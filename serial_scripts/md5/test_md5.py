@@ -42,11 +42,11 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
         super(TestMd5tests, self).setUp()
         result = self.is_test_applicable()
         if result[0]:
-            self.config_basic()
+            self.is_mx_present=True
+            self.config_basic(self.is_mx_present)
             uuid = self.vnc_lib.bgp_routers_list()
             self.uuid = str(uuid)
             self.list_uuid = re.findall('u\'uuid\': u\'([a-zA-Z0-9-]+)\'', self.uuid)
-            self.is_mx_present=True
         else:
             return
 
@@ -410,8 +410,8 @@ class TestMd5testsOnControl(TestMd5tests):
         super(TestMd5testsOnControl, self).setUp()
         result = self.is_test_applicable()
         if result[0]:
-            self.config_basic()
             self.is_mx_present=False
+            self.config_basic(self.is_mx_present)
         else:
             return
 

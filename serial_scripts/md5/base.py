@@ -1,7 +1,12 @@
 import test_v1
+from jnpr.junos import Device
 from vn_test import MultipleVNFixture
 from vnc_api.vnc_api import *
 #from vnc_api.vnc_api import VncApi
+from jnpr.junos import Device
+from common.device_connection import NetconfConnection
+import physical_device_fixture
+from physical_router_fixture import PhysicalRouterFixture
 from vm_test import MultipleVMFixture
 from fabric.api import run, hide, settings
 from vn_test import VNFixture
@@ -42,21 +47,61 @@ class Md5Base(test_v1.BaseTestCase_v1, VerifySecGroup, ConfigPolicy):
     def tearDown(self):
         super(Md5Base, self).tearDown()
 
-    def config_basic(self):
-
+    def config_basic(self, is_mx_present):
         #mx config using device manager
-        if self.inputs.ext_routers:
-            router_params = self.inputs.physical_routers_data.values()[0]
-            self.phy_router_fixture = self.useFixture(PhysicalRouterFixture(
-                router_params['name'], router_params['mgmt_ip'],
-                model=router_params['model'],
-                vendor=router_params['vendor'],
-                asn=router_params['asn'],
-                ssh_username=router_params['ssh_username'],
-                ssh_password=router_params['ssh_password'],
-                mgmt_ip=router_params['mgmt_ip'],
-                connections=self.connections))
-
+        if is_mx_present:   
+            if self.inputs.ext_routers:
+                if self.inputs.use_devicemanager_for_md5:
+                    router_params = self.inputs.physical_routers_data.values()[0]
+                    self.phy_router_fixture = self.useFixture(PhysicalRouterFixture(
+                        router_params['name'], router_params['mgmt_ip'],
+                        model=router_params['model'],
+                        vendor=router_params['vendor'],
+                        asn=router_params['asn'],
+                        ssh_username=router_params['ssh_username'],
+                        ssh_password=router_params['ssh_password'],
+                        mgmt_ip=router_params['mgmt_ip'],
+                        connections=self.connections))
+        else:
+            if self.inputs.ext_routers:
+                router_params = self.inputs.physical_routers_data.values()[0]
+                self.phy_router_fixture = self.useFixture(PhysicalRouterFixture(
+                    router_params['name'], router_params['mgmt_ip'],
+                    model=router_params['model'],
+                    vendor=router_params['vendor'],
+                    asn=router_params['asn'],
+                    ssh_username=router_params['ssh_username'],
+                    ssh_password=router_params['ssh_password'],
+                    mgmt_ip=router_params['mgmt_ip'],
+                    connections=self.connections))
+#                mx_handle = self.phy_router_fixture.get_connection_obj('juniper',
+#                            host=router_params['mgmt_ip'],
+#                            username=router_params['ssh_username'],
+#                            password=router_params['ssh_password'],
+#                            logger=[self.logger])
+#                mx_handle = Device(host=router_params['mgmt_ip'], user=router_params['ssh_username'],passwor
+#d=router_params['ssh_password'])
+#                mx_handle.open(gather_facts=False)
+                cmd = []
+                cmd.append('set groups md5_tests routing-options router-id %s' % router_params['mgmt_ip'])
+                cmd.append('set groups md5_tests routing-options route-distinguisher-id %s' % router_params['mgmt_ip'])
+                cmd.append('set groups md5_tests routing-options autonomous-system %s' % router_params['asn'])
+                cmd.append('set groups md5_tests protocols bgp group md5_tests type internal')
+                cmd.append('set groups md5_tests protocols bgp group md5_tests multihop')
+                cmd.append('set groups md5_tests protocols bgp group md5_tests local-address %s' % router_params['mgmt_ip'])
+                cmd.append('set groups md5_tests protocols bgp group md5_tests hold-time 90')
+                cmd.append('set groups md5_tests protocols bgp group md5_tests keep all')
+                cmd.append('set groups md5_tests protocols bgp group md5_tests family inet-vpn unicast')
+                cmd.append('set groups md5_tests protocols bgp group md5_tests family inet6-vpn unicast')
+                cmd.append('set groups md5_tests protocols bgp group md5_tests family evpn signaling')
+                cmd.append('set groups md5_tests protocols bgp group md5_tests family route-target')
+                cmd.append('set groups md5_tests protocols bgp group md5_tests local-as %s' % router_params['asn'])
+                for node in self.inputs.bgp_control_ips:
+                    cmd.append('set groups md5_tests protocols bgp group md5_tests neighbor %s peer-as %s' % (node, router_params['asn']))
+                cmd.append('set apply-groups md5_tests')
+                mx_handle = NetconfConnection(AbstractConnection)
+#                for cmd_item in cmd:
+                cli_output = mx_handle.config(cmd) 
         vn61_name = "test_vnv6sr"
         vn61_net = ['2001::101:0/120']
         #vn1_fixture = self.config_vn(vn1_name, vn1_net)
