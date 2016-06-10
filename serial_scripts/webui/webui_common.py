@@ -1896,6 +1896,7 @@ class WebuiCommon:
                 keys_arry = self.find_element(
                     'key', 'class', elements=True, browser=element)
                 self.find_element('icon-plus', 'class', elements=True, browser=element)[index].click()
+                time.sleep(2)
                 vals_arry = self.find_element(
                     'value', 'class', elements=True, browser=element)
                 for ind, ele in enumerate(keys_arry):
@@ -1992,7 +1993,6 @@ class WebuiCommon:
                 elif self.list_in_dict(ops_items['value']) and self.list_in_dict(webui_items['value']) and (ops_items['key'] == webui_items['key']):
                     list_ops = ops_items['value'].split(', ')
                     list_webui = webui_items['value'].split(', ')
-
                     if set(list_ops) == set(list_webui):                
                         self.logger.info(
                             "Ops key '%s' with ops_value '%s' matched with webui_value '%s'" %
@@ -2092,6 +2092,48 @@ class WebuiCommon:
             'discards',
             'ds_flow_action_drop',
             'ds_flood',
+            'ds_mcast_df_bit',
+            'ds_flow_no_memory',
+            'ds_push',
+            'ds_invalid_if',
+            'ds_pull',
+            'ds_no_fmd',
+            'ds_invalid_arp',
+            'ds_trap_no_if',
+            'ds_vlan_fwd_tx',
+            'ds_invalid_mcast_source',
+            'ds_invalid_source',
+            'ds_flow_action_invalid',
+            'ds_invalid_packet',
+            'ds_flow_invalid_protocol',
+            'ds_invalid_vnid',
+            'ds_flow_table_full',
+            'ds_invalid_label',
+            'ds_garp_from_vm',
+            'ds_frag_err',
+            'ds_vlan_fwd_enq',
+            'ds_clone_fail',
+            'ds_arp_no_route',
+            'ds_misc',
+            'ds_interface_rx_discard',
+            'ds_flow_unusable',
+            'ds_mcast_clone_fail',
+            'ds_invalid_protocol',
+            'ds_head_space_reserve_fail',
+            'ds_interface_tx_discard',
+            'ds_nowhere_to_go',
+            'ds_arp_no_where_to_go',
+            'ds_l2_no_route',
+            'ds_cksum_err',
+            'ds_flow_queue_limit_exceeded',
+            'ds_ttl_exceeded',
+            'ds_flow_nat_no_rflow',
+            'ds_invalid_nh',
+            'ds_head_alloc_fail',
+            'ds_pcow_fail',
+            'ds_rewrite_fail',
+            'primary',
+            'no_config_intf_list',
             'total_flows',
             'active_flows',
             'aged_flows',
@@ -2122,6 +2164,13 @@ class WebuiCommon:
             'average_blocked_duration',
             'admin_down',
             'sm_back_pressure',
+            'log_local',
+            'log_category',
+            'error_intf_list',
+            'max_sm_queue_count',
+            'status',
+            'control_node_list_cfg',
+            'dns_servers',
             'chunk_select_time']
         key_list = ['exception_packets_dropped', 'l2_mcast_composites']
         index_list = []
