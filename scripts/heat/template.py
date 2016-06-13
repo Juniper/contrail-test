@@ -531,6 +531,7 @@ ecmp_pt = {
        [{"list_join": [":", {"get_attr": ["template_VirtualNetwork_3",
                                           "fq_name"]}]}]}}}
 }
+
 pt_multi_inline = {
     "outputs":
     {"left_VM_ID": {"description": "ID of the left VM",
@@ -1989,6 +1990,10 @@ svc_inst_nomgmt_pt_v2 = {
     u'service_instance_fq_name': {
       u'description': u'FQ name of the service template',
       u'value': {u'get_attr': [u'service_instance', u'fq_name']}
+    },
+    u'svm_id': {
+      u'description': u'FQ name of the service template',
+      u'value': {u'get_attr': [u'svm', u'show', u'id']}
     },
   },
   u'parameters': {

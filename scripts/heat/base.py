@@ -97,9 +97,9 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
 
     def config_heat_obj(self, stack_name, template= None, env= None):
         if template == None:
-            template = self.get_template(template_name=stack_name + '_template')
+            template = self.get_template(template_name=stack_name)
         if env == None:
-            env = self.get_env(env_name=stack_name + '_env')
+            env = self.get_env(env_name=stack_name)
         return self.useFixture(HeatStackFixture(connections=self.connections,
                                                 inputs=self.inputs, stack_name=stack_name, project_fq_name=self.inputs.project_fq_name, template=template, env=env))
     # end config_heat_obj
@@ -232,7 +232,6 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         si_hs_obj = self.config_heat_obj(stack_name, template, env)
         si_name = env['parameters']['service_instance_name']
         si_fix = self.verify_si(si_hs_obj.heat_client_obj, stack_name, si_name, st_fix, max_inst, st_fix.svc_mode, st_fix.image_name)
-        si_fix.verify_on_setup()
         return si_fix, si_hs_obj
 
         # end config_svc_instance
@@ -261,7 +260,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
             domain_name='default-domain', project_name=self.inputs.project_name, si_name=si_name,
             svc_template=st_fix.st_obj, if_list=st_fix.if_list))
         assert svc_inst.verify_on_setup()
-        if self.pt_based_svc and self.inputs.get_af() == 'v6':
+        if self.pt_based_svc:
             op = stack.stacks.get(stack_name).outputs
             for output in op:
                 if output['output_key'] == 'svm_id':
@@ -269,13 +268,25 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
             vm = VMFixture(self.connections, uuid=svm_id)
             vm.setUp()
             vm.verify_on_setup()
-            vm.vm_username = 'ubuntu'
-            vm.vm_password = 'ubuntu'
-            vm.run_cmd_on_vm(['dhclient -6 -pf /var/run/dhclient6.eth0.pid -lf /var/lib/dhcp/dhclient6.eth0.leases',
-                              'dhclient -6 -pf /var/run/dhclient6.eth1.pid -lf /var/lib/dhcp/dhclient6.eth1.leases'], as_sudo=True)
+            image='ubuntu-in-net'
+            (vm.vm_username, vm.vm_password) = vm.orch.get_image_account(image)
+            svc_inst._svm_list.append(vm)
+            if self.inputs.get_af() == 'v6':
+                vm.run_cmd_on_vm(['dhclient -6 -pf /var/run/dhclient6.eth0.pid -lf /var/lib/dhcp/dhclient6.eth0.leases',
+                                  'dhclient -6 -pf /var/run/dhclient6.eth1.pid -lf /var/lib/dhcp/dhclient6.eth1.leases'], as_sudo=True)
         return svc_inst
 
     # end verify_si
+
+    def add_route_in_svm(self, si, route):
+        for subnet in route[0].vn_subnets:
+            subnet = subnet['cidr']
+            af = ''
+            if is_v6(subnet):
+                af = '-6'
+            for vm in si.svm_list:
+                cmd = 'ip %s route add %s dev %s' % (af, subnet, route[1])
+                vm.run_cmd_on_vm([cmd], as_sudo=True)
 
     def config_svc_chain(self, rules, vn_list, heat_objs, stack_name='svc_chain'):
         res_name = 'svc_chain'

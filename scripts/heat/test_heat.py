@@ -72,6 +72,7 @@ try:
             if self.inputs.get_af() == 'v6':
                 svc_rules.append(self.config_svc_rule(proto='icmp6', si_fq_names=[si_fq_name], src_vns=[left_net_fix], dst_vns=[right_net_fix]))
             svc_chain = self.config_svc_chain(svc_rules, vn_list, [l_h_obj, r_hs_obj])
+            time.sleep(10)
             assert vms[0].ping_with_certainty(vms[1].vm_ip, expectation=True)
         # end test_svc_creation_with_heat
 
@@ -99,12 +100,16 @@ try:
 
             left_sis = []
             for i, svc in enumerate(left_svcs):
-                left_sis.append(self.config_svc_instance(
-                    'sil_%d' % i, svc_tmpls[svc]['tmpl'], vn_list1))
+                si = self.config_svc_instance('sil_%d' % i, svc_tmpls[svc]['tmpl'], vn_list1)
+                left_sis.append(si)
+                if svc == 'in-network' and (self.inputs.get_af() == 'v6' or self.pt_based_svc):
+                    self.add_route_in_svm(si[0], [right_net_fix, 'eth1'])
             right_sis = []
             for i, svc in enumerate(right_svcs):
-                right_sis.append(self.config_svc_instance(
-                    'sir_%d' % i, svc_tmpls[svc]['tmpl'], vn_list2))
+                si = self.config_svc_instance('sir_%d' % i, svc_tmpls[svc]['tmpl'], vn_list2)
+                right_sis.append(si)
+                if svc == 'in-network' and (self.inputs.get_af() == 'v6' or self.pt_based_svc):
+                    self.add_route_in_svm(si[0], [left_net_fix, 'eth0'])
             left_si_names = [(':').join(si[0].si_fq_name) for si in left_sis]
             right_si_names = [(':').join(si[0].si_fq_name) for si in right_sis]
             left_rules = []
@@ -116,6 +121,7 @@ try:
                 right_rules.append(self.config_svc_rule(proto='icmp6', si_fq_names=right_si_names, src_vns=[transit_net_fix], dst_vns=[right_net_fix]))
             left_chain = self.config_svc_chain(left_rules, vn_list1, [l_hs_obj, t_hs_obj], 'left_chain')
             right_chain = self.config_svc_chain(right_rules, vn_list2, [t_hs_obj, r_hs_obj], 'right_chain')
+            time.sleep(10)
             assert vms[0].ping_with_certainty(vms[1].vm_ip, expectation=True)
         # end transit_vn_with_left_right_svc
 
@@ -301,6 +307,7 @@ try:
                         src_vns=[left_net_fix], dst_vns=[right_net_fix],
                         si_fq_names=[(':').join(sis[policy['svc']][0].si_fq_name)]))
             chain = self.config_svc_chain(rules, vn_list, [l_hs_obj, r_hs_obj], 'svc_chain')
+            time.sleep(10)
             if test_ping:
                 assert vms[0].ping_with_certainty(vms[1].vm_ip, expectation=True)
             for policy in policys:
