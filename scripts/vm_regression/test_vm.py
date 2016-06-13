@@ -245,7 +245,6 @@ class TestBasicVMVN0(BaseVnVmTest):
         '''
         vn_fixture = self.create_vn()
         assert vn_fixture.verify_on_setup()
-        vn_obj = vn_fixture.obj
         vm1_fixture = self.create_vm(vn_fixture=vn_fixture)
         assert vm1_fixture.verify_on_setup()
         try:
@@ -253,7 +252,7 @@ class TestBasicVMVN0(BaseVnVmTest):
             #if (self.inputs.orchestrator == 'vcenter'):
             #    self.vnc_lib.virtual_network_delete(id=vn_obj.uuid)
             #else:
-            self.vnc_lib.virtual_network_delete(id=vn_obj.vn_id)
+            self.vnc_lib.virtual_network_delete(id=vn_fixture.uuid)
         except RefsExistError as e:
             self.logger.info(
                 'RefsExistError:Check passed that the VN cannot be disassociated/deleted when the VM exists')
@@ -508,6 +507,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 project_name=projects[
                     0], vnc_lib_h=self.vnc_lib, username=user_list[0][0],
                 password=user_list[0][1], connections=self.connections))
+	project_fixture1.set_user_creds(project_fixture1.username,project_fixture1.password)
         user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
         project_inputs1 = ContrailTestInit(
             self.ini_file, stack_user=project_fixture1.project_username,
@@ -522,6 +522,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 project_name=projects[
                     1], vnc_lib_h=self.vnc_lib, username=user_list[1][0],
                 password=user_list[1][1], connections=self.connections))
+	project_fixture2.set_user_creds(project_fixture2.username,project_fixture2.password)
         user2_fixture.add_user_to_tenant(projects[1], user_list[1][0] , user_list[1][2])
         project_inputs2 = ContrailTestInit(
             self.ini_file, stack_user=project_fixture2.project_username,
@@ -635,7 +636,8 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 project_name=projects[
                     0], vnc_lib_h=self.vnc_lib, username=user_list[0][0],
                 password=user_list[0][1], connections=self.connections))
-        user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
+        project_fixture1.set_user_creds(project_fixture1.username,project_fixture1.password)
+	user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
         project_inputs1 = ContrailTestInit(
             self.ini_file, stack_user=project_fixture1.project_username,
             stack_password=project_fixture1.project_user_password,
@@ -650,6 +652,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 project_name=projects[
                     1], vnc_lib_h=self.vnc_lib, username=user_list[1][0],
                 password=user_list[1][1], connections=self.connections))
+	project_fixture2.set_user_creds(project_fixture2.username,project_fixture2.password)		
         user2_fixture.add_user_to_tenant(projects[1], user_list[1][0] , user_list[1][2])
         project_inputs2 = ContrailTestInit(
             self.ini_file, stack_user=project_fixture2.project_username,
