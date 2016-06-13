@@ -209,6 +209,180 @@ class TestvDNSRestart(BasevDNSTest):
                 result = False
                 assert result, msg
     # end scale_vdns_records_restart_named
+    
+    @preposttest_wrapper
+    def test_agent_query_all_dns_servers_policy_fixed(self):
+        '''Agent to request all available named servers from Disocvery Server while 
+           connecting to two in the list to send DNS records, but querying all.
+           This script is specifically written to test 
+           Bug Id 1551987 : "Agent to query all available bind server for vDNS records"
+           Also, this script assumes that DNS policy is *fixed* which is the default value.
+           Steps:
+            1. Create a VN with IPAM having Virtual DNS configured.
+            2. Create 2 VMs each on both compute nodes.
+            3. Check that ping between 2 VMs on same compute and across different compute
+            4. Ping local records and verify in introspect logs that DNS query is sent to all control nodes in cluster
+            5. Search for all DNS servers assigned to vrouter agents by discovery
+            6. Stop the *contrail-named* processes on both assigned DNS servers to vrouter agent of compute 1.
+            7. Verify all cases of nslookup during and after subscription TTL expiry.
+        Pass criteria: DNS queries should reach every DNS server in network and any server can resolve it.
+        Entry Criteria: Minimum 3 control nodes and 2 Compute nodes are required for this test case.
+        Maintainer: pulkitt@juniper.net'''
+        if len(self.inputs.bgp_ips) <2 or len(self.inputs.compute_ips) < 2:
+            slef.logger.info("Skipping this test case as minimum control nodes required are 2")
+            return True
+        initial_cores = get_cores(self.inputs)
+        vm_list = ['vm1-agent1', 'vm2-agent1', 'vm1-agent2', 'vm2-agent2']
+        vn_name = 'vn1'
+        vn_nets = {'vn1' : '10.10.10.0/24'}
+        dns_server_name = 'vdns1'
+        domain_name = 'juniper.net'
+        ttl = 100
+        ipam_name = 'ipam1'
+        project_fixture = self.useFixture(ProjectFixture(
+            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, 
+            connections=self.connections))
+        dns_data = VirtualDnsType(
+            domain_name=domain_name, dynamic_records_from_client=True,
+            default_ttl_seconds=ttl, record_order='random', reverse_resolution=True)
+        vdns_fixt1 = self.useFixture(VdnsFixture(self.inputs, self.connections, 
+            vdns_name=dns_server_name, dns_data=dns_data))
+        result, msg = vdns_fixt1.verify_on_setup()
+        self.assertTrue(result, msg)
+        dns_server = IpamDnsAddressType(
+            virtual_dns_server_name=vdns_fixt1.vdns_fq_name)
+        ipam_mgmt_obj = IpamType(
+            ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
+        # Associate IPAM with  VDNS server Object
+        ipam_fixt1 = self.useFixture(IPAMFixture(ipam_name, vdns_obj=vdns_fixt1.obj, 
+                project_obj=project_fixture, ipamtype=ipam_mgmt_obj))
+        # Launch  VM with VN Created above.
+        vn_fixt = self.useFixture(VNFixture(self.connections, self.inputs,\
+                     vn_name=vn_name, subnets=[vn_nets['vn1']], \
+                     ipam_fq_name=ipam_fixt1.fq_name, option='contrail'))
+        vm_fixture = {}
+        for vm in vm_list:
+            if 'agent1' in vm:
+                vm_fixture[vm] = self.useFixture(VMFixture(project_name=
+                    self.inputs.project_name, connections=self.connections, 
+                    vn_obj=vn_fixt.obj,vm_name=vm, 
+                    node_name = self.inputs.compute_names[0]))
+            elif 'agent2' in vm:
+                vm_fixture[vm] = self.useFixture(VMFixture(project_name=
+                    self.inputs.project_name, connections=self.connections,
+                    vn_obj=vn_fixt.obj, vm_name=vm, 
+                    node_name = self.inputs.compute_names[1]))
+        for vm in vm_list:
+            assert vm_fixture[vm].verify_vm_launched()
+            assert vm_fixture[vm].verify_on_setup()
+            assert vm_fixture[vm].wait_till_vm_is_up()
+        # Verify connectivity between all Agents after configuration of VMs
+        self.assertTrue(vm_fixture['vm1-agent1'].ping_to_ip(ip='vm1-agent2', count=2))
+        self.assertTrue(vm_fixture['vm1-agent1'].ping_to_ip(ip='vm2-agent1', count=2))
+        self.assertTrue(vm_fixture['vm1-agent2'].ping_to_ip(ip='vm1-agent1', count=2))
+        self.assertTrue(vm_fixture['vm1-agent2'].ping_to_ip(ip='vm2-agent2', count=2))
+        # Ping from vm of agent 1 to VM of agent 2 and verify query sent to all DNS servers
+        inspect_h_agent1 = self.agent_inspect[vm_fixture['vm1-agent1'].vm_node_ip]
+        output_1 = str(inspect_h_agent1.get_vna_dns_query_to_named())
+        self.assertTrue(vm_fixture['vm1-agent1'].ping_to_ip(ip='vm1-agent2', count=2))
+        output_2 = str(inspect_h_agent1.get_vna_dns_query_to_named())
+        diff = difflib.ndiff(output_1,output_2)
+        delta = ''.join(x[2:] for x in diff if x.startswith('+ '))
+        # Getting the list of DNS servers in use by every Compute node as per discovery server assignment
+        for i in range(0,len(self.inputs.bgp_ips)):
+            if "DNS query sent to named server : %s" % self.inputs.bgp_control_ips[i] in delta:
+                self.logger.debug("DNS query sent successfully to DNS server on %s" % 
+                                  self.inputs.bgp_control_ips[i])
+            else:
+                self.logger.error("DNS query not sent to DNS server running on %s" % 
+                                  self.inputs.bgp_control_ips[i])
+                errmsg = "DNS query not sent to all DNS servers in the network"
+                self.logger.error(errmsg)
+                assert False, errmsg
+        dns_list_all_compute_nodes = []
+        for entry in self.inputs.compute_ips:
+            inspect_h = self.agent_inspect[entry]
+            dns_list_all_compute_nodes.append(
+                    inspect_h.get_vna_discovered_dns_server())
+            self.logger.debug("The compute node %s is connected to DNS servers: %s" 
+                        %(entry,dns_list_all_compute_nodes[-1]))
+        # Specifically for fixed policy, verifying that all agents connected to same set of DNS servers
+        for i in range(0,(len(dns_list_all_compute_nodes)-1)):
+            if set(dns_list_all_compute_nodes[i]) == set(dns_list_all_compute_nodes[i+1]):
+               self.logger.info("All computes connected to same DNS server as expected")
+            else:
+                errmsg = "Computes connected to different DNS servers. This is not expected with policy as fixed"
+                self.logger.error(errmsg)
+                assert False, errmsg
+        # Making the named down on Control nodes associated with 1st vrouter agent
+        # Verifying that DNS resolve the queries as per the assigned DNS servers
+        for nodes in dns_list_all_compute_nodes[0]:
+            index = self.inputs.bgp_control_ips.index(nodes)
+            self.inputs.stop_service("contrail-named",[self.inputs.bgp_ips[index]])
+            self.addCleanup(self.inputs.start_service,'contrail-named',\
+                             [self.inputs.bgp_ips[index]])
+        verify = "once"
+        cmd_for_agent2 = 'nslookup -timeout=1 vm2-agent2' + '| grep ' +\
+                       '\'' + vm_fixture['vm2-agent2'].vm_ip + '\''
+        cmd_for_agent1 = 'nslookup -timeout=1 vm2-agent1' + '| grep ' +\
+                       '\'' + vm_fixture['vm2-agent1'].vm_ip + '\''
+        for i in range(0,360):
+            new_dns_list = []
+            for entry in self.inputs.compute_ips[0],self.inputs.compute_ips[1]:
+                inspect_h = self.agent_inspect[entry]
+                new_dns_list.append(
+                    inspect_h.get_vna_discovered_dns_server())
+                self.logger.debug("The compute node %s is connected to DNS servers: %s" 
+                        %(entry,new_dns_list[-1]))
+            if i == 0 and new_dns_list[0] == new_dns_list[1] and\
+                new_dns_list[0]==dns_list_all_compute_nodes[0]:
+                self.assertFalse(self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
+                                     cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip))
+                self.assertFalse(self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
+                                     cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip))
+                continue
+            elif new_dns_list[0] != new_dns_list[1] and verify=="once" :
+                if new_dns_list[0] == dns_list_all_compute_nodes[0] and \
+                new_dns_list[1] != dns_list_all_compute_nodes[1]:
+                    self.assertFalse(self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
+                                         cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip))
+                    self.assertFalse(self.verify_ns_lookup_data(vm_fixture['vm1-agent2'],\
+                                         cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip))
+                    self.assertTrue(self.verify_ns_lookup_data(vm_fixture['vm1-agent2'],\
+                                         cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip))
+                    self.assertTrue(self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
+                                         cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip))
+                elif new_dns_list[0] != dns_list_all_compute_nodes[0] and \
+                new_dns_list[1] == dns_list_all_compute_nodes[1]:
+                    self.assertFalse(self.verify_ns_lookup_data(vm_fixture['vm1-agent2'],\
+                                         cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip))
+                    self.assertFalse(self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
+                                         cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip))
+                    self.assertTrue(self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
+                                        cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip))
+                    self.assertTrue(self.verify_ns_lookup_data(vm_fixture['vm1-agent2'],\
+                                         cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip))
+                verify="done"
+                continue
+            elif new_dns_list[0] != dns_list_all_compute_nodes[0] and \
+            new_dns_list[1] != dns_list_all_compute_nodes[1]:
+                self.assertTrue(self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
+                                    cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip))
+                self.assertTrue(self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
+                                     cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip))
+                self.assertTrue(self.verify_ns_lookup_data(vm_fixture['vm1-agent2'],\
+                                     cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip))
+                self.assertTrue(self.verify_ns_lookup_data(vm_fixture['vm1-agent2'],\
+                                     cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip))
+                self.assertTrue(vm_fixture['vm1-agent1'].ping_to_ip(ip='vm2-agent2', count=2))
+                self.assertTrue(vm_fixture['vm1-agent1'].ping_to_ip(ip='vm2-agent1', count=2))
+                self.assertTrue(vm_fixture['vm1-agent2'].ping_to_ip(ip='vm2-agent2', count=2))
+                self.assertTrue(vm_fixture['vm1-agent2'].ping_to_ip(ip='vm2-agent1', count=2))
+                break
+            else:
+                self.logger.debug("Waiting till new DNS server assignment takes place for agent 1")
+                sleep(5)
+                continue
 
 if __name__ == '__main__':
     unittest.main()
