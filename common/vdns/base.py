@@ -379,15 +379,20 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
         return next_item
 
     def verify_ns_lookup_data(self, vm_fix, cmd, expectd_data):
+        self.logger.debug("Inside verify_ns_lookup_data")
         self.logger.debug(
             "cmd string is %s and  expected data %s for searching" %
             (cmd, expectd_data))
         vm_fix.run_cmd_on_vm(cmds=[cmd])
         result = vm_fix.return_output_cmd_dict[cmd]
-        print ('\n result %s' % result)
-        if (result.find(expectd_data) == -1):
+        try:
+            if (result.find(expectd_data) == -1):
+                return False
+            return True
+        except AttributeError, e:
+            self.logger.error('Unable to get any result of nslookup')
+            self.logger.exception(e)
             return False
-        return True
 
     def verify_vm_dns_data(self, vm_dns_exp_data, dns_server_ip):
         result = True
