@@ -458,5 +458,5 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         ''' Test to verify contrail database status
 
         '''
-        assert self.analytics_obj.verify_database_process_running('contrail-database')
+        assert self.analytics_obj.verify_database_process_running('kafka')
 
