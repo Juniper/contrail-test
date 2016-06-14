@@ -386,14 +386,14 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         self.analytics_obj.verify_generator_connection_to_collector()
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_db_purge(self):
         ''' Test to db purge
 
         '''
+        start_time = self.analytics_obj.getstarttime(self.inputs.collector_ip)
         purge_id = self.analytics_obj.get_purge_id(20)
-        assert self.analytics_obj.verify_purge_info_in_database_uve(purge_id)
+        assert self.analytics_obj.verify_purge_info_in_database_uve(purge_id,start_time)
     
     @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
