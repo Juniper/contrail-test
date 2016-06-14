@@ -2,6 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import TimeoutException
 import time
 import random
 import fixtures
@@ -682,32 +683,33 @@ class WebuiTest:
                     addresses = dst_addresses['subnet']
                 addresses = addresses['ip_prefix'] + \
                     '/' + str(addresses['ip_prefix_len'])
-                if index:
+                if index > 1:
                     self.ui.click_element('btnCommonAddSGRule')
                 sg_grp_tuple = self.ui.find_element(
-                    ['sGRuleTuples', 'rule-item'], ['id', 'class'], if_elements=[1])
+                    ['sGRuleTuples', 'rule-item'], ['id', 'class'], if_elements=[1])[index]
+                dropdown_rule_items = self.ui.find_element(
+                    "div[class$='pull-left']", 'css', sg_grp_tuple,
+                    elements=True)
                 self.ui.dropdown(
                     "div[id$='direction']",
                     direction,
                     element_type='css',
-                    browser_obj=sg_grp_tuple[0])
-                self.ui.dropdown(
-                    "div[id$='protocol']",
-                    protocol,
-                    element_type='css',
-                    browser_obj=sg_grp_tuple[0])
+                    browser_obj=sg_grp_tuple)
+                prot = dropdown_rule_items[3]
+                self.ui.click_on_caret_down(browser=prot)
+                self.ui.find_select_from_dropdown(protocol)
                 self.ui.dropdown(
                     "div[id$='ether']",
                     ether_type,
                     element_type='css',
-                    browser_obj=sg_grp_tuple[0])
+                    browser_obj=sg_grp_tuple)
                 text_box = self.ui.find_element(
                     "input[id$='remotePorts']",
                     'css',
-                    browser=sg_grp_tuple[0])
+                    browser=sg_grp_tuple)
                 text_box.clear()
                 text_box.send_keys(port_range)
-                self.ui.click_element("div[id$='remoteAddr']", 'css')
+                self.ui.click_element("div[id$='remoteAddr']", 'css', elements=True, index = 2 * index)
                 self.ui.send_keys(
                     addresses,
                     "input[id^='s2id_autogen']",
@@ -1216,7 +1218,9 @@ class WebuiTest:
                 total_flows = vrouters_ops_data.get(
                     'VrouterStatsAgent').get('total_flows')
                 active_flows = vrouters_ops_data.get(
-                    'VrouterStatsAgent').get('active_flows')
+                    'VrouterStatsAgent').get('flow_rate').get('active_flows')
+                if not active_flows:
+                    active_flows = '--'
                 flow_count_string = str(active_flows) + \
                     ' Active, ' + \
                     str(total_flows) + ' Total'
@@ -1228,7 +1232,7 @@ class WebuiTest:
                     networks = '0'
                 interfaces = str(vrouters_ops_data.get('VrouterAgent')
                                  .get('total_interface_count'))
-                if not interfaces:
+                if not interfaces or interfaces == 'None':
                     interfaces = '0 Total'
                 else:
                     interfaces = interfaces + ' Total'
@@ -1396,7 +1400,6 @@ class WebuiTest:
                                     'key': 'Version', 'value': version}, {
                                         'key': 'Status', 'value': overall_node_status_string}, {
                                             'key': 'Interfaces', 'value': interfaces}])
-
                 if self.verify_vrouter_ops_grid_page_data(host_name, ops_data):
                     self.logger.info(
                         "Vrouter %s main page data matched" %
@@ -1978,19 +1981,22 @@ class WebuiTest:
                 (ops_uuid))
             for i in range(len(rows)):
                 match_flag = 0
-                ui_vm_name = self.ui.find_element(
-                    'instance',
-                    'name',
-                    browser=rows[i]).text
-                if ui_vm_name == vmname:
-                    self.logger.info(
-                        "Vm name %s matched in webui..Verifying basic view details..." %
-                        (vmname))
-                    self.logger.debug(self.dash)
-                    match_index = i
-                    match_flag = 1
-                    vm_name = self.ui.get_slick_cell_text(rows[i])
-                    break
+                try:
+                    ui_vm_name = self.ui.find_element(
+                        'instance',
+                        'name',
+                        browser=rows[i]).text
+                    if ui_vm_name == vmname:
+                        self.logger.info(
+                            "Vm name %s matched in webui..Verifying basic view details..." %
+                                (vmname))
+                        self.logger.debug(self.dash)
+                        match_index = i
+                        match_flag = 1
+                        vm_name = self.ui.get_slick_cell_text(rows[i])
+                        break
+                except TimeoutException:
+                    continue
             if not match_flag:
                 self.logger.error(
                     "Vm exists in opserver but vm %s not found in webui..." %
@@ -2484,9 +2490,9 @@ class WebuiTest:
                 vn_ops_data = self.ui.get_details(
                     vn_list_ops[n]['href'])
                 self.ui.expand_advance_details()
-                dom_arry = self.ui.parse_advanced_view()
-                dom_arry_str = self.ui.get_advanced_view_str()
-                merged_arry = dom_arry + dom_arry_str
+                dom_arry = self.ui.get_advanced_view_str_special()
+                dom_arry_lst = self.ui.get_list_from_view()
+                merged_arry = dom_arry + dom_arry_lst
                 if 'UveVirtualNetworkConfig' in vn_ops_data:
                     ops_data = vn_ops_data['UveVirtualNetworkConfig']
                     modified_ops_data = []
@@ -2518,9 +2524,12 @@ class WebuiTest:
                         else:
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
+                        if complete_ops_data[k]['key'] == 'name':
+                            m = re.search('(.*):(.*)', complete_ops_data[k]['value'])
+                            complete_ops_data[k]['value'] = m.group(1)
                     if self.ui.match_ui_kv(
-                            complete_ops_data,
-                            merged_arry):
+                            merged_arry,
+                            complete_ops_data):
                         self.logger.info(
                             "VN advance view data matched in webui")
                     else:

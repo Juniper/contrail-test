@@ -5,6 +5,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import TimeoutException
 import os
 import time
 import datetime
@@ -413,6 +414,12 @@ class WebuiCommon:
         time.sleep(2)
     # end send_keys
 
+    def click_on_caret_down(self, browser=None):
+        if not browser:
+            browser = self.browser
+        self.click_element('icon-caret-down', 'class', browser, wait=2)
+    # end click_on_caret_down
+
     def find_element(
             self,
             element_name_list,
@@ -663,6 +670,43 @@ class WebuiCommon:
         return True
     # end select_from_dropdown_list
 
+    def find_select_from_dropdown(
+            self, element_text,
+            browser=None,
+            case=None):
+        flag = False
+        result = True
+        if not browser:
+            browser = self.browser
+        br = self.find_element(
+            'ui-autocomplete', 'class', elements=True)
+        for index in range(len(br)):
+            if br[index].text:
+                break
+        ele_types = self.find_element(
+            'ui-menu-item', 'class', elements=True, browser=br[index])
+        if not ele_types:
+            self.logger.debug('Drop-down list not found')
+            return False
+        ele_dropdown = [element.find_element_by_tag_name('a')
+                            for element in ele_types]
+        for ele in ele_dropdown:
+            if case == None:
+                comp_ele = ele.text
+            elif case == 'lower':
+                comp_ele = ele.text.lower()
+            elif case == 'upper':
+                comp_ele = ele.text.upper()
+            if comp_ele == element_text:
+                flag = True
+                ele.click()
+                break
+        if not flag:
+            self.logger.debug('%s not found in the dropdown' % element_text)
+            result = result and False
+        return result
+    # end find_select_from_dropdown
+
     def dropdown(self, id, element_name, element_type=None, browser_obj=None):
         if browser_obj:
             obj = browser_obj
@@ -815,7 +859,9 @@ class WebuiCommon:
         cpu = float(dictn.get('cpu_info').get('cpu_share'))
         cpu_range = range(int(cpu * 100) - offset, int(cpu * 100) + offset)
         cpu_range = map(lambda x: x / 100.0, cpu_range)
-        cpu_list = [str('%.2f' % cpu) + ' %' for cpu in cpu_range]
+        cpu_list1 = [str(cpu) + ' %' for cpu in cpu_range]
+        cpu_list2 = [str('%.2f' % cpu) + ' %' for cpu in cpu_range]
+        cpu_list = sorted(set(cpu_list1 + cpu_list2))
         return cpu_list
     # end get_cpu_string
 
@@ -1753,7 +1799,7 @@ class WebuiCommon:
 
     def get_advanced_view_str_special(self):
         domArry = json.loads(self.browser.execute_script(
-            "var eleList = $('pre').find('span'), dataSet = []; for(var i = 0; i < eleList.length-2; i++){if(eleList[i].className == 'preBlock' && eleList[i + 2].className == 'expanded'){ var j = i + 2 , itemArry = [];  while(j < eleList.length && eleList[j].className != 'key' ){ if(eleList[j].className == 'string'){itemArry.push(eleList[j].innerHTML);}  j++;}  dataSet.push({key : eleList[i].innerHTML, value :itemArry});}} return JSON.stringify(dataSet);"))
+            "var eleList = $('pre').find('span'), dataSet = []; for(i = 0; i < eleList.length; i++){if(eleList[i].className == 'key'){if(eleList[i + 1].className == 'value string' || eleList[i + 1].className == 'value number' ){dataSet.push({key : eleList[i].innerHTML, value : eleList[i + 1].innerHTML});}}} return JSON.stringify(dataSet);"))
         domArry = self.trim_spl_char(domArry)
         return domArry
     # end get_advanced_view_str
@@ -1782,6 +1828,18 @@ class WebuiCommon:
             "var eleList = $('[id^=detail-columns]').find('li').find('div'),dataSet = []; for(var i = 0; i < eleList.length-1; i++){if(eleList[i].className== 'key span5' && eleList[i + 1].className == 'value span7'){dataSet.push({key : eleList[i].innerHTML.replace(/(&nbsp;)*/g,''),value:eleList[i+1].innerHTML.replace(/^\s+|\s+$/g, '')});}} return JSON.stringify(dataSet);"))
         return domArry
     # end get_basic_view_infra
+
+    def get_list_from_view(self):
+        view_arry = []
+        key_val_lst = self.find_element('pre', 'tag')
+        match_sqr = re.findall(r"\n(\w+):\s+\[\n(.*)", key_val_lst.text)
+        if match_sqr:
+            for element in match_sqr:
+                view_arry.append({'key': element[0], 'value': [element[1]]})
+        else:
+            self.logger.error('No list object found in the given view')
+        return view_arry
+    # end get_list_from_view
 
     def trim_spl_char(self, d):
         data = []
@@ -2191,12 +2249,16 @@ class WebuiCommon:
         return ui_list
     # end get_item_list
 
-    def expand_advance_details(self):
-        while True:
+    def expand_advance_details(self, count=20):
+        flag = 0
+        while flag < count:
+            plus_objs = []
             try:
                 plus_objs = self.find_element("i[class*='icon-plus expander']",'css', elements=True,screenshot=False)
+                flag += 1
                 self.click(plus_objs)
-            except WebDriverException:
+                time.sleep(3)
+            except (WebDriverException, TimeoutException):
                 break
     # end expand_advance_details
 
