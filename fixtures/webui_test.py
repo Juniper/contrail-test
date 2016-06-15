@@ -1448,6 +1448,7 @@ class WebuiTest:
                     vrouters_list_ops[n]['href'])
                 new_list = []
                 element_list = [
+                    ('connected_networks', 10),
                     ('interface_list', 9), ('virtual_machine_list', 7),
                     ('dns_server_list_cfg', 6), ('self_ip_list', 5)]
                 agent_name = 'VrouterAgent'
@@ -1866,7 +1867,7 @@ class WebuiTest:
                 analytics_nodes_ops_data = self.ui.get_details(
                     analytics_nodes_list_ops[n]['href'])
                 key1, val1, flag = self.ui.get_advanced_view_list(
-                        'CollectorState', 'self_ip_list', 3)
+                        'CollectorState', 'self_ip_list', 0)
                 self.ui.expand_advance_details()
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = self.ui.get_advanced_view_str()
@@ -2541,8 +2542,8 @@ class WebuiTest:
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
                     if self.ui.match_ui_kv(
-                            complete_ops_data,
-                            merged_arry):
+                            merged_arry,
+                            complete_ops_data):
                         self.logger.info(
                             "VN advance view data matched in webui")
                     else:
@@ -3151,7 +3152,9 @@ class WebuiTest:
         result = True
         fip_list_api = self.ui.get_fip_list_api()
         for fips in range(len(fip_list_api['floating-ips'])):
-            api_fq_id = fip_list_api['floating-ips'][fips]['uuid']
+            api_fq_name = fip_list_api[
+                'floating-ips'][fips]['fq_name'][2] + ':' + fip_list_api[
+                    'floating-ips'][fips]['fq_name'][3]
             self.ui.click_configure_fip()
             project_name = fip_list_api.get(
                 'floating-ips')[fips].get('fq_name')[1]
@@ -3160,35 +3163,53 @@ class WebuiTest:
             self.ui.select_project(project_name)
             rows = self.ui.get_rows()
             self.logger.info(
-                "fip fq_id %s exists in api server..checking if exists in webui as well" %
-                (api_fq_id))
+                "fip fq_name %s exists in api server..checking if exists in webui as well" %
+                (api_fq_name))
             for i in range(len(rows)):
                 match_flag = 0
                 j = 0
                 if rows[i].find_elements_by_tag_name(
-                        'div')[4].text == api_fq_id:
+                        'div')[4].text == api_fq_name:
                     self.logger.info(
-                        "fip fq_id %s matched in webui..Verifying basic view details now" %
-                        (api_fq_id))
+                        "fip fq_name %s matched in webui..Verifying basic view details now" %
+                        (api_fq_name))
                     self.logger.info(self.dash)
                     match_index = i
                     match_flag = 1
                     dom_arry_basic = []
                     dom_arry_basic.append(
-                        {'key': 'IP Address', 'value': rows[i].find_elements_by_tag_name('div')[1].text})
+                        {'key': 'IP Address', 'value': rows[i].find_elements_by_tag_name('div')[2].text})
+                    interface_val = rows[i].find_elements_by_tag_name('div')[3].text
+                    int_val = '-'
+                    if not interface_val == '-':
+                        int_val = interface_val.split()[1].strip('()')
                     dom_arry_basic.append(
-                        {'key': 'Instance', 'value': rows[i].find_elements_by_tag_name('div')[2].text})
+                        {'key': 'Mapped Interface', 'value': int_val})
                     dom_arry_basic.append({'key': 'Floating IP and Pool', 'value': rows[
-                                          i].find_elements_by_tag_name('div')[3].text})
-                    dom_arry_basic.append(
-                        {'key': 'UUID', 'value': rows[i].find_elements_by_tag_name('div')[4].text})
+                                          i].find_elements_by_tag_name('div')[4].text})
                     break
             if not match_flag:
                 self.logger.error(
-                    "fip fq_id exists in apiserver but %s not found in webui..." %
-                    (api_fq_id))
+                    "fip fq_name %s exists in api server but %s not found in webui..." %
+                    (api_fq_name))
                 self.logger.info(self.dash)
             else:
+                self.ui.click_configure_fip_basic(match_index)
+                rows = self.ui.get_rows()
+                self.logger.info(
+                    "Verify basic view details for fip fq_name %s " %
+                    (api_fq_name))
+                detail_rows = self.ui.find_element([
+                    'slick-row-detail-container', 'row-fluid'], [
+                    'class', 'class'], browser = rows[match_index + 1])
+                rows_detail = self.ui.find_element(
+                    'inline', 'class', elements=True,
+                        browser = detail_rows)[1]
+                key1 = self.ui.find_element(
+                    'key', 'class', browser = rows_detail).text
+                val1 = self.ui.find_element(
+                    'value', 'class', browser = rows_detail).text
+                dom_arry_basic.append({'key': key1, 'value': val1})
                 fip_api_data = self.ui.get_details(
                     fip_list_api['floating-ips'][fips]['href'])
                 complete_api_data = []
@@ -3200,24 +3221,15 @@ class WebuiTest:
                     complete_api_data.append(
                         {'key': 'IP Address', 'value': api_data_basic['floating_ip_address']})
                 if api_data_basic.get('virtual_machine_interface_refs'):
-                    vm_api_data = self.ui.get_details(
-                        api_data_basic['virtual_machine_interface_refs'][0]['href'])
-                    if 'virtual-machine-interface' in vm_api_data:
-                        if vm_api_data[
-                                'virtual-machine-interface'].get('virtual_machine_refs'):
-                            complete_api_data.append({'key': 'Instance', 'value': vm_api_data[
-                                                     'virtual-machine-interface']['virtual_machine_refs'][0]['to']})
+                    complete_api_data.append({
+                        'key': 'Mapped Interface', 'value': api_data_basic[
+                            'virtual_machine_interface_refs'][0]['uuid']})
                 else:
                     complete_api_data.append(
-                        {'key': 'Instance', 'value': '-'})
+                        {'key': 'Mapped Interface', 'value': '-'})
                 if api_data_basic.get('fq_name'):
-                    complete_api_data.append(
-                        {
-                            'key': 'Floating IP and Pool',
-                            'value': api_data_basic['fq_name'][2] +
-                            ':' +
-                            api_data_basic['fq_name'][3]})
-                if api_data_basic.get('fq_name'):
+                    complete_api_data.append({
+                        'key': 'Floating IP and Pool', 'value': api_fq_name})
                     complete_api_data.append(
                         {'key': 'UUID', 'value': api_data_basic['fq_name'][4]})
                 if self.ui.match_ui_kv(
