@@ -1446,6 +1446,16 @@ class WebuiTest:
                 self.ui.click_monitor_vrouters_advance(match_index)
                 vrouters_ops_data = self.ui.get_details(
                     vrouters_list_ops[n]['href'])
+                new_list = []
+                element_list = [
+                    ('interface_list', 9), ('virtual_machine_list', 7),
+                    ('dns_server_list_cfg', 6), ('self_ip_list', 5)]
+                agent_name = 'VrouterAgent'
+                for element in element_list:
+                    key1, val1, flag = self.ui.get_advanced_view_list(
+                        agent_name, element[0], element[1])
+                    if flag:
+                        new_list.append({'key' : key1, 'value' : val1})
                 self.ui.expand_advance_details()
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = self.ui.get_advanced_view_str()
@@ -1456,6 +1466,8 @@ class WebuiTest:
                         {'key': item['key'].replace('\\', '"').replace(' ', ''), 'value': item['value']})
                 dom_arry_num = dom_arry_num_new
                 merged_arry = dom_arry + dom_arry_str + dom_arry_num
+                if new_list:
+                    merged_arry+= new_list
                 if 'VrouterStatsAgent' in vrouters_ops_data:
                     ops_data = vrouters_ops_data['VrouterStatsAgent']
                     modified_ops_data = []
@@ -2058,7 +2070,6 @@ class WebuiTest:
                 intf_dict['Virtual Networks'] = vn_names
                 self.ui.extract_keyvalue(intf_dict, ops_list)
                 self.ui.type_change(ops_list)
-
                 if self.ui.match_ui_values(
                         ops_list, ui_list):
                     self.logger.info("VM basic view data matched")
@@ -2088,10 +2099,7 @@ class WebuiTest:
             ['system-info-stat', 'value'], ['id', 'class'], if_elements=[1])
         servers = servers_ver[0].text
         logical_nodes = servers_ver[1].text
-        servers_ver2 = self.ui.find_element(
-            ['system-info-stat', 'inline'], ['id', 'class'], if_elements=[1])
-        m = re.match('.*version (.*) \d+', servers_ver2[2].text)
-        version = m.group(1)
+        version = servers_ver[2].text
         dom_data = []
         dom_data.append(
             {'key': 'logical_nodes', 'value': logical_nodes})
@@ -2404,6 +2412,7 @@ class WebuiTest:
                         {'key': item['key'].replace('\\', '"').replace(' ', ''), 'value': item['value']})
                 dom_arry_num = dom_arry_num_new
                 merged_arry = dom_arry + dom_arry_str + dom_arry_num
+                key_found = False
                 if flag:
                     for item in merged_arry:
                         if item['key'] == 'config_node_ip':
@@ -2461,7 +2470,7 @@ class WebuiTest:
         self.logger.debug(self.dash)
         if not self.ui.click_monitor_networks():
             result = result and False
-        self.ui.select_project(fixture.project_name)
+        self.ui.select_project(self.project_name_input)
         rows = self.ui.get_rows()
         vn_list_ops = self.ui.get_vn_list_ops()
         result = True
@@ -4022,6 +4031,8 @@ class WebuiTest:
                 con.os_url,
                 self.connections.username,
                 self.connections.password)
+            self.browser_openstack.refresh()
+            time.sleep(2)
             self.ui.select_project_in_openstack(
                 fixture.project_name,
                 self.browser_openstack, self.os_release)
@@ -4140,6 +4151,7 @@ class WebuiTest:
             fixture.vm_objs = fixture.nova_h.get_vm_list(
                 name_pattern=fixture.vm_name,
                 project_id=fixture.project_fixture.uuid)
+            fixture.vm_id = fixture.vm_obj.id
             fixture.verify_on_setup()
         except WebDriverException:
             self.logger.error(
@@ -4253,6 +4265,10 @@ class WebuiTest:
                     row_details = self.ui.find_element(
                         'row-fluid', 'class',
                         elements=True, browser=rows[i + 1])[0]
+                    shifted = False
+                    vm_ids = self.ui.find_element(
+                        'label', 'tag',
+                        elements=True, browser=row_details)[0].text.split()[1]
                     vm_state = self.ui.find_element(
                         'label', 'tag',
                         elements=True, browser=row_details)[8].text
@@ -4276,6 +4292,7 @@ class WebuiTest:
                             'label', 'tag', elements=True,
                             browser=row_details)[7].text.split()[2]
                     assert vm_status == 'Active'
+                    assert vm_ids == fixture.vm_id
                     assert vm_ip2 == fixture.vm_ip
                     vm_flag = 1
                     break
@@ -5043,9 +5060,9 @@ class WebuiTest:
                     for temp in range(
                             len(service_temp_list_api['service-templates']) - 1):
                         if template_string == service_temp_list_api[
-                                'service-templates'][temp + 1]['fq_name'][1]:
+                                'service-templates'][temp]['fq_name'][1]:
                             service_temp_api_data = self.ui.get_details(
-                                service_temp_list_api['service-templates'][temp + 1]['href'])
+                                service_temp_list_api['service-templates'][temp]['href'])
                             if 'service-template' in service_temp_api_data:
                                 api1_data_basic = service_temp_api_data.get(
                                     'service-template')
