@@ -2,6 +2,7 @@ from fabric.operations import get, put, sudo
 from fabric.api import run, env
 from fabric.exceptions import CommandTimeout, NetworkError
 from fabric.contrib.files import exists
+from fabric.state import connections as fab_connections
 from fabric.context_managers import settings, hide, cd
 
 import re
@@ -29,8 +30,11 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
         warn_only: run fab with warn_only
         raw: If raw is True, will return the fab _AttributeString object itself without removing any unwanted output
     """
+    fab_connections.clear()
+    kwargs = {}
     if as_daemon:
         cmd = 'nohup ' + cmd + ' &'
+        kwargs.update({'pty': False})
 
     if cwd:
         cmd = 'cd %s; %s' % (cd, cmd)
@@ -77,13 +81,11 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
         tries = 1
         output = None
         while tries > 0:
-            if timeout:
-                try:
-                    output = _run(cmd, timeout=timeout)
-                except CommandTimeout:
-                    pass
-            else:
-                output = _run(cmd)
+            try:
+                output = _run(cmd, timeout=timeout, **kwargs)
+            except CommandTimeout:
+                pass
+
             if output and 'Fatal error' in output:
                 tries -= 1
                 time.sleep(5)
