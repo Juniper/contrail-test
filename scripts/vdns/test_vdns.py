@@ -540,17 +540,15 @@ class TestvDNS0(BasevDNSTest):
                     connections=self.connections, username=proj_user[proj], password=proj_pass[proj]))
             project_fixture = self.useFixture(
                 ProjectFixture(
-                    project_name=proj, vnc_lib_h=self.vnc_lib, username=proj_user[
-                        proj],
-                    password=proj_pass[proj], connections=admin_con))
+                    project_name=proj, vnc_lib_h=self.vnc_lib, username=self.inputs.admin_username,
+                    password=self.inputs.admin_password, connections=admin_con))
             user_fixture.add_user_to_tenant(proj, proj_user[proj] , 'admin')
+            project_fixture.set_user_creds(proj_user[proj], proj_pass[proj])
             project_inputs = ContrailTestInit(
                 self.ini_file, stack_user=project_fixture.project_username,
                 stack_password=project_fixture.project_user_password,
                 stack_tenant=proj, logger=self.logger)
             project_connections = ContrailConnections(project_inputs, logger= self.logger)
-            proj_fixt = self.useFixture(
-                ProjectTestFixtureGen(self.vnc_lib, project_name=proj))
             self.logger.info(
                 'Default SG to be edited for allow all on project: %s' % proj)
             project_fixture.set_sec_group_for_allow_all(proj, 'default')
@@ -559,9 +557,8 @@ class TestvDNS0(BasevDNSTest):
                                              proj], inputs=project_inputs, connections=project_connections, rules_list=rules[proj]))
             # Ipam creation
             ipam_fixt[proj] = self.useFixture(
-                NetworkIpamTestFixtureGen(
-                    self.vnc_lib, virtual_DNS_refs=[vdns_fixt1.obj],
-                    parent_fixt=proj_fixt, network_ipam_name=ipam_list[proj], network_ipam_mgmt=ipam_mgmt_obj))
+                            IPAMFixture(ipam_list[proj], vdns_obj=vdns_fixt1.obj, \
+                            project_obj=project_fixture, ipamtype=ipam_mgmt_obj))
             # VN Creation
             vn_fixt[proj] = self.useFixture(
                 VNFixture(project_name=proj, connections=project_connections,
