@@ -198,11 +198,11 @@ docker_run () {
     # Run container in background
     tempfile=$(mktemp)
     if [[ -n $background ]]; then
-        echo "$docker run ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature -d $arg_rm $arg_shell -t $image_name" > $tempfile
+        echo "$docker run ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature -e TEST_TAGS=$test_tags -d $arg_rm $arg_shell -t $image_name" > $tempfile
         id=. $tempfile
         $docker ps -a --format "ID: {{.ID}}, Name: {{.Names}}" -f id=$id
     else
-        echo "$docker run ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
+        echo "$docker run ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature -e TEST_TAGS=$test_tags  $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
         bash $tempfile; rv=$?
 	return $rv
     fi
@@ -250,7 +250,7 @@ $GREEN  -b, --background                $NO_COLOR run the container in backgroun
 $GREEN  -n, --no-color                  $NO_COLOR Disable output coloring
 $GREEN  -t, --testbed TESTBED           $NO_COLOR Path to testbed file in the host,
                                             Default: /opt/contrail/utils/fabfile/testbeds/testbed.py
-$GREEN  -T, --testbed-json TESTBED_JSON $NO_COLOR Optional testbed json file.
+$GREEN  -j, --testbed-json TESTBED_JSON $NO_COLOR Optional testbed json file.
 $GREEN  -k, --ssh-key FILE_PATH         $NO_COLOR ssh key file path - in case of using key based ssh to cluster nodes.
                                                   Default: $HOME/.ssh/id_rsa
 $GREEN  -K, --ssh-public-key FILE_PATH  $NO_COLOR ssh public key file path. Default: <ssh-key provided>.pub
@@ -259,6 +259,7 @@ $GREEN  -f, --feature FEATURE           $NO_COLOR Features or Tags to test - val
                                             ci_sanity, ci_sanity_WIP, ci_svc_sanity, upgrade, webui_sanity,
                                             ci_webui_sanity, devstack_sanity, upgrade_only. Default: sanity
                                             NOTE: this is only valid for Full contrail-test suite.
+$GREEN -T, --test-tags TEST_TAGS        $NO_COLOR test tags to run specific tests
 
 NOTE: Either testbed.py (-t) or both testbed-json and params-file required
 
@@ -270,10 +271,10 @@ ${GREEN}Possitional Parameters:
 EOF
     }
 
-    while getopts "ibhf:t:p:sk:K:nrT:P:m:" flag; do
+    while getopts "ibhf:t:p:sk:K:nrT:P:m:j:" flag; do
         case "$flag" in
             t) testbed=$OPTARG;;
-            T) testbed_json=$OPTARG;;
+            j) testbed_json=$OPTARG;;
             P) params_file=$OPTARG;;
             f) feature=$OPTARG;;
             p) run_path=$OPTARG;;
@@ -285,6 +286,7 @@ EOF
             r) rm=1;;
             h) usage; exit;;
             n) clear_colors ;;
+            T) test_tags=$OPTARG;;
             m) mount_local=$OPTARG;;
         esac
     done
@@ -425,14 +427,14 @@ $GREEN  -t, --testbed TESTBED           $NO_COLOR Path to testbed file in the ho
                                             Default: /opt/contrail/utils/fabfile/testbeds/testbed.py
 $GREEN  -i, --use-ci-image              $NO_COLOR Use ci image, by default it will use the image name "$DEFAULT_CI_IMAGE",
                                                   One may override this by setting the environment variable \$CI_IMAGE
-$GREEN  -T, --testbed-json TESTBED_JSON $NO_COLOR Optional testbed json file.
+$GREEN  -j, --testbed-json TESTBED_JSON $NO_COLOR Optional testbed json file.
 $GREEN  -P, --params-file PARAMS_FILE   $NO_COLOR Optional Sanity Params ini file
 $GREEN  -k, --ssh-private-key FILE_PATH $NO_COLOR ssh private key file path - in case of using key based ssh to cluster nodes.
 $GREEN  -f, --feature FEATURE           $NO_COLOR Features or Tags to test - valid options are sanity, quick_sanity,
                                             ci_sanity, ci_sanity_WIP, ci_svc_sanity, upgrade, webui_sanity,
                                             ci_webui_sanity, devstack_sanity, upgrade_only. Default: sanity
                                             NOTE: this is only valid for Full contrail-test suite.
-
+$GREEN  -T, --test-tags TEST_TAGS           $NO_COLOR test tags to run tests,
 NOTE: Either testbd.py (-t) or both testbed-json and params-file required
 
 ${GREEN}Possitional Parameters:
@@ -442,10 +444,10 @@ ${GREEN}Possitional Parameters:
 EOF
     }
 
-    while getopts "ibhf:t:p:sk:nrT:P:" flag; do
+    while getopts "ibhf:t:p:sk:nrT:P:j:" flag; do
         case "$flag" in
             t) testbed=$OPTARG;;
-            T) testbed_json=$OPTARG;;
+            j) testbed_json=$OPTARG;;
             P) params_file=$OPTARG;;
             i) use_ci_image=1;;
             r) rm=1;;
@@ -456,6 +458,7 @@ EOF
             b) background=1;;
             h) usage; exit;;
             n) clear_colors ;;
+            j) test_tags=$OPTARG;;
         esac
     done
 
