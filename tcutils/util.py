@@ -28,6 +28,7 @@ from testtools.testcase import TestSkipped
 import functools
 import testtools
 from fabfile import *
+from fabutils import *
 
 log = logging.getLogger('log01')
 #log.basicConfig(format='%(levelname)s: %(message)s', level=log.DEBUG)
@@ -149,24 +150,6 @@ def _escape_some_chars(text):
 # end escape_chars
 
 
-def remove_unwanted_output(text):
-    ''' Fab output usually has content like [ x.x.x.x ] out : <content>
-    '''
-    if not text:
-        return None
-
-    return_list = text.split('\n')
-
-    return_list1 = []
-    for line in return_list:
-        line_split = line.split(' out: ')
-        if len(line_split) == 2:
-            return_list1.append(line_split[1])
-        else:
-            if ' out:' not in line:
-                return_list1.append(line)
-    real_output = '\n'.join(return_list1)
-    return real_output
 
 def get_via_netconf(ip=env.host, username=env.user, password=env.password, cmd='', timeout=10, device='junos', hostkey_verify="False", format='text'):
     from ncclient import manager

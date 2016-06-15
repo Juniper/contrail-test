@@ -1,10 +1,10 @@
 from common.neutron.base import BaseNeutronTest
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
-from fabric.context_managers import settings, hide
-from tcutils.util import run_cmd_through_node, retry
+from tcutils.util import remote_cmd, retry
 from fabric.exceptions import CommandTimeout
 import re
 from time import sleep
+
 
 class BaseTestLbaas(BaseNeutronTest):
 
@@ -102,21 +102,21 @@ class BaseTestLbaas(BaseNeutronTest):
         for server in servers:
             cmd1 = 'hostname > index.html'
             cmd2 = 'python -m SimpleHTTPServer 80 &> /tmp/http.log'
-            run_cmd_through_node(host_string='%s@%s'%(server.vm_username,
+            remote_cmd(host_string='%s@%s'%(server.vm_username,
                                                       server.local_ip),
                                  password=server.vm_password, cmd=cmd1,
                                  gateway='@'.join([self.inputs.username,
                                                    server.vm_node_ip]),
                                  gateway_password=self.inputs.password,
-                                 cd='/tmp')
+                                 cwd='/tmp')
             try:
-                run_cmd_through_node(host_string = '%s@%s'%(server.vm_username,
+                remote_cmd(host_string = '%s@%s'%(server.vm_username,
                                                             server.local_ip),
                                      password=server.vm_password, cmd=cmd2,
                                      gateway='@'.join([self.inputs.username,
                                                    server.vm_node_ip]),
                                      gateway_password=self.inputs.password,
-                                     with_sudo=True, timeout=1, cd='/tmp')
+                                     with_sudo=True, timeout=1, cwd='/tmp')
             except CommandTimeout:
                 pass
         return
@@ -127,7 +127,7 @@ class BaseTestLbaas(BaseNeutronTest):
         result = False
         cmd1 = 'wget http://%s' % vip
         cmd2 = 'cat index.html'
-        result = run_cmd_through_node(
+        result = remote_cmd(
             host_string='%s@%s'%(vm.vm_username, vm.local_ip),
             password=vm.vm_password, cmd=cmd1,
             gateway='@'.join([self.inputs.username, vm.vm_node_ip]),
@@ -137,7 +137,7 @@ class BaseTestLbaas(BaseNeutronTest):
         if result.count('200 OK'):
             result = True
             self.logger.info("connections to vip %s successful" % (vip))
-            response = run_cmd_through_node(
+            response = remote_cmd(
                 host_string='%s@%s'%(vm.vm_username, vm.local_ip),
                 password=vm.vm_password, cmd=cmd2,
                 gateway='@'.join([self.inputs.username, vm.vm_node_ip]),
