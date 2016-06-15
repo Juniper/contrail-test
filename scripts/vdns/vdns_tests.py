@@ -1117,6 +1117,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             dns_record = m_obj.group(1).split(':')
             dns_record_ip = dns_record[1].lstrip()
             next_ip = self.next_ip_in_list(rec_ip_list, dns_record_ip)
+            round_robin_success_count = 0
             for rec in rec_ip_list:
                 vm_fixture.run_cmd_on_vm(cmds=[cmd])
                 result = vm_fixture.return_output_cmd_dict[cmd]
@@ -1130,7 +1131,15 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                 dns_record = m_obj.group(1).split(':')
                 dns_record_ip1 = dns_record[1].lstrip()
                 if record_order == 'round-robin':
-                    if next_ip != dns_record_ip1:
+                    if next_ip == dns_record_ip1:
+                        round_robin_success_count += 1
+                    else:
+                        round_robin_success_count = 0
+                    if round_robin_success_count == 3:
+                        self.logger.debug("Consecutive 3 outputs are in round robin fashion")
+                        self.logger.debug("This should be enough to confirm round robin behavior")
+                        break
+                    if rec == rec_ip_list[-1] and round_robin_success_count < 3:
                         print "\n VDNS records are not sent in \
                             round-robin order"
                         self.assertTrue(
