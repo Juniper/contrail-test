@@ -583,14 +583,17 @@ class AnalyticsVerification(fixtures.Fixture):
                 ip = elem['ip']
                 peers.append(ip)
             missing_peers = set(self.inputs.bgp_control_ips) - set(peers)
-            if not missing_peers:
+            if not len(missing_peers) > len(self.inputs.bgp_control_ips)-2:
+                self.logger.info(
+                    "Vrouter %s connected to %s xmpp peers out of %s" %
+                    (compute_host, set(peers), set(self.inputs.bgp_control_ips)))
                 self.logger.info(
                     "xmpp peer correctly displayed as %s for vrouter %s " %
                     (peers, compute_host))
                 result = True
             else:
-                self.logger.error("xmpp peer %s not displayed  vrouter %s " %
-                                  (missing_peers, compute_host))
+                self.logger.error("vrouter %s not connected to 2 xmpp peers, should connect to at least one more from %s" %
+                                  (compute_host, missing_peers))
                 return False
         return result
 
