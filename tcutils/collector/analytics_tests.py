@@ -3383,38 +3383,63 @@ class AnalyticsVerification(fixtures.Fixture):
                         return False
         except Exception as e:
             self.logger.exception("Got exception as %s"%(e))
-            
-    def verify_process_and_connection_infos_agent(self):
 
+    def verify_process_and_connection_infos_agent(self):
+        result = True
         port_dict = {'xmpp':'5269',
                      'dns' :'53',
                      'collector':'8086',
                      'disco':'5998'
                     }
-        server_list = []            
+        server_list = []
         for vrouter in self.inputs.compute_names:
             ops_inspect = self.ops_inspect[self.inputs.\
                         collector_ips[0]].get_ops_vrouter(vrouter)
             assert self.verify_process_status(ops_inspect,\
                             'contrail-vrouter-agent')
+            xmpp_servers = len(self.inputs.bgp_control_ips)
+            count = 0
             for ip in self.inputs.bgp_control_ips:
                 server = "%s:%s"%(ip,port_dict['xmpp'])
-                assert self.verify_connection_infos(ops_inspect,\
-                                'contrail-vrouter-agent',\
-                                [server],node = vrouter)
+                if self.verify_connection_infos(ops_inspect,\
+                            'contrail-vrouter-agent',\
+                            [server],node = vrouter):
+                    count = count + 1
+                    self.logger.info("%s collected to xmpp %s"%(vrouter, ip))
+            if xmpp_servers > 1:
+                if not count == 2:
+                    result = result and False
+                    self.logger.error("%s is not connected to 2 xmpp-servers"%(vrouter))
+            else:
+               if not count == 1:
+                   result = result and False
+                   self.logger.error("%s is not connected to any xmpp-server"%(vrouter))
+            assert result
+            count = 0
             for ip in self.inputs.bgp_control_ips:
                 server = "%s:%s"%(ip,port_dict['dns'])
-                assert self.verify_connection_infos(ops_inspect,\
-                                'contrail-vrouter-agent',\
-                                [server],node = vrouter)
-            result = False    
+                if self.verify_connection_infos(ops_inspect,\
+                            'contrail-vrouter-agent',\
+                            [server],node = vrouter):
+                    count = count + 1
+                    self.logger.info("%s collected to dns %s"%(vrouter, ip))
+            if xmpp_servers > 1:
+                if not count == 2:
+                    result = result and False
+                    self.logger.error("%s is not connected to 2 dns servers"%(vrouter))
+            else:
+               if not count == 1:
+                   result = result and False
+                   self.logger.error("%s is not connected to any dns-server"%(vrouter))
+            assert result
+
+            result = False
             for ip in self.inputs.collector_control_ips:
                 server = "%s:%s"%(ip,port_dict['collector'])
                 result = result or self.verify_connection_infos(ops_inspect,\
                                 'contrail-vrouter-agent',\
                                 [server],node = vrouter)
-            assert result    
-         
+            assert result            
 
     def verify_process_and_connection_infos_config(self):
 
