@@ -156,8 +156,16 @@ class TestBasicPolicyConfig(BasePolicyTest):
         self.nova_h.wait_till_vm_is_up(vm2_fixture.vm_obj)
         # For multi-vn vm, configure ip address for 2nd interface
         multivn_vm_ip_list = vm1_fixture.vm_ips
-        intf_conf_cmd = "ifconfig eth1 %s netmask 255.255.255.0" % multivn_vm_ip_list[
-            1]
+        interfaces = vm1_fixture.get_vm_interface_with_ip()
+        interface1 = vm1_fixture.get_vm_interface_with_ip(ip=multivn_vm_ip_list[0])[0]
+        interfaces.remove(interface1)
+        interface2 = interfaces[0]
+        if 'dual' == self.inputs.get_af():
+            intf_conf_cmd = "ifconfig %s inet6 add %s" % (interface2,
+                                       multivn_vm_ip_list[3])
+        else:
+            intf_conf_cmd = "ifconfig %s %s netmask 255.255.255.0" % (interface2, 
+                                       multivn_vm_ip_list[1])
         vm_cmds = (intf_conf_cmd, 'ifconfig -a')
         for cmd in vm_cmds:
             cmd_to_output = [cmd]
@@ -180,11 +188,17 @@ class TestBasicPolicyConfig(BasePolicyTest):
         # VN
         self.logger.info(
             "Direct traffic to gw which is part of VN with allow policy to destination VN, traffic should pass now")
-        i = ' route add -net %s netmask 255.255.255.0 gw %s dev eth1' % (
-            vn3_subnets[0].split('/')[0], multivn_vm_ip_list[1])
-        cmd_to_output = [i]
+        cmd_to_output = []
+        if 'dual' == self.inputs.get_af():
+            cmd = ' route add -net %s netmask 255.255.255.0 gw %s dev %s' % (
+                    vn3_subnets[0].split('/')[0], multivn_vm_ip_list[2], interface2)
+            cmd_to_output.append(' ip -6 route add %s dev %s' % (vn3_subnets[1], interface2))
+        else:
+            cmd = ' route add -net %s netmask 255.255.255.0 gw %s dev %s' % (
+                vn3_subnets[0].split('/')[0], multivn_vm_ip_list[1], interface2)
+        cmd_to_output.append(cmd)
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
-        output = vm1_fixture.return_output_cmd_dict[i]
+        output = vm1_fixture.return_output_cmd_dict[cmd]
         # Ping test from multi-vn vm to peer vn, result will be based on action
         # defined in policy attached to VN which has the default gw for VM
         self.logger.info(
