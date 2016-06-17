@@ -140,6 +140,7 @@ class VNFixture(fixtures.Fixture):
                 self.vn_subnets = []
             self.logger.debug('Fetched VN: %s(%s) with subnets %s'
                              %(self.vn_fq_name, self.uuid, subnets))
+            self.already_present = True
     
     def get_dns_ip(self, ipam_fq_name = None):
         if not ipam_fq_name:
