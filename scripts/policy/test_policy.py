@@ -180,9 +180,15 @@ class TestBasicPolicyConfig(BasePolicyTest):
         # VN
         self.logger.info(
             "Direct traffic to gw which is part of VN with allow policy to destination VN, traffic should pass now")
-        i = ' route add -net %s netmask 255.255.255.0 gw %s dev eth1' % (
-            vn3_subnets[0].split('/')[0], multivn_vm_ip_list[1])
-        cmd_to_output = [i]
+        cmd_to_output = []
+        if af_test == self.inputs.get_af():
+            i = ' route add -net %s netmask 255.255.255.0 gw %s dev eth1' % (
+                    vn3_subnets[0].split('/')[0], multivn_vm_ip_list[2])
+            cmd_to_output.append(' ip -6 route add %s dev eth1' % (vn3_subnets[1]))
+        else:
+            i = ' route add -net %s netmask 255.255.255.0 gw %s dev eth1' % (
+                vn3_subnets[0].split('/')[0], multivn_vm_ip_list[1])
+        cmd_to_output.append(i)
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
         output = vm1_fixture.return_output_cmd_dict[i]
         # Ping test from multi-vn vm to peer vn, result will be based on action
