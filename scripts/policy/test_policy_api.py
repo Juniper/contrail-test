@@ -484,6 +484,8 @@ class TestApiPolicyFixture02(BasePolicyTest):
                 id=str(vn_fixture[vn_of_vm[vm_name]]._obj.uuid))
             vn_quantum_obj = self.quantum_h.get_vn_obj_if_present(
                 vn_read.name)
+            assert vn_read, "VN %s not found in API" % (vn_of_vm[vm_name])
+            assert vn_quantum_obj, "VN %s not found in neutron" % (vn_of_vm[vm_name])
             # Launch VM with 'ubuntu-traffic' image which has scapy pkg
             # remember to call install_pkg after VM bringup
             # Bring up with 2G RAM to support multiple traffic streams..
@@ -495,26 +497,15 @@ class TestApiPolicyFixture02(BasePolicyTest):
                     flavor='contrail_flavor_small',
                     image_name='ubuntu-traffic',
                     vm_name=vm_name))
-            vm_fixture[vm_name].verify_vm_launched()
-            vm_node_ip = self.inputs.host_data[
-                self.nova_h.get_nova_host_of_vm(
-                    vm_fixture[vm_name].vm_obj)]['host_ip']
+        for vm_name in vm_names:
             self.logger.info("Calling VM verifications... ")
-            time.sleep(5)     # wait for 5secs after launching VM's
-            vm_verify_out = None
-            vm_verify_out = vm_fixture[vm_name].verify_on_setup()
-            if not vm_verify_out:
-                m = "%s - vm verify in agent after launch failed" % vm_node_ip
-                self.logger.error(m) 
-                return vm_verify_out
+            assert vm_fixture[vm_name].verify_on_setup()
         for vm_name in vm_names:
             out = self.nova_h.wait_till_vm_is_up(
                 vm_fixture[vm_name].vm_obj)
             if not out:
                 self.logger.error("VM failed to come up")
                 return out
-            else:
-                vm_fixture[vm_name].install_pkg("Traffic")
         # Test ping with scaled policy and rules
         dst_vm = vm_names[len(vm_names) - 1]  # 'vm2'
         dst_vm_fixture = vm_fixture[dst_vm]
