@@ -812,7 +812,7 @@ class DiscoveryVerification(fixtures.Fixture):
                 if type(cn_bgp_entry) == type(dict()):
                     if cn_bgp_entry['peer'] in self.inputs.bgp_names:
                         if cn_bgp_entry['state'] != 'Established':
-                            self.logger.error('For control node %s, with peer %s, ',
+                            self.logger.error('For control node %s, with peer %s, '
                                 'peering is not Established. Current State %s ' % (
                                 host, cn_bgp_entry['peer'], cn_bgp_entry['state']))
                     if cn_bgp_entry['encoding'] == 'BGP':
@@ -826,7 +826,7 @@ class DiscoveryVerification(fixtures.Fixture):
                         if entry['peer'] in self.inputs.bgp_names:
                             if entry['state'] != 'Established':
                                 result = result and False
-                                self.logger.error('For control node %s, with peer ',
+                                self.logger.error('For control node %s, with peer '
                                     '%s, peering is not Established. Current State %s ' % (
                                     host, entry['peer'], entry['state']))
                         if entry['encoding'] == 'BGP':

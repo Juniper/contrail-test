@@ -669,7 +669,7 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
             if match:
                 pid.append(match.group(1))
         if pid:
-            self.loger.warn("haproxy still running even after VIP delete for pool name: %s,"
+            self.logger.warn("haproxy still running even after VIP delete for pool name: %s,"
                             " with UUID: %s in compute node %s" % (pool_obj['name'], pool_id, compute_ip))
             errmsg = "HAPROXY still running after VIP delete failed in compute node %s" % (
                 compute_ip)
