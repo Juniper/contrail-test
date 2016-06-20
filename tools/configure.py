@@ -94,6 +94,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         'hosts': [],
         'vgw': [],
         'esxi_vms':[],
+        'vcenter_servers':[],
         'hosts_ipmi': [],
         'tor':[],
     }
@@ -103,8 +104,9 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
        contents_sample_ini = fd_sample_ini.read()
     sanity_ini_templ = string.Template(contents_sample_ini)
 
-    with settings(host_string = env.roledefs['openstack'][0]), hide('everything'):
-        openstack_host_name = run("hostname")
+    if env.get('orchestrator', 'openstack') != 'vcenter':
+        with settings(host_string = env.roledefs['openstack'][0]), hide('everything'):
+            openstack_host_name = run("hostname")
 
     with settings(host_string = env.roledefs['cfgm'][0]), hide('everything'):
         cfgm_host_name = run("hostname")
@@ -160,7 +162,9 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
 
         if host_string in env.roledefs['cfgm']:
             role_dict = {'type': 'cfgm', 'params': {'collector': host_name, 'cassandra': ' '.join(cassandra_host_names)}}
-            role_dict['openstack'] = openstack_host_name
+
+            if env.get('orchestrator', 'openstack') != 'vcenter':
+                role_dict['openstack'] = openstack_host_name
             host_dict['roles'].append(role_dict)
 
         if host_string in env.roledefs['control']:
@@ -220,6 +224,21 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
             host_dict['roles'] = []
             sanity_testbed_dict['hosts'].append(host_dict)
             sanity_testbed_dict['esxi_vms'].append(host_dict)
+
+    vcenter_servers = env.get('vcenter_servers')
+    if vcenter_servers:
+        for vcenter in vcenter_servers:
+            host_dict = {}
+            host_dict['server'] = vcenter_servers[vcenter]['server']
+            host_dict['port'] = vcenter_servers[vcenter]['port']
+            host_dict['username'] = vcenter_servers[vcenter]['username']
+            host_dict['password'] = vcenter_servers[vcenter]['password']
+            host_dict['datacenter'] = vcenter_servers[vcenter]['datacenter']
+            host_dict['auth'] = vcenter_servers[vcenter]['auth']
+            host_dict['cluster'] = vcenter_servers[vcenter]['cluster']
+            host_dict['dv_switch'] = vcenter_servers[vcenter]['dv_switch']['dv_switch_name']
+            host_dict['dv_switch'] = vcenter_servers[vcenter]['dv_port_group']['dv_portgroup_name']
+            sanity_testbed_dict['vcenter_servers'].append(host_dict)
 
     # get host ipmi list
     if env.has_key('hosts_ipmi'):
@@ -311,9 +330,10 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     if orch == 'vcenter':
         public_tenant_name='vCenter'
 
-    if env.has_key('vcenter'):
-        if env.vcenter:
-            vcenter_dc = env.vcenter['datacenter']
+    if env.has_key('vcenter_servers'):
+            if env.vcenter_servers:
+                for k in env.vcenter_servers:
+                    vcenter_dc = env.vcenter_servers[k]['datacenter']
 
     sanity_params = sanity_ini_templ.safe_substitute(
         {'__testbed_json_file__'   : 'sanity_testbed.json',
