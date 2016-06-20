@@ -2261,6 +2261,12 @@ class AnalyticsVerification(fixtures.Fixture):
 
         if role == 'config-node':
             for process in cfgm_processes:
+                if process == 'supervisor-config':
+                    if len(self.inputs.cfgm_ips) > 1:
+                        self.logger.info("Multi cfgms are found, will stop %s on cfgm[0] and check if alarms are generated for the same" %(process))
+                    else:
+                        self.logger.info("Single cfgm setup found, skipping %s stop alarm test" %(process))
+                        continue
                 if not self._verify_contrail_alarms(process, 'config-node', 'service_stop'):
                     result = result and False
                 else:
