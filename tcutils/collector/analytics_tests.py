@@ -2300,7 +2300,7 @@ class AnalyticsVerification(fixtures.Fixture):
                         self.logger.info("Multi analytics are found, will stop %s on cfgm[0] and check if alarms are generated for the same" %(process))
                     else:
                         self.logger.info("Single analytics setup found, skipping %s stop alarm test" %(process))
-                        contine
+                        continue
 
                 if not self._verify_contrail_alarms(process, 'analytics-node', 'service_stop', multi_instances=multi_instances):
                     result = result and False
@@ -3363,9 +3363,12 @@ class AnalyticsVerification(fixtures.Fixture):
             if (obj1 and isinstance(obj1,list)):
                 for elem in obj1:
                     for el in elem['connection_infos']:
+                        check = True
+                        for s_addr in server_addrs:
+                            if not s_addr in el['server_addrs']:
+                                check = check and False
                         #if ((set(el['server_addrs']) == set(server_addrs)) \
-                        if (((server_addrs in el['server_addrs'])  or \
-                                    (server_addrs == el['server_addrs']))\
+                        if ((check or (server_addrs == el['server_addrs']))\
                                     and (el['status'] == status)):
                             self.logger.info("%s:%s module connection to \
                                 %s servers UP"%(node,module,str(server_addrs)))
@@ -3736,7 +3739,7 @@ class AnalyticsVerification(fixtures.Fixture):
         port_dict = {
                      'collector':'8086',
                      'disco':'5998',
-                     'cassandra':'9160',
+                     'cassandra':'9042',
                     }
         module_connection_dict = {'contrail-collector':[
                                                     'collector',\
