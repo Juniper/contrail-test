@@ -186,13 +186,17 @@ class XmppBase(test_v1.BaseTestCase_v1, ConfigPolicy):
                 sleep(5)
 
         table_list = self.cn_inspect[node].get_cn_bgp_neigh_entry()
-        for item in table_list:
-            if item['encoding'] == 'XMPP':
-                if item['peer_address'] in self.inputs.compute_ips:
-                    if not 'Established' in item['state']:
+        if isinstance(table_list, dict):
+            dict_item = table_list
+            table_list = []
+            table_list.append(dict_item)
+        for item in range(len(table_list)):
+            if table_list[item]['encoding'] == 'XMPP':
+                if table_list[item]['peer_address'] in self.inputs.compute_ips:
+                    if not 'Established' in table_list[item]['state']:
                         self.logger.error(
                             "Node %s has a problem with XMPP status. Status is %s" %
-                            (item['peer_address'], item['state']))
+                            (table_list[item]['peer_address'], table_list[item]['state']))
                         result = False
         return result
 
@@ -212,10 +216,15 @@ class XmppBase(test_v1.BaseTestCase_v1, ConfigPolicy):
                 sleep(5)
 
         table_list = self.cn_inspect[node].get_cn_bgp_neigh_entry()
-        for item in table_list:
-            if "encoding" in item:
-                if item['encoding'] == 'XMPP':
-                    if item['peer_address'] in self.inputs.compute_ips:
+        if isinstance(table_list, dict):
+            dict_item = table_list
+            table_list = []
+            table_list.append(dict_item)
+
+        for item in range(len(table_list)):
+            if "encoding" in table_list[item]:
+                if table_list[item]['encoding'] == 'XMPP':
+                    if table_list[item]['peer_address'] in self.inputs.compute_ips:
                         return True
         return False
 
@@ -223,13 +232,18 @@ class XmppBase(test_v1.BaseTestCase_v1, ConfigPolicy):
         result = True
         self.cn_inspect = self.connections.cn_inspect
         table_list = self.cn_inspect[node].get_cn_bgp_neigh_entry()
-        for item in table_list:
-            if item['encoding'] == 'XMPP':
-                if item['peer_address'] in self.inputs.compute_ips:
-                    if not status in item['auth_type']:
+        if isinstance(table_list, dict):
+            dict_item = table_list
+            table_list = []
+            table_list.append(dict_item)
+
+        for item in range(len(table_list)):
+            if table_list[item]['encoding'] == 'XMPP':
+                if table_list[item]['peer_address'] in self.inputs.compute_ips:
+                    if not status in table_list[item]['auth_type']:
                         self.logger.error(
                             "Node %s has a problem with XMPP auth status. Auth status is %s" %
-                            (item['peer_address'], item['auth_type']))
+                            (table_list[item]['peer_address'], table_list[item]['auth_type']))
                         result = False
 
         return result

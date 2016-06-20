@@ -1,1 +1,1 @@
-"XMPP tests"
+"Test XMPP auth"
