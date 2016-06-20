@@ -156,7 +156,8 @@ class ContrailConnections():
         if ip not in self.ops_inspects:
             self.ops_inspects[ip] = VerificationOpsSrv(ip,
                                         port=self.inputs.analytics_api_port,
-                                        logger=self.logger)
+                                        logger=self.logger,
+                                        inputs=self.inputs)
         return self.ops_inspects[ip]
 
     def get_discovery_service_inspect_handle(self, host):

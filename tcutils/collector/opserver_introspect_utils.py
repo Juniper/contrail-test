@@ -16,8 +16,8 @@ from tcutils.util import *
 
 class VerificationOpsSrv (VerificationUtilBase):
 
-    def __init__(self, ip, port=8081, logger=LOG):
-        super(VerificationOpsSrv, self).__init__(ip, port, logger=logger)
+    def __init__(self, ip, port=8081, logger=LOG, inputs=None):
+        super(VerificationOpsSrv, self).__init__(ip, port, logger=logger, args=inputs)
 
 
     def get_ops_generator(self, generator=None, 
