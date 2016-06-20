@@ -3728,7 +3728,7 @@ class AnalyticsVerification(fixtures.Fixture):
     def verify_process_and_connection_infos_analytics_node(self):
 
         port_dict = {
-                     'collector':'8089',
+                     'collector':'8086',
                      'disco':'5998',
                      'cassandra':'9160',
                     }
