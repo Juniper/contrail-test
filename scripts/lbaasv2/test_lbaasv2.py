@@ -85,6 +85,77 @@ class TestLBaaSV2(BaseLBaaSTest):
 
     @attr(type=['sanity'])
     @preposttest_wrapper
+    def test_lbaas_with_sg_vip(self):
+        '''Create LB, LISTENER, POOL and MEMBER
+            create FIP and associate it to VIP, create a VM in the FIP network
+           verify: pool, member and vip gets created
+           after vip creation nets ns is created in compute node and haproxy
+           process starts , fail otherwise
+           Verify different LB Method
+        '''
+        result = True
+        pool_members = {}
+        members=[]
+
+        fip_fix = self.useFixture(VNFixture(connections=self.connections, router_external=True))
+        client_vm1_fixture = self.create_vm(fip_fix,
+                flavor='contrail_flavor_small', image_name='ubuntu')
+
+        vn_vm_fix = self.create_vn_and_its_vms(no_of_vm=3)
+
+        vn_vip_fixture = vn_vm_fix[0]
+        lb_pool_servers = vn_vm_fix[1]
+
+        assert client_vm1_fixture.wait_till_vm_is_up()
+        for VMs in lb_pool_servers:
+            members.append(VMs.vm_ip)
+
+        pool_members.update({'address':members})
+
+        pool_name = get_random_name('mypool')
+        lb_method = 'ROUND_ROBIN'
+        protocol = 'HTTP'
+        protocol_port = 80
+        vip_name = get_random_name('myvip')
+        listener_name = get_random_name('RR')
+
+        self.logger.info("Verify Round Robin Method")
+        rr_listener = self.create_lbaas(vip_name, vn_vip_fixture.get_uuid(),
+              pool_name=pool_name, pool_algorithm=lb_method, pool_protocol=protocol,
+              pool_port=HTTP_PORT, members=pool_members, listener_name=listener_name,
+              fip_net_id=fip_fix.uuid, vip_port=HTTP_PORT, vip_protocol='HTTP',
+              hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
+
+        assert rr_listener.verify_on_setup(), "Verify on setup failed after new FIP associated"
+        assert client_vm1_fixture.ping_with_certainty(rr_listener.fip_ip)
+        assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
+            "Verify LB Method failed for ROUND ROBIN"
+
+        self.logger.info("Apply security group to allow only TCP and verify ping fails")
+        default_sg = self.get_default_sg()
+        vip_sg=self.create_sg()
+        rr_listener.apply_sg_to_vip_vmi([vip_sg.get_uuid()])
+        assert client_vm1_fixture.ping_with_certainty(rr_listener.fip_ip, expectation=False)
+        #assert not self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
+            #"Expected LB verification to fail, because the flow from the netns to members has to fail "
+
+        self.logger.info("Apply security group to allow only TCP to the member VMs and verify the LB works")
+        for server in lb_pool_servers:
+            server.add_security_group(vip_sg.get_uuid())
+        assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
+            "Verify LB Method failed for ROUND ROBIN"
+
+        self.logger.info("Remove the security group and apply the default and verify again")
+        rr_listener.apply_sg_to_vip_vmi([default_sg.get_sg_id()])
+        for server in lb_pool_servers:
+            server.remove_security_group(vip_sg.get_uuid())
+            server.add_security_group(default_sg.get_sg_id())
+        assert client_vm1_fixture.ping_with_certainty(rr_listener.fip_ip)
+        assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
+            "Verify LB Method failed for ROUND ROBIN"
+
+    @attr(type=['sanity'])
+    @preposttest_wrapper
     def test_lbaas_with_different_fip(self):
         '''Create LB, LISTENER, POOL and MEMBER
             create FIP and associate it to VIP, create a VM in the FIP network
@@ -219,3 +290,87 @@ class TestLBaaSV2(BaseLBaaSTest):
             "LEAST_CONNECTIONS"), "Verify LB Method failed for LEAST_CONNECTIONS"
 
     # end test_lbaas_with_different_lb
+
+    @preposttest_wrapper
+    def test_lbaas_add_remove_members(self):
+        '''Create LB, LISTENER, POOL and MEMBER
+            create FIP and associate it to VIP, create a VM in the FIP network
+           verify: pool, member and vip gets created
+           after vip creation nets ns is created in compute node and haproxy
+           process starts , fail otherwise
+           Verify HTTP traffic after restarting the active SVC-monitor
+        '''
+        result = True
+        pool_members = {}
+        members=[]
+
+        fip_fix = self.useFixture(VNFixture(connections=self.connections, router_external=True))
+        client_vm1_fixture = self.create_vm(fip_fix,
+                flavor='contrail_flavor_small', image_name='ubuntu')
+
+        vn_vm_fix = self.create_vn_and_its_vms(no_of_vm=3)
+
+        vn_vip_fixture = vn_vm_fix[0]
+        lb_pool_servers = vn_vm_fix[1]
+
+        assert client_vm1_fixture.wait_till_vm_is_up()
+        for VMs in lb_pool_servers:
+            members.append(VMs.vm_ip)
+
+        pool_members.update({'address':members})
+        pool_name = get_random_name('mypool')
+        lb_method = 'ROUND_ROBIN'
+        protocol = 'HTTP'
+        protocol_port = 80
+        vip_name = get_random_name('myvip')
+        listener_name = get_random_name('HTTP')
+
+        http_listener = self.create_lbaas(vip_name, vn_vip_fixture.get_uuid(),
+              pool_name=pool_name, pool_algorithm=lb_method, pool_protocol=protocol,
+              pool_port=HTTP_PORT, members=pool_members, listener_name=listener_name,
+              fip_net_id=fip_fix.uuid, vip_port=HTTP_PORT, vip_protocol='HTTP',
+              hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
+
+        http_listener.verify_on_setup()
+
+        tcp_listener = self.create_lbaas(vip_name, vn_vip_fixture.get_uuid(),
+              pool_name=pool_name, pool_algorithm=lb_method, pool_protocol='TCP',
+              pool_port=TCP_PORT, members=pool_members, listener_name=get_random_name('TCP'),
+              fip_net_id=fip_fix.uuid, vip_port=TCP_PORT, vip_protocol='TCP',
+              hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=PING_PROBE)
+
+        tcp_listener.verify_on_setup()
+
+        https_listener = self.create_lbaas(vip_name, vn_vip_fixture.get_uuid(),
+              pool_name=pool_name, pool_algorithm=lb_method, pool_protocol='HTTPS',
+              pool_port=HTTPS_PORT, members=pool_members, listener_name=get_random_name('HTTPS'),
+              fip_net_id=fip_fix.uuid, vip_port=HTTPS_PORT, vip_protocol='HTTPS',
+              hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=PING_PROBE)
+
+        https_listener.verify_on_setup()
+
+        assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, http_listener.fip_ip),\
+            "Verify LB failed for ROUND ROBIN"
+
+        self.logger.info("Verify after adding few more members")
+        for no_of_vm in range(3):
+            lb_pool_servers.append(self.create_vm(vn_vip_fixture,
+                flavor='contrail_flavor_small', image_name='ubuntu'))
+            lb_pool_servers[-1].wait_till_vm_is_up()
+            lb_pool_servers[-1].start_webserver(listen_port=80)
+            http_listener.create_member(address=lb_pool_servers[-1].vm_ip)
+
+        time.sleep(60)
+        assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, http_listener.fip_ip),\
+            "Verify LB failed for ROUND ROBIN"
+
+        self.logger.info("Verify after deleting the one of the member VM")
+        lb_pool_servers.pop().cleanUp()
+
+        assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, http_listener.fip_ip),\
+            "Verify LB failed for ROUND ROBIN"
+
+        assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers[:3], http_listener.fip_ip, port=TCP_PORT),\
+            "Verify LB failed for ROUND ROBIN"
+
+    # end test_lbaas_add_remove_members
