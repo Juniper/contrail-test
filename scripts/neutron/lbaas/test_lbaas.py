@@ -728,7 +728,8 @@ class TestLbaas(BaseTestLbaas):
 
         vn_pool_fixture = self.create_vn(vn_pool, vn_pool_subnets)
         assert vn_pool_fixture.verify_on_setup()
-        vn_vip_fixture = self.create_vn(vn_vip, vn_vip_subnets)
+        #vn_vip_fixture = self.create_vn(vn_vip, vn_vip_subnets)
+        vn_vip_fixture = vn_pool_fixture
         assert vn_vip_fixture.verify_on_setup()
         pool_vm1_fixture = self.create_vm(vn_pool_fixture,vm_name=pool_vm1,
                 flavor='contrail_flavor_small', image_name='ubuntu')
