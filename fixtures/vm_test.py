@@ -160,12 +160,15 @@ class VMFixture(fixtures.Fixture):
                                         zone=self.zone)
             (self.vm_username, self.vm_password) = self.orch.get_image_account(
                                     self.image_name)
+            self.already_present = True
 
     def setUp(self):
         super(VMFixture, self).setUp()
         self.create()
 
     def create(self):
+        (self.vm_username, self.vm_password) = self.orch.get_image_account(
+            self.image_name)
         if self.vm_id:
             return self.read()
         self.project_fixture = self.useFixture(
@@ -209,8 +212,6 @@ class VMFixture(fixtures.Fixture):
                 self.image_name = self.orch.get_image_name_for_zone(
                                         image_name=self.image_name,
                                         zone=self.zone)
-        (self.vm_username, self.vm_password) = self.orch.get_image_account(
-            self.image_name)
 
     # end setUp
 
