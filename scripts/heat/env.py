@@ -111,20 +111,11 @@ pt_multi_inline = {
      "svm1_name": "pt_svm1"}
 }
 
-left_net = {
+vn = {
   u'parameters': {
-    u'name': u'vn-left',
+    u'name': u'vn',
     u'ipam': u'default-domain:default-project:default-network-ipam',
-    u'subnet': u'10.10.10.0', u'prefix': 24,
-    u'transit': u'False'
-  }
-}
-
-right_net = {
-  u'parameters': {
-    u'name': u'vn-right',
-    u'ipam': u'default-domain:default-project:default-network-ipam',
-    u'subnet': u'20.20.20.0', u'prefix': 24,
+    u'subnet': u'100.100.100.0', u'prefix': 24,
     u'transit': u'False'
   }
 }
@@ -135,6 +126,33 @@ transit_net = {
     u'ipam': u'default-domain:default-project:default-network-ipam',
     u'subnet': u'30.30.30.0', u'prefix': 24,
     u'transit': u'True'
+  }
+}
+
+single_vm = {
+  u'parameters': {
+    u'vm_name': u'end-vm', u'net_id': u'',
+    u'image': u'ubuntu-traffic', u'flavor': u'm1.medium'
+  }
+}
+
+fip_pool = {
+  u'parameters': {
+    u'floating_pool': u'floating_pool', u'vn': u'',
+  }
+}
+
+fip = {
+  u'parameters': {
+    u'project_name': u'', u'vmi': u'',
+    u'floating_pool': u'',
+  }
+}
+
+intf_rt_table = {
+  u'parameters': {
+    u'intf_rt_table_name': u'intf_rt_tbl', u'route_prefix': u'',
+    u'si_fqdn': u'', u'si_intf_type': u'',
   }
 }
 
@@ -240,6 +258,22 @@ svc_inst_nomgmt_pt_v2 = {
 }
 
 svc_inst_nomgmt_pt_dual_v2 = svc_inst_nomgmt_pt_v2
+
+pt_svm = {
+  u'parameters': {
+    u'image': u'vsrx', u'flavor': u'm1.large', u'svm_name': u'',
+    u'si_fqdn': u'',u'mgmt_net_id': u'', u'left_net_id': u'', u'right_net_id': u'',u'intf_rt_table_fqdn': u'',
+    u'def_sg_id': u''
+  }
+}
+
+pt_si = {
+  u'parameters': {
+    u'service_template_fq_name': u'', u'service_instance_name': u'',
+    u'left_net_id': u'', u'right_net_id': u'', u'mgmt_net_id': u''
+
+  }
+}
 
 svc_chain = {
   u'parameters': {

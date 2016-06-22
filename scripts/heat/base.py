@@ -2,6 +2,7 @@ import time
 import test_v1
 from common.connections import ContrailConnections
 from common import isolated_creds
+from common import create_public_vn
 from vn_test import VNFixture
 from heat_test import *
 from vm_test import VMFixture
@@ -36,6 +37,17 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         cls.api_s_inspect = cls.connections.api_server_inspect
         cls.heat_api_version = 1
         cls.pt_based_svc = False
+        if cls.inputs.admin_username:
+            public_creds = cls.admin_isolated_creds
+        else:
+            public_creds = cls.isolated_creds
+        cls.public_vn_obj = create_public_vn.PublicVn(
+            public_creds,
+            cls.inputs,
+            ini_file=cls.ini_file,
+            logger=cls.logger)
+        cls.public_vn_obj.configure_control_nodes()
+
     # end setUpClass
 
     @classmethod
@@ -79,11 +91,12 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         hs_obj.update(parameters)
     # end update_stack
 
-    def config_vn(self, stack_name=None):
+    def config_vn(self, stack_name=None, vn_name='net'):
         template = self.get_template('vn')
-        env = self.get_env(stack_name)
-        env['parameters']['name']=get_random_name(env['parameters']['name'])
-        env['parameters']['subnet'],env['parameters']['prefix'] = get_random_cidr(af=self.inputs.get_af()).split('/')
+        env = self.get_env('vn')
+        env['parameters']['name'] = get_random_name(stack_name)
+        env['parameters']['subnet'], env['parameters'][
+            'prefix'] = get_random_cidr(af=self.inputs.get_af()).split('/')
         if self.inputs.get_af() == 'v6':
             template = self.get_template('vn_dual')
             env['parameters']['subnet2'],env['parameters']['prefix2'] = get_random_cidr(af='v4').split('/')
@@ -104,6 +117,52 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
                                                 inputs=self.inputs, stack_name=stack_name, project_fq_name=self.inputs.project_fq_name, template=template, env=env))
     # end config_heat_obj
 
+    def config_fip_pool(self, vn):
+        stack_name = get_random_name('fip_pool')
+        template = self.get_template('fip_pool')
+        env = self.get_env('fip_pool')
+        env['parameters']['floating_pool'] = get_random_name(
+            env['parameters']['floating_pool'])
+        env['parameters']['vn'] = vn.get_vn_fq_name()
+        fip_pool_hs_obj = self.config_heat_obj(stack_name, template, env)
+        return fip_pool_hs_obj
+
+    def config_fip(self, fip_pool_fqdn, vmi):
+        stack_name = get_random_name('fip')
+        template = self.get_template('fip')
+        env = self.get_env('fip')
+        env['parameters']['floating_pool'] = fip_pool_fqdn
+        env['parameters']['vmi'] = vmi
+        env['parameters']['project_name'] = (
+            ':').join(self.project.get_fq_name())
+        fip_hs_obj = self.config_heat_obj(stack_name, template, env)
+        return fip_hs_obj
+
+    def config_intf_rt_table(self, prefix, si_fqdn, si_intf_type):
+        stack_name = 'intf_rt_table'
+        template = self.get_template('intf_rt_table')
+        env = self.get_env('intf_rt_table')
+        env['parameters']['intf_rt_table_name'] = get_random_name(
+            env['parameters']['intf_rt_table_name'])
+        env['parameters']['route_prefix'] = prefix
+        env['parameters']['si_fqdn'] = si_fqdn
+        env['parameters']['si_intf_type'] = si_intf_type
+        intf_rt_table_hs_obj = self.config_heat_obj(stack_name, template, env)
+        return intf_rt_table_hs_obj
+
+    def config_vm(self, vn):
+        stack_name = 'single_vm'
+        template = self.get_template('single_vm')
+        env = self.get_env('single_vm')
+        env['parameters']['vm_name'] = get_random_name(
+            env['parameters']['vm_name'])
+        env['parameters']['net_id'] = vn.vn_id
+        vm_hs_obj = self.config_heat_obj(stack_name, template, env)
+        vm_fix = self.useFixture(VMFixture(project_name=self.inputs.project_name,
+                                           vn_obj=vn.obj, vm_name=str(env['parameters']['vm_name']), connections=self.connections))
+        assert vm_fix.wait_till_vm_is_up()
+        return vm_hs_obj, vm_fix
+
     def config_vms(self, vn_list):
         stack_name = 'vms'
         template = self.get_template('vms')
@@ -116,6 +175,12 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         stack = vms_hs_obj.heat_client_obj
         vm_fix = self.verify_vms(stack, vn_list, env, stack_name)
         return vm_fix
+
+    def get_stack_output(self, hs_obj, op_key):
+        for op in hs_obj.heat_client_obj.stacks.get(hs_obj.stack_name).outputs:
+            if op['output_key'] == op_key:
+                return op['output_value']
+                break
 
     def verify_vms(self, stack, vn_list, env, stack_name):
         op = stack.stacks.get(stack_name).outputs
@@ -202,6 +267,44 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         assert st_fix.verify_on_setup()
         return st_fix
     # end verify_st
+
+    def config_pt_si(self, stack_name, st_fix, vn_list, max_inst=1):
+        template = self.get_template(stack_name)
+        env = self.get_env(stack_name)
+        env['parameters']['service_template_fq_name'] = ':'.join(
+            st_fix.st_fq_name)
+        if env['parameters'].get('svm_name', None):
+            env['parameters']['svm_name'] = get_random_name(stack_name)
+        env['parameters']['right_net_id'] = vn_list[2].vn_fq_name
+        env['parameters']['left_net_id'] = vn_list[1].vn_fq_name
+        env['parameters']['mgmt_net_id'] = vn_list[0].vn_fq_name
+        env['parameters'][
+            'service_instance_name'] = get_random_name('svc_inst')
+        pt_si_hs_obj = self.config_heat_obj(stack_name, template, env)
+        return pt_si_hs_obj
+    # end config_pt_si
+
+    def config_pt_svm(self, stack_name, si_fqdn, vn_list, intf_rt_table_fqdn=''):
+        template = self.get_template(stack_name)
+        env = self.get_env(stack_name)
+        env['parameters']['si_fqdn'] = si_fqdn
+        env['parameters']['svm_name'] = get_random_name('svm')
+        env['parameters']['right_net_id'] = vn_list[2].vn_fq_name
+        env['parameters']['left_net_id'] = vn_list[1].vn_fq_name
+        env['parameters']['mgmt_net_id'] = vn_list[0].vn_fq_name
+        env['parameters']['intf_rt_table_fqdn'] = intf_rt_table_fqdn
+        env['parameters']['def_sg_id'] = (':').join(
+            self.inputs.project_fq_name) + ':default'
+        vn_obj_list = []
+        for vn in vn_list:
+            vn_obj_list.append(vn.obj)
+        stack_name = get_random_name(stack_name)
+        pt_svm_hs_obj = self.config_heat_obj(stack_name, template, env)
+        pt_svm_fix = self.useFixture(VMFixture(project_name=self.inputs.project_name,
+                                               vn_objs=vn_obj_list, vm_name=str(env['parameters']['svm_name']), connections=self.connections))
+        pt_svm_fix.wait_for_ssh_on_vm()
+        return pt_svm_hs_obj, pt_svm_fix
+    # end config_pt_svm
 
     def config_svc_instance(self, stack_name, st_fix, vn_list, max_inst=1):
         res_name = 'svc_inst'
