@@ -603,7 +603,7 @@ class VMFixture(fixtures.Fixture):
                 return False
 
         for ips in self.get_vm_ip_dict().values():
-            if set(ips) | set(self.vm_ips) != set(self.vm_ips):
+            if len((set(ips).intersection(set(self.vm_ips)))) < 1:
                 with self.printlock:
                     self.logger.warn('Instance IP %s from API Server is '
                                      ' not found in VM IP list %s' % (ips, str(self.vm_ips)))
