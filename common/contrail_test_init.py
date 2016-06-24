@@ -438,6 +438,11 @@ class TestInputs(object):
         if 'vgw' in json_data:
             self.vgw_data = json_data['vgw']
 
+        if 'xmpp_auth_enable' in json_data:
+            self.xmpp_auth_enable = json_data['xmpp_auth_enable']
+        if 'xmpp_dns_auth_enable' in json_data:
+            self.xmpp_dns_auth_enable = json_data['xmpp_dns_auth_enable']
+
         if 'tor_agent' in json_data:
             self.tor_agent_data = json_data['tor_agent']
         if 'sriov' in json_data:
