@@ -2322,3 +2322,314 @@ svc_inst_nomgmt_pt_dual_v2 = {
     },
   }
 }
+
+pt_si = {
+  u'description': u'HOT template to create a v2 service instance.\n',
+  u'heat_template_version': u'2013-05-23',
+  u'outputs': {
+    u'service_instance_fq_name': {
+      u'description': u'FQ name of the service template',
+      u'value': {u'get_attr': [u'service_instance', u'fq_name']}
+    },
+  },
+  u'parameters': {
+    u'service_instance_name': {
+      u'description': u'service instance name',
+      u'type': u'string'},
+    u'service_template_fq_name': {
+      u'description': u'service template name or ID',
+      u'type': u'string'},
+    u'left_net_id': {
+      u'description': u'ID of the left network',
+      u'type': u'string'},
+    u'right_net_id': {
+      u'description': u'ID of the right network',
+      u'type': u'string'},
+    u'mgmt_net_id': {
+      u'description': u'ID of the mgmt network',
+      u'type': u'string'},
+  },
+  u'resources': {
+    u'service_instance': {
+      u'properties': {
+        u'name': {u'get_param': u'service_instance_name'},
+        u'service_instance_properties': {
+          u'service_instance_properties_interface_list': [
+		{ u'service_instance_properties_interface_list_virtual_network': {u'get_param': u'mgmt_net_id'}
+		},
+		{ u'service_instance_properties_interface_list_virtual_network': {u'get_param': u'left_net_id'}
+		},
+		{ u'service_instance_properties_interface_list_virtual_network': {u'get_param': u'right_net_id'}
+		},
+							],
+	  u'service_instance_properties_management_virtual_network': {u'get_param': u'mgmt_net_id'},
+	  u'service_instance_properties_left_virtual_network': {u'get_param': u'left_net_id'},
+          u'service_instance_properties_right_virtual_network': {u'get_param': u'right_net_id'}
+        },
+        u'service_template_refs': [{u'get_param': u'service_template_fq_name'}]
+      },
+      u'type': u'OS::ContrailV2::ServiceInstance'
+    },
+  }
+}
+
+pt_svm = {
+  u'description': u'HOT template to create a Service VM.\n',
+  u'heat_template_version': u'2013-05-23',
+  u'outputs': {
+    u'svm_left_vmi_id': {
+      u'description': u'ID of the left vmi of the SVM',
+      u'value': {u'get_attr': [u'svm_left_vmi', u'show', u'uuid']}
+    },
+    u'svm_right_vmi_id': {
+      u'description': u'ID of the right vmi of the SVM',
+      u'value': {u'get_attr': [u'svm_right_vmi', u'show', u'uuid']}
+    },
+  },
+  u'parameters': {
+     u'si_fqdn': {
+      u'description': u'FQDN of the SI',
+      u'type': u'string'},
+    u'flavor': {
+      u'description': u'Flavor',
+      u'type': u'string'},
+    u'image': {
+      u'description': u'Name of image to use for servers',
+      u'type': u'string'},
+    u'intf_rt_table_fqdn': {
+      u'description': u'Name of the interface route table',
+      u'type': u'string'},
+    u'left_net_id': {
+      u'description': u'ID of the left network',
+      u'type': u'string'},
+    u'right_net_id': {
+      u'description': u'ID of the right network',
+      u'type': u'string'},
+    u'mgmt_net_id': {
+      u'description': u'ID of the mgmt network',
+      u'type': u'string'},
+    u'def_sg_id': {
+      u'description': u'Default Security Group ID',
+      u'type': u'string'},
+    u'svm_name': {
+      u'description': u'service instance name',
+      u'type': u'string'},
+  },
+  u'resources': {
+    u'pt': {
+      u'type': u'OS::ContrailV2::PortTuple',
+      u'properties': {
+        u'service_instance': { u'get_param': u'si_fqdn' }
+      },
+    },
+    u'svm_mgmt_vmi': {
+      u'type': u'OS::ContrailV2::VirtualMachineInterface',
+      u'depends_on': [ 'pt' ],
+      u'properties': {
+        u'virtual_network_refs': [{ u'get_param': u'mgmt_net_id' }],
+        u'security_group_refs': [{ u'get_param': u'def_sg_id' }],
+	    u'port_tuple_refs': [{ u'get_resource': u'pt' }],
+        u'virtual_machine_interface_properties': {
+          u'virtual_machine_interface_properties_service_interface_type': u'management',
+        }
+      }
+    },
+
+    u'svm_left_vmi': {
+      u'type': u'OS::ContrailV2::VirtualMachineInterface',
+      u'depends_on': [ 'pt' ],
+      u'properties': {
+        u'virtual_network_refs': [{ u'get_param': u'left_net_id' }],
+        u'interface_route_table_refs': [{ u'get_param': u'intf_rt_table_fqdn' }],
+        u'port_tuple_refs': [{ u'get_resource': u'pt' }],
+        u'virtual_machine_interface_properties': {
+          u'virtual_machine_interface_properties_service_interface_type': u'left',
+        }
+      }
+    },
+    u'svm_right_vmi': {
+      u'type': u'OS::ContrailV2::VirtualMachineInterface',
+      u'depends_on': [ u'pt' ],
+      u'properties': {
+        u'virtual_network_refs': [{ u'get_param': u'right_net_id' }],
+        u'port_tuple_refs': [{ u'get_resource': u'pt' }],
+        u'virtual_machine_interface_properties': {
+          u'virtual_machine_interface_properties_service_interface_type': u'right',
+        },
+      }
+    },
+    u'svm_left_ip2': {
+      u'type': u'OS::ContrailV2::InstanceIp',
+      u'depends_on': [ 'svm_left_vmi' ],
+      u'properties': {
+        u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_left_vmi' }],
+        u'virtual_network_refs': [{ u'get_param': u'left_net_id' }],
+        u'instance_ip_family': 'v4',
+        u'service_instance_ip' : True,
+      }
+    },
+    u'svm_right_ip2': {
+      u'type': u'OS::ContrailV2::InstanceIp',
+      u'depends_on': [ 'svm_right_vmi' ],
+      u'properties': {
+        u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_right_vmi' }],
+        u'virtual_network_refs': [{ u'get_param': u'right_net_id' }],
+        u'instance_ip_family' : 'v4',
+        u'service_instance_ip' : True,
+      }
+    },
+    u'svm_mgmt_ip2': {
+      u'type': u'OS::ContrailV2::InstanceIp',
+      u'depends_on': [ 'svm_mgmt_vmi' ],
+      u'properties': {
+        u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_mgmt_vmi' }],
+        u'virtual_network_refs': [{ u'get_param': u'mgmt_net_id' }],
+        u'instance_ip_family' : 'v4',
+        u'service_instance_ip' : True,
+      }
+    },
+
+    u'svm': {
+      u'type': u'OS::Nova::Server',
+      u'depends_on': [ u'svm_left_ip2', u'svm_right_ip2', u'svm_mgmt_ip2'],
+      u'properties': {
+        u'name': { u'get_param': u'svm_name' },
+        u'image': { u'get_param':  u'image' },
+        u'flavor': { u'get_param': u'flavor' },
+        u'networks':
+          [{ u'port': { u'get_resource': u'svm_mgmt_vmi' }},
+	       { u'port': { u'get_resource': u'svm_left_vmi' }},
+           { u'port': { u'get_resource': u'svm_right_vmi' }},]
+      }
+    },
+  }
+}
+
+single_vm = {
+  u'description': u'HOT template to deploy server into an existing neutron tenant network\n',
+  u'heat_template_version': u'2013-05-23',
+  u'outputs': {
+    u'port_id': {
+      u'description': u'ID of the neutron port',
+      u'value': {u'get_attr': [u'server_port', u'show', u'id']}},
+  },
+  u'parameters': {
+    u'flavor': {
+      u'description': u'Flavor to use for servers',
+      u'type': u'string'},
+    u'image': {
+      u'description': u'Name of image to use for servers',
+      u'type': u'string'},
+    u'vm_name': {
+      u'description': u'Name of the server',
+      u'type': u'string'},
+    u'net_id': {
+      u'description': u'ID of the network',
+      u'type': u'string'},
+  },
+  u'resources': {
+    u'server': {
+      u'properties': {
+        u'flavor': {u'get_param': u'flavor'},
+        u'image': {u'get_param': u'image'},
+        u'name': {u'get_param': u'vm_name'},
+        u'networks': [{u'port': {u'get_resource': u'server_port'}}]
+      },
+      u'type': u'OS::Nova::Server'
+    },
+    u'server_port': {
+      u'properties': {u'network_id': {u'get_param': u'net_id'}},
+      u'type': u'OS::Neutron::Port'
+    },
+ }
+}
+
+fip_pool = {
+  u'description': u'HOT template to deploy a Floating IP pool\n',
+  u'heat_template_version': u'2015-04-30',
+  u'outputs': {
+    u'fip_pool_name': {
+      u'description': u'FQDN of the FIP Pool',
+      u'value': {u'get_attr': [u'float_pool', u'fq_name']}},
+  },
+  u'parameters': {
+    u'floating_pool': {
+      u'description': u'Name of the FIP Pool',
+      u'type': u'string'},
+    u'vn': {
+      u'description': u'Name of the VN in which the FIP Pool has to be created',
+      u'type': u'string'},
+  },
+  u'resources': {
+    u'float_pool': {
+      u'properties': {
+        u'name': {u'get_param': u'floating_pool'},
+        u'virtual_network': {u'get_param': u'vn'},
+      },
+      u'type': u'OS::ContrailV2::FloatingIpPool'
+    },
+ }
+}
+
+fip = {
+  u'description': u'HOT template to use a Floating IP \n',
+  u'heat_template_version': u'2015-04-30',
+  u'parameters': {
+    u'floating_pool': {
+      u'description': u'Name of the FIP Pool',
+      u'type': u'string'},
+    u'vmi': {
+      u'description': u'ID of the VMI',
+      u'type': u'string'},
+    u'project_name': {
+      u'description': u'Name of the Project',
+      u'type': u'string'},
+  },
+  u'resources': {
+    u'floating_ip': {
+      u'properties': {
+        u'floating_ip_pool': {u'get_param': u'floating_pool'},
+        u'virtual_machine_interface_refs': [{u'get_param': u'vmi'}],
+        u'project_refs': [{u'get_param': u'project_name'}],
+
+      },
+      u'type': u'OS::ContrailV2::FloatingIp'
+    },
+ }
+}
+
+intf_rt_table = {
+  u'description': u'HOT template to create a Interface Route Table \n',
+  u'heat_template_version': u'2015-04-30',
+  u'outputs': {
+    u'intf_rt_tbl_name': {
+      u'description': u'FQDN of the Interface Route Table',
+      u'value': {u'get_attr': [u'intf_rt_table', u'fq_name']}},
+  },
+  u'parameters': {
+    u'intf_rt_table_name': {
+      u'description': u'Name of the Interface Route Table',
+      u'type': u'string'},
+    u'route_prefix': {
+      u'description': u'Route Prefix',
+      u'type': u'string'},
+    u'si_fqdn': {
+      u'description': u'FQDN of the SI',
+      u'type': u'string'},
+    u'si_intf_type': {
+      u'description': u'Interface Type of the SI',
+      u'type': u'string'},
+  },
+  u'resources': {
+    u'intf_rt_table': {
+      u'properties': {
+        u'name': {u'get_param': u'intf_rt_table_name'},
+	u'interface_route_table_routes': { u'interface_route_table_routes_route': [{ u'interface_route_table_routes_route_prefix': { u'get_param': u'route_prefix' } }] },
+	u'service_instance_refs': [{ u'get_param': u'si_fqdn' }],
+	u'service_instance_refs_data': [{ u'service_instance_refs_data_interface_type': { u'get_param': u'si_intf_type' } }]
+      },
+      u'type': u'OS::ContrailV2::InterfaceRouteTable'
+    },
+ }
+}
+

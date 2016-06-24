@@ -76,6 +76,68 @@ try:
             assert vms[0].ping_with_certainty(vms[1].vm_ip, expectation=True)
         # end test_svc_creation_with_heat
 
+        @test.attr(type=['sanity'])
+        @preposttest_wrapper
+        @skip_because(address_family='v6')
+        def test_public_access_thru_svc_w_fip(self):
+            '''
+            Validate creation of a in-network-nat service chain using heat.
+            Create a end VN.
+            Associate FIPs to the end VM and the right intf of the SVM.
+            Create a static route entry to point 0/0 to the left intf of the SVM.
+            The end VM should be able to access internet.
+            '''
+            if ('MX_GW_TEST' not in os.environ) or (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') != '1')):
+                self.logger.info(
+                    "Skipping Test. Env variable MX_GW_TEST is not set. Skipping the test")
+                raise self.skipTest(
+                    "Skipping Test. Env variable MX_GW_TEST is not set. Skipping the test")
+                return True
+            public_vn_fixture = self.public_vn_obj.public_vn_fixture
+            public_vn_subnet = self.public_vn_obj.public_vn_fixture.vn_subnets[
+                0]['cidr']
+            # Since the ping is across projects, enabling allow_all in the SG
+            self.project.set_sec_group_for_allow_all(
+                self.inputs.project_name, 'default')
+            vn_list = []
+            right_net_fix, r_hs_obj = self.config_vn(stack_name='right_net')
+            left_net_fix, l_h_obj = self.config_vn(stack_name='left_net')
+            mgmt_net_fix, m_h_obj = self.config_vn(stack_name='mgmt_net')
+            end_net_fix, end_h_obj = self.config_vn(stack_name='end_net')
+            vn_list = [left_net_fix, right_net_fix]
+            svc_vn_list = [mgmt_net_fix, left_net_fix, right_net_fix]
+            vms = []
+            vms = self.config_vms(vn_list)
+            end_vm, end_vm_fix = self.config_vm(end_net_fix)
+            end_vm_vmi = self.get_stack_output(end_vm, 'port_id')
+            left_vn_fip_pool = self.config_fip_pool(left_net_fix)
+            left_vn_fip_pool_op = self.get_stack_output(
+                left_vn_fip_pool, 'fip_pool_name')
+            fip_pool_fqdn = (':').join(left_vn_fip_pool_op)
+            left_vn_fip = self.config_fip(fip_pool_fqdn, end_vm_vmi)
+            svc_template = self.config_svc_template(
+                stack_name='st', mode='in-network-nat')
+            pt_si_hs_obj = self.config_pt_si(
+                'pt_si', svc_template, svc_vn_list)
+            pt_si_hs_obj_op = self.get_stack_output(
+                pt_si_hs_obj, 'service_instance_fq_name')
+            si_fqdn = (':').join(pt_si_hs_obj_op)
+            prefix = '8.8.8.8/32'
+            si_intf_type = 'left'
+            intf_route_table = self.config_intf_rt_table(
+                prefix, si_fqdn, si_intf_type)
+            intf_route_table_op = self.get_stack_output(
+                intf_route_table, 'intf_rt_tbl_name')
+            intf_rt_table_fqdn = (':').join(intf_route_table_op)
+            pt_svm, pt_svm_fix = self.config_pt_svm(
+                'pt_svm', si_fqdn, svc_vn_list, intf_rt_table_fqdn)
+            svm_right_vmi_id = self.get_stack_output(
+                pt_svm, 'svm_right_vmi_id')
+            public_vn_fip = self.config_fip(
+                public_vn_fixture.vn_fq_name, svm_right_vmi_id)
+            assert end_vm_fix.ping_with_certainty('8.8.8.8', expectation=True)
+        # end test_public_access_thru_svc_w_fip
+
         def transit_vn_with_left_right_svc(self, left_svcs, right_svcs):
             '''
             Validate Transit VN with multi transparent service chain using heat
