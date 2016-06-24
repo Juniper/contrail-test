@@ -753,6 +753,7 @@ def run_once(f):
 
 def run_cmd_on_server(issue_cmd, server_ip, username,
                       password, pty=True, as_sudo=False):
+    log.debug('[%s]: Running cmd : %s' % (server_ip, issue_cmd))
     with hide('everything'):
         with settings(
             host_string='%s@%s' % (username, server_ip), password=password,
@@ -761,6 +762,7 @@ def run_cmd_on_server(issue_cmd, server_ip, username,
                 output = sudo('%s' % (issue_cmd), pty=pty) 
             else:
                 output = run('%s' % (issue_cmd), pty=pty)
+            log.debug('Output : %s' % (output))
             return output
 # end run_cmd_on_server
 
@@ -987,3 +989,22 @@ def get_build_sku(openstack_node_ip, openstack_node_password='c0ntrail123', user
                 pass
             tries -= 1
         return build_sku
+
+def is_almost_same(val1, val2, threshold_percent=10, num_type=int):
+    ''' returns false if val2 is less than or greater than threshold_percent
+        percent of val1
+    '''
+
+    val1 = num_type(val1)
+    val2 = num_type(val2)
+    if val1:
+        if (abs(float(val1-val2))/val1)*100 < threshold_percent:
+            return True
+        else:
+            return False
+    else:
+        if val2:
+            return False
+        else:
+            return True
+# end is_almost_same

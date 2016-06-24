@@ -69,6 +69,7 @@ class ComputeNodeFixture(fixtures.Fixture):
         self.max_system_flows = 512000
         self.agent_inspect_h = self.connections.agent_inspect[self.ip]
         self.flow_table = None
+        self.agent_generator_name = None
     # end __init__
 
     def setUp(self):
@@ -256,6 +257,14 @@ class ComputeNodeFixture(fixtures.Fixture):
         self.logger.debug(
             "Wait for contrail-vrouter-agent to be in active state.")
         self.wait_for_vrouter_agent_state(state='active')
+
+    def restart_service(self, service_name):
+        ''' Restart any contrail service on this compute node
+        '''
+        self.inputs.restart_service(service_name, [self.ip])
+
+    def restart_agent(self):
+        self.restart_service('contrail-vrouter-agent')
 
     def sup_vrouter_process_start(self):
         self.logger.info(
@@ -590,3 +599,11 @@ class ComputeNodeFixture(fixtures.Fixture):
         self.addCleanup(self.del_vrouter_module_params, params,
             reload_vrouter=True)
     # end setup_vrouter_module_params
+
+    def get_agent_generator_name(self):
+        if not self.agent_generator_name:
+            self.agent_generator_name = self.agent_inspect_h.get_generator_name()
+        return self.agent_generator_name
+    # end get_agent_generator_name
+
+

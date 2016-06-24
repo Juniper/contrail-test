@@ -102,6 +102,8 @@ class Hping3:
         round-trip min/avg/max = 0.1/5.8/1012.5 ms
 
         '''
+        reg_result = None
+        rtt_result = None
         result_data = {'sent': None, 'received': None, 'loss': None,
                        'rtt_min':None, 'rtt_avg':None, 'rtt_max':None}
         search1 = '''(\S+) packets transmitted, (\S+) packets received, (\S+)% packet loss'''
@@ -110,16 +112,17 @@ class Hping3:
 #            result_log = myfile.read()
         cmds = ['cat %s' %(self.result_file),
                 'cat %s' %(self.log_file)]
-        result = self.sender_vm_fixture.run_cmd_on_vm(cmds)
+        result = self.sender_vm_fixture.run_cmd_on_vm(cmds, timeout=300)
 
         result_content = result[cmds[0]]
         result_log = result[cmds[1]]
-        reg_result = re.search(search1, result_content)
+        if result_content:
+            reg_result = re.search(search1, result_content)
+            rtt_result = re.search(search2, result_content)
         if reg_result:
             result_data['sent'] = reg_result.group(1)
             result_data['received'] = reg_result.group(2)
             result_data['loss'] = reg_result.group(3)
-        rtt_result = re.search(search1, result_content)
         if rtt_result:
             result_data['rtt_min'] = rtt_result.group(1)
             result_data['rtt_avg'] = rtt_result.group(2)

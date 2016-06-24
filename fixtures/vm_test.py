@@ -691,15 +691,15 @@ class VMFixture(fixtures.Fixture):
                 self.agent_label[vn_fq_name] = self.get_tap_intf_of_vmi(vmi)['label']
         return self.agent_label
 
-    def get_local_ips(self):
-        if not getattr(self, 'local_ips', None):
+    def get_local_ips(self, refresh=False):
+        if refresh or not getattr(self, 'local_ips', None):
             for (vn_fq_name, vmi) in self.get_vmi_ids().iteritems():
                 self.local_ips[vn_fq_name] = self.get_tap_intf_of_vmi(vmi)['mdata_ip_addr']
         return self.local_ips
 
     def get_local_ip(self, refresh=False):
         if refresh or not getattr(self, '_local_ip', None):
-            local_ips = self.get_local_ips()
+            local_ips = self.get_local_ips(refresh=refresh)
             for vn_fq_name in self.vn_fq_names:
                 if  self.vnc_lib_fixture.get_active_forwarding_mode(vn_fq_name) =='l2':
                     self.logger.debug("skipping ping to one of the 169.254.x.x IPs")
@@ -2268,6 +2268,7 @@ class VMFixture(fixtures.Fixture):
                              (stderr))
         else:
             self.logger.info("%s" % (stdout))
+
 
     def _gather_details(self):
         self.cs_vmi_obj = {}

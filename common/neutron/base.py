@@ -52,42 +52,71 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
         super(BaseNeutronTest, cls).tearDownClass()
     # end tearDownClass
 
-    def create_vn(self, vn_name=None, vn_subnets=None, vxlan_id=None,
-        enable_dhcp=True, cleanup=True):
+    @classmethod
+    def create_only_vn(cls, vn_name=None, vn_subnets=None, vxlan_id=None,
+                   enable_dhcp=True):
+        '''Classmethod to do only VN creation
+        '''
         if not vn_name:
             vn_name = get_random_name('vn')
         if not vn_subnets:
             vn_subnets = [get_random_cidr()]
-        vn_fixture = VNFixture(project_name=self.inputs.project_name,
-                      connections=self.connections,
-                      inputs=self.inputs,
+        vn_fixture = VNFixture(project_name=cls.inputs.project_name,
+                      connections=cls.connections,
+                      inputs=cls.inputs,
                       vn_name=vn_name,
                       subnets=vn_subnets,
                       vxlan_id=vxlan_id,
                       enable_dhcp=enable_dhcp)
         vn_fixture.setUp()
+        return vn_fixture
+    # end create_only_vn
+
+
+    def create_vn(self, vn_name=None, vn_subnets=None, vxlan_id=None,
+        enable_dhcp=True, cleanup=True):
+        vn_fixture = self.create_only_vn(vn_name=vn_name,
+                                     vn_subnets=vn_subnets,
+                                     vxlan_id=vxlan_id,
+                                     enable_dhcp=enable_dhcp)
         if cleanup:
             self.addCleanup(vn_fixture.cleanUp)
 
         return vn_fixture
     # end create_vn
 
-    def create_vm(self, vn_fixture, vm_name=None, node_name=None,
+    @classmethod
+    def create_only_vm(cls, vn_fixture, vm_name=None, node_name=None,
                   flavor='contrail_flavor_small',
                   image_name='ubuntu-traffic',
                   port_ids=[]):
         if not vm_name:
             vm_name = 'vm-%s' % (get_random_name(vn_fixture.vn_name))
-        return self.useFixture(
-            VMFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_obj=vn_fixture.obj,
-                vm_name=vm_name,
-                image_name=image_name,
-                flavor=flavor,
-                node_name=node_name,
-                port_ids=port_ids))
+        vm_obj = VMFixture(
+                    project_name=cls.inputs.project_name,
+                    connections=cls.connections,
+                    vn_obj=vn_fixture.obj,
+                    vm_name=vm_name,
+                    image_name=image_name,
+                    flavor=flavor,
+                    node_name=node_name,
+                    port_ids=port_ids)
+        vm_obj.setUp()
+        return vm_obj
+    # end create_only_vm
+
+    def create_vm(self, vn_fixture, vm_name=None, node_name=None,
+                  flavor='contrail_flavor_small',
+                  image_name='ubuntu-traffic',
+                  port_ids=[]):
+        vm_fixture = self.create_only_vm(vn_fixture,
+                        vm_name=vm_name,
+                        node_name=node_name,
+                        flavor=flavor,
+                        image_name=image_name,
+                        port_ids=port_ids)
+        self.addCleanup(vm_fixture.cleanUp)
+        return vm_fixture
 
     def create_router(self, router_name, tenant_id=None):
         obj = self.quantum_h.create_router(router_name, tenant_id)
