@@ -22,12 +22,14 @@ class TestXmpptests(XmppBase, ConfigPolicy):
         super(TestXmpptests, cls).tearDownClass()
 
     def is_test_applicable(self):
-        result = False
-        for node in self.inputs.bgp_control_ips:
-            if self.check_if_xmpp_auth_enabled(node):
-               result = True
-        if not result:
+        try:
+            assert self.inputs.xmpp_auth_enable
+            assert self.inputs.xmpp_dns_auth_enable
+            if not (self.inputs.xmpp_auth_enable and self.inputs.xmpp_dns_auth_enable):
+                return (False, 'Xmpp auth should be set before running tests')
+        except:
             return (False, 'Xmpp auth should be set before running tests')
+
         return (True, None)
 
     def setUp(self):
