@@ -1,0 +1,9 @@
+Verified+2: opencontrail-admin <ci-admin@opencontrail.org>
+Verified+2: Zuul <zuul@lists.opencontrail.org>
+Approved+1: Vedamurthy Joshi <vjoshi@juniper.net>
+Code-Review+2: Vedamurthy Joshi <vjoshi@juniper.net>
+Submitted-by: Zuul <zuul@lists.opencontrail.org>
+Submitted-at: Fri, 24 Jun 2016 15:03:58 -0700
+Reviewed-on: https://review.opencontrail.org/21288
+Project: Juniper/contrail-test
+Branch: refs/heads/master
