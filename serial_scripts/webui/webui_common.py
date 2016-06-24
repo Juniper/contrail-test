@@ -1047,7 +1047,7 @@ class WebuiCommon:
         return rows
     # end check_rows
 
-    def click_icon_caret(self, row_index, obj=None, length=None, indx=0, nw=0):
+    def click_icon_caret(self, row_index, obj=None, length=None, indx=0, net=0):
         if not obj:
             obj = self.find_element('grid-canvas', 'class')
         rows = None
@@ -1056,8 +1056,7 @@ class WebuiCommon:
             rows = self.check_rows(length, obj)
         br = rows[row_index]
         element0 = ('slick-cell', indx)
-        element1 = ('div', 'i')
-        if not nw:
+        if not net:
             element1 = ('div', 'span')
         else:
             element1 = ('div', 'i')
@@ -1068,13 +1067,13 @@ class WebuiCommon:
     def click_monitor_instances_basic(self, row_index, length=None):
         self.click_monitor_instances()
         self.wait_till_ajax_done(self.browser)
-        self.click_icon_caret(row_index, length=length, nw=1)
+        self.click_icon_caret(row_index, length=length, net=1)
     # end click_monitor_instances_basic_in_webui
 
     def click_monitor_networks_basic(self, row_index):
         self.click_element('Networks', 'link_text', jquery=False)
         time.sleep(2)
-        self.click_icon_caret(row_index, nw=1)
+        self.click_icon_caret(row_index, net=1)
         rows = self.get_rows()
         self.click_element('icon-list', 'class', browser=rows[row_index + 1])
         self.wait_till_ajax_done(self.browser)
@@ -1325,7 +1324,7 @@ class WebuiCommon:
 
     def click_configure_fip(self):
         self._click_on_config_dropdown(self.browser)
-        self.click_element(['config_net_fip', 'a'], ['id', 'tag'])
+        self.click_element(['config_networking_fip', 'a'], ['id', 'tag'])
         self.wait_till_ajax_done(self.browser)
         time.sleep(1)
         return self.check_error_msg("configure fip")
@@ -1473,7 +1472,7 @@ class WebuiCommon:
     def click_monitor_networks_advance(self, row_index):
         self.click_element('Networks', 'link_text')
         self.check_error_msg("monitor networks")
-        self.click_icon_caret(row_index, nw=1)
+        self.click_icon_caret(row_index, net=1)
         rows = self.get_rows()
         self.click_element('icon-code', 'class', browser=rows[row_index + 1])
         self.wait_till_ajax_done(self.browser)
@@ -1513,6 +1512,15 @@ class WebuiCommon:
             'div')[0].find_element_by_tag_name('i').click()
         self.wait_till_ajax_done(self.browser)
     # end click_configure_ipam_basic_in_webui
+
+    def click_configure_fip_basic(self, row_index):
+        self.click_element('Floating IPs', 'link_text')
+        self.check_error_msg("configure fip")
+        rows = self.get_rows()
+        rows[row_index].find_elements_by_tag_name(
+            'div')[0].find_element_by_tag_name('i').click()
+        self.wait_till_ajax_done(self.browser)
+    # end click_configure_fip_basic
 
     def click_configure_project_quotas(self):
         self._click_on_config_dropdown(self.browser, index=0)
@@ -1636,7 +1644,7 @@ class WebuiCommon:
                     browser,
                     jquery=False,
                     wait=4)
-            if os_release != 'juno':
+            elif os_release == 'icehouse':
                 ui_proj = self.find_element(
                     ['tenant_switcher', 'h3'], ['id', 'css'], browser).get_attribute('innerHTML')
                 if ui_proj != project_name:
@@ -1645,7 +1653,7 @@ class WebuiCommon:
                     tenants = self.find_element(
                         ['tenant_list', 'a'], ['id', 'tag'], browser, [1])
                     self.click_if_element_found(tenants, project_name)
-            if os_release == 'juno':
+            else:
                 self.click_element(
                     ['button', 'caret'], ['tag', 'class'], browser)
                 prj_obj = self.find_element(
@@ -1895,8 +1903,9 @@ class WebuiCommon:
             if name in element.text:
                 keys_arry = self.find_element(
                     'key', 'class', elements=True, browser=element)
-                self.find_element('icon-plus', 'class', elements=True, browser=element)[index].click()
-                time.sleep(2)
+                # Find and click are separated here to avoid timeout issues and capture screenshot in case find fails
+                plus_element = self.find_element('icon-plus', 'class', elements=True, browser=element)[index]
+                plus_element.click()
                 vals_arry = self.find_element(
                     'value', 'class', elements=True, browser=element)
                 for ind, ele in enumerate(keys_arry):
@@ -1978,6 +1987,7 @@ class WebuiCommon:
     def match_ui_values(self, complete_ops_data, webui_list):
         error = 0
         match_count = 0
+        count = 0
         for ops_items in complete_ops_data:
             match_flag = 0
             for webui_items in webui_list:
@@ -1993,10 +2003,19 @@ class WebuiCommon:
                 elif self.list_in_dict(ops_items['value']) and self.list_in_dict(webui_items['value']) and (ops_items['key'] == webui_items['key']):
                     list_ops = ops_items['value'].split(', ')
                     list_webui = webui_items['value'].split(', ')
-                    if set(list_ops) == set(list_webui):                
+                    for list_webui_index in range(len(list_webui)):
+                        for list_ops_index in range(len(list_ops)):
+                            if (list_webui[
+                                    list_webui_index] == list_ops[list_ops_index]):
+                                count += 1
+                                break
+                            elif isinstance(list_webui[list_webui_index], (str, unicode)) and list_webui[list_webui_index].strip() == list_ops[list_ops_index]:
+                                count += 1
+                                break
+                    if(count == len(list_ops) or count == len(list_webui)):
                         self.logger.info(
-                            "Ops key '%s' with ops_value '%s' matched with webui_value '%s'" %
-                            (ops_items['key'], ops_items['value'], webui_items['value']))
+                            "Ops key %s.0 : value %s matched" %
+                            (ops_items['key'], list_ops))
                         match_flag = 1
                         match_count += 1
                         break
@@ -2007,7 +2026,6 @@ class WebuiCommon:
                             (len(list_ops), match_count))
                         error = 1
                         break
-
             if not match_flag:
                 self.logger.error(
                     "Ops key %s ops_value %s not found/matched with %s" %
@@ -2254,22 +2272,21 @@ class WebuiCommon:
                     break
                 elif item_ops_key == item_webui_key and isinstance(item_webui_value, list) and isinstance(item_ops_value, list):
                     count = 0
-                    if len(item_webui_value) == len(item_ops_value):
-                        for item_webui_index in range(len(item_webui_value)):
-                            for item_ops_index in range(len(item_ops_value)):
-                                if (item_webui_value[
-                                        item_webui_index] == item_ops_value[item_ops_index]):
-                                    count += 1
-                                    break
-                                elif isinstance(item_webui_value[item_webui_index], (str, unicode)) and item_webui_value[item_webui_index].strip() == item_ops_value[item_ops_index]:
-                                    count += 1
-                                    break
-                        if(count == len(item_webui_value)):
-                            self.logger.info(
-                                "Ops key %s.0 : value %s matched" %
-                                (item_ops_key, item_ops_value))
-                            matched_flag = 1
-                            match_count += 1
+                    for item_webui_index in range(len(item_webui_value)):
+                        for item_ops_index in range(len(item_ops_value)):
+                            if (item_webui_value[
+                                    item_webui_index] == item_ops_value[item_ops_index]):
+                                count += 1
+                                break
+                            elif isinstance(item_webui_value[item_webui_index], (str, unicode)) and item_webui_value[item_webui_index].strip() == item_ops_value[item_ops_index]:
+                                count += 1
+                                break
+                    if(count == len(item_webui_value)):
+                        self.logger.info(
+                            "Ops key %s.0 : value %s matched" %
+                            (item_ops_key, item_ops_value))
+                        matched_flag = 1
+                        match_count += 1
                     break
                 elif item_ops_key == item_webui_key:
                     webui_match_try_list.append(
@@ -2303,6 +2320,12 @@ class WebuiCommon:
                          str(not_matched_count))
         self.logger.info("Total ops/api key-value match skipped count is %s" %
                          str(skipped_count))
+        if not_matched_count <= 3:
+            no_error_flag = True
+            if not_matched_count > 0:
+                self.logger.debug(
+                    "Check the %s mismatched key-value pair(s)" %
+                        str(not_matched_count))
         return no_error_flag
     # end match_ui_kv
 
