@@ -291,6 +291,72 @@ class TestECMPHash(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTr
     # end test_static_table
 
     @preposttest_wrapper
+    def test_network_table(self):
+
+        self.verify_svc_in_network_datapath(
+            si_count=1, svc_scaling=True, max_inst=3)
+        svm_ids = self.si_fixtures[0].svm_ids
+        self.get_rt_info_tap_intf_list(
+            self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
+        dst_vm_list = [self.vm2_fixture]
+        ecmp_hashing_include_fields = {"destination_ip": True, "destination_port": True, "hashing_configured": True, "ip_protocol": True, "source_ip": True}
+        self.config_all_hash(ecmp_hashing_include_fields)
+        ecmp_hashing_include_fields = 'l3-source-address,l3-destination-address,l4-protocol,l4-destination-port,'
+        self.verify_if_hash_changed(self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, ecmp_hashing_include_fields)
+        self.verify_traffic_flow(
+            self.vm1_fixture, [self.vm2_fixture], self.si_fixtures[0], self.vn1_fixture)
+
+        ecmp_hashing_include_fields = {"destination_ip": True, "destination_port": True, "hashing_configured": True, "ip_protocol": True}
+        self.update_hash_on_network(ecmp_hash = ecmp_hashing_include_fields, vn_fixture = self.vn2_fixture)
+        ecmp_hashing_include_fields = 'l3-destination-address,l4-protocol,l4-destination-port,'
+        self.verify_if_hash_changed(self.vn1_fixture,self.vm1_fixture, self.vm2_fixture, ecmp_hashing_include_fields)
+        self.verify_traffic_flow(
+            self.vm1_fixture, [self.vm2_fixture], self.si_fixtures[0], self.vn1_fixture)
+
+        ecmp_hashing_include_fields = {"destination_ip": True, "destination_port": True, "hashing_configured": True}
+        self.update_hash_on_port(ecmp_hash = ecmp_hashing_include_fields, vm_fixture = self.vm2_fixture)
+        ecmp_hashing_include_fields = 'l3-destination-address,l4-destination-port,'
+        self.verify_if_hash_changed(self.vn1_fixture, self.vm1_fixture, self.vm2_fixture,ecmp_hashing_include_fields)
+        self.verify_traffic_flow(
+            self.vm1_fixture, [self.vm2_fixture], self.si_fixtures[0], self.vn1_fixture)
+
+        rt_vnc = RouteTable(name="network_table",parent_obj=self.project.project_obj)
+        self.vnc_lib.route_table_create(rt_vnc)
+        routes = []
+        rt10 = RouteType(prefix = '1.1.1.1/32', next_hop = '2.2.2.2', next_hop_type='ip-address')
+        routes.append(rt10)
+        rt_vnc.set_routes(routes)
+        vn_rt_obj = self.vnc_lib.virtual_network_read(id = self.vn2_fixture.uuid)
+        vn_rt_obj.add_route_table(rt_vnc)
+        self.vnc_lib.virtual_network_update(vn_rt_obj)
+        (domain, project, vn) = self.vn1_fixture.vn_fq_name.split(':')
+        inspect_h = self.agent_inspect[self.vm1_fixture.vm_node_ip]
+        agent_vrf_objs = inspect_h.get_vna_vrf_objs(domain, project, vn)
+        agent_vrf_obj = self.vm1_fixture.get_matching_vrf(
+                agent_vrf_objs['vrf_list'], self.vn1_fixture.vrf_name)
+        vn_vrf_id = agent_vrf_obj['ucindex']
+        next_hops = inspect_h.get_vna_active_route(
+                     vrf_id=vn_vrf_id, ip=self.vm2_fixture.vm_ip, prefix='32')['path_list'][0]['nh']['mc_list']
+        if not next_hops:
+            result = False
+            assert result, 'Route not found in the Agent %s' % vm2_fixture.vm_node_ip
+        else:
+            self.logger.info('Route found in the Agent %s' % vm2_fixture.vm_node_ip)
+
+        if (len(next_hops) != 3):
+            result = False
+            assert result, 'Agent does not reflect the static route addition'
+        else:
+            self.logger.info('Agent reflects the static route addition')
+
+        ecmp_hashing_include_fields = {"destination_ip": True, "destination_port": True, "hashing_configured": True,
+"ip_protocol": True, "source_ip": True, "source_port": True}
+        self.addCleanup(self.config_all_hash(ecmp_hashing_include_fields))
+        return True
+
+    # end test_network_table
+
+    @preposttest_wrapper
     def test_ecmp_hardcode_path(self):
         """
          Description: Validate ECMP Hash with service chaining in-network mode
