@@ -438,6 +438,15 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         return dnsIps
     # end get_vna_discovered_dns_server 
 
+    def get_vna_dns_query_to_named(self):
+        path = 'Snh_SandeshTraceRequest?x=DnsBind'
+        xpath = 'traces'
+        p = self.dict_get(path)
+        dnsQuery = EtreeToDict('./SandeshTraceTextResponse/%s' %(xpath)).get_all_entry(p) or \
+            EtreeToDict('./%s' % (xpath)).get_all_entry(p)
+        return dnsQuery
+    # end get_vna_dns_query_to_named
+
     def get_vna_layer2_route(self, vrf_id='', mac=None):
         routes = {'mac': mac}
         path = 'Snh_Layer2RouteReq?x=%s' % str(vrf_id)
