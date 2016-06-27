@@ -138,6 +138,24 @@ class VNFixture(fixtures.Fixture):
                subnets = [subnet['cidr'] for subnet in subnets]
            af = get_af_from_cidrs(cidrs= subnets)
         return af
+    
+    def get_dns_ip(self, ipam_fq_name = None):
+        if not ipam_fq_name:
+            ipam_fq_name=self.ipam_fq_name
+        self.api_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.uuid)
+        ipams = self.api_vn_obj.get_network_ipam_refs()
+        if ipams:
+            for ipam in ipams:
+                if ipam["to"] == ipam_fq_name:
+                    dns_server_address = ipam['attr'].ipam_subnets[0].dns_server_address
+                    break
+                else:
+                    dns_server_address = None
+            self.logger.debug('DNS IP of IPAM associated with configured VN %s is %s'
+                             %(self.vn_fq_name, dns_server_address))
+        if not dns_server_address:
+            self.logger.error("DNS server for mentioned IPAM not found.")
+        return dns_server_address
 
     @retry(delay=10, tries=10)
     def _create_vn_orch(self):
