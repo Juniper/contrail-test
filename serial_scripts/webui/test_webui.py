@@ -13,7 +13,10 @@ import re
 import test
 from tcutils.wrappers import preposttest_wrapper
 import base
-
+import logging
+from webui_topology import *
+logger = logging.getLogger()
+topo = sdn_webui_config()
 
 class WebuiTestSanity(base.WebuiBaseTest):
 
@@ -26,7 +29,6 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end runTest
 
     # UI config tests #
-
     @preposttest_wrapper
     def test1_1_create_svc_templates(self):
         ''' UI Config-> Services-> Service Templates  : Test svc template creation
@@ -282,5 +284,588 @@ class WebuiTestSanity(base.WebuiBaseTest):
         assert self.webui.verify_vm_ops_advance_data(), 'Instance advance details verification failed'
         return True
     # end test_instance_advance_details
+
+    @preposttest_wrapper
+    def test3_1_edit_net_without_change(self):
+        '''Test to edit the existing network without changing anything
+           1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+           2. Click the save button without changing anything
+           3. Check the UUID in UI page and API and OPS
+
+           Pass Criteria: UUID shouldn't be changed after editing
+        '''
+        opt_list = []
+        logger.debug("Step 1 : Get the uuid before editing")
+        uuid = self.webui_common.get_vn_display_name('UUID')
+        vn_name = self.webui_common.get_vn_display_name('Display Name')
+        logger.debug("UUID before editing " + uuid)
+        logger.debug("Step 2 : Verify WebUI before editing")
+        assert self.webui.verify_vn_after_edit_ui('UUID', uuid, opt_list), 'Virtual networks config data verification in UI failed'
+        logger.debug("Step 3 : Verify API server before editing")
+        assert self.webui.verify_vn_after_edit_api('UUID', uuid, uuid, opt_list), 'Virtual networks config data verification in API failed'
+        logger.debug("Step 4 : Verify OPS server before editing")
+        assert self.webui.verify_vn_after_edit_ops('UUID', vn_name, uuid, opt_list), 'Virtual networks config data verification in OPS failed'
+        logger.debug("Step 5 : Edit the VN without changing anything")
+        assert self.webui.edit_vn_without_change(), 'Editing Network failed'
+        logger.debug("Step 6 : Verify WebUI server after editing")
+        assert self.webui.verify_vn_after_edit_ui('UUID', uuid, opt_list), 'Virtual networks config data verification in UI failed'
+        logger.debug("Step 7 : Verify API server after editing")
+        assert self.webui.verify_vn_after_edit_api('UUID', uuid, uuid, opt_list), 'Virtual networks config data verification in API failed'
+        logger.debug("Step 8 : Verify OPS server after editing")
+        assert self.webui.verify_vn_after_edit_ops('UUID', vn_name, uuid, opt_list), 'Virtual networks config data verification in OPS failed'
+        return True
+
+    #end test_edit_vn_witout_change
+
+    @preposttest_wrapper
+    def test3_2_edit_net_disp_name_change(self):
+        ''' Test to edit the existing network by changing VN display name
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Change the Display name and click the save button
+            3. Check that new display name got reflected in WebUI,API and OPS.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        logger.debug("Step 1 : Get the display name of the VN before editing")
+        uuid = self.webui_common.get_vn_display_name('UUID')
+        self.vn_disp_name = self.webui_common.get_vn_display_name('Display Name')
+        opt_list = []
+        if self.vn_disp_name:
+            logger.debug("Getting VN display name is successful and the VN name is %s" %(self.vn_disp_name))
+            logger.debug("Step 2 : Editing the VN by the name")
+            assert self.webui.edit_vn_disp_name_change(topo.vn_disp_name), 'Editing Network failed'
+            logger.debug("Step 3 : Verify WebUI server after editing")
+            assert self.webui.verify_vn_after_edit_ui('Display Name', topo.vn_disp_name, opt_list), 'Virtual networks config data verification in UI failed'
+            logger.debug("Step 4 : Verify API server after editing")
+            assert self.webui.verify_vn_after_edit_api('Display Name', topo.vn_disp_name, uuid, opt_list), 'Virtual networks config data verification in API failed'
+            logger.debug("Step 5 : Verify OPS server after editing")
+            assert self.webui.verify_vn_after_edit_ops('Display Name', topo.vn_disp_name, topo.vn_disp_name, opt_list), 'Virtual networks config data verification in OPS failed'
+            logger.debug("Step 6 : Editing the VN with the previous vn name")
+            assert self.webui.edit_vn_disp_name_change(self.vn_disp_name), 'Editing Network failed'
+            logger.debug("Step 7 : Verify WebUI after editing with previous vn name")
+            assert self.webui.verify_vn_after_edit_ui('Display Name', self.vn_disp_name, opt_list), 'Virtual networks config data verification in UI failed'
+            logger.debug("Step 8 : Verifying the VN after editing previous vn name in API")
+            assert self.webui.verify_vn_after_edit_api('Display Name', self.vn_disp_name, uuid, opt_list),'Virtual networks config data verification in API failed'
+            logger.debug("Step 9 : Verify OPS server after editing with previous name")
+            assert self.webui.verify_vn_after_edit_ops('Display Name', self.vn_disp_name, self.vn_disp_name, opt_list), 'Virtual networks config data verification in OPS failed'
+        else:
+            logger.error("Not able to get the display name. So Editing Vn is not possible")
+        return True
+    #end test_edit_vn_witout_change
+
+    @preposttest_wrapper
+    def test3_3_edit_net_disp_name_change_with_spl_char(self):
+        ''' Test to edit the existing network by changing VN display name with special character
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Change the Display name with special character and click the save button
+            3. Check that new display name got reflected in WebUI,API and OPS.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        opt_list = []
+        logger.debug("Step 1 : Get the display name of the VN before editing")
+        uuid = self.webui_common.get_vn_display_name('UUID')
+        self.vn_disp_name = self.webui_common.get_vn_display_name('Display Name')
+        if self.vn_disp_name:
+            logger.debug("Getting VN display name is successful and the VN name is %s" %(self.vn_disp_name))
+            logger.debug("Step 2 : Editing the VN by the name with special characters")
+            assert self.webui.edit_vn_disp_name_change(topo.vn_disp_name_spl_char), 'Editing Network failed'
+            logger.debug("Step 3 : Verify WebUI server after editing")
+            assert self.webui.verify_vn_after_edit_ui('Display Name', topo.vn_disp_name_spl_char, opt_list), 'Virtual networks config data verification in UI failed'
+            logger.debug("Step 4 : Verify API server after editing")
+            assert self.webui.verify_vn_after_edit_api('Display Name', topo.vn_disp_name_spl_char, uuid, opt_list), 'Virtual networks config data verification in API failed'
+            logger.debug("Step 5 : Verify OPS server after editing")
+            assert self.webui.verify_vn_after_edit_ops('Display Name', topo.vn_disp_name_spl_char, topo.vn_disp_name_spl_char, opt_list), 'Virtual networks config data verification in OPS failed'
+
+            logger.debug("Step 6 : Editing the VN with the previous vn name")
+            assert self.webui.edit_vn_disp_name_change(self.vn_disp_name), 'Editing Network failed'
+            logger.debug("Step 7 : Verify WebUI after editing with previous vn name")
+            assert self.webui.verify_vn_after_edit_ui('Display Name', self.vn_disp_name, opt_list), 'Virtual networks config data verification in UI failed'
+
+            logger.debug("Step 8 : Verifying the VN after editing previous vn name in API")
+            assert self.webui.verify_vn_after_edit_api('Display Name', self.vn_disp_name, uuid, opt_list),'Virtual networks config data verification in API failed'
+            logger.debug("Step 9 : Verify OPS server after editing")
+            assert self.webui.verify_vn_after_edit_ops('Display Name', self.vn_disp_name, self.vn_disp_name, opt_list), 'Virtual networks config data verification in OPS failed'
+        else:
+            logger.error("Not able to get the display name. So Editing Vn is not possible")
+        return True
+
+    #end test_edit_vn_witout_change
+
+    @preposttest_wrapper
+    def test3_4_edit_net_by_add_policy(self):
+        ''' Test to edit the existing network by policy
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Attach one policy for the vn and save.
+            3. Check that attached policy is there in WebUI,API and OPS.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        opt_list = []
+        logger.debug("Step 1 : Attach policy to the VN")
+        assert self.webui.add_vn_with_policy(), 'Editing network with policy failed'
+        uuid = self.webui_common.get_vn_display_name('UUID')
+        self.vn_disp_name = self.webui_common.get_vn_display_name('Display Name')
+        self.vn_policy = str(self.webui_common.get_vn_display_name('Policy'))
+        logger.debug("Step 2 : Verify the VN for the attached policy through WebUI server")
+        assert self.webui.verify_vn_after_edit_ui('Policy', self.vn_policy, opt_list), 'Virtual networks config data verification in UI failed'
+        logger.debug("Step 3 : Verify the VN for the attached policy through API server")
+        assert self.webui.verify_vn_after_edit_api("Policy", "Policy", uuid, opt_list), 'Virtual networks config data verification in API failed'
+        logger.debug("Step 4 : Verify the VN for the attached policy through OPS server")
+        assert self.webui.verify_vn_after_edit_ops('Policy', self.vn_disp_name, self.vn_disp_name, opt_list), 'Virtual networks config data verification in OPS failed'
+        logger.debug("Step 5 : Remove the policy which is attached")
+        assert self.webui.del_vn_with_policy(), 'Editing network with policy failed'
+
+    #end test3_4_edit_net_policy
+
+    @preposttest_wrapper
+    def test3_5_edit_net_by_add_subnet(self):
+        ''' Test to edit the existing network by subnet
+            1. Go to configure->Networking->Networks. Create a new VN
+            2. Edit the created VN and add subnet with all options and save
+            3. Check that subnet with all options got reflected in WebUI,API and OPS.
+            4. Remove the subnet and and add it back with subnet-gate option.
+            5. Check the same got updated in WebUI, API and OPs. Similarly doing for subnet-dns and subnet-dhcp
+
+            Pass Criteria : Step 3,4,5 should pass
+        '''
+        opt_list = [topo.subnet_edit,topo.mask,topo.subnet_sip,topo.subnet_eip,topo.subnet_dns_ip,topo.subnet_gate_ip,topo.subnet_default_gate_ip]
+
+        if self.webui_common.click_configure_networks():
+            add = self.webui_common.find_element("//i[contains(@class,'icon-plus')]", 'xpath')
+            add.click()
+            time.sleep(3)
+            self.webui_common.find_element("//input[contains(@name,'display_name')]", 'xpath').send_keys(topo.vn_disp_name)
+            time.sleep(3)
+            self.webui_common.click_element('configure-networkbtn1', 'id')
+            self.webui_common.wait_till_ajax_done(self.browser)
+            uuid = self.webui_common.get_vn_display_name('UUID')
+            self.vn_disp_name = self.webui_common.get_vn_display_name('Display Name')
+            verify_list = ['Subnet','Subnet-gate','Subnet-dns','Subnet-dhcp']
+            for i in verify_list:
+                if i == 'Subnet':
+                    str1 = 'all'
+                else:
+                    str1 = i + 'disabled'
+                logger.debug("Step 1 - " + i + ": Add subnet with " + str1 + "options")
+                assert self.webui.edit_vn_with_subnet(i, topo.subnet_edit + "/" + topo.mask, topo.subnet_sip + "-" + topo.subnet_eip, topo.subnet_gate_ip), 'Editing network with subnet failed'
+                uuid = self.webui_common.get_vn_display_name('UUID')
+                self.vn_disp_name = self.webui_common.get_vn_display_name('Display Name')
+                subnet = self.webui_common.get_vn_display_name('Subnet')
+                logger.debug("Step 2 - " + i + ": Verify the VN for subnet in WebUI")
+                assert self.webui.verify_vn_after_edit_ui(i, subnet, opt_list), 'Virtual networks config data verification in UI failed'
+                logger.debug("Step 3 - " + i + ": Verify the VN for subnet in API server")
+                assert self.webui.verify_vn_after_edit_api(i, subnet, uuid, opt_list), 'Virtual networks config data verification in API failed'
+                logger.debug("Step 4 - " + i + ": Verify the VN for subnet in OPS server")
+                assert self.webui.verify_vn_after_edit_ops(i, self.vn_disp_name, uuid, opt_list), 'Virtual networks config data verification in OPS failed'
+                logger.debug("Step 5 : Remove the subnet which is added")
+                assert self.webui.del_vn_with_subnet(), 'Editing network with subnet failed'
+        logger.debug("Step 6 : Remove the VN which is added")
+        assert self.webui.edit_option("Networks", 'remove'), 'Editing network with advanced options is failed'
+
+    #end test3_5_edit_net_subnet
+
+    @preposttest_wrapper
+    def test3_6_edit_net_host_opt(self):
+        ''' Test to edit the existing network by Host routes
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Add Host route with route prefix and next hop and save.
+            3. Check that host route is added in WebUI,API and OPS.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        opt_list = [topo.host_prefix,topo.host_nexthop]
+        uuid = self.webui_common.get_vn_display_name('UUID')
+        logger.debug("Step 1 : Add Host Route under VN")
+        assert self.webui.edit_vn_with_host_route('add', 'pos', topo.host_prefix, topo.host_nexthop), 'Editing network with host routes failed'
+        time.sleep(5)
+        host_route = self.webui_common.get_vn_display_name('Host Route')
+        logger.debug("Step 2 : Verify the host route in WebUI")
+        assert self.webui.verify_vn_after_edit_ui('Host Route', host_route, opt_list), 'Virtual networks config data verification in UI failed'
+        logger.debug("Step 3 : Verify the host route in API server")
+        assert self.webui.verify_vn_after_edit_api('Host Route', host_route, uuid, opt_list), 'Virtual networks config data verification in API failed'
+        logger.debug("Step 4 : Verify the VN for host route in OPS server")
+        assert self.webui.verify_vn_after_edit_ops('Host Route', host_route, uuid, opt_list), 'Virtual networks config data verification in OPS failed'
+        logger.debug("Step 5 : Remove the Host Route which is added")
+        assert self.webui.edit_vn_with_host_route('remove', 'pos', topo.host_prefix, topo.host_nexthop), 'Editing network with host routes failed'
+    # end test3_6_edit_net_host_opt
+
+    @preposttest_wrapper
+    def test3_7_edit_net_host_opt_neg(self):
+        ''' Test to edit the existing network by Invalid Host routes
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Add Host route with invalid route prefix and invalid next hop and save it.
+            3. WebUI should throw an error message while saving.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        uuid = self.webui_common.get_vn_display_name('UUID')
+        logger.debug("Step 1 : Add Host Route under VN")
+        assert self.webui.edit_vn_with_host_route('add', 'neg', topo.dns_ip, topo.host_nexthop), 'Editing network with host routes failed as expected for negative scenario'
+    # end test3_7_edit_net_host_opt_neg
+
+    @preposttest_wrapper
+    def test3_8_edit_net_adv_opt(self):
+        ''' Test to edit the existing network by Advanced Options
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Select all the options under advanced option and save.
+            3. Check that all the options under advanced option got reflected in WebUI,API and OPS.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        opt_list = [topo.vlan_id,topo.phy_net]
+        logger.debug("Step 1 : Add advanced options under VN")
+        assert self.webui.edit_vn_with_adv_option(1, 'pos-phy', topo.phy_net, topo.vlan_id), 'Editing network with advanced options is failed'
+        uuid = self.webui_common.get_vn_display_name('UUID')
+        self.vn_disp_name = self.webui_common.get_vn_display_name('Display Name')
+        adv_option = self.webui_common.get_vn_display_name('Adv Option')
+        logger.debug("Step 2 : Verify the advanced option in WebUI")
+        assert self.webui.verify_vn_after_edit_ui('Adv Option', adv_option, opt_list), 'Virtual networks config data verification in UI failed'
+        logger.debug("Step 3 : Verify advanced option in API server")
+        assert self.webui.verify_vn_after_edit_api('Adv Option',adv_option,uuid,opt_list), 'Virtual networks config data verification in API failed'
+        logger.debug("Step 4 : Verify the VN for advancded option in OPS server")
+        assert self.webui.verify_vn_after_edit_ops('Adv Option', self.vn_disp_name, uuid, opt_list), 'Virtual networks config data verification in OPS failed'
+        logger.debug("Step 5 : Remove the VN which is added")
+        assert self.webui.edit_option("Networks", 'remove'), 'Editing network with advanced options is failed'
+
+    # end test3_8_edit_net_adv_opt
+
+    @preposttest_wrapper
+    def test3_9_edit_net_adv_opt_neg(self):
+        ''' Test to edit the existing network by Invalid physical network and invalid vlan id under Advanced option
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Select all the options under advanced option and give invalid physical network and invalid vlan and save it.
+            3. WebUI should throw an error message while saving.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        logger.debug("Step 1 : Add advanced options under VN")
+        assert self.webui.edit_vn_with_adv_option(1, 'pos-phy', topo.phy_net, topo.vlan_id), 'Editing network with advanced options is failed'
+        logger.debug("Step 2 : Edit the vn using advanced options")
+        assert self.webui.edit_vn_with_adv_option(0, 'neg-phy', topo.phy_net, topo.invalid_vlan_id), 'Editing network with advanced option is failed'
+        logger.debug("Step 3 : Remove the VN which is added")
+        assert self.webui.edit_option("Networks", 'remove'), 'Editing network with advanced options is failed'
+
+    # end test3_9_edit_net_adv_opt_neg
+
+    @preposttest_wrapper
+    def test3_10_edit_net_dns(self):
+        ''' Test to edit the existing network by DNS
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Add dns IP under DNS Server.
+            3. Check that dns Ip got added in WebUI,API and OPS.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        opt_list = [topo.dns_ip]
+        logger.debug("Step 1 : Add dns server IP under VN")
+        assert self.webui.edit_vn_with_dns('add', 'pos', topo.dns_ip), 'Editing network with dns is failed'
+        uuid = self.webui_common.get_vn_display_name('UUID')
+        self.vn_disp_name = self.webui_common.get_vn_display_name('Display Name')
+        dns = self.webui_common.get_vn_display_name('DNS')
+        logger.debug("Step 2 : Verify the DNS server IP in WebUI")
+        assert self.webui.verify_vn_after_edit_ui('DNS', dns, opt_list), 'Virtual networks config data verification in UI failed'
+        logger.debug("Step 3 : Verify DNS server IP in API server")
+        assert self.webui.verify_vn_after_edit_api('DNS', dns, uuid, opt_list), 'Virtual networks config data verification in API failed'
+        logger.debug("Step 4 : Verify the VN for DNS server IP in OPS server")
+        assert self.webui.verify_vn_after_edit_ops('DNS', self.vn_disp_name, uuid, opt_list), 'Virtual networks config data verification in OPS failed'
+        logger.debug("Step 5 : Remove the VN which is added")
+        assert self.webui.edit_vn_with_dns('remove', 'pos', topo.dns_ip), 'Editing network with dns is failed'
+
+    # end test3_10_edit_net_dns
+
+    @preposttest_wrapper
+    def test3_11_edit_net_dns_neg(self):
+        ''' Test to edit the existing network by DNS
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Add Invalid dns IP under DNS Server.
+            3. WebUI should thrown an error message while saving
+
+            Pass Criteria : Step 3 should pass
+        '''
+        logger.debug("Step 1 : Add dns server IP under VN")
+        assert self.webui.edit_vn_with_dns('add', 'neg', topo.invalid_dns_ip), 'Editing network with dns is failed'
+
+    # end test3_11_edit_dns_neg
+
+    @preposttest_wrapper
+    def test3_12_edit_net_fip(self):
+        ''' Test to edit the existing network by Floating IP
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Add Pool name and project name under Floating IP.
+            3. Check that pool and project name got added in WebUI,API and OPS.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        opt_list = [topo.fpool]
+        logger.debug("Step 1 : Add Floating server IP under VN")
+        assert self.webui.edit_vn_with_fpool('add', topo.fpool), 'Editing network with FIP is failed'
+        time.sleep(3)
+        uuid = self.webui_common.get_vn_display_name('UUID')
+        self.vn_disp_name = self.webui_common.get_vn_display_name('Display Name')
+        fip = self.webui_common.get_vn_display_name('FIP')
+        logger.debug("Step 2 : Verify the Floating IP in WebUI")
+        assert self.webui.verify_vn_after_edit_ui('FIP', fip, opt_list), 'Virtual networks config data verification in UI failed'
+        logger.debug("Step 3 : Verify Floating IP in API server")
+        assert self.webui.verify_vn_after_edit_api('FIP', fip, uuid, opt_list), 'Virtual networks config data verification in API failed'
+        logger.debug("Step 4 : Verify the VN for Floating IP in OPS server")
+        assert self.webui.verify_vn_after_edit_ops('FIP', self.vn_disp_name, uuid, opt_list), 'Virtual networks config data verification in OPS failed'
+        logger.debug("Step 5 : Remove the FIP which is added")
+        assert self.webui.edit_vn_with_fpool('remove', topo.fpool), 'Editing network with FIP is failed'
+
+    # end test3_12_edit_net_fip
+
+    @preposttest_wrapper
+    def test3_13_edit_net_route_target_as_no(self):
+        ''' Test to edit the existing network by Route Target
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Add ASN number and Target number under Route Target.
+            3. Check the asn and target number got added in WebUI,API and OPS.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        opt_list = [topo.as_no,topo.target_no,topo.as_ip]
+        logger.debug("Step 1 : Add Route Target under VN")
+        assert self.webui.edit_vn_with_route_target('add', 'pos', 'RT',topo.as_no, topo.target_no), 'Editing network with Route target failed'
+        time.sleep(5)
+        uuid = self.webui_common.get_vn_display_name('UUID')
+        self.vn_disp_name = self.webui_common.get_vn_display_name('Display Name')
+        rt = self.webui_common.get_vn_display_name('RT')
+        logger.debug("Step 2 : Verify the Route Target in WebUI")
+        assert self.webui.verify_vn_after_edit_ui('RT', rt, opt_list), 'Virtual networks config data verification in UI failed'
+        logger.debug("Step 3 : Verify advanced option in API server")
+        assert self.webui.verify_vn_after_edit_api('RT', rt, uuid, opt_list), 'Virtual networks config data verification in API failed'
+        logger.debug("Step 4 : Verify the VN for n in OPS server")
+        assert self.webui.verify_vn_after_edit_ops('RT', self.vn_disp_name, uuid, opt_list), 'Virtual networks config data verification in OPS failed'
+        logger.debug("Step 5 : Remove the Route Target which is added")
+        assert self.webui.edit_vn_with_route_target('remove', 'pos', 'RT',topo.as_no, topo.target_no), 'Editing network with Route Target is failed'
+
+    # end test3_13_edit_net_route_target_as_no
+
+    @preposttest_wrapper
+    def test3_14_edit_net_route_target_as_ip(self):
+        ''' Test to edit the existing network by Route Target
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Add IP as asn and Target number under Route Target.
+            3. Check the asn ip and target number got added in WebUI,API and OPS.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        opt_list = [topo.as_no,topo.target_no,topo.as_ip]
+        logger.debug("Step 1 : Add Route Target under VN")
+        assert self.webui.edit_vn_with_route_target('add', 'pos', 'RT', topo.as_ip, topo.target_no), 'Editing network with Route target failed'
+        time.sleep(3)
+        uuid = self.webui_common.get_vn_display_name('UUID')
+        self.vn_disp_name = self.webui_common.get_vn_display_name('Display Name')
+        rt = self.webui_common.get_vn_display_name('RT')
+        logger.debug("Step 2 : Verify the advanced option in WebUI")
+        assert self.webui.verify_vn_after_edit_ui('RT', rt, opt_list), 'Virtual networks config data verification in UI failed'
+        logger.debug("Step 3 : Verify advanced option in API server")
+        assert self.webui.verify_vn_after_edit_api('RT', rt, uuid, opt_list), 'Virtual networks config data verification in API failed'
+        logger.debug("Step 4 : Verify the VN for advancded option in OPS server")
+        assert self.webui.verify_vn_after_edit_ops('RT', self.vn_disp_name, uuid, opt_list), 'Virtual networks config data verification in OPS failed'
+        logger.debug("Step 5 : Remove the Route Target which is added")
+        assert self.webui.edit_vn_with_route_target('remove', 'pos', 'RT', topo.as_ip, topo.target_no), 'Editing network with Route Target is failed'
+
+    # end test3_14_edit_net_route_target_as_ip
+
+    @preposttest_wrapper
+    def test3_15_edit_net_route_target_neg_as_ip(self):
+        ''' Test to edit the existing network by Route Target
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Add invalid IP as asn and invalid Target number under Route Target.
+            3. WebUI should throw an error message while saving.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        logger.debug("Step 1 : Add Route Target under VN")
+        assert self.webui.edit_vn_with_route_target('add', 'neg', 'RT', topo.invalid_as_ip, topo.invalid_target_no), 'Editing network with Route target failed'
+        time.sleep(3)
+
+    # end test3_15_edit_net_route_target_neg_as_ip
+
+    @preposttest_wrapper
+    def test3_16_edit_net_route_target_neg_as_no(self):
+        ''' Test to edit the existing network by Route Target
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Add invalid asn number and invalid Target number under Route Target.
+            3. WebUI should throw an error message while saving.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        logger.debug("Step 1 : Add Route Target under VN")
+        assert self.webui.edit_vn_with_route_target('add', 'neg', 'RT', topo.invalid_as_no, topo.invalid_target_no), 'Editing network with Route target failed'
+        time.sleep(3)
+
+    # end test3_16_edit_net_route_target_neg_as_no
+
+    @preposttest_wrapper
+    def test3_17_edit_net_exp_route_target_as_no(self):
+        ''' Test to edit the existing network by Export Route Target
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Add asn number and Target number under Export Route Target.
+            3. Check the asn number and target number got added in WebUI,API and OPS.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        opt_list = [topo.as_no,topo.target_no,topo.as_ip]
+        logger.debug("Step 1 : Add Export Route Target under VN")
+        assert self.webui.edit_vn_with_route_target('add', 'pos', 'ERT', topo.as_no, topo.target_no), 'Editing network with Export Route target failed'
+        time.sleep(3)
+        uuid = self.webui_common.get_vn_display_name('UUID')
+        self.vn_disp_name = self.webui_common.get_vn_display_name('Display Name')
+        ert = self.webui_common.get_vn_display_name('ERT')
+        logger.debug("Step 2 : Verify the advanced option in WebUI")
+        assert self.webui.verify_vn_after_edit_ui('ERT', ert, opt_list), 'Virtual networks config data verification in UI failed'
+        logger.debug("Step 3 : Verify advanced option in API server")
+        assert self.webui.verify_vn_after_edit_api('ERT', ert, uuid, opt_list), 'Virtual networks config data verification in API failed'
+        logger.debug("Step 4 : Verify the VN for advancded option in OPS server")
+        assert self.webui.verify_vn_after_edit_ops('ERT', self.vn_disp_name, uuid, opt_list), 'Virtual networks config data verification in OPS failed'
+        logger.debug("Step 5 : Remove the Route Target which is added")
+        assert self.webui.edit_vn_with_route_target('remove', 'pos', 'ERT', topo.as_no, topo.target_no), 'Editing network with Export Route Target is failed'
+
+    # end test3_17_edit_net_exp_route_target_as_no
+
+    @preposttest_wrapper
+    def test3_18_edit_net_exp_route_target_as_ip(self):
+        ''' Test to edit the existing network by Export Route Target
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Add IP as asn and Target number under Export Route Target.
+            3. Check the asn ip and target number got added in WebUI,API and OPS.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        opt_list = [topo.as_no,topo.target_no,topo.as_ip]
+        logger.debug("Step 1 : Add Export Route Target under VN")
+        assert self.webui.edit_vn_with_route_target('add', 'pos', 'ERT', topo.as_ip, topo.target_no), 'Editing network with Export Route target failed'
+        time.sleep(3)
+        uuid = self.webui_common.get_vn_display_name('UUID')
+        self.vn_disp_name = self.webui_common.get_vn_display_name('Display Name')
+        ert = self.webui_common.get_vn_display_name('ERT')
+        logger.debug("Step 2 : Verify the advanced option in WebUI")
+        assert self.webui.verify_vn_after_edit_ui('ERT', ert, opt_list), 'Virtual networks config data verification in UI failed'
+        logger.debug("Step 3 : Verify advanced option in API server")
+        assert self.webui.verify_vn_after_edit_api('ERT', ert, uuid, opt_list), 'Virtual networks config data verification in API failed'
+        logger.debug("Step 4 : Verify the VN for advancded option in OPS server")
+        assert self.webui.verify_vn_after_edit_ops('ERT', self.vn_disp_name, uuid, opt_list), 'Virtual networks config data verification in OPS failed'
+        logger.debug("Step 5 : Remove the Export Route which is added")
+        assert self.webui.edit_vn_with_route_target('remove', 'pos', 'ERT', topo.as_ip, topo.target_no), 'Editing network with Export Route Target is failed'
+
+    # end test3_18_edit_net_exp_route_target_as_ip
+
+    @preposttest_wrapper
+    def test3_19_edit_net_exp_route_target_neg_as_ip(self):
+        ''' Test to edit the existing network by Export Route Target
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Add invalid IP as asn and invalid Target number under Export Route Target.
+            3. WebUI should throw an error message while saving.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        logger.debug("Step 1 : Add Export Route Target under VN")
+        assert self.webui.edit_vn_with_route_target('add', 'neg', 'ERT', topo.invalid_as_ip, topo.invalid_target_no), 'Editing network with Export Route target failed'
+        time.sleep(3)
+
+    # end test3_19_edit_net_route_target_neg_as_ip
+
+    @preposttest_wrapper
+    def test3_20_edit_net_exp_route_target_neg_as_no(self):
+        ''' Test to edit the existing network by Export Route Target
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Add invalid asn number and invalid Export Target number under Route Target.
+            3. WebUI should throw an error message while saving.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        logger.debug("Step 1 : Add Export Route Target under VN")
+        assert self.webui.edit_vn_with_route_target('add', 'neg', 'ERT', topo.invalid_as_no, topo.invalid_target_no), 'Editing network with Export Route target failed'
+        time.sleep(3)
+
+    # end test3_20_edit_net_exp_route_target_neg_as_no
+
+    @preposttest_wrapper
+    def test3_21_edit_net_imp_route_target_as_no(self):
+        ''' Test to edit the existing network by Import Route Target
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Add asn and Target number under Import Route Target.
+            3. Check the asn and target number got added in WebUI,API and OPS.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        opt_list = [topo.as_no,topo.target_no,topo.as_ip]
+        logger.debug("Step 1 : Add Import Route Target under VN")
+        assert self.webui.edit_vn_with_route_target('add', 'pos', 'IRT', topo.as_no, topo.target_no), 'Editing network with import Route target failed'
+        time.sleep(3)
+        uuid = self.webui_common.get_vn_display_name('UUID')
+        self.vn_disp_name = self.webui_common.get_vn_display_name('Display Name')
+        irt = self.webui_common.get_vn_display_name('IRT')
+        logger.debug("Step 2 : Verify the advanced option in WebUI")
+        assert self.webui.verify_vn_after_edit_ui('IRT', irt, opt_list), 'Virtual networks config data verification in UI failed'
+        logger.debug("Step 3 : Verify advanced option in API server")
+        assert self.webui.verify_vn_after_edit_api('IRT', irt, uuid, opt_list), 'Virtual networks config data verification in API failed'
+        logger.debug("Step 4 : Verify the VN for advancded option in OPS server")
+        assert self.webui.verify_vn_after_edit_ops('IRT', self.vn_disp_name, uuid, opt_list), 'Virtual networks config data verification in OPS failed'
+        logger.debug("Step 5 : Remove the Import Route Target which is added")
+        assert self.webui.edit_vn_with_route_target('remove', 'pos', 'IRT', topo.as_ip, topo.target_no), 'Editing network with Import Route Target is failed'
+
+    # end test3_21_edit_net_imp_route_target_as_no
+
+    @preposttest_wrapper
+    def test3_22_edit_net_imp_route_target_as_ip(self):
+        ''' Test to edit the existing network by Import Route Target
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Add IP as asn and Target number under Import Route Target.
+            3. Check the asn ip and target number got added in WebUI,API and OPS.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        opt_list = [topo.as_no,topo.target_no,topo.as_ip]
+        logger.debug("Step 1 : Add Import Route Target under VN")
+        time.sleep(5)
+        assert self.webui.edit_vn_with_route_target('add', 'pos', 'IRT', topo.as_ip, topo.target_no), 'Editing network with Import Route target failed'
+        time.sleep(3)
+        uuid = self.webui_common.get_vn_display_name('UUID')
+        self.vn_disp_name = self.webui_common.get_vn_display_name('Display Name')
+        irt = self.webui_common.get_vn_display_name('IRT')
+        logger.debug("Step 2 : Verify the advanced option in WebUI")
+        assert self.webui.verify_vn_after_edit_ui('IRT', irt, opt_list), 'Virtual networks config data verification in UI failed'
+        logger.debug("Step 3 : Verify advanced option in API server")
+        assert self.webui.verify_vn_after_edit_api('IRT', irt, uuid, opt_list), 'Virtual networks config data verification in API failed'
+        logger.debug("Step 4 : Verify the VN for advancded option in OPS server")
+        assert self.webui.verify_vn_after_edit_ops('IRT', self.vn_disp_name, uuid, opt_list), 'Virtual networks config data verification in OPS failed'
+        logger.debug("Step 5 : Remove the Import Route Target which is added")
+        assert self.webui.edit_vn_with_route_target('remove', 'pos', 'IRT', topo.as_ip, topo.target_no), 'Editing network with Import Route Target is failed'
+
+    # end test3_22_edit_net_route_target_as_ip
+
+    @preposttest_wrapper
+    def test3_23_edit_net_imp_route_target_neg_as_ip(self):
+        ''' Test to edit the existing network by Import Route Target
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Add invalid IP as asn and invalid Import Target number under Import Route Target.
+            3. WebUI should throw an error message while saving.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        logger.debug("Step 1 : Add Import Route Target under VN")
+        assert self.webui.edit_vn_with_route_target('add', 'neg', 'IRT', topo.invalid_as_ip, topo.invalid_target_no), 'Editing network with Import Route target failed'
+        time.sleep(3)
+
+    # end test3_23_edit_net_imp_route_target_neg_as_ip
+
+    @preposttest_wrapper
+    def test3_24_edit_net_imp_route_target_neg_as_no(self):
+        ''' Test to edit the existing network by Import Route Target
+            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
+            2. Add invalid asn number and invalid Target number under Import Route Target.
+            3. WebUI should throw an error message while saving.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        logger.debug("Step 1 : Add Import Route Target under VN")
+        assert self.webui.edit_vn_with_route_target('add', 'neg', 'IRT', topo.invalid_as_no, topo.invalid_target_no), 'Editing network with Import Route target failed'
+        time.sleep(3)
+
+    # end test3_24_edit_net_imp_route_target_neg_as_no
 
 # end WebuiTestSanity

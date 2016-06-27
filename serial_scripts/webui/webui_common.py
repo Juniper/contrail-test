@@ -2412,3 +2412,82 @@ class WebuiCommon:
                 break
     # end expand_advance_details
 
+    def get_vn_detail_api(self, uuid):
+        self.vn_api_url = 'virtual-network/' + uuid
+        return self._get_list_api(self.vn_api_url)
+    # end get_vn_detail_api
+
+
+    def get_vn_detail_ops(self, domain, project_vn, vn_name):
+        self.vn_ops_url = 'virtual-network/' + domain + project_vn + ":" + vn_name + "?flat"
+        return self._get_list_ops(self.vn_ops_url)
+    # end get_vn_detail_api
+
+    def click_icon_cog(self, index, browser, option):
+        self.click_element('icon-cog', 'class', index)
+        self.wait_till_ajax_done(index)
+        tool_tip = self.find_element("//a[contains(@class,'tooltip-success')]", 'xpath', index, elements=True)
+        if option == 'edit':
+            tool_tip[0].click()
+        else:
+            tool_tip[1].click()
+            self.click_element('configure-networkbtn1', 'id', browser)
+        self.wait_till_ajax_done(index)
+    # end click_icon_cog
+
+    def get_vn_display_name(self, search_key):
+        self.wait_till_ajax_done(self.browser)
+        option  =  'Networks'
+        if not self.click_configure_networks():
+            self.dis_name = None
+        self.wait_till_ajax_done(self.browser)
+        rows = self.get_rows(canvas=True)
+        index = len(rows)
+        if rows:
+            edit = self.find_element("//i[contains(@class,'toggleDetailIcon')]", 'xpath', elements=True)
+            edit[index-1].click()
+        self.wait_till_ajax_done(self.browser)
+        item = self.find_element("//ul[contains(@class,'item-list')]", 'xpath')
+        out_split = re.split("\n",item.text)
+        join_res = "-".join(out_split)
+        if search_key == 'Display Name':
+            regexp = "Display Name\-(.*)\-UUID"
+            flag = 1
+        elif search_key == 'UUID':
+            regexp = "UUID\-(.*)\-Admin"
+            flag = 1
+        elif search_key == 'Policy':
+            regexp = "Policies\-(.*)\-Forwarding Mode"
+            flag = 1
+        elif search_key == 'Subnet':
+            regexp = "Subnet(.*)Name"
+            flag = 1
+        elif search_key == 'Host Route':
+            regexp = "Host Route\(s\)(.*)DNS"
+            flag = 1
+        elif search_key == 'Adv Option':
+            regexp = "Shared.*Floating"
+            flag = 0
+        elif search_key == 'DNS':
+            regexp = "DNS Server\(s\)(.*)Ecmp"
+            flag = 0
+        elif search_key == 'FIP':
+            regexp = "Floating IP Pool\(s\)(.*)Route"
+            flag = 0
+        elif search_key == 'RT':
+            regexp = "Route Target\(s\)(.*)Export"
+            flag = 0
+        elif search_key == 'ERT':
+            regexp = "Export Route Target\(s\)(.*)Import"
+            flag = 0
+        elif search_key == 'IRT':
+            regexp = "Import Route Target\(s\)(.*)"
+            flag = 0
+        out = re.search(regexp,join_res)
+        if flag:
+            result = out.group(1)
+        else:
+            result = out.group(0)
+        return result
+    # get_vn_display_name
+
