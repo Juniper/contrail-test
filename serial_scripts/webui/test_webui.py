@@ -19,7 +19,7 @@ logger = logging.getLogger()
 topo = sdn_webui_config()
 
 class WebuiTestSanity(base.WebuiBaseTest):
-    
+
     @classmethod
     def setUpClass(cls):
         super(WebuiTestSanity, cls).setUpClass()
@@ -287,11 +287,11 @@ class WebuiTestSanity(base.WebuiBaseTest):
 
     @preposttest_wrapper
     def test3_1_edit_net_without_change(self):
-	'''Test to edit the existing network without changing anything
+        '''Test to edit the existing network without changing anything
            1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
-	   2. Click the save button without changing anything
-	   3. Check the UUID in UI page and API and OPS  
-  
+           2. Click the save button without changing anything
+           3. Check the UUID in UI page and API and OPS
+
            Pass Criteria: UUID shouldn't be changed after editing
         '''
         opt_list = []
@@ -319,10 +319,10 @@ class WebuiTestSanity(base.WebuiBaseTest):
 
     @preposttest_wrapper
     def test3_2_edit_net_disp_name_change(self):
-	''' Test to edit the existing network by changing VN display name
+        ''' Test to edit the existing network by changing VN display name
             1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
-	    2. Change the Display name and click the save button
-	    3. Check that new display name got reflected in WebUI,API and OPS.  
+            2. Change the Display name and click the save button
+            3. Check that new display name got reflected in WebUI,API and OPS.
 
             Pass Criteria : Step 3 should pass
         '''
@@ -394,9 +394,9 @@ class WebuiTestSanity(base.WebuiBaseTest):
 
     @preposttest_wrapper
     def test3_4_edit_net_by_add_policy(self):
-        ''' Test to edit the existing network by policy 
+        ''' Test to edit the existing network by policy
             1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
-            2. Attach one policy for the vn and save. 
+            2. Attach one policy for the vn and save.
             3. Check that attached policy is there in WebUI,API and OPS.
 
             Pass Criteria : Step 3 should pass
@@ -420,12 +420,13 @@ class WebuiTestSanity(base.WebuiBaseTest):
 
     @preposttest_wrapper
     def test3_5_edit_net_by_add_subnet(self):
-        ''' Test to edit the existing network by subnet 
-            1. Go to configure->Networking->Networks. Create a new VN 
-            2. Edit the created VN and add subnet with all options and save 
+        ''' Test to edit the existing network by subnet
+            1. Go to configure->Networking->Networks. Create a new VN
+            2. Edit the created VN and add subnet with all options and save
             3. Check that subnet with all options got reflected in WebUI,API and OPS.
-            4. Remove the subnet and and add it back with subnet-gate option. 
-	    5. Check the same got updated in WebUI, API and OPs. Similarly doing for subnet-dns and subnet-dhcp 
+            4. Remove the subnet and and add it back with subnet-gate option.
+            5. Check the same got updated in WebUI, API and OPs. Similarly doing for subnet-dns and subnet-dhcp
+
             Pass Criteria : Step 3,4,5 should pass
         '''
         opt_list = [topo.subnet_edit,topo.mask,topo.subnet_sip,topo.subnet_eip,topo.subnet_dns_ip,topo.subnet_gate_ip,topo.subnet_default_gate_ip]
@@ -466,7 +467,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
 
     @preposttest_wrapper
     def test3_6_edit_net_host_opt(self):
-        ''' Test to edit the existing network by Host routes 
+        ''' Test to edit the existing network by Host routes
             1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
             2. Add Host route with route prefix and next hop and save.
             3. Check that host route is added in WebUI,API and OPS.
@@ -505,7 +506,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
 
     @preposttest_wrapper
     def test3_8_edit_net_adv_opt(self):
-        ''' Test to edit the existing network by Advanced Options 
+        ''' Test to edit the existing network by Advanced Options
             1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
             2. Select all the options under advanced option and save.
             3. Check that all the options under advanced option got reflected in WebUI,API and OPS.
@@ -531,7 +532,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
 
     @preposttest_wrapper
     def test3_9_edit_net_adv_opt_neg(self):
-        ''' Test to edit the existing network by Invalid physical network and invalid vlan id under Advanced option 
+        ''' Test to edit the existing network by Invalid physical network and invalid vlan id under Advanced option
             1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
             2. Select all the options under advanced option and give invalid physical network and invalid vlan and save it.
             3. WebUI should throw an error message while saving.
@@ -549,7 +550,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
 
     @preposttest_wrapper
     def test3_10_edit_net_dns(self):
-        ''' Test to edit the existing network by DNS 
+        ''' Test to edit the existing network by DNS
             1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
             2. Add dns IP under DNS Server.
             3. Check that dns Ip got added in WebUI,API and OPS.
@@ -589,7 +590,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
 
     @preposttest_wrapper
     def test3_12_edit_net_fip(self):
-        ''' Test to edit the existing network by Floating IP 
+        ''' Test to edit the existing network by Floating IP
             1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
             2. Add Pool name and project name under Floating IP.
             3. Check that pool and project name got added in WebUI,API and OPS.
@@ -616,7 +617,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
 
     @preposttest_wrapper
     def test3_13_edit_net_route_target_as_no(self):
-        ''' Test to edit the existing network by Route Target 
+        ''' Test to edit the existing network by Route Target
             1. Go to Configure->Networking->Networks. Then select any of the vn and click the edit button
             2. Add ASN number and Target number under Route Target.
             3. Check the asn and target number got added in WebUI,API and OPS.

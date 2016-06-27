@@ -2346,7 +2346,7 @@ class WebuiCommon:
     def click_icon_cog(self, index, browser, option):
         self.click_element('icon-cog', 'class', index)
         self.wait_till_ajax_done(index)
-	tool_tip = self.find_element("//a[contains(@class,'tooltip-success')]", 'xpath', index, elements=True)	
+        tool_tip = self.find_element("//a[contains(@class,'tooltip-success')]", 'xpath', index, elements=True)
         if option == 'edit':
             tool_tip[0].click()
         else:
@@ -2357,14 +2357,14 @@ class WebuiCommon:
 
     def get_vn_display_name(self, search_key):
         self.wait_till_ajax_done(self.browser)
-	option  =  'Networks'
+        option  =  'Networks'
         if not self.click_configure_networks():
             self.dis_name = None
         self.wait_till_ajax_done(self.browser)
         rows = self.get_rows(canvas=True)
         index = len(rows)
         if rows:
-	    edit = self.find_element("//i[contains(@class,'toggleDetailIcon')]", 'xpath', elements=True)
+            edit = self.find_element("//i[contains(@class,'toggleDetailIcon')]", 'xpath', elements=True)
             edit[index-1].click()
         self.wait_till_ajax_done(self.browser)
         item = self.find_element("//ul[contains(@class,'item-list')]", 'xpath')
@@ -2375,10 +2375,10 @@ class WebuiCommon:
             flag = 1
         elif search_key == 'UUID':
             regexp = "UUID\-(.*)\-Admin"
-            flag = 1 	    
+            flag = 1
         elif search_key == 'Policy':
             regexp = "Policies\-(.*)\-Forwarding Mode"
-            flag = 1            
+            flag = 1
         elif search_key == 'Subnet':
             regexp = "Subnet(.*)Name"
             flag = 1
@@ -2403,10 +2403,10 @@ class WebuiCommon:
         elif search_key == 'IRT':
             regexp = "Import Route Target\(s\)(.*)"
             flag = 0
-	out = re.search(regexp,join_res)
-	if flag:
+        out = re.search(regexp,join_res)
+        if flag:
             result = out.group(1)
-	else:
-	    result = out.group(0)
-	return result
+        else:
+            result = out.group(0)
+        return result
     # get_vn_display_name
