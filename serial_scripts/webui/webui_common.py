@@ -1047,7 +1047,7 @@ class WebuiCommon:
         return rows
     # end check_rows
 
-    def click_icon_caret(self, row_index, obj=None, length=None, indx=0, net=0):
+    def click_icon_caret(self, row_index, obj=None, length=None, indx=0):
         if not obj:
             obj = self.find_element('grid-canvas', 'class')
         rows = None
@@ -1056,10 +1056,7 @@ class WebuiCommon:
             rows = self.check_rows(length, obj)
         br = rows[row_index]
         element0 = ('slick-cell', indx)
-        if not net:
-            element1 = ('div', 'span')
-        else:
-            element1 = ('div', 'i')
+        element1 = ('div', 'i')
         self.click_element(
             [element0, element1], ['class', 'tag'], br, if_elements=[0])
     # end click_icon_caret
@@ -1067,13 +1064,13 @@ class WebuiCommon:
     def click_monitor_instances_basic(self, row_index, length=None):
         self.click_monitor_instances()
         self.wait_till_ajax_done(self.browser)
-        self.click_icon_caret(row_index, length=length, net=1)
+        self.click_icon_caret(row_index, length=length)
     # end click_monitor_instances_basic_in_webui
 
     def click_monitor_networks_basic(self, row_index):
         self.click_element('Networks', 'link_text', jquery=False)
         time.sleep(2)
-        self.click_icon_caret(row_index, net=1)
+        self.click_icon_caret(row_index)
         rows = self.get_rows()
         self.click_element('icon-list', 'class', browser=rows[row_index + 1])
         self.wait_till_ajax_done(self.browser)
@@ -1306,9 +1303,9 @@ class WebuiCommon:
     # end delete_element
 
     def click_configure_networks(self):
-        time.sleep(1)
+        time.sleep(5)
         self.click_element('btn-configure')
-        time.sleep(2)
+        time.sleep(5)
         self._click_on_config_dropdown(self.browser)
         self.click_element(['config_networking_networks', 'Networks'], [
                         'id', 'link_text'])
@@ -1324,7 +1321,7 @@ class WebuiCommon:
 
     def click_configure_fip(self):
         self._click_on_config_dropdown(self.browser)
-        self.click_element(['config_networking_fip', 'a'], ['id', 'tag'])
+        self.click_element(['config_net_fip', 'a'], ['id', 'tag'])
         self.wait_till_ajax_done(self.browser)
         time.sleep(1)
         return self.check_error_msg("configure fip")
@@ -1472,7 +1469,7 @@ class WebuiCommon:
     def click_monitor_networks_advance(self, row_index):
         self.click_element('Networks', 'link_text')
         self.check_error_msg("monitor networks")
-        self.click_icon_caret(row_index, net=1)
+        self.click_icon_caret(row_index)
         rows = self.get_rows()
         self.click_element('icon-code', 'class', browser=rows[row_index + 1])
         self.wait_till_ajax_done(self.browser)
@@ -1512,15 +1509,6 @@ class WebuiCommon:
             'div')[0].find_element_by_tag_name('i').click()
         self.wait_till_ajax_done(self.browser)
     # end click_configure_ipam_basic_in_webui
-
-    def click_configure_fip_basic(self, row_index):
-        self.click_element('Floating IPs', 'link_text')
-        self.check_error_msg("configure fip")
-        rows = self.get_rows()
-        rows[row_index].find_elements_by_tag_name(
-            'div')[0].find_element_by_tag_name('i').click()
-        self.wait_till_ajax_done(self.browser)
-    # end click_configure_fip_basic
 
     def click_configure_project_quotas(self):
         self._click_on_config_dropdown(self.browser, index=0)
@@ -1644,7 +1632,7 @@ class WebuiCommon:
                     browser,
                     jquery=False,
                     wait=4)
-            elif os_release == 'icehouse':
+            if os_release != 'juno':
                 ui_proj = self.find_element(
                     ['tenant_switcher', 'h3'], ['id', 'css'], browser).get_attribute('innerHTML')
                 if ui_proj != project_name:
@@ -1653,7 +1641,7 @@ class WebuiCommon:
                     tenants = self.find_element(
                         ['tenant_list', 'a'], ['id', 'tag'], browser, [1])
                     self.click_if_element_found(tenants, project_name)
-            else:
+            if os_release == 'juno':
                 self.click_element(
                     ['button', 'caret'], ['tag', 'class'], browser)
                 prj_obj = self.find_element(
@@ -1895,17 +1883,19 @@ class WebuiCommon:
         return domArry
     # end get_basic_view_infra
 
-    def get_advanced_view_list(self, name, key_val, index=3):
-        key_val_lst1 = self.find_element('pre', 'tag')
+    def get_advanced_view_list(self, name, key_val, expand=0, index=5):
+        key_val_lst1 = self.find_element(
+            ['pre', 'value'], ['tag', 'class'])
         key_val_lst2 = self.find_element(
             'key-value', 'class', elements=True, browser=key_val_lst1)
         for element in key_val_lst2:
             if name in element.text:
+                self.click_element(
+                    'icon-plus', 'class', browser=element)
                 keys_arry = self.find_element(
                     'key', 'class', elements=True, browser=element)
-                # Find and click are separated here to avoid timeout issues and capture screenshot in case find fails
-                plus_element = self.find_element('icon-plus', 'class', elements=True, browser=element)[index]
-                plus_element.click()
+                if expand:
+                    self.find_element('icon-plus', 'class', elements=True)[index].click()
                 vals_arry = self.find_element(
                     'value', 'class', elements=True, browser=element)
                 for ind, ele in enumerate(keys_arry):
@@ -1987,7 +1977,6 @@ class WebuiCommon:
     def match_ui_values(self, complete_ops_data, webui_list):
         error = 0
         match_count = 0
-        count = 0
         for ops_items in complete_ops_data:
             match_flag = 0
             for webui_items in webui_list:
@@ -2003,19 +1992,11 @@ class WebuiCommon:
                 elif self.list_in_dict(ops_items['value']) and self.list_in_dict(webui_items['value']) and (ops_items['key'] == webui_items['key']):
                     list_ops = ops_items['value'].split(', ')
                     list_webui = webui_items['value'].split(', ')
-                    for list_webui_index in range(len(list_webui)):
-                        for list_ops_index in range(len(list_ops)):
-                            if (list_webui[
-                                    list_webui_index] == list_ops[list_ops_index]):
-                                count += 1
-                                break
-                            elif isinstance(list_webui[list_webui_index], (str, unicode)) and list_webui[list_webui_index].strip() == list_ops[list_ops_index]:
-                                count += 1
-                                break
-                    if(count == len(list_ops) or count == len(list_webui)):
+
+                    if set(list_ops) == set(list_webui):                
                         self.logger.info(
-                            "Ops key %s.0 : value %s matched" %
-                            (ops_items['key'], list_ops))
+                            "Ops key '%s' with ops_value '%s' matched with webui_value '%s'" %
+                            (ops_items['key'], ops_items['value'], webui_items['value']))
                         match_flag = 1
                         match_count += 1
                         break
@@ -2026,6 +2007,7 @@ class WebuiCommon:
                             (len(list_ops), match_count))
                         error = 1
                         break
+
             if not match_flag:
                 self.logger.error(
                     "Ops key %s ops_value %s not found/matched with %s" %
@@ -2110,48 +2092,6 @@ class WebuiCommon:
             'discards',
             'ds_flow_action_drop',
             'ds_flood',
-            'ds_mcast_df_bit',
-            'ds_flow_no_memory',
-            'ds_push',
-            'ds_invalid_if',
-            'ds_pull',
-            'ds_no_fmd',
-            'ds_invalid_arp',
-            'ds_trap_no_if',
-            'ds_vlan_fwd_tx',
-            'ds_invalid_mcast_source',
-            'ds_invalid_source',
-            'ds_flow_action_invalid',
-            'ds_invalid_packet',
-            'ds_flow_invalid_protocol',
-            'ds_invalid_vnid',
-            'ds_flow_table_full',
-            'ds_invalid_label',
-            'ds_garp_from_vm',
-            'ds_frag_err',
-            'ds_vlan_fwd_enq',
-            'ds_clone_fail',
-            'ds_arp_no_route',
-            'ds_misc',
-            'ds_interface_rx_discard',
-            'ds_flow_unusable',
-            'ds_mcast_clone_fail',
-            'ds_invalid_protocol',
-            'ds_head_space_reserve_fail',
-            'ds_interface_tx_discard',
-            'ds_nowhere_to_go',
-            'ds_arp_no_where_to_go',
-            'ds_l2_no_route',
-            'ds_cksum_err',
-            'ds_flow_queue_limit_exceeded',
-            'ds_ttl_exceeded',
-            'ds_flow_nat_no_rflow',
-            'ds_invalid_nh',
-            'ds_head_alloc_fail',
-            'ds_pcow_fail',
-            'ds_rewrite_fail',
-            'primary',
-            'no_config_intf_list',
             'total_flows',
             'active_flows',
             'aged_flows',
@@ -2181,14 +2121,6 @@ class WebuiCommon:
             'mem_virt',
             'average_blocked_duration',
             'admin_down',
-            'sm_back_pressure',
-            'log_local',
-            'log_category',
-            'error_intf_list',
-            'max_sm_queue_count',
-            'status',
-            'control_node_list_cfg',
-            'dns_servers',
             'chunk_select_time']
         key_list = ['exception_packets_dropped', 'l2_mcast_composites']
         index_list = []
@@ -2263,30 +2195,24 @@ class WebuiCommon:
                     matched_flag = 1
                     match_count += 1
                     break
-                elif item_ops_key == item_webui_key and not isinstance(item_ops_value, list) and isinstance(item_webui_value, list) and (item_ops_value in item_webui_value):
-                    self.logger.info(
-                        "Ops/api key %s : value %s matched in webui value range list %s " %
-                        (item_ops_key, item_ops_value, item_webui_value))
-                    matched_flag = 1
-                    match_count += 1
-                    break
                 elif item_ops_key == item_webui_key and isinstance(item_webui_value, list) and isinstance(item_ops_value, list):
                     count = 0
-                    for item_webui_index in range(len(item_webui_value)):
-                        for item_ops_index in range(len(item_ops_value)):
-                            if (item_webui_value[
-                                    item_webui_index] == item_ops_value[item_ops_index]):
-                                count += 1
-                                break
-                            elif isinstance(item_webui_value[item_webui_index], (str, unicode)) and item_webui_value[item_webui_index].strip() == item_ops_value[item_ops_index]:
-                                count += 1
-                                break
-                    if(count == len(item_webui_value)):
-                        self.logger.info(
-                            "Ops key %s.0 : value %s matched" %
-                            (item_ops_key, item_ops_value))
-                        matched_flag = 1
-                        match_count += 1
+                    if len(item_webui_value) == len(item_ops_value):
+                        for item_webui_index in range(len(item_webui_value)):
+                            for item_ops_index in range(len(item_ops_value)):
+                                if (item_webui_value[
+                                        item_webui_index] == item_ops_value[item_ops_index]):
+                                    count += 1
+                                    break
+                                elif isinstance(item_webui_value[item_webui_index], (str, unicode)) and item_webui_value[item_webui_index].strip() == item_ops_value[item_ops_index]:
+                                    count += 1
+                                    break
+                        if(count == len(item_webui_value)):
+                            self.logger.info(
+                                "Ops key %s.0 : value %s matched" %
+                                (item_ops_key, item_ops_value))
+                            matched_flag = 1
+                            match_count += 1
                     break
                 elif item_ops_key == item_webui_key:
                     webui_match_try_list.append(
@@ -2320,12 +2246,6 @@ class WebuiCommon:
                          str(not_matched_count))
         self.logger.info("Total ops/api key-value match skipped count is %s" %
                          str(skipped_count))
-        if not_matched_count <= 3:
-            no_error_flag = True
-            if not_matched_count > 0:
-                self.logger.debug(
-                    "Check the %s mismatched key-value pair(s)" %
-                        str(not_matched_count))
         return no_error_flag
     # end match_ui_kv
 
@@ -2412,3 +2332,81 @@ class WebuiCommon:
                 break
     # end expand_advance_details
 
+    def get_vn_detail_api(self, uuid):
+        self.vn_api_url = 'virtual-network/' + uuid
+        return self._get_list_api(self.vn_api_url)
+    # end get_vn_detail_api
+
+
+    def get_vn_detail_ops(self, domain, project_vn, vn_name):
+        self.vn_ops_url = 'virtual-network/' + domain + project_vn + ":" + vn_name + "?flat"
+        return self._get_list_ops(self.vn_ops_url)
+    # end get_vn_detail_api
+
+    def click_icon_cog(self, index, browser, option):
+        self.click_element('icon-cog', 'class', index)
+        self.wait_till_ajax_done(index)
+	tool_tip = self.find_element("//a[contains(@class,'tooltip-success')]", 'xpath', index, elements=True)	
+        if option == 'edit':
+            tool_tip[0].click()
+        else:
+            tool_tip[1].click()
+            self.click_element('configure-networkbtn1', 'id', browser)
+        self.wait_till_ajax_done(index)
+    # end click_icon_cog
+
+    def get_vn_display_name(self, search_key):
+        self.wait_till_ajax_done(self.browser)
+	option  =  'Networks'
+        if not self.click_configure_networks():
+            self.dis_name = None
+        self.wait_till_ajax_done(self.browser)
+        rows = self.get_rows(canvas=True)
+        index = len(rows)
+        if rows:
+	    edit = self.find_element("//i[contains(@class,'toggleDetailIcon')]", 'xpath', elements=True)
+            edit[index-1].click()
+        self.wait_till_ajax_done(self.browser)
+        item = self.find_element("//ul[contains(@class,'item-list')]", 'xpath')
+        out_split = re.split("\n",item.text)
+        join_res = "-".join(out_split)
+        if search_key == 'Display Name':
+            regexp = "Display Name\-(.*)\-UUID"
+            flag = 1
+        elif search_key == 'UUID':
+            regexp = "UUID\-(.*)\-Admin"
+            flag = 1 	    
+        elif search_key == 'Policy':
+            regexp = "Policies\-(.*)\-Forwarding Mode"
+            flag = 1            
+        elif search_key == 'Subnet':
+            regexp = "Subnet(.*)Name"
+            flag = 1
+        elif search_key == 'Host Route':
+            regexp = "Host Route\(s\)(.*)DNS"
+            flag = 1
+        elif search_key == 'Adv Option':
+            regexp = "Shared.*Floating"
+            flag = 0
+        elif search_key == 'DNS':
+            regexp = "DNS Server\(s\)(.*)Ecmp"
+            flag = 0
+        elif search_key == 'FIP':
+            regexp = "Floating IP Pool\(s\)(.*)Route"
+            flag = 0
+        elif search_key == 'RT':
+            regexp = "Route Target\(s\)(.*)Export"
+            flag = 0
+        elif search_key == 'ERT':
+            regexp = "Export Route Target\(s\)(.*)Import"
+            flag = 0
+        elif search_key == 'IRT':
+            regexp = "Import Route Target\(s\)(.*)"
+            flag = 0
+	out = re.search(regexp,join_res)
+	if flag:
+            result = out.group(1)
+	else:
+	    result = out.group(0)
+	return result
+    # get_vn_display_name
