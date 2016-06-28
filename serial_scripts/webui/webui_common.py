@@ -2412,3 +2412,577 @@ class WebuiCommon:
                 break
     # end expand_advance_details
 
+    def get_vn_detail_api(self, uuid):
+        self.vn_api_url = 'virtual-network/' + uuid
+        return self._get_list_api(self.vn_api_url)
+    # end get_vn_detail_api
+
+
+    def get_vn_detail_ops(self, domain, project_vn, vn_name):
+        self.vn_ops_url = 'virtual-network/' + domain + project_vn + ":" + vn_name + "?flat"
+        return self._get_list_ops(self.vn_ops_url)
+    # end get_vn_detail_api
+
+    def click_icon_cog(self, index, browser, option):
+        self.click_element('icon-cog', 'class', index)
+        self.wait_till_ajax_done(index)
+        tool_tip = self.find_element("//a[contains(@class,'tooltip-success')]", 'xpath', index, elements=True)
+        if option == 'edit':
+            tool_tip[0].click()
+        else:
+            tool_tip[1].click()
+            self.click_element('configure-networkbtn1', 'id', browser)
+        self.wait_till_ajax_done(index)
+    # end click_icon_cog
+
+    def get_vn_display_name(self, search_key):
+        self.wait_till_ajax_done(self.browser)
+        option  =  'Networks'
+        if not self.click_configure_networks():
+            self.dis_name = None
+        self.wait_till_ajax_done(self.browser)
+        rows = self.get_rows(canvas=True)
+        index = len(rows)
+        if rows:
+            edit = self.find_element("//i[contains(@class,'toggleDetailIcon')]", 'xpath', elements=True)
+            edit[index-1].click()
+        self.wait_till_ajax_done(self.browser)
+        item = self.find_element("//ul[contains(@class,'item-list')]", 'xpath')
+        out_split = re.split("\n",item.text)
+        join_res = "-".join(out_split)
+        if search_key == 'Display Name':
+            regexp = "Display Name\-(.*)\-UUID"
+            flag = 1
+        elif search_key == 'UUID':
+            regexp = "UUID\-(.*)\-Admin"
+            flag = 1
+        elif search_key == 'Policy':
+            regexp = "Policies\-(.*)\-Forwarding Mode"
+            flag = 1
+        elif search_key == 'Subnet':
+            regexp = "Subnet(.*)Name"
+            flag = 1
+        elif search_key == 'Host Route':
+            regexp = "Host Route\(s\)(.*)DNS"
+            flag = 1
+        elif search_key == 'Adv Option':
+            regexp = "Shared.*Floating"
+            flag = 0
+        elif search_key == 'DNS':
+            regexp = "DNS Server\(s\)(.*)Ecmp"
+            flag = 0
+        elif search_key == 'FIP':
+            regexp = "Floating IP Pool\(s\)(.*)Route"
+            flag = 0
+        elif search_key == 'RT':
+            regexp = "Route Target\(s\)(.*)Export"
+            flag = 0
+        elif search_key == 'ERT':
+            regexp = "Export Route Target\(s\)(.*)Import"
+            flag = 0
+        elif search_key == 'IRT':
+            regexp = "Import Route Target\(s\)(.*)"
+            flag = 0
+        out = re.search(regexp,join_res)
+        if flag:
+            result = out.group(1)
+        else:
+            result = out.group(0)
+        return result
+    # get_vn_display_name
+
+    def edit_option(self, option, category):
+        result = True
+        self.option = option
+        try:
+            if self.option == "Networks":
+                self.logger.info("Go to Configure->Networking->Networks page")
+                if not self.click_configure_networks():
+                    result = result and False
+            rows = self.get_rows(canvas=True)
+
+            if rows:
+                self.logger.info("%d rows are there under %s " % (len(rows),self.option))
+                self.logger.info("%s are available to edit. Editing the %s" % (option,option))
+                index = len(rows)
+                if len(rows) :
+                    self.click_icon_cog(rows[index-1], self.browser, category)
+                    time.sleep(5)
+            else:
+                self.logger.error("No %s are available to edit" % (option))
+                self.screenshot(option)
+            self.wait_till_ajax_done(self.browser)
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.screenshot(option)
+            result = result and False
+            self.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+
+    def edit_vn_without_change(self):
+        result = True
+        option = "Networks"
+        try:
+            self.edit_vn_result = self.edit_option(option, 'edit')
+            if self.edit_vn_result:
+                try:
+                    self.logger.info("Click on save button")
+                    self.click_element('configure-networkbtn1', 'id')
+                except WebDriverException:
+                    self.logger.error("Error while trying to save %s" %(option))
+                    result = result and False
+                    self.screenshot(option)
+                    self.click_on_cancel_if_failure('cancelBtn')
+                    raise
+            else:
+                self.logger.error("Clicking the Edit Button is not working")
+                result = result and False
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.screenshot(option)
+            result = result and False
+            self.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+
+    def edit_vn_disp_name_change(self, vn_name):
+        result = True
+        option = "Networks"
+        try:
+            self.edit_vn_result = self.edit_option(option, 'edit')
+            if self.edit_vn_result:
+                self.click_element('display_name', 'id')
+                net_name = self.find_element('span12', 'class')
+                net_name.clear()
+                net_name.send_keys(vn_name)
+                self.click_element('configure-networkbtn1', 'id')
+            else:
+                self.logger.error("Clicking the Edit Button is not working")
+                result = result and False
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.screenshot(option)
+            result = result and False
+            self.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+
+    def add_vn_with_policy(self,pol_name):
+        result = True
+        option = "Networks"
+        try:
+            self.edit_vn_result = self.edit_option(option, 'edit')
+            if self.edit_vn_result:
+                self.click_element('s2id_network_policy_refs_dropdown', 'id')
+                select = self.find_element("//li[contains(@class,'select2-highlighted')]", 'xpath')
+                pol_name = select.text
+                select.click()
+                self.click_element('configure-networkbtn1', 'id')
+            else:
+                self.logger.error("Clicking the Edit Button is not working")
+                result = result and False
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.screenshot(option)
+            result = result and False
+            self.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+
+    def del_vn_with_policy(self):
+        result = True
+        option = "Networks"
+        try:
+            policy_ui = str(self.get_vn_display_name('Policy'))
+            policy = self.pol_name.split(":")
+            out = re.search(policy[-1],policy_ui)
+            if out:
+                index = 1
+            self.edit_vn_result = self.edit_option(option, 'edit')
+            if self.edit_vn_result:
+                del_row = self.find_element('s2id_network_policy_refs_dropdown', 'id')
+                c = 0
+                if index > 0:
+                    for i in self.find_element("//a[contains(@class,'select2-search-choice-close')]", 'xpath', elements=True):
+                        c = c+1
+                        if c == index:
+                            i.click()
+                            self.logger.info("Policy got removed successfully")
+                            self.click_element('configure-networkbtn1', 'id')
+                            time.sleep(5)
+                else:
+                    self.logger.warn("There is no policy to edit")
+            else:
+                self.logger.error("Clicking the Edit Button is not working")
+                result = result and False
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.screenshot(option)
+            result = result and False
+            self.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+
+    def edit_vn_with_subnet(self, category, subnet, dfrange, dfgate):
+        result = True
+        option = "Networks"
+        try:
+            self.wait_till_ajax_done(self.browser)
+            self.edit_vn_result = self.edit_option(option, 'edit')
+            if self.edit_vn_result:
+                self.wait_till_ajax_done(self.browser)
+                self.click_element('ui-accordion-subnets-header-0', 'id')
+                self.wait_till_ajax_done(self.browser)
+                self.find_element('icon-plus', 'class').click()
+                data = self.find_element("//tr[contains(@class,'data-row')]", 'xpath', elements=True)
+                data_new = []
+                for i in data:
+                    if i == '':
+                        pass
+                    else:
+                        data_new.append(i)
+                data_len = len(data_new)
+                ipam = self.find_element("//td[contains(@id,'user_created_ipam_fqn')]", 'xpath', elements=True)
+                cidr = self.find_element("//input[contains(@name,'user_created_cidr')]", 'xpath', elements=True)
+                pool = self.find_element("//textarea[contains(@name,'allocation_pools')]", 'xpath', elements=True)
+                if data_len> 3 :
+                    index = data_len-3
+                elif data_len<=1 or data_len <=3:
+                    index = data_len-1
+                else:
+                    index = 0
+                cidr[index].send_keys(subnet)
+                pool[index].send_keys(dfrange)
+                if category == 'Subnet':
+                    def_gate = self.find_element("//input[contains(@name,'default_gateway')]", 'xpath', elements=True)
+                    def_gate[index].clear()
+                    def_gate[index].send_keys(dfgate)
+                elif category == 'Subnet-gate':
+                    gate = self.find_element("//input[contains(@name,'user_created_enable_gateway')]", 'xpath', elements=True)
+                    gate[index].click()
+                elif category == 'Subnet-dns':
+                    dns = self.find_element("//input[contains(@name,'user_created_enable_dns')]", 'xpath', elements=True)
+                    dns[index].click()
+                elif category == 'Subnet-dhcp':
+                    dhcp = self.find_element("//input[contains(@name,'enable_dhcp')]", 'xpath', elements=True)
+                    dhcp[index].click()
+                self.click_element('configure-networkbtn1', 'id')
+                self.wait_till_ajax_done(self.browser)
+            else:
+                self.logger.error("Clicking the Edit Button is not working")
+                result = result and False
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.screenshot(option)
+            result = result and False
+            self.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+
+    def del_vn_with_subnet(self):
+        result = True
+        option = "Networks"
+        try:
+            self.edit_vn_result = self.edit_option(option, 'edit')
+            if self.edit_vn_result:
+                self.click_element('ui-accordion-subnets-header-0', 'id')
+                self.wait_till_ajax_done(self.browser)
+                data = self.find_element("//tr[contains(@class,'data-row')]", 'xpath', elements=True)
+                index = 0
+                act_cell = self.find_element('action-cell', 'class')
+                minus = self.find_element("//i[contains(@class,'icon-minus')]", 'xpath', elements=True)
+                minus[index].click()
+                self.click_element('configure-networkbtn1', 'id')
+                self.wait_till_ajax_done(self.browser)
+            else:
+                self.logger.error("Clicking the Edit Button is not working")
+                result = result and False
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.screenshot(option)
+            result = result and False
+            self.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+
+    def edit_vn_with_host_route(self, button, tc, hprefix, hnexthop):
+        result = True
+        option = "Networks"
+        try:
+            self.edit_vn_result = self.edit_option(option, 'edit')
+            if self.edit_vn_result:
+                self.click_element('host_routes', 'id')
+                self.wait_till_ajax_done(self.browser)
+                if button == 'add':
+                    add_link = self.find_element("//a[contains(@class,'editable-grid-add-link')]", 'xpath', elements=True)
+                    add_link[1].click()
+                    if tc == 'pos':
+                        prefix = self.browser.find_element_by_xpath("//input[contains(@name,'prefix')]")
+                        prefix.send_keys(hprefix)
+                        next_hop = self.browser.find_element_by_xpath("//input[contains(@name,'next_hop')]")
+                        next_hop.send_keys(hnexthop)
+                    else:
+                        prefix = self.browser.find_element_by_xpath("//input[contains(@name,'prefix')]")
+                        prefix.send_keys(hprefix)
+                        next_hop = self.browser.find_element_by_xpath("//input[contains(@name,'next_hop')]")
+                        next_hop.send_keys(hnexthop)
+                else:
+                    minus = self.find_element("//i[contains(@class,'icon-minus')]", 'xpath', elements=True)
+                    index = len(minus)
+                    minus[index-1].click()
+                self.click_element('configure-networkbtn1', 'id')
+                self.wait_till_ajax_done(self.browser)
+                if tc == 'neg':
+                    warn_button = self.browser.find_element_by_xpath("//span[contains(@data-bind,'hostRoutes')]")
+                    if warn_button.get_attribute('style') == "":
+                        self.click_on_cancel_if_failure('cancelBtn')
+                        self.wait_till_ajax_done(self.browser)
+                        return result
+                    else:
+                        result = result and False
+            else:
+                self.logger.error("Clicking the Edit Button is not working")
+                result = result and False
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.screenshot(option)
+            result = result and False
+            self.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+
+    def edit_vn_with_adv_option(self, category, tc, pnet, vlan):
+        result = True
+        option = "Networks"
+        try:
+            self.wait_till_ajax_done(self.browser)
+            if not self.click_configure_networks():
+                result = result and False
+            if category == 1:
+                add = self.find_element("//i[contains(@class,'icon-plus')]", 'xpath')
+                add.click()
+                time.sleep(3)
+                self.find_element("//input[contains(@name,'display_name')]", 'xpath').send_keys('vn1')
+                self.find_element('ui-accordion-subnets-header-0', 'id').click()
+                time.sleep(3)
+                self.find_element("icon-plus", 'class').click()
+                self.find_element("//input[contains(@name,'user_created_cidr')]", 'xpath').send_keys('10.10.10.0/24')
+                time.sleep(3)
+                save_btn= self.find_element("configure-networkbtn1", 'id')
+                save_btn.click()
+            self.edit_vn_result = self.edit_option(option, 'edit')
+            if self.edit_vn_result:
+                self.click_element('advanced_options', 'id')
+                check = self.find_element("//input[contains(@name,'is_shared')]", 'xpath')
+                check.click()
+                ext = self.find_element("//input[contains(@name,'router_external')]", 'xpath')
+                ext.click()
+                allow = self.find_element("//input[contains(@name,'allow_transit')]", 'xpath')
+                allow.click()
+                flood = self.find_element("//input[contains(@name,'flood_unknown_unicast')]", 'xpath')
+                flood.click()
+                multi_sc = self.find_element("//input[contains(@name,'multi_policy_service_chains_enabled')]", 'xpath')
+                multi_sc.click()
+                hash_field = self.find_element("//div[contains(@id,'s2id_ecmp_hashing_include_fields_dropdown')]", 'xpath')
+                hash_field.click()
+                route_table = self.find_element("//li[contains(@class,'select2-highlighted')]", 'xpath')
+                route_table.click()
+                if tc == 'pos-phy':
+                    self.click_element('s2id_route_table_refs_dropdown', 'id')
+                    time.sleep(3)
+                    route_table = self.find_element("//li[contains(@class,'select2-highlighted')]", 'xpath')
+                    route_table.click()
+                    prov_net = self.find_element("//input[contains(@name,'user_created_sriov_enabled')]", 'xpath')
+                    prov_net.click()
+                    phy_net = self.find_element("//input[contains(@name,'physical_network')]", 'xpath')
+                    phy_net.send_keys(pnet)
+                    seg_id = self.find_element("//input[contains(@name,'segmentation_id')]", 'xpath')
+                    seg_id.send_keys(vlan)
+                else:
+                    phy_net = self.find_element("//input[contains(@name,'physical_network')]", 'xpath')
+                    phy_net.clear()
+                    phy_net.send_keys(pnet)
+                    seg_id = self.find_element("//input[contains(@name,'segmentation_id')]", 'xpath')
+                    seg_id.clear()
+                    seg_id.send_keys(vlan)
+                self.click_element('configure-networkbtn1', 'id')
+                if tc == 'neg-phy':
+                    warn_button = self.find_element("//span[contains(@data-bind,'advanced')]", 'xpath')
+                    if warn_button.get_attribute('style') == "":
+                        self.click_on_cancel_if_failure('cancelBtn')
+                        self.wait_till_ajax_done(self.browser)
+                        return result
+                    else:
+                        result = result and False
+            else:
+                self.logger.error("Clicking the Edit Button is not working")
+                result = result and False
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.screenshot(option)
+            result = result and False
+            self.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+
+    def edit_vn_with_dns(self, button, tc, dns_ip):
+        result = True
+        option = "Networks"
+        try:
+            self.edit_vn_result = self.edit_option(option, 'edit')
+            if self.edit_vn_result:
+                self.click_element('ui-accordion-dns_servers-header-0','id')
+                time.sleep(3)
+                if button == 'add':
+                    self.click_element('user_created_dns_servers', 'id')
+                    text = self.find_element("//input[contains(@name,'ip_address')]", 'xpath')
+                    if tc == 'pos':
+                        text.send_keys(dns_ip)
+                    else:
+                        text.send_keys(dns_ip)
+                else:
+                    minus = self.find_element("//i[contains(@class,'icon-minus')]", 'xpath', elements=True)
+                    index = len(minus)
+                    minus[index-1].click()
+                self.click_element('configure-networkbtn1', 'id')
+                self.wait_till_ajax_done(self.browser)
+                if tc == 'neg':
+                    warn_button = self.find_element("//span[contains(@data-bind,'dnsServers')]", 'xpath')
+                    if warn_button.get_attribute('style') == "":
+                        self.click_on_cancel_if_failure('cancelBtn')
+                        self.wait_till_ajax_done(self.browser)
+                        return result
+                    else:
+                        result = result and False
+            else:
+                self.logger.error("Clicking the Edit Button is not working")
+                result = result and False
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.screenshot(option)
+            result = result and False
+            self.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+
+    def edit_vn_with_fpool(self, button, fpool):
+        result = True
+        option = "Networks"
+        try:
+            self.edit_vn_result = self.edit_option(option, 'edit')
+            if self.edit_vn_result:
+                self.click_element('fip_pool_accordian', 'id')
+                self.wait_till_ajax_done(self.browser)
+                if button == 'add':
+                    add_link = self.find_element("//a[contains(@class,'editable-grid-add-link')]", 'xpath', elements=True)
+                    add_link[3].click()
+                    self.wait_till_ajax_done(self.browser)
+                    pool = self.find_element("//input[contains(@placeholder,'Enter Pool Name')]", 'xpath')
+                    pool.send_keys(fpool)
+                    self.wait_till_ajax_done(self.browser)
+                    self.click_element('s2id_projects_dropdown', 'id')
+                    select = self.find_element("//li[contains(@class,'select2-highlighted')]", 'xpath')
+                    self.project = select.text
+                    select.click()
+                    choice = self.find_element("//li[contains(@class,'select2-search-choice')]", 'xpath')
+                else:
+                    minus = self.find_element("//i[contains(@class,'icon-minus')]", 'xpath', elements=True)
+                    index = len(minus)
+                    minus[index-1].click()
+                self.click_element('configure-networkbtn1', 'id')
+                self.wait_till_ajax_done(self.browser)
+            else:
+                self.logger.error("Clicking the Edit Button is not working")
+                result = result and False
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.screenshot(option)
+            result = result and False
+            self.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+
+    def edit_vn_with_route_target(self, button, tc, rt_type, asn_no_ip, target_no):
+        result = True
+        option = "Networks"
+        try:
+            self.edit_vn_result = self.edit_option(option, 'edit')
+            time.sleep(10)
+            if self.edit_vn_result:
+                if rt_type == 'RT':
+                    route = self.find_element('route_target_accordian', 'id')
+                    route.click()
+                    ind = 4
+                elif rt_type == 'ERT':
+                    route = self.find_element('export_route_target_accordian', 'id')
+                    ind = 5
+                    route.click()
+                elif rt_type == 'IRT':
+                    if button == 'add':
+                        time.sleep(10)
+                        imp_route = self.find_element('import_route_target_accordian', 'id')
+                        route = self.find_element('ui-accordion-import_route_target_accordian-header-0', 'id')
+                        route.click()
+                        ind = 6
+                        route.click()
+                        time.sleep(5)
+                        rt = self.find_element("//div[contains(@id,'import_route_target_vcfg')]", 'xpath')
+                        user_irt = self.find_element("//div[contains(@id,'user_created_import_route_targets')]", 'xpath')
+                        user_irt.click()
+                        grid_table = self.find_element('contrail-editable-grid-table','class')
+                self.wait_till_ajax_done(self.browser)
+                if button == 'add':
+                    add_link = self.find_element("//a[contains(@class,'editable-grid-add-link')]", 'xpath', elements=True)
+                    add_link[ind].click()
+                    self.wait_till_ajax_done(self.browser)
+                    asn = self.find_element("//input[contains(@name,'asn')]", 'xpath')
+                    asn.send_keys(asn_no_ip)
+                    target = self.find_element("//input[contains(@name,'target')]", 'xpath')
+                    target.send_keys(target_no)
+                else:
+                    if rt_type == 'IRT':
+                        self.click_element('import_route_target_accordian', 'id')
+                        time.sleep(5)
+                        irt = self.find_element("//div[contains(@id,'import_route_target_vcfg')]", 'xpath', elements=True)
+                        user_irt = self.find_element("//div[contains(@id,'user_created_import_route_targets')]", 'xpath', elements=True)
+                    minus = self.find_element("//i[contains(@class,'icon-minus')]", 'xpath', elements=True)
+                    index = len(minus) - 1
+                    minus[index].click()
+                self.click_element('configure-networkbtn1', 'id')
+                time.sleep(10)
+                if tc == 'neg':
+                    if rt_type == 'RT':
+                        warn_button = self.find_element("//span[contains(@data-bind,'route_target_vcfg')]", 'xpath')
+                    elif rt_type == 'ERT':
+                        warn_button = self.find_element("//span[contains(@data-bind,'export_route_target_vcfg')]", 'xpath')
+                    elif rt_type == 'IRT':
+                        warn_button = self.find_element("//span[contains(@data-bind,'import_route_target_vcfg')]", 'xpath')
+                    if warn_button.get_attribute('style') == "":
+                        self.click_on_cancel_if_failure('cancelBtn')
+                        self.wait_till_ajax_done(self.browser)
+                        return result
+                    else:
+                        result = result and False
+            else:
+                self.logger.error("Clicking the Edit Button is not working")
+                result = result and False
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.screenshot(option)
+            result = result and False
+            self.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+
