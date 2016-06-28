@@ -858,8 +858,8 @@ class VerifyEvpnCases():
         self.vxlan_id = str(vxlan_random_id)
 
         self.connections.vnc_lib_fixture.set_vxlan_mode('configured')
-        self.addCleanup(self.connections.vnc_lib_fixture.set_vxlan_mode(
-            'automatic'))
+        self.addCleanup(self.connections.vnc_lib_fixture.set_vxlan_mode,
+            vxlan_mode='automatic')
         self.vn1_fixture = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name,
@@ -1005,8 +1005,8 @@ class VerifyEvpnCases():
         self.vxlan_id = str(vxlan_random_id)
 
         self.connections.vnc_lib_fixture.set_vxlan_mode('configured')
-        self.addCleanup(self.connections.vnc_lib_fixture.set_vxlan_mode(
-            'automatic'))
+        self.addCleanup(self.connections.vnc_lib_fixture.set_vxlan_mode,
+            vxlan_mode='automatic')
         self.vn1_fixture = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name,
