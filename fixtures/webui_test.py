@@ -1969,6 +1969,7 @@ class WebuiTest:
         self.logger.debug(self.dash)
         if not self.ui.click_monitor_instances():
             result = result and False
+        self.ui.select_project(self.project_name_input)
         self.ui.select_network(network_name)
         rows = self.ui.get_rows()
         vm_list_ops = self.ui.get_vm_list_ops()
@@ -2560,6 +2561,7 @@ class WebuiTest:
         self.logger.debug(self.dash)
         if not self.ui.click_monitor_instances():
             result = result and False
+        self.ui.select_project(self.project_name_input)
         self.ui.select_network(network_name)
         rows = self.ui.get_rows()
         vm_list_ops = self.ui.get_vm_list_ops()
