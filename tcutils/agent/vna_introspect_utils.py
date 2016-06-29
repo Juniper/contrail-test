@@ -760,6 +760,14 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
             l.append(p)
         return l
 
+    def get_generator_name(self):
+        ''' Returns string of format nodek1:Compute:contrail-vrouter-agent:0
+        '''
+        xml_data = self.dict_get('Snh_SandeshUVECacheReq?x=ModuleClientState')
+        name = xml_data.getchildren()[0].xpath('./data/ModuleClientState/name')[0].text
+        return name
+    # end get_generator_name
+
 if __name__ == '__main__':
 
     vvnagnt = AgentInspect('10.204.217.12')

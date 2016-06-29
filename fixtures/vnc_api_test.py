@@ -228,5 +228,29 @@ class VncLibFixture(fixtures.Fixture):
         self.vnc_api_h.global_vrouter_config_update(gsc_obj)
     #end set_global_forwarding_mode
 
+    def get_flow_export_rate(self):
+        fq_name = [ 'default-global-system-config',
+                    'default-global-vrouter-config']
+        gv_obj = self.vnc_api_h.global_vrouter_config_read(fq_name=fq_name)
+        rate = gv_obj.get_flow_export_rate()
+        if not rate:
+            # If not set, return 100 , since this is default
+            return 100
+        else:
+            return rate
+    # end get_flow_export_rate
 
+    def set_flow_export_rate(self, value):
+        '''
+        Set flow export rate in default global vrouter config
+        value : Value of flow export rate to be set
+        '''
+        fq_name = [ 'default-global-system-config',
+                    'default-global-vrouter-config']
+        gv_obj = self.vnc_api_h.global_vrouter_config_read(fq_name=fq_name)
+        gv_obj.set_flow_export_rate(int(value))
+        self.vnc_api_h.global_vrouter_config_update(gv_obj)
+        self.logger.info('Setting flow export rate: %s' % (value))
+        return True
+    # end set_flow_export_rate
 # end VncLibFixture

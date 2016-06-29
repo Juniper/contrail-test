@@ -1,5 +1,6 @@
 from common.isolated_creds import *
 from test import BaseTestCase
+import time
 
 class BaseTestCase_v1(BaseTestCase):
     @classmethod
@@ -53,5 +54,10 @@ class BaseTestCase_v1(BaseTestCase):
             cls.admin_isolated_creds.delete_user(cls.isolated_creds.username)
         super(BaseTestCase_v1, cls).tearDownClass()
     # end tearDownClass
+
+    def sleep(self, value):
+        self.logger.debug('Sleeping for %s seconds..' % (value))
+        time.sleep(value)
+    # end sleep
         
 
