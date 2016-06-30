@@ -1,9 +1,10 @@
 import time
-
 import paramiko
 import fixtures
 from fabric.api import run, hide, settings
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
+from tcutils.util import get_random_cidr
+from tcutils.util import get_random_name
 from vn_test import VNFixture
 from vm_test import VMFixture
 from policy_test import PolicyFixture
@@ -28,8 +29,8 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
         self.remove_from_cleanups(st_fix)
 
     def config_st_si(self, st_name, si_name_prefix, si_count,
-                     svc_scaling=False, max_inst=1, domain='default-domain', project='admin', left_vn=None,
-                     right_vn=None, svc_type='firewall', svc_mode='transparent', flavor='contrail_flavor_2cpu', static_route=['None', 'None', 'None'], ordered_interfaces=True, svc_img_name="vsrx"):
+                     svc_scaling=False, max_inst=1, domain='default-domain', project='admin', mgmt_vn=None, left_vn=None,
+                     right_vn=None, svc_type='firewall', svc_mode='transparent', flavor='contrail_flavor_2cpu', static_route=['None', 'None', 'None'], ordered_interfaces=True, svc_img_name="vsrx", st_version=1):
         if svc_scaling == True:
             if svc_mode == 'in-network-nat':
                 if_list = [['management', False, False],
@@ -71,7 +72,7 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
         st_fixture = self.useFixture(SvcTemplateFixture(
             connections=self.connections, inputs=self.inputs, domain_name=domain,
             st_name=st_name, svc_img_name=svc_img_name, svc_type=svc_type,
-            if_list=if_list, svc_mode=svc_mode, svc_scaling=svc_scaling, flavor=flavor, ordered_interfaces=ordered_interfaces))
+            if_list=if_list, svc_mode=svc_mode, svc_scaling=svc_scaling, flavor=flavor, ordered_interfaces=ordered_interfaces, version=st_version))
         assert st_fixture.verify_on_setup()
 
         # create service instances
@@ -85,7 +86,36 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
                 connections=self.connections, inputs=self.inputs,
                 domain_name=domain, project_name=project, si_name=si_name,
                 svc_template=st_fixture.st_obj, if_list=if_list,
-                left_vn_name=left_vn, right_vn_name=right_vn, do_verify=verify_vn_ri, max_inst=max_inst, static_route=static_route))
+                mgmt_vn_name=mgmt_vn, left_vn_name=left_vn, right_vn_name=right_vn, do_verify=verify_vn_ri, max_inst=max_inst, static_route=static_route))
+            if st_version == 2:
+                self.logger.debug('Launching SVM')
+                if svc_mode == 'transparent':
+                    self.trans_mgmt_vn_name = get_random_name('trans_mgmt_vn')
+                    self.trans_mgmt_vn_subnets = [
+                        get_random_cidr(af=self.inputs.get_af())]
+                    self.trans_left_vn_name = get_random_name('trans_left_vn')
+                    self.trans_left_vn_subnets = [
+                        get_random_cidr(af=self.inputs.get_af())]
+                    self.trans_right_vn_name = get_random_name(
+                        'trans_right_vn')
+                    self.trans_right_vn_subnets = [
+                        get_random_cidr(af=self.inputs.get_af())]
+                    self.trans_mgmt_vn_fixture = self.config_vn(
+                        self.trans_mgmt_vn_name, self.trans_mgmt_vn_subnets)
+                    self.trans_left_vn_fixture = self.config_vn(
+                        self.trans_left_vn_name, self.trans_left_vn_subnets)
+                    self.trans_right_vn_fixture = self.config_vn(
+                        self.trans_right_vn_name, self.trans_right_vn_subnets)
+                for i in range(max_inst):
+                    svm_name = get_random_name("pt_svm" + str(i))
+                    pt_name = get_random_name("port_tuple" + str(i))
+                    if svc_mode == 'transparent':
+                        svm_fixture = self.config_and_verify_vm(
+                            svm_name, image_name=svc_img_name, vns=[self.trans_mgmt_vn_fixture, self.trans_left_vn_fixture, self.trans_right_vn_fixture], count=1, flavor='m1.large')
+                    else:
+                        svm_fixture = self.config_and_verify_vm(
+                            svm_name, image_name=svc_img_name, vns=[self.mgmt_vn_fixture, self.vn1_fixture, self.vn2_fixture], count=1, flavor='m1.large')
+                    si_fixture.add_port_tuple(svm_fixture, pt_name)
             si_fixture.verify_on_setup()
             si_fixtures.append(si_fixture)
 
@@ -120,16 +150,28 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
             self.inputs, self.connections, vn_fix, policy_fix, policy_type))
         return policy_attach_fix
 
-    def config_and_verify_vm(self, vn_fix, vm_name, image_name='ubuntu-traffic'):
-        vm_fixture = self.config_vm(vn_fix, vm_name, image_name=image_name)
+    def config_and_verify_vm(self, vm_name, vn_fix=None, image_name='ubuntu-traffic', vns=[], count=1, flavor='contrail_flavor_small'):
+        if vns:
+            vn_objs = [vn.obj for vn in vns]
+            vm_fixture = self.config_vm(
+                vm_name, vns=vn_objs, image_name=image_name, count=count)
+        else:
+            vm_fixture = self.config_vm(
+                vm_name, vn_fix=vn_fix, image_name=image_name, count=count)
         assert vm_fixture.verify_on_setup(), 'VM verification failed'
         assert vm_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
         return vm_fixture
 
-    def config_vm(self, vn_fix, vm_name, node_name=None, image_name='ubuntu-traffic', flavor='contrail_flavor_small'):
-        vm_fixture = self.useFixture(VMFixture(
-            project_name=self.inputs.project_name, connections=self.connections,
-            vn_obj=vn_fix.obj, vm_name=vm_name, node_name=node_name, image_name=image_name, flavor=flavor))
+    def config_vm(self, vm_name, vn_fix=None, node_name=None, image_name='ubuntu-traffic', flavor='contrail_flavor_small', vns=[], count=1):
+        if vn_fix:
+            vm_fixture = self.useFixture(VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_obj=vn_fix.obj, vm_name=vm_name, node_name=node_name, image_name=image_name, flavor=flavor, count=count))
+        elif vns:
+            vm_fixture = self.useFixture(VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vm_name=vm_name, node_name=node_name, image_name=image_name, flavor=flavor, vn_objs=vns, count=count))
+
         return vm_fixture
 
     def config_fip(self, vn_id, pool_name):
@@ -240,7 +282,8 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
 
     def start_tcpdump_on_intf(self, host, tapintf):
         session = ssh(host['host_ip'], host['username'], host['password'])
-        cmd = 'tcpdump -nni %s -c 1 proto 1 > /tmp/%s_out.log 2>&1' % (tapintf, tapintf)
+        cmd = 'tcpdump -nni %s -c 1 proto 1 > /tmp/%s_out.log 2>&1' % (
+            tapintf, tapintf)
         execute_cmd(session, cmd, self.logger)
     # end start_tcpdump_on_intf
 

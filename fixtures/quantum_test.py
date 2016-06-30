@@ -217,10 +217,15 @@ class QuantumHelper():
         return port_rsp
     # end delete_port
 
-    def get_vn_obj_if_present(self, vn_name, project_id=None):
-        project_id = project_id if project_id else self.project_id
+    def get_vn_obj_if_present(self, vn_name, project_id=None,
+                              router_external=True):
+        query_dict = {}
+        if project_id:
+            query_dict['tenant_id'] = project_id
+        query_dict['router:external'] = router_external
+        query_dict['name'] = vn_name
         try:
-            net_rsp = self.obj.list_networks(tenant_id=project_id, name=vn_name)['networks']
+            net_rsp = self.obj.list_networks(**query_dict)['networks']
             if net_rsp:
                 return self.obj.show_network(network=net_rsp[0]['id'])
         except CommonNetworkClientException as e:

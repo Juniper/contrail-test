@@ -181,8 +181,12 @@ class VerifySvcFirewall(VerifySvcMirror):
     def verify_svc_transparent_datapath(
             self, si_count=1, svc_scaling=False, max_inst=1,
             flavor='contrail_flavor_2cpu', proto='any', src_ports=[0, -1],
-            dst_ports=[0, -1], svc_img_name='vsrx-bridge', ci=False):
+            dst_ports=[0, -1], svc_img_name='vsrx-bridge', ci=False, st_version=1):
         """Validate the service chaining datapath"""
+        self.mgmt_vn_name = get_random_name("mgmt_vn")
+        self.mgmt_vn_subnets = [get_random_cidr(af=self.inputs.get_af())]
+        self.mgmt_vn_fixture = self.config_vn(
+            self.mgmt_vn_name, self.mgmt_vn_subnets)
         self.vn1_name = get_random_name('bridge_vn1')
         self.vn1_subnets = [get_random_cidr(af=self.inputs.get_af())]
         self.vm1_name = get_random_name('bridge_vm1')
@@ -196,9 +200,14 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.policy_name = get_random_name('policy_transparent')
         self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
         self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
+        if st_version == 1:
+            (mgmt_vn, left_vn, right_vn) = (None, None, None)
+        else:
+            (mgmt_vn, left_vn, right_vn) = (self.mgmt_vn_fixture.vn_fq_name,
+                                            self.vn1_fixture.vn_fq_name, self.vn2_fixture.vn_fq_name)
 
         self.st_fixture, self.si_fixtures = self.config_st_si(
-            self.st_name, si_prefix, si_count, svc_scaling, max_inst, flavor=flavor, project=self.inputs.project_name, svc_img_name=svc_img_name)
+            self.st_name, si_prefix, si_count, svc_scaling, max_inst, flavor=flavor, project=self.inputs.project_name, svc_img_name=svc_img_name, st_version=st_version, mgmt_vn=mgmt_vn, left_vn=left_vn, right_vn=right_vn)
         self.action_list = self.chain_si(
             si_count, si_prefix, self.inputs.project_name)
 
@@ -225,9 +234,9 @@ class VerifySvcFirewall(VerifySvcMirror):
         else:
             image_name = 'ubuntu-traffic'
         self.vm1_fixture = self.config_and_verify_vm(
-            self.vn1_fixture, self.vm1_name, image_name)
+            self.vm1_name, vn_fix=self.vn1_fixture, image_name=image_name)
         self.vm2_fixture = self.config_and_verify_vm(
-            self.vn2_fixture, self.vm2_name, image_name)
+            self.vm2_name, vn_fix=self.vn2_fixture, image_name=image_name)
         self.verify_si(self.si_fixtures)
         result, msg = self.validate_vn(
             self.vn1_name, project_name=self.inputs.project_name)
@@ -253,18 +262,20 @@ class VerifySvcFirewall(VerifySvcMirror):
                                        vn1_subnets=None,
                                        vn2_fixture=None,
                                        vn2_subnets=None,
-                                       ci=False):
+                                       ci=False, st_version=1):
         """Validate the service chaining in network  datapath"""
 
-        self.vn1_fq_name = "default-domain:" + self.inputs.project_name + \
-            ":" + get_random_name("in_network_vn1")
-        self.vn1_name = self.vn1_fq_name.split(':')[2]
-        self.vn1_subnets = vn1_subnets or [get_random_cidr(af=self.inputs.get_af())]
+        self.mgmt_vn_name = get_random_name("mgmt_vn")
+        self.mgmt_vn_subnets = [get_random_cidr(af=self.inputs.get_af())]
+        self.mgmt_vn_fixture = self.config_vn(
+            self.mgmt_vn_name, self.mgmt_vn_subnets)
+        self.vn1_subnets = vn1_subnets or [
+            get_random_cidr(af=self.inputs.get_af())]
+        self.vn1_name = get_random_name("in_network_vn1")
+        self.vn2_name = get_random_name("in_network_vn2")
         self.vm1_name = get_random_name("in_network_vm1")
-        self.vn2_fq_name = "default-domain:" + self.inputs.project_name + \
-            ":" + get_random_name("in_network_vn2")
-        self.vn2_name = self.vn2_fq_name.split(':')[2]
-        self.vn2_subnets = vn2_subnets or [get_random_cidr(af=self.inputs.get_af())]
+        self.vn2_subnets = vn2_subnets or [
+            get_random_cidr(af=self.inputs.get_af())]
         self.vm2_name = get_random_name("in_network_vm2")
         self.action_list = []
         self.if_list = [['management', False, False],
@@ -284,17 +295,17 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.vn2_fq_name = vn2_fixture.vn_fq_name
             self.vn2_name = self.vn2_fq_name.split(':')[2]
         self.st_fixture, self.si_fixtures = self.config_st_si(
-            self.st_name, si_prefix, si_count, svc_scaling, max_inst, left_vn=self.vn1_fq_name,
-            right_vn=self.vn2_fq_name, svc_mode=svc_mode, flavor=flavor, static_route=static_route, ordered_interfaces=ordered_interfaces, svc_img_name=svc_img_name, project=self.inputs.project_name)
+            self.st_name, si_prefix, si_count, svc_scaling, max_inst, mgmt_vn=self.mgmt_vn_fixture.vn_fq_name, left_vn=self.vn1_fixture.vn_fq_name,
+            right_vn=self.vn2_fixture.vn_fq_name, svc_mode=svc_mode, flavor=flavor, static_route=static_route, ordered_interfaces=ordered_interfaces, svc_img_name=svc_img_name, project=self.inputs.project_name, st_version=st_version)
         self.action_list = self.chain_si(
             si_count, si_prefix, self.inputs.project_name)
         self.rules = [
             {
                 'direction': '<>',
                 'protocol': 'any',
-                'source_network': self.vn1_fq_name,
+                'source_network': self.vn1_fixture.vn_fq_name,
                 'src_ports': [0, -1],
-                'dest_network': self.vn2_fq_name,
+                'dest_network': self.vn2_fixture.vn_fq_name,
                 'dst_ports': [0, -1],
                 'simple_action': None,
                 'action_list': {'apply_service': self.action_list}
@@ -311,16 +322,16 @@ class VerifySvcFirewall(VerifySvcMirror):
         else:
             image_name = 'ubuntu-traffic'
         self.vm1_fixture = self.config_and_verify_vm(
-            self.vn1_fixture, self.vm1_name, image_name)
+            self.vm1_name, vn_fix=self.vn1_fixture, image_name=image_name)
         self.vm2_fixture = self.config_and_verify_vm(
-            self.vn2_fixture, self.vm2_name, image_name)
+            self.vm2_name, vn_fix=self.vn2_fixture, image_name=image_name)
         for si_fix in self.si_fixtures:
             si_fix.verify_on_setup()
         result, msg = self.validate_vn(
-            self.vn1_name, project_name=self.vn1_fixture.project_name)
+            self.vn1_fixture.vn_name, project_name=self.vn1_fixture.project_name)
         assert result, msg
         result, msg = self.validate_vn(
-            self.vn2_name, project_name=self.vn2_fixture.project_name, right_vn=True)
+            self.vn2_fixture.vn_name, project_name=self.vn2_fixture.project_name, right_vn=True)
         assert result, msg
         # Ping from left VM to right VM
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
@@ -328,19 +339,19 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.vm2_fixture.vm_ip), errmsg
         return True
 
-    def verify_multi_inline_svc(self, si_list=[('bridge', 1), ('in-net', 1), ('nat', 1)], flavor='contrail_flavor_2cpu', ordered_interfaces=True, vn1_subnets=None, vn2_subnets=None):
+    def verify_multi_inline_svc(self, si_list=[('bridge', 1), ('in-net', 1), ('nat', 1)], flavor='contrail_flavor_2cpu', ordered_interfaces=True, vn1_subnets=None, vn2_subnets=None, st_version=1):
         """Validate in-line multi service chaining in network  datapath"""
 
+        self.mgmt_vn_name = get_random_name("mgmt_vn")
+        self.mgmt_vn_subnets = [get_random_cidr(af=self.inputs.get_af())]
+        self.mgmt_vn_fixture = self.config_vn(
+            self.mgmt_vn_name, self.mgmt_vn_subnets)
         vn1_subnets = vn1_subnets or [get_random_cidr(af=self.inputs.get_af())]
         vn2_subnets = vn2_subnets or [get_random_cidr(af=self.inputs.get_af())]
-        self.vn1_fq_name = "default-domain:" + self.inputs.project_name + \
-            ":" + get_random_name("in_network_vn1")
-        self.vn1_name = self.vn1_fq_name.split(':')[2]
+        self.vn1_name = get_random_name("in_network_vn1")
         self.vn1_subnets = vn1_subnets
         self.vm1_name = get_random_name("in_network_vm1")
-        self.vn2_fq_name = "default-domain:" + self.inputs.project_name + \
-            ":" + get_random_name("in_network_vn2")
-        self.vn2_name = self.vn2_fq_name.split(':')[2]
+        self.vn2_name = get_random_name("in_network_vn2")
         self.vn2_subnets = vn2_subnets
         self.vm2_name = get_random_name("in_network_vm2")
         self.action_list = []
@@ -349,6 +360,11 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
         self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
         for si in si_list:
+            if st_version == 1:
+                (mgmt_vn, left_vn, right_vn) = (None, None, None)
+            else:
+                (mgmt_vn, left_vn, right_vn) = (self.mgmt_vn_fixture.vn_fq_name,
+                                                self.vn1_fixture.vn_fq_name, self.vn2_fixture.vn_fq_name)
             self.if_list = [['management', False, False],
                             ['left', True, False], ['right', True, False]]
             svc_scaling = False
@@ -358,25 +374,25 @@ class VerifySvcFirewall(VerifySvcMirror):
             si_prefix = get_random_name(
                 ("multi_sc_") + si[0] + "_" + str(si_list.index(si)) + ("_si")) + "_"
             max_inst = si[1]
-            left_vn = self.vn1_fq_name
-            right_vn = self.vn2_fq_name
             if max_inst > 1:
                 svc_scaling = True
             if si[0] == 'nat':
                 svc_mode = 'in-network-nat'
-                svc_img_name = 'vsrx'
+                svc_img_name = 'tiny_nat_fw'
             elif si[0] == 'in-net':
                 svc_mode = 'in-network'
                 svc_img_name = 'ubuntu-in-net'
             else:
                 svc_mode = 'transparent'
                 svc_img_name = 'tiny_trans_fw'
-                left_vn = None
-                right_vn = None
+                (mgmt_vn, left_vn, right_vn) = (None, None, None)
+                if st_version == 2:
+                    (mgmt_vn, left_vn, right_vn) = (self.mgmt_vn_fixture.vn_fq_name,
+                                                    self.vn1_fixture.vn_fq_name, self.vn2_fixture.vn_fq_name)
             self.st_fixture, self.si_fixtures = self.config_st_si(
-                self.st_name, si_prefix, si_count, svc_scaling, max_inst, left_vn=left_vn,
+                self.st_name, si_prefix, si_count, svc_scaling, max_inst, mgmt_vn=mgmt_vn, left_vn=left_vn,
                 right_vn=right_vn, svc_mode=svc_mode, flavor=flavor,
-                ordered_interfaces=ordered_interfaces, project=self.inputs.project_name, svc_img_name=svc_img_name)
+                ordered_interfaces=ordered_interfaces, project=self.inputs.project_name, svc_img_name=svc_img_name, st_version=st_version)
             action_step = self.chain_si(
                 si_count, si_prefix, self.inputs.project_name)
             self.action_list += action_step
@@ -400,9 +416,9 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.vn2_policy_fix = self.attach_policy_to_vn(
             self.policy_fixture, self.vn2_fixture)
         self.vm1_fixture = self.config_and_verify_vm(
-            self.vn1_fixture, self.vm1_name)
+            self.vm1_name, vn_fix=self.vn1_fixture)
         self.vm2_fixture = self.config_and_verify_vm(
-            self.vn2_fixture, self.vm2_name)
+            self.vm2_name, vn_fix=self.vn2_fixture)
         for si_fix in self.si_fixtures:
             si_fix.verify_on_setup()
         result, msg = self.validate_vn(
@@ -816,12 +832,14 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.vn1_fq_name = "default-domain:" + self.inputs.project_name + \
             ":" + get_random_name("in_network_vn1")
         self.vn1_name = self.vn1_fq_name.split(':')[2]
-        self.vn1_subnets = [vn1_subnets or get_random_cidr(af=self.inputs.get_af())]
+        self.vn1_subnets = [
+            vn1_subnets or get_random_cidr(af=self.inputs.get_af())]
         self.vm1_name = get_random_name("in_network_vm1")
         self.vn2_fq_name = "default-domain:" + self.inputs.project_name + \
             ":" + get_random_name("in_network_vn2")
         self.vn2_name = self.vn2_fq_name.split(':')[2]
-        self.vn2_subnets = [vn2_subnets or get_random_cidr(af=self.inputs.get_af())]
+        self.vn2_subnets = [
+            vn2_subnets or get_random_cidr(af=self.inputs.get_af())]
         self.vm2_name = get_random_name("in_network_vm2")
         self.action_list = []
         self.firewall_st_name = get_random_name("svc_firewall_template_1")
