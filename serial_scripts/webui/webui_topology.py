@@ -342,6 +342,30 @@ class sdn_webui_config ():
                                   'src_ports': [3,
                                                 4]}]
 
+        self.subnet_edit = "10.10.10.0"
+        self.as_ip = "10.10.10.3"
+        self.invalid_as_ip = "10,10,10,3"
+        self.as_no = "65534"
+        self.invalid_as_no = "65534ab"
+        self.target_no = "4294967295"
+        self.invalid_target_no = "4294967295abc"
+        self.mask = "24"
+        self.subnet_sip = "10.10.10.5"
+        self.subnet_eip = "10.10.10.10"
+        self.subnet_dns_ip = "10.10.10.2"
+        self.subnet_gate_ip = "10.10.10.1"
+        self.subnet_default_gate_ip = "0.0.0.0"
+        self.host_prefix = "1.1.1.1/24"
+        self.host_nexthop = "2.2.2.2"
+        self.phy_net = "phy1"
+        self.vlan_id = "4094"
+        self.fpool = "pool1"
+        self.invalid_vlan_id = "4094abcd49494"
+        self.dns_ip = "1.1.1.1"
+        self.invalid_dns_ip = "1,1,1,1"
+        self.vn_disp_name = "vn1"
+        self.vn_disp_name_spl_char = "vn1~`!@#$%^&*()_+}{|:\"?><,./;\'[]\=-"
+
         # end __init__
 
 if __name__ == '__main__':
