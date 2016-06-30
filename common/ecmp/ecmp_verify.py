@@ -48,8 +48,11 @@ class ECMPVerify():
             self.logger.info('%s has %s as left_ip and %s as right_ip' %
                              (svc_obj.name, left_ip[svm_id], right_ip[svm_id]))
             shared_ip= left_ip[svm_id]
+        net = '/32'
+        if self.inputs.get_af() == 'v6':
+            net = '/128'
         dst_vm_ip = self.cn_inspect[new_controller].get_cn_route_table_entry(
-                ri_name=src_vn.ri_name, prefix=dst_vm.vm_ip + '/32')
+                ri_name=src_vn.ri_name, prefix=dst_vm.vm_ip + net)
         result = True
         if dst_vm_ip:
             self.logger.info(
@@ -66,8 +69,11 @@ class ECMPVerify():
         self.logger.info('***Get the Route Entry in the agent***')
         vn_vrf_id= self.get_vrf_id(src_vn, src_vm)
         inspect_h1 = self.agent_inspect[src_vm.vm_node_ip]
+        net = '32'
+        if self.inputs.get_af() == 'v6':
+            net = '128'
         paths = inspect_h1.get_vna_active_route(
-            vrf_id=vn_vrf_id, ip=dst_vm.vm_ip, prefix='32')['path_list']
+            vrf_id=vn_vrf_id, ip=dst_vm.vm_ip, prefix=net)['path_list']
         self.logger.info('There are %s nexthops to %s on Agent %s' %
                          (len(paths), dst_vm.vm_ip, src_vm.vm_node_ip))
         next_hops = paths[0]['nh']
@@ -81,8 +87,11 @@ class ECMPVerify():
         self.logger.info('***Get the Tap Interface List***')
         vn_vrf_id= self.get_vrf_id(src_vn, src_vm)
         inspect_h1 = self.agent_inspect[src_vm.vm_node_ip]
+        net = '32'
+        if self.inputs.get_af() == 'v6':
+            net = '128'
         paths = inspect_h1.get_vna_active_route(
-            vrf_id=vn_vrf_id, ip=shared_ip, prefix='32')['path_list']
+            vrf_id=vn_vrf_id, ip=shared_ip, prefix=net)['path_list']
         next_hops = paths[0]['nh']       
         (domain, project, vn) = src_vn.vn_fq_name.split(':')
         tap_intf_list= []
@@ -91,7 +100,7 @@ class ECMPVerify():
             inspect_h1 = self.agent_inspect[src_vm.vm_node_ip]
             vn_vrf_id= self.get_vrf_id(src_vn, src_vm)
             multi_next_hops = inspect_h1.get_vna_active_route(
-                vrf_id=vn_vrf_id, ip=shared_ip, prefix='32')['path_list'][0]['nh']['mc_list']
+                vrf_id=vn_vrf_id, ip=shared_ip, prefix=net)['path_list'][0]['nh']['mc_list']
 
             for nh in multi_next_hops:
                 if nh['type'] == 'Tunnel':
@@ -101,7 +110,7 @@ class ECMPVerify():
                     inspect_hh = self.agent_inspect[new_destn_agent]
                     vn_vrf_id= self.get_vrf_id(src_vn, src_vm, new_destn_agent)
                     next_hops_in_tnl = inspect_hh.get_vna_active_route(
-                        vrf_id=vn_vrf_id, ip=shared_ip, prefix='32')['path_list'][0]['nh']['mc_list']
+                        vrf_id=vn_vrf_id, ip=shared_ip, prefix=net)['path_list'][0]['nh']['mc_list']
                     for next_hop in next_hops_in_tnl:
                         if next_hop['type'] == 'Interface':
                             tap_intf_from_tnl = next_hop['itf']
@@ -120,7 +129,7 @@ class ECMPVerify():
                 inspect_hh = self.agent_inspect[new_destn_agent]
                 vn_vrf_id= self.get_vrf_id(src_vn, src_vm, new_destn_agent)
                 next_hops_in_tnl = inspect_hh.get_vna_active_route(
-                    vrf_id=vn_vrf_id, ip=shared_ip, prefix='32')['path_list'][0]['nh']
+                    vrf_id=vn_vrf_id, ip=shared_ip, prefix=net)['path_list'][0]['nh']
                 if 'mc_list' in next_hops_in_tnl:
                     next_hops_in_tnl= next_hops_in_tnl['mc_list']
                     for next_hop in next_hops_in_tnl:

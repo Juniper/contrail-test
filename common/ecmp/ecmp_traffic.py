@@ -45,11 +45,11 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
         if dst_ip == None:
             dst_ip = dst_vm_list[0].vm_ip
 
-        stream1 = Stream(protocol="ip", proto="udp", src=src_ip,
+        stream1 = Stream(proto="udp", src=src_ip,
                          dst=dst_ip, sport=8000, dport=9000)
-        stream2 = Stream(protocol="ip", proto="udp", src=src_ip,
+        stream2 = Stream( proto="udp", src=src_ip,
                          dst=dst_ip, sport=8000, dport=9001)
-        stream3 = Stream(protocol="ip", proto="udp", src=src_ip,
+        stream3 = Stream( proto="udp", src=src_ip,
                          dst=dst_ip, sport=8000, dport=9002)
         stream_list = [stream1, stream2, stream3]
 

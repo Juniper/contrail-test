@@ -821,30 +821,32 @@ class VMFixture(fixtures.Fixture):
                     self.vm_in_agent_flag = self.vm_in_agent_flag and False
                     return False
                 for agent_path in self.agent_path[vn_fq_name]:
-                    agent_label = agent_path['path_list'][0]['label']
-                    self.agent_label[vn_fq_name].append(agent_label)
+                    if not agent_path['path_list'][0]['nh'].get('mc_list', None):
+                        agent_label = agent_path['path_list'][0]['label']
+                        intf_name = agent_path['path_list'][0]['nh']['itf']
+                        self.agent_label[vn_fq_name].append(agent_label)
     
-                    if agent_path['path_list'][0]['nh']['itf'] != \
-                            self.tap_intf[vn_fq_name]['name']:
-                        self.logger.warning("Active route in agent for %s is "
-                                            "not pointing to right tap interface. It is %s "
-                                            % (self.vm_ip_dict[vn_fq_name],
-                                               agent_path['path_list'][0]['nh']['itf']))
-                        self.vm_in_agent_flag = self.vm_in_agent_flag and False
-                        return False
-                    else:
-                        self.logger.debug('Active route in agent is present for'
-                                          ' VMI %s ' % (self.tap_intf[vn_fq_name]['name']))
+                        if agent_path['path_list'][0]['nh']['itf'] != \
+                              self.tap_intf[vn_fq_name]['name']:
+                           self.logger.warning("Active route in agent for %s is "
+                                               "not pointing to right tap interface. It is %s "
+                                               % (self.vm_ip_dict[vn_fq_name],
+                                                  agent_path['path_list'][0]['nh']['itf']))
+                           self.vm_in_agent_flag = self.vm_in_agent_flag and False
+                           return False
+                        else:
+                           self.logger.debug('Active route in agent is present for'
+                                             ' VMI %s ' % (self.tap_intf[vn_fq_name]['name']))
     
-                    if self.tap_intf[vn_fq_name]['label'] != agent_label:
-                        self.logger.warning('VM %s label mismatch! ,'
-                                            ' Expected : %s , Got : %s' % (self.vm_name,
-                                                                           self.tap_intf[vn_fq_name]['label'], agent_label))
-                        self.vm_in_agent_flag = self.vm_in_agent_flag and False
-                        return False
-                    else:
-                        self.logger.debug('VM %s labels in tap-interface and '
-                                          'the route do match' % (self.vm_name))
+                        if self.tap_intf[vn_fq_name]['label'] != agent_label:
+                           self.logger.warning('VM %s label mismatch! ,'
+                                               ' Expected : %s , Got : %s' % (self.vm_name,
+                                                                              self.tap_intf[vn_fq_name]['label'], agent_label))
+                           self.vm_in_agent_flag = self.vm_in_agent_flag and False
+                           return False
+                        else:
+                           self.logger.debug('VM %s labels in tap-interface and '
+                                             'the route do match' % (self.vm_name))
 
             # Check if tap interface is set to Active
             if self.tap_intf[vn_fq_name]['active'] != 'Active':
@@ -966,14 +968,15 @@ class VMFixture(fixtures.Fixture):
                 for vm_ip in self.vm_ip_dict[vn_fq_name]:
                     agent_path = inspect_h.get_vna_active_route(
                         vrf_id=agent_vrf_id, ip=vm_ip)
-                    agent_label = agent_path['path_list'][0]['label']
-                    if agent_label not in self.agent_label[vn_fq_name]:
-                        self.logger.warn(
-                            'The route for VM IP %s in Node %s is having '
-                            'incorrect label. Expected: %s, Seen : %s' % (
-                                vm_ip, compute_ip,
-                                self.agent_label[vn_fq_name], agent_label))
-                        return False
+                    if not agent_path['path_list'][0]['nh'].get('mc_list', None):
+                        agent_label = agent_path['path_list'][0]['label']
+                        if agent_label not in self.agent_label[vn_fq_name]:
+                            self.logger.warn(
+                                'The route for VM IP %s in Node %s is having '
+                                'incorrect label. Expected: %s, Seen : %s' % (
+                                    vm_ip, compute_ip,
+                                    self.agent_label[vn_fq_name], agent_label))
+                            return False
 
             self.logger.debug(
                 'VRF IDs of VN %s is consistent in agent %s' %
@@ -2490,6 +2493,9 @@ class VMFixture(fixtures.Fixture):
                 self.logger.debug('Layer 2 path is seen for VM MAC %s '
                                  'in agent %s' % (self.mac_addr[vn_fq_name],
                                                   self.vm_node_ip))
+        if not self.agent_l2_path[vn_fq_name]['routes'][0]['path_list'][0]['nh'].get('itf', None):
+            return True
+
         self.agent_l2_label[vn_fq_name] = self.agent_l2_path[
             vn_fq_name]['routes'][0]['path_list'][0]['label']
         self.agent_vxlan_id[vn_fq_name] = self.agent_l2_path[
