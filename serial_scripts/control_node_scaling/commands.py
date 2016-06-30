@@ -18,8 +18,8 @@ class Command(object):
         self.fstderr = tempfile.NamedTemporaryFile(mode='w',
                                                    prefix='CMD_ERR_')
         self.env = copy.deepcopy(os.environ)
-        if not env:
-            self.env.update({i.split('=')[0]:i.split('=')[1] for i in e.split()})
+        if env:
+            self.env.update({i.split('=')[0]:i.split('=')[1] for i in env.split()})
 
     def start(self):
         """Launches a local command as background process."""
