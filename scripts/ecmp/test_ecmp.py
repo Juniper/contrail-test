@@ -59,6 +59,24 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    def test_ecmp_svc_v2_transparent_with_3_instance(self):
+        """
+           Description: Validate ECMP with version 2 service chaining transparent mode datapath having service instance
+           Test steps:
+                1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                2.Creating a service instance in transparent mode with 3 instances.
+                3.Creating a service chain by applying the service instance as a service in a policy between the VNs.
+                4.Checking for ping and bidirectional tcp traffic between vm1 and vm2.
+           Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1 and vice-versa.
+           Maintainer : ganeshahv@juniper.net
+        """
+        self.verify_svc_transparent_datapath(
+            si_count=1, svc_scaling=True, max_inst=2, svc_img_name='tiny_trans_fw',  ci=True, st_version=2)
+        return True
+    # end test_ecmp_svc_v2_transparent_with_3_instance
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance(self):
         """
         Description: Validate ECMP with service chaining in-network mode datapath having
@@ -244,6 +262,26 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             si_count=3, svc_scaling=True, max_inst=3)
         return True
     # end test_multi_SC_with_ecmp
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_ecmp_svc_v2_in_network_nat_with_3_instance(self):
+        """
+         Description: Validate ECMP with v2 service chaining in-network-nat mode datapath having service instance
+         Test steps:
+           1.	Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+           2.	Creating a service instance in in-network-nat mode with 3 instances and
+                left-interface of the service instances sharing the IP and enabled for static route.
+
+           3.	Creating a service chain by applying the service instance as a service in a policy between the VNs.
+           4.	Checking for ping and tcp traffic between vm1 and vm2.
+         Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1.
+         Maintainer : ganeshahv@juniper.net
+        """
+        self.verify_svc_in_network_datapath(
+            si_count=1, svc_scaling=True, max_inst=2, svc_mode='in-network-nat', svc_img_name='tiny_nat_fw', ci=True, st_version=2)
+        return True
+    # end test_ecmp_svc_v2_in_network_nat_with_3_instance
 
     @test.attr(type=['ci_sanity_WIP'])
     @preposttest_wrapper
@@ -707,10 +745,13 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
         self.verify_flow_thru_si(self.si_fixtures[0], self.vn1_fixture)
         while(len(svms) > 1):
             old_count = len(svms)
-            self.logger.info('Will reduce the SVM count from %s to %s' %(old_count, len(svms)-1))
-            si_obj = self.vnc_lib.service_instance_read(fq_name = self.si_fixtures[0].si_fq_name)
+            self.logger.info(
+                'Will reduce the SVM count from %s to %s' % (old_count, len(svms) - 1))
+            si_obj = self.vnc_lib.service_instance_read(
+                fq_name=self.si_fixtures[0].si_fq_name)
             si_prop = si_obj.get_service_instance_properties()
-            scale_out = my_vnc_api.ServiceScaleOutType(max_instances=(len(svms)-1))
+            scale_out = my_vnc_api.ServiceScaleOutType(
+                max_instances=(len(svms) - 1))
             si_prop.set_scale_out(scale_out)
             si_obj.set_service_instance_properties(si_prop)
             self.vnc_lib.service_instance_update(si_obj)
@@ -824,6 +865,25 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
             si_list=[('bridge', 1), ('in-net', 1), ('nat', 1)])
         return True
     # end test_three_stage_SC
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_three_stage_v2_SC(self):
+        """
+        Description: Validate multi-Inline SVC version 2.
+        Test steps:
+                         1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                         2.Creating 3 service instances.
+                         3.Creating a service chain by applying the 3 service instances in a policy between t
+                    he VNs.
+                         4.There should be no traffic loss.
+        Pass criteria: Ping between the VMs should be successful.
+        Maintainer : ganeshahv@juniper.net
+        """
+        self.verify_multi_inline_svc(
+            si_list=[('bridge', 1), ('nat', 1)], st_version=2)
+        return True
+    # end test_three_stage_v2_SC
 
     @preposttest_wrapper
     def test_three_stage_SC_with_ECMP(self):
