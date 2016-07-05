@@ -122,7 +122,7 @@ class WebuiTest:
             self.ui.click_on_select2_arrow('s2id_virtualNetworkName_dropdown')
             self.ui.select_from_dropdown(net)
             if port_name:
-                self.ui.send_keys(port_name, 'name', 'name')
+                self.ui.send_keys(port_name, 'display_name', 'name')
             self.ui.click_element('advanced_options', 'id')
             if mac:
                 self.ui.send_keys(mac, 'macAddress', 'name')
@@ -1450,8 +1450,6 @@ class WebuiTest:
                     vrouters_list_ops[n]['href'])
                 new_list = []
                 element_list = [
-                    ('connected_networks', 10),
-                    ('interface_list', 9), ('virtual_machine_list', 7),
                     ('dns_server_list_cfg', 6), ('self_ip_list', 5)]
                 agent_name = 'VrouterAgent'
                 for element in element_list:
@@ -5293,7 +5291,7 @@ class WebuiTest:
         self.ui.click_monitor_control_nodes()
         rows = self.ui.get_rows()
         base_indx = 0
-        for hosts in range(len(rows) - 1):
+        for hosts in range(len(rows)):
             if self.ui.get_slick_cell_text(
                     rows[hosts],
                     base_indx) == host_name:
