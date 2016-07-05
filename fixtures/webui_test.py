@@ -460,6 +460,8 @@ class WebuiTest:
             for service_temp in service_temp_list:
                 service_temp_text = service_temp.text
                 if service_temp_text.find(fixture.st_name) != -1:
+                    self.browser.execute_script(
+                        "return arguments[0].scrollIntoView();", service_temp)
                     service_temp.click()
                     break
             intfs = self.browser.find_element_by_id(
