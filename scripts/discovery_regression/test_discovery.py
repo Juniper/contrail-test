@@ -201,5 +201,77 @@ class TestDiscovery(BaseDiscoveryTest):
         assert self.ds_obj.verify_webui_subscribed_to_opserver_service(
         )
         return True
+    
+    @preposttest_wrapper
+    def test_rule_create_delete(self):
+        ''' Validate rules get created and deleted successfully.
+        Also verify that created rules are found in the display.
+        Read all the rules together.
+        Steps:
+        1. This test case creates multiple rules for Xmpp-Server and DNS-server
+        2. Then it searches for the created rules to check if they are configured properly or not
+        3. Read all the rules that are present.
+        4. Delete all the configured rules.
+        5. Search for the rules if they have been deleted properly or not.
+        '''
+        result = True
+        ds_ip = self.ds_obj.inputs.cfgm_ip
+        if len(self.inputs.cfgm_control_ip) > 0:
+            self.logger.info("Creating rules corresponding to xmpp-server and dns-server running on all config nodes for vrouter agent running in same subnets")
+        for i in range(0,len(self.inputs.cfgm_control_ips)):
+            cfgm_control_ip = self.inputs.cfgm_control_ips[i].split('.')
+            cfgm_control_ip[3] = '0'
+            cfgm_control_ip = ".".join(cfgm_control_ip) + "/24"
+            self.ds_obj.discovery_rule_config("add_rule",\
+                        'default-discovery-service-assignment', cfgm_control_ip,\
+                        'xmpp-server', cfgm_control_ip, 'contrail-vrouter-agent:0')
+            self.ds_obj.discovery_rule_config("add_rule",\
+                        'default-discovery-service-assignment', cfgm_control_ip,\
+                        'dns-server', cfgm_control_ip, 'contrail-vrouter-agent:0')
+        self.ds_obj.read_rule('default-discovery-service-assignment')
+        for i in range(0,len(self.inputs.cfgm_control_ips)): 
+            cfgm_control_ip = self.inputs.cfgm_control_ips[i].split('.')
+            cfgm_control_ip[3] = '0'
+            cfgm_control_ip = ".".join(cfgm_control_ip) + "/24"
+            result1 = self.ds_obj.discovery_rule_config("find_rule",\
+                    'default-discovery-service-assignment',cfgm_control_ip,\
+                    'xmpp-server', cfgm_control_ip,'contrail-vrouter-agent:0')
+            if result1 == False:
+                self.logger.error("While searching for the configured rule, it was not found. Configuration failed")
+                result = False
+            result2 = self.ds_obj.discovery_rule_config("find_rule",\
+                    'default-discovery-service-assignment',cfgm_control_ip,\
+                    'dns-server', cfgm_control_ip,'contrail-vrouter-agent:0')
+            if result2 == False:
+                self.logger.error("While searching for the configured rule, it was not found. Configuration failed")
+                result = False
+        for i in range(0,len(self.inputs.cfgm_control_ips)): 
+            cfgm_control_ip = self.inputs.cfgm_control_ips[i].split('.')
+            cfgm_control_ip[3] = '0'
+            cfgm_control_ip = ".".join(cfgm_control_ip) + "/24"
+            self.ds_obj.discovery_rule_config('del_rule',\
+                'default-discovery-service-assignment', cfgm_control_ip,\
+                'xmpp-server', cfgm_control_ip,'contrail-vrouter-agent:0')
+            self.ds_obj.discovery_rule_config('del_rule',\
+                'default-discovery-service-assignment', cfgm_control_ip,\
+                'dns-server', cfgm_control_ip,'contrail-vrouter-agent:0')
+        self.ds_obj.read_rule("default-discovery-service-assignment")
+        for i in range(0,len(self.inputs.cfgm_control_ips)): 
+            cfgm_control_ip = self.inputs.cfgm_control_ips[i].split('.')
+            cfgm_control_ip[3] = '0'
+            cfgm_control_ip = ".".join(cfgm_control_ip) + "/24"
+            result1 = self.ds_obj.discovery_rule_config("find_rule",\
+                    'default-discovery-service-assignment',cfgm_control_ip,\
+                    'xmpp-server', cfgm_control_ip,'contrail-vrouter-agent:0')
+            if result1 == True:
+                self.logger.error("While searching for the deleted rule, it was found. Deletion failed")
+                result = False
+            result2 = self.ds_obj.discovery_rule_config("find_rule",\
+                    'default-discovery-service-assignment',cfgm_control_ip,\
+                    'dns-server', cfgm_control_ip,'contrail-vrouter-agent:0')
+            if result2 == True:
+                self.logger.error("While searching for the deleted rule, it was found. Deletion failed")
+                result = False
+        assert result
 
 # end TestDiscoveryFixture
