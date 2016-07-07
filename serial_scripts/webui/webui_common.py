@@ -1278,10 +1278,10 @@ class WebuiCommon:
             if if_select:
                 if element_type in ['policy_delete', 'router_delete']:
                     self.click_element(element_id, 'class')
+                elif element_type == 'port_delete':
+                    self.click_element("//a[@data-original-title='Delete']", 'xpath')
                 else:
                     self.click_element(element_id)
-                if element_type == 'port_delete':
-                    self.click_element("//a[@data-original-title='Delete']", 'xpath')
                 self.click_element(popup_id, screenshot=False)
                 delete_success = True
                 if not self.check_error_msg(
@@ -1295,7 +1295,6 @@ class WebuiCommon:
             result = result and False
         if not delete_success:
             self.logger.warning("%s element does not exist" % (element_type))
-            result = result and True
         else:
             self.logger.info("%s %s successful using webui" %
                              (element_name, element_type))
@@ -2189,6 +2188,11 @@ class WebuiCommon:
             'status',
             'control_node_list_cfg',
             'dns_servers',
+            'cached',
+            'total',
+            'reconnects',
+            'in_msgs',
+            'out_msgs',
             'chunk_select_time']
         key_list = ['exception_packets_dropped', 'l2_mcast_composites']
         index_list = []
