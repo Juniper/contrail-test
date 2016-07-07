@@ -250,7 +250,7 @@ class TestBasicVMVN0(BaseVnVmTest):
             #if (self.inputs.orchestrator == 'vcenter'):
             #    self.vnc_lib.virtual_network_delete(id=vn_obj.uuid)
             #else:
-            self.vnc_lib.virtual_network_delete(id=vn_obj.vn_id)
+            self.vnc_lib.virtual_network_delete(id=vn_fixture.vn_id)
         except RefsExistError as e:
             self.logger.info(
                 'RefsExistError:Check passed that the VN cannot be disassociated/deleted when the VM exists')
