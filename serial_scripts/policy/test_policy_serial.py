@@ -899,7 +899,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         # 6. Match traffic stats against Analytics flow series data
         self.logger.info("-" * 80)
         self.logger.info(
-            "***Match traffic stats against Analytics flow series data***")
+            "%%%Match traffic stats against Analytics flow series data%%%")
         self.logger.info("-" * 80)
         msg = {}
         for proto in traffic_proto_l:
@@ -909,7 +909,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
             msg[proto] = proto + \
                 " Traffic Stats is not matching with opServer flow series data"
             self.logger.info(
-                "***Actual Traffic sent by agent %s \n\n stats shown by Analytics flow series%s" %
+                "%%%%%%Actual Traffic sent by agent %s \n\n stats shown by Analytics flow series%s" %
                 (traffic_stats[proto], flow_series_data[proto]))
             self.assertGreaterEqual(
                 flow_series_data[proto][0]['sum(packets)'],
@@ -919,7 +919,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         # 6.a Let flows age out and verify analytics still shows the data
         self.logger.info("-" * 80)
         self.logger.info(
-            "***Let flows age out and verify analytics still shows the data in the history***")
+            "%%%Let flows age out and verify analytics still shows the data in the history%%%")
         self.logger.info("-" * 80)
         time.sleep(180)
         for proto in traffic_proto_l:

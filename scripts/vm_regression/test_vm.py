@@ -2713,10 +2713,10 @@ class TestBasicVMVN9(BaseVnVmTest):
                                                                    vm1_tapintf)
         execute_cmd(session, cmd, self.logger)
 
-        self.logger.info('***** Will start a ping from %s to 1.2.3.4 *****' %
+        self.logger.info('%%%%%%%%%% Will start a ping from %s to 1.2.3.4 %%%%%%%%%%' %
                          vm2_fixture.vm_name)
         vm2_fixture.ping_with_certainty('1.2.3.4', expectation=False)
-        self.logger.info('***** Will check the result of tcpdump *****')
+        self.logger.info('%%%%%%%%%% Will check the result of tcpdump %%%%%%%%%%')
         output_cmd = 'cat /tmp/%s_out.log' % vm1_tapintf
         output, err = execute_cmd_out(session, output_cmd, self.logger)
         print output

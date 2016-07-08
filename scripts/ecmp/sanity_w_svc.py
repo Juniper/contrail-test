@@ -225,7 +225,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
             inspect_h = self.agent_inspect[agent_ip]
             rev_flow_result = False
             for iter in range(25):
-                self.logger.debug('**** Iteration %s *****' % iter)
+                self.logger.debug('%%%%%%%% Iteration %s %%%%%%%%' % iter)
                 reverseflowrecords = []
                 reverseflowrecords = inspect_h.get_vna_fetchallflowrecords()
                 for rec in reverseflowrecords:
@@ -1417,14 +1417,14 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
 
         self.logger.info(
-            '***** Will Detach the policy from the networks and delete it *****')
+            '%%%%% Will Detach the policy from the networks and delete it %%%%%')
         self.detach_policy(self.vn1_policy_fix)
         self.detach_policy(self.vn2_policy_fix)
         self.unconfig_policy(self.policy_fixture)
         sleep(30)
 
         self.logger.info(
-            '***** Ping and traffic between the networks should go thru fine because of the static route configuration *****')
+            '%%%%% Ping and traffic between the networks should go thru fine because of the static route configuration %%%%%')
         assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip)
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
 
@@ -1454,7 +1454,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
             self.vn1_fixture, self.vm1_fixture, svm_ids)
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
         self.logger.info(
-            '***** Will start tcpdump to capture a ICMP packet destined to 1.2.3.4 on the node housing the SI *****')
+            '%%%%% Will start tcpdump to capture a ICMP packet destined to 1.2.3.4 on the node housing the SI %%%%%')
         svm_name = self.si_fixtures[0].si_name + '_1'
         host = self.get_svm_compute(svm_name)
         tapintf = self.get_svm_tapintf_of_vn(svm_name, self.vn1_fixture)
@@ -1463,11 +1463,11 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
                                                                    tapintf)
         execute_cmd(session, cmd, self.logger)
         self.logger.info(
-            '***** Will start a ping from VM %s to 1.2.3.4 *****' %
+            '%%%%%%%%%% Will start a ping from VM %s to 1.2.3.4 %%%%%%%%%%' %
             self.vm1_fixture.vm_name)
         cmd_to_ping = ['sh -c "ping -c 100 1.2.3.4 &"; ls']
         self.vm1_fixture.run_cmd_on_vm(cmds=cmd_to_ping, as_sudo=True)
-        self.logger.info('***** Will check the result of tcpdump *****')
+        self.logger.info('%%%%% Will check the result of tcpdump %%%%%')
         output_cmd = 'cat /tmp/%s_out.log' % tapintf
         out, err = execute_cmd_out(session, output_cmd, self.logger)
         if '1.2.3.4' in out:
@@ -1512,7 +1512,7 @@ class ECMPSvcMonSanityFixture(testtools.TestCase, VerifySvcFirewall, ECMPTraffic
         if len(self.connections.nova_h.get_hosts()) > 1:
             for i in range(4, 17, 4):
                 self.logger.info(
-                    '***** Will launch %s instances in the Service Chain *****' % i)
+                    '%%%%%%%%%% Will launch %s instances in the Service Chain %%%%%%%%%%' % i)
                 self.verify_svc_in_network_datapath(
                     si_count=1, svc_scaling=True, max_inst=i, svc_mode='in-network-nat')
                 svm_ids = self.si_fixtures[0].svm_ids
