@@ -2206,7 +2206,7 @@ class FloatingipTestSanity3(base.FloatingIpBaseTest):
             msg = proto + \
                 " Traffic Stats is not matching with opServer flow series data"
             self.logger.info(
-                "***Actual Traffic sent by agent %s \n\n stats shown by Analytics flow series%s" %
+                "%%%%%%Actual Traffic sent by agent %s \n\n stats shown by Analytics flow series%s" %
                 (traffic_stats[proto], flow_series_data[proto]))
         print flow_series_data[proto]
         for i in xrange(len(flow_series_data[proto]) - 1):
@@ -2218,7 +2218,7 @@ class FloatingipTestSanity3(base.FloatingIpBaseTest):
 
         self.logger.info("-" * 80)
         self.logger.info(
-            "***Let flows age out and verify analytics still shows the data in the history***")
+            "%%%Let flows age out and verify analytics still shows the data in the history%%%")
         self.logger.info("-" * 80)
         time.sleep(180)
         for proto in traffic_proto_l:
@@ -2807,7 +2807,7 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                                                                    vm2_tapintf)
         execute_cmd(session, cmd, self.logger)
         assert not(vm1_fixture.ping_to_ip(vm3_fixture.vm_ip, count='20'))
-        self.logger.info('***** Will check the result of tcpdump *****')
+        self.logger.info('%%%%% Will check the result of tcpdump %%%%%')
         output_cmd = 'cat /tmp/%s_out.log' % vm2_tapintf
         output, err = execute_cmd_out(session, output_cmd, self.logger)
         print output
@@ -2839,7 +2839,7 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
             result = result and False
             self.logger.error(
                 'Longest prefix matched route is not taken floating ip ping is failing')
-        self.logger.info('***** Will check the result of tcpdump *****')
+        self.logger.info('%%%%% Will check the result of tcpdump %%%%%')
         output_cmd = 'cat /tmp/%s_out.log' % vm2_tapintf
         output, err = execute_cmd_out(session, output_cmd, self.logger)
         print output
@@ -3124,7 +3124,7 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
             vm3_tapintf, vm3_tapintf)
         execute_cmd(session, cmd, self.logger)
         assert not(vm1_fixture.ping_to_ip(vm2_eth1_ip, count='20'))
-        self.logger.info('***** Will check the result of tcpdump *****\n')
+        self.logger.info('%%%%% Will check the result of tcpdump %%%%%\n')
         output_cmd = 'cat /tmp/%s_out.log' % vm3_tapintf
         output, err = execute_cmd_out(session, output_cmd, self.logger)
         print output
@@ -3160,7 +3160,7 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
             result = result and False
             self.logger.error(
                 'Longest prefix matched route is not taken ping using native static route is failing \n')
-        self.logger.info('***** Will check the result of tcpdump *****')
+        self.logger.info('%%%%% Will check the result of tcpdump %%%%%')
         output_cmd = 'cat /tmp/%s_out.log' % vm3_tapintf
         output, err = execute_cmd_out(session, output_cmd, self.logger)
         print output
@@ -3371,7 +3371,7 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
             result = result and False
             self.logger.error("Ping from vm222 to vm111 failed not expected")
 
-        self.logger.info('***** Will check the result of tcpdump *****\n')
+        self.logger.info('%%%%% Will check the result of tcpdump %%%%%\n')
         output_cmd1 = 'cat /tmp/%s_out.log' % vm1_tapintf_eth1
         output_cmd2 = 'cat /tmp/%s_out.log' % vm1_tapintf_eth2
         output1, err = execute_cmd_out(session, output_cmd1, self.logger)
@@ -3507,7 +3507,7 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
             result = result and False
             self.logger.error("Ping from vm222 to vm111 failed not expected")
 
-        self.logger.info('***** Will check the result of tcpdump *****\n')
+        self.logger.info('%%%%% Will check the result of tcpdump %%%%%\n')
         output_cmd = 'cat /tmp/%s_out.log' % vm1_tapintf
         output, err = execute_cmd_out(session, output_cmd, self.logger)
         print output
@@ -3541,7 +3541,7 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                 count='20')):
             result = result and False
             self.logger.error("Ping from vm222 to vm111 failed not expected")
-        self.logger.info('***** Will check the result of tcpdump *****')
+        self.logger.info('%%%%% Will check the result of tcpdump %%%%%')
         output_cmd = 'cat /tmp/%s_out.log' % vm1_tapintf
         output, err = execute_cmd_out(session, output_cmd, self.logger)
         print output

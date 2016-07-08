@@ -140,7 +140,7 @@ class BasevDNSRestartTest(test.BaseTestCase):
                 'Sleep for 180sec to sync vdns server with vdns record entry')
             sleep(180)
             # Verify NS look up works for some random records values
-            self.logger.info('****NSLook up verification****')
+            self.logger.info('%%%%NSLook up verification%%%%')
             import re
             for rec in verify_rec_name_list:
                 cmd = 'nslookup ' + rec
