@@ -110,13 +110,13 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
         self.verify_traffic_flow(
             self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
         self.logger.info(
-            '***** Will Detach the policy from the networks and delete it *****')
+            '%%%%% Will Detach the policy from the networks and delete it %%%%%')
         self.detach_policy(self.vn1_policy_fix)
         self.detach_policy(self.vn2_policy_fix)
         self.unconfig_policy(self.policy_fixture)
         sleep(30)
         self.logger.info(
-            '***** Ping and traffic between the networks should go thru fine because of the static route configuration *****')
+            '%%%%% Ping and traffic between the networks should go thru fine because of the static route configuration %%%%%')
         assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip)
 
         # Cleaning up
@@ -767,7 +767,7 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
         self.verify_flow_thru_si(self.si_fixtures[0])
 
         self.logger.info(
-            '****** Will suspend the SVMs and check traffic flow ******')
+            '%%%%%% Will suspend the SVMs and check traffic flow %%%%%%')
         for i in range(len(svms) - 1):
             self.logger.info('Will Suspend SVM %s' % svms[i].name)
             svms[i].suspend()
@@ -777,7 +777,7 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
             self.verify_flow_thru_si(self.si_fixtures[0])
 
         self.logger.info(
-            '****** Will resume the suspended SVMs and check traffic flow ******')
+            '%%%%%% Will resume the suspended SVMs and check traffic flow %%%%%%')
         for i in range(len(svms)):
             svms = self.get_svms_in_si(
                 self.si_fixtures[0], self.inputs.project_name)

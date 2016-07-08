@@ -3982,7 +3982,7 @@ class TestBGPScale(BaseBGPScaleTest):
         #
         # Init
         #
-        # self._log_print("INFO:******ABC*********")
+        # self._log_print("INFO:%%%%%%%%ABC%%%%%%%%%")
         self.obj = FlapAgentScaleInit(args_str='', inputs=self.inputs)
 
         #
