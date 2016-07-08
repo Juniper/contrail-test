@@ -130,7 +130,7 @@ try:
             self.verify_traffic_flow(
                 vms[0], dst_vm_list, svc_instance, left_net_fix)
             self.logger.info(
-                '***** Will increase the SVMs in the SI to 4 *****')
+                '%%%%% Will increase the SVMs in the SI to 4 %%%%%')
             self.update_stack(
                 si_hs_obj, stack_name='svc_inst', change_set=['max_instances', '4'])
             time.sleep(10)
@@ -140,7 +140,7 @@ try:
             self.verify_traffic_flow(
                 vms[0], dst_vm_list, svc_instance, left_net_fix)
             self.logger.info(
-                '***** Will decrease the SVMs in the SI to 2 *****')
+                '%%%%% Will decrease the SVMs in the SI to 2 %%%%%')
             self.update_stack(
                 si_hs_obj, stack_name='svc_inst', change_set=['max_instances', '2'])
             time.sleep(10)

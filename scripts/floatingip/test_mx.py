@@ -564,7 +564,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         flow_rec1_direction = False
         flow_rec1_nat = False
         for iter in range(25):
-            self.logger.debug('**** Iteration %s *****' % iter)
+            self.logger.debug('%%%%%%%% Iteration %s %%%%%%%%%%' % iter)
             flow_rec1 = None
             flow_rec1 = inspect_h1.get_vna_fetchallflowrecords()
             for rec in flow_rec1:
@@ -602,7 +602,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         flow_rec2_direction = False
         flow_rec2_nat = False
         for iter in range(25):
-            self.logger.debug('**** Iteration %s *****' % iter)
+            self.logger.debug('%%%%%%%% Iteration %s %%%%%%%%%%' % iter)
             flow_rec2 = None
             flow_rec2 = inspect_h1.get_vna_fetchallflowrecords()
             for rec in flow_rec2:

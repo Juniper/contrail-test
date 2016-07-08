@@ -297,7 +297,7 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
 
         '''
         self.logger.info(
-            "********TEST WILL FAIL IF RAN MORE THAN ONCE WITHOUT CLEARING THE ZOOKEEPER DATABASE*********")
+            "%%%%%%%%TEST WILL FAIL IF RAN MORE THAN ONCE WITHOUT CLEARING THE ZOOKEEPER DATABASE%%%%%%%%%")
         service = 'dummy_service23'
         port = 65093
         result = True
