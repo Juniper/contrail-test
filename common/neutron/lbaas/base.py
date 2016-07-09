@@ -16,6 +16,12 @@ class BaseTestLbaas(BaseNeutronTest):
     def tearDownClass(cls):
         super(BaseTestLbaas, cls).tearDownClass()
 
+    def is_test_applicable(self):
+        if self.inputs.orchestrator.lower() != 'openstack':
+            return (False, 'Skipping Test. Openstack required')
+        if self.inputs.get_build_sku().lower()[0] > 'k':
+            return (False, 'Skipping Test. LBaasV1 is supported till kilo')
+        return (True, None)
 
     def verify_active_standby(self, compute_ips, pool_uuid):
         cmd1 = 'ip netns list | grep %s' % pool_uuid
