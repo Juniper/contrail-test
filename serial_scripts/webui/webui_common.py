@@ -1653,8 +1653,12 @@ class WebuiCommon:
                         ['tenant_list', 'a'], ['id', 'tag'], browser, [1])
                     self.click_if_element_found(tenants, project_name)
             else:
-                self.click_element(
-                    ['button', 'caret'], ['tag', 'class'], browser)
+                if os_release in ('liberty', 'mitaka'):
+                    self.click_element(
+                        'fa-caret-down', 'class', browser)
+                else:
+                    self.click_element(
+                        ['button', 'caret'], ['tag', 'class'], browser)
                 prj_obj = self.find_element(
                     ['dropdown-menu', 'a'], ['class', 'tag'], browser, [1])
                 for element in prj_obj:
