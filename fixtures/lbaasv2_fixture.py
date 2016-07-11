@@ -743,6 +743,7 @@ class LBaasV2Fixture(LBBaseFixture):
         self.pool_uuid = None
         self.member_ips = list()
         self.member_ids = list()
+        self.member_weight = list()
         self.deleted_member_ids = list()
         self.hmon_id = None
         self.already_present = False
@@ -845,7 +846,7 @@ class LBaasV2Fixture(LBBaseFixture):
             self.pool_uuid = None
 
     def create_member(self, address=None, vmi=None,
-                      vm=None, port=None, network_id=None):
+                      vm=None, port=None, network_id=None, weight=1):
         port = port or self.pool_port
         network_id = network_id or self.network_id
         if vm:
@@ -859,9 +860,11 @@ class LBaasV2Fixture(LBBaseFixture):
             self.logger.info('Creating LB Member %s'%address)
             obj = self.network_h.create_lbaas_member(address, port,
                                                      self.pool_uuid,
-                                                     network_id=network_id)
+                                                     network_id=network_id,
+                                                     weight=weight)
             self.member_ids.append(obj.get('id'))
             self.member_ips.append(address)
+            self.member_weight.append(weight)
             self.logger.info('Created LB Member with UUID,%s'%obj.get('id'))
             return obj.get('id')
         else:
@@ -886,6 +889,16 @@ class LBaasV2Fixture(LBBaseFixture):
         self.member_ids.remove(member_id)
         self.member_ips.remove(address)
 
+    def update_member(self, member_id, **kwargs):
+        weight = kwargs.get('weight', None)
+        port = kwargs.get('port', None)
+        admin_state = kwargs.get('admin_state', None)
+        mem_obj = self.network_h.update_lbaas_member(
+            member_id, self.pool_uuid, port=port, weight=weight, admin_state=admin_state)
+        if weight:
+            mem_idx = self.member_ids.index(member_id)
+            self.member_weight[mem_idx] = weight
+
     def create_hmon(self, probe_type, delay, max_retries, timeout):
         hmon_obj = self.network_h.create_lbaas_healthmonitor(
                                   self.pool_uuid, delay, max_retries,
@@ -897,6 +910,19 @@ class LBaasV2Fixture(LBBaseFixture):
         if self.hmon_id:
             self.network_h.delete_lbaas_healthmonitor(self.hmon_id)
             self.hmon_id = None
+
+    def update_hmon(self, **kwargs):
+        delay = kwargs.get('delay', None)
+        max_retries = kwargs.get('max_retries', None)
+        timeout = kwargs.get('timeout', None)
+        hmon_update_obj = self.network_h.update_lbaas_healthmonitor(
+            self.hmon_id, delay=delay, max_retries=max_retries, timeout=timeout)
+        if delay:
+            self.hm_delay = delay
+        if max_retries:
+            self.hm_max_retries = max_retries
+        if timeout:
+            self.hm_timeout=timeout
 
     def delete(self):
         for member_id in list(self.member_ids):
@@ -946,40 +972,45 @@ class LBaasV2Fixture(LBBaseFixture):
     def _verify_haproxy_configs(self):
         retval = False
         conf_filename = '/var/lib/contrail/loadbalancer/haproxy/%s/haproxy.conf'%self.lb_uuid
-        host = self.get_active_vrouter()
-        username = self.inputs.host_data[host]['username']
-        password = self.inputs.host_data[host]['password']
-        haproxy_dict = parse_haproxy(conf_filename, host, username, password)
-        if haproxy_dict == None:
-            return (False, "HAPROXY_NOT_EXIST")
-        for frontend in haproxy_dict['frontends'] or []:
-            if self.listener_uuid == frontend['uuid'] and \
-               self.vip_ip == frontend['address'] and \
-               self.vip_protocol.lower() == frontend['protocol'] and \
-               self.vip_port == frontend['port']:
-               if self.pool_uuid:
-                   if self.pool_uuid != frontend['backend']:
-                       break
-               retval = True
-               break
-        if retval == False:
-            self.logger.debug("frontend not found in haproxy config file")
-            return (False, "FRONTEND_NOT_EXIST")
-        for backend in haproxy_dict['backends'] or []:
-            if self.pool_uuid == backend['uuid'] and \
-                self.pool_protocol.lower() == backend['protocol']:
-                if mappings[self.pool_algorithm] != backend['lb_method']:
+        for host in [self.get_active_vrouter()] + list(self.get_standby_vrouter() or []):
+            username = self.inputs.host_data[host]['username']
+            password = self.inputs.host_data[host]['password']
+            haproxy_dict = parse_haproxy(conf_filename, host, username, password)
+            if haproxy_dict == None:
+                return (False, "HAPROXY_NOT_EXIST")
+            for frontend in haproxy_dict['frontends'] or []:
+                if self.listener_uuid == frontend['uuid'] and \
+                   self.vip_ip == frontend['address'] and \
+                   self.vip_protocol.lower() == frontend['protocol'] and \
+                   self.vip_port == frontend['port']:
+                   if self.pool_uuid:
+                       if self.pool_uuid != frontend['backend']:
+                           break
+                   retval = True
+                   break
+            if retval == False:
+                self.logger.debug("frontend not found in haproxy config file")
+                return (False, "FRONTEND_NOT_EXIST")
+            retval = False
+            for backend in haproxy_dict['backends'] or []:
+                if self.pool_uuid == backend['uuid'] and \
+                    self.pool_protocol.lower() == backend['protocol']:
+                    if mappings[self.pool_algorithm] != backend['lb_method']:
+                        break
+                    act_mem_list = [(member['uuid'], member['address'], member['weight'])
+                                    for member in backend['members']]
+                    exp_mem_list = zip(self.member_ids, self.member_ips, self.member_weight)
+                    if sorted(act_mem_list) != sorted(exp_mem_list):
+                        break
+                    if self.hmon_id and (str(self.hm_timeout) != backend['timeout'] or
+                        [(member['delay'], member['retries']) for member in backend['members'] if member['delay'] != self.hm_delay or member['retries'] != self.hm_max_retries]):
+                        self.logger.info("healthmonitor values didn't match, %s" %backend)
+                        break
+                    retval = True
                     break
-                act_mem_list = [(member['uuid'], member['address'])
-                                for member in backend['members']]
-                exp_mem_list = zip(self.member_ids, self.member_ips)
-                if sorted(act_mem_list) != sorted(exp_mem_list):
-                    break
-                retval = True
-                break
-        if retval == False:
-            self.logger.debug("backend not found in haproxy config file")
-            return (False, "BACKEND_NOT_EXIST")
+            if retval == False:
+                self.logger.debug("backend not found in haproxy config file")
+                return (False, "BACKEND_NOT_EXIST")
         return (True, "SUCCESS")
 
     def verify_on_cleanup(self):

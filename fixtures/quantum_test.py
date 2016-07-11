@@ -1045,7 +1045,7 @@ class QuantumHelper():
         if weight:
             member_dict['weight'] = weight
         try:
-            resp = self.obj.update_lbaas_pool(member_id, pool_id,
+            resp = self.obj.update_lbaas_member(member_id, pool_id,
                                               {'member': member_dict})
             return resp['member']
         except CommonNetworkClientException as e:
@@ -1099,8 +1099,9 @@ class QuantumHelper():
             hm_dict['url_path'] = http_url
 
         try:
-            hm_rsp = self.obj.update_health_monitor(hm_id, hm_dict)
-            return hm_resp['healthmonitor']
+            #hm_rsp = self.obj.update_health_monitor(hm_id, hm_dict)
+            hm_rsp = self.obj.update_lbaas_healthmonitor(hm_id, {'healthmonitor': hm_dict})
+            return hm_rsp['healthmonitor']
         except CommonNetworkClientException as e:
             self.logger.exception("Neutron exception while updating "
                                   " Healthmonitor %s"%hm_id)

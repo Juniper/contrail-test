@@ -1,4 +1,4 @@
-import test_v1
+import test_v1, time
 from lbaasv2_fixture import LBaasV2Fixture
 from tcutils.util import *
 from common.neutron.base import BaseNeutronTest
@@ -97,7 +97,7 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
             self.logger.error("curl request to the VIP failed, with response %s", result)
             return (False, result[-1])
 
-    def verify_lb_method(self, client_fix, servers_fix, vip_ip, lb_method='ROUND_ROBIN'):
+    def verify_lb_method(self, client_fix, servers_fix, vip_ip, lb_method='ROUND_ROBIN', port=80):
         '''
         Function to verify the Load balance method, by sending HTTP Traffic
         '''
@@ -107,7 +107,7 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
         result = ''
         output = ''
         for i in range (0,len(servers_fix)):
-            result,output = self.run_curl(client_fix,vip_ip)
+            result,output = self.run_curl(client_fix,vip_ip,port)
             if result:
                 lb_response1.add(output.strip('\r'))
             else:
@@ -117,7 +117,7 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
         # To check lb-method ROUND ROBIN lets do wget again 3 times
         lb_response2 = set([])
         for i in range (0,len(servers_fix)):
-            result,output = self.run_curl(client_fix,vip_ip)
+            result,output = self.run_curl(client_fix,vip_ip,port)
             if result:
                 lb_response2.add(output.strip('\r'))
             else:
