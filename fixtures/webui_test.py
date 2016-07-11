@@ -576,6 +576,7 @@ class WebuiTest:
                         prj_name=fixture.project_name):
                     result = result and False
                 self.ui.send_keys(fixture.policy_name, 'policyName', 'name')
+                plus_count = 0
                 for index, rule in enumerate(fixture.rules_list):
                     ind = index * 3
                     simple_action = rule['simple_action']
@@ -596,6 +597,7 @@ class WebuiTest:
                         else:
                             dst_port = str(rule['dst_ports'])
                     self.ui.click_element('editable-grid-add-link', 'class')
+                    plus_count+= 1
                     rules = self.browser.find_elements_by_class_name(
                         'data-row')[ind]
                     src_textbox_element = self.browser.find_elements_by_name(
@@ -606,8 +608,11 @@ class WebuiTest:
                         'dst_ports_text')[index]
                     dst_textbox_element.clear()
                     dst_textbox_element.send_keys(dst_port)
-                    self.ui.send_keys(protocol.upper(), ['protocol', 'custom-combobox-input'], [
-                        'id', 'class'], clear=True)
+                    protocol_element = self.ui.find_element(
+                        'custom-combobox-input', 'class',
+                        elements=True, if_elements=[1])[plus_count-1]
+                    protocol_element.clear()
+                    protocol_element.send_keys(protocol.upper())
                     rule_list = ['direction', \
                         'simple_action', 'src_address', 'dst_address']
                     for item in rule_list:
