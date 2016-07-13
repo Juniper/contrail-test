@@ -26,7 +26,7 @@ class ECMPVerify():
         right_ip = {}
         left_ip = {}
         count= 0
-        self.logger.info('***Get the Route Entry in the control node***')
+        self.logger.info('%%%Get the Route Entry in the control node%%%')
         active_controller = None
         inspect_h1 = self.agent_inspect[src_vm.vm_node_ip]
         agent_xmpp_status = inspect_h1.get_vna_xmpp_connection_status()
@@ -66,7 +66,7 @@ class ECMPVerify():
     #end find_rt_in_ctrl_node
 
     def find_rt_in_agent(self, src_vn, src_vm, dst_vm):
-        self.logger.info('***Get the Route Entry in the agent***')
+        self.logger.info('%%%Get the Route Entry in the agent%%%')
         vn_vrf_id= self.get_vrf_id(src_vn, src_vm)
         inspect_h1 = self.agent_inspect[src_vm.vm_node_ip]
         net = '32'
@@ -84,7 +84,7 @@ class ECMPVerify():
     #end find_rt_in_agent
 
     def get_tap_intf_list(self, src_vn, src_vm, dst_vm, shared_ip):
-        self.logger.info('***Get the Tap Interface List***')
+        self.logger.info('%%%Get the Tap Interface List%%%')
         vn_vrf_id= self.get_vrf_id(src_vn, src_vm)
         inspect_h1 = self.agent_inspect[src_vm.vm_node_ip]
         net = '32'

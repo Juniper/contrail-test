@@ -136,7 +136,7 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
                 self.logger.info('%s is not in ACTIVE state' % svm.name)
         sleep(15)
 
-        self.logger.info('***** Will check the result of tcpdump *****')
+        self.logger.info('%%%%% Will check the result of tcpdump %%%%%')
         svms = self.get_svms_in_si(si_fix, self.inputs.project_name)
         svms = sorted(set(svms))
         if None in svms:

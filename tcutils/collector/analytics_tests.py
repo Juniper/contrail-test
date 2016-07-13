@@ -2960,7 +2960,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
     def get_value_from_query_threads(self):
         while not self.que.empty():
-            self.logger.debug("******** Verifying resutlts *************")
+            self.logger.debug("%%%%%%%%%% Verifying results %%%%%%%%%%%%%%%")
             try:
                 assert self.que.get()
             except Exception as e:
