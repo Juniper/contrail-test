@@ -102,7 +102,7 @@ class NetconfConnection(AbstractConnection):
     def show_version(self):
         return self.handle.show_version()
 
-    def config(self, stmts=[], commit=True, ignore_errors=False):
+    def config(self, stmts=[], commit=True, ignore_errors=False, timeout = 30):
         for stmt in stmts:
             try:
                 self.config_handle.load(stmt, format='set', merge=True)
@@ -114,7 +114,7 @@ class NetconfConnection(AbstractConnection):
                     raise e
         if commit:
             try:
-                self.config_handle.commit()
+                self.config_handle.commit(timeout = timeout)
             except CommitError,e:
                 self.logger.exception(e)
                 return (False,e)
