@@ -2412,9 +2412,9 @@ class AnalyticsVerification(fixtures.Fixture):
             service_ip = self.inputs.collector_ips[0]
         process_connectivity = ['contrail-api', 'contrail-database']
         if service in process_connectivity:
-            alarm_type = ['ProcessConnectivity']
+            alarm_type = ['process-connectivity']
         else:
-            alarm_type = ['ProcessStatus']
+            alarm_type = ['process-status']
 
         if trigger == 'service_stop':
             if not self._verify_alarms_stop_svc(service, service_ip, role, alarm_type, multi_instances):
@@ -2457,12 +2457,21 @@ class AnalyticsVerification(fixtures.Fixture):
                             else:
                                 if re.search('supervisor', str(service)) or re.search('nodemgr', str(service)):
                                     supervisor = True
-                                any_of = type_alarms['any_of']
-                                for any_alarms in any_of:
-                                    all_of = any_alarms['all_of']
-                                    for all_of_alarms in all_of:
+                                alarm_rules = type_alarms.get('alarm_rules')
+                                if not alarm_rules:
+                                    self.logger.error("alarm_rules dict missing ")
+                                    return False
+                                or_list = alarm_rules.get('or_list')
+                                if not or_list:
+                                    self.logger.error("or_list not found")
+                                    return False
+                                for any_alarms in or_list:
+                                    and_list = any_alarms.get('and_list')
+                                    for and_list_elem in and_list:
+                                        condition_dict = and_list_elem.get('condition')
+                                        match_list = and_list_elem.get('match')
                                         if not supervisor:
-                                            json_vars = all_of_alarms.get('json_vars')
+                                            json_vars = match_list[0].get('json_vars')
                                         else:
                                             json_vars = None
                                         if json_vars:
@@ -2471,13 +2480,13 @@ class AnalyticsVerification(fixtures.Fixture):
                                             process_name = None
                                         if not supervisor:
                                             if re.search(service, str(process_name)) or service == str(process_name):
-                                                print all_of_alarms
-                                                return all_of_alarms
+                                                print and_list_elem
+                                                return and_list_elem
                                             else:
-                                                self.logger.warn("'all_of' dict :%s alarms not generated yet ..wait .checking again" % (service))
+                                                self.logger.warn("'and_list'%s alarms not generated yet ..wait .checking again" % (service))
                                                 return None
                                         else:
-                                            self.logger.info("'all_of' dict json operands are null for %s " % (service))
+                                            self.logger.info("json operands are null for %s " % (service))
                                             print type_alarms
                                             return type_alarms
 
