@@ -2441,7 +2441,8 @@ class AnalyticsVerification(fixtures.Fixture):
         else:
             return None
         for nalarms in role_alarms:
-            if nalarms['name'] == hostname:
+            h_name = nalarms['name'].split('.')[0]
+            if h_name == hostname:
                 if not alarm_type and not service:
                     # return all alarms for a host
                     return nalarms
