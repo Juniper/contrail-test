@@ -342,6 +342,35 @@ class sdn_webui_config ():
                                   'src_ports': [3,
                                                 4]}]
 
+        self.subnet_edit = "20.20.20.0"
+        self.subnet_adv_option = "20.20.20.0/24"
+        self.asn_ip = "20.20.20.3"
+        self.invalid_asn_ip = "20,20,20,3"
+        self.asn_num = "65534"
+        self.invalid_asn_num = "65534ab"
+        self.target_num = "4294967295"
+        self.invalid_target_num = "4294967295abc"
+        self.mask = "24"
+        self.subnet_sip = "20.20.20.5"
+        self.subnet_eip = "20.20.20.20"
+        self.subnet_dns_ip = "20.20.20.2"
+        self.subnet_gate_ip = "20.20.20.1"
+        self.subnet_default_gate_ip = "0.0.0.0"
+        self.host_prefix = "1.1.1.1/24"
+        self.host_nexthop = "2.2.2.2"
+        self.phy_net = "phy1"
+        self.vlan_id = "4094"
+        self.fpool = "pool1"
+        self.invalid_vlan_id = "4094abcd49494"
+        self.dns_ip = "1.1.1.1"
+        self.invalid_dns_ip = "1,1,1,1"
+        self.vn_disp_name = "vn-test"
+        self.vn_disp_name_spl_char = "vn1~`!@#$%^&*()_+}{|:\"?><,./;\'[]\=-"
+        self.vn_disp_name_spl_char_ops = "vn1~`!@#$%^&*()_+}{|:\\\"?><,./;\'[]\\\\=-"
+        self.vn_name_beg_spl_char = "~!@#$%^&*()_+|}{\"?><,./;\'[]\=-`vn1"
+        self.vn_name_end_spl_char = "vn1~!@#$%^&*()_+|}{\"?><,./;\'[]\=-`"
+        self.vn_name_mid_spl_char = "vn1~!@#$%^&*()_+|}{\"?><,./;\'[]\=-`vn1"
+        self.port_name = 'port1'
         # end __init__
 
 if __name__ == '__main__':
