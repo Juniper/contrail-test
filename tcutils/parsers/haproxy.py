@@ -82,11 +82,23 @@ def get_pool_dict(lines):
             pool_dict['protocol'] = re.match('mode\s+(\w+)', line).group(1)
         elif 'balance' in line:
             pool_dict['lb_method'] = re.match('balance\s+(\w+)', line).group(1)
+        elif 'timeout' in line:
+            pool_dict['timeout'] = re.match('timeout\s+check\s+([0-9]+)s', line).group(1)
         elif 'server' in line:
-            m = re.match('server\s+(.*)\s+(.*):([0-9]+)', line)
-            pool_dict['members'].append({'uuid': m.group(1),
+            if 'timeout' in pool_dict:
+                m = re.match('server\s+(.*)\s+(.*):([0-9]+)\sweight\s([0-9]+)\scheck\sinter\s([0-9]+)s\sfall\s([0-9]+)', line)
+                pool_dict['members'].append({'uuid': m.group(1),
                                          'address': m.group(2),
-                                         'port': m.group(3)})
+                                         'port': m.group(3),
+                                         'weight': int(m.group(4)),
+                                         'delay': int(m.group(5)),
+                                         'retries': int(m.group(6))})
+            else:
+                m = re.match('server\s+(.*)\s+(.*):([0-9]+) weight ([0-9]+)', line)
+                pool_dict['members'].append({'uuid': m.group(1),
+                                         'address': m.group(2),
+                                         'port': m.group(3),
+                                         'weight': m.group(4)})
     return pool_dict
 
 if __name__ == '__main__':

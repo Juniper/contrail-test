@@ -2231,6 +2231,28 @@ class VMFixture(fixtures.Fixture):
             return False
     # end webserver
 
+    def stop_webserver(self):
+        ''' Stop Web Server on the specified port.
+        '''
+        host = self.inputs.host_data[self.vm_node_ip]
+        fab_connections.clear()
+        #listen_port = "\"Server "+listen_port+"$\""
+        try:
+            vm_host_string = '%s@%s'%(self.vm_username, self.local_ip)
+            cmd = "pkill -e -f SimpleHTTPServer"
+            self.logger.info("cmd  is is %s" %cmd)
+            output = remote_cmd(
+                vm_host_string, cmd, gateway_password=host['password'],
+                gateway='%s@%s' % (host['username'], self.vm_node_ip),
+                with_sudo=True, password=self.vm_password
+            )
+            self.logger.debug(output)
+        except Exception, e:
+            self.logger.exception(
+                'Exception occured while starting webservice on VM')
+            return False
+    # end stop webserver
+
     def provision_static_route(
             self,
             prefix='111.1.0.0/16',
