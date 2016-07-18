@@ -51,7 +51,7 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
         if len(self.inputs.compute_ips) > 1:
             for i in range(4, 17, 4):
                 self.logger.info(
-                    '***** Will launch %s instances in the Service Chain *****' % i)
+                    '%%%%%%%%%% Will launch %s instances in the Service Chain %%%%%%%%%%' % i)
                 self.verify_svc_in_network_datapath(
                     si_count=1, svc_scaling=True, max_inst=i, svc_mode='in-network-nat')
                 svm_ids = self.si_fixtures[0].svm_ids

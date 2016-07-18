@@ -108,14 +108,14 @@ class ECMPSanityFixture(testtools.TestCase, ResourcedTestCase, VerifySvcFirewall
         self.verify_traffic_flow(self.vm1_fixture, self.vm2_fixture)
 
         self.logger.info(
-            '***** Will Detach the policy from the networks and delete it *****')
+            '%%%%% Will Detach the policy from the networks and delete it %%%%%')
         self.detach_policy(self.vn1_policy_fix)
         self.detach_policy(self.vn2_policy_fix)
         self.unconfig_policy(self.policy_fixture)
         sleep(30)
 
         self.logger.info(
-            '***** Ping and traffic between the networks should go thru fine because of the static route configuration *****')
+            '%%%%% Ping and traffic between the networks should go thru fine because of the static route configuration %%%%%')
         assert self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip)
 
         return True
