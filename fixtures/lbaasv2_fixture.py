@@ -972,7 +972,8 @@ class LBaasV2Fixture(LBBaseFixture):
     def _verify_haproxy_configs(self):
         retval = False
         conf_filename = '/var/lib/contrail/loadbalancer/haproxy/%s/haproxy.conf'%self.lb_uuid
-        for host in [self.get_active_vrouter()] + list(self.get_standby_vrouter() or []):
+        for host in [self.get_active_vrouter()] + [self.get_standby_vrouter()]\
+            if self.get_standby_vrouter() is not None else [self.get_active_vrouter()]:
             username = self.inputs.host_data[host]['username']
             password = self.inputs.host_data[host]['password']
             haproxy_dict = parse_haproxy(conf_filename, host, username, password)
