@@ -593,9 +593,12 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         self.inputs.start_service('contrail-control', [active_controller])
 
         time.sleep(10)
+        #get the management ip corresponding to new_active_controller
+        host = self.inputs.host_data[new_active_controller]
+        host_ip = self.inputs.host_data[host['name']]['host_ip']
         # Check the BGP peering status from the currently active control node
         cn_bgp_entry = self.cn_inspect[
-            new_active_controller].get_cn_bgp_neigh_entry()
+            host_ip].get_cn_bgp_neigh_entry()
         time.sleep(5)
         for entry in cn_bgp_entry:
             if entry['state'] != 'Established':
