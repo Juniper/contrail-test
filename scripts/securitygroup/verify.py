@@ -20,7 +20,7 @@ class VerifySecGroup():
         traffic_obj = BaseTraffic.factory(proto=proto)
         assert traffic_obj
         assert traffic_obj.start(sender_vm, receiver_vm,
-                              proto, sport, dport, pkt_count=count)
+                              proto, sport, dport)
         sleep(1)
         sent, recv = traffic_obj.stop()
 

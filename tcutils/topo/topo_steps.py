@@ -72,6 +72,8 @@ def createProject(self):
     self.project_connections = ContrailConnections(
         self.project_inputs,
         self.logger)
+    #update new connection in project fixture 
+    self.project_fixture[self.topo.project].project_connections = self.project_connections
     self.project_parent_fixt = self.useFixture(
         ProjectTestFixtureGen(self.vnc_lib, project_name=self.topo.project))
     if self.skip_verify == 'no':
