@@ -156,8 +156,8 @@ class TestBasicPolicyConfig(BasePolicyTest):
         self.nova_h.wait_till_vm_is_up(vm2_fixture.vm_obj)
         # For multi-vn vm, configure ip address for 2nd interface
         multivn_vm_ip_list = vm1_fixture.vm_ips
-        interfaces = vm1_fixture.get_vm_interface_with_ip()
-        interface1 = vm1_fixture.get_vm_interface_with_ip(ip=multivn_vm_ip_list[0])[0]
+        interfaces = vm1_fixture.get_vm_interface_list()
+        interface1 = vm1_fixture.get_vm_interface_list(ip=multivn_vm_ip_list[0])[0]
         interfaces.remove(interface1)
         interface2 = interfaces[0]
         if 'dual' == self.inputs.get_af():
