@@ -807,7 +807,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         sleep(3)
 
         # 4. Poll live traffic & verify VM flow count
-        flow_cmd = 'flow -l | grep %s -A1 |' % vm1_fixture.vm_ip
+        flow_cmd = 'flow -l | grep %s -A2 |' % vm1_fixture.vm_ip
         flow_cmd = flow_cmd + ' grep "Action" | grep -v "Action:D(FlowLim)" | wc -l'
         sample_time = 2
         vm_flow_list=[]
