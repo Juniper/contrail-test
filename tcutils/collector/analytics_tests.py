@@ -582,8 +582,11 @@ class AnalyticsVerification(fixtures.Fixture):
             for elem in xmpp_peer_list:
                 ip = elem['ip']
                 peers.append(ip)
+            factor = 1
+            if len(self.inputs.bgp_control_ips)>1:
+                factor = 2 # Xmpp client connects to 2 servers at most when more are available
             missing_peers = set(self.inputs.bgp_control_ips) - set(peers)
-            if not len(missing_peers) > len(self.inputs.bgp_control_ips)-2:
+            if not len(missing_peers) > len(self.inputs.bgp_control_ips) - factor:
                 self.logger.info(
                     "Vrouter %s connected to %s xmpp peers out of %s" %
                     (compute_host, set(peers), set(self.inputs.bgp_control_ips)))
