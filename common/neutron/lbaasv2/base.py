@@ -131,6 +131,8 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
             assert False, errmsg
         if lb_method == "SOURCE_IP" and len(lb_response1) > 1:
             assert False, errmsg
+        if lb_method == "ROUND_ROBIN" and len(lb_response1) != len(servers_fix):
+            assert False, "In Round Robin, failed to get the response from all the server"
         self.logger.info("lb-method %s works as expected,First time requests went to servers %s"
                          " subsequent requests went to servers %s" % (lb_method, lb_response1, lb_response2))
         return True
