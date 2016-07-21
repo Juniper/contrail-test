@@ -4,7 +4,8 @@ import fixtures
 #from common.contrail_test_init import ContrailTestInit
 from nova_test import *
 from common.connections import ContrailConnections
-sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
+trafficdir = os.path.join(os.path.dirname(__file__), '../tcutils/pkgs/Traffic')
+sys.path.append(trafficdir)
 from traffic.core.stream import Stream
 from traffic.core.profile import create, ContinuousProfile, ContinuousSportRange
 from traffic.core.helpers import Host

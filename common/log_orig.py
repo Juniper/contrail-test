@@ -9,7 +9,7 @@ import time
 import fixtures
 import datetime
 
-cwd = os.getcwd()
+cwd = os.path.join(os.path.dirname(__file__), os.pardir)
 LOG_CONFIG = '%s/log_conf.ini'%cwd
 LOG_KEY = 'log01'
 TS = time.time()
