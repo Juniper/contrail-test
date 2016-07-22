@@ -3,11 +3,14 @@ from vn_test import MultipleVNFixture
 from common.device_connection import NetconfConnection
 import physical_device_fixture
 from physical_router_fixture import PhysicalRouterFixture
+from tcutils.contrail_status_check import *
+from fabric.api import run, hide, settings
 from vm_test import MultipleVMFixture
 from vn_test import VNFixture
 from vm_test import VMFixture
 from vnc_api.vnc_api import *
 from policy_test import PolicyFixture
+from tcutils.util import get_random_name
 from scripts.securitygroup.verify import VerifySecGroup
 from common.policy.config import ConfigPolicy
 from common import isolated_creds
@@ -188,7 +191,7 @@ class Md5Base(test_v1.BaseTestCase_v1, VerifySecGroup, ConfigPolicy):
                 cn_bgp_entry = str(cn_bgp_entry)
 
         cn_bgp_entry = str(cn_bgp_entry)
-        est = re.findall(' \'state\': \'(\w+)\', \'local', cn_bgp_entry)
+        est = re.findall(' \'state\': \'(\w+)\', \'flap_count', cn_bgp_entry)
         for ip in est:
             if not ('Established' in ip):
                 result = False
@@ -237,6 +240,12 @@ class Md5Base(test_v1.BaseTestCase_v1, VerifySecGroup, ConfigPolicy):
             mx_handle = NetconfConnection(host = router_params['mgmt_ip'])
             mx_handle.connect()
             cli_output = mx_handle.config(stmts = cmd, timeout = 120)
+
+    def remove_configured_md5(self):
+        auth_data=None
+        for host in self.list_uuid:
+            self.config_per_peer(auth_data=auth_data)
+            self.config_md5( host=host, auth_data=auth_data )
 
     def create_md5_config(self):
         auth_data=None
