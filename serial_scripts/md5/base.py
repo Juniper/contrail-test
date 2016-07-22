@@ -8,6 +8,7 @@ from vn_test import VNFixture
 from vm_test import VMFixture
 from vnc_api.vnc_api import *
 from policy_test import PolicyFixture
+from tcutils.util import get_random_name
 from scripts.securitygroup.verify import VerifySecGroup
 from common.policy.config import ConfigPolicy
 from common import isolated_creds
