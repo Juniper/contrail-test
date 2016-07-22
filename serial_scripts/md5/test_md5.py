@@ -56,6 +56,7 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
         """
         Description: Verify md5 with allow specific protocol on all ports and policy with allow all between VN's
         """
+        self.addCleanup(self.remove_configured_md5)
         assert self.create_md5_config()
     #end create_md5
 
@@ -64,6 +65,7 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
         """
         Description: Verify md5 with add,delete and specific protocol on all ports and policy with allow all between VN's
         """
+        self.addCleanup(self.remove_configured_md5)
         assert self.add_delete_md5_config()
     #end add_delete_md5
 
@@ -72,6 +74,7 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
         """
         Description: Verify md5 with add,delete and specific protocol on all ports and policy with allow all between VN's
         """
+        self.addCleanup(self.remove_configured_md5)
         assert self.different_keys_md5_config()
     #end different_keys_md5
 
@@ -81,7 +84,7 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
         """
         Description: Verify per peer md5 and specific protocol on all ports and policy with allow all between VN's
         """
-
+        self.addCleanup(self.remove_configured_md5)
         assert self.check_per_peer_md5_config()
     #end check_per_peer   
 
@@ -90,6 +93,7 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
         """
         Description: Verify add delete per peer md5 and specific protocol on all ports and policy with allow all between VN's
         """
+        self.addCleanup(self.remove_configured_md5)
         assert self.add_delete_per_peer_md5_config()    
     #end add_delete_per_peer
 
@@ -98,6 +102,7 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
         """
         Description: Verify different keys per peer md5 and specific protocol on all ports and policy with allow all between VN's
         """
+        self.addCleanup(self.remove_configured_md5)
         assert self.diff_keys_per_peer_md5_config()
     #end diff_keys_per_peer
        
@@ -106,6 +111,7 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
         """
         Description: Verify precedence per peer md5 and specific protocol on all ports and policy with allow all between VN's
         """
+        self.addCleanup(self.remove_configured_md5)
         assert self.precedence_per_peer_md5_config()
     #end precedence_per_peer
     @preposttest_wrapper
@@ -114,6 +120,7 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
         """
         Description: Verify iteration of same keys per peer md5 and specific protocol on all ports and policy with allow all between VN's
         """
+        self.addCleanup(self.remove_configured_md5)
         assert self.iter_keys_per_peer_md5_config()
     #end test_iter_keys_per_peer
 
@@ -154,6 +161,7 @@ class TestMd5testsOnControl(Md5Base, VerifySecGroup, ConfigPolicy):
         """
         Description: Verify md5 with allow specific protocol on all ports and policy with allow all between VN's
         """
+        self.addCleanup(self.remove_configured_md5)
         assert self.create_md5_config()
     #end create_md5
 
@@ -162,6 +170,7 @@ class TestMd5testsOnControl(Md5Base, VerifySecGroup, ConfigPolicy):
         """
         Description: Verify md5 with add,delete and specific protocol on all ports and policy with allow all between VN's
         """
+        self.addCleanup(self.remove_configured_md5)
         assert self.add_delete_md5_config()
     #end add_delete_md5
 
@@ -170,6 +179,7 @@ class TestMd5testsOnControl(Md5Base, VerifySecGroup, ConfigPolicy):
         """
         Description: Verify md5 with add,delete and specific protocol on all ports and policy with allow all between VN's
         """
+        self.addCleanup(self.remove_configured_md5)
         assert self.different_keys_md5_config()
     #end different_keys_md5
 
@@ -179,7 +189,7 @@ class TestMd5testsOnControl(Md5Base, VerifySecGroup, ConfigPolicy):
         """
         Description: Verify per peer md5 and specific protocol on all ports and policy with allow all between VN's
         """
-
+        self.addCleanup(self.remove_configured_md5)
         assert self.check_per_peer_md5_config()
     #end check_per_peer   
 
@@ -188,6 +198,7 @@ class TestMd5testsOnControl(Md5Base, VerifySecGroup, ConfigPolicy):
         """
         Description: Verify add delete per peer md5 and specific protocol on all ports and policy with allow all between VN's
         """
+        self.addCleanup(self.remove_configured_md5)
         assert self.add_delete_per_peer_md5_config()
     #end add_delete_per_peer
 
@@ -196,6 +207,7 @@ class TestMd5testsOnControl(Md5Base, VerifySecGroup, ConfigPolicy):
         """
         Description: Verify different keys per peer md5 and specific protocol on all ports and policy with allow all between VN's
         """
+        self.addCleanup(self.remove_configured_md5)
         assert self.diff_keys_per_peer_md5_config()
     #end diff_keys_per_peer
 
@@ -204,6 +216,7 @@ class TestMd5testsOnControl(Md5Base, VerifySecGroup, ConfigPolicy):
         """
         Description: Verify precedence per peer md5 and specific protocol on all ports and policy with allow all between VN's
         """
+        self.addCleanup(self.remove_configured_md5)
         assert self.precedence_per_peer_md5_config()
     #end precedence_per_peer
     @preposttest_wrapper
@@ -212,6 +225,7 @@ class TestMd5testsOnControl(Md5Base, VerifySecGroup, ConfigPolicy):
         """
         Description: Verify iteration of same keys per peer md5 and specific protocol on all ports and policy with allow all between VN's
         """
+        self.addCleanup(self.remove_configured_md5)
         assert self.iter_keys_per_peer_md5_config()
     #end test_iter_keys_per_peer
 
