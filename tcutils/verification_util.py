@@ -14,11 +14,12 @@ class JsonDrv (object):
     }
     _DEFAULT_AUTHN_URL = "/v2.0/tokens"
 
-    def __init__(self, vub, logger=LOG, args=None):
+    def __init__(self, vub, logger=LOG, args=None, use_admin_auth=False):
         self.log = logger
         self._vub = vub
         self._headers = None
         self._args = args
+        self._use_admin_auth = use_admin_auth
 
     def _auth(self):
         if self._args:
@@ -33,8 +34,9 @@ class JsonDrv (object):
             verify = not insecure
             self._authn_body = \
                 '{"auth":{"passwordCredentials":{"username": "%s", "password": "%s"}, "tenantName":"%s"}}' % (
-                    self._args.stack_user, self._args.stack_password,
-                    self._args.project_name)
+                    self._args.admin_username if self._use_admin_auth else self._args.stack_user,
+                    self._args.admin_password if self._use_admin_auth else self._args.stack_password,
+                    self._args.admin_tenant if self._use_admin_auth else self._args.project_name)
             response = requests.post(url, data=self._authn_body,
                                      headers=self._DEFAULT_HEADERS,
                                      verify=verify)
@@ -62,7 +64,7 @@ class JsonDrv (object):
 
 class XmlDrv (object):
 
-    def __init__(self, vub, logger=LOG, args=None):
+    def __init__(self, vub, logger=LOG, args=None, use_admin_auth=False):
         self.log = logger
         self._vub = vub
         if args:
@@ -80,11 +82,11 @@ class XmlDrv (object):
 
 class VerificationUtilBase (object):
 
-    def __init__(self, ip, port, drv=JsonDrv, logger=LOG, args=None):
+    def __init__(self, ip, port, drv=JsonDrv, logger=LOG, args=None, use_admin_auth=False):
         self.log = logger
         self._ip = ip
         self._port = port
-        self._drv = drv(self, logger=logger, args=args)
+        self._drv = drv(self, logger=logger, args=args, use_admin_auth=use_admin_auth)
         self._force_refresh = False
 
     def get_force_refresh(self):
