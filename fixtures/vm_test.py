@@ -2432,6 +2432,18 @@ class VMFixture(fixtures.Fixture):
         return name
     # end get_vm_interface_name
 
+    def get_vm_interface_list(self, ip=None):
+        '''if ip is None, returns all interfaces list.
+           this method should work on ubuntu as well as redhat and centos'''
+
+        cmd = 'ifconfig -a'
+        if ip:
+            cmd = cmd + '| grep %s -A2 -B4' % (ip)
+        cmd = cmd +  '| grep -i \'hwaddr\|flags\' | awk \'{print $1}\' | cut -d \':\' -f 1'
+        name = self.run_cmd_on_vm([cmd])[cmd].splitlines()
+
+        return name
+
     def arping(self, ip, interface=None):
         if not interface:
             interface_mac = self.mac_addr.values()[0]
