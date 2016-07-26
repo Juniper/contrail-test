@@ -26,6 +26,7 @@ class UILogin:
         self.os_type = self.inputs.os_type
         self.os_name = self.os_type[self.inputs.webui_ip]
         self.ui_flag = self.inputs.ui_browser
+        self.log_path = ('%s' + '/logs/') % os.getcwd()
         if self.ui_flag == 'chrome':
             chromedriver = "/usr/bin/chromedriver"
             os.environ["webdriver.chrome.driver"] = chromedriver
@@ -132,7 +133,7 @@ class UILogin:
             if url.find('8080') != -1:
                 obj.find_element('btn-monitor', browser=br, delay=4)
             else:
-                br.find_element_by_id('container')
+                obj.find_element('main_content', browser=br, delay=4)
             login = True
         except WebDriverException:
             self.inputs.logger.info(url + " User is not logged in")
@@ -147,7 +148,7 @@ class UILogin:
                     if url.find('8080') != -1:
                         obj.find_element('btn-monitor', browser=br)
                     else:
-                        obj.find_element('container', browser=br)
+                        obj.find_element('main_content', browser=br)
                 except:
                     self.get_login_page(br, url, 2)
                     obj.find_element('btn-monitor', browser=br)
@@ -158,6 +159,7 @@ class UILogin:
                     url +
                     " Not able to login ..capturing screenshot.")
                 br.get_screenshot_as_file(
+                    self.log_path +
                     'url_login_failed_' +
                     obj.date_time_string() +
                     '.png')
