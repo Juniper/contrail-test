@@ -1,4 +1,7 @@
 import vnc_api_test
+from tcutils.util import retry
+import json
+import uuid
 
 class PortFixture(vnc_api_test.VncLibFixture):
 
@@ -36,7 +39,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
         self.extra_dhcp_opts = kwargs.get('extra_dhcp_opts', [])
         self.api_type = kwargs.get('api_type', 'neutron')
         self.project_obj = kwargs.get('project_obj', None)
-
+        self.binding_profile = kwargs.get('binding_profile', None)
         self.vn_obj = None
      # end __init__
 
@@ -61,7 +64,8 @@ class PortFixture(vnc_api_test.VncLibFixture):
             fixed_ips=self.fixed_ips,
             mac_address=self.mac_address,
             security_groups=self.security_groups,
-            extra_dhcp_opts=self.extra_dhcp_opts)
+            extra_dhcp_opts=self.extra_dhcp_opts,
+            binding_profile=self.binding_profile)
         self.neutron_obj = neutron_obj
         self.uuid = neutron_obj['id']
 
@@ -94,6 +98,13 @@ class PortFixture(vnc_api_test.VncLibFixture):
         if self.extra_dhcp_opts:
             # TODO
             pass
+
+        if self.binding_profile:
+            bind_kv = vnc_api_test.KeyValuePair(key='profile', value=str(self.binding_profile))
+            kv_pairs = vmi_obj.get_virtual_machine_interface_bindings() or\
+                       vnc_api_test.KeyValuePairs()
+            kv_pairs.add_key_value_pair(bind_kv)
+            vmi_obj.set_virtual_machine_interface_bindings(kv_pairs)
 
         self.vmi_obj = self.vnc_api_h.virtual_machine_interface_create(vmi_obj)
         self.uuid = vmi_id
@@ -135,8 +146,29 @@ class PortFixture(vnc_api_test.VncLibFixture):
             self.vnc_api_h.instance_ip_delete(id=vmi_iip_uuid)
         self.vnc_api_h.virtual_machine_interface_delete(id=self.uuid)
 
+    def verify_on_setup(self):
+        if not self.verify_port_in_api_server():
+            self.logger.error('VMI %s verification in API Server failed'%self.uuid)
+            return False
+        else:
+            self.logger.info('VMI %s verification in API Server passed'%self.uuid)
+        return True
+
+    @retry(delay=2, tries=5)
     def verify_port_in_api_server(self):
-        pass
+        api_h = self.connections.api_server_inspect
+        vmi = api_h.get_cs_vmi(self.uuid)
+        if not vmi:
+            self.logger.warn('Unable to fetch VMI %s from API server'%self.uuid)
+            return False
+        if self.binding_profile:
+            bindings = vmi.get_bindings()
+            if bindings['profile'] != json.dumps(self.binding_profile):
+                self.logger.warn('VMI binding profile doesnt match.'
+                                 'Expected %s actual %s for VMI %s'%(
+                                 self.binding_profile, bindings['profile'], self.uuid))
+                return False
+        return True
 
     def verify_port_in_control_node_ifmap(self):
         pass

@@ -491,6 +491,16 @@ class CsVMResult (Result):
 #                0, 'href')
 
 
+class CsVMIResult (Result):
+    def get_bindings(self):
+        bindings = self.xpath('virtual-machine-interface',
+                              'virtual_machine_interface_bindings',
+                              'key_value_pair')
+        bdict = dict()
+        for binding in bindings:
+            bdict[binding['key']] = binding['value']
+        return bdict
+
 class CsVrOfVmResult (Result):
 
     def name(self):
