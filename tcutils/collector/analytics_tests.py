@@ -2350,6 +2350,11 @@ class AnalyticsVerification(fixtures.Fixture):
         retry = 0
         role_alarms = None
         all_alarms = None
+
+        supervisors =['supervisor-analytics', 'supervisor-control', 'supervisor-config', 'supervisor-database', 'supervisor-vrouter']
+        if service in supervisors:
+            alarm_type = ['node-status']
+
         try:
             for alarm_t in alarm_type:
                 while not role_alarms:
