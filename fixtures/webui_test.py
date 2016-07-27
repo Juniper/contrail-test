@@ -5434,4 +5434,421 @@ class WebuiTest:
             else:
                 return False
 
+    def verify_vn_after_edit_api(self, option, value, uuid, var_list):
+        result = True
+        vn_list_api = self.ui.get_api_detail(uuid, 'virtual-network/')
+        if vn_list_api:
+            api_fq_vn = vn_list_api.get('virtual-network')
+            if api_fq_vn:
+                if option == 'UUID':
+                    api_fq_vn_uuid = api_fq_vn.get('uuid')
+                    if api_fq_vn_uuid != value:
+                        logger.error("UUID is not there under virtual-network")
+                        result = result and False
+                elif option == 'Display Name':
+                    api_fq_disp_name = api_fq_vn.get('display_name')
+                    if api_fq_disp_name != value :
+                        logger.error("Display name is not there under virtual-network")
+                        result = result and False
+                elif option == 'Policy':
+                    api_fq_pol = api_fq_vn.get('network_policy_refs')
+                    if len(api_fq_pol):
+                        for pol_name in api_fq_pol:
+                            regexp = ".*\:.*\:(.*)"
+                            pol_out = re.search(regexp, var_list[0])
+                            policy_name = pol_out.group(1)
+                            out = re.search(policy_name, str(pol_name))
+                            if out:
+                                break
+                            else:
+                                result = result and False
+                    else:
+                        logger.error("Policy is not there under virtual-network")
+                        result = result and False
+                elif re.search('Subnet',option):
+                    api_fq_subnet = api_fq_vn.get('network_ipam_refs')
+                    regexp = var_list[0] + ".*uuid"
+                    api_out = re.search(regexp, str(api_fq_subnet))
+                    if api_out:
+                        out = option.strip('Subnet')
+                        reg_mask = re.search(var_list[0]  + ".*ip_prefix_len.*" + \
+                                             var_list[1], api_out.group())
+                        reg_alloc_pool = re.search("allocation_pools.*start.*" + \
+                                         var_list[2] + ".*end.*" + var_list[3], api_out.group())
+                        if not out:
+                            reg_dns = re.search("dns_server_address.*" + var_list[4], \
+                                                api_out.group())
+                            reg_dhcp = re.search("enable_dhcp.*True", api_out.group())
+                            reg_gate = re.search("default_gateway.*" + var_list[5], api_out.group())
+                        else:
+                            if re.search('ga', out):
+                                reg_gate = re.search("default_gateway.*" + var_list[6], \
+                                                     api_out.group())
+                                reg_dns = re.search("dns_server_address.*" + var_list[4], \
+                                                    api_out.group())
+                                reg_dhcp = re.search("enable_dhcp.*True", api_out.group())
+                            elif re.search('dn', out):
+                                reg_dns = re.search("dhcp_option_value.*" + var_list[6] + \
+                                                    ".*dhcp_option_name.*6", api_out.group())
+                                reg_dhcp = re.search("enable_dhcp.*True", api_out.group())
+                                reg_gate = re.search("default_gateway.*" + var_list[5], \
+                                                     api_out.group())
+                            else:
+                                reg_dns = re.search("dns_server_address.*" + var_list[4], \
+                                                    api_out.group())
+                                reg_dhcp = re.search("enable_dhcp.*False", api_out.group())
+                                reg_gate = re.search("default_gateway.*" + var_list[5], \
+                                                     api_out.group())
+                        if not(reg_mask and reg_dns and reg_dhcp and reg_gate and reg_alloc_pool):
+                            result = result and False
+                    else:
+                        logger.error("Subnet is not there under virutal-network")
+                        result = result and False
+                elif option == 'Host Route':
+                    api_fq_host = api_fq_vn.get('network_ipam_refs')
+                    api_host_out = re.search("host_routes.*prefix.*" + var_list[0] + \
+                                             ".*next_hop.*" + var_list[1], str(api_fq_host))
+                    if not api_host_out:
+                       logger.error("Host Route is not there under virtual-network")
+                       result = result and False
+                elif option == 'Adv Option':
+                    allow_rpf_api = api_fq_vn.get('virtual_network_properties')
+                    allow_rpf_api_out = re.search("'allow_transit': True", str(allow_rpf_api))
+                    hash_api = api_fq_vn.get('ecmp_hashing_include_fields')
+                    hash_api_out = hash_api.get('hashing_configured')
+                    share_api = api_fq_vn.get('is_shared')
+                    prov_props_seg = api_fq_vn.get('provider_properties')
+                    prov_props_seg_out = prov_props_seg.get('segmentation_id')
+                    prov_props_phy = api_fq_vn.get('provider_properties')
+                    prov_props_phy_out = prov_props_phy.get('physical_network')
+                    ext_api = api_fq_vn.get('router_external')
+                    flood_api = api_fq_vn.get('flood_unknown_unicast')
+                    multi_pol_api = api_fq_vn.get('multi_policy_service_chains_enabled')
+                    if not(allow_rpf_api_out and hash_api_out and share_api and \
+                       str(prov_props_seg_out) == var_list[0] and \
+                       str(prov_props_phy_out) == var_list[1] \
+                       and ext_api and flood_api and multi_pol_api):
+                        logger.error("Options which are under advanced option \
+                                     is not there under virtual-network")
+                        result = result and False
+                elif option == 'DNS':
+                    api_dns = api_fq_vn.get('network_ipam_refs')
+                    if api_dns:
+                        reg_dns = re.search("dhcp_option_value.*" + var_list[0] + \
+                                            ".*dhcp_option_name.*6", str(api_dns))
+                        if not reg_dns:
+                            result = result and False
+                    else:
+                        logger.error("DNS option is not there under virtual-network")
+                        flag = False
+                elif option == 'FIP':
+                    api_fip = api_fq_vn.get('floating_ip_pools')
+                    if api_fip:
+                        reg_fip = re.search(var_list[0], str(api_fip))
+                        if not reg_fip:
+                            result = result and False
+                    else:
+                        logger.error("FIP is not there under virtual-network")
+                        result = result and False
+                elif re.search('RT', option):
+                    if option == 'RT':
+                        api_rt = api_fq_vn.get('route_target_list')
+                    elif option == 'ERT':
+                        api_rt = api_fq_vn.get('export_route_target_list')
+                    elif option == 'IRT':
+                        api_rt = api_fq_vn.get('import_route_target_list')
+                    if api_rt:
+                        reg_rt_no = re.search(var_list[0] + "\:" + var_list[1], str(api_rt))
+                        reg_rt_ip = re.search(var_list[2] + "\:" + var_list[1], str(api_rt))
+                        if not(reg_rt_no or reg_rt_ip):
+                            result = result and False
+                    else:
+                        result = result and False
+                        logger.error("RT is not there under virtual-network")
+            else:
+                logger.error("Virtual-Network option is not found in API")
+                result = result and false
+        else:
+            result = result and False
+        if result:
+            self.logger.info("Verification of %s is successful through API server" %(option))
+        else:
+            self.logger.error("%s got changed in API after editing VN" % (value))
+        return result
+    # verify_vn_after_edit_api
 
+    def verify_vn_after_edit_ops(self, option, value, uuid, var_list):
+        result = True
+        vn_list_ops = self.ui.get_vn_detail_ops("default-domain:", self.project_name_input, value)
+        if vn_list_ops:
+            vn_list_ops_config = vn_list_ops.get('ContrailConfig')
+            if vn_list_ops_config:
+                vn_list_ops_element = vn_list_ops_config.get('elements')
+                if vn_list_ops_element:
+                    if option == 'UUID':
+                        ops_uuid = vn_list_ops_element.get('uuid')
+                        if ops_uuid:
+                            uuid_new = "\"" + uuid + "\""
+                            if ops_uuid != uuid_new:
+                                result = result and False
+                        else:
+                            result = result and False
+                            logger.error("UUID is not there under contrail config in OPS")
+                    elif option == 'Display Name':
+                        ops_fq = vn_list_ops_element.get('display_name')
+                        if ops_fq:
+                            disp_name = "\"" + var_list[0] + "\""
+                            if ops_fq != disp_name:
+                                result = result and False
+                        else:
+                           result = result and False
+                           logger.error("Display name is not there under contrail config in OPS")
+                    elif option == 'Policy':
+                         ops_policy = vn_list_ops_element.get('network_policy_refs')
+                         if len(ops_policy):
+                             regexp = ".*\:.*\:(.*)"
+                             pol_out = re.search(regexp, var_list[0])
+                             policy_name = pol_out.group(1)
+                             out = re.search(policy_name, str(ops_policy))
+                             if not out:
+                                 result = result and False
+                         else:
+                             result = result and False
+                             logger.error("Policy is not there under contrail config in OPS")
+                    elif re.search('Subnet', option):
+                        ops_subnet = vn_list_ops_element.get('network_ipam_refs')
+                        ops_sub_out = re.search(var_list[0] + ".*uuid", str(ops_subnet))
+                        if ops_sub_out:
+                            reg_mask = re.search(var_list[0], ops_sub_out.group())
+                            reg_alloc_pool = re.search("allocation_pools.*start.*" + var_list[2] + \
+                                                       ".*end.*" + var_list[3], ops_sub_out.group())
+                            out = option.strip('Subnet')
+                            if not out:
+                                reg_dns = re.search("dns_server_address.*" + var_list[4], \
+                                                    ops_sub_out.group())
+                                reg_dhcp = re.search("enable_dhcp.*true", ops_sub_out.group())
+                                reg_gate = re.search("default_gateway.*" + var_list[5], \
+                                                     ops_sub_out.group())
+                            else:
+                                if re.search('ga', out):
+                                    reg_gate = re.search("default_gateway.*" + var_list[6], \
+                                                         ops_sub_out.group())
+                                    reg_dns = re.search("dns_server_address.*" + var_list[4], \
+                                                        ops_sub_out.group())
+                                    reg_dhcp = re.search("enable_dhcp.*true", ops_sub_out.group())
+                                elif re.search('dn', out):
+                                    reg_dns = re.search("dhcp_option_value.*" + var_list[6] + \
+                                                        ".*dhcp_option_name.*6", \
+                                                        ops_sub_out.group())
+                                    reg_dhcp = re.search("enable_dhcp.*true", ops_sub_out.group())
+                                    reg_gate = re.search("default_gateway.*" + var_list[5], \
+                                                         ops_sub_out.group())
+                                else:
+                                    reg_dhcp = re.search("enable_dhcp.*false", ops_sub_out.group())
+                                    reg_dns = re.search("dns_server_address.*" + var_list[4], \
+                                                        ops_sub_out.group())
+                                    reg_gate = re.search("default_gateway.*" + var_list[5], \
+                                                          ops_sub_out.group())
+                            if not(reg_mask and reg_dns and reg_dhcp and reg_gate and reg_alloc_pool):
+                                result = result and False
+                        else:
+                            result = result and False
+                            logger.error("Subnet is not there under contrail config in OPS")
+                    elif option == 'Host Route':
+                        ops_host = vn_list_ops_element.get('network_ipam_refs')
+                        if ops_host:
+                            ops_host_out = re.search("host_routes.*prefix.*" + var_list[0] + \
+                                                 ".*next_hop.*" + var_list[1], ops_host)
+                            if not ops_host_out:
+                                result = result and False
+                        else:
+                            result = result and False
+                            logger.error("network_ipam_refs is not there under contrail \
+                                         config in OPS")
+                    elif option == 'Adv Option':
+                        service_chain = 'multi_policy_service_chains_enabled'
+                        ops_multi_pol = vn_list_ops_element.get(service_chain)
+                        ops_allow_rpf = vn_list_ops_element.get('virtual_network_properties')
+                        allow_transit = "\"allow_transit\"\: true\, \"rpf\": \"enable\""
+                        ops_allow_rpf_out = re.search(allow_transit, str(ops_allow_rpf))
+                        ops_hash = vn_list_ops_element.get('ecmp_hashing_include_fields')
+                        ops_hash_out = re.search("\"hashing_configured\"\: true", str(ops_hash))
+                        ops_share = vn_list_ops_element.get('is_shared')
+                        ops_ext = vn_list_ops_element.get('router_external')
+                        ops_flood = vn_list_ops_element.get('flood_unknown_unicast')
+                        ops_static_route = vn_list_ops_element.get('route_table_refs')
+                        ops_static_route_out = re.search('default-route-table', \
+                                                         str(ops_static_route))
+                        ops_prov_props = vn_list_ops_element.get('provider_properties')
+                        ops_prov_seg_phy = re.search("\"segmentation_id\"\: " + var_list[0] + \
+                                                     ".*\"physical_network\"\: \""+ \
+                                                     var_list[1], str(ops_prov_props))
+                        if not(str(ops_multi_pol) == 'true' and ops_allow_rpf_out and ops_hash_out \
+                           and str(ops_share) == 'true' and str(ops_ext) =='true' and \
+                           str(ops_flood) == 'true' and ops_static_route_out and ops_prov_seg_phy):
+                            result = result and False
+                            logger.error("Advanced option is not there in contrail config")
+                    elif option == 'DNS':
+                        ops_dns = vn_list_ops_element.get('network_ipam_refs')
+                        if ops_dns:
+                            reg_dns = re.search("dhcp_option_value.*" + var_list[0] + \
+                                                ".*dhcp_option_name.*6", str(ops_dns))
+                            if not reg_dns:
+                                result = result and False
+                        else:
+                            result = result and False
+                            logger.error("DNS is not there under contrail config in OPS")
+                    elif option == 'FIP':
+                        ops_fip = vn_list_ops_element.get('floating_ip_pools')
+                        if ops_fip:
+                            reg_fip =  re.search(var_list[0], str(ops_fip))
+                            if not reg_fip:
+                                result = result and False
+                        else:
+                            result = result and False
+                            logger.error("Floating ip pools is not there under contrail config")
+                    elif re.search('RT',option):
+                        if option == 'RT':
+                            ops_rt = vn_list_ops_element.get('route_target_list')
+                        elif option  == 'ERT':
+                            ops_rt = vn_list_ops_element.get('export_route_target_list')
+                        elif option == 'IRT':
+                            ops_rt = vn_list_ops_element.get('import_route_target_list')
+                        if ops_rt:
+                            reg_rt_no = re.search(var_list[0] + "\:" + var_list[1], str(ops_rt))
+                            reg_rt_ip = re.search(var_list[2] + "\:" + var_list[1], str(ops_rt))
+                            if not(reg_rt_no or reg_rt_ip):
+                                result = result and False
+                        else:
+                            result = result and False
+                            logger.error("RT option is not there under contrail config in OPS")
+                    else:
+                        result = result and False
+                else:
+                    result = result and False
+                    logger.error("Element is not there under ContrailConfig in OPS server")
+            else:
+                logger.error("ContrailConfig is not there in OPS server")
+                result = result and False
+        else:
+            result = result and False
+        if result:
+            self.logger.info("Verification of %s is successful through OPS server" % (option))
+        else:
+            self.logger.error("%s got changed in OPS after editing VN" % (value))
+        return result
+    # verify_vn_after_edit_ops
+
+    def verify_vn_after_edit_ui(self, option, value, var_list):
+        result = True
+        try:
+            if option == 'UUID':
+                uuid = self.ui.get_vn_detail_ui(option)
+                if uuid == value:
+                    self.logger.info("Verification of UUID is successful in WebUI")
+                else:
+                    self.logger.error("WebUI verification is failed for UUID")
+                    result = result and False
+            elif option == 'Display Name':
+                disp_name = self.ui.get_vn_detail_ui(option)
+                if disp_name == value:
+                    self.logger.info("Verification of display name is successful in WebUI")
+                else:
+                    self.logger.error("WebUI verification is failed for display name")
+                    result = result and False
+            elif option == 'Policy':
+                regexp = ".*\:.*\:(.*)"
+                pol_out = re.search(regexp, var_list[0])
+                policy_name = pol_out.group(1)
+                out = re.search(policy_name, value)
+                if out:
+                    self.logger.info("Verification of policy is successful in WebUI")
+                else:
+                    self.logger.error("WebUI verification is failed for policy")
+                    result = result and False
+            elif re.search('Subnet', option):
+                regexp= var_list[0]
+                subnet_out = re.search(regexp, value)
+                if subnet_out:
+                    out = option.strip('Subnet')
+                    reg_mask = re.search(var_list[0] + "\/" + var_list[1], value)
+                    reg_alloc_pool = re.search(var_list[2] + " - " + var_list[3], value)
+                    if out == "":
+                        reg_gateway = re.search(var_list[5], value)
+                        reg_dns_dhcp = re.search("Enabled Enabled", value)
+                    else:
+                        if re.search('ga', out):
+                            reg_gateway = re.search(var_list[6], value)
+                            reg_dns_dhcp = re.search("Enabled Enabled", value)
+                        elif re.search('dn',out):
+                            reg_dns_dhcp = re.search("Disabled Enabled", value)
+                            reg_gateway = re.search(var_list[5], value)
+                        else:
+                            reg_gateway = re.search(var_list[5], value)
+                            reg_dns_dhcp = re.search("Enabled Disabled", value)
+                    if reg_mask and reg_gateway and reg_dns_dhcp and reg_alloc_pool:
+                        self.logger.info("Verification of subnet is successful in WebUI")
+                    else:
+                        self.logger.error("WebUI verification is failed for subnet")
+                        result = result and False
+                else:
+                    result = result and False
+            elif option == 'Host Route':
+                regexp = var_list[0] + ".*" + var_list[1]
+                reg_host = re.search(regexp, value)
+                if reg_host:
+                    self.logger.info("Verification of host route is successful in WebUI")
+                else:
+                    self.logger.error("WebUI verification is failed for host route")
+                    result = result and False
+            elif option == 'Adv Option':
+                reg_shared = re.search('Shared(.*)External', value)
+                reg_ext = re.search('External(.*)Attached Network', value)
+                reg_allow_trans = re.search('Allow Transit(.*)Reverse', value)
+                reg_reverse = re.search('Reverse Path Forwarding(.*)Flood', value)
+                reg_multi_chain = re.search('Multiple Service Chains(.*)Host', value)
+                reg_hash = re.search('Ecmp Hashing Fields(.*)Provider', value)
+                reg_prov = re.search('Provider Network(.*)Ext', value)
+                if str(reg_shared.group(1)).strip('-') == 'Enabled' and \
+                   str(reg_ext.group(1)).strip('-') == 'Enabled' and \
+                   str(reg_allow_trans.group(1)).strip('-') == 'Enabled' and \
+                   str(reg_reverse.group(1)).strip('-') == 'Enabled' and \
+                   str(reg_multi_chain.group(1)).strip('-') == 'Enabled' and \
+                   str(reg_hash and reg_prov.group(1)).strip('-') == 'Physical Network: ' + \
+                       var_list[1] + ' , VLAN: ' + var_list[0] :
+                    self.logger.info("Verification for Advanced option is successful in WebUI")
+                else:
+                    self.logger.error("WebUI verification is failed for advanced option")
+            elif option == 'DNS':
+                regexp_dns = re.search(var_list[0], value)
+                if regexp_dns:
+                    self.logger.info("Verification of dns is successful in WebUI")
+                else:
+                    self.logger.error("WebUI verification is failed for DNS")
+                    result = result and False
+            elif option == 'FIP':
+                regexp = self.project_name_input
+                regexp_fip = re.search(str(regexp), str(value))
+                if regexp_fip:
+                    self.logger.info("Verification of FIP is successful in WebUI")
+                else:
+                    self.logger.error("WebUI verification is failed for FIP")
+                    result = result and False
+            elif re.search('RT',option):
+                regexp_rt_no = re.search(var_list[0] + "\:" + var_list[1], str(value))
+                regexp_rt_ip = re.search(var_list[2] + "\:" + var_list[1], str(value))
+                if regexp_rt_no or regexp_rt_ip:
+                    self.logger.info("Verificatoin of RT is successful in WebUI")
+                else:
+                    self.logger.error("WebUI verification is failed for RT")
+                    result = result and False
+            return result
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.ui.screenshot(option)
+            result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+    # verify_vn_after_edit_ui
