@@ -154,13 +154,8 @@ class VMFixture(fixtures.Fixture):
             self.vn_fq_name = self.vn_fq_names[0]
             self.vm_ip_dict = self.get_vm_ip_dict()
             self.vm_ips = self.get_vm_ips()
-            self.zone = getattr(self.vm_obj,'OS-EXT-AZ:availability_zone', None)
-            self.image_name = self.orch.get_image_name_for_zone(
-                                        image_name=self.image_name,
-                                        zone=self.zone)
-            (self.vm_username, self.vm_password) = self.orch.get_image_account(
-                                    self.image_name)
             self.already_present = True
+            self.set_image_details(self.vm_obj)
 
     def setUp(self):
         super(VMFixture, self).setUp()
@@ -186,6 +181,7 @@ class VMFixture(fixtures.Fixture):
             with self.printlock:
                 self.logger.debug('VM %s already present, not creating it'
                                   % (self.vm_name))
+            self.set_image_details(self.vm_obj)
         else:
             if self.inputs.is_gui_based_config():
                 self.webui.create_vm(self)
@@ -207,13 +203,20 @@ class VMFixture(fixtures.Fixture):
                 self.vm_obj = objs[0]
                 self.vm_objs = objs
                 self.vm_id = self.vm_objs[0].id
-                self.vm_obj.get()
-                self.zone = getattr(self.vm_obj,'OS-EXT-AZ:availability_zone', None)
-                self.image_name = self.orch.get_image_name_for_zone(
-                                        image_name=self.image_name,
-                                        zone=self.zone)
 
     # end setUp
+
+    def set_image_details(self, vm_obj):
+        '''
+        Need to update image details for the setup where we manipulate image name in orchestrator
+        like in docker setup, image name will be changed while nova vm creation:
+        First get the latest zone from orch and then get image info for the zone'''
+        self.zone = getattr(vm_obj,'OS-EXT-AZ:availability_zone', None)
+        self.image_name = self.orch.get_image_name_for_zone(
+                                image_name=self.image_name,
+                                zone=self.zone)
+        (self.vm_username, self.vm_password) = self.orch.get_image_account(
+            self.image_name)
 
     def get_uuid(self):
         return self.vm_id
@@ -260,6 +263,7 @@ class VMFixture(fixtures.Fixture):
             self.logger.debug("VM %s ID is %s" % (vm_obj.name, vm_obj.id))
             self.logger.debug('VM %s launched on Node %s'
                              % (vm_obj.name, self.get_host_of_vm(vm_obj)))
+        self.set_image_details(vm_obj)
         self.vm_ips = self.get_vm_ips()
         if not self.vm_ips:
             self.logger.error('VM didnt seem to have got any IP')
