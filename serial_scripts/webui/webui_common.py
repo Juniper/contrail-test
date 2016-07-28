@@ -1665,7 +1665,12 @@ class WebuiCommon:
                         element.click()
                         break
             if os_release != 'havana':
-                self.click_element('dt', 'tag', browser, jquery=False, wait=4)
+                try:
+                    self.click_element('dt', 'tag', browser, jquery=False, wait=4)
+                except:
+                    self.click_element(
+                        'openstack-dashboard', 'class',
+                        browser, jquery=False, wait=4)
         except WebDriverException:
             self.logger.error("Click on select project failed")
             self.screenshot('Click_select_project_failure', browser)
