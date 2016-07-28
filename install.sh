@@ -10,7 +10,7 @@ CIRROS_IMAGE_URL=${CIRROS_IMAGE_URL:-http://10.204.217.158/images/converts/cirro
 BASE_DIR=`dirname $(readlink -f $0)`
 PACKAGES_REQUIRED_UBUNTU="python-pip ant python-novaclient python-neutronclient python-cinderclient \
     python-contrail python-glanceclient python-heatclient python-ceilometerclient python-setuptools contrail-utils \
-    patch git"
+    patch git ipmitool"
 PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD="$PACKAGES_REQUIRED_UBUNTU python-dev libxslt1-dev libz-dev libyaml-dev sshpass"
 
 usage () {

@@ -230,9 +230,6 @@ class ContrailConnections():
         self.agent_inspect.clear()
         self.ops_inspects.clear()
         self.ds_inspect.clear()
-        self.api_server_inspect = None
-        self.ops_inspect = None
-        self.ds_verification_obj = None
         self._svc_mon_inspect = None
         self._api_server_inspect = None
         self._ops_inspect = None

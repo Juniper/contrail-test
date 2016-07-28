@@ -7,7 +7,8 @@ import testtools
 import unittest                                                                                                                                                                                                                           
 import types                                                                                                                                                                                                                                
 import time
-sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))                                                                                                                                                                                  
+trafficdir = os.path.join(os.path.dirname(__file__), '../../tcutils/pkgs/Traffic')
+sys.path.append(trafficdir)
 from tcutils.util import retry
 from traffic.core.stream import Stream                                                                                                                                                                                                      
 from traffic.core.profile import StandardProfile, ContinuousProfile, ContinuousSportRange
