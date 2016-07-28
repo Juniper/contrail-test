@@ -579,7 +579,10 @@ class WebuiTest:
                 self.ui.send_keys(fixture.policy_name, 'policyName', 'name')
                 plus_count = 0
                 for index, rule in enumerate(fixture.rules_list):
-                    ind = index * 3
+                    if not index:
+                        ind = index * 3
+                    else:
+                        ind = index * 3 + 1
                     simple_action = rule['simple_action']
                     protocol = rule['protocol']
                     src_address = rule['source_network']
