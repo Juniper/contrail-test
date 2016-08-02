@@ -144,7 +144,25 @@ docker_run () {
 
     if [[ -e $mount_local ]]; then
         mount_local=`readlink -f $mount_local`
-        local_vol=" -v $mount_local:/contrail-test-local "
+        if [[ -d $mount_local/contrail-test && -d $mount_local/contrail-test-ci ]]; then
+            temp_dir=`mktemp -d`
+            rsync -a -f"+ */" -f"- *" $mount_local/contrail-test-ci/* $temp_dir
+            rsync -a -f"+ */" -f"- *" $mount_local/contrail-test/* $temp_dir
+            for i in `find $mount_local/contrail-test-ci/ -not \( -path $mount_local/contrail-test-ci/.\* -prune \) -type f -print`; do
+                d=`echo $i | sed "s#$mount_local/contrail-test-ci/##"`
+                s=`echo $i | sed "s#$mount_local#/combined/#"`
+                ln -s $s $temp_dir/$d
+            done
+            for i in `find $mount_local/contrail-test/ -not \( -path $mount_local/contrail-test/.\* -prune \) -type f -print`; do
+                d=`echo $i | sed "s#$mount_local/contrail-test/##"`
+                s=`echo $i | sed "s#$mount_local#/combined/#"`
+                ln -s $s $temp_dir/$d
+            done
+            local_vol=" -v $mount_local:/combined -v $temp_dir:/contrail-test-local "
+        else
+            echo "ERROR: Mount local directory ($mount_local) should have contrail-test and contrail-test-ci cloned"
+            exit 1
+        fi
     fi
     if [[ -n $ssh_key_file ]]; then
         ssh_key_file=`readlink -f $ssh_key_file`
