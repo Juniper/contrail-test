@@ -1008,3 +1008,14 @@ def is_almost_same(val1, val2, threshold_percent=10, num_type=int):
         else:
             return True
 # end is_almost_same
+
+def compare_dict(dict1, dict2, ignore_keys=[]):
+    ''' Compares two dicts.
+        Returns a tuple (True/False, set of items which dont match)
+    '''
+    d1_new = dict((k, v) for k,v in dict1.iteritems() \
+        if k not in ignore_keys)
+    d2_new = dict((k, v) for k,v in dict2.iteritems() \
+        if k not in ignore_keys)
+    return (d1_new == d2_new, set(d1_new) ^ set(d2_new))
+# end compare_dict

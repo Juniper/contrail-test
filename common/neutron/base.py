@@ -910,3 +910,10 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
             self.logger.error('keepalived not running in %s' % vm.vm_name)
         return result
     # end keepalive_chk
+
+    @classmethod
+    def check_vms_booted(cls, vms_list):
+        for vm_fixture in vms_list:
+            assert vm_fixture.wait_till_vm_is_up(), 'VM %s has not booted' % (
+                vm_fixture.vm_name)
+    # end check_vms_booted

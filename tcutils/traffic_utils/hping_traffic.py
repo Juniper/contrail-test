@@ -36,19 +36,21 @@ class Hping3:
         self.sender_vm_fixture = sender_vm_fixture
         self.host = host
         self.args_string = self.get_cmd_args(**kwargs)
-        rnd_str = get_random_name()
-        self.log_file = result_file + '_' + rnd_str + '.log'
-        self.result_file = result_file + '_' + rnd_str + '.result'
+        self.rnd_str = get_random_name()
+        self.log_file = result_file + '_' + self.rnd_str + '.log'
+        self.result_file = result_file + '_' + self.rnd_str + '.result'
+        self.hping_cmd = None
+        self.pid_file = '/tmp/hping_%s.pid' %(self.rnd_str)
 
     def start(self, wait=True):
         cmd = 'hping3 %s %s 1>%s 2>%s' % (self.args_string, self.host,
-                                             self.log_file,
-                                             self.result_file)
+                                          self.log_file,
+                                          self.result_file)
         self.logger.info('Starting hping3  on %s, args: %s' % (
             self.sender_vm_fixture.vm_name, self.args_string))
         self.logger.debug('Hping3 cmd : %s' %(cmd))
         self.sender_vm_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True,
-            as_daemon=True)
+            as_daemon=True, pidfile=self.pid_file)
         if wait:
             self.wait_till_hping3_completes()
     # end start
@@ -65,7 +67,7 @@ class Hping3:
           'rtt_max' : xyz,
         }
         '''
-        cmd = 'pkill -9 -f %s' % (self.result_file)
+        cmd = 'cat %s | xargs kill ' % (self.pid_file)
         self.logger.debug('Ensuring hping3 instance with result file %s '
             'on %s is stopped' % (self.result_file,
                                   self.sender_vm_fixture.vm_name))
@@ -157,28 +159,26 @@ class Hping3:
         return ret_val
     # end get_cmd_args
 
-    def _get_pid_of_hping3(self):
-        cmd = 'pidof hping3'
-        # TODO
-        # Need to change to use result's succeeded/failed attributes
-        # once ssh fowarding is used to run the cmd
-        result = self.sender_vm_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True,
-                 raw=True)
+    def _check_if_hping_still_running(self):
+        result = self.sender_vm_fixture.run_cmd_on_vm(
+            cmds=['kill `cat %s`' %(self.pid_file)],
+            raw=True)
         status = result.values()[0]
-        if 'received nonzero return code' in status:
-            self.logger.debug('Unable to get pid of hping3 on %s..may not be '
-                ' running' % (self.sender_vm_fixture.vm_name))
-            return None
-        else:
+        if result.succeeded:
             self.logger.debug('hping3 is active on %s, PID: %s' % (
                               self.sender_vm_fixture,
                               status))
-            return status
-    # end _get_pid_of_hping3
+            return True
+        else:
+            self.logger.debug('PID of hping not found to be running'
+                ' on VM %s. It must have completed' % (
+                self.sender_vm_fixture.vm_name))
+            return False
+    # end _check_if_hping_still_running
 
-    @retry(delay=5, tries=100)
+    @retry(delay=5, tries=50)
     def wait_till_hping3_completes(self):
-        if self._get_pid_of_hping3():
+        if self._check_if_hping_still_running():
             self.logger.debug('Waiting for hping3 to complete...')
             return False
         else:

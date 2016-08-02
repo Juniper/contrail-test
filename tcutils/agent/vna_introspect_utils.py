@@ -768,6 +768,145 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         return name
     # end get_generator_name
 
+    def get_agent_physical_interface(self):
+        ''' Get it from http://nodek2:8085/Snh_SandeshUVECacheReq?x=VrouterAgent
+        '''
+        xml_obj = self.dict_get('Snh_SandeshUVECacheReq?x=VrouterAgent')
+        return xml_obj.xpath('./UveVrouterAgent/data/VrouterAgent/phy_if/list/'
+                             'AgentInterface/name')[0].text
+    # end get_agent_physical_interface        
+
+
+    def get_agent_forwarding_class(self, uuid):
+        '''   Get it from nodek2:8085/Snh_ForwardingClassSandeshReq?uuid=&name=&id=1
+            Sample : {'mpls_exp': '1',
+                      'vlan_priority': '5',
+                      'uuid': '954bcfda-c38f-41b6-a50b-1c42e400d95e',
+                      'dscp': '10',
+                      'qos_queue': '0',
+                      'id': '1',
+                      'name': None}
+        '''
+        xml_obj = self.dict_get('Snh_ForwardingClassSandeshReq?uuid=%s&name=&id=' % (uuid))
+        xpath_str = './ForwardingClassSandeshResp/fc_list/list/ForwardingClassSandeshData'
+        xml_obj = xml_obj.xpath(xpath_str)
+
+        if not xml_obj or len(xml_obj) != 1:
+            self.log.debug('Unable to fetch fc details in agent for '
+                ' uuid %s, Got :%s' % (uuid, xml_obj))
+            return None
+
+        p = {}
+        for e in xml_obj[0]:
+            p[e.tag] = e.text
+        return p
+    # end get_agent_forwarding_class
+
+    def get_vrouter_forwarding_class(self, id):
+        ''' http://nodek2:8085/Snh_KForwardingClassReq?index=0
+
+            Returns 
+                {'mpls_exp': '0', 'qos_queue': '0', 'vlan_priority': '0', 'id': '0', 'dscp': '0'}
+            or None if id is not found
+        '''
+        xml_obj = self.dict_get('Snh_KForwardingClassReq?index=%s' % (id))
+        xml_obj = xml_obj.xpath('./forwarding_class_list/list/KForwardingClass')
+        if not xml_obj or len(xml_obj) != 1:
+            self.log.debug('Unable to fetch fc details in vrouter for '
+                ' id %s, Got :%s' % (id, xml_obj))
+            return None
+        p = {}
+        for e in xml_obj[0]:
+            p[e.tag] = e.text
+        return p
+    # end get_vrouter_forwarding_class
+
+    def get_agent_qos_config(self, uuid):
+        ''' Get it from 
+            http://nodek2:8085/Snh_AgentQosConfigSandeshReq?uuid=4eedad9a-a954-4553-ae8b-9cd95a09b66b&name=&id=
+            Sample return dict: 
+                {'dscp_list': [{'forwarding_class_id': '1', 'qos_value': '0'}],
+                 'id': '1',
+                 'name': 'default-global-system-config:default-global-qos-config:fab-qc1',
+                 'type': 'fabric',
+                 'uuid': '4eedad9a-a954-4553-ae8b-9cd95a09b66b',
+                 'vlan_priority_list': []}
+        '''
+        xml_obj = self.dict_get('Snh_AgentQosConfigSandeshReq?uuid=%s&name=&id=' % (uuid))
+        xpath_str = './AgentQosConfigSandeshResp/qc_list/list/AgentQosConfigSandeshData'
+        xml_obj = xml_obj.xpath(xpath_str)
+        if not xml_obj or len(xml_obj) != 1:
+            self.log.debug('Unable to fetch Qos config details in agent for '
+                ' uuid %s, Got :%s' % (uuid, xml_obj))
+            return None
+
+        p = {}
+        for e in xml_obj[0]:
+            if e.tag == 'dscp_list' or e.tag == 'vlan_priority_list' or \
+                    e.tag == 'mpls_exp_list' :
+                cp_list = e.xpath('./list/QosForwardingClassSandeshPair')
+                cps = []
+                for cp in cp_list:
+                    qv = cp.xpath('./qos_value')[0].text
+                    fc = cp.xpath('./forwarding_class_id')[0].text
+                    cps.append({'qos_value':  qv, 'forwarding_class_id' : fc})
+                p[e.tag] = cps
+            else:
+                p[e.tag] = e.text
+        return p
+    # end get_agent_qos_config
+
+    def get_vrouter_qos_config(self, id):
+        ''' Get it from 
+            http://nodek2:8085/Snh_KQosConfigReq?index=0
+            Sample return dict: 
+              {'dscp_map': [{'fc_id': '1', 'qos': '0'},
+                            {'fc_id': '0', 'qos': '1'},
+                            {'fc_id': '0', 'qos': '2'},
+                            {'fc_id': '0', 'qos': '3'},.....64 Code points
+                 'id': '0',
+                 'mpls_exp_map': [{'fc_id': '0', 'qos': '0'},
+                                  {'fc_id': '0', 'qos': '1'},
+                                  {'fc_id': '0', 'qos': '2'},
+                                  {'fc_id': '0', 'qos': '3'},
+                                  {'fc_id': '0', 'qos': '4'},
+                                  {'fc_id': '0', 'qos': '5'},
+                                  {'fc_id': '0', 'qos': '6'},
+                                  {'fc_id': '0', 'qos': '7'}],
+                 'vlan_priority_map': [{'fc_id': '0', 'qos': '0'},
+                                       {'fc_id': '0', 'qos': '1'},
+                                       {'fc_id': '0', 'qos': '2'},
+                                       {'fc_id': '0', 'qos': '3'},
+                                       {'fc_id': '0', 'qos': '4'},
+                                       {'fc_id': '0', 'qos': '5'},
+                                       {'fc_id': '0', 'qos': '6'},
+                                       {'fc_id': '0', 'qos': '7'}]}
+
+        '''
+        xml_obj = self.dict_get('Snh_KQosConfigReq?index=%s' % (id))
+        xpath_str = './qos_config_list/list/KQosConfig'
+        xml_obj = xml_obj.xpath(xpath_str)
+        if not xml_obj or len(xml_obj) != 1:
+            self.log.debug('Unable to fetch Qos config details in vrouter for '
+                ' id %s, Got :%s' % (id, xml_obj))
+            return None
+
+        p = {}
+        for e in xml_obj[0]:
+            if e.tag == 'dscp_map' or e.tag == 'vlan_priority_map' or \
+                    e.tag == 'mpls_exp_map' :
+                cp_list = e.xpath('./list/kQosIdFowardingClassPair')
+                cps = []
+                for cp in cp_list:
+                    qv = cp.xpath('./qos')[0].text
+                    fc = cp.xpath('./fc_id')[0].text
+                    cps.append({'qos':  qv, 'fc_id' : fc})
+                p[e.tag] = cps
+            else:
+                p[e.tag] = e.text
+        return p
+    # end get_vrouter_qos_config
+
 if __name__ == '__main__':
 
     vvnagnt = AgentInspect('10.204.217.12')

@@ -33,16 +33,23 @@ def stop_tcpdump_for_vm_intf(obj, session, pcap):
     return stop_tcpdump_for_intf(session, pcap)
 
 @retry(delay=2, tries=6)
-def verify_tcpdump_count(obj, session, pcap, exp_count=None):
+def verify_tcpdump_count(obj, session, pcap, exp_count=None, exact_match=True):
 
     cmd = 'tcpdump -r %s | wc -l' % pcap
     out, err = execute_cmd_out(session, cmd, obj.logger)
     count = int(out.strip('\n'))
     result = True
     if exp_count is not None:
-        if count != exp_count:
+        if count != exp_count and exact_match:
             obj.logger.warn("%s packets are found in tcpdump output file %s but \
                                         expected %s" % (count, pcap, exp_count))
+            result = False
+        elif count > exp_count and not exact_match:
+            obj.logger.debug("%s packets are found in tcpdump output file %s but \
+                             expected %s, which is fine" % (count, pcap, exp_count))
+        elif count < exp_count and not exact_match:
+            obj.logger.warn("%s packets are found in tcpdump output file %s but \
+                             expected atleast %s" % (count, pcap, exp_count))
             result = False
     else:
         if count == 0:
