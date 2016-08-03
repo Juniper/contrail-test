@@ -142,6 +142,8 @@ class VMFixture(fixtures.Fixture):
             self.vm_obj = self.orch.get_vm_by_id(vm_id=self.vm_id)
             if not self.vm_obj:
                 raise Exception('VM with id %s not found'%self.vm_id)
+            if not self.orch.get_vm_detail(self.vm_obj):
+                raise Exception('VM %s is not yet launched'%self.vm_id)
             self.vm_objs = [self.vm_obj]
             self.vm_name = self.vm_obj.name
             self.vn_names = self.orch.get_networks_of_vm(self.vm_obj)
@@ -330,7 +332,7 @@ class VMFixture(fixtures.Fixture):
             self.cs_vmi_objs = dict()
         if not self.cs_vmi_objs.get(cfgm_ip) or refresh:
             vmi_obj = self.api_s_inspects[cfgm_ip].get_cs_vmi_of_vm(
-                      self.vm_id, refresh)
+                      self.vm_id, refresh=True)
             self.cs_vmi_objs[cfgm_ip] = vmi_obj
         ret = True if self.cs_vmi_objs[cfgm_ip] else False
         return (ret, self.cs_vmi_objs[cfgm_ip])
@@ -730,7 +732,7 @@ class VMFixture(fixtures.Fixture):
         self.vm_in_agent_flag = True
 
         #Verification in vcenter plugin introspect
-        #vcenter introspect not working.disabling vcenter verification till. 
+        #vcenter introspect not working.disabling vcenter verification till.
         #if getattr(self.orch,'verify_vm_in_vcenter',None):
         #    assert self.orch.verify_vm_in_vcenter(self.vm_obj)
 
@@ -829,7 +831,7 @@ class VMFixture(fixtures.Fixture):
                         agent_label = agent_path['path_list'][0]['label']
                         intf_name = agent_path['path_list'][0]['nh']['itf']
                         self.agent_label[vn_fq_name].append(agent_label)
-    
+
                         if agent_path['path_list'][0]['nh']['itf'] != \
                               self.tap_intf[vn_fq_name]['name']:
                            self.logger.warning("Active route in agent for %s is "
@@ -841,7 +843,7 @@ class VMFixture(fixtures.Fixture):
                         else:
                            self.logger.debug('Active route in agent is present for'
                                              ' VMI %s ' % (self.tap_intf[vn_fq_name]['name']))
-    
+
                         if self.tap_intf[vn_fq_name]['label'] != agent_label:
                            self.logger.warning('VM %s label mismatch! ,'
                                                ' Expected : %s , Got : %s' % (self.vm_name,
@@ -870,10 +872,10 @@ class VMFixture(fixtures.Fixture):
                 self.logger.debug('Tap interface %s detail : %s' % (
                     self.tap_intf[vn_fq_name]['name'], self.tap_intf[vn_fq_name]))
 
-            if 'l2' in self.vnc_lib_fixture.get_active_forwarding_mode(vn_fq_name):    
-                if not self._do_l2_verification(vn_fq_name,inspect_h): 
+            if 'l2' in self.vnc_lib_fixture.get_active_forwarding_mode(vn_fq_name):
+                if not self._do_l2_verification(vn_fq_name,inspect_h):
                     return False
-            
+
             # Check if VN for the VM and route for the VM is present on all
             # compute nodes
             if not self.verify_in_all_agents(vn_fq_name):
@@ -991,7 +993,7 @@ class VMFixture(fixtures.Fixture):
             self.logger.debug(
                 'VN %s verification for VM %s  in Agent %s passed ' %
                 (vn_fq_name, self.vm_name, compute_ip))
-            
+
             if 'l2' in self.vnc_lib_fixture.get_active_forwarding_mode(vn_fq_name):
                 self.logger.debug(
                     'Starting all layer 2 verification in agent %s' % (compute_ip))
@@ -1025,7 +1027,7 @@ class VMFixture(fixtures.Fixture):
         for ip in vm_ips:
             result = self.ping_to_ip(ip=ip, *args, **kwargs)
             if result == expectation:
-                #if result matches the expectation, continue to next ip 
+                #if result matches the expectation, continue to next ip
                 continue
             else:
                 return result
@@ -2350,8 +2352,16 @@ class VMFixture(fixtures.Fixture):
             self.tap_intf[vn_fq_name] = inspect_h.get_vna_intf_details(
                 self.tap_intf[vn_fq_name]['name'])[0]
     # end refresh_agent_vmi_objects
-        
-        
+
+    def clear_vmi_info(self):
+        self.clear_local_ips()
+        self.vmi_ids = dict()
+        self.mac_addr = dict()
+        self.agent_label = dict()
+        self.cs_vmi_objs = dict()
+        self.cs_instance_ip_objs = dict()
+        self.vm_ips = list()
+        self.vm_ip_dict = dict()
 
     def interface_attach(self, port_id=None, net_id=None, fixed_ip=None):
         self.logger.info('Attaching port %s to VM %s' %
@@ -2398,7 +2408,7 @@ class VMFixture(fixtures.Fixture):
         compute_ip = self.vm_node_ip
         compute_user = self.inputs.host_data[compute_ip]['username']
         compute_password = self.inputs.host_data[compute_ip]['password']
-        
+
         (session, pcap) = start_tcpdump_for_intf(compute_ip, compute_user,
             compute_password, interface, filters, self.logger)
         return (session, pcap)
@@ -2408,13 +2418,13 @@ class VMFixture(fixtures.Fixture):
         stop_tcpdump_for_intf(session, pcap, self.logger)
 
     def get_vm_interface_name(self, mac_address=None):
-        ''' 
+        '''
             Given a MAC address, returns the corresponding interface name
             in the VM
 
-            Note that ifconfig output for some distros like fedora is diff 
+            Note that ifconfig output for some distros like fedora is diff
             from that in Ubuntu/Cirros
-            Ubuntu has ifconfig with format 
+            Ubuntu has ifconfig with format
                 p1p2      Link encap:Ethernet  HWaddr 00:25:90:c3:0a:f3
 
             and redhat-based distros has
@@ -2430,10 +2440,10 @@ class VMFixture(fixtures.Fixture):
             mac_address)
         redhat_cmd = 'ifconfig | grep -i -B 2 "%s" | grep flags | '\
                         'awk \'{print \\\\$1}\'' % (mac_address)
-        cmd = 'test -f /etc/redhat-release && %s || %s' % (redhat_cmd, 
+        cmd = 'test -f /etc/redhat-release && %s || %s' % (redhat_cmd,
             ubuntu_cmd)
         name = self.run_cmd_on_vm([cmd]).strip(':')
-        self._vm_interface[mac_address] = name 
+        self._vm_interface[mac_address] = name
         return name
     # end get_vm_interface_name
 
@@ -2497,7 +2507,7 @@ class VMFixture(fixtures.Fixture):
             warn_only=True, abort_on_prompts=False,
             hide='everything'):
             self.copy_file_to_vm(filename, '/tmp', force=True)
-            outputs = self.run_cmd_on_vm(['python /tmp/%s' % (filename_short)], 
+            outputs = self.run_cmd_on_vm(['python /tmp/%s' % (filename_short)],
                 as_sudo=as_sudo)
         shutil.rmtree(folder)
         return outputs.values()[0]
@@ -2508,8 +2518,8 @@ class VMFixture(fixtures.Fixture):
                 if element['key'] == 'vnic_type':
                     return element['value']
         except Exception as e:
-             return '' 
-    
+             return ''
+
     def _do_l2_verification(self,vn_fq_name,inspect_h):
         with self.printlock:
                 self.logger.debug('Starting Layer 2 verification in Agent')
@@ -2613,7 +2623,7 @@ class VMFixture(fixtures.Fixture):
         #          return False
         return True
         # L2 verification end here
-        
+
 # end VMFixture
 
 class VMData(object):
