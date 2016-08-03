@@ -94,7 +94,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         assert result
     	return True
     
-    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_verify_object_logs(self):
         '''
