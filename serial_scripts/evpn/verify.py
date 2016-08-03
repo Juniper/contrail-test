@@ -2335,8 +2335,8 @@ class VerifyEvpnCases():
         self.send_l2_traffic(vn1_vm1_fixture,iface='eth0')
         result = verify_tcpdump_count(self, session, pcap, exp_count=10,mac=self.mac2)
         self.logger.info('Checking the communication between 2 VM after vrouter restart')
-        assert vn_l2_vm1_fixture.ping_with_certainty(dst_vm_fixture=vn_l2_vm2_fixture, 
-                                              vn_fq_name=vn4_fixture.vn_fq_name)
+        assert vn1_vm1_fixture.ping_with_certainty(dst_vm_fixture=vn1_vm2_fixture, 
+                                              vn_fq_name=vn1_fixture.vn_fq_name)
 
         return True
     # End test_epvn_with_agent_restart
