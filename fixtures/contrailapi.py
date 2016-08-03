@@ -1,13 +1,13 @@
+import logging
+
 from tcutils.util import *
 from vnc_api.vnc_api import *
-from orchestrator import Orchestrator
 
-class ContrailApi(Orchestrator):
+class ContrailVncApi():
 
-    def __init__(self, inputs, vnc, logger):
-        self._inputs = inputs
+    def __init__(self, vnc, logger=None):
         self._vnc = vnc
-        self._log = logger
+        self._log = logger or logging.getLogger(__name__)
 
     def get_policy(self, fq_name, **kwargs):
         return self._vnc.network_policy_read(fq_name=fq_name)

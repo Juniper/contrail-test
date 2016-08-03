@@ -1,13 +1,12 @@
 import os
 from orchestrator import Orchestrator, OrchestratorAuth
-from contrailapi import ContrailApi
 from nova_test import NovaHelper
 from quantum_test import QuantumHelper
 from keystone_tests import KeystoneCommands
 from common.openstack_libs import ks_exceptions
 from vcenter import VcenterAuth, VcenterOrchestrator
 
-class OpenstackOrchestrator(ContrailApi):
+class OpenstackOrchestrator(Orchestrator):
 
    def __init__(self, inputs, username, password, project_name, project_id,
                  vnclib=None, logger=None, auth_server_ip=None):
@@ -82,7 +81,7 @@ class OpenstackOrchestrator(ContrailApi):
        return self.nova_h.delete_vm(vm_obj)
 
    def is_vm_deleted(self, vm_obj, **kwargs):
-       return self.nova_h.is_vm_deleted_in_nova_db(vm_obj, self._inputs.openstack_ip)
+       return self.nova_h.is_vm_deleted_in_nova_db(vm_obj, self.inputs.openstack_ip)
 
    def get_host_of_vm(self, vm_obj, **kwargs):
        return self.nova_h.get_nova_host_of_vm(vm_obj)

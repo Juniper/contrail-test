@@ -8,7 +8,6 @@ from fabric.context_managers import settings, hide
 from fabric.api import run, env
 from fabric.operations import get, put
 from orchestrator import Orchestrator, OrchestratorAuth
-from contrailapi import ContrailApi
 from tcutils.util import *
 from tcutils.cfgparser import parse_cfg_file
 from vnc_api.vnc_api import VncApi
@@ -86,7 +85,7 @@ class VcenterVlanMgr:
     def free_vlan(self, vlan):
         self._vlans.append(vlan)
 
-class VcenterOrchestrator(ContrailApi):
+class VcenterOrchestrator(Orchestrator):
 
     def __init__(self, inputs, host, port, user, pwd, dc_name, vnc, logger):
         super(VcenterOrchestrator, self).__init__(inputs, vnc, logger)
