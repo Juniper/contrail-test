@@ -29,6 +29,8 @@ if __name__ == "__main__":
                 tor_ovs_port=device_dict['tor_ovs_port'],
                 tor_ovs_protocol=device_dict['tor_ovs_protocol'],
                 controller_ip=device_dict['controller_ip'],
+                cfgm_ip=init_obj.cfgm_ip,
+                auth_server_ip=init_obj.auth_ip,
                 bringup=True)
             tor_obj.setUp()
         if device_dict['type'] == 'router':
@@ -42,6 +44,8 @@ if __name__ == "__main__":
                 mgmt_ip=device_dict['mgmt_ip'],
                 tunnel_ip=device_dict['tunnel_ip'],
                 ports=device_dict['ports'],
+                cfgm_ip=init_obj.cfgm_ip,
+                auth_server_ip=init_obj.auth_ip,
                 )
             phy_router_obj.setUp()
     # end for

@@ -606,4 +606,9 @@ class ComputeNodeFixture(fixtures.Fixture):
         return self.agent_generator_name
     # end get_agent_generator_name
 
+    @property
+    def agent_physical_interface(self):
+        if not getattr(self, '_agent_phyiscal_interface', None):
+            self._agent_phyiscal_interface = self.agent_inspect_h.get_agent_physical_interface()
+        return self._agent_phyiscal_interface
 

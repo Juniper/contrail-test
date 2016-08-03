@@ -392,7 +392,7 @@ class OpenVSwitchFixture(ToRFixture, AbstractToR):
             put('%s/tools/tor/contrail-ovs-tool.sh' % (pwd))
             put('%s/tools/tor/ovs-vtep' % (pwd),
                 '/usr/share/openvswitch/scripts/ovs-vtep')
-            self.logger.debug('Copied contrail-ovs-tool.sh and ovs-vtep ',
+            self.logger.debug('Copied contrail-ovs-tool.sh and ovs-vtep '
                 ' to %s' % (self.mgmt_ip))
             if self.tor_ovs_protocol == 'pssl':
                 self.remote_home = run('pwd')

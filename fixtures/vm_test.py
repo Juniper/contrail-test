@@ -1890,7 +1890,7 @@ class VMFixture(fixtures.Fixture):
    # end config_via_netconf
 
     def run_cmd_on_vm(self, cmds=[], as_sudo=False, timeout=30,
-        as_daemon=False, raw=False, warn_only=True):
+        as_daemon=False, raw=False, warn_only=True, pidfile=None):
         '''run cmds on VM
 
         '''
@@ -1911,7 +1911,8 @@ class VMFixture(fixtures.Fixture):
                     vm_host_string, cmd, gateway_password=host['password'],
                     gateway='%s@%s' % (host['username'], self.vm_node_ip),
                     with_sudo=as_sudo, timeout=timeout, as_daemon=as_daemon,
-                    raw=raw, warn_only=warn_only, password=self.vm_password
+                    raw=raw, warn_only=warn_only, password=self.vm_password,
+                    pidfile=pidfile
                 )
                 self.logger.debug(output)
                 self.return_output_values_list.append(output)
