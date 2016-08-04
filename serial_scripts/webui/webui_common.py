@@ -2672,7 +2672,7 @@ class WebuiCommon:
                     else:
                         data_new.append(item)
                 data_len = len(data_new)
-                ipam_option = "//td[contains(@id,'user_created_ipam_fqn')]"
+                ipam_option = "//td[contains(@id,'user_created_ipam_fqn_dropdown')]"
                 ipam = self.find_element(ipam_option, 'xpath', elements=True)
                 if data_len> 3 :
                     index = data_len-3
