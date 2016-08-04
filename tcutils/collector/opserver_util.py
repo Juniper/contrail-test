@@ -59,17 +59,20 @@ class OpServerUtils(object):
     # end get_start_end_time
 
     @staticmethod
-    def post_url_http(url, params):
+    def post_url_http(url, params, token):
+        DEFAULT_HEADERS = {'Content-type': 'application/json; charset="UTF-8"','Expect': '202-accepted'}
+        headers = DEFAULT_HEADERS.copy()
+        headers['X-AUTH-TOKEN'] = token['X-AUTH-TOKEN']
         try:
             print 'request version : %s'%(pkg_resources.get_distribution("requests").version[0])
             if int(pkg_resources.get_distribution("requests").version[0]) >= 1:
                 response = requests.post(url, stream=True,
                                          data=params,
-                                         headers=OpServerUtils.POST_HEADERS)
+                                         headers=headers)
             else:
                 response = requests.post(url, prefetch=False,
                                          data=params,
-                                         headers=OpServerUtils.POST_HEADERS)
+                                         headers=headers)
         except requests.exceptions.ConnectionError, e:
             print "Connection to %s failed" % url
             return None
@@ -81,13 +84,13 @@ class OpServerUtils(object):
     # end post_url_http
 
     @staticmethod
-    def get_url_http(url):
+    def get_url_http(url, headers=None):
         data = {}
         try:
             if int(pkg_resources.get_distribution("requests").version[0]) >= 1:
-                data = requests.get(url, stream=True)
+                data = requests.get(url, stream=True, headers=headers)
             else:
-                data = requests.get(url, prefetch=False)
+                data = requests.get(url, prefetch=False, headers=headers)
         except requests.exceptions.ConnectionError, e:
             print "Connection to %s failed" % url
 
@@ -121,11 +124,11 @@ class OpServerUtils(object):
     # end parse_query_result
 
     @staticmethod
-    def get_query_result(opserver_ip, opserver_port, qid):
+    def get_query_result(opserver_ip, opserver_port, qid, headers):
         while True:
             url = OpServerUtils.opserver_query_url(
                 opserver_ip, opserver_port) + '/' + qid
-            resp = OpServerUtils.get_url_http(url)
+            resp = OpServerUtils.get_url_http(url, headers=headers)
             if resp.status_code != 200:
                 yield {}
                 return
@@ -137,7 +140,7 @@ class OpServerUtils(object):
                 for chunk in status['chunks']:
                     url = OpServerUtils.opserver_url(
                         opserver_ip, opserver_port) + chunk['href']
-                    resp = OpServerUtils.get_url_http(url)
+                    resp = OpServerUtils.get_url_http(url, headers=headers)
                     if resp.status_code != 200:
                         yield {}
                     else:

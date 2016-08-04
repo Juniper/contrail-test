@@ -291,6 +291,8 @@ class VerificationOpsSrv (VerificationUtilBase):
                    where_clause='',
                    sort_fields=None, sort=None, limit=None, filter=None, dir=None):
         res = None
+        self._drv._auth()
+        headers = self._drv._headers
         try:
             flows_url = OpServerUtils.opserver_query_url(
                 self._ip, str(self._port))
@@ -304,14 +306,19 @@ class VerificationOpsSrv (VerificationUtilBase):
             print json.dumps(query_dict)
             res = []
             resp = OpServerUtils.post_url_http(
-                flows_url, json.dumps(query_dict))
+                flows_url, json.dumps(query_dict), headers)
             if resp is not None:
                 resp = json.loads(resp)
-                qid = resp['href'].rsplit('/', 1)[1]
-                result = OpServerUtils.get_query_result(
-                    self._ip, str(self._port), qid)
-                for item in result:
-                    res.append(item)
+                try:
+                    qid = resp['href'].rsplit('/', 1)[1]
+                    result = OpServerUtils.get_query_result(
+                        self._ip, str(self._port), qid, headers)
+                    for item in result:
+                        res.append(item)
+                except Exception as e:
+                    if 'value' in resp:
+                        for item in resp['value']:
+                            res.append(item)
         except Exception as e:
             print str(e)
         finally:
