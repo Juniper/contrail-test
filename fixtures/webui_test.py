@@ -691,10 +691,12 @@ class WebuiTest:
                     'data-row')[index]
                 self.ui.click_element('s2id_direction_dropdown', 'id', browser=sg_grp_tuple)
                 self.ui.select_from_dropdown(direction)
-                prot = self.ui.find_element('protocol', 'id', browser=sg_grp_tuple)
+                prot = self.ui.find_element(
+                        'data-cell-protocol', 'class', browser=sg_grp_tuple)
                 self.ui.click_on_caret_down(browser=prot)
                 self.ui.find_select_from_dropdown(protocol)
-                self.ui.click_element('s2id_ethertype_dropdown', 'id', browser=sg_grp_tuple)
+                self.ui.click_element(
+                        's2id_ethertype_dropdown', browser=sg_grp_tuple)
                 self.ui.select_from_dropdown(ether_type)
                 text_box = self.ui.find_element(
                     "input[name$='remotePorts']",
@@ -702,8 +704,8 @@ class WebuiTest:
                     browser=sg_grp_tuple)
                 text_box.clear()
                 text_box.send_keys(port_range)
-                self.ui.click_element("td[id$='remoteAddr']",
-                    'css', browser=sg_grp_tuple)
+                self.ui.click_element(
+                        's2id_remoteAddr_dropdown', browser=sg_grp_tuple)
                 self.ui.send_keys(
                     addresses,
                     "input[id^='s2id_autogen']",
