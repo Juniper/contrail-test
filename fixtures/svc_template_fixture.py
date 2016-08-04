@@ -10,7 +10,8 @@ except ImportError:
 class SvcTemplateFixture(fixtures.Fixture):
 
     def __init__(self, connections, inputs, domain_name, st_name, svc_img_name,
-                 svc_type, if_list, svc_scaling, ordered_interfaces, version=1, svc_mode='transparent', flavor='contrail_flavor_2cpu'):
+                 svc_type, if_list, svc_scaling, ordered_interfaces, version=1, svc_mode='transparent', flavor='contrail_flavor_2cpu',
+                 availability_zone_enable = False):
         self.nova_h = connections.nova_h
         self.vnc_lib_h = connections.vnc_lib
         self.domain_name = domain_name
@@ -32,6 +33,7 @@ class SvcTemplateFixture(fixtures.Fixture):
         self.inputs = inputs
         self.connections = connections
         self.nova_h = connections.nova_h
+        self.availability_zone_enable = availability_zone_enable
         if self.inputs.verify_thru_gui():
             self.browser = connections.browser
             self.browser_openstack = connections.browser_openstack
@@ -73,6 +75,7 @@ class SvcTemplateFixture(fixtures.Fixture):
             self.nova_h.get_flavor(self.flavor)
             svc_properties.set_flavor(self.flavor)
             svc_properties.set_ordered_interfaces(self.ordered_interfaces)
+            svc_properties.set_availability_zone_enable(self.availability_zone_enable)
             for itf in self.if_list:
                 if_type = ServiceTemplateInterfaceType(
                     service_interface_type=itf[0], shared_ip=itf[1], static_route_enable=itf[2])

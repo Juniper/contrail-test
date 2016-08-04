@@ -13,7 +13,8 @@ except ImportError:
 class SvcInstanceFixture(fixtures.Fixture):
 
     def __init__(self, connections, inputs, domain_name, project_name, si_name,
-                 svc_template, if_list, mgmt_vn_name=None, left_vn_name=None, right_vn_name=None, do_verify=True, max_inst=1, static_route=['None', 'None', 'None']):
+                 svc_template, if_list, mgmt_vn_name=None, left_vn_name=None, right_vn_name=None, do_verify=True, max_inst=1, static_route=['None', 'None', 'None'],
+                 availability_zone = None):
         self.connections = connections
         self.vnc_lib = connections.vnc_lib
         self.api_s_inspect = connections.api_server_inspect
@@ -41,6 +42,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.svm_ids = []
         self.cs_svc_vns = []
         self.cs_svc_ris = []
+        self.availability_zone = availability_zone
         self.svn_list = ['svc-vn-mgmt', 'svc-vn-left', 'svc-vn-right']
         if self.inputs.verify_thru_gui():
             self.browser = connections.browser
@@ -129,6 +131,8 @@ class SvcInstanceFixture(fixtures.Fixture):
                         virtual_network=virtual_network)
                     si_prop.add_interface_list(if_type)
             si_prop.set_scale_out(ServiceScaleOutType(self.max_inst))
+            if self.availability_zone:
+                si_prop.set_availability_zone(self.availability_zone)
             svc_instance.set_service_instance_properties(si_prop)
             svc_instance.set_service_template(self.svc_template)
             if self.inputs.is_gui_based_config():
