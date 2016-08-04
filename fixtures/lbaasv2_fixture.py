@@ -2,6 +2,9 @@ import vnc_api_test
 from compute_node_test import ComputeNodeFixture
 from tcutils.util import get_random_name, retry
 from tcutils.parsers.haproxy import parse_haproxy
+from barbican_test import BarbicanHelper
+import tcutils.createContrailCerts as CreateCertsKeys
+
 
 class LBBaseFixture(vnc_api_test.VncLibFixture):
     '''Fixture to handle Loadbalancer object
@@ -729,6 +732,7 @@ class LBaasV2Fixture(LBBaseFixture):
         self.listener_name = kwargs.get('listener_name',
                                         get_random_name('Listener'))
         self.listener_uuid = kwargs.get('listener_uuid', None)
+        self.default_tls_container = kwargs.get('default_tls_container', None)
         self.vip_port = kwargs.get('vip_port', 80)
         self.vip_protocol = kwargs.get('vip_protocol', 'HTTP')
         self.pool_name = kwargs.get('pool_name', get_random_name('Pool'))
@@ -747,6 +751,8 @@ class LBaasV2Fixture(LBBaseFixture):
         self.deleted_member_ids = list()
         self.hmon_id = None
         self.already_present = False
+        self.tls_container = None
+        self.container_ref = None
 
     def setUp(self):
         super(LBaasV2Fixture, self).setUp()
@@ -804,9 +810,16 @@ class LBaasV2Fixture(LBBaseFixture):
         if self.listener_uuid:
             self.already_present = True
         else:
+            if self.default_tls_container and not self.container_ref:
+                cert_key_payload = CreateCertsKeys.create_certificate()
+                self.create_container()
+                self.create_container_cert(self.default_tls_container, cert_payload=cert_key_payload[0], pkey_payload=cert_key_payload[1])
+                self.add_neutron_user_to_acl()
+                self.container_ref = self.container_certs.container_ref
             obj = self.network_h.create_listener(self.lb_uuid,
                                                  self.vip_protocol,
                                                  self.vip_port,
+                                                 self.container_ref,
                                                  self.listener_name)
             self.listener_uuid = obj['id']
             if self.listener_uuid:
@@ -826,6 +839,28 @@ class LBaasV2Fixture(LBBaseFixture):
 
         if not self.hmon_id and self.hm_probe_type:
             self.create_hmon(self.hm_probe_type, self.hm_delay, self.hm_max_retries, self.hm_timeout)
+
+    def create_container(self):
+        self.tls_container = BarbicanHelper(connections=self.connections)
+        return self.tls_container
+
+    def delete_container(self):
+        self.tls_container.delete(self.container_certs)
+        self.tls_container=None
+
+    def create_container_cert(self, container_name='tls_container', cert_payload='certificate', pkey_payload='priavte_key'):
+        self.container_certs = self.tls_container.create_container_certificate(container_name=container_name,
+            cert_payload=cert_payload,
+            pkey_payload=pkey_payload)
+        return self.container_certs
+
+    def add_neutron_user_to_acl(self, user='neutron'):
+        self.connections.auth.keystone.add_user_to_tenant(self.connections.project_name, user, '_member_')
+        auth_token = self.connections.auth.keystone.keystone.get_token(self.connections.auth.keystone.get_session())
+        user_id = str(self.connections.auth.keystone.get_user_dct(user).id)
+        for secrets in self.container_certs.secret_refs:
+            self.tls_container.add_users_to_refs_acl(auth_token, [user_id], str(self.container_certs.secret_refs[secrets]))
+        self.tls_container.add_users_to_refs_acl(auth_token, [user_id], str(self.container_certs.container_ref))
 
     def create_pool(self):
         self.pool_active = False
@@ -932,6 +967,8 @@ class LBaasV2Fixture(LBBaseFixture):
         if self.listener_uuid:
             self.network_h.delete_listener(self.listener_uuid)
             self.listener_uuid = None
+        if self.tls_container:
+            self.delete_container()
         self.listener_active = False
         if getattr(self, 'verify_lb_is_run', None):
             assert self.verify_on_cleanup(), "Verify on cleanup failed"
@@ -982,7 +1019,9 @@ class LBaasV2Fixture(LBBaseFixture):
             for frontend in haproxy_dict['frontends'] or []:
                 if self.listener_uuid == frontend['uuid'] and \
                    self.vip_ip == frontend['address'] and \
-                   self.vip_protocol.lower() == frontend['protocol'] and \
+                   (self.vip_protocol.lower() == frontend['protocol']
+                   or (self.vip_protocol.lower() == 'terminated_https'
+                   and frontend['protocol'] == 'http')) and \
                    self.vip_port == frontend['port']:
                    if self.pool_uuid:
                        if self.pool_uuid != frontend['backend']:

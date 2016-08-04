@@ -23,6 +23,12 @@ class KeystoneCommands():
                 username=username, password=password, tenant_name=tenant, auth_url=auth_url,
                 insecure=insecure, region_name=region_name or 'RegionOne')
 
+    def get_session(self):
+        auth = keystoneclient.auth.identity.v2.Password(auth_url=self.keystone.auth_url,
+            username=self.keystone.username, password=self.keystone.password, tenant_name=self.keystone.tenant_name)
+        sess = keystoneclient.session.Session(auth=auth)
+        return sess
+
     def get_handle(self):
         return self.keystone
 

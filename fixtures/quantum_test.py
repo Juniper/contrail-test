@@ -910,10 +910,10 @@ class QuantumHelper():
         self.obj.delete_loadbalancer(lb_id)
         self.logger.debug('deleted loadbalancer %s'%lb_id)
 
-    def create_listener(self, lb_id, protocol, port,
+    def create_listener(self, lb_id, protocol, port, default_tls_container=None,
                         name=None, connection_limit=-1):
         listener_dict = {'loadbalancer_id': lb_id, 'protocol_port': port,
-                         'protocol': protocol, 'name': name,}
+                         'protocol': protocol, 'name': name, 'default_tls_container_ref': default_tls_container}
 #                         'connection_limit': connection_limit}
         try:
             resp = self.obj.create_listener({'listener': listener_dict})

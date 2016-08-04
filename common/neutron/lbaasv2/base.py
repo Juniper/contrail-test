@@ -4,6 +4,7 @@ from tcutils.util import *
 from common.neutron.base import BaseNeutronTest
 from security_group import SecurityGroupFixture, get_secgrp_id_from_name
 
+
 class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
 
     @classmethod
@@ -85,10 +86,13 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
         return lbaas_fixture
     # end create_lbaas method
 
-    def run_curl(self, vm, vip, port=80):
+    def run_curl(self, vm, vip, port=80, https=False):
         response = ''
         result = False
-        cmds = "curl -i "+vip+":"+str(port)
+        if https:
+            cmds = "curl -i -k https://"+vip+":"+str(port)
+        else:
+            cmds = "curl -i "+vip+":"+str(port)
         result = vm.run_cmd_on_vm(cmds=[cmds])
         result = result[cmds].split('\r\n')
         if "200 OK" in result[0]:
@@ -97,7 +101,7 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
             self.logger.error("curl request to the VIP failed, with response %s", result)
             return (False, result[-1])
 
-    def verify_lb_method(self, client_fix, servers_fix, vip_ip, lb_method='ROUND_ROBIN', port=80):
+    def verify_lb_method(self, client_fix, servers_fix, vip_ip, lb_method='ROUND_ROBIN', port=80, https=False):
         '''
         Function to verify the Load balance method, by sending HTTP Traffic
         '''
@@ -107,7 +111,7 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
         result = ''
         output = ''
         for i in range (0,len(servers_fix)):
-            result,output = self.run_curl(client_fix,vip_ip,port)
+            result,output = self.run_curl(client_fix,vip_ip,port,https)
             if result:
                 lb_response1.add(output.strip('\r'))
             else:
@@ -117,7 +121,7 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
         # To check lb-method ROUND ROBIN lets do wget again 3 times
         lb_response2 = set([])
         for i in range (0,len(servers_fix)):
-            result,output = self.run_curl(client_fix,vip_ip,port)
+            result,output = self.run_curl(client_fix,vip_ip,port,https)
             if result:
                 lb_response2.add(output.strip('\r'))
             else:
