@@ -3428,14 +3428,19 @@ class AnalyticsVerification(fixtures.Fixture):
                    result = result and False
                    self.logger.error("%s is not connected to any dns-server"%(vrouter))
             assert result
-
-            result = False
+            count = 0
             for ip in self.inputs.collector_control_ips:
                 server = "%s:%s"%(ip,port_dict['collector'])
-                result = result or self.verify_connection_infos(ops_inspect,\
+                if self.verify_connection_infos(ops_inspect,\
                                 'contrail-vrouter-agent',\
-                                [server],node = vrouter)
-            assert result            
+                                [server],node = vrouter):
+                    count = count + 1
+                    self.logger.info("%s collected to collector %s"%(vrouter, ip))
+            if not count > 0:
+                self.logger.error("%s is not connected to any collector "%(vrouter))
+                result = result and False
+            assert result
+            return result 
 
     def verify_process_and_connection_infos_config(self):
 
