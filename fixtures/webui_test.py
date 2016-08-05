@@ -5365,25 +5365,26 @@ class WebuiTest:
         rows = self.ui.get_rows()
         base_indx = 0
         for hosts in range(len(rows)):
-            if self.ui.get_slick_cell_text(
-                    rows[hosts],
-                    base_indx) == host_name:
-                webui_data.append(
-                    {'key': 'Hostname', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx)})
-                webui_data.append({'key': 'IP Address', 'value': self.ui.get_slick_cell_text(
-                    rows[hosts], base_indx + 1)})
-                webui_data.append(
-                    {'key': 'Version', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 2)})
-                webui_data.append(
-                    {'key': 'Status', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 3)})
-                webui_data.append({'key': 'CPU', 'value': self.ui.get_slick_cell_text(
-                    rows[hosts], base_indx + 4) + ' %'})
-                webui_data.append(
-                    {'key': 'Memory', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 5)})
-                webui_data.append(
-                    {'key': 'Peers', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 6)})
-                webui_data.append({'key': 'vRouters', 'value': self.ui.get_slick_cell_text(
-                    rows[hosts], base_indx + 7)})
+            if rows[hosts].text:
+                if self.ui.get_slick_cell_text(
+                        rows[hosts],
+                        base_indx) == host_name:
+                    webui_data.append(
+                        {'key': 'Hostname', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx)})
+                    webui_data.append({'key': 'IP Address', 'value': self.ui.get_slick_cell_text(
+                        rows[hosts], base_indx + 1)})
+                    webui_data.append(
+                        {'key': 'Version', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 2)})
+                    webui_data.append(
+                        {'key': 'Status', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 3)})
+                    webui_data.append({'key': 'CPU', 'value': self.ui.get_slick_cell_text(
+                        rows[hosts], base_indx + 4) + ' %'})
+                    webui_data.append(
+                        {'key': 'Memory', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 5)})
+                    webui_data.append(
+                        {'key': 'Peers', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 6)})
+                    webui_data.append({'key': 'vRouters', 'value': self.ui.get_slick_cell_text(
+                        rows[hosts], base_indx + 7)})
         if self.ui.match_ui_kv(ops_data, webui_data):
             return True
         else:
