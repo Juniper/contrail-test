@@ -370,7 +370,7 @@ class ContrailReportInit:
         if build_sku is None:
             build_sku=get_build_sku(self.openstack_ip,self.host_data[self.openstack_ip]['password'])
         if (build_id.count('.') > 3):
-            build_id = build_id.rsplit('.', 2)[0]
+            build_id=re.match(r'([0-9\.-]*)\.',build_id).group(1)
         return [build_id.rstrip('\n'), build_sku]
 
     def get_distro(self):
