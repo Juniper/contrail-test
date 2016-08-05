@@ -114,7 +114,8 @@ class QuantumHelper():
 
     def create_port(self, net_id, fixed_ips=[],
                     mac_address=None, no_security_group=False,
-                    security_groups=[], extra_dhcp_opts=None,sriov=False):
+                    security_groups=[], extra_dhcp_opts=None,
+                    sriov=False, binding_profile=None):
         port_req_dict = {
             'network_id': net_id,
         }
@@ -131,6 +132,8 @@ class QuantumHelper():
             port_req_dict['fixed_ips'] = fixed_ips
         if sriov:
             port_req_dict['binding:vnic_type'] = 'direct'
+        if binding_profile:
+            port_req_dict['binding:profile'] = binding_profile
         try:
             port_rsp = self.obj.create_port({'port': port_req_dict})
             self.logger.debug('Response for create_port : ' + repr(port_rsp))

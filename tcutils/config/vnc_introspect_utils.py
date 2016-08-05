@@ -714,6 +714,18 @@ class VNCApiInspect (VerificationUtilBase):
                 self.update_cache('loadbalancer', p.fq_name().split(':'), p)
         return p
 
+    def get_cs_vmi(self, vmi_id):
+        '''
+        method: get_loadbalancer find the loadbalancer
+        returns None if not found, a dict w/ attrib. eg:
+
+        '''
+        obj = self.dict_get('virtual-machine-interface/%s' %vmi_id)
+        if obj:
+            return CsVMIResult(obj)
+        return None
+
+
 if __name__ == '__main__':
     va = VNCApiInspect('10.84.7.2')
     r = va.get_cs_domain()
