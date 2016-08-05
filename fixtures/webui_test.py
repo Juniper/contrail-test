@@ -5443,12 +5443,12 @@ class WebuiTest:
                 if option == 'UUID':
                     api_fq_vn_uuid = api_fq_vn.get('uuid')
                     if api_fq_vn_uuid != value:
-                        logger.error("UUID is not there under virtual-network")
+                        self.logger.error("UUID is not there under virtual-network")
                         result = result and False
                 elif option == 'Display Name':
                     api_fq_disp_name = api_fq_vn.get('display_name')
                     if api_fq_disp_name != value :
-                        logger.error("Display name is not there under virtual-network")
+                        self.logger.error("Display name is not there under virtual-network")
                         result = result and False
                 elif option == 'Policy':
                     api_fq_pol = api_fq_vn.get('network_policy_refs')
@@ -5463,7 +5463,7 @@ class WebuiTest:
                             else:
                                 result = result and False
                     else:
-                        logger.error("Policy is not there under virtual-network")
+                        self.logger.error("Policy is not there under virtual-network")
                         result = result and False
                 elif re.search('Subnet',option):
                     api_fq_subnet = api_fq_vn.get('network_ipam_refs')
@@ -5502,14 +5502,14 @@ class WebuiTest:
                         if not(reg_mask and reg_dns and reg_dhcp and reg_gate and reg_alloc_pool):
                             result = result and False
                     else:
-                        logger.error("Subnet is not there under virutal-network")
+                        self.logger.error("Subnet is not there under virutal-network")
                         result = result and False
                 elif option == 'Host Route':
                     api_fq_host = api_fq_vn.get('network_ipam_refs')
                     api_host_out = re.search("host_routes.*prefix.*" + var_list[0] + \
                                              ".*next_hop.*" + var_list[1], str(api_fq_host))
                     if not api_host_out:
-                       logger.error("Host Route is not there under virtual-network")
+                       self.logger.error("Host Route is not there under virtual-network")
                        result = result and False
                 elif option == 'Adv Option':
                     allow_rpf_api = api_fq_vn.get('virtual_network_properties')
@@ -5528,7 +5528,7 @@ class WebuiTest:
                        str(prov_props_seg_out) == var_list[0] and \
                        str(prov_props_phy_out) == var_list[1] \
                        and ext_api and flood_api and multi_pol_api):
-                        logger.error("Options which are under advanced option \
+                        self.logger.error("Options which are under advanced option \
                                      is not there under virtual-network")
                         result = result and False
                 elif option == 'DNS':
@@ -5539,7 +5539,7 @@ class WebuiTest:
                         if not reg_dns:
                             result = result and False
                     else:
-                        logger.error("DNS option is not there under virtual-network")
+                        self.logger.error("DNS option is not there under virtual-network")
                         flag = False
                 elif option == 'FIP':
                     api_fip = api_fq_vn.get('floating_ip_pools')
@@ -5548,7 +5548,7 @@ class WebuiTest:
                         if not reg_fip:
                             result = result and False
                     else:
-                        logger.error("FIP is not there under virtual-network")
+                        self.logger.error("FIP is not there under virtual-network")
                         result = result and False
                 elif re.search('RT', option):
                     if option == 'RT':
@@ -5564,9 +5564,9 @@ class WebuiTest:
                             result = result and False
                     else:
                         result = result and False
-                        logger.error("RT is not there under virtual-network")
+                        self.logger.error("RT is not there under virtual-network")
             else:
-                logger.error("Virtual-Network option is not found in API")
+                self.logger.error("Virtual-Network option is not found in API")
                 result = result and false
         else:
             result = result and False
@@ -5593,7 +5593,7 @@ class WebuiTest:
                                 result = result and False
                         else:
                             result = result and False
-                            logger.error("UUID is not there under contrail config in OPS")
+                            self.logger.error("UUID is not there under contrail config in OPS")
                     elif option == 'Display Name':
                         ops_fq = vn_list_ops_element.get('display_name')
                         if ops_fq:
@@ -5602,7 +5602,7 @@ class WebuiTest:
                                 result = result and False
                         else:
                            result = result and False
-                           logger.error("Display name is not there under contrail config in OPS")
+                           self.logger.error("Display name is not there under contrail config in OPS")
                     elif option == 'Policy':
                          ops_policy = vn_list_ops_element.get('network_policy_refs')
                          if len(ops_policy):
@@ -5614,7 +5614,7 @@ class WebuiTest:
                                  result = result and False
                          else:
                              result = result and False
-                             logger.error("Policy is not there under contrail config in OPS")
+                             self.logger.error("Policy is not there under contrail config in OPS")
                     elif re.search('Subnet', option):
                         ops_subnet = vn_list_ops_element.get('network_ipam_refs')
                         ops_sub_out = re.search(var_list[0] + ".*uuid", str(ops_subnet))
@@ -5653,7 +5653,7 @@ class WebuiTest:
                                 result = result and False
                         else:
                             result = result and False
-                            logger.error("Subnet is not there under contrail config in OPS")
+                            self.logger.error("Subnet is not there under contrail config in OPS")
                     elif option == 'Host Route':
                         ops_host = vn_list_ops_element.get('network_ipam_refs')
                         if ops_host:
@@ -5663,7 +5663,7 @@ class WebuiTest:
                                 result = result and False
                         else:
                             result = result and False
-                            logger.error("network_ipam_refs is not there under contrail \
+                            self.logger.error("network_ipam_refs is not there under contrail \
                                          config in OPS")
                     elif option == 'Adv Option':
                         service_chain = 'multi_policy_service_chains_enabled'
@@ -5687,7 +5687,7 @@ class WebuiTest:
                            and str(ops_share) == 'true' and str(ops_ext) =='true' and \
                            str(ops_flood) == 'true' and ops_static_route_out and ops_prov_seg_phy):
                             result = result and False
-                            logger.error("Advanced option is not there in contrail config")
+                            self.logger.error("Advanced option is not there in contrail config")
                     elif option == 'DNS':
                         ops_dns = vn_list_ops_element.get('network_ipam_refs')
                         if ops_dns:
@@ -5697,7 +5697,7 @@ class WebuiTest:
                                 result = result and False
                         else:
                             result = result and False
-                            logger.error("DNS is not there under contrail config in OPS")
+                            self.logger.error("DNS is not there under contrail config in OPS")
                     elif option == 'FIP':
                         ops_fip = vn_list_ops_element.get('floating_ip_pools')
                         if ops_fip:
@@ -5706,7 +5706,7 @@ class WebuiTest:
                                 result = result and False
                         else:
                             result = result and False
-                            logger.error("Floating ip pools is not there under contrail config")
+                            self.logger.error("Floating ip pools is not there under contrail config")
                     elif re.search('RT',option):
                         if option == 'RT':
                             ops_rt = vn_list_ops_element.get('route_target_list')
@@ -5721,14 +5721,14 @@ class WebuiTest:
                                 result = result and False
                         else:
                             result = result and False
-                            logger.error("RT option is not there under contrail config in OPS")
+                            self.logger.error("RT option is not there under contrail config in OPS")
                     else:
                         result = result and False
                 else:
                     result = result and False
-                    logger.error("Element is not there under ContrailConfig in OPS server")
+                    self.logger.error("Element is not there under ContrailConfig in OPS server")
             else:
-                logger.error("ContrailConfig is not there in OPS server")
+                self.logger.error("ContrailConfig is not there in OPS server")
                 result = result and False
         else:
             result = result and False
@@ -5827,8 +5827,7 @@ class WebuiTest:
                     self.logger.error("WebUI verification is failed for DNS")
                     result = result and False
             elif option == 'FIP':
-                regexp = self.project_name_input
-                regexp_fip = re.search(str(regexp), str(value))
+                regexp_fip = re.search(var_list[0], str(value))
                 if regexp_fip:
                     self.logger.info("Verification of FIP is successful in WebUI")
                 else:
