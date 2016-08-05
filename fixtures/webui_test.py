@@ -2994,13 +2994,14 @@ class WebuiTest:
             self.logger.info(
                 "Service template fq_name %s exists in api server..checking if exists in webui as well" %
                 (api_fq_name))
-            api_fq_name_ver = api_fq_name + ' - v1'
             for i in range(len(rows)):
                 dom_arry_basic = []
                 match_flag = 0
                 j = 0
-                if rows[i].find_elements_by_tag_name(
-                        'div')[2].text == api_fq_name_ver:
+                flag1 = False
+                if self.ui.find_element(
+                        'div', 'tag', browser=rows[i],
+                        elements=True,if_elements=[1])[2].text == api_fq_name:
                     self.logger.info(
                         "Service template fq_name %s matched in webui..Verifying basic view details..." %
                         (api_fq_name))
@@ -3043,7 +3044,7 @@ class WebuiTest:
                         value_arry = value_arry.replace('\n', ', ')
                     dom_arry_basic.append({'key': key_arry, 'value': value_arry})
                     if key_arry == 'Version' and value_arry == '1':
-                        flag1 = 1
+                        flag1 = True
                 service_temp_api_data = self.ui.get_details(
                     service_temp_list_api['service-templates'][temp + 1]['href'])
                 complete_api_data = []
@@ -3053,11 +3054,7 @@ class WebuiTest:
                 if 'fq_name' in api_data_basic:
                     complete_api_data.append(
                         {'key': 'Name', 'value': str(api_data_basic['fq_name'][1])})
-                    if flag1:
-                        complete_api_data.append(
-                            {'key': 'Name_grid_row', 'value': str(api_data_basic['fq_name'][1]) + ' - v1'})
-                    else:
-                        complete_api_data.append(
+                    complete_api_data.append(
                             {'key': 'Name_grid_row', 'value': str(api_data_basic['fq_name'][1])})
                 svc_temp_properties = api_data_basic[
                     'service_template_properties']
@@ -3073,8 +3070,12 @@ class WebuiTest:
                         {'key': 'Mode_grid_row', 'value': svc_mode_value})
                 if 'service_type' in api_data_basic[
                         'service_template_properties']:
-                    svc_type_value = str(
-                        svc_temp_properties['service_type']).capitalize()
+                    if flag1:
+                        svc_type_value = str(
+                            svc_temp_properties['service_type']).capitalize() + ' / v1'
+                    else:
+                        svc_type_value = str(
+                            svc_temp_properties['service_type']).capitalize()
                     complete_api_data.append(
                         {'key': 'Type', 'value': svc_type_value})
                     complete_api_data.append(
