@@ -1060,7 +1060,7 @@ class WebuiCommon:
         else:
             element1 = ('div', 'i')
         self.click_element(
-            [element0, element1], ['class', 'tag'], br, if_elements=[0])
+            [element0, element1], ['class', 'tag'], br, if_elements=[0], delay=25)
     # end click_icon_caret
 
     def click_monitor_instances_basic(self, row_index, length=None):
