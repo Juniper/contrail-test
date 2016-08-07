@@ -2310,18 +2310,33 @@ class AnalyticsVerification(fixtures.Fixture):
         return self.verify_alarms( role='analytics-node')
     # end analytics_alarms
 
-    def _verify_alarms_stop_svc(self, service, service_ip, role, alarm_type, multi_instances=False):
+    def _verify_alarms_stop_svc(self, service, service_ip, role, alarm_type, multi_instances=False, soak_timer=10):
         result = True
         self.logger.info("Verify alarms generated after stopping the service %s:" % (service))
         self.inputs.stop_service(service, host_ips=[service_ip], contrail_service=True)
         self.logger.info("Process %s stopped" % (service))
-        MAX_RETRY_COUNT = 300
+        soaking = False
+        supervisor = False
+        if re.search('supervisor', str(service)) or re.search('nodemgr', str(service)):
+            supervisor = True
+        if 'process-status' in alarm_type and not supervisor:
+            soaking = True
+        if soaking:
+            self.logger.info("Soaking enabled..waiting %s secs for soak timer to expire" % (soak_timer))
+            time.sleep(soak_timer)
+        MAX_RETRY_COUNT = 200
         SLEEP_DURATION = .2
         retry = 0
         role_alarms = None
         all_alarms = None
+        supervisors = [
+            'supervisor-analytics',
+            'supervisor-control',
+            'supervisor-config',
+            'supervisor-database',
+            'supervisor-vrouter',
+            'contrail-database-nodemgr']
 
-        supervisors =['supervisor-analytics', 'supervisor-control', 'supervisor-config', 'supervisor-database', 'supervisor-vrouter']
         if service in supervisors:
             alarm_type = ['node-status']
 
@@ -2339,7 +2354,8 @@ class AnalyticsVerification(fixtures.Fixture):
                         if not all_alarms:
                             time.sleep(SLEEP_DURATION)
                             retry = retry + 1
-                            self.logger.info("No alarms found...Iteration  %s " %(retry))
+                            if retry % 10 == 0:
+                                self.logger.info("No alarms found...Iteration  %s " %(retry))
                         if retry > MAX_RETRY_COUNT:
                             self.logger.error("No alarms have been generated")
                             return False
@@ -2348,7 +2364,8 @@ class AnalyticsVerification(fixtures.Fixture):
                     if not role_alarms:
                         retry = retry + 1
                         time.sleep(SLEEP_DURATION)
-                        self.logger.info("Iteration  %s " %(retry))
+                        if retry % 10 == 0:
+                            self.logger.info("Iteration  %s " %(retry))
                     else:
                         time_taken = retry * SLEEP_DURATION
                         # Display warning if time taken to generate is more than 5 secs
@@ -2413,6 +2430,8 @@ class AnalyticsVerification(fixtures.Fixture):
         '''
 
         supervisor = False
+        if re.search('supervisor', str(service)) or re.search('nodemgr', str(service)):
+            supervisor = True
         if role in alarms:
             role_alarms = alarms[role]
             self.logger.info("%s alarms generated for %s " % (role, hostname))
@@ -2433,8 +2452,6 @@ class AnalyticsVerification(fixtures.Fixture):
                             if not service:
                                 return type_alarms
                             else:
-                                if re.search('supervisor', str(service)) or re.search('nodemgr', str(service)):
-                                    supervisor = True
                                 alarm_rules = type_alarms.get('alarm_rules')
                                 if not alarm_rules:
                                     self.logger.error("alarm_rules dict missing ")
@@ -2449,7 +2466,7 @@ class AnalyticsVerification(fixtures.Fixture):
                                         condition_dict = and_list_elem.get('condition')
                                         match_list = and_list_elem.get('match')
                                         if not supervisor:
-                                            json_vars = match_list[0].get('json_vars')
+                                            json_vars = match_list[0].get('json_variables')
                                         else:
                                             json_vars = None
                                         if json_vars:
