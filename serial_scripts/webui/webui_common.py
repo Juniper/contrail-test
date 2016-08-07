@@ -1143,8 +1143,6 @@ class WebuiCommon:
                 self.logger.info('Status is %s' % (text))
                 break
         rows = self.get_rows()
-        self.wait_till_ajax_done(self.browser)
-        time.sleep(3)
         rows[row_index].find_elements_by_tag_name(
             'div')[0].find_element_by_tag_name('i').click()
         self.wait_till_ajax_done(self.browser)
