@@ -6,6 +6,7 @@ from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import StaleElementReferenceException
 import os
 import time
 import datetime
@@ -1047,20 +1048,31 @@ class WebuiCommon:
     # end check_rows
 
     def click_icon_caret(self, row_index, obj=None, length=None, indx=0, net=0):
-        if not obj:
-            obj = self.find_element('grid-canvas', 'class')
-        rows = None
-        rows = self.get_rows(obj)
-        if length:
-            rows = self.check_rows(length, obj)
-        br = rows[row_index]
         element0 = ('slick-cell', indx)
         if not net:
             element1 = ('div', 'span')
         else:
             element1 = ('div', 'i')
-        self.click_element(
-            [element0, element1], ['class', 'tag'], br, if_elements=[0], delay=25)
+        try:
+            if not obj:
+                obj = self.find_element('grid-canvas', 'class')
+            rows = None
+            rows = self.get_rows(obj)
+            if length:
+                rows = self.check_rows(length, obj)
+            br = rows[row_index]
+            self.click_element(
+                [element0, element1], ['class', 'tag'], br, if_elements=[0], delay=25)
+        except StaleElementReferenceException:
+            if not obj:
+                obj = self.find_element('grid-canvas', 'class')
+            rows = None
+            rows = self.get_rows(obj)
+            if length:
+                rows = self.check_rows(length, obj)
+            br = rows[row_index]
+            self.click_element(
+                [element0, element1], ['class', 'tag'], br, if_elements=[0], delay=25)
     # end click_icon_caret
 
     def click_monitor_instances_basic(self, row_index, length=None):
@@ -2199,6 +2211,11 @@ class WebuiCommon:
             'reconnects',
             'in_msgs',
             'out_msgs',
+            'p1p1',
+            'stddev',
+            'mean',
+            'sigma',
+            'samples',
             'chunk_select_time']
         key_list = ['exception_packets_dropped', 'l2_mcast_composites']
         index_list = []
