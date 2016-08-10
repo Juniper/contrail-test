@@ -451,7 +451,8 @@ def tx_quntum_def_aces_to_system(test_vn, user_rules_tx, uni_rule):
     last_rule['action_l'] = [{'simple_action': 'pass', 'gateway_name': None,
                                 'apply_service': [], 'mirror_to': None,
                                 'assign_routing_instance': None,
-                                'log': False, 'alert': False}]
+                                'log': False, 'alert': False,
+                                'qos_action': None}]
     last_rule['src'], last_rule['dst'] = 'any', 'any'
 
     # check any rule exist in policy :
