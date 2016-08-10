@@ -2467,17 +2467,24 @@ class WebuiCommon:
         self.wait_till_ajax_done(index)
     # end click_icon_cog
 
-    def get_vn_detail_ui(self, search_key):
+    def get_vn_detail_ui(self, search_key, index=0, vn_name=None):
         option  =  'Networks'
         if not self.click_configure_networks():
             self.dis_name = None
         self.wait_till_ajax_done(self.browser)
-        rows = self.get_rows(canvas=True)
-        index = len(rows)
-        if rows:
-            toggle_icon = "//i[contains(@class,'toggleDetailIcon')]"
-            edit = self.find_element(toggle_icon, 'xpath', elements=True)
-            edit[index-1].click()
+        if not index:
+            rows = self.get_rows(canvas=True)
+            if vn_name:
+                for row in rows:
+                    out = re.search(vn_name, str(row.text))
+                    index += 1
+                    if out:
+                        break
+            else:
+                index = len(rows)
+        toggle_icon = "//i[contains(@class,'toggleDetailIcon')]"
+        edit = self.find_element(toggle_icon, 'xpath', elements=True)
+        edit[index-1].click()
         self.wait_till_ajax_done(self.browser)
         item = self.find_element("//ul[contains(@class,'item-list')]", 'xpath')
         out_split = re.split("\n",item.text)
@@ -2523,9 +2530,9 @@ class WebuiCommon:
         return result
     # get_vn_detail_ui
 
-    def edit_remove_option(self, option, category):
-        result = True
+    def edit_remove_option(self, option, category, vn_name=None):
         self.option = option
+        index = 0
         try:
             if self.option == "Networks":
                 self.logger.info("Go to Configure->Networking->Networks page")
@@ -2538,18 +2545,27 @@ class WebuiCommon:
             if rows:
                 self.logger.info("%d rows are there under %s " % (len(rows),self.option))
                 self.logger.info("%s are available to edit. Editing the %s" % (option,option))
-                index = len(rows)
-                if len(rows) :
+                if vn_name:
+                    for row in rows:
+                        out = re.search(vn_name, str(row.text))
+                        index += 1
+                        if out:
+                            break
+                else:
+                    index = len(rows)
+                if len(rows):
                     self.wait_till_ajax_done(self.browser)
                     self.click_icon_cog(rows[index-1], self.browser, category, option)
             else:
                 self.logger.error("No %s are available to edit" % (option))
                 self.screenshot(option)
             self.wait_till_ajax_done(self.browser)
+            result = index
+
         except WebDriverException:
             self.logger.error("Error while trying to edit %s" % (option))
             self.screenshot(option)
-            result = result and False
+            result = False
             self.click_on_cancel_if_failure('cancelBtn')
             raise
         return result
@@ -2668,11 +2684,10 @@ class WebuiCommon:
         return result
     # del_vn_with_policy
 
-    def edit_vn_with_subnet(self, category, subnet, dfrange, dfgate):
-        result = True
+    def edit_vn_with_subnet(self, category, subnet, dfrange, dfgate, vn):
         option = "Networks"
         try:
-            self.edit_vn_result = self.edit_remove_option(option, 'edit')
+            self.edit_vn_result = self.edit_remove_option(option, 'edit', vn_name=vn)
             if self.edit_vn_result:
                 self.wait_till_ajax_done(self.browser)
                 self.click_element('ui-accordion-subnets-header-0')
@@ -2713,9 +2728,10 @@ class WebuiCommon:
                     self.click_element(dhcp_option, 'xpath', elements=True, index=index)
                 self.click_element('configure-networkbtn1')
                 self.wait_till_ajax_done(self.browser)
+                result = self.edit_vn_result
             else:
                 self.logger.error("Clicking the Edit Button is not working")
-                result = result and False
+                result = False
 
         except WebDriverException:
             self.logger.error("Error while trying to edit %s" % (option))
@@ -2726,11 +2742,11 @@ class WebuiCommon:
         return result
     # edit_vn_with_subnet
 
-    def del_vn_with_subnet(self):
+    def del_vn_with_subnet(self, vn):
         result = True
         option = "Networks"
         try:
-            self.edit_vn_result = self.edit_remove_option(option, 'edit')
+            self.edit_vn_result = self.edit_remove_option(option, 'edit', vn_name=vn)
             if self.edit_vn_result:
                 self.click_element('ui-accordion-subnets-header-0')
                 self.wait_till_ajax_done(self.browser)
@@ -2801,12 +2817,11 @@ class WebuiCommon:
     # edit_vn_with_host_route
 
     def edit_vn_with_adv_option(self, category, tc, var_list):
-        result = True
         option = "Networks"
         try:
             self.wait_till_ajax_done(self.browser)
             if not self.click_configure_networks():
-                result = result and False
+                result = False
             if category == 1:
                 add_icon = "//i[contains(@class,'icon-plus')]"
                 self.click_element(add_icon, 'xpath')
@@ -2818,7 +2833,7 @@ class WebuiCommon:
                 self.send_keys(var_list[2], cidr, 'xpath')
                 self.wait_till_ajax_done(self.browser, wait=3)
                 self.click_element("configure-networkbtn1")
-            self.edit_vn_result = self.edit_remove_option(option, 'edit')
+            self.edit_vn_result = self.edit_remove_option(option, 'edit', vn_name=var_list[3])
             if self.edit_vn_result:
                 self.click_element('advanced_options')
                 is_shared = "//input[contains(@name,'is_shared')]"
@@ -2851,23 +2866,24 @@ class WebuiCommon:
                     seg_id = "//input[contains(@name,'segmentation_id')]"
                     self.send_keys(var_list[0], seg_id, 'xpath', clear=True)
                 self.click_element('configure-networkbtn1')
+                result = self.edit_vn_result
                 if tc == 'neg-phy':
                     warn_advance = "//span[contains(@data-bind,'advanced')]"
                     warn_button = self.find_element(warn_advance, 'xpath')
                     if warn_button.get_attribute('style') == "":
                         self.click_on_cancel_if_failure('cancelBtn')
                         self.wait_till_ajax_done(self.browser)
-                        return result
+                        result = self.edit_vn_result
                     else:
-                        result = result and False
+                        result = False
             else:
                 self.logger.error("Clicking the Edit Button is not working")
-                result = result and False
+                result = False
 
         except WebDriverException:
             self.logger.error("Error while trying to edit %s" % (option))
             self.screenshot(option)
-            result = result and False
+            result = False
             self.click_on_cancel_if_failure('cancelBtn')
             raise
         return result
@@ -2882,7 +2898,8 @@ class WebuiCommon:
                 self.click_element('ui-accordion-dns_servers-header-0')
                 self.wait_till_ajax_done(self.browser, wait=3)
                 if button == 'add':
-                    self.click_element('user_created_dns_servers')
+                    add_link = self.find_element('editable-grid-add-link', 'class', elements=True)
+                    add_link[2].click()
                     ip_address = "//input[contains(@name,'ip_address')]"
                     text = self.find_element(ip_address, 'xpath')
                     if tc == 'pos':
