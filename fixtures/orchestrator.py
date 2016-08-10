@@ -1,9 +1,17 @@
+import logging
 from abc import ABCMeta, abstractmethod
+
+from contrailapi import ContrailVncApi
 
 class Orchestrator:
    """Base class for orchestrator."""
 
    __metaclass__ = ABCMeta
+
+   def __init__(self, inputs, vnc_api_h, logger=None):
+       self.inputs = inputs
+       self.logger = logger or logging.getLogger(__name__)
+       self.vnc_h = ContrailVncApi(vnc_api_h, logger)
 
    def is_feature_supported(self, feature):
        return True
@@ -60,11 +68,6 @@ class Orchestrator:
        '''Returns a list of VM object matching pattern.'''
        pass 
    
-   @abstractmethod 
-   def get_vn_list(self, **kwargs):
-       '''Returns a list of VM object matching pattern.'''
-       pass 
-
    @abstractmethod
    def get_vm_detail(self, vm_obj, **kwargs):
        '''Refreshes VM object.'''
@@ -121,57 +124,49 @@ class Orchestrator:
    def get_vn_id(self, vn_obj, **kwargs):
        pass
 
-   @abstractmethod
+   def get_vn_list(self, **kwargs):
+       return self.vnc_h.get_vn_list(**kwargs)
+
    def get_policy(self, fq_name, **kwargs):
-       pass
+       return self.vnc_h.get_policy(fq_name, **kwargs)
 
-   @abstractmethod
    def get_floating_ip(self, fip_id, **kwargs):
-       pass
+       return self.vnc_h.get_floating_ip(fip_id, **kwargs)
 
-   @abstractmethod
    def create_floating_ip(self, pool_vn_id, pool_obj, project_obj, **kwargs):
-       pass
+       return self.vnc_h.create_floating_ip(pool_vn_id, pool_obj, project_obj,
+                                            **kwargs)
 
-   @abstractmethod
    def delete_floating_ip(self, fip_id, **kwargs):
-       pass
+       return self.vnc_h.delete_floating_ip(fip_id, **kwargs)
 
-   @abstractmethod
    def assoc_floating_ip(self, fip_id, vm_id, **kwargs):
-       pass
+       return self.vnc_h.assoc_floating_ip(fip_id, vm_id, **kwargs)
 
-   @abstractmethod
    def disassoc_floating_ip(self, fip_id, **kwargs):
-       pass
+       return self.vnc_h.disassoc_floating_ip(fip_id, **kwargs)
 
-   @abstractmethod
    def add_security_group(self, vm_id, sg_id, **kwargs):
-       pass
+       return self.vnc_h.add_security_group(vm_id, sg_id, **kwargs)
 
-   @abstractmethod
    def remove_security_group(self, vm_id, sg_id, **kwargs):
-       pass
+       return self.vnc_h.remove_security_group(vm_id, sg_id, **kwargs)
 
-   @abstractmethod
    def create_security_group(self, sg_name, parent_fqname, sg_entries, **kwargs):
-       pass
+       return self.vnc_h.create_security_group(sg_name, parent_fqname,
+                                               sg_entries, **kwargs)
 
-   @abstractmethod
    def delete_security_group(self, sg_id, **kwargs):
-       pass
+       return self.vnc_h.delete_security_group(sg_id, **kwargs)
 
-   @abstractmethod
    def get_security_group_rules(self, sg_id, **kwargs):
-       pass
+       return self.vnc_h.get_security_group_rules(sg_id, **kwargs)
 
-   @abstractmethod
    def delete_security_group_rules(self, sg_id, **kwargs):
-       pass
+       return self.vnc_h.delete_security_group_rules(sg_id, **kwargs)
 
-   @abstractmethod
    def set_security_group_rules(self, sg_id, **kwargs):
-       pass
+       return self.vnc_h.set_security_group_rules(sg_id, **kwargs)
 
 class OrchestratorAuth:
    __metaclass__ = ABCMeta
