@@ -200,7 +200,7 @@ class NovaHelper():
         self.logger.debug('Installing image %s'%image_name)
         image_info = self.images_info[image_name]
         webserver = image_info['webserver'] or \
-            os.getenv('IMAGE_WEB_SERVER', '10.204.217.158')
+            os.getenv('IMAGE_WEB_SERVER', '10.204.216.50')
         location = image_info['location']
         params = image_info['params']
         image = image_info['name']
