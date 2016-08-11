@@ -1,6 +1,7 @@
 import pprint
 
 import vnc_api_test
+from contrailapi import ContrailVncApi
 from vnc_api.vnc_api import QosQueue, ForwardingClass,\
     QosIdForwardingClassPairs, QosIdForwardingClassPair, QosConfig
 from cfgm_common.exceptions import NoIdError
@@ -16,9 +17,12 @@ class QosBaseFixture(vnc_api_test.VncLibFixture):
     def __init__(self, *args, **kwargs):
         super(QosBaseFixture, self).__init__(self, *args, **kwargs)
         self.agent_inspect = None
+        self.vnc_h = None
+        self.verify_is_run = False
 
     def setUp(self):
         super(QosBaseFixture, self).setUp()
+        self.vnc_h = ContrailVncApi(self.vnc_api_h, self.logger)
         if self.connections:
             self.agent_inspect = self.connections.agent_inspect
 
@@ -104,7 +108,8 @@ class QosForwardingClassFixture(QosBaseFixture):
     def create(self):
         if self.uuid:
             return self.read()
-        fq_name = self.get_parent_obj().fq_name + [self.name]
+        self.parent_obj = self.get_parent_obj()
+        fq_name = self.parent_obj.fq_name + [self.name]
         try:
             fc_obj = self.vnc_api_h.forwarding_class_read(fq_name=fq_name)
             self.uuid = fc_obj.uuid
@@ -112,22 +117,12 @@ class QosForwardingClassFixture(QosBaseFixture):
         except NoIdError, e:
             pass
 
-        self.logger.info('Creating FC %s' % (fq_name))
-        fc_obj = ForwardingClass(name=self.name,
-                                 forwarding_class_id=self.fc_id,
-                                 forwarding_class_dscp=self.dscp,
-                                 forwarding_class_vlan_priority=self.dot1p,
-                                 forwarding_class_mpls_exp=self.exp)
-
-        if self.queue_uuid:
-            queue_obj = self.vnc_api_h.qos_queue_read(id=self.queue_uuid)
-        else:
-            # WA for bug
-            queue_obj = self.vnc_api_h.qos_queue_read(
-                fq_name_str='%s:default-qos-queue' % (global_qos_config_fq_str))
-        fc_obj.add_qos_queue(queue_obj)
-
-        fc_uuid = self.vnc_api_h.forwarding_class_create(fc_obj)
+        fc_uuid = self.vnc_h.create_forwarding_class(self.name,
+                                                    fc_id=self.fc_id,
+                                                    parent_obj=self.parent_obj,
+                                                    dscp=self.dscp,
+                                                    dot1p=self.dot1p,
+                                                    exp=self.exp)
         fc_obj = self.vnc_api_h.forwarding_class_read(id=fc_uuid)
         self._populate_attr(fc_obj)
     # end create
@@ -251,7 +246,6 @@ class QosForwardingClassFixture(QosBaseFixture):
         self.exp = fc_obj.forwarding_class_mpls_exp
         self.fc_id = fc_obj.forwarding_class_id
         self.uuid = fc_obj.uuid
-        self.queue_uuid = fc_obj.get_qos_queue_refs()[0]['uuid']
 
     def read(self):
         try:
@@ -269,21 +263,12 @@ class QosForwardingClassFixture(QosBaseFixture):
 
     def update(self, fc_id=None, dscp=None, dot1p=None, exp=None,
                queue_uuid=None):
-        self.logger.info('Updating FC : fc_id: %s, dscp: %s, dot1p: %s, exp: %s,'
-                         'queue: %s' % (fc_id, dscp, dot1p, exp, queue_uuid))
-        fc_obj = self.vnc_api_h.forwarding_class_read(id=self.uuid)
-        if fc_id:
-            fc_obj.set_forwarding_class_id(fc_id)
-        if dscp:
-            fc_obj.set_forwarding_class_dscp(dscp)
-        if dot1p:
-            fc_obj.set_forwarding_class_vlan_priority(dot1p)
-        if exp:
-            fc_obj.set_forwarding_class_mpls_exp(exp)
-        if queue_uuid:
-            queue_obj = self.vnc_api_h.qos_queue_read(id=queue_uuid)
-            fc_obj.set_qos_queue(queue_obj)
-        self.vnc_api_h.forwarding_class_update(fc_obj)
+        fc_obj = self.vnc_h.update_forwarding_class(self.uuid,
+                                           fc_id=fc_id,
+                                           dscp=dscp,
+                                           dot1p=dot1p,
+                                           exp=exp,
+                                           queue_uuid=queue_uuid)
         self._populate_attr(fc_obj)
     # end update
 
@@ -291,9 +276,7 @@ class QosForwardingClassFixture(QosBaseFixture):
         if self.is_already_present:
             self.logger.info('Skipping deletion of FC %s' % (self.fq_name))
             return
-        self.logger.info('Deleting FC %s, UUID: %s' %
-                         (self.fq_name, self.uuid))
-        self.vnc_api_h.forwarding_class_delete(id=self.uuid)
+        self.vnc_h.delete_forwarding_class(self.uuid)
         self.verify_on_cleanup()
     # end delete
 
@@ -343,7 +326,8 @@ class QosConfigFixture(QosBaseFixture):
     def create(self):
         if self.uuid:
             return self.read()
-        fq_name = self.get_parent_obj().fq_name + [self.name]
+        self.parent_obj = self.get_parent_obj()
+        fq_name = self.parent_obj.fq_name + [self.name]
         try:
             qos_config_obj = self.vnc_api_h.qos_config_read(fq_name=fq_name)
             self.uuid = qos_config_obj.uuid
@@ -351,30 +335,12 @@ class QosConfigFixture(QosBaseFixture):
         except NoIdError, e:
             pass
 
-        self.logger.info('Creating QosConfig %s' % (fq_name))
-        if self.qos_config_type == 'project':
-            if self.connections:
-                project_id = self.connections.project_id
-            else:
-                project_id = self.vnc_api_h.project_read(
-                    fq_name_str='default-domain:default-project').uuid
-            parent_obj = self.vnc_api_h.project_read(id=project_id)
-        else:
-            parent_obj = self.vnc_api_h.global_qos_config_read(fq_name_str=
-                                                               global_qos_config_fq_str)
-        self.parent_obj = parent_obj
-
-        dscp_entries = self._get_code_point_to_fc_map(self.dscp_mapping)
-        dot1p_entries = self._get_code_point_to_fc_map(self.dot1p_mapping)
-        exp_entries = self._get_code_point_to_fc_map(self.exp_mapping)
-
-        qos_config_obj = QosConfig(name=self.name,
+        self.uuid = self.vnc_h.create_qos_config(name=self.name,
                                    parent_obj=self.parent_obj,
-                                   dscp_entries=dscp_entries,
-                                   vlan_priority_entries=dot1p_entries,
-                                   mpls_exp_entries=exp_entries,
+                                   dscp_mapping=self.dscp_mapping,
+                                   dot1p_mapping=self.dot1p_mapping,
+                                   exp_mapping=self.exp_mapping,
                                    qos_config_type=self.qos_config_type)
-        self.uuid = self.vnc_api_h.qos_config_create(qos_config_obj)
         self.qos_config_obj = self.vnc_api_h.qos_config_read(id=self.uuid)
         self._populate_attr()
     # end create
@@ -382,20 +348,11 @@ class QosConfigFixture(QosBaseFixture):
     def set_entries(self, dscp_mapping=None, dot1p_mapping=None, exp_mapping=None):
         ''' If the user wants to clear the entries, {} needs to be passed
         '''
-        self.logger.info('Updating qos-config: dscp_mapping: %s,'
-                         'dot1p_mapping: %s, exp_mapping: %s' % (dscp_mapping,
-                                                                 dot1p_mapping, exp_mapping))
-        self.qos_config_obj = self.vnc_api_h.qos_config_read(id=self.uuid)
-        if dscp_mapping is not None:
-            dscp_entries = self._get_code_point_to_fc_map(dscp_mapping)
-            self.qos_config_obj.set_dscp_entries(dscp_entries)
-        if dot1p_mapping is not None:
-            dot1p_entries = self._get_code_point_to_fc_map(dot1p_mapping)
-            self.qos_config_obj.set_vlan_priority_entries(dot1p_entries)
-        if exp_mapping is not None:
-            exp_entries = self._get_code_point_to_fc_map(exp_mapping)
-            self.qos_config_obj.set_mpls_exp_entries(exp_entries)
-        self.vnc_api_h.qos_config_update(self.qos_config_obj)
+        self.qos_config_obj = self.vnc_h.set_qos_config_entries(
+            uuid=self.uuid,
+            dscp_mapping=dscp_mapping,
+            dot1p_mapping=dot1p_mapping,
+            exp_mapping=exp_mapping)
         self._populate_attr()
     # end set_entries
 
@@ -429,61 +386,21 @@ class QosConfigFixture(QosBaseFixture):
     def add_entries(self, dscp_mapping=None, dot1p_mapping=None, exp_mapping=None):
         ''' Add one or more code-point to fc mappings to existing qos-config entries
         '''
-        self.qos_config_obj = self.vnc_api_h.qos_config_read(id=self.uuid)
-        if dscp_mapping:
-            self._add_to_entries(dscp_mapping=dscp_mapping)
-        if dot1p_mapping:
-            self._add_to_entries(dot1p_mapping=dot1p_mapping)
-        if exp_mapping:
-            self._add_to_entries(exp_mapping=exp_mapping)
+        self.qos_config_obj = self.vnc_h.add_qos_config_entries(
+            uuid,
+            dscp_mapping=dscp_mapping,
+            dot1p_mapping=dot1p_mapping,
+            exp_mapping=exp_mapping)
         self._populate_attr()
     # end add_entries
-
-    def get_code_point_entry(self, dscp=None, dot1p=None, exp=None):
-        ''' Return QosIdForwardingClassPair object for the argument
-        '''
-        entries = None
-        value = dscp or dot1p or exp
-        if dscp:
-            entries = self.qos_config_obj.dscp_entries
-        if dot1p:
-            entries = self.qos_config_obj.vlan_priority_entries
-        if exp:
-            entries = self.qos_config_obj.mpls_exp_entries
-
-        if entries:
-            pairs = entries.get_qos_id_forwarding_class_pair()
-            entry = [x for x in pairs if x.key == value]
-            if entry:
-                return entry[0]
-    # end get_code_point_entry
 
     def del_entry(self, dscp=None, dot1p=None, exp=None):
         ''' Remove the entry from qos config which has the code-point
         '''
-        self.qos_config_obj = self.vnc_api_h.qos_config_read(id=self.uuid)
-        self.logger.info('Removing entry for key dscp:%s, dot1p:%s, exp:%s' % (
-            dscp, dot1p, exp))
-
-        dscp_entry = self.get_code_point_entry(dscp=dscp)
-        if dscp_entry:
-            self.qos_config_obj.dscp_entries.delete_qos_id_forwarding_class_pair(
-                dscp_entry)
-            self.qos_config_obj.set_dscp_entries(
-                self.qos_config_obj.dscp_entries)
-        dot1p_entry = self.get_code_point_entry(dot1p=dot1p)
-        if dot1p_entry:
-            self.qos_config_obj.dscp_entries.delete_qos_id_forwarding_class_pair(
-                dot1p_entry)
-            self.qos_config_obj.set_vlan_priority_entries(
-                self.qos_config_obj.vlan_priority_entries)
-        exp_entry = self.get_code_point_entry(exp=exp)
-        if exp_entry:
-            self.qos_config_obj.dscp_entries.delete_qos_id_forwarding_class_pair(
-                exp_entry)
-            self.qos_config_obj.set_mpls_exp_entries(
-                self.qos_config_obj.mpls_exp_entries)
-        self.vnc_api_h.qos_config_update(self.qos_config_obj)
+        self.qos_config_obj = self.vnc_h.del_qos_config_entry(self.uuid,
+                                                              dscp=dscp,
+                                                              dot1p=dot1p,
+                                                              exp=exp)
         self._populate_attr()
     # end del_entry
 
@@ -499,9 +416,9 @@ class QosConfigFixture(QosBaseFixture):
 
     def read(self):
         try:
-            self.qos_config_obj = self.vnc_api_h.qos_config_read(id=self.uuid)
             self.logger.info('Reading existing qos-config with UUID %s' % (
                              self.uuid))
+            self.qos_config_obj = self.vnc_api_h.qos_config_read(id=self.uuid)
         except NoIdError, e:
             self.logger.exception('UUID %s not found, cant read qos config' % (
                 self.uuid))
@@ -679,15 +596,11 @@ if __name__ == "__main__":
     fc_fixture = QosForwardingClassFixture(
         name='fc0', dscp=10, dot1p=2, exp=2, fc_id=0, auth_server_ip='192.168.192.251', cfgm_ip='192.168.192.6')
     fc_fixture.setUp()
-    import pdb
-    pdb.set_trace()
     dscp_map = {1: fc_fixture.fc_id}
     dscp_map1 = {2: fc_fixture.fc_id}
     qos_config_fixture = QosConfigFixture(
         name='qos_config1', dscp_mapping=dscp_map, auth_server_ip='192.168.192.251', cfgm_ip='192.168.192.6')
     qos_config_fixture.setUp()
-    import pdb
-    pdb.set_trace()
     qos_config_fixture.add_entries(dscp_mapping=dscp_map1)
     qos_config_fixture.del_entry(dscp=2)
     qos_config_fixture.add_entries(dscp_mapping=dscp_map1)
