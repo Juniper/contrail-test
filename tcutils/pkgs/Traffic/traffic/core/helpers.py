@@ -73,7 +73,8 @@ class Helper(object):
 #                    output=run(ssh_cmd)
                     output = run_fab_cmd_on_node(
                         host_string='%s@%s' % (self.rhost.user, self.rhost.ip),
-                        password='ubuntu', as_sudo=True, cmd=cmd)
+                        password='ubuntu', as_sudo=True, cmd=cmd,
+                        logger=self.log)
                     if (not output) and retry:
                         self.log.error(
                             "Scapy issue while sending/receiving packets. Will retry after 5 secs.")

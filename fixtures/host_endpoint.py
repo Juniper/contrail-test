@@ -1,11 +1,13 @@
+import re
+import time
+
 import logging
 import fixtures
 from fabric.api import env
 from fabric.api import run, sudo
 from fabric.contrib.files import exists
 from fabric.context_managers import settings, hide
-import re
-import time
+from common import log_orig as contrail_logging
 
 from tcutils.util import retry, search_arp_entry
 from tcutils.tcpdump_utils import start_tcpdump_for_intf,\
@@ -62,7 +64,7 @@ class HostEndpointFixture(fixtures.Fixture):
             self.logger = connections.inputs.logger
             self.connections = connections
         else:
-            self.logger = logging.getLogger(__name__)
+            self.logger = contrail_logging.getLogger(__name__)
 
 
         self.name = '[%s-%s]' % (self.bridge, self.namespace)

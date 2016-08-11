@@ -1,8 +1,8 @@
 import re
 from tcutils.verification_util import *
-import logging
+from common import log_orig as contrail_logging
 
-log = logging.getLogger('log01')
+log = contrail_logging.getLogger(__name__)
 
 
 def _OpResult_get_list_name(lst):

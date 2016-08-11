@@ -7,7 +7,7 @@ import fixtures
 import testresources
 import testtools
 from common.contrail_test_init import ContrailTestInit
-from common import log_orig as logging
+from common import log_orig as contrail_logging
 #from common import config
 import logging as std_logging
 from tcutils.util import get_random_name
@@ -72,9 +72,7 @@ class BaseTestCase(TagsHack,
             cls.ini_file= os.environ.get('TEST_CONFIG_FILE')
         else:
             cls.ini_file= 'sanity_params.ini'	
-        cls.Logger = logging.ContrailLogger(cls.__name__)
-        cls.Logger.setUp()
-        cls.logger = cls.Logger.logger
+        cls.logger = contrail_logging.getLogger(cls.__name__)
         cls.inputs = ContrailTestInit(cls.ini_file,logger = cls.logger)
 
     @classmethod

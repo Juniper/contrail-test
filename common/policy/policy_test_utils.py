@@ -9,9 +9,7 @@ from vnc_api.gen.resource_test import *
 import re
 
 
-import logging
-
-logger = logging.getLogger('log01')
+from common import log_orig as contrail_logging
 
 def update_rule_ace_id(rules_list):
     ''' After combining multiple policies, renumber ace_id of the rules by
@@ -117,11 +115,14 @@ def trim_realign_rules(rules_list):
     return final_list
 
 
-def compare_rules_list(user_rules_tx, system_rules, exp_name='user_rules_tx', act_name='system_rules'):
+def compare_rules_list(user_rules_tx, system_rules, exp_name='user_rules_tx', act_name='system_rules',
+                       logger=None):
     ''' Compares 2 list of rules [as dictionary] returns a dictionary with keys
     as result & msg_list.
     For success, return is empty. For failure, result is set to False & msg has
     the error info. '''
+    if not logger:
+        logger = contrail_logging.getLogger(__name__)
     logger.debug("-" * 40)
     proto_map = {'1': 'icmp', '6': 'tcp', '17': 'udp'}
     result = True
@@ -208,17 +209,20 @@ def compare_rules_list(user_rules_tx, system_rules, exp_name='user_rules_tx', ac
 # end compare_rules_list
 
 
-def compare_args(key, a, b, exp_name='expected', act_name='actual'):
+def compare_args(key, a, b, exp_name='expected', act_name='actual',
+                 logger=None):
     ''' For a given key, compare values a, b got from 2 different databases.
     If instance is dict and not matching, call compare_rules_list to get details'''
+    if not logger:
+        logger = contrail_logging.getLogger(__name__)
     ret = None
     if a != b:
         ret = key + " not matching --->expected: " + \
             str(a) + " --->got: " + str(b)
     if a != b and isinstance(a, dict):
-        ret = compare_rules_list(a, b, exp_name, act_name)
+        ret = compare_rules_list(a, b, exp_name, act_name, logger)
     if a != b and isinstance(a, list):
-        ret = compare_rules_list(a, b, exp_name, act_name)
+        ret = compare_rules_list(a, b, exp_name, act_name, logger)
     return ret
 
 # This procedure compare list1 is exists in list2 or not.
@@ -512,6 +516,6 @@ if __name__ == '__main__':
             "system data successful!")
     else:
         self.logger.warn("Data compare after update failed!")
-        compare_rules_list(system_data, updated_list)
+        compare_rules_list(system_data, updated_list, logger=self.logger)
 
 # end __main__

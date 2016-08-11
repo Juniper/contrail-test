@@ -24,6 +24,7 @@ from tcutils.config.ds_introspect_utils import VerificationDsSrv
 from keystone_tests import KeystoneCommands
 from tempfile import NamedTemporaryFile
 import re
+from common import log_orig as contrail_logging
 
 import subprocess
 import ast
@@ -57,13 +58,14 @@ class TestInputs(object):
        the same with the certain default value assumptions
     '''
     __metaclass__ = Singleton
-    def __init__(self, ini_file=None):
+    def __init__(self, ini_file=None, logger=None):
         self.jenkins_trigger = self.get_os_env('JENKINS_TRIGGERED')
         self.os_type = custom_dict(self.get_os_version, 'os_type')
         self.config = None
         if ini_file:
             self.config = ConfigParser.ConfigParser()
             self.config.read(ini_file)
+        self.logger = logger or contrail_logging.getLogger(__name__)
         self.orchestrator = read_config_option(self.config,
                                                'Basic', 'orchestrator', 'openstack')
         self.prov_file = read_config_option(self.config,
@@ -549,7 +551,8 @@ class TestInputs(object):
                                         self.stack_tenant,
                                         auth_url,
                                         region_name=self.region_name,
-                                        insecure=insecure)
+                                        insecure=insecure,
+                                        logger=self.logger)
             match = re.match(pattern, keystone.get_endpoint('identity')[0])
             self.auth_ip = match.group('ip')
             self.auth_port = match.group('port')
@@ -657,8 +660,8 @@ class ContrailTestInit(object):
             stack_tenant=None,
             logger=None):
         self.connections = None
-        self.logger = logger or logging.getLogger(__name__)
-        self.inputs = TestInputs(ini_file)
+        self.logger = logger or contrail_logging.getLogger(__name__)
+        self.inputs = TestInputs(ini_file, self.logger)
         self.stack_user = stack_user or self.stack_user
         self.stack_password = stack_password or self.stack_password
         self.stack_tenant = stack_tenant or self.stack_tenant

@@ -8,6 +8,7 @@ from cfgm_common.exceptions import NoIdError
 from tcutils.util import get_dashed_uuid
 from openstack import OpenstackAuth, OpenstackOrchestrator
 from vcenter import VcenterAuth
+from common import log_orig as contrail_logging
 
 class VncLibFixture(fixtures.Fixture):
     ''' Wrapper for VncApi
@@ -33,7 +34,7 @@ class VncLibFixture(fixtures.Fixture):
         self.domain = kwargs.get('domain', 'default-domain')
         self.api_server_port = kwargs.get('api_server_port', '8082')
         self.cfgm_ip = kwargs.get('cfgm_ip', '127.0.0.1')
-        self.logger = kwargs.get('logger', logging.getLogger(__name__))
+        self.logger = kwargs.get('logger', None)
         self.connections = kwargs.get('connections', None)
         self.orchestrator = kwargs.get('orchestrator', 'openstack')
         self.vnc_api_h = None
@@ -63,6 +64,7 @@ class VncLibFixture(fixtures.Fixture):
             self.project_id = self.connections.project_id
             self.auth_url = 'http://' + self.inputs.auth_ip + ':5000/v2.0'
         else:
+            self.logger = self.logger or contrail_logging.getLogger(__name__)
             self.vnc_api_h = VncApi(
                               username=self.username,
                               password=self.password,

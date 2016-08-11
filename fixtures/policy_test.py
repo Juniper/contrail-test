@@ -978,7 +978,8 @@ class PolicyFixture(fixtures.Fixture):
                     cn_vna_rules_by_vn[vn] = []
                 # compare with test input & assert on failure
                 ret = policy_test_utils.compare_rules_list(
-                    rules_by_vn[vn], cn_vna_rules_by_vn[vn])
+                    rules_by_vn[vn], cn_vna_rules_by_vn[vn],
+                    logger=self.logger)
                 if ret:
                     result = ret['state']
                     msg = ret['msg']
@@ -1048,7 +1049,8 @@ class PolicyFixture(fixtures.Fixture):
 
         # compare policy_fq_name
         out = policy_test_utils.compare_args(
-            'policy_fq_name', self.api_s_policy_obj_x['fq_name'], self.policy_fq_name)
+            'policy_fq_name', self.api_s_policy_obj_x['fq_name'], self.policy_fq_name,
+            logger=self.logger)
         if out:
             err_msg.append(out)
         # compare policy_uuid
@@ -1060,13 +1062,15 @@ class PolicyFixture(fixtures.Fixture):
             rules = self.policy_obj['policy']['entries']
 
         out = policy_test_utils.compare_args(
-            'policy_uuid', self.api_s_policy_obj_x['uuid'], uuid)
+            'policy_uuid', self.api_s_policy_obj_x['uuid'], uuid,
+            logger=self.logger)
         if out:
             err_msg.append(out)
         # compare policy_rules
         out = policy_test_utils.compare_args(
             'policy_rules', self.api_s_policy_obj_x[
-                'network_policy_entries']['policy_rule'], rules['policy_rule'])
+                'network_policy_entries']['policy_rule'], rules['policy_rule'],
+                logger=self.logger)
         if out:
             err_msg.append(out)
 

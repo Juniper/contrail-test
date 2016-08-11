@@ -8,7 +8,7 @@ from netaddr import *
 import pprint
 from fabric.operations import get, put, sudo
 from fabric.api import run, env
-import logging
+from common import log_orig as contrail_logging
 import threading
 from functools import wraps
 import errno
@@ -30,14 +30,10 @@ import testtools
 from fabfile import *
 from fabutils import *
 
-log = logging.getLogger('log01')
-#log.basicConfig(format='%(levelname)s: %(message)s', level=log.DEBUG)
-
 sku_dict = {'2014.1': 'icehouse', '2014.2': 'juno', '2015.1': 'kilo', '12.0': 'liberty', '13.0': 'mitaka'}
 
+
 # Code borrowed from http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
-
-
 def retry(tries=5, delay=3):
     '''Retries a function or method until it returns True.
     delay sets the initial delay in seconds.
@@ -108,14 +104,15 @@ def retry(tries=5, delay=3):
 # end retry
 
 
-def web_invoke(httplink):
+def web_invoke(httplink, logger = None):
+    logger = logger or contrail_logging.getLogger(__name__)
     output = None
     try:
         cmd = 'curl ' + httplink
         output = subprocess.check_output(cmd, shell=True)
     except Exception, e:
         output = None
-        log.debug(e)
+        logger.debug(e)
         return output
     return output
 # end web_invoke
@@ -212,7 +209,8 @@ def copy_fabfile_to_agent():
 
 def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
                          gateway_password=None, with_sudo=False, timeout=120,
-                         as_daemon=False, raw=False, cd=None, warn_only=True):
+                         as_daemon=False, raw=False, cd=None, warn_only=True,
+                         logger=None):
     """ Run command on remote node through another node (gateway).
         This is useful to run commands on VMs through compute node
     Args:
@@ -227,6 +225,7 @@ def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
         as_daemon: run in background
         raw: If raw is True, will return the fab _AttributeString object itself without removing any unwanted output
     """
+    logger = logger or contrail_logging.getLogger(__name__)
     fab_connections.clear()
     kwargs = {}
     if as_daemon:
@@ -270,7 +269,7 @@ def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
             if not password:
                 env.passwords.update({node_hoststring: gateway_password})
 
-        log.debug(cmd)
+        logger.debug(cmd)
         tries = 1
         output = None
         while tries > 0:
@@ -293,12 +292,14 @@ def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
 
 
 def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, as_daemon=False, raw=False,
-                        warn_only=True):
+                        warn_only=True,
+                        logger=None):
     """
     Run fab command on a node. Usecase : as part of script running on cfgm node, can run a cmd on VM from compute node
 
     If raw is True, will return the fab _AttributeString object itself without removing any unwanted output
     """
+    logger = logger or contrail_logging.getLogger(__name__)
     cmd = _escape_some_chars(cmd)
     (username, host_ip) = host_string.split('@')
     copy_fabfile_to_agent()
@@ -319,14 +320,14 @@ def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, 
     else:
         cmd_str += 'command:\"%s\"' % (cmd)
     # Sometimes, during bootup, there could be some intermittent conn. issue
-    log.debug(cmd_str)
+    logger.debug(cmd_str)
     tries = 1
     output = None
     while tries > 0:
         if timeout:
             try:
                 output = sudo(cmd_str, timeout=timeout)
-                log.debug(output)
+                logger.debug(output)
             except CommandTimeout:
                 return output
         else:
@@ -346,18 +347,22 @@ def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, 
 # end run_fab_cmd_on_node
 
 
-def fab_put_file_to_vm(host_string, password, src, dest):
+def fab_put_file_to_vm(host_string, password, src, dest,
+                       logger=None):
+    logger = logger or contrail_logging.getLogger(__name__)
     copy_fabfile_to_agent()
     (username, host_ip) = host_string.split('@')
     cmd_str = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running fput:\"%s\",\"%s\"' % (
         username, password, host_ip, src, dest)
-    log.debug(cmd_str)
+    logger.debug(cmd_str)
     output = run(cmd_str)
     real_output = remove_unwanted_output(output)
 # end fab_put_file_to_vm
 
 
-def sshable(host_string, password=None, gateway=None, gateway_password=None):
+def sshable(host_string, password=None, gateway=None, gateway_password=None,
+            logger=None):
+    logger = logger or contrail_logging.getLogger(__name__)
     host_string_split = re.split(r"[@:]", host_string)
     host_port = host_string_split[2] if len(host_string_split) > 2 else '22'
     with hide('everything'), settings(host_string=gateway,
@@ -369,21 +374,23 @@ def sshable(host_string, password=None, gateway=None, gateway_password=None):
                 if run('(echo > /dev/tcp/%s/%s)' % (host_string_split[1], host_port)).succeeded:
                     return True
                 else:
-                    log.error("Error on ssh to %s" % host_string)
+                    logger.error("Error on ssh to %s" % host_string)
                     return False
         except CommandTimeout, e:
-            log.debug('Could not ssh to %s ' % (host_string))
+            logger.debug('Could not ssh to %s ' % (host_string))
             return False
 
 
-def fab_check_ssh(host_string, password):
+def fab_check_ssh(host_string, password,
+                  logger=None):
+    logger = logger or contrail_logging.getLogger(__name__)
     copy_fabfile_to_agent()
     (username, host_ip) = host_string.split('@')
     cmd_str = 'fab -u %s -p "%s" -H %s -D -w --hide status,user,running verify_socket_connection:22' % (
         username, password, host_ip)
-    log.debug(cmd_str)
+    logger.debug(cmd_str)
     output = run(cmd_str)
-    log.debug(output)
+    logger.debug(output)
     if 'True' in output:
         return True
     return False
@@ -752,8 +759,10 @@ def run_once(f):
     return wrapper
 
 def run_cmd_on_server(issue_cmd, server_ip, username,
-                      password, pty=True, as_sudo=False):
-    log.debug('[%s]: Running cmd : %s' % (server_ip, issue_cmd))
+                      password, pty=True, as_sudo=False,
+                      logger=None):
+    logger = logger or contrail_logging.getLogger(__name__)
+    logger.debug('[%s]: Running cmd : %s' % (server_ip, issue_cmd))
     with hide('everything'):
         with settings(
             host_string='%s@%s' % (username, server_ip), password=password,
@@ -762,7 +771,7 @@ def run_cmd_on_server(issue_cmd, server_ip, username,
                 output = sudo('%s' % (issue_cmd), pty=pty) 
             else:
                 output = run('%s' % (issue_cmd), pty=pty)
-            log.debug('Output : %s' % (output))
+            logger.debug('Output : %s' % (output))
             return output
 # end run_cmd_on_server
 
