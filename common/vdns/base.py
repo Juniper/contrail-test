@@ -289,11 +289,11 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
                 ttl), 'rec_name': rec_name, 'installed': 'yes', 'zone': domain_name}, {'rec_data': rec_name, 'rec_type': 'PTR', 'rec_class': 'IN', 'rec_ttl': str(ttl), 'rec_name': vm_rev_ip, 'installed': 'yes', 'zone': rev_zone}]
             self.verify_vm_dns_data(vm_dns_exp_data[vm_name], assigned_dns_ips[0])
         # ping between two vms which are in same subnets by using name.
-        self.assertTrue(vm_fixture['vm1-test']
+        self.assertTrue(vm_fixture[vm_list[0]]
                         .ping_with_certainty(ip=vm_list[1]))
-        active_controller = vm_fixture['vm1-test'].get_active_controller()
+        active_controller = vm_fixture[vm_list[0]].get_active_controller()
         self.logger.debug('Active control node from the Agent %s is %s' %
-                         (vm_fixture['vm1-test'].vm_node_ip, active_controller))
+                         (vm_fixture[vm_list[0]].vm_node_ip, active_controller))
         # Control node restart/switchover.
         if restart_process == 'ControlNodeRestart':
             # restart the Active control node
@@ -303,9 +303,9 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
             sleep(5)
             # Check the control node shifted to other control node
             new_active_controller = vm_fixture[
-                'vm1-test'].get_active_controller()
+                vm_list[0]].get_active_controller()
             self.logger.info('Active control node from the Agent %s is %s' %
-                             (vm_fixture['vm1-test'].vm_node_ip, new_active_controller))
+                             (vm_fixture[vm_list[0]].vm_node_ip, new_active_controller))
             if new_active_controller == active_controller:
                 self.logger.error(
                     'Control node switchover fail. Old Active controlnode was %s and new active control node is %s' %
@@ -330,8 +330,8 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
                 self.inputs.restart_service('contrail-vrouter', [compute_ip])
         if restart_process == 'scp':
             self.logger.debug('scp using name of vm')
-            vm_fixture['vm1-test'].put_pub_key_to_vm()
-            vm_fixture['vm2-test'].put_pub_key_to_vm()
+            vm_fixture[vm_list[0]].put_pub_key_to_vm()
+            vm_fixture[vm_list[1]].put_pub_key_to_vm()
             size = '1000'
             file = 'testfile'
             y = 'ls -lrt %s' % file
@@ -344,17 +344,17 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
             self.logger.debug("FILE SIZE = %sB" % size)
             self.logger.debug("-" * 80)
             self.logger.debug('Creating a file of the specified size on %s' %
-                             vm_fixture['vm1-test'].vm_name)
+                             vm_fixture[vm_list[0]].vm_name)
 
             self.logger.debug('Transferring the file from %s to %s using scp' %
-                             (vm_fixture['vm1-test'].vm_name, vm_fixture['vm2-test'].vm_name))
+                             (vm_fixture[vm_list[0]].vm_name, vm_fixture[vm_list[1]].vm_name))
             vm_fixture[
-                'vm1-test'].check_file_transfer(dest_vm_fixture=vm_fixture['vm2-test'], mode='scp', size=size)
+                vm_list[0]].check_file_transfer(dest_vm_fixture=vm_fixture[vm_list[1]], mode='scp', size=size)
 
             self.logger.debug('Checking if the file exists on %s' %
-                             vm_fixture['vm2-test'].vm_name)
-            vm_fixture['vm2-test'].run_cmd_on_vm(cmds=cmd_to_check_file)
-            output = vm_fixture['vm2-test'].return_output_cmd_dict[y]
+                             vm_fixture[vm_list[1]].vm_name)
+            vm_fixture[vm_list[1]].run_cmd_on_vm(cmds=cmd_to_check_file)
+            output = vm_fixture[vm_list[1]].return_output_cmd_dict[y]
             print output
             if size in output:
                 self.logger.info(
