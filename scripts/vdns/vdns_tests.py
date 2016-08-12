@@ -428,17 +428,25 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                         continue
                     else:
                         self.assertTrue(False, 'Failed to Modify TTL values')
-            vm_fixture['vm1-test'].run_cmd_on_vm(cmds=[cmd])
-            result = vm_fixture['vm1-test'].return_output_cmd_dict[cmd]
-            result = result.replace("\t", " ")
-            m_obj = re.search(
-                r"rec1.juniper.net\.*\s*([0-9.]*)\s*IN\s*A\s*([0-9.]*)",
-                result)
-            if not m_obj:
-                self.assertTrue(
-                    False,
-                    'record search is failed,please check '
-                    'syntax of regular expression')
+            vm_updated = False
+            for i in range(0,4):
+                vm_fixture['vm1-test'].run_cmd_on_vm(cmds=[cmd])
+                result = vm_fixture['vm1-test'].return_output_cmd_dict[cmd]
+                if result:
+                    result = result.replace("\t", " ")
+                    m_obj = re.search(r"rec1.juniper.net\.*\s*([0-9.]*)\s*IN\s*A\s*([0-9.]*)",
+                                      result)
+                    if not m_obj:
+                        self.assertTrue(False, 
+                        'record search is failed,please check syntax of regular expression')
+                    if int(m_obj.group(1)) != ttl_mod:
+                        sleep(1)
+                    else:
+                        vm_updated = True
+                        break
+                else:
+                    sleep(1)
+            assert vm_updated, "Record not updated on VM "
             print ("\nTTL VALUE is %s ", m_obj.group(1))
             print ("\nrecord ip address is %s", m_obj.group(2))
             self.assertEqual(int(m_obj.group(
