@@ -428,8 +428,10 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
                         continue
                     else:
                         self.assertTrue(False, 'Failed to Modify TTL values')
+            sleep(3) # Record is taking around 3 seconds to get updated on the VM
             vm_fixture['vm1-test'].run_cmd_on_vm(cmds=[cmd])
             result = vm_fixture['vm1-test'].return_output_cmd_dict[cmd]
+            assert result, "Record not updated on VM "
             result = result.replace("\t", " ")
             m_obj = re.search(
                 r"rec1.juniper.net\.*\s*([0-9.]*)\s*IN\s*A\s*([0-9.]*)",
