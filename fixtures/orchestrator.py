@@ -159,6 +159,9 @@ class Orchestrator:
    def delete_security_group(self, sg_id, **kwargs):
        return self.vnc_h.delete_security_group(sg_id, **kwargs)
 
+   def get_security_group(self, sg_id, **kwargs):
+       return self.vnc_h.get_security_group(sg_id, **kwargs)
+
    def get_security_group_rules(self, sg_id, **kwargs):
        return self.vnc_h.get_security_group_rules(sg_id, **kwargs)
 
