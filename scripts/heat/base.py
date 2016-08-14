@@ -91,10 +91,11 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         hs_obj.update(parameters)
     # end update_stack
 
-    def config_vn(self, stack_name=None, vn_name='net'):
+    def config_vn(self, stack_name=None, vn_name='net', transit=False):
         template = self.get_template('vn')
         env = self.get_env('vn')
         env['parameters']['name'] = get_random_name(stack_name)
+        env['parameters']['transit'] = transit
         env['parameters']['subnet'], env['parameters'][
             'prefix'] = get_random_cidr(af=self.inputs.get_af()).split('/')
         if self.inputs.get_af() == 'v6':
