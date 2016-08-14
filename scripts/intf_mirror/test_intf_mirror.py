@@ -23,35 +23,35 @@ class TestIntfMirror(BaseIntfMirrorTest, VerifyIntfMirror):
 
     @test.attr(type=['ci_sanity_WIP', 'sanity', 'quick_sanity'])
     @preposttest_wrapper
-    def test_intf_mirroring_1(self):
+    def test_intf_mirroring_src_on_cn1_dst_on_cn2_analyzer_on_cn3(self):
         """Validate the intf mirroring
         src vm, dst vm and analyzer vm on different CNs
         """
         return self.verify_intf_mirroring_1()
 
     @preposttest_wrapper
-    def test_intf_mirroring_2(self):
+    def test_intf_mirroring_src_on_cn1_dst_on_cn1_analyzer_on_cn1(self):
         """Validate the intf mirroring
         src vm, dst vm and analyzer vm on same CN
         """
         return self.verify_intf_mirroring_2()
 
     @preposttest_wrapper
-    def test_intf_mirroring_3(self):
+    def test_intf_mirroring_src_on_cn1_dst_on_cn1_analyzer_on_cn2(self):
         """Validate the intf mirroring
         src vm, dst vm on same CN and analyzer vm on different CN
         """
         return self.verify_intf_mirroring_3()
 
     @preposttest_wrapper
-    def test_intf_mirroring_4(self):
+    def test_intf_mirroring_src_on_cn1_dst_on_cn2_analyzer_on_cn1(self):
         """Validate the intf mirroring
         src vm, analyzer on same CN and dst vm on different CN
         """
         return self.verify_intf_mirroring_4()
 
     @preposttest_wrapper
-    def test_intf_mirroring_5(self):
+    def test_intf_mirroring_src_on_cn2_dst_on_cn1_analyzer_on_cn1(self):
         """Validate the intf mirroring
         dst vm, analyzer vm on same CN and src vm on different CN
         """
