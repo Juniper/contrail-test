@@ -144,7 +144,7 @@ try:
             '''
             vn_list = []
             right_net_fix, r_hs_obj = self.config_vn(stack_name='right_net')
-            transit_net_fix, t_hs_obj = self.config_vn(stack_name='transit_net')
+            transit_net_fix, t_hs_obj = self.config_vn(stack_name='transit_net', transit=True)
             left_net_fix, l_hs_obj = self.config_vn(stack_name='left_net')
             vn_list1 = [left_net_fix, transit_net_fix]
             vn_list2 = [transit_net_fix, right_net_fix]

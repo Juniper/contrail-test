@@ -91,10 +91,11 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         hs_obj.update(parameters)
     # end update_stack
 
-    def config_vn(self, stack_name=None, vn_name='net'):
+    def config_vn(self, stack_name=None, vn_name='net', transit=False):
         template = self.get_template('vn')
         env = self.get_env('vn')
         env['parameters']['name'] = get_random_name(stack_name)
+        env['parameters']['transit'] = transit
         env['parameters']['subnet'], env['parameters'][
             'prefix'] = get_random_cidr(af=self.inputs.get_af()).split('/')
         if self.inputs.get_af() == 'v6':
@@ -224,7 +225,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
 
         if not self.pt_based_svc:
             if mode == 'transparent':
-                env['parameters']['image'] = 'vsrx-bridge'
+                env['parameters']['image'] = 'tiny_trans_fw'
             if mode == 'in-network':
                 env['parameters']['image'] = 'vsrx-fw'
                 if self.inputs.get_af() == 'v6':
@@ -326,8 +327,8 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
             env['parameters']['right_net_id'] = vn_list[1].vn_fq_name
             env['parameters']['left_net_id'] = vn_list[0].vn_fq_name
         else:
-            env['parameters']['right_net_id'] = ''
-            env['parameters']['left_net_id'] = ''
+            env['parameters']['right_net_id'] = 'auto'
+            env['parameters']['left_net_id'] = 'auto'
         env['parameters'][
             'service_instance_name'] = get_random_name('svc_inst')
         if not self.pt_based_svc:
