@@ -165,7 +165,7 @@ class XmppBase(test_v1.BaseTestCase_v1, ConfigPolicy):
             xmpp_status = self.inputs.run_cmd_on_server(node, cmd)
         self.inputs.restart_service(service, [node])
         cluster_status, error_nodes = ContrailStatusChecker(
-        ).wait_till_contrail_cluster_stable(nodes=[node])
+        ).wait_till_contrail_cluster_stable()
         assert cluster_status, 'Hash of error nodes and services : %s' % (
             error_nodes)
 
