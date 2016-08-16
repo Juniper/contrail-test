@@ -1,5 +1,5 @@
 # utils to start and stop tcpdump on VM
-import logging
+from common import log_orig as contrail_logging
 
 from util import retry
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
@@ -7,7 +7,7 @@ from tcutils.util import get_random_name
 
 def start_tcpdump_for_intf(ip, username, password, interface, filters='-v', logger=None):
     if not logger:
-        logger = logging.getLogger(__name__)
+        logger = contrail_logging.getLogger(__name__)
     session = ssh(ip, username, password)
     pcap = '/tmp/%s_%s.pcap' % (interface, get_random_name())
     cmd = 'tcpdump -ni %s -U %s -w %s' % (interface, filters, pcap)
@@ -16,7 +16,7 @@ def start_tcpdump_for_intf(ip, username, password, interface, filters='-v', logg
 
 def stop_tcpdump_for_intf(session, pcap, logger=None):
     if not logger:
-        logger = logging.getLogger(__name__)
+        logger = contrail_logging.getLogger(__name__)
     cmd = 'kill $(ps -ef|grep tcpdump | grep pcap| awk \'{print $2}\')'
     execute_cmd(session, cmd, logger)
     return True

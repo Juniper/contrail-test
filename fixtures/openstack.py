@@ -1,4 +1,5 @@
 import os
+from common import log_orig as contrail_logging
 from orchestrator import Orchestrator, OrchestratorAuth
 from nova_test import NovaHelper
 from quantum_test import QuantumHelper
@@ -10,7 +11,7 @@ class OpenstackOrchestrator(Orchestrator):
 
    def __init__(self, inputs, username, password, project_name, project_id,
                  vnclib=None, logger=None, auth_server_ip=None):
-       self.logger = logger or logging.getLogger(__name__)
+       self.logger = logger or contrail_logging.getLogger(__name__)
        super(OpenstackOrchestrator, self).__init__(inputs, vnclib, self.logger)
        self.inputs = inputs
        self.quantum_h = None
@@ -317,7 +318,7 @@ class OpenstackAuth(OrchestratorAuth):
        self.user = user
        self.passwd = passwd
        self.project = project_name
-       self.logger = logger or logging.getLogger(__name__)
+       self.logger = logger or contrail_logging.getLogger(__name__)
        self.insecure = bool(os.getenv('OS_INSECURE',True))
        if inputs:
            self.auth_url = inputs.auth_url
@@ -333,7 +334,8 @@ class OpenstackAuth(OrchestratorAuth):
                                         tenant=self.project,
                                         auth_url=self.auth_url,
                                         insecure=self.insecure,
-                                        region_name=self.region_name)
+                                        region_name=self.region_name,
+                                        logger=self.logger)
 
    def get_project_id(self, name=None):
        if not name or name == self.project:

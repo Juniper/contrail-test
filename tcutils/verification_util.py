@@ -1,9 +1,13 @@
 import os
 import json
+import pprint
 import urllib2
 import requests
+import threading
 import logging as LOG
 from lxml import etree
+
+from common import log_orig as contrail_logging
 
 LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.INFO)
 
@@ -20,6 +24,10 @@ class JsonDrv (object):
         self._headers = None
         self._args = args
         self._use_admin_auth = use_admin_auth
+        self.more_logger = contrail_logging.getLogger('introspect',
+                                                      log_to_console=False)
+        # Since introspect log is a single file, need locks
+        self.lock = threading.Lock()
 
     def _auth(self):
         if self._args:
@@ -49,35 +57,60 @@ class JsonDrv (object):
         raise RuntimeError('Authentication Failure')
 
     def load(self, url, retry=True):
-        self.log.debug("Requesting: %s", url)
+        self.common_log("Requesting: %s" %(url))
         resp = requests.get(url, headers=self._headers)
         if resp.status_code == 401:
             if retry:
                 self._auth()
                 return self.load(url, False)
         if resp.status_code == 200:
-            return json.loads(resp.text)
+            output = json.loads(resp.text)
+            with self.lock:
+                self.more_logger.debug(pprint.pformat(output))
+            return output
 
-        self.log.debug("Response Code: %d" % resp.status_code)
+        self.common_log("Response Code: %d" % resp.status_code)
         return None
 
+    def common_log(self, line, mode=LOG.DEBUG):
+        self.log.log(mode, line)
+        with self.lock:
+            self.more_logger.log(mode, line)
 
 class XmlDrv (object):
 
     def __init__(self, vub, logger=LOG, args=None, use_admin_auth=False):
         self.log = logger
         self._vub = vub
+        self.more_logger = contrail_logging.getLogger('introspect',
+                                                      log_to_console=False)
+        # Since introspect log is a single file, need locks
+        self.lock = threading.Lock()
         if args:
             pass
 
     def load(self, url):
         try:
-            self.log.debug("Requesting: %s", url)
+            self.common_log("Requesting: %s" %(url))
             resp = requests.get(url)
-            return etree.fromstring(resp.text)
+            output = etree.fromstring(resp.text)
+            self.log_xml(self.more_logger, output)
+            return output
         except requests.ConnectionError, e:
             self.log.error("Socket Connection error: %s", str(e))
             return None
+
+    def common_log(self, line, mode=LOG.DEBUG):
+        self.log.log(mode, line)
+        with self.lock:
+            self.more_logger.log(mode, line)
+
+    def log_xml(self, logger, line, mode=LOG.DEBUG):
+        ''' line is of type lxml.etree._Element
+        '''
+        logline = etree.tostring(line, pretty_print=True)
+        with self.lock:
+            logger.log(mode, logline)
 
 
 class VerificationUtilBase (object):

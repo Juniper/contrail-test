@@ -2,10 +2,8 @@ import os
 from common.openstack_libs import ks_client as keystone_client
 from common.openstack_libs import ks_exceptions
 from common.openstack_libs import keystoneclient
-from common import log_orig as logging
+from common import log_orig as contrail_logging
 from tcutils.util import retry, get_dashed_uuid
-
-LOG = logging.getLogger(__name__)
 
 class KeystoneCommands():
 
@@ -13,8 +11,10 @@ class KeystoneCommands():
 
     def __init__(self, username=None, password=None, tenant=None,
                  auth_url=None, token=None, endpoint=None,
-                 insecure=True, region_name=None):
+                 insecure=True, region_name=None,
+                 logger=None):
 
+        self.logger = logger or contrail_logging.getLogger(__name__)
         if token:
             self.keystone = keystoneclient.Client(
                 token=token, endpoint=endpoint)
@@ -82,9 +82,9 @@ class KeystoneCommands():
             self.keystone.tenants.add_user(tenant, user, role)
         except ks_exceptions.Conflict as e:
             if 'already has role' in str(e):
-                LOG.logger.debug(str(e))
+                self.logger.debug(str(e))
             else:
-                LOG.logger.info(str(e))
+                self.logger.info(str(e))
 
     def remove_user_from_tenant(self, tenant, user, role):
 
@@ -150,8 +150,8 @@ class KeystoneCommands():
         except ks_exceptions.ClientException, e:
             # TODO Remove this workaround 
             if 'Unable to add token to revocation list' in str(e):
-                LOG.logger.warn('Exception %s while deleting user' % (
-                    str(e)))
+                self.logger.warn('Exception %s while deleting user' % (
+                                 str(e)))
                 return False
     # end delete_user
 

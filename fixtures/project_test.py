@@ -67,6 +67,8 @@ class ProjectFixture(fixtures.Fixture):
 
     def _delete_project(self):
         self.auth.delete_project(self.project_name)
+        print "In project delete, logger is %s" %(self.logger)
+        print "%s" %(vars(self.logger))
         self.logger.info('Deleted project: %s, ID : %s ' % (self.project_name,
                                                             self.uuid))
     # end _delete_project

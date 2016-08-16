@@ -114,7 +114,8 @@ class BaseTestLbaas(BaseNeutronTest):
                                  gateway='@'.join([self.inputs.username,
                                                    server.vm_node_ip]),
                                  gateway_password=self.inputs.password,
-                                 cwd='/tmp')
+                                 cwd='/tmp',
+                                 logger=self.logger)
             try:
                 remote_cmd(host_string = '%s@%s'%(server.vm_username,
                                                             server.local_ip),
@@ -122,7 +123,8 @@ class BaseTestLbaas(BaseNeutronTest):
                                      gateway='@'.join([self.inputs.username,
                                                    server.vm_node_ip]),
                                      gateway_password=self.inputs.password,
-                                     with_sudo=True, timeout=1, cwd='/tmp')
+                                     with_sudo=True, timeout=1, cwd='/tmp',
+                                     logger=self.logger)
             except CommandTimeout:
                 pass
         return
@@ -137,7 +139,8 @@ class BaseTestLbaas(BaseNeutronTest):
             host_string='%s@%s'%(vm.vm_username, vm.local_ip),
             password=vm.vm_password, cmd=cmd1,
             gateway='@'.join([self.inputs.username, vm.vm_node_ip]),
-            gateway_password=self.inputs.password
+            gateway_password=self.inputs.password,
+            logger=self.logger
         )
 
         if result.count('200 OK'):
@@ -147,7 +150,8 @@ class BaseTestLbaas(BaseNeutronTest):
                 host_string='%s@%s'%(vm.vm_username, vm.local_ip),
                 password=vm.vm_password, cmd=cmd2,
                 gateway='@'.join([self.inputs.username, vm.vm_node_ip]),
-                gateway_password=self.inputs.password
+                gateway_password=self.inputs.password,
+                logger=self.logger
             )
             self.logger.info("Request went to server: %s" % (response))
         else:

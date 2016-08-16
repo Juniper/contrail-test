@@ -126,7 +126,8 @@ class Installer(BuildInstallBase):
                     output = fab_put_file_to_vm(host_string='%s@%s' % (
                         self.pkgdst.user, self.pkgdst.host),
                         password=self.pkgdst.password, src=pkg,
-                        dest='~/')
+                        dest='~/',
+                        logger=self.log)
                     self.log.debug(str(output))
                     self.log.debug(
                         "Copied the distro from compute '%s' to VM '%s'", host, self.pkgdst.host)
@@ -149,7 +150,8 @@ class Installer(BuildInstallBase):
                         host_string='%s@%s' % (
                             self.pkgdst.user, self.pkgdst.host),
                         password=self.pkgdst.password, cmd=cmd,
-                        as_sudo=True)
+                        as_sudo=True,
+                        logger=self.log)
                     if ("Connection timed out" in output or
                             "Connection refused" in output) and retry:
                         self.log.debug(

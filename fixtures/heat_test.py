@@ -9,7 +9,6 @@ import heatclient
 from heatclient import client as heat_client
 from heatclient.common import utils
 from heatclient import exc
-logger = logging.getLogger(__name__)
 from tcutils.util import get_plain_uuid, get_dashed_uuid
 import os
 import fixtures

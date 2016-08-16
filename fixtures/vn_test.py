@@ -726,7 +726,8 @@ class VNFixture(fixtures.Fixture):
                 err_msg.append(d['ret'])
             else:
                 out = policy_test_utils.compare_args(
-                    'policy_fqn', fqn, d['ret']['policy']['fq_name'])
+                    'policy_fqn', fqn, d['ret']['policy']['fq_name'],
+                    logger=self.logger)
                 if out:
                     err_msg.append(out)
 

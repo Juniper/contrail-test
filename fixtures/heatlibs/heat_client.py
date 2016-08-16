@@ -6,6 +6,7 @@ from common.openstack_libs import ks_session as session
 from common.openstack_libs import heat_client as client
 from common.structure import DynamicArgs
 from common.openstack_libs import ks_client as ksclient
+from common import log_orig as contrail_logging
 import functools
 from tcutils.util import *
 
@@ -201,7 +202,7 @@ class Inputs(object):
         from fabric.context_managers import settings, hide
         from fabric.exceptions import NetworkError
         from fabric.contrib.files import exists
-        self.logger = logging.getLogger(__name__)
+        self.logger = contrail_logging.getLogger(__name__)
         self.openstack_ip = openstack_ip
         self.host_data = dict()
         nested_set(self.host_data,[self.openstack_ip,'username'],username) 

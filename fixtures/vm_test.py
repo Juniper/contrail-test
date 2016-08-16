@@ -1049,7 +1049,8 @@ class VMFixture(fixtures.Fixture):
                 output = remote_cmd(
                     vm_host_string, cmd, gateway_password=host['password'],
                     gateway='%s@%s' % (host['username'], self.vm_node_ip),
-                    with_sudo=True, password=self.vm_password
+                    with_sudo=True, password=self.vm_password,
+                    logger=self.logger
                 )
                 util = 'ping' if output else 'ping6'
             else:
@@ -1062,7 +1063,8 @@ class VMFixture(fixtures.Fixture):
             output = remote_cmd(
                 vm_host_string, cmd, gateway_password=host['password'],
                 gateway='%s@%s' % (host['username'], self.vm_node_ip),
-                with_sudo=True, password=self.vm_password
+                with_sudo=True, password=self.vm_password,
+                logger=self.logger
             )
             self.logger.debug(output)
             if return_output is True:
@@ -1758,7 +1760,8 @@ class VMFixture(fixtures.Fixture):
                 fab_put_file_to_vm(host_string='%s@%s' % (
                     self.vm_username, self.local_ip),
                     password=self.vm_password,
-                    src='/tmp/id_rsa.pub', dest='/tmp/')
+                    src='/tmp/id_rsa.pub', dest='/tmp/',
+                    logger=self.logger)
         cmds = [
             'cat /tmp/id_rsa.pub >> ~/%s' % (auth_file),
             'chmod 600 ~/%s' % (auth_file),
@@ -1844,7 +1847,8 @@ class VMFixture(fixtures.Fixture):
                     fab_put_file_to_vm(host_string='%s@%s' % (
                         self.vm_username, self.local_ip),
                         password=self.vm_password,
-                        src=key_file, dest='~/')
+                        src=key_file, dest='~/',
+                        logger=self.logger)
                     self.run_cmd_on_vm(cmds=['chmod 600 id_rsa'])
 
         except Exception, e:
@@ -1914,7 +1918,8 @@ class VMFixture(fixtures.Fixture):
                     gateway='%s@%s' % (host['username'], self.vm_node_ip),
                     with_sudo=as_sudo, timeout=timeout, as_daemon=as_daemon,
                     raw=raw, warn_only=warn_only, password=self.vm_password,
-                    pidfile=pidfile
+                    pidfile=pidfile,
+                    logger=self.logger
                 )
                 self.logger.debug(output)
                 self.return_output_values_list.append(output)
@@ -2115,7 +2120,8 @@ class VMFixture(fixtures.Fixture):
         vm_hoststring = '@'.join([self.vm_username, self.local_ip])
         if sshable(vm_hoststring, self.vm_password,
                    gateway='%s@%s' %(host['username'], self.vm_node_ip),
-                   gateway_password=host['password']):
+                   gateway_password=host['password'],
+                   logger=self.logger):
             self.logger.debug('VM %s is ready for SSH connections'
                               % self.vm_name)
             return True
@@ -2223,13 +2229,15 @@ class VMFixture(fixtures.Fixture):
             output = remote_cmd(
                 vm_host_string, cmd, gateway_password=host['password'],
                 gateway='%s@%s' % (host['username'], self.vm_node_ip),
-                with_sudo=True, password=self.vm_password
+                with_sudo=True, password=self.vm_password,
+                logger=self.logger
             )
             cmd = 'python -m SimpleHTTPServer %d &> /dev/null' % listen_port
             output = remote_cmd(
                 vm_host_string, cmd, gateway_password=host['password'],
                 gateway='%s@%s' % (host['username'], self.vm_node_ip),
-                with_sudo=True, as_daemon=True, password=self.vm_password
+                with_sudo=True, as_daemon=True, password=self.vm_password,
+                logger=self.logger
             )
             self.logger.debug(output)
         except Exception, e:
@@ -2251,7 +2259,8 @@ class VMFixture(fixtures.Fixture):
             output = remote_cmd(
                 vm_host_string, cmd, gateway_password=host['password'],
                 gateway='%s@%s' % (host['username'], self.vm_node_ip),
-                with_sudo=True, password=self.vm_password
+                with_sudo=True, password=self.vm_password,
+                logger=self.logger
             )
             self.logger.debug(output)
         except Exception, e:

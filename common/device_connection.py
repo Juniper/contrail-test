@@ -9,6 +9,8 @@ from jnpr.junos.utils.config import Config
 from jnpr.junos.exception import LockError
 from jnpr.junos.exception import *
 
+from common import log_orig as contrail_logging
+
 class AbstractConnection(object):
     ''' Abstract connnection class for ssh/netconf etc
     '''
@@ -37,7 +39,7 @@ class SSHConnection(AbstractConnection):
         self.username = username
         self.password = password
         self.handle = None
-        self.logger = kwargs.get('logger', logging.getLogger(__name__))
+        self.logger = kwargs.get('logger', contrail_logging.getLogger(__name__))
 
     def connect(self):
         '''Since its a ssh connection, fab will take care, no action needed
@@ -80,7 +82,7 @@ class NetconfConnection(AbstractConnection):
         self.username = username
         self.password = password
         self.handle = None
-        self.logger = kwargs.get('logger', logging.getLogger(__name__))
+        self.logger = kwargs.get('logger', contrail_logging.getLogger(__name__))
         self.config_handle = None
 
         

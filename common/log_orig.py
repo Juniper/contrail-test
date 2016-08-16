@@ -10,13 +10,13 @@ import fixtures
 import datetime
 
 cwd = os.path.join(os.path.dirname(__file__), os.pardir)
-LOG_CONFIG = '%s/log_conf.ini'%cwd
-LOG_KEY = 'log01'
+LOG_KEY = 'default'
 TS = time.time()
 ST = datetime.datetime.fromtimestamp(TS).strftime('%Y-%m-%d_%H:%M:%S')
 LOG_FORMAT = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
-_loggers = {}
+if not '_loggers' in locals():
+    _loggers = {}
 
 class NullHandler(logging.Handler):
     """
@@ -33,43 +33,40 @@ class NullHandler(logging.Handler):
     def createLock(self):
         self.lock = None
 
-def getLogger(log_file = 'abcd', name='unknown'):
+def getLogger(name='unknown',**kwargs):
     if name not in _loggers:
-        _loggers[name] = ContrailLogger(log_file ,name = name)
+        _loggers[name] = ContrailLogger(name=name, **kwargs)
         _loggers[name].setUp()
-    return _loggers[name]
+    return _loggers[name].logger
 
 class ContrailLogger:
-    def __init__(self,log_file,name=None):
-    
- 
+    def __init__(self, name, log_to_console=True):
         self.name = name
-        logging.config.fileConfig(LOG_CONFIG)
-        self.logger = logging.getLogger(LOG_KEY)
-        self.log_file = log_file
+        self.logger = logging.getLogger(name or LOG_KEY)
+        self.logger.disabled = False
+        self.logger.setLevel(logging.DEBUG)
+        self.logger.propagate = False
+        self.log_file = name
+        self.log_to_console = log_to_console
+        self.console_h = None
 
     def setUp(self):
         self.fileHandler = CustomFileHandler(fileName = self.log_file)
         self.fileHandler.setFormatter(LOG_FORMAT)
+        self.fileHandler.setLevel(logging.DEBUG)
         self.logger.addHandler(self.fileHandler)
-        #return self.logger
-        #self.memHandler = self.logger.handlers[0]
-        #self.memHandler.setTarget(self.fileHandler)
-        #self.logger.addHandler(self.fileHandler)
 
-        self.console_h= logging.StreamHandler()
-        self.console_h.setLevel(logging.INFO)
-        self.console_h.setFormatter(LOG_FORMAT)
-        self.logger.addHandler(self.console_h)
-        #self.logger.addHandler(logging.NullHandler())
+        if self.log_to_console:
+            self.console_h= logging.StreamHandler()
+            self.console_h.setLevel(logging.INFO)
+            self.console_h.setFormatter(LOG_FORMAT)
+            self.logger.addHandler(self.console_h)
         self.logger.addHandler(NullHandler())
 
     def cleanUp(self):
         pass
-        #self.memHandler.flush()
-        #self.memHandler.close()
-        #self.logger.removeHandler(self.memHandler)
-        self.logger.removeHandler(self.console_h)
+        if self.console_h:
+            self.logger.removeHandler(self.console_h)
 
     def handlers(self):
         return self.logger.handlers
@@ -89,7 +86,6 @@ class CustomFileHandler(logging.FileHandler):
         except OSError:
             subprocess.call('mkdir -p %s' %(path), shell=True)
         fileName= path + '/' + fileName.lower() +'.log'
-        print "\nLog file : %s \n" %(os.path.realpath(fileName))
         logging.FileHandler.__init__(self,fileName,mode)
 
 def dolog(logger,message = ''):

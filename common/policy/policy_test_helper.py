@@ -386,7 +386,8 @@ def comp_user_rules_to_system_rules(
                 cn_vna_rules_by_vn[vn] = []
             # compare with test input & assert on failure
             ret = policy_test_utils.compare_rules_list(
-                rules_by_all_vn, cn_vna_rules_by_vn[vn])
+                rules_by_all_vn, cn_vna_rules_by_vn[vn],
+                logger=self.logger)
             if ret:
                 result = ret['state']
                 msg = ret['msg']

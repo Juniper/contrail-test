@@ -6,18 +6,17 @@ from fabric.state import connections as fab_connections
 from fabric.context_managers import settings, hide, cd
 
 import re
-import logging
+from common import log_orig as contrail_logging
 import time
 import os
 import tempfile
 
-log = logging.getLogger('log01')
 
 
 def remote_cmd(host_string, cmd, password=None, gateway=None,
                gateway_password=None, with_sudo=False, timeout=120,
                as_daemon=False, raw=False, cwd=None, warn_only=True, tries=1,
-               pidfile=None):
+               pidfile=None, logger=None):
     """ Run command on remote node.
     remote_cmd method to be used to run command on any remote nodes - whether it
     is a remote server or VM or between VMs. This method has capability to
@@ -61,6 +60,8 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
         pidfile : When run in background, use pidfile to store the pid of the 
                   running process
     """
+    if not logger:
+        logger = contrail_logging.getLogger(__name__)
     fab_connections.clear()
     kwargs = {}
     if as_daemon:
@@ -94,13 +95,13 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
             abort_on_prompts=False):
         update_env_passwords(host_string, password, gateway, gateway_password)
 
-        log.debug(cmd)
+        logger.debug(cmd)
         output = None
         while tries > 0:
             try:
                 output = _run(cmd, timeout=timeout, **kwargs)
             except (CommandTimeout, NetworkError) as e:
-                log.warn('Unable to run command %s: %s' % (cmd, str(e)))
+                logger.warn('Unable to run command %s: %s' % (cmd, str(e)))
                 tries -= 1
                 time.sleep(5)
                 continue
