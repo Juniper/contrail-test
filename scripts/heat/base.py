@@ -428,21 +428,38 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         svc_pt_hs = self.config_heat_obj(stack_name)
         stack = svc_pt_hs.heat_client_obj
         op = stack.stacks.get(stack_name).outputs
-        time.sleep(5) 
+        time.sleep(5)
         for output in op:
             if output['output_key'] == 'left_VM_ID':
                 left_vm_id = output['output_value']
-            elif output['output_key'] == 'right_VM_ID': 
+            elif output['output_key'] == 'left_VM1_ID':
+                left_vm1_id = output['output_value']
+            elif output['output_key'] == 'left_VM2_ID':
+                left_vm2_id = output['output_value']
+            elif output['output_key'] == 'right_VM_ID':
                 right_vm_id = output['output_value']
-            elif output['output_key'] == 'left_vn_FQDN': 
+            elif output['output_key'] == 'right_VM1_ID':
+                right_vm1_id = output['output_value']
+            elif output['output_key'] == 'right_VM2_ID':
+                right_vm2_id = output['output_value']
+            elif output['output_key'] == 'left_vn_FQDN':
                 left_vn_fqdn = output['output_value']
-            elif output['output_key'] == 'right_vn_FQDN': 
+            elif output['output_key'] == 'right_vn_FQDN':
                 right_vn_fqdn = output['output_value']
-            elif output['output_key'] == 'si_fqdn': 
+            elif output['output_key'] == 'si_fqdn':
                 si_fqdn = output['output_value']
-            elif output['output_key'] == 'si2_fqdn': 
+            elif output['output_key'] == 'si2_fqdn':
                 si2_fqdn = output['output_value']
                 si2_fqdn=":".join(si2_fqdn)
+            elif output['output_key'] == 'left_VM1_IP_ADDRESS':
+                left_vm1_ip_address = output['output_value']
+                network_policy_entries_policy_rule_src_addresses_subnet_ip_prefix = "left_vn"+":"+left_vm1_ip_address
+                network_policy_entries_policy_rule_src_addresses_subnet_ip_prefix_len = "32"
+            elif output['output_key'] == 'right_VM1_IP_ADDRESS':
+                right_vm1_ip_address = output['output_value']
+                network_policy_entries_policy_rule_dst_addresses_subnet_ip_prefix = "right_vn"+":"+right_vm1_ip_address
+                network_policy_entries_policy_rule_dst_addresses_subnet_ip_prefix_len = "32"
+
         #Update the policy
         si_fqdn=":".join(si_fqdn)
         left_vn_fqdn=":".join(left_vn_fqdn)
@@ -450,14 +467,40 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         if 'multi' in stack_name:
             self.update_stack(svc_pt_hs, change_sets=[['left_vn_fqdn', left_vn_fqdn], ['right_vn_fqdn', right_vn_fqdn], ['service_instance1_fq_name', si_fqdn], ['service_instance2_fq_name', si2_fqdn]])
         else:
-            self.update_stack(svc_pt_hs, change_sets=[['left_vn_fqdn', left_vn_fqdn], ['right_vn_fqdn', right_vn_fqdn], ['service_instance_fq_name', si_fqdn]])
-        left_vm = VMFixture(connections=self.connections,uuid = left_vm_id, image_name = 'cirros-0.3.0-x86_64-uec')
-        left_vm.read()
-        left_vm.verify_on_setup()
-        right_vm = VMFixture(connections=self.connections,uuid = right_vm_id, image_name = 'cirros-0.3.0-x86_64-uec')
-        right_vm.read()
-        right_vm.verify_on_setup()
-        assert left_vm.ping_with_certainty(right_vm.vm_ip, expectation=True)
+            if 'cidr' in stack_name:
+                if 'src_cidr' in stack_name:
+                    self.update_stack(svc_pt_hs, change_sets=[['left_vn_fqdn', left_vn_fqdn], ['right_vn_fqdn', right_vn_fqdn], ['service_instance_fq_name', si_fqdn], ['network_policy_entries_policy_rule_src_addresses_subnet_ip_prefix', network_policy_entries_policy_rule_src_addresses_subnet_ip_prefix], ['network_policy_entries_policy_rule_src_addresses_subnet_ip_prefix_len', network_policy_entries_policy_rule_src_addresses_subnet_ip_prefix_len]])
+            else:
+                self.update_stack(svc_pt_hs, change_sets=[['left_vn_fqdn', left_vn_fqdn], ['right_vn_fqdn', right_vn_fqdn], ['service_instance_fq_name', si_fqdn]])
+        if 'cidr' in stack_name:
+                if 'src_cidr' in stack_name:
+                    # 2 VMs in the left_vn
+                    left_vm1 = VMFixture(connections=self.connections,uuid = left_vm1_id, image_name = 'cirros-0.3.0-x86_64-uec')
+                    left_vm1.read()
+                    left_vm1.verify_on_setup()
+
+                    left_vm2 = VMFixture(connections=self.connections,uuid = left_vm2_id, image_name = 'cirros-0.3.0-x86_64-uec')
+                    left_vm2.read()
+                    left_vm2.verify_on_setup()
+
+                    # One VM in the right_vn
+                    right_vm = VMFixture(connections=self.connections,uuid = right_vm_id, image_name = 'cirros-0.3.0-x86_64-uec')
+                    right_vm.read()
+                    right_vm.verify_on_setup()
+
+                    # Ping from left_vm1 to right_vm should pass
+                    assert left_vm1.ping_with_certainty(right_vm.vm_ip, expectation=True)
+
+                    # Ping from left_vm2 to right_vm should fail
+                    assert left_vm2.ping_with_certainty(right_vm.vm_ip, expectation=False)
+        else:
+            left_vm = VMFixture(connections=self.connections,uuid = left_vm_id, image_name = 'cirros-0.3.0-x86_64-uec')
+            left_vm.read()
+            left_vm.verify_on_setup()
+            right_vm = VMFixture(connections=self.connections,uuid = right_vm_id, image_name = 'cirros-0.3.0-x86_64-uec')
+            right_vm.read()
+            right_vm.verify_on_setup()
+            assert left_vm.ping_with_certainty(right_vm.vm_ip, expectation=True)
 
     def config_svc_rule_v1(self, direction='<>', proto='icmp', src_ports=None, dst_ports=None, src_vns=None, dst_vns=None, si_fq_names=[]):
         template = self.get_template('svc_rule')

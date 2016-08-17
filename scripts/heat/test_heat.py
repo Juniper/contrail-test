@@ -437,6 +437,26 @@ try:
             self.config_v2_svc_chain(stack_name)
         # end test_pt_multi_inline_v2_svc_creation_with_heat
 
+        @preposttest_wrapper
+        def test_src_cidr_svc_creation_with_heat(self):
+            '''
+            Validate Source CIDR based policy with service chaining
+
+            At high level service chain template consists of following resources
+                1. Two VNs (left_vn:10.10.10.0/24 and right_vn: 20.20.20.0/24
+                2. Two VMs in left_vn (left_vm1: 10.10.10.3/24 and left_vm2: 10.10.10.4/24)
+                3. One VM in right_vn (right_vm: 20.20.20.3/24)
+                4. Service chain with version 2 template and in-network, having CIDR based policy with left_vm1 IP for source
+
+            Validation steps
+                1. Ping right_vm from left_vm1 and ping should pass, since policy is based upon left_vm1 CIDR
+                2. Ping right_vm from left_vm2 and ping should fail, as polciy does not match for left_vm2 IP address
+
+            '''
+            stack_name = 'src_cidr_svc'
+            self.config_v2_svc_chain(stack_name)
+        # end test_cidr_based_sc
+
     class TestHeatv2IPv6(TestHeatv2):
 
         @classmethod
