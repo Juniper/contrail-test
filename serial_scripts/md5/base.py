@@ -189,7 +189,7 @@ class Md5Base(test_v1.BaseTestCase_v1, VerifySecGroup, ConfigPolicy):
                 cn_bgp_entry = str(cn_bgp_entry)
 
         cn_bgp_entry = str(cn_bgp_entry)
-        est = re.findall(' \'state\': \'(\w+)\', \'local', cn_bgp_entry)
+        est = re.findall(' \'state\': \'(\w+)\', \'flap_count', cn_bgp_entry)
         for ip in est:
             if not ('Established' in ip):
                 result = False
