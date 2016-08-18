@@ -54,7 +54,7 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
 
     @classmethod
     def create_only_vn(cls, vn_name=None, vn_subnets=None, vxlan_id=None,
-                   enable_dhcp=True, *args, **kwargs):
+                   enable_dhcp=True, **kwargs):
         '''Classmethod to do only VN creation
         '''
         if not vn_name:
@@ -68,19 +68,19 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
                       subnets=vn_subnets,
                       vxlan_id=vxlan_id,
                       enable_dhcp=enable_dhcp,
-                      *args, **kwargs)
+                      **kwargs)
         vn_fixture.setUp()
         return vn_fixture
     # end create_only_vn
 
 
     def create_vn(self, vn_name=None, vn_subnets=None, vxlan_id=None,
-        enable_dhcp=True, cleanup=True, *args, **kwargs):
+        enable_dhcp=True, cleanup=True, **kwargs):
         vn_fixture = self.create_only_vn(vn_name=vn_name,
                                      vn_subnets=vn_subnets,
                                      vxlan_id=vxlan_id,
                                      enable_dhcp=enable_dhcp,
-                                     *args, **kwargs)
+                                     **kwargs)
         if cleanup:
             self.addCleanup(vn_fixture.cleanUp)
 
@@ -91,7 +91,7 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
     def create_only_vm(cls, vn_fixture, vm_name=None, node_name=None,
                   flavor='contrail_flavor_small',
                   image_name='ubuntu-traffic',
-                  port_ids=[], *args, **kwargs):
+                  port_ids=[], **kwargs):
         if not vm_name:
             vm_name = 'vm-%s' % (get_random_name(vn_fixture.vn_name))
         vm_obj = VMFixture(
@@ -103,7 +103,7 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
                     flavor=flavor,
                     node_name=node_name,
                     port_ids=port_ids,
-                    *args, **kwargs)
+                    **kwargs)
         vm_obj.setUp()
         return vm_obj
     # end create_only_vm
@@ -111,14 +111,14 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
     def create_vm(self, vn_fixture, vm_name=None, node_name=None,
                   flavor='contrail_flavor_small',
                   image_name='ubuntu-traffic',
-                  port_ids=[], *args, **kwargs):
+                  port_ids=[], **kwargs):
         vm_fixture = self.create_only_vm(vn_fixture,
                         vm_name=vm_name,
                         node_name=node_name,
                         flavor=flavor,
                         image_name=image_name,
                         port_ids=port_ids,
-                        *args, **kwargs)
+                        **kwargs)
         self.addCleanup(vm_fixture.cleanUp)
         return vm_fixture
 

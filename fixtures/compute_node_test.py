@@ -300,6 +300,9 @@ class ComputeNodeFixture(fixtures.Fixture):
 
     def get_vrouter_matching_flow(self, flow_data, filters='Action:'):
         '''
+        This method is only to be used for test cases specific to flow command testing.
+        For other test cases, to verify the action method verify_flow_action
+            from vrouter/base.py should be used.
         flow_data: dict of 6 tuples to identify the flow
         dict format: flow_data={'src_ip':<src IP>, 'dst_ip':<dst IP>,
                                    'src_port':<src port>, 'dst_port':<dst port>,
@@ -642,10 +645,3 @@ class ComputeNodeFixture(fixtures.Fixture):
         if not getattr(self, '_agent_phyiscal_interface', None):
             self._agent_phyiscal_interface = self.agent_inspect_h.get_agent_physical_interface()
         return self._agent_phyiscal_interface
-
-    def get_vrouter_dropstats(self):
-        cmd = 'dropstats | grep -v " 0"'
-        output = self.execute_cmd(cmd)
-        self.logger.debug('Command issued: %s, output: %s' %(cmd, output))
-        return output
-
