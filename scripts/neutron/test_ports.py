@@ -12,6 +12,7 @@ import time
 
 from vn_test import *
 from vm_test import *
+from port_fixture import PortFixture
 from common.connections import ContrailConnections
 from tcutils.wrappers import preposttest_wrapper
 
@@ -946,3 +947,19 @@ class TestPorts(BaseNeutronTest):
             'Ping to the Virtual IP %s from the test VM  %s, failed' % (vIP,
                                                 vm_test_fixture.vm_ip)
     # end test_aap_with_zero_mac  
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_ports_bindings(self):
+        '''
+        Verify that we are able to create a port with custom port bindings
+        Steps:
+            1) Create Port with Port bindings profile set to {'foo': 'bar'}
+            2) Retrieve and verify the same is set
+        '''
+        bind_dict = {'foo': 'bar'}
+        vn = self.create_vn()
+        port = self.useFixture(PortFixture(vn.uuid, connections=self.connections,
+                               binding_profile=bind_dict))
+        assert port.verify_on_setup(), 'VMI %s verification has failed'%port.uuid
+    # end test_ports_bindings
