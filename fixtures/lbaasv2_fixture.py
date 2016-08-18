@@ -260,7 +260,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
             if vmis:
                 self.label = [vmi['label'] for vmi in vmis
                               if vmi['ip_addr'] == self.vip_ip][0]
-            if self.label == -1:
+            if self.label == '-1':
                 self.label = None
             if not self.label:
                 self.logger.debug('LB: Unable to fetch label of vip intf')

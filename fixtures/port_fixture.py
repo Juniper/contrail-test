@@ -190,6 +190,21 @@ class PortFixture(vnc_api_test.VncLibFixture):
     def verify_port_in_agent_ifmap(self):
         pass
 
+    def add_fat_flow(self, fat_flow_config):
+        '''
+        fat_flow_config: dictionary of format {'proto':<string>,'port':<int>}
+        '''
+        self.vnc_h.add_fat_flow_to_vmi(self.uuid, fat_flow_config)
+
+        return True
+
+    def remove_fat_flow(self, fat_flow_config):
+        '''
+        fat_flow_config: dictionary of format {'proto':<string>,'port':<int>}
+        '''
+        self.vnc_h.remove_fat_flow_on_vmi(self.uuid, fat_flow_config)
+
+        return True
 # end PortFixture
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ try:
     from webui_test import *
 except ImportError:
     pass
+from tcutils.util import get_random_name
 
 class SecurityGroupFixture(ContrailFixture):
 
@@ -25,7 +26,7 @@ class SecurityGroupFixture(ContrailFixture):
         self.api_s_inspect = connections.api_server_inspect
         self.domain_name = self.inputs.domain_name
         self.project_name = self.inputs.project_name
-        self.secgrp_name = secgrp_name
+        self.secgrp_name = secgrp_name or get_random_name(self.project_name)
         self.secgrp_id = uuid
         self.secgrp_entries = secgrp_entries
         self.already_present = True
@@ -75,8 +76,9 @@ class SecurityGroupFixture(ContrailFixture):
     def get_fq_name(self):
         return self.secgrp_fq_name
 
-    def delete_all_rules(self, sg_id):
+    def delete_all_rules(self, sg_id=None):
         #deletes all the rules of the sg sg_id
+        sg_id = sg_id or self.secgrp_id
         self.orch.delete_security_group_rules(sg_id=sg_id, project_id=self.project_id, option=self.option)
 
     def create_sg_rule(self, sg_id, secgrp_rules=None):

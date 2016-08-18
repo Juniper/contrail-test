@@ -2108,44 +2108,86 @@ class VMFixture(fixtures.Fixture):
 
     # end scp_file_transfer_cirros
 
-    def cirros_nc_file_transfer(self, dest_vm_fixture, size='100',
-                                local_port='10001', remote_port='10000'):
+    def nc_send_file_to_ip(self, filename, dest_ip, size='100',
+        local_port='10001', remote_port='10000', nc_options=''):
         '''
-        Creates a file of "size" bytes and transfers to the VM in dest_vm_fixture using netcat
-        Max size where it is tested to work is about 20KB
+        Creates the file and sends it to ip dest_ip
         '''
-        filename = 'testfile'
-        dest_vm_ip = dest_vm_fixture.vm_ip
-        listen_port = remote_port
-
+        nc_cmd = 'nc ' + nc_options
         # Create file
         cmd = 'dd bs=%s count=1 if=/dev/zero of=%s' % (size, filename)
         self.run_cmd_on_vm(cmds=[cmd])
         host = self.inputs.host_data[self.vm_node_ip]
+
+        # Transfer the file
+        self.run_cmd_on_vm(cmds=['%s -p %s %s %s < %s' % (nc_cmd, local_port,
+            dest_ip, remote_port, filename)])
+
+    @retry(delay=3, tries=10)
+    def verify_file_size_on_vm(self, filename, size='100', expectation=True):
+        # Check if file exists on VM with same size
+        out_dict = self.run_cmd_on_vm(
+            cmds=['ls -l %s' % (filename)])
+
+        result = size in out_dict.values()[0]
+
+        if (result == expectation):
+            return True
+        else:
+            self.logger.debug("File size %s verification failed on the VM, "
+                "will retry after 3 seconds" % size)
+            return False
+
+    def nc_file_transfer(self, dest_vm_fixture, size='100',
+            local_port='10001', remote_port='10000', nc_options='', ip=None,
+            expectation=True):
+        '''
+        This method can use used to send tcp/udp traffic using netcat and
+            will work for IPv4 as well as IPv6.
+        Starts the netcat on both sender as well as receiver.
+        IPv6 will work only with ubuntu and ubuntu-traffic images,
+            cirros does not support IPv6.
+        Creates a file of "size" bytes and transfers to the VM in dest_vm_fixture using netcat.
+        Max size where it is tested to work is about 20KB.
+        If ip is passed, send the file to ip instead of dest_vm_fixture and
+            verify it on dest_vm_fixture
+        nc_options: options to be passed to netcat.
+            for IPv6: '-6', for udp: '-u'
+        If nc_options is None, then it will use tcp and IPv4
+        '''
+
+        filename = 'testfile'
+        dest_vm_ip = ip or dest_vm_fixture.vm_ip
+        listen_port = remote_port
+
         dest_host = self.inputs.host_data[dest_vm_fixture.vm_node_ip]
 
         # Launch nc on dest_vm. For some reason, it exits after the first
         # client disconnect
-        cmds = ['rm -f %s' % (filename),
-                'nc -ll -p %s > %s' % (listen_port, filename)]
+        nc_cmd = 'nc ' + nc_options
+        #Some version of netcat does not support -p option in listener mode
+        #so run without -p option also
+        nc_l = ['%s -ll -p %s > %s' % (nc_cmd, listen_port, filename),
+                    '%s -ll %s > %s' % (nc_cmd, listen_port, filename)]
+        cmds=[ 'rm -f %s' % (filename) ]
         dest_vm_fixture.run_cmd_on_vm(cmds=cmds, as_sudo=True, as_daemon=True)
+        dest_vm_fixture.run_cmd_on_vm(cmds=nc_l, as_sudo=True, as_daemon=True)
 
-        # Transfer the file
-        self.run_cmd_on_vm(cmds=['nc -p %s %s %s < %s' % (local_port,
-                                                          dest_vm_ip, listen_port, filename)])
+        self.nc_send_file_to_ip(filename, dest_vm_ip, size=size,
+            local_port=local_port, remote_port=listen_port,
+            nc_options=nc_options)
 
+        msg1 = 'File transfer verification for file size %s failed on the VM %s' % (size, dest_vm_fixture.vm_name)
+        msg2 = 'File transfer verification for file size %s passed on the VM %s' % (size, dest_vm_fixture.vm_name)
         # Check if file exists on dest VM
-        out_dict = dest_vm_fixture.run_cmd_on_vm(
-            cmds=['ls -l %s' % (filename)])
-        if size in out_dict.values()[0]:
-            self.logger.info('File of size %s is trasferred successfully to '
-                             '%s ' % (size, dest_vm_fixture.vm_name))
+        if dest_vm_fixture.verify_file_size_on_vm(filename, size=size, expectation=expectation):
+            self.logger.info(msg2)
             return True
         else:
-            self.logger.warn('File of size %s is not trasferred fine to %s '
-                             '!! Pls check logs' % (size, dest_vm_fixture.vm_name))
+            self.logger.info(msg1)
             return False
-    # end cirros_nc_file_transfer
+
+    # end nc_file_transfer
 
     def get_console_output(self):
         return self.orch.get_console_output(self.vm_obj)
@@ -2697,8 +2739,33 @@ class VMFixture(fixtures.Fixture):
         return True
         # L2 verification end here
 
-# end VMFixture
+    def add_ip_on_vm(self, ip, interface=None):
+        '''
+        Adds IP on the VM's interface
+            if interface is not passed add it on the first interface.
+            IPv4: Configures virtual interface on the VM for new IP
+            IPv6: Adds the new ip in existing interface
+        '''
+        interface = interface or self.get_vm_interface_list()[0]
+        if is_v6(ip):
+            intf_conf_cmd = "ifconfig %s inet6 add %s" % (interface,
+                                       ip)
+        else:
+            intf_conf_cmd = "ifconfig %s:0 %s" % (interface,
+                                       ip)
+        vm_cmds = (intf_conf_cmd, 'ifconfig -a')
+        for cmd in vm_cmds:
+            cmd_to_output = [cmd]
+            self.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
+            output = self.return_output_cmd_dict[cmd]
+        if ip not in output:
+            self.logger.error(
+                "IP %s not assigned to any interface" % (ip))
+            return False
 
+        return True
+
+# end VMFixture
 
 class VMData(object):
 

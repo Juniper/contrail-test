@@ -54,7 +54,7 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
 
     @classmethod
     def create_only_vn(cls, vn_name=None, vn_subnets=None, vxlan_id=None,
-                   enable_dhcp=True):
+                   enable_dhcp=True, *args, **kwargs):
         '''Classmethod to do only VN creation
         '''
         if not vn_name:
@@ -67,18 +67,20 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
                       vn_name=vn_name,
                       subnets=vn_subnets,
                       vxlan_id=vxlan_id,
-                      enable_dhcp=enable_dhcp)
+                      enable_dhcp=enable_dhcp,
+                      *args, **kwargs)
         vn_fixture.setUp()
         return vn_fixture
     # end create_only_vn
 
 
     def create_vn(self, vn_name=None, vn_subnets=None, vxlan_id=None,
-        enable_dhcp=True, cleanup=True):
+        enable_dhcp=True, cleanup=True, *args, **kwargs):
         vn_fixture = self.create_only_vn(vn_name=vn_name,
                                      vn_subnets=vn_subnets,
                                      vxlan_id=vxlan_id,
-                                     enable_dhcp=enable_dhcp)
+                                     enable_dhcp=enable_dhcp,
+                                     *args, **kwargs)
         if cleanup:
             self.addCleanup(vn_fixture.cleanUp)
 
@@ -89,7 +91,7 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
     def create_only_vm(cls, vn_fixture, vm_name=None, node_name=None,
                   flavor='contrail_flavor_small',
                   image_name='ubuntu-traffic',
-                  port_ids=[]):
+                  port_ids=[], *args, **kwargs):
         if not vm_name:
             vm_name = 'vm-%s' % (get_random_name(vn_fixture.vn_name))
         vm_obj = VMFixture(
@@ -100,7 +102,8 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
                     image_name=image_name,
                     flavor=flavor,
                     node_name=node_name,
-                    port_ids=port_ids)
+                    port_ids=port_ids,
+                    *args, **kwargs)
         vm_obj.setUp()
         return vm_obj
     # end create_only_vm
@@ -108,13 +111,14 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
     def create_vm(self, vn_fixture, vm_name=None, node_name=None,
                   flavor='contrail_flavor_small',
                   image_name='ubuntu-traffic',
-                  port_ids=[]):
+                  port_ids=[], *args, **kwargs):
         vm_fixture = self.create_only_vm(vn_fixture,
                         vm_name=vm_name,
                         node_name=node_name,
                         flavor=flavor,
                         image_name=image_name,
-                        port_ids=port_ids)
+                        port_ids=port_ids,
+                        *args, **kwargs)
         self.addCleanup(vm_fixture.cleanUp)
         return vm_fixture
 
@@ -396,22 +400,27 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
 #            {"ip_address": ip + '/32', "mac_address": port1['mac_address']}]}
 #        port2_dict = {'allowed_address_pairs': [
 #            {"ip_address": ip + '/32', "mac_address": port2['mac_address']}]}
+        if is_v4(ip):
+            prefix = '/32'
+        elif is_v6(ip):
+            prefix = '/128'
+
         if zero_mac:
             port1_dict = {'allowed_address_pairs': [
-                {"ip_address": ip + '/32', "mac_address": '00:00:00:00:00:00'}]}
+                {"ip_address": ip + prefix , "mac_address": '00:00:00:00:00:00'}]}
             port2_dict = {'allowed_address_pairs': [
-                {"ip_address": ip + '/32', "mac_address": '00:00:00:00:00:00'}]}
+                {"ip_address": ip + prefix, "mac_address": '00:00:00:00:00:00'}]}
         else:
             if vsrx:
                 port1_dict = {'allowed_address_pairs': [
-                    {"ip_address": ip + '/32', "mac_address": '00:00:5e:00:01:01'}]}
+                    {"ip_address": ip + prefix, "mac_address": '00:00:5e:00:01:01'}]}
                 port2_dict = {'allowed_address_pairs': [
-                    {"ip_address": ip + '/32', "mac_address": '00:00:5e:00:01:01'}]}
+                    {"ip_address": ip + prefix, "mac_address": '00:00:5e:00:01:01'}]}
             else:
                 port1_dict = {'allowed_address_pairs': [
-                    {"ip_address": ip + '/32'}]}
+                    {"ip_address": ip + prefix}]}
                 port2_dict = {'allowed_address_pairs': [
-                    {"ip_address": ip + '/32'}]}
+                    {"ip_address": ip + prefix}]}
         port1_rsp = self.update_port(port1['id'], port1_dict)
         port2_rsp = self.update_port(port2['id'], port2_dict)
         return True
@@ -502,6 +511,13 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
     def vrrp_mas_chk(self, vm, vn, ip, vsrx=False):
         self.logger.info(
             'Will verify who the VRRP master is and the corresponding route entries in the Agent')
+        if is_v4(ip):
+            prefix = '32'
+            vrrp_mas_chk_cmd = 'ip -4 addr ls'
+        elif is_v6(ip):
+            prefix = '128'
+            vrrp_mas_chk_cmd = 'ip -6 addr ls'
+
         if vsrx:
             vrrp_mas_chk_cmd = 'show vrrp'
             result = vm.get_config_via_netconf(
@@ -514,7 +530,6 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
                 result = False
                 self.logger.error('VRRP Master not selected')
         else:
-            vrrp_mas_chk_cmd = 'ip -4 addr ls'
             vm.run_cmd_on_vm(cmds=[vrrp_mas_chk_cmd], as_sudo=True)
             output = vm.return_output_cmd_dict[vrrp_mas_chk_cmd]
             result = False
@@ -532,7 +547,7 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
             agent_vrf_objs['vrf_list'], vn.vrf_name)
         vn1_vrf_id = agent_vrf_obj['ucindex']
         paths = inspect_h.get_vna_active_route(
-            vrf_id=vn1_vrf_id, ip=ip, prefix='32')['path_list']
+            vrf_id=vn1_vrf_id, ip=ip, prefix=prefix)['path_list']
         for path in paths:
             if path['peer'] == 'LocalVmPort' and path['path_preference_data']['wait_for_traffic'] == 'false':
                 result = True

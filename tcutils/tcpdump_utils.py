@@ -27,10 +27,10 @@ def start_tcpdump_for_vm_intf(obj, vm_fix, vn_fq_name, filters='-v'):
     compute_password = obj.inputs.host_data[compute_ip]['password']
     vm_tapintf = obj.orch.get_vm_tap_interface(vm_fix.tap_intf[vn_fq_name])
     return start_tcpdump_for_intf(compute_ip, compute_user,
-        compute_password, vm_tapintf, filters)
+        compute_password, vm_tapintf, filters, logger=obj.logger)
 
 def stop_tcpdump_for_vm_intf(obj, session, pcap):
-    return stop_tcpdump_for_intf(session, pcap)
+    return stop_tcpdump_for_intf(session, pcap, logger=obj.logger)
 
 @retry(delay=2, tries=6)
 def verify_tcpdump_count(obj, session, pcap, exp_count=None, exact_match=True):
