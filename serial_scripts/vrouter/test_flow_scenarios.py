@@ -84,7 +84,7 @@ class SimpleTCPFlowEvictionTests(ExtendedFlowTestsBase):
         for i in range(0, 3):
             self.logger.debug('Iteration : %s' % (i))
             # Do file transfer
-            result = self.vn1_vm1_fixture.cirros_nc_file_transfer(
+            result = self.vn1_vm1_fixture.nc_file_transfer(
                 self.vn1_vm2_fixture,
                 size=filesize,
                 local_port=sport,
