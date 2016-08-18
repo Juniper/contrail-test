@@ -14,7 +14,7 @@ from common.openstack_libs import network_exception as exceptions
 
 class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
-    def verify_svc_mirroring(self, si_count=1, svc_mode='transparent', ci=False):
+    def verify_svc_mirroring(self, si_count=1, svc_mode='transparent', ci=False, st_version=1):
         """Validate the service chaining datapath
            Test steps:
            1. Create the SI/ST in svc_mode specified.
@@ -55,7 +55,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
             svc_img_name = "vsrx"
             image_name = 'ubuntu-traffic'
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-                                                              self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name, svc_img_name=svc_img_name)
+                                                              self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name, svc_img_name=svc_img_name, st_version=st_version)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
 
@@ -171,7 +171,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
         return True
 
-    def verify_svc_mirroring_with_floating_ip(self, si_count=1):
+    def verify_svc_mirroring_with_floating_ip(self, si_count=1, st_version=1):
         """Validate the service mirrroring with flaoting IP
            Test steps:
            1. Create the SI/ST in svc_mode specified.
@@ -211,7 +211,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         fip_pool_name = get_random_name('testpool')
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-                                                              self.si_prefix, si_count, svc_type='analyzer', left_vn=self.vn1_name, project=self.inputs.project_name)
+                                                              self.si_prefix, si_count, svc_type='analyzer', left_vn=self.vn1_name, project=self.inputs.project_name, st_version=st_version)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
         self.rules = [{'direction': '<>',
@@ -331,7 +331,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
         return True
 
-    def verify_svc_mirror_with_deny(self, si_count=1):
+    def verify_svc_mirror_with_deny(self, si_count=1, st_version=1):
         """Validate the service chaining mirroring with deny rule
            Test steps:
            1. Create the SI/ST in svc_mode specified.
@@ -411,7 +411,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.nova_h.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-                                                              self.si_prefix, si_count, svc_type='analyzer', left_vn=self.vn1_name, project=self.inputs.project_name)
+                                                              self.si_prefix, si_count, svc_type='analyzer', left_vn=self.vn1_name, project=self.inputs.project_name, st_version=st_version)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
 
@@ -764,7 +764,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
         return True
 
-    def verify_svc_mirroring_unidirection(self, si_count=1, svc_mode='transparent'):
+    def verify_svc_mirroring_unidirection(self, si_count=1, svc_mode='transparent', st_version=1):
         """Validate the service chaining datapath with unidirection traffic
            Test steps:
            1. Create the SI/ST in svc_mode specified.
@@ -801,7 +801,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-                                                              self.si_prefix, si_count, left_vn=self.vn1_name, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name)
+                                                              self.si_prefix, si_count, left_vn=self.vn1_name, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name, st_version=st_version)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
 
@@ -918,7 +918,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
         return True
 
-    def verify_attach_detach_policy_with_svc_mirroring(self, si_count=1):
+    def verify_attach_detach_policy_with_svc_mirroring(self, si_count=1, st_version=1):
         """Validate the detach and attach policy with SI doesn't block traffic"""
 
         vn1_subnets = [get_random_cidr(af=self.inputs.get_af())]
@@ -945,7 +945,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         svc_mode = 'in-network'
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-                                                              self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name)
+                                                              self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name, st_version=st_version)
                                                               #svc_img_name=svc_img)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
@@ -1044,7 +1044,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
         return True
 
-    def verify_detach_attach_diff_policy_with_mirroring(self, si_count=1):
+    def verify_detach_attach_diff_policy_with_mirroring(self, si_count=1, st_version=1):
         """validate attaching a policy with analyzer and detaching again removes all the routes and does not impact other policies"""
         random_number = randint(700, 800)
         self.domain_name = "default-domain"
@@ -1075,7 +1075,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.svc_type = 'analyzer'
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-                                                              self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type=self.svc_type, svc_mode=self.svc_mode, project=self.inputs.project_name)
+                                                              self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type=self.svc_type, svc_mode=self.svc_mode, project=self.inputs.project_name, st_version=st_version)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
         self.rules1 = [{'direction': '<>',
@@ -1181,7 +1181,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
         return True
 
-    def verify_detach_attach_policy_change_rules(self, si_count=1):
+    def verify_detach_attach_policy_change_rules(self, si_count=1, st_version=1):
         random_number = randint(800, 900)
         self.domain_name = "default-domain"
         self.project_name = self.inputs.project_name
@@ -1211,7 +1211,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.svc_type = 'analyzer'
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-                                                              self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type=self.svc_type, svc_mode=self.svc_mode, project=self.inputs.project_name)
+                                                              self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type=self.svc_type, svc_mode=self.svc_mode, project=self.inputs.project_name, st_version=st_version)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
         self.rules1 = [{'direction': '<>',
@@ -1302,7 +1302,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
         return True
 
-    def verify_policy_order_change(self, si_count=1):
+    def verify_policy_order_change(self, si_count=1, st_version=1):
         random_number = randint(901, 950)
         self.domain_name = "default-domain"
         self.project_name = self.inputs.project_name
@@ -1333,7 +1333,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.svc_type = 'analyzer'
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-                                                              self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type=self.svc_type, svc_mode=self.svc_mode, project=self.inputs.project_name)
+                                                              self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type=self.svc_type, svc_mode=self.svc_mode, project=self.inputs.project_name, st_version=st_version)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
         self.rules1 = [{'direction': '<>',
