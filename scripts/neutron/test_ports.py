@@ -52,8 +52,8 @@ class TestPorts(BaseNeutronTest):
                                      port_ids=[port_obj['id']])
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
                                      image_name='cirros-0.3.0-x86_64-uec')
-        vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
         if not vm2_fixture.ping_with_certainty(vm1_fixture.vm_ip):
             self.logger.error('Ping to a attached port %s failed' %
                               (vm1_fixture.vm_ip))
@@ -122,8 +122,8 @@ class TestPorts(BaseNeutronTest):
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
                                      image_name='cirros-0.3.0-x86_64-uec',
                                      port_ids=[port2_obj['id']])
-        vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
         self.assertEqual(
             vm1_fixture.vm_ip,
             port1_obj['fixed_ips'][0]['ip_address'],
@@ -172,8 +172,8 @@ class TestPorts(BaseNeutronTest):
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
                                      image_name='cirros-0.3.0-x86_64-uec',
                                      port_ids=[port2_obj['id']])
-        vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
         self.assertEqual(vm1_fixture.vm_ip,
                          vn1_subnet1_ip, 'VM IP and Port IP Mismatch')
         self.assertEqual(vm2_fixture.vm_ip,
@@ -213,7 +213,7 @@ class TestPorts(BaseNeutronTest):
         test_vm_fixture = self.create_vm(vn1_fixture, test_vm_name,
                                          image_name='cirros-0.3.0-x86_64-uec')
         vm1_fixture.verify_on_setup()
-        test_vm_fixture.wait_till_vm_is_up()
+        assert test_vm_fixture.wait_till_vm_is_up()
         subnet_list = [vn1_subnet1_ip, vn1_subnet2_ip]
         subnet_list2 = [vn1_subnet1_ip2, vn1_subnet2_ip2]
         assert set(vm1_fixture.vm_ips) == set(
@@ -238,7 +238,7 @@ class TestPorts(BaseNeutronTest):
                                      fixed_ips=[{'subnet_id': vn1_subnet1_id,
                                                  'ip_address': vn1_subnet1_ip2}, {'subnet_id': vn1_subnet2_id, 'ip_address': vn1_subnet2_ip2}])
         vm1_fixture.interface_attach(port_id=port1_obj['id'])
-        vm1_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
        # Create alias on the VM to respond to pings
         for subnet in subnet_list2:
             output = vm1_fixture.run_cmd_on_vm(['sudo ifconfig eth0:' + unicode(
@@ -278,8 +278,8 @@ class TestPorts(BaseNeutronTest):
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
                                      image_name='cirros-0.3.0-x86_64-uec',
                                      port_ids=[port2_obj['id']])
-        vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
         vm1_tap_intf = vm1_fixture.tap_intf[vm1_fixture.vn_fq_names[0]]
         vm2_tap_intf = vm2_fixture.tap_intf[vm2_fixture.vn_fq_names[0]]
         assert vm1_tap_intf['mac_addr'] == vm1_mac, ''\
