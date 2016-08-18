@@ -115,12 +115,16 @@ function run_tests_serial {
       return $?
   fi
   testr run --subunit $testrargs |  subunit2junitxml -f -o $serial_result_xml > /dev/null 2>&1
-  python tools/parse_result.py $serial_result_xml 
 }
 
 function check_test_discovery {
    echo "Checking if test-discovery is fine"
    bash -x tools/check_test_discovery.sh || die "Test discovery failed!"
+}
+
+function convert_logs_to_html {
+  python tools/convert_logs_to_html.py logs/
+  echo "Converted log files to html files"
 }
 
 function get_result_xml {
@@ -161,7 +165,6 @@ function run_tests {
           sleep 2
         fi
   fi
-  python tools/parse_result.py $result_xml 
 }
 
 function generate_html {
@@ -180,6 +183,11 @@ function upload_to_web_server {
        python tools/upload_to_webserver.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE $REPORT_FILE
   fi
   echo "Uploaded reports"
+}
+
+function parse_results {
+    python tools/parse_result.py $result_xml $REPORT_DETAILS_FILE
+    python tools/parse_result.py $serial_result_xml $REPORT_DETAILS_FILE
 }
 
 function find_python_version {
@@ -274,6 +282,7 @@ sleep 2
 
 python tools/report_gen.py $TEST_CONFIG_FILE
 echo "Generated report_details* file: $REPORT_DETAILS_FILE"
+parse_results
 generate_html 
 upload_to_web_server
 sleep 2

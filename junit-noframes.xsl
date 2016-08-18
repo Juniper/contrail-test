@@ -409,6 +409,7 @@
         <th>Status</th>
         <th width="80%">Type</th>
         <th nowrap="nowrap">Time(s)</th>
+        <th >LogFile</th>
     </tr>
 </xsl:template>
 
@@ -469,6 +470,21 @@
                 <xsl:with-param name="value" select="@time"/>
             </xsl:call-template>
         </td>
+        <xsl:choose>
+            <xsl:when test="failure">
+		<td>
+		  <xsl:element name="a">
+		    <xsl:attribute name="href">
+			<xsl:value-of select="logfile"/>
+		    </xsl:attribute>
+		    Log File
+		  </xsl:element>
+		</td>
+	   </xsl:when>
+           <xsl:otherwise>
+           <td></td>
+           </xsl:otherwise>
+	</xsl:choose>
     </tr>
 </xsl:template>
 
@@ -477,6 +493,12 @@
     <xsl:call-template name="display-failures"/>
 </xsl:template>
 
+<!-- 
+<xsl:template match="logfile">
+    <xsl:call-template name="display-logfile"/>
+</xsl:template>
+-->
+
 <xsl:template match="error">
     <xsl:call-template name="display-failures"/>
 </xsl:template>
@@ -484,7 +506,7 @@
 <!-- Style for the error and failure in the tescase template -->
 <xsl:template name="display-failures">
     <xsl:choose>
-        <xsl:when test="not(@message)"><span style="cursor:pointer" onclick="javascript:toggleErrorDetail(this)">N/A</span></xsl:when>
+        <xsl:when test="not(@message)"><span style="cursor:pointer" onclick="javascript:toggleErrorDetail(this)">Details</span></xsl:when>
         <xsl:otherwise>
             <xsl:value-of select="@message"/>
         </xsl:otherwise>
