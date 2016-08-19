@@ -464,8 +464,9 @@ class WebuiTest:
                         "return arguments[0].scrollIntoView();", service_temp)
                     service_temp.click()
                     break
-            intfs = self.browser.find_element_by_id(
-                'interfaces-collection').find_elements_by_id('virtualNetwork')
+            intfs = self.ui.find_element(
+                ['interfaces-collection', 'data-cell-virtualNetwork'],
+                    ['id', 'class'], if_elements=[1])
             for intf in intfs:
                 intf.click()
                 self.ui.select_from_dropdown(sel_vn)
@@ -616,8 +617,9 @@ class WebuiTest:
                     rule_list = ['direction', \
                         'simple_action', 'src_address', 'dst_address']
                     for item in rule_list:
-                        rule_element = rules.find_element_by_id(
-                            item)
+                        item_data = 'data-cell-' + item
+                        rule_element = self.ui.find_element(
+                            item_data, 'class', browser=rules)
                         self.ui.click_on_dropdown(rule_element)
                         if item in ('simple_action'):
                             self.ui.select_from_dropdown(eval(item).upper())
