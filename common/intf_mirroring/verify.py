@@ -254,22 +254,22 @@ class VerifyIntfMirror(VerifySvcMirror):
             self.policy_fixture_vn1_vn3, self.vn3_fixture)
 
         self.vm1_fixture_vn1 = self.config_vm(
-            self.vn1_fixture, self.vm1_name_vn1, node_name=src_compute, image_name=image_name)
+            vn_fix=self.vn1_fixture, vm_name=self.vm1_name_vn1, node_name=src_compute, image_name=image_name)
 
         self.vm2_fixture_vn2 = self.config_vm(
-            self.vn2_fixture, self.vm2_name_vn2, node_name=dst_compute, image_name=image_name)
+            vn_fix=self.vn2_fixture, vm_name=self.vm2_name_vn2, node_name=dst_compute, image_name=image_name)
 
         self.mirror_vm_fixture_vn1 = self.config_vm(
-            self.vn1_fixture, self.mirror_vm_name_vn1, node_name=analyzer_compute, image_name=image_name)
+            vn_fix=self.vn1_fixture, vm_name=self.mirror_vm_name_vn1, node_name=analyzer_compute, image_name=image_name)
 
         self.vm2_fixture_vn1 = self.config_vm(
-            self.vn1_fixture, self.vm2_name_vn1, node_name=dst_compute, image_name=image_name)
+            vn_fix=self.vn1_fixture, vm_name=self.vm2_name_vn1, node_name=dst_compute, image_name=image_name)
  
         self.mirror_vm_fixture_vn3 = self.config_vm(
-           self.vn3_fixture, self.mirror_vm_name_vn3, node_name=analyzer_compute, image_name=image_name)
+           vn_fix=self.vn3_fixture, vm_name=self.mirror_vm_name_vn3, node_name=analyzer_compute, image_name=image_name)
 
         self.mirror_vm_fixture_vn2 = self.config_vm(
-           self.vn2_fixture, self.mirror_vm_name_vn2, node_name=analyzer_compute, image_name=image_name)
+           vn_fix=self.vn2_fixture, vm_name=self.mirror_vm_name_vn2, node_name=analyzer_compute, image_name=image_name)
 
         assert self.vm1_fixture_vn1.verify_on_setup()
         assert self.vm2_fixture_vn2.verify_on_setup()
@@ -355,7 +355,8 @@ class VerifyIntfMirror(VerifySvcMirror):
             prop_obj = VirtualMachineInterfacePropertiesType()
         interface_mirror = prop_obj.get_interface_mirror()
         if not interface_mirror:
-            mirror_to = MirrorActionType(analyzer_name, None, analyzer_ip_address, routing_instance, udp_port)
+            mirror_to = MirrorActionType(analyzer_name=analyzer_name, encapsulation=None, 
+                analyzer_ip_address=analyzer_ip_address, routing_instance=routing_instance, udp_port=udp_port)
             interface_mirror = InterfaceMirrorType(direction, mirror_to)
             prop_obj.set_interface_mirror(interface_mirror)
             tap.set_virtual_machine_interface_properties(prop_obj)
