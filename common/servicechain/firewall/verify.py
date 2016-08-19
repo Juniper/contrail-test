@@ -379,9 +379,11 @@ class VerifySvcFirewall(VerifySvcMirror):
             if si[0] == 'nat':
                 svc_mode = 'in-network-nat'
                 svc_img_name = 'tiny_nat_fw'
+                (mgmt_vn, left_vn, right_vn) = (None, self.vn1_fixture.vn_fq_name, self.vn2_fixture.vn_fq_name)
             elif si[0] == 'in-net':
                 svc_mode = 'in-network'
                 svc_img_name = 'ubuntu-in-net'
+                (mgmt_vn, left_vn, right_vn) = (None, self.vn1_fixture.vn_fq_name, self.vn2_fixture.vn_fq_name)
             else:
                 svc_mode = 'transparent'
                 svc_img_name = 'tiny_trans_fw'
