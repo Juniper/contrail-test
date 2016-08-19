@@ -5461,6 +5461,7 @@ class WebuiTest:
                             policy_name = pol_out.group(1)
                             out = re.search(policy_name, str(pol_name))
                             if out:
+                                result = True
                                 break
                             else:
                                 result = result and False
@@ -5671,8 +5672,10 @@ class WebuiTest:
                         service_chain = 'multi_policy_service_chains_enabled'
                         ops_multi_pol = vn_list_ops_element.get(service_chain)
                         ops_allow_rpf = vn_list_ops_element.get('virtual_network_properties')
-                        allow_transit = "\"allow_transit\"\: true\, \"rpf\": \"enable\""
-                        ops_allow_rpf_out = re.search(allow_transit, str(ops_allow_rpf))
+                        allow_transit = "\"allow_transit\"\: true"
+                        rpf =  "\"rpf\": \"enable\""
+                        ops_allow_out = re.search(allow_transit, str(ops_allow_rpf))
+                        ops_rpf_out = re.search(rpf, str(ops_allow_rpf))
                         ops_hash = vn_list_ops_element.get('ecmp_hashing_include_fields')
                         ops_hash_out = re.search("\"hashing_configured\"\: true", str(ops_hash))
                         ops_share = vn_list_ops_element.get('is_shared')
@@ -5685,7 +5688,8 @@ class WebuiTest:
                         ops_prov_seg_phy = re.search("\"segmentation_id\"\: " + var_list[0] + \
                                                      ".*\"physical_network\"\: \""+ \
                                                      var_list[1], str(ops_prov_props))
-                        if not(str(ops_multi_pol) == 'true' and ops_allow_rpf_out and ops_hash_out \
+                        if not(str(ops_multi_pol) == 'true' and ops_allow_out and \
+                           ops_rpf_out and ops_hash_out \
                            and str(ops_share) == 'true' and str(ops_ext) =='true' and \
                            str(ops_flood) == 'true' and ops_static_route_out and ops_prov_seg_phy):
                             result = result and False
@@ -5741,18 +5745,21 @@ class WebuiTest:
         return result
     # verify_vn_after_edit_ops
 
-    def verify_vn_after_edit_ui(self, option, value, var_list):
+    def verify_vn_after_edit_ui(self, option, value, var_list, index=0):
         result = True
         try:
             if option == 'UUID':
-                uuid = self.ui.get_vn_detail_ui(option)
+                uuid = self.ui.get_vn_detail_ui(option, index=index)
                 if uuid == value:
                     self.logger.info("Verification of UUID is successful in WebUI")
                 else:
                     self.logger.error("WebUI verification is failed for UUID")
                     result = result and False
             elif option == 'Display Name':
-                disp_name = self.ui.get_vn_detail_ui(option)
+                if re.search('vn1', value):
+                    disp_name = self.ui.get_vn_detail_ui(option, index=index, vn_name='vn1')
+                else:
+                    disp_name = self.ui.get_vn_detail_ui(option, index=index)
                 if disp_name == value:
                     self.logger.info("Verification of display name is successful in WebUI")
                 else:
@@ -5804,23 +5811,21 @@ class WebuiTest:
                     self.logger.error("WebUI verification is failed for host route")
                     result = result and False
             elif option == 'Adv Option':
-                reg_shared = re.search('Shared(.*)External', value)
-                reg_ext = re.search('External(.*)Attached Network', value)
-                reg_allow_trans = re.search('Allow Transit(.*)Reverse', value)
-                reg_reverse = re.search('Reverse Path Forwarding(.*)Flood', value)
-                reg_multi_chain = re.search('Multiple Service Chains(.*)Host', value)
-                reg_hash = re.search('Ecmp Hashing Fields(.*)Provider', value)
-                reg_prov = re.search('Provider Network(.*)Ext', value)
-                if str(reg_shared.group(1)).strip('-') == 'Enabled' and \
-                   str(reg_ext.group(1)).strip('-') == 'Enabled' and \
-                   str(reg_allow_trans.group(1)).strip('-') == 'Enabled' and \
-                   str(reg_reverse.group(1)).strip('-') == 'Enabled' and \
-                   str(reg_multi_chain.group(1)).strip('-') == 'Enabled' and \
-                   str(reg_hash and reg_prov.group(1)).strip('-') == 'Physical Network: ' + \
-                       var_list[1] + ' , VLAN: ' + var_list[0] :
+                reg_shared = re.search('Shared-Enabled', value)
+                reg_ext = re.search('External-Enabled', value)
+                reg_allow_trans = re.search('Allow Transit-Enabled', value)
+                reg_reverse = re.search('Reverse Path Forwarding-Enabled', value)
+                reg_multi_chain = re.search('Multiple Service Chains-Enabled', value)
+                reg_hash = re.search('Ecmp Hashing Fields-source-ip', value)
+                prov_net = 'Provider Network-Physical Network: ' + var_list[1] + ' , VLAN: ' + \
+                           var_list[0]
+                reg_prov = re.search(prov_net, value)
+                if (reg_shared and reg_ext and reg_allow_trans and reg_reverse and reg_multi_chain \
+                   and reg_hash and reg_prov):
                     self.logger.info("Verification for Advanced option is successful in WebUI")
                 else:
                     self.logger.error("WebUI verification is failed for advanced option")
+                    result = result and False
             elif option == 'DNS':
                 regexp_dns = re.search(var_list[0], value)
                 if regexp_dns:
