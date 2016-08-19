@@ -24,6 +24,7 @@ from floating_ip import *
 from policy_test import *
 from multiple_vn_vm_test import *
 from contrail_fixtures import *
+from common import isolated_creds
 from tcutils.wrappers import preposttest_wrapper
 sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
 from tcutils.commands import *
@@ -1724,7 +1725,7 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
         # Adding further projects to floating IP.
         self.logger.info('Adding project demo to FIP pool %s' %
                          (fip_pool_name))
-        project_obj = fip_fixture.assoc_project(fip_fixture, 'demo')
+        project_obj = fip_fixture.assoc_project('demo')
 
         # Asscociating FIP to VMs under demo project and exaust 4 fips available from the /29 subnet
         self.logger.info(
@@ -1784,7 +1785,7 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
         # Removing further projects from floating IP pool. For cleanup
         self.logger.info('Removing project demo to FIP pool %s' %
                          (fip_pool_name))
-        project_obj = fip_fixture.deassoc_project(fip_fixture, 'demo')
+        project_obj = fip_fixture.deassoc_project('demo')
 
         if not result:
             self.logger.error(
@@ -1818,58 +1819,40 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
         self.get_two_different_compute_hosts()
         self.connections = ContrailConnections(self.inputs, self.logger)
         # Projects
-        user1_fixture = self.useFixture(
-            UserFixture(
-                connections=self.connections,
-                username=user_list[0][0],
-                password=user_list[0][1]))
-
+        user1_fixture= self.useFixture(UserFixture(connections=self.connections,
+            username=user_list[0][0], password=user_list[0][1]))
         project_fixture1 = self.useFixture(
             ProjectFixture(
                 project_name=projects[
                     0], vnc_lib_h=self.vnc_lib, username=user_list[0][0],
                 password=user_list[0][1], connections=self.connections))
-        user1_fixture.add_user_to_tenant(
-            projects[0],
-            user_list[0][0],
-            user_list[0][2])
-        project_inputs1 = self.useFixture( ContrailTestInit(
+        project_fixture1.set_user_creds(project_fixture1.username,project_fixture1.password)
+        user1_fixture.add_user_to_tenant(projects[0], user_list[0][0] , user_list[0][2])
+        project_inputs1 = ContrailTestInit(
             self.ini_file, stack_user=project_fixture1.project_username,
             stack_password=project_fixture1.project_user_password,
-            stack_tenant=projects[0], logger=self.logger))
-        project_connections1 = ContrailConnections(
-            project_inputs1,
-            self.logger)
+            stack_tenant=projects[0], logger = self.logger)
+        project_connections1 = ContrailConnections(project_inputs1,self.logger) 
         self.connections = ContrailConnections(self.inputs, self.logger)
         self.logger.info(
             'Default SG to be edited for allow all on project: %s' %
             projects[0])
         project_fixture1.set_sec_group_for_allow_all(projects[0], 'default')
 
-        user2_fixture = self.useFixture(
-            UserFixture(
-                connections=self.connections,
-                username=user_list[1][0],
-                password=user_list[1][1]))
-
+        user2_fixture= self.useFixture(UserFixture(connections=self.connections,
+            username=user_list[1][0], password=user_list[1][1]))
         project_fixture2 = self.useFixture(
             ProjectFixture(
                 project_name=projects[
                     1], vnc_lib_h=self.vnc_lib, username=user_list[1][0],
                 password=user_list[1][1], connections=self.connections))
-        user2_fixture.add_user_to_tenant(
-            projects[1],
-            user_list[1][0],
-            user_list[1][2])
+        project_fixture2.set_user_creds(project_fixture2.username,project_fixture2.password)
+        user2_fixture.add_user_to_tenant(projects[1], user_list[1][0] , user_list[1][2])
         project_inputs2 = ContrailTestInit(
-            self.ini_file,
-            stack_user=project_fixture2.project_username,
+            self.ini_file, stack_user=project_fixture2.project_username,
             stack_password=project_fixture2.project_user_password,
-            stack_tenant=projects[1], logger=self.logger)
-        project_connections2 = ContrailConnections(
-            project_inputs2,
-            self.logger)
-        self.connections = ContrailConnections(self.inputs, self.logger)
+            stack_tenant=projects[1], logger = self.logger)
+        project_connections2 = ContrailConnections(project_inputs2, self.logger)
         self.logger.info(
             'Default SG to be edited for allow all on project: %s' %
             projects[1])
@@ -1926,7 +1909,7 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
         # Adding further projects to floating IP.
         self.logger.info('Adding project demo to FIP pool %s' %
                          (fip_pool_name))
-        project_obj = fip_fixture.assoc_project(fip_fixture, projects[0])
+        project_obj = fip_fixture.assoc_project(projects[0])
 
         self.logger.info(
             'Allocating FIP to VM %s in project %s from VN %s in project %s ' %
@@ -1942,7 +1925,7 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
         # Removing further projects from floating IP pool. For cleanup
         self.logger.info('Removing project %s from FIP pool %s' %
                          (projects[0], fip_pool_name))
-        project_obj = fip_fixture.deassoc_project(fip_fixture, projects[0])
+        project_obj = fip_fixture.deassoc_project(projects[0])
 
         if not result:
             self.logger.error(
@@ -2266,89 +2249,6 @@ class FloatingipTestSanity3(base.FloatingIpBaseTest):
             assert result
         return result
     # end test_fip_with_traffic
-
-    @preposttest_wrapper
-    def test_ping_to_fip_using_diag(self):
-        '''Test ping to floating IP using diag introspect.
-        '''
-        result = True
-        fip_pool_name = get_random_name('some-pool1')
-
-        (vn1_name, vn1_subnets) = (
-            get_random_name("vn1"), [get_random_cidr()])
-        (fvn1_name, fvn1_subnets) = (
-            get_random_name("fip_vn1"), [get_random_cidr()])
-        (vn1_vm1_name) = (get_random_name('vn1_vm1'))
-        (fvn1_vm1_name) = (get_random_name('fvn1_vm1'))
-
-        # Get all computr hosts
-        self.get_two_different_compute_hosts()
-        fvn1_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                inputs=self.inputs,
-                vn_name=fvn1_name,
-                subnets=fvn1_subnets))
-        vn1_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                inputs=self.inputs,
-                vn_name=vn1_name,
-                subnets=vn1_subnets))
-        fvn1_vm1_fixture = self.useFixture(
-            VMFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_obj=fvn1_fixture.obj,
-                vm_name=fvn1_vm1_name,
-                node_name=self.compute_2))
-
-        vn1_vm1_fixture = self.useFixture(
-            VMFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_obj=vn1_fixture.obj,
-                vm_name=vn1_vm1_name,
-                node_name=self.compute_1))
-
-        assert fvn1_fixture.verify_on_setup()
-        assert vn1_fixture.verify_on_setup()
-        assert vn1_vm1_fixture.verify_on_setup()
-        assert fvn1_vm1_fixture.verify_on_setup()
-
-        fip_fixture1 = self.useFixture(
-            FloatingIPFixture(
-                project_name=self.inputs.project_name,
-                inputs=self.inputs,
-                connections=self.connections,
-                pool_name=fip_pool_name,
-                vn_id=fvn1_fixture.vn_id))
-        assert fip_fixture1.verify_on_setup()
-
-        fip_id1 = fip_fixture1.create_and_assoc_fip(
-            fvn1_fixture.vn_id, vn1_vm1_fixture.vm_id)
-        self.addCleanup(fip_fixture1.disassoc_and_delete_fip, fip_id1)
-        assert fip_fixture1.verify_fip(fip_id1, vn1_vm1_fixture, fvn1_fixture)
-
-        if not fvn1_vm1_fixture.ping_with_certainty(fip_fixture1.fip[fip_id1]):
-            result = result and False
-        inspect_h1 = self.agent_inspect[fvn1_vm1_fixture.vm_node_ip]
-        self.logger.info("Pinging using diag introspect from IP %s to IP %s" %
-                         (fvn1_vm1_fixture.vm_ip, fip_fixture1.fip[fip_id1]))
-        result = inspect_h1.get_vna_verify_diag_ping(
-            src_ip=fvn1_vm1_fixture.vm_ip,
-            dst_ip=fip_fixture1.fip[fip_id1],
-            vrf=fvn1_vm1_fixture.agent_vrf_objs['vrf_list'][0]['name'],
-            proto='17')
-        if not result:
-            self.logger.error(
-                'Test to ping uding diag between VMs %s and %s' %
-                (fvn1_vm1_fixture.vm_ip, fip_fixture1.fip[fip_id1]))
-            assert result
-        return result
-    # end test_ping_to_fip_using_diag
 
 
 class FloatingipTestSanity4(base.FloatingIpBaseTest):
