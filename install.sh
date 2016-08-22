@@ -266,7 +266,8 @@ RUN wget $CONTRAIL_INSTALL_PACKAGE_URL -O /contrail-install-packages.deb && \
     rm -f /contrail-install-packages.deb && \
     cd /opt/contrail/contrail_packages/ && ./setup.sh && \
     apt-get install -y $PACKAGES_REQUIRED_DOCKER_BUILD && \
-                    rm -fr /opt/contrail/* ; apt-get -y autoremove && apt-get -y clean;
+    sed -i '/file:\/opt\/contrail\/contrail_install_repo/d' /etc/apt/sources.list ; \
+    rm -fr /opt/contrail/* ; apt-get -y autoremove && apt-get -y clean;
 EOF
         elif [[ $CONTRAIL_INSTALL_PACKAGE_URL =~ ^ssh[s]*:// ]]; then
             scp_package=1
@@ -280,7 +281,8 @@ RUN apt-get install -y sshpass && \
     rm -f /contrail-install-packages.deb && \
     cd /opt/contrail/contrail_packages/ && ./setup.sh && \
     apt-get install -y $PACKAGES_REQUIRED_DOCKER_BUILD && \
-                    rm -fr /opt/contrail/* && apt-get -y autoremove && apt-get -y clean
+    sed -i '/file:\/opt\/contrail\/contrail_install_repo/d' /etc/apt/sources.list ; \
+    rm -fr /opt/contrail/* ; apt-get -y autoremove; apt-get -y clean
 EOF
         else
             echo "ERROR, Unknown url format, only http[s], ssh supported" >&2
@@ -304,6 +306,16 @@ EOF
                 echo -e "ADD $(basename $CONTRAIL_TEST_ARTIFACT) /"
             else
                 cat <<EOF
+RUN echo 'deb http://dl.google.com/linux/chrome/deb/ stable main' > /etc/apt/sources.list.d/chrome.list; \
+    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -; \
+    apt-get -q -y update; apt-get -qy install unzip firefox xvfb; \
+    wget -c http://chromedriver.storage.googleapis.com/2.10/chromedriver_linux64.zip; \
+    unzip chromedriver_linux64.zip; cp ./chromedriver /usr/bin/; chmod ugo+rx /usr/bin/chromedriver; \
+    apt-get -qy install libxpm4 libxrender1 libgtk2.0-0 libnss3 libgconf-2-4 google-chrome-stable; \
+    apt-get remove -y firefox; \
+    wget https://ftp.mozilla.org/pub/mozilla.org/firefox/releases/31.0/linux-x86_64/en-US/firefox-31.0.tar.bz2 -O /tmp/firefox.tar.bz2; \
+    cd /opt; tar xjf /tmp/firefox.tar.bz2; ln -sf /opt/firefox/firefox /usr/bin/firefox;
+
 RUN git clone $CONTRAIL_TEST_REPO /contrail-test; \
     cd /contrail-test ; \
     git checkout $CONTRAIL_TEST_REF; \
