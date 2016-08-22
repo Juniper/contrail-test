@@ -4045,6 +4045,8 @@ class WebuiTest:
 
     def create_vm(self, fixture):
         result = True
+        flag = False
+        flavor_name = 'm1.small'
         if not WebuiTest.os_release:
             WebuiTest.os_release = self.os_release
         try:
@@ -4073,46 +4075,85 @@ class WebuiTest:
             self.logger.info(
                 'Creating instance name %s with image name %s using openstack horizon' %
                 (fixture.vm_name, fixture.image_name))
-            xpath_image_type = "//select[@name='source_type']/option[contains(text(), 'image') or contains(text(),'Image')]"
-            self.ui.click_element(
-                xpath_image_type,
-                'xpath',
-                self.browser_openstack,
-                jquery=False,
-                wait=2)
-            xpath_image_name = "//select[@name='image_id']/option[contains(text(), '" + \
-                fixture.image_name + "')]"
-            self.ui.click_element(
-                xpath_image_name,
-                'xpath',
-                self.browser_openstack,
-                jquery=False,
-                wait=2)
-            self.ui.find_element(
-                'id_name',
-                browser=self.browser_openstack).send_keys(
-                fixture.vm_name)
-            self.browser_openstack.find_element_by_xpath(
-                "//select[@name='availability_zone']/option[text()='nova']").click()
-            self.browser_openstack.find_element_by_xpath(
-                "//select[@name='flavor']/option[text()='m1.small']").click()
-            self.ui.click_element(
-                "//input[@value='Launch']",
-                'xpath',
-                self.browser_openstack,
-                jquery=False,
-                wait=4)
-            networks = self.ui.find_element(
-                ['available_network', 'li'], ['id', 'tag'], self.browser_openstack, [1])
-            for net in networks:
-                vn_match = net.text.split('(')[0]
-                if (vn_match == fixture.vn_name):
-                    net.find_element_by_class_name('btn').click()
-                    break
-            self.ui.click_element(
-                "//input[@value='Launch']",
-                'xpath',
-                self.browser_openstack)
+            if self.os_release == 'mitaka':
+                self.ui.send_keys(fixture.vm_name, 'name', 'name',
+                                      browser=self.browser_openstack)
+                availability_zone = "//select[@id='availability-zone']/option[text()='nova']"
+                self.ui.click_element(availability_zone, 'xpath', browser = self.browser_openstack)
+                self.ui.click_element(
+                    'next', 'class', browser = self.browser_openstack)
+                image_tab = "//select[@id='boot-source-type']/option[text()='Image']"
+                self.ui.click_element(
+                    image_tab, 'xpath', browser = self.browser_openstack)
+                options_list = ['image', 'flavor', 'network']
+                for index, option in enumerate(options_list):
+                    flag = False
+                    if option == 'image':
+                        option_name = fixture.image_name
+                    elif option == 'flavor':
+                        option_name = flavor_name
+                    else:
+                        option_name = fixture.vn_name
+                    option_browser = self.ui.find_element(
+                                      'transfer-available', 'class',
+                                      browser = self.browser_openstack,
+                                      elements=True, if_elements=[1])[index]
+                    option_list = self.ui.find_element(
+                                      'tr', 'tag', browser=option_browser,
+                                      elements=True, if_elements=[1])
+                    for opt in option_list:
+                        if option_name in opt.text:
+                            self.ui.click_element('fa-plus', 'class', browser=opt)
+                            flag = True
+                            break
+                    if not flag:
+                        self.logger.error('%s not found in the list' % option_name)
+                    self.ui.click_element(
+                        'next', 'class', browser = self.browser_openstack)
+                    self.logger.info('Launching the instance')
+                    self.ui.click_element(
+                        'finish', 'class', browser = self.browser_openstack)
+            else:
+                xpath_image_type = "//select[@name='source_type']/option[contains(text(), 'image') or contains(text(),'Image')]"
+                self.ui.click_element(
+                    xpath_image_type,
+                    'xpath',
+                    self.browser_openstack,
+                    jquery=False,
+                    wait=2)
+                xpath_image_name = "//select[@name='image_id']/option[contains(text(), '" + \
+                    fixture.image_name + "')]"
+                self.ui.click_element(
+                    xpath_image_name,
+                    'xpath',
+                    self.browser_openstack,
+                    jquery=False,
+                    wait=2)
+                self.ui.find_element(
+                    'id_name',
+                    browser=self.browser_openstack).send_keys(
+                    fixture.vm_name)
+                self.browser_openstack.find_element_by_xpath(
+                    "//select[@name='availability_zone']/option[text()='nova']").click()
+                self.browser_openstack.find_element_by_xpath(
+                    "//select[@name='flavor']/option[text()='m1.small']").click()
+                self.ui.click_element(
+                    "//input[@value='Launch']",
+                    'xpath',
+                    self.browser_openstack,
+                    jquery=False,
+                    wait=4)
+                networks = self.ui.find_element(
+                    ['available_network', 'li'], ['id', 'tag'], self.browser_openstack, [1])
+                for net in networks:
+                    vn_match = net.text.split('(')[0]
+                    if (vn_match == fixture.vn_name):
+                        net.find_element_by_class_name('btn').click()
+                        break
+                self.ui.click_element(
+                    "//input[@value='Launch']",
+                    'xpath',
+                    self.browser_openstack)
             self.ui.wait_till_ajax_done(self.browser_openstack)
             self.logger.debug('VM %s launched using openstack horizon' %
                               (fixture.vm_name))
@@ -4208,17 +4249,32 @@ class WebuiTest:
         rows = rows.find_elements_by_tag_name('tr')
         for instance in rows:
             if fixture.vm_name == instance.find_element_by_tag_name('a').text:
-                instance.find_elements_by_tag_name(
-                    'td')[0].find_element_by_tag_name('input').click()
+                if self.os_release == 'mitaka':
+                    inst = self.ui.find_element(
+                            'td', 'tag', browser=instance,
+                            elements=True, if_elements=[1])[0]
+                    self.ui.click_element('label', 'tag', browser = inst)
+                else:
+                    instance.find_elements_by_tag_name(
+                        'td')[0].find_element_by_tag_name('input').click()
                 break
         ln = len(rows)
-        launch_instance = self.ui.click_element(
-            'instances__action_terminate',
-            browser=self.browser_openstack)
-        self.ui.click_element(
-            'Terminate Instances',
-            'link_text',
-            self.browser_openstack)
+        if self.os_release == 'mitaka':
+            self.ui.click_element(
+                'instances__action_delete',
+                browser=self.browser_openstack)
+            self.ui.click_element(
+                'Delete Instances',
+                'link_text',
+                self.browser_openstack)
+        else:
+            launch_instance = self.ui.click_element(
+                'instances__action_terminate',
+                browser=self.browser_openstack)
+            self.ui.click_element(
+                'Terminate Instances',
+                'link_text',
+                self.browser_openstack)
         time.sleep(8)
         self.ui.click_instances(self.browser_openstack)
         if not self.verify_vm_in_openstack(fixture.vm_name):
