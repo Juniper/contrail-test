@@ -4110,9 +4110,16 @@ class WebuiTest:
                         self.logger.error('%s not found in the list' % option_name)
                     self.ui.click_element(
                         'next', 'class', browser = self.browser_openstack)
+                if self.ui.find_element('finish', 'class', browser = self.browser_openstack).is_enabled():
                     self.logger.info('Launching the instance')
                     self.ui.click_element(
                         'finish', 'class', browser = self.browser_openstack)
+                else:
+                    self.logger.error(
+                        'Not able to launch instance, one or more fields are unfilled')
+                    self.ui.click_element(
+                        'pull-left', 'class', browser = self.browser_openstack)
+                    result = result and False
             else:
                 xpath_image_type = "//select[@name='source_type']/option[contains(text(), 'image') or contains(text(),'Image')]"
                 self.ui.click_element(
