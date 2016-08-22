@@ -312,3 +312,13 @@ class ContrailVncApi:
         self._vnc.qos_config_update(qos_config_obj)
         return qos_config_obj
     # end del_qos_config_entry
+
+    def update_virtual_router_type(self,name,vrouter_type):
+        vr_fq_name = ['default-global-system-config', name]
+        try:
+            vr = self._vnc.virtual_router_read(
+                fq_name=vr_fq_name)
+            vr.set_virtual_router_type(vrouter_type)
+            self._vnc.virtual_router_update(vr) 
+        except Exception as e:
+            pass

@@ -108,7 +108,7 @@ class VncLibFixture(fixtures.Fixture):
                   project_name=self.project_name,
                   auth_server_ip=self.auth_server_ip,
                   vnclib=self.vnc_api_h,
-                  logger=self.logger, inputs=None)
+                  logger=self.logger, inputs=self.inputs)
             self.neutron_handle = self.orch.get_network_handler()
             return self.neutron_handle
     # end get_neutron_handle

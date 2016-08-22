@@ -40,10 +40,10 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         self.mgmt_ip = args[1]
         self.vendor = kwargs.get('vendor', None)
         self.model = kwargs.get('model', None)
-        self.asn = kwargs.get('asn', '64512')
+        self.asn = kwargs.get('asn', None)
         self.ssh_username = kwargs.get('ssh_username', 'root')
         self.ssh_password = kwargs.get('ssh_password', 'Embe1mpls')
-        self.tunnel_ip = kwargs.get('tunnel_ip', self.mgmt_ip)
+        self.tunnel_ip = kwargs.get('tunnel_ip', None)
         self.ports = kwargs.get('ports', [])
         self.device_details = {}
 

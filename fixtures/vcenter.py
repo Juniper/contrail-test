@@ -72,7 +72,7 @@ class NFSDatastore:
         for host in hosts:
             host.configManager.datastoreSystem.CreateNasDatastore(spec)
 
-class VcenterVlanMgr:
+class VcenterPvtVlanMgr:
 
     __metaclass__ = Singleton
 
@@ -84,6 +84,14 @@ class VcenterVlanMgr:
 
     def free_vlan(self, vlan):
         self._vlans.append(vlan)
+
+class VcenterVlanMgr(VcenterPvtVlanMgr):
+
+    __metaclass__ = Singleton
+
+    def __init__(self, dvs):
+        self._vlans = list(range(1,4096)) 
+
 
 class VcenterOrchestrator(Orchestrator):
 
@@ -99,7 +107,10 @@ class VcenterOrchestrator(Orchestrator):
         self._log = logger
         self._images_info = parse_cfg_file('configs/images.cfg')
         self._connect_to_vcenter()
-        self._vlanmgmt = VcenterVlanMgr(self._vs)
+        if self._inputs.orchestrator == 'vcenter':
+            self._vlanmgmt = VcenterPvtVlanMgr(self._vs)
+        else: 
+            self._vlanmgmt = VcenterVlanMgr(self._vs)
         self._create_keypair()
         self._nfs_ds = NFSDatastore(self._inputs, self)
         self.enable_vmotion(self.get_hosts())
@@ -330,8 +341,11 @@ class VcenterOrchestrator(Orchestrator):
         for vm in host.vm:
             if 'ContrailVM' in vm.name:
                 contrail_vm = vm
-                break
-        return self._inputs.host_data[contrail_vm.summary.guest.ipAddress]['name']
+                return self._inputs.host_data[contrail_vm.summary.guest.ipAddress]['name']
+        #for vcenter and vcenter as compute mode, contrail_vm would be in the esxi server
+        #but for vcenter gateway, its a physical server configured to work as the gateway
+        #the vcenter gateway info would be captured in contrail_test_init.py
+        return self._inputs.vcenter_gateway
 
     def get_networks_of_vm(self, vm_obj, **kwargs):
          return vm_obj.nets[:]
@@ -568,10 +582,21 @@ class VcenterVN:
         ip_list = list(v4_network.hosts)
 
         ipam_setting = [_vim_obj('dvs.Blob', key='external_ipam', opaqueData='true')] if not dhcp else None
-        spec = _vim_obj('dvs.ConfigSpec', name=name, type='earlyBinding', numPorts = len(ip_list),
+        if len(str(vlan)) > 1:
+            spec = _vim_obj('dvs.ConfigSpec', name=name, type='earlyBinding', numPorts = len(ip_list),
                        defaultPortConfig=_vim_obj('dvs.PortConfig',
-                                                 vlan=_vim_obj('dvs.PVLan', pvlanId=vlan[1])),
+                       vlan=_vim_obj('dvs.PVLan', pvlanId=vlan[1])),
                        vendorSpecificConfig=ipam_setting)
+        else:
+            spec = _vim_obj('dvs.ConfigSpec', name=name, type='earlyBinding', numPorts = len(ip_list),
+                       defaultPortConfig=_vim_obj('dvs.PortConfig',
+                        vlan=_vim_obj('dvs.VLan', vlanId=vlan),
+                       securityPolicy=_vim_obj('dvs.PortGroupSecurity',
+                                      allowPromiscuous=vim.BoolPolicy(value=True), 
+                                      macChanges=vim.BoolPolicy(value=True),
+                                      forgedTransmits=vim.BoolPolicy(value=True))),
+                       vendorSpecificConfig=ipam_setting)
+
         _wait_for_task(vcenter._vs.AddDVPortgroup_Task([spec]))
         pg = vcenter._find_obj(vcenter._dc, 'dvs.PortGroup', {'name' : name})
 
@@ -650,7 +675,13 @@ class VcenterVM:
         vm.vcenter = vcenter
         vm.name = name
         vm.host = host.name
+        vm.networks = networks
         vm.nets = [net.name for net in networks]
+        #below 2 attributes needed for vcenter gateway
+        #as we create vmis/logical interface, we can update the below lists lif and port objects, it will ease the delete vm 
+        #, we just need to  call vm.ports[<index>].cleanUP and same for lif objects 
+        vm.ports = []
+        vm.lifs = []
 
         intfs = []
         switch_id = vcenter._vs.uuid
@@ -777,15 +808,13 @@ class VcenterVM:
         time.sleep(60)
         return True
 
-    def bring_up_interfaces(self, vcenter ,vm , intfs):
+    def bring_up_interfaces(self, vcenter ,vm , intfs=[]):
         time.sleep(20)
         cmd_path = '/usr/bin/sudo'
         user = 'ubuntu'
         password = 'ubuntu'
-        vm_id = vm.summary.config.instanceUuid
-        i = 1
-        while i < len(intfs):
-            intf = 'eth' + str(i)
+        vm_id = vm.id
+        for intf in intfs: 
             args = 'ifconfig %s up'%(intf)
             try:
                 vcenter.run_a_command(vm_id,user,password,cmd_path,args)
@@ -796,7 +825,6 @@ class VcenterVM:
                 vcenter.run_a_command(vm_id,user,password,cmd_path,args)
             except Exception as e:
                 print e
-            i += 1
         time.sleep(20)
 
 class VcenterAuth(OrchestratorAuth):

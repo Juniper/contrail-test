@@ -459,6 +459,7 @@ class TestInputs(object):
         if 'physical_routers' in json_data:
             self.physical_routers_data = json_data['physical_routers']
         self._process_tor_data()
+        self._process_for_vcenter_gateway()
 
         if 'esxi_vms' in json_data:
             self.esxi_vm_ips = json_data['esxi_vms']
@@ -472,6 +473,14 @@ class TestInputs(object):
                 self.auth_ip = self.openstack_ip
         return json_data
     # end read_prov_file
+
+    def _process_for_vcenter_gateway(self):
+        self.vcenter_gateway = []
+        for (device_name, device_dict) in self.physical_routers_data.iteritems():
+            if ((device_dict.has_key('type')) and (device_dict['type'] in 'vcenter_gateway')):
+               self.vcenter_gateway.append(device_dict)
+                
+        
 
     def _process_tor_data(self):
         for (device_name, device_dict) in self.physical_routers_data.iteritems():

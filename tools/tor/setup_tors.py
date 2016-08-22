@@ -8,6 +8,9 @@ import logging
 from tor_fixture import ToRFixtureFactory
 from physical_router_fixture import PhysicalRouterFixture
 from common.contrail_test_init import ContrailTestInit
+from physical_device_fixture import PhysicalDeviceFixture
+from vcpe_router_fixture import VpeRouterFixture
+from virtual_router_fixture import VirtualRouterFixture
 
 logging.getLogger('urllib3.connectionpool').setLevel(logging.WARN)
 logging.getLogger('paramiko.transport').setLevel(logging.WARN)
@@ -48,6 +51,21 @@ if __name__ == "__main__":
                 auth_server_ip=init_obj.auth_ip,
                 )
             phy_router_obj.setUp()
+        if device_dict['type'] == 'vcenter_gateway':
+               vrouter_obj = VirtualRouterFixture(device_dict['name'],
+                                      'embedded' )
+               vrouter_obj.setUp()
+
+               vcpe_router_obj = VpeRouterFixture(
+                   device_dict['name'], device_dict['mgmt_ip'],
+                   ssh_username=device_dict['ssh_username'],
+                   ssh_password=device_dict['ssh_password'],
+                   mgmt_ip=device_dict['mgmt_ip'],
+                   ports=device_dict['ports'],
+                   )
+               vcpe_router_obj.setUp()
+               vcpe_router_obj.vrouter_ref_set(vrouter_obj.vr)
+               vcpe_router_obj.setup_physical_ports()
     # end for
 
 
