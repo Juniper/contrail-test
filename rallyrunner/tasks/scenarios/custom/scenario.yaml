@@ -1,0 +1,133 @@
+{#
+All code which need to be exposed to rally template must be within {% raw %}
+#}
+{% raw %}
+{% set cxt_tenants = cxt_tenants or 3 %}
+{% set cxt_users_per_tenant = cxt_users_per_tenant or 3 %}
+
+{% set cxt_network = cxt_network or false %}
+{% set cxt_networks_per_tenant = cxt_networks_per_tenant or 3 %}
+{% set cxt_ports_per_network = cxt_ports_per_network or 10 %}
+{% set cxt_fips_per_tenant = cxt_fips_per_tenant or 1 %}
+{% set cxt_subnets_per_network = cxt_subnets_per_network or 3 %}
+{% set base_network_load_objects = base_network_load_objects or 100 %}
+{% set base_load = base_load or "auto" %}
+
+{% set cxt_server = cxt_server or false %}
+
+{% set load_type = load_type or "rps" %}
+{% set times = times or 10 %}
+{% set rps = rps or 1 %}
+{% set bl_nw_networks = bl_nw_networks or none %}
+{% set concurrency = concurrency or 1 %}
+
+
+##
+# network context
+##
+{% macro context_network(network, base_load='auto', base_network_load_objects=100) -%}
+        {%- if network -%}
+        {%- if base_load == "auto" -%}
+        {%- set bl_nw_networks = (base_network_load_objects * 5)//100 %}
+        network:
+          networks_per_tenant: {{bl_nw_networks}}
+          subnets_per_network: 1
+          ports_per_network: {{ (((base_network_load_objects * 90)//100)//bl_nw_networks) }}
+          floating_ips_per_tenant: {{bl_nw_networks}}
+        {%- else -%}
+        network:
+          networks_per_tenant: {{ cxt_networks_per_tenant }}
+          subnets_per_network: 1
+          ports_per_network: {{ cxt_ports_per_network }}
+          floating_ips_per_tenant: {{ cxt_fips_per_tenant }}
+        {%- endif -%}
+        {%- endif -%}
+{%- endmacro %}
+
+{%- macro context_user(tenants=1, users_per_tenant=1) -%}
+        users:
+          tenants: {{tenants}}
+          users_per_tenant: {{users_per_tenant}}
+{%- endmacro -%}
+
+{% macro context_server(server=false, image_name='cirros', flavor_name='m1.tiny', servers_per_tenant=1, auto_assign_nic=true) -%}
+  {%- if server %}
+        servers:
+          image:
+            name: {{ image_name }}
+          flavor:
+            name: {{ flavor_name }}
+          servers_per_tenant: {{ servers_per_tenant }}
+          auto_assign_nic: {{ auto_assign_nic }}
+  {%- endif %}
+{%- endmacro %}
+
+{%- macro context_quota(network=-1) -%}
+        quotas:
+          neutron:
+            network: {{ network }}
+{%- endmacro %}
+
+{%- macro runner(load_type='rps', times=1, concurrency=1, rps=1) %}
+      {%- if load_type == 'constant' -%}
+        type: "constant"
+        times: {{ times }}
+        concurrency: {{ concurrency }}
+      {%- elif load_type == "rps" -%}
+        type: "rps"
+        times: {{ times }}
+        rps: {{ rps }}
+      {%- elif load_type == "serial" -%}
+        type: "serial"
+        times: {{ times }}
+      {%- endif %}
+{%- endmacro %}
+
+
+{% macro details() -%}
+      runner:
+        {{ runner(load_type=load_type, times=times, concurrency=concurrency, rps=rps) }}
+      context:
+        {{ context_user(tenants=cxt_tenants, users_per_tenant=cxt_users_per_tenant) }}
+        {{ context_network(cxt_network, base_load=base_load, base_network_load_objects=base_network_load_objects) }}
+        {{ context_server(server=cxt_server, image_name='cirros', flavor_name='m1.tiny', servers_per_tenant=1) }}
+        {{ context_quota() }}
+{%- endmacro %}
+
+{%- endraw %}
+{#
+All the code before {% endraw %} is part of rally scenario template
+#}
+---
+{#
+Template rendering code used by run_rally.py
+#}
+
+{% set templates = context().get('scenarios', {}) %}
+
+{% for file, macro in templates.items() %}
+{{'{%'}} import '{{ file }}' as {{ macro }} {{ '%}' }}
+{% endfor %}
+
+{{ '{%' }} set scenarios = {{ templates.values() }} {{ '%}' }}
+
+{{ '{%' }} for s in scenarios {{ '%}' }}
+
+{# {{ '{%' }} if scenarios is mapping {{ '%}' }} #}
+{% set if_or_elif = 'if' %}
+{% for d in context().get('scenario_details', {}).values() %}
+{% if d is mapping %}
+{% for macro, args in d.items() %}
+{{ '{%' }} {{ if_or_elif }} s == '{{ macro }}' {{ '-%}' }}
+{{ '{{' }} {{ macro }}.{{ macro }}({{ args }}) {{ '}}' }}
+      {{ '{{' }} details() {{ '}}' }}
+{%- endfor -%}
+{%- else -%}
+{{ '{%' }} {{ if_or_elif }} s == '{{ d }}' {{ '-%}' }}
+{{ '{{' }} {{ d }}.{{ d }}() {{ '}}' }}
+      {{ '{{' }} details() {{ '}}' }}
+{%- endif -%}
+{%- set if_or_elif = 'elif' -%}
+{%- endfor -%}
+{{ '{%' }} endif {{ '-%}' }}
+{{ '{%' }} endfor {{ '-%}' }}
