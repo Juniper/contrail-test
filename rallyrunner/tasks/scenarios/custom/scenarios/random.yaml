@@ -1,0 +1,50 @@
+{% macro random(image_id, flavor_id) -%}
+  RandomScenarios.random_scenarios:
+    -
+      args:
+        scenario_config:
+          -
+            - rs_create_network:
+                params:
+                  network_create_args: {}
+            - _list_networks
+            - _create_security_groups:
+                params:
+                  num_security_groups: 1
+            - _list_security_groups
+            - _list_networks
+          -
+            - rs_create_network
+            - _list_networks
+            - _create_security_groups:
+                params:
+                  num_security_groups: 1
+            - _list_security_groups
+            - _list_networks
+            - _create_ports:
+                params:
+                  network: __macro__rs_network
+                  security_groups: __macro__rs_security_group_ids
+            - _list_networks
+            - _list_ports
+          -
+            - rs_create_network:
+                params:
+                  network_create_args: {}
+            - _list_networks
+            - _create_ports:
+                params:
+                  network: __macro__rs_network
+            - _list_ports
+          -
+            - rs_create_network
+            - _create_subnet:
+               params:
+                 network: __macro__rs_network
+                 subnet_create_args: {}
+            - rs_boot_server:
+               params:
+                 image_id: {{ image_id }}
+                 flavor_id: {{ flavor_id }}
+                 nic_net_id: __macro__rs_network_id
+{%- endmacro %}

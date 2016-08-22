@@ -1,0 +1,5 @@
+ContrailIpam.create_and_delete_ipams:
+  -
+    runner:
+      type: serial
+      times: 5

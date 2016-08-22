@@ -1,0 +1,5 @@
+ContrailIpam.list_ipams:
+  -
+    runner:
+      type: serial
+      times: 5
