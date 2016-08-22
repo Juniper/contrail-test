@@ -221,7 +221,14 @@ docker_run () {
         $docker ps -a --format "ID: {{.ID}}, Name: {{.Names}}" -f id=$id
     else
         echo "$docker run ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature -e TEST_TAGS=$test_tags  $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
-        bash $tempfile; rv=$?
+	run_n=0
+	while [ $run_n -le 5 ]; do
+            bash $tempfile; rv=$?
+	    if [ $rv -eq 0 ]; then
+	        break
+	    fi
+	    run_n=$(($run_n+1))
+	done
 	return $rv
     fi
 }
