@@ -91,9 +91,7 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
                   from vm1 and vice-versa.
         Maintainer : ganeshahv@juniper.net
         """
-        svc_mode = 'in-network-nat'
-        if self.inputs.get_af() == 'v6':
-            svc_mode = 'in-network'
+        svc_mode = 'in-network'
         self.verify_svc_in_network_datapath(
             si_count=1, svc_scaling=True, max_inst=3, svc_mode=svc_mode)
         svm_ids = self.si_fixtures[0].svm_ids
