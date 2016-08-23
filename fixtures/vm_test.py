@@ -1654,16 +1654,16 @@ class VMFixture(fixtures.Fixture):
              assert self.verify_vm_not_in_api_server(), ('VM %s is not removed ',
                 'from API Server' %(self.vm_name))
              if check_orch:
-                 assert self.verify_vm_not_in_orchestrator(), ('VM %s is still',
+                 assert self.verify_vm_not_in_orchestrator(), ('VM %s is still'
                     'seen in orchestrator' % (self.vm_name))
-             assert self.verify_vm_not_in_agent(), ('VM %s is still seen in ',
+             assert self.verify_vm_not_in_agent(), ('VM %s is still seen in '
                 'one or more agents' % (self.vm_name))
-             assert self.verify_vm_not_in_control_nodes(), ('VM %s is still ',
+             assert self.verify_vm_not_in_control_nodes(), ('VM %s is still '
                 'seen in Control nodes' % (self.vm_name))
-             assert self.verify_vm_not_in_nova(), ('VM %s is still seen in ',
+             assert self.verify_vm_not_in_nova(), ('VM %s is still seen in '
                 'nova' % (self.vm_name))
 
-             assert self.verify_vm_flows_removed(), ('One or more flows of VM',
+             assert self.verify_vm_flows_removed(), ('One or more flows of VM'
                 ' %s is still seen in Compute node %s' %(self.vm_name,
                 self.vm_node_ip))
              for vn_fq_name in self.vn_fq_names:
