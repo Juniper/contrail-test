@@ -1,5 +1,64 @@
 from tcutils.util import get_random_cidr
 
+src_cidr_svc = {
+    "parameters":
+    {
+        # VN config
+        "management_network": "management_vn",
+        "left_vn": "left_vn",
+        "right_vn": "right_vn",
+        "left_vn_fqdn": "",
+        "right_vn_fqdn": "",
+        "network_policy_entries_policy_rule_src_addresses_subnet_ip_prefix": "left_vn:10.10.10.3",
+        #"network_policy_entries_policy_rule_src_addresses_subnet_ip_prefix": "10.10.10.3",
+        "network_policy_entries_policy_rule_src_addresses_subnet_ip_prefix_len": "32",
+        # VM config
+        "flavor": "m1.tiny",
+        "image": "cirros-0.3.0-x86_64-uec",
+        "left_vm1_name": "left_vm1",
+        "left_vm2_name": "left_vm2",
+        "right_vm_name": "right_vm",
+        #ST Config
+        "service_template_name": "test_cidr_template",
+        "service_template_properties_version": 2,
+        "service_template_properties_service_mode": "in-network",
+        "service_template_properties_service_type": "firewall",
+        "service_template_properties_interface_type_service_interface_type_1": "management",
+        "service_template_properties_interface_type_service_interface_type_2": "left",
+        "service_template_properties_interface_type_service_interface_type_3": "right",
+        "service_template_properties_ordered_interfaces": True,
+        "service_template_properties_service_virtualization_type": "virtual-machine",
+        "domain": "default-domain",
+        # SI Config
+        "service_instance_name": "my-CIDR-SI",
+        "svm1_name": "test_cidr_svm",
+        "svm1_image": "vsrx",
+        "svm1_flavor": "m1.medium",
+        "service_instance_fq_name": "",
+        #PT Config
+        "pt_name": "pt_test_cidr",
+        #IPAM Config
+        "network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_1": '30.30.30.0',
+        "network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len_1" : 24,
+        "network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_2" : '10.10.10.0',
+        "network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len_2" : 24,
+        "network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_3" : '20.20.20.0',
+        "network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len_3" : 24,
+        "network_ipam_refs_data_ipam_subnets_addr_from_start_true" : "true",
+        #Policy Config
+        "policy_name": "cidr_policy",
+        "policy_fq_name": "",
+        "simple_action": "pass",
+        "protocol": "any",
+        "src_port_end": -1,
+        "src_port_start": -1,
+        "direction": "<>",
+        "dst_port_end": -1,
+        "dst_port_start": -1,
+        "apply_services": "my-CIDR-SI",
+    }
+}
+
 ecmp_pt = {
     "parameters":
     {"domain": "default-domain",
