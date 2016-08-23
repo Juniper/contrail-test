@@ -3,6 +3,8 @@ from vn_test import MultipleVNFixture
 from common.device_connection import NetconfConnection
 import physical_device_fixture
 from physical_router_fixture import PhysicalRouterFixture
+from fabric.api import run, hide, settings
+from tcutils.contrail_status_check import *
 from vm_test import MultipleVMFixture
 from vn_test import VNFixture
 from vm_test import VMFixture
@@ -189,7 +191,7 @@ class Md5Base(test_v1.BaseTestCase_v1, VerifySecGroup, ConfigPolicy):
                 cn_bgp_entry = str(cn_bgp_entry)
 
         cn_bgp_entry = str(cn_bgp_entry)
-        est = re.findall(' \'state\': \'(\w+)\', \'local', cn_bgp_entry)
+        est = re.findall(' \'state\': \'(\w+)\', \'flap_count', cn_bgp_entry)
         for ip in est:
             if not ('Established' in ip):
                 result = False
