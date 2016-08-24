@@ -140,6 +140,7 @@ class VMFixture(fixtures.Fixture):
     def read(self):
         if self.vm_id:
             self.vm_obj = self.orch.get_vm_by_id(vm_id=self.vm_id)
+            self.orch.wait_till_vm_is_active(self.vm_obj)
             if not self.vm_obj:
                 raise Exception('VM with id %s not found'%self.vm_id)
             if not self.orch.get_vm_detail(self.vm_obj):

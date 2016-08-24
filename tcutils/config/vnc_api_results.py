@@ -600,6 +600,32 @@ class CsSecurityGroupResult (Result):
         return ':'.join(self.xpath('security-group', 'fq_name'))
 
 
+class CsVirtualMachineInterfaceResult (Result):
+
+    '''
+        CsVirtualMachineInterfaceResult to provide access to vnc_introspect_utils.get_cs_vmi
+    '''
+
+    def uuid(self):
+        return ':'.join(self.xpath('virtual-machine-interface', 'uuid'))
+
+    def fq_name(self):
+        return ':'.join(self.xpath('virtual-machine-interface', 'fq_name'))
+
+
+class CsPortTupleResult (Result):
+
+    '''
+        CsPortTupleResult to provide access to vnc_introspect_utils.get_cs_pt
+    '''
+
+    def uuid(self):
+        return ':'.join(self.xpath('port-tuple', 'uuid'))
+
+    def fq_name(self):
+        return ':'.join(self.xpath('port-tuple', 'fq_name'))
+
+
 class CsServiceInstanceResult (Result):
 
     '''

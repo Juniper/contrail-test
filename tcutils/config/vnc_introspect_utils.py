@@ -29,6 +29,7 @@ class VNCApiInspect (VerificationUtilBase):
             'secgrp': {},
             'si': {},
             'st': {},
+            'pt': {},
             'dns': {},
             'dns_rec': {},
             'lb_pool': {},
@@ -545,6 +546,36 @@ class VNCApiInspect (VerificationUtilBase):
             if pp:
                 p = CsServiceInstanceResult(pp)
                 self.update_cache('si', [domain, project, si], p)
+        return p
+
+    def get_cs_vmi_by_id(self, vmi_id, refresh=True):
+        '''
+            method: get_cs_vmi_by_id finds the VMI by id
+            returns None if not found, a dict w/ attrib. eg:
+
+        '''
+        p = self.try_cache_by_id('vmi', vmi_id, refresh)
+        if not p:
+            # cache miss
+            pp = self.dict_get('virtual-machine-interface/%s' % vmi_id)
+            if pp:
+                p = CsVirtualMachineInterfaceResult(pp)
+                self.update_cache('vmi', p.fq_name().split(':'), p)
+        return p
+
+    def get_cs_pt_by_id(self, pt_id, refresh=False):
+        '''
+            method: get_cs_pt_by_id finds the port-tuple by id
+            returns None if not found, a dict w/ attrib. eg:
+
+        '''
+        p = self.try_cache_by_id('pt', pt_id, refresh)
+        if not p:
+            # cache miss
+            pp = self.dict_get('port-tuple/%s' % pt_id)
+            if pp:
+                p = CsPortTupleResult(pp)
+                self.update_cache('pt', p.fq_name().split(':'), p)
         return p
 
     def get_cs_si_by_id(self, si_id, refresh=False):

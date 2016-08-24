@@ -237,7 +237,6 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.vm1_name, vn_fix=self.vn1_fixture, image_name=image_name)
         self.vm2_fixture = self.config_and_verify_vm(
             self.vm2_name, vn_fix=self.vn2_fixture, image_name=image_name)
-        self.verify_si(self.si_fixtures)
         result, msg = self.validate_vn(
             self.vn1_name, project_name=self.inputs.project_name)
         assert result, msg
@@ -325,8 +324,6 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.vm1_name, vn_fix=self.vn1_fixture, image_name=image_name)
         self.vm2_fixture = self.config_and_verify_vm(
             self.vm2_name, vn_fix=self.vn2_fixture, image_name=image_name)
-        for si_fix in self.si_fixtures:
-            si_fix.verify_on_setup()
         result, msg = self.validate_vn(
             self.vn1_fixture.vn_name, project_name=self.vn1_fixture.project_name)
         assert result, msg
@@ -419,8 +416,6 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.vm1_name, vn_fix=self.vn1_fixture)
         self.vm2_fixture = self.config_and_verify_vm(
             self.vm2_name, vn_fix=self.vn2_fixture)
-        for si_fix in self.si_fixtures:
-            si_fix.verify_on_setup()
         result, msg = self.validate_vn(
             self.vn1_name, project_name=self.inputs.project_name)
         assert result, msg

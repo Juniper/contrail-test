@@ -220,33 +220,57 @@ class SvcInstanceFixture(fixtures.Fixture):
     @retry(delay=5, tries=5)
     def verify_svm(self):
         """check Service VM"""
-        # read again from api in case of retry
+        # Get the pt_refs in case of v2 and vm_refs in case of v1
+        # From the pt_refs, get the vmi_refs and then get the VMs from vmi_refs
+        # From svm_ids, get the svm_list
+        # Verify the SVMs in the svm_list
         self.cs_si = self.api_s_inspect.get_cs_si(
             project=self.project.name, si=self.si_name, refresh=True)
-        pt = self.cs_si['service-instance'].get('port_tuples', None)
-        if pt:
-            self.logger.debug("SI is port-tuple based")
-            return True, None
+        try:
+            self.pt_refs = self.cs_si[
+                'service-instance']['port_tuples']
+        except KeyError:
+            self.pt_refs = None
+
         try:
             self.vm_refs = self.cs_si[
                 'service-instance']['virtual_machine_back_refs']
+            self.svm_ids = [vm_ref['to'][0] for vm_ref in self.vm_refs]
         except KeyError:
             self.vm_refs = None
+
+        if self.pt_refs:
+            self.vm_refs = []
+            for pt in self.pt_refs:
+                self.cs_pt = self.api_s_inspect.get_cs_pt_by_id(pt['uuid'])
+                self.pt_vmi_refs = self.cs_pt[
+                    'port-tuple']['virtual_machine_interface_back_refs']
+                for vmi in self.pt_vmi_refs:
+                    self.vmi = self.api_s_inspect.get_cs_vmi_by_id(vmi['uuid'])
+                    self.vm_refs_vmi = self.vmi[
+                        'virtual-machine-interface']['virtual_machine_refs']
+                    for vm_ref in self.vm_refs_vmi:
+                        self.vm_refs.append(vm_ref['to'][0])
+            self.svm_ids = set(self.vm_refs)
+
         if not self.vm_refs:
-            errmsg = "SI %s does not have back refs to Service VM" % self.si_name
+            errmsg = "SI %s does not have any Service VM" % self.si_name
             self.logger.warn(errmsg)
             return (False, errmsg)
 
-        self.logger.debug("SI %s has back refs to Service VM", self.si_name)
-        self.svm_ids = [vm_ref['to'][0] for vm_ref in self.vm_refs]
+        self.logger.debug("SI %s has Service VM", self.si_name)
         for svm_id in self.svm_ids:
             cs_svm = self.api_s_inspect.get_cs_vm(vm_id=svm_id, refresh=True)
             if not cs_svm:
                 errmsg = "Service VM for SI '%s' not launched" % self.si_name
                 self.logger.warn(errmsg)
-                #self.logger.debug("Service monitor status: %s", get_status('contrail-svc-monitor'))
                 return (False, errmsg)
         self.logger.debug("Service VM for SI '%s' is launched", self.si_name)
+        for vm in self.svm_list:
+            if self.svc_template.service_template_properties.service_mode == 'transparent':
+                assert vm.wait_till_vm_is_active()
+            else:
+                assert vm.wait_till_vm_is_up()
         return True, None
 
     @retry(delay=1, tries=5)
@@ -393,20 +417,9 @@ class SvcInstanceFixture(fixtures.Fixture):
             self.report(self.verify_si())
             self.report(self.verify_st())
             self.report(self.verify_svm())
-            self.report(self.verify_svm_interface())
-            self.st_version = self.svc_template.get_service_template_properties(
-            ).get_version()
-            if self.st_version == 2:
+            if self.svc_template.service_template_properties.version == 2:
                 self.report(self.verify_pt())
-            st_refs = self.cs_si['service-instance']['service_template_refs']
-            st = self.vnc_lib.service_template_read(fq_name=st_refs[0]['to'])
-            st_mode = st.get_service_template_properties().get_service_mode()
-            for vm in self.svm_list:
-                (vm.vm_username, vm.vm_password) = vm.orch.get_image_account(st.service_template_properties.image_name)
-                if st_mode == 'transparent':
-                    assert vm.wait_till_vm_is_active()
-                else:
-                    assert vm.wait_till_vm_is_up()
+            self.report(self.verify_svm_interface())
         else:
             # Need verifications to be run without asserting so that they can
             # retried to wait for instances to come up
