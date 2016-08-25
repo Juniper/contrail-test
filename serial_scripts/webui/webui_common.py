@@ -2216,6 +2216,7 @@ class WebuiCommon:
             'mean',
             'sigma',
             'samples',
+            'inst_id',
             'chunk_select_time']
         key_list = ['exception_packets_dropped', 'l2_mcast_composites']
         index_list = []
