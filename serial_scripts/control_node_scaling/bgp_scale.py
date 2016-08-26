@@ -177,7 +177,7 @@ def get_total_prefix_expectations(ninstances, import_targets_per_instance, nagen
 # end get_total_prefix_expectations
 
 
-def bgp_scale_mock_agent(cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, rt_ip, rt_ip2, xmpp_src, ri_domain, ri_name, ninstances, import_targets_per_instance, family, nh, test_id, nagents, nroutes, oper, sleep_time, logfile_name_bgp_stress, logfile_name_results, timeout_minutes_poll_prefixes, background, xmpp_prefix, xmpp_prefix_large_option, skip_krt_check, report_stats_during_bgp_scale, report_cpu_only_at_peak_bgp_scale, skip_rtr_check, bgp_env, no_verify_routes, logging, local_ip):
+def bgp_scale_mock_agent(cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, rt_ip, rt_ip2, xmpp_src, ri_domain, ri_name, ninstances, import_targets_per_instance, family, nh, test_id, nagents, nroutes, oper, sleep_time, logfile_name_bgp_stress, logfile_name_results, timeout_minutes_poll_prefixes, background, xmpp_prefix, xmpp_prefix_large_option, skip_krt_check, report_stats_during_bgp_scale, report_cpu_only_at_peak_bgp_scale, skip_rtr_check, bgp_env, no_verify_routes, logging, local_ip, rt_per_block_enabled):
     '''Performs bgp stress test
     '''
 
@@ -328,7 +328,7 @@ def bgp_scale_mock_agent(cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, r
         del_start_time = datetime.now()
         get_prefix_install_or_delete_time(
             cn_self, rt_self, cn_ip, rt_ip, ri_domain, instance_name, ninstances,  prefixes_per_instance, vpn_prefixes,
-            op, family, nagents, nroutes, timeout_minutes_poll_prefixes, skip_krt_check, skip_rtr_check, no_verify_routes, xmpp_src, del_start_time, fd)
+            op, family, nagents, nroutes, timeout_minutes_poll_prefixes, skip_krt_check, skip_rtr_check, no_verify_routes, xmpp_src, del_start_time, fd, rt_per_block_enabled)
 
     #
     # Install prefixes
@@ -406,7 +406,7 @@ def bgp_scale_mock_agent(cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, r
         #
         get_prefix_install_or_delete_time(
             cn_self, rt_self, cn_ip, rt_ip, rt_usr, rt_pw, ri_domain, instance_name, ninstances, prefixes_per_instance, vpn_prefixes, op, family,
-            nagents, nroutes, timeout_minutes_poll_prefixes, skip_krt_check, skip_rtr_check, no_verify_routes, xmpp_src, timestamp_start_prefix_announcement, fd)
+            nagents, nroutes, timeout_minutes_poll_prefixes, skip_krt_check, skip_rtr_check, no_verify_routes, xmpp_src, timestamp_start_prefix_announcement, fd, rt_per_block_enabled)
 
         #
         # Perform post-install tasks such as stats reporting and sleeping
@@ -439,7 +439,7 @@ def bgp_scale_mock_agent(cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, r
         #
         get_prefix_install_or_delete_time(
             cn_self, rt_self, cn_ip, rt_ip, rt_usr, rt_pw, ri_domain, instance_name, ninstances,  prefixes_per_instance, vpn_prefixes,
-            "del", family, nagents, nroutes, timeout_minutes_poll_prefixes, skip_krt_check, skip_rtr_check, no_verify_routes, xmpp_src, del_start_time, fd)
+            "del", family, nagents, nroutes, timeout_minutes_poll_prefixes, skip_krt_check, skip_rtr_check, no_verify_routes, xmpp_src, del_start_time, fd, rt_per_block_enabled)
 
     #
     # Get stats after test run
@@ -1230,7 +1230,7 @@ def check_done_flags(cn_done, rt_done, skip_rtr_check, skip_krt_check, krt_clear
 # end check_done_flags
 
 
-def get_prefix_install_or_delete_time(cn_self, rt_self, cn_ip, rt_ip, rt_usr, rt_pw, ri_domain, ri_name, ninstances, prefixes_per_instance, vpn_prefixes, oper, family, nagents, nroutes, timeout_minutes_poll_prefixes, skip_krt_check, skip_rtr_check, no_verify_routes, xmpp_src, start_time, fd):
+def get_prefix_install_or_delete_time(cn_self, rt_self, cn_ip, rt_ip, rt_usr, rt_pw, ri_domain, ri_name, ninstances, prefixes_per_instance, vpn_prefixes, oper, family, nagents, nroutes, timeout_minutes_poll_prefixes, skip_krt_check, skip_rtr_check, no_verify_routes, xmpp_src, start_time, fd, rt_per_block_enabled):
 
     #
     # Return if no_verify is set
@@ -1247,7 +1247,10 @@ def get_prefix_install_or_delete_time(cn_self, rt_self, cn_ip, rt_ip, rt_usr, rt
     #
     # Each instances has the same number of expected prefixes
     #
-    total_expected_prefixes = prefixes_per_instance * ninstances
+    if rt_per_block_enabled:
+        total_expected_prefixes = prefixes_per_instance * ninstances * ninstances
+    else:
+        total_expected_prefixes = prefixes_per_instance * ninstances 
 
     #
     # Loop until it the number of routes has been reached, or timeout if count does not change for <n> times

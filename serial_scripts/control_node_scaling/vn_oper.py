@@ -131,6 +131,41 @@ class VnCfg(object):
             pass
     # end _create_vn_list`
 
+    def _add_route_target(self, routing_instance_name=None, router_asn=None,
+            route_target_number=None):
+        vn_fq_name = VirtualNetwork(routing_instance_name, self._proj_obj).get_fq_name()
+        rtgt_val = "target:%s:%s" % (router_asn, route_target_number)
+        vn_obj = self._vnc_lib.virtual_network_read(fq_name=vn_fq_name)
+        route_targets = vn_obj.get_route_target_list()
+        if route_targets and (rtgt_val not in route_targets.get_route_target()):
+            route_targets.add_route_target(rtgt_val)
+        else:
+            route_targets = RouteTargetList([rtgt_val])
+        vn_obj.set_route_target_list(route_targets)
+        self._vnc_lib.virtual_network_update(vn_obj)
+    # end add_route_target
+
+    def _del_route_target(self, routing_instance_name=None, router_asn=None,
+            route_target_number=None):
+        result = True
+        vn_fq_name = VirtualNetwork(routing_instance_name, self._proj_obj).get_fq_name()
+        rtgt_val = "target:%s:%s" % (router_asn, route_target_number)
+        vn_obj = self._vnc_lib.virtual_network_read(fq_name=vn_fq_name)
+
+        if rtgt_val not in vn_obj.get_route_target_list().get_route_target():
+            self.logger.error("%s not configured for VN %s" %
+                              (rtgt_val, rt_inst_fq_name[:-1]))
+            result = False
+        route_targets = vn_obj.get_route_target_list()
+        route_targets.delete_route_target(rtgt_val)
+        if route_targets.get_route_target():
+            vn_obj.set_route_target_list(route_targets)
+        else:
+            vn_obj.set_route_target_list(None)
+        self._vnc_lib.virtual_network_update(vn_obj)
+        return result
+    # end del_route_target
+
     def _parse_args(self, args_str):
         '''
         Eg. python demo_cfg.py --api_server_ip 127.0.0.1

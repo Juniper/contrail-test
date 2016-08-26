@@ -1426,7 +1426,7 @@ class FlapAgentScaleInit (object):
             process = multiprocessing.Process(
                 target=bgp_scale_mock_agent, args=(
                     cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, rtr_ip, rtr_ip2, xmpp_source, ri_domain_and_proj_name, ri_name, ninstances, import_targets_per_instance, family, nh, test_id, nagents, nroutes, oper, sleeptime, logfile_name_bgp_stress,
-                    logfile_name_results, timeout_minutes_poll_prefixes, background, xmpp_start_prefix, xmpp_start_prefix_large, skip_krt_check, self.report_stats_during_bgp_scale, self.report_cpu_only_at_peak_bgp_scale, skip_rtr_check, self.bgp_env, no_verify_routes, self._args.logging_etc, self.localhost_ip))
+                    logfile_name_results, timeout_minutes_poll_prefixes, background, xmpp_start_prefix, xmpp_start_prefix_large, skip_krt_check, self.report_stats_during_bgp_scale, self.report_cpu_only_at_peak_bgp_scale, skip_rtr_check, self.bgp_env, no_verify_routes, self._args.logging_etc, self.localhost_ip, self.rt_per_block_enabled))
             process.start()
             self.process.append(process)
             self._log_print(
@@ -1440,7 +1440,7 @@ class FlapAgentScaleInit (object):
         else:
             bgp_scale_mock_agent(
                 cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, rtr_ip, rtr_ip2, xmpp_source, ri_domain_and_proj_name, ri_name, ninstances, import_targets_per_instance, family, nh, test_id, nagents, nroutes, oper, sleeptime, logfile_name_bgp_stress, logfile_name_results,
-                timeout_minutes_poll_prefixes, background, xmpp_start_prefix, xmpp_start_prefix_large, skip_krt_check, self.report_stats_during_bgp_scale, self.report_cpu_only_at_peak_bgp_scale, skip_rtr_check, self.bgp_env, no_verify_routes, self._args.logging_etc, self.localhost_ip)
+                timeout_minutes_poll_prefixes, background, xmpp_start_prefix, xmpp_start_prefix_large, skip_krt_check, self.report_stats_during_bgp_scale, self.report_cpu_only_at_peak_bgp_scale, skip_rtr_check, self.bgp_env, no_verify_routes, self._args.logging_etc, self.localhost_ip, self.rt_per_block_enabled)
             self._log_print("INFO: started bgp_stress_test.%s" % run_id)
 
     # end run_bgp_scale
@@ -2047,7 +2047,7 @@ class FlapAgentScaleInit (object):
         #
         num_blocks = int(self._args.nblocks_of_vns)
         self.nblocks_of_vns = num_blocks
-
+        self.rt_per_block_enabled = int(self._args.rt_per_block_enabled)
         #
         # Misc
         #
@@ -2224,10 +2224,16 @@ class FlapAgentScaleInit (object):
         #
         # Use first val as for label
         #
-        self.total_expected_prefixes = self.num_iterations * \
-            self.ninstances[0] * self.nagents[0] * self.nroutes[0]
-        self.test_param_name = "%s_iterations_at_%sx%sx%s" % (
-            self.num_iterations, self.ninstances[0], self.nagents[0], self.nroutes[0])
+        if self.rt_per_block_enabled:
+            self.total_expected_prefixes = self.num_iterations * \
+                self.ninstances[0] * self.nagents[0] * self.nroutes[0] * self.ninstances[0]
+            self.test_param_name = "%s_iterations_at_%sx%sx%sx%s" % (
+                self.num_iterations, self.ninstances[0], self.nagents[0], self.nroutes[0],self.ninstances[0])
+        else:
+            self.total_expected_prefixes = self.num_iterations * \
+                self.ninstances[0] * self.nagents[0] * self.nroutes[0]
+            self.test_param_name = "%s_iterations_at_%sx%sx%s" % (
+                self.num_iterations, self.ninstances[0], self.nagents[0], self.nroutes[0])
 
         #
         # Debug for vn add/delete poll timings
@@ -2649,7 +2655,7 @@ class FlapAgentScaleInit (object):
             # Get block number ID to start iteration, not always starting with 1
             #
             start_block_num = int(self._args.start_block_num)
-            vn_cfg = VnCfg()
+            self.vn_cfg = VnCfg()
 
             #
             # Each block of VNs is used in a test iteration, example
@@ -2684,8 +2690,10 @@ class FlapAgentScaleInit (object):
                     cmd = '--api_server_ip {0} --api_server_port 8082 --public_subnet {1} --vn_name {2} --oper {3}'.format(
                         self.inputs.auth_ip, str(net), vn_name, oper)
                     self._log_print("INFO: %s" % cmd)
-                    vn_cfg._run(cmd)
-
+                    self.vn_cfg._run(cmd)
+                    # Adding route target for each block  
+                    if self.rt_per_block_enabled:
+                        self.vn_cfg._add_route_target(vn_name,64512,j) 
                     #
                     # Check that vn is deleted before deleting next
                     #
