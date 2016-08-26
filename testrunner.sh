@@ -20,7 +20,6 @@ testbed=/opt/contrail/utils/fabfile/testbeds/testbed.py
 feature=sanity
 run_path="${HOME}/contrail-test-runs"
 arg_shell=''
-name="contrail_test_$(< /dev/urandom tr -dc a-z | head -c8)"
 declare -a arg_env
 SCRIPT_TIMESTAMP=${SCRIPT_TIMESTAMP:-`date +"%Y_%m_%d_%H_%M_%S"`}
 DEFAULT_CI_IMAGE='cirros-0.3.0-x86_64-uec'
@@ -34,7 +33,7 @@ RED="$ESC[0;31m"
 trap finish EXIT SIGHUP SIGINT SIGTERM
 
 finish () {
-    rm -f $tempfile
+    rm -f $tempfile $run_log
     tput init
 }
 
@@ -85,7 +84,8 @@ is_image_available () {
 
 # Is container available?
 is_container_available () {
-    docker ps -a -q -f id=$pos_arg | grep -q [[:alnum:]] || docker ps -a -q -f name=$pos_arg | grep -q [[:alnum:]]
+    container=${1:-$pos_arg}
+    docker ps -a -q -f id=$container | grep -q [[:alnum:]] || docker ps -a -q -f name=$container | grep -q [[:alnum:]]
 }
 
 get_container_name () {
@@ -144,25 +144,7 @@ docker_run () {
 
     if [[ -e $mount_local ]]; then
         mount_local=`readlink -f $mount_local`
-        if [[ -d $mount_local/contrail-test && -d $mount_local/contrail-test-ci ]]; then
-            temp_dir=`mktemp -d`
-            rsync -a -f"+ */" -f"- *" $mount_local/contrail-test-ci/* $temp_dir
-            rsync -a -f"+ */" -f"- *" $mount_local/contrail-test/* $temp_dir
-            for i in `find $mount_local/contrail-test-ci/ -not \( -path $mount_local/contrail-test-ci/.\* -prune \) -type f -print`; do
-                d=`echo $i | sed "s#$mount_local/contrail-test-ci/##"`
-                s=`echo $i | sed "s#$mount_local#/combined/#"`
-                ln -s $s $temp_dir/$d
-            done
-            for i in `find $mount_local/contrail-test/ -not \( -path $mount_local/contrail-test/.\* -prune \) -type f -print`; do
-                d=`echo $i | sed "s#$mount_local/contrail-test/##"`
-                s=`echo $i | sed "s#$mount_local#/combined/#"`
-                ln -s $s $temp_dir/$d
-            done
-            local_vol=" -v $mount_local:/combined -v $temp_dir:/contrail-test-local "
-        else
-            echo "ERROR: Mount local directory ($mount_local) should have contrail-test and contrail-test-ci cloned"
-            exit 1
-        fi
+        local_vol=" -v $mount_local:/contrail-test-local "
     fi
     if [[ -n $ssh_key_file ]]; then
         ssh_key_file=`readlink -f $ssh_key_file`
@@ -213,24 +195,42 @@ docker_run () {
         ci_image_arg=" -e CI_IMAGE=$CI_IMAGE_ORIG -e ci_image=$CI_IMAGE_ORIG"
     fi
 
+    run_log=$(mktemp /tmp/contrail_test_XXXXXXXXX.log)
+	run_n=1
+
+    # Execute docker run, if it failed (exit with non-zero), check if it encountered container start timeout error.
+    # If it is, delete the old container if running, and try again.
+    # If it failed because of any other reason, just leave it
+	while [ $run_n -le 5 ]; do
+	    run_docker_cmd; rv=$?
+	    if [ $rv -eq 0 ]; then
+	        break
+	    else
+	        if [[ `grep -c "docker: Error response from daemon: containerd:" $run_log` -ne 0 ]]; then
+	            echo "Docker run failed, retrying (${run_n}/5)".
+	            $docker rm -f $name || true
+	        else
+	            break
+	        fi
+	    fi
+	    run_n=$(($run_n+1))
+	done
+	return $rv
+}
+
+run_docker_cmd () {
     # Run container in background
-    tempfile=$(mktemp)
+    tempfile=$(mktemp /tmp/contrail_test_XXXXXXXXX)
+    name=$(basename $tempfile)
     if [[ -n $background ]]; then
         echo "$docker run ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature -e TEST_TAGS=$test_tags -d $arg_rm $arg_shell -t $image_name" > $tempfile
         id=. $tempfile
         $docker ps -a --format "ID: {{.ID}}, Name: {{.Names}}" -f id=$id
     else
         echo "$docker run ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature -e TEST_TAGS=$test_tags  $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
-	run_n=0
-	while [ $run_n -le 5 ]; do
-            bash $tempfile; rv=$?
-	    if [ $rv -eq 0 ]; then
-	        break
-	    fi
-	    run_n=$(($run_n+1))
-	done
-	return $rv
     fi
+    bash $tempfile | tee $run_log; rv=$?
+    return $rv
 }
 
 check_docker () {
