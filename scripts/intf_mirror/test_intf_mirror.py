@@ -57,5 +57,12 @@ class TestIntfMirror(BaseIntfMirrorTest, VerifyIntfMirror):
         """
         return self.verify_intf_mirroring_5()
 
+    @preposttest_wrapper
+    def test_intf_mirroring_without_header(self):
+        """Validate the intf mirroring without header
+        dst vm, analyzer vm on same CN and src vm on different CN
+        """
+        return self.verify_intf_mirroring_6()
+
 if __name__ == '__main__':
     unittest.main()
