@@ -25,6 +25,14 @@ adminUser=$__admin_user__
 adminPassword=$__admin_password__
 adminTenant=$__admin_tenant__
 
+# Neutron user will have member rights in the dynamically created test tenants
+neutron_username=$__neutron_username__
+
+# Nova availability zone to use to launch VMs
+availability_zone=$__availability_zone__
+
+# Image flavor to use for all tests
+ci_flavor=$__ci_flavor__
 
 # Set to False to make use of the stack user and skip user create per testscript
 # Default: True (setting tenant_isolation to False overrides user_isolation to be False)

@@ -877,7 +877,9 @@ class DiscoveryVerification(fixtures.Fixture):
 
     @retry(delay=1, tries=10)
     def verify_bgp_connection(self, ds_ip=None):
+        return self._verify_bgp_connection(ds_ip)
 
+    def _verify_bgp_connection(self, ds_ip=None):
         result = True
         if not ds_ip:
             ds_ip = self.inputs.cfgm_ip

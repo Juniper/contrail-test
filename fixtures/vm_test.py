@@ -76,7 +76,7 @@ class VMFixture(fixtures.Fixture):
         if os.environ.has_key('ci_image'):
             image_name = os.environ.get('ci_image')
         self.image_name = image_name
-        self.flavor = flavor
+        self.flavor = self.nova_h.get_default_image_flavor(self.image_name) or flavor
         self.project_name = project_name or self.inputs.stack_tenant
         self.vm_name = vm_name or get_random_name(self.project_name)
         self.vm_id = uuid
@@ -90,7 +90,7 @@ class VMFixture(fixtures.Fixture):
                 if vn_obj['network'].has_key('contrail:subnet_ipam'):
                     cidrs.extend(list(map(lambda obj: obj['subnet_cidr'],
                                           vn_obj['network']['contrail:subnet_ipam'])))
-            if get_af_from_cidrs(cidrs) != 'v4':
+            if cidrs and get_af_from_cidrs(cidrs) != 'v4':
                 raise v4OnlyTestException('Disabling v6 tests for CI')
         self.vn_names = [self.orch.get_vn_name(x) for x in self.vn_objs]
         self.vn_fq_names = [':'.join(self.vnc_lib_h.id_to_fq_name(self.orch.get_vn_id(x)))
@@ -140,9 +140,9 @@ class VMFixture(fixtures.Fixture):
     def read(self):
         if self.vm_id:
             self.vm_obj = self.orch.get_vm_by_id(vm_id=self.vm_id)
-            self.orch.wait_till_vm_is_active(self.vm_obj)
             if not self.vm_obj:
                 raise Exception('VM with id %s not found' % self.vm_id)
+            self.orch.wait_till_vm_is_active(self.vm_obj)
             if not self.orch.get_vm_detail(self.vm_obj):
                 raise Exception('VM %s is not yet launched' % self.vm_id)
             self.vm_objs = [self.vm_obj]

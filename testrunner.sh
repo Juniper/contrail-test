@@ -139,7 +139,8 @@ docker_run () {
     arg_base_vol=" -v ${run_path}/${SCRIPT_TIMESTAMP}/logs:/contrail-test/logs \
         -v ${run_path}/${SCRIPT_TIMESTAMP}/reports:/contrail-test/report \
         -v ${run_path}/${SCRIPT_TIMESTAMP}:/contrail-test.save \
-        -v /etc/localtime:/etc/localtime:ro"
+        -v /etc/localtime:/etc/localtime:ro \
+        -v /etc/hosts:/etc/hosts:ro"
 
 
     if [[ -e $mount_local ]]; then

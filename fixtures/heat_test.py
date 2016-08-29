@@ -1,19 +1,13 @@
-from __future__ import print_function
 from tcutils.util import *
 import argparse
 import logging
 import six
 import sys
 from common.openstack_libs import ks_client as ksclient
-import heatclient
-from heatclient import client as heat_client
-from heatclient.common import utils
-from heatclient import exc
+from common.openstack_libs import heat_client
 from tcutils.util import get_plain_uuid, get_dashed_uuid
 import os
 import fixtures
-from contrail_fixtures import contrail_fix_ext
-
 
 class HeatFixture(fixtures.Fixture):
 

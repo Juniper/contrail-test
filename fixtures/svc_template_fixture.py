@@ -28,11 +28,13 @@ class SvcTemplateFixture(fixtures.Fixture):
         self.svc_mode = svc_mode
         self.svc_scaling = svc_scaling
         self.ordered_interfaces = ordered_interfaces
-        self.flavor = flavor
         self.logger = inputs.logger
         self.inputs = inputs
         self.connections = connections
         self.nova_h = connections.nova_h
+        self.flavor = self.nova_h.get_default_image_flavor(self.image_name)
+        if self.inputs.availability_zone:
+            availability_zone_enable = True
         self.availability_zone_enable = availability_zone_enable
         if self.inputs.verify_thru_gui():
             self.browser = connections.browser
