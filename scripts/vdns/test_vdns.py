@@ -851,7 +851,7 @@ class TestvDNS0(BasevDNSTest):
         dnsPayload = '\x12\x34\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x04'
         streamObj = Stream(protocol="ip", sport=1234, dport=53, proto='udp', src=vm_fixture1.vm_ip,
                 dst=vn_fixt.get_dns_ip(ipam_fq_name =ipam_fixt1.fq_name))
-        profile_kwargs = {'stream': streamObj, 'count' : 2, 'payload': dnsPayload}
+        profile_kwargs = {'stream': streamObj, 'count' : 10, 'payload': dnsPayload}
         profileObj = StandardProfile(**profile_kwargs)
         tx_vm_node_ip = vm_fixture1.vm_node_ip
         send_node = Host(
@@ -862,7 +862,13 @@ class TestvDNS0(BasevDNSTest):
                              vm_fixture1.vm_username, vm_fixture1.vm_password)
         sender = Sender("senddns", profileObj, send_node, send_host, self.inputs.logger)
         sender.start()
+        sleep(1)
+        sender.poll()
+        if not sender.sent:
+            self.logger.error("Failed to Transmit packet")
+            assert False, "Failed to Transmit packet"
         sender.stop()
+        stop_tcpdump_for_vm_intf(self, session, pcap)
         assert verify_tcpdump_count(self, session, pcap)
 
 class TestvDNS1(BasevDNSTest):
