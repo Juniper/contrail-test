@@ -32,8 +32,8 @@ class DnsAgentInspect (VerificationUtilBase):
         method: get_dnsa_config returns a list 
         returns None if not found, a dict w/ attrib.
         '''
-        path = 'Snh_ShowVirtualDnsServers?'
-        xpath = './virtual_dns_servers/list/VirtualDnsServersSandesh/virtual_dns'
+        path = 'Snh_PageReq?x=AllEntries%20VdnsServersReq'
+        xpath = './VirtualDnsServersResponse/virtual_dns_servers/list/VirtualDnsServersSandesh/virtual_dns'
         virtual_dns = self.dict_get(path)
         virtual_dns_data = EtreeToDict(xpath).get_all_entry(virtual_dns)
 
@@ -52,8 +52,8 @@ class DnsAgentInspect (VerificationUtilBase):
         return return_vdns_data
 
     def get_rec_data(self, vdns_server):
-        path = 'Snh_ShowVirtualDnsRecords?x=%s' % vdns_server
-        xpath = './records'
+        path = 'Snh_PageReq?x=%s'% vdns_server + '@0%20AllEntriesVdnsRecordsReq'
+        xpath = './VirtualDnsRecordsResponse/records'
         rec_data = self.dict_get(path)
         return_data = EtreeToDict(xpath).get_all_entry(rec_data)
         return return_data['records']
