@@ -362,8 +362,14 @@ class TestvDNSRestart(BasevDNSTest):
                 continue
             elif new_dns_list[0] != dns_list_all_compute_nodes[0] and \
             new_dns_list[1] != dns_list_all_compute_nodes[1]:
-                self.assertTrue(self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
-                                    cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip))
+                for i in range(0,4):
+                    value = self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
+                                    cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip)
+                    if value:
+                        break
+                    else:
+                        sleep(1)
+                self.assertTrue(value)
                 self.assertTrue(self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
                                      cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip))
                 self.assertTrue(self.verify_ns_lookup_data(vm_fixture['vm1-agent2'],\
