@@ -27,7 +27,7 @@ from floating_ip import *
 from policy_test import *
 from control_node import *
 from user_test import UserFixture
-
+from tcutils.util import get_random_name, retry
 
 class TestVdnsFixture(testtools.TestCase, VdnsFixture):
 
@@ -2378,7 +2378,9 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             next_item = iplist[0]
         return next_item
 
-    def verify_ns_lookup_data(self, vm_fix, cmd, expectd_data):
+    @retry(delay=1, tries=4)
+    def verify_ns_lookup_data(self, vm_fix, cmd, expectd_data,
+                              expected_result = True):
         self.logger.debug("Inside verify_ns_lookup_data")
         self.logger.debug(
             "cmd string is %s and  expected data %s for searching" %
@@ -2387,11 +2389,16 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
         result = vm_fix.return_output_cmd_dict[cmd]
         try:
             if (result.find(expectd_data) == -1):
-                return False
-            return True
+                actual_result = False
+            else:
+                actual_result = True
         except AttributeError, e:
             self.logger.error('Unable to get any result of nslookup')
             self.logger.exception(e)
+            actual_result = False
+        if actual_result == expected_result:
+            return True
+        else:
             return False
 
     def verify_vm_dns_data(self, vm_dns_exp_data, dns_server_ip):
