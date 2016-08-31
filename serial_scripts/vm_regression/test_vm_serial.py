@@ -19,6 +19,7 @@ from tcutils.util import skip_because
 from tcutils.tcpdump_utils import start_tcpdump_for_intf,\
      stop_tcpdump_for_intf, verify_tcpdump_count
 import test
+from tcutils.contrail_status_check import ContrailStatusChecker
 
 class TestBasicVMVN0(BaseVnVmTest):
 
@@ -186,11 +187,14 @@ class TestBasicVMVN0(BaseVnVmTest):
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control',[bgp_ip])
             pass
-        sleep(30)
 
+        cluster_status, error_nodes = ContrailStatusChecker().wait_till_contrail_cluster_stable()
+        assert cluster_status, 'Cluster is not stable after restart'
         self.logger.info('Will check if the ipam persists and ping b/w VMs is still successful')
-
         assert ipam_obj.verify_on_setup()
+        msg = 'VM verification failed after process restarts'
+        assert vm1_fixture.verify_on_setup(), msg
+        assert vm2_fixture.verify_on_setup(), msg
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
         return True
     
@@ -663,6 +667,8 @@ class TestBasicVMVN0(BaseVnVmTest):
                     'With Peer %s peering is not Established. Current State %s ' %
                     (entry['peer'], entry['state']))
 
+        assert vm1_fixture.verify_on_setup(), 'VM Verification failed'
+        assert vm2_fixture.verify_on_setup(), 'VM Verification failed'
         # Check the ping
         self.logger.info('Checking the ping between the VM again')
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
