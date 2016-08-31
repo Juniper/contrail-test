@@ -26,6 +26,7 @@ from contrail_fixtures import *
 from vnc_api import vnc_api
 from vnc_api.gen.resource_test import *
 from tcutils.wrappers import preposttest_wrapper
+from tcutils.util import retry
 
 class BasevDNSTest(test_v1.BaseTestCase_v1):
 
@@ -389,7 +390,9 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
             next_item = iplist[0]
         return next_item
 
-    def verify_ns_lookup_data(self, vm_fix, cmd, expectd_data):
+    @retry(delay=1, tries=4)
+    def verify_ns_lookup_data(self, vm_fix, cmd, expectd_data,
+                              expected_result = True):
         self.logger.debug("Inside verify_ns_lookup_data")
         self.logger.debug(
             "cmd string is %s and  expected data %s for searching" %
@@ -398,11 +401,16 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
         result = vm_fix.return_output_cmd_dict[cmd]
         try:
             if (result.find(expectd_data) == -1):
-                return False
-            return True
+                actual_result = False
+            else:
+                actual_result = True
         except AttributeError, e:
             self.logger.error('Unable to get any result of nslookup')
             self.logger.exception(e)
+            actual_result = False
+        if actual_result == expected_result:
+            return True
+        else:
             return False
 
     def verify_vm_dns_data(self, vm_dns_exp_data, dns_server_ip):
