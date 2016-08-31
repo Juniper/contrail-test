@@ -332,44 +332,51 @@ class TestvDNSRestart(BasevDNSTest):
                         %(entry,new_dns_list[-1]))
             if i == 0 and new_dns_list[0] == new_dns_list[1] and\
                 new_dns_list[0]==dns_list_all_compute_nodes[0]:
-                self.assertFalse(self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
-                                     cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip))
-                self.assertFalse(self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
-                                     cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip))
+                assert self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
+                                     cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip,
+                                     expected_result = False)
+                assert self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
+                                     cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip,
+                                     expected_result = False)
                 continue
             elif new_dns_list[0] != new_dns_list[1] and verify=="once" :
                 if new_dns_list[0] == dns_list_all_compute_nodes[0] and \
                 new_dns_list[1] != dns_list_all_compute_nodes[1]:
-                    self.assertFalse(self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
-                                         cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip))
-                    self.assertFalse(self.verify_ns_lookup_data(vm_fixture['vm1-agent2'],\
-                                         cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip))
-                    self.assertTrue(self.verify_ns_lookup_data(vm_fixture['vm1-agent2'],\
-                                         cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip))
-                    self.assertTrue(self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
-                                         cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip))
+                    assert self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
+                                         cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip,
+                                         expected_result = False)
+                    assert self.verify_ns_lookup_data(vm_fixture['vm1-agent2'],\
+                                         cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip,
+                                         expected_result = False)
+                    assert self.verify_ns_lookup_data(vm_fixture['vm1-agent2'],\
+                                         cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip)
+                    assert self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
+                                         cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip)
                 elif new_dns_list[0] != dns_list_all_compute_nodes[0] and \
                 new_dns_list[1] == dns_list_all_compute_nodes[1]:
-                    self.assertFalse(self.verify_ns_lookup_data(vm_fixture['vm1-agent2'],\
-                                         cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip))
-                    self.assertFalse(self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
-                                         cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip))
-                    self.assertTrue(self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
-                                        cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip))
-                    self.assertTrue(self.verify_ns_lookup_data(vm_fixture['vm1-agent2'],\
-                                         cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip))
+                    assert self.verify_ns_lookup_data(vm_fixture['vm1-agent2'],\
+                                         cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip,
+                                         expected_result = False)
+                    assert self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
+                                         cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip,
+                                         expected_result = False)
+                    assert self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
+                                        cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip)
+                    assert self.verify_ns_lookup_data(vm_fixture['vm1-agent2'],\
+                                         cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip)
                 verify="done"
                 continue
             elif new_dns_list[0] != dns_list_all_compute_nodes[0] and \
             new_dns_list[1] != dns_list_all_compute_nodes[1]:
-                self.assertTrue(self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
-                                    cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip))
-                self.assertTrue(self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
-                                     cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip))
-                self.assertTrue(self.verify_ns_lookup_data(vm_fixture['vm1-agent2'],\
-                                     cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip))
-                self.assertTrue(self.verify_ns_lookup_data(vm_fixture['vm1-agent2'],\
-                                     cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip))
+                # Allowing some time for new DNS server to populate the records. 
+                assert self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
+                                    cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip)
+                assert self.verify_ns_lookup_data(vm_fixture['vm1-agent1'],\
+                                     cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip)
+                assert self.verify_ns_lookup_data(vm_fixture['vm1-agent2'],\
+                                     cmd_for_agent2, vm_fixture['vm2-agent2'].vm_ip)
+                assert self.verify_ns_lookup_data(vm_fixture['vm1-agent2'],\
+                                     cmd_for_agent1, vm_fixture['vm2-agent1'].vm_ip)
                 self.assertTrue(vm_fixture['vm1-agent1'].ping_to_ip(ip='vm2-agent2', count=2))
                 self.assertTrue(vm_fixture['vm1-agent1'].ping_to_ip(ip='vm2-agent1', count=2))
                 self.assertTrue(vm_fixture['vm1-agent2'].ping_to_ip(ip='vm2-agent2', count=2))
