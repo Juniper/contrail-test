@@ -331,7 +331,6 @@ class WebuiTestSanity(base.WebuiBaseTest):
             self.webui.logger.debug('Virtual networks config data verification in OPS failed')
             result = result and False
         return result
-
     #end test_edit_vn_witout_change
 
     @preposttest_wrapper
@@ -459,7 +458,6 @@ class WebuiTestSanity(base.WebuiBaseTest):
                                     So Editing Vn is not possible")
             result = result and False
         return result
-
     #end test_edit_vn_witout_change
 
     @preposttest_wrapper
@@ -500,8 +498,8 @@ class WebuiTestSanity(base.WebuiBaseTest):
             result = result and False
         return result
     #end test3_4_edit_net_policy
-    @preposttest_wrapper
 
+    @preposttest_wrapper
     def test3_5_edit_net_by_add_subnet(self):
         ''' Test to edit the existing network by subnet
             1. Go to configure->Networking->Networks. Create a new VN
@@ -526,8 +524,6 @@ class WebuiTestSanity(base.WebuiBaseTest):
             self.webui_common.click_element('configure-networkbtn1')
 
             self.webui_common.wait_till_ajax_done(self.browser, wait=5)
-            uuid = self.webui_common.get_vn_detail_ui('UUID')
-            self.vn_disp_name = self.webui_common.get_vn_detail_ui('Display Name')
             verify_list = ['Subnet', 'Subnet-gate', 'Subnet-dns', 'Subnet-dhcp']
             for subnet_type in verify_list:
                 if subnet_type == 'Subnet':
@@ -536,19 +532,20 @@ class WebuiTestSanity(base.WebuiBaseTest):
                     str1 = subnet_type + 'disabled'
                 self.webui.logger.debug("Step 1 - " + subnet_type + \
                                         ": Add subnet with " + str1 + "options")
-                if not self.webui_common.edit_vn_with_subnet(subnet_type, topo.subnet_edit + \
+                ind = self.webui_common.edit_vn_with_subnet(subnet_type, topo.subnet_edit + \
                                                              "/" + topo.mask, \
                                                              topo.subnet_sip + "-" + \
                                                              topo.subnet_eip, \
-                                                             topo.subnet_gate_ip):
+                                                             topo.subnet_gate_ip, topo.vn_disp_name)
+                if not ind:
                     self.webui.logger.debug('Editing network with subnet failed')
                     result = result and False
-                uuid = self.webui_common.get_vn_detail_ui('UUID')
-                self.vn_disp_name = self.webui_common.get_vn_detail_ui('Display Name')
-                subnet = self.webui_common.get_vn_detail_ui('Subnet')
+                uuid = self.webui_common.get_vn_detail_ui('UUID', index=ind)
+                self.vn_disp_name = self.webui_common.get_vn_detail_ui('Display Name', index=ind)
+                subnet = self.webui_common.get_vn_detail_ui('Subnet', index=ind)
                 self.webui.logger.debug("Step 2 - " + subnet_type + \
                                         ": Verify the VN for subnet in WebUI")
-                if not self.webui.verify_vn_after_edit_ui(subnet_type, subnet, opt_list):
+                if not self.webui.verify_vn_after_edit_ui(subnet_type, subnet, opt_list, index=ind):
                     self.webui.logger.debug('Virtual networks config data \
                                              verification in UI failed')
                     result = result and False
@@ -566,11 +563,12 @@ class WebuiTestSanity(base.WebuiBaseTest):
                                             in OPS failed')
                     result = result and False
                 self.webui.logger.debug("Step 5 : Remove the subnet which is added")
-                if not self.webui_common.del_vn_with_subnet():
+                if not self.webui_common.del_vn_with_subnet(topo.vn_disp_name):
                     self.webui.logger.debug('Editing network with subnet failed')
                     result = result and False
         self.webui.logger.debug("Step 6 : Remove the VN which is added")
-        if not self.webui_common.edit_remove_option("Networks", 'remove'):
+        if not self.webui_common.edit_remove_option("Networks", 'remove', \
+                                                   vn_name=topo.vn_disp_name):
             self.webui.logger.debug('Editing network with advanced options is failed')
             result = result and False
         return result
@@ -649,14 +647,15 @@ class WebuiTestSanity(base.WebuiBaseTest):
         result = True
         opt_list = [topo.vlan_id, topo.phy_net, topo.subnet_adv_option, topo.vn_disp_name]
         self.webui.logger.debug("Step 1 : Add advanced options under VN")
-        if not self.webui_common.edit_vn_with_adv_option(1, 'pos-phy', opt_list):
+        index = self.webui_common.edit_vn_with_adv_option(1, 'pos-phy', opt_list)
+        if not index:
             self.webui.logger.debug('Editing network with advanced options is failed')
             result = result and False
-        uuid = self.webui_common.get_vn_detail_ui('UUID')
-        self.vn_disp_name = self.webui_common.get_vn_detail_ui('Display Name')
-        adv_option = self.webui_common.get_vn_detail_ui('Adv Option')
+        uuid = self.webui_common.get_vn_detail_ui('UUID', index=index)
+        self.vn_disp_name = self.webui_common.get_vn_detail_ui('Display Name', index=index)
+        adv_option = self.webui_common.get_vn_detail_ui('Adv Option', index=index)
         self.webui.logger.debug("Step 2 : Verify the advanced option in WebUI")
-        if not self.webui.verify_vn_after_edit_ui('Adv Option', adv_option, opt_list):
+        if not self.webui.verify_vn_after_edit_ui('Adv Option', adv_option, opt_list, index=index):
             self.webui.logger.debug('Virtual networks config data verification in UI failed')
             result = result and False
         self.webui.logger.debug("Step 3 : Verify advanced option in API server")
@@ -668,7 +667,8 @@ class WebuiTestSanity(base.WebuiBaseTest):
             self.webui.logger.debug('Virtual networks config data verification in OPS failed')
             result = result and False
         self.webui.logger.debug("Step 5 : Remove the VN which is added")
-        if not self.webui_common.edit_remove_option("Networks", 'remove'):
+        if not self.webui_common.edit_remove_option("Networks", 'remove', \
+                                                   vn_name=topo.vn_disp_name):
             self.webui.logger.debug('Editing network with advanced options is failed')
             result = result and False
         return result
@@ -690,7 +690,8 @@ class WebuiTestSanity(base.WebuiBaseTest):
         result = True
         self.webui.logger.debug("Step 1 : Add advanced options under VN")
         opt_list = [topo.vlan_id, topo.phy_net, topo.subnet_adv_option, topo.vn_disp_name]
-        if not self.webui_common.edit_vn_with_adv_option(1, 'pos-phy', opt_list):
+        index = self.webui_common.edit_vn_with_adv_option(1, 'pos-phy', opt_list)
+        if not index:
             self.webui.logger.debug('Editing network with advanced options is failed')
             result = result and False
         self.webui.logger.debug("Step 2 : Edit the vn using advanced options")
@@ -699,7 +700,8 @@ class WebuiTestSanity(base.WebuiBaseTest):
             self.webui.logger.debug('Editing network with advanced option is failed')
             result = result and False
         self.webui.logger.debug("Step 3 : Remove the VN which is added")
-        if not self.webui_common.edit_remove_option("Networks", 'remove'):
+        if not self.webui_common.edit_remove_option("Networks", 'remove', \
+                                                   vn_name=topo.vn_disp_name):
             self.webui.logger.debug('Editing network with advanced options is failed')
             result = result and False
         return result
@@ -1033,7 +1035,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test5_6_edit_net_exp_route_target_neg_asn_ip
 
     @preposttest_wrapper
-    def test5_7_edit_net_exp_route_target_neg_asn_num(self):
+    def test5_8_edit_net_exp_route_target_neg_asn_num(self):
         ''' Test to edit the existing network by Export Route Target
             1. Go to Configure->Networking->Networks. Then select any of the vn
                and click the edit button
@@ -1051,7 +1053,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
                                                            Export Route target failed'
         self.webui_common.wait_till_ajax_done(self.browser, wait=3)
 
-    # end test5_7_edit_net_exp_route_target_neg_asn_num
+    # end test5_8_edit_net_exp_route_target_neg_asn_num
 
     @preposttest_wrapper
     def test4_5_edit_net_imp_route_target_asn_num(self):
@@ -1145,7 +1147,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test4_6_edit_net_route_target_asn_ip
 
     @preposttest_wrapper
-    def test5_8_negative_case_edit_net_with_invalid_route_target_ip(self):
+    def test5_7_negative_case_edit_net_with_invalid_route_target_ip(self):
         ''' Test to edit the existing network by Import Route Target
             1. Go to Configure->Networking->Networks. Then select any of the vn
                and click the edit button
@@ -1165,7 +1167,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
                                                            Import Route target failed'
         self.webui_common.wait_till_ajax_done(self.browser, wait=3)
 
-    # end test5_8_negative_case_edit_net_with_invalid_route_target_ip
+    # end test5_7_negative_case_edit_net_with_invalid_route_target_ip
 
     @preposttest_wrapper
     def test5_9_negative_case_edit_net_with_invalid_route_target_num(self):
@@ -1213,8 +1215,9 @@ class WebuiTestSanity(base.WebuiBaseTest):
                 self.webui_common.wait_till_ajax_done(self.browser, wait=3)
                 self.webui_common.click_element('configure-networkbtn1')
                 self.webui_common.wait_till_ajax_done(self.browser)
-                uuid = self.webui_common.get_vn_detail_ui('UUID')
-                self.vn_disp_name = self.webui_common.get_vn_detail_ui('Display Name')
+                uuid = self.webui_common.get_vn_detail_ui('UUID', vn_name='vn1')
+                self.vn_disp_name = self.webui_common.get_vn_detail_ui('Display Name', \
+                                                                      vn_name='vn1')
                 self.webui.logger.debug("Step 2 : Verify WebUI server after editing")
                 if not self.webui.verify_vn_after_edit_ui('Display Name', vn, opt_list):
                     self.webui.logger.debug('Virtual networks config data verification \
@@ -1231,7 +1234,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
                                             in OPS failed')
                     result = result and False
                 self.webui.logger.debug("Step 5 : Remove the VN which is added")
-                if not self.webui_common.edit_remove_option("Networks", 'remove'):
+                if not self.webui_common.edit_remove_option("Networks", 'remove', vn_name='vn1'):
                     self.webui.logger.debug('Editing network with advanced options is failed')
                     result = result and False
         return result
