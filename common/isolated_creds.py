@@ -136,7 +136,14 @@ class AdminIsolatedCreds(fixtures.Fixture):
             self.auth.create_user(username, password)
         self.auth.add_user_to_project(username, project_name)
         if self.inputs.admin_username:
-            self.auth.add_user_to_project(self.inputs.admin_username, project_name)
+            self.auth.add_user_to_project(self.inputs.admin_username,
+                                          project_name)
+        # Certain deployments uses neutron username/password for contrail too
+        # So the neutron user has to be added to test tenant
+        # for Service Chain v1 to launch VMs
+        if self.inputs.neutron_username:
+            self.auth.add_user_to_project(self.inputs.neutron_username,
+                                          project_name, '_member_')
     # end create_and_attach_user_to_tenant
 
     def use_tenant(self, project_fixture):

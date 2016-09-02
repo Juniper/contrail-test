@@ -7,7 +7,8 @@ import os
 import platform
 from fabric.api import env, run, local, lcd
 from fabric.context_managers import settings, hide
-
+sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir))
+from common import log_orig as contrail_logging
 
 def detect_ostype():
     return platform.dist()[0].lower()
@@ -38,6 +39,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     from fabfile.utils.multitenancy import get_mt_enable
     from fabfile.utils.interface import get_data_ip
     from fabfile.tasks.install import update_config_option, update_js_config
+    logger = contrail_logging.getLogger(__name__)
 
     cfgm_host = env.roledefs['cfgm'][0]
 
@@ -109,8 +111,11 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
                 continue
         host_ip = host_string.split('@')[1]
         with settings(host_string = host_string), hide('everything'):
-            host_name = run("hostname")
-
+            try:
+                host_name = run("hostname")
+            except:
+                logger.warn('Unable to login to %s'%host_ip)
+                continue
         host_dict = {}
 
         host_dict['ip'] = host_ip
@@ -282,6 +287,12 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     agent_port = env.test.get('agent_port', os.getenv('AGENT_PORT') or '')
     user_isolation = env.test.get('user_isolation',
                                   bool(os.getenv('USER_ISOLATION') or True))
+    neutron_username = env.test.get('neutron_username',
+                                    os.getenv('NEUTRON_USERNAME') or None)
+    availability_zone = env.test.get('availability_zone',
+                                     os.getenv('AVAILABILITY_ZONE') or None)
+    ci_flavor = env.test.get('ci_flavor',
+                             os.getenv('CI_FLAVOR') or None)
 
     use_devicemanager_for_md5 = getattr(testbed, 'use_devicemanager_for_md5', False)
     orch = getattr(env, 'orchestrator', 'openstack')
@@ -383,6 +394,9 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
          '__config_api_ip__'       : config_api_ip,
          '__analytics_api_ip__'    : analytics_api_ip,
          '__user_isolation__'      : user_isolation,
+         '__neutron_username__'    : neutron_username,
+         '__availability_zone__'   : availability_zone,
+         '__ci_flavor__'           : ci_flavor,
         })
 
     ini_file = test_dir + '/' + 'sanity_params.ini'
@@ -422,6 +436,8 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     config.set('auth','AUTHN_SERVER', auth_server_ip)
     config.set('auth','AUTHN_PORT', auth_server_port)
     config.set('auth','AUTHN_URL', '/v2.0/tokens')
+    if bool(os.getenv('OS_INSECURE', True)):
+        config.set('auth', 'insecure', 'True')
 
     with open(vnc_api_ini,'w') as f:
         config.write(f)

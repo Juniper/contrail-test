@@ -484,7 +484,7 @@ class CsVMResult (Result):
         vmi_list = (self.xpath('virtual-machine', 'virtual_machine_interfaces') or
                     self.xpath('virtual-machine', 'virtual_machine_interface_back_refs'))
         links = []
-        for vmi in vmi_list:
+        for vmi in vmi_list or []:
             links.append(vmi['href'])
         return links
 #        return self.xpath ('virtual-machine', 'virtual_machine_interfaces',
@@ -513,7 +513,7 @@ class CsVmiOfVmResult (Result):
         links = []
         instance_ips = self.xpath('virtual-machine-interface',
                                   'instance_ip_back_refs')
-        for iip in instance_ips:
+        for iip in instance_ips or []:
             links.append(iip['href'])
         return links
 
@@ -587,7 +587,7 @@ class CsFipIdResult (Result):
 
     def vmi(self):
         return [vmi['uuid'] for vmi in self.xpath('floating-ip',
-                              'virtual_machine_interface_refs')]
+                              'virtual_machine_interface_refs') or []]
 
 
 class CsSecurityGroupResult (Result):
@@ -743,14 +743,14 @@ class CsLbPool(Result):
 
     def members(self):
         members = list()
-        for member in self.xpath('loadbalancer-pool', 'loadbalancer_members'):
+        for member in self.xpath('loadbalancer-pool', 'loadbalancer_members') or []:
             members.append(member['uuid'])
         return members
 
     def hmons(self):
         hmons = list()
         for hmon in self.xpath('loadbalancer-pool',
-                               'loadbalancer_healthmonitor_refs'):
+                               'loadbalancer_healthmonitor_refs') or []:
             hmons.append(hmon['uuid'])
         return hmons
 

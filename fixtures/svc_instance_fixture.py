@@ -42,7 +42,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.svm_ids = []
         self.cs_svc_vns = []
         self.cs_svc_ris = []
-        self.availability_zone = availability_zone
+        self.availability_zone = self.inputs.availability_zone or availability_zone
         self.svn_list = ['svc-vn-mgmt', 'svc-vn-left', 'svc-vn-right']
         if self.inputs.verify_thru_gui():
             self.browser = connections.browser

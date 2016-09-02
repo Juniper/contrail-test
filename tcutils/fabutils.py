@@ -63,10 +63,8 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
     if not logger:
         logger = contrail_logging.getLogger(__name__)
     fab_connections.clear()
-    kwargs = {}
     if as_daemon:
         cmd = 'nohup ' + cmd + ' & '
-        kwargs.update({'pty': False})
         if pidfile:
             cmd = '%s echo $! > %s' % (cmd, pidfile)
 
@@ -99,7 +97,7 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
         output = None
         while tries > 0:
             try:
-                output = _run(cmd, timeout=timeout, **kwargs)
+                output = _run(cmd, timeout=timeout, pty=not as_daemon)
             except (CommandTimeout, NetworkError) as e:
                 logger.warn('Unable to run command %s: %s' % (cmd, str(e)))
                 tries -= 1

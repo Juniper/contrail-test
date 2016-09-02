@@ -33,6 +33,7 @@ class NovaHelper():
         self.project_name = project_name
         self.cfgm_ip = inputs.cfgm_ip
         self.openstack_ip = inputs.openstack_ip
+        self.zone = inputs.availability_zone
         # 1265563 keypair name can only be alphanumeric. Fixed in icehouse
         self.key = 'ctest_' + self.project_name+self.username+key
         self.obj = None
@@ -70,7 +71,7 @@ class NovaHelper():
             finally:
                 lock.release()
         self.compute_nodes = self.get_compute_host()
-        self.zones = self._list_zones()
+        self.zones = [self.zone] if self.zone else self._list_zones()
         self.hosts_list = []
         self.hosts_dict = self._list_hosts()
 
@@ -86,8 +87,7 @@ class NovaHelper():
         return self.zones[:]
 
     def _list_hosts(self):
-        nova_computes = self.obj.services.list()
-        nova_computes = filter(lambda x: x.zone != 'internal' and x.state != 'down' and x.status != 'disabled', nova_computes)
+        nova_computes = self.get_nova_services(binary='nova-compute')
         host_dict = dict()
         for compute in nova_computes:
             self.hosts_list.append(compute.host)
@@ -280,7 +280,13 @@ class NovaHelper():
     # end get_image_account
 
     def get_default_image_flavor(self, image_name):
-        return self.images_info[image_name]['flavor']
+        if self.inputs.ci_flavor:
+            return self.inputs.ci_flavor
+        try:
+            return self.images_info[image_name]['flavor']
+        except KeyError:
+            self.logger.debug('Unable to fetch flavor of image %s'%image_name)
+            return None
 
     def execute_cmd_with_proxy(self, cmd):
         if self.inputs.http_proxy:
@@ -306,10 +312,12 @@ class NovaHelper():
         else:
             public_arg = "--visibility public"
 
-        cmd = '(glance --os-username %s --os-password %s \
+        insecure = '--insecure' if bool(os.getenv('OS_INSECURE', True)) else ''
+        cmd = '(glance %s --os-username %s --os-password %s \
                 --os-tenant-name %s --os-auth-url %s \
                 --os-region-name %s image-create --name "%s" \
-                %s %s --file %s)' % (self.username,
+                %s %s --file %s)' % (insecure,
+                                     self.username,
                                      self.password,
                                      self.project_name,
                                      self.auth_url,
@@ -370,6 +378,9 @@ class NovaHelper():
             nova_services = self.obj.services.list(**kwargs)
             nova_services = filter(lambda x: x.state != 'down' and x.status != 'disabled',
                    nova_services)
+            if self.zone:
+                nova_services = filter(lambda x: x.zone == 'internal' or x.zone == self.zone,
+                       nova_services)
             self.logger.debug('Services list from nova: %s' %
                              nova_services)
             return nova_services
