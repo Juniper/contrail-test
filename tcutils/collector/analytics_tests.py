@@ -177,13 +177,21 @@ class AnalyticsVerification(fixtures.Fixture):
         else:
             return None
 
+    @retry_for_value(delay=2, tries=5)
+    def get_ops_generator_from_ops_introspect(self, collector, generator, moduleid, node_type, instanceid):
+        obj = self.ops_inspect[collector].get_ops_generator(
+            generator=generator, moduleid=moduleid, node_type=node_type, instanceid=instanceid)
+        if not obj:
+            self.logger.warn("ops generator uve analytics/uves/generator/%s:%s:%s?flat not returned" %
+                             (generator, node_type, moduleid))
+        return obj
+
     def get_connection_dict(self, collector, generator, moduleid, node_type, instanceid):
         '''Getting connection dict with generator:moduleid with collector
         '''
-        self.opsobj = self.ops_inspect[collector].get_ops_generator(
-            generator=generator, moduleid=moduleid, node_type=node_type, instanceid=instanceid)
+        self.opsobj = self.get_ops_generator_from_ops_introspect(collector, generator, moduleid, node_type, instanceid)
         if not self.opsobj:
-            self.logger.warn("query returned none")
+            self.logger.error("query returned none")
             st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
                                                     node=self.inputs.collector_names[0], \
                                                     module='Contrail-Analytics-Api', trace_buffer_name='DiscoveryMsg')
