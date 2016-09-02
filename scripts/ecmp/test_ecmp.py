@@ -896,8 +896,11 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
         Pass criteria: Ping between the VMs should be successful.
         Maintainer : ganeshahv@juniper.net
         """
+        si_list=[('bridge', 1), ('nat', 1)]
+        if self.inputs.get_af() == 'v6':
+            si_list=[('bridge', 1), ('in-net', 1)]
         self.verify_multi_inline_svc(
-            si_list=[('bridge', 1), ('nat', 1)], st_version=2)
+            si_list=si_list, st_version=2)
         return True
     # end test_three_stage_v2_SC
 
