@@ -1878,7 +1878,7 @@ class WebuiTest:
                 analytics_nodes_ops_data = self.ui.get_details(
                     analytics_nodes_list_ops[n]['href'])
                 key1, val1, flag = self.ui.get_advanced_view_list(
-                        'CollectorState', 'self_ip_list', 0)
+                        'CollectorState', 'self_ip_list', 2)
                 self.ui.expand_advance_details()
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = self.ui.get_advanced_view_str()
