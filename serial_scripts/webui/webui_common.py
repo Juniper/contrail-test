@@ -1047,20 +1047,28 @@ class WebuiCommon:
     # end check_rows
 
     def click_icon_caret(self, row_index, obj=None, length=None, indx=0, net=0):
-        if not obj:
-            obj = self.find_element('grid-canvas', 'class')
-        rows = None
-        rows = self.get_rows(obj)
-        if length:
-            rows = self.check_rows(length, obj)
-        br = rows[row_index]
         element0 = ('slick-cell', indx)
         if not net:
             element1 = ('div', 'span')
         else:
             element1 = ('div', 'i')
-        self.click_element(
-            [element0, element1], ['class', 'tag'], br, if_elements=[0])
+        try:
+            if not obj:
+                obj = self.find_element('grid-canvas', 'class')
+            rows = None
+            rows = self.get_rows(obj)
+            if length:
+                rows = self.check_rows(length, obj)
+            br = rows[row_index]
+            self.click_element(
+                [element0, element1], ['class', 'tag'], br, if_elements=[0], delay=25)
+        except StaleElementReferenceException:
+            rows = self.get_rows(obj)
+            if length:
+                rows = self.check_rows(length, obj)
+            br = rows[row_index]
+            self.click_element(
+                [element0, element1], ['class', 'tag'], br, if_elements=[0], delay=25)
     # end click_icon_caret
 
     def click_monitor_instances_basic(self, row_index, length=None):
