@@ -65,6 +65,15 @@ class OpenstackOrchestrator(Orchestrator):
    def get_image_name_for_zone(self, image_name='ubuntu', zone='nova'):
        return self.nova_h.get_image_name_for_zone(image_name, zone)
 
+   def get_image(self, image_name):
+       return self.nova_h.get_image(image_name)
+
+   def get_default_image_flavor(self, image_name):
+       return self.nova_h.get_default_image_flavor(image_name)
+
+   def get_flavor(self, flavor):
+       return self.nova_h.get_flavor(flavor)
+
    def get_hosts(self, zone=None):
        if not zone:
           return self.nova_h.get_hosts()

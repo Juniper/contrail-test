@@ -27,6 +27,21 @@ class Orchestrator:
        pass
 
    @abstractmethod
+   def get_flavor(self, flavor):
+       '''Installs and Returns Flavor ID.'''
+       pass
+
+   @abstractmethod
+   def get_default_image_flavor(self, image_name):
+       '''Returns Flavor ID for an image.'''
+       pass
+
+   @abstractmethod
+   def get_image(self, image):
+       '''Installs and Returns Image ID.'''
+       pass
+
+   @abstractmethod
    def get_hosts(self, zone=None):
        '''Returns a list of computes.'''
        pass

@@ -185,6 +185,15 @@ class VcenterOrchestrator(Orchestrator):
     def get_image_name_for_zone(self, image_name='ubuntu', zone=None):
         return image_name
 
+    def get_image(self, *args, **kwargs):
+        pass
+
+    def get_flavor(self, *args, **kwargs):
+        pass
+
+    def get_default_image_flavor(self, *args, **kwargs):
+        pass
+
     def enable_vmotion(self, hosts):
         for host in hosts:
             username = self._inputs.host_data[host]['username']
