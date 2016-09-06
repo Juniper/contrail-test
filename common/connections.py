@@ -14,6 +14,7 @@ import os
 from openstack import OpenstackAuth, OpenstackOrchestrator
 from vcenter import VcenterAuth, VcenterOrchestrator
 from common.contrail_test_init import ContrailTestInit
+from vcenter_gateway import VcenterGatewayOrch
 
 try:
     from webui.ui_login import UILogin
@@ -65,11 +66,20 @@ class ContrailConnections():
                                              auth_server_ip=self.inputs.auth_ip)
             self.nova_h = self.orch.get_compute_handler()
             self.quantum_h = self.orch.get_network_handler()
-        else: # vcenter
+        elif self.inputs.orchestrator == 'vcenter': # vcenter
             self.orch = VcenterOrchestrator(user=self.username,
                                             pwd=self.password,
                                             host=self.inputs.auth_ip,
                                             port=self.inputs.auth_port,
+                                            dc_name=self.inputs.vcenter_dc,
+                                            vnc=self.vnc_lib,
+                                            inputs=self.inputs,
+                                            logger=self.logger)
+        elif self.inputs.orchestrator == 'vcenter_gateway': # vcenter_gateway
+            self.orch = VcenterGatewayOrch(user=self.inputs.vcenter_username,
+                                            pwd=self.inputs.vcenter_password,
+                                            host=self.inputs.vcenter_server,
+                                            port=int(self.inputs.vcenter_port),
                                             dc_name=self.inputs.vcenter_dc,
                                             vnc=self.vnc_lib,
                                             inputs=self.inputs,
