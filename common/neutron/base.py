@@ -1,7 +1,7 @@
 import time
 import test_v1
 from netaddr import *
-
+from vnc_api.vnc_api import *
 from common.connections import ContrailConnections
 from common import isolated_creds
 from common import create_public_vn
@@ -416,6 +416,42 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
         port2_rsp = self.update_port(port2['id'], port2_dict)
         return True
     # end config_aap
+
+    def config_aap_contrail (self, port1, port2, ip, vsrx=False, zero_mac=False):
+        if zero_mac:
+            port1_dict = {'allowed_address_pairs': [
+                {"ip_address": ip + '/32', "mac_address": '00:00:00:00:00:00'}]}
+            port2_dict = {'allowed_address_pairs': [
+                {"ip_address": ip + '/32', "mac_address": '00:00:00:00:00:00'}]}
+        else:
+            if vsrx:
+                port1_dict = {'allowed_address_pairs': [
+                    {"ip_address": ip + '/32', "mac_address": '00:00:5e:00:01:01'}]}
+                port2_dict = {'allowed_address_pairs': [
+                    {"ip_address": ip + '/32', "mac_address": '00:00:5e:00:01:01'}]}
+            else:
+                port1_dict = {'allowed_address_pairs': [
+                    {"ip_address": ip + '/32'}]}
+                port2_dict = {'allowed_address_pairs': [
+                    {"ip_address": ip + '/32'}]}
+        ip1 = SubnetType(ip_prefix=port1_dict['allowed_address_pairs'][0]['ip_address'].split('/')[0],\
+                         ip_prefix_len=int(port1_dict['allowed_address_pairs'][0]['ip_address'].split('/')[1]))
+        aap1 = AllowedAddressPair(ip=ip1, mac=port1_dict['allowed_address_pairs'][0]['mac_address'])
+        aaps1 = AllowedAddressPairs(allowed_address_pair=[aap1])
+        self.vmi1_obj = self.vnc_lib.virtual_machine_interface_read(id=port1['id'])
+        #self.vmi1_obj.set_virtual_machine_interface_allowed_address_pairs([aaps1])
+        self.vmi1_obj.set_virtual_machine_interface_allowed_address_pairs(aaps1)
+
+        ip2 = SubnetType(ip_prefix=port2_dict['allowed_address_pairs'][0]['ip_address'].split('/')[0],\
+                         ip_prefix_len=int(port2_dict['allowed_address_pairs'][0]['ip_address'].split('/')[1]))
+        aap2 = AllowedAddressPair(ip=ip2, mac=port2_dict['allowed_address_pairs'][0]['mac_address'])
+        aaps2 = AllowedAddressPairs(allowed_address_pair=[aap2])
+        self.vmi2_obj = self.vnc_lib.virtual_machine_interface_read(id=port2['id'])
+        #self.vmi2_obj.set_virtual_machine_interface_allowed_address_pairs([aaps2])
+        self.vmi2_obj.set_virtual_machine_interface_allowed_address_pairs(aaps2)
+        self.vnc_lib.virtual_machine_interface_update(self.vmi1_obj)
+        self.vnc_lib.virtual_machine_interface_update(self.vmi2_obj)
+        return True 
 
     def config_vrrp_on_vsrx(self, vm_fix, vip, priority):
         cmdList = []
@@ -910,6 +946,13 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
             self.logger.error('keepalived not running in %s' % vm.vm_name)
         return result
     # end keepalive_chk
+ 
+    def service_keepalived(self, vm, action):
+        keepalive_chk_cmd = 'service keepalived %s' %(action)
+        vm.run_cmd_on_vm(cmds=[keepalive_chk_cmd], as_sudo=True)
+        return True
+    # end service_keepalived
+
 
     @classmethod
     def check_vms_booted(cls, vms_list):
