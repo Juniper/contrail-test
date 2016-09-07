@@ -106,8 +106,8 @@ class TestQuota(BaseNeutronTest):
 
         project_name = get_random_name('project1')
         isolated_creds = IsolatedCreds(
-            project_name,
             self.admin_inputs,
+            project_name=project_name,
             ini_file=self.ini_file,
             logger=self.logger)
         isolated_creds.setUp()
@@ -118,8 +118,8 @@ class TestQuota(BaseNeutronTest):
 
         project_name1 = get_random_name('project2')
         isolated_creds1 = IsolatedCreds(
-            project_name1,
             self.admin_inputs,
+            project_name=project_name1,
             ini_file=self.ini_file,
             logger=self.logger)
         isolated_creds1.setUp()
