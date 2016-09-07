@@ -630,6 +630,8 @@ class TestPorts(BaseNeutronTest):
         self.logger.info(
             'Executing nova stop to shutoff the VM %s' % (vm1_name))
         vn1_vm1_fixture.vm_obj.stop()
+        assert vn1_vm1_fixture.wait_till_vm_status('SHUTOFF'), ('Unable to '
+            ' shutoff a VM')
 
         # Test specific verification
         self.logger.info(
