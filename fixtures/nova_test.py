@@ -694,13 +694,13 @@ class NovaHelper():
     def wait_till_vm_status(self, vm_obj, status='ACTIVE'):
         try:
             vm_obj.get()
-            if vm_obj.status == 'ACTIVE' or vm_obj.status == 'ERROR':
+            if vm_obj.status == status or vm_obj.status == 'ERROR':
                 self.logger.debug('VM %s is in %s state now' %
                                  (vm_obj, vm_obj.status))
                 return (True,vm_obj.status)
             else:
-                self.logger.debug('VM %s is still in %s state' %
-                                  (vm_obj, vm_obj.status))
+                self.logger.debug('VM %s is still in %s state, Expected: %s' %
+                                  (vm_obj, vm_obj.status, status))
                 return False
         except novaException.NotFound:
             self.logger.debug('VM console log not formed yet')

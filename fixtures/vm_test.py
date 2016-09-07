@@ -1929,8 +1929,6 @@ class VMFixture(fixtures.Fixture):
             vm_host_string = '%s@%s' % (
                 self.vm_username, self.local_ip)
             for cmd in cmdList:
-                self.logger.debug('Running Cmd on %s: %s' % (
-                    self.vm_node_ip, cmd))
                 output = remote_cmd(
                     vm_host_string, cmd, gateway_password=host['password'],
                     gateway='%s@%s' % (host['username'], self.vm_node_ip),
