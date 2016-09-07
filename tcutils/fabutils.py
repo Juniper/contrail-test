@@ -62,6 +62,9 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
     """
     if not logger:
         logger = contrail_logging.getLogger(__name__)
+    logger.debug('Running remote_cmd, Cmd : %s, host_string: %s, password: %s'
+        'gateway: %s, gateway password: %s' %(cmd, host_string, password, 
+            gateway, gateway_password))
     fab_connections.clear()
     if as_daemon:
         cmd = 'nohup ' + cmd + ' & '
