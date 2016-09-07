@@ -418,10 +418,7 @@ class ComputeNodeFixture(fixtures.Fixture):
         return self.control_node
 
     def get_vrf_id(self, vn_fq_name):
-        vrf_id = self.agent_inspect_h.get_vna_vrf_id(vn_fq_name)
-        if vrf_id:
-            return vrf_id[0]
-        return None
+        return self.agent_inspect_h.get_vna_vrf_id(vn_fq_name)
 
     def get_flow_table(self, index=None, refresh=True, show_evicted=False):
         ''' Returns FlowTable instance

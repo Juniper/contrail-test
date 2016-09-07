@@ -116,6 +116,19 @@ class VncLibFixture(fixtures.Fixture):
             return self.neutron_handle
     # end get_neutron_handle
 
+    def get_project_obj(self):
+        if self.connections:
+            project_id = self.connections.project_id
+        elif self.project_id:
+            project_id = self.project_id
+        else:
+            project_id = self.vnc_api_h.project_read(
+                fq_name_str='default-domain:default-project').uuid
+        parent_obj = self.vnc_api_h.project_read(id=project_id)
+        return parent_obj
+    # end get_parent_obj
+
+
     def get_forwarding_mode(self, vn_fq_name):
         vnc_lib = self.vnc_api_h
         # Figure out VN

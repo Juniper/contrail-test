@@ -4,6 +4,7 @@ import re
 from tcutils.verification_util import *
 from tcutils.util import is_v6, get_random_name
 from netaddr import IPNetwork, AddrFormatError
+from tcutils.test_lib.contrail_utils import get_ri_name
 
 LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
@@ -272,7 +273,43 @@ class ControlNodeInspect (VerificationUtilBase):
 
         return acls_dict
 
+    def get_cn_ri_membership(self, ri_name=None, vn_fq_name=None ):
+        '''
+        Return the peers (includes both bgp and xmpp peers) who are
+        interested in this RI (across all families inet/evpn etc.)
+        Data is got from Snh_ShowRoutingInstanceReq itself
+
+        Returns a list of hostnames
+        '''
+        ri_fq_name = None
+        if vn_fq_name:
+            ri_fq_name = get_ri_name(vn_fq_name)
+        if ri_name:
+            ri_fq_name = ri_name
+        if not ri_fq_name:
+            self.logger.debug('get_cn_ri_membership needs RI or vn name')
+            return None
+
+        path = 'Snh_ShowRoutingInstanceReq?name=%s' % ri_fq_name
+        ri_resp = self.dict_get(path)
+        if ri_resp is not None:
+            self.logger.debug('No RI detail found for %s' % (ri_fq_name))
+            return
+        xpath = ('./instances/list/ShowRoutingInstance/tables/list/'
+        'ShowRoutingInstanceTable/membership/ShowTableMembershipInfo/peers')
+        peers_info = EtreeToDict(xpath).get_all_entry(ri_resp)
+        all_peers = set()
+        for info in peers_info:
+            for x in info.get('peers') or []:
+                all_peers.add(x['peer'])
+        return list(all_peers)
+    # end get_cn_ri_membership
+
 if __name__ == '__main__':
+    cn = ControlNodeInspect('10.204.216.58')
+    import pdb; pdb.set_trace()
+    v = cn.get_cn_ri_membership('default-domain:admin:net1:net1')
+    import pdb; pdb.set_trace()
     cn = ControlNodeInspect('10.84.14.9')
     print "ipam", cn.get_cn_config_ipam()
     print "policy", cn.get_cn_config_policy()

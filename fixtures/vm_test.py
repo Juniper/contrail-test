@@ -1,31 +1,33 @@
+import re
+import time
+import shlex
 import shutil
+import traceback
+import threading
 import tempfile
 import fixtures
-import re
-from ipam_test import *
-from vn_test import *
-from tcutils.util import *
-import time
-import traceback
+import socket
+import paramiko
+from collections import defaultdict
 from fabric.api import env
 from fabric.api import run
 from fabric.state import output
 from fabric.state import connections as fab_connections
 from fabric.operations import get, put
 from fabric.context_managers import settings, hide
-import socket
-import paramiko
-from contrail_fixtures import *
-import threading
-import shlex
 from subprocess import Popen, PIPE
-from tcutils.fabutils import *
 
-from collections import defaultdict
+from ipam_test import *
+from vn_test import *
+from tcutils.util import *
+from contrail_fixtures import *
 from tcutils.pkgs.install import PkgHost, build_and_install
 from security_group import get_secgrp_id_from_name, list_sg_rules
 from tcutils.tcpdump_utils import start_tcpdump_for_intf,\
     stop_tcpdump_for_intf
+from tcutils.agent.vrouter_lib import *
+from tcutils.fabutils import *
+from tcutils.test_lib.contrail_utils import get_interested_computes
 
 env.disable_known_hosts = True
 try:
@@ -140,6 +142,8 @@ class VMFixture(fixtures.Fixture):
             self.browser_openstack = self.connections.browser_openstack
             self.webui = WebuiTest(self.connections, self.inputs)
         self._vm_interface = {}
+        self.vrf_ids = {}
+        self._interested_computes = []
 
     # end __init__
 
@@ -481,6 +485,72 @@ class VMFixture(fixtures.Fixture):
 
         return True, None
 
+    @retry(delay=2, tries=4)
+    def verify_vm_in_vrouter(self):
+        '''
+        Verify that VM's /32 route is in vrouter of all computes
+        '''
+        for vn_fq_name in self.vn_fq_names:
+            if self.vnc_lib_fixture.get_active_forwarding_mode(vn_fq_name) =='l2':
+                # TODO 
+                # After bug 1614824 is fixed
+                # L2 route verification
+                continue
+            tap_intf = self.tap_intf[vn_fq_name]
+            for compute_ip in self.inputs.compute_ips:
+                inspect_h = self.agent_inspect[compute_ip]
+                prefixes = self.vm_ip_dict[vn_fq_name]
+
+                vrf_id = self.vrf_ids.get(compute_ip, {}).get(vn_fq_name)
+                # No need to check route if vrf is not in that compute
+                if not vrf_id:
+                    continue
+                for prefix in prefixes:
+                    route_table = inspect_h.get_vrouter_route_table(
+                        vrf_id,
+                        prefix=prefix,
+                        prefix_len='32',
+                        get_nh_details=True)
+                    # Do WA for bug 1614847
+                    if len(route_table) == 2 and \
+                        route_table[0] == route_table[1]:
+                        pass
+                    elif len(route_table) != 1:
+                        self.logger.warn('Did not find vrouter route for IP %s'
+                            ' in %s' %(prefix, compute_ip))
+                        return False
+                    self.logger.debug('Validated VM route %s in vrouter of %s' %(
+                        prefix, compute_ip))
+
+                    # Check the label and nh details 
+                    route = route_table[0]
+                    if compute_ip == self.vm_node_ip:
+                        result = validate_local_route_in_vrouter(route,
+                            inspect_h, tap_intf['name'], self.logger)
+                    else:
+                        tunnel_dest_ip = self.inputs.host_data[self.vm_node_ip]['control-ip']
+                        label = tap_intf['label']
+                        result = validate_remote_route_in_vrouter(route,
+                                                                  tunnel_dest_ip,
+                                                                  label,
+                                                                  self.logger)
+                        if not result:
+                            self.logger.warn('Failed to validate VM route %s in'
+                                ' vrouter of %s' %(prefix, compute_ip))
+                            return False
+                        else:
+                            self.logger.debug('Validated VM route %s in '
+                                'vrouter of %s' %(prefix, compute_ip))
+                        # endif
+                    # endif
+                # for prefix
+            #end for compute_ip
+        # end for vn_fq_name
+        self.logger.info('Validated routes of VM %s in all vrouters' % (
+            self.vm_name))
+        return True
+    # end verify_vm_in_vrouter
+
     def verify_on_setup(self, force=False):
         #TO DO: sandipd - Need adjustments in multiple places to make verification success
         # in vcenter gateway setup.Will do gradually.For now made changes just needed to make few functionality 
@@ -517,6 +587,11 @@ class VMFixture(fixtures.Fixture):
         result = self.verify_vm_in_agent()
         if not result:
             self.logger.error('VM %s verification in Agent failed'
+                              % (self.vm_name))
+            return result
+        result = self.verify_vm_in_vrouter()
+        if not result:
+            self.logger.error('VM %s verification in Vrouter failed'
                               % (self.vm_name))
             return result
         result = self.verify_vm_in_control_nodes()
@@ -908,6 +983,7 @@ class VMFixture(fixtures.Fixture):
 
         # end for vn_fq_name in self.vn_fq_names
 
+
         # Ping to VM IP from host
         if not self.local_ip:
             with self.printlock:
@@ -919,8 +995,27 @@ class VMFixture(fixtures.Fixture):
             self.logger.info("VM %s verifications in Compute nodes passed" %
                              (self.vm_name))
         self.vm_in_agent_flag = self.vm_in_agent_flag and True
+
+        self.vrf_ids = self.get_vrf_ids()
+        if self.inputs.many_computes:
+            self.get_interested_computes()
         return True
     # end verify_vm_in_agent
+
+    @property
+    def interested_computes(self):
+        return self.get_interested_computes()
+
+    def get_interested_computes(self, refresh=False):
+        ''' Query control node to get a list of compute nodes
+            interested in the VMs vrfs
+        '''
+        if getattr(self, '_interested_computes', None) and not refresh:
+            return self._interested_computes
+        self._interested_computes = get_interested_computes(self.connections,
+                                                            self.vn_fq_names)
+        return self._interested_computes
+    # end get_interested_computes
 
     def get_matching_vrf(self, vrf_objs, vrf_name):
         return [x for x in vrf_objs if x['name'] == vrf_name][0]
@@ -961,7 +1056,7 @@ class VMFixture(fixtures.Fixture):
         ''' Verify if the corresponding VN for a VM is present in all compute nodes.
             Also verifies that a route is present in all compute nodes for the VM IP
         '''
-        if len(self.inputs.compute_ips) > 10:
+        if self.inputs.many_computes:
             self.logger.warn('Skipping verification on all agents since '
                              'there are more than 10 computes in the box, '
                              'until the subroutine supports gevent/mp')
@@ -1159,7 +1254,7 @@ class VMFixture(fixtures.Fixture):
 
     @retry(delay=2, tries=20)
     def verify_vm_not_in_agent(self):
-        '''Verify that the VM is fully removed in all Agents.
+        '''Verify that the VM is fully removed in all Agents and vrouters
 
         '''
         # Verification in vcenter plugin introspect
@@ -1168,8 +1263,7 @@ class VMFixture(fixtures.Fixture):
 
         result = True
         self.verify_vm_not_in_agent_flag = True
-        self.vrfs = dict()
-        self.vrfs = self.get_vrf_ids_accross_agents()
+        vrfs = self.get_vrf_ids()
         inspect_h = self.agent_inspect[self.vm_node_ip]
         # Check if VM is in agent's active VMList:
         if self.vm_id in inspect_h.get_vna_vm_list():
@@ -1185,7 +1279,7 @@ class VMFixture(fixtures.Fixture):
             self.verify_vm_not_in_agent_flag = \
                 self.verify_vm_not_in_agent_flag and False
             result = result and False
-        for k, v in self.vrfs.items():
+        for k, v in vrfs.items():
             inspect_h = self.agent_inspect[k]
             for vn_fq_name in self.vn_fq_names:
                 if vn_fq_name in v:
@@ -1201,12 +1295,92 @@ class VMFixture(fixtures.Fixture):
                             result = result and False
                 else:
                     continue
-            if result:
-                self.logger.info(
-                    "VM %s is removed in Compute, and routes are removed "
-                    "in all agent nodes" % (self.vm_name))
+        # end for
+
+        # Do validations in vrouter
+        for vn_fq_name in self.vn_fq_names:
+            result = result and self.verify_vm_not_in_vrouter(vn_fq_name)
+        if result:
+            self.logger.info(
+                "VM %s is removed in Compute, and routes are removed "
+                "in all compute nodes" % (self.vm_name))
         return result
     # end verify_vm_not_in_agent
+
+    @retry(delay=2, tries=5)
+    def verify_vm_not_in_vrouter(self, vn_fq_name):
+        ''' For each compute node, for Vn's vrf, if vrf is still in agent,
+            check that VM's /32 route is removed
+            If the vrf is not in agent, Check that the route table in vrouter
+            is also cleared
+        '''
+        compute_ips = self.inputs.compute_ips
+        # If large number of compute nodes, try to query less number of them
+        if self.inputs.many_computes:
+            compute_ips = self.interested_computes
+        if not compute_ips:
+            self.logger.debug('No interested compute node info present.'
+                              ' Skipping vm cleanup check in vrouter')
+            return True
+        curr_vrf_ids = self.get_vrf_ids()
+        for compute_ip in compute_ips:
+            vrf_id = None
+            earlier_agent_vrfs = self.vrf_ids.get(compute_ip)
+            inspect_h = self.agent_inspect[compute_ip]
+            if earlier_agent_vrfs:
+                vrf_id = earlier_agent_vrfs.get(vn_fq_name)
+            curr_vrf_id = curr_vrf_ids.get(compute_ip, {}).get(vn_fq_name)
+            if vrf_id and not curr_vrf_id:
+                # The vrf is deleted in agent. Check the same in vrouter
+                vrouter_route_table = inspect_h.get_vrouter_route_table(
+                    vrf_id)
+                if vrouter_route_table:
+                    self.logger.warn('Vrouter on Compute node %s still has vrf '
+                        ' %s for VN %s. Check introspect logs' %(
+                            compute_ip, vrf_id, vn_fq_name))
+                    return False
+                else:
+                    self.logger.debug('Vrouter on Compute %s has deleted the '
+                        'vrf %s for VN %s' % (compute_ip, vrf_id, vn_fq_name))
+                # endif
+            elif curr_vrf_id:
+                # vrf is in agent. Check that VM route is removed in vrouter
+                prefixes = self.vm_ip_dict[vn_fq_name]
+                for prefix in prefixes:
+                    route_table = inspect_h.get_vrouter_route_table(
+                        curr_vrf_id,
+                        prefix=prefix,
+                        prefix_len='32',
+                        get_nh_details=True)
+                    if len(route_table):
+                        # If the route exists, it should be a discard route
+                        # A change is pending in agent for label to be marked
+                        # as 0 always. Until then, check for 1048575 also
+                        if route_table[0]['nh_id'] != '1' or \
+                            route_table[0]['label'] not in ['0', '1048575']:
+                            self.logger.warn('VM route %s still in vrf %s of '
+                            ' VN %s of compute %s' %(prefix, curr_vrf_id,
+                                                     vn_fq_name, compute_ip))
+                            return False
+                        else:
+                            self.logger.debug('VM route %s has been marked '
+                                'for discard in VN %s of compute %s' % (
+                                prefix, vn_fq_name, compute_ip))
+                    else:
+                        self.logger.debug('VM route %s is not in vrf %s of VN'
+                            ' %s of compute %s' %(prefix, curr_vrf_id,
+                                                  vn_fq_name, compute_ip))
+                # end for prefix
+                # end if
+            # end if
+            self.logger.debug('Validated that vrouter  %s does not '
+                ' have VMs route for VN %s' %(compute_ip,
+                    vn_fq_name))
+        # end for compute_ip
+        self.logger.info('Validated that all vrouters do not '
+            ' have VMs route for VN %s' %(vn_fq_name))
+        return True
+    # end verify_vm_not_in_vrouter
 
     @retry(delay=2, tries=20)
     def verify_vm_routes_not_in_agent(self):
@@ -1635,7 +1809,7 @@ class VMFixture(fixtures.Fixture):
         return True
     # end tcp_data_transfer
 
-    def get_vrf_ids_accross_agents(self):
+    def get_vrf_ids(self):
         vrfs = dict()
         try:
             for ip in self.inputs.compute_ips:
@@ -1644,13 +1818,14 @@ class VMFixture(fixtures.Fixture):
                 for vn_fq_name in self.vn_fq_names:
                     vrf_id = inspect_h.get_vna_vrf_id(vn_fq_name)
                     if vrf_id:
-                        dct.update({vn_fq_name: vrf_id[0]})
+                        dct.update({vn_fq_name: vrf_id})
                 if dct:
                     vrfs[ip] = dct
         except Exception as e:
             self.logger.exception('Exception while getting VRF id')
         finally:
             return vrfs
+    # end get_vrf_ids
 
     def cleanUp(self):
         super(VMFixture, self).cleanUp()
@@ -2424,8 +2599,9 @@ class VMFixture(fixtures.Fixture):
                     return False
                 self.local_ips[vn_fq_name] = self.tap_intf[
                     vn_fq_name]['mdata_ip_addr']
-                self.mac_addr[vn_fq_name] = self.tap_intf[
-                    vn_fq_name]['mac_addr']
+                self.mac_addr[vn_fq_name] = self.tap_intf[vn_fq_name]['mac_addr']
+                self.agent_vrf_id[vn_fq_name] = inspect_h.get_vna_vrf_id(
+                    vn_fq_name)
         self.get_local_ip(refresh=True)
         if not self.local_ip:
             self.logger.warn('VM metadata IP is not 169.254.x.x')

@@ -1,3 +1,4 @@
+import re
 import time
 import test_v1
 from netaddr import *
@@ -10,13 +11,13 @@ from vm_test import VMFixture
 from project_test import ProjectFixture
 from policy_test import PolicyFixture
 from port_fixture import PortFixture
+from interface_route_table_fixture import InterfaceRouteTableFixture
 from tcutils.util import get_random_name, retry, get_random_cidr
 from fabric.context_managers import settings
 from fabric.api import run
 from fabric.operations import get, put
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 import ConfigParser
-import re
 from tcutils.contrail_status_check import *
 
 contrail_api_conf = '/etc/contrail/contrail-api.conf'
@@ -112,6 +113,7 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
                   flavor='contrail_flavor_small',
                   image_name='ubuntu-traffic',
                   port_ids=[], **kwargs):
+        cleanup = kwargs.get('cleanup', True)
         vm_fixture = self.create_only_vm(vn_fixture,
                         vm_name=vm_name,
                         node_name=node_name,
@@ -119,7 +121,8 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
                         image_name=image_name,
                         port_ids=port_ids,
                         **kwargs)
-        self.addCleanup(vm_fixture.cleanUp)
+        if cleanup:
+            self.addCleanup(vm_fixture.cleanUp)
         return vm_fixture
 
     def create_router(self, router_name, tenant_id=None):
@@ -913,6 +916,47 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
             self.addCleanup(port_fixture.cleanUp)
         return port_fixture
     # end setup_vmi
+
+    def setup_interface_route_table(
+            self,
+            obj=None,
+            name=None,
+            cleanup=True,
+            **kwargs):
+        '''
+        Create interface route table and optionally add it to obj
+        obj : Example : PortFixture instance
+        '''
+        name = name or get_random_name('irtb')
+        intf_route_table = InterfaceRouteTableFixture(
+            name=name,
+            cleanup=cleanup,
+            connections=self.connections,
+            **kwargs)
+        intf_route_table.setUp()
+        if cleanup:
+            self.sleep(1)
+            self.addCleanup(intf_route_table.cleanUp)
+        if obj:
+            self.add_interface_route_table(obj,intf_route_table.obj, cleanup)
+        return intf_route_table
+    # end setup_interface_route_table
+
+    def add_interface_route_table(self, obj, intf_route_table_obj,
+        cleanup=True):
+        ''' Calls add_interface_route_table on obj object
+            intf_route_table_obj is InterfaceRouteTable instance
+        '''
+        obj.add_interface_route_table(intf_route_table_obj)
+        if cleanup:
+            self.addCleanup(obj.del_interface_route_table,
+                            intf_route_table_obj.uuid)
+    # end add_inteface_route_table
+
+    def del_interface_route_table(self, obj, uuid):
+        self._remove_from_cleanup(obj.del_interface_route_table, (uuid))
+        obj.del_interface_route_table(uuid)
+    # end del_interface_route_table
 
     def do_ping_test(self, fixture_obj, sip, dip, expectation=True):
         assert fixture_obj.ping_with_certainty(dip, expectation=expectation),\

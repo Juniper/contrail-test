@@ -391,7 +391,11 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         vrf = '%s:%s:%s:%s' % (domain,
                                 project, vn, vn)
         agent_vrf_objs = self.get_vna_vrf_objs(domain,project,vn)
-        return [x['ucindex'] for x in agent_vrf_objs['vrf_list'] if x['name'] == vrf]
+        vrf_id = [x['ucindex'] for x in agent_vrf_objs['vrf_list'] if x['name'] == vrf]
+        if len(vrf_id):
+            return vrf_id[0]
+        else:
+            return None
 
     def get_vna_route(self, vrf_id='', ip=None, prefix=None):
         if not ip or not is_v6(ip):
@@ -907,7 +911,153 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         return p
     # end get_vrouter_qos_config
 
+    def get_vrouter_virtual_interface(self, index):
+        ''' http://nodek1:8085/Snh_KInterfaceReq?if_id=3
+        '''
+        xml_obj = self.dict_get('Snh_KInterfaceReq?if_id=%s' % (index))
+        xpath_str = './if_list/list/KInterfaceInfo'
+        xml_obj = xml_obj.xpath(xpath_str)
+        if not xml_obj or len(xml_obj) != 1:
+            self.log.debug('Unable to fetch intf details in vrouter for '
+                ' index %s, Got :%s' % (index, xml_obj))
+            return None
+        p = {}
+        for e in xml_obj[0]:
+            p[e.tag] = e.text
+        return p
+    # end get_vrouter_virtual_interface    
+
+    def get_vrouter_nh(self, index):
+        ''' http://nodek1:8085/Snh_KNHReq?x=41
+        '''
+        xml_obj = self.dict_get('Snh_KNHReq?x=%s' % (index))
+        xpath_str = './nh_list/list/KNHInfo'
+        xml_obj = xml_obj.xpath(xpath_str)
+        if not xml_obj or len(xml_obj) != 1:
+            self.log.debug('Unable to fetch nh details in vrouter for '
+                ' index %s, Got :%s' % (index, xml_obj))
+            return None
+        return elem2dict(xml_obj[0])
+    # end get_vrouter_nh
+
+    def get_vrouter_route_table(self, vrf_id, get_nh_details=False, **kwargs):
+        # TODO
+        # Once bug 1614824 is fixed , add filter options
+        # since this table can be very big
+        '''
+            Queries http://nodek1:8085/Snh_KRouteReq?vrf_id=4
+            get_nh_details: If True, Include nh details also in the route dict
+                            It is False by default
+            Sample :
+            v.get_vrouter_route_table('4', prefix='30.1.1.0', get_nh_details=True))
+            returns:
+            [{'family': 'AF_INET',
+              'label': '18',
+              'label_flags': 'MPLS ',
+              'nh': {'encap': '0cc47a320a860cc47a320a8c0800',
+                     'encap_family': 'INVALID',
+                     'encap_len': '14',
+                     'encap_oif_id': '0',
+                     'family': 'AF_INET',
+                     'flags': 'VALID | TUNNEL_MPLS_UDP ',
+                     'id': '41',
+                     'ref_cnt': '138',
+                     'rid': '0',
+                     'tun_dip': '10.204.216.222',
+                     'tun_sip': '10.204.216.221',
+                     'type': 'TUNNEL',
+                     'vrf': '0'},
+              'nh_id': '41',
+              'prefix': '30.1.1.0',
+              'prefix_len': '32',
+              'rid': '0',
+              'vrf_id': '4'},
+             {'family': 'AF_INET',
+              'label': '18',
+              'label_flags': 'MPLS ',
+              'nh': {'encap': '0cc47a320a860cc47a320a8c0800',
+                     'encap_family': 'INVALID',
+                     'encap_len': '14',
+                     'encap_oif_id': '0',
+                     'family': 'AF_INET',
+                     'flags': 'VALID | TUNNEL_MPLS_UDP ',
+                     'id': '41',
+                     'ref_cnt': '138',
+                     'rid': '0',
+                     'tun_dip': '10.204.216.222',
+                     'tun_sip': '10.204.216.221',
+                     'type': 'TUNNEL',
+                     'vrf': '0'},
+              'nh_id': '41',
+              'prefix': '30.1.1.0',
+              'prefix_len': '32',
+              'rid': '0',
+              'vrf_id': '4'}]
+        '''
+        filter_dict = dict((k,v) for k,v in  kwargs.iteritems() if v is not None)
+        filter_set = set(filter_dict.items())
+        xml_obj = self.dict_get('Snh_KRouteReq?x=%s' % (vrf_id))
+        xpath_str = './KRouteResp'
+        xml_obj = xml_obj.xpath(xpath_str)
+        if not xml_obj:
+            self.log.debug('Unable to fetch route details in vrouter for '
+                ' vrf index %s, Got :%s' % (vrf_id, xml_obj))
+            return []
+        routes = []
+        for obj in xml_obj:
+            xpath_str = './rt_list/list/KRouteInfo'
+            routes_elem = obj.xpath(xpath_str)
+            for route in routes_elem:
+                p = elem2dict(route)
+
+                # Remove any unhashable values in p
+                p = dict((k,v) for k,v in p.iteritems() if v)
+
+                if filter_set.issubset(set(p.items())):
+                    if get_nh_details:
+                        p['nh'] = self.get_vrouter_nh(p['nh_id'])
+                    routes.append(p)
+        return routes
+    # end get_vrouter_route_table
+
+    def get_nh_for_route_in_vrouter(self, prefix, route_table=[], **kwargs):
+        '''
+        Return nh details as dict for a route in vrouter
+
+        Sample:
+        {'encap': '0cc47a320a860cc47a320a8c0800',
+         'encap_family': 'INVALID',
+         'encap_len': '14',
+         'encap_oif_id': '0',
+         'family': 'AF_INET',
+         'flags': 'VALID | TUNNEL_MPLS_UDP ',
+         'id': '41',
+         'ref_cnt': '138',
+         'rid': '0',
+         'tun_dip': '10.204.216.222',
+         'tun_sip': '10.204.216.221',
+         'type': 'TUNNEL',
+         'vrf': '0'}
+        '''
+
+        nh = None
+        (prefix_ip, prefix_len) = prefix.split('/')
+        if not route_table:
+            vrf_id = kwargs.get('vrf_id')
+            route_table = self.get_vrouter_route_table(vrf_id, prefix=prefix_ip,
+                                               prefix_len=prefix_len,
+                                               get_nh_details=True)
+
+        for route in route_table:
+            if route['prefix'] == prefix_ip and \
+                route['prefix_len'] == prefix_len:
+                    nh = route.get('nh') or route.get('nh_id')
+        return nh
+    # end get_nh_for_route_in_vrouter
+
 if __name__ == '__main__':
+    v = AgentInspect('10.204.216.221')
+    x = v.get_vrouter_route_table('4')
 
     vvnagnt = AgentInspect('10.204.217.12')
     print vvnagnt.get_vna_vn('default-domain', 'admin', 'vn-1')

@@ -47,8 +47,9 @@ class PortFixture(vnc_api_test.VncLibFixture):
 
     def setUp(self):
         super(PortFixture, self).setUp()
+        self.vnc_h = ContrailVncApi(self.vnc_api_h, self.logger)
         self.vn_obj = self.vnc_api_h.virtual_network_read(id=self.vn_id)
-        
+
         if self.api_type == 'neutron':
             self._neutron_create_port()
         else:
@@ -67,6 +68,8 @@ class PortFixture(vnc_api_test.VncLibFixture):
         self.logger.debug('Created port %s' % (self.uuid))
 
     def _neutron_create_port(self):
+        if not self.neutron_handle:
+            self.neutron_handle = self.get_neutron_handle()
         neutron_obj = self.neutron_handle.create_port(
             self.vn_id,
             fixed_ips=self.fixed_ips,
@@ -205,6 +208,25 @@ class PortFixture(vnc_api_test.VncLibFixture):
         self.vnc_h.remove_fat_flow_on_vmi(self.uuid, fat_flow_config)
 
         return True
+
+    def add_interface_route_table(self, intf_route_table_obj):
+        '''
+        Adds interface static routes to a port
+
+        Args:
+        intf_route_table_obj:  InterfaceRouteTable instance
+        '''
+        self.vnc_h.bind_vmi_to_interface_route_table(self.uuid,
+                                                     intf_route_table_obj)
+    # end add_interface_route_table
+
+    def del_interface_route_table(self, intf_route_table_uuid):
+        '''Unbind intf_route_table_obj from port
+        intf_route_table_obj is InterfaceRouteTable instance
+        '''
+        self.vnc_h.unbind_vmi_from_interface_route_table(
+            self.uuid, intf_route_table_uuid)
+    # end del_interface_route_table
 # end PortFixture
 
 if __name__ == "__main__":
