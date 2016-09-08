@@ -315,10 +315,19 @@ class ContrailVncApi:
 
     def update_virtual_router_type(self,name,vrouter_type):
         vr_fq_name = ['default-global-system-config', name]
-        try:
-            vr = self._vnc.virtual_router_read(
-                fq_name=vr_fq_name)
-            vr.set_virtual_router_type(vrouter_type)
-            self._vnc.virtual_router_update(vr) 
-        except Exception as e:
-            pass
+        vr = self._vnc.virtual_router_read(
+            fq_name=vr_fq_name)
+        vr.set_virtual_router_type(vrouter_type)
+        self._vnc.virtual_router_update(vr) 
+
+    def create_virtual_machine(self,vm_uuid=None):
+        vm = VirtualMachine()
+        if vm_uuid:
+            vm.set_uuid(vm_uuid)
+        self._vnc.virtual_machine_create(vm)
+    #end create_virtual_machine
+    
+    def delete_virtual_machine(self,vm_uuid):
+        self._vnc.virtual_machine_delete(id=vm_uuid)
+    #end delete_virtual_machine
+            

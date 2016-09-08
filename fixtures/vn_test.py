@@ -22,7 +22,8 @@ class NotPossibleToSubnet(Exception):
        required numer of subnets.
     """
     pass
-
+from openstack import OpenstackOrchestrator
+from vcenter import VcenterOrchestrator
 
 #@contrail_fix_ext ()
 class VNFixture(fixtures.Fixture):
@@ -46,11 +47,11 @@ class VNFixture(fixtures.Fixture):
                  af=None, empty_vn=False, enable_dhcp=True,
                  dhcp_option_list=None, disable_gateway=False,
                  uuid=None, sriov_enable=False, sriov_vlan=None,
-                 sriov_provider_network=None):
+                 sriov_provider_network=None,*args,**kwargs):
         self.connections = connections
         self.inputs = inputs or connections.inputs
         self.logger = self.connections.logger
-        self.orch = self.connections.orch
+        self.orchestrator = kwargs.get('orch', self.connections.orch)
         self.quantum_h = self.connections.quantum_h
         self.vnc_lib_h = self.connections.get_vnc_lib_h()
         self.api_s_inspect = self.connections.api_server_inspect
@@ -71,7 +72,7 @@ class VNFixture(fixtures.Fixture):
         #Forcing v4 subnet creation incase of v6. Reqd for ssh to host
         if ('v6' in self.af) or ('dual' == self.inputs.get_af()):
             self.af = 'dual'
-        if self.inputs.orchestrator == 'vcenter' and subnets and (len(subnets) != 1):
+        if isinstance(self.orchestrator,VcenterOrchestrator)  and subnets and (len(subnets) != 1):
            raise Exception('vcenter: Multiple subnets not supported')
         if not subnets and not empty_vn:
             subnets = get_random_cidrs(stack=self.af)
@@ -123,7 +124,7 @@ class VNFixture(fixtures.Fixture):
 
     def read(self):
         if self.uuid:
-            self.obj = self.orch.get_vn_obj_from_id(self.uuid)
+            self.obj = self.orchestrator.get_vn_obj_from_id(self.uuid)
             self.api_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.uuid)
             self.vn_name = self.api_vn_obj.name
             self.vn_fq_name = self.api_vn_obj.get_fq_name_str()
@@ -211,10 +212,10 @@ class VNFixture(fixtures.Fixture):
 
     def _create_vn_orch(self):
         try:
-            self.obj = self.orch.get_vn_obj_if_present(self.vn_name,
+            self.obj = self.orchestrator.get_vn_obj_if_present(self.vn_name,
                                          project_id=self.project_id)
             if not self.obj:
-                self.obj = self.orch.create_vn(
+                self.obj = self.orchestrator.create_vn(
                                                 self.vn_name,
                                                 self.vn_subnets,
                                                 ipam_fq_name=self.ipam_fq_name,
@@ -235,7 +236,7 @@ class VNFixture(fixtures.Fixture):
             # It is possible that VN may not be created due to quota limits
             # In such cases, self.obj would not be set
             if self.obj:
-                self.uuid = self.orch.get_vn_id(self.obj)
+                self.uuid = self.orchestrator.get_vn_id(self.obj)
                 self.vn_fq_name = ':'.join(
                     self.vnc_lib_h.id_to_fq_name(self.uuid))
                 self.api_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.uuid)
@@ -283,7 +284,7 @@ class VNFixture(fixtures.Fixture):
             return uid
 
     def _create_vn_api(self, vn_name, project):
-        if self.inputs.orchestrator == 'vcenter':
+        if isinstance(self.orchestrator,VcenterOrchestrator) :
            raise Exception('vcenter: no support for VN creation through VNC-api')
         try:
             self.api_vn_obj = VirtualNetwork(
@@ -384,12 +385,12 @@ class VNFixture(fixtures.Fixture):
             self.set_vxlan_id()
 
         # Populate the VN Subnet details
-        if self.inputs.orchestrator == 'openstack':
+        if isinstance(self.orchestrator,OpenstackOrchestrator):
             self.vn_subnet_objs = self.quantum_h.get_subnets_of_vn(self.uuid)
     # end setUp
 
     def create_subnet(self, vn_subnet, ipam_fq_name):
-        if self.inputs.orchestrator == 'vcenter':
+        if isinstance(self.orchestrator,VcenterOrchestrator) :
             raise Exception('vcenter: subnets not supported')
         self.quantum_h.create_subnet(vn_subnet, self.uuid, ipam_fq_name)
         self.vn_subnets.append([{'cidr': vn_subnet}])
@@ -405,7 +406,7 @@ class VNFixture(fixtures.Fixture):
     def create_port(self, net_id, subnet_id=None, ip_address=None,
                     mac_address=None, no_security_group=False,
                     security_groups=[], extra_dhcp_opts=None, sriov=False):
-        if self.inputs.orchestrator == 'vcenter':
+        if isinstance(self.orchestrator,VcenterOrchestrator) :
             raise Exception('vcenter: ports not supported')
         fixed_ips = [{'subnet_id': subnet_id, 'ip_address': ip_address}]
         port_rsp = self.quantum_h.create_port(
@@ -420,14 +421,14 @@ class VNFixture(fixtures.Fixture):
         return port_rsp
 
     def delete_port(self, port_id, quiet=False):
-        if self.inputs.orchestrator == 'vcenter':
+        if isinstance(self.orchestrator,VcenterOrchestrator) :
             raise Exception('vcenter: ports not supported')
         is_port_present=self.quantum_h.get_port(port_id)
         if is_port_present is not None:
             self.quantum_h.delete_port(port_id)
 
     def update_port(self, port_id, port_dict):
-        if self.inputs.orchestrator == 'vcenter':
+        if isinstance(self.orchestrator,VcenterOrchestrator) :
             raise Exception('vcenter: ports not supported')
         port_rsp = self.quantum_h.update_port(port_id, port_dict)
         return port_rsp
@@ -676,7 +677,7 @@ class VNFixture(fixtures.Fixture):
 
     def verify_vn_policy_in_api_server(self):
         ''' verify VN's policy data in api-server with data in quantum database'''
-        if self.inputs.orchestrator == 'vcenter':
+        if isinstance(self.orchestrator,VcenterOrchestrator) :
             self.policy_verification_flag = {'result': True, 'msg': None}
             return self.policy_verification_flag
 
@@ -1072,7 +1073,7 @@ class VNFixture(fixtures.Fixture):
     # end  get_rt_info
 
     def add_subnet(self, subnet):
-        if self.inputs.orchestrator == 'vcenter':
+        if isinstance(self.orchestrator,VcenterOrchestrator) :
             raise Exception('vcenter: subnets not supported')
         # Get the Quantum details
         quantum_obj = self.quantum_h.get_vn_obj_if_present(self.vn_name,
@@ -1168,7 +1169,7 @@ class VNFixture(fixtures.Fixture):
                 self.vnc_lib_h.virtual_network_delete(id=self.uuid)
             else:
                 for i in range(12):
-                    if not self.orch.delete_vn(self.obj):
+                    if not self.orchestrator.delete_vn(self.obj):
                         # This might be due to caching issues.
                         self.logger.warn("%s. Deleting the VN %s failed" %
                                          (i, self.vn_name))
@@ -1194,7 +1195,7 @@ class VNFixture(fixtures.Fixture):
     # end get_obj
 
     def bind_policies(self, policy_fq_names, vn_id):
-        if self.inputs.orchestrator == 'vcenter' or self.option == 'contrail':
+        if  isinstance(self.orchestrator,VcenterOrchestrator) or self.option == 'contrail':
             self.api_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.uuid)
             self.api_vn_obj.set_network_policy_list([],True)
             self.vnc_lib_h.virtual_network_update(self.api_vn_obj)
@@ -1228,17 +1229,17 @@ class VNFixture(fixtures.Fixture):
     # end get_current_policies_bound
 
     def update_vn_object(self):
-        if self.inputs.orchestrator == 'openstack':
+        if isinstance(self.orchestrator,OpenstackOrchestrator) :
             self.obj = self.quantum_h.get_vn_obj_from_id(self.uuid)
         self.policy_objs = []
         if not self.policy_objs:
             for policy_fq_name in self.get_current_policies_bound():
-                policy_obj = self.orch.get_policy(policy_fq_name)
+                policy_obj = self.orchestrator.get_policy(policy_fq_name)
                 self.policy_objs.append(policy_obj)
     # end update_vn_object
 
     def unbind_policies(self, vn_id, policy_fq_names=[]):
-        if self.inputs.orchestrator == 'vcenter' or self.option == 'contrail':
+        if isinstance(self.orchestrator,VcenterOrchestrator) or self.option == 'contrail':
             if policy_fq_names == []:
                 self.api_vn_obj.set_network_policy_list([],True)
                 net_rsp = self.vnc_lib_h.virtual_network_update(self.api_vn_obj)
@@ -1270,13 +1271,13 @@ class VNFixture(fixtures.Fixture):
     # end unbind_policy
 
     def update_subnet(self, subnet_id, subnet_dict):
-        if self.inputs.orchestrator == 'vcenter':
+        if isinstance(self.orchestrator,VcenterOrchestrator):
            raise Exception('vcenter: subnets not supported')
         self.quantum_h.update_subnet(subnet_id, subnet_dict)
         self.vn_subnet_objs = self.quantum_h.get_subnets_of_vn(self.uuid)
 
     def get_subnets(self):
-        if self.inputs.orchestrator == 'vcenter':
+        if isinstance(self.orchestrator,VcenterOrchestrator):
            raise Exception('vcenter: subnets not supported')
         return self.quantum_h.get_subnets_of_vn(self.uuid)
 

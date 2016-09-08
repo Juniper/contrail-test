@@ -61,6 +61,7 @@ class LogicalInterfaceFixture(vnc_api_test.VncLibFixture):
             self.already_present = True
             self.logger.debug('Logical port %s already present' % (
                 lif_fq_name))
+            self.uuid = self.obj.get_uuid()
         except vnc_api_test.NoIdError:
             self.create_lif()
 

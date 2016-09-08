@@ -354,7 +354,7 @@ class VcenterOrchestrator(Orchestrator):
         #for vcenter and vcenter as compute mode, contrail_vm would be in the esxi server
         #but for vcenter gateway, its a physical server configured to work as the gateway
         #the vcenter gateway info would be captured in contrail_test_init.py
-        return self._inputs.vcenter_gateway
+        return self._inputs.get_vcenter_gateway()
 
     def get_networks_of_vm(self, vm_obj, **kwargs):
          return vm_obj.nets[:]
@@ -468,9 +468,13 @@ class VcenterOrchestrator(Orchestrator):
 
     def delete_vn(self, vn_obj, **kwargs):
         self._vlanmgmt.free_vlan(vn_obj.vlan)
-        self._content.ipPoolManager.DestroyIpPool(self._dc, vn_obj.ip_pool_id, True)
-        pg = self._find_obj(self._dc, 'dvs.PortGroup', {'name' : vn_obj.name})
-        pg.Destroy()
+        try: #Sometimes the ip pool delete fails in vcenter - not root caused yet.
+             #Till its completely debugged, handled the exception.
+            pg = self._find_obj(self._dc, 'dvs.PortGroup', {'name' : vn_obj.name})
+            pg.Destroy()
+            self._content.ipPoolManager.DestroyIpPool(self._dc, vn_obj.ip_pool_id, True)
+        except Exception as e:
+            return True
         return True
 
     def get_vn_obj_if_present(self, vn_name, **kwargs):
@@ -644,8 +648,13 @@ class VcenterVN:
         vn.vcenter = vcenter
         vn.name = vn_obj.name
         vn.uuid = None
-        vlan = vn_obj.config.defaultPortConfig.vlan.pvlanId
-        vn.vlan = (vlan - 1, vlan)
+        try:#when vcenter only mode, we need to get the pvlan id
+            vlan = vn_obj.config.defaultPortConfig.vlan.pvlanId
+            vn.vlan = (vlan - 1, vlan)
+        except Exception as e:#vcenter gateway mode,where we create normal vlan
+            vlan = vn_obj.config.defaultPortConfig.vlan.vlanId
+            vn.vlan =  vlan
+            
         vn.ip_pool_id = vn_obj.summary.ipPoolId
         pool = vcenter._find_obj(vcenter._dc, 'ip.Pool', {'id':vn.ip_pool_id})
         vn.prefix = IPNetwork(pool.ipv4Config.subnetAddress+'/'+pool.ipv4Config.netmask)
