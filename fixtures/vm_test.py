@@ -1240,7 +1240,7 @@ class VMFixture(fixtures.Fixture):
                 rt_list.append(rt_obj.name)
         for rt in rt_list:
             ctrl_node = self.get_active_controller()
-            ctrl_node = self.inputs.get_host_ip(ctrl_node)
+            ctrl_node = self.inputs.host_data[ctrl_node]['host_ip']
             peer_list.append(ctrl_node)
             rt_group_entry = self.cn_inspect[
                 ctrl_node].get_cn_rtarget_group(rt)
