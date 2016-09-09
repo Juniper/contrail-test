@@ -316,7 +316,7 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.policy_fixture, self.vn1_fixture)
         self.vn2_policy_fix = self.attach_policy_to_vn(
             self.policy_fixture, self.vn2_fixture)
-        if ci and self.inputs.get_af() == 'v4':
+        if ci and self.inputs.get_af() == 'v4' and self.inputs.orchestrator != 'vcenter':
             image_name = 'cirros-0.3.0-x86_64-uec'
         else:
             image_name = 'ubuntu-traffic'
@@ -380,7 +380,7 @@ class VerifySvcFirewall(VerifySvcMirror):
             elif si[0] == 'in-net':
                 svc_mode = 'in-network'
                 svc_img_name = 'ubuntu-in-net'
-                (mgmt_vn, left_vn, right_vn) = (None, self.vn1_fixture.vn_fq_name, self.vn2_fixture.vn_fq_name)
+		(mgmt_vn, left_vn, right_vn) = (None, self.vn1_fixture.vn_fq_name, self.vn2_fixture.vn_fq_name)
             else:
                 svc_mode = 'transparent'
                 svc_img_name = 'tiny_trans_fw'
