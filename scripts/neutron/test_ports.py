@@ -871,7 +871,8 @@ class TestPorts(BaseNeutronTest):
         self.logger.info("VM's tap interface got cleaned up on port delete. Test passed")
  
     #end test_zombie_tap_interface
-     
+    
+    @test.attr(type=['sanity']) 
     @preposttest_wrapper
     def test_aap_with_zero_mac(self):
         '''
@@ -918,7 +919,7 @@ class TestPorts(BaseNeutronTest):
         assert vm2_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
         assert vm_test_fixture.wait_till_vm_is_up(
         ), 'VM does not seem to be up'
-        self.config_aap(port1_obj, port2_obj, vIP, zero_mac=True)
+        self.config_aap_contrail(port1_obj, port2_obj, vIP, zero_mac=True)
         self.config_keepalive(vm1_fixture, vIP, vID, '10')
         self.config_keepalive(vm2_fixture, vIP, vID, '20')
 
