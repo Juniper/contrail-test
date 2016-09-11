@@ -98,7 +98,10 @@ class NovaHelper():
         return host_dict
 
     def _list_zones(self):
-        zones = self.obj.availability_zones.list()
+        try:
+            zones = self.obj.availability_zones.list()
+        except novaException.Forbidden:
+            zones = self.admin_obj.obj.availability_zones.list()
         zones = filter(lambda x: x.zoneName != 'internal', zones)
         return map(lambda x: x.zoneName, zones)
 
@@ -177,7 +180,7 @@ class NovaHelper():
 
     def get_vm_by_id(self, vm_id):
         try:
-            vm = self.obj.servers.find(id=vm_id)
+            vm = self.obj.servers.get(vm_id)
             if vm:
                 return vm
         except novaException.NotFound:
@@ -395,6 +398,8 @@ class NovaHelper():
             self.logger.debug('Services list from nova: %s' %
                              nova_services)
             return nova_services
+        except novaException.Forbidden:
+            return []
         except:
             self.logger.debug('Unable to retrieve services from nova obj')
             self.logger.debug('Using \"nova service-list\" to retrieve'
@@ -443,7 +448,6 @@ class NovaHelper():
     def create_vm(self, project_uuid, image_name, vm_name, vn_ids,
                   node_name=None, sg_ids=None, count=1, userdata=None,
                   flavor=None, port_ids=None, fixed_ips=None, zone=None):
-
         if node_name == 'disable':
             zone = None
         elif zone and node_name:
@@ -504,7 +508,7 @@ class NovaHelper():
         elif vn_ids:
             nics_list = [{'net-id': x} for x in vn_ids]
 
-        zone = zone + ":" + node_name
+        zone = zone + ":" + node_name if node_name else zone
         self.obj.servers.create(name=vm_name, image=image,
                                 security_groups=sg_ids,
                                 flavor=flavor, nics=nics_list,
@@ -607,7 +611,9 @@ class NovaHelper():
     # end get_vm_list
 
     def get_nova_host_of_vm(self, vm_obj):
-        for hypervisor in self.get_nova_hypervisor_list():
+        if 'OS-EXT-SRV-ATTR:hypervisor_hostname' not in vm_obj.__dict__:
+            vm_obj = self.admin_obj.get_vm_by_id(vm_obj.id)
+        for hypervisor in self.hypervisors:
             if vm_obj.__dict__['OS-EXT-SRV-ATTR:hypervisor_hostname'] is not None:
                 if vm_obj.__dict__['OS-EXT-SRV-ATTR:hypervisor_hostname']\
                     == hypervisor.hypervisor_hostname:
@@ -627,9 +633,23 @@ class NovaHelper():
                 self.logger.error('Nova failed to get host of the VM')
     # end get_nova_host_of_vm
 
-    def get_nova_hypervisor_list(self):
-        #return self.obj.hypervisors.find().hypervisor_type
-        return self.obj.hypervisors.list()
+    @property
+    def admin_obj(self):
+        if not getattr(self, '_admin_obj', None):
+            self._admin_obj = NovaHelper(inputs=self.inputs,
+                                         project_name=self.inputs.admin_tenant,
+                                         username=self.inputs.admin_username,
+                                         password=self.inputs.admin_password)
+        return self._admin_obj
+
+    @property
+    def hypervisors(self):
+        if not getattr(self, '_hypervisors', None):
+            try:
+                self._hypervisors = self.obj.hypervisors.list()
+            except novaException.Forbidden:
+                self._hypervisors = self.admin_obj.obj.hypervisors.list()
+        return self._hypervisors
     #end
 
     def kill_remove_container(self, compute_host_ip, vm_id):
@@ -691,8 +711,8 @@ class NovaHelper():
         while True:
             nova_services = self.get_nova_services(binary='nova-compute')
             if not nova_services:
-                self.logger.error('nova-compute service doesnt exist, check openstack-status')
-                raise RuntimeError('nova-compute service doesnt exist')
+                self.logger.warn('Unable to get the list of compute nodes')
+                yield (None, None)
             for compute_svc in nova_services:
                 yield (compute_svc.host, compute_svc.zone)
     # end get_compute_host
@@ -815,6 +835,8 @@ class NovaHelper():
                     zone = 'nova'
             if zone not in self.zones:
                 raise RuntimeError("Zone %s is not available" % zone)
+            if not self.compute_nodes:
+                return (zone, None)
             if not len(self.hosts_dict[zone]):
                 raise RuntimeError("Zone %s doesnt have any computes" % zone)
 
