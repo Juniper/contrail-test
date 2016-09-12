@@ -32,11 +32,19 @@ class TestQuota(BaseNeutronTest):
             "Defalult quota set for admin tenant is : \n %s" %
             (quota_dict))
         for neutron_obj in quota_dict['quota']:
-            if quota_dict['quota'][neutron_obj] != -1:
-                self.logger.error(
-                    "Default Quota limit not followed for %s and is set to %s " %
-                    (neutron_obj, quota_dict['quota'][neutron_obj]))
-                result = False
+            if neutron_obj != 'rbac_policy' and neutron_obj != 'loadbalancer':
+                if quota_dict['quota'][neutron_obj] != -1:
+                    self.logger.error(
+                        "Default Quota limit not followed for %s and is set to %s " %
+                        (neutron_obj, quota_dict['quota'][neutron_obj]))
+                    result = False
+            else:
+                if quota_dict['quota'][neutron_obj] != 10:
+                    self.logger.error(
+                        "Default Quota limit not followed for %s and is set to %s " %
+                        (neutron_obj, quota_dict['quota'][neutron_obj]))
+                    result = False
+                    
         assert result, 'Default quota for admin tenant is not set'
 
     @preposttest_wrapper
@@ -48,11 +56,18 @@ class TestQuota(BaseNeutronTest):
             "Defalult quota set for tenant %s is : \n %s" %
             (self.inputs.project_name, quota_dict))
         for neutron_obj in quota_dict['quota']:
-            if quota_dict['quota'][neutron_obj] != -1:
-                self.logger.error(
-                    "Default Quota limit not followed for %s and is set to %s " %
-                    (neutron_obj, quota_dict['quota'][neutron_obj]))
-                result = False
+            if neutron_obj != 'rbac_policy' and neutron_obj != 'loadbalancer':
+                if quota_dict['quota'][neutron_obj] != -1:
+                    self.logger.error(
+                        "Default Quota limit not followed for %s and is set to %s " %
+                        (neutron_obj, quota_dict['quota'][neutron_obj]))
+                    result = False
+            else:
+                if quota_dict['quota'][neutron_obj] != 10:
+                    self.logger.error(
+                        "Default Quota limit not followed for %s and is set to %s " %
+                        (neutron_obj, quota_dict['quota'][neutron_obj]))
+                    result = False
         assert result, 'Default quota for custom tenant is not set'
 
     @preposttest_wrapper
@@ -105,62 +120,70 @@ class TestQuota(BaseNeutronTest):
             'security_group_rule': 6}
 
         project_name = get_random_name('project1')
-        isolated_creds = IsolatedCreds(
-            self.admin_inputs,
+        user_fixture = self.useFixture(UserFixture(
+            connections=self.connections, username='test_usr',
+            password='testusr123'))
+        project_fixture_obj = self.useFixture(ProjectFixture(
+            username=self.inputs.stack_user,
+            password=self.inputs.stack_password,
             project_name=project_name,
-            ini_file=self.ini_file,
-            logger=self.logger)
-        isolated_creds.setUp()
-        project_obj = isolated_creds.create_tenant()
-        isolated_creds.create_and_attach_user_to_tenant()
-        proj_inputs = isolated_creds.get_inputs()
-        proj_connection = isolated_creds.get_conections()
-
+            vnc_lib_h=self.vnc_lib,
+            connections=self.connections))
+        user_fixture.add_user_to_tenant(project_name, 'test_usr', 'admin')
+        user_fixture.add_user_to_tenant(project_name, 'test_usr', 'Member')
+        assert project_fixture_obj.verify_on_setup()
         project_name1 = get_random_name('project2')
-        isolated_creds1 = IsolatedCreds(
-            self.admin_inputs,
+        user_fixture1 = self.useFixture(UserFixture(
+            connections=self.connections, username='test_usr1',
+            password='testusr1231'))
+        project_fixture_obj1 = self.useFixture(ProjectFixture(
+            username='test_usr1',
+            password='test1231',
             project_name=project_name1,
-            ini_file=self.ini_file,
-            logger=self.logger)
-        isolated_creds1.setUp()
-        project_obj1 = isolated_creds1.create_tenant()
-        isolated_creds1.create_and_attach_user_to_tenant()
-        proj_inputs1 = isolated_creds1.get_inputs()
-        proj_connection1 = isolated_creds1.get_conections()
-
+            vnc_lib_h=self.vnc_lib,
+            connections=self.connections))
+        user_fixture1.add_user_to_tenant(project_name1, 'test_usr1', 'Member')
+        assert project_fixture_obj1.verify_on_setup()
+        project_fixture_obj.set_user_creds('test_usr','testusr123')
+        proj_connection = project_fixture_obj.get_project_connections()
         self.logger.info(
-            "Update quota for tenant %s to: \n %s by admin tenat " %
-            (proj_inputs1.project_name, quota_dict))
+            "Update quota for tenant %s to: \n %s by admin tenant " %
+            (project_name, quota_dict))
         quota_rsp = self.admin_connections.quantum_h.update_quota(
-            project_obj1.uuid,
+            project_fixture_obj.uuid,
             quota_dict)
         quota_show_dict = self.admin_connections.quantum_h.show_quota(
-            project_obj1.uuid)
+            project_fixture_obj.uuid)
 
         for neutron_obj in quota_rsp['quota']:
             if quota_rsp['quota'][neutron_obj] != quota_show_dict[
                     'quota'][neutron_obj]:
                 self.logger.error(
                     "Quota update unsuccessful for %s for %s tenant " %
-                    (neutron_obj, project_name1))
+                    (neutron_obj, project_name))
                 result = False
         assert result, 'Quota update by admin tenant failed'
         self.logger.info(
-            "Quota for tenant %s updated to : \n %s" %
-            (proj_inputs1.project_name, quota_show_dict))
+            "Quota for tenant %s is updated to : \n %s " %
+            (project_name, quota_show_dict))
+        #Remove admin role and try to update quota of other project
+        user_fixture.remove_user_role('test_usr','admin',
+                                      project_fixture_obj.project_name)
+        quota_show_dict = self.admin_connections.quantum_h.show_quota(
+            project_fixture_obj1.uuid)
         self.logger.info(
             "Try to update quota for tenant %s to : \n %s by tenant %s" %
-            (proj_inputs1.project_name,
+            (project_name1,
              quota_dict,
-             proj_inputs.project_name))
+             project_name))
         result1 = proj_connection.quantum_h.update_quota(
-            project_obj1.uuid,
+            project_fixture_obj1.uuid,
             quota_dict)
         assert not result1, 'Quota update of %s by %s successful not expected' % (
             project_name1, project_name)
         self.logger.info(
             "Quota for tenant %s still set to : \n %s as expected " %
-            (proj_inputs1.project_name, quota_show_dict))
+            (project_name1, quota_show_dict))
 
     @preposttest_wrapper
     def test_quota_update_of_specific_tenant(self):

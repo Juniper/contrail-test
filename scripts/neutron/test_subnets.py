@@ -260,16 +260,19 @@ class TestSubnets(BaseNeutronTest):
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
         assert vn1_fixture.vn_subnet_objs[0]['enable_dhcp'],\
             'DHCP is not enabled by default in the Subnet!'
-
+        vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
+                                     image_name='cirros-0.3.0-x86_64-uec')
+        assert vm1_fixture.wait_till_vm_up(),\
+            'VM not able to boot'
+            
         # Update subnet to disable dhcp
         vn1_subnet_dict = {'enable_dhcp': False}
         vn1_fixture.update_subnet(vn1_fixture.vn_subnet_objs[0]['id'],
                                   vn1_subnet_dict)
-        vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
-                                     image_name='cirros-0.3.0-x86_64-uec')
-        assert vm1_fixture.wait_till_vm_up(),\
-            'Unable to detect if VM booted up using console log'
-
+        vm1_fixture.reboot()
+        time.sleep(5)
+        assert vm1_fixture.wait_till_vm_is_active(), 'VM is not up on reboot!'
+        time.sleep(30)
         console_log = vm1_fixture.get_console_output()
         assert 'No lease, failing' in console_log,\
             'Failure while determining if VM got a DHCP IP. Log : %s' % (
@@ -282,14 +285,12 @@ class TestSubnets(BaseNeutronTest):
                                   vn1_subnet_dict)
         vm1_fixture.reboot()
         time.sleep(5)
-        assert vm1_fixture.wait_till_vm_is_up(), 'VM is not up on reboot!'
-
+        assert vm1_fixture.wait_till_vm_is_active(), 'VM is not up on reboot!'
         result_output = vm1_fixture.run_cmd_on_vm(['ifconfig -a'])
         output = result_output.values()[0]
         assert vm1_fixture.vm_ip in output,\
             'VM did not get an IP %s after enabling DHCP' % (vm1_fixture.vm_ip)
         self.logger.info('VM got DHCP IP after subnet-dhcp is enabled..OK')
-
     # end test_enable_dhcp
 
     @preposttest_wrapper
