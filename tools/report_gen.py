@@ -299,6 +299,8 @@ class ContrailReportInit:
 
         newline = '<br/>'
         detail = newline
+        detail += 'DISTRO : %s %s' % (self.get_distro(), newline)
+        detail += 'SKU : %s %s' % (self.sku, newline)
         detail += 'Config Nodes : %s %s' % (cfgm_nodes, newline)
         detail += 'Control Nodes : %s %s' % (bgp_nodes, newline)
         detail += 'Compute Nodes : %s %s' % (compute_nodes, newline)
