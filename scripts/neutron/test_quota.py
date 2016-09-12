@@ -32,11 +32,19 @@ class TestQuota(BaseNeutronTest):
             "Defalult quota set for admin tenant is : \n %s" %
             (quota_dict))
         for neutron_obj in quota_dict['quota']:
-            if quota_dict['quota'][neutron_obj] != -1:
-                self.logger.error(
-                    "Default Quota limit not followed for %s and is set to %s " %
-                    (neutron_obj, quota_dict['quota'][neutron_obj]))
-                result = False
+            if neutron_obj != 'rbac_policy' and neutron_obj != 'loadbalancer':
+                if quota_dict['quota'][neutron_obj] != -1:
+                    self.logger.error(
+                        "Default Quota limit not followed for %s and is set to %s " %
+                        (neutron_obj, quota_dict['quota'][neutron_obj]))
+                    result = False
+            else:
+                if quota_dict['quota'][neutron_obj] != 10:
+                    self.logger.error(
+                        "Default Quota limit not followed for %s and is set to %s " %
+                        (neutron_obj, quota_dict['quota'][neutron_obj]))
+                    result = False
+                    
         assert result, 'Default quota for admin tenant is not set'
 
     @preposttest_wrapper
@@ -48,11 +56,18 @@ class TestQuota(BaseNeutronTest):
             "Defalult quota set for tenant %s is : \n %s" %
             (self.inputs.project_name, quota_dict))
         for neutron_obj in quota_dict['quota']:
-            if quota_dict['quota'][neutron_obj] != -1:
-                self.logger.error(
-                    "Default Quota limit not followed for %s and is set to %s " %
-                    (neutron_obj, quota_dict['quota'][neutron_obj]))
-                result = False
+            if neutron_obj != 'rbac_policy' and neutron_obj != 'loadbalancer':
+                if quota_dict['quota'][neutron_obj] != -1:
+                    self.logger.error(
+                        "Default Quota limit not followed for %s and is set to %s " %
+                        (neutron_obj, quota_dict['quota'][neutron_obj]))
+                    result = False
+            else:
+                if quota_dict['quota'][neutron_obj] != 10:
+                    self.logger.error(
+                        "Default Quota limit not followed for %s and is set to %s " %
+                        (neutron_obj, quota_dict['quota'][neutron_obj]))
+                    result = False
         assert result, 'Default quota for custom tenant is not set'
 
     @preposttest_wrapper
@@ -89,6 +104,7 @@ class TestQuota(BaseNeutronTest):
                 result = False
         assert result, 'Failed to update quota for admin tenant'
 
+
     @preposttest_wrapper
     def test_quota_update_of_new_project_by_admin(self):
         '''Launch two custom tenants, quota update by admin tenant should be successful
@@ -107,26 +123,26 @@ class TestQuota(BaseNeutronTest):
         project_name = get_random_name('project1')
         isolated_creds = IsolatedCreds(
             self.admin_inputs,
-            project_name=project_name,
+            project_name,
             ini_file=self.ini_file,
             logger=self.logger)
-        isolated_creds.setUp()
-        project_obj = isolated_creds.create_tenant()
-        isolated_creds.create_and_attach_user_to_tenant()
-        proj_inputs = isolated_creds.get_inputs()
-        proj_connection = isolated_creds.get_conections()
+        project_obj = self.admin_isolated_creds.create_tenant(isolated_creds.project_name)
+        self.admin_isolated_creds.create_and_attach_user_to_tenant(project_obj,
+                            isolated_creds.username,isolated_creds.password)
+        proj_inputs = isolated_creds.get_inputs(project_obj)
+        proj_connection = project_obj.get_project_connections()
 
         project_name1 = get_random_name('project2')
         isolated_creds1 = IsolatedCreds(
             self.admin_inputs,
-            project_name=project_name1,
+            project_name1,
             ini_file=self.ini_file,
             logger=self.logger)
-        isolated_creds1.setUp()
-        project_obj1 = isolated_creds1.create_tenant()
-        isolated_creds1.create_and_attach_user_to_tenant()
-        proj_inputs1 = isolated_creds1.get_inputs()
-        proj_connection1 = isolated_creds1.get_conections()
+        project_obj1 = self.admin_isolated_creds.create_tenant(isolated_creds1.project_name)
+        self.admin_isolated_creds.create_and_attach_user_to_tenant(project_obj1,
+                            isolated_creds1.username,isolated_creds1.password)
+        proj_inputs1 = isolated_creds1.get_inputs(project_obj1)
+        proj_connection1 = project_obj1.get_project_connections()
 
         self.logger.info(
             "Update quota for tenant %s to: \n %s by admin tenat " %
@@ -161,6 +177,7 @@ class TestQuota(BaseNeutronTest):
         self.logger.info(
             "Quota for tenant %s still set to : \n %s as expected " %
             (proj_inputs1.project_name, quota_show_dict))
+
 
     @preposttest_wrapper
     def test_quota_update_of_specific_tenant(self):
