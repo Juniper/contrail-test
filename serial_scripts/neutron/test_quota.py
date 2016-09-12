@@ -50,7 +50,7 @@ class TestQuotaUpdate(BaseNeutronTest):
             vn_count=3,
             router_count=10,
             secgrp_count=5,
-            secgep_rule_count=9,
+            secgep_rule_count=8,
             fip_count=10,
             port_count=5)
 
@@ -76,6 +76,7 @@ class TestQuotaUpdate(BaseNeutronTest):
 
         assert result, 'Quota tests failed'
 
+
     @preposttest_wrapper
     def test_update_default_quota_for_new_tenant(self):
         result = True
@@ -91,22 +92,22 @@ class TestQuotaUpdate(BaseNeutronTest):
 
         project_name = 'Project'
         isolated_creds = IsolatedCreds(
-            project_name,
             self.admin_inputs,
+            project_name,
             ini_file=self.ini_file,
             logger=self.logger)
-        isolated_creds.setUp()
-        project_obj = isolated_creds.create_tenant()
-        isolated_creds.create_and_attach_user_to_tenant()
-        proj_inputs = isolated_creds.get_inputs()
-        proj_connection = isolated_creds.get_conections()
+        project_obj = self.admin_isolated_creds.create_tenant(isolated_creds.project_name)
+        self.admin_isolated_creds.create_and_attach_user_to_tenant(project_obj,
+                            isolated_creds.username,isolated_creds.password)
+        proj_inputs = isolated_creds.get_inputs(project_obj)
+        proj_connection = project_obj.get_project_connections()
         resource_dict = self.create_quota_test_resources(
             proj_inputs,
             proj_connection,
             vn_count=3,
             router_count=10,
             secgrp_count=4,
-            secgep_rule_count=9,
+            secgep_rule_count=8,
             fip_count=10,
             port_count=5)
 
@@ -132,7 +133,8 @@ class TestQuotaUpdate(BaseNeutronTest):
                 self.logger.error("Quota limit not followed for %s " % (item))
 
         assert result, 'Quota tests failed'
-
+       
+        
     @preposttest_wrapper
     def test_update_quota_for_admin_tenant(self):
         '''Update quota for admin tenent using neutron quota_update
