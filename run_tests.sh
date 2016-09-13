@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -x
 
 source tools/common.sh
 
@@ -148,7 +149,6 @@ function run_tests_serial {
       return $?
   fi
   ${wrapper} testr run --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $serial_result_xml > /dev/null 2>&1
-  python tools/parse_result.py $serial_result_xml 
 }
 
 function check_test_discovery {
@@ -194,7 +194,11 @@ function run_tests {
           sleep 2
         fi
   fi
-  python tools/parse_result.py $result_xml 
+}
+
+function convert_logs_to_html {
+  python tools/convert_logs_to_html.py logs/
+  echo "Converted log files to html files"
 }
 
 function generate_html {
@@ -206,6 +210,7 @@ function generate_html {
       ant || die "ant job failed!"
   fi
   echo "Generate HTML reports in report/ folder : $REPORT_FILE"
+  convert_logs_to_html
 }
 
 function upload_to_web_server {
@@ -330,7 +335,11 @@ function stop_on_failure {
     return 0
 }
 
-
+function parse_results {
+    python tools/parse_result.py $result_xml $REPORT_DETAILS_FILE
+    python tools/parse_result.py $serial_result_xml $REPORT_DETAILS_FILE
+}
+    
 export PYTHONPATH=$PATH:$PWD/scripts:$PWD/fixtures:$PWD
 apply_patches
 export TEST_DELAY_FACTOR=${TEST_DELAY_FACTOR:-1}
@@ -383,6 +392,7 @@ sleep 2
 
 python tools/report_gen.py $TEST_CONFIG_FILE
 echo "Generated report_details* file: $REPORT_DETAILS_FILE"
+parse_results
 generate_html
 upload_to_web_server
 sleep 2
