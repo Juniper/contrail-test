@@ -275,7 +275,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         return True
     # end test_multi_SC_with_ecmp
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_ecmp_svc_v2_in_network_nat_with_3_instance(self):
         """
@@ -880,7 +880,7 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
         return True
     # end test_three_stage_SC
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_three_stage_v2_SC(self):
         """
@@ -894,8 +894,12 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
         Pass criteria: Ping between the VMs should be successful.
         Maintainer : ganeshahv@juniper.net
         """
-        self.verify_multi_inline_svc(
-            si_list=[('bridge', 1), ('nat', 1)], st_version=2)
+        if self.inputs.orchestrator == 'vcenter':
+            self.verify_multi_inline_svc(
+                si_list=[('in-net', 1), ('nat', 1)], st_version=2)
+        else:
+            self.verify_multi_inline_svc(
+                si_list=[('bridge', 1), ('nat', 1)], st_version=2)
         return True
     # end test_three_stage_v2_SC
 
