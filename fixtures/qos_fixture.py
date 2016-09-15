@@ -300,6 +300,7 @@ class QosConfigFixture(QosBaseFixture):
         self.exp_mapping = kwargs.get('exp_mapping', {})
         self.vmi_uuid = kwargs.get('vmi_uuid', None)
         self.vn_uuid = kwargs.get('vn_uuid', None)
+        self.default_fc_id = kwargs.get('default_fc_id', 0)
 
         self.is_already_present = False
         self.parent_obj = None
@@ -340,7 +341,8 @@ class QosConfigFixture(QosBaseFixture):
                                    dscp_mapping=self.dscp_mapping,
                                    dot1p_mapping=self.dot1p_mapping,
                                    exp_mapping=self.exp_mapping,
-                                   qos_config_type=self.qos_config_type)
+                                   qos_config_type=self.qos_config_type,
+                                   default_fc_id = self.default_fc_id)
         self.qos_config_obj = self.vnc_api_h.qos_config_read(id=self.uuid)
         self._populate_attr()
     # end create
@@ -353,6 +355,13 @@ class QosConfigFixture(QosBaseFixture):
             dscp_mapping=dscp_mapping,
             dot1p_mapping=dot1p_mapping,
             exp_mapping=exp_mapping)
+        self._populate_attr()
+    # end set_entries
+    
+    def set_default_fc(self, default_fc_id=0):
+        ''' Updates the default FC ID associated with this qos config
+        '''
+        self.vnc_h.set_default_fc_id(self.uuid, default_fc_id)
         self._populate_attr()
     # end set_entries
 
@@ -387,7 +396,7 @@ class QosConfigFixture(QosBaseFixture):
         ''' Add one or more code-point to fc mappings to existing qos-config entries
         '''
         self.qos_config_obj = self.vnc_h.add_qos_config_entries(
-            uuid,
+            uuid=self.uuid,
             dscp_mapping=dscp_mapping,
             dot1p_mapping=dot1p_mapping,
             exp_mapping=exp_mapping)
@@ -413,6 +422,7 @@ class QosConfigFixture(QosBaseFixture):
         self.dscp_entries = qos_config_obj.dscp_entries
         self.dot1p_entries = qos_config_obj.vlan_priority_entries
         self.mpls_exp_entries = qos_config_obj.mpls_exp_entries
+        self.default_fc_id = qos_config_obj.default_forwarding_class_id
 
     def read(self):
         try:

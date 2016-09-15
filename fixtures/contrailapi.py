@@ -137,7 +137,7 @@ class ContrailVncApi:
                                 exp=None, queue_uuid=None):
         self._log.info('Updating FC %s: fc_id: %s, dscp: %s, dot1p: %s, exp: %s,'
                          'queue: %s' % (uuid, fc_id, dscp, dot1p, exp, queue_uuid))
-        fc_obj = self.vnc_api_h.forwarding_class_read(id=uuid)
+        fc_obj = self._vnc.forwarding_class_read(id=uuid)
         if fc_id:
             fc_obj.set_forwarding_class_id(fc_id)
         if dscp:
@@ -164,7 +164,8 @@ class ContrailVncApi:
                           dscp_mapping=None,
                           dot1p_mapping=None,
                           exp_mapping=None,
-                          qos_config_type=None):
+                          qos_config_type=None,
+                          default_fc_id=0):
         '''
             dscp_mapping , dot1p_mapping and exp_mapping is a
             dict of code_points as key and ForwardingClass id as value
@@ -181,7 +182,8 @@ class ContrailVncApi:
                                    dscp_entries=dscp_entries,
                                    vlan_priority_entries=dot1p_entries,
                                    mpls_exp_entries=exp_entries,
-                                   qos_config_type=qos_config_type)
+                                   qos_config_type=qos_config_type,
+                                   default_forwarding_class_id=default_fc_id)
         uuid = self._vnc.qos_config_create(qos_config_obj)
         self._log.info('Created QosConfig %s, UUID: %s' % (
                          self._vnc.id_to_fq_name(uuid), uuid))
@@ -208,6 +210,15 @@ class ContrailVncApi:
         self._vnc.qos_config_update(qos_config_obj)
         return qos_config_obj
     # end set_qos_config_entries
+    
+    def set_default_fc_id(self, uuid, default_fc_id=0):
+        ''' Updates the default FC ID associated with this qos config
+        '''
+        self._log.info('Updating qos-config: Default_FC_Id: %d,'
+                          % (default_fc_id))
+        qos_config_obj = self._vnc.qos_config_read(id=uuid)
+        qos_config_obj.set_default_forwarding_class_id(default_fc_id)
+        self._vnc.qos_config_update(qos_config_obj)
 
     def _get_code_point_to_fc_map(self, mapping_dict=None):
         if not mapping_dict:
