@@ -3216,20 +3216,11 @@ class AnalyticsVerification(fixtures.Fixture):
     def search_links(self, link, selected_uve=''):
 #
         result = True
-        _headers = {
-        'Content-type': 'application/json; charset="UTF-8"',
-                   }
-        self.ops_inspect[self.inputs.collector_ips[0]]._drv._auth()
-        _auth = self.ops_inspect[self.inputs.collector_ips[0]]._drv._headers
-        _headers['X-AUTH-TOKEN'] = _auth['X-AUTH-TOKEN']
-
         links = self.parse_links(link)
         dct = {}
         for ln in links:
             try:
-                req = urllib2.Request(ln, headers=_headers)
-                response = urllib2.urlopen(req)
-                data = json.load(response)
+                data = self.ops_inspect[self.inputs.collector_ips[0]].dict_get(url=ln)
                 if selected_uve:
                     if selected_uve in ln:
                         return data
