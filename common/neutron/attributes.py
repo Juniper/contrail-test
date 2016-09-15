@@ -137,7 +137,7 @@ port = {
         'required': 'true',
     },
     'name': {
-        'perm': 'cru',
+        'perm': 'cr',
         'default': 'none',
         'type': 'string',
         'required': 'false',
@@ -161,7 +161,7 @@ port = {
         'required': 'false',
     },
     'fixed_ips': {
-        'perm': 'cru',
+        'perm': 'cr',
         'default': 'generated',
         'type': 'list-fixed-ip-dict',
         'required': 'false',
