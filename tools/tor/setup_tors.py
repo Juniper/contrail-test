@@ -66,6 +66,9 @@ if __name__ == "__main__":
                vcpe_router_obj.setUp()
                vcpe_router_obj.vrouter_ref_set(vrouter_obj.vr)
                vcpe_router_obj.setup_physical_ports()
+               for port in device_dict['ports']:
+                   ifup_cmd = 'ifconfig %s up'%port
+                   init_obj.run_cmd_on_server(device_dict['mgmt_ip'],ifup_cmd )
     # end for
 
 

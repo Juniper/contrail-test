@@ -32,7 +32,7 @@ class IsolatedCreds(fixtures.Fixture):
 
         self.ini_file = ini_file
         self.logger = logger
-        if self.inputs.orchestrator in ['vcenter','vcenter_gateway']:
+        if self.inputs.orchestrator == 'vcenter' or self.inputs.vcenter_gw_setup:
             self.project_name = self.inputs.stack_tenant
             self.username = self.inputs.stack_user
             self.password = self.inputs.stack_password
@@ -103,7 +103,7 @@ class AdminIsolatedCreds(fixtures.Fixture):
 
         self.ini_file = ini_file
         self.logger = logger
-        if self.inputs.orchestrator in ['vcenter','vcenter_gateway']:
+        if self.inputs.orchestrator == 'vcenter' or self.inputs.vcenter_gw_setup:
             self.project_name = self.inputs.stack_tenant
             self.username = self.inputs.stack_user
             self.password = self.inputs.stack_password
@@ -119,7 +119,7 @@ class AdminIsolatedCreds(fixtures.Fixture):
         self.auth = self.connections.auth
 
     def delete_user(self, user):
-        if self.inputs.orchestrator in ['vcenter','vcenter_gateway']:
+        if self.inputs.orchestrator  == 'vcenter' or self.inputs.vcenter_gw_setup:
             return
         if self.inputs.user_isolation:
             self.auth.delete_user(user)
@@ -129,9 +129,11 @@ class AdminIsolatedCreds(fixtures.Fixture):
             username, password):
         project_fixture.set_user_creds(username, password)
         project_name = project_fixture.project_name
-        if self.inputs.orchestrator in ['vcenter','vcenter_gateway'] or \
+        if self.inputs.orchestrator == 'vcenter'  or \
            not self.inputs.tenant_isolation:
             return
+        if self.inputs.vcenter_gw_setup:
+            return 
         if self.inputs.user_isolation:
             self.auth.create_user(username, password)
         self.auth.add_user_to_project(username, project_name)

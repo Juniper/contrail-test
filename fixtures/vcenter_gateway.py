@@ -4,6 +4,8 @@ from lif_fixture import LogicalInterfaceFixture
 from physical_device_fixture import PhysicalDeviceFixture
 from pif_fixture import PhysicalInterfaceFixture
 from port_fixture import PortFixture
+from openstack import OpenstackAuth, OpenstackOrchestrator
+from contrailapi import ContrailVncApi
 
 class VcenterGatewayOrch(VcenterOrchestrator):
 
@@ -37,18 +39,23 @@ class VcenterGatewayOrch(VcenterOrchestrator):
                     mac = vm.macs[net_name]
                 else:
                     mac = None  
-                self.plug_api.create_vmi_lif_and_attach_vmi_to_lif(vm,vn_name=net_name,mac_address=mac,vlan=vlanId)
+                self.plug_api.create_vmi_lif_and_attach_vmi_to_lif(vn_name=net_name,mac_address=mac,vlan=vlanId,vm=vm)
+ 
         for vm in vm_objs:
             vm.bring_up_interfaces(self,vm,intfs=['eth0'])
         for vm in vm_objs:
             vm.get()
+            self.plug_api.create_vmobj_in_api_server(vm)
         return vm_objs
-
+    
+    def create_vn_vmi_for_stp_bpdu_to_be_flooded(self,**kwargs):
+        self.plug_api.create_network_in_contrail_cluster(name='stp_vn',subnet=[{'cidr':'122.121.123.0/24'}],**kwargs)
+        self.plug_api.create_vmi_lif_and_attach_vmi_to_lif(vn_name='stp_vn',mac_address='01:02:03:04:05:06',vlan='0')
 
     def delete_vm(self, vm, **kwargs):
         super(VcenterGatewayOrch, self).delete_vm(vm, **kwargs)
         self.plug_api.delete_vmi_and_detach_vmi_to_lif(vm)
-        #self.plug_api.delete_lif(vm)
+        self.plug_api.delete_vmobj_in_api_server(vm)
 
 class ContrailPlugApi(object):
     def __init__(self, inputs, vnc, logger):
@@ -58,6 +65,7 @@ class ContrailPlugApi(object):
         self._proj_obj = self._get_project_object()
         self._ipam_obj = self._get_ipam_object()
         self._gw = self._process_vcenter_gateway_info()
+        self.vnc_h = ContrailVncApi(self._vnc, self.logger)
 
     def _get_project_object(self):
         return self._vnc.project_read(fq_name = self._inputs.project_fq_name)
@@ -81,18 +89,39 @@ class ContrailPlugApi(object):
     def delete_lif(self,vm):
         self._delete_lif(vm)
 
-    def create_vmi_lif_and_attach_vmi_to_lif(self,vm,vn_name,mac_address,vlan):
+    def create_vmobj_in_api_server(self,vm_obj):
+        vm_uuid = vm_obj.id 
+        try:
+            self.vnc_h.create_virtual_machine(vm_uuid=vm_uuid)
+        except Exception as e:
+            self.logger.error("VM object create in api failed for vm id %s"%(vm_uuid)) 
+            raise
+        vm_api_obj = self._vnc.virtual_machine_read(id=vm_obj.id)
+        for port in vm_obj.ports:
+            port_uuid = port.uuid
+            port_obj = self._vnc.virtual_machine_interface_read(id=port_uuid)
+            port_obj.set_virtual_machine(vm_api_obj)
+            self._vnc.virtual_machine_interface_update(port_obj)
+    
+    def delete_vmobj_in_api_server(self,vm_obj):
+        vm_uuid = vm_obj.id 
+        try:
+            self.vnc_h.delete_virtual_machine(vm_uuid=vm_uuid)
+        except Exception as e:
+            self.logger.error("VM object delete in api failed for vm id %s"%(vm_uuid)) 
+
+    def create_vmi_lif_and_attach_vmi_to_lif(self,vn_name,mac_address,vlan,vm=None):
         vn_obj = self._read_vn(vn_name) 
         vn_id = vn_obj.uuid
         #create vmi
-        port = self._create_vmi(vm,vn_id=vn_id,mac_address=mac_address
-                     )
+        port = self._create_vmi(vn_id=vn_id,mac_address=mac_address,
+                    vm=vm )
         #for each vrouter gateway port , create lif 
         for gw in self._gw:
             for phy_port in gw.ports:
                 lif_name = phy_port + '.' + str(vlan)
                 pif_id = gw.get_port_uuid(phy_port)  
-                self._create_lif(vm,lif_name,vlan,pif_id,vmi_ids = [port.uuid])
+                self._create_lif(lif_name,vlan,pif_id,vm=vm,vmi_ids = [port.uuid])
 
     def _create_vn(self, vn_name, vn_subnet):
 
@@ -124,20 +153,21 @@ class ContrailPlugApi(object):
             pass
         return vn_obj
 
-    def _create_lif(self,vm,name,vlan,pif_id,vmi_ids=[]):
+    def _create_lif(self,name,vlan,pif_id,vmi_ids=[],vm=None):
         lif_obj = LogicalInterfaceFixture(
         name, pif_id=pif_id, vlan_id=vlan,vmi_ids=vmi_ids)
         lif_obj.setUp()
-        vm.lifs.append(lif_obj)
+        if vm:
+            vm.lifs.append(lif_obj)
 
     def _delete_lif(self,vm):
         for lif in vm.lifs:
             lif.cleanUp()
 
-    def _create_vmi(self,vm,vn_id,mac_address,
+    def _create_vmi(self,vn_id,mac_address,
                      fixed_ips=[],security_groups=[],
                      extra_dhcp_opts=[],
-                     project_obj=None):
+                     project_obj=None,vm=None):
         port = PortFixture(vn_id,
                                 api_type='contrail',
                                 mac_address=mac_address,
@@ -146,7 +176,8 @@ class ContrailPlugApi(object):
                                 project_obj=self._proj_obj,
                                 security_groups=security_groups)
         port.setUp()
-        vm.ports.append(port)
+        if vm:
+            vm.ports.append(port)
         return port
 
     def _delete_vmi(self,vm):

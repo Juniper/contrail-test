@@ -75,8 +75,8 @@ class ContrailConnections():
                                             vnc=self.vnc_lib,
                                             inputs=self.inputs,
                                             logger=self.logger)
-        elif self.inputs.orchestrator == 'vcenter_gateway': # vcenter_gateway
-            self.orch = VcenterGatewayOrch(user=self.inputs.vcenter_username,
+        if self.inputs.vcenter_gw_setup: # vcenter_gateway
+            self.slave_orch = VcenterGatewayOrch(user=self.inputs.vcenter_username,
                                             pwd=self.inputs.vcenter_password,
                                             host=self.inputs.vcenter_server,
                                             port=int(self.inputs.vcenter_port),

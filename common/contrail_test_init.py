@@ -29,6 +29,7 @@ from common import log_orig as contrail_logging
 import subprocess
 import ast
 from collections import namedtuple
+import random
 
 # monkey patch subprocess.check_output cos its not supported in 2.6
 if "check_output" not in dir(subprocess):  # duck punch it in!
@@ -471,6 +472,7 @@ class TestInputs(object):
             self.physical_routers_data = json_data['physical_routers']
         self._process_tor_data()
         self._process_for_vcenter_gateway()
+        self._process_other_orchestrators(json_data)
 
         if 'esxi_vms' in json_data:
             self.esxi_vm_ips = json_data['esxi_vms']
@@ -490,9 +492,35 @@ class TestInputs(object):
         for (device_name, device_dict) in self.physical_routers_data.iteritems():
             if ((device_dict.has_key('type')) and (device_dict['type'] in 'vcenter_gateway')):
                self.vcenter_gateway.append(device_dict)
-                
-        
+    #end _process_for_vcenter_gateway
 
+    def _process_other_orchestrators(self,json_data):
+        self.orchs = []
+        #Depending on these 2 below flags, the tenant would be set to vCenter
+        self.vcenter_gw_setup = False
+        self.vcenter_present_in_this_setup = False
+        if 'other_orchestrators' in json_data:
+            for (orch_name, orch_dict) in json_data['other_orchestrators'].iteritems():
+                orch = {}
+                orch['name'] = orch_name
+                orch['type'] = orch_dict['type']
+                if orch['type'] == 'vcenter':
+                    orch['vcenter_server'] = orch_dict['vcenter_server']
+                    self.vcenter_present_in_this_setup = True
+                if 'gateway_vrouters' in orch_dict:
+                    orch['gateway_vrouters'] = orch_dict['gateway_vrouters'] 
+                    self.vcenter_gw_setup = True
+                if 'controller_refs' in orch_dict:
+                    orch['controller_refs'] = orch_dict['controller_refs'] 
+                self.orchs.append(orch)
+    # end _process_other_orchestrators  
+
+    def get_vcenter_gateway(self): 
+        for orch in self.orchs:
+            if orch['type'] == 'vcenter':
+                return random.choice(orch['gateway_vrouters'])
+              
+            
     def _process_tor_data(self):
         for (device_name, device_dict) in self.physical_routers_data.iteritems():
             device_dict['tor_agents'] = []
@@ -626,7 +654,7 @@ class TestInputs(object):
     def get_mysql_token(self):
         if self.mysql_token:
             return self.mysql_token
-        if self.orchestrator == 'vcenter':
+        if self.orchestrator == 'vcenter' or self.vcenter_present_in_this_setup:
             return None
         if self.devstack:
             return 'contrail123'
