@@ -325,6 +325,7 @@ class ContrailVncApi:
         if vm_uuid:
             vm.set_uuid(vm_uuid)
         self._vnc.virtual_machine_create(vm)
+        return vm
     #end create_virtual_machine
     
     def delete_virtual_machine(self,vm_uuid):
