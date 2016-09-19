@@ -1,0 +1,10 @@
+Approved+1: opencontrail-admin <ci-admin@opencontrail.org>
+Verified+2: Zuul <zuul@lists.opencontrail.org>
+Approved+1: Nagabhushana R <bhushana@juniper.net>
+Code-Review+1: Ankit Jain <ankitja@juniper.net>
+Code-Review+2: Sudheendra Rao <sudheendra@juniper.net>
+Submitted-by: Zuul <zuul@lists.opencontrail.org>
+Submitted-at: Sun, 18 Sep 2016 23:53:44 -0700
+Reviewed-on: https://review.opencontrail.org/24249
+Project: Juniper/contrail-test
+Branch: refs/heads/R3.0
