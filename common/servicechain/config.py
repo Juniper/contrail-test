@@ -30,44 +30,44 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
 
     def config_st_si(self, st_name, si_name_prefix, si_count,
                      svc_scaling=False, max_inst=1, domain='default-domain', project='admin', mgmt_vn=None, left_vn=None,
-                     right_vn=None, svc_type='firewall', svc_mode='transparent', flavor='contrail_flavor_2cpu', static_route=['None', 'None', 'None'], ordered_interfaces=True, svc_img_name="vsrx", st_version=1):
-        if svc_scaling == True:
-            if svc_mode == 'in-network-nat':
-                if_list = [['management', False, False],
-                           ['left', True, False], ['right', False, False]]
-            else:
-                if_list = [['management', False, False],
-                           ['left', True, False], ['right', True, False]]
-        else:
-            if_list = [['management', False, False],
-                       ['left', False, False], ['right', False, False]]
+                     right_vn=None, svc_type='firewall', svc_mode='transparent', flavor='contrail_flavor_2cpu', static_route=[None, None, None], ordered_interfaces=True, svc_img_name="vsrx", st_version=1):
 
-#        svc_img_name = "vsrx"
-        if left_vn and right_vn:
-            # In network/routed mode
-            if svc_mode == 'in-network':
-                svc_img_name = 'ubuntu-in-net'
-                if svc_scaling == True:
-                    if_list = [['left', True, False], ['right', True, False]]
-                else:
-                    if_list = [['left', False, False], ['right', False, False]]
-        elif left_vn:
-            # Analyzer mode
-            if svc_img_name != "analyzer":
-                svc_img_name = svc_img_name
-            else:
-                svc_img_name = "analyzer"
-            if_list = [['left', False, False]]
-            if svc_mode == 'transparent':
-                # No need to pass left vn for transparent mode.
-                left_vn = None
-        else:
-            # Transperent/bridge mode
-            svc_img_name = svc_img_name
+        svc_type_props = {
+            'firewall': {	'in-network-nat': 'tiny-nat-fw',
+                          'in-network': 'tiny-in-net',
+                          'transparent': 'tiny-trans-fw',
+                          },
+            'analyzer': {'analyzer': 'analyzer'}
+        },
+        svc_mode_props = {
+            'in-network-nat':   {'left': {'shared': True},
+                                 'right': {'shared': False},
+                                 },
+            'in-network':       {'left': {'shared': True},
+                                 'right': {'shared': True}
+                                 },
+            'transparent':      {'left': {'shared': True},
+                                 'right': {'shared': True}
+                                 }
+        }
 
-        for entry in static_route:
-            if entry != 'None':
-                if_list[static_route.index(entry)][2] = True
+        mgmt_props = ['management', False, False]
+        left_scaling = False
+        right_scaling = False
+        if svc_scaling:
+            left_scaling = True
+            right_scaling = svc_mode_props[svc_mode]['right']['shared']
+        image_name = svc_img_name or svc_type_props[svc_type][svc_mode]
+        if_list = [mgmt_props,
+                   ['left', left_scaling, bool(static_route[1])],
+                   ['right', right_scaling, bool(static_route[2])],
+                    ]
+        if svc_type == 'analyzer':
+            left_scaling=svc_mode_props[svc_mode]['left']['shared']
+            if_list=[['left', left_scaling, bool(static_route[1])]]
+
+        self.logger.debug('The chosen SI is a %s in %s mode,using %s image with the following interface list %s'%(svc_type, svc_mode, image_name, if_list))
+
         # create service template
         st_fixture = self.useFixture(SvcTemplateFixture(
             connections=self.connections, inputs=self.inputs, domain_name=domain,
