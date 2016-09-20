@@ -47,39 +47,42 @@ class Md5Base(test_v1.BaseTestCase_v1, VerifySecGroup, ConfigPolicy):
         if is_mx_present:   
             if self.inputs.ext_routers:
                 if self.inputs.use_devicemanager_for_md5:
-                    router_params = self.inputs.physical_routers_data.values()[0]
-                    self.phy_router_fixture = self.useFixture(PhysicalRouterFixture(
-                        router_params['name'], router_params['mgmt_ip'],
-                        model=router_params['model'],
-                        vendor=router_params['vendor'],
-                        asn=router_params['asn'],
-                        ssh_username=router_params['ssh_username'],
-                        ssh_password=router_params['ssh_password'],
-                        mgmt_ip=router_params['mgmt_ip'],
-                        connections=self.connections))
+                    for i in range(len(self.inputs.ext_routers)):
+                        router_params = self.inputs.physical_routers_data.values()[i]
+                        self.phy_router_fixture = self.useFixture(PhysicalRouterFixture(
+                            router_params['name'], router_params['mgmt_ip'],
+                            model=router_params['model'],
+                            vendor=router_params['vendor'],
+                            asn=router_params['asn'],
+                            ssh_username=router_params['ssh_username'],
+                            ssh_password=router_params['ssh_password'],
+                            mgmt_ip=router_params['mgmt_ip'],
+                            connections=self.connections))
         else:
             if self.inputs.ext_routers:
-                router_params = self.inputs.physical_routers_data.values()[0]
-                cmd = []
-                cmd.append('set groups md5_tests routing-options router-id %s' % router_params['mgmt_ip'])
-                cmd.append('set groups md5_tests routing-options route-distinguisher-id %s' % router_params['mgmt_ip'])
-                cmd.append('set groups md5_tests routing-options autonomous-system %s' % router_params['asn'])
-                cmd.append('set groups md5_tests protocols bgp group md5_tests type internal')
-                cmd.append('set groups md5_tests protocols bgp group md5_tests multihop')
-                cmd.append('set groups md5_tests protocols bgp group md5_tests local-address %s' % router_params['mgmt_ip'])
-                cmd.append('set groups md5_tests protocols bgp group md5_tests hold-time 90')
-                cmd.append('set groups md5_tests protocols bgp group md5_tests keep all')
-                cmd.append('set groups md5_tests protocols bgp group md5_tests family inet-vpn unicast')
-                cmd.append('set groups md5_tests protocols bgp group md5_tests family inet6-vpn unicast')
-                cmd.append('set groups md5_tests protocols bgp group md5_tests family evpn signaling')
-                cmd.append('set groups md5_tests protocols bgp group md5_tests family route-target')
-                cmd.append('set groups md5_tests protocols bgp group md5_tests local-as %s' % router_params['asn'])
-                for node in self.inputs.bgp_control_ips:
-                    cmd.append('set groups md5_tests protocols bgp group md5_tests neighbor %s peer-as %s' % (node, router_params['asn']))
-                cmd.append('set apply-groups md5_tests')
-                mx_handle = NetconfConnection(host = router_params['mgmt_ip'])
-                mx_handle.connect()
-                cli_output = mx_handle.config(stmts = cmd, timeout = 120) 
+                for i in range(len(self.inputs.ext_routers)):
+                    router_params = self.inputs.physical_routers_data.values()[i]
+                    cmd = []
+                    cmd.append('set groups md5_tests routing-options router-id %s' % router_params['mgmt_ip'])
+                    cmd.append('set groups md5_tests routing-options route-distinguisher-id %s' % router_params['mgmt_ip'])
+                    cmd.append('set groups md5_tests routing-options autonomous-system %s' % router_params['asn'])
+                    cmd.append('set groups md5_tests protocols bgp group md5_tests type internal')
+                    cmd.append('set groups md5_tests protocols bgp group md5_tests multihop')
+                    cmd.append('set groups md5_tests protocols bgp group md5_tests local-address %s' % router_params['mgmt_ip'])
+                    cmd.append('set groups md5_tests protocols bgp group md5_tests hold-time 90')
+                    cmd.append('set groups md5_tests protocols bgp group md5_tests keep all')
+                    cmd.append('set groups md5_tests protocols bgp group md5_tests family inet-vpn unicast')
+                    cmd.append('set groups md5_tests protocols bgp group md5_tests family inet6-vpn unicast')
+                    cmd.append('set groups md5_tests protocols bgp group md5_tests family evpn signaling')
+                    cmd.append('set groups md5_tests protocols bgp group md5_tests family route-target')
+                    cmd.append('set groups md5_tests protocols bgp group md5_tests local-as %s' % router_params['asn'])
+                    for node in self.inputs.bgp_control_ips:
+                        cmd.append('set groups md5_tests protocols bgp group md5_tests neighbor %s peer-as %s' % (node, router_params['asn']))
+                    cmd.append('set apply-groups md5_tests')
+                    mx_handle = NetconfConnection(host = router_params['mgmt_ip'])
+                    mx_handle.connect()
+                    cli_output = mx_handle.config(stmts = cmd, timeout = 120) 
+
         vn61_name = "test_vnv6sr"
         vn61_net = ['2001::101:0/120']
         #vn1_fixture = self.config_vn(vn1_name, vn1_net)
