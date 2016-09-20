@@ -224,6 +224,7 @@ class TestEvpnCasesVxlan(base.BaseEvpnTest, VerifyEvpnCases):
     #    '''
     #    return self.verify_change_of_l2_vn_forwarding_mode(encap='vxlan')
 
+    @test.attr(type=[' ci_sanity '])
     @preposttest_wrapper
     def test_with_vxlan_encap_change_of_l2l3_vn_forwarding_mode(self):
         '''Test to verify change of vn forwarding mode from l2l3 to l2 with vxlan  encap
