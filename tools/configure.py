@@ -198,7 +198,10 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
             host_dict['name'] = esxi
             host_dict['username'] = esxi_hosts[esxi]['username']
             host_dict['password'] = esxi_hosts[esxi]['password']
-            host_dict['contrail_vm'] = esxi_hosts[esxi]['contrail_vm']['host']
+            #Its used for vcenter only mode provosioning for contrail-vm
+            #Its not needed for vcenter_gateway mode, hence might not be there in testbed.py
+            if 'contrail_vm' in esxi_hosts[esxi]:
+                host_dict['contrail_vm'] = esxi_hosts[esxi]['contrail_vm']['host']
             host_dict['roles'] = []
             sanity_testbed_dict['hosts'].append(host_dict)
             sanity_testbed_dict['esxi_vms'].append(host_dict)
@@ -215,8 +218,20 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
             host_dict['auth'] = vcenter_servers[vcenter]['auth']
             host_dict['cluster'] = vcenter_servers[vcenter]['cluster']
             host_dict['dv_switch'] = vcenter_servers[vcenter]['dv_switch']['dv_switch_name']
-            host_dict['dv_switch'] = vcenter_servers[vcenter]['dv_port_group']['dv_portgroup_name']
+            #Mostly we do not use the below info for vcenter sanity tests.
+            #Its used for vcenter only mode provosioning for contrail-vm
+            #Its not needed for vcenter_gateway mode, hence might not be there in testbed.py
+            if 'dv_port_group' in vcenter_servers[vcenter]:
+                host_dict['dv_port_group'] = vcenter_servers[vcenter]['dv_port_group']['dv_portgroup_name']
             sanity_testbed_dict['vcenter_servers'].append(host_dict)
+
+    #get other orchestrators (vcenter etc) info if any 
+    slave_orch = None  
+    if env.has_key('other_orchestrators'):
+        sanity_testbed_dict['other_orchestrators'] = env.other_orchestrators
+        for k,v in env.other_orchestrators.items():
+            if v['type'] == 'vcenter':
+                slave_orch = 'vcenter'
 
     # get host ipmi list
     if env.has_key('hosts_ipmi'):
@@ -311,7 +326,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     pubkey_filename = env.get('pubkey_filename', '')
 
     vcenter_dc = ''
-    if orch == 'vcenter':
+    if orch == 'vcenter' or slave_orch== 'vcenter':
         public_tenant_name='vCenter'
 
     if env.has_key('vcenter_servers'):
