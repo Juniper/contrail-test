@@ -180,7 +180,7 @@ class VerifySvcFirewall(VerifySvcMirror):
 
     def verify_svc_transparent_datapath(
             self, si_count=1, svc_scaling=False, max_inst=1,
-            flavor='contrail_flavor_2cpu', proto='any', src_ports=[0, -1],
+            flavor='m1.medium', proto='any', src_ports=[0, -1],
             dst_ports=[0, -1], svc_img_name='vsrx-bridge', ci=False, st_version=1):
         """Validate the service chaining datapath"""
         self.mgmt_vn_name = get_random_name("mgmt_vn")
@@ -254,8 +254,8 @@ class VerifySvcFirewall(VerifySvcMirror):
 
     def verify_svc_in_network_datapath(self, si_count=1, svc_scaling=False,
                                        max_inst=1, svc_mode='in-network-nat',
-                                       flavor='contrail_flavor_2cpu',
-                                       static_route=['None', 'None', 'None'],
+                                       flavor='m1.medium',
+                                       static_route=[None, None, None],
                                        ordered_interfaces=True,
                                        svc_img_name='vsrx',
                                        vn1_subnets=None,
@@ -336,7 +336,7 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.vm2_fixture.vm_ip), errmsg
         return True
 
-    def verify_multi_inline_svc(self, si_list=[('bridge', 1), ('in-net', 1), ('nat', 1)], flavor='contrail_flavor_2cpu', ordered_interfaces=True, vn1_subnets=None, vn2_subnets=None, st_version=1):
+    def verify_multi_inline_svc(self, si_list=[('bridge', 1), ('in-net', 1), ('nat', 1)], flavor='m1.medium', ordered_interfaces=True, vn1_subnets=None, vn2_subnets=None, st_version=1):
         """Validate in-line multi service chaining in network  datapath"""
 
         self.mgmt_vn_name = get_random_name("mgmt_vn")
@@ -376,11 +376,13 @@ class VerifySvcFirewall(VerifySvcMirror):
             if si[0] == 'nat':
                 svc_mode = 'in-network-nat'
                 svc_img_name = 'tiny_nat_fw'
-                (mgmt_vn, left_vn, right_vn) = (None, self.vn1_fixture.vn_fq_name, self.vn2_fixture.vn_fq_name)
+                (mgmt_vn, left_vn, right_vn) = (
+                    None, self.vn1_fixture.vn_fq_name, self.vn2_fixture.vn_fq_name)
             elif si[0] == 'in-net':
                 svc_mode = 'in-network'
                 svc_img_name = 'ubuntu-in-net'
-		(mgmt_vn, left_vn, right_vn) = (None, self.vn1_fixture.vn_fq_name, self.vn2_fixture.vn_fq_name)
+                (mgmt_vn, left_vn, right_vn) = (
+                    None, self.vn1_fixture.vn_fq_name, self.vn2_fixture.vn_fq_name)
             else:
                 svc_mode = 'transparent'
                 svc_img_name = 'tiny_trans_fw'

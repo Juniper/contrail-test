@@ -217,7 +217,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.logger.debug("SI %s has Port Tuple:  %s", self.si_name, self.pts)
         return True, None
 
-    @retry(delay=5, tries=5)
+    @retry(delay=5, tries=10)
     def verify_svm(self):
         """check Service VM"""
         # Get the pt_refs in case of v2 and vm_refs in case of v1
@@ -258,7 +258,12 @@ class SvcInstanceFixture(fixtures.Fixture):
             self.logger.warn(errmsg)
             return (False, errmsg)
 
-        self.logger.debug("SI %s has Service VM", self.si_name)
+        if self.svc_template.service_template_properties.version == 1:
+            if len(self.vm_refs) != self.max_inst:
+                errmsg = "SI %s does not have all Service VMs" % self.si_name
+                self.logger.warn(errmsg)
+                return (False, errmsg)
+
         for svm_id in self.svm_ids:
             cs_svm = self.api_s_inspect.get_cs_vm(vm_id=svm_id, refresh=True)
             if not cs_svm:
@@ -498,7 +503,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         else:
             return True
 
-    @retry(delay=2, tries=30)
+    @retry(delay=2, tries=35)
     def verify_svn_not_in_api_server(self):
         if self.si_exists():
             self.logger.info(
