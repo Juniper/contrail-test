@@ -150,7 +150,7 @@ class BaseResource(fixtures.Fixture, ConfigSvcChain, VerifySvcChain, BaseTestLba
 
         self.action_list = []
         self.if_list = [['management', False], ['left', True], ['right', True]]
-        self.st_name = 'in_net_svc_template_1'
+        self.st_name = 'test_in_net_svc_template_1'
         si_prefix = 'in_net_svc_instance_'
         self.policy_name = 'policy_in_network'
 
