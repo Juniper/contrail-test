@@ -82,7 +82,7 @@ class VMFixture(fixtures.Fixture):
         if os.environ.has_key('ci_image'):
             image_name = os.environ.get('ci_image')
         self.image_name = image_name
-        self.flavor = self.nova_h.get_default_image_flavor(self.image_name) or flavor
+        self.flavor = self.orch.get_default_image_flavor(self.image_name) or flavor
         self.project_name = project_name or self.inputs.stack_tenant
         self.vm_name = vm_name or get_random_name(self.project_name)
         self.vm_id = uuid
