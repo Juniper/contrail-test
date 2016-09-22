@@ -52,8 +52,8 @@ class TestPorts(BaseNeutronTest):
                                      port_ids=[port_obj['id']])
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
                                      image_name='cirros-0.3.0-x86_64-uec')
-        vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
         if not vm2_fixture.ping_with_certainty(vm1_fixture.vm_ip):
             self.logger.error('Ping to a attached port %s failed' %
                               (vm1_fixture.vm_ip))
@@ -122,8 +122,8 @@ class TestPorts(BaseNeutronTest):
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
                                      image_name='cirros-0.3.0-x86_64-uec',
                                      port_ids=[port2_obj['id']])
-        vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
         self.assertEqual(
             vm1_fixture.vm_ip,
             port1_obj['fixed_ips'][0]['ip_address'],
@@ -172,8 +172,8 @@ class TestPorts(BaseNeutronTest):
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
                                      image_name='cirros-0.3.0-x86_64-uec',
                                      port_ids=[port2_obj['id']])
-        vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
         self.assertEqual(vm1_fixture.vm_ip,
                          vn1_subnet1_ip, 'VM IP and Port IP Mismatch')
         self.assertEqual(vm2_fixture.vm_ip,
@@ -213,7 +213,7 @@ class TestPorts(BaseNeutronTest):
         test_vm_fixture = self.create_vm(vn1_fixture, test_vm_name,
                                          image_name='cirros-0.3.0-x86_64-uec')
         vm1_fixture.verify_on_setup()
-        test_vm_fixture.wait_till_vm_is_up()
+        assert test_vm_fixture.wait_till_vm_is_up()
         subnet_list = [vn1_subnet1_ip, vn1_subnet2_ip]
         subnet_list2 = [vn1_subnet1_ip2, vn1_subnet2_ip2]
         assert set(vm1_fixture.vm_ips) == set(
@@ -238,7 +238,7 @@ class TestPorts(BaseNeutronTest):
                                      fixed_ips=[{'subnet_id': vn1_subnet1_id,
                                                  'ip_address': vn1_subnet1_ip2}, {'subnet_id': vn1_subnet2_id, 'ip_address': vn1_subnet2_ip2}])
         vm1_fixture.interface_attach(port_id=port1_obj['id'])
-        vm1_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
        # Create alias on the VM to respond to pings
         for subnet in subnet_list2:
             output = vm1_fixture.run_cmd_on_vm(['sudo ifconfig eth0:' + unicode(
@@ -278,8 +278,8 @@ class TestPorts(BaseNeutronTest):
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
                                      image_name='cirros-0.3.0-x86_64-uec',
                                      port_ids=[port2_obj['id']])
-        vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
         vm1_tap_intf = vm1_fixture.tap_intf[vm1_fixture.vn_fq_names[0]]
         vm2_tap_intf = vm2_fixture.tap_intf[vm2_fixture.vn_fq_names[0]]
         assert vm1_tap_intf['mac_addr'] == vm1_mac, ''\
@@ -470,8 +470,8 @@ class TestPorts(BaseNeutronTest):
                                      port_ids=[port_obj['id']])
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
                                      image_name='cirros-0.3.0-x86_64-uec')
-        vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
         assert vm2_fixture.ping_with_certainty(vm1_fixture.vm_ip)
         port_dict = {'admin_state_up': False}
         port_rsp = self.quantum_h.update_port(port_obj['id'], port_dict)
@@ -613,8 +613,8 @@ class TestPorts(BaseNeutronTest):
         vn1_vm1_fixture = self.vn1_vm1_fixture
         vn1_vm2_fixture = self.vn1_vm2_fixture
 
-        vn1_vm1_fixture.wait_till_vm_is_up()
-        vn1_vm2_fixture.wait_till_vm_is_up()
+        assert vn1_vm1_fixture.wait_till_vm_is_up()
+        assert vn1_vm2_fixture.wait_till_vm_is_up()
 
         vm1_name = self.vn1_vm1_name
         vn1_name = self.vn1_name
@@ -762,8 +762,8 @@ class TestPorts(BaseNeutronTest):
         vm_test_fixture = self.create_vm(vn1_fixture, vm_test_name,
                                          image_name='ubuntu-traffic')
         self.config_aap(lvn_port_obj1, lvn_port_obj2, vIP, vsrx=True)
-        vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
         self.logger.info('We will configure VRRP on the two vSRX')
         op1 = self.config_vrrp_on_vsrx(vm1_fixture, vIP, '200')
         op2 = self.config_vrrp_on_vsrx(vm2_fixture, vIP, '100')
@@ -771,7 +771,7 @@ class TestPorts(BaseNeutronTest):
         self.logger.info('Will wait for both the vSRXs to come up')
         vm1_fixture.wait_for_ssh_on_vm()
         vm2_fixture.wait_for_ssh_on_vm()
-        vm_test_fixture.wait_till_vm_is_up()
+        assert vm_test_fixture.wait_till_vm_is_up()
         assert self.vrrp_mas_chk(vm1_fixture, vn1_fixture, vIP, vsrx=True)
         assert self.verify_vrrp_action(
             vm_test_fixture, vm1_fixture, vIP, vsrx=True)
@@ -860,7 +860,7 @@ class TestPorts(BaseNeutronTest):
         vm1_fixture = self.create_vm(vn1_fixture, vm1_name,
                                      image_name='ubuntu-traffic',
                                      port_ids=[port1_obj['id']])
-        vm1_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
         self.logger.info('get tap_interface of vm %s' %vm1_fixture.vm_name)
         vm_tap_intf=vm1_fixture.get_tap_intf_of_vm()
         assert vm_tap_intf,'Tap interface not present for %s'  %vm1_fixture.vm_name
