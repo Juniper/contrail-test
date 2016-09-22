@@ -415,8 +415,11 @@ class WebuiTest:
             flavors_list = self.browser.find_elements_by_xpath(
                 "//span[@class = 'select2-match']/..")
             for flavor in flavors_list:
-                flavor_txt = re.search(r'(m1.\S+)', flavor.text)
-                flavor_text = flavor_txt.group(1)
+                flavor_txt = re.search(r'(\S+)', flavor.text)
+                flavor_text = flavor_txt.group()
+                if 'm1' in flavor_text:
+                    flavor_txt = re.search(r'(m1.(\S+))', flavor_text)
+                    flavor_text = flavor_txt.group(2)
                 if flavor_text.find(fixture.flavor) != -1:
                     flavor.click()
                     break
