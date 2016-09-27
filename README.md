@@ -13,13 +13,13 @@ limitations under the License.
 
 ## Overview
 
-The Contrail Test repository contains the test code for validating the Contrail infrastructure
-The code is organized into ``fixtures`` , ``scripts`` and ``serial_scripts``
+The Contrail Test repository contains the test code for validating the Contrail infrastructure.
+The code is organized into ``fixtures`` , ``scripts`` and ``serial_scripts``.
 
-Testcases under ``scripts`` folder are independent of each other and can be run in parallel
-Testcases under ``serial_scripts`` can have cluster-wide impact and MUST be run only one at a time
+Testcases under ``scripts`` folder are independent of each other and can be run in parallel.
+Testcases under ``serial_scripts`` can have cluster-wide impact and MUST be run only one at a time.
 
-``run_tests.sh`` lets you run these tests as well. Take a look at [ this ] (https://github.com/Juniper/contrail-test/wiki/Running-Tests)
+``run_tests.sh`` lets you run these tests as well. Take a look at [ this ](https://github.com/Juniper/contrail-test/wiki/Running-Tests).
 
 ### fixtures
 
@@ -51,12 +51,12 @@ Checkout the corresponding branch that the cluster is running ("master","R1.05",
     $> cd contrail-test
     $> git checkout R1.05
 ```
-Populate the path of this test repo in ``env.test_repo_dir`` in testbed.py (typically /opt/contrail/utils/fabfile/testbeds/testbed.py) 
-Refer to ``sanity_params.ini.sample`` for more options. 
-Populate the path to the images in ``configs/images.cfg`` 
+Populate the path of this test repo in ``env.test_repo_dir`` in testbed.py (typically /opt/contrail/utils/fabfile/testbeds/testbed.py). 
+Refer to ``sanity_params.ini.sample`` for more options.
+Populate the path to the images in ``configs/images.cfg``.
 
 ##Running Tests
-Run the 'run_sanity' task in fab 
+Run the 'run_sanity' task in fab:
 ```
     $> cd /opt/contrail/utils
     $> # Run Sanity test
@@ -65,29 +65,33 @@ Run the 'run_sanity' task in fab
     $> fab run_sanity:ci_sanity
 
 ```
-Run ``fab run_sanity:help`` to view help on running individual tests and other regressions
+Run ``fab run_sanity:help`` to view help on running individual tests and other regressions.
 
 The run_sanity task installs the python modules required for running tests, autogenerates sanity_params.ini and sanity_testbed.json and sources them for the tests. 
-``sanity_testbed.json`` contails the Contrail cluster topology information
+``sanity_testbed.json`` contains the Contrail cluster topology information.
 
-To setup fab and learn about testbed.py, please refer to [Contrail Documentation ] (https://www.juniper.net/techpubs/en_US/contrail1.0/topics/task/installation/testbed-file-vnc.html)
+To setup fab and learn about testbed.py, please refer to [Contrail Documentation ] (https://www.juniper.net/techpubs/en_US/contrail1.0/topics/task/installation/testbed-file-vnc.html).
 
-The log files and any html report of the entire run will be created in contrail-test/logs folder
+The log files and any html report of the entire run will be created in contrail-test/logs folder.
 
-For more , refer [ here ] (https://github.com/Juniper/contrail-test/wiki/Running-Tests)
+You can find more detailed information of the [WIKI page] (https://github.com/Juniper/contrail-test/wiki/Running-Tests).
 
 ### Usage:
 ```
   fab run_sanity
   fab run_sanity:ci_sanity
 ```
+
 ### Filing Bugs
-Use http://bugs.launchpad.net/juniperopenstack
+Use launchpad [http://bugs.launchpad.net/juniperopenstack](http://bugs.launchpad.net/juniperopenstack) to describe new bugs.
+
 It will be useful to include the test run log file. 
-For post-analysis of a cluster, a fab task ``attach_logs_cores`` can collect the logs and cassandra logs 
+
+For post-analysis of a cluster, a fab task ``attach_logs_cores`` can collect the logs and cassandra logs.
+
 ### Queries
 Mail to
-dev@lists.opencontrail.org
-users@lists.opencontrail.org
+dev@lists.opencontrail.org and
+users@lists.opencontrail.org.
 ### IRC 
-opencontrail on freenode.net
+\#opencontrail on freenode.net
