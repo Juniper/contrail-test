@@ -1,3 +1,5 @@
+import traffic_tests
+import sys
 import os
 import fixtures
 import testtools
@@ -7,6 +9,7 @@ from vn_test import *
 from floating_ip import *
 from quantum_test import *
 from vnc_api_test import *
+from vnc_api import vnc_api as my_vnc_api
 from nova_test import *
 from vm_test import *
 from tcutils.wrappers import preposttest_wrapper
@@ -14,12 +17,17 @@ from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from common.servicechain.firewall.verify import VerifySvcFirewall
 from common.ecmp.ecmp_traffic import ECMPTraffic
 from common.ecmp.ecmp_verify import ECMPVerify
+sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
+from traffic.core.stream import Stream
+from traffic.core.profile import create, ContinuousProfile, ContinuousSportRange
+from traffic.core.helpers import Host
+from traffic.core.helpers import Sender, Receiver
 from fabric.state import connections as fab_connections
 from common.ecmp.ecmp_test_resource import ECMPSolnSetup
 from base import BaseECMPRestartTest
-import test 
-from common import isolated_creds                                                                                                                                                                              
+from common import isolated_creds
 import inspect
+import test 
 
 class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
     
@@ -220,3 +228,100 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
         self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip)
         return True
     # end test_ecmp_svc_in_network_with_3_instance_reboot_nodes
+  
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_interface_static_table(self):
+
+        self.verify_svc_in_network_datapath(si_count=1, svc_scaling=True, max_inst=3, svc_mode='in-network-nat')
+        svm_ids = self.si_fixtures[0].svm_ids
+        self.get_rt_info_tap_intf_list(
+            self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
+        dst_vm_list = [self.vm2_fixture]
+        self.verify_traffic_flow(
+            self.vm1_fixture, [self.vm2_fixture], self.si_fixtures[0], self.vn1_fixture)
+
+        key, vm_uuid = self.vm1_fixture.get_vmi_ids().popitem()
+        vm_uuid = str(vm_uuid)
+        add_static_route_cmd = 'python provision_static_route.py --prefix ' + self.vm2_fixture.vm_ip + '/32' + ' --virtual_machine_interface_id ' + vm_uuid + \
+            ' --tenant_name ' + self.inputs.project_name + ' --api_server_ip 127.0.0.1 --api_server_port 8082 --oper add --route_table_name my_route_table' + \
+            ' --user ' + "admin" + ' --password ' + "contrail123"
+        with settings(
+            host_string='%s@%s' % (
+                self.inputs.username, self.inputs.cfgm_ips[0]),
+                password=self.inputs.password, warn_only=True, abort_on_prompts=False, debug=True):
+
+            status = run('cd /opt/contrail/utils;' + add_static_route_cmd)
+            self.logger.debug("%s" % status)
+            m = re.search(r'Creating Route table', status)
+            assert m, 'Failed in Creating Route table'
+
+        (domain, project, vn) = self.vn1_fixture.vn_fq_name.split(':')
+        inspect_h = self.agent_inspect[self.vm1_fixture.vm_node_ip]
+        agent_vrf_objs = inspect_h.get_vna_vrf_objs(domain, project, vn)
+        agent_vrf_obj = self.vm1_fixture.get_matching_vrf(
+                agent_vrf_objs['vrf_list'], self.vn1_fixture.vrf_name)
+        vn_vrf_id = agent_vrf_obj['ucindex']
+        next_hops = inspect_h.get_vna_active_route(
+                     vrf_id=vn_vrf_id, ip=self.vm2_fixture.vm_ip, prefix='32')['path_list'][0]['nh']['mc_list']
+        if not next_hops:
+            result = False
+            assert result, 'Route not found in the Agent %s' % vm2_fixture.vm_node_ip
+        else:
+            self.logger.info('Route found in the Agent %s' % vm2_fixture.vm_node_ip)
+
+        if (len(next_hops) != 3):
+            result = False
+            assert result, 'Agent does not reflect the static route addition'
+        else:
+            self.logger.info('Agent reflects the static route addition')
+
+        return True
+
+    # end test_static_table
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_network_table(self):
+
+        self.verify_svc_in_network_datapath(si_count=1, svc_scaling=True, max_inst=3, svc_mode='in-network-nat')
+        svm_ids = self.si_fixtures[0].svm_ids
+        self.get_rt_info_tap_intf_list(
+            self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
+        dst_vm_list = [self.vm2_fixture]
+        self.verify_traffic_flow(
+            self.vm1_fixture, [self.vm2_fixture], self.si_fixtures[0], self.vn1_fixture)
+
+        rt_vnc = RouteTable(name="network_table",parent_obj=self.project.project_obj)
+        self.vnc_lib.route_table_create(rt_vnc)
+        routes = []
+        rt10 = RouteType(prefix = '1.1.1.1/32', next_hop = '2.2.2.2', next_hop_type='ip-address')
+        routes.append(rt10)
+        rt_vnc.set_routes(routes)
+        vn_rt_obj = self.vnc_lib.virtual_network_read(id = self.vn2_fixture.uuid)
+        vn_rt_obj.add_route_table(rt_vnc)
+        self.vnc_lib.virtual_network_update(vn_rt_obj)
+        (domain, project, vn) = self.vn1_fixture.vn_fq_name.split(':')
+        inspect_h = self.agent_inspect[self.vm1_fixture.vm_node_ip]
+        agent_vrf_objs = inspect_h.get_vna_vrf_objs(domain, project, vn)
+        agent_vrf_obj = self.vm1_fixture.get_matching_vrf(
+                agent_vrf_objs['vrf_list'], self.vn1_fixture.vrf_name)
+        vn_vrf_id = agent_vrf_obj['ucindex']
+        next_hops = inspect_h.get_vna_active_route(
+                     vrf_id=vn_vrf_id, ip=self.vm2_fixture.vm_ip, prefix='32')['path_list'][0]['nh']['mc_list']
+        if not next_hops:
+            result = False
+            assert result, 'Route not found in the Agent %s' % vm2_fixture.vm_node_ip
+        else:
+            self.logger.info('Route found in the Agent %s' % vm2_fixture.vm_node_ip)
+
+        if (len(next_hops) != 3):
+            result = False
+            assert result, 'Agent does not reflect the static route addition'
+        else:
+            self.logger.info('Agent reflects the static route addition')
+
+        return True
+
+    # end test_network_table
+
