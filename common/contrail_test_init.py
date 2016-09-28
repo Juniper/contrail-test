@@ -177,6 +177,12 @@ class TestInputs(object):
                                                     'Basic', 'enable_ceilometer', False)
         self.ci_flavor = read_config_option(self.config,
                                             'Basic', 'ci_flavor', None)
+        self.config_amqp_ips = read_config_option(self.config,
+                                            'services', 'config_amqp_ips', None)
+        if self.config_amqp_ips:
+            self.config_amqp_ips = self.config_amqp_ips.split(',')
+        self.config_amqp_port = read_config_option(self.config,
+                                            'services', 'config_amqp_port', '5672')
         self.fixture_cleanup = read_config_option(
             self.config,
             'Basic',
@@ -484,6 +490,10 @@ class TestInputs(object):
                 self.auth_ip = self.external_vip
             else:
                 self.auth_ip = self.openstack_ip
+
+        # If no explicit amqp servers are configured, it will be cfgm ips
+        if not self.config_amqp_ips:
+            self.config_amqp_ips = self.cfgm_control_ips
         return json_data
     # end read_prov_file
 

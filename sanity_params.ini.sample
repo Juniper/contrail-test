@@ -71,6 +71,7 @@ pubkey_filename=$__pubkey_filename__
 discovery_ip=$__discovery_ip__
 config_api_ip=$__config_api_ip__
 analytics_api_ip=$__analytics_api_ip__
+config_amqp_ips=$__config_amqp_ips__
 
 # Populate the below if the services introspect doesnt run on default ports
 # Defaults: discovery - 5998, contrail-api - 8082, contrail-analytics-api - 8081
@@ -81,6 +82,7 @@ analytics_api_port=$__analytics_api_port__
 control_port=$__control_port__
 dns_port=$__dns_port__
 agent_port=$__vrouter_agent_port__
+config_amqp_port=$__config_amqp_port__
 
 [WebServer]
 # The URL to which the test log file and HTML report would be uploaded to.
