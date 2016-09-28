@@ -201,13 +201,14 @@ class BaseVrouterTest(BaseNeutronTest):
             cirros does not support IPv6.
         '''
         nc_options = '-4' if (self.inputs.get_af() == 'v4') else '-6'
-        nc_options = nc_options + ' -q 2'
+        nc_options = nc_options + ' -q 2 -w 5'
         if proto == 'udp':
             nc_options = nc_options + ' -u'
 
         result = sender_vm_fix.nc_file_transfer(
             dest_vm_fix, local_port=sport, remote_port=dport,
-            nc_options=nc_options, size=size, ip=ip, expectation=exp)
+            nc_options=nc_options, size=size, ip=ip, expectation=exp,
+            retry=True)
 
         return result
 

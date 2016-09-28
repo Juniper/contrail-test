@@ -1490,7 +1490,7 @@ class MultipleVNFixture(fixtures.Fixture):
             if type(net) is list:
                 self._vn_subnets.update({vn_name: net})
             else:
-                self._vn_subnets.update({vn_name: self._subnet(network=net)})
+                self._vn_subnets.update({vn_name: self._subnet(network=net, af=self.stack)})
 
     def setUp(self):
         super(MultipleVNFixture, self).setUp()
