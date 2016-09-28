@@ -7,7 +7,8 @@ from vn_test import MultipleVNFixture
 from vm_test import MultipleVMFixture
 from base import BaseSGTest
 from common.policy.config import ConfigPolicy
-from security_group import SecurityGroupFixture,get_secgrp_id_from_name
+from security_group import SecurityGroupFixture, get_secgrp_id_from_name,\
+    set_default_sg_rules
 from vn_test import VNFixture
 from vm_test import VMFixture
 from tcutils.topo.topo_helper import *
@@ -24,16 +25,19 @@ from base_traffic import *
 from tcutils.util import skip_because
 import test_regression_basic
 
+AF_TEST = 'v6'
+
+
 class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests2, cls).setUpClass()
-	cls.option = 'openstack'
+        cls.option = 'openstack'
 
     def setUp(self):
         super(SecurityGroupRegressionTests2, self).setUp()
-	self.create_sg_test_resources()
+        self.create_sg_test_resources()
 
     def tearDown(self):
         self.logger.debug("Tearing down SecurityGroupRegressionTests2.")
@@ -45,13 +49,13 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
     @preposttest_wrapper
     def test_sec_group_with_proto(self):
         """
-	Description: Verify security group with allow specific protocol on all ports and policy with allow all between VN's
-	Steps:
-	    1. create the resources VN,VM,policy,SG 
-	    2. update the SG rules with proto tcp(for sg1) and udp(sg2)
-	    3. verify if traffic allowed is as per the proto allowed in SG rule
-	Pass criteria: step 3 should pass 
-	"""
+        Description: Verify security group with allow specific protocol on all ports and policy with allow all between VN's
+        Steps:
+            1. create the resources VN,VM,policy,SG
+            2. update the SG rules with proto tcp(for sg1) and udp(sg2)
+            3. verify if traffic allowed is as per the proto allowed in SG rule
+        Pass criteria: step 3 should pass
+        """
         self.logger.info("Configure the policy with allow any")
         rules = [
             {
@@ -66,17 +70,21 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
         ]
         self.config_policy_and_attach_to_vn(rules)
         rule = [{'direction': '<>',
-                'protocol': 'tcp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'protocol': 'tcp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'tcp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
@@ -84,17 +92,21 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.sg1_fix.replace_rules(rule)
 
         rule = [{'direction': '<>',
-                'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'protocol': 'udp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
@@ -107,13 +119,13 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
     @preposttest_wrapper
     def test_sec_group_with_port(self):
         """
-	Description: Verify security group with allow specific protocol/port and policy with allow all between VN's
+        Description: Verify security group with allow specific protocol/port and policy with allow all between VN's
         Steps:
             1. create the resources VN,VM,policy,SG
             2. update the SG rules with proto tcp(for sg1) and udp(sg2) and open port 8000-9000
             3. verify if traffic allowed is as per the proto/port allowed in SG rule
         Pass criteria: step 3 should pass
-	"""
+        """
 
         self.logger.info("Configure the policy with allow any")
         rules = [
@@ -130,17 +142,21 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.config_policy_and_attach_to_vn(rules)
 
         rule = [{'direction': '<>',
-                'protocol': 'tcp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'protocol': 'tcp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 8000, 'end_port': 9000}],
                  'src_ports': [{'start_port': 8000, 'end_port': 9000}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'tcp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 8000, 'end_port': 9000}],
                  'dst_ports': [{'start_port': 8000, 'end_port': 9000}],
                  'dst_addresses': [{'security_group': 'local'}],
@@ -148,38 +164,46 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.sg1_fix.replace_rules(rule)
 
         rule = [{'direction': '<>',
-                'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'protocol': 'udp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 8000, 'end_port': 9000}],
                  'src_ports': [{'start_port': 8000, 'end_port': 9000}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 8000, 'end_port': 9000}],
                  'dst_ports': [{'start_port': 8000, 'end_port': 9000}],
                  'dst_addresses': [{'security_group': 'local'}],
                  }]
         self.sg2_fix.replace_rules(rule)
 
-        self.verify_sec_group_port_proto(port_test=True)
+        self.verify_sec_group_port_proto(
+            port_test=True,
+            sport=8000,
+            dport=9000)
         return True
 
-#end class SecurityGroupRegressionTests2
+# end class SecurityGroupRegressionTests2
+
 
 class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests3, cls).setUpClass()
-	cls.option = 'openstack'
+        cls.option = 'openstack'
 
     def setUp(self):
         super(SecurityGroupRegressionTests3, self).setUp()
-	self.create_sg_test_resources()
+        self.create_sg_test_resources()
 
     def tearDown(self):
         self.logger.debug("Tearing down SecurityGroupRegressionTests3.")
@@ -191,10 +215,10 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
     @preposttest_wrapper
     def test_sec_group_with_proto_and_policy_to_allow_only_tcp(self):
         """
-	Description: Verify security group with allow specific protocol on all ports and policy with allow only TCP between VN's
+        Description: Verify security group with allow specific protocol on all ports and policy with allow only TCP between VN's
         Steps:
             1. create the resources VN,VM,policy,SG
-            2. update the SG rules with proto tcp(for sg1) and udp(sg2) 
+            2. update the SG rules with proto tcp(for sg1) and udp(sg2)
             3. verify if traffic allowed is as per the proto allowed in SG rule and policy
         Pass criteria: step 3 should pass
         """
@@ -214,17 +238,21 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.config_policy_and_attach_to_vn(rules)
 
         rule = [{'direction': '<>',
-                'protocol': 'tcp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'protocol': 'tcp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'tcp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
@@ -232,17 +260,21 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.sg1_fix.replace_rules(rule)
 
         rule = [{'direction': '<>',
-                'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'protocol': 'udp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
@@ -255,7 +287,7 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
     @preposttest_wrapper
     def test_sec_group_with_proto_and_policy_to_allow_only_tcp_ports(self):
         """
-	Description: Verify security group with allow specific protocol on all ports and policy with allow only TCP on specifif ports between VN's
+        Description: Verify security group with allow specific protocol on all ports and policy with allow only TCP on specifif ports between VN's
         Steps:
             1. create the resources VN,VM,policy,SG
             2. update the SG rules with proto tcp(for sg1) and udp(sg2)
@@ -279,17 +311,21 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.config_policy_and_attach_to_vn(rules)
 
         rule = [{'direction': '<>',
-                'protocol': 'tcp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'protocol': 'tcp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'tcp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
@@ -297,34 +333,41 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.sg1_fix.replace_rules(rule)
 
         rule = [{'direction': '<>',
-                'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'protocol': 'udp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
                  }]
         self.sg2_fix.replace_rules(rule)
 
-        self.verify_sec_group_with_udp_and_policy_with_tcp_port()
+        self.verify_sec_group_with_udp_and_policy_with_tcp_port(
+            sport=8000,
+            dport=9000)
         return True
 
-#end class SecurityGroupRegressionTests3
+# end class SecurityGroupRegressionTests3
+
 
 class SecurityGroupRegressionTests4(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests4, cls).setUpClass()
-	cls.option = 'openstack'
+        cls.option = 'openstack'
 
     def runTest(self):
         pass
@@ -332,14 +375,14 @@ class SecurityGroupRegressionTests4(BaseSGTest, VerifySecGroup, ConfigPolicy):
     @preposttest_wrapper
     @skip_because(feature='multi-subnet')
     def test_vn_compute_sg_comb(self):
-	"""
-	Description: Verify traffic between intra/inter VN,intra/inter compute and same/diff default/user-define SG
-	Steps:
-	    1. define the topology for intra/inter VN,intra/inter compute and same/diff default/user-define SG
-	    2. create the resources as defined in the topo
-	    3. verify the traffic 
-	Pass criteria: step 3 should pass
-	"""
+        """
+        Description: Verify traffic between intra/inter VN,intra/inter compute and same/diff default/user-define SG
+        Steps:
+            1. define the topology for intra/inter VN,intra/inter compute and same/diff default/user-define SG
+            2. create the resources as defined in the topo
+            3. verify the traffic
+        Pass criteria: step 3 should pass
+        """
         topology_class_name = None
 
         #
@@ -356,9 +399,13 @@ class SecurityGroupRegressionTests4(BaseSGTest, VerifySecGroup, ConfigPolicy):
             topo = topology_class_name(
                 project=self.project.project_name,
                 username=self.project.username,
-                password=self.project.password, compute_node_list=self.connections.orch.get_hosts(),config_option=self.option)
-        except (AttributeError,NameError):
-            topo = topology_class_name(compute_node_list=self.connections.orch.get_hosts(),config_option=self.option)
+                password=self.project.password,
+                compute_node_list=self.connections.orch.get_hosts(),
+                config_option=self.option)
+        except (AttributeError, NameError):
+            topo = topology_class_name(
+                compute_node_list=self.connections.orch.get_hosts(),
+                config_option=self.option)
 
         #
         # Test setup: Configure policy, VN, & VM
@@ -367,7 +414,9 @@ class SecurityGroupRegressionTests4(BaseSGTest, VerifySecGroup, ConfigPolicy):
         # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
         setup_obj = self.useFixture(
             sdnTopoSetupFixture(self.connections, topo))
-	out = setup_obj.topo_setup(VmToNodeMapping=topo.vm_node_map,config_option=self.option)
+        out = setup_obj.topo_setup(
+            VmToNodeMapping=topo.vm_node_map,
+            config_option=self.option)
         self.logger.info("Setup completed with result %s" % (out['result']))
         self.assertEqual(out['result'], True, out['msg'])
         if out['result']:
@@ -375,23 +424,24 @@ class SecurityGroupRegressionTests4(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         self.start_traffic_and_verify_negative_cases(topo_obj, config_topo)
         return True
-    #end test_vn_compute_sg_comb 
+    # end test_vn_compute_sg_comb
 
-#end class SecurityGroupRegressionTests4
+# end class SecurityGroupRegressionTests4
+
 
 class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests5, cls).setUpClass()
-	cls.option = 'openstack'
+        cls.option = 'openstack'
 
     def setUp(self):
         super(SecurityGroupRegressionTests5, self).setUp()
         self.create_sg_test_resources()
 
     def tearDown(self):
-        self.logger.debug("Tearing down SecurityGroupRegressionTests2.")
+        self.logger.debug("Tearing down SecurityGroupRegressionTests5.")
         super(SecurityGroupRegressionTests5, self).tearDown()
 
     def runTest(self):
@@ -400,7 +450,7 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
     @preposttest_wrapper
     def test_sec_group_with_proto_double_rules_sg1(self):
         """
-	Description: Verify security group with allow tcp/udp protocol on all ports and policy with allow all between VN's
+        Description: Verify security group with allow tcp/udp protocol on all ports and policy with allow all between VN's
         Steps:
             1. create the resources VN,VM,policy,SG
             2. update the SG rules with proto tcp/udp
@@ -422,50 +472,62 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
         ]
         self.config_policy_and_attach_to_vn(rules)
         rule = [{'direction': '<>',
-                'protocol': 'tcp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'protocol': 'tcp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'tcp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
                  },
-		{'direction': '<>',
-                'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_addresses': [{'security_group': 'local'}],
-                 },
-		{'direction': '<>',
+                {'direction': '<>',
                  'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_addresses': [{'security_group': 'local'}],
-                 }]
-        self.sg1_fix.replace_rules(rule)
-        rule = [{'direction': '<>',
-                'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
+                 }]
+        self.sg1_fix.replace_rules(rule)
+        rule = [{'direction': '<>',
+                 'protocol': 'udp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'src_addresses': [{'security_group': 'local'}],
+                 },
+                {'direction': '<>',
+                 'protocol': 'udp',
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
@@ -474,17 +536,17 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         self.verify_sec_group_port_proto(double_rule=True)
         return True
-    #end test_sec_group_with_proto_double_rules_sg1
+    # end test_sec_group_with_proto_double_rules_sg1
 
     @preposttest_wrapper
     def test_default_sg(self):
         """
-	Description: test default security group
-	Steps:
+        Description: test default security group
+        Steps:
             1. try to delete default sg, should fail
             2. add/delete rules and verify the rules with traffic
-	Pass criteria: step 1 and 2 should pass
-	"""
+        Pass criteria: step 1 and 2 should pass
+        """
 
         self.logger.info("Configure the policy with allow any")
         rules = [
@@ -500,16 +562,16 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
         ]
         self.config_policy_and_attach_to_vn(rules)
 
-        #try to delete default sg
+        # try to delete default sg
         secgrp_fq_name = ':'.join(['default-domain',
-                                self.inputs.project_name,
-                                'default'])
+                                   self.inputs.project_name,
+                                   'default'])
         sg_id = get_secgrp_id_from_name(
-                        self.connections,
-                        secgrp_fq_name)
+            self.connections,
+            secgrp_fq_name)
         try:
             self.orch.delete_security_group(sg_id)
-        except Exception, msg:
+        except Exception as msg:
             self.logger.info(msg)
             self.logger.info(
                 "Not able to delete the default security group as expected")
@@ -524,61 +586,50 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
                 self.logger.error(errmsg)
                 assert False, errmsg
 
-        #delete egress rule and add new rules and verify with traffic
+        # delete egress rule and add new rules and verify with traffic
         self.sg1_fix.delete_all_rules(sg_id)
         rule = [{'direction': '<>',
-                'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'protocol': 'udp',
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
                  }]
-        secgrp_rules = self.sg1_fix.create_sg_rule(sg_id,secgrp_rules=rule)
+        secgrp_rules = self.sg1_fix.create_sg_rule(sg_id, secgrp_rules=rule)
         assert secgrp_rules
 
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm6_fix, 'default')
         self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'pass')
 
-        #revert back default sg
-        self.sg1_fix.delete_all_rules(sg_id)
-        rule = [{'direction': '<>',
-                'protocol': 'any',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_addresses': [{'security_group': 'local'}],
-                 },
-                {'direction': '<>',
-                 'protocol': 'any',
-                 'src_addresses': [{'security_group':secgrp_fq_name}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_addresses': [{'security_group': 'local'}],
-                 }]
-        secgrp_rules = self.sg1_fix.create_sg_rule(sg_id,secgrp_rules=rule)
-        assert secgrp_rules
-
+        # revert back default sg
+        assert set_default_sg_rules(self.connections, sg_id)
+        self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'fail')
         return True
-        #end test_default_sg
+        # end test_default_sg
 
-#end class SecurityGroupRegressionTests5
+# end class SecurityGroupRegressionTests5
+
 
 class SecurityGroupRegressionTests6(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests6, cls).setUpClass()
-	cls.option = 'openstack'
+        cls.option = 'openstack'
 
     def runTest(self):
         pass
@@ -586,17 +637,17 @@ class SecurityGroupRegressionTests6(BaseSGTest, VerifySecGroup, ConfigPolicy):
     @preposttest_wrapper
     @skip_because(feature='multi-subnet')
     def test_sg_stateful(self):
-	"""
-	Description: Test if SG is stateful
+        """
+        Description: Test if SG is stateful
             1. test if inbound traffic without allowed ingress rule is allowed
             2. Test if outbound traffic without allowed egress rule is allowed
             3. test traffic betwen SG with only ingress/egress rule
         Steps:
-            1. define the topology for the test 
+            1. define the topology for the test
             2. create the resources as defined in the topo
             3. verify the traffic
-	Pass criteria: step 3 should pass
-	"""
+        Pass criteria: step 3 should pass
+        """
 
         topology_class_name = None
 
@@ -609,14 +660,14 @@ class SecurityGroupRegressionTests6(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         self.logger.info("Scenario for the test used is: %s" %
                          (topology_class_name))
-	topo = topology_class_name()
+        topo = topology_class_name()
         try:
             # provided by wrapper module if run in parallel test env
             topo.build_topo_sg_stateful(
                 project=self.project.project_name,
                 username=self.project.username,
-                password=self.project.password,config_option=self.option)
-        except (AttributeError,NameError):
+                password=self.project.password, config_option=self.option)
+        except (AttributeError, NameError):
             topo.build_topo_sg_stateful(config_option=self.option)
         #
         # Test setup: Configure policy, VN, & VM
@@ -631,22 +682,24 @@ class SecurityGroupRegressionTests6(BaseSGTest, VerifySecGroup, ConfigPolicy):
         if out['result']:
             topo_obj, config_topo = out['data']
 
-	self.start_traffic_and_verify(topo_obj, config_topo, traffic_reverse=False)
+        self.start_traffic_and_verify(
+            topo_obj,
+            config_topo,
+            traffic_reverse=False)
         return True
-    #end test_sg_stateful 
+    # end test_sg_stateful
 
     @preposttest_wrapper
     @skip_because(feature='multi-tenant')
     def test_sg_multiproject(self):
         """
-	Description: Test SG across projects
+        Description: Test SG across projects
         Steps:
             1. define the topology for the test
             2. create the resources as defined in the topo
             3. verify the traffic
         Pass criteria: step 3 should pass
         """
-
 
         topology_class_name = None
 
@@ -672,26 +725,36 @@ class SecurityGroupRegressionTests6(BaseSGTest, VerifySecGroup, ConfigPolicy):
             sdnTopoSetupFixture(self.connections, topo))
         out = setup_obj.sdn_topo_setup(config_option=self.option)
         self.assertEqual(out['result'], True, out['msg'])
-        if out['result'] == True:
+        if out['result']:
             topo_objs, config_topo, vm_fip_info = out['data']
 
-        self.start_traffic_and_verify_multiproject(topo_objs, config_topo, traffic_reverse=False)
+        secgrp_fq_name = ':'.join(['default-domain',
+                                   self.inputs.admin_tenant,
+                                   'default'])
+        sg_id = get_secgrp_id_from_name(
+            self.connections,
+            secgrp_fq_name)
+        assert set_default_sg_rules(self.connections, sg_id,
+                                    remote_sg=secgrp_fq_name)
+        self.start_traffic_and_verify_multiproject(
+            topo_objs,
+            config_topo,
+            traffic_reverse=False)
 
         return True
-    #end test_sg_multiproject
+    # end test_sg_multiproject
 
     @preposttest_wrapper
     @skip_because(feature='multi-subnet')
     def test_sg_no_rule(self):
         """
-	Description: Test SG without any rule, it should deny all traffic
+        Description: Test SG without any rule, it should deny all traffic
         Steps:
             1. define the topology for the test
             2. create the resources as defined in the topo
             3. verify the traffic denied
         Pass criteria: step 3 should pass
         """
-
 
         topology_class_name = None
 
@@ -710,8 +773,8 @@ class SecurityGroupRegressionTests6(BaseSGTest, VerifySecGroup, ConfigPolicy):
             topo.build_topo(
                 project=self.project.project_name,
                 username=self.project.username,
-                password=self.project.password,config_option=self.option)
-        except (AttributeError,NameError):
+                password=self.project.password, config_option=self.option)
+        except (AttributeError, NameError):
             topo.build_topo(config_option=self.option)
         #
         # Test setup: Configure policy, VN, & VM
@@ -726,19 +789,23 @@ class SecurityGroupRegressionTests6(BaseSGTest, VerifySecGroup, ConfigPolicy):
         if out['result']:
             topo_obj, config_topo = out['data']
 
-        self.start_traffic_and_verify(topo_obj, config_topo, traffic_reverse=True)
+        self.start_traffic_and_verify(
+            topo_obj,
+            config_topo,
+            traffic_reverse=True)
 
         return True
-        #end test_sg_no_rule
+        # end test_sg_no_rule
 
-#end class SecurityGroupRegressionTests6
+# end class SecurityGroupRegressionTests6
+
 
 class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests7, cls).setUpClass()
-	cls.option = 'openstack'
+        cls.option = 'openstack'
 
     def runTest(self):
         pass
@@ -746,7 +813,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
     @preposttest_wrapper
     def test_icmp_error_handling1(self):
         """
-	Description: Test ICMP error handling
+        Description: Test ICMP error handling
             1. ingress-udp from same SG, egress-all
             2. Test with SG rule, ingress-egress-udp only
             3. Test with SG rule, ingress-egress-all
@@ -756,7 +823,6 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
             3. verify the traffic for each of the cases mentioned in description
         Pass criteria: step 3 should pass
         """
-
 
         topology_class_name = None
 
@@ -775,8 +841,8 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
             topo.build_topo(
                 project=self.project.project_name,
                 username=self.project.username,
-                password=self.project.password,config_option=self.option)
-        except (AttributeError,NameError):
+                password=self.project.password, config_option=self.option)
+        except (AttributeError, NameError):
             topo.build_topo(config_option=self.option)
         #
         # Test setup: Configure policy, VN, & VM
@@ -791,7 +857,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         if out['result']:
             topo_obj, config_topo = out['data']
 
-        #Test SG rule, ingress-udp same SG, egress-all
+        # Test SG rule, ingress-udp same SG, egress-all
         port = 10000
         pkt_cnt = 10
         src_vm_name = 'vm1'
@@ -804,21 +870,23 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         else:
             src_vn_fq_name = ':'.join(src_vn_fix._obj.get_fq_name())
 
-        #start tcpdump on src VM
-        filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
-        session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
-        #start traffic
-        sender, receiver = self.start_traffic_scapy(src_vm_fix, dst_vm_fix, 'udp',
-                                port, port,recvr=False)
+        # start tcpdump on src VM
+        filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        session, pcap = start_tcpdump_for_vm_intf(
+            self, src_vm_fix, src_vn_fq_name, filters=filters)
+        # start traffic
+        sender, receiver = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'udp', port, port, recvr=False)
 
-        #verify packet count and stop tcpdump
+        # verify packet count and stop tcpdump
         assert verify_tcpdump_count(self, session, pcap)
-        #stop traffic
-        sent, recv = self.stop_traffic_scapy(sender, receiver,recvr=False)
+        # stop traffic
+        sent, recv = self.stop_traffic_scapy(sender, receiver, recvr=False)
 
-        #Test with SG rule, ingress-egress-udp only
+        # Test with SG rule, ingress-egress-udp only
         rule = [{'direction': '>',
-                'protocol': 'udp',
+                 'protocol': 'udp',
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -833,22 +901,24 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  }]
         config_topo['sec_grp'][topo_obj.sg_list[0]].replace_rules(rule)
 
-        #start tcpdump on src VM
-        filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
-        session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
-        #start traffic
-        sender, receiver = self.start_traffic_scapy(src_vm_fix, dst_vm_fix, 'udp',
-                                port, port,recvr=False)
+        # start tcpdump on src VM
+        filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        session, pcap = start_tcpdump_for_vm_intf(
+            self, src_vm_fix, src_vn_fq_name, filters=filters)
+        # start traffic
+        sender, receiver = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'udp', port, port, recvr=False)
 
-        #verify packet count and stop tcpdump
+        # verify packet count and stop tcpdump
         assert verify_tcpdump_count(self, session, pcap)
-        #stop traffic
-        sent, recv = self.stop_traffic_scapy(sender, receiver,recvr=False)
+        # stop traffic
+        sent, recv = self.stop_traffic_scapy(sender, receiver, recvr=False)
 
-        #Test with SG rule, ingress-egress-all
+        # Test with SG rule, ingress-egress-all
         dst_vm_fix = config_topo['vm']['vm2']
         rule = [{'direction': '>',
-                'protocol': 'any',
+                 'protocol': 'any',
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -863,20 +933,22 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
                  }]
         config_topo['sec_grp'][topo_obj.sg_list[0]].replace_rules(rule)
 
-        #start tcpdump on src VM
-        filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
-        session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
-        #start traffic
-        sender, receiver = self.start_traffic_scapy(src_vm_fix, dst_vm_fix, 'udp',
-                                port, port,recvr=False)
+        # start tcpdump on src VM
+        filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        session, pcap = start_tcpdump_for_vm_intf(
+            self, src_vm_fix, src_vn_fq_name, filters=filters)
+        # start traffic
+        sender, receiver = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'udp', port, port, recvr=False)
 
-        #verify packet count and stop tcpdump
+        # verify packet count and stop tcpdump
         assert verify_tcpdump_count(self, session, pcap)
-        #stop traffic
-        sent, recv = self.stop_traffic_scapy(sender, receiver,recvr=False)
+        # stop traffic
+        sent, recv = self.stop_traffic_scapy(sender, receiver, recvr=False)
 
         return True
-    #end test_icmp_error_handling1
+    # end test_icmp_error_handling1
 
     @preposttest_wrapper
     def test_icmp_error_handling2(self):
@@ -890,7 +962,6 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
             3. verify the traffic for each of the cases mentioned in description
         Pass criteria: step 3 should pass
         """
-
 
         topology_class_name = None
         #
@@ -909,9 +980,12 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
                 project=self.project.project_name,
                 username=self.project.username,
                 password=self.project.password,
-                compute_node_list=self.connections.orch.get_hosts(),config_option=self.option)
-        except (AttributeError,NameError):
-            topo.build_topo2(compute_node_list=self.connections.orch.get_hosts(),config_option=self.option)
+                compute_node_list=self.connections.orch.get_hosts(),
+                config_option=self.option)
+        except (AttributeError, NameError):
+            topo.build_topo2(
+                compute_node_list=self.connections.orch.get_hosts(),
+                config_option=self.option)
         #
         # Test setup: Configure policy, VN, & VM
         # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
@@ -919,13 +993,15 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
         setup_obj = self.useFixture(
             sdnTopoSetupFixture(self.connections, topo))
-        out = setup_obj.topo_setup(VmToNodeMapping=topo.vm_node_map,config_option=self.option)
+        out = setup_obj.topo_setup(
+            VmToNodeMapping=topo.vm_node_map,
+            config_option=self.option)
         self.logger.info("Setup completed with result %s" % (out['result']))
         self.assertEqual(out['result'], True, out['msg'])
         if out['result']:
             topo_obj, config_topo = out['data']
 
-        #Test with SG rule, egress-udp only
+        # Test with SG rule, egress-udp only
         port = 10000
         pkt_cnt = 10
         src_vm_name = 'vm1'
@@ -938,18 +1014,20 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         else:
             src_vn_fq_name = ':'.join(src_vn_fix._obj.get_fq_name())
 
-        #start tcpdump on src VM
-        filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
-        session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
-        #start traffic
-        sender, receiver = self.start_traffic_scapy(src_vm_fix, dst_vm_fix, 'udp',
-                                port, port,recvr=False)
+        # start tcpdump on src VM
+        filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (
+            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        session, pcap = start_tcpdump_for_vm_intf(
+            self, src_vm_fix, src_vn_fq_name, filters=filters)
+        # start traffic
+        sender, receiver = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'udp', port, port, recvr=False)
 
-        #verify packet count and stop tcpdump
+        # verify packet count and stop tcpdump
         assert verify_tcpdump_count(self, session, pcap)
-        #stop traffic
-        sent, recv = self.stop_traffic_scapy(sender, receiver,recvr=False)
-        #Test ICMP error from agent
+        # stop traffic
+        sent, recv = self.stop_traffic_scapy(sender, receiver, recvr=False)
+        # Test ICMP error from agent
         if len(self.connections.orch.get_hosts()) < 2:
             self.logger.info("Skipping second case(Test ICMP error from agent), \
                                     this test needs atleast 2 compute nodes")
@@ -957,7 +1035,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
                                     this test needs atleast 2 compute nodes")
             return True
         rule = [{'direction': '>',
-                'protocol': 'icmp',
+                 'protocol': 'icmp',
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
@@ -975,46 +1053,64 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         vn1_name = "test_vnv6sr"
         vn1_net = ['2001::101:0/120']
         #vn1_fixture = self.config_vn(vn1_name, vn1_net)
-        vn1_fixture = self.useFixture(VNFixture(
-            project_name=self.inputs.project_name, connections=self.connections,
-            vn_name=vn1_name, inputs=self.inputs, subnets=vn1_net))
+        vn1_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_name=vn1_name,
+                inputs=self.inputs,
+                subnets=vn1_net))
         assert vn1_fixture.verify_on_setup()
         vn2_name = "test_vnv6dn"
         vn2_net = ['2001::201:0/120']
         #vn2_fixture = self.config_vn(vn2_name, vn2_net)
-        vn2_fixture = self.useFixture(VNFixture(
-            project_name=self.inputs.project_name, connections=self.connections,
-            vn_name=vn2_name, inputs=self.inputs, subnets=vn2_net))
+        vn2_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_name=vn2_name,
+                inputs=self.inputs,
+                subnets=vn2_net))
         assert vn2_fixture.verify_on_setup()
         vm1_name = 'source_vm'
         vm2_name = 'dest_vm'
         #vm1_fixture = self.config_vm(vn1_fixture, vm1_name)
         #vm2_fixture = self.config_vm(vn2_fixture, vm2_name)
         self.inputs.set_af('dual')
-        vm1_fixture = self.useFixture(VMFixture(
-            project_name=self.inputs.project_name, connections=self.connections,
-            vn_obj=vn1_fixture.obj, vm_name=vm1_name, node_name=None, 
-            image_name='ubuntu-traffic', flavor='contrail_flavor_small'))
+        vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn1_fixture.obj,
+                vm_name=vm1_name,
+                node_name=None,
+                image_name='ubuntu-traffic',
+                flavor='contrail_flavor_small'))
 
-        vm2_fixture = self.useFixture(VMFixture(
-            project_name=self.inputs.project_name, connections=self.connections,
-            vn_obj=vn2_fixture.obj, vm_name=vm2_name, node_name=None, 
-            image_name='ubuntu-traffic', flavor='contrail_flavor_small'))
+        vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn2_fixture.obj,
+                vm_name=vm2_name,
+                node_name=None,
+                image_name='ubuntu-traffic',
+                flavor='contrail_flavor_small'))
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
 
         rule = [
-           {
-             'direction': '<>',
-             'protocol': 'any',
-             'source_network': vn1_name,
-             'src_ports': [0, -1],
-             'dest_network': vn2_name,
-             'dst_ports': [0, -1],
-             'simple_action': 'pass',
-           },
+            {
+                'direction': '<>',
+                'protocol': 'any',
+                'source_network': vn1_name,
+                'src_ports': [0, -1],
+                'dest_network': vn2_name,
+                'dst_ports': [0, -1],
+                'simple_action': 'pass',
+            },
         ]
         policy_name = 'allow_all'
         policy_fixture = self.config_policy(policy_name, rule)
@@ -1028,33 +1124,48 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
             src_vn_fq_name = src_vn_fix.vn_fq_name
         else:
             src_vn_fq_name = ':'.join(src_vn_fix._obj.get_fq_name())
-        self.logger.info("Increasing MTU on src VM and ping with bigger size and reverting MTU")
-        cmd_ping = ('ping -M want -s 2500 -c 10 %s | grep \"Frag needed and DF set\"' %
-                     (dst_vm_fix.vm_ip))
+        self.logger.info(
+            "Increasing MTU on src VM and ping with bigger size and reverting MTU")
+        cmd_ping = (
+            'ping -M want -s 2500 -c 10 %s | grep \"Frag needed and DF set\"' %
+            (dst_vm_fix.vm_ip))
 #        cmd_tcpdump = 'tcpdump -vvv -c 5 -ni eth0 -v icmp > /tmp/op1.log'
-        output = src_vm_fix.run_cmd_on_vm(cmds=['''netstat -anr  |grep ^0.0.0.0 | awk '{ print $2 }' '''], as_sudo=True)
+        output = src_vm_fix.run_cmd_on_vm(
+            cmds=['''netstat -anr  |grep ^0.0.0.0 | awk '{ print $2 }' '''],
+            as_sudo=True)
         gw = output.values()[0].split('\r\n')[-1]
         filters = 'icmp'
-        session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
+        session, pcap = start_tcpdump_for_vm_intf(
+            self, src_vm_fix, src_vn_fq_name, filters=filters)
         cmds = ['ifconfig eth0 mtu 3000', cmd_ping,
-                  'ifconfig eth0 mtu 1500']
-        output = src_vm_fix.run_cmd_on_vm(cmds=cmds, as_sudo=True, as_daemon=True)
+                'ifconfig eth0 mtu 1500']
+        output = src_vm_fix.run_cmd_on_vm(
+            cmds=cmds,
+            as_sudo=True,
+            as_daemon=True)
         cmd = 'tcpdump -r %s' % pcap
         cmd_check_icmp, err = execute_cmd_out(session, cmd, self.logger)
         cmd_df = re.search('need to frag', cmd_check_icmp)
         self.logger.debug("output for ping cmd: %s" % output[cmd_ping])
-        cmd_next_icmp = re.search('.+ seq 2, length (\d\d\d\d).*', cmd_check_icmp)
+        cmd_next_icmp = re.search(
+            '.+ seq 2, length (\d\d\d\d).*',
+            cmd_check_icmp)
         icmpmatch = ("%s > %s: ICMP %s unreachable - need to frag" %
                      (gw, src_vm_fix.vm_ip, dst_vm_fix.vm_ip))
-        if not ((icmpmatch in cmd_check_icmp) and ("need to frag" in cmd_df.group(0))
-                  and (cmd_next_icmp.group(1) < '1500')
-                  and ("Frag needed and DF set" in output[cmd_ping])):
-            self.logger.error("expected ICMP error for type 3 code 4 not found")
+        if not (
+            (icmpmatch in cmd_check_icmp) and (
+                "need to frag" in cmd_df.group(0)) and (
+                cmd_next_icmp.group(1) < '1500') and (
+                "Frag needed and DF set" in output[cmd_ping])):
+            self.logger.error(
+                "expected ICMP error for type 3 code 4 not found")
             stop_tcpdump_for_vm_intf(self, session, pcap)
             return False
         stop_tcpdump_for_vm_intf(self, session, pcap)
-        self.logger.info("increasing MTU on src VM and ping6 with bigger size and reverting MTU")
-        cmd_ping = 'ping6 -s 2500 -c 10 %s | grep \"Packet too big\"' % (vm2_fixture.vm_ip)
+        self.logger.info(
+            "increasing MTU on src VM and ping6 with bigger size and reverting MTU")
+        cmd_ping = 'ping6 -s 2500 -c 10 %s | grep \"Packet too big\"' % (
+            vm2_fixture.vm_ip)
 
         src_vn_fq_name = vn1_fixture.vn_fq_name
         gw = vm1_fixture.vm_ip
@@ -1062,50 +1173,63 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         gw[-1] = '1'
         gw = ':'.join(gw)
         filters = 'icmp6'
-        session, pcap = start_tcpdump_for_vm_intf(self, vm1_fixture, src_vn_fq_name, filters = filters)
+        session, pcap = start_tcpdump_for_vm_intf(
+            self, vm1_fixture, src_vn_fq_name, filters=filters)
         cmds = ['ifconfig eth0 mtu 3000', cmd_ping,
-                 'ifconfig eth0 mtu 1500']
-        output = vm1_fixture.run_cmd_on_vm(cmds=cmds, as_sudo=True, as_daemon=True)
+                'ifconfig eth0 mtu 1500']
+        output = vm1_fixture.run_cmd_on_vm(
+            cmds=cmds,
+            as_sudo=True,
+            as_daemon=True)
         cmd = 'tcpdump -r %s' % pcap
         cmd_check_icmp, err = execute_cmd_out(session, cmd, self.logger)
         self.logger.debug("output for ping cmd: %s" % output[cmd_ping])
-        cmd_next_icmp = re.search('.+ ICMP6, packet too big, mtu (\d\d\d\d).*', cmd_check_icmp)
+        cmd_next_icmp = re.search(
+            '.+ ICMP6, packet too big, mtu (\d\d\d\d).*',
+            cmd_check_icmp)
         icmpmatch = ("ICMP6, packet too big")
-        if not ((icmpmatch in cmd_check_icmp) and (cmd_next_icmp.group(1) < '1500')
-                 and ("Packet too big" in output[cmd_ping])):
-            self.logger.error("expected ICMP6 error for type 2 packet too big message not found")
+        if not (
+                (icmpmatch in cmd_check_icmp) and (
+                    cmd_next_icmp.group(1) < '1500') and (
+                "Packet too big" in output[cmd_ping])):
+            self.logger.error(
+                "expected ICMP6 error for type 2 packet too big message not found")
             stop_tcpdump_for_vm_intf(self, session, pcap)
 #            output = vm1_fixture.run_cmd_on_vm(cmds='rm /tmp/op.log', as_sudo=True)
             return False
         stop_tcpdump_for_vm_intf(self, session, pcap)
 
         return True
-        #end test_icmp_error_handling2
+        # end test_icmp_error_handling2
 
     @preposttest_wrapper
     @skip_because(feature='service-instance')
     def test_icmp_error_handling_from_mx_with_si(self):
         """
-	Description: Test ICMP error handling from MX with SI in the middle
+        Description: Test ICMP error handling from MX with SI in the middle
             1. uses traceroute util on the VM
         Steps:
             1. define the topology for the test
             2. create the resources as defined in the topo
-	    3. copy the traceroute pkg to VM and install
-	    4. run the traceroute to 8.8.8.8
-            5. verify through tcpdump if icmp error recvd on VM 
+            3. copy the traceroute pkg to VM and install
+            4. run the traceroute to 8.8.8.8
+            5. verify through tcpdump if icmp error recvd on VM
         Pass criteria: step 5 should pass
         """
 
-
-        if ('MX_GW_TEST' not in os.environ) or (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') != '1')):
+        if ('MX_GW_TEST' not in os.environ) or (
+                ('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') != '1')):
             self.logger.info(
                 "Skipping Test. Env variable MX_GW_TEST is not set. Skipping the test")
             raise self.skipTest(
                 "Skipping Test. Env variable MX_GW_TEST is not set. Skipping the test")
             return True
 
-        public_vn_info = {'subnet':[self.inputs.fip_pool], 'router_asn':self.inputs.router_asn, 'rt_number':self.inputs.mx_rt}
+        public_vn_info = {
+            'subnet': [
+                self.inputs.fip_pool],
+            'router_asn': self.inputs.router_asn,
+            'rt_number': self.inputs.mx_rt}
         topology_class_name = None
         #
         # Get config for test from topology
@@ -1123,9 +1247,11 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
                 project=self.project.project_name,
                 username=self.project.username,
                 password=self.project.password,
-                public_vn_info=public_vn_info,config_option=self.option)
-        except (AttributeError,NameError):
-            topo.build_topo(public_vn_info=public_vn_info,config_option=self.option)
+                public_vn_info=public_vn_info, config_option=self.option)
+        except (AttributeError, NameError):
+            topo.build_topo(
+                public_vn_info=public_vn_info,
+                config_option=self.option)
         #
         # Test setup: Configure policy, VN, & VM
         # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
@@ -1133,7 +1259,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
         setup_obj = self.useFixture(
             sdnTopoSetupFixture(self.connections, topo))
-        out = setup_obj.topo_setup(skip_verify='no',config_option=self.option)
+        out = setup_obj.topo_setup(skip_verify='no', config_option=self.option)
         self.logger.info("Setup completed with result %s" % (out['result']))
         self.assertEqual(out['result'], True, out['msg'])
         if out['result']:
@@ -1142,18 +1268,19 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         pol_fix = config_topo['policy'][topo_obj.policy_list[0]]
         if self.option == 'openstack':
             policy_id = pol_fix.policy_obj['policy']['id']
-            new_policy_entries = config_topo['policy'][topo_obj.policy_list[1]].policy_obj['policy']['entries']
+            new_policy_entries = config_topo['policy'][
+                topo_obj.policy_list[1]].policy_obj['policy']['entries']
             data = {'policy': {'entries': new_policy_entries}}
             pol_fix.update_policy(policy_id, data)
         else:
             policy_name = topo_obj.policy_list[0]
-            proj_obj = pol_fix._conn_drv.project_read(['default-domain',self.project.project_name])
-            new_policy_entries = pol_fix._conn_drv.network_policy_read(['default-domain',
-                                                                       self.project.project_name,
-                                                                       topo_obj.policy_list[1]]).network_policy_entries
+            proj_obj = pol_fix._conn_drv.project_read(
+                ['default-domain', self.project.project_name])
+            new_policy_entries = pol_fix._conn_drv.network_policy_read(
+                ['default-domain', self.project.project_name, topo_obj.policy_list[1]]).network_policy_entries
             net_policy_obj = NetworkPolicy(
-                                policy_name, network_policy_entries=new_policy_entries,
-                                parent_obj=proj_obj)
+                policy_name, network_policy_entries=new_policy_entries,
+                parent_obj=proj_obj)
             pol_fix._conn_drv.network_policy_update(net_policy_obj)
 
         src_vm_name = 'vm2'
@@ -1168,8 +1295,11 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         self.logger.info("copying traceroute pkg to the compute node.")
         path = os.getcwd() + '/tcutils/pkgs/' + pkg
-        host_compute = {'username': self.inputs.username, 'password': self.inputs.password, 'ip': src_vm_fix.vm_node_ip}
-        copy_file_to_server(host_compute,path, '/tmp',pkg)
+        host_compute = {
+            'username': self.inputs.username,
+            'password': self.inputs.password,
+            'ip': src_vm_fix.vm_node_ip}
+        copy_file_to_server(host_compute, path, '/tmp', pkg)
 
         self.logger.info("copying traceroute from compute node to VM")
         with settings(host_string='%s@%s' % (self.inputs.username, src_vm_fix.vm_node_ip),
@@ -1186,38 +1316,41 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.logger.info("installing traceroute")
         cmd = 'dpkg -i /tmp/' + pkg
         output_cmd_dict = src_vm_fix.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
-        assert "Setting up traceroute" in output_cmd_dict[cmd], "traceroute pkg installation error, output:%s" % output_cmd_dict[cmd]
+        assert "Setting up traceroute" in output_cmd_dict[
+            cmd], "traceroute pkg installation error, output:%s" % output_cmd_dict[cmd]
 
         self.logger.info("starting tcpdump on src VM")
         filters = '\'(icmp[0]=11 and icmp[1]=0)\''
-        session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
+        session, pcap = start_tcpdump_for_vm_intf(
+            self, src_vm_fix, src_vn_fq_name, filters=filters)
 
         self.logger.info("starting traceroute to out of cluster, 8.8.8.8")
         cmd = 'traceroute 8.8.8.8'
-        for i in range(0,4):
-            output_cmd_dict = src_vm_fix.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        for i in range(0, 4):
+            output_cmd_dict = src_vm_fix.run_cmd_on_vm(
+                cmds=[cmd],
+                as_sudo=True)
             self.logger.info(output_cmd_dict[cmd])
 
             if verify_tcpdump_count(self, session, pcap):
                 return True
 
         return False
-        #end test_icmp_error_handling_from_mx_with_si
+        # end test_icmp_error_handling_from_mx_with_si
 
     @preposttest_wrapper
     def test_icmp_error_payload_matching(self):
         """
-	Description: Test ICMP error handling with payload diff. from original packet
+        Description: Test ICMP error handling with payload diff. from original packet
             1. icmp pakcet with payload matching should be accepted and others should be denied
         Steps:
             1. define the topology for the test
             2. create the resources as defined in the topo
-	    3. send the traffic from sender to unreachable port on recvr side(port 10000 used here), recvr will send icmp error to sender for "destination port unreachable"
-	    4. from recvr side send many other icmp error types in loop
-	    5. sender should recv only icmp error mentioned in step 3 and should NOT recv errors mentioned in step4
+            3. send the traffic from sender to unreachable port on recvr side(port 10000 used here), recvr will send icmp error to sender for "destination port unreachable"
+            4. from recvr side send many other icmp error types in loop
+            5. sender should recv only icmp error mentioned in step 3 and should NOT recv errors mentioned in step4
         Pass criteria: step 5 should pass
         """
-
 
         topology_class_name = None
         #
@@ -1236,9 +1369,12 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
                 project=self.project.project_name,
                 username=self.project.username,
                 password=self.project.password,
-                compute_node_list=self.connections.orch.get_hosts(),config_option=self.option)
-        except (AttributeError,NameError):
-            topo.build_topo2(compute_node_list=self.connections.orch.get_hosts(),config_option=self.option)
+                compute_node_list=self.connections.orch.get_hosts(),
+                config_option=self.option)
+        except (AttributeError, NameError):
+            topo.build_topo2(
+                compute_node_list=self.connections.orch.get_hosts(),
+                config_option=self.option)
         #
         # Test setup: Configure policy, VN, & VM
         # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
@@ -1246,15 +1382,18 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
         setup_obj = self.useFixture(
             sdnTopoSetupFixture(self.connections, topo))
-        out = setup_obj.topo_setup(VmToNodeMapping=topo.vm_node_map,config_option=self.option)
+        out = setup_obj.topo_setup(
+            VmToNodeMapping=topo.vm_node_map,
+            config_option=self.option)
         self.logger.info("Setup completed with result %s" % (out['result']))
         self.assertEqual(out['result'], True, out['msg'])
         if out['result']:
             topo_obj, config_topo = out['data']
 
-        #Test with SG rule, egress-udp only and also send diff ICMP error with diff payload
+        # Test with SG rule, egress-udp only and also send diff ICMP error with
+        # diff payload
         port = 10000
-        pkt_cnt = 2 
+        pkt_cnt = 2
         src_vm_name = 'vm1'
         dst_vm_name = 'vm2'
         src_vm_fix = config_topo['vm'][src_vm_name]
@@ -1265,76 +1404,90 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         else:
             src_vn_fq_name = ':'.join(src_vn_fix._obj.get_fq_name())
 
-        #start tcpdump on src VM
-        filters = '\'(icmp[0]=3 and icmp[1]=3)\'' 
-        session1, pcap1 = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
-        #start traffic
-        sender1, receiver1 = self.start_traffic_scapy(src_vm_fix, dst_vm_fix, 'udp',
-                                port, port,recvr=False)
+        # start tcpdump on src VM
+        filters = '\'(icmp[0]=3 and icmp[1]=3)\''
+        session1, pcap1 = start_tcpdump_for_vm_intf(
+            self, src_vm_fix, src_vn_fq_name, filters=filters)
+        # start traffic
+        sender1, receiver1 = self.start_traffic_scapy(
+            src_vm_fix, dst_vm_fix, 'udp', port, port, recvr=False)
 
         icmp_code = 0
-        for icmp_type in xrange(0,3):
-                #start tcpdump on src VM
-                filters = '\'(icmp[0] = %s and icmp[1] = %s)\'' % (icmp_type, icmp_code)
-                session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
-                sender, receiver = self.start_traffic_scapy(dst_vm_fix, src_vm_fix, 'icmp',
-                                        port, port, payload="payload",
-                                        icmp_type=icmp_type, icmp_code=icmp_code,count=pkt_cnt)
-                sent, recv = self.stop_traffic_scapy(sender, receiver)
-                assert sent != 0, "sent count is ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
-	        #verify packet count and stop tcpdump
-                assert verify_tcpdump_count(self, session, pcap, exp_count=0), "pkt count in tcpdump is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
+        for icmp_type in xrange(0, 3):
+                # start tcpdump on src VM
+            filters = '\'(icmp[0] = %s and icmp[1] = %s)\'' % (
+                icmp_type, icmp_code)
+            session, pcap = start_tcpdump_for_vm_intf(
+                self, src_vm_fix, src_vn_fq_name, filters=filters)
+            sender, receiver = self.start_traffic_scapy(
+                dst_vm_fix, src_vm_fix, 'icmp', port, port, payload="payload", icmp_type=icmp_type, icmp_code=icmp_code, count=pkt_cnt)
+            sent, recv = self.stop_traffic_scapy(sender, receiver)
+            assert sent != 0, "sent count is ZERO for icmp type %s and code %s" % (
+                icmp_type, icmp_code)
+            # verify packet count and stop tcpdump
+            assert verify_tcpdump_count(
+                self, session, pcap, exp_count=0), "pkt count in tcpdump is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
 
-        #type 3 , code (0,3)
+        # type 3 , code (0,3)
         icmp_type = 3
-        for icmp_code in xrange(0,3):
-                #start tcpdump on src VM
-                filters = '\'(icmp[0] = %s and icmp[1] = %s)\'' % (icmp_type, icmp_code)
-                session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
-                sender, receiver = self.start_traffic_scapy(dst_vm_fix, src_vm_fix, 'icmp',
-                                        port, port, payload="payload",
-                                        icmp_type=icmp_type, icmp_code=icmp_code,count=pkt_cnt)
-                sent, recv = self.stop_traffic_scapy(sender, receiver)
-                assert sent != 0, "sent count is ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
-                #verify packet count and stop tcpdump
-                assert verify_tcpdump_count(self, session, pcap, exp_count=0), "pkt count in tcpdump is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
+        for icmp_code in xrange(0, 3):
+            # start tcpdump on src VM
+            filters = '\'(icmp[0] = %s and icmp[1] = %s)\'' % (
+                icmp_type, icmp_code)
+            session, pcap = start_tcpdump_for_vm_intf(
+                self, src_vm_fix, src_vn_fq_name, filters=filters)
+            sender, receiver = self.start_traffic_scapy(
+                dst_vm_fix, src_vm_fix, 'icmp', port, port, payload="payload", icmp_type=icmp_type, icmp_code=icmp_code, count=pkt_cnt)
+            sent, recv = self.stop_traffic_scapy(sender, receiver)
+            assert sent != 0, "sent count is ZERO for icmp type %s and code %s" % (
+                icmp_type, icmp_code)
+            # verify packet count and stop tcpdump
+            assert verify_tcpdump_count(
+                self, session, pcap, exp_count=0), "pkt count in tcpdump is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
 
-        #type 3 , code (4,15)
+        # type 3 , code (4,15)
         icmp_type = 3
-        for icmp_code in xrange(4,16):
-                #start tcpdump on src VM
-                filters = '\'(icmp[0] = %s and icmp[1] = %s)\'' % (icmp_type, icmp_code)
-                session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
-                sender, receiver = self.start_traffic_scapy(dst_vm_fix, src_vm_fix, 'icmp',
-                                        port, port, payload="payload",
-                                        icmp_type=icmp_type, icmp_code=icmp_code,count=pkt_cnt)
-                sent, recv = self.stop_traffic_scapy(sender, receiver)
-                assert sent != 0, "sent count is ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
-                #verify packet count and stop tcpdump
-                assert verify_tcpdump_count(self, session, pcap, exp_count=0), "pkt count in tcpdump is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
+        for icmp_code in xrange(4, 16):
+            # start tcpdump on src VM
+            filters = '\'(icmp[0] = %s and icmp[1] = %s)\'' % (
+                icmp_type, icmp_code)
+            session, pcap = start_tcpdump_for_vm_intf(
+                self, src_vm_fix, src_vn_fq_name, filters=filters)
+            sender, receiver = self.start_traffic_scapy(
+                dst_vm_fix, src_vm_fix, 'icmp', port, port, payload="payload", icmp_type=icmp_type, icmp_code=icmp_code, count=pkt_cnt)
+            sent, recv = self.stop_traffic_scapy(sender, receiver)
+            assert sent != 0, "sent count is ZERO for icmp type %s and code %s" % (
+                icmp_type, icmp_code)
+            # verify packet count and stop tcpdump
+            assert verify_tcpdump_count(
+                self, session, pcap, exp_count=0), "pkt count in tcpdump is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
 
-        #type (4,11), code 0
+        # type (4,11), code 0
         icmp_code = 0
-        for icmp_type in xrange(4,12):
-                #start tcpdump on src VM
-                filters = '\'(icmp[0] = %s and icmp[1] = %s)\'' % (icmp_type, icmp_code)
-                session, pcap = start_tcpdump_for_vm_intf(self, src_vm_fix, src_vn_fq_name, filters = filters)
-                sender, receiver = self.start_traffic_scapy(dst_vm_fix, src_vm_fix, 'icmp',
-                                        port, port, payload="payload",
-                                        icmp_type=icmp_type, icmp_code=icmp_code,count=pkt_cnt)
-                sent, recv = self.stop_traffic_scapy(sender, receiver)
-                assert sent != 0, "sent count is ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
-                #verify packet count and stop tcpdump
-                assert verify_tcpdump_count(self, session, pcap, exp_count=0), "pkt count in tcpdump is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
+        for icmp_type in xrange(4, 12):
+            # start tcpdump on src VM
+            filters = '\'(icmp[0] = %s and icmp[1] = %s)\'' % (
+                icmp_type, icmp_code)
+            session, pcap = start_tcpdump_for_vm_intf(
+                self, src_vm_fix, src_vn_fq_name, filters=filters)
+            sender, receiver = self.start_traffic_scapy(
+                dst_vm_fix, src_vm_fix, 'icmp', port, port, payload="payload", icmp_type=icmp_type, icmp_code=icmp_code, count=pkt_cnt)
+            sent, recv = self.stop_traffic_scapy(sender, receiver)
+            assert sent != 0, "sent count is ZERO for icmp type %s and code %s" % (
+                icmp_type, icmp_code)
+            # verify packet count and stop tcpdump
+            assert verify_tcpdump_count(
+                self, session, pcap, exp_count=0), "pkt count in tcpdump is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
 
-        #verify packet count and stop tcpdump
+        # verify packet count and stop tcpdump
         assert verify_tcpdump_count(self, session1, pcap1)
-        #stop traffic
-        sent, recv = self.stop_traffic_scapy(sender1, receiver1,recvr=False)
+        # stop traffic
+        sent, recv = self.stop_traffic_scapy(sender1, receiver1, recvr=False)
         return True
-        #end test_icmp_error_payload_matching
+        # end test_icmp_error_payload_matching
 
-#end class SecurityGroupRegressionTests7
+# end class SecurityGroupRegressionTests7
+
 
 class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
@@ -1355,10 +1508,10 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         Steps:
             1. create resources as defined in topology
             2. start traffic for specific protocol which matches with specific security group rule
-	    3. get flow records from agent and verify if sg rule uuid matches with corresponding ingress/egress rule id
+            3. get flow records from agent and verify if sg rule uuid matches with corresponding ingress/egress rule id
         Pass criteria:
-	    step 3 should PASS
-	"""
+            step 3 should PASS
+        """
 
         topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
         topo = topology_class_name()
@@ -1392,16 +1545,16 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         src_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[src_vm_name]]
         dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
         default_secgrp_id = get_secgrp_id_from_name(
-                                self.connections,
-                                ':'.join([self.inputs.domain_name,
-                                        self.inputs.project_name,
-                                        'default']))
+            self.connections,
+            ':'.join([self.inputs.domain_name,
+                      self.inputs.project_name,
+                      'default']))
 
         # test with default SG
         traffic_obj = BaseTraffic.factory(proto=proto)
         assert traffic_obj
         assert traffic_obj.start(src_vm_fix, dst_vm_fix,
-                              proto, port, port)
+                                 proto, port, port)
 
         assert self.verify_flow_to_sg_rule_mapping(
             src_vm_fix,
@@ -1416,10 +1569,10 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         # test with user-defined SG
         sg_name = topo_obj.sg_list[0]
         secgrp_id = get_secgrp_id_from_name(
-                                self.connections,
-                                ':'.join([self.inputs.domain_name,
-                                        self.inputs.project_name,
-                                        sg_name]))
+            self.connections,
+            ':'.join([self.inputs.domain_name,
+                      self.inputs.project_name,
+                      sg_name]))
 
         src_vm_fix.remove_security_group(secgrp=default_secgrp_id)
         dst_vm_fix.remove_security_group(secgrp=default_secgrp_id)
@@ -1429,8 +1582,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         traffic_obj = BaseTraffic.factory(proto=proto)
         assert traffic_obj
         assert traffic_obj.start(src_vm_fix, dst_vm_fix,
-                              proto, port, port)
-     
+                                 proto, port, port)
 
         assert self.verify_flow_to_sg_rule_mapping(
             src_vm_fix,
@@ -1442,7 +1594,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
             port)
         sent, recv = traffic_obj.stop()
 
-        return True 
+        return True
     # end test_flow_to_sg_rule_mapping
 
     @preposttest_wrapper
@@ -1494,20 +1646,20 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         traffic_obj_udp = BaseTraffic.factory(proto='udp')
         assert traffic_obj_udp
         assert traffic_obj_udp.start(src_vm_fix, dst_vm_fix,
-                              'udp', port, port)
+                                     'udp', port, port)
         traffic_obj_tcp = BaseTraffic.factory(proto='tcp')
         assert traffic_obj_tcp
         assert traffic_obj_tcp.start(src_vm_fix, dst_vm_fix,
-                              'tcp', port, port)
+                                     'tcp', port, port)
         sender_icmp, receiver_icmp = self.start_traffic_scapy(
             src_vm_fix, dst_vm_fix, 'icmp', port, port, payload="payload")
 
         sg_name = topo_obj.sg_list[0]
         secgrp_id = get_secgrp_id_from_name(
-                                self.connections,
-                                ':'.join([self.inputs.domain_name,
-                                        self.inputs.project_name,
-                                        sg_name]))
+            self.connections,
+            ':'.join([self.inputs.domain_name,
+                      self.inputs.project_name,
+                      sg_name]))
 
         assert self.verify_flow_to_sg_rule_mapping(
             src_vm_fix,
@@ -1520,10 +1672,10 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         sg_name = topo_obj.sg_list[1]
         secgrp_id = get_secgrp_id_from_name(
-                                self.connections,
-                                ':'.join([self.inputs.domain_name,
-                                        self.inputs.project_name,
-                                        sg_name]))
+            self.connections,
+            ':'.join([self.inputs.domain_name,
+                      self.inputs.project_name,
+                      sg_name]))
 
         assert self.verify_flow_to_sg_rule_mapping(
             src_vm_fix,
@@ -1537,10 +1689,10 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         port = 0
         sg_name = topo_obj.sg_list[0]
         secgrp_id = get_secgrp_id_from_name(
-                                self.connections,
-                                ':'.join([self.inputs.domain_name,
-                                        self.inputs.project_name,
-                                        sg_name]))
+            self.connections,
+            ':'.join([self.inputs.domain_name,
+                      self.inputs.project_name,
+                      sg_name]))
 
         assert self.verify_flow_to_sg_rule_mapping(
             src_vm_fix,
@@ -1557,13 +1709,13 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         sent, recv = self.stop_traffic_scapy(sender_icmp, receiver_icmp)
 
         return True
-    #end test_flow_to_sg_rule_mapping_multiple_rules
+    # end test_flow_to_sg_rule_mapping_multiple_rules
 
     @preposttest_wrapper
     def test_flow_to_sg_rule_mapping_intra_vn(self):
         """
         Description: test flow to security group rule uuid mapping for
-	    1. intra VN traffic with diff SG in src and dst VM
+            1. intra VN traffic with diff SG in src and dst VM
         Steps:
             1. create resources as defined in topology
             2. start traffic for specific protocol which matches with specific security group rule
@@ -1626,23 +1778,23 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
             dst_vn_fq_name = ':'.join(dst_vn_fix._obj.get_fq_name())
 
         secgrp_id = get_secgrp_id_from_name(
-                                self.connections,
-                                ':'.join([self.inputs.domain_name,
-                                        self.inputs.project_name,
-                                        src_sg_name]))
+            self.connections,
+            ':'.join([self.inputs.domain_name,
+                      self.inputs.project_name,
+                      src_sg_name]))
         # start traffic
         traffic_obj = BaseTraffic.factory(proto=proto)
         assert traffic_obj
         assert traffic_obj.start(src_vm_fix, dst_vm_fix,
-                              proto, port, port)
+                                 proto, port, port)
 
         # get the egress rule uuid
         rule_uuid = None
         rules = list_sg_rules(self.connections, secgrp_id)
         for rule in rules:
-            if rule['direction'] == 'egress' and (rule['ethertype'] == 'IPv4' or \
-                        rule['remote_ip_prefix'] == '0.0.0.0/0') and \
-                       (rule['protocol'] == 'any' or rule['protocol'] == proto):
+            if rule['direction'] == 'egress' and (
+                    rule['ethertype'] == 'IPv4' or rule['remote_ip_prefix'] == '0.0.0.0/0') and (
+                    rule['protocol'] == 'any' or rule['protocol'] == proto):
                 rule_uuid = rule['id']
                 break
         assert rule_uuid, "Egress rule id could not be found"
@@ -1663,20 +1815,20 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
                 nh, dst_vm_fix, src_vm_fix, port, port, '17',
                 rule_uuid, src_vm_fix.vm_node_ip):
             test_result = False
-        
+
         if src_vm_fix.vm_node_ip != dst_vm_fix.vm_node_ip:
             secgrp_id = get_secgrp_id_from_name(
-                                    self.connections,
-                                    ':'.join([self.inputs.domain_name,
-                                            self.inputs.project_name,
-                                            dst_sg_name]))
+                self.connections,
+                ':'.join([self.inputs.domain_name,
+                          self.inputs.project_name,
+                          dst_sg_name]))
 
             # get the ingress rule uuid
             rule_uuid = None
             rules = list_sg_rules(self.connections, secgrp_id)
             for rule in rules:
-                if rule['direction'] == 'ingress' and \
-                     (rule['protocol'] == 'any' or rule['protocol'] == proto):
+                if rule['direction'] == 'ingress' and (
+                        rule['protocol'] == 'any' or rule['protocol'] == proto):
                     rule_uuid = rule['id']
                     break
             assert rule_uuid, "Ingress rule id could not be found"
@@ -1699,7 +1851,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         return True
 
-    #end test_flow_to_sg_rule_mapping_intra_vn
+    # end test_flow_to_sg_rule_mapping_intra_vn
 
     @preposttest_wrapper
     def test_verify_sg_rule_uuid_in_control_api(self):
@@ -1763,10 +1915,10 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         for sg_name in sg_list:
             secgrp_id = get_secgrp_id_from_name(
-                                self.connections,
-                                ':'.join([self.inputs.domain_name,
-                                        self.inputs.project_name,
-                                        sg_name]))
+                self.connections,
+                ':'.join([self.inputs.domain_name,
+                          self.inputs.project_name,
+                          sg_name]))
 
             # get the egress and ingress rule uuid
             egress_ipv4_id = None
@@ -1775,7 +1927,8 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
             ingress_ipv6_id = None
             rules = list_sg_rules(self.connections, secgrp_id)
             for rule in rules:
-                if rule['direction'] == 'egress' and rule['ethertype'] == 'IPv4':
+                if rule['direction'] == 'egress' and rule[
+                        'ethertype'] == 'IPv4':
                     egress_ipv4_id = rule['id']
                 elif rule['direction'] == 'ingress' and rule['ethertype'] == 'IPv4':
                     ingress_ipv4_id = rule['id']
@@ -1783,7 +1936,6 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
                     ingress_ipv6_id = rule['id']
                 elif rule['direction'] == 'egress' and rule['ethertype'] == 'IPv6':
                     egress_ipv6_id = rule['id']
-
 
             assert egress_ipv4_id, "Egress rule id could not be found"
             assert ingress_ipv4_id, "Ingress rule id could not be found"
@@ -1800,7 +1952,8 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
             uuid_ingress_ipv6 = None
 
             for rule in api_secgrp_obj['security-group']['security_group_entries']['policy_rule']:
-                if rule['src_addresses'][0]['security_group'] == "local" and rule['ethertype'] == 'IPv4':
+                if rule['src_addresses'][0][
+                        'security_group'] == "local" and rule['ethertype'] == 'IPv4':
                     uuid_egress_ipv4 = rule['rule_uuid']
                 elif rule['dst_addresses'][0]['security_group'] == "local" and rule['ethertype'] == 'IPv4':
                     uuid_ingress_ipv4 = rule['rule_uuid']
@@ -1821,8 +1974,9 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
                 assert egress_ipv6_id == uuid_egress_ipv6, "egress IPv6 rule uuid is not same in API \
                                                         and neutron for SG:%s" % (sg_name)
 
-
-            self.logger.info("%s security group rule uuid matches in API with neutron" % (sg_name))
+            self.logger.info(
+                "%s security group rule uuid matches in API with neutron" %
+                (sg_name))
             # get SG rule uuid from control node and match with neutron uuid
             for cn in self.inputs.bgp_ips:
                 uuid_egress_ipv4 = None
@@ -1831,7 +1985,8 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
                     project=prj_name,
                     secgrp=sg_name)
                 for rule in cn_secgrp_obj['obj_info'][0]['data']['security-group-entries']:
-                    if rule['src-addresses']['security-group'] == 'local' and rule['ethertype'] == 'IPv4':
+                    if rule[
+                            'src-addresses']['security-group'] == 'local' and rule['ethertype'] == 'IPv4':
                         uuid_egress_ipv4 = rule['rule-uuid']
                     elif rule['dst-addresses']['security-group'] == 'local' and rule['ethertype'] == 'IPv4':
                         uuid_ingress_ipv4 = rule['rule-uuid']
@@ -1851,12 +2006,15 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
                     assert egress_ipv6_id == uuid_egress_ipv6, "egress IPv6 rule uuid is not same in control \
                                                         and neutron for SG:%s" % (sg_name)
 
-            self.logger.info("%s security group rule uuid matches in control with neutron" % (sg_name))
+            self.logger.info(
+                "%s security group rule uuid matches in control with neutron" %
+                (sg_name))
 
         return True
         # end test_verify_sg_rule_uuid_in_control_api
 
-#end class SecurityGroupRegressionTests8
+# end class SecurityGroupRegressionTests8
+
 
 class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
@@ -1873,7 +2031,8 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         """ add/remove default SG from VM when flow is active and traffic from both ends"""
 
         topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
-        topo_obj, config_topo = self.create_topo_setup(topology_class_name, "build_topo")
+        topo_obj, config_topo = self.create_topo_setup(
+            topology_class_name, "build_topo")
 
         port = 10000
         src_vm_name = 'vm1'
@@ -1885,10 +2044,10 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         sg_name = 'default'
         secgrp_id = get_secgrp_id_from_name(
-                                self.connections,
-                                ':'.join([self.inputs.domain_name,
-                                        self.inputs.project_name,
-                                        sg_name]))
+            self.connections,
+            ':'.join([self.inputs.domain_name,
+                      self.inputs.project_name,
+                      sg_name]))
 
         filters1 = '\'(udp and src host %s and dst host %s)\'' % (
             src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
@@ -1901,21 +2060,21 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
             dst_vm_fix, src_vm_fix, 'tcp', port, port, payload="payload")
 
         assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                             dst_vm_fix, dst_vn_fix,
-                             filters2, filters1)
+                                          dst_vm_fix, dst_vn_fix,
+                                          filters2, filters1)
 
         src_vm_fix.remove_security_group(secgrp=secgrp_id)
 
         assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                             dst_vm_fix, dst_vn_fix,
-                             filters2, filters1,
-                             src_exp_count=0, dst_exp_count=0)
+                                          dst_vm_fix, dst_vn_fix,
+                                          filters2, filters1,
+                                          src_exp_count=0, dst_exp_count=0)
 
         src_vm_fix.add_security_group(secgrp=secgrp_id)
 
         assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                             dst_vm_fix, dst_vn_fix,
-                             filters2, filters1)
+                                          dst_vm_fix, dst_vn_fix,
+                                          filters2, filters1)
 
         # stop traffic
         sent, recv = self.stop_traffic_scapy(sender1, receiver1)
@@ -1931,7 +2090,8 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         2.Test for SG with rule with remote as sg for both ingress-egress"""
 
         topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
-        topo_obj, config_topo = self.create_topo_setup(topology_class_name, "build_topo")
+        topo_obj, config_topo = self.create_topo_setup(
+            topology_class_name, "build_topo")
 
         sg_allow_all = self.create_sec_group_allow_all()
         port = 10000
@@ -1944,16 +2104,16 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         sg_name = topo_obj.sg_list[0]
         secgrp_id = get_secgrp_id_from_name(
-                                self.connections,
-                                ':'.join([self.inputs.domain_name,
-                                        self.inputs.project_name,
-                                        sg_name]))
+            self.connections,
+            ':'.join([self.inputs.domain_name,
+                      self.inputs.project_name,
+                      sg_name]))
 
         default_sg_id = get_secgrp_id_from_name(
-                                self.connections,
-                                ':'.join([self.inputs.domain_name,
-                                        self.inputs.project_name,
-                                        'default']))
+            self.connections,
+            ':'.join([self.inputs.domain_name,
+                      self.inputs.project_name,
+                      'default']))
 
         src_vm_fix.remove_security_group(secgrp=default_sg_id)
         dst_vm_fix.remove_security_group(secgrp=default_sg_id)
@@ -1988,16 +2148,16 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
             dst_vm_fix, src_vm_fix, 'udp', port, port, payload="payload")
 
         assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                             dst_vm_fix, dst_vn_fix,
-                             filters2, filters1)
+                                          dst_vm_fix, dst_vn_fix,
+                                          filters2, filters1)
 
         src_vm_fix.remove_security_group(secgrp=secgrp_id)
         src_vm_fix.add_security_group(secgrp=sg_allow_all)
 
         assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                             dst_vm_fix, dst_vn_fix,
-                             filters2, filters1,
-                             src_exp_count=0, dst_exp_count=0)
+                                          dst_vm_fix, dst_vn_fix,
+                                          filters2, filters1,
+                                          src_exp_count=0, dst_exp_count=0)
 
         # stop traffic
         sent, recv = self.stop_traffic_scapy(sender1, receiver1)
@@ -2014,7 +2174,8 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         2.Test for SG with egress cidr rule,ingress sg"""
 
         topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
-        topo_obj, config_topo = self.create_topo_setup(topology_class_name, "build_topo")
+        topo_obj, config_topo = self.create_topo_setup(
+            topology_class_name, "build_topo")
 
         sg_allow_all = self.create_sec_group_allow_all()
 
@@ -2029,16 +2190,16 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         sg_name = topo_obj.sg_list[0]
         secgrp_id = get_secgrp_id_from_name(
-                                self.connections,
-                                ':'.join([self.inputs.domain_name,
-                                        self.inputs.project_name,
-                                        sg_name]))
+            self.connections,
+            ':'.join([self.inputs.domain_name,
+                      self.inputs.project_name,
+                      sg_name]))
 
         default_sg_id = get_secgrp_id_from_name(
-                                self.connections,
-                                ':'.join([self.inputs.domain_name,
-                                        self.inputs.project_name,
-                                        'default']))
+            self.connections,
+            ':'.join([self.inputs.domain_name,
+                      self.inputs.project_name,
+                      'default']))
 
         src_vm_fix.remove_security_group(secgrp=default_sg_id)
         dst_vm_fix.remove_security_group(secgrp=default_sg_id)
@@ -2075,16 +2236,16 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
             dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
 
         assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                             dst_vm_fix, dst_vn_fix,
-                             filters2, filters1)
+                                          dst_vm_fix, dst_vn_fix,
+                                          filters2, filters1)
 
         src_vm_fix.remove_security_group(secgrp=secgrp_id)
         src_vm_fix.add_security_group(secgrp=sg_allow_all)
 
         assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                             dst_vm_fix, dst_vn_fix,
-                             filters2, filters1,
-                             dst_exp_count=0)
+                                          dst_vm_fix, dst_vn_fix,
+                                          filters2, filters1,
+                                          dst_exp_count=0)
 
         # stop traffic
         sent, recv = self.stop_traffic_scapy(sender1, receiver1)
@@ -2101,7 +2262,8 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         2. Test for SG with ingress cidr and egress sg"""
 
         topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
-        topo_obj, config_topo = self.create_topo_setup(topology_class_name, "build_topo")
+        topo_obj, config_topo = self.create_topo_setup(
+            topology_class_name, "build_topo")
 
         sg_allow_all = self.create_sec_group_allow_all()
         port = 10000
@@ -2115,16 +2277,16 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         sg_name = topo_obj.sg_list[0]
         secgrp_id = get_secgrp_id_from_name(
-                                self.connections,
-                                ':'.join([self.inputs.domain_name,
-                                        self.inputs.project_name,
-                                        sg_name]))
+            self.connections,
+            ':'.join([self.inputs.domain_name,
+                      self.inputs.project_name,
+                      sg_name]))
 
         default_sg_id = get_secgrp_id_from_name(
-                                self.connections,
-                                ':'.join([self.inputs.domain_name,
-                                        self.inputs.project_name,
-                                        'default']))
+            self.connections,
+            ':'.join([self.inputs.domain_name,
+                      self.inputs.project_name,
+                      'default']))
 
         src_vm_fix.remove_security_group(secgrp=default_sg_id)
         dst_vm_fix.remove_security_group(secgrp=default_sg_id)
@@ -2161,16 +2323,16 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
             dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
 
         assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                             dst_vm_fix, dst_vn_fix,
-                             filters2, filters1)
+                                          dst_vm_fix, dst_vn_fix,
+                                          filters2, filters1)
 
         src_vm_fix.remove_security_group(secgrp=secgrp_id)
         src_vm_fix.add_security_group(secgrp=sg_allow_all)
 
         assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                             dst_vm_fix, dst_vn_fix,
-                             filters2, filters1,
-                             src_exp_count=0)
+                                          dst_vm_fix, dst_vn_fix,
+                                          filters2, filters1,
+                                          src_exp_count=0)
 
         # stop traffic
         sent, recv = self.stop_traffic_scapy(sender1, receiver1)
@@ -2187,7 +2349,8 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         2. Test for SG with cidr both ingress-egress"""
 
         topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
-        topo_obj, config_topo = self.create_topo_setup(topology_class_name, "build_topo")
+        topo_obj, config_topo = self.create_topo_setup(
+            topology_class_name, "build_topo")
 
         port = 10000
         src_vm_name = 'vm1'
@@ -2199,16 +2362,16 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         sg_name = topo_obj.sg_list[0]
 
         secgrp_id = get_secgrp_id_from_name(
-                                self.connections,
-                                ':'.join([self.inputs.domain_name,
-                                        self.inputs.project_name,
-                                        sg_name]))
+            self.connections,
+            ':'.join([self.inputs.domain_name,
+                      self.inputs.project_name,
+                      sg_name]))
 
         default_sg_id = get_secgrp_id_from_name(
-                                self.connections,
-                                ':'.join([self.inputs.domain_name,
-                                        self.inputs.project_name,
-                                        'default']))
+            self.connections,
+            ':'.join([self.inputs.domain_name,
+                      self.inputs.project_name,
+                      'default']))
 
         src_vm_fix.remove_security_group(secgrp=default_sg_id)
         dst_vm_fix.remove_security_group(secgrp=default_sg_id)
@@ -2245,15 +2408,15 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
             dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
 
         assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                             dst_vm_fix, dst_vn_fix,
-                             filters2, filters1)
+                                          dst_vm_fix, dst_vn_fix,
+                                          filters2, filters1)
 
         src_vm_fix.remove_security_group(secgrp=secgrp_id)
         src_vm_fix.add_security_group(secgrp=secgrp_id)
 
         assert self.verify_traffic_on_vms(src_vm_fix, src_vn_fix,
-                             dst_vm_fix, dst_vn_fix,
-                             filters2, filters1)
+                                          dst_vm_fix, dst_vn_fix,
+                                          filters2, filters1)
 
         # stop traffic
         sent, recv = self.stop_traffic_scapy(sender1, receiver1)
@@ -2262,7 +2425,8 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         return True
         # end test_add_remove_sg_active_flow4
 
-#end class SecurityGroupRegressionTests9
+# end class SecurityGroupRegressionTests9
+
 
 class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
@@ -2301,35 +2465,35 @@ class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
                 username=self.project.username,
                 password=self.project.password,
                 compute_node_list=self.inputs.compute_ips)
-        except (AttributeError,NameError):
+        except (AttributeError, NameError):
             topo.build_topo2(compute_node_list=self.inputs.compute_ips)
 
         topo.sg_rules[topo.sg_list[0]] = [
-                {'direction': '>',
-                'protocol': 'any',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0',
-                                    'ip_prefix_len': 0}}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_addresses': [{'security_group': 'local'}],
-                 }]
+            {'direction': '>',
+             'protocol': 'any',
+             'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0',
+                                           'ip_prefix_len': 0}}],
+             'dst_ports': [{'start_port': 0, 'end_port': -1}],
+             'src_ports': [{'start_port': 0, 'end_port': -1}],
+             'src_addresses': [{'security_group': 'local'}],
+             }]
         topo.sg_rules[topo.sg_list[1]] = [
-                {'direction': '>',
-                'protocol': 'any',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0',
-                                    'ip_prefix_len': 0}}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_addresses': [{'security_group': 'local'}],
-                 },
-                {'direction': '>',
-                'protocol': 'any',
-                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0',
-                                    'ip_prefix_len': 0}}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_addresses': [{'security_group': 'local'}],
-                 }]
+            {'direction': '>',
+             'protocol': 'any',
+             'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0',
+                                           'ip_prefix_len': 0}}],
+             'dst_ports': [{'start_port': 0, 'end_port': -1}],
+             'src_ports': [{'start_port': 0, 'end_port': -1}],
+             'src_addresses': [{'security_group': 'local'}],
+             },
+            {'direction': '>',
+             'protocol': 'any',
+             'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0',
+                                           'ip_prefix_len': 0}}],
+             'dst_ports': [{'start_port': 0, 'end_port': -1}],
+             'src_ports': [{'start_port': 0, 'end_port': -1}],
+             'dst_addresses': [{'security_group': 'local'}],
+             }]
 
         setup_obj = self.useFixture(
             sdnTopoSetupFixture(self.connections, topo))
@@ -2350,14 +2514,16 @@ class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.logger.info("copying syn client to the compute node.")
         path = os.getcwd() + '/tcutils/pkgs/syn_ack_test/' + pkg
         host_compute = {
-          'username': self.inputs.host_data[src_vm_fix.vm_node_ip]['username'],
-          'password': self.inputs.host_data[src_vm_fix.vm_node_ip]['password'],
-          'ip': src_vm_fix.vm_node_ip}
+            'username': self.inputs.host_data[
+                src_vm_fix.vm_node_ip]['username'],
+            'password': self.inputs.host_data[
+                src_vm_fix.vm_node_ip]['password'],
+            'ip': src_vm_fix.vm_node_ip}
         copy_file_to_server(host_compute, path, '/tmp', pkg)
 
         self.logger.info("copying syn client from compute node to VM")
         with settings(host_string='%s@%s' % (self.inputs.username,
-                                            src_vm_fix.vm_node_ip),
+                                             src_vm_fix.vm_node_ip),
                       password=self.inputs.password, warn_only=True,
                       abort_on_prompts=False):
             path = '/tmp/' + pkg
@@ -2380,7 +2546,7 @@ class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         self.logger.info("copying syn server from compute node to VM")
         with settings(host_string='%s@%s' % (self.inputs.username,
-                                            dst_vm_fix.vm_node_ip),
+                                             dst_vm_fix.vm_node_ip),
                       password=self.inputs.password, warn_only=True,
                       abort_on_prompts=False):
             path = '/tmp/' + pkg
@@ -2398,18 +2564,22 @@ class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
         cmd2 = 'chmod +x /tmp/syn_client.py;/tmp/syn_client.py %s %s \
                     2>/tmp/client.log 1>/tmp/client.log' \
                     % (dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
-        output_cmd_dict = dst_vm_fix.run_cmd_on_vm(cmds=[cmd1],
-                                        as_sudo=True, as_daemon=True)
-        output_cmd_dict = src_vm_fix.run_cmd_on_vm(cmds=[cmd2],
-                                        as_sudo=True, as_daemon=True)
+        output_cmd_dict = dst_vm_fix.run_cmd_on_vm(
+            cmds=[cmd1],
+            as_sudo=True,
+            as_daemon=True)
+        output_cmd_dict = src_vm_fix.run_cmd_on_vm(
+            cmds=[cmd2],
+            as_sudo=True,
+            as_daemon=True)
 
         sleep(1)
-        #verify flow created
+        # verify flow created
         inspect_h1 = self.agent_inspect[src_vm_fix.vm_node_ip]
         flow_rec1 = None
         sport = '8100'
         dport = '8000'
-        vn_fq_name=src_vm_fix.vn_fq_name
+        vn_fq_name = src_vm_fix.vn_fq_name
         flow_timeout = 180
 
         flow_rec1 = inspect_h1.get_vna_fetchflowrecord(
@@ -2420,10 +2590,10 @@ class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
             dport=dport,
             protocol='6')
         assert flow_rec1
-        #wait for flow to expire
-        sleep(flow_timeout+2)
+        # wait for flow to expire
+        sleep(flow_timeout + 2)
 
-        #verify flow created again
+        # verify flow created again
         flow_rec1 = inspect_h1.get_vna_fetchflowrecord(
             nh=src_vm_fix.tap_intf[vn_fq_name]['flow_key_idx'],
             sip=src_vm_fix.vm_ip,
@@ -2443,55 +2613,122 @@ class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
         assert flow_rec1
 
         return True
-    #end test_syn_ack_create_flow
+    # end test_syn_ack_create_flow
 
-# end class SecurityGroupSynAckTest 
+# end class SecurityGroupSynAckTest
 
 
-#creating new classes to run all tests with contrail apis
-class SecurityGroupBasicRegressionTests1_contrail(test_regression_basic.SecurityGroupBasicRegressionTests1):
+# creating new classes to run all tests with contrail apis
+class SecurityGroupBasicRegressionTests1_contrail(
+        test_regression_basic.SecurityGroupBasicRegressionTests1):
+
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupBasicRegressionTests1_contrail, cls).setUpClass()
         cls.option = 'contrail'
+
+
 class SecurityGroupRegressionTests2_contrail(SecurityGroupRegressionTests2):
+
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests2, cls).setUpClass()
         cls.option = 'contrail'
+
+
 class SecurityGroupRegressionTests3_contrail(SecurityGroupRegressionTests3):
+
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests3, cls).setUpClass()
         cls.option = 'contrail'
+
+
 class SecurityGroupRegressionTests4_contrail(SecurityGroupRegressionTests4):
+
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests4, cls).setUpClass()
         cls.option = 'contrail'
+
+
 class SecurityGroupRegressionTests5_contrail(SecurityGroupRegressionTests5):
+
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests5, cls).setUpClass()
         cls.option = 'contrail'
+
+
 class SecurityGroupRegressionTests6_contrail(SecurityGroupRegressionTests6):
+
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests6, cls).setUpClass()
         cls.option = 'contrail'
+
+
 class SecurityGroupRegressionTests7_contrail(SecurityGroupRegressionTests7):
+
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests7, cls).setUpClass()
         cls.option = 'contrail'
+
+
 class SecurityGroupRegressionTests8_contrail(SecurityGroupRegressionTests8):
+
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests8, cls).setUpClass()
         cls.option = 'contrail'
+
+
 class SecurityGroupRegressionTests9_contrail(SecurityGroupRegressionTests9):
+
     @classmethod
     def setUpClass(cls):
         super(SecurityGroupRegressionTests9, cls).setUpClass()
         cls.option = 'contrail'
 
+
+class SecurityGroupRegressionTests2Ipv6(SecurityGroupRegressionTests2):
+
+    @classmethod
+    def setUpClass(cls):
+        super(SecurityGroupRegressionTests2Ipv6, cls).setUpClass()
+        cls.inputs.set_af(AF_TEST)
+
+    def is_test_applicable(self):
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported(
+                'ipv6'):
+            return(False, 'Skipping IPv6 Test on vcenter setup')
+        return (True, None)
+
+
+class SecurityGroupRegressionTests3Ipv6(SecurityGroupRegressionTests3):
+
+    @classmethod
+    def setUpClass(cls):
+        super(SecurityGroupRegressionTests3Ipv6, cls).setUpClass()
+        cls.inputs.set_af(AF_TEST)
+
+    def is_test_applicable(self):
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported(
+                'ipv6'):
+            return(False, 'Skipping IPv6 Test on vcenter setup')
+        return (True, None)
+
+
+class SecurityGroupRegressionTests5Ipv6(SecurityGroupRegressionTests5):
+
+    @classmethod
+    def setUpClass(cls):
+        super(SecurityGroupRegressionTests5Ipv6, cls).setUpClass()
+        cls.inputs.set_af(AF_TEST)
+
+    def is_test_applicable(self):
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported(
+                'ipv6'):
+            return(False, 'Skipping IPv6 Test on vcenter setup')
+        return (True, None)
