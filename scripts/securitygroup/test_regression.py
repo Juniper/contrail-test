@@ -7,7 +7,8 @@ from vn_test import MultipleVNFixture
 from vm_test import MultipleVMFixture
 from base import BaseSGTest
 from common.policy.config import ConfigPolicy
-from security_group import SecurityGroupFixture,get_secgrp_id_from_name
+from security_group import SecurityGroupFixture,get_secgrp_id_from_name,\
+    set_default_sg_rules
 from vn_test import VNFixture
 from vm_test import VMFixture
 from tcutils.topo.topo_helper import *
@@ -23,6 +24,8 @@ from tcutils.util import get_random_name
 from base_traffic import *
 from tcutils.util import skip_because
 import test_regression_basic
+
+AF_TEST = 'v6'
 
 class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
@@ -67,16 +70,16 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.config_policy_and_attach_to_vn(rules)
         rule = [{'direction': '<>',
                 'protocol': 'tcp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'tcp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
@@ -85,16 +88,16 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         rule = [{'direction': '<>',
                 'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
@@ -131,16 +134,16 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         rule = [{'direction': '<>',
                 'protocol': 'tcp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 8000, 'end_port': 9000}],
                  'src_ports': [{'start_port': 8000, 'end_port': 9000}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'tcp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 8000, 'end_port': 9000}],
                  'dst_ports': [{'start_port': 8000, 'end_port': 9000}],
                  'dst_addresses': [{'security_group': 'local'}],
@@ -149,23 +152,23 @@ class SecurityGroupRegressionTests2(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         rule = [{'direction': '<>',
                 'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 8000, 'end_port': 9000}],
                  'src_ports': [{'start_port': 8000, 'end_port': 9000}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 8000, 'end_port': 9000}],
                  'dst_ports': [{'start_port': 8000, 'end_port': 9000}],
                  'dst_addresses': [{'security_group': 'local'}],
                  }]
         self.sg2_fix.replace_rules(rule)
 
-        self.verify_sec_group_port_proto(port_test=True)
+        self.verify_sec_group_port_proto(port_test=True, sport=8000, dport=9000)
         return True
 
 #end class SecurityGroupRegressionTests2
@@ -215,16 +218,16 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         rule = [{'direction': '<>',
                 'protocol': 'tcp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'tcp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
@@ -233,16 +236,16 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         rule = [{'direction': '<>',
                 'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
@@ -280,16 +283,16 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         rule = [{'direction': '<>',
                 'protocol': 'tcp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'tcp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
@@ -298,23 +301,23 @@ class SecurityGroupRegressionTests3(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         rule = [{'direction': '<>',
                 'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
                  }]
         self.sg2_fix.replace_rules(rule)
 
-        self.verify_sec_group_with_udp_and_policy_with_tcp_port()
+        self.verify_sec_group_with_udp_and_policy_with_tcp_port(sport=8000, dport=9000)
         return True
 
 #end class SecurityGroupRegressionTests3
@@ -391,7 +394,7 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.create_sg_test_resources()
 
     def tearDown(self):
-        self.logger.debug("Tearing down SecurityGroupRegressionTests2.")
+        self.logger.debug("Tearing down SecurityGroupRegressionTests5.")
         super(SecurityGroupRegressionTests5, self).tearDown()
 
     def runTest(self):
@@ -423,32 +426,32 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.config_policy_and_attach_to_vn(rules)
         rule = [{'direction': '<>',
                 'protocol': 'tcp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'tcp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
                  },
 		{'direction': '<>',
                 'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
 		{'direction': '<>',
                  'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
@@ -456,16 +459,16 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.sg1_fix.replace_rules(rule)
         rule = [{'direction': '<>',
                 'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
@@ -528,16 +531,16 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.sg1_fix.delete_all_rules(sg_id)
         rule = [{'direction': '<>',
                 'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix, 'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix, 'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
@@ -550,23 +553,7 @@ class SecurityGroupRegressionTests5(BaseSGTest, VerifySecGroup, ConfigPolicy):
         self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'pass')
 
         #revert back default sg
-        self.sg1_fix.delete_all_rules(sg_id)
-        rule = [{'direction': '<>',
-                'protocol': 'any',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_addresses': [{'security_group': 'local'}],
-                 },
-                {'direction': '<>',
-                 'protocol': 'any',
-                 'src_addresses': [{'security_group':secgrp_fq_name}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_addresses': [{'security_group': 'local'}],
-                 }]
-        secgrp_rules = self.sg1_fix.create_sg_rule(sg_id,secgrp_rules=rule)
-        assert secgrp_rules
+        assert set_default_sg_rules(self.connections, sg_id)
 
         return True
         #end test_default_sg
@@ -675,6 +662,14 @@ class SecurityGroupRegressionTests6(BaseSGTest, VerifySecGroup, ConfigPolicy):
         if out['result'] == True:
             topo_objs, config_topo, vm_fip_info = out['data']
 
+        secgrp_fq_name = ':'.join(['default-domain',
+                                self.inputs.admin_tenant,
+                                'default'])
+        sg_id = get_secgrp_id_from_name(
+                        self.connections,
+                        secgrp_fq_name)
+        assert set_default_sg_rules(self.connections, sg_id,
+            remote_sg=secgrp_fq_name)
         self.start_traffic_and_verify_multiproject(topo_objs, config_topo, traffic_reverse=False)
 
         return True
@@ -2495,3 +2490,35 @@ class SecurityGroupRegressionTests9_contrail(SecurityGroupRegressionTests9):
         super(SecurityGroupRegressionTests9, cls).setUpClass()
         cls.option = 'contrail'
 
+class SecurityGroupRegressionTests2Ipv6(SecurityGroupRegressionTests2):
+    @classmethod
+    def setUpClass(cls):
+        super(SecurityGroupRegressionTests2Ipv6, cls).setUpClass()
+        cls.inputs.set_af(AF_TEST)
+
+    def is_test_applicable(self):
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported('ipv6'):
+            return(False, 'Skipping IPv6 Test on vcenter setup')
+        return (True, None)
+
+class SecurityGroupRegressionTests3Ipv6(SecurityGroupRegressionTests3):
+    @classmethod
+    def setUpClass(cls):
+        super(SecurityGroupRegressionTests3Ipv6, cls).setUpClass()
+        cls.inputs.set_af(AF_TEST)
+
+    def is_test_applicable(self):
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported('ipv6'):
+            return(False, 'Skipping IPv6 Test on vcenter setup')
+        return (True, None)
+
+class SecurityGroupRegressionTests5Ipv6(SecurityGroupRegressionTests5):
+    @classmethod
+    def setUpClass(cls):
+        super(SecurityGroupRegressionTests5Ipv6, cls).setUpClass()
+        cls.inputs.set_af(AF_TEST)
+
+    def is_test_applicable(self):
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported('ipv6'):
+            return(False, 'Skipping IPv6 Test on vcenter setup')
+        return (True, None)
