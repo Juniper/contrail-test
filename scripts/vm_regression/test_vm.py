@@ -2296,14 +2296,10 @@ class TestBasicVMVN6(BaseVnVmTest):
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
                 vn_obj=vn1_fixture.obj, vm_name=vn1_vm4_name))
-        assert vm1_fixture.verify_on_setup()
-        assert vm2_fixture.verify_on_setup()
-        assert vm3_fixture.verify_on_setup()
-        assert vm4_fixture.verify_on_setup()
-        vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture.wait_till_vm_is_up()
-        vm3_fixture.wait_till_vm_is_up()
-        vm4_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
+        assert vm3_fixture.wait_till_vm_is_up()
+        assert vm4_fixture.wait_till_vm_is_up()
 
         # Geting the VM ips
         vm1_ip = vm1_fixture.vm_ip
