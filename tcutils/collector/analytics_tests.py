@@ -21,6 +21,8 @@ import shlex
 from netaddr import *
 import random
 from tcutils.collector.opserver_introspect_utils import VerificationOpsSrvIntrospect
+from physical_router_fixture import PhysicalRouterFixture
+import pprint
 
 months = {'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun':
           6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12}
@@ -2256,7 +2258,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
     # Verifiation of contrail Alarms generation
 
-    def verify_alarms(self, role):
+    def verify_alarms(self, role, alarm_type='process-status'):
         result = True
         analytics = self.inputs.collector_ips[0]
         underlay = self.inputs.run_cmd_on_server(analytics, 'contrail-status | grep contrail-snmp-collector')
@@ -2298,12 +2300,18 @@ class AnalyticsVerification(fixtures.Fixture):
                 else:
                     self.logger.info("Db alarms were generated after stopping the process  %s " % (role))
         if role == 'control-node':
-            for process in control_processes:
-                if not self._verify_contrail_alarms(process, 'control-node', 'service_stop'):
+            if alarm_type == 'process-status':
+                for process in control_processes:
+                    if not self._verify_contrail_alarms(process, 'control-node', 'service_stop'):
+                        result = result and False
+                    else:
+                        self.logger.info("Control alarms were generated after stopping the process  %s " % (role))
+
+            elif alarm_type == 'bgp-connectivity':
+                if not self._verify_contrail_alarms(None, 'control-node', 'bgp_peer_mismatch'):
                     result = result and False
                 else:
-                    self.logger.info("Control alarms were generated after stopping the process  %s " % (role))
-
+                    self.logger.info("Control bgp connectivity alarm verified for  %s " % (role))
         if role == 'analytics-node':
             multi_instances = False
             for process in analytics_processes:
@@ -2330,6 +2338,21 @@ class AnalyticsVerification(fixtures.Fixture):
         return result
     # end verify_alarms
 
+    def _verify_alarms_bgp_peer_mismatch(self, service_ip, role, alarm_type, multi_instances):
+        result = True
+        bgp_router_fixture = PhysicalRouterFixture('test_bgp_connectivity_alarm', '1.1.1.1')
+        super(PhysicalRouterFixture, bgp_router_fixture).setUp()
+        self.bgp_router = bgp_router_fixture.create_bgp_router()
+        bgp_router_fixture.bgp_router = self.bgp_router
+        if not self._verify_alarms_by_type(None, service_ip, role, alarm_type, multi_instances=False, soak_timer=15):
+            result = result and False
+        bgp_router_fixture.delete_bgp_router()
+        super(PhysicalRouterFixture, bgp_router_fixture).cleanUp()
+        if not self._verify_alarms_by_type(None, service_ip, role, alarm_type, multi_instances=False, soak_timer=15, verify_alarm_cleared=True):
+            result = result and False
+        return result
+    # end _verify_contrail_bgp_connectivity_alarm
+
     def verify_cfgm_alarms(self):
         return self.verify_alarms(role='config-node')
     # end cfgm_alarms
@@ -2350,7 +2373,11 @@ class AnalyticsVerification(fixtures.Fixture):
         return self.verify_alarms( role='analytics-node')
     # end analytics_alarms
 
-    def _verify_alarms_stop_svc(self, service, service_ip, role, alarm_type, multi_instances=False, soak_timer=10):
+    def verify_bgp_connectivity_alarm(self):
+        return self.verify_alarms(role='control-node', alarm_type='bgp-connectivity')
+    # end verify_bgp_peer_mismatch_alarm
+
+    def _verify_alarms_stop_svc(self, service, service_ip, role, alarm_type, multi_instances=False, soak_timer=15):
         result = True
         self.logger.info("Verify alarms generated after stopping the service %s:" % (service))
         dist = self.inputs.get_os_version(service_ip)
@@ -2367,6 +2394,16 @@ class AnalyticsVerification(fixtures.Fixture):
         else:
             self.inputs.stop_service(service, host_ips=[service_ip], contrail_service=True)
         self.logger.info("Process %s stopped" % (service))
+        if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances, soak_timer):
+            result = result and False
+        self.inputs.start_service(service, host_ips=[service_ip], contrail_service=True)
+        time.sleep(10)
+        if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances, soak_timer=soak_timer, verify_alarm_cleared=True):
+            result = result and False
+        return result
+
+    def _verify_alarms_by_type(self, service, service_ip, role, alarm_type, multi_instances=False, soak_timer=15, verify_alarm_cleared=False):
+        result = True
         soaking = False
         supervisor = False
         if re.search('supervisor', str(service)) or re.search('nodemgr', str(service)):
@@ -2377,7 +2414,7 @@ class AnalyticsVerification(fixtures.Fixture):
             self.logger.info("Soaking enabled..waiting %s secs for soak timer to expire" % (soak_timer))
             time.sleep(soak_timer)
         MAX_RETRY_COUNT = 200
-        SLEEP_DURATION = .2
+        SLEEP_DURATION = .5
         retry = 0
         role_alarms = None
         all_alarms = None
@@ -2391,47 +2428,76 @@ class AnalyticsVerification(fixtures.Fixture):
 
         if service in supervisors:
             alarm_type = ['node-status']
+        collector_ip = self.inputs.collector_ips[0]
+        if multi_instances:
+            collector_ip = self.inputs.collector_ips[1]
+        hostname = socket.gethostbyaddr(service_ip)[0].split('.')[0]
+
+        if not isinstance(alarm_type, list):
+            alarm_type = [alarm_type]
 
         try:
             for alarm_t in alarm_type:
-                while not role_alarms:
-                    all_alarms = None
-                    role_alarms = None
-                    while not all_alarms:
-                        if multi_instances:
-                            collector_ip = self.inputs.collector_ips[1]
-                        else:
-                            collector_ip = self.inputs.collector_ips[0]
-                        all_alarms = self.ops_inspect[collector_ip].get_ops_alarms()
-                        if not all_alarms:
-                            time.sleep(SLEEP_DURATION)
+                if not verify_alarm_cleared:
+                    while not role_alarms:
+                        all_alarms = None
+                        role_alarms = None
+                        while not all_alarms:
+                            all_alarms = self.ops_inspect[collector_ip].get_ops_alarms()
+                            if not all_alarms:
+                                time.sleep(SLEEP_DURATION)
+                                retry = retry + 1
+                                if retry % 10 == 0:
+                                    self.logger.info("No alarms found...Iteration  %s " %(retry))
+                            if retry > MAX_RETRY_COUNT:
+                                self.logger.error("No alarms have been generated")
+                                return False
+                        role_alarms = self.get_alarms(all_alarms, hostname, role, alarm_t, service=service)
+                        if not role_alarms:
                             retry = retry + 1
+                            time.sleep(SLEEP_DURATION)
                             if retry % 10 == 0:
-                                self.logger.info("No alarms found...Iteration  %s " %(retry))
+                                self.logger.info("Iteration  %s " %(retry))
+                        else:
+                            time_taken = retry * SLEEP_DURATION
+                            # Display warning if time taken to generate is more than 5 secs
+                            if time_taken > 5:
+                                self.logger.warn("Time taken %s is > 5 secs" %(time_taken))
+                            self.logger.info("Time taken to generate the alarms is %s secs" %(time_taken))
                         if retry > MAX_RETRY_COUNT:
-                            self.logger.error("No alarms have been generated")
-                            return False
-                    hostname = socket.gethostbyaddr(service_ip)[0].split('.')[0]
-                    role_alarms = self.get_alarms(all_alarms, hostname, role, alarm_t, service=service)
-                    if not role_alarms:
+                            self.logger.error("Alarm type %s not generated for role %s" % (
+                                alarm_t, role))
+                            self.logger.info("Alarms generated in the system are  \n : %s \n" % (all_alarms))
+                            result = result and False
+                            break
+                else:
+                    retry = 0
+                    all_alarms = self.ops_inspect[collector_ip].get_ops_alarms()
+                    if all_alarms:
+                        role_alarms = self.get_alarms(all_alarms, hostname, role, alarm_t, service=service)
+                    else:
+                        self.logger.info("All alarms cleared")
+                        continue
+                    while role_alarms:
+                        all_alarms = self.ops_inspect[collector_ip].get_ops_alarms()
+                        role_alarms = None
+                        if all_alarms:
+                            role_alarms = self.get_alarms(all_alarms, hostname, role, alarm_t, service=service)
                         retry = retry + 1
                         time.sleep(SLEEP_DURATION)
                         if retry % 10 == 0:
                             self.logger.info("Iteration  %s " %(retry))
-                    else:
-                        time_taken = retry * SLEEP_DURATION
-                        # Display warning if time taken to generate is more than 5 secs
-                        if time_taken > 5:
-                            self.logger.warn("Time taken %s is > 5 secs" %(time_taken))
-                        self.logger.info("Time taken to generate the alarms is %s secs" %(time_taken))
-                    if retry > MAX_RETRY_COUNT:
-                        self.logger.error("Alarm type %s not generated for role %s" % (
-                            alarm_t, role))
-                        self.logger.info("Alarms generated in the system are  \n : %s \n" % (all_alarms))
-                        result = result and False
-                        break
+                        if not role_alarms:
+                            time_taken = retry * SLEEP_DURATION
+                            self.logger.info("Time taken to clear the alarm is %s secs" %(time_taken))
+                        if retry > MAX_RETRY_COUNT:
+                            self.logger.error("Alarm type %s not cleared for role %s" % (
+                                alarm_t, role))
+                            self.logger.info("Alarms present in the system are  \n : %s \n" % (all_alarms))
+                            result = result and False
+                            break
                 if role_alarms:
-                    #print role_alarms
+                    print role_alarms
                     pass
                 role_alarms = None
         except Exception, e:
@@ -2443,7 +2509,9 @@ class AnalyticsVerification(fixtures.Fixture):
                 self.inputs.start_service(service, host_ips=[service_ip],
                     contrail_service=True)
             time.sleep(10)
+            result = result and False
         return result
+    # end _verify_alarms_by_type
 
     def _verify_contrail_alarms(self, service, role, trigger='service_stop', multi_instances=False):
         ''' Verify whether contrail alarms is raised
@@ -2469,6 +2537,10 @@ class AnalyticsVerification(fixtures.Fixture):
         if trigger == 'service_stop':
             if not self._verify_alarms_stop_svc(service, service_ip, role, alarm_type, multi_instances):
                 result = result and False
+        elif trigger == 'bgp_peer_mismatch':
+            alarm_type = ['bgp-connectivity']
+            if not self._verify_alarms_bgp_peer_mismatch(service_ip, role, alarm_type, multi_instances):
+                result = result and False
 
         return result
     # end _verify_contrail_alarms
@@ -2489,7 +2561,6 @@ class AnalyticsVerification(fixtures.Fixture):
             supervisor = True
         if role in alarms:
             role_alarms = alarms[role]
-            self.logger.info("%s alarms generated for %s " % (role, hostname))
         else:
             return None
         for nalarms in role_alarms:
@@ -2500,11 +2571,8 @@ class AnalyticsVerification(fixtures.Fixture):
                     return nalarms
                 else:
                     type_alarms_list = nalarms['value']['UVEAlarms']['alarms']
-                    #print type_alarms_list
                     for type_alarms in type_alarms_list:
-                        #print type_alarms['type']
                         if type_alarms['type'] == alarm_type:
-                            self.logger.info("%s alarms generated" % alarm_type)
                             if not service:
                                 return type_alarms
                             else:
