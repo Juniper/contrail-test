@@ -24,6 +24,13 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         pass
     # end runTest
 
+    def test_bgp_connectivity_alarm(self):
+        ''' Test whether contrail bgp connectivity alarm is generated 
+            when there is bgp peer mismatch
+        '''
+        assert self.analytics_obj.verify_bgp_connectivity_alarm()
+        return True
+
     @test.attr(type=['sanity', 'vcenter'])
     def test_cfgm_alarms(self):
         ''' Test whether contrail config alarms are generated
