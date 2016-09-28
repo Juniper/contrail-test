@@ -9,6 +9,7 @@ from tcutils.util import get_dashed_uuid
 from openstack import OpenstackAuth, OpenstackOrchestrator
 from vcenter import VcenterAuth
 from common import log_orig as contrail_logging
+from contrailapi import ContrailVncApi
 
 class VncLibFixture(fixtures.Fixture):
     ''' Wrapper for VncApi
@@ -88,6 +89,8 @@ class VncLibFixture(fixtures.Fixture):
                                                     self.inputs
                                                     )
                     self.project_id = self.auth_client.get_project_id()
+
+        self.vnc_h = ContrailVncApi(self.vnc_api_h, self.logger)
 
     # end setUp
 
