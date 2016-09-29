@@ -26,7 +26,10 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ConfigSvcChain, ECMPVerify)
     @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_svc_v2_in_network_datapath(self):
-        return self.verify_svc_in_network_datapath(svc_img_name='tiny_nat_fw', st_version=2)
+	if self.inputs.orchestrator == 'vcenter':
+            return self.verify_svc_in_network_datapath(svc_img_name='tiny_nat_fw', st_version=2, svc_mode='in-network')
+	else:
+	    return self.verify_svc_in_network_datapath(svc_img_name='tiny_nat_fw', st_version=2)
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
