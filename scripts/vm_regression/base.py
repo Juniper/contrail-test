@@ -76,12 +76,16 @@ class BaseVnVmTest(test_v1.BaseTestCase_v1):
                           *args, **kwargs
                           ))
 
-    def create_vm(self, vn_fixture, image_name='ubuntu', *args, **kwargs):
+    def create_vm(self, vn_fixture=None, image_name='ubuntu', *args, **kwargs):
+        if vn_fixture:
+            vn_obj = vn_fixture.obj
+        else:
+            vn_obj = None
         return self.useFixture(
                 VMFixture(
                     project_name=self.inputs.project_name,
                     connections=self.connections,
-                    vn_obj=vn_fixture.obj,
+                    vn_obj=vn_obj,
                     image_name=image_name,
                     *args, **kwargs
                     ))

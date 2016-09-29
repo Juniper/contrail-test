@@ -96,7 +96,6 @@ class VNFixture(fixtures.Fixture):
         self.router_external = router_external
         self.clean_up = clean_up
         self.lock = threading.Lock()
-        self.already_present = False
         self.verify_is_run = False
         self.verify_result = True
         self.verify_not_in_result = True
@@ -141,7 +140,6 @@ class VNFixture(fixtures.Fixture):
                 self.vn_subnets = []
             self.logger.debug('Fetched VN: %s(%s) with subnets %s'
                              %(self.vn_fq_name, self.uuid, subnets))
-            self.already_present = True
     
     def get_dns_ip(self, ipam_fq_name = None):
         if not ipam_fq_name:
@@ -228,10 +226,13 @@ class VNFixture(fixtures.Fixture):
                                                 disable_gateway=self.disable_gateway)
                 if self.obj:
                     self.logger.info('Created VN %s' %(self.vn_name))
+                    self.created = True #Introducing this flag to make sure if 
+                                        #vn was created by this fixture object,
+                                        #delete it on cleanup.
             else:
-                self.already_present = True
                 self.logger.debug('VN %s already present, not creating it' %
                                   (self.vn_name))
+                self.created = False
 
             # It is possible that VN may not be created due to quota limits
             # In such cases, self.obj would not be set
@@ -295,11 +296,13 @@ class VNFixture(fixtures.Fixture):
                 with self.lock:
                     self.logger.info("Created VN %s, UUID :%s" % (self.vn_name,
                         self.uuid))
+                self.created = True
             else:
                 with self.lock:
                     self.logger.debug("VN %s already present" % (self.vn_name))
                 self.uuid = self.get_vn_uid(
                     self.api_vn_obj, project.project_obj.uuid)
+                self.created = False
             ipam = self.vnc_lib_h.network_ipam_read(
                 fq_name=self.ipam_fq_name)
             ipam_sn_lst = []
@@ -1143,12 +1146,12 @@ class VNFixture(fixtures.Fixture):
 
     def delete(self, verify=False):
         do_cleanup = True
-        if self.inputs.fixture_cleanup == 'no':
-            do_cleanup = False
-        if self.already_present:
-            do_cleanup = False
         if self.inputs.fixture_cleanup == 'force':
             do_cleanup = True
+        if self.created:
+            do_cleanup = True
+        if self.inputs.fixture_cleanup == 'no':
+            do_cleanup = False
         if self.clean_up == False:
             do_cleanup = False
 
