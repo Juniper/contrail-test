@@ -250,8 +250,8 @@ class BaseVrouterTest(BaseLBaaSTest):
 
     def create_sg(self, name=None, entries=None):
         sg_fixture = self.useFixture(SecurityGroupFixture(self.inputs,
-                                                              self.connections, self.inputs.domain_name, self.inputs.project_name,
-                                                              secgrp_name=name, secgrp_entries=entries))
+            self.connections, self.inputs.domain_name, self.inputs.project_name,
+            secgrp_name=name, secgrp_entries=entries))
 
         return sg_fixture
 
