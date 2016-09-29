@@ -3403,7 +3403,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 else:
                    return False
             else:
-                self.logger.error ("No object found for module %s"%(module))
+                self.logger.warn ("No object found for module %s"%(module))
                 return False       
         except Exception as e:
             self.logger.exception("Got exception as %s"%(e))
@@ -3438,7 +3438,7 @@ class AnalyticsVerification(fixtures.Fixture):
                             return True
                         else:
                             continue
-                self.logger.error("%s:%s module connection to \
+                self.logger.warn("%s:%s module connection to \
                     %s servers NOT UP"%(node,module,str(server_addrs)))
                 return False        
 
@@ -3450,7 +3450,7 @@ class AnalyticsVerification(fixtures.Fixture):
                                 servers UP"%(module,str(server_addrs)))    
                         return True 
                     else:
-                        self.logger.info("%s module connection to %s \
+                        self.logger.warn("%s module connection to %s \
                                 servers NOT UP"%(module,str(server_addrs)))    
                         return False
         except Exception as e:
@@ -3477,7 +3477,7 @@ class AnalyticsVerification(fixtures.Fixture):
                             'contrail-vrouter-agent',\
                             [server],node = vrouter):
                     count = count + 1
-                    self.logger.info("%s collected to xmpp %s"%(vrouter, ip))
+                    self.logger.info("%s connected to xmpp %s"%(vrouter, ip))
             if xmpp_servers > 1:
                 if not count == 2:
                     result = result and False
@@ -3494,7 +3494,7 @@ class AnalyticsVerification(fixtures.Fixture):
                             'contrail-vrouter-agent',\
                             [server],node = vrouter):
                     count = count + 1
-                    self.logger.info("%s collected to dns %s"%(vrouter, ip))
+                    self.logger.info("%s connected to dns %s"%(vrouter, ip))
             if xmpp_servers > 1:
                 if not count == 2:
                     result = result and False
@@ -3511,7 +3511,7 @@ class AnalyticsVerification(fixtures.Fixture):
                                 'contrail-vrouter-agent',\
                                 [server],node = vrouter):
                     count = count + 1
-                    self.logger.info("%s collected to collector %s"%(vrouter, ip))
+                    self.logger.info("%s connected to collector %s"%(vrouter, ip))
             if not count > 0:
                 self.logger.error("%s is not connected to any collector "%(vrouter))
                 result = result and False
@@ -3605,7 +3605,7 @@ class AnalyticsVerification(fixtures.Fixture):
                             server,node = cfgm)
             assert result
             result = False    
-            for ip in self.inputs.cfgm_control_ips:
+            for ip in self.inputs.config_amqp_ips:
                 server = "%s:%s"%(ip,port_dict['rmq'])
                 result = result or self.verify_connection_infos(ops_inspect,\
                                 'contrail-api',\
@@ -3671,7 +3671,7 @@ class AnalyticsVerification(fixtures.Fixture):
                             server,node = cfgm)
             assert result
             result = False    
-            for ip in self.inputs.cfgm_control_ips:
+            for ip in self.inputs.config_amqp_ips:
                server = "%s:%s"%(ip,port_dict['rmq'])
                result = result or self.verify_connection_infos(ops_inspect,\
                                 'DeviceManager',\
@@ -3781,6 +3781,8 @@ class AnalyticsVerification(fixtures.Fixture):
                             'contrail-svc-monitor',\
                             server,node = cfgm)
             assert result
+        return True
+    # end verify_process_and_connection_infos_config
 
     def verify_process_and_connection_infos_control_node(self):
 

@@ -72,7 +72,7 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
             cmd = '%s echo $! > %s' % (cmd, pidfile)
 
     if cwd:
-        cmd = 'cd %s; %s' % (cd, cmd)
+        cmd = 'cd %s; %s' % (cwd, cmd)
 
     (username, host_ip) = host_string.split('@')
 
