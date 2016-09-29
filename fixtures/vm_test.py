@@ -1785,6 +1785,7 @@ class VMFixture(fixtures.Fixture):
     # end scp_file_to_vm
 
     def put_pub_key_to_vm(self):
+        fab_connections.clear()
         self.logger.debug('Copying public key to VM %s' % (self.vm_name))
         self.orch.put_key_file_to_host(self.vm_node_ip)
         auth_file = '.ssh/authorized_keys'
@@ -2229,7 +2230,7 @@ class VMFixture(fixtures.Fixture):
         ''' Get VM IPV6 from Ifconfig output executed on VM
         '''
         vm_ipv6 = None
-        cmd = "ifconfig %s| awk '/inet6/ {print $3}'" % (intf)
+        cmd = "ifconfig %s| awk '/inet6/'" % (intf)
         self.run_cmd_on_vm(cmds=[cmd])
         if cmd in self.return_output_cmd_dict.keys():
             output = self.return_output_cmd_dict[cmd]
@@ -2526,13 +2527,14 @@ class VMFixture(fixtures.Fixture):
             mac_address = self.mac_addr.values()[0]
         if mac_address in self._vm_interface.keys():
             return self._vm_interface[mac_address]
-        ubuntu_cmd = 'ifconfig | grep "%s" | awk \'{print \\\\$1}\' | head -1' % (
+        ubuntu_cmd = 'ifconfig | grep "%s" | awk \'{print $1}\' | head -1' %(
             mac_address)
         redhat_cmd = 'ifconfig | grep -i -B 2 "%s" | grep flags | '\
             'awk \'{print \\\\$1}\'' % (mac_address)
         cmd = 'test -f /etc/redhat-release && %s || %s' % (redhat_cmd,
                                                            ubuntu_cmd)
-        name = self.run_cmd_on_vm([cmd]).strip(':')
+        output = self.run_cmd_on_vm([cmd])
+        name = output.values()[0]
         self._vm_interface[mac_address] = name
         return name
     # end get_vm_interface_name
@@ -2556,12 +2558,12 @@ class VMFixture(fixtures.Fixture):
             interface = self.get_vm_interface_name(interface_mac)
 
         cmd = 'arping -i %s -c 1 -r %s' % (interface, ip)
-        outputs = self.run_cmd_on_vm([cmd])
+        outputs = self.run_cmd_on_vm([cmd], as_sudo=True)
         my_output = outputs.values()[0]
         self.logger.debug('On VM %s, arping to %s on %s returned :%s' % (
             self.vm_name, ip, interface, my_output))
         formatted_output = remove_unwanted_output(my_output)
-        return (my_output.succeeded, formatted_output)
+        return (my_output, formatted_output)
     # end arping
 
     def run_dhclient(self, interface=None):

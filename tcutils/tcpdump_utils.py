@@ -33,9 +33,12 @@ def stop_tcpdump_for_vm_intf(obj, session, pcap):
     return stop_tcpdump_for_intf(session, pcap, logger=obj.logger)
 
 @retry(delay=2, tries=6)
-def verify_tcpdump_count(obj, session, pcap, exp_count=None, exact_match=True):
+def verify_tcpdump_count(obj, session, pcap, exp_count=None, exact_match=True, mac=None):
 
-    cmd = 'tcpdump -r %s | wc -l' % pcap
+    if mac:
+        cmd = 'tcpdump -r %s | grep %s | wc -l' % (pcap,mac)
+    else:
+        cmd = 'tcpdump -r %s | wc -l' % pcap
     out, err = execute_cmd_out(session, cmd, obj.logger)
     count = int(out.strip('\n'))
     result = True
