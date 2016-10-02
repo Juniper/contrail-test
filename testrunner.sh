@@ -18,6 +18,7 @@
 docker=docker
 testbed=/opt/contrail/utils/fabfile/testbeds/testbed.py
 feature=sanity
+scenarios=''
 run_path="${HOME}/contrail-test-runs"
 arg_shell=''
 declare -a arg_env
@@ -224,11 +225,11 @@ run_docker_cmd () {
     tempfile=$(mktemp /tmp/contrail_test_XXXXXXXXX)
     name=$(basename $tempfile)
     if [[ -n $background ]]; then
-        echo "$docker run ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature -e TEST_TAGS=$test_tags -d $arg_rm $arg_shell -t $image_name" > $tempfile
+        echo "$docker run ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature -e TEST_TAGS=$test_tags -e SCENARIOS=$scenarios -d $arg_rm $arg_shell -t $image_name" > $tempfile
         id=. $tempfile
         $docker ps -a --format "ID: {{.ID}}, Name: {{.Names}}" -f id=$id
     else
-        echo "$docker run ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature -e TEST_TAGS=$test_tags  $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
+        echo "$docker run ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature -e TEST_TAGS=$test_tags -e SCENARIOS=$scenarios $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
     fi
     bash $tempfile | tee $run_log; rv=$?
     return $rv
@@ -269,6 +270,8 @@ Run Contrail test suite in docker container
 $GREEN  -p, --run-path RUNPATH          $NO_COLOR Directory path on the host, in which contrail-test save all the
                                             results and other data. Default: $HOME/contrail-test-runs/
 $GREEN  -s, --shell                     $NO_COLOR Do not run tests, but leave a shell, this is useful for debugging.
+$GREEN  -S, --scenarios SCENARIOS                     $NO_COLOR list of scenarios that need to run as part rally tests. If empty ,
+                                            runs all the tests under ./rally/scenarios
 $GREEN  -i, --use-ci-image              $NO_COLOR Use ci image, by default it will use the image name "$DEFAULT_CI_IMAGE",
                                                   One may override this by setting the environment variable \$CI_IMAGE
 $GREEN  -r, --rm	                    $NO_COLOR Remove the container on container exit, Default: Container will be kept.
@@ -297,7 +300,7 @@ ${GREEN}Possitional Parameters:
 EOF
     }
 
-    while getopts "ibhf:t:p:sk:K:nrT:P:m:j:" flag; do
+    while getopts "ibhf:t:p:sS:k:K:nrT:P:m:j:" flag; do
         case "$flag" in
             t) testbed=$OPTARG;;
             j) testbed_json=$OPTARG;;
@@ -305,6 +308,7 @@ EOF
             f) feature=$OPTARG;;
             p) run_path=$OPTARG;;
             s) shell=1;;
+            S) scenarios=$OPTARG;;
             i) use_ci_image=1;;
             k) ssh_key_file=$OPTARG;;
             K) ssh_pub_key_file=$OPTARG;;
@@ -371,7 +375,7 @@ EOF
     if [[ -n $list_all || -n $list_images ]]; then
         echo; echo "$GREEN=========== Images =============$NO_COLOR"
         docker images  | awk 'BEGIN {printf "%-50s %-20s %-20s\n", "IMAGE","IMAGE ID", "VIRTUAL SIZE"}
-                            /(contrail-test|contrail_test)/ {printf "%-50s %-20s %-20s\n", $1":"$2, $3, $(NF-1)" "$NF}'
+                            /(contrail-test|contrail_test|rally)/ {printf "%-50s %-20s %-20s\n", $1":"$2, $3, $(NF-1)" "$NF}'
     fi
     if [[ -n $list_all || -n $list_containers ]]; then
         echo;echo "$GREEN=========== Container Instances =============$NO_COLOR"
@@ -519,6 +523,7 @@ for arg in "$@"; do
         "--feature") set -- "$@" "-f" ;;
         "--log-path") set -- "$@" "-p" ;;
         "--shell") set == "$@" "-s";;
+        "--scenarios") set == "$@" "-S";;
         "--ssh-key") set == "$@" "-k";;
         "--ssh-public-key") set == "$@" "-K";;
         "--background") set == "$@" "-b";;
