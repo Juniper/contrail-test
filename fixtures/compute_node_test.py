@@ -66,7 +66,7 @@ class ComputeNodeFixture(fixtures.Fixture):
             'flow_cache_timeout': 180,
             'headless_mode': 'false'}
         self.default_values['FLOWS'] = {'max_vm_flows': 100}
-        self.max_system_flows = 512000
+        self.max_system_flows = 512*1024
         self.agent_inspect_h = self.connections.agent_inspect[self.ip]
         self.flow_table = None
         self.agent_generator_name = None

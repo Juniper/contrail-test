@@ -164,7 +164,7 @@ class Hping3:
             cmds=['kill `cat %s`' %(self.pid_file)],
             raw=True)
         status = result.values()[0]
-        if result.succeeded:
+        if status.succeeded:
             self.logger.debug('hping3 is active on %s, PID: %s' % (
                               self.sender_vm_fixture,
                               status))
