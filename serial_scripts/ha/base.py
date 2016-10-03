@@ -13,11 +13,14 @@ from vn_test import *
 from vm_test import *
 from floating_ip import *
 from tcutils.commands import *
-sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
+from tcutils.util import get_random_name
+trafficdir = os.path.join(os.path.dirname(__file__), '../../tcutils/pkgs/Traffic')
+sys.path.append(trafficdir)
 from traffic.core.stream import Stream
 from traffic.core.profile import create, ContinuousProfile
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
+from fabric.api import local
 
 class HABaseTest(test_v1.BaseTestCase_v1):
 
@@ -33,7 +36,7 @@ class HABaseTest(test_v1.BaseTestCase_v1):
     @classmethod
     def tearDownClass(cls):
         super(HABaseTest, cls).tearDownClass()
-    #end tearDownClass 
+    #end tearDownClass
 
     def remove_from_cleanups(self, fix):
         self.remove_api_from_cleanups(fix.cleanUp)
@@ -56,7 +59,7 @@ class HABaseTest(test_v1.BaseTestCase_v1):
 
     def cold_reboot(self,ip,option):
         ''' API to power clycle node for a given IP address '''
-        if option != 'on': 
+        if option != 'on':
             cmd = 'if ! grep -Rq "GRUB_RECORDFAIL_TIMEOUT" /etc/default/grub; then echo "GRUB_RECORDFAIL_TIMEOUT=10" >> /etc/default/grub; update-grub ; fi ;sed -i s/GRUB_CMDLINE_LINUX_DEFAULT.*/GRUB_CMDLINE_LINUX_DEFAULT=\"nomodeset\"/g /etc/default/grub ; update-grub;'
             self.logger.info('command executed  %s' %cmd)
             self.inputs.run_cmd_on_server(ip, cmd)
@@ -66,24 +69,12 @@ class HABaseTest(test_v1.BaseTestCase_v1):
             cmd = 'echo  "blacklist mei_me" > /etc/modprobe.d/mei_me.conf;'
             self.inputs.run_cmd_on_server(ip, cmd)
             cmd = 'if ! grep -Rq "mei_me" /etc/modprobe.d/blacklist.conf ; then echo "blacklist mei_me" >> /etc/modprobe.d/blacklist.conf; fi ;'
-            self.inputs.run_cmd_on_server(ip, cmd) 
+            self.inputs.run_cmd_on_server(ip, cmd)
 
         ipmi_addr = self.get_ipmi_address(ip)
-        # ToDo: Use python based ipmi shutdown wrapper rather than ipmitool
-        test_ip = self.inputs.cfgm_ips[0]
-        cmd = 'wget http://us.archive.ubuntu.com/ubuntu/pool/universe/i/ipmitool/ipmitool_1.8.13-1ubuntu0.2_amd64.deb'
+        cmd = 'ipmitool -H "%s" -U %s -P %s chassis power "%s"'%(ipmi_addr,self.inputs.ipmi_username,self.inputs.ipmi_password,option)
         self.logger.info('command executed  %s' %cmd)
-        self.inputs.run_cmd_on_server(test_ip,cmd)
-        cmd = 'dpkg -i /root/ipmitool_1.8.13-1ubuntu0.2_amd64.deb'
-        self.logger.info('command executed  %s' %cmd)
-        self.inputs.run_cmd_on_server(test_ip,cmd)
-        cmd = 'rm -rf /root/ipmitool_1.8.13-1ubuntu0.2_amd64.deb'
-        self.logger.info('command executed  %s' %cmd)
-        self.inputs.run_cmd_on_server(test_ip,cmd)
-        # TODO removed later , when support is there to execute test from test node.
-        cmd = '/usr/bin/ipmitool -H "%s" -U %s -P %s chassis power "%s"'%(ipmi_addr,self.inputs.ipmi_username,self.inputs.ipmi_password,option)
-        self.logger.info('command executed  %s' %cmd)
-        self.inputs.run_cmd_on_server(test_ip,cmd)
+        local(cmd)
         # clear the fab connections
         sleep(20)
         self.connections.update_inspect_handles()
@@ -109,7 +100,7 @@ class HABaseTest(test_v1.BaseTestCase_v1):
     def get_ipmi_address(self,ip):
         ''' API to get IPMI address for a given IP address '''
         self.ipmi_list = self.inputs.hosts_ipmi[0]
-        return self.ipmi_list[ip] 
+        return self.ipmi_list[ip]
 
     def get_gw(self,routes):
         for route in routes:
@@ -130,7 +121,7 @@ class HABaseTest(test_v1.BaseTestCase_v1):
 
     def update_handles(self, hosts, service=None):
         ''' Updates the handles when a node is isolated or removed from list '''
-        vip = self.inputs.vip['contrail']
+        vip = self.inputs.contrail_internal_vip
         for host in hosts:
             if host in self.inputs.cfgm_ips:
                 self.inputs.cfgm_ips[self.inputs.cfgm_ips.index(host)] = vip
@@ -154,7 +145,7 @@ class HABaseTest(test_v1.BaseTestCase_v1):
 
     def reset_handles(self, hosts, service=None):
         ''' resetting cfgm_ip , bgp_ips , compute_ips required for ha testing during node failures '''
-        vip = self.inputs.vip['contrail']
+        vip = self.inputs.contrail_internal_vip
         for host in hosts:
             if vip in self.inputs.cfgm_ips:
                 self.inputs.cfgm_ips[self.inputs.cfgm_ips.index(vip)] = host
@@ -178,7 +169,7 @@ class HABaseTest(test_v1.BaseTestCase_v1):
 
     def ha_start(self):
         '''
-        ha_start will spawn VM's and starts traffic from 
+        ha_start will spawn VM's and starts traffic from
         VM - VM , VM - floating IP.
         '''
         self.vn1_name='vn1000'
@@ -190,7 +181,7 @@ class HABaseTest(test_v1.BaseTestCase_v1):
         self.fip_subnets = [self.inputs.fip_pool]
         self.vmlist = []
         self.vm_fixture = []
-        self.vm_num = 2 
+        self.vm_num = 2
         self.jdaf_ip = '6.6.6.1'
         self.public_ip = '8.8.8.8'
         self.mx_rt = self.inputs.mx_rt
@@ -198,23 +189,22 @@ class HABaseTest(test_v1.BaseTestCase_v1):
         self.sport = 39100
         self.dport = 39200
         self.proto_list = ['tcp','icmp']
-        self.fip = "" 
+        self.fip = ""
         self.count = ""
-        self.sender = {} 
-        self.sender_fip = {} 
-        self.receiver = {} 
-        self.send_node = {} 
-        self.send_fip_node = {} 
-        self.recv_node = {} 
-        self.send_fip_host = {} 
-        self.recv_host = {} 
-        self.send_host = {} 
+        self.sender = {}
+        self.sender_fip = {}
+        self.receiver = {}
+        self.send_node = {}
+        self.send_fip_node = {}
+        self.recv_node = {}
+        self.send_fip_host = {}
+        self.recv_host = {}
+        self.send_host = {}
    #     self.host_list= self.connections.nova_h.get_hosts()
         self.host_list = self.connections.orch.get_hosts()
 
         for i in range(0,self.vm_num):
-            val = random.randint(1,100000)
-            self.vmlist.append("vm-test"+str(val))
+            self.vmlist.append(get_random_name("vm-test"))
 
         # ping gateway from VM's
         if self.inputs.orchestrator =='vcenter':
@@ -236,10 +226,10 @@ class HABaseTest(test_v1.BaseTestCase_v1):
         for i in range(0,self.vm_num):
             node_indx = (i % host_cnt)
             if self.inputs.orchestrator =='vcenter':
-                self.vm_fixture.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj ], vm_name= self.vmlist[i],flavor='contrail_flavor_large',image_name='ubuntu-traffic',node_name=self.host_list[node_indx])))
+                self.vm_fixture.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj ], vm_name= self.vmlist[i],image_name='ubuntu-traffic',node_name=self.host_list[node_indx])))
 
             else:
-                self.vm_fixture.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj,self.vn2_fixture.obj ], vm_name= self.vmlist[i],flavor='contrail_flavor_large',image_name='ubuntu-traffic',node_name=self.host_list[node_indx])))
+                self.vm_fixture.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj,self.vn2_fixture.obj ], vm_name= self.vmlist[i],image_name='ubuntu-traffic',node_name=self.host_list[node_indx])))
 #               self.vm_fixture.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj ], vm_name= self.vmlist[i],flavor='contrail_flavor_large',image_name='ubuntu-traffic',node_name=self.host_list[node_indx])))
 
         for i in range(0,self.vm_num):
@@ -265,14 +255,14 @@ class HABaseTest(test_v1.BaseTestCase_v1):
         #Set VM credentials
         for proto in self.proto_list:
             self.send_node[proto] = []
-            self.sender[proto] = [] 
+            self.sender[proto] = []
             if self.fip == 'True' :
-                self.sender_fip[proto] = [] 
-            self.receiver[proto] = [] 
-            self.send_node[proto] = [] 
-            self.recv_node[proto] = [] 
-            self.send_host[proto] = [] 
-            self.recv_host[proto] = [] 
+                self.sender_fip[proto] = []
+            self.receiver[proto] = []
+            self.send_node[proto] = []
+            self.recv_node[proto] = []
+            self.send_host[proto] = []
+            self.recv_host[proto] = []
             j = self.vm_num - 1
             for i in range(0,((self.vm_num/2))):
                 if self.fip == 'True' and proto == 'icmp' :
@@ -330,7 +320,7 @@ class HABaseTest(test_v1.BaseTestCase_v1):
                 print("Sent: %s:  Proto : %s"%(self.sender[proto][i].sent,proto))
                 if proto != 'icmp' :
                     print("Received: %s Proto : %s"%(self.receiver[proto][i].recv,proto))
-                else: 
+                else:
                     print("Received: %s Proto : %s"%(self.sender[proto][i].recv,proto))
                 if self.fip == 'True' and proto == 'icmp' :
                     print("Sent FIP : %s:  Proto : %s"%(self.sender_fip[proto][i].sent,proto))
@@ -344,12 +334,12 @@ class HABaseTest(test_v1.BaseTestCase_v1):
             that the VM are spawned successfully and deletes them.
         '''
         vms = []
-#        vm_cnt = len(self.inputs.cfgm_ips) 
-        vm_cnt = 1 
+#        vm_cnt = len(self.inputs.cfgm_ips)
+        vm_cnt = 1
 
         self.logger.debug("In ha_basic_test.....")
         for i in range(0,vm_cnt):
-            vms.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj ], vm_name= "ha_new_vm"+str(random.randint(1,100000)) ,flavor='contrail_flavor_large',image_name='ubuntu-traffic')))
+            vms.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj ], vm_name= get_random_name("ha_new_vm") ,image_name='ubuntu-traffic')))
         for i in range(0,vm_cnt):
             assert vms[i].verify_on_setup()
             if self.inputs.orchestrator =='vcenter':
@@ -419,7 +409,7 @@ class HABaseTest(test_v1.BaseTestCase_v1):
             status = self.inputs.run_cmd_on_server(node, st, username=username ,password=password)
             self.logger.info("status: %s" % status)
             if re.search('RUNNING', status,flags=re.I):
-               ret = True 
+               ret = True
                break
         if not ret:
            self.logger.error("Failed: %s on %s" % (cmd, node))
@@ -430,12 +420,12 @@ class HABaseTest(test_v1.BaseTestCase_v1):
     def ha_service_restart_test(self, service, nodes):
         ''' Test service instance crash/restart
             Ensure that that system is operational when a signle service
-            instance crashes/restarted. 
+            instance crashes/restarted.
             Pass crietria: as defined by ha_basic_test
         '''
 
         sleep(10)
-        self.ha_start()
+        assert self.ha_start(), "Basic HA setup failed"
         for node in nodes:
             if not self.service_command('restart', service, node):
                return False
@@ -447,13 +437,13 @@ class HABaseTest(test_v1.BaseTestCase_v1):
 
     def ha_service_restart(self, service, nodes):
         ''' Test service instance crash/restart
-            Pass crietria: service restarted successfully 
+            Pass crietria: service restarted successfully
         '''
         sleep(10)
         for node in nodes:
             if not self.service_command('restart', service, node):
                return False
-        return True 
+        return True
 
     def ha_service_single_failure_test(self, service, nodes):
         ''' Test single service instance failure
@@ -468,7 +458,7 @@ class HABaseTest(test_v1.BaseTestCase_v1):
             self.logger.info("Failed to start contrail service")
             return False
         sleep(10)
-        self.ha_start()
+        assert self.ha_start(), "Basic HA setup failed"
         for node in nodes:
             if not self.service_command('stop', service, node):
                 return False
@@ -499,7 +489,7 @@ class HABaseTest(test_v1.BaseTestCase_v1):
             if not self.ha_basic_test():
                 return False
 
-        return self.ha_stop() 
+        return self.ha_stop()
 
     def check_status(self,cmd,nodes):
         for node in nodes:
@@ -519,11 +509,11 @@ class HABaseTest(test_v1.BaseTestCase_v1):
 
     def ha_reboot_test(self, nodes):
         ''' Test reboot of controller nodes
-            instance crashes/restarted. 
+            instance crashes/restarted.
             Pass crietria: as defined by ha_basic_test
         '''
-        self.ha_start()
-        
+        assert self.ha_start(), "Basic HA setup failed"
+
         for node in nodes:
 
             if not self.reboot(node):
@@ -540,8 +530,8 @@ class HABaseTest(test_v1.BaseTestCase_v1):
         ''' Test cold reboot of controller nodes
             Pass crietria: as defined by ha_basic_test
         '''
-        self.ha_start()
-        
+        assert self.ha_start(), "Basic HA setup failed"
+
         for node in nodes:
 
             if not self.cold_reboot(node,'cycle'):
@@ -556,8 +546,8 @@ class HABaseTest(test_v1.BaseTestCase_v1):
         ''' Test cold reboot of compute nodes
             Pass crietria: as defined by ha_basic_test
         '''
-        self.ha_start()
-        
+        assert self.ha_start(), "Basic HA setup failed"
+
         for node in nodes:
             if mode == 'ipmi':
                 if not self.cold_reboot(node,'cycle'):
@@ -575,7 +565,7 @@ class HABaseTest(test_v1.BaseTestCase_v1):
         ''' Test cold reboot of controller nodes
             Pass crietria: as defined by ha_basic_test
         '''
-        self.ha_start()
+        assert self.ha_start(), "Basic HA setup failed"
 
         for node in nodes:
 
@@ -593,14 +583,14 @@ class HABaseTest(test_v1.BaseTestCase_v1):
             self.remove_api_from_cleanups(self.reset_handles)
             if not self.ha_basic_test():
                 return False
-        
+
         return self.ha_stop()
 
     def ha_isolate_test(self, nodes):
         ''' Test isolation of controller nodes
             Pass crietria: as defined by ha_basic_test
         '''
-        self.ha_start()
+        assert self.ha_start(), "Basic HA setup failed"
         for node in nodes:
             self.addCleanup(self.isolate_node, node,'up')
             if not self.isolate_node(node,"down"):
