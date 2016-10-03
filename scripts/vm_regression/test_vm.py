@@ -3609,8 +3609,8 @@ class TestBasicVMVNx(BaseVnVmTest):
                 node_name=self.compute_2
             ))
 
-        assert vn1_vm1_fixture.verify_on_setup()
-        assert fvn_vm1_fixture.verify_on_setup()
+        vn1_vm1_fixture.wait_till_vm_up()
+        fvn_vm1_fixture.wait_till_vm_up()
         fip_fixture = self.useFixture(
             FloatingIPFixture(
                 project_name=self.inputs.project_name,
@@ -3623,8 +3623,6 @@ class TestBasicVMVNx(BaseVnVmTest):
             fvn_fixture.vn_id, vn1_vm1_fixture.vm_id)
         self.addCleanup(fip_fixture.disassoc_and_delete_fip, fip_id)
         assert fip_fixture.verify_fip(fip_id, vn1_vm1_fixture, fvn_fixture)
-        vn1_vm1_fixture.wait_till_vm_up()
-        fvn_vm1_fixture.wait_till_vm_up()
         if not vn1_vm1_fixture.ping_with_certainty(fvn_vm1_fixture.vm_ip):
             result = result and False
             fip_fixture.disassoc_and_delete_fip(fip_id)
@@ -3637,8 +3635,9 @@ class TestBasicVMVNx(BaseVnVmTest):
         # Setup SCTP flow on the vm
         # Server
         server_port=3700
-        cmd_to_pass="sctp_test -H %s -P %s -l" %(fvn_vm1_fixture.vm_ip,server_port)
-        fvn_vm1_fixture.run_cmd_on_vm(cmds=[cmd_to_pass], as_sudo=True, timeout=60)   
+        cmd_to_pass="sctp_test -H %s -P %s -l > /dev/null" %(fvn_vm1_fixture.vm_ip,server_port)
+        fvn_vm1_fixture.run_cmd_on_vm(cmds=[cmd_to_pass], as_sudo=True,
+                                      as_daemon=True)
 
         # Client 
         client_port=4700
