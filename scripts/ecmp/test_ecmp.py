@@ -53,7 +53,7 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
            Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_transparent_datapath(
-            si_count=1, svc_scaling=True, max_inst=2, svc_img_name='tiny_trans_fw',  ci=True)
+            si_count=1, svc_scaling=True, max_inst=2, svc_mode='transparent',  ci=True)
         return True
     # end test_ecmp_svc_transparent_with_3_instance
 
@@ -71,7 +71,7 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
            Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_transparent_datapath(
-            si_count=1, svc_scaling=True, max_inst=2, svc_img_name='tiny_trans_fw',  ci=True, st_version=2)
+            si_count=1, svc_scaling=True, max_inst=2, svc_mode='transparent', ci=True, st_version=2)
         return True
     # end test_ecmp_svc_v2_transparent_with_3_instance
 
@@ -91,9 +91,8 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
                   from vm1 and vice-versa.
         Maintainer : ganeshahv@juniper.net
         """
-        svc_mode = 'in-network'
         self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=3, svc_mode=svc_mode)
+            si_count=1, svc_scaling=True, max_inst=3, svc_mode='in-network')
         svm_ids = self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
@@ -121,17 +120,15 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
         vn1_subnet_list = []
         vn2_subnet_list = []
         static_route = None
-        svc_mode = 'in-network-nat'
         if self.inputs.get_af() == 'v6':
-             svc_mode = 'in-network'
-             vn1_subnet_list += ['2100::/64']
-             vn2_subnet_list += ['2200::/64']
-             static_route =  [vn2_subnet_list[0], vn1_subnet_list[0]]
+            vn1_subnet_list += ['2100::/64']
+            vn2_subnet_list += ['2200::/64']
+            static_route = [vn2_subnet_list[0], vn1_subnet_list[0]]
         vn1_subnet_list += ['100.1.1.0/24']
         vn2_subnet_list += ['200.1.1.0/24']
         if not static_route:
-             static_route =  ['None', vn2_subnet_list[0], vn1_subnet_list[0]]
-        self.verify_svc_in_network_datapath(si_count=1, svc_mode=svc_mode, svc_scaling=True, max_inst=1, static_route=static_route,
+            static_route = ['None', vn2_subnet_list[0], vn1_subnet_list[0]]
+        self.verify_svc_in_network_datapath(si_count=1, svc_mode='in-network', svc_scaling=True, max_inst=1, static_route=static_route,
                                             vn1_subnets=vn1_subnet_list, vn2_subnets=vn2_subnet_list)
         svm_ids = self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
@@ -183,7 +180,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
            Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_transparent_datapath(
-            svc_img_name='tiny_trans_fw',si_count=1, svc_scaling=True, max_inst=3, proto='tcp')
+            svc_mode='transparent', si_count=1, svc_scaling=True, max_inst=3, proto='tcp')
         self.vm1_fixture.put_pub_key_to_vm()
         self.vm2_fixture.put_pub_key_to_vm()
         # TFTP from Left VM to Right VM is expected to fail
@@ -216,7 +213,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
            Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_transparent_datapath(
-            svc_img_name='tiny_trans_fw',si_count=1, svc_scaling=True, max_inst=3, proto='tcp')
+            svc_mode='transparent', si_count=1, svc_scaling=True, max_inst=3, proto='tcp')
         self.vm1_fixture.put_pub_key_to_vm()
         self.vm2_fixture.put_pub_key_to_vm()
         # TFTP from Left VM to Right VM is expected to fail
@@ -271,7 +268,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_transparent_datapath(
-            svc_img_name='tiny_trans_fw',si_count=3, svc_scaling=True, max_inst=3)
+            svc_mode='transparent', si_count=3, svc_scaling=True, max_inst=3)
         return True
     # end test_multi_SC_with_ecmp
 
@@ -291,7 +288,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
          Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=2, svc_mode='in-network-nat', svc_img_name='tiny_nat_fw', ci=True, st_version=2)
+            si_count=1, svc_scaling=True, max_inst=2, svc_mode='in-network-nat', ci=True, st_version=2)
         return True
     # end test_ecmp_svc_v2_in_network_nat_with_3_instance
 
@@ -311,7 +308,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
          Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=2, svc_mode='in-network-nat', svc_img_name='tiny_nat_fw', ci=True)
+            si_count=1, svc_scaling=True, max_inst=2, svc_mode='in-network-nat', ci=True)
         return True
     # end test_ecmp_svc_in_network_nat_with_3_instance
 
@@ -333,7 +330,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_in_network_datapath(
-            svc_mode = 'in-network', si_count=1, svc_scaling=True, max_inst=3)
+            svc_mode='in-network', si_count=1, svc_scaling=True, max_inst=3)
         svm_ids = self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
@@ -384,7 +381,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
          Maintainer : ganeshahv@juniper.net
          """
         self.verify_svc_in_network_datapath(
-            svc_mode = 'in-network', si_count=1, svc_scaling=True, max_inst=3)
+            svc_mode='in-network', si_count=1, svc_scaling=True, max_inst=3)
         svm_ids = self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
@@ -436,7 +433,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_in_network_datapath(
-            svc_mode = 'in-network', si_count=1, svc_scaling=True, max_inst=3)
+            svc_mode='in-network', si_count=1, svc_scaling=True, max_inst=3)
         svm_ids = self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
@@ -495,7 +492,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_in_network_datapath(
-            svc_mode = 'in-network', si_count=1, svc_scaling=True, max_inst=3)
+            svc_mode='in-network', si_count=1, svc_scaling=True, max_inst=3)
         svm_ids = self.si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
             self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
@@ -741,7 +738,7 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
            Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_in_network_datapath(
-            svc_mode = 'in-network', si_count=1, svc_scaling=True, max_inst=3)
+            svc_mode='in-network', si_count=1, svc_scaling=True, max_inst=3)
         svms = self.get_svms_in_si(
             self.si_fixtures[0], self.inputs.project_name)
         self.logger.info('The Service VMs in the Service Instance %s are %s' % (
@@ -804,7 +801,7 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
            Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_transparent_datapath(
-            svc_img_name='tiny_trans_fw',si_count=1, svc_scaling=True, max_inst=3)
+            svc_mode='transparent', si_count=1, svc_scaling=True, max_inst=3)
         svms = self.get_svms_in_si(
             self.si_fixtures[0], self.inputs.project_name)
         self.logger.info('The Service VMs in the Service Instance %s are %s' % (
@@ -873,9 +870,10 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
         Pass criteria: Ping between the VMs should be successful.
         Maintainer : ganeshahv@juniper.net
         """
-        si_list=[('bridge', 1), ('in-net', 1), ('nat', 1)]
+        si_list = [
+            ('transparent', 1), ('in-network', 1), ('in-network-nat', 1)]
         if self.inputs.get_af() == 'v6':
-            si_list=[('bridge', 1), ('in-net', 1)]
+            si_list = [('transparent', 1), ('in-network', 1)]
         self.verify_multi_inline_svc(si_list=si_list)
         return True
     # end test_three_stage_SC
@@ -913,9 +911,10 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
                    from vm1 and vice-versa.
         Maintainer : ganeshahv@juniper.net
         """
-        si_list=[('bridge', 2), ('in-net', 2), ('nat', 2)]
+        si_list = [
+            ('transparent', 2), ('in-network', 2), ('in-network-nat', 2)]
         if self.inputs.get_af() == 'v6':
-            si_list=[('bridge', 2), ('in-net', 2)]
+            si_list = [('transparent', 2), ('in-network', 2)]
         self.verify_multi_inline_svc(si_list=si_list)
         return True
     # end test_three_stage_SC_with_ECMP
@@ -934,9 +933,10 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
                  from vm1 and vice-versa.
         Maintainer : ganeshahv@juniper.net
         """
-        si_list=[('bridge', 2), ('in-net', 2), ('nat', 2)]
+        si_list = [
+            ('transparent', 2), ('in-network', 2), ('in-network-nat', 2)]
         if self.inputs.get_af() == 'v6':
-            si_list=[('bridge', 2), ('in-net', 2)]
+            si_list = [('transparent', 2), ('in-network', 2)]
         self.verify_multi_inline_svc(si_list=si_list)
         tap_list = []
         si_list = self.si_list
