@@ -180,8 +180,9 @@ class VerifySvcFirewall(VerifySvcMirror):
 
     def verify_svc_transparent_datapath(
             self, si_count=1, svc_scaling=False, max_inst=1,
-            flavor='m1.medium', proto='any', src_ports=[0, -1],
-            dst_ports=[0, -1], svc_img_name='vsrx-bridge', ci=False, st_version=1):
+            svc_mode='transparent',
+            flavor=None, proto='any', src_ports=[0, -1],
+            dst_ports=[0, -1], svc_img_name=None, ci=False, st_version=1):
         """Validate the service chaining datapath"""
         self.mgmt_vn_name = get_random_name("mgmt_vn")
         self.mgmt_vn_subnets = [get_random_cidr(af=self.inputs.get_af())]
@@ -207,7 +208,7 @@ class VerifySvcFirewall(VerifySvcMirror):
                                             self.vn1_fixture.vn_fq_name, self.vn2_fixture.vn_fq_name)
 
         self.st_fixture, self.si_fixtures = self.config_st_si(
-            self.st_name, si_prefix, si_count, svc_scaling, max_inst, flavor=flavor, project=self.inputs.project_name, svc_img_name=svc_img_name, st_version=st_version, mgmt_vn=mgmt_vn, left_vn=left_vn, right_vn=right_vn)
+            self.st_name, si_prefix, si_count, svc_scaling, max_inst, svc_mode=svc_mode, flavor=flavor, project=self.inputs.project_name, svc_img_name=svc_img_name, st_version=st_version, mgmt_vn=mgmt_vn, left_vn=left_vn, right_vn=right_vn)
         self.action_list = self.chain_si(
             si_count, si_prefix, self.inputs.project_name)
 
@@ -254,10 +255,10 @@ class VerifySvcFirewall(VerifySvcMirror):
 
     def verify_svc_in_network_datapath(self, si_count=1, svc_scaling=False,
                                        max_inst=1, svc_mode='in-network-nat',
-                                       flavor='m1.medium',
+                                       flavor=None,
                                        static_route=[None, None, None],
                                        ordered_interfaces=True,
-                                       svc_img_name='vsrx',
+                                       svc_img_name=None,
                                        vn1_subnets=None,
                                        vn2_fixture=None,
                                        vn2_subnets=None,
@@ -336,7 +337,7 @@ class VerifySvcFirewall(VerifySvcMirror):
             self.vm2_fixture.vm_ip), errmsg
         return True
 
-    def verify_multi_inline_svc(self, si_list=[('bridge', 1), ('in-net', 1), ('nat', 1)], flavor='m1.medium', ordered_interfaces=True, vn1_subnets=None, vn2_subnets=None, st_version=1):
+    def verify_multi_inline_svc(self, si_list=[('transparent', 1), ('in-network', 1), ('in-network-nat', 1)], flavor=None, ordered_interfaces=True, vn1_subnets=None, vn2_subnets=None, st_version=1, svc_img_name=None):
         """Validate in-line multi service chaining in network  datapath"""
 
         self.mgmt_vn_name = get_random_name("mgmt_vn")
@@ -373,23 +374,14 @@ class VerifySvcFirewall(VerifySvcMirror):
             max_inst = si[1]
             if max_inst > 1:
                 svc_scaling = True
-            if si[0] == 'nat':
-                svc_mode = 'in-network-nat'
-                svc_img_name = 'tiny_nat_fw'
-                (mgmt_vn, left_vn, right_vn) = (
-                    None, self.vn1_fixture.vn_fq_name, self.vn2_fixture.vn_fq_name)
-            elif si[0] == 'in-net':
-                svc_mode = 'in-network'
-                svc_img_name = 'ubuntu-in-net'
-                (mgmt_vn, left_vn, right_vn) = (
-                    None, self.vn1_fixture.vn_fq_name, self.vn2_fixture.vn_fq_name)
-            else:
-                svc_mode = 'transparent'
-                svc_img_name = 'tiny_trans_fw'
+            svc_mode = si[0]
+            (mgmt_vn, left_vn, right_vn) = (
+                None, self.vn1_fixture.vn_fq_name, self.vn2_fixture.vn_fq_name)
+            if svc_mode == 'transparent':
                 (mgmt_vn, left_vn, right_vn) = (None, None, None)
-                if st_version == 2:
-                    (mgmt_vn, left_vn, right_vn) = (self.mgmt_vn_fixture.vn_fq_name,
-                                                    self.vn1_fixture.vn_fq_name, self.vn2_fixture.vn_fq_name)
+            if st_version == 2:
+                (mgmt_vn, left_vn, right_vn) = (self.mgmt_vn_fixture.vn_fq_name,
+                                                self.vn1_fixture.vn_fq_name, self.vn2_fixture.vn_fq_name)
             self.st_fixture, self.si_fixtures = self.config_st_si(
                 self.st_name, si_prefix, si_count, svc_scaling, max_inst, mgmt_vn=mgmt_vn, left_vn=left_vn,
                 right_vn=right_vn, svc_mode=svc_mode, flavor=flavor,
