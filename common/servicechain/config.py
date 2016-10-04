@@ -5,6 +5,7 @@ from fabric.api import run, hide, settings
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import get_random_cidr
 from tcutils.util import get_random_name
+from tcutils.cfgparser import parse_cfg_file
 from vn_test import VNFixture
 from vm_test import VMFixture
 from policy_test import PolicyFixture
@@ -30,15 +31,16 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
 
     def config_st_si(self, st_name, si_name_prefix, si_count,
                      svc_scaling=False, max_inst=1, domain='default-domain', project='admin', mgmt_vn=None, left_vn=None,
-                     right_vn=None, svc_type='firewall', svc_mode='transparent', flavor='contrail_flavor_2cpu', static_route=[None, None, None], ordered_interfaces=True, svc_img_name="vsrx", st_version=1):
+                     right_vn=None, svc_type='firewall', svc_mode='transparent', flavor='contrail_flavor_2cpu', static_route=[None, None, None], ordered_interfaces=True, svc_img_name=None, st_version=1):
 
         svc_type_props = {
-            'firewall': {	'in-network-nat': 'tiny-nat-fw',
-                          'in-network': 'tiny-in-net',
-                          'transparent': 'tiny-trans-fw',
-                          },
+            'firewall': {'in-network-nat': 'tiny_nat_fw',
+                         'in-network': 'tiny_in_net',
+                         'transparent': 'tiny_trans_fw',
+                         },
             'analyzer': {'analyzer': 'analyzer'}
-        },
+        }
+
         svc_mode_props = {
             'in-network-nat':   {'left': {'shared': True},
                                  'right': {'shared': False},
@@ -57,17 +59,23 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
         if svc_scaling:
             left_scaling = True
             right_scaling = svc_mode_props[svc_mode]['right']['shared']
-        image_name = svc_img_name or svc_type_props[svc_type][svc_mode]
+        svc_img_name = svc_img_name or svc_type_props[svc_type][svc_mode]
+        images_info = parse_cfg_file('configs/images.cfg')
+        flavor = flavor or images_info[svc_img_name]['flavor']
         if_list = [mgmt_props,
                    ['left', left_scaling, bool(static_route[1])],
                    ['right', right_scaling, bool(static_route[2])],
-                    ]
+                   ]
         if svc_type == 'analyzer':
-            left_scaling=svc_mode_props[svc_mode]['left']['shared']
-            if_list=[['left', left_scaling, bool(static_route[1])]]
+            left_scaling = svc_mode_props[svc_mode]['left']['shared']
+            if_list = [['left', left_scaling, bool(static_route[1])]]
 
-        self.logger.debug('The chosen SI is a %s in %s mode,using %s image with the following interface list %s'%(svc_type, svc_mode, image_name, if_list))
-
+        self.logger.debug('SI properties:'"\n"
+                          'type: %s '"\n"
+                          'mode: %s' "\n"
+                          'image: %s' "\n"
+                          'flavor: %s' "\n"
+                          'intf_list: %s' % (svc_type, svc_mode, svc_img_name, flavor, if_list))
         # create service template
         st_fixture = self.useFixture(SvcTemplateFixture(
             connections=self.connections, inputs=self.inputs, domain_name=domain,

@@ -131,6 +131,17 @@ class NovaHelper():
         return got_image
     # end find_image
 
+    def get_image_by_id(self, image_id):
+        try:
+            image = self.obj.images.get(image_id)
+            return image.name
+        except novaException.NotFound:
+            return None
+        except Exception:
+            self.logger.exception('Exception while finding a VM')
+            return None
+    # end get_image_by_id
+
     def get_image(self, image_name='ubuntu'):
         got_image = self.find_image(image_name)
         if not got_image:
