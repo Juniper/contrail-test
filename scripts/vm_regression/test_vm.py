@@ -927,7 +927,7 @@ class TestBasicVMVN2(BaseVnVmTest):
                     break
         for dst_ip in list_of_ip_to_ping:
             self.logger.info('pinging from %s to %s' % (vm1_ip, dst_ip))
-# pinging from Vm1 to subnet broadcast
+            # pinging from Vm1 to subnet broadcast
             ping_output = vm1_fixture.ping_to_ip(
                 dst_ip, return_output=True, count=ping_count, other_opt='-b')
             self.logger.info("ping output : \n %s" % (ping_output))
@@ -936,7 +936,7 @@ class TestBasicVMVN2(BaseVnVmTest):
                 self.logger.error('Expected 0% packet loss!')
                 self.logger.error('Ping result : %s' % (ping_output))
                 result = result and False
-# getting count of ping response from each vm
+            # getting count of ping response from each vm
             string_count_dict = {}
             string_count_dict = get_string_match_count(ip_list, ping_output)
             self.logger.info("output %s" % (string_count_dict))
@@ -1017,7 +1017,7 @@ class TestBasicVMVN2(BaseVnVmTest):
         vm1_ip = vm1_fixture.vm_ip
         vm2_ip = vm2_fixture.vm_ip
         ip_list = [vm1_ip, vm2_ip]
-#       gettig broadcast ip for vm1_ip
+        # gettig broadcast ip for vm1_ip
         ip_broadcast = get_subnet_broadcast('%s/%s'%(vm1_ip, '29'))
         list_of_ip_to_ping = [ip_broadcast, '224.0.0.1', '255.255.255.255']
         # passing command to vms so that they respond to subnet broadcast
@@ -1029,7 +1029,7 @@ class TestBasicVMVN2(BaseVnVmTest):
 
         for dst_ip in list_of_ip_to_ping:
             print 'pinging from %s to %s' % (vm1_ip, dst_ip)
-# pinging from Vm1 to subnet broadcast
+            # pinging from Vm1 to subnet broadcast
             if os.environ.has_key('ci_image'):
                 ping_output = vm1_fixture.ping_to_ip(
                     dst_ip, return_output=True)
@@ -1038,7 +1038,7 @@ class TestBasicVMVN2(BaseVnVmTest):
                     dst_ip, return_output=True, other_opt='-b')
             expected_result = ' 0% packet loss'
             assert (expected_result in ping_output)
-# getting count of ping response from each vm
+            # getting count of ping response from each vm
             string_count_dict = {}
             string_count_dict = get_string_match_count(ip_list, ping_output)
             print string_count_dict
@@ -2233,7 +2233,7 @@ class TestBasicVMVN6(BaseVnVmTest):
         pass
     #end runTes 
 
-    @test.attr(type=['sanity', 'ci_sanity', 'vcenter'])
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter','vcenter_gw'])
     @preposttest_wrapper
     def test_generic_link_local_service(self):
         '''
@@ -2252,13 +2252,13 @@ class TestBasicVMVN6(BaseVnVmTest):
         vn_fixture = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
+                vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets,orch=self.orchestrator))
         #assert vn_fixture.verify_on_setup()
         vn_obj = vn_fixture.obj
         img_name = os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name,
-                                                image_name=img_name))
+                                                image_name=img_name,orch=self.orchestrator))
 
         time.sleep(90)
         assert vm1_fixture.verify_on_setup()
@@ -2819,13 +2819,13 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         vn_fixture = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
+                vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets,orch=self.orchestrator))
         #assert vn_fixture.verify_on_setup()
         vn_obj = vn_fixture.obj
         img_name = os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name,
-                                                image_name=img_name))
+                                                image_name=img_name,orch=self.orchestrator))
 
         time.sleep(90)
         assert vm1_fixture.verify_on_setup()
@@ -3371,7 +3371,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         return True
     #end test_vn_add_delete
 
-    @test.attr(type=['sanity','ci_sanity','vcenter'])
+    @test.attr(type=['sanity','ci_sanity','vcenter','vcenter_gw'])
     @preposttest_wrapper
     def test_vm_add_delete(self):
         '''
@@ -3385,12 +3385,12 @@ class TestBasicVMVNx(BaseVnVmTest):
         assert vn_fixture.verify_on_setup()
         vn_obj = vn_fixture.obj
         vm1_fixture = self.create_vm(vn_fixture=vn_fixture,
-                                     vm_name=get_random_name('vm_add_delete'))
+                                     vm_name=get_random_name('vm_add_delete'),orch=self.orchestrator)
         assert vm1_fixture.verify_on_setup()
         return True
     # end test_vm_add_delete
 
-    @test.attr(type=['sanity','ci_sanity','quick_sanity', 'vcenter'])
+    @test.attr(type=['sanity','ci_sanity','quick_sanity', 'vcenter','vcenter_gw'])
     @preposttest_wrapper
     def test_ping_within_vn(self):
         '''
@@ -3403,10 +3403,11 @@ class TestBasicVMVNx(BaseVnVmTest):
         vn1_name = get_random_name('vn30')
         vn1_vm1_name = get_random_name('vm1')
         vn1_vm2_name = get_random_name('vm2')
-        vn1_fixture = self.create_vn(vn_name=vn1_name)
+        vn1_fixture = self.create_vn(vn_name=vn1_name,orch=self.orchestrator)
         assert vn1_fixture.verify_on_setup()
-        vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm1_name)
-        vm2_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm2_name)
+        vn1_fixture.read()
+        vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm1_name,orch=self.orchestrator)
+        vm2_fixture = self.create_vm(vn_ids=[vn1_fixture.uuid], vm_name=vn1_vm2_name)
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
         vm1_fixture.wait_till_vm_is_up()
@@ -3418,7 +3419,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         return True
     # end test_ping_within_vn
 
-    @test.attr(type=['sanity','quick_sanity','ci_sanity', 'vcenter'])
+    @test.attr(type=['sanity','quick_sanity','ci_sanity', 'vcenter','vcenter_gw'])
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
         '''
@@ -3445,11 +3446,12 @@ class TestBasicVMVNx(BaseVnVmTest):
         cmd_to_sync = [x]
         create_result = True
         transfer_result = True
-        vn_fixture = self.create_vn(vn_name=vn_name)
+        vn_fixture = self.create_vn(vn_name=vn_name,orch=self.orchestrator)
+        vn_fixture.read()
         assert vn_fixture.verify_on_setup()
         vm1_fixture = self.create_vm(vn_fixture=vn_fixture,vm_name=vm1_name,
-                                     flavor='contrail_flavor_small')
-        vm2_fixture = self.create_vm(vn_fixture=vn_fixture,vm_name=vm2_name,
+                                     flavor='contrail_flavor_small',orch=self.orchestrator)
+        vm2_fixture = self.create_vm(vn_ids=[vn_fixture.uuid],vm_name=vm2_name,
                                      flavor='contrail_flavor_small')
         assert vm1_fixture.wait_till_vm_is_up()
         assert vm2_fixture.wait_till_vm_is_up()
@@ -3478,7 +3480,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         return transfer_result
     # end test_vm_file_trf_scp_tests
 
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['sanity', 'vcenter','vcenter_gw'])
     @preposttest_wrapper
     def test_vm_file_trf_tftp_tests(self):
         '''
@@ -3507,14 +3509,15 @@ class TestBasicVMVNx(BaseVnVmTest):
         cmd_to_sync = [x]
         create_result= True
         transfer_result= True
-        vn_fixture= self.create_vn(vn_name=vn_name)
+        vn_fixture= self.create_vn(vn_name=vn_name,orch=self.orchestrator)
         assert vn_fixture.verify_on_setup()
+        vn_fixture.read()
         img_name=os.environ['ci_image'] if os.environ.has_key('ci_image')\
                                         else 'ubuntu'
         flavor='m1.tiny' if os.environ.has_key('ci_image')\
                          else 'contrail_flavor_small'
         vm1_fixture = self.create_vm(vn_fixture= vn_fixture, vm_name=vm1_name,
-                                     image_name=img_name, flavor=flavor)
+                                     image_name=img_name, flavor=flavor,orch=self.orchestrator)
         vm2_fixture = self.create_vm(vn_fixture= vn_fixture, vm_name=vm2_name,
                                      image_name=img_name, flavor=flavor)
         assert vm1_fixture.wait_till_vm_is_up()
