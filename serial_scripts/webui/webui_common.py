@@ -239,7 +239,7 @@ class WebuiCommon:
     def webui_logout(self):
         try:
             self.click_element('user_info', browser=self.browser)
-            self.click_element('icon-off', 'class', browser=self.browser)
+            self.click_element('fa-power-off', 'class', browser=self.browser)
         except WebDriverException:
             pass
     # end webui_logout
@@ -437,7 +437,7 @@ class WebuiCommon:
     def click_on_caret_down(self, browser=None):
         if not browser:
             browser = self.browser
-        self.click_element('icon-caret-down', 'class', browser, wait=2)
+        self.click_element('fa-caret-down', 'class', browser, wait=2)
     # end click_on_caret_down
 
     def find_element(
@@ -1086,7 +1086,7 @@ class WebuiCommon:
         time.sleep(2)
         self.click_icon_caret(row_index, net=1)
         rows = self.get_rows()
-        self.click_element('icon-list', 'class', browser=rows[row_index + 1])
+        self.click_element('fa-list', 'class', browser=rows[row_index + 1])
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_instances_basic_in_webui
 
@@ -1212,7 +1212,7 @@ class WebuiCommon:
             if not self.click_configure_policies():
                 result = result and False
             element_name = fixture.policy_name
-            element_id = 'icon-trash'
+            element_id = 'fa-trash'
             popup_id = 'configure-policybtn1'
         elif element_type == 'disassociate_fip':
             if not self.click_configure_fip():
@@ -1225,13 +1225,13 @@ class WebuiCommon:
                 result = result and False
             element_name = fixture.vn_name
             element_id  = 'btnDeletePort'
-            id_port_delete = 'icon-trash'
+            id_port_delete = 'fa-trash'
             popup_id = 'configure-Portsbtn1'
         elif element_type == 'router_delete':
             if not self.click_configure_routers():
                 result = result and False
             element_name = 'all'
-            element_id = 'icon-trash'
+            element_id = 'fa-trash'
             popup_id = 'configure-logical_routerbtn1'
         elif element_type == 'dns_server_delete':
             if not self.click_configure_dns_servers():
@@ -1462,9 +1462,9 @@ class WebuiCommon:
     def click_monitor_common_advance(self, row_index):
         self.click_icon_caret(row_index)
         self.click_element(["div[class*='widget-box transparent']", \
-            'icon-cog'], ['css', 'class'])
+            'fa-cog'], ['css', 'class'])
         self.click_element(["div[class*='widget-box transparent']", \
-            'icon-code'], ['css', 'class'])
+            'fa-code'], ['css', 'class'])
     # end click_monitor_common_advance_in_webui
 
     def click_monitor_common_basic(self, row_index):
@@ -1472,9 +1472,9 @@ class WebuiCommon:
         time.sleep(3)
         self.click_icon_caret(row_index)
         self.click_element(["div[class*='widget-box transparent']", \
-            'icon-cog'], ['css', 'class'])
+            'fa-cog'], ['css', 'class'])
         self.click_element(["div[class*='widget-box transparent']", \
-            'icon-list'], ['css', 'class'])
+            'fa-list'], ['css', 'class'])
     # end click_monitor_common_basic_in_webui
 
     def click_monitor_networks_advance(self, row_index):
@@ -1482,14 +1482,14 @@ class WebuiCommon:
         self.check_error_msg("monitor networks")
         self.click_icon_caret(row_index, net=1)
         rows = self.get_rows()
-        self.click_element('icon-code', 'class', browser=rows[row_index + 1])
+        self.click_element('fa-code', 'class', browser=rows[row_index + 1])
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_networks_advance_in_webui
 
     def click_monitor_instances_advance(self, row_index, length=None):
         self.click_monitor_instances_basic(row_index, length)
         rows = self.get_rows()
-        self.click_element('icon-code', 'class', browser=rows[row_index + 1])
+        self.click_element('fa-code', 'class', browser=rows[row_index + 1])
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_instances_advance_in_webui
 
@@ -1921,7 +1921,7 @@ class WebuiCommon:
                 keys_arry = self.find_element(
                     'key', 'class', elements=True, browser=element)
                 # Find and click are separated here to avoid timeout issues and capture screenshot in case find fails
-                plus_element = self.find_element('icon-plus', 'class', elements=True, browser=element)[index]
+                plus_element = self.find_element('fa-plus', 'class', elements=True, browser=element)[index]
                 plus_element.click()
                 vals_arry = self.find_element(
                     'value', 'class', elements=True, browser=element)
@@ -2432,7 +2432,7 @@ class WebuiCommon:
         while flag < count:
             plus_objs = []
             try:
-                plus_objs = self.find_element("i[class*='icon-plus expander']",'css', elements=True,screenshot=False)
+                plus_objs = self.find_element("i[class*='fa-plus expander']",'css', elements=True,screenshot=False)
                 flag += 1
                 self.click(plus_objs)
                 time.sleep(3)
@@ -2452,7 +2452,7 @@ class WebuiCommon:
     # end get_vn_detail_ops
 
     def click_icon_cog(self, index, browser, option, type):
-        self.click_element('icon-cog', 'class', index)
+        self.click_element('fa-cog', 'class', index)
         self.wait_till_ajax_done(index)
         tool_tip_option = "//a[contains(@class,'tooltip-success')]"
         tool_tip = self.find_element(tool_tip_option, 'xpath', index, elements=True)
@@ -2693,7 +2693,7 @@ class WebuiCommon:
                 self.wait_till_ajax_done(self.browser)
                 self.click_element('ui-accordion-subnets-header-0')
                 self.wait_till_ajax_done(self.browser)
-                self.click_element('icon-plus', 'class')
+                self.click_element('fa-plus', 'class')
                 data_row = "//tr[contains(@class,'data-row')]"
                 data = self.find_element(data_row, 'xpath', elements=True)
                 data_new = []
@@ -2755,7 +2755,7 @@ class WebuiCommon:
                 data = self.find_element(data_row, 'xpath', elements=True)
                 ind = 0
                 act_cell = self.find_element('action-cell', 'class')
-                minus_icon = "//i[contains(@class,'icon-minus')]"
+                minus_icon = "//i[contains(@class,'fa-minus')]"
                 self.click_element(minus_icon, 'xpath', elements=True, index=ind)
                 self.click_element('configure-networkbtn1')
                 self.wait_till_ajax_done(self.browser)
@@ -2789,7 +2789,7 @@ class WebuiCommon:
                     next_hop = "//input[contains(@name,'next_hop')]"
                     self.send_keys(hnexthop, next_hop, 'xpath')
                 else:
-                    minus_icon = "//i[contains(@class,'icon-minus')]"
+                    minus_icon = "//i[contains(@class,'fa-minus')]"
                     minus = self.find_element(minus_icon, 'xpath', elements=True)
                     index = len(minus)
                     minus[index-1].click()
@@ -2824,12 +2824,12 @@ class WebuiCommon:
             if not self.click_configure_networks():
                 result = False
             if category == 1:
-                add_icon = "//i[contains(@class,'icon-plus')]"
+                add_icon = "//i[contains(@class,'fa-plus')]"
                 self.click_element(add_icon, 'xpath')
                 disp_name = "//input[contains(@name,'display_name')]"
                 self.send_keys(var_list[3], disp_name, 'xpath')
                 self.click_element('ui-accordion-subnets-header-0')
-                self.click_element("icon-plus", 'class')
+                self.click_element("fa-plus", 'class')
                 cidr = "//input[contains(@name,'user_created_cidr')]"
                 self.send_keys(var_list[2], cidr, 'xpath')
                 self.wait_till_ajax_done(self.browser, wait=3)
@@ -2908,7 +2908,7 @@ class WebuiCommon:
                     else:
                         text.send_keys(dns_ip)
                 else:
-                    minus_icon = "//i[contains(@class,'icon-minus')]"
+                    minus_icon = "//i[contains(@class,'fa-minus')]"
                     minus = self.find_element(minus_icon, 'xpath', elements=True)
                     index = len(minus)
                     minus[index-1].click()
@@ -2958,7 +2958,7 @@ class WebuiCommon:
                     self.project = select.text
                     select.click()
                 else:
-                    minus_icon = "//i[contains(@class,'icon-minus')]"
+                    minus_icon = "//i[contains(@class,'fa-minus')]"
                     minus = self.find_element(minus_icon, 'xpath', elements=True)
                     index = len(minus)
                     minus[index-1].click()
@@ -3016,7 +3016,7 @@ class WebuiCommon:
                         user_imp_route_target = "//div[contains(@id, \
                                                 'user_created_import_route_targets')]"
                         user_irt = self.find_element(user_imp_route_target, 'xpath', elements=True)
-                    minus_icon = "//i[contains(@class,'icon-minus')]"
+                    minus_icon = "//i[contains(@class,'fa-minus')]"
                     minus = self.find_element(minus_icon, 'xpath', elements=True)
                     index = len(minus) - 1
                     minus[index].click()
