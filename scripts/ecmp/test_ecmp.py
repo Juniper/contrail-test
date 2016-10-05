@@ -27,6 +27,7 @@ from base import BaseECMPTest
 from common import isolated_creds
 import inspect
 import test
+import pdb
 
 
 class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
@@ -259,7 +260,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
     @preposttest_wrapper
     def test_multi_SC_with_ecmp(self):
         """
-        Description: Validate Multiple Service Instances with ECMP. 
+        Description: Validate Multiple Service Instances with ECMP.
         Test steps:
                     1. Creating vm's - vm1 and vm2 in networks vn1 and vn2.
                     2.  Creating 3 service instances in transparent mode with 3 instances each.
@@ -324,7 +325,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                     1.  Creating vm's - vm1 and vm2 in networks vn1 and vn2.
                     2.  Creating a service instance in in-network-nat mode with 3 instances and
                         left-interface of the service instances sharing the IP and enabled for static route.
-                    3.   Start traffic and and more flows. 
+                    3.   Start traffic and and more flows.
                     4.  Creating a service chain by applying the service instance as a service in a policy b
                         etween the VNs.
                     5.  Checking for ping and tcp traffic between vm1 and vm2.
@@ -375,7 +376,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                     1.  Creating vm's - vm1 and vm2 in networks vn1 and vn2.
                     2.  Creating a service instance in in-network-nat mode with 3 instances and
                          left-interface of the service instances sharing the IP and enabled for static route.
-                    3.   Start traffic and send 3 different protocol traffic to the same destination. 
+                    3.   Start traffic and send 3 different protocol traffic to the same destination.
                     4.  Creating a service chain by applying the service instance as a service in a policy b
                             etween the VNs.
                     5.  Checking for ping and tcp traffic between vm1 and vm2.
@@ -528,6 +529,174 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         return True
     # end test_ecmp_svc_in_network_with_policy_bind_unbind
 
+class TestECMPwithConfigHash(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestECMPwithConfigHash, cls).setUpClass()
+
+    def runTest(self):
+        pass
+    # end runTest
+    """
+        General Test steps:
+                1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                2.Creating a service instance in in-network mode with 3 instances.
+                3.Creating a service chain by applying the service instance as a service in a policy
+                     between the VNs.
+                4.Configuring ecmp hash to 5 tuple (source_ip, destination_ip,
+                    source_port, destionation_port, ip_protocol) and verifying
+                    traffic distribution is happening properly between vm1 to vm2
+                5. Modify the configurable ecmp hash to "source_ip" only and
+                    verify traffic distribution for all flows go through a single
+                    service instance
+                6. Modify the configurable ecmp hash to "destination_ip" only and
+                    verify traffic distribution for all flows go through a single
+                    service instance
+                7. Modify the configurable ecmp hash to "source_port" only and
+                    verify traffic distribution for all flows go through a single
+                    service instance
+                8. Modify the configurable ecmp hash to "destination_port" only and
+                    verify traffic distribution for all flows go through a single
+                    service instance
+                9. Modify the configurable ecmp hash to "ip_protocol" only and
+                    verify traffic distribution for all flows go through a single
+                    service instance
+                10. Modify the configurable ecmp hash to "source_ip" and "destination_ip" and
+                    verify traffic distribution for all flows go through a single
+                    service instance
+                11. Delete the configurable hash, by default when no hash is configured,
+                    ecmp hash should point to default value i.e 5 tuple.
+                    verify traffic distribution for all flows go through a single
+                    service instance
+        Pass criteria: Ping between the VMs should be successful and traffic should reach vm2
+                  from vm1 and vice-versa, based upon the configurable ecmp.
+    """
+
+    #@test.attr(type=['ci_sanity_WIP', 'sanity'])
+    #@preposttest_wrapper
+    def test_ecmp_hash_svc_v1_in_network_nat_with_3_instance(self):
+        """
+            Above test steps are validated (1-11) with in_network_nat svc_mode and
+            with st_version = 1
+            Maintainer : cmallam@juniper.net
+        """
+        #pdb.set_trace()
+        max_inst = 3
+        svc_mode = 'in-network-nat'
+        svc_img_name = 'tiny_nat_fw'
+        st_version = 1
+        pdb.set_trace()
+        self.test_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
+                                       max_inst=max_inst, svc_mode=svc_mode,
+                                       svc_img_name=svc_img_name,
+                                       st_version=st_version)
+        return True
+    # end test_ecmp_hash_svc_v2_in_network_nat_with_3_instance
+
+    #@test.attr(type=['sanity'])
+    #@preposttest_wrapper
+    def test_ecmp_hash_svc_v1_transparent_with_3_instance(self):
+        """
+            Above test steps are validated (1-11) with transparent svc_mode and
+            with st_version = 1
+            Maintainer : cmallam@juniper.net
+        """
+        max_inst = 3
+        svc_mode = 'transparent'
+        svc_img_name = 'tiny_trans_fw'
+        st_version = 1
+        #pdb.set_trace()
+        self.test_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
+                                       max_inst=max_inst, svc_mode=svc_mode,
+                                       svc_img_name=svc_img_name,
+                                       st_version=st_version)
+        return True
+    # end test_ecmp_hash_svc_v1_transparent_with_3_instance
+
+    #@test.attr(type=['sanity'])
+    #@preposttest_wrapper
+    def test_ecmp_hash_svc_v1_in_network_with_3_instance(self):
+        """
+            Above test steps are validated (1-11) with in_network svc_mode and
+            with st_version = 1
+            Maintainer : cmallam@juniper.net
+        """
+        max_inst = 3
+        svc_mode = 'in-network'
+        st_version = 1
+        svc_img_name = 'ubuntu-in-net'
+        #pdb.set_trace()
+        self.test_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
+                                       max_inst=max_inst, svc_mode=svc_mode,
+                                       svc_img_name=svc_img_name,
+                                       st_version=st_version)
+
+        return True
+
+    # end test_ecmp_hash_svc_v1_in_network_with_3_instance
+
+    #@test.attr(type=['ci_sanity_WIP', 'sanity'])
+    #@preposttest_wrapper
+    def test_ecmp_hash_svc_v2_in_network_nat_with_3_instance(self):
+        """
+            Above test steps are validated (1-11) with in_network_nat svc_mode and
+            with st_version = 2
+            Maintainer : cmallam@juniper.net
+        """
+        #pdb.set_trace()
+        max_inst = 3
+        svc_mode = 'in-network-nat'
+        svc_img_name = 'tiny_nat_fw'
+        st_version = 2
+        self.test_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
+                                       max_inst=max_inst, svc_mode=svc_mode,
+                                       svc_img_name=svc_img_name,
+                                       st_version=st_version)
+        return True
+    # end test_ecmp_hash_svc_v2_in_network_nat_with_3_instance
+
+    #@test.attr(type=['sanity'])
+    #@preposttest_wrapper
+    def test_ecmp_hash_svc_v2_transparent_with_3_instance(self):
+        """
+            Above test steps are validated (1-11) with transparent svc_mode and
+            with st_version = 2
+            Maintainer : cmallam@juniper.net
+        """
+        max_inst = 3
+        svc_mode = 'transparent'
+        svc_img_name = 'tiny_trans_fw'
+        st_version = 2
+        #pdb.set_trace()
+        self.test_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
+                                       max_inst=max_inst, svc_mode=svc_mode,
+                                       svc_img_name=svc_img_name,
+                                       st_version=st_version)
+        return True
+    # end test_ecmp_hash_svc_v2_transparent_with_3_instance
+
+    #@test.attr(type=['sanity'])
+    #@preposttest_wrapper
+    def test_ecmp_hash_svc_v2_in_network_with_3_instance(self):
+        """
+            Above test steps are validated (1-11) with in_network svc_mode and
+            with st_version = 2
+            Maintainer : cmallam@juniper.net
+        """
+        max_inst = 3
+        svc_mode = 'in-network'
+        st_version = 2
+        svc_img_name = 'ubuntu-in-net'
+        #pdb.set_trace()
+        self.test_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
+                                       max_inst=max_inst, svc_mode=svc_mode,
+                                       svc_img_name=svc_img_name,
+                                       st_version=st_version)
+
+        return True
+
+    # end test_ecmp_hash_svc_v2_in_network_with_3_instance
 
 class TestECMPwithFIP(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
 
@@ -781,7 +950,7 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
                 self.si_fixtures[0].si_name, svms))
             svm_ids = []
             for svm in svms:
-                svm_ids.append(svm.id) 
+                svm_ids.append(svm.id)
             self.get_rt_info_tap_intf_list(
                 self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
             self.verify_flow_records(
