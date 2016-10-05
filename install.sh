@@ -14,12 +14,13 @@ PACKAGES_REQUIRED_UBUNTU="python-pip ant python-novaclient python-neutronclient 
     python-contrail python-glanceclient python-heatclient python-ceilometerclient python-setuptools contrail-utils \
     patch git ipmitool"
 PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD="$PACKAGES_REQUIRED_UBUNTU python-dev libxslt1-dev libz-dev libyaml-dev sshpass"
+PACKAGES_REQUIRED_RALLY="libssl-dev libffi-dev python-dev libxml2-dev libxslt1-dev libpq-dev"
 
 usage () {
     cat <<EOF
 Install or do docker build of Contrail-test and contrail-test-ci
 
-Usage: $0 (install|docker-build) [OPTIONS] (contrail-test|contrail-test-ci)
+Usage: $0 (install|docker-build) [OPTIONS] (contrail-test|contrail-test-ci|rally)
 
 Subcommands:
 
@@ -59,6 +60,64 @@ function distro {
         echo "Unsupported distribution"
         exit 1
     fi
+}
+
+function make_entrypoint_rally {
+    cat <<'EOT'
+#!/bin/bash
+
+sendmail=1
+
+while getopts ":t:p:mu" opt; do
+  case $opt in
+    t)
+        testbed_input=$OPTARG
+        ;;
+    p)
+        contrail_fabpath_input=$OPTARG
+        ;;
+    s)
+        scenarios_list=$OPTARG
+        ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      exit 1
+      ;;
+  esac
+done
+export ci_image=${CI_IMAGE:-'cirros-0.3.0-x86_64-uec'}
+TESTBED=${testbed_input:-${TESTBED:-'/opt/contrail/utils/fabfile/testbeds/testbed.py'}}
+CONTRAIL_FABPATH=${contrail_fabpath_input:-${CONTRAIL_FABPATH:-'/opt/contrail/utils'}}
+SCENARIOS=${scenarios_list:-${SCENARIOS:-''}}
+
+if [[ ( ! -f /contrail-test/sanity_params.ini || ! -f /contrail-test/sanity_testbed.json ) && ! -f $TESTBED ]]; then
+    echo "ERROR! Either testbed file or sanity_params.ini or sanity_testbed.json under /contrail-test is required.
+          you probably forgot to attach them as volumes"
+    exit 100
+fi
+
+if [ ! $TESTBED -ef ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py ]; then
+    mkdir -p ${CONTRAIL_FABPATH}/fabfile/testbeds/
+    cp $TESTBED ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py
+fi
+
+if [ $sendmail -eq 1 ]; then
+    mail_arg='-m'
+fi
+
+cd /contrail-test
+if [[ $SCENARIOS == "" ]]; then
+./run_rally.sh
+else
+./run_rally.sh -s $SCENARIOS
+fi
+
+if [ -d /contrail-test.save ]; then
+    cp -f ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py /contrail-test.save/
+    rsync -a --exclude logs/ --exclude report/ /contrail-test /contrail-test.save/
+fi
+
+EOT
 }
 
 function make_entrypoint_contrail_test_ci {
@@ -327,7 +386,7 @@ RUN git clone $CONTRAIL_TEST_REPO /contrail-test; \
     rm -fr .git
 EOF
             fi
-        elif [[ $build_type == 'contrail-test-ci' && -f $CONTRAIL_TEST_CI_ARTIFACT ]] ; then
+        elif [[ ($build_type == 'contrail-test-ci' || $build_type == 'rally') && -f $CONTRAIL_TEST_CI_ARTIFACT ]] ; then
             merge_code='mv /contrail-test-ci /contrail-test; '
         fi
 
@@ -342,6 +401,14 @@ RUN git clone $CONTRAIL_TEST_CI_REPO $ci_dir; \
     rm -fr .git
 EOF
          fi
+
+        if [[ ! -z $RALLY_REPO ]]; then
+            cat <<EOF
+RUN cd contrail-test-ci ; \
+    apt-get install -y $PACKAGES_REQUIRED_RALLY ; \
+    ./install_rally.sh $RALLY_REPO
+EOF
+        fi
 
         if [[ -f $CONTRAIL_FAB_ARTIFACT ]]; then
             echo -e "ADD $(basename $CONTRAIL_FAB_ARTIFACT) /opt/contrail/"
@@ -459,6 +526,8 @@ EOF
             make_entrypoint_contrail_test > ${BUILD_DIR}/docker_entrypoint.sh
         elif [[ $build_type == 'contrail-test-ci' ]]; then
             make_entrypoint_contrail_test_ci > ${BUILD_DIR}/docker_entrypoint.sh
+        elif [[ $build_type == 'rally' ]]; then
+            make_entrypoint_rally > ${BUILD_DIR}/docker_entrypoint.sh
         else
             echo "ERROR! Unknown build_type: $build_type"
             exit 1
@@ -490,7 +559,7 @@ EOF
         fi
     }
 
-    if ! options=$(getopt -o hcu:t:e:f -l help,force,test-artifact:,ci-artifact:,fab-artifact:,use-cache,ci-repo:,ci-ref:,export:,test-repo:,test-ref:,contrail-install-package-url:,fab-repo:,fab-ref:,container-tag: -- "$@"); then
+    if ! options=$(getopt -o hcu:t:e:f -l help,force,test-artifact:,ci-artifact:,rally-repo:,fab-artifact:,use-cache,ci-repo:,ci-ref:,export:,test-repo:,test-ref:,contrail-install-package-url:,fab-repo:,fab-ref:,container-tag: -- "$@"); then
 # parse error
         usage
         exit 1
@@ -506,6 +575,7 @@ EOF
             --fab-repo) CONTRAIL_FAB_REPO=$2; shift;;
             --fab-ref) CONTRAIL_FAB_REF=$2; shift;;
             --ci-repo) CONTRAIL_TEST_CI_REPO=$2; shift;;
+            --rally-repo) RALLY_REPO=$2; shift;;
             --ci-ref) CONTRAIL_TEST_CI_REF=$2; shift;;
             --test-artifact) CONTRAIL_TEST_ARTIFACT=$2; shift;;
             --ci-artifact) CONTRAIL_TEST_CI_ARTIFACT=$2; shift;;
