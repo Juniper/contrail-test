@@ -75,7 +75,7 @@ class FloatingipBasicTestSanity(base.FloatingIpBaseTest):
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=vn1_name,
-                subnets=vn1_subnets))
+                subnets=vn1_subnets,orch = self.orchestrator))
 
         assert vn1_fixture.verify_on_setup()
 
@@ -85,7 +85,8 @@ class FloatingipBasicTestSanity(base.FloatingIpBaseTest):
                 connections=self.connections,
                 vn_obj=vn1_fixture.obj,
                 vm_name=vn1_vm1_name,
-                node_name=self.compute_1
+                node_name=self.compute_1,
+                orch = self.orchestrator
             ))
 
         fvn_vm1_fixture = self.useFixture(
