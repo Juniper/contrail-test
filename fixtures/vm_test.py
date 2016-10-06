@@ -365,9 +365,9 @@ class VMFixture(fixtures.Fixture):
         if not getattr(self, 'cs_instance_ip_objs', None):
             self.cs_instance_ip_objs = dict()
         if not self.cs_instance_ip_objs.get(cfgm_ip) or refresh:
-            iip_obj = self.api_s_inspects[cfgm_ip].get_cs_instance_ips_of_vm(
+            iip_objs = self.api_s_inspects[cfgm_ip].get_cs_instance_ips_of_vm(
                 self.vm_id, refresh)
-            self.cs_instance_ip_objs[cfgm_ip] = iip_obj
+            self.cs_instance_ip_objs[cfgm_ip] = iip_objs
         ret = True if self.cs_instance_ip_objs[cfgm_ip] else False
         return (ret, self.cs_instance_ip_objs[cfgm_ip])
 
@@ -381,7 +381,7 @@ class VMFixture(fixtures.Fixture):
     def get_vm_ip_dict(self):
         if not getattr(self, 'vm_ip_dict', None):
             self.vm_ip_dict = defaultdict(list)
-            iip_objs = self.get_iip_obj_from_api_server()[1]
+            iip_objs = self.get_iip_obj_from_api_server(refresh=True)[1]
             for iip_obj in iip_objs:
                 ip = iip_obj.ip
                 if self.hack_for_v6(ip):
@@ -688,8 +688,8 @@ class VMFixture(fixtures.Fixture):
         self.vm_in_api_flag = True
 
         self.get_vm_objs()
-        self.get_vmi_objs()
-        self.get_iip_objs()
+        self.get_vmi_objs(refresh=True)
+        self.get_iip_objs(refresh=True)
 
         for cfgm_ip in self.inputs.cfgm_ips:
             self.logger.debug("Verifying in api server %s" % (cfgm_ip))
@@ -744,7 +744,7 @@ class VMFixture(fixtures.Fixture):
                 self.verify_vm_not_in_api_server_flag = self.verify_vm_not_in_api_server_flag and False
                 return False
             if api_inspect.get_cs_vmi_of_vm(self.vm_id,
-                                            refresh=True) is not None:
+                                            refresh=True):
                 with self.printlock:
                     self.logger.debug("API-Server still has VMI info of VM %s"
                                       % (self.vm_name))
@@ -768,10 +768,10 @@ class VMFixture(fixtures.Fixture):
         tap_intfs = inspect_h.get_vna_tap_interface_by_vm(vm_id=self.vm_id)
         return tap_intfs
 
-    def get_vmi_ids(self):
-        if not getattr(self, 'vmi_ids', None):
+    def get_vmi_ids(self, refresh=False):
+        if not getattr(self, 'vmi_ids', None) or refresh:
             self.vmi_ids = dict()
-            vmi_objs = self.get_vmi_obj_from_api_server()[1]
+            vmi_objs = self.get_vmi_obj_from_api_server(refresh=refresh)[1]
             for vmi_obj in vmi_objs:
                 self.vmi_ids[vmi_obj.vn_fq_name] = vmi_obj.uuid
         return self.vmi_ids
