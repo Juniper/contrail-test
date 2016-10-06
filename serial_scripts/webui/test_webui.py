@@ -515,8 +515,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
                     topo.subnet_dns_ip, topo.subnet_gate_ip, topo.subnet_default_gate_ip]
         result = True
         if self.webui_common.click_configure_networks():
-            add = self.webui_common.find_element("//i[contains(@class,'fa-plus')]", 'xpath')
-            add.click()
+            self.webui_common.click_element('fa-plus', 'class')
             self.webui_common.wait_till_ajax_done(self.browser, wait=3)
             self.webui_common.find_element("//input[contains(@name,'display_name')]", \
                                             'xpath').send_keys(topo.vn_disp_name)
@@ -1189,8 +1188,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         for vn in vn_list:
             self.webui.logger.debug("Step 1 : Create vn %s " %(vn))
             if self.webui_common.click_configure_networks():
-                add = self.webui_common.find_element("//i[contains(@class,'fa-plus')]", 'xpath')
-                add.click()
+                self.webui_common.click_element('fa-plus', 'class')
                 self.webui_common.wait_till_ajax_done(self.browser, wait=3)
                 self.webui_common.find_element("//input[contains(@name,'display_name')]", \
                                                'xpath').send_keys(vn)
