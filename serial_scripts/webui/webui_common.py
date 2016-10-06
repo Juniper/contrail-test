@@ -2607,7 +2607,7 @@ class WebuiCommon:
             self.edit_vn_result = self.edit_remove_option(option, 'edit')
             if self.edit_vn_result:
                 self.click_element('display_name')
-                self.send_keys(vn_name, 'span12', 'class', clear=True)
+                self.send_keys(vn_name, 'display_name', 'name', clear=True)
                 self.click_element('configure-networkbtn1')
             else:
                 self.logger.error("Clicking the Edit Button is not working")
@@ -2691,7 +2691,7 @@ class WebuiCommon:
             self.edit_vn_result = self.edit_remove_option(option, 'edit', vn_name=vn)
             if self.edit_vn_result:
                 self.wait_till_ajax_done(self.browser)
-                self.click_element('ui-accordion-subnets-header-0')
+                self.click_element('subnets')
                 self.wait_till_ajax_done(self.browser)
                 self.click_element('fa-plus', 'class')
                 data_row = "//tr[contains(@class,'data-row')]"
@@ -2749,7 +2749,7 @@ class WebuiCommon:
         try:
             self.edit_vn_result = self.edit_remove_option(option, 'edit', vn_name=vn)
             if self.edit_vn_result:
-                self.click_element('ui-accordion-subnets-header-0')
+                self.click_element('subnets')
                 self.wait_till_ajax_done(self.browser)
                 data_row = "//tr[contains(@class,'data-row')]"
                 data = self.find_element(data_row, 'xpath', elements=True)
@@ -2828,7 +2828,7 @@ class WebuiCommon:
                 self.click_element(add_icon, 'xpath')
                 disp_name = "//input[contains(@name,'display_name')]"
                 self.send_keys(var_list[3], disp_name, 'xpath')
-                self.click_element('ui-accordion-subnets-header-0')
+                self.click_element('subnets')
                 self.click_element("fa-plus", 'class')
                 cidr = "//input[contains(@name,'user_created_cidr')]"
                 self.send_keys(var_list[2], cidr, 'xpath')
@@ -2837,35 +2837,24 @@ class WebuiCommon:
             self.edit_vn_result = self.edit_remove_option(option, 'edit', vn_name=var_list[3])
             if self.edit_vn_result:
                 self.click_element('advanced_options')
-                is_shared = "//input[contains(@name,'is_shared')]"
-                check = self.click_element(is_shared, 'xpath')
-                router_external = "//input[contains(@name,'router_external')]"
-                self.click_element(router_external, 'xpath')
-                allow_transit = "//input[contains(@name,'allow_transit')]"
-                self.click_element(allow_transit, 'xpath')
-                unknown_unicast = "//input[contains(@name,'flood_unknown_unicast')]"
-                self.click_element(unknown_unicast, 'xpath')
-                service_chain = "//input[contains(@name,'multi_policy_service_chains_enabled')]"
-                self.click_element(service_chain, 'xpath')
-                ecmp_hash = "//div[contains(@id,'s2id_ecmp_hashing_include_fields_dropdown')]"
-                self.click_element(ecmp_hash, 'xpath')
-                select_highlight = "//li[contains(@class,'select2-highlighted')]"
-                self.click_element(select_highlight, 'xpath')
+                self.wait_till_ajax_done(self.browser, wait=3)
+                is_shared = self.find_element('is_shared', 'name')
+                self.browser.execute_script(
+                        "return arguments[0].scrollIntoView();", is_shared)
+                is_shared.click()
+                self.click_element('router_external', 'name')
+                self.click_element('allow_transit', 'name')
+                self.click_element('flood_unknown_unicast', 'name')
+                self.click_element('multi_policy_service_chains_enabled', 'name')
+                self.click_element('s2id_ecmp_hashing_include_fields_dropdown')
+                self.click_element('select2-highlighted', 'class')
                 if tc == 'pos-phy':
-                    self.click_element('s2id_route_table_refs_dropdown')
-                    self.wait_till_ajax_done(self.browser, wait=3)
-                    self.click_element(select_highlight, 'xpath')
-                    sriov_option = "//input[contains(@name,'user_created_sriov_enabled')]"
-                    self.click_element(sriov_option, 'xpath')
-                    phy_network =  "//input[contains(@name,'physical_network')]"
-                    self.send_keys(var_list[1], phy_network, 'xpath')
-                    seg_id = "//input[contains(@name,'segmentation_id')]"
-                    self.send_keys(var_list[0], seg_id, 'xpath')
+                    self.click_element('user_created_sriov_enabled', 'name')
+                    self.send_keys(var_list[1], 'physical_network', 'name')
+                    self.send_keys(var_list[0], 'segmentation_id', 'name')
                 else:
-                    phy_net = "//input[contains(@name,'physical_network')]"
-                    self.send_keys(var_list[1], phy_net, 'xpath', clear=True)
-                    seg_id = "//input[contains(@name,'segmentation_id')]"
-                    self.send_keys(var_list[0], seg_id, 'xpath', clear=True)
+                    self.send_keys(var_list[1], 'physical_network', 'name', clear=True)
+                    self.send_keys(var_list[0], 'segmentation_id', 'name', clear=True)
                 self.click_element('configure-networkbtn1')
                 result = self.edit_vn_result
                 if tc == 'neg-phy':
@@ -2896,17 +2885,13 @@ class WebuiCommon:
         try:
             self.edit_vn_result = self.edit_remove_option(option, 'edit')
             if self.edit_vn_result:
-                self.click_element('ui-accordion-dns_servers-header-0')
+                self.click_element('dns_servers')
                 self.wait_till_ajax_done(self.browser, wait=3)
                 if button == 'add':
                     add_link = self.find_element('editable-grid-add-link', 'class', elements=True)
                     add_link[2].click()
-                    ip_address = "//input[contains(@name,'ip_address')]"
-                    text = self.find_element(ip_address, 'xpath')
-                    if tc == 'pos':
-                        text.send_keys(dns_ip)
-                    else:
-                        text.send_keys(dns_ip)
+                    text = self.find_element('ip_address', 'name')
+                    text.send_keys(dns_ip)
                 else:
                     minus_icon = "//i[contains(@class,'fa-minus')]"
                     minus = self.find_element(minus_icon, 'xpath', elements=True)
@@ -2945,21 +2930,20 @@ class WebuiCommon:
                 self.click_element('fip_pool_accordian')
                 self.wait_till_ajax_done(self.browser)
                 if button == 'add':
-                    edit_grid = "//a[contains(@class,'editable-grid-add-link')]"
-                    add_link = self.find_element(edit_grid, 'xpath', elements=True)
+                    add_link = self.find_element('editable-grid-add-link', 'class', \
+                                                 elements=True)
+                    self.browser.execute_script(
+                        "return arguments[0].scrollIntoView();", add_link[3])
                     add_link[3].click()
                     self.wait_till_ajax_done(self.browser)
-                    pool_name = "//input[contains(@placeholder,'Enter Pool Name')]"
-                    self.send_keys(fpool, pool_name, 'xpath')
+                    self.send_keys(fpool, 'name', 'name')
                     self.wait_till_ajax_done(self.browser)
                     self.click_element('s2id_projects_dropdown')
-                    select_highlight = "//li[contains(@class,'select2-highlighted')]"
-                    select = self.find_element(select_highlight, 'xpath')
+                    select = self.find_element('select2-highlighted', 'class')
                     self.project = select.text
                     select.click()
                 else:
-                    minus_icon = "//i[contains(@class,'fa-minus')]"
-                    minus = self.find_element(minus_icon, 'xpath', elements=True)
+                    minus = self.find_element('fa-minus', 'class', elements=True)
                     index = len(minus)
                     minus[index-1].click()
                 self.click_element('configure-networkbtn1')
@@ -2993,8 +2977,9 @@ class WebuiCommon:
                 elif rt_type == 'IRT':
                     if button == 'add':
                         self.wait_till_ajax_done(self.browser, wait=10)
-                        imp_route_target = 'ui-accordion-import_route_target_accordian-header-0'
-                        route = self.find_element(imp_route_target)
+                        route = self.find_element('import_route_target_accordian')
+                        self.browser.execute_script(
+                            "return arguments[0].scrollIntoView();", route)
                         route.click()
                         ind = 6
                         self.wait_till_ajax_done(self.browser)
@@ -3002,22 +2987,23 @@ class WebuiCommon:
                             route.click()
                         self.wait_till_ajax_done(self.browser)
                 if button == 'add':
-                    edit_grid = "//a[contains(@class,'editable-grid-add-link')]"
-                    self.click_element(edit_grid, 'xpath', elements=True, index=ind)
+                    add_link = self.find_element('editable-grid-add-link', 'class', \
+                                                 elements=True)
+                    self.browser.execute_script(
+                        "return arguments[0].scrollIntoView();", add_link[ind])
+                    add_link[ind].click()
                     self.wait_till_ajax_done(self.browser)
-                    self.send_keys(asn_no_ip, "//input[contains(@name,'asn')]", 'xpath')
-                    self.send_keys(target_no, "//input[contains(@name,'target')]", 'xpath')
+                    self.send_keys(asn_no_ip, 'asn', 'name')
+                    self.send_keys(target_no, 'target', 'name')
                 else:
                     if rt_type == 'IRT':
                         self.click_element('import_route_target_accordian')
                         self.wait_till_ajax_done(self.browser)
                         imp_route_target_vcfg = "//div[contains(@id,'import_route_target_vcfg')]"
                         irt = self.find_element(imp_route_target_vcfg, 'xpath', elements=True)
-                        user_imp_route_target = "//div[contains(@id, \
-                                                'user_created_import_route_targets')]"
-                        user_irt = self.find_element(user_imp_route_target, 'xpath', elements=True)
-                    minus_icon = "//i[contains(@class,'fa-minus')]"
-                    minus = self.find_element(minus_icon, 'xpath', elements=True)
+                        user_imp_route_target = self.find_element('user_created_import_route_targets', \
+                                                     elements=True)
+                    minus = self.find_element('fa-minus', 'class', elements=True)
                     index = len(minus) - 1
                     minus[index].click()
                 self.click_element('configure-networkbtn1')
