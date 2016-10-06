@@ -24,7 +24,59 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         pass
     # end runTest
 
-    def test_bgp_connectivity_alarm(self):
+    def test_conf_incorrect_alarms(self):
+        ''' Test to check conf-incorrect alarms
+            Steps:
+                1) Change disc_server_ip in contrail-api conf file and restart
+                2) Expect process connectivity alarm to get raised
+                3) Verify ConfIncorrect alarms for analytics-node, control-node, vrouter, db node and config-node
+        '''
+        assert self.analytics_obj.verify_conf_incorrect_alarm()
+        return True
+
+    def test_contrail_control_process_connectivity_alarm(self):
+        ''' Test to check contrail-control process connectivity alarm
+            Steps:
+                1) Change ifmap user in contrail-control conf file and restart
+                2) Expect contrail control  process connectivity alarm to get raised
+                3) Verify contrail control process connectivity alarm
+
+        '''
+        assert self.analytics_obj.verify_process_connectivity_contrail_control_alarm()
+        return True
+
+    def test_partial_sysinfo_config_alarm(self):
+        ''' Test to check PartialSysinfoConfig alarm
+            Steps:
+                1) Change disc_server_ip in contrail-api conf file and restart
+                2) Expect partial-sysinfo-config alarm to get raised
+                3) Verify PartialSysinfoConfig alarm
+
+        '''
+        assert self.analytics_obj.verify_partial_sysinfo_config_alarm()
+        return True
+
+    def test_vrouter_agent_process_connectivity_alarm(self):
+        ''' Test to check vrouter agent process connectivity alarm
+            Steps:
+                1) Change ifmap user in contrail-control conf file and restart
+                2) Expect process connectivity alarm to get raised
+                3) Verify vrouter agent process connectivity alarm
+        '''
+        assert self.analytics_obj.verify_process_connectivity_vrouter_agent_alarm()
+        return True
+
+    def test_address_mismatch_control_alarm(self):
+        ''' Test to check contrail AddressMismatchControl alarm
+            Steps:
+               1) Change hostip in contrail-control conf file and restart
+               2) Expect address mismatch alarm to get raised
+               3) Verify AddressMismatchControl alarm
+        '''
+        assert self.analytics_obj.verify_address_mismatch_control_alarm()
+        return True
+
+    def test_control_node_bgp_connectivity_alarm(self):
         ''' Test whether contrail bgp connectivity alarm is generated 
             when there is bgp peer mismatch
         '''
@@ -32,47 +84,76 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         return True
 
     @test.attr(type=['sanity', 'vcenter'])
-    def test_cfgm_alarms(self):
-        ''' Test whether contrail config alarms are generated
-            after executing alarms triggering  operations
-
+    def test_cfgm_node_process_status_alarms(self):
+        ''' Test whether process status alarm gets generated/cleared
+            after stopping the process
+            Steps:
+            1) Stop process 'contrail-schema'
+            2) Verify alarm of process-status type gets generated for contrail-schema
+            3) Start process 'contrail-schema'
+            4) Verify alarm of process-status type gets cleared for contrail-schema
+            5) Repeat step 1 to 4 for all config node processes
         '''
+
         assert self.analytics_obj.verify_cfgm_alarms()
         return True
 
     @test.attr(type=['sanity','vcenter'])
-    def test_db_alarms(self):
-        ''' Test whether contrail database alarms are generated
-            after executing alarms triggering  operations
-
+    def test_db_node_process_status_alarms(self):
+        ''' Test whether process status alarm gets generated/cleared
+            after stopping the process
+            Steps:
+            1) Stop process 'contrail-database'
+            2) Verify alarm of process-status type gets generated for contrail-database
+            3) Start process 'contrail-database'
+            4) Verify alarm of process-status type gets cleared for contrail-database
+            5) Repeat step 1 to 4 for all database node processes
         '''
+
         assert self.analytics_obj.verify_db_alarms()
         return True
 
     @test.attr(type=['sanity','vcenter'])
-    def test_analytics_alarms(self):
-        ''' Test whether contrail analytics alarms are generated
-            after executing alarms triggering  operations
-
+    def test_analytics_node_process_status_alarms(self):
+        ''' Test whether process status alarm gets generated/cleared
+            after stopping the process
+            Steps:
+            1) Stop process 'contrail-snmp-connector'
+            2) Verify alarm of process-status type gets generated for contrail-snmp-collector
+            3) Start process 'contrail-snmp-collector'
+            4) Verify alarm of process-status type gets cleared for contrail-snmp-collector
+            5) Repeat step 1 to 4 for all analytics node processes
         '''
         assert self.analytics_obj.verify_analytics_alarms()
         return True
 
     @test.attr(type=['sanity','vcenter'])
-    def test_control_alarms(self):
-        ''' Test whether contrail control alarms are generated
-            after executing alarms triggering  operations
-
+    def test_control_node_process_status_alarms(self):
+        ''' Test whether process status alarm gets generated/cleared
+            after stopping the process
+            Steps:
+            1) Stop process 'contrail-control'
+            2) Verify alarm of process-status type gets generated for contrail-control
+            3) Start process 'contrail-control'
+            4) Verify alarm of process-status type gets cleared for contrail-control
+            5) Repeat step 1 to 4 for all control node processes
         '''
+
         assert self.analytics_obj.verify_control_alarms()
         return True
 
     @test.attr(type=['sanity','vcenter'])
     def test_vrouter_alarms(self):
-        ''' Test whether contrail vrouter alarms are generated
-            after executing alarms triggering  operations
-
+        ''' Test whether process status alarm gets generated/cleared
+            after stopping the process
+            Steps:
+            1) Stop process 'contrail-vrouter-agent'
+            2) Verify alarm of process-status type gets generated for contrail-vrouter-agent
+            3) Start process 'contrail-database'
+            4) Verify alarm of process-status type gets cleared for contrail-vrouter-agent
+            5) Repeat step 1 to 4 for all compute node processes
         '''
+
         assert self.analytics_obj.verify_vrouter_alarms()
         return True
 
