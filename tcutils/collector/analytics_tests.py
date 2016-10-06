@@ -18,11 +18,12 @@ import threading
 import Queue
 from subprocess import Popen, PIPE
 import shlex
+import pprint
 from netaddr import *
 import random
 from tcutils.collector.opserver_introspect_utils import VerificationOpsSrvIntrospect
 from physical_router_fixture import PhysicalRouterFixture
-import pprint
+from tcutils.contrail_status_check import ContrailStatusChecker
 
 months = {'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun':
           6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12}
@@ -2258,7 +2259,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
     # Verifiation of contrail Alarms generation
 
-    def verify_alarms(self, role, alarm_type='process-status'):
+    def verify_alarms(self, role, alarm_type='process-status', service=None):
         result = True
         analytics = self.inputs.collector_ips[0]
         underlay = self.inputs.run_cmd_on_server(analytics, 'contrail-status | grep contrail-snmp-collector')
@@ -2273,21 +2274,34 @@ class AnalyticsVerification(fixtures.Fixture):
         control_processes = ['supervisor-control', 'contrail-control',
             'contrail-control-nodemgr', 'contrail-dns', 'contrail-named']
         vrouter_processes = ['supervisor-vrouter', 'contrail-vrouter-agent']
+        self.new_ip_addr = '10.1.1.1'
 
         if role == 'config-node':
-            for process in cfgm_processes:
-                if process == 'supervisor-config':
-                    if len(self.inputs.cfgm_ips) > 1:
-                        self.logger.info("Multi cfgms are found, will stop %s on cfgm[0] and check if alarms are generated for the same" %(process))
+            multi_instances = False
+            if len(self.inputs.cfgm_ips) > 1:
+                multi_instances = True
+            if alarm_type == 'process-status':
+                for process in cfgm_processes:
+                    if process == 'supervisor-config':
+                        if len(self.inputs.cfgm_ips) > 1:
+                            self.logger.info("Multi cfgms are found, will stop %s on cfgm[0] and check if alarms are generated for the same" %(process))
+                        else:
+                            self.logger.info("Single cfgm setup found, skipping %s stop alarm test" %(process))
+                            continue
+                    if not self._verify_contrail_alarms(process, 'config-node', 'service_stop', multi_instances=multi_instances):
+                        result = result and False
                     else:
-                        self.logger.info("Single cfgm setup found, skipping %s stop alarm test" %(process))
-                        continue
-                if not self._verify_contrail_alarms(process, 'config-node', 'service_stop'):
-                    result = result and False
-                else:
-                    self.logger.info("Config alarms were generated after stopping the process  %s " % (role))
+                        self.logger.info("Config alarms were generated after stopping the process  %s " % (role))
+            elif alarm_type == 'partial-sysinfo-config':
+                    if not self._verify_contrail_alarms(None, 'config-node', 'partial_sysinfo_config', multi_instances=multi_instances):
+                        result = result and False
+                    else:
+                        self.logger.info("Partial sysinfo config alarm generated %s " % (role))
 
-        if role == 'database-node':
+        elif role == 'database-node':
+            multi_instances = False
+            if len(self.inputs.database_ips) > 1:
+                multi_instances = True
             for process in db_processes:
                 if process == 'kafka' or process == 'supervisor-database':
                     if len(self.inputs.database_ips) > 1:
@@ -2295,63 +2309,284 @@ class AnalyticsVerification(fixtures.Fixture):
                     else:
                         self.logger.info("Single db setup found, skipping %s stop alarm test" %(process))
                         continue
-                if not self._verify_contrail_alarms(process, 'database-node','service_stop'):
+                if not self._verify_contrail_alarms(process, 'database-node','service_stop', multi_instances=multi_instances):
                     result = result and False
                 else:
                     self.logger.info("Db alarms were generated after stopping the process  %s " % (role))
-        if role == 'control-node':
+        elif role == 'control-node':
+            multi_instances = False
+            if len(self.inputs.bgp_control_ips) > 1:
+                multi_instances = True
             if alarm_type == 'process-status':
                 for process in control_processes:
-                    if not self._verify_contrail_alarms(process, 'control-node', 'service_stop'):
+                    if not self._verify_contrail_alarms(process, 'control-node', 'service_stop', multi_instances=multi_instances):
                         result = result and False
                     else:
                         self.logger.info("Control alarms were generated after stopping the process  %s " % (role))
 
             elif alarm_type == 'bgp-connectivity':
-                if not self._verify_contrail_alarms(None, 'control-node', 'bgp_peer_mismatch'):
+                if not self._verify_contrail_alarms(None, 'control-node', 'bgp_peer_mismatch', multi_instances=multi_instances):
+                    self.logger.error("Control bgp connectivity alarm verification failed for  %s " % (role))
                     result = result and False
                 else:
                     self.logger.info("Control bgp connectivity alarm verified for  %s " % (role))
-        if role == 'analytics-node':
+
+            elif alarm_type == 'address-mismatch-control':
+                if not self._verify_contrail_alarms('contrail-control', 'control-node', 'address_mismatch', multi_instances=multi_instances):
+                    self.logger.error("Address mismatch control alarm verification failed for  %s " % (role))
+                    result = result and False
+                else:
+                    self.logger.info("Address mismatch control alarm verified for  %s " % (role))
+
+            elif alarm_type == 'process-connectivity':
+                if not self._verify_contrail_alarms('contrail-control', 'control-node', 'process_connectivity',
+                        multi_instances=multi_instances):
+                    self.logger.error("control node process connectivity alarm verification failed for  %s " % (role))
+                    result = result and False
+                else:
+                    self.logger.info("control node process connectivity alarm verified for  %s " % (role))
+
+        elif role == 'analytics-node':
             multi_instances = False
-            for process in analytics_processes:
-                if process == 'contrail-collector' or process == 'supervisor-analytics':
-                    if len(self.inputs.collector_ips) > 1:
-                        multi_instances = True
-                        self.logger.info("Multi analytics are found, will stop %s on cfgm[0] and check if alarms are generated for the same" %(process))
+            if len(self.inputs.collector_ips) > 1:
+                multi_instances = True
+            if alarm_type == 'process-status':
+                for process in analytics_processes:
+                    if process == 'contrail-collector' or process == 'supervisor-analytics':
+                        if len(self.inputs.collector_ips) > 1:
+                            multi_instances = True
+                            self.logger.info("Multi analytics are found, will stop %s on cfgm[0] and check if alarms are generated for the same" %(process))
+                        else:
+                            self.logger.info("Single analytics setup found, skipping %s stop alarm test" %(process))
+                            continue
+
+                    if not self._verify_contrail_alarms(process, 'analytics-node', 'service_stop', multi_instances=multi_instances):
+                        result = result and False
                     else:
-                        self.logger.info("Single analytics setup found, skipping %s stop alarm test" %(process))
-                        continue
+                        self.logger.info("Analytics alarms were generated after stopping the process  %s " % (role))
+            elif alarm_type == 'process-connectivity' and service == 'contrail-alarm-gen':
+                if not self._verify_contrail_alarms('contrail-alarm-gen', 'analytics-node', 'process_connectivity',
+                        multi_instances=multi_instances):
+                    result = result and False
 
-                if not self._verify_contrail_alarms(process, 'analytics-node', 'service_stop', multi_instances=multi_instances):
+        elif role == 'vrouter':
+            multi_instances = False
+            if len(self.inputs.compute_ips) > 1:
+                multi_instances = True
+            if alarm_type == 'process-status':
+                for process in vrouter_processes:
+                    if not self._verify_contrail_alarms(process, 'vrouter','service_stop', multi_instances=multi_instances):
+                        result = result and False
+                    else:
+                        self.logger.info("Vrouter alarms were generated after stopping the process  %s " % (role))
+            elif alarm_type == 'address-mismatch-control':
+                if not self._verify_contrail_alarms('contrail-vrouter-agent', 'vrouter', 'address_mismatch',
+                        multi_instances=multi_instances):
                     result = result and False
                 else:
-                    self.logger.info("Analytics alarms were generated after stopping the process  %s " % (role))
-
-        if role == 'vrouter':
-            for process in vrouter_processes:
-                if not self._verify_contrail_alarms(process, 'vrouter','service_stop'):
+                    self.logger.info("Address mismatch compute alarm verified for  %s " % (role))
+            elif alarm_type == 'process-connectivity':
+                if not self._verify_contrail_alarms('contrail-vrouter-agent', 'vrouter', 'process_connectivity',
+                        multi_instances=multi_instances):
                     result = result and False
                 else:
-                    self.logger.info("Vrouter alarms were generated after stopping the process  %s " % (role))
+                    self.logger.info("Process connectivity alarm for vrouter verified for  %s " % (role))
+
+        elif role == 'all':
+            if len(self.inputs.cfgm_ips) > 1:
+                multi_instances = True
+            if alarm_type == 'conf-incorrect':
+                if not self._verify_contrail_alarms(None, 'all','conf_incorrect', multi_instances=multi_instances):
+                    result = result and False
+                else:
+                    self.logger.info("Conf incorrect alarms verified  for %s roles" % (role))
 
         return result
     # end verify_alarms
 
     def _verify_alarms_bgp_peer_mismatch(self, service_ip, role, alarm_type, multi_instances):
         result = True
-        bgp_router_fixture = PhysicalRouterFixture('test_bgp_connectivity_alarm', '1.1.1.1')
+        new_ip = self.new_ip_addr
+        bgp_router_fixture = PhysicalRouterFixture('test_bgp_connectivity_alarm', self.new_ip_addr)
         super(PhysicalRouterFixture, bgp_router_fixture).setUp()
         self.bgp_router = bgp_router_fixture.create_bgp_router()
         bgp_router_fixture.bgp_router = self.bgp_router
         if not self._verify_alarms_by_type(None, service_ip, role, alarm_type, multi_instances=False, soak_timer=15):
             result = result and False
         bgp_router_fixture.delete_bgp_router()
-        super(PhysicalRouterFixture, bgp_router_fixture).cleanUp()
-        if not self._verify_alarms_by_type(None, service_ip, role, alarm_type, multi_instances=False, soak_timer=15, verify_alarm_cleared=True):
+        super(PhysicalRouterFixture, bgp_router_fixture).delete_device()
+        if not self._verify_alarms_by_type(None, service_ip, role, alarm_type, multi_instances=False,
+                soak_timer=15, verify_alarm_cleared=True):
             result = result and False
         return result
     # end _verify_contrail_bgp_connectivity_alarm
+
+    def update_contrail_conf(self, node, ip, conf_file_type, section, value, cluster_verify=False):
+        file_loc = '/etc/contrail/' + conf_file_type + '.conf'
+        self._update_contrail_conf(file_loc, 'set', section,
+            value, node, conf_file_type, ip, cluster_verify)
+    # end update_contrail_conf
+
+    def update_contrail_control_conf_file_and_verify_alarms(self, section, value, service_ip, role,
+            alarm_type, multi_instances, service=None):
+        result = True
+        try:
+            len_of_bgp_control_ips = len(self.inputs.bgp_control_ips)
+            new_host_ip = self.new_ip_addr
+            if multi_instances:
+                for ip in self.inputs.bgp_control_ips:
+                    self.update_contrail_conf(ip, new_host_ip, 'contrail-control', section, value)
+            else:
+                self.update_contrail_conf(service_ip, new_host_ip, 'contrail-control', section, value)
+            self.wait_for_system_stability()
+            if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances=False, soak_timer=15):
+                result = result and False
+        except Exception, e:
+            self.logger.exception('Exception occured while verifying alarms %s' % (alarm_type))
+            result = result and False
+        finally:
+            cluster_verify = False
+            if multi_instances:
+                for ip in self.inputs.bgp_control_ips:
+                    if ip == self.inputs.bgp_control_ips[len_of_bgp_control_ips-1]:
+                        cluster_verify = False
+                    self.update_contrail_conf(ip, ip, 'contrail-control', section, value, cluster_verify=cluster_verify)
+            else:
+                self.update_contrail_conf(service_ip, service_ip, 'contrail-control', section, value, cluster_verify=False)
+            self.wait_for_system_stability()
+            if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances=False,
+                    soak_timer=15, verify_alarm_cleared=True):
+                result = result and False
+        return result
+    # end update_conf_file_and_verify_alarms
+
+    def update_host_ip_in_contrail_control_conf_and_verify_alarms(self, service_ip, role, alarm_type,
+            multi_instances, service=None):
+        return self.update_contrail_control_conf_file_and_verify_alarms('DEFAULT', 'hostip', service_ip,
+            role, alarm_type, multi_instances, service)
+
+    def update_discovery_server_ip_in_contrail_api_conf_and_verify_alarms(self, service_ip, role,
+            alarm_type, multi_instances, service=None):
+        return self.update_contrail_api_conf_file_and_verify_alarms('DEFAULTS', 'disc_server_ip', service_ip, role,
+            alarm_type, multi_instances, service)
+
+    def update_ifmap_user_in_contrail_control_conf_and_verify_alarms(self, service_ip, role, alarm_type,
+            multi_instances, service=None):
+        return self.update_contrail_control_conf_file_and_verify_alarms('IFMAP', 'user', service_ip,
+            role, alarm_type, multi_instances, service)
+
+    def wait_for_system_stability(self, wait=60):
+        time.sleep(wait)
+
+    def update_contrail_api_conf_file_and_verify_alarms(self, section, value, service_ip,
+            role, alarm_type, multi_instances, service=None):
+        result = True
+        try:
+            api_service_ip = service_ip
+            if isinstance(service_ip, dict):
+                api_service_ip = service_ip['config-node']
+            new_host_ip = self.new_ip_addr
+            len_of_cfgm_ips = len(self.inputs.cfgm_ips)
+            if multi_instances:
+                for ip in self.inputs.cfgm_ips:
+                    self.update_contrail_conf(ip, new_host_ip, 'contrail-api', section, value)
+            else:
+                self.update_contrail_conf(api_service_ip, new_host_ip, 'contrail-api', section, value)
+            self.wait_for_system_stability()
+            if role == 'all':
+                for role_type in ['analytics-node', 'config-node', 'vrouter', 'database-node', 'control-node']:
+                    if not self._verify_alarms_by_type(service, service_ip[role_type],
+                            role_type, alarm_type, multi_instances=False, soak_timer=15):
+                        result = result and False
+            else:
+                if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances=False, soak_timer=15):
+                    result = result and False
+        except Exception, e:
+            self.logger.exception('Exception occured while verifying alarms %s' % (alarm_type))
+            result = result and False
+        finally:
+            cluster_verify = False
+            if multi_instances:
+                for ip in self.inputs.cfgm_ips:
+                    if ip == self.inputs.cfgm_ips[len_of_cfgm_ips-1]:
+                        cluster_verify = False
+                    self.update_contrail_conf(ip, ip, 'contrail-api', section, value, cluster_verify=cluster_verify)
+            else:
+                self.update_contrail_conf(api_service_ip, api_service_ip, 'contrail-api', section, value, cluster_verify=True)
+            self.wait_for_system_stability()
+            if role == 'all':
+                for role_type in ['analytics-node', 'config-node', 'vrouter', 'database-node', 'control-node']:
+                    if not self._verify_alarms_by_type(service, service_ip[role_type], role, alarm_type, multi_instances=False,
+                            soak_timer=15, verify_alarm_cleared=True):
+                        result = result and False
+            else:
+                if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances=False,
+                        soak_timer=15, verify_alarm_cleared=True):
+                    result = result and False
+        return result
+    # end update_conf_file_and_verify_alarms
+
+
+    def _verify_alarms_address_mismatch_control(self, service_ip, role, alarm_type, multi_instances):
+        result = True
+        if not self.update_host_ip_in_contrail_control_conf_and_verify_alarms(service_ip, role,
+                alarm_type, multi_instances):
+            result = result and False
+        return result
+    # end _verify_alarms_address_mismatch_control
+
+    def _verify_alarms_conf_incorrect(self, service_ip, role, alarm_type, multi_instances):
+        result = True
+        if not self.update_discovery_server_ip_in_contrail_api_conf_and_verify_alarms(service_ip, role,
+                alarm_type, multi_instances):
+            result = result and False
+        return result
+    # end _verify_alarms_conf_incorrect
+
+    def _verify_alarms_process_connectivity_alarm_gen(self, service_ip, role, alarm_type, multi_instances):
+        result = True
+        if not self.update_discovery_server_ip_in_contrail_api_conf_and_verify_alarms(service_ip, role,
+                alarm_type, multi_instances, service='contrail-alarm-gen'):
+            result = result and False
+        return result
+
+    def _verify_alarms_process_connectivity_control(self, service_ip, role, alarm_type, multi_instances):
+        result = True
+        if not self.update_ifmap_user_in_contrail_control_conf_and_verify_alarms(service_ip, role,
+                alarm_type, multi_instances, service='contrail-control'):
+            result = result and False
+        return result
+
+    # end _verify_alarms_process_connectivity_alarm_gen
+
+    def _verify_alarms_partial_sysinfo_config(self, service_ip, role, alarm_type, multi_instances):
+        result = True
+        if not self.update_discovery_server_ip_in_contrail_api_conf_and_verify_alarms(service_ip, role,
+                alarm_type, multi_instances):
+            result = result and False
+        return result
+    # end _verify_alarms_partial_sys_info_config
+
+
+    def _verify_alarms_process_connectivity_vrouter_agent(self, service_ip, role, alarm_type, multi_instances):
+        result = True
+        if not self.update_ifmap_user_in_contrail_control_conf_and_verify_alarms(service_ip, role,
+                alarm_type, multi_instances, service='contrail-vrouter-agent'):
+            result = result and False
+        return result
+    # end _verify_alarms_process_connectivity_vrouter_agent
+
+    def _update_contrail_conf(self, conf_file, operation, section, knob, node, service, value, cluster_verify):
+        if operation == 'del':
+            cmd = 'openstack-config --del %s %s %s' % (conf_file, section, knob)
+            xmpp_status = self.inputs.run_cmd_on_server(node, cmd)
+        if operation == 'set':
+            cmd = 'openstack-config --set %s %s %s %s' % (conf_file, section, knob, value)
+        status = self.inputs.run_cmd_on_server(node, cmd)
+        self.inputs.restart_service(service, [node])
+        if cluster_verify:
+            cluster_status, error_nodes = ContrailStatusChecker().wait_till_contrail_cluster_stable()
+            assert cluster_status, 'Hash of error nodes and services : %s' % (error_nodes)
 
     def verify_cfgm_alarms(self):
         return self.verify_alarms(role='config-node')
@@ -2377,6 +2612,34 @@ class AnalyticsVerification(fixtures.Fixture):
         return self.verify_alarms(role='control-node', alarm_type='bgp-connectivity')
     # end verify_bgp_peer_mismatch_alarm
 
+    def verify_address_mismatch_control_alarm(self):
+        return self.verify_alarms(role='control-node', alarm_type='address-mismatch-control')
+    # end verify_address_mismatch_control_alarm
+
+    def verify_address_mismatch_compute_alarm(self):
+        return self.verify_alarms(role='vrouter', alarm_type='address-mismatch-compute')
+    # end verify_address_mismatch_compute_alarm
+
+    def verify_process_connectivity_vrouter_agent_alarm(self):
+        return self.verify_alarms(role='vrouter', alarm_type='process-connectivity', service='contrail-vrouter-agent')
+    # end verify_address_mismatch_compute_alarm
+
+    def verify_process_connectivity_contrail_control_alarm(self):
+        return self.verify_alarms(role='control-node', alarm_type='process-connectivity', service='contrail-control')
+    # end verify_process_connectivity_control_alarm
+
+    def verify_process_connectivity_contrail_alarm_gen_alarm(self):
+        return self.verify_alarms(role='analytics-node', alarm_type='process-connectivity', service='contrail-alarm-gen')
+    # end verify_address_mismatch_compute_alarm
+
+    def verify_partial_sysinfo_config_alarm(self):
+        return self.verify_alarms(role='config-node', alarm_type='partial-sysinfo-config')
+    # end verify_address_mismatch_compute_alarm
+
+    def verify_conf_incorrect_alarm(self):
+        return self.verify_alarms(role='all', alarm_type='conf-incorrect')
+    # end verify_conf_incorrect_alarm
+
     def _verify_alarms_stop_svc(self, service, service_ip, role, alarm_type, multi_instances=False, soak_timer=15):
         result = True
         self.logger.info("Verify alarms generated after stopping the service %s:" % (service))
@@ -2385,24 +2648,31 @@ class AnalyticsVerification(fixtures.Fixture):
         password = self.inputs.host_data[self.inputs.cfgm_ip]['password']
         cfgm_ndmgr_ctl_required = False
         cfgm_services = ['contrail-config-nodemgr', 'contrail-device-manager']
-        if service in cfgm_services and dist in ['centos', 'fedora', 'redhat']:
-            supervisorctl_cfg = 'supervisorctl -s unix:///tmp/supervisord_config.sock'
-            issue_stop_cmd = supervisorctl_cfg + ' stop ' + service
-            issue_start_cmd = supervisorctl_cfg + ' start ' + service
-            cfgm_ndmgr_ctl_required = True
-            self.inputs.run_cmd_on_server(service_ip, issue_stop_cmd, username, password, pty=True)
-        else:
-            self.inputs.stop_service(service, host_ips=[service_ip], contrail_service=True)
-        self.logger.info("Process %s stopped" % (service))
-        if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances, soak_timer):
+        try:
+            if service in cfgm_services and dist in ['centos', 'fedora', 'redhat']:
+                supervisorctl_cfg = 'supervisorctl -s unix:///tmp/supervisord_config.sock'
+                issue_stop_cmd = supervisorctl_cfg + ' stop ' + service
+                issue_start_cmd = supervisorctl_cfg + ' start ' + service
+                cfgm_ndmgr_ctl_required = True
+                self.inputs.run_cmd_on_server(service_ip, issue_stop_cmd, username, password, pty=True)
+            else:
+                self.inputs.stop_service(service, host_ips=[service_ip], contrail_service=True)
+            self.logger.info("Process %s stopped" % (service))
+            if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances, soak_timer):
+                result = result and False
+        except Exception, e:
+            self.logger.exception('Exception occured while verifying alarms %s' % (alarm_type))
             result = result and False
-        self.inputs.start_service(service, host_ips=[service_ip], contrail_service=True)
-        time.sleep(10)
-        if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances, soak_timer=soak_timer, verify_alarm_cleared=True):
-            result = result and False
+        finally:
+            self.inputs.start_service(service, host_ips=[service_ip], contrail_service=True)
+            time.sleep(10)
+            if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances,
+                    soak_timer=soak_timer, verify_alarm_cleared=True):
+                result = result and False
         return result
 
-    def _verify_alarms_by_type(self, service, service_ip, role, alarm_type, multi_instances=False, soak_timer=15, verify_alarm_cleared=False):
+    def _verify_alarms_by_type(self, service, service_ip, role, alarm_type, multi_instances=False,
+            soak_timer=15, verify_alarm_cleared=False):
         result = True
         soaking = False
         supervisor = False
@@ -2432,10 +2702,8 @@ class AnalyticsVerification(fixtures.Fixture):
         if multi_instances:
             collector_ip = self.inputs.collector_ips[1]
         hostname = socket.gethostbyaddr(service_ip)[0].split('.')[0]
-
         if not isinstance(alarm_type, list):
             alarm_type = [alarm_type]
-
         try:
             for alarm_t in alarm_type:
                 if not verify_alarm_cleared:
@@ -2448,7 +2716,7 @@ class AnalyticsVerification(fixtures.Fixture):
                                 time.sleep(SLEEP_DURATION)
                                 retry = retry + 1
                                 if retry % 10 == 0:
-                                    self.logger.info("No alarms found...Iteration  %s " %(retry))
+                                    self.logger.info("No alarms found...Iteration  %s " %(retry/10))
                             if retry > MAX_RETRY_COUNT:
                                 self.logger.error("No alarms have been generated")
                                 return False
@@ -2467,14 +2735,16 @@ class AnalyticsVerification(fixtures.Fixture):
                         if retry > MAX_RETRY_COUNT:
                             self.logger.error("Alarm type %s not generated for role %s" % (
                                 alarm_t, role))
-                            self.logger.info("Alarms generated in the system are  \n : %s \n" % (all_alarms))
+                            self.logger.info("Alarms generated in the system are  \n : %s \n" % (pprint.pprint(all_alarms)))
                             result = result and False
                             break
                 else:
                     retry = 0
                     all_alarms = self.ops_inspect[collector_ip].get_ops_alarms()
                     if all_alarms:
-                        role_alarms = self.get_alarms(all_alarms, hostname, role, alarm_t, service=service)
+                        role_alarms = self.get_alarms(all_alarms, hostname, role, alarm_t, service=service, clear=True)
+                        if not role_alarms:
+                            self.logger.info("Alarm type %s cleared for role %s" % (alarm_t, role))
                     else:
                         self.logger.info("All alarms cleared")
                         continue
@@ -2482,7 +2752,7 @@ class AnalyticsVerification(fixtures.Fixture):
                         all_alarms = self.ops_inspect[collector_ip].get_ops_alarms()
                         role_alarms = None
                         if all_alarms:
-                            role_alarms = self.get_alarms(all_alarms, hostname, role, alarm_t, service=service)
+                            role_alarms = self.get_alarms(all_alarms, hostname, role, alarm_t, service=service, clear=True)
                         retry = retry + 1
                         time.sleep(SLEEP_DURATION)
                         if retry % 10 == 0:
@@ -2497,7 +2767,7 @@ class AnalyticsVerification(fixtures.Fixture):
                             result = result and False
                             break
                 if role_alarms:
-                    print role_alarms
+                    pprint.pprint(role_alarms)
                     pass
                 role_alarms = None
         except Exception, e:
@@ -2528,6 +2798,13 @@ class AnalyticsVerification(fixtures.Fixture):
             service_ip = self.inputs.compute_ips[0]
         elif role == 'analytics-node':
             service_ip = self.inputs.collector_ips[0]
+        elif role == 'all':
+            service_ip = {
+                'config-node': self.inputs.cfgm_ips[0],
+                'database-node': self.inputs.database_ips[0],
+                'control-node': self.inputs.bgp_control_ips[0],
+                'vrouter': self.inputs.compute_ips[0],
+                'analytics-node': self.inputs.collector_ips[0]}
         process_connectivity = ['contrail-api', 'contrail-database']
         if service in process_connectivity:
             alarm_type = ['process-connectivity']
@@ -2542,10 +2819,43 @@ class AnalyticsVerification(fixtures.Fixture):
             if not self._verify_alarms_bgp_peer_mismatch(service_ip, role, alarm_type, multi_instances):
                 result = result and False
 
+        elif role == 'control-node':
+             if trigger == 'address_mismatch':
+                 alarm_type = 'address-mismatch-control'
+                 if not self._verify_alarms_address_mismatch_control(service_ip, role, alarm_type, multi_instances):
+                     result = result and False
+             elif trigger == 'process_connectivity':
+                 alarm_type = 'process-connectivity'
+                 if not self._verify_alarms_process_connectivity_control(service_ip, role, alarm_type, multi_instances):
+                     result = result and False
+
+        elif trigger == 'address_mismatch' and role == 'vrouter':
+            alarm_type = 'address-mismatch-compute'
+            if not self._verify_alarms_address_mismatch_compute(service_ip, role, alarm_type, multi_instances):
+                result = result and False
+        elif trigger == 'process_connectivity' and role in ['vrouter', 'analytics-node']:
+            alarm_type = 'process-connectivity'
+            if role == 'vrouter':
+                if not self._verify_alarms_process_connectivity_vrouter_agent(service_ip, role, alarm_type, multi_instances):
+                    result = result and False
+            elif role == 'analytics-node' and service == 'contrail-alarm-gen':
+                if not self._verify_alarms_process_connectivity_alarm_gen(service_ip, role, alarm_type, multi_instances):
+                    result = result and False
+        elif trigger == 'conf_incorrect' and role == 'all':
+            alarm_type = 'conf-incorrect'
+            if not self._verify_alarms_conf_incorrect(service_ip, role, alarm_type, multi_instances):
+                result = result and False
+        elif trigger == 'partial_sysinfo_config' and role == 'config-node':
+            alarm_type = 'partial-sysinfo-config'
+            if not self._verify_alarms_partial_sysinfo_config(service_ip, role, alarm_type, multi_instances):
+                result = result and False
+        else:
+            self.logger.error("No valid alarm-type found")
+            result = result and False
         return result
     # end _verify_contrail_alarms
 
-    def get_alarms(self, alarms, hostname, role, alarm_type=None, service=None):
+    def get_alarms(self, alarms, hostname, role, alarm_type=None, service=None, clear=False):
         '''To return the dict of alarms based on host, service or alarm type
         hostname = host
         role = analytics-node, vrouter, database-node, config-node, control-node
@@ -2561,6 +2871,8 @@ class AnalyticsVerification(fixtures.Fixture):
             supervisor = True
         if role in alarms:
             role_alarms = alarms[role]
+            if not clear:
+                self.logger.info("%s alarms generated for %s " % (role, hostname))
         else:
             return None
         for nalarms in role_alarms:
@@ -2571,8 +2883,12 @@ class AnalyticsVerification(fixtures.Fixture):
                     return nalarms
                 else:
                     type_alarms_list = nalarms['value']['UVEAlarms']['alarms']
+                    #print type_alarms_list
                     for type_alarms in type_alarms_list:
+                        #print type_alarms['type']
                         if type_alarms['type'] == alarm_type:
+                            if not clear:
+                                self.logger.info("%s alarms generated" % alarm_type)
                             if not service:
                                 return type_alarms
                             else:
@@ -2594,22 +2910,25 @@ class AnalyticsVerification(fixtures.Fixture):
                                         else:
                                             json_vars = None
                                         if json_vars:
-                                            process_name = json_vars.get('NodeStatus.process_info.process_name')
+                                            process_name = json_vars.get('NodeStatus.process_info.process_name') or \
+                                                json_vars.get('NodeStatus.process_status.module_id')
                                         else:
                                             process_name = None
                                         if not supervisor:
                                             if re.search(service, str(process_name)) or service == str(process_name):
-                                                print and_list_elem
+                                                if not clear:
+                                                    self.logger.info("And list alarms: %s" % (pprint.pprint(and_list_elem)))
                                                 return and_list_elem
                                             else:
-                                                self.logger.warn("'and_list'%s alarms not generated yet ..wait .checking again" % (service))
+                                                if not clear:
+                                                    self.logger.warn(" 'and_list' %s alarms not generated yet ..wait .checking again" % (service))
                                                 return None
                                         else:
                                             self.logger.info("json operands are null for %s " % (service))
                                             print type_alarms
                                             return type_alarms
 
-                        else:
+                        elif not clear:
                             self.logger.warn("Alarm type %s alarms not generated yet ..wait .checking again" % (alarm_type))
                     return None
     # end get_alarms
