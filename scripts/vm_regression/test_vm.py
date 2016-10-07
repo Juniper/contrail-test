@@ -897,7 +897,7 @@ class TestBasicVMVN2(BaseVnVmTest):
                     break
         for dst_ip in list_of_ip_to_ping:
             self.logger.info('pinging from %s to %s' % (vm1_ip, dst_ip))
-# pinging from Vm1 to subnet broadcast
+            # pinging from Vm1 to subnet broadcast
             ping_output = vm1_fixture.ping_to_ip(
                 dst_ip, return_output=True, count=ping_count, other_opt='-b')
             self.logger.info("ping output : \n %s" % (ping_output))
@@ -906,7 +906,7 @@ class TestBasicVMVN2(BaseVnVmTest):
                 self.logger.error('Expected 0% packet loss!')
                 self.logger.error('Ping result : %s' % (ping_output))
                 result = result and False
-# getting count of ping response from each vm
+            # getting count of ping response from each vm
             string_count_dict = {}
             string_count_dict = get_string_match_count(ip_list, ping_output)
             self.logger.info("output %s" % (string_count_dict))
@@ -2866,7 +2866,7 @@ class TestBasicVMVNx(BaseVnVmTest):
     def tearDownClass(cls):
         super(TestBasicVMVNx, cls).tearDownClass()
 
-    @test.attr(type=['sanity','quick_sanity','ci_sanity', 'vcenter'])
+    @test.attr(type=['sanity','quick_sanity','ci_sanity', 'vcenter','vcenter_gw'])
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
         '''
@@ -2893,11 +2893,12 @@ class TestBasicVMVNx(BaseVnVmTest):
         cmd_to_sync = [x]
         create_result = True
         transfer_result = True
-        vn_fixture = self.create_vn(vn_name=vn_name)
+        vn_fixture = self.create_vn(vn_name=vn_name,orch=self.orchestrator)
+        vn_fixture.read()
         assert vn_fixture.verify_on_setup()
         vm1_fixture = self.create_vm(vn_fixture=vn_fixture,vm_name=vm1_name,
-                                     flavor='contrail_flavor_small')
-        vm2_fixture = self.create_vm(vn_fixture=vn_fixture,vm_name=vm2_name,
+                                     flavor='contrail_flavor_small',orch=self.orchestrator)
+        vm2_fixture = self.create_vm(vn_ids=[vn_fixture.uuid],vm_name=vm2_name,
                                      flavor='contrail_flavor_small')
         assert vm1_fixture.wait_till_vm_is_up()
         assert vm2_fixture.wait_till_vm_is_up()
@@ -2926,7 +2927,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         return transfer_result
     # end test_vm_file_trf_scp_tests
 
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['sanity', 'vcenter','vcenter_gw'])
     @preposttest_wrapper
     def test_vm_file_trf_tftp_tests(self):
         '''
@@ -2955,14 +2956,15 @@ class TestBasicVMVNx(BaseVnVmTest):
         cmd_to_sync = [x]
         create_result= True
         transfer_result= True
-        vn_fixture= self.create_vn(vn_name=vn_name)
+        vn_fixture= self.create_vn(vn_name=vn_name,orch=self.orchestrator)
         assert vn_fixture.verify_on_setup()
+        vn_fixture.read()
         img_name=os.environ['ci_image'] if os.environ.has_key('ci_image')\
                                         else 'ubuntu'
         flavor='m1.tiny' if os.environ.has_key('ci_image')\
                          else 'contrail_flavor_small'
         vm1_fixture = self.create_vm(vn_fixture= vn_fixture, vm_name=vm1_name,
-                                     image_name=img_name, flavor=flavor)
+                                     image_name=img_name, flavor=flavor,orch=self.orchestrator)
         vm2_fixture = self.create_vm(vn_fixture= vn_fixture, vm_name=vm2_name,
                                      image_name=img_name, flavor=flavor)
         assert vm1_fixture.wait_till_vm_is_up()
