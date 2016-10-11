@@ -178,6 +178,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
             env['parameters']['availability_zone'] = self.inputs.availability_zone
         env['parameters']['flavor'] = self.nova_h.get_default_image_flavor(env['parameters']['image'])
         self.nova_h.get_image(env['parameters']['image'])
+        self.nova_h.get_flavor(env['parameters']['flavor'])
         vms_hs_obj = self.config_heat_obj(stack_name, template, env)
         stack = vms_hs_obj.heat_client_obj
         vm_fix = self.verify_vms(stack, vn_list, env, stack_name)
@@ -233,7 +234,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
             if mode == 'transparent':
                 env['parameters']['image'] = 'tiny_trans_fw'
             if mode == 'in-network':
-                env['parameters']['image'] = 'tiny-in-net'
+                env['parameters']['image'] = 'tiny_in_net'
                 if self.inputs.get_af() == 'v6':
                     env['parameters']['image'] = 'ubuntu-in-net'
             env['parameters']['service_scaling'] = scaling
@@ -385,7 +386,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
             vm = VMFixture(self.connections, uuid=svm_id)
             vm.setUp()
             vm.verify_on_setup()
-            image='tiny-in-net'
+            image='tiny_in_net'
             (vm.vm_username, vm.vm_password) = vm.orch.get_image_account(image)
             svc_inst._svm_list.append(vm)
         return svc_inst

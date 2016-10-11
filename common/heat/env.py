@@ -311,7 +311,7 @@ svc_inst_nomgmt_dual_v2 = svc_inst_v2
 
 svc_inst_nomgmt_pt_v2 = {
   u'parameters': {
-    u'image': u'tiny-in-net', u'flavor': u'contrail_flavor_tiny', u'svm_name': 'svm',
+    u'image': u'tiny_in_net', u'flavor': u'contrail_flavor_tiny', u'svm_name': 'svm',
     u'service_template_fq_name': u'', u'service_instance_name': u'',
     u'left_net_id': u'', u'right_net_id': u'',
     u'availability_zone': u'',

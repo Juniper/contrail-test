@@ -12,7 +12,7 @@ SVC_IN_NET_URL=${SVC_IN_NET_URL:-http://10.204.216.50/images/tinycore/tinycore-i
 BASE_DIR=`dirname $(readlink -f $0)`
 PACKAGES_REQUIRED_UBUNTU="python-pip ant python-novaclient python-neutronclient python-cinderclient \
     python-contrail python-glanceclient python-heatclient python-ceilometerclient python-setuptools contrail-utils \
-    patch git ipmitool"
+    patch git ipmitool python-requests"
 PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD="$PACKAGES_REQUIRED_UBUNTU python-dev libxslt1-dev libz-dev libyaml-dev sshpass"
 PACKAGES_REQUIRED_RALLY="libssl-dev libffi-dev python-dev libxml2-dev libxslt1-dev libpq-dev"
 
