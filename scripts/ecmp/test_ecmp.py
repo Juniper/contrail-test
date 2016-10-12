@@ -123,7 +123,7 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
         if self.inputs.get_af() == 'v6':
             vn1_subnet_list += ['2100::/64']
             vn2_subnet_list += ['2200::/64']
-            static_route = [vn2_subnet_list[0], vn1_subnet_list[0]]
+            static_route = ['None', vn2_subnet_list[0], vn1_subnet_list[0]]
         vn1_subnet_list += ['100.1.1.0/24']
         vn2_subnet_list += ['200.1.1.0/24']
         if not static_route:
@@ -894,10 +894,10 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
         """
         if self.inputs.orchestrator == 'vcenter':
             self.verify_multi_inline_svc(
-                si_list=[('in-net', 1), ('nat', 1)], st_version=2)
+                si_list=[('in-network', 1), ('in-network-nat', 1)], st_version=2)
         else:
             self.verify_multi_inline_svc(
-                si_list=[('bridge', 1), ('nat', 1)], st_version=2)
+                si_list=[('transparent', 1), ('in-network-nat', 1)], st_version=2)
         return True
     # end test_three_stage_v2_SC
 
