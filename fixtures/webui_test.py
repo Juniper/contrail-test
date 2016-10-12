@@ -5753,9 +5753,6 @@ class WebuiTest:
                         ops_share = vn_list_ops_element.get('is_shared')
                         ops_ext = vn_list_ops_element.get('router_external')
                         ops_flood = vn_list_ops_element.get('flood_unknown_unicast')
-                        ops_static_route = vn_list_ops_element.get('route_table_refs')
-                        ops_static_route_out = re.search('default-route-table', \
-                                                         str(ops_static_route))
                         ops_prov_props = vn_list_ops_element.get('provider_properties')
                         ops_prov_seg_phy = re.search("\"segmentation_id\"\: " + var_list[0] + \
                                                      ".*\"physical_network\"\: \""+ \
@@ -5763,7 +5760,7 @@ class WebuiTest:
                         if not(str(ops_multi_pol) == 'true' and ops_allow_out and \
                            ops_rpf_out and ops_hash_out \
                            and str(ops_share) == 'true' and str(ops_ext) =='true' and \
-                           str(ops_flood) == 'true' and ops_static_route_out and ops_prov_seg_phy):
+                           str(ops_flood) == 'true' and ops_prov_seg_phy):
                             result = result and False
                             self.logger.error("Advanced option is not there in contrail config")
                     elif option == 'DNS':
