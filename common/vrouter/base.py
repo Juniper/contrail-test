@@ -667,6 +667,7 @@ class BaseVrouterTest(BaseLBaaSTest):
         return len(routes)
     # end get_vrouter_route_table_size
 
+    @retry(delay=1, tries=5)
     def validate_prefix_is_of_vm_in_vrouter(self, inspect_h, prefix,
                                             vm_fixture, vn_fixture=None):
         '''
@@ -686,7 +687,7 @@ class BaseVrouterTest(BaseLBaaSTest):
             vn_fixture)
     # end validate_prefix_is_of_vm_in_vrouter
 
-    @retry(delay=3, tries=5)
+    @retry(delay=3, tries=3)
     def validate_route_is_of_vm_in_vrouter(self, inspect_h, route, vm_fixture,
                                            vn_fixture=None):
         '''Validation is in vrouter
@@ -729,3 +730,24 @@ class BaseVrouterTest(BaseLBaaSTest):
                 count += 1
         return count
     # end count_nh_label_in_route_table
+
+    @retry(delay=2, tries=5)
+    def validate_discard_route(self, prefix, vn_fixture, node_ip):
+        '''
+        Validate that route for prefix in vrf of a VN is  pointing to a discard
+        route on compute node node_ip
+        '''
+        route = self.get_vrouter_route(prefix,
+                                       vn_fixture=vn_fixture,
+                                       node_ip=node_ip)
+        if not route:
+            self.logger.warn('No vrouter route for prefix %s found' % (prefix))
+            return False
+        if not (route['label'] == '0' and route['nh_id'] == '1'):
+            self.logger.warn('Discard route not set for prefix %s' % (prefix))
+            self.logger.debug('Route seen is %s' % (route))
+            return False
+        self.logger.info('Route for prefix %s is validated to be discard'
+                         ' route' %(prefix))
+        return True
+    # end validate_discard_route
