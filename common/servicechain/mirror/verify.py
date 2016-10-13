@@ -54,8 +54,10 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         else:
             svc_img_name = "vsrx"
             image_name = 'ubuntu-traffic'
+        if svc_mode == 'in-network':
+           svc_img_name = 'ubuntu-in-net'
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-                                                              self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name, svc_img_name=svc_img_name, st_version=st_version)
+                                                              self.si_prefix, si_count, left_vn=None, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name, svc_img_name=svc_img_name, st_version=st_version)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
 
@@ -801,7 +803,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-                                                              self.si_prefix, si_count, left_vn=self.vn1_name, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name, st_version=st_version)
+                                                              self.si_prefix, si_count, left_vn=None, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name, st_version=st_version)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
 
