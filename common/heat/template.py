@@ -2793,7 +2793,11 @@ svc_inst_nomgmt_pt_dual_v2 = {
       u'type': u'string'},
     u'service_template_fq_name': {
       u'description': u'service template name or ID',
-      u'type': u'string'}
+      u'type': u'string'},
+    u'availability_zone': {
+      u'description': u'Name of availability_zone to use for servers',
+      u'default': u'',
+      u'type': u'string'},
   },
   u'resources': {
     u'pt': {
@@ -2879,6 +2883,7 @@ svc_inst_nomgmt_pt_dual_v2 = {
         u'name': { u'get_param': u'svm_name' },
         u'image': { u'get_param':  u'image' },
         u'flavor': { u'get_param': u'flavor' },
+        u'availability_zone': { u'get_param':  u'availability_zone' },
         u'networks':
           [{ u'port': { u'get_resource': u'svm_left_vmi' }},
            { u'port': { u'get_resource': u'svm_right_vmi' }},]

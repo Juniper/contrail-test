@@ -508,6 +508,9 @@ class VMFixture(fixtures.Fixture):
                 if not vrf_id:
                     continue
                 for prefix in prefixes:
+                    # Skip validattion of v6 route on kernel till 1632511 is fixed
+                    if get_af_type(prefix) == 'v6':
+                        continue
                     route_table = inspect_h.get_vrouter_route_table(
                         vrf_id,
                         prefix=prefix,

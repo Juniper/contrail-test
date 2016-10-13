@@ -5,7 +5,6 @@ discover
 testrepository
 junitxml
 pytun
-requests==2.3.0
 pexpect
 pyvirtualdisplay
 selenium

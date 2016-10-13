@@ -97,6 +97,7 @@ class VNFixture(fixtures.Fixture):
         self.router_external = router_external
         self.clean_up = clean_up
         self.lock = threading.Lock()
+        self.created = False
         self.verify_is_run = False
         self.verify_result = True
         self.verify_not_in_result = True
