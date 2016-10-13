@@ -1028,3 +1028,13 @@ def compare_dict(dict1, dict2, ignore_keys=[]):
         if k not in ignore_keys)
     return (d1_new == d2_new, set(d1_new) ^ set(d2_new))
 # end compare_dict
+
+def is_uuid(value):
+    value = str(value)
+    try:
+        val = uuid.UUID(value, version=4)
+    except ValueError:
+        return False
+    return True
+# end is_uuid
+

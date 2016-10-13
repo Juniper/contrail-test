@@ -554,15 +554,15 @@ class ContrailVncApi:
         # TODO
         # Start making different modules for each object and rename methods
         # accordingly
-        if isinstance(intf_rtb, uuid.UUID):
-            intf_rtb_uuid = intf_rtb
+        if is_uuid(intf_rtb):
+            intf_rtb_obj = self._vnc.interface_route_table_read(id=intf_rtb)
         elif isinstance(intf_rtb, InterfaceRouteTable):
-            intf_rtb_uuid = intf_rtb.uuid
+            intf_rtb_obj = intf_rtb
         vmi_obj = self._vnc.virtual_machine_interface_read(id=vmi_uuid)
-        vmi_obj.add_interface_route_table(intf_route_table_obj)
+        vmi_obj.add_interface_route_table(intf_rtb_obj)
         self._vnc.virtual_machine_interface_update(vmi_obj)
         self._log.info('Added intf route table %s to port %s' % (
-            intf_rtb_uuid, vmi_uuid))
+            intf_rtb_obj.uuid, vmi_uuid))
     # end bind_vmi_to_interface_route_table
 
     def unbind_vmi_from_interface_route_table(self, vmi_uuid, intf_rtb):
@@ -573,7 +573,7 @@ class ContrailVncApi:
 
         Returns None
         '''
-        if isinstance(intf_rtb, uuid.UUID):
+        if is_uuid(intf_rtb):
             intf_rtb_obj = self._vnc.interface_route_table_read(id=intf_rtb)
         elif isinstance(intf_rtb, InterfaceRouteTable):
             intf_rtb_obj = intf_rtb
