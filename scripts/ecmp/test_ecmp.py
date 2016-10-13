@@ -287,8 +287,13 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
          Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1.
          Maintainer : ganeshahv@juniper.net
         """
-        self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=2, svc_mode='in-network-nat', ci=True, st_version=2)
+        if self.inputs.orchestrator != 'vcenter':
+            self.verify_svc_in_network_datapath(
+                si_count=1, svc_scaling=True, max_inst=2, svc_mode='in-network-nat', ci=True, st_version=2')
+	else:
+            self.verify_svc_in_network_datapath(
+                si_count=1, svc_scaling=True, max_inst=2, svc_mode='in-network-nat', st_version=2)
+
         return True
     # end test_ecmp_svc_v2_in_network_nat_with_3_instance
 
@@ -894,7 +899,7 @@ class TestMultiInlineSVC(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
         """
         if self.inputs.orchestrator == 'vcenter':
             self.verify_multi_inline_svc(
-                si_list=[('in-net', 1), ('nat', 1)], st_version=2)
+                si_list=[('in-network', 1), ('in-network-nat', 1)], st_version=2)
         else:
             self.verify_multi_inline_svc(
                 si_list=[('bridge', 1), ('nat', 1)], st_version=2)
