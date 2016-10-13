@@ -482,7 +482,7 @@ class CsVMResult (Result):
 
     def vmi_links(self):
         vmi_list = (self.xpath('virtual-machine', 'virtual_machine_interfaces') or
-                    self.xpath('virtual-machine', 'virtual_machine_interface_back_refs'))
+                    self.xpath('virtual-machine', 'virtual_machine_interface_back_refs')) or []
         links = []
         for vmi in vmi_list or []:
             links.append(vmi['href'])

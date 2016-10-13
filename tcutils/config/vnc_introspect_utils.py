@@ -378,7 +378,7 @@ class VNCApiInspect (VerificationUtilBase):
 
         Returns the Virtual Machine Interface using virtual_machine_interfaces link in http://host/virtual-machine/<VM-ID>
         '''
-        p = self.try_cache('vmi', vm_id, refresh)
+        p = self.try_cache('vmi', vm_id, refresh) or []
         pp = []
         if not p:
             # cache miss
@@ -400,7 +400,7 @@ class VNCApiInspect (VerificationUtilBase):
 
         Returns the Instance-IP objects using virtual_machine_interfaces link of a VM
         '''
-        p = self.try_cache('iip', vm_id, refresh)
+        p = self.try_cache('iip', vm_id, refresh) or []
         pp = []
         if not p:
             # cache miss
