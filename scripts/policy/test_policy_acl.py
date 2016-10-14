@@ -1398,7 +1398,7 @@ class TestPolicyAcl(BasePolicyTest):
         self.setup_vm()
         agent_inspect_h = self.agent_inspect[self.VM11_fixture.vm_node_ip]
         vrf_id = agent_inspect_h.get_vna_vrf_id(self.VN1_fixture.vn_fq_name)
-        route = agent_inspect_h.get_vna_route(vrf_id= vrf_id[0], ip=self.VM21_fixture.vm_ip)
+        route = agent_inspect_h.get_vna_route(vrf_id= vrf_id, ip=self.VM21_fixture.vm_ip)
         self.logger.debug("Route value : %s" % route)
         if route:
             self.logger.info("Route of VN2 found in VN1 database. Route leaking successful")
