@@ -1,6 +1,6 @@
 import os
 from tcutils.util import *
-import logging
+from common import log_orig as contrail_logging
 from common.openstack_libs import network_client as client
 from common.openstack_libs import network_http_client as HTTPClient
 from common.openstack_libs import network_client_exception as CommonNetworkClientException
@@ -26,14 +26,20 @@ class QuantumHelper():
             username,
             password,
             project_id,
-            inputs):
+            inputs,
+            auth_server_ip=None):
         self.username = username
         self.password = password
         self.project_id = get_plain_uuid(project_id)
         self.obj = None
-        self.logger = inputs.logger
-        self.auth_url = inputs.auth_url
-        self.region_name = inputs.region_name
+        self.auth_server_ip = inputs.auth_ip if inputs else auth_server_ip or \
+                                  '127.0.0.1'
+        self.logger = inputs.logger if inputs else \
+                          contrail_logging.getLogger(__name__)
+        self.auth_url = inputs.auth_url if inputs else \
+                        os.getenv('OS_AUTH_URL') or \
+                        'http://%s:5000/v2.0' % self.auth_server_ip
+        self.region_name = inputs.region_name if inputs else None
     # end __init__
 
     def setUp(self):

@@ -89,16 +89,19 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
     # end create_vn
 
     @classmethod
-    def create_only_vm(cls, vn_fixture, vm_name=None, node_name=None,
+    def create_only_vm(cls, vn_fixture=None, vm_name=None, node_name=None,
                   flavor='contrail_flavor_small',
                   image_name='ubuntu-traffic',
                   port_ids=[], **kwargs):
+        vn_obj = None
         if not vm_name:
-            vm_name = 'vm-%s' % (get_random_name(vn_fixture.vn_name))
+            vm_name = 'vm-%s' % (get_random_name(cls.inputs.project_name))
+        if vn_fixture:
+            vn_obj = vn_fixture.obj
         vm_obj = VMFixture(
                     project_name=cls.inputs.project_name,
                     connections=cls.connections,
-                    vn_obj=vn_fixture.obj,
+                    vn_obj=vn_obj,
                     vm_name=vm_name,
                     image_name=image_name,
                     flavor=flavor,
@@ -109,12 +112,12 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
         return vm_obj
     # end create_only_vm
 
-    def create_vm(self, vn_fixture, vm_name=None, node_name=None,
+    def create_vm(self, vn_fixture=None, vm_name=None, node_name=None,
                   flavor='contrail_flavor_small',
                   image_name='ubuntu-traffic',
                   port_ids=[], **kwargs):
         cleanup = kwargs.get('cleanup', True)
-        vm_fixture = self.create_only_vm(vn_fixture,
+        vm_fixture = self.create_only_vm(vn_fixture=vn_fixture,
                         vm_name=vm_name,
                         node_name=node_name,
                         flavor=flavor,
@@ -125,7 +128,12 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
             self.addCleanup(vm_fixture.cleanUp)
         return vm_fixture
 
-    def create_router(self, router_name, tenant_id=None):
+    def create_router(self, router_name=None, tenant_id=None):
+        project_name = None
+        if not router_name:
+            if tenant_id:
+                project_name = self.vnc_lib.project_read(id=tenant_id)
+            router_name = 'router-%s' % (get_random_name(project_name))
         obj = self.quantum_h.create_router(router_name, tenant_id)
         if obj:
             self.addCleanup(self.quantum_h.delete_router, obj['id'])
@@ -895,11 +903,12 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
 
     # end create_dhcp_server_vm
 
-    def setup_vmi(self, vn_id, fixed_ips=[],
+    @classmethod
+    def setup_only_vmi(cls, vn_id, fixed_ips=[],
                   mac_address=None,
                   security_groups=[],
                   extra_dhcp_opts=[],
-                  cleanup=True):
+                  **kwargs):
         if mac_address:
             mac_address = EUI(mac_address)
             mac_address.dialect = mac_unix
@@ -909,9 +918,24 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
             fixed_ips=fixed_ips,
             security_groups=security_groups,
             extra_dhcp_opts=extra_dhcp_opts,
-            connections=self.connections,
+            connections=cls.connections,
+            **kwargs
         )
         port_fixture.setUp()
+        return port_fixture
+    # end setup_only_vmi
+
+    def setup_vmi(self, vn_id, fixed_ips=[],
+                  mac_address=None,
+                  security_groups=[],
+                  extra_dhcp_opts=[],
+                  **kwargs):
+        cleanup = kwargs.get('cleanup', True)
+        port_fixture = self.setup_only_vmi(vn_id,fixed_ips=fixed_ips,
+                                           mac_address=mac_address,
+                                           security_groups=security_groups,
+                                           extra_dhcp_opts=extra_dhcp_opts,
+                                           **kwargs)
         if cleanup:
             self.addCleanup(port_fixture.cleanUp)
         return port_fixture

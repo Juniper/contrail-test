@@ -7,13 +7,13 @@ from vnc_api.vnc_api import *
 from tcutils.traffic_utils.base_traffic import *
 from tcutils.traffic_utils.hping_traffic import Hping3
 from tcutils.traffic_utils.ping_traffic import Ping
-from common.neutron.lbaasv2.base import BaseLBaaSTest
+from common.neutron.base import BaseNeutronTest
 from contrailapi import ContrailVncApi
 import random
 from security_group import get_secgrp_id_from_name, SecurityGroupFixture
 from tcutils.agent.vrouter_lib import *
 
-class BaseVrouterTest(BaseLBaaSTest):
+class BaseVrouterTest(BaseNeutronTest):
 
     @classmethod
     def setUpClass(cls):
