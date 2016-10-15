@@ -914,10 +914,12 @@ class VMFixture(fixtures.Fixture):
             self.agent_label[vn_fq_name] = list()
             try:
                 for vm_ip in self.vm_ip_dict[vn_fq_name]:
-                    self.agent_path[vn_fq_name].append(
-                        inspect_h.get_vna_active_route(
-                            vrf_id=self.agent_vrf_id[vn_fq_name],
-                            ip=vm_ip))
+                    agent_path = inspect_h.get_vna_active_route(
+                        vrf_id=self.agent_vrf_id[vn_fq_name],
+                        ip=vm_ip)
+                    if agent_path is None:
+                        return False
+                    self.agent_path[vn_fq_name].append(agent_path)
             except Exception as e:
                 return False
             if self.vnc_lib_fixture.get_active_forwarding_mode(vn_fq_name) != 'l2':
