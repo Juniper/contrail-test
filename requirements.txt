@@ -7,7 +7,7 @@ junitxml
 pytun
 pexpect
 pyvirtualdisplay
-selenium
+selenium==2.53.6
 unittest2
 xmltodict
 junos-eznc==1.2.2
