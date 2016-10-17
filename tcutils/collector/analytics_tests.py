@@ -2664,7 +2664,11 @@ class AnalyticsVerification(fixtures.Fixture):
             self.logger.exception('Exception occured while verifying alarms %s' % (alarm_type))
             result = result and False
         finally:
-            self.inputs.start_service(service, host_ips=[service_ip], contrail_service=True)
+            if cfgm_ndmgr_ctl_required:
+                self.inputs.run_cmd_on_server(service_ip, issue_start_cmd, username, password, pty=True)
+            else:
+                self.inputs.start_service(service, host_ips=[service_ip],
+                    contrail_service=True)
             time.sleep(10)
             if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances,
                     soak_timer=soak_timer, verify_alarm_cleared=True):
@@ -2772,13 +2776,6 @@ class AnalyticsVerification(fixtures.Fixture):
                 role_alarms = None
         except Exception, e:
             self.logger.exception('Exception occured while checking for alarms')
-        finally:
-            if cfgm_ndmgr_ctl_required:
-                self.inputs.run_cmd_on_server(service_ip, issue_start_cmd, username, password, pty=True)
-            else:
-                self.inputs.start_service(service, host_ips=[service_ip],
-                    contrail_service=True)
-            time.sleep(10)
             result = result and False
         return result
     # end _verify_alarms_by_type
