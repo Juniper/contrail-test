@@ -420,7 +420,7 @@ class WebuiTest:
                 if 'm1' in flavor_text:
                     flavor_txt = re.search(r'(m1.(\S+))', flavor_text)
                     flavor_text = flavor_txt.group(2)
-                if flavor_text.find(fixture.flavor) != -1:
+                if fixture.flavor.find(flavor_text) != -1:
                     flavor.click()
                     break
             if fixture.svc_scaling:
