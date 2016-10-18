@@ -2256,7 +2256,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
     # Verifiation of contrail Alarms generation
 
-    def verify_alarms(self, role, alarm_type='process-status', service=None):
+    def verify_alarms(self, role, alarm_type='process-status', service=None, verify_alarm_cleared=False):
         result = True
         analytics = self.inputs.collector_ips[0]
         underlay = self.inputs.run_cmd_on_server(analytics, 'contrail-status | grep contrail-snmp-collector')
@@ -2299,17 +2299,19 @@ class AnalyticsVerification(fixtures.Fixture):
             multi_instances = False
             if len(self.inputs.database_ips) > 1:
                 multi_instances = True
-            for process in db_processes:
-                if process == 'kafka' or process == 'supervisor-database':
-                    if len(self.inputs.database_ips) > 1:
-                        self.logger.info("Multi DBs are found, will stop %s on Db[0] and check if alarms are generated for the same" %(process))
+            if process == 'process-status':
+                for process in db_processes:
+                    if process == 'kafka' or process == 'supervisor-database':
+                        if len(self.inputs.database_ips) > 1:
+                            self.logger.info("Multi DBs are found, will stop %s on Db[0] and check if alarms are generated for the same" %(process))
+                        else:
+                            self.logger.info("Single db setup found, skipping %s stop alarm test" %(process))
+                            continue
+                    if not self._verify_contrail_alarms(process, 'database-node','service_stop', multi_instances=multi_instances):
+                        result = result and False
                     else:
-                        self.logger.info("Single db setup found, skipping %s stop alarm test" %(process))
-                        continue
-                if not self._verify_contrail_alarms(process, 'database-node','service_stop', multi_instances=multi_instances):
-                    result = result and False
-                else:
-                    self.logger.info("Db alarms were generated after stopping the process  %s " % (role))
+                        self.logger.info("Db alarms were generated after stopping the process  %s " % (role))
+
         elif role == 'control-node':
             multi_instances = False
             if len(self.inputs.bgp_control_ips) > 1:
@@ -2388,8 +2390,14 @@ class AnalyticsVerification(fixtures.Fixture):
                     result = result and False
                 else:
                     self.logger.info("Process connectivity alarm for vrouter verified for  %s " % (role))
-
+            elif alarm_type == 'vrouter-interface':
+                if not self._verify_contrail_alarms(None, 'vrouter', 'vrouter_interface',
+                        multi_instances=multi_instances, verify_alarm_cleared=verify_alarm_cleared):
+                    result = result and False
+                else:
+                    self.logger.info("Vrouter-interface alarm for vrouter verified for  %s " % (role))
         elif role == 'all':
+            multi_instances = False
             if len(self.inputs.cfgm_ips) > 1:
                 multi_instances = True
             if alarm_type == 'conf-incorrect':
@@ -2397,6 +2405,11 @@ class AnalyticsVerification(fixtures.Fixture):
                     result = result and False
                 else:
                     self.logger.info("Conf incorrect alarms verified  for %s roles" % (role))
+            elif alarm_type == 'disk-usage':
+                    if not self._verify_contrail_alarms(None, 'all', 'disk_usage', multi_instances=multi_instances):
+                        result = result and False
+                    else:
+                        self.logger.info("Disk usage config alarm generated %s " % (role))
 
         return result
     # end verify_alarms
@@ -2417,6 +2430,15 @@ class AnalyticsVerification(fixtures.Fixture):
             result = result and False
         return result
     # end _verify_contrail_bgp_connectivity_alarm
+
+    def _verify_alarms_vrouter_interface(self, service_ip, role, alarm_type, multi_instances, verify_alarm_cleared):
+        result = True
+        # To implement
+        if not self._verify_alarms_by_type(None, service_ip, role, alarm_type, multi_instances=False,
+                soak_timer=15, verify_alarm_cleared=verify_alarm_cleared):
+            result = result and False
+        return result
+    # end _verify_vrouter_interface_alarm
 
     def update_contrail_conf(self, node, ip, conf_file_type, section, value, cluster_verify=False):
         file_loc = '/etc/contrail/' + conf_file_type + '.conf'
@@ -2532,6 +2554,74 @@ class AnalyticsVerification(fixtures.Fixture):
         return result
     # end _verify_alarms_address_mismatch_control
 
+    def _verify_alarms_disk_usage(self, service_ip, role, alarm_type, multi_instances):
+        result = True
+        if not self.fill_91_disk_usage_and_verify_alarms(service_ip, role,
+            alarm_type, multi_instances):
+            result = result and False
+        return result
+    # end _verify_alarms_disk_usage
+
+
+    def fill_91_disk_usage_and_verify_alarms(self, service_ip, role, alarm_type, multi_instances):
+        result = True
+        is_file_created = {  'config-node':False, 'analytics-node':False,
+            'vrouter':False, 'database-node':False, 'control-node':False }
+        try:
+            for role in is_file_created:
+                svc_ip = service_ip[role]
+                hostname = self.inputs.host_data[svc_ip]['name']
+                cmd = "df -h /dev/mapper/" + hostname + "--vg-root"
+                cmd1 = cmd + " | awk 'NR==2 {print $2}'"
+                cmd2 = cmd + " | awk 'NR==2 {print $3}'"
+                total = int(self.inputs.run_cmd_on_server(svc_ip, cmd1).split('G')[0])
+                used = int(self.inputs.run_cmd_on_server(svc_ip, cmd2).split('G')[0])
+                diff = 0
+                limit = 0.91 * total
+                if not used > limit:
+                    diff = limit - used
+                mb = int(diff * 1024 + 1)
+                str_mb = str(mb) + 'M'
+                dd_cmd = 'fallocate -l ' + str_mb + ' large_test_file.txt'
+                self.logger.info('Disk usage alarm verification for role %s' % (role))
+                if not is_file_created[role]:
+                    status = self.inputs.run_cmd_on_server(svc_ip, cmd)
+                    self.logger.debug('Printing df -h before file creation: \n %s \n' % (status))
+                    if diff:
+                        self.logger.info('Creating a file of size %s GB(%s MB) to fill 91 percent of the disk space on %s' %
+                            (str(mb/1024), str(mb), role))
+                        self.inputs.run_cmd_on_server(svc_ip, dd_cmd)
+                    else:
+                        self.logger.info('Disk usage is already more than 91 percent, disk usage alarm expected')
+                    status = self.inputs.run_cmd_on_server(svc_ip, cmd)
+                    self.logger.debug('Printing df -h after file creation: \n %s \n' % (status))
+                    self.wait_for_system_stability(wait=10)
+                    for node_role in is_file_created:
+                        if svc_ip == service_ip[node_role]:
+                            is_file_created[node_role] = True
+                else:
+                   status = self.inputs.run_cmd_on_server(svc_ip, cmd)
+                   self.logger.debug('Printing current disk usage: \n\n %s' % (status))
+                   self.logger.debug('Large file already created on %s, skipping creation, disk usage is above 91 percent' % (role))
+                if not self._verify_alarms_by_type(None, svc_ip, role, alarm_type, multi_instances=False,
+                        soak_timer=15):
+                    result = result and False
+        except Exception, e:
+            self.logger.exception('Exception occured while verifying alarms %s' % (alarm_type))
+            result = result and False
+        finally:
+            for role in is_file_created:
+                self.logger.info('Verifying disk usage alarm cleared for role %s' % (role))
+                svc_ip = service_ip[role]
+                self.logger.debug('Deleting large file from %s' % (role))
+                status = self.inputs.run_cmd_on_server(svc_ip, 'rm large_test_file.txt')
+                if not self._verify_alarms_by_type(None, svc_ip, role, alarm_type, multi_instances=False,
+                        soak_timer=15, verify_alarm_cleared=True):
+                    result = result and False
+        return result
+    # end fill_91_disk_usage_and_verify_alarms
+
+
     def _verify_alarms_conf_incorrect(self, service_ip, role, alarm_type, multi_instances):
         result = True
         if not self.update_discovery_server_ip_in_contrail_api_conf_and_verify_alarms(service_ip, role,
@@ -2585,6 +2675,11 @@ class AnalyticsVerification(fixtures.Fixture):
             cluster_status, error_nodes = ContrailStatusChecker().wait_till_contrail_cluster_stable()
             assert cluster_status, 'Hash of error nodes and services : %s' % (error_nodes)
 
+    def verify_vrouter_intf_alarm(self, verify_alarm_cleared=False):
+        return self.verify_alarms(role='vrouter', alarm_type='vrouter-interface',
+            verify_alarm_cleared=verify_alarm_cleared)
+    # end verify_vrouter_intfalarms
+
     def verify_cfgm_alarms(self):
         return self.verify_alarms(role='config-node')
     # end cfgm_alarms
@@ -2598,7 +2693,7 @@ class AnalyticsVerification(fixtures.Fixture):
     # end control_alarms
 
     def verify_vrouter_alarms(self):
-        return self.verify_alarms(role='vrouter')
+        return self.verify_alarms(role='vrouter', verify_alarm_cleared=False)
     # end vrouter_alarms
 
     def verify_analytics_alarms(self):
@@ -2636,6 +2731,10 @@ class AnalyticsVerification(fixtures.Fixture):
     def verify_conf_incorrect_alarm(self):
         return self.verify_alarms(role='all', alarm_type='conf-incorrect')
     # end verify_conf_incorrect_alarm
+
+    def verify_disk_usage_alarm(self):
+        return self.verify_alarms(role='all', alarm_type='disk-usage')
+    # end verify_disk_usage_alarm
 
     def _verify_alarms_stop_svc(self, service, service_ip, role, alarm_type, multi_instances=False, soak_timer=15):
         result = True
@@ -2777,7 +2876,8 @@ class AnalyticsVerification(fixtures.Fixture):
         return result
     # end _verify_alarms_by_type
 
-    def _verify_contrail_alarms(self, service, role, trigger='service_stop', multi_instances=False):
+    def _verify_contrail_alarms(self, service, role, trigger='service_stop',
+            multi_instances=False, verify_alarm_cleared=False):
         ''' Verify whether contrail alarms is raised
         multi_instances = True for multi node setup based on the role
         '''
@@ -2799,6 +2899,20 @@ class AnalyticsVerification(fixtures.Fixture):
                 'control-node': self.inputs.bgp_control_ips[0],
                 'vrouter': self.inputs.compute_ips[0],
                 'analytics-node': self.inputs.collector_ips[0]}
+        elif isinstance(role, list):
+            service_ip = {}
+            for r in role:
+                if r == 'config-node':
+                    service_ip['config-node'] = self.inputs.cfgm_ips[0]
+                elif r == 'database-node':
+                    service_ip['database-node']  = self.inputs.database_ips[0]
+                elif r == 'control-node':
+                    service_ip['control-node'] = self.inputs.bgp_control_ips[0]
+                elif r == 'vrouter':
+                    service_ip['vrouter'] = self.inputs.compute_ips[0]
+                elif r == 'analytics-node':
+                    service_ip['analytics-node'] = self.inputs.collector_ips[0]
+
         process_connectivity = ['contrail-api', 'contrail-database']
         if service in process_connectivity:
             alarm_type = ['process-connectivity']
@@ -2812,7 +2926,10 @@ class AnalyticsVerification(fixtures.Fixture):
             alarm_type = ['bgp-connectivity']
             if not self._verify_alarms_bgp_peer_mismatch(service_ip, role, alarm_type, multi_instances):
                 result = result and False
-
+        elif trigger == 'disk_usage':
+            alarm_type = 'disk-usage'
+            if not self._verify_alarms_disk_usage(service_ip, role, alarm_type, multi_instances):
+                result = result and False
         elif role == 'control-node':
              if trigger == 'address_mismatch':
                  alarm_type = 'address-mismatch-control'
@@ -2826,6 +2943,10 @@ class AnalyticsVerification(fixtures.Fixture):
         elif trigger == 'address_mismatch' and role == 'vrouter':
             alarm_type = 'address-mismatch-compute'
             if not self._verify_alarms_address_mismatch_compute(service_ip, role, alarm_type, multi_instances):
+                result = result and False
+        elif trigger == 'vrouter_interface' and role == 'vrouter':
+            alarm_type = 'vrouter-interface'
+            if not self._verify_alarms_vrouter_interface(service_ip, role, alarm_type, multi_instances, verify_alarm_cleared):
                 result = result and False
         elif trigger == 'process_connectivity' and role in ['vrouter', 'analytics-node']:
             alarm_type = 'process-connectivity'
