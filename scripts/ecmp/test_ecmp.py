@@ -11,6 +11,7 @@ from vnc_api_test import *
 from vnc_api import vnc_api as my_vnc_api
 from nova_test import *
 from vm_test import *
+from tcutils.util import skip_because
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from common.servicechain.firewall.verify import VerifySvcFirewall
@@ -274,6 +275,7 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
 
     @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
+    @skip_because(address_family='v6')
     def test_ecmp_svc_v2_in_network_nat_with_3_instance(self):
         """
          Description: Validate ECMP with v2 service chaining in-network-nat mode datapath having service instance
