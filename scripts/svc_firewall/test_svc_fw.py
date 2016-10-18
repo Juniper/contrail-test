@@ -4,6 +4,7 @@ import unittest
 import fixtures
 import testtools
 from tcutils.wrappers import preposttest_wrapper
+from tcutils.util import skip_because
 from common.ecmp.ecmp_verify import ECMPVerify
 from common.servicechain.firewall.verify import VerifySvcFirewall
 from common.servicechain.config import ConfigSvcChain
@@ -60,6 +61,7 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ConfigSvcChain, ECMPVerify)
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    @skip_because(address_family='v6')
     def test_svc_in_network_nat_private_to_public(self):
         if ('MX_GW_TEST' not in os.environ) or (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') != '1')):
             self.logger.info(
