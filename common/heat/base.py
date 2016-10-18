@@ -400,6 +400,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
             if is_v6(subnet):
                 af = '-6'
             for vm in si.svm_list:
+                vm.wait_for_ssh_on_vm()
                 cmd = 'ip %s route add %s dev %s' % (af, subnet, route[1])
                 vm.run_cmd_on_vm([cmd], as_sudo=True)
 
