@@ -24,6 +24,16 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         pass
     # end runTest
 
+    def test_disk_usage_alarms(self):
+        ''' Test to check disk-usage alarms
+            Steps:
+                1) Create a large file to fill the disk space upto 91%
+                2) Expect disk usage alarm to get raised
+                3) Verify disk usage alarms for analytics-node, control-node, vrouter, db node and config-node
+        '''
+        assert self.analytics_obj.verify_disk_usage_alarm()
+        return True
+
     def test_conf_incorrect_alarms(self):
         ''' Test to check conf-incorrect alarms
             Steps:
