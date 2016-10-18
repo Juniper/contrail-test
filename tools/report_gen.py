@@ -308,6 +308,7 @@ class ContrailReportInit:
             detail += 'Openstack Node : %s %s' % (openstack_node, newline)
         detail += 'WebUI Node : %s %s' % (webui_node, newline)
         detail += 'Analytics Nodes : %s %s' % (collector_nodes, newline)
+        detail += 'Database Nodes : %s %s' % (database_nodes, newline)
         detail += 'Physical Devices : %s %s' % (phy_dev, newline)
         if self.ui_browser:
             detail += 'Browser : %s %s' % (self.ui_browser, newline)
