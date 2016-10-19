@@ -361,6 +361,9 @@ setup_tors
 if [[ ! -z $path ]];then
     for p in $path
         do
+            if [ $p != 'webui']; then
+                export EMAIL_SUBJECT_PREFIX=$p
+            fi
             run_tests $p
             run_tests_serial $p
             python tools/report_gen.py $TEST_CONFIG_FILE
