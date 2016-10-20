@@ -12,7 +12,7 @@ from fabric.api import run, local
 from analytics import base
 import fixtures
 import test
-
+import socket
 
 class AnalyticsTestSanity(base.AnalyticsBaseTest):
 
@@ -23,6 +23,46 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
     def runTest(self):
         pass
     # end runTest
+
+    def test_vrouter_intf_alarm(self):
+        ''' Test to check vrouter-interface alarm
+            Steps:
+                1) Create a vn and a vm
+                2) Bring the tap intf of vm down
+                3) Verify vrouter intf alarm gets generated for the same
+                4) Bring the tap intf of vm up
+                5) Verify vrouter intf alarm gets cleared for the same
+        '''
+        vn_fix = self.useFixture(
+                VNFixture(project_name=self.inputs.project_name,
+                          connections=self.connections,
+                          inputs=self.inputs,
+                          vn_name='vrouter_intf_alarm_test_vn',
+                          subnets=['10.1.1.0/24'],
+                          option = 'orch'))
+        compute0 = self.inputs.compute_ips[0]
+        hostname = self.inputs.host_data[compute0]['name']
+        vm_fix = self.useFixture(
+                VMFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_obj=vn_fix.obj,
+                    vm_name='vrouter_intf_alarm_test_vm',
+                    image_name='ubuntu',
+                    flavor='m1.tiny',
+                    node_name=hostname))
+        assert vm_fix.verify_on_setup()
+        vmi_id = vm_fix.get_vmi_ids().values()[0]
+        tap = vm_fix.get_tap_intf_of_vmi(vmi_id)['name']
+        host_ip = vm_fix.vm_node_ip
+        cmd_down = 'ifconfig ' + tap + ' down'
+        cmd_up = 'ifconfig ' + tap + ' up'
+        self.inputs.run_cmd_on_server(host_ip, cmd_down)
+        assert self.analytics_obj.verify_vrouter_intf_alarm()
+        self.inputs.run_cmd_on_server(host_ip, cmd_up)
+        assert self.analytics_obj.verify_vrouter_intf_alarm(verify_alarm_cleared=True)
+        return True
+    # end test_vrouter_intf_alarm
 
     def test_disk_usage_alarms(self):
         ''' Test to check disk-usage alarms
