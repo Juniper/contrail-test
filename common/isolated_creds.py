@@ -32,8 +32,12 @@ class IsolatedCreds(fixtures.Fixture):
 
         self.ini_file = ini_file
         self.logger = logger
-        if self.inputs.orchestrator == 'vcenter' or self.inputs.vcenter_gw_setup:
+        if self.inputs.orchestrator == 'vcenter':
             self.project_name = self.inputs.stack_tenant
+            self.username = self.inputs.stack_user
+            self.password = self.inputs.stack_password
+        if self.inputs.vcenter_gw_setup:#Fixing tenant as vCenter for vcenter gw setup
+            self.project_name = 'vCenter'
             self.username = self.inputs.stack_user
             self.password = self.inputs.stack_password
     # end __init__
@@ -71,7 +75,8 @@ class IsolatedCreds(fixtures.Fixture):
     # end create_tenant
 
     def delete_tenant(self, project_fixture):
-        project_fixture.cleanUp()
+        if not self.inputs.vcenter_gw_setup:
+            project_fixture.cleanUp()
 
     def get_inputs(self, project_fixture):
         project_inputs= ContrailTestInit(self.ini_file,
@@ -103,7 +108,7 @@ class AdminIsolatedCreds(fixtures.Fixture):
 
         self.ini_file = ini_file
         self.logger = logger
-        if self.inputs.orchestrator == 'vcenter' or self.inputs.vcenter_gw_setup:
+        if self.inputs.orchestrator == 'vcenter':
             self.project_name = self.inputs.stack_tenant
             self.username = self.inputs.stack_user
             self.password = self.inputs.stack_password
@@ -132,8 +137,6 @@ class AdminIsolatedCreds(fixtures.Fixture):
         if self.inputs.orchestrator == 'vcenter'  or \
            not self.inputs.tenant_isolation:
             return
-        if self.inputs.vcenter_gw_setup:
-            return 
         if self.inputs.user_isolation:
             self.auth.create_user(username, password)
         self.auth.add_user_to_project(username, project_name)
