@@ -2572,15 +2572,17 @@ class WebuiCommon:
         return result
     # edit_remove_option
 
-    def edit_vn_without_change(self):
+    def edit_without_change(self, option):
         result = True
-        option = "Networks"
         try:
             self.edit_vn_result = self.edit_remove_option(option, 'edit')
             if self.edit_vn_result:
                 try:
                     self.logger.info("Click on save button")
-                    self.click_element('configure-networkbtn1')
+                    if option == 'Networks':
+                        self.click_element('configure-networkbtn1')
+                    elif option == 'Ports':
+                        self.click_element('configure-Portsbtn1')
                 except WebDriverException:
                     self.logger.error("Error while trying to save %s" %(option))
                     result = result and False
@@ -2598,7 +2600,7 @@ class WebuiCommon:
             self.click_on_cancel_if_failure('cancelBtn')
             raise
         return result
-    # edit_vn_without_change
+    # edit_without_change
 
     def edit_vn_disp_name_change(self, vn_name):
         result = True
@@ -3036,3 +3038,99 @@ class WebuiCommon:
             raise
         return result
     # edit_vn_with_route_target
+
+    def get_port_value_ui(self, search_key, index=0, port_name=None):
+        all_flag = False
+        if not self.click_configure_ports():
+            self.dis_name = None
+        self.wait_till_ajax_done(self.browser, wait=3)
+        if not index:
+            rows = self.get_rows(canvas=True)
+            if port_name:
+                for row in rows:
+                    out = re.search(port_name, str(row.text))
+                    index += 1
+                    if out:
+                        break
+            else:
+                index = len(rows)
+        edit = self.find_element('fa-caret-right', 'class', elements=True)
+        edit[index-1].click()
+        self.wait_till_ajax_done(self.browser)
+        item = self.find_element('item-list', 'class')
+        out_split = re.split("\n",item.text)
+        join_res = "-".join(out_split)
+        if search_key == 'UUID':
+            regexp = "UUID\-(.*)\-Name"
+            flag = True
+        elif search_key == 'Name':
+            regexp = "Name\-(.*)\-Display"
+            flag = True
+        elif search_key == 'Network':
+            regexp = "Network\-(.*)\-UUID"
+            flag = True
+        else:
+            result = join_res
+            all_flag = True
+        if not all_flag:
+            out = re.search(regexp, join_res)
+            if flag:
+                result = out.group(1)
+            else:
+                result = out.group(0)
+        return result
+    # get_port_value_ui
+
+    def edit_vn_port_portedit(self, option):
+        result = True
+        try:
+            self.edit_port_result = self.edit_remove_option(option, 'edit')
+            if self.edit_port_result:
+                vn_name = self.find_element('virtualNetworkName')
+                vn_drop = self.find_element('virtualNetworkName_dropdown')
+                mode = vn_drop.get_attribute('data-bind')
+                vn_out = re.search('disable: true', mode)
+                port_disp_name = self.find_element('display_name', 'name')
+                port_mode = port_disp_name.get_attribute('data-bind')
+                port_out = re.search('disable: true', port_mode)
+                if vn_out and port_out:
+                    self.logger.info("Editing is failed for vn and port name as expected")
+                else:
+                    self.logger.error("Clicking the Edit Button is not working")
+                    result = result and False
+            else:
+                self.logger.error("There are no rows to edit")
+                result = result and False
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.screenshot(option)
+            result = result and False
+            raise
+        self.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # edit_vn_port_portedit
+
+    def add_port_with_sec_group(self, sec_group_name, option, port_name):
+        result = True
+        try:
+            self.edit_port_result = self.edit_remove_option(option, 'edit', vn_name=port_name)
+            if self.edit_port_result:
+                self.click_element('s2id_securityGroupValue_dropdown')
+                select = self.find_element('select2-highlighted', 'class')
+                sec_name = select.text
+                select.click()
+                self.click_element('configure-Portsbtn1')
+                self.wait_till_ajax_done(self.browser)
+                return sec_name
+            else:
+                self.logger.error("Clicking the Edit Button is not working")
+                result = result and False
+
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.screenshot(option)
+            result = result and False
+            self.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+    # add_port_with_sec_group

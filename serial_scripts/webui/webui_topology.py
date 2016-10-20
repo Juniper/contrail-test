@@ -370,7 +370,7 @@ class sdn_webui_config ():
         self.vn_name_beg_spl_char = "~!@#$%^&*()_+|}{\"?><,./;\'[]\=-`vn1"
         self.vn_name_end_spl_char = "vn1~!@#$%^&*()_+|}{\"?><,./;\'[]\=-`"
         self.vn_name_mid_spl_char = "vn1~!@#$%^&*()_+|}{\"?><,./;\'[]\=-`vn1"
-        self.port_name = 'port1'
+        self.port_name = 'port-test'
         # end __init__
 
 if __name__ == '__main__':

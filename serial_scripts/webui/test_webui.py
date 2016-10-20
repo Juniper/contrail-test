@@ -315,7 +315,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
             self.webui.logger.debug('Virtual networks config data verification in OPS failed')
             result = result and False
         self.webui.logger.debug("Step 5 : Edit the VN without changing anything")
-        if not self.webui_common.edit_vn_without_change():
+        if not self.webui_common.edit_without_change('Networks'):
             self.webui.logger.debug('Editing Network failed')
             result = result and False
         self.webui.logger.debug("Step 6 : Verify WebUI server after editing")
@@ -1219,5 +1219,124 @@ class WebuiTestSanity(base.WebuiBaseTest):
                     result = result and False
         return result
     # test4_7_create_vn_with_spl_char
+
+    @preposttest_wrapper
+    def test6_1_create_verify_port(self):
+        ''' Test to create, verify and delete the port and check in all API, OPS and WebUI
+            1. Go to Configure->Networking->Ports. Then create one port under one VN
+            2. Verify the Port in WebUI, OPS and API server.
+            3. Go to Configure->Networking->Ports. Then delete the port which is created
+            4. Verify the non-existence of the port in WebUI, API and OPS servers.
+
+            Pass Criteria : Step 2 and 4 should pass
+        '''
+        self.webui.logger.debug("Step 1 : Create the Port under VN")
+        result = True
+        if self.webui_common.click_on_create(
+                        'Network',
+                        'networks',
+                        topo.vn_disp_name, prj_name=self.webui.project_name_input):
+            self.webui_common.send_keys(topo.vn_disp_name, 'display_name', 'name')
+            self.webui_common.wait_till_ajax_done(self.browser, wait=3)
+            self.webui_common.click_element('configure-networkbtn1')
+            self.webui_common.wait_till_ajax_done(self.browser)
+        else:
+            result = result and False
+        subnet = None
+        opt_list = [topo.vn_disp_name, topo.port_name, 'Up']
+        if not self.webui.create_port(topo.vn_disp_name, subnet, port_name=topo.port_name):
+            self.webui.logger.debug('Creating port is getting failed')
+            result = result and False
+        self.uuid_port = self.webui_common.get_port_value_ui('UUID', port_name=topo.port_name)
+        self.webui.logger.debug("Step 2 : Verify the Port in WebUI")
+        if not self.webui.verify_port_ui('all', 'add', opt_list):
+            self.webui.logger.debug('Verifying port in WebUI is failed')
+            result = result and False
+        self.webui.logger.debug("Step 3 : Verify the port in API server")
+        if not self.webui.verify_port_api('all', self.uuid_port, opt_list, 'add'):
+            self.webuil.logger.debug('Verifying port in API is failed')
+            result = result and False
+        return result
+    # end test6_1_create_verify_port
+
+    @preposttest_wrapper
+    def test6_2_edit_port_without_change(self):
+        ''' Test to create, verify and delete the port and check in all API, OPS and WebUI
+            1. Go to Configure->Networking->Ports. Then select the last port.
+            2. Click the Edit button and Click the save button without changing anything.
+            3. Verify the Port's UUID in WebUI, OPS and API server.
+
+            Pass Criteria: UUID shouldn't be changed after editing
+        '''
+        result = True
+        self.webui.logger.debug("Step 1 : Get the uuid before editing")
+        uuid_port = self.webui_common.get_port_value_ui('UUID')
+        port_name = self.webui_common.get_port_value_ui('Name')
+        network = self.webui_common.get_port_value_ui('Network')
+        self.webui.logger.debug("UUID before editing " + uuid_port)
+        opt_list = [uuid_port, port_name, 'Up']
+        self.webui.logger.debug("Step 2 : Edit the port without changing anything")
+        if not self.webui_common.edit_without_change('Ports'):
+            self.webui.logger.debug('Editing Network failed')
+            result = result and False
+        self.webui.logger.debug("Step 3 : Verify WebUI server after editing")
+        if not self.webui.verify_port_ui('all', 'add', opt_list):
+            self.webui.logger.debug("Verifying port in WebUI is failed after editing")
+            result = result and False
+        self.webui.logger.debug("Step 3 : Verify the port in API server")
+        if not self.webui.verify_port_api('all', uuid_port, opt_list, 'add'):
+            self.webui.logger("Verifying port in API is failed")
+            result = result and False
+        return result
+    # end test6_2_edit_port_without_change
+
+    @preposttest_wrapper
+    def test6_3_edit_port_vn_port_name(self):
+        ''' Test to create, verify and delete the port and check in all API, OPS and WebUI
+            1. Go to Configure->Networking->Ports. Then select the last port.
+            2. Click the Edit button and Try to edit vn and port name.
+            3. Verify the vn and port name disabled for existing port.
+
+            Pass Criteria: Step 3 should pass
+        '''
+        self.webui.logger.debug("Step 1 : Edit the port without changing anything")
+        assert self.webui_common.edit_vn_port_portedit('Ports'), \
+                                 'VN and Port name not disabled for editing'
+        return True
+    # end test6_3_edit_port_vn_port_name
+
+    @preposttest_wrapper
+    def test6_4_edit_port_by_add_security_group(self):
+        ''' Test to edit the existing port by security group
+            1. Go to Configure->Networking->Ports. Then select the last port
+               and click the edit button
+            2. Attach one security group for the port and save.
+            3. Check that attached security group is there in WebUI,API and OPS.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        self.webui.logger.debug("Step 1 : Attach security group to the port")
+        sec_group_name = ""
+        sec_group_name = self.webui_common.add_port_with_sec_group(sec_group_name, 'Ports', \
+                                                                  topo.port_name)
+        sec_group = sec_group_name.split(":")
+        if len(sec_group) > 1:
+            sec_group_name = sec_group[1].strip(')')
+        result = True
+        uuid = self.webui_common.get_port_value_ui('UUID', port_name=topo.port_name)
+        opt_list = [uuid, topo.port_name, 'Up', sec_group_name]
+        self.webui.logger.debug("Step 2 : Verify the port for the attached security group \
+                                in WebUI server")
+        if not self.webui.verify_port_ui('Security Group', 'add', opt_list):
+            self.webui.logger.debug('UI verification is failed for Security Group')
+            result = result and False
+        self.webui.logger.debug("Step 3 : Verify the port for the attached security group \
+                                in API server")
+        if not self.webui.verify_port_api("Security Group", uuid, opt_list, 'add'):
+            self.webui.logger.debug('Security group for the port in API is failed')
+            result = result and False
+        return result
+    #end test6_4_edit_port_by_add_security_group
+
 
 # end WebuiTestSanity
