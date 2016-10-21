@@ -131,7 +131,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
          Maintainer : ganeshahv@juniper.net
         '''
         ipam_obj = self.useFixture(
-            IPAMFixture(project_obj=self.project, name=get_random_name('my-ipam')))
+            IPAMFixture(connections=self.connections, name=get_random_name('my-ipam')))
         assert ipam_obj.verify_on_setup()
         vn_fixture = self.create_vn(ipam_fq_name=ipam_obj.fq_name)
         assert vn_fixture.verify_on_setup()

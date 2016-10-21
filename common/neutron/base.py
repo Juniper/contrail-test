@@ -128,15 +128,16 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
             self.addCleanup(vm_fixture.cleanUp)
         return vm_fixture
 
-    def create_router(self, router_name=None, tenant_id=None):
-        project_name = None
+    def create_router(self, router_name=None, connections=None):
+        if not connections:
+            neutron_handle = self.quantum_h
+        else:
+            neutron_handle = connections.quantum_h
         if not router_name:
-            if tenant_id:
-                project_name = self.vnc_lib.project_read(id=tenant_id)
-            router_name = 'router-%s' % (get_random_name(project_name))
-        obj = self.quantum_h.create_router(router_name, tenant_id)
+            router_name = 'router-%s' % (get_random_name())
+        obj = neutron_handle.create_router(router_name)
         if obj:
-            self.addCleanup(self.quantum_h.delete_router, obj['id'])
+            self.addCleanup(neutron_handle.delete_router, obj['id'])
         return obj
 
     def delete_router(self, router_id=None):

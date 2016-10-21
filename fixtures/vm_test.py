@@ -56,7 +56,7 @@ class VMFixture(fixtures.Fixture):
     '''
 
     def __init__(self, connections, vm_name=None, vn_obj=None,
-                 vn_objs=[], project_name=None,
+                 vn_objs=[],
                  image_name='ubuntu', subnets=[],
                  flavor=None,
                  node_name=None, sg_ids=[], count=1, userdata=None,
@@ -85,7 +85,8 @@ class VMFixture(fixtures.Fixture):
             image_name = os.environ.get('ci_image')
         self.image_name = image_name
         self.flavor = self.orch.get_default_image_flavor(self.image_name) or flavor
-        self.project_name = project_name or self.connections.project_name
+        self.project_name = connections.project_name
+        self.project_id = connections.project_id
         self.vm_name = vm_name or get_random_name(self.project_name)
         self.vm_id = uuid
         self.vm_obj = None
@@ -180,15 +181,11 @@ class VMFixture(fixtures.Fixture):
             self.image_name)
         if self.vm_id:
             return self.read()
-        self.project_fixture = self.useFixture(
-            ProjectFixture(vnc_lib_h=self.vnc_lib_h,
-                           project_name=self.project_name,
-                           connections=self.connections))
         self.vn_ids = [self.orch.get_vn_id(x) for x in self.vn_objs]
         self.vm_obj = self.orch.get_vm_if_present(self.vm_name,
-                                                  project_id=self.project_fixture.uuid)
+                                                  project_id=self.project_id)
         self.vm_objs = self.orch.get_vm_list(name_pattern=self.vm_name,
-                                             project_id=self.project_fixture.uuid)
+                                             project_id=self.project_id)
         if self.vm_obj:
             self.vm_id = self.vm_obj.id
             with self.printlock:
@@ -200,7 +197,7 @@ class VMFixture(fixtures.Fixture):
                 self.webui.create_vm(self)
             else:
                 objs = self.orch.create_vm(
-                    project_uuid=self.project_fixture.uuid,
+                    project_uuid=self.project_id,
                     image_name=self.image_name,
                     flavor=self.flavor,
                     vm_name=self.vm_name,
@@ -212,7 +209,6 @@ class VMFixture(fixtures.Fixture):
                     userdata=self.userdata,
                     port_ids=self.port_ids,
                     fixed_ips=self.fixed_ips)
-#                time.sleep(5)
                 self.created = True
                 self.vm_obj = objs[0]
                 self.vm_objs = objs

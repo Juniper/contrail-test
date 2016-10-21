@@ -14,10 +14,10 @@ except ImportError:
 
 class IPAMFixture(fixtures.Fixture):
 
-    def __init__(self, name=None, connections=None, project_obj=None,
+    def __init__(self, name=None, connections=None,
                  ipamtype=IpamType("dhcp"), vdns_obj=None, uuid=None):
         self.name = name
-        self.connections = connections or project_obj.get_project_connections()
+        self.connections = connections
         self.inputs = self.connections.inputs
         self.logger = self.connections.logger
         self.api_s_inspect = self.connections.api_server_inspect
