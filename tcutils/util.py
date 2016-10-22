@@ -973,6 +973,11 @@ def skip_because(*args, **kwargs):
                     raise ValueError('bug must be a valid bug number')
                 msg = "Skipped until Bug: %s is resolved." % kwargs["bug"]
                 raise testtools.TestCase.skipException(msg)
+            if 'pt_based_svc' in kwargs:
+                if kwargs['pt_based_svc'] == True and self.pt_based_svc == True:
+                    skip = True
+                    msg = "Skipped as testcase is not supported with Service Template v2"
+                    raise testtools.TestCase.skipException(msg)
             return f(self, *func_args, **func_kwargs)
         return wrapper
     return decorator

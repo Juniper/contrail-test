@@ -151,15 +151,19 @@ class SvcInstanceFixture(fixtures.Fixture):
 
     @property
     def svm_list(self):
-        if not getattr(self, '_svm_list', None):
-            self._svm_list = []
-            for vmid in self.svm_ids:
+        vms = getattr(self, '_svm_list', [])
+        if not vms or len(vms) != len(self.svm_ids):
+            # Reduce the svm_list to take care of reduce in ecmp instances
+            self._svm_list = [vm for vm in vms if vm.get_uuid() in self.svm_ids]
+            # Increase the svm_list to take care of increase in ecmp instances
+            for vmid in set(self.svm_ids) - set([vm.get_uuid() for vm in self._svm_list]):
                 vm = VMFixture(self.connections, uuid=vmid)
                 vm.setUp()
                 vm.wait_till_vm_is_active()
                 self._svm_list.append(vm)
         return self._svm_list
 
+    @retry(delay=2, tries=10)
     def verify_si(self):
         """check service instance"""
         self.project = self.vnc_lib.project_read(fq_name=self.project_fq_name)
@@ -174,6 +178,7 @@ class SvcInstanceFixture(fixtures.Fixture):
             return (False, errmsg)
         return True, None
 
+    @retry(delay=2, tries=10)
     def verify_st(self):
         """check service template"""
         self.cs_si = self.api_s_inspect.get_cs_si(
@@ -272,9 +277,7 @@ class SvcInstanceFixture(fixtures.Fixture):
                 return (False, errmsg)
         self.logger.debug("Service VM for SI '%s' is launched", self.si_name)
         for vm in self.svm_list:
-            if self.svc_template.service_template_properties.service_mode == 'transparent':
-                assert vm.wait_till_vm_is_active()
-            else:
+            if self.svc_template.service_template_properties.service_mode != 'transparent':
                 assert vm.wait_till_vm_is_up()
         return True, None
 

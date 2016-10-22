@@ -9,7 +9,7 @@ src_cidr_svc = {
         "right_vn": "right_vn",
         "left_vn_fqdn": "",
         "right_vn_fqdn": "",
-        "network_policy_entries_policy_rule_src_addresses_subnet_ip_prefix": "left_vn:10.10.10.3",
+        "network_policy_entries_policy_rule_src_addresses_subnet_ip_prefix": "10.10.10.3",
         #"network_policy_entries_policy_rule_src_addresses_subnet_ip_prefix": "10.10.10.3",
         "network_policy_entries_policy_rule_src_addresses_subnet_ip_prefix_len": "32",
         # VM config
@@ -32,8 +32,8 @@ src_cidr_svc = {
         # SI Config
         "service_instance_name": "my-CIDR-SI",
         "svm1_name": "test_cidr_svm",
-        "svm1_image": "vsrx",
-        "svm1_flavor": "m1.medium",
+        "svm1_image": "tiny_in_net",
+        "svm1_flavor": "contrail_flavor_tiny",
         "service_instance_fq_name": "",
         #PT Config
         "pt_name": "pt_test_cidr",
@@ -90,8 +90,8 @@ ecmp_pt = {
      "management",
      "src_port_end": -1,
      "direction": "<>",
-     "service_template_properties_flavor": "m1.medium",
-     "service_template_properties_image_name": "vsrx",
+     "service_template_properties_flavor": "contrail_flavor_tiny",
+     "service_template_properties_image_name": "tiny_nat_fw",
      "service_template_properties_interface_type_service_interface_type_2":
      "left",
      "service_instance_name": "pt_instance",
@@ -119,7 +119,7 @@ pt_multi_inline = {
      "service_template_properties_version": 2,
      "svm2_name": "pt_svm2",
      "svc_vn_right": "svc_vn_right",
-     "service_template1_properties_image_name": "vsrx-bridge",
+     "service_template1_properties_image_name": "tiny_trans_fw",
      "service_instance1_name": "pt_instance1",
      "service_template_properties_service_type": "firewall",
      "service_template2_properties_service_mode": "in-network-nat",
@@ -145,7 +145,7 @@ pt_multi_inline = {
      "image": "cirros-0.3.0-x86_64-uec",
      "src_port_end": -1,
      "service_instance2_fq_name": "",
-     "service_template2_properties_image_name": "vsrx",
+     "service_template2_properties_image_name": "tiny_nat_fw",
      "service_template2_name": "pt_template2",
      "left_vn_fqdn": "",
      "service_template_properties_interface_type_service_interface_type_2":
@@ -160,7 +160,7 @@ pt_multi_inline = {
      "management_network": "management_vn",
      "service_instance1_fq_name": "",
      "right_vm_name": "right_vm",
-     "service_template_properties_flavor": "m1.medium",
+     "service_template_properties_flavor": "contrail_flavor_tiny",
      "svc_vn_right_prefix": "%s" % get_random_cidr().split('/')[0],
      "service_instance2_name": "pt_instance2",
      "svc_vn_left": "svc_vn_left",
@@ -191,7 +191,7 @@ transit_net = {
 single_vm = {
   u'parameters': {
     u'vm_name': u'end-vm', u'net_id': u'',
-    u'image': u'ubuntu-traffic', u'flavor': u'm1.medium'
+    u'image': u'ubuntu-traffic', u'flavor': u'contrail_flavor_small'
   }
 }
 
@@ -219,7 +219,7 @@ vms = {
   u'parameters': {
     u'right_vm_name': u'right-vm', u'right_net_id': u'',
     u'left_vm_name': u'left-vm', u'left_net_id': u'',
-    u'image': u'ubuntu-traffic', u'flavor': u'm1.medium',
+    u'image': u'ubuntu-traffic', u'flavor': u'',
     u'availability_zone': u'',
   }
 }
@@ -228,46 +228,21 @@ svc_tmpl = {
   u'parameters': {
     u'name': u'st1',
     u'service_interface_type_list': u'management,left,right',
-    u'image': u'vsrx',
+    u'image': u'',
     u'static_routes_list': u'False,False,False',
-    u'mode': u'in-network-nat',
-    u'flavor': u'm1.medium',
+    u'mode': u'',
+    u'flavor': u'',
     u'service_scaling': 'False',
     u'type': u'firewall',
     u'shared_ip_list': u'False,False,False'
   }
 }
 
-svc_tmpl_nomgmt = {
-  u'parameters': {
-    u'name': u'st1',
-    u'service_interface_type_list': u'left,right',
-    u'image': u'ubuntu-in-net',
-    u'static_routes_list': u'False,False',
-    u'mode': u'in-network',
-    u'flavor': u'm1.medium',
-    u'service_scaling': 'False',
-    u'type': u'firewall',
-    u'shared_ip_list': u'False,False'
-  }
-}
-
 svc_tmpl_v2 = {
   u'parameters': {
     u'name': u'',
-    u'image': u'vsrx', u'flavor': u'm1.medium',
-    u'mode': u'in-network-nat', u'type': u'firewall',
-    u'service_scaling': u'False',
-    u'left_shared': u'False', u'left_static': u'False',
-    u'right_static': u'False', u'right_shared': u'False'
-  }
-}
-
-svc_tmpl_nomgmt_v2 = {
-  u'parameters': {
-    u'name': u'',
-    u'image': u'ubuntu-in-net', u'flavor': u'm1.medium',
-    u'mode': u'in-network', u'type': u'firewall',
+    u'image': u'', u'flavor': u'',
+    u'mode': u'', u'type': u'firewall',
     u'service_scaling': u'False',
     u'left_shared': u'False', u'left_static': u'False',
     u'right_static': u'False', u'right_shared': u'False'
@@ -277,11 +252,9 @@ svc_tmpl_nomgmt_v2 = {
 svc_tmpl_pt_v2 = {
   u'parameters': {
     u'name': u'',
-    u'mode': u'in-network-nat', u'type': u'firewall',
+    u'mode': u'', u'type': u'firewall',
   }
 }
-
-svc_tmpl_nomgmt_pt_v2 = svc_tmpl_pt_v2
 
 svc_inst = {
   u'parameters': {
@@ -293,8 +266,6 @@ svc_inst = {
   }
 }
 
-svc_inst_nomgmt = svc_inst
-
 svc_inst_v2 = {
   u'parameters': {
     u'service_template_fq_name': u'', u'service_instance_name': u'',
@@ -305,24 +276,21 @@ svc_inst_v2 = {
 
 svc_inst_dual_v2 = svc_inst_v2
 
-svc_inst_nomgmt_v2 = svc_inst_v2
-
-svc_inst_nomgmt_dual_v2 = svc_inst_v2
-
-svc_inst_nomgmt_pt_v2 = {
+svc_inst_pt_v2 = {
   u'parameters': {
-    u'image': u'tiny_in_net', u'flavor': u'contrail_flavor_tiny', u'svm_name': 'svm',
+    u'image': u'', u'flavor': u'', u'svm_name': 'svm',
     u'service_template_fq_name': u'', u'service_instance_name': u'',
-    u'left_net_id': u'', u'right_net_id': u'',
+    u'mgmt_net_id': u'',u'left_net_id': u'', u'right_net_id': u'',
+    u'security_group_ref':u'',
     u'availability_zone': u'',
   }
 }
 
-svc_inst_nomgmt_pt_dual_v2 = svc_inst_nomgmt_pt_v2
+svc_inst_pt_dual_v2 = svc_inst_pt_v2
 
 pt_svm = {
   u'parameters': {
-    u'image': u'vsrx', u'flavor': u'm1.large', u'svm_name': u'',
+    u'image': u'tiny_in_net', u'flavor': u'contrail_flavor_tiny', u'svm_name': u'',
     u'si_fqdn': u'',u'mgmt_net_id': u'', u'left_net_id': u'', u'right_net_id': u'',u'intf_rt_table_fqdn': u'',
     u'def_sg_id': u''
   }
