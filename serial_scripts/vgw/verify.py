@@ -39,7 +39,7 @@ class VerifyVgwCases():
             if compute_type == 'same':
                 vm_compute = self.inputs.host_data[vgw_compute]['name']
             else:
-                host_list.remove(vgw_compute)
+                host_list.remove(self.inputs.host_data[vgw_compute]['name'])
                 vm_compute = self.inputs.host_data[host_list[0]]['name']
         else:
             vm_compute = self.inputs.host_data[host_list[0]]['name']
@@ -105,7 +105,7 @@ class VerifyVgwCases():
             if compute_type == 'same':
                 vm_compute = self.inputs.host_data[vgw_compute]['name']
             else:
-                host_list.remove(vgw_compute)
+                host_list.remove(self.inputs.host_data[vgw_compute]['name'])
                 vm_compute = self.inputs.host_data[host_list[0]]['name']
         else:
             vm_compute = self.inputs.host_data[host_list[0]]['name']
@@ -231,7 +231,7 @@ class VerifyVgwCases():
                 if key.split(":")[3] == self.vn_fixture_dict[0].vn_name:
                     vgw_compute = self.vgw_vn_list[
                         key]['host'].split("@")[1]
-            host_list.remove(vgw_compute)
+            host_list.remove(self.inputs.host_data[vgw_compute]['name'])
             vm_compute = self.inputs.host_data[host_list[0]]['name']
         else:
             vm_compute = self.inputs.host_data[host_list[0]]['name']
