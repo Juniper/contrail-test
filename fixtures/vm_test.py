@@ -158,7 +158,7 @@ class VMFixture(fixtures.Fixture):
             self.vm_objs = [self.vm_obj]
             self.vm_name = self.vm_obj.name
             self.vn_names = self.orch.get_networks_of_vm(self.vm_obj)
-            self.vn_objs = [self.orch.get_vn_obj_if_present(x)
+            self.vn_objs = [self.orch.get_vn_obj_if_present(x, project_id=self.connections.project_id)
                             for x in self.vn_names]
             self.vn_ids = [self.orch.get_vn_id(x) for x in self.vn_objs]
             self.vn_fq_names = [':'.join(self.vnc_lib_h.id_to_fq_name(x))

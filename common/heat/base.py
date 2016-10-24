@@ -253,7 +253,9 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
                         env['parameters']['shared_ip_list'] = 'False,True,False'
 
         if env['parameters'].has_key('image'):
+            env['parameters']['flavor'] = self.nova_h.get_default_image_flavor(env['parameters']['image'])
             self.nova_h.get_image(env['parameters']['image'])
+            self.nova_h.get_flavor(env['parameters']['flavor'])
         svc_temp_hs_obj = self.config_heat_obj(stack_name, template, env)
         st = self.verify_st(env, scaling, nomgmt, ver)
         return st
@@ -343,8 +345,9 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         if not self.pt_based_svc:
             env['parameters']['max_instances'] = max_inst
         if env['parameters'].has_key('image'):
-            self.nova_h.get_image(env['parameters']['image'])
             env['parameters']['flavor'] = self.nova_h.get_default_image_flavor(env['parameters']['image'])
+            self.nova_h.get_image(env['parameters']['image'])
+            self.nova_h.get_flavor(env['parameters']['flavor'])
             if self.inputs.availability_zone:
                 env['parameters']['availability_zone'] = self.inputs.availability_zone
         si_hs_obj = self.config_heat_obj(stack_name, template, env)
