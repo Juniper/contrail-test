@@ -22,14 +22,14 @@ class OpenstackOrchestrator(Orchestrator):
        self.project_id = project_id 
        self.vnc_lib = vnclib
        self.auth_server_ip = auth_server_ip
-       self.region_name = inputs.region_name
+       self.region_name = inputs.region_name if inputs else None
        if not auth_server_ip:
            self.auth_server_ip = self.inputs.auth_ip
        #for vcenter as compute
        self.vcntr_handle = self.get_vcenter_handle()
 
    def get_vcenter_handle(self):
-       if self.inputs.vcenter_dc:
+       if self.inputs and self.inputs.vcenter_dc:
            vcntr = VcenterOrchestrator(user=self.inputs.vcenter_username,
                                             pwd=self.inputs.vcenter_password,
                                             host=self.inputs.vcenter_server,
@@ -37,7 +37,7 @@ class OpenstackOrchestrator(Orchestrator):
                                             dc_name=self.inputs.vcenter_dc,
                                             vnc=self.vnc_lib,
                                             inputs=self.inputs,
-                                            logger=self.logger)	
+                                            logger=self.logger)
        else:
            vcntr = None
        return vcntr
@@ -47,7 +47,8 @@ class OpenstackOrchestrator(Orchestrator):
            self.quantum_h = QuantumHelper(username=self.username,
                                           password=self.password,
                                           project_id=self.project_id,
-                                          inputs=self.inputs)
+                                          inputs=self.inputs,
+                                          auth_server_ip=self.auth_server_ip)
            self.quantum_h.setUp()
        return self.quantum_h
 

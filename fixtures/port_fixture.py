@@ -21,6 +21,9 @@ class PortFixture(vnc_api_test.VncLibFixture):
     :param api_type     : one of 'neutron'(default) or 'contrail'
     :param project_obj   : Project object which is to be the parent
                           object of this port
+    :param vlan_id     : vlan id of sub-interface if any
+    :param parent_vmi  : If this is sub-interface, instance of parent
+                               VirtualMachineInterface
 
     Inherited parameters:
     :param domain   : default is default-domain
@@ -43,6 +46,8 @@ class PortFixture(vnc_api_test.VncLibFixture):
         self.api_type = kwargs.get('api_type', 'neutron')
         self.project_obj = kwargs.get('project_obj', None)
         self.binding_profile = kwargs.get('binding_profile', None)
+        self.vlan_id = kwargs.get('vlan_id', None)
+        self.parent_vmi = kwargs.get('parent_vmi', None)
         self.vn_obj = None
      # end __init__
 
@@ -82,6 +87,8 @@ class PortFixture(vnc_api_test.VncLibFixture):
         self.uuid = neutron_obj['id']
 
     def _contrail_create_port(self):
+        vmi_props = vnc_api_test.VirtualMachineInterfacePropertiesType()
+
         if not self.project_obj:
             self.project_obj = self.vnc_api_h.project_read(id=self.project_id)
         vmi_id = str(uuid.uuid4())
@@ -111,6 +118,12 @@ class PortFixture(vnc_api_test.VncLibFixture):
             # TODO
             pass
 
+        if self.vlan_id:
+            vmi_props.set_sub_interface_vlan_tag(int(self.vlan_id))
+
+        if self.parent_vmi:
+            vmi_obj.add_virtual_machine_interface(self.parent_vmi)
+
         if self.binding_profile:
             bind_kv = vnc_api_test.KeyValuePair(key='profile', value=str(self.binding_profile))
             kv_pairs = vmi_obj.get_virtual_machine_interface_bindings() or\
@@ -118,6 +131,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
             kv_pairs.add_key_value_pair(bind_kv)
             vmi_obj.set_virtual_machine_interface_bindings(kv_pairs)
 
+        vmi_obj.set_virtual_machine_interface_properties(vmi_props)
         self.vmi_obj = self.vnc_api_h.virtual_machine_interface_create(vmi_obj)
         self.uuid = vmi_id
 
@@ -228,15 +242,27 @@ class PortFixture(vnc_api_test.VncLibFixture):
         self.vnc_h.unbind_vmi_from_interface_route_table(
             self.uuid, intf_route_table_uuid)
     # end del_interface_route_table
+
+    def get_ip(self, subnet_id):
+        fixed_ips = self.obj['fixed_ips']
+        ip = [x['ip_address'] for x in fixed_ips if x['subnet_id'] == subnet_id]
+        if ip:
+            return ip[0]
+        else :
+            return None
+    # end get_ip
 # end PortFixture
 
 if __name__ == "__main__":
     vn_id = '1c83bed1-7d24-4414-9aa2-9d92975bc86f'
     subnet_id = '49fea486-57ab-4056-beb3-d311a385814e'
-    port_fixture = PortFixture(vn_id=vn_id)
+#    port_fixture = PortFixture(vn_id=vn_id)
+    port_fixture = PortFixture(vn_id, auth_server_ip='10.204.216.184',
+                               cfgm_ip='10.204.216.184',
+                               api_type='contrail',
+                               project_id=get_dashed_uuid('24c8d6f768c843a2ac83f5a8ff847073'))
 #    port_fixture.setUp()
-    port_fixture1 = PortFixture(vn_id=vn_id, api_type='contrail')
-#    port_fixture1.setUp()
+    port_fixture.get_ip(subnet_id)
     port_fixture2 = PortFixture(vn_id=vn_id, api_type='contrail', fixed_ips=[
                                 {'subnet_id': subnet_id, 'ip_address': '10.1.1.20'}])
     port_fixture2.setUp()

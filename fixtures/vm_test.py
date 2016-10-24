@@ -107,7 +107,6 @@ class VMFixture(fixtures.Fixture):
         if len(self.vn_objs) == 1:
             self.vn_name = self.vn_names[0]
             self.vn_fq_name = self.vn_fq_names[0]
-        self.already_present = False
         self.verify_is_run = False
         self.analytics_obj = self.connections.analytics_obj
         self.agent_vrf_name = {}
@@ -144,6 +143,7 @@ class VMFixture(fixtures.Fixture):
         self._vm_interface = {}
         self.vrf_ids = {}
         self._interested_computes = []
+        self.created = False
 
     # end __init__
 
@@ -169,7 +169,6 @@ class VMFixture(fixtures.Fixture):
             self.vm_ips = self.get_vm_ips()
             self.image_id = self.vm_obj.image['id']
             self.image_name = self.nova_h.get_image_by_id(self.image_id)
-            self.already_present = True
             self.set_image_details(self.vm_obj)
 
     def setUp(self):
@@ -192,7 +191,6 @@ class VMFixture(fixtures.Fixture):
                                              project_id=self.project_fixture.uuid)
         if self.vm_obj:
             self.vm_id = self.vm_obj.id
-            self.already_present = True
             with self.printlock:
                 self.logger.debug('VM %s already present, not creating it'
                                   % (self.vm_name))
@@ -215,6 +213,7 @@ class VMFixture(fixtures.Fixture):
                     port_ids=self.port_ids,
                     fixed_ips=self.fixed_ips)
 #                time.sleep(5)
+                self.created = True
                 self.vm_obj = objs[0]
                 self.vm_objs = objs
                 self.vm_id = self.vm_objs[0].id
@@ -1842,7 +1841,7 @@ class VMFixture(fixtures.Fixture):
         do_cleanup = True
         if self.inputs.fixture_cleanup == 'no':
             do_cleanup = False
-        if self.already_present:
+        if not self.created:
             do_cleanup = False
         if self.inputs.fixture_cleanup == 'force':
             do_cleanup = True
@@ -2949,6 +2948,11 @@ class VMFixture(fixtures.Fixture):
             return False
 
         return True
+
+    def add_route_in_vm(self, prefix, prefix_type='net', device='eth0'):
+        cmd = ['route add -%s %s dev %s' % (prefix_type, prefix, device)]
+        self.run_cmd_on_vm(cmd, as_sudo=True)
+    # end add_route_in_vm
 
 # end VMFixture
 
