@@ -24,6 +24,7 @@ class TestQos(QosTestExtendedBase):
         super(TestQos, cls).tearDownClass()
     # end tearDownClass
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_qos_remark_dscp_on_vmi(self):
         ''' Create a qos config for remarking DSCP 1 to 10
