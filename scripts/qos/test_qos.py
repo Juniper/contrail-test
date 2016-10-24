@@ -1,5 +1,6 @@
 from tcutils.wrappers import preposttest_wrapper
 from compute_node_test import ComputeNodeFixture
+import test
 
 from common.qos.base import *
 
@@ -24,6 +25,7 @@ class TestQos(QosTestExtendedBase):
         super(TestQos, cls).tearDownClass()
     # end tearDownClass
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_qos_remark_dscp_on_vmi(self):
         ''' Create a qos config for remarking DSCP 1 to 10
