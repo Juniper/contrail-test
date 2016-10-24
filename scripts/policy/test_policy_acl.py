@@ -33,17 +33,17 @@ class TestPolicyAcl(BasePolicyTest):
         # create new IPAM
         self.ipam1_obj = self.useFixture(
             IPAMFixture(
-                project_obj=self.project,
+                connections=self.connections,
                 name='ipam1'))
 
         self.ipam2_obj = self.useFixture(
             IPAMFixture(
-                project_obj=self.project,
+                connections=self.connections,
                 name='ipam2'))
 
         self.ipam3_obj = self.useFixture(
             IPAMFixture(
-                project_obj=self.project,
+                connections=self.connections,
                 name='ipam3'))
 
         # create new VN

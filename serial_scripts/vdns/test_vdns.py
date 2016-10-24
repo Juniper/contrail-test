@@ -156,7 +156,7 @@ class TestvDNSRestart(BasevDNSTest):
         ipam_mgmt_obj = IpamType(ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
         # Associate VDNS with IPAM.
         ipam_fixt = self.useFixture(IPAMFixture(ipam_name, vdns_obj= vdns_fixt.obj,
-                        project_obj=self.project, ipamtype=ipam_mgmt_obj))
+                        connections=self.connections, ipamtype=ipam_mgmt_obj))
         assert ipam_fixt.verify_on_setup()
         vn_fixt = self.useFixture(VNFixture(self.connections, self.inputs,vn_name=vn_name,
                 subnets=[vn_ip], ipam_fq_name=ipam_fixt.fq_name, option='contrail'))
@@ -253,7 +253,7 @@ class TestvDNSRestart(BasevDNSTest):
             ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
         # Associate IPAM with  VDNS server Object
         ipam_fixt1 = self.useFixture(IPAMFixture(ipam_name, vdns_obj=vdns_fixt1.obj, 
-                project_obj=self.project, ipamtype=ipam_mgmt_obj))
+                connections=self.connections, ipamtype=ipam_mgmt_obj))
         # Launch  VM with VN Created above.
         vn_fixt = self.useFixture(VNFixture(self.connections, self.inputs,\
                      vn_name=vn_name, subnets=[vn_nets['vn1']], \

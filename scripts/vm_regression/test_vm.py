@@ -940,7 +940,7 @@ class TestBasicVMVN2(BaseVnVmTest):
         Maintainer : ganeshahv@juniper.net
         '''
         ipam_obj = self.useFixture(
-            IPAMFixture(project_obj=self.project, name='my-ipam'))
+            IPAMFixture(connections=self.connections, name='my-ipam'))
         assert ipam_obj.verify_on_setup()
 
         vn_fixture = self.create_vn(ipam_fq_name=ipam_obj.fq_name)

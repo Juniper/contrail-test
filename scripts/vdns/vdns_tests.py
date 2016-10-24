@@ -1341,7 +1341,7 @@ class TestVdnsFixture(testtools.TestCase, VdnsFixture):
             # Ipam creation
             ipam_fixt[proj] = self.useFixture(
                             IPAMFixture(ipam_list[proj], vdns_obj=vdns_fixt1.obj, \
-                            project_obj=project_fixture, ipamtype=ipam_mgmt_obj))
+                            connections=project_connections, ipamtype=ipam_mgmt_obj))
             # VN Creation
             vn_fixt[proj] = self.useFixture(
                 VNFixture(

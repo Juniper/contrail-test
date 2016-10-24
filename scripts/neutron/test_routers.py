@@ -375,7 +375,8 @@ class TestRouterSNAT(BaseNeutronTest):
                     vm_name=vm2_name))
         vm2_fixture.wait_till_vm_is_up()
         router_name = get_random_name('router1')
-        router_dict = self.create_router(router_name, tenant_id=project_fixture_obj1.uuid)
+        neutron_h1 = proj_connection1.quantum_h
+        router_dict = self.create_router(router_name, neutron_handle=neutron_h1)
         router_rsp = self.quantum_h.router_gateway_set(
                 router_dict['id'],
                 self.public_vn_obj.public_vn_fixture.vn_id)
@@ -383,7 +384,8 @@ class TestRouterSNAT(BaseNeutronTest):
 
         assert self.verify_snat(vm1_fixture)
         router_name = get_random_name('router2')
-        router_dict = self.create_router(router_name, tenant_id=project_fixture_obj.uuid)
+        neutron_h = proj_connection.quantum_h
+        router_dict = self.create_router(router_name, neutron_handle=neutron_h)
         router_rsp = self.quantum_h.router_gateway_set(
                 router_dict['id'],
                 self.public_vn_obj.public_vn_fixture.vn_id)

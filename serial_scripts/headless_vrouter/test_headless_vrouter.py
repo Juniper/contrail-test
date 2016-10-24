@@ -406,11 +406,11 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
         # create new IPAM
         ipam3_obj = self.useFixture(
             IPAMFixture(
-                project_obj=project1_instance,
+                connections=project1_instance.project_connections,
                 name='ipam3'))
         ipam4_obj = self.useFixture(
             IPAMFixture(
-                project_obj=project1_instance,
+                connections=project1_instance.project_connections,
                 name='ipam4'))
 
         # create new VN

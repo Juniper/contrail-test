@@ -89,7 +89,6 @@ class ConfigScaleSetup(convertor.ReadConfigIni):
                         project_name=self.lib_handle.get_project_name(
                         config_dict,
                         tor_id),
-                        project_obj=self.project_handle,
                         vxlan_id=self.lib_handle.get_vxlan_id(config_dict, tor_id, num_lif_in_systems))
                 # Crete VMI (BMS Server)
                 self.vmi_obj = self.lib_handle.create_vmi(vn_id=self.vn_handle.uuid,
