@@ -75,6 +75,8 @@ class ContrailReportInit:
             datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
         self.single_node = self.get_os_env('SINGLE_NODE_IP')
         self.jenkins_trigger = self.get_os_env('JENKINS_TRIGGERED')
+        if self.jenkins_trigger:
+            self.ts = self.ts + '_' + str(time.time())
         self.report_details_file = 'report_details_%s.ini' % (self.ts)
         self.distro = None
 
