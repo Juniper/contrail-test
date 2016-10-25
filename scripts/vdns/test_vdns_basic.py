@@ -76,6 +76,7 @@ class TestvDNSBasic0(BasevDNSTest):
         rev_zone = rev_zone + '.in-addr.arpa'
         proj_fixt = self.useFixture(ProjectFixture(
             vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+        proj_connections = proj_fixt.get_project_connections()
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,
             default_ttl_seconds=ttl, record_order='random', reverse_resolution=True)
@@ -89,7 +90,7 @@ class TestvDNSBasic0(BasevDNSTest):
         ipam_mgmt_obj = IpamType(
             ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
         # Associate VDNS with IPAM.
-        ipam_fixt1 = self.useFixture(IPAMFixture(ipam_name, vdns_obj= vdns_fixt1.obj, project_obj=proj_fixt, ipamtype=ipam_mgmt_obj))
+        ipam_fixt1 = self.useFixture(IPAMFixture(ipam_name, vdns_obj= vdns_fixt1.obj, connections=proj_connections, ipamtype=ipam_mgmt_obj))
         vn_fixt = self.useFixture(
             VNFixture(
                 self.connections, self.inputs,

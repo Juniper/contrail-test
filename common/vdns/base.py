@@ -62,6 +62,7 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
         ipam_name = get_random_name('ipam1')
         project_fixture = self.useFixture(ProjectFixture(
             vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+        project_connections = project_fixture.get_project_connections()
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,
             default_ttl_seconds=ttl, record_order=record_order)
@@ -76,7 +77,7 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
             ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
         # Associate VDNS with IPAM.
         ipam_fixt1 = self.useFixture(IPAMFixture(ipam_name, vdns_obj=
-                                     vdns_fixt1.obj, project_obj=project_fixture, ipamtype=ipam_mgmt_obj))
+                                     vdns_fixt1.obj, connections=project_connections, ipamtype=ipam_mgmt_obj))
         # Launch VN with IPAM
         vn_fixt = self.useFixture(
             VNFixture(
@@ -242,6 +243,7 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
         rev_zone = rev_zone + '.in-addr.arpa'
         project_fixture = self.useFixture(ProjectFixture(
             vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+        project_connections = project_fixture.get_project_connections()
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,
             default_ttl_seconds=ttl, record_order='random')
@@ -256,7 +258,7 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
             ipam_dns_method='virtual-dns-server', ipam_dns_server=dns_server)
         # Associate VDNS with IPAM.
         ipam_fixt1 = self.useFixture(IPAMFixture(ipam_name, vdns_obj=
-                                     vdns_fixt1.obj, project_obj=project_fixture, ipamtype=ipam_mgmt_obj))
+                                     vdns_fixt1.obj, connections=project_connections, ipamtype=ipam_mgmt_obj))
         # Launch VN with IPAM
         vn_fixt = self.useFixture(
             VNFixture(

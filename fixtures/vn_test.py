@@ -41,10 +41,10 @@ class VNFixture(fixtures.Fixture):
         vn_fixture.vn_fq_name : FQ name of the VN
     '''
     def __init__(self, connections, inputs=None, vn_name=None, policy_objs=[],
-                 subnets=[], project_name=None, router_asn='64512',
+                 subnets=[], router_asn='64512', project_name=None,
                  rt_number=None, ipam_fq_name=None, option='quantum',
                  forwarding_mode=None, vxlan_id=None, shared=False,
-                 router_external=False, clean_up=True, project_obj= None,
+                 router_external=False, clean_up=True,
                  af=None, empty_vn=False, enable_dhcp=True,
                  dhcp_option_list=None, disable_gateway=False,
                  uuid=None, sriov_enable=False, sriov_vlan=None,
@@ -109,7 +109,7 @@ class VNFixture(fixtures.Fixture):
         self.not_in_agent_verification_flag = True
         self.not_in_api_verification_flag = True
         self.not_in_cn_verification_flag = True
-        self.project_obj = project_obj
+        self.project_obj = None
         self.vn_fq_name = None
         self.enable_dhcp = enable_dhcp
         self.sriov_enable = sriov_enable
@@ -325,13 +325,13 @@ class VNFixture(fixtures.Fixture):
         finally:
             return uid
 
-    def _create_vn_api(self, vn_name, project):
+    def _create_vn_api(self, vn_name, project_obj):
         if isinstance(self.orchestrator,VcenterOrchestrator) :
            raise Exception('vcenter: no support for VN creation through VNC-api')
         try:
             self.api_vn_obj = VirtualNetwork(
-                name=vn_name, parent_obj=project.project_obj)
-            if not self.verify_if_vn_already_present(self.api_vn_obj, project.project_obj):
+                name=vn_name, parent_obj=project_obj)
+            if not self.verify_if_vn_already_present(self.api_vn_obj, project_obj):
                 self.uuid = self.vnc_lib_h.virtual_network_create(
                     self.api_vn_obj)
                 with self.lock:
@@ -342,7 +342,7 @@ class VNFixture(fixtures.Fixture):
                 with self.lock:
                     self.logger.debug("VN %s already present" % (self.vn_name))
                 self.uuid = self.get_vn_uid(
-                    self.api_vn_obj, project.project_obj.uuid)
+                    self.api_vn_obj, project_obj.uuid)
                 self.created = False
             ipam = self.vnc_lib_h.network_ipam_read(
                 fq_name=self.ipam_fq_name)
@@ -381,14 +381,9 @@ class VNFixture(fixtures.Fixture):
         self.create()
 
     def create(self):
+        self.project_obj = self.connections.vnc_lib_fixture.get_project_obj()
         if self.uuid:
             return self.read()
-        if not self.project_obj:
-            self.project_obj = self.useFixture(ProjectFixture(
-                                   vnc_lib_h=self.vnc_lib_h,
-                                   project_name=self.project_name,
-                                   connections=self.connections))
-        self.project_id = self.project_obj.uuid
         if self.inputs.is_gui_based_config():
             self.webui.create_vn(self)
         elif (self.option == 'api'):

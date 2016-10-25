@@ -230,8 +230,6 @@ def createIPAM(self, option='openstack'):
                 IPAMFixture(
                     connections=self.project_fixture[
                         self.topo.project].connections,
-                    project_obj=self.project_fixture[
-                        self.topo.project],
                     name=ipam_name))
             if self.skip_verify == 'no':
                 assert self.ipam_fixture[
@@ -246,8 +244,8 @@ def createIPAM(self, option='openstack'):
         print "creating project default IPAM %s" % ipam_name
         self.ipam_fixture[ipam_name] = self.useFixture(
             IPAMFixture(
-                project_obj=self.project_fixture[
-                    self.topo.project],
+                connections=self.project_fixture[
+                    self.topo.project].connections,
                 name=ipam_name))
         if self.skip_verify == 'no':
             assert self.ipam_fixture[
