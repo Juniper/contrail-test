@@ -350,7 +350,9 @@ if [[ ! -z $path ]];then
         do
             export REPORT_DETAILS_FILE=report_details_${SCRIPT_TS}.ini
             echo $REPORT_DETAILS_FILE
-            export EMAIL_SUBJECT_PREFIX=$p 
+            if [ $p != 'webui']; then
+                export EMAIL_SUBJECT_PREFIX=$p
+            fi
             rm -rf result*.xml
             run_tests $p
             run_tests_serial $p
