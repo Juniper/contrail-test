@@ -22,6 +22,8 @@ import re
 from tcutils.rsyslog_utils import restart_collector_to_listen_on_port
 from tcutils.rsyslog_utils import restart_rsyslog_client_to_send_on_port
 from tcutils.rsyslog_utils import update_rsyslog_client_connection_details
+from tcutils.rsyslog_utils import back_up_conf_files 
+from tcutils.rsyslog_utils import restore_conf_for_rsyslog
 from base import BaseRsyslogTest
 RSYSLOG_CONF_FILE = '/etc/rsyslog.conf'
 COLLECTOR_CONF_FILE = '/etc/contrail/contrail-collector.conf'
@@ -73,7 +75,7 @@ class TestRsyslog(BaseRsyslogTest):
 
     @test.attr(type=['sanity','quick_sanity'])
     @preposttest_wrapper
-    def test_rsyslog_sanity_if_provisioned(self):
+    def test_rsyslog_if_provisioned(self):
         """Tests rsyslog connection if provisioned."""
         result = False
 
@@ -157,6 +159,13 @@ class TestRsyslog(BaseRsyslogTest):
             self.logger.warn(
                 "Exiting since this test can't be run.")
             return True
+
+        # Take backup of the conf files and restore config after the run.
+        back_up_conf_files(self, self.inputs.host_ips, RSYSLOG_CONF_FILE)
+        back_up_conf_files(self, self.inputs.collector_ips, COLLECTOR_CONF_FILE)
+
+        #Register a cleanup routine to restore configs
+        self.addCleanup(restore_conf_for_rsyslog, self)
 
         # get a collector less compute node for the test.
         # so that we can test remote syslog messages.
