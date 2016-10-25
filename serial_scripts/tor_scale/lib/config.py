@@ -58,19 +58,17 @@ class ConfigScale(object):
         time.sleep(1)
 
     def create_vn(
-            self, vn_name, vn_subnet, project_name, project_obj, vxlan_id):
+            self, vn_name, vn_subnet, project_name, vxlan_id):
 
         self.vn_name = vn_name
         self.vn_subnet = vn_subnet
         self.project_name = project_name
-        self.project_obj = project_obj
         self.vxlan_id = vxlan_id
 
         time.sleep(1)
         try:
             self.vn = vn_test.VNFixture(project_name=self.project_name, connections=self.connections,
                                         inputs=self.inputs, vn_name=self.vn_name, subnets=self.vn_subnet,
-                                        project_obj=self.project_obj,
                                         option='api',
                                         vxlan_id=self.vxlan_id)
             self.vn.setUp()

@@ -161,7 +161,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         Pass criteria: The VMs should be back to ACTIVE state and the ping between them should PASS.
         Maintainer : ganeshahv@juniper.net
         '''
-        ipam_obj=self.useFixture( IPAMFixture(project_obj= self.project, name = get_random_name('my-ipam')))
+        ipam_obj=self.useFixture( IPAMFixture(connections= self.connections, name = get_random_name('my-ipam')))
         assert ipam_obj.verify_on_setup()
 
         ts = time.time()
