@@ -558,6 +558,14 @@ class Subnets(object):
         range = str(ip_list[0]) + '#' + str(len(ip_list))
         return range
 
+    @property
+    def range2(self):
+        ip_list = list(self.hosts)
+        # vmware adds to the first given ip for count of IP's
+        count = len(ip_list) - 2
+        range = str(ip_list[1]) + '#' + str(count)
+        return range
+
 class IPv4Subnet(Subnets):
 
     def __init__(self,subnet):
@@ -633,7 +641,7 @@ class VcenterVN:
                               ipv4Config=_vim_obj('ip.Config',
                                                  subnetAddress = str(v4_network.sub_network),
                                                  netmask = str(v4_network.netmask),
-                                                 range = v4_network.range,
+                                                 range = v4_network.range2,
                                                  ipPoolEnabled = dhcp),
                               networkAssociation = [_vim_obj('ip.Association',
                                                             network=pg,

@@ -299,18 +299,33 @@ class VerifySvcFirewall(VerifySvcMirror):
             right_vn=self.vn2_fixture.vn_fq_name, svc_mode=svc_mode, flavor=flavor, static_route=static_route, ordered_interfaces=ordered_interfaces, svc_img_name=svc_img_name, project=self.inputs.project_name, st_version=st_version)
         self.action_list = self.chain_si(
             si_count, si_prefix, self.inputs.project_name)
-        self.rules = [
-            {
-                'direction': '<>',
-                'protocol': 'any',
-                'source_network': self.vn1_fixture.vn_fq_name,
-                'src_ports': [0, -1],
-                'dest_network': self.vn2_fixture.vn_fq_name,
-                'dst_ports': [0, -1],
-                'simple_action': None,
-                'action_list': {'apply_service': self.action_list}
-            },
-        ]
+	if self.inputs.orchestrator != 'vcenter':
+	        self.rules = [
+	            {
+	                'direction': '<>',
+	                'protocol': 'any',
+	                'source_network': self.vn1_fixture.vn_fq_name,
+	                'src_ports': [0, -1],
+	                'dest_network': self.vn2_fixture.vn_fq_name,
+	                'dst_ports': [0, -1],
+	                'simple_action': None,
+	                'action_list': {'apply_service': self.action_list}
+	            },
+	        ]
+	else:
+	        self.rules = [
+	            {
+	                'direction': '<>',
+	                'protocol': 'any',
+	                'source_network': self.vn1_fixture.vn_fq_name,
+	                'src_ports': 'any',
+	                'dest_network': self.vn2_fixture.vn_fq_name,
+	                'dst_ports': 'any',
+                        'simple_action':'pass',
+			'action_list': {'apply_service': self.action_list}
+	            },
+	        ]
+
         self.policy_fixture = self.config_policy(self.policy_name, self.rules)
 
         self.vn1_policy_fix = self.attach_policy_to_vn(
@@ -331,6 +346,7 @@ class VerifySvcFirewall(VerifySvcMirror):
         result, msg = self.validate_vn(
             self.vn2_fixture.vn_name, project_name=self.vn2_fixture.project_name, right_vn=True)
         assert result, msg
+
         # Ping from left VM to right VM
         errmsg = "Ping to right VM ip %s from left VM failed" % self.vm2_fixture.vm_ip
         assert self.vm1_fixture.ping_with_certainty(

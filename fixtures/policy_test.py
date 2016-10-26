@@ -360,11 +360,16 @@ class PolicyFixture(fixtures.Fixture):
                 'dest_policy': None,
                 'dest_subnet': None,
                 'dst_ports': [PortType(-1, -1)],
-                'action_list': None
+                'action_list': {} 
             }
             for key in rule_dict:
                 new_rule[key] = rule_dict[key]
             # end for
+            new_rule['action_list'][
+                'simple_action'] = rule_dict['simple_action']
+            if 'qos_action' in rule_dict:
+                new_rule['action_list'][
+                    'qos_action'] = rule_dict['qos_action']
             # Format Source ports
             if 'src_ports' in rule_dict:
                 if isinstance(
@@ -519,8 +524,8 @@ class PolicyFixture(fixtures.Fixture):
                     application=new_rule['application'],
                     dst_addresses=dest_address,
                     dst_ports=new_rule['dst_ports'],
-                    action_list={'simple_action':new_rule['simple_action'],\
-                    'qos_action':new_rule['qos_action']}))
+                    action_list=new_rule['action_list']))
+
 
         # end for
         self.logger.debug("Policy np_rules : %s" % (np_rules))
