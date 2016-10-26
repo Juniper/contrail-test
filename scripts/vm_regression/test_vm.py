@@ -2866,7 +2866,7 @@ class TestBasicVMVNx(BaseVnVmTest):
     def tearDownClass(cls):
         super(TestBasicVMVNx, cls).tearDownClass()
 
-    @test.attr(type=['sanity','quick_sanity','ci_sanity', 'vcenter','vcenter_gw'])
+    @test.attr(type=['sanity','quick_sanity','ci_sanity', 'vcenter','vrouter_gw'])
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
         '''
@@ -2927,7 +2927,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         return transfer_result
     # end test_vm_file_trf_scp_tests
 
-    @test.attr(type=['sanity', 'vcenter','vcenter_gw'])
+    @test.attr(type=['sanity', 'vcenter','vrouter_gw'])
     @preposttest_wrapper
     def test_vm_file_trf_tftp_tests(self):
         '''
