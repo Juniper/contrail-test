@@ -78,7 +78,7 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
         self.phy_device.del_bgp_router(self.bgp_router)
         self.vnc_api_h.physical_router_update(self.phy_device)
 
-        super(PhysicalRouterFixture, self).delete_device(self)
+        super(PhysicalRouterFixture, self).delete_device()
 
     def setUp(self):
         super(PhysicalRouterFixture, self).setUp()
