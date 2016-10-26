@@ -24,12 +24,12 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ConfigSvcChain, ECMPVerify)
         pass
     # end runTest
 
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_svc_in_network_datapath(self):
-        return self.verify_svc_in_network_datapath(svc_mode='in-network', ci=True)
+       	return self.verify_svc_in_network_datapath(svc_mode='in-network', ci=True)
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_svc_v2_in_network_datapath(self):
         return self.verify_svc_in_network_datapath(svc_mode='in-network', st_version=2)
