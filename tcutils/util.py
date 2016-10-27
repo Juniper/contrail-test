@@ -361,7 +361,7 @@ def fab_put_file_to_vm(host_string, password, src, dest,
 
 
 def sshable(host_string, password=None, gateway=None, gateway_password=None,
-            logger=None):
+            logger=None, timeout=3):
     logger = logger or contrail_logging.getLogger(__name__)
     host_string_split = re.split(r"[@:]", host_string)
     host_port = host_string_split[2] if len(host_string_split) > 2 else '22'
@@ -369,7 +369,9 @@ def sshable(host_string, password=None, gateway=None, gateway_password=None,
                                       password=gateway_password,
                                       warn_only=True):
         try:
-            if run('(echo > /dev/tcp/%s/%s)' % (host_string_split[1], host_port)).succeeded:
+            result = run('(echo > /dev/tcp/%s/%s)' % (host_string_split[1],
+                                                      host_port), timeout=timeout)
+            if result.succeeded:
                 time.sleep(5)
                 if run('(echo > /dev/tcp/%s/%s)' % (host_string_split[1], host_port)).succeeded:
                     return True
