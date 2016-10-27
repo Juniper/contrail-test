@@ -118,56 +118,6 @@ class TestDiscovery(BaseDiscoveryTest):
         return True
 
     @preposttest_wrapper
-    def itest_control_node_restart_and_validate_status_of_the_service(self):
-        ''' Validate restart of control node services
-
-        '''
-        result = True
-        svc_lst = []
-        svc_lst = self.ds_obj.get_all_control_services(self.inputs.cfgm_ip)
-        for elem in svc_lst:
-            if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem) == 'up'):
-                self.logger.info("Service %s is up" % (elem,))
-                result = result and True
-            else:
-                self.logger.warn("Service %s is down" % (elem,))
-                result = result and False
-                svc_lst.remove(elem)
-        # Stopping the control node service
-        for elem in svc_lst:
-            ip = elem[0]
-            self.logger.info("Stopping service %s.." % (elem,))
-            self.inputs.stop_service('contrail-control', [ip])
-        time.sleep(20)
-        for elem in svc_lst:
-            ip = elem[0]
-            if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem) == 'up'):
-                self.logger.warn("Service %s is still up" % (elem,))
-                result = result and False
-            else:
-                self.logger.info("Service %s is down" % (elem,))
-                result = result and True
-        # Starting the control node service
-        for elem in svc_lst:
-            ip = elem[0]
-            self.logger.info("Starting service %s.." % (elem,))
-            self.inputs.start_service('contrail-control', [ip])
-        time.sleep(6)
-        for elem in svc_lst:
-            ip = elem[0]
-            if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem) == 'up'):
-                self.logger.info(
-                    "Service %s came up after service was started" % (elem,))
-                result = result and True
-            else:
-                self.logger.info(
-                    "Service %s is down even after service was started" % (elem,))
-                result = result and False
-
-        assert result
-        return True
-
-    @preposttest_wrapper
     def test_cleanup(self):
         ''' cleanup service from discovery
 
