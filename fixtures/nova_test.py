@@ -193,13 +193,13 @@ class NovaHelper():
     def _install_flavor(self, name):
         flavor_info = self.flavor_info[name]
         try:
-            if name is 'contrail_flavor_dpdk':
+            if bool(self.inputs.dpdk_data):
                 self.obj.flavors.create(name=name,
                                     vcpus=flavor_info['vcpus'],
                                     ram=flavor_info['ram'],
                                     disk=flavor_info['disk'])
                 flavor = self.obj.flavors.find(name=name)
-                flavor.set_keys(ast.literal_eval(flavor_info['extra_specs']))
+                flavor.set_keys({'hw:mem_page_size': 'any'})
             else:
                 self.obj.flavors.create(name=name,
                                     vcpus=flavor_info['vcpus'],
@@ -480,10 +480,6 @@ class NovaHelper():
             lock.acquire()
             image_name = self.get_image_name_for_zone(image_name=image_name, zone=zone)
             image = self.get_image(image_name=image_name)
-            # Is DPDK enabled
-            if bool(self.inputs.dpdk_data):
-                if node_name is not 'disable' and self.is_dpdk_compute(node_name):
-                    flavor = 'contrail_flavor_dpdk'
             if not flavor:
                 flavor = self.get_default_image_flavor(image_name=image_name)
             flavor = self.get_flavor(name=flavor)
