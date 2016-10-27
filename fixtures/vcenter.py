@@ -563,7 +563,7 @@ class Subnets(object):
         ip_list = list(self.hosts)
         # vmware adds to the first given ip for count of IP's
         count = len(ip_list) - 2
-        range = str(ip_list[1]) + '#' + str(count)
+        range = str(ip_list[2]) + '#' + str(count)
         return range
 
 class IPv4Subnet(Subnets):
