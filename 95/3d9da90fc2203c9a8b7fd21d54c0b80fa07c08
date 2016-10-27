@@ -1,0 +1,9 @@
+Approved+1: opencontrail-admin <ci-admin@opencontrail.org>
+Code-Review+2: opencontrail-admin <ci-admin@opencontrail.org>
+Verified+2: opencontrail-admin <ci-admin@opencontrail.org>
+Verified+2: Zuul <zuul@lists.opencontrail.org>
+Submitted-by: Zuul <zuul@lists.opencontrail.org>
+Submitted-at: Thu, 27 Oct 2016 00:46:12 -0700
+Reviewed-on: https://review.opencontrail.org/23421
+Project: Juniper/contrail-test
+Branch: refs/heads/master
