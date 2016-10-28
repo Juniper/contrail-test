@@ -138,6 +138,8 @@ class VerificationOpsSrv (VerificationUtilBase):
             dct = self.dict_get('analytics/uves')
             
         ret_value = []
+        if not dct:
+            return ret_value
         for elem in dct:
             self.ame = OpHrefResult(elem)
             ret_value.append(self.ame)

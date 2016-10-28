@@ -875,8 +875,8 @@ class BaseNeutronTest(test_v1.BaseTestCase_v1):
                               vn2_fixture,
                               vm_name=None,
                               node_name=None,
-                              flavor='contrail_flavor_large',
-                              image_name='ubuntu-dhcpdns-server',
+                              flavor='contrail_flavor_small',
+                              image_name='ubuntu-dns-server',
                               port_ids=[]):
         if not vm_name:
             vm_name = get_random_name('dhcp-server')
