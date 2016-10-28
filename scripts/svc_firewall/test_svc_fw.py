@@ -20,6 +20,11 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ConfigSvcChain, ECMPVerify)
     def setUpClass(cls):
         super(TestSvcRegr, cls).setUpClass()
 
+    def is_test_applicable(self):
+        if not self.orch.is_feature_supported('ipv6'):
+            return(False, 'Skipping IPv6 Test on vcenter setup')
+        return (True, None)
+
     def runTest(self):
         pass
     # end runTest
