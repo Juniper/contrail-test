@@ -71,7 +71,8 @@ class BaseVgwTest(test.BaseTestCase):
             cls.vn_fixture_dict = []
             for key in cls.vgw_vn_list:
                 vn = VNFixture(
-                    project_name=cls.inputs.project_name,
+                    project_name=key.split(':')[1],
+                    option='api',
                     connections=cls.connections,
                     inputs=cls.inputs,
                     vn_name=key.split(":")[3],
