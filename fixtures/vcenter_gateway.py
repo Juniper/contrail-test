@@ -133,7 +133,7 @@ class ContrailPlugApi(object):
         for gw in self._gw:
             for phy_port in gw.ports:
                 lif_name = phy_port + '.' + str(vlan)
-                pif_id = gw.get_port_uuid(phy_port)  
+                pif_id = gw.get_port_uuid(phy_port,inputs=self._inputs)  
                 self._create_lif(lif_name,vlan,pif_id,vm=vm,vmi_ids = [port.uuid])
 
     def _create_vn(self, vn_name, vn_subnet):
@@ -168,7 +168,7 @@ class ContrailPlugApi(object):
 
     def _create_lif(self,name,vlan,pif_id,vmi_ids=[],vm=None):
         lif_obj = LogicalInterfaceFixture(
-        name, pif_id=pif_id, vlan_id=vlan,vmi_ids=vmi_ids)
+        name, pif_id=pif_id, vlan_id=vlan,vmi_ids=vmi_ids,inputs=self._inputs)
         lif_obj.setUp()
         if vm:
             vm.lifs.append(lif_obj)
@@ -187,7 +187,7 @@ class ContrailPlugApi(object):
                                 fixed_ips=fixed_ips,
                                 extra_dhcp_opts=extra_dhcp_opts,
                                 project_obj=self._proj_obj,
-                                security_groups=security_groups)
+                                security_groups=security_groups,inputs=self._inputs)
         port.setUp()
         if vm:
             vm.ports.append(port)
@@ -219,10 +219,10 @@ class VcenterGateway:
     def ports(self):
         return self.gateway['ports']
         
-    def get_port_uuid(self,port):
-        phy_device_fixture=PhysicalDeviceFixture(self.name,self.mgmt_ip)
+    def get_port_uuid(self,port,inputs=None):
+        phy_device_fixture=PhysicalDeviceFixture(self.name,self.mgmt_ip,inputs=inputs)
         phy_device_fixture.setUp()
         phy_device_uuid = phy_device_fixture.phy_device.uuid
-        pif_fixture=PhysicalInterfaceFixture(port,device_id=phy_device_uuid)
+        pif_fixture=PhysicalInterfaceFixture(port,device_id=phy_device_uuid,inputs=inputs)
         pif_fixture.setUp()
         return pif_fixture.uuid

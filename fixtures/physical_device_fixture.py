@@ -144,7 +144,9 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
     def add_physical_port(self, port_name):
         pif_fixture = PhysicalInterfaceFixture(port_name,
                                                device_id=self.phy_device.uuid,
-                                               connections=self.connections)
+                                               connections=self.connections,
+                                               cfgm_ip=self.cfgm_ip,
+                                               auth_server_ip=self.auth_server_ip)
         pif_fixture.setUp()
         return pif_fixture
 
