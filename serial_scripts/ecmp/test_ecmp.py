@@ -12,68 +12,25 @@ from vm_test import *
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from common.servicechain.firewall.verify import VerifySvcFirewall
+from common.base import GenericTestBase
+from common.ecmp.base import ECMPTestBase
 from common.ecmp.ecmp_traffic import ECMPTraffic
 from common.ecmp.ecmp_verify import ECMPVerify
 from fabric.state import connections as fab_connections
 from common.ecmp.ecmp_test_resource import ECMPSolnSetup
-from base import BaseECMPRestartTest
-import test 
-from common import isolated_creds                                                                                                                                                                              
+from common import isolated_creds
 import inspect
 
-class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
-    
+class TestECMPMultipleSC(GenericTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
+
     @classmethod
     def setUpClass(cls):
-        super(TestECMPRestart, cls).setUpClass()
+        super(TestECMPMultipleSC, cls).setUpClass()
 
-    def runTest(self):
-        pass    
-    #end runTest
- 
-    @preposttest_wrapper
-    def test_ecmp_svc_in_network_nat_scale_max_instances(self):
-        """
-         Description: Validate ECMP with service chaining in-network-nat mode datapath by incrementing the max instances
-                    from 4 in steps of 4 till 16
-         Test steps:
-           1.	Creating vm's - vm1 and vm2 in networks vn1 and vn2.
-           2.	Creating a service instance in in-network-nat mode with 4 instances and
-                left-interface of the service instances sharing the IP.
-           3.	Creating a service chain by applying the service instance as a service in a policy between the VNs.
-           4.	Checking for ping and tcp traffic between vm1 and vm2.
-           5.   Delete the Service Instances and Service Template.
-           6.   Increment the service instance max count by 4 and repeat steps 1-5.
-           7.   This testcase will be run in only multiple compute node scenario.
-         Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1.
-         Maintainer : ganeshahv@juniper.net
-        """
-        if len(self.inputs.compute_ips) > 1:
-            for i in range(4, 17, 4):
-                self.logger.info(
-                    '%%%%%%%%%% Will launch %s instances in the Service Chain %%%%%%%%%%' % i)
-                self.verify_svc_in_network_datapath(
-                    si_count=1, svc_scaling=True, max_inst=i, svc_mode='in-network-nat')
-                svm_ids = self.si_fixtures[0].svm_ids
-                self.get_rt_info_tap_intf_list(
-                    self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
-                dst_vm_list= [self.vm2_fixture]
-                self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
-                for si in self.si_fixtures:
-                    self.logger.info('Deleting the SI %s' % si.st_name)
-                    si.cleanUp()
-                    si.verify_on_cleanup()
-                    self.remove_from_cleanups(si)
-                self.logger.info('Deleting the ST %s' %
-                                 self.st_fixture.st_name)
-                self.st_fixture.cleanUp()
-                self.remove_from_cleanups(self.st_fixture)
-        else:
-            self.logger.info(
-                'Scaling test. Will run only on multiple node setup')
-        return True
-    # end test_ecmp_svc_in_network_nat_scale_max_instances
-    
+    @classmethod
+    def tearDownClass(cls):
+        super(TestECMPMultipleSC, cls).tearDownClass()
+
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_multiple_service_chains(self):
         """
@@ -96,18 +53,76 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
             vn1_subnet_list= [vn1_subnets]
             vn2_subnets = '20.%s.1.0/24' % i
             vn2_subnet_list= [vn2_subnets]
-            self.verify_svc_in_network_datapath(si_count=1, svc_scaling=True, max_inst=3, vn1_subnets= vn1_subnet_list, vn2_subnets= vn2_subnet_list)
-            dst_vm_list= [self.vm2_fixture]
-            self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
-        return True
+            ret_dict = self.verify_svc_in_network_datapath(si_count=1, svc_scaling=True,
+                max_inst=3, left_vn_subnets=vn1_subnet_list,
+                right_vn_subnets=vn2_subnet_list)
+            vm1_fixture = ret_dict['left_vm_fixture']
+            vm2_fixture = ret_dict['right_vm_fixture']
+            dst_vm_list= [vm2_fixture]
+            self.verify_traffic_flow(vm1_fixture, dst_vm_list,
+                ret_dict['si_fixtures'][0], ret_dict['left_vn_fixture'])
     # end test_ecmp_svc_in_network_with_multiple_service_chains
 
-    def remove_from_cleanups(self, fix):
-        for cleanup in self._cleanups:
-            if fix.cleanUp in cleanup:
-                self._cleanups.remove(cleanup)
-                break
-   
+class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
+    
+    @classmethod
+    def setUpClass(cls):
+        super(TestECMPRestart, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestECMPRestart, cls).tearDownClass()
+
+    @preposttest_wrapper
+    def test_ecmp_svc_in_network_nat_scale_max_instances(self):
+        """
+         Description: Validate ECMP with service chaining in-network-nat mode datapath by incrementing the max instances
+                    from 4 in steps of 4 till 16
+         Test steps:
+           1.	Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+           2.	Creating a service instance in in-network-nat mode with 4 instances and
+                left-interface of the service instances sharing the IP.
+           3.	Creating a service chain by applying the service instance as a service in a policy between the VNs.
+           4.	Checking for ping and tcp traffic between vm1 and vm2.
+           5.   Delete the Service Instances and Service Template.
+           6.   Increment the service instance max count by 4 and repeat steps 1-5.
+           7.   This testcase will be run in only multiple compute node scenario.
+         Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1.
+         Maintainer : ganeshahv@juniper.net
+        """
+        if len(self.inputs.compute_ips) <= 1:
+            raise self.skipTest(''
+                'Scaling test. Will run only on multiple node setup')
+        for i in range(4, 17, 4):
+            self.logger.info(
+                '%%%%%%%%%% Will launch %s instances in the Service Chain %%%%%%%%%%' % i)
+            ret_dict = self.verify_svc_in_network_datapath(
+                si_count=1, svc_scaling=True, max_inst=i,
+                svc_mode='in-network-nat', **self.common_args)
+            si_fixtures = ret_dict['si_fixtures']
+            st_fixture = ret_dict['st_fixture']
+            svm_ids = si_fixtures[0].svm_ids
+            self.get_rt_info_tap_intf_list(
+                ret_dict['left_vn_fixture'],
+                ret_dict['left_vm_fixture'],
+                ret_dict['right_vm_fixture'],
+                svm_ids,
+                si_fixtures)
+            dst_vm_list= [self.right_vm_fixture]
+            self.verify_traffic_flow(self.left_vm_fixture, dst_vm_list,
+                si_fixtures[0], self.left_vn_fixture)
+            for si in si_fixtures:
+                self.logger.info('Deleting the SI %s' % si.st_name)
+                si.cleanUp()
+                self.remove_from_cleanups(si.cleanUp)
+                si.verify_on_cleanup()
+            self.logger.info('Deleting the ST %s' %
+                             st_fixture.st_name)
+            st_fixture.cleanUp()
+            self.remove_from_cleanups(st_fixture.cleanUp)
+        # end for
+    # end test_ecmp_svc_in_network_nat_scale_max_instances
+
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance_service_restarts(self):
         """
@@ -123,38 +138,54 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
         om vm1 and vice-versa even after the restarts.
         Maintainer : ganeshahv@juniper.net
         """
-        self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=3)
-        svm_ids = self.si_fixtures[0].svm_ids
+        ret_dict = self.verify_svc_in_network_datapath(
+                       si_count=1, svc_scaling=True, max_inst=3,
+                       **self.common_args)
+        si_fixtures = ret_dict['si_fixtures']
+        svm_ids = si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
-            self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
-        dst_vm_list= [self.vm2_fixture]
-        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
+            self.left_vm_fixture, self.left_vm_fixture, self.right_vm_fixture,
+            svm_ids, si_fixtures)
+        dst_vm_list = [self.right_vm_fixture]
+        self.verify_traffic_flow(self.left_vm_fixture, dst_vm_list,
+            si_fixtures[0], self.left_vm_fixture)
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter', [compute_ip])
-        self.logger.info('Sleeping for 30 seconds')
-        sleep(30)
-        
-        self.vm1_fixture.wait_till_vm_is_up()
-        self.vm2_fixture.wait_till_vm_is_up()
+
+        # Wait for service stability
+        cs_checker = ContrailStatusChecker()
+        cluster_status, error_nodes = cs_checker.wait_till_contrail_cluster_stable(
+                                          self.inputs.compute_ips)
+        assert cluster_status, 'Hash of error nodes and services : %s' % (
+                                    error_nodes)
+
+        self.left_vm_fixture.wait_till_vm_is_up()
+        self.right_vm_fixture.wait_till_vm_is_up()
 
         self.get_rt_info_tap_intf_list(
-            self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
+            self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture,
+            svm_ids, si_fixtures)
         fab_connections.clear()
-        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
+        self.verify_traffic_flow(self.left_vm_fixture, dst_vm_list,
+            si_fixtures[0], self.left_vn_fixture)
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control', [bgp_ip])
-        self.logger.info('Sleeping for 30 seconds')
-        sleep(30)
 
-        self.vm1_fixture.wait_till_vm_is_up()
-        self.vm2_fixture.wait_till_vm_is_up()
+        cluster_status, error_nodes = cs_checker.wait_till_contrail_cluster_stable(
+                                          self.inputs.bgp_ips)
+        assert cluster_status, 'Hash of error nodes and services : %s' % (
+                                    error_nodes)
+
+        self.left_vm_fixture.wait_till_vm_is_up()
+        self.right_vm_fixture.wait_till_vm_is_up()
 
         self.get_rt_info_tap_intf_list(
-           self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
+            self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture,
+            svm_ids, si_fixtures)
+
         fab_connections.clear()
-        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
-        return True
+        self.verify_traffic_flow(self.left_vm_fixture, dst_vm_list,
+            si_fixtures[0], self.left_vn_fixture)
     # end test_ecmp_svc_in_network_with_3_instance_service_restarts
 
     @preposttest_wrapper
@@ -173,18 +204,22 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
         Maintainer : ganeshahv@juniper.net
         """
         cmd = 'reboot'
-        self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=3, flavor='contrail_flavor_2cpu')
-        svm_ids = self.si_fixtures[0].svm_ids
+        ret_dict = self.verify_svc_in_network_datapath(
+            si_count=1, svc_scaling=True, max_inst=3,
+            flavor='contrail_flavor_2cpu', **self.common_args)
+        si_fixtures = ret_dict['si_fixtures']
+        svm_ids = si_fixtures[0].svm_ids
         self.get_rt_info_tap_intf_list(
-            self.vn1_fixture, self.vm1_fixture, self.vm2_fixture, svm_ids)
+            self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture,
+            svm_ids, si_fixtures)
         
-        dst_vm_list= [self.vm2_fixture]
-        self.verify_traffic_flow(self.vm1_fixture, dst_vm_list, self.si_fixtures[0], self.vn1_fixture)
+        dst_vm_list= [self.right_vm_fixture]
+        self.verify_traffic_flow(self.left_vm_fixture, dst_vm_list,
+                                 si_fixtures[0], self.left_vn_fixture)
         self.logger.info('Will shutdown the SVMs and VMs before rebooting the nodes')
         si_svms= []
-        si_svms= self.get_svms_in_si(self.si_fixtures[0], self.inputs.project_name)
-        vms= [self.vm1_fixture, self.vm2_fixture]
+        si_svms= self.get_svms_in_si(si_fixtures[0], self.inputs.project_name)
+        vms= [self.left_vm_fixture, self.right_vm_fixture]
         for svm in si_svms:
             svm.stop()
         for vm in vms:
@@ -215,8 +250,8 @@ class TestECMPRestart(BaseECMPRestartTest, VerifySvcFirewall, ECMPSolnSetup, ECM
                 pass
         self.logger.info('Sleeping for 120 seconds')
         sleep(120)
-        self.vm1_fixture.wait_till_vm_is_up()
-        self.vm2_fixture.wait_till_vm_is_up()
-        self.vm1_fixture.ping_with_certainty(self.vm2_fixture.vm_ip)
-        return True
+        self.left_vm_fixture.wait_till_vm_is_up()
+        self.right_vm_fixture.wait_till_vm_is_up()
+        assert self.left_vm_fixture.ping_with_certainty(
+            self.right_vm_fixture.vm_ip)
     # end test_ecmp_svc_in_network_with_3_instance_reboot_nodes

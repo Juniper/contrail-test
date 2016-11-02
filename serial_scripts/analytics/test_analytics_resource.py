@@ -86,9 +86,10 @@ class AnalyticsTestSanityWithResource(
             self.st_fixture, self.si_fixtures = self.config_st_si\
                                                 (self.st_name,
                                                 si_prefix, si_count, svc_scaling,
-                                                max_inst, project=self.inputs.project_name, 
-                                                left_vn=self.vn1_fq_name,
-                                                right_vn=self.vn2_fq_name, svc_mode=svc_mode)
+                                                max_inst, project=self.inputs.project_name,
+                                                left_vn_fixture=self.vn1_fixture,
+                                                right_vn_fixture=self.vn2_fixture,
+                                                svc_mode=svc_mode)
             self.action_list = self.chain_si(
                 si_count,
                 si_prefix,
