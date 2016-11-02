@@ -23,15 +23,19 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
         for si_fix in si_fixtures:
             self.logger.debug("Delete SI '%s'", si_fix.si_name)
             si_fix.cleanUp()
-            self.remove_from_cleanups(si_fix)
+            self.remove_from_cleanups(si_fix.cleanUp)
 
         self.logger.debug("Delete ST '%s'", st_fix.st_name)
         st_fix.cleanUp()
-        self.remove_from_cleanups(st_fix)
+        self.remove_from_cleanups(st_fix.cleanUp)
 
     def config_st_si(self, st_name, si_name_prefix, si_count,
-                     svc_scaling=False, max_inst=1, domain='default-domain', project='admin', mgmt_vn=None, left_vn=None,
-                     right_vn=None, svc_type='firewall', svc_mode='transparent', flavor='contrail_flavor_2cpu', static_route=[None, None, None], ordered_interfaces=True, svc_img_name=None, st_version=1):
+                     svc_scaling=False, max_inst=1, domain='default-domain',
+                     project='admin', mgmt_vn_fixture=None, left_vn_fixture=None,
+                     right_vn_fixture=None, svc_type='firewall',
+                     svc_mode='transparent', flavor='contrail_flavor_2cpu',
+                     static_route=[None, None, None], ordered_interfaces=True,
+                     svc_img_name=None, st_version=1):
 
         svc_type_props = {
             'firewall': {'in-network-nat': 'tiny_nat_fw',
@@ -83,6 +87,10 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
             if_list=if_list, svc_mode=svc_mode, svc_scaling=svc_scaling, flavor=flavor, ordered_interfaces=ordered_interfaces, version=st_version))
         assert st_fixture.verify_on_setup()
 
+        mgmt_vn_name = mgmt_vn_fixture.vn_fq_name if mgmt_vn_fixture else None
+        left_vn_name=left_vn_fixture.vn_fq_name if left_vn_fixture else None
+        right_vn_name=right_vn_fixture.vn_fq_name if right_vn_fixture else None
+
         # create service instances
         si_fixtures = []
         for i in range(0, si_count):
@@ -94,7 +102,11 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
                 connections=self.connections, inputs=self.inputs,
                 domain_name=domain, project_name=project, si_name=si_name,
                 svc_template=st_fixture.st_obj, if_list=if_list,
-                mgmt_vn_name=mgmt_vn, left_vn_name=left_vn, right_vn_name=right_vn, do_verify=verify_vn_ri, max_inst=max_inst, static_route=static_route))
+                mgmt_vn_name=mgmt_vn_name,
+                left_vn_name=left_vn_name,
+                right_vn_name=right_vn_name,
+                do_verify=verify_vn_ri, max_inst=max_inst,
+                static_route=static_route))
             if st_version == 2:
                 self.logger.debug('Launching SVM')
                 if svc_mode == 'transparent':
@@ -122,7 +134,10 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
                             svm_name, image_name=svc_img_name, vns=[self.trans_mgmt_vn_fixture, self.trans_left_vn_fixture, self.trans_right_vn_fixture], count=1, flavor='m1.large')
                     else:
                         svm_fixture = self.config_and_verify_vm(
-                            svm_name, image_name=svc_img_name, vns=[self.mgmt_vn_fixture, self.vn1_fixture, self.vn2_fixture], count=1, flavor='m1.large')
+                            svm_name, image_name=svc_img_name,
+                            vns=[mgmt_vn_fixture, left_vn_fixture,
+                                right_vn_fixture],
+                            count=1, flavor='m1.large')
                     si_fixture.add_port_tuple(svm_fixture, pt_name)
             si_fixture.verify_on_setup()
             si_fixtures.append(si_fixture)
@@ -195,23 +210,23 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
         self.logger.debug("Removing policy from '%s'",
                           vn_policy_fix.vn_fixture.vn_name)
         vn_policy_fix.cleanUp()
-        self.remove_from_cleanups(vn_policy_fix)
+        self.remove_from_cleanups(vn_policy_fix.cleanUp)
 
     def unconfig_policy(self, policy_fix):
         """Un Configures policy."""
         self.logger.debug("Delete policy '%s'", policy_fix.policy_name)
         policy_fix.cleanUp()
-        self.remove_from_cleanups(policy_fix)
+        self.remove_from_cleanups(policy_fix.cleanUp)
 
     def delete_vn(self, vn_fix):
         self.logger.debug("Delete vn '%s'", vn_fix.vn_name)
         vn_fix.cleanUp()
-        self.remove_from_cleanups(vn_fix)
+        self.remove_from_cleanups(vn_fix.cleanUp)
 
     def delete_vm(self, vm_fix):
         self.logger.debug("Delete vm '%s'", vm_fix.vm_name)
         vm_fix.cleanUp()
-        self.remove_from_cleanups(vm_fix)
+        self.remove_from_cleanups(vm_fix.cleanUp)
 
     def get_svm_obj(self, vm_name):
         for vm_obj in self.nova_h.get_vm_list():

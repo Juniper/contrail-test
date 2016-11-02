@@ -57,7 +57,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         if svc_mode == 'in-network':
            svc_img_name = 'ubuntu-in-net'
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-                                                              self.si_prefix, si_count, left_vn=None, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name, svc_img_name=svc_img_name, st_version=st_version)
+                                                              self.si_prefix, si_count, left_vn_fixture=None, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name, svc_img_name=svc_img_name, st_version=st_version)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
 
@@ -213,7 +213,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         fip_pool_name = get_random_name('testpool')
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-                                                              self.si_prefix, si_count, svc_type='analyzer', left_vn=self.vn1_name, project=self.inputs.project_name, st_version=st_version)
+                                                              self.si_prefix, si_count, svc_type='analyzer', left_vn_fixture=self.vn1_fixture, project=self.inputs.project_name, st_version=st_version)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
         self.rules = [{'direction': '<>',
@@ -413,7 +413,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.nova_h.wait_till_vm_is_up(self.vm2_fixture.vm_obj)
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-                                                              self.si_prefix, si_count, svc_type='analyzer', left_vn=self.vn1_name, project=self.inputs.project_name, st_version=st_version)
+                                                              self.si_prefix, si_count, svc_type='analyzer', left_vn_fixture=self.vn1_fixture, project=self.inputs.project_name, st_version=st_version)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
 
@@ -803,7 +803,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-                                                              self.si_prefix, si_count, left_vn=None, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name, st_version=st_version)
+                                                              self.si_prefix, si_count, left_vn_fixture=None, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name, st_version=st_version)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
 
@@ -947,7 +947,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         svc_mode = 'in-network'
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-                                                              self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name, st_version=st_version)
+                                                              self.si_prefix, si_count, left_vn_fixture=self.vn1_fixture, svc_type='analyzer', svc_mode=svc_mode, project=self.inputs.project_name, st_version=st_version)
                                                               #svc_img_name=svc_img)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
@@ -1077,7 +1077,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.svc_type = 'analyzer'
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-                                                              self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type=self.svc_type, svc_mode=self.svc_mode, project=self.inputs.project_name, st_version=st_version)
+                                                              self.si_prefix, si_count, left_vn_fixture=self.vn1_fixture, svc_type=self.svc_type, svc_mode=self.svc_mode, project=self.inputs.project_name, st_version=st_version)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
         self.rules1 = [{'direction': '<>',
@@ -1213,7 +1213,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.svc_type = 'analyzer'
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-                                                              self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type=self.svc_type, svc_mode=self.svc_mode, project=self.inputs.project_name, st_version=st_version)
+                                                              self.si_prefix, si_count, left_vn_fixture=self.vn1_fixture, svc_type=self.svc_type, svc_mode=self.svc_mode, project=self.inputs.project_name, st_version=st_version)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
         self.rules1 = [{'direction': '<>',
@@ -1335,7 +1335,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.svc_type = 'analyzer'
 
         self.st_fixture, self.si_fixtures = self.config_st_si(self.st_name,
-                                                              self.si_prefix, si_count, left_vn=self.vn1_fq_name, svc_type=self.svc_type, svc_mode=self.svc_mode, project=self.inputs.project_name, st_version=st_version)
+                                                              self.si_prefix, si_count, left_vn_fixture=self.vn1_fixture, svc_type=self.svc_type, svc_mode=self.svc_mode, project=self.inputs.project_name, st_version=st_version)
         self.action_list = self.chain_si(
             si_count, self.si_prefix, self.inputs.project_name)
         self.rules1 = [{'direction': '<>',
