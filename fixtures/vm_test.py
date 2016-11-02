@@ -2215,6 +2215,8 @@ class VMFixture(fixtures.Fixture):
         result = result and self._gather_details()
         for vn_fq_name in self.vn_fq_names:
             if self.vnc_lib_fixture.get_active_forwarding_mode(vn_fq_name) != 'l2':
+                if not result:
+                    break
                 ssh_wait_result = self.wait_for_ssh_on_vm()
                 if not ssh_wait_result:
                     self.logger.error('VM %s is NOT ready for SSH connections' % (

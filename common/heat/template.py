@@ -1,3 +1,5 @@
+from tcutils.util import get_random_cidr
+
 src_cidr_svc = {
     "heat_template_version": "2015-04-30",
     #Outputs, these values will be used in the test case
@@ -592,6 +594,7 @@ src_cidr_svc = {
                                 "network_policy_entries_policy_rule_src_addresses_subnet_ip_prefix" : { "get_param" : "network_policy_entries_policy_rule_src_addresses_subnet_ip_prefix" },
                                 "network_policy_entries_policy_rule_src_addresses_subnet_ip_prefix_len" : { "get_param" : "network_policy_entries_policy_rule_src_addresses_subnet_ip_prefix_len" },
                                 },
+                        "network_policy_entries_policy_rule_src_addresses_virtual_network" : { "get_param" : "left_vn_fqdn" }
                                             }],
                     "network_policy_entries_policy_rule_action_list" : {
                         "network_policy_entries_policy_rule_action_list_simple_action" : { "get_param" : "simple_action" },
@@ -2161,8 +2164,6 @@ svc_tmpl = {
   }
 }
 
-svc_tmpl_nomgmt = svc_tmpl
-
 svc_tmpl_v2 = {
   u'description': u'HOT template to create a service template \n',
   u'heat_template_version': u'2013-05-23',
@@ -2263,112 +2264,6 @@ svc_tmpl_pt_v2 = {
           u'service_template_properties_service_type': {u'get_param': u'type'},
           u'service_template_properties_interface_type':[
             {u'service_template_properties_interface_type_service_interface_type': u'management'},
-            {u'service_template_properties_interface_type_service_interface_type': u'left'},
-            {u'service_template_properties_interface_type_service_interface_type': u'right'},
-          ]
-        }
-     },
-     u'type': u'OS::ContrailV2::ServiceTemplate'
-   }
- }
-}
-
-svc_tmpl_nomgmt_v2 = {
-  u'description': u'HOT template to create a service template \n',
-  u'heat_template_version': u'2013-05-23',
-  u'outputs': {
-    u'service_template_fq_name': {
-      u'description': u'FQ name of the service template',
-      u'value': {u'get_attr': [u'service_template', u'fq_name']}}
-  },
-  u'parameters': {
-    u'flavor': {
-      u'description': u'Flavor',
-      u'type': u'string'},
-    u'service_scaling': {
-      u'description': u'Flag to enable scaling',
-      u'type': u'string'},
-    u'image': {
-      u'description': u'Name of the image',
-      u'type': u'string'},
-    u'mode': {
-      u'description': u'service mode',
-      u'type': u'string'},
-    u'name': {
-      u'description': u'Name of service template',
-      u'type': u'string'},
-    u'type': {
-      u'description': u'service type',
-      u'type': u'string'},
-    u'left_shared': {
-      u'description': u'Shared IP enabled for left vn',
-      u'type': u'string'},
-    u'right_shared': {
-      u'description': u'Shared IP enabled for right vn',
-      u'type': u'string'},
-    u'left_static': {
-      u'description': u'Static IP enabled for left vn',
-      u'type': u'string'},
-    u'right_static': {
-      u'description': u'Static IP enabled for right vn',
-      u'type': u'string'}
-  },
-  u'resources': {
-    u'service_template': {
-      u'properties': {
-        u'name': {u'get_param': u'name'},
-        u'domain': u'default-domain',
-        u'service_template_properties': {
-          u'service_template_properties_version': u'1',
-          u'service_template_properties_image_name': {u'get_param': u'image'},
-          u'service_template_properties_service_scaling': {u'get_param': u'service_scaling'},
-          u'service_template_properties_service_mode': {u'get_param': u'mode'},
-          u'service_template_properties_service_type': {u'get_param': u'type'},
-          u'service_template_properties_flavor': {u'get_param': u'flavor'},
-          u'service_template_properties_interface_type':[
-            {u'service_template_properties_interface_type_service_interface_type': u'left',
-             u'service_template_properties_interface_type_shared_ip': {u'get_param': u'left_shared'},
-             u'service_template_properties_interface_type_static_route_enable': {u'get_param': u'left_static'}},
-            {u'service_template_properties_interface_type_service_interface_type': u'right',
-             u'service_template_properties_interface_type_shared_ip': {u'get_param': u'right_shared'},
-             u'service_template_properties_interface_type_static_route_enable': {u'get_param': u'right_static'}}
-          ]
-        }
-     },
-     u'type': u'OS::ContrailV2::ServiceTemplate'
-   }
- }
-}
-
-svc_tmpl_nomgmt_pt_v2 = {
-  u'description': u'HOT template to create a service template \n',
-  u'heat_template_version': u'2013-05-23',
-  u'outputs': {
-    u'service_template_fq_name': {
-      u'description': u'FQ name of the service template',
-      u'value': {u'get_attr': [u'service_template', u'fq_name']}}
-  },
-  u'parameters': {
-    u'mode': {
-      u'description': u'service mode',
-      u'type': u'string'},
-    u'name': {
-      u'description': u'Name of service template',
-      u'type': u'string'},
-    u'type': {
-      u'description': u'service type',
-      u'type': u'string'},
-  },
-  u'resources': {
-    u'service_template': {
-      u'properties': {
-        u'name': {u'get_param': u'name'},
-        u'domain': u'default-domain',
-        u'service_template_properties': {
-          u'service_template_properties_version': u'2',
-          u'service_template_properties_service_mode': {u'get_param': u'mode'},
-          u'service_template_properties_service_type': {u'get_param': u'type'},
-          u'service_template_properties_interface_type':[
             {u'service_template_properties_interface_type_service_interface_type': u'left'},
             {u'service_template_properties_interface_type_service_interface_type': u'right'},
           ]
@@ -2488,114 +2383,7 @@ svc_inst = {
   }
 }
 
-svc_inst_nomgmt = {
-  u'description': u'HOT template to create service instance.\n',
-  u'heat_template_version': u'2013-05-23',
-  u'outputs': {
-    u'num_active_service_instance_vms': {
-      u'description': u'Number of active service VMs',
-      u'value': {u'get_attr': [u'service_instance', u'active_service_vms']}
-    },
-    u'service_instance_fq_name': {
-      u'description': u'FQ name of the service template',
-      u'value': {u'get_attr': [u'service_instance', u'fq_name']}
-    },
-    u'service_instance_uuid': {
-      u'description': u'UUID of the service template',
-      u'value': {u'get_attr': [u'service_instance', u'show']}
-    },
-    u'service_instance_vms': {
-      u'description': u'List of service VMs', u'value': {u'get_attr': [u'service_instance', u'virtual_machines']}
-    }
-  },
-  u'parameters': {
-    u'left_net_id': {
-      u'description': u'ID of the left network\n',
-      u'type': u'string'
-    },
-    u'right_net_id': {
-      u'description': u'ID of the right network\n',
-      u'type': u'string'
-    },
-    u'service_instance_name': {
-      u'description': u'service instance name',
-      u'type': u'string'
-    },
-    u'max_instances': {
-      u'description': u'Number of service VMs',
-      u'type': u'string'
-    },
-    u'service_template_fq_name': {
-      u'description': u'service template name or ID',
-      u'type': u'string'
-    }
-  },
-  u'resources': {
-    u'service_instance': {
-      u'properties': {
-        u'interface_list': [
-          {u'virtual_network': {u'get_param': u'left_net_id' }},
-          {u'virtual_network': {u'get_param': u'right_net_id'}}
-        ],
-        u'name': {u'get_param': u'service_instance_name'},
-        u'scale_out': {u'max_instances': {u'get_param': u'max_instances'}},
-        u'service_template': {u'get_param': u'service_template_fq_name'}
-      },
-      u'type': u'OS::Contrail::ServiceInstance'
-    }
-  }
-}
-
-svc_inst_nomgmt_v2 = {
-  u'description': u'HOT template to create service instance.\n',
-  u'heat_template_version': u'2013-05-23',
-  u'outputs': {
-    u'service_instance_fq_name': {
-      u'description': u'FQ name of the service template',
-      u'value': {u'get_attr': [u'service_instance', u'fq_name']}
-    },
-  },
-  u'parameters': {
-    u'left_net_id': {
-      u'description': u'ID of the left network',
-      u'type': u'string'},
-    u'right_net_id': {
-      u'description': u'ID of the right network',
-      u'type': u'string'},
-    u'service_instance_name': {
-      u'description': u'service instance name',
-      u'type': u'string'},
-    u'max_instances': {
-      u'description': u'Number of service VMs',
-      u'type': u'string'},
-    u'ha': {
-      u'description': u'High-availability mode',
-      u'type': u'string'},
-    u'service_template_fq_name': {
-      u'description': u'service template name or ID',
-      u'type': u'string'}
-  },
-  u'resources': {
-    u'service_instance': {
-      u'properties': {
-        u'name': {u'get_param': u'service_instance_name'},
-        u'service_instance_properties': {
-          u'service_instance_properties_scale_out': {
-            u'service_instance_properties_scale_out_max_instances': {u'get_param': u'max_instances'}},
-          u'service_instance_properties_ha_mode': {u'get_param': u'ha'},
-          u'service_instance_properties_left_virtual_network': {u'get_param': u'left_net_id'},
-          u'service_instance_properties_right_virtual_network': {u'get_param': u'right_net_id'}
-        },
-        u'service_template_refs': [{u'get_param': u'service_template_fq_name'}]
-      },
-      u'type': u'OS::ContrailV2::ServiceInstance'
-    }
-  }
-}
-
-svc_inst_nomgmt_dual_v2 = svc_inst_nomgmt_v2
-
-svc_inst_nomgmt_pt_v2 = {
+svc_inst_pt_v2 = {
   u'description': u'HOT template to create service instance.\n',
   u'heat_template_version': u'2013-05-23',
   u'outputs': {
@@ -2619,10 +2407,16 @@ svc_inst_nomgmt_pt_v2 = {
       u'description': u'Name of availability_zone to use for servers',
       u'default': u'',
       u'type': u'string'},
+    u'mgmt_net_id': {
+      u'description': u'ID of the Managemet network',
+      u'type': u'string'},
     u'left_net_id': {
       u'description': u'ID of the left network',
       u'type': u'string'},
     u'right_net_id': {
+      u'description': u'ID of the right network',
+      u'type': u'string'},
+    u'security_group_ref': {
       u'description': u'ID of the right network',
       u'type': u'string'},
     u'svm_name': {
@@ -2644,12 +2438,25 @@ svc_inst_nomgmt_pt_v2 = {
         u'service_instance': { u'list_join': [':', { u'get_attr': [ u'service_instance', u'fq_name' ] } ] }
       },
     },
+    u'svm_mgmt_vmi': {
+      u'type': u'OS::ContrailV2::VirtualMachineInterface',
+      u'depends_on': [ 'pt' ],
+      u'properties': {
+        u'name': { u'get_attr': [ u'random_key_mgmt', u'value' ] },
+        u'virtual_network_refs': [{ u'get_param': u'mgmt_net_id' }],
+        u'port_tuple_refs': [{ u'get_resource': u'pt' }],
+        u'virtual_machine_interface_properties': {
+          u'virtual_machine_interface_properties_service_interface_type': u'management',
+        }
+      }
+    },
     u'svm_left_vmi': {
       u'type': u'OS::ContrailV2::VirtualMachineInterface',
       u'depends_on': [ 'pt' ],
       u'properties': {
         u'name': { u'get_attr': [ u'random_key_2', u'value' ] },
         u'virtual_network_refs': [{ u'get_param': u'left_net_id' }],
+        u'security_group_refs': [{ u'get_param': u'security_group_ref' }],
         u'port_tuple_refs': [{ u'get_resource': u'pt' }],
         u'virtual_machine_interface_properties': {
           u'virtual_machine_interface_properties_service_interface_type': u'left',
@@ -2662,10 +2469,21 @@ svc_inst_nomgmt_pt_v2 = {
       u'properties': {
         u'name': { u'get_attr': [ u'random_key_3', u'value' ] },
         u'virtual_network_refs': [{ u'get_param': u'right_net_id' }],
+        u'security_group_refs': [{ u'get_param': u'security_group_ref' }],
         u'port_tuple_refs': [{ u'get_resource': u'pt' }],
         u'virtual_machine_interface_properties': {
           u'virtual_machine_interface_properties_service_interface_type': u'right',
         },
+      }
+    },
+    u'svm_mgmt_ip1': {
+      u'type': u'OS::ContrailV2::InstanceIp',
+      u'depends_on': [ 'svm_mgmt_vmi' ],
+      u'properties': {
+        u'name': { u'get_attr': [ u'random_key_mgmt', u'value' ] },
+        u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_mgmt_vmi' }],
+        u'virtual_network_refs': [{ u'get_param': u'mgmt_net_id' }],
+        u'instance_ip_family': 'v4',
       }
     },
     u'svm_left_ip1': {
@@ -2676,7 +2494,6 @@ svc_inst_nomgmt_pt_v2 = {
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_left_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'left_net_id' }],
         u'instance_ip_family': 'v4',
-        u'service_instance_ip' : True,
       }
     },
     u'svm_right_ip1': {
@@ -2687,19 +2504,19 @@ svc_inst_nomgmt_pt_v2 = {
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_right_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'right_net_id' }],
         u'instance_ip_family' : 'v4',
-        u'service_instance_ip' : True,
       }
     },
     u'svm': {
       u'type': u'OS::Nova::Server',
-      u'depends_on': [ u'svm_left_ip1', u'svm_right_ip1'],
+      u'depends_on': [ u'svm_mgmt_ip1', u'svm_left_ip1', u'svm_right_ip1'],
       u'properties': {
         u'name': { u'get_param': u'svm_name' },
         u'image': { u'get_param':  u'image' },
         u'availability_zone': { u'get_param':  u'availability_zone' },
         u'flavor': { u'get_param': u'flavor' },
         u'networks':
-          [{ u'port': { u'get_resource': u'svm_left_vmi' }},
+          [{ u'port': { u'get_resource': u'svm_mgmt_vmi' }},
+           { u'port': { u'get_resource': u'svm_left_vmi' }},
            { u'port': { u'get_resource': u'svm_right_vmi' }},]
       }
     },
@@ -2707,12 +2524,24 @@ svc_inst_nomgmt_pt_v2 = {
       u'properties': {
         u'name': {u'get_param': u'service_instance_name'},
         u'service_instance_properties': {
+          u'service_instance_properties_management_virtual_network': {u'get_param': u'mgmt_net_id'},
           u'service_instance_properties_left_virtual_network': {u'get_param': u'left_net_id'},
-          u'service_instance_properties_right_virtual_network': {u'get_param': u'right_net_id'}
+          u'service_instance_properties_right_virtual_network': {u'get_param': u'right_net_id'},
+          "service_instance_properties_interface_list":
+           [{"service_instance_properties_interface_list_virtual_network": {u'get_param': u'mgmt_net_id'}},
+            {"service_instance_properties_interface_list_virtual_network": {u'get_param': u'left_net_id'}},
+            {"service_instance_properties_interface_list_virtual_network": {u'get_param': u'right_net_id'}},
+           ]
         },
         u'service_template_refs': [{u'get_param': u'service_template_fq_name'}]
       },
       u'type': u'OS::ContrailV2::ServiceInstance'
+    },
+    u'random_key_mgmt': {
+      u'type': u'OS::Heat::RandomString',
+      u'properties': {
+        u'length': 16,
+      }
     },
     u'random_key_1': {
       u'type': u'OS::Heat::RandomString',
@@ -2759,7 +2588,7 @@ svc_inst_nomgmt_pt_v2 = {
   }
 }
 
-svc_inst_nomgmt_pt_dual_v2 = {
+svc_inst_pt_dual_v2 = {
   u'description': u'HOT template to create service instance.\n',
   u'heat_template_version': u'2013-05-23',
   u'outputs': {
@@ -2779,10 +2608,16 @@ svc_inst_nomgmt_pt_dual_v2 = {
     u'image': {
       u'description': u'Name of image to use for servers',
       u'type': u'string'},
+    u'mgmt_net_id': {
+      u'description': u'ID of the Managemet network',
+      u'type': u'string'},
     u'left_net_id': {
       u'description': u'ID of the left network',
       u'type': u'string'},
     u'right_net_id': {
+      u'description': u'ID of the right network',
+      u'type': u'string'},
+    u'security_group_ref': {
       u'description': u'ID of the right network',
       u'type': u'string'},
     u'svm_name': {
@@ -2808,12 +2643,25 @@ svc_inst_nomgmt_pt_dual_v2 = {
         u'service_instance': { u'list_join': [':', { u'get_attr': [ u'service_instance', u'fq_name' ] } ] }
       },
     },
+    u'svm_mgmt_vmi': {
+      u'type': u'OS::ContrailV2::VirtualMachineInterface',
+      u'depends_on': [ 'pt' ],
+      u'properties': {
+        u'name': { u'get_attr': [ u'random_key_mgmt', u'value' ] },
+        u'virtual_network_refs': [{ u'get_param': u'mgmt_net_id' }],
+        u'port_tuple_refs': [{ u'get_resource': u'pt' }],
+        u'virtual_machine_interface_properties': {
+          u'virtual_machine_interface_properties_service_interface_type': u'management',
+        }
+      }
+    },
     u'svm_left_vmi': {
       u'type': u'OS::ContrailV2::VirtualMachineInterface',
       u'depends_on': [ 'pt' ],
       u'properties': {
         u'name': { u'get_attr': [ u'random_key_2', u'value' ] },
         u'virtual_network_refs': [{ u'get_param': u'left_net_id' }],
+        u'security_group_refs': [{ u'get_param': u'security_group_ref' }],
         u'port_tuple_refs': [{ u'get_resource': u'pt' }],
         u'virtual_machine_interface_properties': {
           u'virtual_machine_interface_properties_service_interface_type': u'left',
@@ -2826,10 +2674,21 @@ svc_inst_nomgmt_pt_dual_v2 = {
       u'properties': {
         u'name': { u'get_attr': [ u'random_key_3', u'value' ] },
         u'virtual_network_refs': [{ u'get_param': u'right_net_id' }],
+        u'security_group_refs': [{ u'get_param': u'security_group_ref' }],
         u'port_tuple_refs': [{ u'get_resource': u'pt' }],
         u'virtual_machine_interface_properties': {
           u'virtual_machine_interface_properties_service_interface_type': u'right',
         },
+      }
+    },
+    u'svm_mgmt_ip1': {
+      u'type': u'OS::ContrailV2::InstanceIp',
+      u'depends_on': [ 'svm_mgmt_vmi' ],
+      u'properties': {
+        u'name': { u'get_attr': [ u'random_key_mgmt', u'value' ] },
+        u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_mgmt_vmi' }],
+        u'virtual_network_refs': [{ u'get_param': u'mgmt_net_id' }],
+        u'instance_ip_family': 'v4',
       }
     },
     u'svm_left_ip1': {
@@ -2840,7 +2699,6 @@ svc_inst_nomgmt_pt_dual_v2 = {
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_left_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'left_net_id' }],
         u'instance_ip_family': 'v6',
-        u'service_instance_ip' : True,
       }
     },
     u'svm_right_ip1': {
@@ -2851,7 +2709,6 @@ svc_inst_nomgmt_pt_dual_v2 = {
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_right_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'right_net_id' }],
         u'instance_ip_family' : 'v6',
-        u'service_instance_ip' : True,
       }
     },
     u'svm_left_ip2': {
@@ -2862,7 +2719,6 @@ svc_inst_nomgmt_pt_dual_v2 = {
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_left_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'left_net_id' }],
         u'instance_ip_family': 'v4',
-        u'service_instance_ip' : True,
       }
     },
     u'svm_right_ip2': {
@@ -2873,7 +2729,6 @@ svc_inst_nomgmt_pt_dual_v2 = {
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_right_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'right_net_id' }],
         u'instance_ip_family' : 'v4',
-        u'service_instance_ip' : True,
       }
     },
     u'svm': {
@@ -2885,7 +2740,8 @@ svc_inst_nomgmt_pt_dual_v2 = {
         u'flavor': { u'get_param': u'flavor' },
         u'availability_zone': { u'get_param':  u'availability_zone' },
         u'networks':
-          [{ u'port': { u'get_resource': u'svm_left_vmi' }},
+          [{ u'port': { u'get_resource': u'svm_mgmt_vmi' }},
+           { u'port': { u'get_resource': u'svm_left_vmi' }},
            { u'port': { u'get_resource': u'svm_right_vmi' }},]
       }
     },
@@ -2893,12 +2749,24 @@ svc_inst_nomgmt_pt_dual_v2 = {
       u'properties': {
         u'name': {u'get_param': u'service_instance_name'},
         u'service_instance_properties': {
+          u'service_instance_properties_management_virtual_network': {u'get_param': u'mgmt_net_id'},
           u'service_instance_properties_left_virtual_network': {u'get_param': u'left_net_id'},
-          u'service_instance_properties_right_virtual_network': {u'get_param': u'right_net_id'}
+          u'service_instance_properties_right_virtual_network': {u'get_param': u'right_net_id'},
+          "service_instance_properties_interface_list":
+           [{"service_instance_properties_interface_list_virtual_network": {u'get_param': u'mgmt_net_id'}},
+            {"service_instance_properties_interface_list_virtual_network": {u'get_param': u'left_net_id'}},
+            {"service_instance_properties_interface_list_virtual_network": {u'get_param': u'right_net_id'}}
+           ]
         },
         u'service_template_refs': [{u'get_param': u'service_template_fq_name'}]
       },
       u'type': u'OS::ContrailV2::ServiceInstance'
+    },
+    u'random_key_mgmt': {
+      u'type': u'OS::Heat::RandomString',
+      u'properties': {
+        u'length': 16,
+      }
     },
     u'random_key_1': {
       u'type': u'OS::Heat::RandomString',
@@ -3087,7 +2955,6 @@ pt_svm = {
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_left_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'left_net_id' }],
         u'instance_ip_family': 'v4',
-        u'service_instance_ip' : True,
       }
     },
     u'svm_right_ip2': {
@@ -3097,7 +2964,6 @@ pt_svm = {
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_right_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'right_net_id' }],
         u'instance_ip_family' : 'v4',
-        u'service_instance_ip' : True,
       }
     },
     u'svm_mgmt_ip2': {
@@ -3107,7 +2973,6 @@ pt_svm = {
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_mgmt_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'mgmt_net_id' }],
         u'instance_ip_family' : 'v4',
-        u'service_instance_ip' : True,
       }
     },
 

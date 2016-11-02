@@ -336,6 +336,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         vm1_fixture.wait_till_vm_is_up()
 
         cfgm_hostname = self.inputs.host_data[self.inputs.cfgm_ip]['name']
+        cfgm_control_ip = self.inputs.host_data[cfgm_hostname]['host_control_ip']
         compute_user = self.inputs.host_data[vm1_fixture.vm_node_ip]['username']
         compute_password = self.inputs.host_data[vm1_fixture.vm_node_ip]['password']
         cfgm_host_new_name = cfgm_hostname + '-test'
@@ -360,7 +361,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             cmd = "python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py  --oper add %s" % (
                 link_local_args)
 
-        update_hosts_cmd = 'echo "%s %s" >> /etc/hosts' % (self.inputs.cfgm_ip,
+        update_hosts_cmd = 'echo "%s %s" >> /etc/hosts' % (cfgm_control_ip,
             cfgm_host_new_name)
         self.inputs.run_cmd_on_server(vm1_fixture.vm_node_ip,
                                       update_hosts_cmd,

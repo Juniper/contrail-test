@@ -24,8 +24,8 @@ class IsolatedCreds(fixtures.Fixture):
         else :
             self.project_name = project_name or inputs.stack_tenant
         if inputs.tenant_isolation and inputs.user_isolation:
-            self.username = project_name
-            self.password = project_name
+            self.username = self.project_name
+            self.password = self.project_name
         else:
             self.username = username or inputs.stack_user
             self.password = password or inputs.stack_password
