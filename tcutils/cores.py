@@ -3,11 +3,15 @@
 import sys
 import traceback
 import unittest
+from time import sleep
 from functools import wraps
 
 from fabric.api import run, cd
 from fabric.contrib.files import exists
 from fabric.context_managers import settings, hide
+from paramiko.ssh_exception import ChannelException
+
+from tcutils.util import retry
 
 CORE_DIR = '/var/crashes'
 
@@ -40,7 +44,7 @@ def get_cores_node(node_ip, user, password):
                     warn_only=True, abort_on_prompts=False):
                 if exists(CORE_DIR):
                     with cd(CORE_DIR):
-                        core = run("ls core.* 2>/dev/null")
+                        (ret_val, core) = run("ls core.* 2>/dev/null")
         except Exception:
             pass
     return core
@@ -75,6 +79,18 @@ def get_service_crashes(inputs):
     return crashes
                  
 
+@retry(tries=10, delay=3)
+def _run(cmd):
+    try:
+        output = run(cmd)
+    except ChannelException, e:
+        # Handle too many concurrent sessions
+        if 'Administratively prohibited' in str(e):
+            sleep(random.randint(1,5))
+            return (False, None)
+    return (True, output)
+# end _run
+
 def get_service_crashes_node(node_ip, user, password):
     """Get the list of services crashed in one of the nodes in the test setup.
     """
@@ -84,7 +100,7 @@ def get_service_crashes_node(node_ip, user, password):
         with settings(
             host_string='%s@%s' % (user, node_ip), password=password,
                 warn_only=True, abort_on_prompts=False):
-            crash = run("contrail-status")
+            (ret_val, crash) = _run("contrail-status")
     if crash and "Failed service list" in crash:
         for line in crash.split("\n"):
             if "Failed service list" in line:
