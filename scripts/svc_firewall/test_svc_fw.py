@@ -93,15 +93,11 @@ class TestSvcRegrFeature(BaseSvc_FwTest, VerifySvcFirewall):
     def setUpClass(cls):
         super(TestSvcRegrFeature, cls).setUpClass()
 
-    def runTest(self):
-        pass
-    # end runTest
-
     @preposttest_wrapper
     def test_policy_delete_add_transparent_mode(self):
         """Test policy update in transparent mode service chaining."""
-        self.verify_svc_transparent_datapath(svc_img_name='tiny_trans_fw')
-        return self.verify_policy_delete_add()
+        ret_dict = self.verify_svc_transparent_datapath(svc_img_name='tiny_trans_fw')
+        self.verify_policy_delete_add(ret_dict)
 
     @preposttest_wrapper
     def test_policy_delete_add_in_network_mode(self):
@@ -109,14 +105,14 @@ class TestSvcRegrFeature(BaseSvc_FwTest, VerifySvcFirewall):
         mode = None
         if self.inputs.get_af() == 'v6':
             mode = 'in-network'
-        self.verify_svc_in_network_datapath(svc_mode=mode)
-        return self.verify_policy_delete_add()
+        ret_dict = self.verify_svc_in_network_datapath(svc_mode=mode)
+        return self.verify_policy_delete_add(ret_dict)
 
     @preposttest_wrapper
     def test_policy_to_more_vns_transparent_mode(self):
         """Attach the same policy to  one more left and right VN's transparent mode service chaining."""
-        self.verify_svc_transparent_datapath(svc_img_name='tiny_trans_fw')
-        return self.verify_add_new_vns()
+        ret_dict = self.verify_svc_transparent_datapath(svc_img_name='tiny_trans_fw')
+        return self.verify_add_new_vns(ret_dict)
 
     @preposttest_wrapper
     def test_policy_to_more_vns_in_network_mode(self):
@@ -124,14 +120,14 @@ class TestSvcRegrFeature(BaseSvc_FwTest, VerifySvcFirewall):
         mode = None
         if self.inputs.get_af() == 'v6':
             mode = 'in-network'
-        self.verify_svc_in_network_datapath(svc_mode=mode)
-        return self.verify_add_new_vms()
+        ret_dict = self.verify_svc_in_network_datapath(svc_mode=mode)
+        return self.verify_add_new_vms(ret_dict)
 
     @preposttest_wrapper
     def test_policy_port_protocol_change_transparent_mode(self):
         """Change the port and protocol of policy transparent mode service chaining."""
-        self.verify_svc_transparent_datapath(svc_img_name='tiny_trans_fw')
-        return self.verify_protocol_port_change()
+        ret_dict = self.verify_svc_transparent_datapath(svc_img_name='tiny_trans_fw')
+        return self.verify_protocol_port_change(ret_dict)
 
     @preposttest_wrapper
     def test_policy_port_protocol_change_in_network_mode(self):
@@ -139,8 +135,8 @@ class TestSvcRegrFeature(BaseSvc_FwTest, VerifySvcFirewall):
         mode = None
         if self.inputs.get_af() == 'v6':
             mode = 'in-network'
-        self.verify_svc_in_network_datapath(svc_mode=mode)
-        return self.verify_protocol_port_change(mode='in-network')
+        ret_dict = self.verify_svc_in_network_datapath(svc_mode=mode)
+        return self.verify_protocol_port_change(ret_dict, mode='in-network')
 
 
 class TestSvcRegrwithMirror(BaseSvc_FwTest, VerifySvcFirewall):
