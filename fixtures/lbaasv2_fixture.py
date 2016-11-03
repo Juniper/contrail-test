@@ -433,12 +433,12 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         return True
 
     def verify_lb_in_agent(self):
-        self.verify_netns_instance_launched()
-        self.verify_vip_in_agent()
-        if self.is_fip_active:
-            self.verify_fip_in_agent(), "LB %s: verify_lb_in_agent failed" %self.lb_uuid
-        self.logger.info('LB %s: verify_lb_in_agent passed'%self.lb_uuid)
-        return True
+        if self.verify_netns_instance_launched() and self.verify_vip_in_agent():
+            if self.is_fip_active and not self.verify_fip_in_agent():
+                return False
+            self.logger.info('LB %s: verify_lb_in_agent passed'%self.lb_uuid)
+            return True
+        return False
 
     @retry(6, 10)
     def verify_netns_instance_launched(self):
