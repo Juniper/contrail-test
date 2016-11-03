@@ -34,11 +34,11 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
         svc_lst = []
         svc_lst = self.ds_obj.get_all_control_services(self.inputs.cfgm_ip)
         for elem in svc_lst:
-            if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem) == 'up'):
+            if self.ds_obj.get_service_status(self.inputs.cfgm_ip, elem, 'up'):
                 self.logger.info("Service %s is up" % (elem,))
                 result = result and True
             else:
-                self.logger.warn("Service %s is down" % (elem,))
+                self.logger.error("Service %s is down" % (elem,))
                 result = result and False
                 svc_lst.remove(elem)
         # Stopping the control node service
@@ -46,39 +46,31 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             ip = elem[0]
             self.logger.info("Stopping service %s.." % (elem,))
             self.inputs.stop_service('contrail-control', [ip])
-        time.sleep(20)
+
         for elem in svc_lst:
             ip = elem[0]
-            if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem) == 'up'):
-                self.logger.warn("Service %s is still up" % (elem,))
-                result = result and False
-            else:
+            if self.ds_obj.get_service_status(self.inputs.cfgm_ip, elem, 'down', 8):
                 self.logger.info("Service %s is down" % (elem,))
-                result = result and True
+                result = result and True  
+            else:
+                self.logger.error("Service %s is still up" % (elem,))
+                result = result and False
         # Starting the control node service
         for elem in svc_lst:
             ip = elem[0]
             self.logger.info("Starting service %s.." % (elem,))
             self.inputs.start_service('contrail-control', [ip])
-        retry = 0
         for elem in svc_lst:
             ip = elem[0]
-            while True:
-                svc_status = self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem)
-                if svc_status == 'up':
-                    self.logger.info(
+            svc_status = self.ds_obj.get_service_status(self.inputs.cfgm_ip, elem, 'up', 6)
+            if svc_status:
+                self.logger.info(
                         "Service %s came up after service was started" % (elem,))
-                    result = result and True
-                    break
-                else:
-                    retry = retry + 1
-                    time.sleep(1)
-                    self.logger.warn("Service %s isn't up yet " % (elem,))
-                    if retry > 30:
-                        self.logger.info(
-                            "Service %s is down even after service was started" % (elem,))
-                        result = result and False
-                        break
+                result = result and True
+            else:
+                self.logger.error("Service %s isn't up yet " % (elem,))
+                self.logger.error("Service %s is down even after service was started" % (elem,))
+                result = result and False
         assert result
         return True
 
@@ -145,15 +137,15 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                     result = result and True
                     self.logger.info("Verifying if the service is up")
                     svc_status = self.ds_obj.get_service_status(
-                        self.inputs.cfgm_ip, service_tuple=elem)
-                    if (svc_status == 'up'):
+                        self.inputs.cfgm_ip, elem, "up")
+                    if svc_status:
                         self.logger.info("svc is up")
                         result = result and True
                     else:
                         result = result and False
-                        self.logger.warn("svc not up")
+                        self.logger.error("svc not up")
                 else:
-                    self.logger.warn("%s is NOT added to discovery service" %
+                    self.logger.error("%s is NOT added to discovery service" %
                                      (elem,))
                     result = result and False
             # Verify instnaces == 0 will send all services
@@ -163,7 +155,7 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             resp = resp[service]
             if len(resp) < 100:
                 result = result and False
-                self.logger.warn("Not all services returned")
+                self.logger.error("Not all services returned")
             self.logger.info(
                 "Sending 100 subscription message to discovery..")
             subs_threads = []
@@ -376,7 +368,7 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             resp = resp[service]
             if len(resp) < 3:
                 result = result and False
-                self.logger.warn("Not all services returned")
+                self.logger.error("Not all services returned")
 
             expected_ip_list = ['192.168.1.1', '192.168.1.2', '192.168.1.3']
             result1 = True
@@ -432,7 +424,7 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             -policy
 
         '''
-        # Changing the hc_max_miss=5 and verifying that the services are down
+        # Changing the hc_max_miss=10 and verifying that the services are down
         # after 25 sec
         try:
             cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss.*=.*/c\hc_max_miss = 10\' contrail-discovery.conf'
@@ -446,11 +438,11 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             svc_lst = []
             svc_lst = self.ds_obj.get_all_control_services(self.inputs.cfgm_ip)
             for elem in svc_lst:
-                if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem) == 'up'):
+                if self.ds_obj.get_service_status(self.inputs.cfgm_ip, elem, 'up'):
                     self.logger.info("Service %s is up" % (elem,))
                     result = result and True
                 else:
-                    self.logger.warn("Service %s is down" % (elem,))
+                    self.logger.error("Service %s is down" % (elem,))
                     result = result and False
                     svc_lst.remove(elem)
             # Stopping the control node service
@@ -458,27 +450,29 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                 ip = elem[0]
                 self.logger.info("Stopping service %s.." % (elem,))
                 self.inputs.stop_service('contrail-control', [ip])
-            time.sleep(15)
+            first_cfgm = True
             for elem in svc_lst:
                 ip = elem[0]
-                if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem) == 'up'):
-                    self.logger.info("Service %s is still up" % (elem,))
-                    result = result and True
-                else:
-                    self.logger.warn("Service %s is down before 25 sec" %
-                                     (elem,))
-                    result = result and False
-            time.sleep(45)
-            for elem in svc_lst:
-                ip = elem[0]
-                if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem) == 'up'):
-                    self.logger.warn("Service %s is still up after 30 secs" %
+                retry_count = 8 if first_cfgm else 0
+                first_cfgm = False
+                if self.ds_obj.get_service_status(self.inputs.cfgm_ip, elem, 'down', retry_count):
+                    self.logger.error("Service %s is down before 50 sec" %
                                      (elem,))
                     result = result and False
                 else:
-                    self.logger.info("Service %s is down after 30 sec" %
+                    self.logger.info("Service %s is still up" % 
                                      (elem,))
                     result = result and True
+            for elem in svc_lst:
+                ip = elem[0]
+                if self.ds_obj.get_service_status(self.inputs.cfgm_ip, elem, 'down', 2):
+                    self.logger.info("Service %s is down after 50 sec" %
+                                     (elem,))
+                    result = result and True
+                else:
+                    self.logger.error("Service %s is still up after 50 secs" %
+                                     (elem,))
+                    result = result and False
             # Starting the control node service
             for elem in svc_lst:
                 ip = elem[0]
@@ -488,8 +482,8 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
         except Exception as e:
             print e
         finally:
-            # Changing the hc_max_miss=3
-            cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss.*=.*/c\hc_max_miss = 3\' contrail-discovery.conf'
+            # Changing the hc_max_miss=7
+            cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss.*=.*/c\hc_max_miss = 7\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
                     ip, cmd, username='root', password='c0ntrail123')
@@ -2525,11 +2519,11 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             obj_1.start()
             sleep(1)
             if self.ds_obj.get_service_status(ds_ip,\
-                        service_tuple=("1.1.1.1","TEST_PUB")) == "up" \
+                        service_tuple=("1.1.1.1","TEST_PUB"),expected_status= 'up') \
             and self.ds_obj.get_service_status(ds_ip,\
-                        service_tuple=("2.2.2.2","TEST_PUB")) == "up" \
+                        service_tuple=("2.2.2.2","TEST_PUB"),expected_status= 'up') \
             and self.ds_obj.get_service_status(ds_ip,\
-                        service_tuple=("3.3.3.3","TEST_PUB")) == "up":
+                        service_tuple=("3.3.3.3","TEST_PUB"),expected_status= 'up'):
                 self.logger.info("#### All publishers have registered to discovery server successfully.###")
             else:
                 self.logger.error("\n#### Either or all Publishers have not registered to discovery server.\n \
