@@ -53,7 +53,10 @@ if __name__ == "__main__":
             phy_router_obj.setUp()
         if device_dict['type'] == 'vcenter_gateway':
                vrouter_obj = VirtualRouterFixture(device_dict['name'],
-                                      'embedded' )
+                                      'embedded', 
+                                      cfgm_ip=init_obj.cfgm_ip,
+                                      auth_server_ip=init_obj.auth_ip,
+                                       )
                vrouter_obj.setUp()
 
                vcpe_router_obj = VpeRouterFixture(
@@ -62,6 +65,8 @@ if __name__ == "__main__":
                    ssh_password=device_dict['ssh_password'],
                    mgmt_ip=device_dict['mgmt_ip'],
                    ports=device_dict['ports'],
+                   cfgm_ip=init_obj.cfgm_ip,
+                   auth_server_ip=init_obj.auth_ip,
                    )
                vcpe_router_obj.setUp()
                vcpe_router_obj.vrouter_ref_set(vrouter_obj.vr)

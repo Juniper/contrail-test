@@ -34,7 +34,6 @@ class VncLibFixture(fixtures.Fixture):
         self.project_name = kwargs.get('project_name', 'admin')
         self.domain = kwargs.get('domain', 'default-domain')
         self.api_server_port = kwargs.get('api_server_port', '8082')
-        self.cfgm_ip = kwargs.get('cfgm_ip', '127.0.0.1')
         self.logger = kwargs.get('logger', None)
         self.connections = kwargs.get('connections', None)
         self.orchestrator = kwargs.get('orchestrator', 'openstack')
@@ -42,6 +41,7 @@ class VncLibFixture(fixtures.Fixture):
         self.inputs = self.connections.inputs if self.connections \
                       else kwargs.get('inputs', None)
         self.neutron_handle = None
+        self.cfgm_ip = kwargs.get('cfgm_ip', self.inputs.cfgm_ip if self.inputs else '127.0.0.1')
         self.auth_server_ip = self.inputs.auth_ip if self.inputs else \
                         kwargs.get('auth_server_ip', '127.0.0.1')
         self.auth_url = self.inputs.auth_url if self.inputs else \
