@@ -583,3 +583,106 @@ class ContrailVncApi:
         self._log.info('Removed intf route table %s from port %s' % (
             intf_rtb_obj.uuid, vmi_uuid))
     # end unbind_vmi_from_interface_route_table
+
+    def create_route_table(self, name,route_table_type = 'interface', parent_obj=None, prefixes=[], next_hop='', next_hop_type = 'ip-address'):
+        '''
+        Create and return InterfaceRouteTable or RouteTable object
+        Args:
+            For interface route table:
+            prefixes : list of x.y.z.a/mask entries for Interface route table
+
+            For network route table:
+            route_table_type : type of static table, Either interface table or network table
+                               This also determines the parameters to be passed. 
+                               Interface table only needs prefix.
+                               Network table would need atleast next-hop ip with prefix
+            prefixes : list of x.y.z.a/mask entries for Interface route table
+            next_hop_type : Either 'ip-address' or 'service-chain' for Interface route table
+            next-hop value : next-hop ip for route table
+
+        '''
+        route_table = RouteTableType(name)
+        if route_table_type == 'interface':
+            nw_prefixes = [ IPNetwork(x) for x in prefixes]
+            route_table.set_route([])
+            intf_route_table = InterfaceRouteTable(
+                                    interface_route_table_routes = route_table,
+                                    parent_obj=parent_obj,
+                                    name=name)
+            if prefixes:
+                rt_routes = intf_route_table.get_interface_route_table_routes()
+                routes = rt_routes.get_route()
+                for prefix in prefixes:
+                    rt1 = RouteType(prefix = prefix)
+                    routes.append(rt1)
+                intf_route_table.set_interface_route_table_routes(rt_routes)
+            uuid = self._vnc.interface_route_table_create(intf_route_table)
+            intf_route_table_obj = self._vnc.interface_route_table_read(id=uuid)
+            self._log.info('Created InterfaceRouteTable %s(UUID %s), prefixes : %s'\
+                %(intf_route_table_obj.fq_name, intf_route_table_obj.uuid, prefixes))
+            return intf_route_table_obj
+        else:
+            nw_route_table=RouteTable(name, parent_obj)
+            nw_route_table.set_routes([])
+            uuid=self._vnc.route_table_create(nw_route_table)
+            if prefixes:
+                for prefix in prefixes:
+                    rt1=RouteType(prefix=prefix, next_hop=next_hop, next_hop_type=next_hop_type)
+                    route_table.set_route([rt1])
+            nw_route_table.set_routes(route_table)
+            self._vnc.route_table_update(nw_route_table)
+            network_route_table_obj = self._vnc.route_table_read(id=uuid)
+            self._log.info('Created NetworkRouteTable %s(UUID %s), prefixes : %s'\
+                %(network_route_table_obj.fq_name, network_route_table_obj.uuid, prefixes))
+            return network_route_table_obj
+
+    def bind_network_route_table_to_vn(self, vn_uuid, nw_route_table_obj):
+        '''
+        Bind network route table to a VN
+
+        nw_route_table_obj : either UUID or RouteTable object
+
+        Returns None
+        '''
+
+        if is_uuid(nw_route_table_obj):
+            network_route_table_obj = self._vnc.route_table_read(id=nw_route_table_obj)
+        elif isinstance(nw_route_table_obj, RouteTable):
+            network_route_table_obj = nw_route_table_obj
+
+        vn_rt_obj = self._vnc.virtual_network_read(id = vn_uuid)
+        vn_rt_obj.add_route_table(network_route_table_obj)
+        self._vnc.virtual_network_update(vn_rt_obj)
+
+    # end create_route_table
+
+    def unbind_vn_from_network_route_table(self, vn_uuid, nw_route_table_obj):
+        '''
+        Unbind network route table from a VN
+
+        nw_route_table_obj : either UUID or RouteTable object
+
+        Returns None
+        '''
+
+        if is_uuid(nw_route_table_obj):
+            network_route_table_obj = self._vnc.route_table_read(id=nw_route_table_obj)
+        elif isinstance(nw_route_table_obj, RouteTable):
+            network_route_table_obj = nw_route_table_obj
+        vn_obj = self._vnc.virtual_network_read(id=vn_uuid)
+        vn_obj.del_route_table(network_route_table_obj)
+        self._vnc.virtual_network_update(vn_obj)
+        self._log.info('Removed network route table %s from network %s' % (
+            network_route_table_obj.uuid, vn_uuid))
+    # end unbind_vn_from_network_route_table
+
+    def delete_network_route_table(self, uuid):
+        '''
+        Delete NetworkRouteTable object
+
+        Args:
+            uuid : UUID of NetworkRouteTable object
+        '''
+        self._vnc.route_table_delete(id=uuid)
+        self._log.info('Deleted Network route table %s' % (uuid))
+    # end delete_network_route_table
