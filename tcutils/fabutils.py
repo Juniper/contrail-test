@@ -57,16 +57,16 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
         as_daemon: run in background
         warn_only: run fab with warn_only
         raw: If raw is True, will return the fab _AttributeString object itself without removing any unwanted output
-        pidfile : When run in background, use pidfile to store the pid of the 
+        pidfile : When run in background, use pidfile to store the pid of the
                   running process
         abort_on_prompts : Run command with abort_on_prompts set to True
-                           Note that this SystemExit does get caught and 
+                           Note that this SystemExit does get caught and
                            counted against `tries`
     """
     if not logger:
         logger = contrail_logging.getLogger(__name__)
     logger.debug('Running remote_cmd, Cmd : %s, host_string: %s, password: %s'
-        'gateway: %s, gateway password: %s' %(cmd, host_string, password, 
+        'gateway: %s, gateway password: %s' %(cmd, host_string, password,
             gateway, gateway_password))
     fab_connections.clear()
     if as_daemon:
@@ -87,6 +87,10 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
     if username == 'cirros':
         shell = '/bin/sh -l -c'
 
+    # For tiny images, running the commnads in sudo requires this
+    if username == 'tc' and with_sudo:
+        shell = False
+
     _run = sudo if with_sudo else run
 
     # with hide('everything'), settings(host_string=host_string,
@@ -103,9 +107,9 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
         output = None
         while tries > 0:
             try:
-                output = _run(cmd, timeout=timeout, pty=not as_daemon)
-            except (CommandTimeout, NetworkError, SystemExit) as e:
-                logger.exception('Unable to run command %s: %s' % (cmd, str(e)))
+                output = _run(cmd, timeout=timeout, pty=not as_daemon, shell=shell)
+            except (CommandTimeout, NetworkError) as e:
+                logger.warn('Unable to run command %s: %s' % (cmd, str(e)))
                 tries -= 1
                 time.sleep(5)
                 continue
