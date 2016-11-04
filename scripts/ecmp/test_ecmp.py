@@ -280,7 +280,6 @@ class TestECMPFeature(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
 
     @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
-    @skip_because(address_family='v6')
     def test_ecmp_svc_v2_in_network_nat_with_3_instance(self):
         """
          Description: Validate ECMP with v2 service chaining in-network-nat mode datapath having service instance
