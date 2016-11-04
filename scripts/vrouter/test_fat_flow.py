@@ -3,10 +3,11 @@ from common.vrouter.base import BaseVrouterTest
 import test
 from tcutils.util import get_random_name, is_v6
 import random
+from common.neutron.lbaasv2.base import BaseLBaaSTest
 
 AF_TEST = 'v6'
 
-class FatFlow(BaseVrouterTest):
+class FatFlow(BaseVrouterTest, BaseLBaaSTest):
 
     @classmethod
     def setUpClass(cls):
@@ -15,6 +16,11 @@ class FatFlow(BaseVrouterTest):
     @classmethod
     def tearDownClass(cls):
         super(FatFlow, cls).tearDownClass()
+
+    #This is required just to override the method in BaseLBaaSTest, else tests
+    #run only in openstack liberty and up
+    def is_test_applicable(self):
+        return (True, None)
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
@@ -387,7 +393,7 @@ class FatFlow(BaseVrouterTest):
         for vm in lb_pool_servers:
             vm.start_webserver(listen_port=port)
 
-        #Call LB fixutre to create LBaaS VIP, Listener, POOL , Member and associate a Health monitor to the pool
+        #Call LB fixutre to create LBaaS VIP, Listener, POOL and Members
         lb = self.create_lbaas(vip_name, vn_vip_fixture.get_uuid(),
               pool_name=pool_name, pool_algorithm=lb_method, pool_protocol=protocol,
               pool_port=port, members=pool_members, listener_name=listener_name,
@@ -396,8 +402,8 @@ class FatFlow(BaseVrouterTest):
         #Verify all the creations are success
         assert lb.verify_on_setup(), "Verify LB method failed"
 
-        assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, lb.vip_ip),\
-            "Verify lb method failed"
+        assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers,
+            lb.vip_ip), "Verify lb method failed"
 
         #Verify Fat flow on lb_pool_servers computes
         for vm in lb_pool_servers:
