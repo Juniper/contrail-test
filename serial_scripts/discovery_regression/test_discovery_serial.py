@@ -46,7 +46,8 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             ip = elem[0]
             self.logger.info("Stopping service %s.." % (elem,))
             self.inputs.stop_service('contrail-control', [ip])
-        time.sleep(20)
+        # Setting the sleep time to be hc_miss of discover.conf + 5 secs buffer
+        time.sleep(40)
         for elem in svc_lst:
             ip = elem[0]
             if (self.ds_obj.get_service_status(self.inputs.cfgm_ip, service_tuple=elem) == 'up'):
@@ -72,9 +73,10 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                     break
                 else:
                     retry = retry + 1
-                    time.sleep(1)
+                    time.sleep(5)
                     self.logger.warn("Service %s isn't up yet " % (elem,))
-                    if retry > 30:
+                    # Setting retry to be hc_miss + 1
+                    if retry > 8:
                         self.logger.info(
                             "Service %s is down even after service was started" % (elem,))
                         result = result and False
