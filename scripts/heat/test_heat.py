@@ -35,7 +35,7 @@ try:
         def tearDownClass(cls):
             super(TestHeat, cls).tearDownClass()
 
-        @test.attr(type=['sanity', 'ci_sanity'])
+        @test.attr(type=['ci_sanity'])
         @preposttest_wrapper
         def test_heat_stacks_list(self):
             '''
@@ -118,11 +118,12 @@ try:
             Validate Transit VN with multi transparent service chain using heat
             '''
             vn_list = []
+            mgmt_net_fix, m_hs_obj = self.config_vn(stack_name='svc_mgmt_net')
             right_net_fix, r_hs_obj = self.config_vn(stack_name='right_net')
             transit_net_fix, t_hs_obj = self.config_vn(stack_name='transit_net', transit=True)
             left_net_fix, l_hs_obj = self.config_vn(stack_name='left_net')
-            vn_list1 = [left_net_fix, transit_net_fix]
-            vn_list2 = [transit_net_fix, right_net_fix]
+            vn_list1 = [mgmt_net_fix, left_net_fix, transit_net_fix]
+            vn_list2 = [mgmt_net_fix, transit_net_fix, right_net_fix]
             end_vn_list = [left_net_fix, right_net_fix]
             vms = []
             vms = self.config_vms(end_vn_list)
@@ -139,14 +140,14 @@ try:
             for i, svc in enumerate(left_svcs):
                 si = self.config_svc_instance('sil_%d' % i, svc_tmpls[svc]['tmpl'], vn_list1)
                 left_sis.append(si)
-                if svc == 'in-network' and (self.inputs.get_af() == 'v6' or self.pt_based_svc):
-                    self.add_route_in_svm(si[0], [right_net_fix, 'eth1'])
+                if svc == 'in-network':
+                    self.add_route_in_svm(si[0], [right_net_fix, 'eth2'])
             right_sis = []
             for i, svc in enumerate(right_svcs):
                 si = self.config_svc_instance('sir_%d' % i, svc_tmpls[svc]['tmpl'], vn_list2)
                 right_sis.append(si)
-                if svc == 'in-network' and (self.inputs.get_af() == 'v6' or self.pt_based_svc):
-                    self.add_route_in_svm(si[0], [left_net_fix, 'eth0'])
+                if svc == 'in-network':
+                    self.add_route_in_svm(si[0], [left_net_fix, 'eth1'])
             left_si_names = [(':').join(si[0].si_fq_name) for si in left_sis]
             right_si_names = [(':').join(si[0].si_fq_name) for si in right_sis]
             left_rules = []
@@ -158,12 +159,10 @@ try:
                 right_rules.append(self.config_svc_rule(proto='icmp6', si_fq_names=right_si_names, src_vns=[transit_net_fix], dst_vns=[right_net_fix]))
             left_chain = self.config_svc_chain(left_rules, vn_list1, [l_hs_obj, t_hs_obj], 'left_chain')
             right_chain = self.config_svc_chain(right_rules, vn_list2, [t_hs_obj, r_hs_obj], 'right_chain')
-            time.sleep(10)
             assert vms[0].ping_with_certainty(vms[1].vm_ip, expectation=True)
         # end transit_vn_with_left_right_svc
 
         @preposttest_wrapper
-        @skip_because(address_family='v6')
         def test_transit_vn_sym_1_innetnat(self):
             svcs= ['in-network-nat']
             self.transit_vn_with_left_right_svc(svcs, svcs)
@@ -183,7 +182,6 @@ try:
             return True
 
         @preposttest_wrapper
-        @skip_because(address_family='v6')
         def test_transit_vn_asym_innetnat_trans(self):
             left= ['in-network-nat']
             right= ['transparent']
@@ -198,7 +196,6 @@ try:
             return True
 
         @preposttest_wrapper
-        @skip_because(address_family='v6')
         def test_transit_vn_asym_innet_nat(self):
             left= ['in-network']
             right= ['in-network-nat']
@@ -218,14 +215,12 @@ try:
             return True
 
         @preposttest_wrapper
-        @skip_because(address_family='v6')
         def test_transit_vn_sym_innet_nat(self):
             svcs= ['in-network', 'in-network-nat']
             self.transit_vn_with_left_right_svc(svcs, svcs)
             return True
 
         @preposttest_wrapper
-        @skip_because(address_family='v6')
         def test_transit_vn_sym_trans_nat(self):
             svcs= ['transparent', 'in-network-nat']
             self.transit_vn_with_left_right_svc(svcs, svcs)
@@ -238,16 +233,18 @@ try:
             return True
 
         @preposttest_wrapper
+        @skip_because(pt_based_svc=True)
         def test_max_inst_change_in_ecmp_svc(self):
             '''
             Validate creation of a in-network-nat service chain with 3 Service VMs using heat
             '''
             vn_list = []
+            mgmt_net_fix, m_hs_obj = self.config_vn(stack_name='mgmt_net')
             right_net_fix, r_hs_obj = self.config_vn(stack_name='right_net')
             left_net_fix, l_h_obj = self.config_vn(stack_name='left_net')
-            vn_list = [left_net_fix, right_net_fix]
+            vn_list = [mgmt_net_fix, left_net_fix, right_net_fix]
             vms = []
-            vms = self.config_vms(vn_list)
+            vms = self.config_vms([left_net_fix, right_net_fix])
             svc_template = self.config_svc_template(
                 stack_name='st', scaling=True, mode='in-network-nat')
             svc_instance, si_hs_obj = self.config_svc_instance(
@@ -256,7 +253,6 @@ try:
             svc_rules = []
             svc_rules.append(self.config_svc_rule(proto='any', si_fq_names=[si_fq_name], src_vns=[left_net_fix], dst_vns=[right_net_fix]))
             svc_chain = self.config_svc_chain(svc_rules, vn_list, [l_h_obj, r_hs_obj])
-            time.sleep(10)
             assert vms[0].ping_with_certainty(vms[1].vm_ip, expectation=True)
             dst_vm_list = [vms[1]]
             self.verify_traffic_flow(
@@ -265,9 +261,9 @@ try:
                 '%%%%% Will increase the SVMs in the SI to 4 %%%%%')
             self.update_stack(
                 si_hs_obj, change_sets=[('max_instances', '4')])
-            time.sleep(10)
-            svc_instance.verify_on_setup()
-            self.verify_svm_count(si_hs_obj, 'si', '4')
+            svc_instance.max_inst = 4
+            assert svc_instance.verify_on_setup(), 'SI verification failed after change of max_inst to 4'
+            assert self.verify_svm_count(si_hs_obj, 'si', '4'), 'SVM count doesnt match after incr to 4'
             assert vms[0].ping_with_certainty(vms[1].vm_ip, expectation=True)
             self.verify_traffic_flow(
                 vms[0], dst_vm_list, svc_instance, left_net_fix)
@@ -275,13 +271,13 @@ try:
                 '%%%%% Will decrease the SVMs in the SI to 2 %%%%%')
             self.update_stack(
                 si_hs_obj, change_sets=[('max_instances', '2')])
-            time.sleep(10)
-            svc_instance.verify_on_setup()
-            self.verify_svm_count(si_hs_obj, 'si', '2')
+            svc_instance.max_inst = 2
+            assert svc_instance.verify_on_setup(), 'SI verification failed after change of max_inst to 2'
+            assert self.verify_svm_count(si_hs_obj, 'si', '2'), 'SVM count doesnt match after decr to 2'
             assert vms[0].ping_with_certainty(vms[1].vm_ip, expectation=True)
             self.verify_traffic_flow(
                 vms[0], dst_vm_list, svc_instance, left_net_fix)
-    # end test_max_inst_change_in_ecmp_svc
+        # end test_max_inst_change_in_ecmp_svc
 
         @preposttest_wrapper
         def test_ecmp_svc_creation_with_heat(self):
@@ -289,11 +285,13 @@ try:
             Validate creation of a in-network-nat service chain with 3 Service VMs using heat
             '''
             vn_list = []
+            mgmt_net_fix, m_hs_obj = self.config_vn(stack_name='mgmt_net')
             right_net_fix, r_hs_obj = self.config_vn(stack_name='right_net')
             left_net_fix, l_h_obj = self.config_vn(stack_name='left_net')
-            vn_list = [left_net_fix, right_net_fix]
+            vn_list = [mgmt_net_fix, left_net_fix, right_net_fix]
+            end_vn_list = [left_net_fix, right_net_fix]
             vms = []
-            vms = self.config_vms(vn_list)
+            vms = self.config_vms(end_vn_list)
             svc_template = self.config_svc_template(
                 stack_name='st', scaling=True, mode='in-network-nat')
             svc_instance, si_hs_obj = self.config_svc_instance(
@@ -302,7 +300,6 @@ try:
             svc_rules = []
             svc_rules.append(self.config_svc_rule(proto='any', si_fq_names=[si_fq_name], src_vns=[left_net_fix], dst_vns=[right_net_fix]))
             svc_chain = self.config_svc_chain(svc_rules, vn_list, [l_h_obj, r_hs_obj])
-            time.sleep(10)
             assert vms[0].ping_with_certainty(vms[1].vm_ip, expectation=True)
             dst_vm_list = [vms[1]]
             self.verify_traffic_flow(
@@ -313,11 +310,13 @@ try:
             '''
             Validate multi service chain using heat
             '''
+            mgmt_net_fix, m_hs_obj = self.config_vn(stack_name='mgmt_net')
             right_net_fix, r_hs_obj = self.config_vn(stack_name='right_net')
             left_net_fix, l_hs_obj = self.config_vn(stack_name='left_net')
-            vn_list = [left_net_fix, right_net_fix]
+            vn_list = [mgmt_net_fix, left_net_fix, right_net_fix]
+            end_vn_list = [left_net_fix, right_net_fix]
             vms = []
-            vms = self.config_vms(vn_list)
+            vms = self.config_vms(end_vn_list)
             svc_tmpls = {}
             for i, mode in enumerate(set(svcs.values())):
                 tmpl = self.config_svc_template(stack_name='st_%d' % i,
@@ -344,7 +343,6 @@ try:
                         src_vns=[left_net_fix], dst_vns=[right_net_fix],
                         si_fq_names=[(':').join(sis[policy['svc']][0].si_fq_name)]))
             chain = self.config_svc_chain(rules, vn_list, [l_hs_obj, r_hs_obj], 'svc_chain')
-            time.sleep(10)
             if test_ping:
                 assert vms[0].ping_with_certainty(vms[1].vm_ip, expectation=True)
             for policy in policys:
