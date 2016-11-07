@@ -358,12 +358,17 @@ check_test_discovery
 
 setup_tors
 
+if [ $JENKINS_TRIGGERED -eq 1 ]; then
+    export REPORT_DETAILS_FILE=report_details_${SCRIPT_TS}_$(date +"%Y_%m_%d_%H_%M_%S").ini
+    echo $REPORT_DETAILS_FILE
+fi
+
 if [[ ! -z $path ]];then
     for p in $path
         do
             run_tests $p
             run_tests_serial $p
-            python tools/report_gen.py $TEST_CONFIG_FILE
+            python tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
             generate_html 
             upload_to_web_server
             sleep 2
@@ -390,7 +395,7 @@ if [[ -z $path ]] && [[ -z $testrargs ]];then
 fi
 sleep 2
 
-python tools/report_gen.py $TEST_CONFIG_FILE
+python tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
 echo "Generated report_details* file: $REPORT_DETAILS_FILE"
 parse_results
 generate_html
