@@ -280,7 +280,12 @@ run_tests
 run_tests_serial
 sleep 2
 
-python tools/report_gen.py $TEST_CONFIG_FILE
+if [ $JENKINS_TRIGGERED -eq 1 ]; then
+    export REPORT_DETAILS_FILE=report_details_${SCRIPT_TS}_$(date +"%Y_%m_%d_%H_%M_%S").ini
+    echo $REPORT_DETAILS_FILE
+fi
+
+python tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
 echo "Generated report_details* file: $REPORT_DETAILS_FILE"
 parse_results
 generate_html 

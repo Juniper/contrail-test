@@ -23,7 +23,7 @@ logging.getLogger("paramiko").setLevel(logging.WARNING)
 
 class ContrailReportInit:
 
-    def __init__(self, ini_file):
+    def __init__(self, ini_file, report_details):
         self.build_id = None
         self.bgp_stress = False
         self.config = ConfigParser.ConfigParser()
@@ -75,9 +75,7 @@ class ContrailReportInit:
             datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
         self.single_node = self.get_os_env('SINGLE_NODE_IP')
         self.jenkins_trigger = self.get_os_env('JENKINS_TRIGGERED')
-        if self.jenkins_trigger:
-            self.ts = self.ts + '_' + str(time.time())
-        self.report_details_file = 'report_details_%s.ini' % (self.ts)
+        self.report_details_file = report_details
         self.distro = None
 
     # end __init__
@@ -435,11 +433,11 @@ class ContrailReportInit:
 
 # end
 
-def main(arg1):
-    obj = ContrailReportInit(arg1)
+def main(arg1, arg2):
+    obj = ContrailReportInit(arg1, arg2)
     obj.setUp()
     obj.get_cores()
 
-# accept sanity_params.ini
+# accept sanity_params.ini and report_details.ini
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(sys.argv[1], sys.argv[2])
