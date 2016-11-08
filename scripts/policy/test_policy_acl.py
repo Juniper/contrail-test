@@ -54,7 +54,9 @@ class TestPolicyAcl(BasePolicyTest):
                 vn_name='VN1',
                 inputs=self.inputs,
                 subnets=['10.1.1.0/24'],
-                ipam_fq_name=self.ipam1_obj.fq_name))
+                ipam_fq_name=self.ipam1_obj.fq_name,orch=self.orchestrator))
+        
+        self.VN1_fixture.read()
 
         self.VN2_fixture = self.useFixture(
             VNFixture(
@@ -83,7 +85,7 @@ class TestPolicyAcl(BasePolicyTest):
                 connections=self.connections,
                 vn_obj=self.VN1_fixture.obj,
                 vm_name='VM11',
-                project_name=self.project.project_name))
+                project_name=self.project.project_name,orch=self.orchestrator))
 
         self.VM21_fixture = self.useFixture(
             VMFixture(
@@ -99,13 +101,13 @@ class TestPolicyAcl(BasePolicyTest):
                 vm_name='VM31',
                 project_name=self.project.project_name))
 
-        self.VM11_fixture.wait_till_vm_is_up()
-        self.VM21_fixture.wait_till_vm_is_up()
-        self.VM31_fixture.wait_till_vm_is_up()
+        assert self.VM11_fixture.wait_till_vm_is_up()
+        assert self.VM21_fixture.wait_till_vm_is_up()
+        assert self.VM31_fixture.wait_till_vm_is_up()
     
     # end setup_vm
 
-    @attr(type=['sanity', 'vcenter'])
+    @attr(type=['sanity', 'vcenter', 'vrouter_gw'])
     @tcutils.wrappers.preposttest_wrapper
     def test_policy_inheritance_src_vn_dst_pol(self):
         """Test cases to test policy inheritance"""
@@ -177,8 +179,7 @@ class TestPolicyAcl(BasePolicyTest):
                             policy13_fixture.policy_obj]},
                 vn_obj={self.VN1_fixture.vn_name : self.VN1_fixture},
                 vn_policys=['policy12','policy13'],
-                project_name=self.project.project_name))
-
+                project_name=self.project.project_name,options='contrail'))
         VN2_policy_fixture = self.useFixture(
             VN_Policy_Fixture(
                 connections=self.connections,
