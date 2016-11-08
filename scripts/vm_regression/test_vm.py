@@ -3200,7 +3200,6 @@ class TestBasicIPv6VMVN(test_vm_basic.TestBasicVMVN):
         super(TestBasicIPv6VMVN, cls).setUpClass()
         cls.inputs.set_af('v6')
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter')
     def test_metadata_service(self):
@@ -3233,7 +3232,6 @@ class TestBasicIPv6VMVN(test_vm_basic.TestBasicVMVN):
     def test_ping_within_vn(self):
         super(TestBasicIPv6VMVN, self).test_ping_within_vn()
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_generic_link_local_service(self):

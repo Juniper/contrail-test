@@ -754,12 +754,12 @@ class TestPorts(BaseNeutronTest):
         vm1_fixture = self.useFixture(
             VMFixture(
                 vn_objs=vn_objs, project_name=self.inputs.project_name, connections=self.connections,
-                flavor='m1.medium', image_name='vsrx', vm_name=vsrx1_name,
+                image_name='vsrx', vm_name=vsrx1_name,
                 port_ids=port_ids1, zone='nova'))
         vm2_fixture = self.useFixture(
             VMFixture(
                 vn_objs=vn_objs, project_name=self.inputs.project_name, connections=self.connections,
-                flavor='m1.medium', image_name='vsrx', vm_name=vsrx2_name,
+                image_name='vsrx', vm_name=vsrx2_name,
                 port_ids=port_ids2, zone='nova'))
         vm_test_fixture = self.create_vm(vn1_fixture, vm_test_name,
                                          image_name='ubuntu-traffic')
@@ -909,14 +909,12 @@ class TestPorts(BaseNeutronTest):
         port2_obj = self.create_port(net_id=vn1_fixture.vn_id)
         vm1_fixture = self.create_vm(vn1_fixture, vm1_name,
                                      image_name='ubuntu-keepalive',
-                                     flavor='m1.medium',
                                      port_ids=[port1_obj['id']])
         vm2_fixture = self.create_vm(vn1_fixture, vm2_name,
                                      image_name='ubuntu-keepalive',
-                                     flavor='m1.medium',
                                      port_ids=[port2_obj['id']])
         vm_test_fixture = self.create_vm(vn1_fixture, vm_test_name,
-                                          flavor='m1.medium', image_name='ubuntu')
+                                          image_name='ubuntu')
         assert vm1_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
         assert vm2_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
         assert vm_test_fixture.wait_till_vm_is_up(
