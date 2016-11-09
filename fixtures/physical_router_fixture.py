@@ -73,6 +73,11 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
         self.phy_device.add_bgp_router(bgp_router)
         self.vnc_api_h.physical_router_update(self.phy_device)
 
+    def unbind_bgp_router(self, bgp_router):
+        self.phy_device = self.vnc_api_h.physical_router_read(id=self.phy_device.uuid)
+        self.phy_device.del_bgp_router(bgp_router)
+        self.vnc_api_h.physical_router_update(self.phy_device)
+
     def delete_device(self):
         self.phy_device = self.vnc_api_h.physical_router_read(id=self.phy_device.uuid)
         self.phy_device.del_bgp_router(self.bgp_router)
