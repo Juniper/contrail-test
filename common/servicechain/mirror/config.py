@@ -18,13 +18,13 @@ class ConfigSvcMirror(ConfigSvcChain):
         execute_cmd(session, cmd, self.logger)
         return pcap
 
-    def stop_tcpdump(self, session, pcap):
+    def stop_tcpdump(self, session, pcap, filt=''):
         self.logger.info("Waiting for the tcpdump write to complete.")
         sleep(30)
         cmd = 'kill $(pidof tcpdump)'
         execute_cmd(session, cmd, self.logger)
         execute_cmd(session, 'sync', self.logger)
-        cmd = 'tcpdump -r %s | wc -l' % pcap
+        cmd = 'tcpdump -r %s %s | wc -l' % (pcap, filt)
         out, err = execute_cmd_out(session, cmd, self.logger)
         count = int(out.strip('\n'))
         cmd = 'rm -f %s' % pcap
