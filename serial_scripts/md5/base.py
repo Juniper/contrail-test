@@ -18,7 +18,7 @@ import os
 import re
 from time import sleep
 
-class Md5Base(test_v1.BaseTestCase_v1, VerifySecGroup, ConfigPolicy):
+class Md5Base(VerifySecGroup, ConfigPolicy, test_v1.BaseTestCase_v1):
 
     @classmethod
     def setUpClass(cls):
