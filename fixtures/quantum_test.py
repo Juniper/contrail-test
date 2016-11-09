@@ -434,7 +434,10 @@ class QuantumHelper():
     # end delete_policy
 
     def get_policy_fq_name(self, policy_obj):
-        return policy_obj['policy']['fq_name']
+        try:
+            return policy_obj['policy']['fq_name']
+        except Exception as e:
+            return policy_obj.get_fq_name()
     # end get_policy_fq_name
 
     def update_network(self, vn_id, network_dict):
