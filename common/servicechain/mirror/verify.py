@@ -568,6 +568,34 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
                 self.logger.warning('No mirroring action seen')
         return result
 
+
+    @retry(delay=2, tries=6)
+    def verify_port_mirroring(self, src_vm, dst_vm, mirr_vm):
+        result = True
+        svm = mirr_vm.vm_obj
+        if svm.status == 'ACTIVE':
+            svm_name = svm.name
+            host = self.get_svm_compute(svm_name)
+            tapintf = self.get_svm_tapintf(svm_name)
+        session = ssh(host['host_ip'], host['username'], host['password'])
+        pcap = self.start_tcpdump(session, tapintf)
+        assert src_vm.ping_with_certainty(dst_vm.vm_ip, count=5)
+        self.logger.info('Ping from %s to %s executed with c=5, expected mirrored packets 5 Ingress,5 Egress count = 10'
+            % (src_vm.vm_ip, dst_vm.vm_ip))
+        exp_count = 10
+        filt = '| grep \"length 100\"'
+        mirror_pkt_count = self.stop_tcpdump(session, pcap, filt)
+        sleep(10)
+        errmsg = "%s ICMP Packets mirrored to the analyzer VM %s,"\
+                 "Expected %s packets" % (
+                     mirror_pkt_count, svm_name, exp_count)
+        if mirror_pkt_count != exp_count:
+            self.logger.error(errmsg)
+            assert False, errmsg
+        self.logger.info("%s ICMP packets are mirrored to the analyzer "
+                         "service VM '%s'", mirror_pkt_count, svm_name)
+        return result
+
     def verify_policy_delete_add(self, si_prefix, si_count=1):
         # Delete policy
         self.detach_policy(self.vn1_policy_fix)

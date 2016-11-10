@@ -33,6 +33,7 @@ class VerifyIntfMirror(VerifySvcMirror):
         src_compute = compute_1
         dst_compute = compute_2
         analyzer_compute = compute_3
+        self.logger.info("src compute %s -> dst compute %s => analyzer compute %s" % (src_compute, dst_compute, analyzer_compute))
         return self.verify_intf_mirroring(src_compute, dst_compute, analyzer_compute)        
 
     def verify_intf_mirroring_2(self):
@@ -53,6 +54,7 @@ class VerifyIntfMirror(VerifySvcMirror):
         src_compute = compute_1
         dst_compute = compute_1
         analyzer_compute = compute_1
+        self.logger.info("src compute %s -> dst compute %s => analyzer compute %s" % (src_compute, dst_compute, analyzer_compute))
         return self.verify_intf_mirroring(src_compute, dst_compute, analyzer_compute)
 
     def verify_intf_mirroring_3(self):
@@ -73,6 +75,7 @@ class VerifyIntfMirror(VerifySvcMirror):
         src_compute = compute_1
         dst_compute = compute_1
         analyzer_compute = compute_2
+        self.logger.info("src compute %s -> dst compute %s => analyzer compute %s" % (src_compute, dst_compute, analyzer_compute))
         return self.verify_intf_mirroring(src_compute, dst_compute, analyzer_compute)
 
     def verify_intf_mirroring_4(self):
@@ -93,6 +96,7 @@ class VerifyIntfMirror(VerifySvcMirror):
         src_compute = compute_1
         dst_compute = compute_2
         analyzer_compute = compute_1
+        self.logger.info("src compute %s -> dst compute %s => analyzer compute %s" % (src_compute, dst_compute, analyzer_compute))
         return self.verify_intf_mirroring(src_compute, dst_compute, analyzer_compute)
 
     def verify_intf_mirroring_5(self):
@@ -113,6 +117,7 @@ class VerifyIntfMirror(VerifySvcMirror):
         src_compute = compute_1
         dst_compute = compute_2
         analyzer_compute = compute_2
+        self.logger.info("src compute %s -> dst compute %s => analyzer compute %s" % (src_compute, dst_compute, analyzer_compute))
         return self.verify_intf_mirroring(src_compute, dst_compute, analyzer_compute)
 
     def verify_intf_mirroring(self, src_compute, dst_compute, analyzer_compute):
@@ -339,7 +344,7 @@ class VerifyIntfMirror(VerifySvcMirror):
         self.enable_intf_mirroring(vnc, tap_intf_obj, analyzer_ip_address, analyzer_name, routing_instance)
 
         self.logger.info("src vm ip %s -> dst vm ip %s => mirror vm ip %s" % (src_vm_ip, dst_vm_ip, mirror_vm_ip))
-        if not self.verify_mirroring(None, src_vm_fixture, dst_vm_fixture, mirror_vm_fixture):
+        if not self.verify_port_mirroring(src_vm_fixture, dst_vm_fixture, mirror_vm_fixture):
             result = result and False
             self.logger.error("Intf not mirrored")
 
