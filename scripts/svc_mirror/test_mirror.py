@@ -283,7 +283,7 @@ class TestSVCMirrorIPv6(TestSVCMirror):
         """Validate the service chain mirroring"""
         return self.verify_svc_mirroring()
 
-class TestSVCV2MirrorIPv6(TestSVCMirror):
+class TestSVCV2MirrorIPv6(TestSVC2Mirror):
 
     @classmethod
     def setUpClass(cls):
