@@ -15,112 +15,220 @@ from vnc_api.gen.resource_xsd import VirtualMachineInterfacePropertiesType
 
 class VerifyIntfMirror(VerifySvcMirror):
 
-    def verify_intf_mirroring_1(self):
-        """Validate the interface mirroring
-        src vm, dst vm and analyzer vm on different CNs
-        """
+    def get_compute_nodes(self, src, dst, analyzer):
         host_list = []
+        compute_nodes = []
+
         for host in self.inputs.compute_ips:
             host_list.append(self.inputs.host_data[host]['name'])
-        compute_1 = host_list[0]
-        compute_2 = host_list[0]
-        compute_3 = host_list[0]
-        if len(host_list) > 1:
-            compute_1 = host_list[0]
-            compute_2 = host_list[1]
-        if len(host_list) > 2:
-            compute_3 = host_list[2]
-        src_compute = compute_1
-        dst_compute = compute_2
-        analyzer_compute = compute_3
-        self.logger.info("src compute %s -> dst compute %s => analyzer compute %s" % (src_compute, dst_compute, analyzer_compute))
-        return self.verify_intf_mirroring(src_compute, dst_compute, analyzer_compute)        
 
-    def verify_intf_mirroring_2(self):
+        no_of_computes = len(host_list)
+
+        for compute_id in [src, dst, analyzer]:
+            if compute_id == 0:
+                compute_nodes.append(host_list[0])
+
+            if compute_id == 1 and no_of_computes > 1:
+                compute_nodes.append(host_list[1])
+            else:
+                compute_nodes.append(host_list[0])
+
+            if compute_id == 2:
+                if no_of_computes > 2:
+                    compute_nodes.append(host_list[2])
+                elif no_of_computes == 2:
+                    compute_nodes.append(host_list[1])
+                else:
+                    compute_nodes.append(host_list[0])
+        self.logger.info("src compute %s -> dst compute %s => analyzer compute %s" %
+            (compute_nodes[0], compute_nodes[1], compute_nodes[2]))
+        return compute_nodes
+
+
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn1_analyzer_on_cn3_vn1(self):
         """Validate the interface mirroring
-        src vm, dst vm and analyzer vm on same CN
+        src vm, dst vm and analyzer vm on different CNs, all in same VN
         """
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
-        compute_1 = host_list[0]
-        compute_2 = host_list[0]
-        compute_3 = host_list[0]
-        if len(host_list) > 1:
-            compute_1 = host_list[0]
-            compute_2 = host_list[1]
-        if len(host_list) > 2:
-            compute_3 = host_list[2]
-        src_compute = compute_1
-        dst_compute = compute_1
-        analyzer_compute = compute_1
-        self.logger.info("src compute %s -> dst compute %s => analyzer compute %s" % (src_compute, dst_compute, analyzer_compute))
-        return self.verify_intf_mirroring(src_compute, dst_compute, analyzer_compute)
+        compute_nodes  = self.get_compute_nodes(0, 1, 2)
+        return self.verify_intf_mirroring(compute_nodes, [0, 0, 0])
 
-    def verify_intf_mirroring_3(self):
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn2_analyzer_on_cn3_vn3(self):
         """Validate the interface mirroring
-        src vm, dst vm on same CN and analyzer vm on different CN
+        src vm, dst vm and analyzer vm on different CNs, all in different VNs
         """
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
-        compute_1 = host_list[0]
-        compute_2 = host_list[0]
-        compute_3 = host_list[0]
-        if len(host_list) > 1:
-            compute_1 = host_list[0]
-            compute_2 = host_list[1]
-        if len(host_list) > 2:
-            compute_3 = host_list[2]
-        src_compute = compute_1
-        dst_compute = compute_1
-        analyzer_compute = compute_2
-        self.logger.info("src compute %s -> dst compute %s => analyzer compute %s" % (src_compute, dst_compute, analyzer_compute))
-        return self.verify_intf_mirroring(src_compute, dst_compute, analyzer_compute)
+        compute_nodes  = self.get_compute_nodes(0, 1, 2)
+        return self.verify_intf_mirroring(compute_nodes, [0, 1, 2])
 
-    def verify_intf_mirroring_4(self):
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn1_analyzer_on_cn3_vn2(self):
         """Validate the interface mirroring
-        src vm, analyzer vm on same CN and dst vm on different CN
+        src vm, dst vm and analyzer vm on different CNs, src and dst in vn1, analyzer in vn2
         """
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
-        compute_1 = host_list[0]
-        compute_2 = host_list[0]
-        compute_3 = host_list[0]
-        if len(host_list) > 1:
-            compute_1 = host_list[0]
-            compute_2 = host_list[1]
-        if len(host_list) > 2:
-            compute_3 = host_list[2]
-        src_compute = compute_1
-        dst_compute = compute_2
-        analyzer_compute = compute_1
-        self.logger.info("src compute %s -> dst compute %s => analyzer compute %s" % (src_compute, dst_compute, analyzer_compute))
-        return self.verify_intf_mirroring(src_compute, dst_compute, analyzer_compute)
+        compute_nodes  = self.get_compute_nodes(0, 1, 2)
+        return self.verify_intf_mirroring(compute_nodes, [0, 0, 1])
 
-    def verify_intf_mirroring_5(self):
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn2_analyzer_on_cn3_vn1(self):
         """Validate the interface mirroring
-        dst vm, analyzer vm on same CN and src vm on different CN
+        src vm, dst vm and analyzer vm on different CNs, src and analyzer in vn1, dst in vn2
         """
-        host_list = []
-        for host in self.inputs.compute_ips:
-            host_list.append(self.inputs.host_data[host]['name'])
-        compute_1 = host_list[0]
-        compute_2 = host_list[0]
-        compute_3 = host_list[0]
-        if len(host_list) > 1:
-            compute_1 = host_list[0]
-            compute_2 = host_list[1]
-        if len(host_list) > 2:
-            compute_3 = host_list[2]
-        src_compute = compute_1
-        dst_compute = compute_2
-        analyzer_compute = compute_2
-        self.logger.info("src compute %s -> dst compute %s => analyzer compute %s" % (src_compute, dst_compute, analyzer_compute))
-        return self.verify_intf_mirroring(src_compute, dst_compute, analyzer_compute)
+        compute_nodes  = self.get_compute_nodes(0, 1, 2)
+        return self.verify_intf_mirroring(compute_nodes, [0, 1, 0])
 
-    def verify_intf_mirroring(self, src_compute, dst_compute, analyzer_compute):
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn2_analyzer_on_cn3_vn2(self):
+        """Validate the interface mirroring
+        src vm, dst vm and analyzer vm on different CNs, src in vn1, dst and analyzer in vn2
+        """
+        compute_nodes  = self.get_compute_nodes(0, 1, 2)
+        return self.verify_intf_mirroring(compute_nodes, [0, 1, 1])
+
+
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn1_vn1_analyzer_on_cn1_vn1(self):
+        """Validate the interface mirroring
+        src vm, dst vm and analyzer vm on same CN, all in same VN
+        """
+
+        compute_nodes = self.get_compute_nodes(0, 0, 0)
+        return self.verify_intf_mirroring(compute_nodes, [0, 0, 0])
+
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn1_vn2_analyzer_on_cn1_vn3(self):
+        """Validate the interface mirroring
+        src vm, dst vm and analyzer vm on same CN, all in different VNs
+        """
+
+        compute_nodes = self.get_compute_nodes(0, 0, 0)
+        return self.verify_intf_mirroring(compute_nodes, [0, 1, 2])
+
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn1_vn1_analyzer_on_cn1_vn2(self):
+        """Validate the interface mirroring
+        src vm, dst vm and analyzer vm on same CN, src and dst in vn1, analyzer in vn2
+        """
+
+        compute_nodes = self.get_compute_nodes(0, 0, 0)
+        return self.verify_intf_mirroring(compute_nodes, [0, 0, 1])
+
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn1_vn2_analyzer_on_cn1_vn1(self):
+        """Validate the interface mirroring
+        src vm, dst vm and analyzer vm on same CN, src and analyzer in vn1, dst in vn2
+        """
+
+        compute_nodes = self.get_compute_nodes(0, 0, 0)
+        return self.verify_intf_mirroring(compute_nodes, [0, 1, 0])
+
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn1_vn2_analyzer_on_cn1_vn2(self):
+        """Validate the interface mirroring
+        src vm, dst vm and analyzer vm on same CN, src in vn1, dst and analyzer in vn2
+        """
+
+        compute_nodes = self.get_compute_nodes(0, 0, 0)
+        return self.verify_intf_mirroring(compute_nodes, [0, 1, 1])
+
+
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn1_vn1_analyzer_on_cn2_vn1(self):
+        """Validate the interface mirroring
+        src vm, dst vm on same CN and analyzer vm on different CN, all in same VN
+        """
+        compute_nodes  = self.get_compute_nodes(0, 0, 1)
+        return self.verify_intf_mirroring(compute_nodes, [0, 0, 0])
+
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn1_vn2_analyzer_on_cn2_vn3(self):
+        """Validate the interface mirroring
+        src vm, dst vm on same CN and analyzer vm on different CN, all in different VNs
+        """
+        compute_nodes  = self.get_compute_nodes(0, 0, 1)
+        return self.verify_intf_mirroring(compute_nodes, [0, 1, 2])
+
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn1_vn1_analyzer_on_cn2_vn2(self):
+        """Validate the interface mirroring
+        src vm, dst vm on same CN and analyzer vm on different CN, src and dst in vn1, analyzer in vn2
+        """
+        compute_nodes  = self.get_compute_nodes(0, 0, 1)
+        return self.verify_intf_mirroring(compute_nodes, [0, 0, 1])
+
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn1_vn2_analyzer_on_cn2_vn1(self):
+        """Validate the interface mirroring
+        src vm, dst vm on same CN and analyzer vm on different CN, src and analyzer in vn1, dst in vn2
+        """
+        compute_nodes  = self.get_compute_nodes(0, 0, 1)
+        return self.verify_intf_mirroring(compute_nodes, [0, 1, 0])
+
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn1_vn2_analyzer_on_cn2_vn2(self):
+        """Validate the interface mirroring
+        src vm, dst vm on same CN and analyzer vm on different CN, src in vn1, dst and analyzer in vn2
+        """
+        compute_nodes  = self.get_compute_nodes(0, 0, 1)
+        return self.verify_intf_mirroring(compute_nodes, [0, 1, 1])
+
+
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn1_analyzer_on_cn1_vn1(self):
+        """Validate the interface mirroring
+        src vm, analyzer vm on same CN and dst vm on different CN, all in same VN
+        """
+        compute_nodes  = self.get_compute_nodes(0, 1, 0)
+        return self.verify_intf_mirroring(compute_nodes, [0, 0, 0])
+
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn2_analyzer_on_cn1_vn3(self):
+        """Validate the interface mirroring
+        src vm, analyzer vm on same CN and dst vm on different CN, all in different VNs
+        """
+        compute_nodes  = self.get_compute_nodes(0, 1, 0)
+        return self.verify_intf_mirroring(compute_nodes, [0, 1, 2])
+
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn1_analyzer_on_cn1_vn2(self):
+        """Validate the interface mirroring
+        src vm, analyzer vm on same CN and dst vm on different CN, src and dst in vn1, analyzer in vn2
+        """
+        compute_nodes  = self.get_compute_nodes(0, 1, 0)
+        return self.verify_intf_mirroring(compute_nodes, [0, 0, 1])
+
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn2_analyzer_on_cn1_vn1(self):
+        """Validate the interface mirroring
+        src vm, analyzer vm on same CN and dst vm on different CN, src and analyzer in vn1, dst in vn2
+        """
+        compute_nodes  = self.get_compute_nodes(0, 1, 0)
+        return self.verify_intf_mirroring(compute_nodes, [0, 1, 0])
+
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn2_analyzer_on_cn1_vn2(self):
+        """Validate the interface mirroring
+        src vm, analyzer vm on same CN and dst vm on different CN, src in vn1, dst and analyzer in vn2
+        """
+        compute_nodes  = self.get_compute_nodes(0, 1, 0)
+        return self.verify_intf_mirroring(compute_nodes, [0, 1, 1])
+
+    def verify_intf_mirroring_src_on_cn2_vn1_dst_on_cn1_vn1_analyzer_on_cn1_vn1(self):
+        """Validate the interface mirroring
+        dst vm, analyzer vm on same CN and src vm on different CN, all in same VN
+        """
+        compute_nodes  = self.get_compute_nodes(1, 0, 0)
+        return self.verify_intf_mirroring(compute_nodes, [0, 0, 0])
+
+    def verify_intf_mirroring_src_on_cn2_vn1_dst_on_cn1_vn2_analyzer_on_cn1_vn3(self):
+        """Validate the interface mirroring
+        dst vm, analyzer vm on same CN and src vm on different CN, all in different VNs
+        """
+        compute_nodes  = self.get_compute_nodes(1, 0, 0)
+        return self.verify_intf_mirroring(compute_nodes, [0, 1, 2])
+
+    def verify_intf_mirroring_src_on_cn2_vn1_dst_on_cn1_vn1_analyzer_on_cn1_vn2(self):
+        """Validate the interface mirroring
+        dst vm, analyzer vm on same CN and src vm on different CN, src and dst in vn1, analyzer in vn2
+        """
+        compute_nodes  = self.get_compute_nodes(1, 0, 0)
+        return self.verify_intf_mirroring(compute_nodes, [0, 0, 1])
+
+    def verify_intf_mirroring_src_on_cn2_vn1_dst_on_cn1_vn2_analyzer_on_cn1_vn1(self):
+        """Validate the interface mirroring
+        dst vm, analyzer vm on same CN and src vm on different CN, src and analyzer in vn1, dst in vn2
+        """
+        compute_nodes  = self.get_compute_nodes(1, 0, 0)
+        return self.verify_intf_mirroring(compute_nodes, [0, 1, 0])
+
+    def verify_intf_mirroring_src_on_cn2_vn1_dst_on_cn1_vn2_analyzer_on_cn1_vn2(self):
+        """Validate the interface mirroring
+        dst vm, analyzer vm on same CN and src vm on different CN, src in vn1, dst and analyzer in vn2
+        """
+        compute_nodes  = self.get_compute_nodes(1, 0, 0)
+        return self.verify_intf_mirroring(compute_nodes, [0, 1, 1])
+
+    def verify_intf_mirroring(self, compute_nodes, vn_index_list):
         """Validate the interface mirroring
            Test steps:
            1. Create vn1/vm1_vn1, vn1/vm2_vn1, vn1/mirror_vm_vn1,  vn2/vm2_vn2, vn2/mirror_vm_vn2, vn3/mirror_vm_vn3
@@ -136,54 +244,36 @@ class VerifyIntfMirror(VerifySvcMirror):
         """
         result = True
 
-        vn1_subnets = [get_random_cidr(af=self.inputs.get_af())]
-        vn2_subnets = [get_random_cidr(af=self.inputs.get_af())]
-        vn3_subnets = [get_random_cidr(af=self.inputs.get_af())]
-
-        self.vn1_fq_name = "default-domain:" + self.inputs.project_name + \
-            ":" + get_random_name("vn1")
-        self.vn1_name = self.vn1_fq_name.split(':')[2] 
-        self.vn2_fq_name = "default-domain:" + self.inputs.project_name + \
-            ":" + get_random_name("vn2")
-        self.vn2_name = self.vn2_fq_name.split(':')[2]
-
-        self.vn3_fq_name = "default-domain:" + self.inputs.project_name + \
-            ":" + get_random_name("vn3")
-        self.vn3_name = self.vn3_fq_name.split(':')[2]
-
-        self.vm1_name_vn1 = get_random_name("vm1_vn1")
-        self.vm2_name_vn2 = get_random_name("vm2_vn2")
-        self.vm2_name_vn1 = get_random_name("vm2_vn1")
-
-        self.mirror_vm_name_vn1 = get_random_name("mirror_vm_vn1")
-        self.mirror_vm_name_vn2 = get_random_name("mirror_vm_vn2")
-        self.mirror_vm_name_vn3 = get_random_name("mirror_vm_vn3")
-
-        self.analyzer_name_vn1 = "default-domain:" + self.inputs.project_name + \
-            ":" + self.mirror_vm_name_vn1
-        self.routing_instance_vn1 = self.vn1_fq_name + ':' + self.vn1_name
-
-        self.analyzer_name_vn3 = "default-domain:" + self.inputs.project_name + \
-            ":" + self.mirror_vm_name_vn3
-        self.routing_instance_vn3 = self.vn3_fq_name + ':' + self.vn3_name
-
-        self.analyzer_name_vn2 = "default-domain:" + self.inputs.project_name + \
-            ":" + self.mirror_vm_name_vn2
-        self.routing_instance_vn2 = self.vn2_fq_name + ':' + self.vn2_name
+        src_compute = compute_nodes[0]
+        dst_compute = compute_nodes[1]
+        analyzer_compute = compute_nodes[2]
 
         self.analyzer_port = 8099
         image_name = 'ubuntu-traffic'
 
-        self.vn1_subnets = vn1_subnets
-        self.vn2_subnets = vn2_subnets
-        self.vn3_subnets = vn3_subnets
+        self.vn1_subnets = [get_random_cidr(af=self.inputs.get_af())]
+        self.vn2_subnets = [get_random_cidr(af=self.inputs.get_af())]
+        self.vn3_subnets = [get_random_cidr(af=self.inputs.get_af())]
 
-        self.policy_name_vn1_vn2 = get_random_name("vn1_vn2_pass")
-        self.policy_name_vn1_vn3 = get_random_name("vn1_vn3_pass")
+
+        self.vn1_fq_name = "default-domain:" + self.inputs.project_name + \
+            ":" + get_random_name("vn1")
+        self.vn2_fq_name = "default-domain:" + self.inputs.project_name + \
+            ":" + get_random_name("vn2")
+        self.vn3_fq_name = "default-domain:" + self.inputs.project_name + \
+            ":" + get_random_name("vn3")
+
+        self.vn1_name = self.vn1_fq_name.split(':')[2]
+        self.vn2_name = self.vn2_fq_name.split(':')[2]
+        self.vn3_name = self.vn3_fq_name.split(':')[2]
 
         self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
         self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
         self.vn3_fixture = self.config_vn(self.vn3_name, self.vn3_subnets)
+
+        self.policy_name_vn1_vn2 = get_random_name("vn1_vn2_pass")
+        self.policy_name_vn1_vn3 = get_random_name("vn1_vn3_pass")
+        self.policy_name_vn2_vn3 = get_random_name("vn2_vn3_pass")
 
         self.rules_vn1_vn2 = [{'direction': '<>',
                        'protocol': 'icmp',
@@ -203,16 +293,6 @@ class VerifyIntfMirror(VerifySvcMirror):
                        'simple_action': 'pass',
                        'action_list': {'simple_action': 'pass'}
                        }]
-        self.rules_vn1_vn2.append({'direction': '<>',
-                               'protocol': 'udp',
-                               'source_network': self.vn1_name,
-                               'src_ports': [0, -1],
-                               'dest_network': self.vn2_name,
-                               'dst_ports': [0, -1],
-                               'simple_action': 'pass',
-                               'action_list': {'simple_action': 'pass'}
-                               }
-                              )
 
         self.rules_vn1_vn3 = [{'direction': '<>',
                        'protocol': 'icmp',
@@ -232,101 +312,148 @@ class VerifyIntfMirror(VerifySvcMirror):
                        'simple_action': 'pass',
                        'action_list': {'simple_action': 'pass'}
                        }]
-        self.rules_vn1_vn3.append({'direction': '<>',
-                               'protocol': 'udp',
-                               'source_network': self.vn1_name,
-                               'src_ports': [0, -1],
-                               'dest_network': self.vn3_name,
-                               'dst_ports': [0, -1],
-                               'simple_action': 'pass',
-                               'action_list': {'simple_action': 'pass'}
-                               }
-                              )
-        self.policy_fixture_vn1_vn2 = self.config_policy(self.policy_name_vn1_vn2, self.rules_vn1_vn2)
-        self.policy_fixture_vn1_vn3 = self.config_policy(self.policy_name_vn1_vn3, self.rules_vn1_vn3)
+
+        self.rules_vn2_vn3 = [{'direction': '<>',
+                       'protocol': 'icmp',
+                       'source_network': self.vn2_name,
+                       'src_ports': [0, -1],
+                       'dest_network': self.vn3_name,
+                       'dst_ports': [0, -1],
+                       'simple_action': 'pass',
+                       'action_list': {'simple_action': 'pass'}
+                       },
+                       {'direction': '<>',
+                       'protocol': 'icmp6',
+                       'source_network': self.vn2_name,
+                       'src_ports': [0, -1],
+                       'dest_network': self.vn3_name,
+                       'dst_ports': [0, -1],
+                       'simple_action': 'pass',
+                       'action_list': {'simple_action': 'pass'}
+                       }]
 
         self.policy_fixture_vn1_vn2 = self.config_policy(self.policy_name_vn1_vn2, self.rules_vn1_vn2)
         self.policy_fixture_vn1_vn3 = self.config_policy(self.policy_name_vn1_vn3, self.rules_vn1_vn3)
+        self.policy_fixture_vn2_vn3 = self.config_policy(self.policy_name_vn2_vn3, self.rules_vn2_vn3)
 
-        self.vn1_policy_fix = self.attach_policy_to_vn(
+        self.vn1_v2_attach_to_vn1 = self.attach_policy_to_vn(
             self.policy_fixture_vn1_vn2, self.vn1_fixture)
-        self.vn2_policy_fix = self.attach_policy_to_vn(
+        self.vn1_vn2_attach_to_vn2 = self.attach_policy_to_vn(
             self.policy_fixture_vn1_vn2, self.vn2_fixture)
 
-        self.vn1_policy_fix = self.attach_policy_to_vn(
+        self.vn1_v3_attach_to_vn1 = self.attach_policy_to_vn(
             self.policy_fixture_vn1_vn3, self.vn1_fixture)
-        self.vn3_policy_fix = self.attach_policy_to_vn(
+        self.vn1_v3_attach_to_vn3 = self.attach_policy_to_vn(
             self.policy_fixture_vn1_vn3, self.vn3_fixture)
 
-        self.vm1_fixture_vn1 = self.config_vm(
-            vn_fix=self.vn1_fixture, vm_name=self.vm1_name_vn1, node_name=src_compute, image_name=image_name)
+        self.vn2_v3_attach_to_vn2 = self.attach_policy_to_vn(
+            self.policy_fixture_vn2_vn3, self.vn2_fixture)
+        self.vn2_v3_attach_to_vn3 = self.attach_policy_to_vn(
+            self.policy_fixture_vn2_vn3, self.vn3_fixture)
 
-        self.vm2_fixture_vn2 = self.config_vm(
-            vn_fix=self.vn2_fixture, vm_name=self.vm2_name_vn2, node_name=dst_compute, image_name=image_name)
+        vn1_vmi_ref, vn2_vmi_ref, vn3_vmi_ref = None, None, None
 
-        self.mirror_vm_fixture_vn1 = self.config_vm(
-            vn_fix=self.vn1_fixture, vm_name=self.mirror_vm_name_vn1, node_name=analyzer_compute, image_name=image_name)
+        if vn_index_list[0] == 0:
+           self.src_vn_fixture = self.vn1_fixture
+           self.src_vn_fq_name = self.vn1_fq_name
+           self.src_vn_name = self.vn1_fq_name.split(':')[2]
+           vn1_vmi_ref = True
+        elif vn_index_list[0] == 1:
+           self.src_vn_fixture = self.vn2_fixture
+           self.src_vn_fq_name = self.vn2_fq_name
+           self.src_vn_name = self.vn2_fq_name.split(':')[2]
+           vn2_vmi_ref = True
+        else:
+           self.src_vn_fixture = self.vn3_fixture
+           self.src_vn_fq_name = self.vn3_fq_name
+           self.src_vn_name = self.vn3_fq_name.split(':')[2]
+           vn3_vmi_ref = True
 
-        self.vm2_fixture_vn1 = self.config_vm(
-            vn_fix=self.vn1_fixture, vm_name=self.vm2_name_vn1, node_name=dst_compute, image_name=image_name)
+        if vn_index_list[1] == 0:
+           self.dst_vn_fixture = self.vn1_fixture
+           self.dst_vn_fq_name = self.vn1_fq_name
+           self.dst_vn_name = self.vn1_fq_name.split(':')[2]
+           vn1_vmi_ref = True
+        elif vn_index_list[1] == 1:
+           self.dst_vn_fixture = self.vn2_fixture
+           self.dst_vn_fq_name = self.vn2_fq_name
+           self.dst_vn_name = self.vn2_fq_name.split(':')[2]
+           vn2_vmi_ref = True
+        else:
+           self.dst_vn_fixture = self.vn3_fixture
+           self.dst_vn_fq_name = self.vn3_fq_name
+           self.dst_vn_name = self.vn3_fq_name.split(':')[2]
+           vn3_vmi_ref = True
+
+        if vn_index_list[2] == 0:
+           self.analyzer_vn_fixture = self.vn1_fixture
+           self.analyzer_vn_fq_name = self.vn1_fq_name
+           self.analyzer_vn_name = self.vn1_fq_name.split(':')[2]
+           vn1_vmi_ref = True
+
+        elif vn_index_list[2] == 1:
+           self.analyzer_vn_fixture = self.vn2_fixture
+           self.analyzer_vn_fq_name = self.vn2_fq_name
+           self.analyzer_vn_name = self.vn2_fq_name.split(':')[2]
+           vn2_vmi_ref = True
+        else:
+           self.analyzer_vn_fixture = self.vn3_fixture
+           self.analyzer_vn_fq_name = self.vn3_fq_name
+           self.analyzer_vn_name = self.vn3_fq_name.split(':')[2]
+           vn3_vmi_ref = True
+
+        self.src_vm_name = get_random_name("src_vm")
+        self.dst_vm_name = get_random_name("dst_vm")
+        self.analyzer_vm_name = get_random_name("analyzer_vm")
+
+        self.analyzer_fq_name  = "default-domain:" + self.inputs.project_name + \
+            ":" + self.analyzer_vm_name
+        self.routing_instance = self.analyzer_vn_fq_name + ':' + self.analyzer_vn_name
+
+        self.src_vm_fixture = self.config_vm(
+            vn_fix=self.src_vn_fixture, vm_name=self.src_vm_name, node_name=src_compute, image_name=image_name)
+
+        self.dst_vm_fixture = self.config_vm(
+            vn_fix=self.dst_vn_fixture, vm_name=self.dst_vm_name, node_name=dst_compute, image_name=image_name)
+
+        self.analyzer_vm_fixture = self.config_vm(
+            vn_fix=self.analyzer_vn_fixture, vm_name=self.analyzer_vm_name, node_name=analyzer_compute, image_name=image_name)
+
+        assert self.src_vm_fixture.verify_on_setup()
+        assert self.dst_vm_fixture.verify_on_setup()
+        assert self.analyzer_vm_fixture.verify_on_setup()
+
+        self.nova_h.wait_till_vm_is_up(self.src_vm_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up(self.dst_vm_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up(self.analyzer_vm_fixture.vm_obj)
+
+        if vn1_vmi_ref:
+            result, msg = self.validate_vn(
+                self.vn1_name, project_name=self.inputs.project_name)
+            assert result, msg
+        if vn2_vmi_ref:
+            result, msg = self.validate_vn(
+                self.vn2_name, project_name=self.inputs.project_name)
+            assert result, msg
+        if vn3_vmi_ref:
+            result, msg = self.validate_vn(
+                self.vn3_name, project_name=self.inputs.project_name)
+            assert result, msg
+
+        self.src_vm_ip = self.src_vm_fixture.get_vm_ips(self.src_vn_fq_name)[0]
+        self.dst_vm_ip = self.dst_vm_fixture.get_vm_ips(self.dst_vn_fq_name)[0]
+        self.analyzer_vm_ip = self.analyzer_vm_fixture.get_vm_ips(self.analyzer_vn_fq_name)[0]
+
+        self.logger.info("Compute/VM: SRC: %s / %s, -> DST: %s / %s => ANALYZER: %s / %s" %
+            (src_compute, self.src_vm_ip, dst_compute, self.dst_vm_ip, analyzer_compute, self.analyzer_vm_ip))
  
-        self.mirror_vm_fixture_vn3 = self.config_vm(
-           vn_fix=self.vn3_fixture, vm_name=self.mirror_vm_name_vn3, node_name=analyzer_compute, image_name=image_name)
-
-        self.mirror_vm_fixture_vn2 = self.config_vm(
-           vn_fix=self.vn2_fixture, vm_name=self.mirror_vm_name_vn2, node_name=analyzer_compute, image_name=image_name)
-
-        assert self.vm1_fixture_vn1.verify_on_setup()
-        assert self.vm2_fixture_vn2.verify_on_setup()
-        assert self.vm2_fixture_vn1.verify_on_setup()
-        assert self.mirror_vm_fixture_vn1.verify_on_setup()
-        assert self.mirror_vm_fixture_vn3.verify_on_setup()
-        assert self.mirror_vm_fixture_vn2.verify_on_setup()
-
-        self.nova_h.wait_till_vm_is_up(self.vm1_fixture_vn1.vm_obj)
-        self.nova_h.wait_till_vm_is_up(self.vm2_fixture_vn2.vm_obj)
-        self.nova_h.wait_till_vm_is_up(self.vm2_fixture_vn1.vm_obj)
-        self.nova_h.wait_till_vm_is_up(self.mirror_vm_fixture_vn1.vm_obj)
-        self.nova_h.wait_till_vm_is_up(self.mirror_vm_fixture_vn3.vm_obj)
-        self.nova_h.wait_till_vm_is_up(self.mirror_vm_fixture_vn2.vm_obj)
-
-        result, msg = self.validate_vn(
-            self.vn1_name, project_name=self.inputs.project_name)
-        assert result, msg
-        result, msg = self.validate_vn(
-            self.vn2_name, project_name=self.inputs.project_name)
-        assert result, msg
-
-        self.mirror_vm_ip_vn1 = self.mirror_vm_fixture_vn1.get_vm_ips(self.vn1_fq_name)[0]
-        self.mirror_vm_ip_vn3 = self.mirror_vm_fixture_vn3.get_vm_ips(self.vn3_fq_name)[0]
-        self.mirror_vm_ip_vn3 = self.mirror_vm_fixture_vn3.get_vm_ips(self.vn3_fq_name)[0]
-        self.mirror_vm_ip_vn2 = self.mirror_vm_fixture_vn2.get_vm_ips(self.vn2_fq_name)[0]
-
-        self.logger.info("Verify Port mirroring when src vm in vn1, mirror vm in vn1 and dst vm in vn2..")
-        if not self._verify_intf_mirroring(self.vm1_fixture_vn1, self.vm2_fixture_vn2, self.mirror_vm_fixture_vn1, \
-                self.vn1_fq_name, self.vn2_fq_name, self.vn1_fq_name,
-                self.mirror_vm_ip_vn1, self.analyzer_name_vn1, self.routing_instance_vn1) :
+        if not self._verify_intf_mirroring(self.src_vm_fixture, self.dst_vm_fixture, self.analyzer_vm_fixture, \
+                self.src_vn_fq_name, self.dst_vn_fq_name, self.analyzer_vn_fq_name,
+                self.analyzer_vm_ip, self.analyzer_fq_name, self.routing_instance) :
             result = result and False
 
-        self.logger.info("Verify Port mirroring when src vm in vn1, mirror vm in vn3, and dst vm in vn2")
-        if not self._verify_intf_mirroring(self.vm1_fixture_vn1, self.vm2_fixture_vn2, self.mirror_vm_fixture_vn3, \
-                self.vn1_fq_name, self.vn2_fq_name, self.vn3_fq_name,
-                self.mirror_vm_ip_vn3, self.analyzer_name_vn3, self.routing_instance_vn3) :
-            result = result and False
-
-        self.logger.info("Verify Port mirroring when src vm, dst vm and mirror vm all are in vn1")
-        if not self._verify_intf_mirroring(self.vm1_fixture_vn1, self.vm2_fixture_vn1, self.mirror_vm_fixture_vn1, \
-                self.vn1_fq_name, self.vn1_fq_name, self.vn1_fq_name,
-                self.mirror_vm_ip_vn1, self.analyzer_name_vn1, self.routing_instance_vn1) :
-            result = result and False
-
-        self.logger.info("Verify Port mirroring when src vm in vn1, dst vm in vn2 and mirror vm in vn2")
-        if not self._verify_intf_mirroring(self.vm1_fixture_vn1, self.vm2_fixture_vn2, self.mirror_vm_fixture_vn2, \
-                self.vn1_fq_name, self.vn2_fq_name, self.vn2_fq_name,
-                self.mirror_vm_ip_vn2, self.analyzer_name_vn2, self.routing_instance_vn2) :
-            result = result and False
- 
         return result
+    # end verify_intf_mirroring
 
     def _verify_intf_mirroring(self, src_vm_fixture, dst_vm_fixture, mirror_vm_fixture, src_vn_fq, dst_vn_fq, mirr_vn_fq,\
             analyzer_ip_address, analyzer_name, routing_instance):
