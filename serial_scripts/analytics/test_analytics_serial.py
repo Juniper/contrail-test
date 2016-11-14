@@ -24,6 +24,28 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         pass
     # end runTest
 
+    def is_test_applicable(self):
+        if len(self.inputs.tor_hosts_data.keys()) == 0 :
+            info_str = 'Skipping Test. No BMS details seen in the Test cluster'
+            return (False, info_str)
+        return (True, None)
+    # end is_test_applicable
+
+    @preposttest_wrapper
+    def test_prouter_connectivity_alarm(self):
+        ''' Test to check prouter process connectivity alarm
+            Steps:
+                1) Check prouter connectivity alarm is not already raised when system is stable
+                1) stop tor-agent-* processes
+                2) step 1 makes connected_agent_list empty
+                3) Verify prouter connectivity alarm gets raised
+                4) undo step1
+                5) Expect prouter connectivity alarm gets cleared
+        '''
+        assert self.analytics_obj.verify_prouter_connectivity_alarm()
+        return True
+    # end test_prouter_connectivity_alarm
+
     def test_vrouter_intf_alarm(self):
         ''' Test to check vrouter-interface alarm
             Steps:
