@@ -163,14 +163,15 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
         return [min_ip, max_ip]
 
     def create_svc_chains(self, st_name, si_prefix, si_count, max_inst,
-                          left_vn='', right_vn='', svc_mode='in-network', svc_scaling=False):
+                          left_vn_fixture=None, right_vn_fixture=None,
+                          svc_mode='in-network', svc_scaling=False):
 
         self.action_list = []
         self.if_list = [['management', False], ['left', True], ['right', True]]
         self.st_fixture, self.si_fixtures = self.config_st_si(
             st_name, si_prefix, si_count,
-            svc_scaling, max_inst, left_vn=left_vn,
-            right_vn=right_vn, svc_mode=svc_mode)
+            svc_scaling, max_inst, left_vn_fixture=left_vn_fixture,
+            right_vn_fixture=right_vn_fixture, svc_mode=svc_mode)
         self.action_list = self.chain_si(si_count, si_prefix)
 
     def create_policy(self, policy_name='policy_in_network', rules=[], src_vn_fixture=None, dest_vn_fixture=None):
@@ -189,11 +190,13 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
 
     def setup_service_instance(
         self, st_name='in_net_svc_template_1', si_prefix='in_net_svc_instance_',
-            si_count=1, svc_scaling=False, max_inst=1, left_vn='', right_vn='', svc_mode='in-network'):
+            si_count=1, svc_scaling=False, max_inst=1, left_vn_fixture=None,
+            right_vn_fixture=None, svc_mode='in-network'):
 
         self.create_svc_chains(
             st_name, si_prefix, si_count, max_inst, svc_scaling=svc_scaling,
-            left_vn=left_vn, right_vn=right_vn, svc_mode=svc_mode)
+            left_vn_fixture=left_vn_fixture,
+            right_vn_fixture=right_vn_fixture, svc_mode=svc_mode)
 
     def setup_policy(self, policy_name='policy_in_network', policy_rules=[], src_vn_fixture=None, dest_vn_fixture=None):
 
@@ -290,7 +293,7 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
         right_vn_fq_name = self.setup_fixture.vn_obj_dict.values()[
             1].vn_fq_name
         self.setup_service_instance(
-            left_vn=left_vn_fq_name, right_vn=right_vn_fq_name)
+            left_vn_fixture=left_vn_fix, right_vn_fixture=right_vn_fix)
 
         # Creating rules and policy
         rules = [
