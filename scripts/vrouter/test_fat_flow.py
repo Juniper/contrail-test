@@ -347,7 +347,6 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
                         vIP, dport, proto, vrf_id_dst,
                         fat_flow_count=1)
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_fat_flow_lbaasv2(self):
         '''Creates Lbaas pool with lb-method ROUND ROBIN, 3 members and vip
