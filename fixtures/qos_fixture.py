@@ -31,7 +31,7 @@ class QosBaseFixture(vnc_api_test.VncLibFixture):
 
     def get_parent_obj(self):
         if getattr(self, 'qos_config_type', None) == 'project':
-            parent_obj = super(QosBaseFixture, self).get_project_obj(self)
+            parent_obj = super(QosBaseFixture, self).get_project_obj()
         else:
             parent_obj = self.vnc_api_h.global_qos_config_read(fq_name_str=
                                                                global_qos_config_fq_str)
