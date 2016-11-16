@@ -8,6 +8,7 @@ This needs to be extended for new protocol streams with new protocol.
 
 import sys
 import inspect
+import random
 
 try:
     # Running from the source repo "test".
@@ -181,6 +182,7 @@ class ICMPHeader(AnyHeader):
 
     def get_header(self):
         header = self.create_header(self.fields)
+        header['id'] = random.randint(0, 32767)
 
         return Header(header)
 
