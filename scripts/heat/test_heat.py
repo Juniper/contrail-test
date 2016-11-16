@@ -140,7 +140,7 @@ try:
             for i, svc in enumerate(left_svcs):
                 si = self.config_svc_instance('sil_%d' % i, svc_tmpls[svc]['tmpl'], vn_list1)
                 left_sis.append(si)
-                if svc == 'in-network':
+                if svc == 'in-network' or svc == 'in-network-nat':
                     self.add_route_in_svm(si[0], [right_net_fix, 'eth2'])
             right_sis = []
             for i, svc in enumerate(right_svcs):
@@ -411,6 +411,7 @@ try:
         # end test_pt_multi_inline_v2_svc_creation_with_heat
 
         @preposttest_wrapper
+        @skip_because(address_family='v6')
         def test_src_cidr_svc_creation_with_heat(self):
             '''
             Validate Source CIDR based policy with service chaining
