@@ -42,7 +42,9 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
                          'in-network': 'tiny_in_net',
                          'transparent': 'tiny_trans_fw',
                          },
-            'analyzer': {'analyzer': 'analyzer'}
+            'analyzer': {'transparent': 'analyzer',
+                         'in-network' : 'analyzer',
+                         }
         }
 
         svc_mode_props = {
