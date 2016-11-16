@@ -345,12 +345,19 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
             self.nova_h.get_flavor(env['parameters']['flavor'])
         else:
             env['parameters']['max_instances'] = max_inst
-        if self.pt_based_svc or st_fix.svc_mode != 'transparent':
-            env['parameters']['right_net_id'] = vn_list[2].vn_fq_name
-            env['parameters']['left_net_id'] = vn_list[1].vn_fq_name
-        else:
+        if self.pt_based_svc and st_fix.svc_mode == 'transparent':
+            #for transparent service, VM needs to be part of dummy virtual network
+            dummy_vn1, d1_hs_obj = self.config_vn(stack_name='dummy_v1')
+            dummy_vn2, d2_hs_obj = self.config_vn(stack_name='dummy_v2')
+            env['parameters']['left_net_id'] = dummy_vn1.vn_fq_name
+            env['parameters']['right_net_id'] = dummy_vn2.vn_fq_name
+        elif not self.pt_based_svc and st_fix.svc_mode == 'transparent':
+            # In ase of SVC v1 and transparent, need to set the right and left net as auto
             env['parameters']['right_net_id'] = 'auto'
             env['parameters']['left_net_id'] = 'auto'
+        else:
+            env['parameters']['right_net_id'] = vn_list[2].vn_fq_name
+            env['parameters']['left_net_id'] = vn_list[1].vn_fq_name
         si_hs_obj = self.config_heat_obj(stack_name, template, env)
         si_name = env['parameters']['service_instance_name']
         si_fix = self.verify_si(si_hs_obj.heat_client_obj, stack_name, si_name, st_fix, max_inst, st_fix.svc_mode, st_fix.image_name)
