@@ -222,7 +222,8 @@ class WebuiCommon:
             for k, v in kargs.iteritems():
                 if not isinstance(v, list):
                     v = str(v)
-                list_obj.append({'key': str(k), 'value': v})
+                if v:
+                    list_obj.append({'key': str(k), 'value': v})
     # end keyvalue_list
 
     def screenshot(self, string, browser=None, log=True):
@@ -1501,6 +1502,16 @@ class WebuiCommon:
             'div')[0].find_element_by_tag_name('i').click()
         self.wait_till_ajax_done(self.browser)
     # end click_configure_networks_basic_in_webui
+
+    def click_configure_ports_basic(self, row_index):
+        self.click_element('Ports', 'link_text')
+        self.check_error_msg("configure ports")
+        rows = self.get_rows()
+        port = self.find_element('div', 'tag', browser=rows[row_index],
+            elements=True)[0]
+        self.click_element('i', 'tag', browser=port)
+        self.wait_till_ajax_done(self.browser)
+    # end click_configure_ports_basic_in_webui
 
     def click_configure_policies_basic(self, row_index):
         self.click_element('Policies', 'link_text')
