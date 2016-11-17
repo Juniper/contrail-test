@@ -17,7 +17,7 @@ import inspect
 import time
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import get_subnet_broadcast
-
+from tcutils.util import skip_because
 import test
 
 class TestBasicVMVN(BaseVnVmTest):
@@ -34,6 +34,7 @@ class TestBasicVMVN(BaseVnVmTest):
         pass
     #end runTes
 
+    @skip_because(orchestrator = 'vcenter', hypervisor='docker',msg='Bug 1455944:VM image with cloud-init package needed')
     @test.attr(type=['sanity', 'ci_sanity', 'suite1'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter')
