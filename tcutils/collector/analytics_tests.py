@@ -2299,7 +2299,7 @@ class AnalyticsVerification(fixtures.Fixture):
             multi_instances = False
             if len(self.inputs.database_ips) > 1:
                 multi_instances = True
-            if process == 'process-status':
+            if alarm_type == 'process-status':
                 for process in db_processes:
                     if process == 'kafka' or process == 'supervisor-database':
                         if len(self.inputs.database_ips) > 1:
