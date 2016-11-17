@@ -4,7 +4,7 @@ from common import log_orig as contrail_logging
 from common.openstack_libs import network_client as client
 from common.openstack_libs import network_http_client as HTTPClient
 from common.openstack_libs import network_client_exception as CommonNetworkClientException
-
+from netaddr import IPNetwork
 
 class NetworkClientException(CommonNetworkClientException):
 
@@ -184,7 +184,8 @@ class QuantumHelper():
     def create_security_group_rule(self, sg_id, direction='ingress',
                                    port_range_min=None, port_range_max=None,
                                    protocol=None, remote_group_id=None,
-                                   remote_ip_prefix=None):
+                                   remote_ip_prefix=None, ethertype=None):
+
         sg_rule = None
         sg_rule_dict = {'security_group_id': sg_id}
         if direction:
@@ -199,6 +200,10 @@ class QuantumHelper():
             sg_rule_dict['remote_group_id'] = remote_group_id
         if remote_ip_prefix:
             sg_rule_dict['remote_ip_prefix'] = remote_ip_prefix
+            prefix_af = str(IPNetwork(remote_ip_prefix).version)
+            ethertype = ethertype or ('IPv' + prefix_af)
+        if ethertype:
+            sg_rule_dict['ethertype'] = ethertype
         try:
             sg_rule = self.obj.create_security_group_rule(
                 {'security_group_rule': sg_rule_dict})

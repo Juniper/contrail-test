@@ -12,26 +12,42 @@ sys.path.append(os.path.realpath('tcutils/traffic_utils'))
 from base_traffic import *
 from security_group import list_sg_rules 
 from tcutils.tcpdump_utils import *
+from common.vrouter.base import BaseVrouterTest
+import random
 
-class VerifySecGroup():
+class VerifySecGroup(BaseVrouterTest):
 
-    def verify_traffic(self, sender_vm, receiver_vm, proto, sport, dport, count=None, fip=None):
-
-        traffic_obj = BaseTraffic.factory(proto=proto)
-        assert traffic_obj
-        assert traffic_obj.start(sender_vm, receiver_vm,
-                              proto, sport, dport)
-        sleep(1)
-        sent, recv = traffic_obj.stop()
+    def verify_traffic(self, sender_vm, receiver_vm, proto, sport=None,
+            dport=None, count=None, fip=None, exp='pass'):
+        sport = sport or random.randint(8000, 65000)
+        dport = dport or (sport + 1)
+        if (proto == 'tcp') or (proto == 'udp'):
+            if exp == 'pass':
+                exp = True
+            else:
+                exp = False
+            result = self.send_nc_traffic(sender_vm, receiver_vm, sport, dport,
+                proto, exp=exp)
+            if result:
+                sent, recv = exp, exp
+            else:
+                sent, recv = (not exp), (not exp)
+        else:
+            traffic_obj = BaseTraffic.factory(proto=proto)
+            assert traffic_obj
+            assert traffic_obj.start(sender_vm, receiver_vm,
+                                  proto, sport, dport)
+            sleep(1)
+            sent, recv = traffic_obj.stop()
 
         return (sent, recv)
 
-    def assert_traffic(self, sender, receiver, proto, sport, dport,
+    def assert_traffic(self, sender, receiver, proto, sport=None, dport=None,
                        expectation='pass'):
         self.logger.info("Sending %s traffic from %s with %s to %s with %s" %
                          (proto, sender[0].vm_name, sender[1], receiver[0].vm_name, receiver[1]))
         sent, recv = self.verify_traffic(sender[0], receiver[0],
-                                         proto, sport, dport)
+                                         proto, sport, dport, exp=expectation)
         if expectation == 'pass':
             msg = "%s traffic from %s with %s to %s with %s passed " % (proto,
                                                                         sender[0].vm_name, sender[1], receiver[0].vm_name, receiver[1])
@@ -56,7 +72,7 @@ class VerifySecGroup():
             errmsg = "%s traffic from %s port %s with %s to %s port %s with %s "\
                      "passed; Expcted to fail " % (proto, sender[0].vm_name,sport, sender[1],
                                                    receiver[0].vm_name,dport, receiver[1])
-            if (recv == 0):
+            if (not recv):
                 self.logger.info(msg)
                 return (True, msg)
             else:
@@ -125,32 +141,36 @@ class VerifySecGroup():
         return (sender.sent, receiver.recv)
 
 
-    def verify_sec_group_port_proto(self, port_test=False, double_rule=False):
+    def verify_sec_group_port_proto(self, port_test=False, double_rule=False,
+            sport=None, dport=None):
         results = []
+        max_port = 65535
         self.logger.info("Verifcations with UDP traffic")
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm2_fix, self.sg2_fix.secgrp_name)
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'pass'))
+            self.assert_traffic(sender, receiver, 'udp', sport, dport, expectation='pass'))
         if port_test:
+            sport2 = random.randint(max(sport, dport), max_port)
+            dport2 = sport2 + 1
             results.append(
-                self.assert_traffic(sender, receiver, 'udp', 8010, 9010, 'fail'))
+                self.assert_traffic(sender, receiver, 'udp', sport2, dport2, 'fail'))
 
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm3_fix, 'default')
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'udp', sport, dport, expectation='fail'))
         if port_test:
             results.append(
-                self.assert_traffic(sender, receiver, 'udp', 8010, 9010, 'fail'))
+                self.assert_traffic(sender, receiver, 'udp', sport2, dport2, 'fail'))
 
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm4_fix, self.sg2_fix.secgrp_name)
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'pass'))
+            self.assert_traffic(sender, receiver, 'udp', sport, dport, expectation='pass'))
         if port_test:
             results.append(
-                self.assert_traffic(sender, receiver, 'udp', 8010, 9010, 'fail'))
+                self.assert_traffic(sender, receiver, 'udp', sport2, dport2, 'fail'))
 
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm5_fix, self.sg1_fix.secgrp_name)
@@ -159,59 +179,59 @@ class VerifySecGroup():
 	else:
 	    exp = 'fail'
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8000, 9000, exp))
+            self.assert_traffic(sender, receiver, 'udp', sport, dport, expectation=exp))
         if port_test:
             results.append(
-                self.assert_traffic(sender, receiver, 'udp', 8010, 9010, 'fail'))
+                self.assert_traffic(sender, receiver, 'udp', sport2, dport2, 'fail'))
 
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm6_fix, 'default')
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'udp', sport, dport, expectation='fail'))
         if port_test:
             results.append(
-                self.assert_traffic(sender, receiver, 'udp', 8010, 9010, 'fail'))
+                self.assert_traffic(sender, receiver, 'udp', sport2, dport2, 'fail'))
 
         self.logger.info("Verifcations with TCP traffic")
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
         receiver = (self.vm2_fix, self.sg2_fix.secgrp_name)
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'tcp', sport, dport, expectation='fail'))
         if port_test:
             results.append(
-                self.assert_traffic(sender, receiver, 'tcp', 8010, 9010, 'fail'))
+                self.assert_traffic(sender, receiver, 'tcp', sport2, dport2, 'fail'))
 
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
         receiver = (self.vm3_fix, 'default')
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'tcp', sport, dport, expectation='fail'))
         if port_test:
             results.append(
-                self.assert_traffic(sender, receiver, 'tcp', 8010, 9010, 'fail'))
+                self.assert_traffic(sender, receiver, 'tcp', sport2, dport2, 'fail'))
 
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
         receiver = (self.vm4_fix, self.sg1_fix.secgrp_name)
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'pass'))
+            self.assert_traffic(sender, receiver, 'tcp', sport, dport, expectation='pass'))
         if port_test:
             results.append(
-                self.assert_traffic(sender, receiver, 'tcp', 8010, 9010, 'fail'))
+                self.assert_traffic(sender, receiver, 'tcp', sport2, dport2, 'fail'))
 
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
         receiver = (self.vm5_fix, self.sg1_fix.secgrp_name)
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'pass'))
+            self.assert_traffic(sender, receiver, 'tcp', sport, dport, expectation='pass'))
         if port_test:
             results.append(
-                self.assert_traffic(sender, receiver, 'tcp', 8010, 9010, 'fail'))
+                self.assert_traffic(sender, receiver, 'tcp', sport2, dport2, 'fail'))
 
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
         receiver = (self.vm6_fix, 'default')
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'tcp', sport, dport, expectation='fail'))
         if port_test:
             results.append(
-                self.assert_traffic(sender, receiver, 'tcp', 8010, 9010, 'fail'))
+                self.assert_traffic(sender, receiver, 'tcp', sport2, dport2, 'fail'))
 
         errmsg = ''
         for (rc, msg) in results:
@@ -222,59 +242,60 @@ class VerifySecGroup():
         if errmsg:
             assert False, errmsg
 
-    def verify_sec_group_with_udp_and_policy_with_tcp(self):
+    def verify_sec_group_with_udp_and_policy_with_tcp(self, sport=None,
+            dport=None):
         results = []
         self.logger.info("Verifcations with TCP traffic")
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
         receiver = (self.vm2_fix, self.sg2_fix.secgrp_name)
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'tcp', sport, dport, expectation='fail'))
 
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
         receiver = (self.vm3_fix, 'default')
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'tcp', sport, dport, expectation='fail'))
 
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
         receiver = (self.vm4_fix, self.sg1_fix.secgrp_name)
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'pass'))
+            self.assert_traffic(sender, receiver, 'tcp', sport, dport, expectation='pass'))
 
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
         receiver = (self.vm5_fix, self.sg1_fix.secgrp_name)
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'pass'))
+            self.assert_traffic(sender, receiver, 'tcp', sport, dport, expectation='pass'))
 
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
         receiver = (self.vm6_fix, 'default')
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'tcp', sport, dport, expectation='fail'))
 
         self.logger.info("Verifcations with UDP traffic")
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm2_fix, self.sg2_fix.secgrp_name)
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'pass'))
+            self.assert_traffic(sender, receiver, 'udp', sport, dport, expectation='pass'))
 
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm3_fix, 'default')
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'udp', sport, dport, expectation='fail'))
 
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm4_fix, self.sg2_fix.secgrp_name)
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'udp', sport, dport, expectation='fail'))
 
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm5_fix, self.sg1_fix.secgrp_name)
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'udp', sport, dport, expectation='fail'))
 
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm6_fix, 'default')
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'udp', sport, dport, expectation='fail'))
 
         errmsg = ''
         for (rc, msg) in results:
@@ -285,78 +306,78 @@ class VerifySecGroup():
         if errmsg:
             assert False, errmsg
 
-    def verify_sec_group_with_udp_and_policy_with_tcp_port(self):
+    def verify_sec_group_with_udp_and_policy_with_tcp_port(self, sport=None, dport=None):
         results = []
         self.logger.info("Verifcations with TCP traffic")
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
         receiver = (self.vm2_fix, self.sg2_fix.secgrp_name)
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'tcp', sport, dport, expectation='fail'))
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8010, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'tcp', dport=dport, expectation='fail'))
 
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
         receiver = (self.vm3_fix, 'default')
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'tcp', sport, dport, expectation='fail'))
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8010, 9010, 'fail'))
+            self.assert_traffic(sender, receiver, 'tcp', expectation='fail'))
 
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
         receiver = (self.vm4_fix, self.sg1_fix.secgrp_name)
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'pass'))
+            self.assert_traffic(sender, receiver, 'tcp', sport, dport, expectation='pass'))
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8000, 9010, 'fail'))
+            self.assert_traffic(sender, receiver, 'tcp', sport=sport, expectation='fail'))
 
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
         receiver = (self.vm5_fix, self.sg1_fix.secgrp_name)
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'pass'))
+            self.assert_traffic(sender, receiver, 'tcp', sport, dport, expectation='pass'))
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8010, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'tcp', dport=dport, expectation='fail'))
         sender = (self.vm1_fix, self.sg1_fix.secgrp_name)
         receiver = (self.vm6_fix, 'default')
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'tcp', sport, dport, expectation='fail'))
         results.append(
-            self.assert_traffic(sender, receiver, 'tcp', 8010, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'tcp', dport=dport, expectation='fail'))
 
         self.logger.info("Verifcations with UDP traffic")
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm2_fix, self.sg2_fix.secgrp_name)
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'pass'))
+            self.assert_traffic(sender, receiver, 'udp', sport, dport, expectation='pass'))
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8010, 9000, 'pass'))
+            self.assert_traffic(sender, receiver, 'udp', 8010, 9000, expectation='pass'))
 
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm3_fix, 'default')
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'udp', sport, dport, expectation='fail'))
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8010, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'udp', 8010, 9000, expectation='fail'))
 
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm4_fix, self.sg2_fix.secgrp_name)
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'udp', sport, dport, expectation='fail'))
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8010, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'udp', 8010, 9000, expectation='fail'))
 
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm5_fix, self.sg1_fix.secgrp_name)
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'udp', sport, dport, expectation='fail'))
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8010, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'udp', 8010, 9000, expectation='fail'))
 
         sender = (self.vm1_fix, self.sg2_fix.secgrp_name)
         receiver = (self.vm6_fix, 'default')
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8000, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'udp', sport, dport, expectation='fail'))
         results.append(
-            self.assert_traffic(sender, receiver, 'udp', 8010, 9000, 'fail'))
+            self.assert_traffic(sender, receiver, 'udp', 8010, 9000, expectation='fail'))
 
         errmsg = ''
         for (rc, msg) in results:

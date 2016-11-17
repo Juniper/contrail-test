@@ -334,3 +334,41 @@ def show_secgrp(connections,sg_id):
     sg_info = connections.quantum_h.show_security_group(sg_id)
 
     return sg_info
+
+def set_default_sg_rules(connections, sg_id, remote_sg=None):
+    '''
+    Creates default rules for SG sg_id and set remote sg as remote_sg
+    if remote_sg is None, set default SG as remote
+    '''
+    default_sg_name = ':'.join([connections.inputs.domain_name,
+                            connections.inputs.project_name,
+                            'default'])
+    secgrp_fq_name = remote_sg or default_sg_name
+
+    default_rules = [
+            {
+            'protocol': 'any',
+             'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+             'src_addresses': [{'security_group': 'local'}],
+             'ethertype': 'IPv4'
+             },
+            {
+            'protocol': 'any',
+             'dst_addresses': [{'subnet': {'ip_prefix': '0::', 'ip_prefix_len': 0}}],
+             'src_addresses': [{'security_group': 'local'}],
+             'ethertype': 'IPv6'
+             },
+            {
+             'protocol': 'any',
+             'src_addresses': [{'security_group':secgrp_fq_name}],
+             'dst_addresses': [{'security_group': 'local'}],
+             'ethertype': 'IPv4'
+             },
+            {
+             'protocol': 'any',
+             'src_addresses': [{'security_group':secgrp_fq_name}],
+             'dst_addresses': [{'security_group': 'local'}],
+             'ethertype': 'IPv6'
+             }]
+    return connections.orch.set_security_group_rules(sg_id,
+        sg_entries=default_rules, option='contrail')

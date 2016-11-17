@@ -2290,20 +2290,29 @@ class VMFixture(fixtures.Fixture):
 
     # end scp_file_transfer_cirros
 
+    @retry(delay=6, tries=10)
+    def run_nc_with_retry(self, nc_cmd, retry=False):
+        output = self.run_cmd_on_vm(cmds=[nc_cmd])
+        if retry and output and output[nc_cmd]:
+            if "bind failed: Address already in use" in output[nc_cmd]:
+                return False
+        return True
+
     def nc_send_file_to_ip(self, filename, dest_ip, size='100',
-        local_port='10001', remote_port='10000', nc_options=''):
+        local_port='10001', remote_port='10000', nc_options='', retry=False):
         '''
         Creates the file and sends it to ip dest_ip
         '''
         nc_cmd = 'nc ' + nc_options
         # Create file
         cmd = 'dd bs=%s count=1 if=/dev/zero of=%s' % (size, filename)
-        self.run_cmd_on_vm(cmds=[cmd])
+        self.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
         host = self.inputs.host_data[self.vm_node_ip]
 
         # Transfer the file
-        self.run_cmd_on_vm(cmds=['%s -p %s %s %s < %s' % (nc_cmd, local_port,
-            dest_ip, remote_port, filename)])
+        cmd = '%s -p %s %s %s < %s' % (nc_cmd, local_port, dest_ip, remote_port,
+            filename)
+        self.run_nc_with_retry(nc_cmd=cmd, retry=retry)
 
     @retry(delay=3, tries=10)
     def verify_file_size_on_vm(self, filename, size='100', expectation=True):
@@ -2322,7 +2331,7 @@ class VMFixture(fixtures.Fixture):
 
     def nc_file_transfer(self, dest_vm_fixture, size='100',
             local_port='10001', remote_port='10000', nc_options='', ip=None,
-            expectation=True):
+            expectation=True, retry=False):
         '''
         This method can use used to send tcp/udp traffic using netcat and
             will work for IPv4 as well as IPv6.
@@ -2351,13 +2360,13 @@ class VMFixture(fixtures.Fixture):
         #so run without -p option also
         nc_l = ['%s -ll -p %s > %s' % (nc_cmd, listen_port, filename),
                     '%s -ll %s > %s' % (nc_cmd, listen_port, filename)]
-        cmds=[ 'rm -f %s' % (filename) ]
+        cmds=[ 'rm -f %s;ls -la' % (filename) ]
         dest_vm_fixture.run_cmd_on_vm(cmds=cmds, as_sudo=True, as_daemon=True)
         dest_vm_fixture.run_cmd_on_vm(cmds=nc_l, as_sudo=True, as_daemon=True)
 
         self.nc_send_file_to_ip(filename, dest_vm_ip, size=size,
             local_port=local_port, remote_port=listen_port,
-            nc_options=nc_options)
+            nc_options=nc_options, retry=retry)
 
         msg1 = 'File transfer verification for file size %s failed on the VM %s' % (size, dest_vm_fixture.vm_name)
         msg2 = 'File transfer verification for file size %s passed on the VM %s' % (size, dest_vm_fixture.vm_name)

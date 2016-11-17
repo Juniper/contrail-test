@@ -255,10 +255,13 @@ class OpenstackOrchestrator(Orchestrator):
        ret = False
        for rule in secgrp_rules:
            remote_group_id=None;remote_ip_prefix=None
+           ethertype = None
            if rule['protocol'] == 'any':
                proto = None
            else:
                proto = rule['protocol']
+           if 'ethertype' in rule:
+               ethertype = rule['ethertype']
            if rule['src_addresses'][0].has_key('security_group'):
                if rule['src_addresses'][0]['security_group'] == 'local':
                    direction = 'egress'
@@ -289,7 +292,8 @@ class OpenstackOrchestrator(Orchestrator):
                                                 port_range_max=port_range_max,
                                                 protocol=proto,
                                                 remote_group_id=remote_group_id,
-                                                remote_ip_prefix=remote_ip_prefix)
+                                                remote_ip_prefix=remote_ip_prefix,
+                                                ethertype=ethertype)
                except:
                    self.logger.error("error while creating sg rule through quantum")
                    return False
@@ -304,7 +308,8 @@ class OpenstackOrchestrator(Orchestrator):
                                                 port_range_max=port_range_max,
                                                 protocol=proto,
                                                 remote_group_id=remote_group_id,
-                                                remote_ip_prefix=remote_ip_prefix)
+                                                remote_ip_prefix=remote_ip_prefix,
+                                                ethertype=ethertype)
                except:
                    self.logger.error("error while creating sg rule through quantum")
                    return False
@@ -316,7 +321,8 @@ class OpenstackOrchestrator(Orchestrator):
                                            port_range_max=port_range_max,
                                            protocol=proto,
                                            remote_group_id=remote_group_id,
-                                           remote_ip_prefix=remote_ip_prefix):
+                                           remote_ip_prefix=remote_ip_prefix,
+                                           ethertype=ethertype):
                   return False
        return ret
 

@@ -41,9 +41,18 @@ class BaseSGTest(test_v1.BaseTestCase_v1):
 
     def create_sg_test_resources(self):
         """Config common resources."""
-	self.logger.info("Configuring setup for security group tests.")
+        self.logger.info("Configuring setup for security group tests.")
 
-        vn_s = {'vn1': '20.1.1.0/24', 'vn2': ['10.1.1.0/24']}
+        self.vn1_subnets = get_random_cidrs(self.inputs.get_af())
+        self.vn2_subnets = get_random_cidrs(self.inputs.get_af())
+
+        self.vn1_prefix = self.vn1_subnets[0].split('/')[0]
+        self.vn1_prefix_len = int(self.vn1_subnets[0].split('/')[1])
+        self.vn2_prefix = self.vn2_subnets[0].split('/')[0]
+        self.vn2_prefix_len = int(self.vn2_subnets[0].split('/')[1])
+
+        vn_s = {'vn1': self.vn1_subnets[0], 'vn2': self.vn2_subnets}
+
         self.multi_vn_fixture = self.useFixture(MultipleVNFixture(
             connections=self.connections, inputs=self.inputs, subnet_count=2,
             vn_name_net=vn_s,  project_name=self.inputs.project_name))
@@ -78,8 +87,8 @@ class BaseSGTest(test_v1.BaseTestCase_v1):
 	default_secgrp_id = get_secgrp_id_from_name(
                         	self.connections,
                         	':'.join([self.inputs.domain_name,
-					self.inputs.project_name,
-					'default']))
+                                    self.inputs.project_name,
+                                    'default']))
         self.vm1_fix.remove_security_group(secgrp=default_secgrp_id)
         self.vm2_fix.remove_security_group(secgrp=default_secgrp_id)
         self.vm4_fix.remove_security_group(secgrp=default_secgrp_id)
@@ -87,6 +96,9 @@ class BaseSGTest(test_v1.BaseTestCase_v1):
 
         self.logger.info("Verifying setup of security group tests.")
         self.verify_sg_test_resources()
+
+        self.set_tcp_port_use_optimizations([self.vm1_fix, self.vm2_fix,
+            self.vm3_fix, self.vm4_fix, self.vm5_fix, self.vm6_fix])
 
         self.logger.info(
             "Finished configuring setup for security group tests.")
@@ -96,16 +108,20 @@ class BaseSGTest(test_v1.BaseTestCase_v1):
         self.sg1_name = 'test_tcp_sec_group' + '_' + get_random_name()
         rule = [{'direction': '<>',
                 'protocol': 'tcp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'tcp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
@@ -116,16 +132,20 @@ class BaseSGTest(test_v1.BaseTestCase_v1):
         self.sg2_name = 'test_udp_sec_group' + '_' + get_random_name()
         rule = [{'direction': '<>',
                 'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'src_addresses': [{'security_group': 'local'}],
                  },
                 {'direction': '<>',
                  'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}},
-                                   {'subnet': {'ip_prefix': '20.1.1.0', 'ip_prefix_len': 24}}],
+                 'src_addresses': [{'subnet': {'ip_prefix': self.vn1_prefix,
+                                        'ip_prefix_len': self.vn1_prefix_len}},
+                                   {'subnet': {'ip_prefix': self.vn2_prefix,
+                                        'ip_prefix_len': self.vn2_prefix_len}}],
                  'src_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
@@ -245,6 +265,16 @@ class BaseSGTest(test_v1.BaseTestCase_v1):
             topo_obj, config_topo = out['data']
 
         return (topo_obj, config_topo)
+
+    def set_tcp_port_use_optimizations(self, vm_list):
+        '''
+        Sets various tcp level optimization for port reuse and recycling to
+        avoid bind failure on the instances
+        As of now it only sets tcp_tw_reuse, more can be added here if required.
+        '''
+        cmd = 'echo 1 > /proc/sys/net/ipv4/tcp_tw_reuse'
+        for vm in vm_list:
+            vm.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
 
 #end class BaseSGTest
 

@@ -236,7 +236,8 @@ class ProjectFixture(fixtures.Fixture):
                   'dst_ports': [{'start_port': 0, 'end_port': 65535}],
                   'src_ports': [{'start_port': 0, 'end_port': 65535}],
                   'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                  'rule_uuid': uuid_1
+                  'rule_uuid': uuid_1,
+                  'ethertype': 'IPv4'
                   },
                  {'direction': '>',
                   'protocol': 'any',
@@ -244,8 +245,25 @@ class ProjectFixture(fixtures.Fixture):
                   'src_ports': [{'start_port': 0, 'end_port': 65535}],
                   'dst_ports': [{'start_port': 0, 'end_port': 65535}],
                   'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                  'rule_uuid': uuid_2
+                  'rule_uuid': uuid_2,
+                  'ethertype': 'IPv4'
                   },
+                 {'direction': '>',
+                 'protocol': 'any',
+                  'dst_addresses': [{'security_group': 'local', 'subnet': None}],
+                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'src_addresses': [{'subnet': {'ip_prefix': '::', 'ip_prefix_len': 0}}],
+                  'ethertype': 'IPv6'
+                  },
+                 {'direction': '>',
+                  'protocol': 'any',
+                  'src_addresses': [{'security_group': 'local', 'subnet': None}],
+                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'dst_addresses': [{'subnet': {'ip_prefix': '::', 'ip_prefix_len': 0}}],
+                  'ethertype': 'IPv6'
+                  }
                  ]
         self.update_sec_group(project_name, sg_name, rule1)
     # end set_sec_group_for_allow_all
