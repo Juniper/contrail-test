@@ -67,6 +67,8 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         'vcenter_servers':[],
         'hosts_ipmi': [],
         'tor':[],
+        'sriov':[],
+        'dpdk':[],
     }
 
     sample_ini_file = test_dir + '/' + 'sanity_params.ini.sample'
@@ -169,6 +171,14 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
 
         sanity_testbed_dict['hosts'].append(host_dict)
     if env.has_key('vgw'): sanity_testbed_dict['vgw'].append(env.vgw)
+
+    #get sriov info
+    if env.has_key('sriov'):
+        sanity_testbed_dict['sriov'].append(env.sriov)
+
+    #get dpdk info
+    if env.has_key('dpdk'):
+        sanity_testbed_dict['dpdk'].append(env.dpdk)
 
     # Read ToR config
     sanity_tor_dict = {}
