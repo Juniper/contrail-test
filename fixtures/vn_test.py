@@ -353,7 +353,7 @@ class VNFixture(fixtures.Fixture):
                 ipam_sn = IpamSubnetType(
                     subnet=SubnetType(network, int(prefix)))
                 if self.dhcp_option_list:
-                   ipam_sn.set_dhcp_option_list(self.dhcp_option_list)
+                   ipam_sn.set_dhcp_option_list(DhcpOptionsListType(params_dict=self.dhcp_option_list))
                 if not self.enable_dhcp:
                    ipam_sn.set_enable_dhcp(self.enable_dhcp)
                 ipam_sn_lst.append(ipam_sn)
