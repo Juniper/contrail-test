@@ -356,22 +356,25 @@ class DiscoveryVerification(fixtures.Fixture):
         finally:
             return obj
 
-    def get_service_status(self, ds_ip, service_tuple=()):
-
+    def get_service_status(self, ds_ip, service_tuple=(), expected_status = "up", retries = 0):
         ip = service_tuple[0]
         svc = service_tuple[1]
         status = None
         try:
-            obj = self.ds_inspect[ds_ip].get_ds_services()
-            dct = obj.get_attr('Service', match=('service_type', svc))
-            for elem in dct:
-                if ip in elem['info']['ip-address']:
-                    status = elem['status']
-                    self.logger.info("dct:%s" % (elem))
+            for retry in range(0,retries+1):
+                obj = self.ds_inspect[ds_ip].get_ds_services()
+                dct = obj.get_attr('Service', match=('service_type', svc))
+                for elem in dct:
+                    if ip in elem['info']['ip-address']:
+                        status = elem['status']
+                        self.logger.info("dct:%s" % (elem))
+                if status == expected_status:
+                    return True
+                elif retry != retries:
+                    sleep(5)
+            return False
         except Exception as e:
             raise
-        finally:
-            return status
 
     def get_service_admin_state(self, ds_ip, service_tuple=()):
 
