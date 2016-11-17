@@ -10,8 +10,10 @@ from policy_test import *
 from contrail_fixtures import *
 import random
 import socket
+from tcutils.tcpdump_utils import verify_tcpdump_count, search_in_pcap
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from fabric.operations import get, put
+from string import Template
 
 
 class VerifyEvpnCases():
@@ -50,13 +52,16 @@ class VerifyEvpnCases():
         vn3_fixture = self.useFixture(
                 VNFixture(
                     project_name=self.inputs.project_name, connections=self.connections,
-                    vn_name=self.vn3_name, option='api', inputs=self.inputs, subnets=self.vn3_subnets))
+                    vn_name=self.vn3_name,option='api', inputs=self.inputs, subnets=self.vn3_subnets))
 
         vn4_fixture = self.useFixture(
                 VNFixture(
                     project_name=self.inputs.project_name, connections=self.connections,
-                    vn_name=self.vn4_name, option='api', inputs=self.inputs, subnets=self.vn4_subnets, enable_dhcp=False, dhcp_option_list=dhcp_option_list))
-
+                    vn_name=self.vn4_name, option='api', inputs=self.inputs,
+                    subnets=self.vn4_subnets, dhcp_option_list=dhcp_option_list,
+                    enable_dhcp=False,forwarding_mode='l2'))
+        assert vn3_fixture.verify_on_setup()
+        assert vn4_fixture.verify_on_setup()
         self.connections.vnc_lib_fixture.set_rpf_mode(vn4_fixture.vn_fq_name, 'disable')
 
         vn_l2_vm1_name = 'testvm1'
@@ -66,10 +71,11 @@ class VerifyEvpnCases():
             VMFixture(
                 project_name=self.inputs.project_name,
                 connections=self.connections,
+                flavor='contrail_flavor_large',
                 vn_objs=[
                     vn3_fixture.obj,
                     vn4_fixture.obj],
-                image_name='ubuntu-dns-server',
+                image_name='ubuntu-dhcpdns-server',
                 vm_name=vm1_name,
                 node_name=compute_2))
 
@@ -78,6 +84,7 @@ class VerifyEvpnCases():
             VMFixture(
                 project_name=self.inputs.project_name,
                 connections=self.connections,
+                flavor='contrail_flavor_large',
                 vn_objs=[
                     vn3_fixture.obj,
                     vn4_fixture.obj],
@@ -101,12 +108,10 @@ class VerifyEvpnCases():
         assert vm2_fixture.wait_till_vm_is_up()
         assert vn_l2_vm1_fixture.wait_till_vm_is_up()
 
-        assert vn3_fixture.verify_on_setup()
-        assert vn4_fixture.verify_on_setup()
         assert vm1_fixture.verify_on_setup()
         assert vm2_fixture.verify_on_setup()
         assert vn_l2_vm1_fixture.verify_on_setup()
-
+        
         # Configure dhcp-server vm on eth1 and bring the intreface up
         # forcefully
         self.bringup_interface_forcefully(vm1_fixture)
@@ -196,147 +201,8 @@ class VerifyEvpnCases():
 
         return result
 
-    def verify_ipv6_ping_for_non_ip_communication(self, encap):
 
-        # Setting up default encapsulation
-        self.logger.info('Setting new Encap before continuing')
-        if (encap == 'gre'):
-            self.update_encap_priority('gre')
-        elif (encap == 'udp'):
-            self.update_encap_priority('udp')
-        elif (encap == 'vxlan'):
-            self.update_encap_priority('vxlan')
-        host_list = self.connections.nova_h.get_hosts()
-        compute_1 = host_list[0]
-        compute_2 = host_list[0]
-        if len(host_list) > 1:
-            compute_1 = host_list[0]
-            compute_2 = host_list[1]
-
-        (self.vn1_name, self.vn1_subnets) = ("EVPN-VN1", ["11.1.1.0/24"])
-        vn1_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                inputs=self.inputs,
-                vn_name=self.vn1_name,
-                subnets=self.vn1_subnets))
-
-        vm1_name = 'EVPN_VN1_VM1'
-        vm2_name = 'EVPN_VN1_VM2'
-
-        vn1_vm1_fixture = self.useFixture(
-            VMFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_obj=vn1_fixture.obj,
-                image_name='ubuntu',
-                vm_name=vm1_name,
-                node_name=compute_1))
-        vn1_vm2_fixture = self.useFixture(
-            VMFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_obj=vn1_fixture.obj,
-                image_name='ubuntu',
-                vm_name=vm2_name,
-                node_name=compute_2))
-
-        assert vn1_fixture.verify_on_setup()
-        assert vn1_vm1_fixture.verify_on_setup()
-        assert vn1_vm2_fixture.verify_on_setup()
-        for i in range(0, 20):
-            vm2_ipv6 = vn1_vm2_fixture.get_vm_ipv6_addr_from_vm()
-            if vm2_ipv6 is not None:
-                break
-        if vm2_ipv6 is None:
-            self.logger.error('Not able to get VM link local address')
-            return False
-        self.tcpdump_start_on_all_compute()
-        assert vn1_vm1_fixture.ping_to_ipv6(
-            vm2_ipv6.split("/")[0].strip(), count='15', other_opt='-I eth0')
-        comp_vm2_ip = vn1_vm2_fixture.vm_node_ip
-        self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
-        self.tcpdump_stop_on_all_compute()
-
-        return True
-    # End verify_ipv6_ping_for_non_ip_communication
-
-    def verify_ping_to_configured_ipv6_address(self, encap):
-        '''Configure IPV6 address to VM. Test IPv6 ping to that address.
-        '''
-        result = True
-        # Setting up default encapsulation
-        self.logger.info('Setting new Encap before continuing')
-        if (encap == 'gre'):
-            self.update_encap_priority('gre')
-        elif (encap == 'udp'):
-            self.update_encap_priority('udp')
-        elif (encap == 'vxlan'):
-            self.update_encap_priority('vxlan')
-
-        host_list = self.connections.nova_h.get_hosts()
-        compute_1 = host_list[0]
-        compute_2 = host_list[0]
-        if len(host_list) > 1:
-            compute_1 = host_list[0]
-            compute_2 = host_list[1]
-
-        vn1_vm1 = '1001::1/64'
-        vn1_vm2 = '1001::2/64'
-
-        (self.vn1_name, self.vn1_subnets) = ("EVPN-VN1", ["11.1.1.0/24"])
-        vn1_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                inputs=self.inputs,
-                vn_name=self.vn1_name,
-                subnets=self.vn1_subnets))
-
-        vm1_name = 'EVPN_VN1_VM1'
-        vm2_name = 'EVPN_VN1_VM2'
-
-        vn1_vm1_fixture = self.useFixture(
-            VMFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_obj=vn1_fixture.obj,
-                image_name='ubuntu',
-                vm_name=vm1_name,
-                node_name=compute_1))
-        vn1_vm2_fixture = self.useFixture(
-            VMFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_obj=vn1_fixture.obj,
-                image_name='ubuntu',
-                vm_name=vm2_name,
-                node_name=compute_2))
-
-        assert vn1_fixture.verify_on_setup()
-        assert vn1_vm1_fixture.verify_on_setup()
-        assert vn1_vm2_fixture.verify_on_setup()
-        # Waiting for VM to boots up
-        assert vn1_vm1_fixture.wait_till_vm_is_up()
-        assert vn1_vm2_fixture.wait_till_vm_is_up()
-        cmd_to_pass1 = ['sudo ifconfig eth0 inet6 add %s' % (vn1_vm1)]
-        vn1_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
-        cmd_to_pass2 = ['sudo ifconfig eth0 inet6 add %s' % (vn1_vm2)]
-        vn1_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
-        vm1_ipv6 = vn1_vm1_fixture.get_vm_ipv6_addr_from_vm(addr_type='global')
-        vm2_ipv6 = vn1_vm2_fixture.get_vm_ipv6_addr_from_vm(addr_type='global')
-        self.tcpdump_start_on_all_compute()
-        assert vn1_vm1_fixture.ping_to_ipv6(
-            vm2_ipv6.split("/")[0].strip(), count='15')
-        comp_vm2_ip = vn1_vm2_fixture.vm_node_ip
-        self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
-        self.tcpdump_stop_on_all_compute()
-
-        return True
-    # End verify_ping_to_configured_ipv6_address
-
-    def verify_l2_ipv6_multicast_traffic(self, encap):
+    def verify_l2_multicast_traffic(self, encap):
         '''Test ping to all hosts
         '''
         # Setting up default encapsulation
@@ -360,9 +226,7 @@ class VerifyEvpnCases():
             compute_1 = host_list[0]
             compute_2 = host_list[1]
             compute_3 = host_list[1]
-        vn1_vm1 = '1001::1/64'
-        vn1_vm2 = '1001::2/64'
-        vn1_vm3 = '1001::3/64'
+             
         (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["33.1.1.0/24"])
         (self.vn4_name, self.vn4_subnets) = ("EVPN-L2-VN", ["44.1.1.0/24"])
 
@@ -372,7 +236,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,))
+                subnets=self.vn3_subnets))
 
         vn4_fixture = self.useFixture(
             VNFixture(
@@ -381,7 +245,8 @@ class VerifyEvpnCases():
                 inputs=self.inputs,
                 vn_name=self.vn4_name,
                 subnets=self.vn4_subnets,
-                enable_dhcp=False))
+                enable_dhcp=False,
+                forwarding_mode='l2'))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -428,170 +293,30 @@ class VerifyEvpnCases():
         assert vn_l2_vm1_fixture.wait_till_vm_is_up()
         assert vn_l2_vm2_fixture.wait_till_vm_is_up()
         assert vn_l2_vm3_fixture.wait_till_vm_is_up()
+        assert not self.verify_eth1_ip_from_vm(vn_l2_vm1_fixture),'L2 VM got IP when dhcp is disabled'
+        assert not self.verify_eth1_ip_from_vm(vn_l2_vm2_fixture),'L2 VM got IP when dhcp is disabled'
+        assert not self.verify_eth1_ip_from_vm(vn_l2_vm3_fixture),'L2 VM got IP when dhcp is disabled'
+        #send l2 multicast traffic
+        self.mac1 = vn_l2_vm1_fixture.mac_addr[vn4_fixture.vn_fq_name]
+        self.mac2 = '01:00:00:00:00:00'
+        vm2_intf = vn_l2_vm2_fixture.tap_intf[vn4_fixture.vn_fq_name]['name']
+        vm3_intf = vn_l2_vm3_fixture.tap_intf[vn4_fixture.vn_fq_name]['name']
+        filters = 'ether src %s' %(self.mac1)
+        session1,pcap1 = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=vm2_intf)
+        session2,pcap2 = vn_l2_vm3_fixture.start_tcpdump(filters=filters,interface=vm3_intf)
+        self.logger.info('waiting to get tcpdump started')
+        sleep(10)
+        self.send_l2_traffic(vn_l2_vm1_fixture,iface='eth1')
+        result1 = verify_tcpdump_count(self, session1, pcap1, exp_count=10,mac=self.mac2)
+        result2 = verify_tcpdump_count(self, session2, pcap2, exp_count=10,mac=self.mac2)
+        result = result1 and result2
+        assert result,'Failed to send multicast traffic'
+    # End verify_l2_multicast_traffic
 
-        # Bring the intreface up forcefully
-        self.bringup_interface_forcefully(vn_l2_vm1_fixture)
-        self.bringup_interface_forcefully(vn_l2_vm2_fixture)
-        self.bringup_interface_forcefully(vn_l2_vm3_fixture)
 
-        # Configured IPV6 address
-        cmd_to_pass1 = ['ifconfig eth1 inet6 add %s' % (vn1_vm1)]
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
-        cmd_to_pass2 = ['ifconfig eth1 inet6 add %s' % (vn1_vm2)]
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
-        cmd_to_pass3 = ['ifconfig eth1 inet6 add %s' % (vn1_vm3)]
-        vn_l2_vm3_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True, timeout=60)
-
-        ping_count = '10'
-        if encap != 'vxlan':
-            self.tcpdump_start_on_all_compute()
-        ping_output = vn_l2_vm1_fixture.ping_to_ipv6(
-            'ff02::1', return_output=True, count=ping_count, other_opt='-I eth1')
-        self.logger.info("ping output : \n %s" % (ping_output))
-        expected_result = ' 0% packet loss'
-        assert (expected_result in ping_output)
-        vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(
-            intf='eth1', addr_type='link').split('/')[0]
-        vm2_ipv6 = vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(
-            intf='eth1', addr_type='link').split('/')[0]
-        vm3_ipv6 = vn_l2_vm3_fixture.get_vm_ipv6_addr_from_vm(
-            intf='eth1', addr_type='link').split('/')[0]
-        ip_list = [vm1_ipv6, vm2_ipv6, vm3_ipv6]
-        # getting count of ping response from each vm
-        string_count_dict = {}
-        string_count_dict = get_string_match_count(ip_list, ping_output)
-        self.logger.info("output %s" % (string_count_dict))
-        self.logger.info("There should be atleast 9 echo reply from each ip")
-        for k in ip_list:
-            # this is a workaround : ping utility exist as soon as it gets one
-            # response'''
-            assert (string_count_dict[k] >= (int(ping_count) - 1))
-        if encap != 'vxlan':
-            comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
-            self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
-        self.tcpdump_stop_on_all_compute()
-
-        return result
-    # End verify_l2_ipv6_multicast_traffic
-
-    def verify_l2l3_ipv6_multicast_traffic(self, encap):
-        '''Test ping to all hosts
-        '''
-        # Setting up default encapsulation
-        self.logger.info('Setting new Encap before continuing')
-        if (encap == 'gre'):
-            self.update_encap_priority('gre')
-        elif (encap == 'udp'):
-            self.update_encap_priority('udp')
-        elif (encap == 'vxlan'):
-            self.update_encap_priority('vxlan')
-
-        result = True
-        host_list = self.connections.nova_h.get_hosts()
-        compute_1 = host_list[0]
-        compute_2 = host_list[0]
-        compute_3 = host_list[0]
-        if len(host_list) > 2:
-            compute_1 = host_list[0]
-            compute_2 = host_list[1]
-            compute_3 = host_list[2]
-        elif len(host_list) > 1:
-            compute_1 = host_list[0]
-            compute_2 = host_list[1]
-            compute_3 = host_list[1]
-
-        vn1_vm1 = '1001::1/64'
-        vn1_vm2 = '1001::2/64'
-        vn1_vm3 = '1001::3/64'
-        (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["33.1.1.0/24"])
-        vn3_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                inputs=self.inputs,
-                vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,))
-
-        vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
-        vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
-        vn_l2_vm3_name = 'EVPN_VN_L2_VM3'
-
-        vn_l2_vm1_fixture = self.useFixture(
-            VMFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_obj=vn3_fixture.obj,
-                image_name='ubuntu',
-                vm_name=vn_l2_vm1_name,
-                node_name=compute_1))
-        vn_l2_vm2_fixture = self.useFixture(
-            VMFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_obj=vn3_fixture.obj,
-                image_name='ubuntu',
-                vm_name=vn_l2_vm2_name,
-                node_name=compute_2))
-        vn_l2_vm3_fixture = self.useFixture(
-            VMFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_obj=vn3_fixture.obj,
-                image_name='ubuntu',
-                vm_name=vn_l2_vm3_name,
-                node_name=compute_3))
-
-        assert vn3_fixture.verify_on_setup()
-        assert vn_l2_vm1_fixture.verify_on_setup()
-        assert vn_l2_vm2_fixture.verify_on_setup()
-        assert vn_l2_vm3_fixture.verify_on_setup()
-
-        # Wait till vm is up
-        assert vn_l2_vm1_fixture.wait_till_vm_is_up()
-        assert vn_l2_vm2_fixture.wait_till_vm_is_up()
-        assert vn_l2_vm3_fixture.wait_till_vm_is_up()
-        # Configured IPV6 address
-        cmd_to_pass1 = ['ifconfig eth0 inet6 add %s' % (vn1_vm1)]
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
-        cmd_to_pass2 = ['ifconfig eth0 inet6 add %s' % (vn1_vm2)]
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
-        cmd_to_pass3 = ['ifconfig eth0 inet6 add %s' % (vn1_vm3)]
-        vn_l2_vm3_fixture.run_cmd_on_vm(cmds=cmd_to_pass3, as_sudo=True, timeout=60)
-        # ping with multicast ipv6 ip on eth0
-        ping_count = '10'
-        if encap != 'vxlan':
-            self.tcpdump_start_on_all_compute()
-        ping_output = vn_l2_vm1_fixture.ping_to_ipv6(
-            'ff02::1', return_output=True, count=ping_count)
-        self.logger.info("ping output : \n %s" % (ping_output))
-        expected_result = ' 0% packet loss'
-        assert (expected_result in ping_output)
-        vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(
-            addr_type='link').split('/')[0]
-        vm2_ipv6 = vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(
-            addr_type='link').split('/')[0]
-        vm3_ipv6 = vn_l2_vm3_fixture.get_vm_ipv6_addr_from_vm(
-            addr_type='link').split('/')[0]
-        ip_list = [vm1_ipv6, vm2_ipv6, vm3_ipv6]
-        # getting count of ping response from each vm
-        string_count_dict = {}
-        string_count_dict = get_string_match_count(ip_list, ping_output)
-        self.logger.info("output %s" % (string_count_dict))
-        self.logger.info("There should be atleast 9 echo reply from each ip")
-        for k in ip_list:
-            # this is a workaround : ping utility exist as soon as it gets one
-            # response'''
-            assert (string_count_dict[k] >= (int(ping_count) - 1))
-        if encap != 'vxlan':
-            comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
-            self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
-
-        self.tcpdump_stop_on_all_compute()
-        return result
-    # End verify_l2l3_ipv6_multicast_traffic
 
     def verify_change_of_l2_vn_forwarding_mode(self, encap):
-        '''Change the vn forwarding mode from l2 only to l2l3 and verify l3 routes get updated
+        '''Change the vn forwarding mode from l2 only to l2l3 and verify l2_l3 routes get updated
         '''
         # Setting up default encapsulation
         self.logger.info('Setting new Encap before continuing')
@@ -609,8 +334,6 @@ class VerifyEvpnCases():
         if len(host_list) > 1:
             compute_1 = host_list[0]
             compute_2 = host_list[1]
-        vm1_ip6 = '1001::1/64'
-        vm2_ip6 = '1001::2/64'
         (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["33.1.1.0/24"])
         vn3_fixture = self.useFixture(
             VNFixture(
@@ -618,7 +341,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,))
+                subnets=self.vn3_subnets))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -632,7 +355,119 @@ class VerifyEvpnCases():
                 inputs=self.inputs,
                 vn_name=self.vn1_name,
                 subnets=self.vn1_subnets,
-                enable_dhcp=False))
+                enable_dhcp=False,
+                forwarding_mode='l2'))
+        
+        assert self.vn1_fixture.verify_on_setup()
+        vn_l2_vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    self.vn1_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm1_name,
+                node_name=compute_1))
+        
+        vn_l2_vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    self.vn1_fixture.obj],
+                image_name='ubuntu',
+                vm_name=vn_l2_vm2_name,
+                node_name=compute_2))
+
+        assert vn_l2_vm1_fixture.verify_on_setup()
+        assert vn_l2_vm2_fixture.verify_on_setup()
+
+        # Wait till vm is up
+        assert vn_l2_vm1_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm2_fixture.wait_till_vm_is_up()
+        assert not self.verify_eth1_ip_from_vm(vn_l2_vm1_fixture),'L2 VM got IP when dhcp is disabled'
+        assert not self.verify_eth1_ip_from_vm(vn_l2_vm2_fixture),'L2 VM got IP when dhcp is disabled'
+        vn1_subnet_id=self.vn1_fixture.get_subnets()[0]['id']
+        vn1_dhcp_dict = {'enable_dhcp': True}
+        self.vn1_fixture.update_subnet(vn1_subnet_id,vn1_dhcp_dict)
+        self.logger.info(
+            "Changing vn1 forwarding mode from l2 only to l2l3 followed by calling verify_on_setup for vms which checks if l3 routes are there or not ")
+        self.vn1_fixture.add_forwarding_mode(
+            project_fq_name=self.inputs.project_fq_name,
+            vn_name=self.vn1_name,
+            forwarding_mode='l2_l3')
+        assert self.verify_eth1_ip_from_vm(vn_l2_vm1_fixture),'VM did not got IP after enabling dhcp'
+        assert self.verify_eth1_ip_from_vm(vn_l2_vm2_fixture),'VM did not got IP after enabling dhcp'
+        assert self.vn1_fixture.verify_on_setup()
+        assert vn_l2_vm1_fixture.verify_on_setup()
+        assert vn_l2_vm2_fixture.verify_on_setup()
+        #removing ipv6 verification
+        #send l3 only traffic and verify
+        self.vn_l2_vm1_ip = vn_l2_vm1_fixture.vm_ip_dict[self.vn1_fixture.vn_fq_name][0]
+        self.vn_l2_vm2_ip =  vn_l2_vm2_fixture.vm_ip_dict[self.vn1_fixture.vn_fq_name][0]
+        filters = '\'(src host %s and dst host %s and not arp)\'' \
+                    % (self.vn_l2_vm1_ip, self.vn_l2_vm2_ip)
+        tap_intf = vn_l2_vm2_fixture.tap_intf[self.vn1_fixture.vn_fq_name]['name']
+        session, pcap = vn_l2_vm2_fixture.start_tcpdump(filters = filters,interface = tap_intf)
+        sleep(20)
+        self.send_l3_traffic(vn_l2_vm1_fixture)
+        assert verify_tcpdump_count(self,session, pcap,exp_count=10)
+        
+        #send l2 traffic and verify
+        self.mac1=vn_l2_vm1_fixture.mac_addr[self.vn1_fixture.vn_fq_name]
+        self.mac2=vn_l2_vm2_fixture.mac_addr[self.vn1_fixture.vn_fq_name]
+        filters = 'ether src %s' %(self.mac1)
+        tap_intf = vn_l2_vm2_fixture.tap_intf[self.vn1_fixture.vn_fq_name]['name']
+        session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        sleep(20)
+        self.send_l2_traffic(vn_l2_vm1_fixture,iface='eth1')
+        result = verify_tcpdump_count(self, session, pcap, exp_count=10,mac=self.mac2)
+
+        return result
+    # End verify_change_of_l2_vn_forwarding_mode
+
+    def verify_change_of_l2l3_vn_forwarding_mode(self, encap):
+        '''Change the vn forwarding mode from l2l3 only to l2 and verify l3 routes gets deleted and check with l2 traffic
+        '''
+        # Setting up default encapsulation
+        self.logger.info('Setting new Encap before continuing')
+        if (encap == 'gre'):
+            self.update_encap_priority('gre')
+        elif (encap == 'udp'):
+            self.update_encap_priority('udp')
+        elif (encap == 'vxlan'):
+            self.update_encap_priority('vxlan')
+
+        result = True
+        host_list = self.connections.nova_h.get_hosts()
+        compute_1 = host_list[0]
+        compute_2 = host_list[0]
+        if len(host_list) > 1:
+            compute_1 = host_list[0]
+            compute_2 = host_list[1]
+        (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["33.1.1.0/24"])
+        vn3_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn3_name,
+                subnets=self.vn3_subnets))
+
+        vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
+        vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
+
+        (self.vn1_name, self.vn1_subnets) = ("EVPN-Test-VN1", ["55.1.1.0/24"])
+
+        self.vn1_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn1_name,
+                subnets=self.vn1_subnets))
         assert self.vn1_fixture.verify_on_setup()
         vn_l2_vm1_fixture = self.useFixture(
             VMFixture(
@@ -661,45 +496,48 @@ class VerifyEvpnCases():
         # Wait till vm is up
         assert vn_l2_vm1_fixture.wait_till_vm_is_up()
         assert vn_l2_vm2_fixture.wait_till_vm_is_up()
+        vn1_subnet_id=self.vn1_fixture.get_subnets()[0]['id']
+        cmd = 'ip addr flush dev eth1'
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=60)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=60)
+        vn1_dhcp_dict = {'enable_dhcp': False}
+        self.vn1_fixture.update_subnet(vn1_subnet_id,vn1_dhcp_dict)
         self.logger.info(
-            "Changing vn1 forwarding mode from l2 only to l2l3 followed by calling verify_on_setup for vms which checks if l3 routes are there or not ")
-        disable_subnet_dhcp = {'enable_dhcp':False}
-        self.quantum_h.update_subnet(self.vn1_fixture.vn_subnet_objs[0]['id'], disable_subnet_dhcp)
+            "Changing vn1 forwarding mode from l2l3 to l2 only  followed by calling verify_on_setup for vms which checks l2 routes and explicity check l3 routes are  removed  ")
+        self.vn1_fixture.add_forwarding_mode(
+            project_fq_name=self.inputs.project_fq_name,
+            vn_name=self.vn1_name,
+            forwarding_mode='l2')
+        cmd = 'dhclient eth1'
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=10)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=10)
+        assert not self.verify_eth1_ip_from_vm(vn_l2_vm1_fixture),'L2 VM got IP when dhcp is disabled'
+        assert not self.verify_eth1_ip_from_vm(vn_l2_vm2_fixture),'L2 VM got IP when dhcp is disabled'
         assert self.vn1_fixture.verify_on_setup()
         assert vn_l2_vm1_fixture.verify_on_setup()
         assert vn_l2_vm2_fixture.verify_on_setup()
-
-        # Bring the intreface up forcefully
-        self.bringup_interface_forcefully(vn_l2_vm1_fixture)
-        self.bringup_interface_forcefully(vn_l2_vm2_fixture)
-
-        # Configure IPV6 address
-        cmd_to_pass1 = ['ifconfig eth1 inet6 add %s' % (vm1_ip6)]
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
-        cmd_to_pass2 = ['ifconfig eth1 inet6 add %s' % (vm2_ip6)]
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
-
-        vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(
-            intf='eth1', addr_type='global').split('/')[0].strip()
-        vm2_ipv6 = vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(
-            intf='eth1', addr_type='global').split('/')[0].strip()
-
-        self.tcpdump_start_on_all_compute()
-        assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6, count='15',
-                                              other_opt='-I eth1')
-        assert vn_l2_vm2_fixture.ping_to_ipv6(vm1_ipv6, count='15',
-                                              other_opt='-I eth1')
-        comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
-        comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
-        self.tcpdump_analyze_on_compute(comp_vm1_ip, encap.upper())
-        self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
-
-        self.tcpdump_stop_on_all_compute()
+                       
+        #send l2 traffic and verify
+        self.mac1=vn_l2_vm1_fixture.mac_addr[self.vn1_fixture.vn_fq_name]
+        self.mac2=vn_l2_vm2_fixture.mac_addr[self.vn1_fixture.vn_fq_name]
+        filters = 'ether src %s' %(self.mac1)
+        tap_intf = vn_l2_vm2_fixture.tap_intf[self.vn1_fixture.vn_fq_name]['name']
+        session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        self.logger.info('waiting to get tcpdump started')
+        sleep(20)
+        self.send_l2_traffic(vn_l2_vm1_fixture,iface='eth1')
+        result = verify_tcpdump_count(self, session, pcap, exp_count=10,mac=self.mac2)
+        
+        #for bug-id 1514703
+        #check ping working between l2 vms
+        #assert vn_l2_vm1_fixture.ping_with_certainty(dst_vm_fixture=vn_l2_vm2_fixture, 
+        #                                      vn_fq_name=self.vn1_fixture.vn_fq_name)
+        
         return result
-    # End verify_change_of_l2_vn_forwarding_mode
+    # End verify_change_of_l2l3_vn_forwarding_mode
 
-    def verify_change_of_l2l3_vn_forwarding_mode(self, encap):
-        '''Change the vn forwarding mode from l2l3 only to l2 and verify l3 routes gets deleted
+    def verify_change_of_l3_vn_forwarding_mode(self, encap):
+        '''Change the vn forwarding mode from l2_l3  to l3_only and verify l3 mode 
         '''
         # Setting up default encapsulation
         self.logger.info('Setting new Encap before continuing')
@@ -717,8 +555,6 @@ class VerifyEvpnCases():
         if len(host_list) > 1:
             compute_1 = host_list[0]
             compute_2 = host_list[1]
-        vm1_ip6 = '1001::1/64'
-        vm2_ip6 = '1001::2/64'
         (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["33.1.1.0/24"])
         vn3_fixture = self.useFixture(
             VNFixture(
@@ -726,7 +562,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,))
+                subnets=self.vn3_subnets))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -769,36 +605,29 @@ class VerifyEvpnCases():
         assert vn_l2_vm1_fixture.wait_till_vm_is_up()
         assert vn_l2_vm2_fixture.wait_till_vm_is_up()
         self.logger.info(
-            "Changing vn1 forwarding mode from l2l3 to l2 only  followed by calling verify_on_setup for vms which checks l2 routes and explicity check l3 routes are  removed  ")
-        enable_subnet_dhcp = {'enable_dhcp':False}
-        self.quantum_h.update_subnet(self.vn1_fixture.vn_subnet_objs[0]['id'], enable_subnet_dhcp)
+            "Changing vn1 forwarding mode from l2l3 to l3 only  followed by calling verify_on_setup ")
+        self.vn1_fixture.add_forwarding_mode(
+            project_fq_name=self.inputs.project_fq_name,
+            vn_name=self.vn1_name,
+            forwarding_mode='l3')
         assert self.vn1_fixture.verify_on_setup()
         assert vn_l2_vm1_fixture.verify_on_setup()
         assert vn_l2_vm2_fixture.verify_on_setup()
-
-        # Bring the intreface up forcefully
-        self.bringup_interface_forcefully(vn_l2_vm1_fixture)
-        self.bringup_interface_forcefully(vn_l2_vm2_fixture)
-
-        # Configure IPV6 address
-        cmd_to_pass1 = ['ifconfig eth1 inet6 add %s' % (vm1_ip6)]
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
-        cmd_to_pass2 = ['ifconfig eth1 inet6 add %s' % (vm2_ip6)]
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
-
-        vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(
-            intf='eth1', addr_type='global').split('/')[0].strip()
-        vm2_ipv6 = vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(
-            intf='eth1', addr_type='global').split('/')[0].strip()
-
-        assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6, count='15',
-                                              other_opt='-I eth1')
-        assert vn_l2_vm2_fixture.ping_to_ipv6(vm1_ipv6, count='15',
-                                              other_opt='-I eth1')
-
-        self.tcpdump_stop_on_all_compute()
+        
+        #send l3 only traffic and verify
+        self.vn_l2_vm1_ip = vn_l2_vm1_fixture.vm_ip_dict[self.vn1_fixture.vn_fq_name][0]
+        self.vn_l2_vm2_ip =  vn_l2_vm2_fixture.vm_ip_dict[self.vn1_fixture.vn_fq_name][0]
+        filters = '\'(src host %s and dst host %s and not arp)\'' \
+                    % (self.vn_l2_vm1_ip, self.vn_l2_vm2_ip)
+        tap_intf = vn_l2_vm2_fixture.tap_intf[self.vn1_fixture.vn_fq_name]['name']
+        session, pcap = vn_l2_vm2_fixture.start_tcpdump(filters = filters,interface = tap_intf)
+        sleep(10)
+        output = self.send_l3_traffic(vn_l2_vm1_fixture)
+        assert verify_tcpdump_count(self,session, pcap,exp_count=10)
+        
         return result
-    # End verify_change_of_l2l3_vn_forwarding_mode
+    
+    # End verify_change_of_l3_vn_forwarding_mode
 
     def get_matching_vrf(self, vrf_objs, vrf_name):
         return [x for x in vrf_objs if x['name'] == vrf_name][0]
@@ -811,7 +640,6 @@ class VerifyEvpnCases():
         # Setting up default encapsulation
         self.logger.info('Setting new Encap before continuing')
         self.update_encap_priority(encap)
-
         result = True
         host_list = self.connections.nova_h.get_hosts()
         compute_1 = host_list[0]
@@ -819,9 +647,7 @@ class VerifyEvpnCases():
         if len(host_list) > 1:
             compute_1 = host_list[0]
             compute_2 = host_list[1]
-
-        vm1_ip6 = '1001::1/64'
-        vm2_ip6 = '1001::2/64'
+            
         (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["33.1.1.0/24"])
         vn3_fixture = self.useFixture(
             VNFixture(
@@ -829,7 +655,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,))
+                subnets=self.vn3_subnets))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -843,8 +669,8 @@ class VerifyEvpnCases():
         self.vxlan_id = str(vxlan_random_id)
 
         self.connections.vnc_lib_fixture.set_vxlan_mode('configured')
-        self.addCleanup(self.connections.vnc_lib_fixture.set_vxlan_mode(
-            'automatic'))
+        self.addCleanup(self.connections.vnc_lib_fixture.set_vxlan_mode,
+            vxlan_mode='automatic')
         self.vn1_fixture = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name,
@@ -852,8 +678,9 @@ class VerifyEvpnCases():
                 inputs=self.inputs,
                 vn_name=self.vn1_name,
                 subnets=self.vn1_subnets,
+                vxlan_id=self.vxlan_id,
                 enable_dhcp=False,
-                vxlan_id=self.vxlan_id))
+                forwarding_mode='l2'))
         assert self.vn1_fixture.verify_on_setup()
 
         vn_l2_vm1_fixture = self.useFixture(
@@ -880,7 +707,7 @@ class VerifyEvpnCases():
         assert vn3_fixture.verify_on_setup()
         assert vn_l2_vm1_fixture.verify_on_setup()
         assert vn_l2_vm2_fixture.verify_on_setup()
-
+        
         # Verify that configured vxlan_id shows up in agent introspect
         for compute_ip in self.inputs.compute_ips:
             inspect_h = self.agent_inspect[compute_ip]
@@ -923,29 +750,20 @@ class VerifyEvpnCases():
         # Wait till vm is up
         assert vn_l2_vm1_fixture.wait_till_vm_is_up()
         assert vn_l2_vm2_fixture.wait_till_vm_is_up()
-
-        # Bring the intreface up forcefully
-        self.bringup_interface_forcefully(vn_l2_vm1_fixture)
-        self.bringup_interface_forcefully(vn_l2_vm2_fixture)
-
-        # Configure IPV6 address
-        cmd_to_pass1 = ['ifconfig eth1 inet6 add %s' % (vm1_ip6)]
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
-        cmd_to_pass2 = ['ifconfig eth1 inet6 add %s' % (vm2_ip6)]
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
-
-        vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(
-            intf='eth1', addr_type='global').split('/')[0].strip()
-        vm2_ipv6 = vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(
-            intf='eth1', addr_type='global').split('/')[0].strip()
-
+        #send l2 traffic and verify
+        self.mac1=vn_l2_vm1_fixture.mac_addr[self.vn1_fixture.vn_fq_name]
+        self.mac2=vn_l2_vm2_fixture.mac_addr[self.vn1_fixture.vn_fq_name]
+        filters = 'ether src %s' %(self.mac1)
+        tap_intf = vn_l2_vm2_fixture.tap_intf[self.vn1_fixture.vn_fq_name]['name']
         self.tcpdump_start_on_all_compute()
-        assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6, count='15',
-                                              other_opt='-I eth1')
-        assert vn_l2_vm2_fixture.ping_to_ipv6(vm1_ipv6, count='15',
-                                              other_opt='-I eth1')
+        session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        self.logger.info('waiting to get tcpdump started')
+        sleep(10)
+        self.send_l2_traffic(vn_l2_vm1_fixture,iface='eth1')
+        result = verify_tcpdump_count(self, session, pcap, exp_count=10,mac=self.mac2)
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
+
         # Pad vxlan_hex_id to length of 4 and grep it in tcpdump
         if vxlan_random_id < 15:
             vxlan_hex_id = '0' + vxlan_hex_id
@@ -974,9 +792,6 @@ class VerifyEvpnCases():
             compute_1 = host_list[0]
             compute_2 = host_list[1]
 
-        vm1_ip6 = '1001::1/64'
-        vm2_ip6 = '1001::2/64'
-
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
 
@@ -989,8 +804,8 @@ class VerifyEvpnCases():
         self.vxlan_id = str(vxlan_random_id)
 
         self.connections.vnc_lib_fixture.set_vxlan_mode('configured')
-        self.addCleanup(self.connections.vnc_lib_fixture.set_vxlan_mode(
-            'automatic'))
+        self.addCleanup(self.connections.vnc_lib_fixture.set_vxlan_mode,
+            vxlan_mode='automatic')
         self.vn1_fixture = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name,
@@ -1062,27 +877,24 @@ class VerifyEvpnCases():
         # Wait till vm is up
         assert vn_l2_vm1_fixture.wait_till_vm_is_up()
         assert vn_l2_vm2_fixture.wait_till_vm_is_up()
-
-        # Configure IPV6 address
-        cmd_to_pass1 = ['ifconfig eth0 inet6 add %s' % (vm1_ip6)]
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
-        cmd_to_pass2 = ['ifconfig eth0 inet6 add %s' % (vm2_ip6)]
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
-
-        vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(
-            addr_type='global').split('/')[0].strip()
-        vm2_ipv6 = vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(
-            addr_type='global').split('/')[0].strip()
-
+        #removing ipv6 verification
+        #send l3 only traffic and verify
+        self.vn_l2_vm1_ip = vn_l2_vm1_fixture.vm_ip_dict[self.vn1_fixture.vn_fq_name][0]
+        self.vn_l2_vm2_ip =  vn_l2_vm2_fixture.vm_ip_dict[self.vn1_fixture.vn_fq_name][0]
+        filters = '\'(src host %s and dst host %s and not arp)\'' \
+                    % (self.vn_l2_vm1_ip, self.vn_l2_vm2_ip)
+        tap_intf = vn_l2_vm2_fixture.tap_intf[self.vn1_fixture.vn_fq_name]['name']
         self.tcpdump_start_on_all_compute()
-        assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6, count='15')
-        assert vn_l2_vm2_fixture.ping_to_ipv6(vm1_ipv6, count='15')
+        session, pcap = vn_l2_vm2_fixture.start_tcpdump(filters = filters,interface = tap_intf)
+        sleep(10)
+        self.send_l3_traffic(vn_l2_vm1_fixture)
+        assert verify_tcpdump_count(self,session, pcap,exp_count=10)
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
+        
         # Pad vxlan_hex_id to length of 4 and grep it in tcpdump
         if vxlan_random_id < 15:
-            vxlan_hex_id = '0' + vxlan_hex_id
-
+           vxlan_hex_id = '0' + vxlan_hex_id
         self.tcpdump_analyze_on_compute(
             comp_vm1_ip, encap.upper(), vxlan_id=vxlan_hex_id)
         self.tcpdump_analyze_on_compute(
@@ -1094,7 +906,7 @@ class VerifyEvpnCases():
 
     def get_matching_vrf(self, vrf_objs, vrf_name):
         return [x for x in vrf_objs if x['name'] == vrf_name][0]
-
+  
     def verify_l2_vm_file_trf_by_scp(self, encap):
         '''Description: Test to validate File Transfer using scp between VMs. Files of different sizes. L2 forwarding mode is used for scp.
         '''
@@ -1130,7 +942,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,))
+                subnets=self.vn3_subnets))
 
         vn4_fixture = self.useFixture(
             VNFixture(
@@ -1139,7 +951,9 @@ class VerifyEvpnCases():
                 inputs=self.inputs,
                 vn_name=self.vn4_name,
                 subnets=self.vn4_subnets,
-                enable_dhcp=False))
+                enable_dhcp=False,
+                forwarding_mode='l2'
+                ))
 
         self.connections.vnc_lib_fixture.set_rpf_mode(vn4_fixture.vn_fq_name, 'disable')
 
@@ -1190,7 +1004,7 @@ class VerifyEvpnCases():
         assert vm1_fixture.verify_on_setup()
         assert vn_l2_vm1_fixture.verify_on_setup()
         assert vn_l2_vm2_fixture.verify_on_setup()
-
+        
         # Configure dhcp-server vm on eth1 and bring the intreface up
         # forcefully
         self.bringup_interface_forcefully(vm1_fixture)
@@ -1272,10 +1086,11 @@ class VerifyEvpnCases():
                     by scp !! Pls check logs' % (size, dest_vm_ip))
                 result = False
                 assert result
-
+                
         self.tcpdump_stop_on_all_compute()
         return result
-
+    
+    @retry(delay=2, tries=5)
     def verify_eth1_ip_from_vm(self, vm_fix):
         i = 'ifconfig eth1'
         cmd_to_pass5 = [i]
@@ -1321,7 +1136,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,))
+                subnets=self.vn3_subnets))
 
         vn4_fixture = self.useFixture(
             VNFixture(
@@ -1330,7 +1145,8 @@ class VerifyEvpnCases():
                 inputs=self.inputs,
                 vn_name=self.vn4_name,
                 subnets=self.vn4_subnets,
-                enable_dhcp=False))
+                enable_dhcp=False,
+                forwarding_mode='l2'))
 
         self.connections.vnc_lib_fixture.set_rpf_mode(vn4_fixture.vn_fq_name, 'disable')
 
@@ -1390,7 +1206,7 @@ class VerifyEvpnCases():
         assert vm1_fixture.verify_on_setup()
         assert vn_l2_vm1_fixture.verify_on_setup()
         assert vn_l2_vm2_fixture.verify_on_setup()
-
+        
         # Configure dhcp-server vm on eth1 and bring the intreface up
         # forcefully
         self.bringup_interface_forcefully(vm1_fixture)
@@ -1505,7 +1321,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,))
+                subnets=self.vn3_subnets))
 
         vn4_fixture = self.useFixture(
             VNFixture(
@@ -1514,7 +1330,8 @@ class VerifyEvpnCases():
                 inputs=self.inputs,
                 vn_name=self.vn4_name,
                 subnets=self.vn4_subnets,
-                enable_dhcp=False))
+                enable_dhcp=False,
+                forwarding_mode='l2'))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -1523,20 +1340,22 @@ class VerifyEvpnCases():
             VMFixture(
                 project_name=self.inputs.project_name,
                 connections=self.connections,
+                flavor='contrail_flavor_large',
                 vn_objs=[
                     vn3_fixture.obj,
                     vn4_fixture.obj],
-                image_name='ubuntu-traffic',
+                image_name='ubuntu-with-vlan8021q',
                 vm_name=vn_l2_vm1_name,
                 node_name=compute_1))
         vn_l2_vm2_fixture = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name,
                 connections=self.connections,
+                flavor='contrail_flavor_large',
                 vn_objs=[
                     vn3_fixture.obj,
                     vn4_fixture.obj],
-                image_name='ubuntu-traffic',
+                image_name='ubuntu-with-vlan8021q',
                 vm_name=vn_l2_vm2_name,
                 node_name=compute_2))
 
@@ -1548,7 +1367,7 @@ class VerifyEvpnCases():
         # Wait till vm is up
         assert vn_l2_vm1_fixture.wait_till_vm_is_up()
         assert vn_l2_vm2_fixture.wait_till_vm_is_up()
-
+        
         # Bring the intreface up forcefully
         self.bringup_interface_forcefully(vn_l2_vm1_fixture)
         self.bringup_interface_forcefully(vn_l2_vm2_fixture)
@@ -1665,7 +1484,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,))
+                subnets=self.vn3_subnets))
 
         vn4_fixture = self.useFixture(
             VNFixture(
@@ -1674,7 +1493,8 @@ class VerifyEvpnCases():
                 inputs=self.inputs,
                 vn_name=self.vn4_name,
                 subnets=self.vn4_subnets,
-                enable_dhcp=False))
+                enable_dhcp=False,
+                forwarding_mode='l2'))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -1683,10 +1503,11 @@ class VerifyEvpnCases():
             VMFixture(
                 project_name=self.inputs.project_name,
                 connections=self.connections,
+                flavor='contrail_flavor_large',
                 vn_objs=[
                     vn3_fixture.obj,
                     vn4_fixture.obj],
-                image_name='ubuntu-traffic',
+                image_name='ubuntu-with-vlan8021q',
                 vm_name=vn_l2_vm1_name,
                 node_name=compute_1))
         vn_l2_vm2_fixture = self.useFixture(
@@ -1697,10 +1518,9 @@ class VerifyEvpnCases():
                 vn_objs=[
                     vn3_fixture.obj,
                     vn4_fixture.obj],
-                image_name='ubuntu-traffic',
+                image_name='ubuntu-with-vlan8021q',
                 vm_name=vn_l2_vm2_name,
                 node_name=compute_2))
-
         assert vn3_fixture.verify_on_setup()
         assert vn4_fixture.verify_on_setup()
         assert vn_l2_vm1_fixture.verify_on_setup()
@@ -1709,7 +1529,7 @@ class VerifyEvpnCases():
         # Wait till vm is up
         assert vn_l2_vm1_fixture.wait_till_vm_is_up()
         assert vn_l2_vm2_fixture.wait_till_vm_is_up()
-
+        
         # Bring the intreface up forcefully
         self.bringup_interface_forcefully(vn_l2_vm1_fixture)
         self.bringup_interface_forcefully(vn_l2_vm2_fixture)
@@ -1979,8 +1799,6 @@ class VerifyEvpnCases():
             compute_1 = host_list[0]
             compute_2 = host_list[1]
 
-        vn1_vm1 = '1001::1/64'
-        vn1_vm2 = '1001::2/64'
         (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["33.1.1.0/24"])
         (self.vn4_name, self.vn4_subnets) = ("EVPN-L2-VN", ["44.1.1.0/24"])
         vn3_fixture = self.useFixture(
@@ -1989,7 +1807,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,))
+                subnets=self.vn3_subnets))
 
         vn4_fixture = self.useFixture(
             VNFixture(
@@ -1998,7 +1816,8 @@ class VerifyEvpnCases():
                 inputs=self.inputs,
                 vn_name=self.vn4_name,
                 subnets=self.vn4_subnets,
-                enable_dhcp=False))
+                enable_dhcp=False,
+                forwarding_mode='l2'))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -2033,25 +1852,17 @@ class VerifyEvpnCases():
         assert vn_l2_vm1_fixture.wait_till_vm_is_up()
         assert vn_l2_vm2_fixture.wait_till_vm_is_up()
 
-        # Bring the intreface up forcefully
-        self.bringup_interface_forcefully(vn_l2_vm1_fixture)
-        self.bringup_interface_forcefully(vn_l2_vm2_fixture)
-
-        # Configured IPV6 address
-        cmd_to_pass1 = ['ifconfig eth1 inet6 add %s' % (vn1_vm1)]
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
-        cmd_to_pass2 = ['ifconfig eth1 inet6 add %s' % (vn1_vm2)]
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
-
-        vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(
-            intf='eth1', addr_type='global')
-        vm2_ipv6 = vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(
-            intf='eth1', addr_type='global')
+        #removed ipv6 verification
         self.tcpdump_start_on_all_compute()
-        assert vn_l2_vm1_fixture.ping_to_ipv6(
-            vm2_ipv6.split("/")[0].strip(), count='15')
-        assert vn_l2_vm2_fixture.ping_to_ipv6(
-            vm1_ipv6.split("/")[0].strip(), count='15')
+        self.mac1=vn_l2_vm1_fixture.mac_addr[vn4_fixture.vn_fq_name]
+        self.mac2=vn_l2_vm2_fixture.mac_addr[vn4_fixture.vn_fq_name]
+        filters = 'ether src %s' %(self.mac1)
+        tap_intf = vn_l2_vm2_fixture.tap_intf[vn4_fixture.vn_fq_name]['name']
+        session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        self.logger.info('waiting to get tcpdump started')
+        sleep(20)
+        self.send_l2_traffic(vn_l2_vm1_fixture,iface='eth1')
+        
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm1_ip, encap.upper())
@@ -2121,17 +1932,23 @@ class VerifyEvpnCases():
                     'With Peer %s peering is not Established. Current State %s ' %
                     (entry['peer'], entry['state']))
         # Check ping
+        #removed ipv6 verification
+        #send l2_traffic
         self.tcpdump_start_on_all_compute()
-        assert vn_l2_vm1_fixture.ping_to_ipv6(
-            vm2_ipv6.split("/")[0].strip(), count='15')
-        assert vn_l2_vm2_fixture.ping_to_ipv6(
-            vm1_ipv6.split("/")[0].strip(), count='15')
+        self.mac1=vn_l2_vm1_fixture.mac_addr[vn4_fixture.vn_fq_name]
+        self.mac2=vn_l2_vm2_fixture.mac_addr[vn4_fixture.vn_fq_name]
+        filters = 'ether src %s' %(self.mac1)
+        tap_intf = vn_l2_vm2_fixture.tap_intf[vn4_fixture.vn_fq_name]['name']
+        session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        self.logger.info('waiting to get tcpdump started')
+        sleep(20)
+        self.send_l2_traffic(vn_l2_vm1_fixture,iface='eth1')                                     
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
         self.tcpdump_analyze_on_compute(comp_vm1_ip, encap.upper())
         self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
         self.tcpdump_stop_on_all_compute()
-
+        
         return result
     # verify_epvn_l2_mode_control_node_switchover
 
@@ -2186,20 +2003,17 @@ class VerifyEvpnCases():
         assert vn1_vm2_fixture.verify_on_setup()
         assert vn1_vm1_fixture.wait_till_vm_is_up()
         assert vn1_vm2_fixture.wait_till_vm_is_up()
-   
-        # Bug 1374192: Removing all traffic test from this case.
-        # This test case will only veirfy L2 route after vrouter restart
-        # Will add new test case for L2 fallback
-        #for i in range(0, 20):
-        #    vm2_ipv6 = vn1_vm2_fixture.get_vm_ipv6_addr_from_vm()
-        #    if vm2_ipv6 is not None:
-        #        break
-        #if vm2_ipv6 is None:
-        #    self.logger.error('Not able to get VM link local address')
-        #    return False
-        #self.logger.info(
-        #    'Checking the communication between 2 VM using ping6 to VM link local address from other VM')
-        #assert vn1_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0])
+        
+        #send l2 traffic and verify
+        self.mac1=vn1_vm1_fixture.mac_addr[vn1_fixture.vn_fq_name]
+        self.mac2=vn1_vm2_fixture.mac_addr[vn1_fixture.vn_fq_name]
+        filters = 'ether src %s' %(self.mac1)
+        tap_intf = vn1_vm2_fixture.tap_intf[vn1_fixture.vn_fq_name]['name']
+        session,pcap = vn1_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        self.logger.info('waiting to get tcpdump started')
+        sleep(20)
+        self.send_l2_traffic(vn1_vm1_fixture,iface='eth0')
+        result = verify_tcpdump_count(self, session, pcap, exp_count=10,mac=self.mac2)
         self.logger.info('Will restart compute  services now')
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter', [compute_ip])
@@ -2208,28 +2022,25 @@ class VerifyEvpnCases():
             'Verifying L2 route and other VM verification after restart')
         assert vn1_vm1_fixture.verify_on_setup(force=True)
         assert vn1_vm2_fixture.verify_on_setup(force=True)
-        #for i in range(0, 20):
-        #    vm2_ipv6 = vn1_vm2_fixture.get_vm_ipv6_addr_from_vm()
-        #    if vm2_ipv6 is not None:
-        #        break
-        #if vm2_ipv6 is None:
-        #    self.logger.error('Not able to get VM link local address')
-        #    return False
-        #self.logger.info(
-        #    'Checking the communication between 2 VM after vrouter restart')
-        #self.tcpdump_start_on_all_compute()
-        #assert vn1_vm1_fixture.ping_to_ipv6(
-        #    vm2_ipv6.split("/")[0], count='15')
-        #comp_vm2_ip = vn1_vm2_fixture.vm_node_ip
-        #if len(set(self.inputs.compute_ips)) >= 2:
-        #    self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
-        #self.tcpdump_stop_on_all_compute()
+        #send l2 traffic and verify
+        self.mac1=vn1_vm1_fixture.mac_addr[vn1_fixture.vn_fq_name]
+        self.mac2=vn1_vm2_fixture.mac_addr[vn1_fixture.vn_fq_name]
+        filters = 'ether src %s' %(self.mac1)
+        tap_intf = vn1_vm2_fixture.tap_intf[vn1_fixture.vn_fq_name]['name']
+        session,pcap = vn1_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        self.logger.info('waiting to get tcpdump started')
+        sleep(20)
+        self.send_l2_traffic(vn1_vm1_fixture,iface='eth0')
+        result = verify_tcpdump_count(self, session, pcap, exp_count=10,mac=self.mac2)
+        self.logger.info('Checking the communication between 2 VM after vrouter restart')
+        assert vn1_vm1_fixture.ping_with_certainty(dst_vm_fixture=vn1_vm2_fixture, 
+                                              vn_fq_name=vn1_fixture.vn_fq_name)
 
         return True
     # End test_epvn_with_agent_restart
 
     def verify_epvn_l2_mode(self, encap):
-        '''Restart the vrouter service and verify the impact on L2 route
+        '''verify the impact on L2 route with each encapsulation
         '''
         # Setting up default encapsulation
         self.logger.info('Setting new Encap before continuing')
@@ -2248,8 +2059,6 @@ class VerifyEvpnCases():
             compute_1 = host_list[0]
             compute_2 = host_list[1]
 
-        vn1_vm1 = '1001::1/64'
-        vn1_vm2 = '1001::2/64'
         (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["33.1.1.0/24"])
         (self.vn4_name, self.vn4_subnets) = ("EVPN-L2-VN", ["44.1.1.0/24"])
 
@@ -2259,7 +2068,7 @@ class VerifyEvpnCases():
                 connections=self.connections,
                 inputs=self.inputs,
                 vn_name=self.vn3_name,
-                subnets=self.vn3_subnets,))
+                subnets=self.vn3_subnets))
 
         vn4_fixture = self.useFixture(
             VNFixture(
@@ -2268,7 +2077,8 @@ class VerifyEvpnCases():
                 inputs=self.inputs,
                 vn_name=self.vn4_name,
                 subnets=self.vn4_subnets,
-                enable_dhcp=False))
+                enable_dhcp=False,
+                forwarding_mode='l2'))
 
         vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
         vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
@@ -2293,7 +2103,6 @@ class VerifyEvpnCases():
                 image_name='ubuntu',
                 vm_name=vn_l2_vm2_name,
                 node_name=compute_2))
-
         assert vn3_fixture.verify_on_setup()
         assert vn4_fixture.verify_on_setup()
         assert vn_l2_vm1_fixture.verify_on_setup()
@@ -2303,41 +2112,165 @@ class VerifyEvpnCases():
         vn_l2_vm1_fixture.wait_till_vm_is_up()
         vn_l2_vm2_fixture.wait_till_vm_is_up()
 
-        # Bring the intreface up forcefully
-        self.bringup_interface_forcefully(vn_l2_vm1_fixture)
-        self.bringup_interface_forcefully(vn_l2_vm2_fixture)
-
-        # Configured IPV6 address
-        cmd_to_pass1 = ['ifconfig eth1 inet6 add %s' % (vn1_vm1)]
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
-        cmd_to_pass2 = ['ifconfig eth1 inet6 add %s' % (vn1_vm2)]
-        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_pass2, as_sudo=True, timeout=60)
-
-        vm1_ipv6 = vn_l2_vm1_fixture.get_vm_ipv6_addr_from_vm(
-            intf='eth1', addr_type='global')
-        vm2_ipv6 = vn_l2_vm2_fixture.get_vm_ipv6_addr_from_vm(
-            intf='eth1', addr_type='global')
+        #send l2 traffic and verify
+        self.mac1=vn_l2_vm1_fixture.mac_addr[vn4_fixture.vn_fq_name]
+        self.mac2=vn_l2_vm2_fixture.mac_addr[vn4_fixture.vn_fq_name]
+        filters = 'ether src %s' %(self.mac1)
+        tap_intf = vn_l2_vm2_fixture.tap_intf[vn4_fixture.vn_fq_name]['name']
         self.tcpdump_start_on_all_compute()
-        assert vn_l2_vm1_fixture.ping_to_ipv6(
-            vm2_ipv6.split("/")[0].strip(), count='15', other_opt='-I eth1')
+        session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        self.logger.info('waiting to get tcpdump started')
+        sleep(10)
+        self.send_l2_traffic(vn_l2_vm1_fixture,iface='eth1')
+        result = verify_tcpdump_count(self, session, pcap, exp_count=10,mac=self.mac2)
+
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
         if len(self.connections.nova_h.get_hosts()) >= 2:
             self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
         self.tcpdump_stop_on_all_compute()
 
-        #self.logger.info('Will restart compute  services now')
-        # for compute_ip in self.inputs.compute_ips:
-        #    self.inputs.restart_service('contrail-vrouter',[compute_ip])
-        # sleep(10)
-
-        # TODO
-        #assert vn1_vm1_fixture.verify_on_setup()
-        #assert vn1_vm2_fixture.verify_on_setup()
-
-        #self.logger.info('Checking the communication between 2 VM after vrouter restart')
-        #assert vn_l2_vm1_fixture.ping_to_ipv6(vm2_ipv6.split("/")[0])
         return True
     # End verify_epvn_l2_mode
+    
+    def verify_l2_only_and_l3_only_arp_resolution(self,encap):
+
+        # Setting up default encapsulation
+        self.logger.info('Setting new Encap before continuing')
+        if (encap == 'gre'):
+            self.update_encap_priority('gre')
+        elif (encap == 'udp'):
+            self.update_encap_priority('udp')
+        elif (encap == 'vxlan'):
+            self.update_encap_priority('vxlan')
+
+        result = True
+        host_list = self.connections.nova_h.get_hosts()
+        compute_1 = host_list[0]
+        compute_2 = host_list[0]
+        if len(host_list) > 1:
+            compute_1 = host_list[0]
+            compute_2 = host_list[1]
+        (self.vn3_name, self.vn3_subnets) = ("EVPN-MGMT-VN", ["33.1.1.0/24"])
+        vn3_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn3_name,
+                subnets=self.vn3_subnets))
+
+        vn_l2_vm1_name = 'EVPN_VN_L2_VM1'
+        vn_l2_vm2_name = 'EVPN_VN_L2_VM2'
+
+        (self.vn1_name, self.vn1_subnets) = ("EVPN-Test-VN1", ["55.1.1.0/24"])
+
+        self.vn1_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                inputs=self.inputs,
+                vn_name=self.vn1_name,
+                subnets=self.vn1_subnets))
+        assert self.vn1_fixture.verify_on_setup()
+        vn_l2_vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    self.vn1_fixture.obj],
+                image_name='ubuntu-traffic',
+                vm_name=vn_l2_vm1_name,
+                node_name=compute_1))
+        vn_l2_vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_objs=[
+                    vn3_fixture.obj,
+                    self.vn1_fixture.obj],
+                image_name='ubuntu-traffic',
+                vm_name=vn_l2_vm2_name,
+                node_name=compute_2))
+
+        assert vn_l2_vm1_fixture.verify_on_setup()
+        assert vn_l2_vm2_fixture.verify_on_setup()
+
+        # Wait till vm is up
+        assert vn_l2_vm1_fixture.wait_till_vm_is_up()
+        assert vn_l2_vm2_fixture.wait_till_vm_is_up()
+        self.bringup_interface_forcefully(vn_l2_vm1_fixture)
+        cmd = 'dhclient eth1'
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        assert self.verify_eth1_ip_from_vm(vn_l2_vm1_fixture)
+        
+        self.bringup_interface_forcefully(vn_l2_vm2_fixture)
+        cmd = 'dhclient eth1'
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        assert self.verify_eth1_ip_from_vm(vn_l2_vm2_fixture)
+        self.logger.info(
+            "Changing vn1 forwarding mode from l2l3 to l2 only  followed by calling verify_on_setup for vms which checks l2 routes and explicity check l3 routes are  removed  ")
+        self.vn1_fixture.add_forwarding_mode(
+            project_fq_name=self.inputs.project_fq_name,
+            vn_name=self.vn1_name,
+            forwarding_mode='l2')
+        assert self.vn1_fixture.verify_on_setup()
+        assert vn_l2_vm1_fixture.verify_on_setup()
+        assert vn_l2_vm2_fixture.verify_on_setup()
+        cmd = 'ip -s -s neigh flush all'
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        mac1=vn_l2_vm1_fixture.mac_addr[self.vn1_fixture.vn_fq_name]
+        mac2=vn_l2_vm2_fixture.mac_addr[self.vn1_fixture.vn_fq_name]
+        self.logger.info('verify l2_only arp resolution')
+        filters = 'arp'
+        tap_intf = vn_l2_vm2_fixture.tap_intf[self.vn1_fixture.vn_fq_name]['name']
+        session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        self.logger.info('waiting to get tcpdump started')
+        sleep(20)
+        
+        self.vn_l2_vm1_ip = vn_l2_vm1_fixture.vm_ip_dict[self.vn1_fixture.vn_fq_name][0]
+        self.vn_l2_vm2_ip = vn_l2_vm2_fixture.vm_ip_dict[self.vn1_fixture.vn_fq_name][0]
+        intf_name = vn_l2_vm1_fixture.get_vm_interface_name(mac1)
+        output,form_output = vn_l2_vm1_fixture.arping(self.vn_l2_vm2_ip,intf_name)
+        search_string = self.vn_l2_vm1_ip
+        status = search_in_pcap(session, pcap,search_string)
+        vn_l2_vm2_fixture.stop_tcpdump(session,pcap)
+        if status and mac2 in output:
+            self.logger.info('arp resolution was done by end vm')
+        else:
+            assert status,'arp got proxied which is not expected in L2 mode'
+            
+        #for bug-id 1513718 
+        #clear arps and do arping
+        #check vrouter proxy arp request or not
+        self.logger.info('Verifying l3_only arp resolution')
+        self.logger.info(
+            "Changing vn1 forwarding mode from l2l3 to l3 only  followed by calling verify_on_setup ")
+        self.vn1_fixture.add_forwarding_mode(
+            project_fq_name=self.inputs.project_fq_name,
+            vn_name=self.vn1_name,
+            forwarding_mode='l3')
+        cmd = 'ip -s -s neigh flush all'
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        filters = 'arp'
+        session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        self.logger.info('waiting to get tcpdump started')
+        sleep(20)
+        intf_name = vn_l2_vm1_fixture.get_vm_interface_name(mac1)
+        output,form_output = vn_l2_vm1_fixture.arping(self.vn_l2_vm2_ip,intf_name)
+        vn_l2_vm2_fixture.stop_tcpdump(session, pcap)
+        search_string = self.vn_l2_vm1_ip
+        status = search_in_pcap(session, pcap,search_string)
+        vn_l2_vm2_fixture.stop_tcpdump(session,pcap)
+        if not status and ('00:00:5e:00:01:00' in output):
+            self.logger.info('arp proxied by vrouter in L3 mode')
+        else:
+            assert status,'arp not proxied by vrouter'
+            
+        return result
+    #end verify_l2_l3_and_l3_only_arp_resolution
+
+        
 
     def bringup_interface_forcefully(self, vm_fixture, intf='eth1'):
         cmd = 'ifconfig %s up'%(intf)
@@ -2381,12 +2314,12 @@ class VerifyEvpnCases():
             pcap1 = '/tmp/encap-udp.pcap'
             pcap2 = '/tmp/encap-gre.pcap'
             pcap3 = '/tmp/encap-vxlan.pcap'
-            cmd1 = 'tcpdump -ni %s udp port 51234 and less 170 -w %s -s 0' % (
+            cmd1 = 'tcpdump -ni %s -U udp port 51234 and less 170 and ether[100:4]==0x5a5a5a5a -w %s -s 0' % (
                 comp_intf, pcap1)
             cmd_udp = "nohup " + cmd1 + " >& /dev/null < /dev/null &"
-            cmd2 = 'tcpdump -ni %s proto 47 -w %s -s 0' % (comp_intf, pcap2)
+            cmd2 = 'tcpdump -ni %s -U proto 47 and ether[100:4]==0x5a5a5a5a -w %s -s 0' % (comp_intf, pcap2)
             cmd_gre = "nohup " + cmd2 + " >& /dev/null < /dev/null &"
-            cmd3 = 'tcpdump -ni %s dst port 4789 -w %s -s 0' % (
+            cmd3 = 'tcpdump -ni %s -U dst port 4789 and ether[100:4]==0x5a5a5a5a -w %s -s 0' % (
                 comp_intf, pcap3)
             cmd_vxlan = "nohup " + cmd3 + " >& /dev/null < /dev/null &"
 
@@ -2537,5 +2470,27 @@ class VerifyEvpnCases():
 
         return True
 
-        # return True
     # end tcpdump_analyze_on_compute
+    
+    def send_l3_traffic(self,vm1_fixture):
+        python_code = Template('''
+from scapy.all import *
+payload = 'ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ'
+a=IP(src='$src_ip',dst='$dst_ip')/payload
+send(a, count=10)
+            ''')
+        python_code = python_code.substitute(src_ip=self.vn_l2_vm1_ip, dst_ip=self.vn_l2_vm2_ip)
+        return vm1_fixture.run_python_code(python_code)
+    #end send_l3_traffic
+    def send_l2_traffic(self,vm1_fixture,iface):
+        
+        python_code = Template('''
+from scapy.all import *
+payload = 'ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ'
+a=Ether(src='$mac1',dst='$mac2')/payload
+sendp(a, count=10, inter=0, iface='$iface')
+            ''')
+        python_code = python_code.substitute(mac1=self.mac1,mac2=self.mac2,iface=iface)
+        return vm1_fixture.run_python_code(python_code)
+    #end send_l2_traffic
+    
