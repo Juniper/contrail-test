@@ -2256,7 +2256,8 @@ class TestBasicVMVN6(BaseVnVmTest):
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
-    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6',
+        hypervisor='docker',msg='Bug 1461423:Need privileged access')
     def test_ping_on_broadcast_multicast_with_frag(self):
         '''
         Description: Validate Ping on subnet broadcast,link local multucast,network broadcastwith packet sizes > MTU and see that fragmentation and assembly work fine .
@@ -2996,7 +2997,8 @@ class TestBasicVMVNx(BaseVnVmTest):
     #end test_vm_file_trf_tftp_tests
 
     @test.attr(type=['sanity'])
-    @skip_because(address_family = 'v6')
+    @skip_because(address_family = 'v6', hypervisor='docker',
+        msg='Need image with sctp_test util and libsctp.so.1')
     @preposttest_wrapper
     def test_sctp_traffic_between_vm(self):
         '''
@@ -3212,7 +3214,8 @@ class TestBasicIPv6VMVN(test_vm_basic.TestBasicVMVN):
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
-    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6',
+        hypervisor='docker',msg='Bug 1461423:Need privileged access')
     def test_ping_within_vn_two_vms_two_different_subnets(self):
         super(TestBasicIPv6VMVN, self).test_ping_within_vn_two_vms_two_different_subnets()
 
