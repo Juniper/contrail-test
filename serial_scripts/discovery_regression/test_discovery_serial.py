@@ -46,7 +46,6 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             ip = elem[0]
             self.logger.info("Stopping service %s.." % (elem,))
             self.inputs.stop_service('contrail-control', [ip])
-
         for elem in svc_lst:
             ip = elem[0]
             if self.ds_obj.get_service_status(self.inputs.cfgm_ip, elem, 'down', 8):
@@ -66,11 +65,26 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             if svc_status:
                 self.logger.info(
                         "Service %s came up after service was started" % (elem,))
+<<<<<<< HEAD
                 result = result and True
             else:
                 self.logger.error("Service %s isn't up yet " % (elem,))
                 self.logger.error("Service %s is down even after service was started" % (elem,))
                 result = result and False
+=======
+                    result = result and True
+                    break
+                else:
+                    retry = retry + 1
+                    time.sleep(5)
+                    self.logger.warn("Service %s isn't up yet " % (elem,))
+                    # Setting retry to be hc_miss + 1
+                    if retry > 8:
+                        self.logger.info(
+                            "Service %s is down even after service was started" % (elem,))
+                        result = result and False
+                        break
+>>>>>>> 867e484... Heat testcases to support tiny core image for SVM
         assert result
         return True
 
