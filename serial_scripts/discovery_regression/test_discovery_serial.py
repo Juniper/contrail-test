@@ -46,7 +46,8 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             ip = elem[0]
             self.logger.info("Stopping service %s.." % (elem,))
             self.inputs.stop_service('contrail-control', [ip])
-
+        # Setting the sleep time to be hc_miss of discover.conf + 5 secs buffer
+        time.sleep(40)        
         for elem in svc_lst:
             ip = elem[0]
             if self.ds_obj.get_service_status(self.inputs.cfgm_ip, elem, 'down', 8):
