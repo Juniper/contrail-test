@@ -13,7 +13,7 @@ from tcutils.traffic_utils.scapy_traffic_gen import ScapyTraffic
 from tcutils.traffic_utils.traffic_analyzer import TrafficAnalyzer
 
 
-class TestQos(QosTestExtendedBase):
+class TestQos(QosTestExtendedBase, FcIdGenerator):
 
     @classmethod
     def setUpClass(cls):
@@ -33,9 +33,10 @@ class TestQos(QosTestExtendedBase):
             Apply the qos config to VM A
             Validate that packets from A to B have DSCP marked correctly
         '''
-        fcs = [{'fc_id': 10, 'dscp': 10, 'dot1p': 1, 'exp': 1}]
+        fc_id = self.get_free_fc_ids(1)
+        fcs = [{'fc_id': fc_id[0], 'dscp': 10, 'dot1p': 1, 'exp': 1}]
         fc_fixtures = self.setup_fcs(fcs)
-        dscp_map = {1: 10}
+        dscp_map = {1: fc_id[0]}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map)
         vm1_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
         self.setup_qos_config_on_vmi(qos_fixture, vm1_vmi_id)
@@ -58,9 +59,10 @@ class TestQos(QosTestExtendedBase):
             Apply the qos config to VM A
             Validate that packets from A to B have DSCP marked correctly
         '''
-        fcs = [{'fc_id': 10, 'dscp': 10, 'dot1p': 1, 'exp': 1}]
+        fc_id = self.get_free_fc_ids(1)
+        fcs = [{'fc_id': fc_id[0], 'dscp': 10, 'dot1p': 1, 'exp': 1}]
         fc_fixtures = self.setup_fcs(fcs)
-        dscp_map = {1: 10}
+        dscp_map = {1: fc_id[0]}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map)
         vm1_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
         self.setup_qos_config_on_vmi(qos_fixture, vm1_vmi_id)
@@ -90,9 +92,10 @@ class TestQos(QosTestExtendedBase):
             Giving a valid destination mac in the packet.
             Unicast traffic will be VxLAN encapsulated.
         '''
-        fcs = [{'fc_id': 10, 'dscp': 12, 'dot1p': 6, 'exp': 2}]
+        fc_id = self.get_free_fc_ids(1)
+        fcs = [{'fc_id': fc_id[0], 'dscp': 12, 'dot1p': 6, 'exp': 2}]
         fc_fixtures = self.setup_fcs(fcs)
-        dot1p_map = {2: 10}
+        dot1p_map = {2: fc_id[0]}
         qos_fixture = self.setup_qos_config(dot1p_map=dot1p_map)
         vm1_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
         self.setup_qos_config_on_vmi(qos_fixture, vm1_vmi_id)
@@ -117,9 +120,10 @@ class TestQos(QosTestExtendedBase):
             Apply the qos config to the VN
             Validate that packets from A to B have DSCP marked correctly
         '''
-        fcs = [{'fc_id': 10, 'dscp': 10, 'dot1p': 1, 'exp': 1}]
+        fc_id = self.get_free_fc_ids(1)
+        fcs = [{'fc_id': fc_id[0], 'dscp': 10, 'dot1p': 1, 'exp': 1}]
         self.setup_fcs(fcs)
-        dscp_map = {1: 10}
+        dscp_map = {1: fc_id[0]}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map)
         self.setup_qos_config_on_vn(qos_fixture, self.vn1_fixture.uuid)
         assert self.validate_packet_qos_marking(
@@ -140,9 +144,10 @@ class TestQos(QosTestExtendedBase):
             Apply the qos config to the VN
             Validate that packets from A to B have DSCP marked correctly
         '''
-        fcs = [{'fc_id': 10, 'dscp': 23, 'dot1p': 3, 'exp': 7}]
+        fc_id = self.get_free_fc_ids(1)
+        fcs = [{'fc_id': fc_id[0], 'dscp': 23, 'dot1p': 3, 'exp': 7}]
         self.setup_fcs(fcs)
-        dscp_map = {10: 10}
+        dscp_map = {10: fc_id[0]}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map)
         self.setup_qos_config_on_vn(qos_fixture, self.vn1_fixture.uuid)
         assert self.validate_packet_qos_marking(
@@ -168,9 +173,10 @@ class TestQos(QosTestExtendedBase):
             Apply the qos config to the VN
             Validate that packets from A to B have Dot1P marked correctly
         '''
-        fcs = [{'fc_id': 10, 'dscp': 23, 'dot1p': 5, 'exp': 3}]
+        fc_id = self.get_free_fc_ids(1)
+        fcs = [{'fc_id': fc_id[0], 'dscp': 23, 'dot1p': 5, 'exp': 3}]
         self.setup_fcs(fcs)
-        dot1p_map = {3: 10}
+        dot1p_map = {3: fc_id[0]}
         qos_fixture = self.setup_qos_config(dot1p_map=dot1p_map)
         self.setup_qos_config_on_vn(qos_fixture, self.vn1_fixture.uuid)
         assert self.validate_packet_qos_marking(
@@ -201,12 +207,13 @@ class TestQos(QosTestExtendedBase):
             Validate that packets from A to B have DSCP marked to 12
 
         '''
-        fcs = [{'fc_id': 1, 'dscp': 10, 'dot1p': 1, 'exp': 1},
-               {'fc_id': 2, 'dscp': 11, 'dot1p': 1, 'exp': 1}]
+        fc_ids= self.get_free_fc_ids(3)
+        fcs = [{'fc_id': fc_ids[0], 'dscp': 10, 'dot1p': 1, 'exp': 1},
+               {'fc_id': fc_ids[1], 'dscp': 11, 'dot1p': 1, 'exp': 1}]
         fc_fixtures = self.setup_fcs(fcs)
-        dscp_map1 = {1: 1}
-        dscp_map2 = {1: 2}
-        dscp_map3 = {1: 3}
+        dscp_map1 = {1: fc_ids[0]}
+        dscp_map2 = {1: fc_ids[1]}
+        dscp_map3 = {1: fc_ids[2]}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map1)
         vm1_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
         self.setup_qos_config_on_vmi(qos_fixture, vm1_vmi_id)
@@ -228,7 +235,7 @@ class TestQos(QosTestExtendedBase):
         validate_method_args['expected_dot1p'] = 5
         assert self.validate_packet_qos_marking(**validate_method_args)
         # Change FC id
-        fc_fixtures[1].update(fc_id=3)
+        fc_fixtures[1].update(fc_id=fc_ids[2])
         qos_fixture.set_entries(dscp_mapping=dscp_map3)
         assert self.validate_packet_qos_marking(**validate_method_args)
     # end test_qos_config_and_fc_update_for_dscp
@@ -246,13 +253,14 @@ class TestQos(QosTestExtendedBase):
             Validate that packets from A to B have Dot1p marked to 2
 
         '''
-        fcs = [{'fc_id': 1, 'dscp': 10, 'dot1p': 4, 'exp': 1},
-               {'fc_id': 2, 'dscp': 11, 'dot1p': 6, 'exp': 1}]
+        fc_ids= self.get_free_fc_ids(3)
+        fcs = [{'fc_id': fc_ids[0], 'dscp': 10, 'dot1p': 4, 'exp': 1},
+               {'fc_id': fc_ids[1], 'dscp': 11, 'dot1p': 6, 'exp': 1}]
         fc_fixtures = self.setup_fcs(fcs)
-        dot1p_map1 = {1: 1}
-        dot1p_map2 = {1: 2}
-        dot1p_map3 = {1: 3}
-        dot1p_map4 = {2: 1}
+        dot1p_map1 = {1: fc_ids[0]}
+        dot1p_map2 = {1: fc_ids[1]}
+        dot1p_map3 = {1: fc_ids[2]}
+        dot1p_map4 = {2: fc_ids[0]}
         qos_fixture = self.setup_qos_config(dot1p_map=dot1p_map1)
         self.setup_qos_config_on_vn(qos_fixture, self.vn1_fixture.uuid)
         validate_method_args = {
@@ -276,7 +284,7 @@ class TestQos(QosTestExtendedBase):
         validate_method_args['expected_dot1p'] = 7
         assert self.validate_packet_qos_marking(**validate_method_args)
         # Change FC id
-        fc_fixtures[1].update(fc_id=3)
+        fc_fixtures[1].update(fc_id=fc_ids[2])
         qos_fixture.set_entries(dot1p_mapping=dot1p_map3)
         assert self.validate_packet_qos_marking(**validate_method_args)
         # Add entry in Dot1P map tablee
@@ -300,11 +308,13 @@ class TestQos(QosTestExtendedBase):
            mapped to default FC ID and gets marking as per FC ID 0
 
         '''
-        fcs = [{'fc_id': 0, 'dscp': 9, 'dot1p': 3, 'exp': 3},
-               {'fc_id': 1, 'dscp': 10, 'dot1p': 4, 'exp': 1}]
+        fc_ids= self.get_free_fc_ids(2)
+        fcs = [{'fc_id': fc_ids[0], 'dscp': 9, 'dot1p': 3, 'exp': 3},
+               {'fc_id': fc_ids[1], 'dscp': 10, 'dot1p': 4, 'exp': 1}]
         fc_fixtures = self.setup_fcs(fcs)
-        dscp_map = {30: 1}
-        qos_fixture = self.setup_qos_config(dscp_map=dscp_map)
+        dscp_map = {30: fc_ids[1]}
+        qos_fixture = self.setup_qos_config(dscp_map=dscp_map,
+                                            default_fc_id = fc_ids[0])
         vm1_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
         self.setup_qos_config_on_vmi(qos_fixture, vm1_vmi_id)
         validate_method_args = {
@@ -336,13 +346,14 @@ class TestQos(QosTestExtendedBase):
         4. Verify that traffic mapping to valid dscp value in qos-map
            gets marked as per the non defaul FC mentioned in qos-map
         '''
-        fcs = [{'fc_id': 1, 'dscp': 9, 'dot1p': 3, 'exp': 3},
-               {'fc_id': 2, 'dscp': 10, 'dot1p': 4, 'exp': 4},
-               {'fc_id': 3, 'dscp': 11, 'dot1p': 5, 'exp': 5}]
+        fc_ids= self.get_free_fc_ids(3)
+        fcs = [{'fc_id': fc_ids[0] , 'dscp': 9, 'dot1p': 3, 'exp': 3},
+               {'fc_id': fc_ids[1], 'dscp': 10, 'dot1p': 4, 'exp': 4},
+               {'fc_id': fc_ids[2], 'dscp': 11, 'dot1p': 5, 'exp': 5}]
         fc_fixtures = self.setup_fcs(fcs)
-        dscp_map = {30: 2}
+        dscp_map = {30: fc_ids[1]}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map,
-                                            default_fc_id=1)
+                                            default_fc_id=fc_ids[0])
         vm1_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
         self.setup_qos_config_on_vmi(qos_fixture, vm1_vmi_id)
         validate_method_args = {
@@ -354,7 +365,7 @@ class TestQos(QosTestExtendedBase):
             'src_compute_fixture': self.vn1_vm1_compute_fixture,
             'encap': "VxLAN"}
         assert self.validate_packet_qos_marking(**validate_method_args)
-        qos_fixture.set_default_fc(3)
+        qos_fixture.set_default_fc(fc_ids[2])
         validate_method_args['expected_dscp'] = fcs[2]['dscp']
         validate_method_args['expected_dot1p'] = fcs[2]['dot1p']
         assert self.validate_packet_qos_marking(**validate_method_args)
@@ -374,11 +385,12 @@ class TestQos(QosTestExtendedBase):
             Apply qos-config2 on vhost interface and verify that all packets 
             going out of vhost interface are marked as per fc2
         '''
-        fcs = [{'fc_id': 1, 'dscp': 10, 'dot1p': 5, 'exp': 1},
-               {'fc_id': 2, 'dscp': 20, 'dot1p': 6, 'exp': 2}]
+        fc_ids= self.get_free_fc_ids(2)
+        fcs = [{'fc_id': fc_ids[0], 'dscp': 10, 'dot1p': 5, 'exp': 1},
+               {'fc_id': fc_ids[1], 'dscp': 20, 'dot1p': 6, 'exp': 2}]
         self.setup_fcs(fcs)
-        dscp_map_vmi = {1: 1}
-        dscp_map_vhost = {0: 2}
+        dscp_map_vmi = {1: fc_ids[0]}
+        dscp_map_vhost = {0: fc_ids[1]}
         qos_fixture1 = self.setup_qos_config(dscp_map=dscp_map_vmi)
         qos_fixture2 = self.setup_qos_config(dscp_map=dscp_map_vhost,
                                              qos_config_type='vhost')
@@ -406,10 +418,11 @@ class TestQos(QosTestExtendedBase):
                                       dest_port=5269,
                                       protocol='tcp',
                                       logger=self.logger)
-        traffic_obj.packet_capture_start()
+        session,pcap = traffic_obj.packet_capture_start()
         sleep(10)
         traffic_obj.packet_capture_stop()
         assert traffic_obj.verify_packets("dot1p_dscp",
+                                          pcap_path_with_file_name = pcap,
                                           expected_count=1,
                                           dscp=fcs[1]['dscp'],
                                           dot1p=fcs[1]['dot1p'])
@@ -523,7 +536,7 @@ class TestQos(QosTestExtendedBase):
     '''
     """
 
-class TestQosPolicy(TestQosPolicyBase):
+class TestQosPolicy(TestQosPolicyBase, FcIdGenerator):
 
     @classmethod
     def setUpClass(cls):
@@ -556,19 +569,24 @@ class TestQosPolicy(TestQosPolicyBase):
             10.Validate that packets with dscp 10-19 on fabric from A to B have 
                DSCP marked to 62 and mpls exp marked to 6.
         '''
+        fc_ids= self.get_free_fc_ids(3)
         fcs = [
-            {'name': "FC1_Test", 'fc_id': 10,
+            {'name': "FC1_Test", 'fc_id': fc_ids[0],
                 'dscp': 62, 'dot1p': 6, 'exp': 6},
-            {'name': "FC2_Test", 'fc_id': 11, 'dscp': 2, 'dot1p': 4, 'exp': 4}]
+            {'name': "FC2_Test", 'fc_id': fc_ids[1], 'dscp': 2, 'dot1p': 4, 'exp': 4}]
         fc_fixtures = self.setup_fcs(fcs)
-        dscp_map1 = {0: 10, 1: 10, 2: 10, 3: 10, 4:
-                     10, 5: 10, 6: 10, 7: 10, 8: 10, 9: 10}
-        dscp_map2 = {0: 11, 1: 11, 2: 11, 3: 11, 4:
-                     11, 5: 11, 6: 11, 7: 11, 8: 11, 9: 11}
-        dscp_map3 = {0: 12, 1: 12, 2: 12, 3: 12, 4:
-                     12, 5: 12, 6: 12, 7: 12, 8: 12, 9: 12}
-        dscp_map4 = {10: 10, 11: 10, 12: 10, 13: 10, 14:
-                     10, 15: 10, 16: 10, 17: 10, 18: 10, 19: 10}
+        dscp_map1 = {0: fc_ids[0], 1: fc_ids[0], 2: fc_ids[0], 3: fc_ids[0],
+                    4: fc_ids[0], 5: fc_ids[0], 6: fc_ids[0], 7: fc_ids[0],
+                     8: fc_ids[0], 9: fc_ids[0]}
+        dscp_map2 = {0: fc_ids[1], 1: fc_ids[1], 2: fc_ids[1], 3: fc_ids[1],
+                    4: fc_ids[1], 5: fc_ids[1], 6: fc_ids[1], 7: fc_ids[1],
+                     8: fc_ids[1], 9: fc_ids[1]}
+        dscp_map3 = {0: fc_ids[2], 1: fc_ids[2], 2: fc_ids[2], 3: fc_ids[2],
+                      4: fc_ids[2], 5: fc_ids[2], 6: fc_ids[2], 7: fc_ids[2],
+                    8: fc_ids[2], 9: fc_ids[2]}
+        dscp_map4 = {10: fc_ids[0], 11: fc_ids[0], 12: fc_ids[0], 13: fc_ids[0],
+                    14: fc_ids[0], 15: fc_ids[0], 16: fc_ids[0], 17: fc_ids[0],
+                     18: fc_ids[0], 19: fc_ids[0]}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map1)
         self.update_policy_qos_config(self.policy_fixture, qos_fixture)
         validate_method_args = {
@@ -593,7 +611,7 @@ class TestQosPolicy(TestQosPolicyBase):
         validate_method_args['expected_dot1p'] = 2
         assert self.validate_packet_qos_marking(**validate_method_args)
         # Change FC id
-        fc_fixtures[1].update(fc_id=12)
+        fc_fixtures[1].update(fc_id=fc_ids[2])
         qos_fixture.set_entries(dscp_mapping=dscp_map3)
         assert self.validate_packet_qos_marking(**validate_method_args)
         # Adding more entries in qos-config
@@ -607,58 +625,24 @@ class TestQosPolicy(TestQosPolicyBase):
     # end test_qos_config_and_fc_update_for_dscp_map_on_policy
 
     @preposttest_wrapper
-    def test_qos_config_on_policy_for_all_dscp_entries(self):
-        '''
-        Create a qos config with all valid DSCP values and verify traffic
-        for all dscp values
-        Steps:
-        1. Create 62 FC IDs having unique DSCP values in all
-        2. Create a qos config and map all DSCP to unique FC ID
-        3. Validate that packets with dscp 1 on fabric from A to B 
-           have DSCP marked to 62
-        4. Validate that packets with dscp 62 on fabric from A to B 
-           have DSCP marked to 1
-        5. Similarly, verify for all DSCP values
-        '''
-        fcs = []
-        dscp_map = {}
-        for i in range(1, 63):
-            fc = {'name': "FC_Test" + str(i), 'fc_id': i, 'dscp': i}
-            fcs.append(fc)
-            dscp_map[i] = 63 - i
-        fc_fixtures = self.setup_fcs(fcs)
-        qos_fixture = self.setup_qos_config(dscp_map=dscp_map)
-        self.update_policy_qos_config(self.policy_fixture, qos_fixture)
-        validate_method_args = {
-            'src_vm_fixture': self.vn1_vm1_fixture,
-            'dest_vm_fixture': self.vn2_vm1_fixture,
-            'dscp': None,
-            'expected_dscp': None,
-            'src_compute_fixture': self.vn1_vm1_compute_fixture,
-            'encap': "MPLSoUDP"}
-        for i in range(1, 63):
-            validate_method_args['expected_dscp'] = i
-            validate_method_args['dscp'] = 63 - i
-            assert self.validate_packet_qos_marking(**validate_method_args)
-    # end test_qos_config_on_policy_for_all_dscp_entries
-
-    @preposttest_wrapper
     def test_qos_vmi_precedence_over_policy_over_vn(self):
         ''' Create qos-config1 for remarking DSCP 1 to fc1(DSCP 10)
             Create qos-config2 for remarking DSCP 1 to fc2(DSCP 20)
             Apply qos-config1 to vmi and qos-config2 to VN
             Validate that qos-config1's dscp rewrite is applied
         '''
+        fc_ids= self.get_free_fc_ids(3)
         fcs = [
-            {'name': "FC1_Test", 'fc_id': 10,
+            {'name': "FC1_Test", 'fc_id': fc_ids[0],
                 'dscp': 62, 'dot1p': 7, 'exp': 7},
-            {'name': "FC2_Test", 'fc_id': 11,
+            {'name': "FC2_Test", 'fc_id': fc_ids[1],
              'dscp': 2, 'dot1p': 5, 'exp': 5},
-            {'name': "FC3_Test", 'fc_id': 12, 'dscp': 30, 'dot1p': 3, 'exp': 3}]
+            {'name': "FC3_Test", 'fc_id': fc_ids[2],
+             'dscp': 30, 'dot1p': 3, 'exp': 3}]
         self.setup_fcs(fcs)
-        dscp_map_vmi = {49: 10}
-        dscp_map_vn = {49: 11}
-        dscp_map_policy = {49: 12}
+        dscp_map_vmi = {49: fc_ids[0]}
+        dscp_map_vn = {49: fc_ids[1]}
+        dscp_map_policy = {49: fc_ids[2]}
         qos_fixture1 = self.setup_qos_config(dscp_map=dscp_map_vmi)
         qos_fixture2 = self.setup_qos_config(dscp_map=dscp_map_vn)
         qos_fixture3 = self.setup_qos_config(dscp_map=dscp_map_policy)
@@ -703,11 +687,13 @@ class TestQosPolicy(TestQosPolicyBase):
             4. Remove qos config from 1st rule and apply to 2nd rule
             5. Verify that traffic for rule 2 is marked and for rule 1 is untouched
         '''
-        fcs = [{'name': "FC1_Test", 'fc_id': 10,
+        fc_ids= self.get_free_fc_ids(1)
+        fcs = [{'name': "FC1_Test", 'fc_id': fc_ids[0],
                 'dscp': 62, 'dot1p': 6, 'exp': 6}]
         fc_fixtures = self.setup_fcs(fcs)
-        dscp_map = {0: 10, 1: 10, 2: 10, 3: 10, 4:
-                    10, 5: 10, 6: 10, 7: 10, 8: 10, 9: 10}
+        dscp_map = {0: fc_ids[0], 1: fc_ids[0], 2: fc_ids[0], 3: fc_ids[0],
+                    4: fc_ids[0], 5: fc_ids[0], 6: fc_ids[0], 7: fc_ids[0],
+                    8: fc_ids[0], 9: fc_ids[0]}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map)
         self.update_policy_qos_config(self.policy_fixture, qos_fixture,
                                       entry_index=1)
@@ -762,11 +748,13 @@ class TestQosSVC(TestQosSVCBase):
            3.Validate that packets on fabric from Service instance VMi to
             node B have DSCP marked to 62
         '''
-        fcs = [{'name': "FC_Test", 'fc_id': 10,
+        fc_ids= self.get_free_fc_ids(1)
+        fcs = [{'name': "FC_Test", 'fc_id': fc_ids[0],
                 'dscp': 62, 'dot1p': 7, 'exp': 3}]
         fc_fixtures = self.setup_fcs(fcs)
-        dscp_map = {0: 10, 1: 10, 2: 10, 3: 10, 4:
-                    10, 5: 10, 6: 10, 7: 10, 8: 10, 9: 10}
+        dscp_map = {0: fc_ids[0], 1: fc_ids[0], 2: fc_ids[0], 3: fc_ids[0],
+                    4: fc_ids[0], 5: fc_ids[0], 6: fc_ids[0], 7: fc_ids[0],
+                    8: fc_ids[0], 9: fc_ids[0]}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map)
         # Getting the VMI of Service Instance
         cs_si = self.si_fixture.api_s_inspect.get_cs_si(
@@ -818,11 +806,13 @@ class TestQosSVC(TestQosSVCBase):
            3.Apply the qos config to the policy
            4.Verify that packets to and from the SI are marked as expected
         '''
-        fcs = [{'name': "FC_Test", 'fc_id': 10,
+        fc_ids= self.get_free_fc_ids(1)
+        fcs = [{'name': "FC_Test", 'fc_id': fc_ids[0],
                 'dscp': 62, 'dot1p': 7, 'exp': 3}]
         fc_fixtures = self.setup_fcs(fcs)
-        dscp_map = {0: 10, 1: 10, 2: 10, 3: 10, 4:
-                    10, 5: 10, 6: 10, 7: 10, 8: 10, 9: 10}
+        dscp_map = {0: fc_ids[0], 1: fc_ids[0], 2: fc_ids[0], 3: fc_ids[0],
+                    4: fc_ids[0], 5: fc_ids[0], 6: fc_ids[0], 7: fc_ids[0],
+                    8: fc_ids[0], 9: fc_ids[0]}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map)
         self.update_policy_qos_config(self.policy_fixture, qos_fixture)
         # verifying marking on packets from SI to right VN
