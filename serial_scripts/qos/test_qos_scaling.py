@@ -94,3 +94,4 @@ class TestQosScaling(QosTestBase):
             vn_fixture = self.create_vn()
             self.setup_qos_config_on_vn(qos_fixture, vn_fixture.uuid)
     # end test_qos_config_scaling
+
