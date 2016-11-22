@@ -68,8 +68,9 @@ class BaseDiscoveryTest(test_v1.BaseTestCase_v1):
                     result = result and True
                     self.logger.info("Verifying if the service is " + expected_status)
                     svc_status = self.ds_obj.get_service_status(
-                        self.inputs.cfgm_ip, service_tuple=elem)
-                    if (svc_status == expected_status):
+                        self.inputs.cfgm_ip, service_tuple=elem, 
+                        expected_status = expected_status)
+                    if svc_status:
                         self.logger.info("svc is " + expected_status)
                         result = result and True
                     else:
