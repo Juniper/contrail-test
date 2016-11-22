@@ -142,7 +142,7 @@ class VMFixture(fixtures.Fixture):
             self.browser_openstack = self.connections.browser_openstack
             self.webui = WebuiTest(self.connections, self.inputs)
         self._vm_interface = {}
-        self.vrf_ids = {}
+        self._vrf_ids = {}
         self._interested_computes = []
         self.created = False
 
@@ -817,6 +817,10 @@ class VMFixture(fixtures.Fixture):
     def local_ip(self):
         return self.get_local_ip()
 
+    @property
+    def vrf_ids(self):
+        return self.get_vrf_ids()
+
     @retry(delay=2, tries=20)
     def verify_vm_in_agent(self):
         ''' Verifies whether VM has got created properly in agent.
@@ -999,7 +1003,6 @@ class VMFixture(fixtures.Fixture):
                              (self.vm_name))
         self.vm_in_agent_flag = self.vm_in_agent_flag and True
 
-        self.vrf_ids = self.get_vrf_ids()
         if self.inputs.many_computes:
             self.get_interested_computes()
         return True
@@ -1812,8 +1815,11 @@ class VMFixture(fixtures.Fixture):
         return True
     # end tcp_data_transfer
 
-    def get_vrf_ids(self):
-        vrfs = dict()
+    def get_vrf_ids(self, refresh=False):
+        if getattr(self, '_vrf_ids', None) and not refresh:
+            return self._vrf_ids
+
+        self._vrf_ids = dict()
         try:
             for ip in self.inputs.compute_ips:
                 inspect_h = self.agent_inspect[ip]
@@ -1823,11 +1829,11 @@ class VMFixture(fixtures.Fixture):
                     if vrf_id:
                         dct.update({vn_fq_name: vrf_id})
                 if dct:
-                    vrfs[ip] = dct
+                    self._vrf_ids[ip] = dct
         except Exception as e:
             self.logger.exception('Exception while getting VRF id')
         finally:
-            return vrfs
+            return self._vrf_ids
     # end get_vrf_ids
 
     def cleanUp(self):

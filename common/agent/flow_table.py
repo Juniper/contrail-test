@@ -39,7 +39,7 @@ class FlowEntry:
                           'dport': '80', 'sport': '21372',
                           'dip': '169.254.0.3', 'action': 'NAT'}
     Later additions to above dict: tcp_flags, underlay_udp_port, drop_reason,
-    nh_id, insight
+    source_nh_id, insight
 
     Flow flags can be one or more of ACTIVE, MIRROR, VRFT, SNAT, SPAT, DNAT,
     DPAT, LINK_LOCAL, EVICTED, EVICT_CANDIDATE, NEW_FLOW, MODIFIED,
@@ -79,7 +79,7 @@ class FlowEntry:
         self.tcp_flags = flow_entry_items.get('tcp_flags')
         self.underlay_udp_port = flow_entry_items.get('underlay_udp_port')
         self.drop_reason = flow_entry_items.get('drop_reason')
-        self.nh_id = flow_entry_items.get('nh_id')
+        self.source_nh_id = flow_entry_items.get('nhid')
         self.insight = flow_entry_items.get('insight')
     # end _update_flow_attrs
 

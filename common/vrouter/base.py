@@ -751,3 +751,46 @@ class BaseVrouterTest(BaseNeutronTest):
                          ' route' %(prefix))
         return True
     # end validate_discard_route
+
+    def is_flow_pointing_to_vm(self, flow_entry, compute_fixture, vm_fixture,
+                               vn_fixture=None, vm_ip=None):
+        '''
+        flow_entry : Instance of FlowEntry class
+        vm_ip      : If there is more than one ip on the VM
+
+        Returns True if nh is that of the vm_fixture
+        '''
+        vrf_id = flow_entry.vrf_id
+        flow_dest_ip = '%s/32' % (flow_entry.dest_ip)
+        if not vn_fixture:
+            tap_intf = vm_fixture.tap_intf.values()[0]['name']
+            vn_fq_name = vm_fixture.vn_fq_names[0]
+        else:
+            tap_intf = vm_fixture.tap_intf[vn_fixture.vn_fq_name]['name']
+            vn_fq_name = vn_fixture.vn_fq_name
+
+        if not vm_ip:
+            vm_ip = vm_fixture.vm_ip
+        agent_inspect_h = compute_fixture.agent_inspect_h
+        route = self.get_vrouter_route(flow_dest_ip,
+                                       vrf_id=vrf_id,
+                                       inspect_h=agent_inspect_h)
+        if not route:
+            self.logger.warn('Route for IP %s in vrf %s not found' % (
+                flow_dest_ip, vrf_id))
+            return False
+        result = self.validate_route_is_of_vm_in_vrouter(agent_inspect_h,
+                                                route,
+                                                vm_fixture)
+
+        if not result:
+            self.logger.error('Route %s as seen from flow is not that of VM '
+                ' %s' % (route, vm_fixture.vm_ip))
+            return False
+
+        self.logger.info('On %s, flow is pointing to the VM %s as expected' % (
+                          compute_fixture.ip, vm_ip))
+        return True
+    # end is_flow_pointing_to_vm
+
+
