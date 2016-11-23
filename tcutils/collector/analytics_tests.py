@@ -2410,9 +2410,61 @@ class AnalyticsVerification(fixtures.Fixture):
                         result = result and False
                     else:
                         self.logger.info("Disk usage config alarm generated %s " % (role))
+        elif role == 'prouter':
+            multi_instances = False
+            if len(self.inputs.compute_ips) > 1:
+                multi_instances = True
+            if alarm_type == 'prouter-connectivity':
+                if not self._verify_contrail_alarms(None, 'prouter', 'prouter_connectivity',
+                        multi_instances=multi_instances):
+                    result = result and False
+                else:
+                    self.logger.info("prouter connectivity alarm for prouter verified for  %s " % (role))
 
         return result
     # end verify_alarms
+
+    def _verify_alarms_prouter_connectivity(self, service_ip, role, alarm_type, multi_instances):
+        result = True
+        self.logger.info("Verify prouter connectivity alarms..")
+        if not self._verify_alarms_by_type(None, service_ip, role, alarm_type, multi_instances=False,
+                soak_timer=15, verify_alarm_cleared=True):
+            result = result and False
+        else:
+            self.logger.info("Prouter connectivity alarms not seen when system is stable")
+        prouter_data = self.inputs.physical_routers_data
+        for prouter in prouter_data:
+            tor_agents = []
+            if prouter_data[prouter]['mgmt_ip'] == service_ip:
+                tagents = prouter_data[prouter]['tor_agents']
+                for agent in tagents:
+                    tor_data = {}
+                    tor = agent.split('@')[1].split(':')
+                    tor_id = tor[1]
+                    tor_ip = tor[0]
+                    service = 'contrail-tor-agent-' + tor_id
+                    tor_data['service'] = service
+                    tor_data['tor_ip'] = tor_ip
+                    tor_agents.append(tor_data)
+                break
+        for tagent in tor_agents:
+            self.inputs.stop_service(tagent['service'], host_ips=[tagent['tor_ip']], contrail_service=True)
+        try:
+            if not self._verify_alarms_by_type(None, service_ip, role, alarm_type, multi_instances=False,
+                    soak_timer=15):
+                result = result and False
+        except Exception, e:
+            self.logger.exception('Exception occured while verifying alarms %s' % (alarm_type))
+        finally:
+            for tagent in tor_agents:
+                self.inputs.start_service(tagent['service'], host_ips=[tagent['tor_ip']], contrail_service=True)
+            time.sleep(15)
+            if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances,
+                    soak_timer=15, verify_alarm_cleared=True):
+                result = result and False
+
+        return result
+    # end _verify_contrail_bgp_connectivity_alarm
 
     def _verify_alarms_bgp_peer_mismatch(self, service_ip, role, alarm_type, multi_instances):
         result = True
@@ -2675,6 +2727,10 @@ class AnalyticsVerification(fixtures.Fixture):
             cluster_status, error_nodes = ContrailStatusChecker().wait_till_contrail_cluster_stable()
             assert cluster_status, 'Hash of error nodes and services : %s' % (error_nodes)
 
+    def verify_prouter_connectivity_alarm(self):
+        return self.verify_alarms(role='prouter', alarm_type='prouter-connectivity')
+    # end verify_prouter_connectivity_alarm
+
     def verify_vrouter_intf_alarm(self, verify_alarm_cleared=False):
         return self.verify_alarms(role='vrouter', alarm_type='vrouter-interface',
             verify_alarm_cleared=verify_alarm_cleared)
@@ -2801,7 +2857,14 @@ class AnalyticsVerification(fixtures.Fixture):
         collector_ip = self.inputs.collector_ips[0]
         if multi_instances and role == 'analytics-node':
             collector_ip = self.inputs.collector_ips[1]
-        hostname = socket.gethostbyaddr(service_ip)[0].split('.')[0]
+        if role == 'prouter':
+            prouters_data = self.inputs.physical_routers_data
+            for prouter in prouters_data:
+                if prouters_data[prouter]['mgmt_ip'] == service_ip:
+                    hostname = prouters_data[prouter]['name']
+                    break
+        else:
+            hostname = self.inputs.host_data[service_ip]['name']
         if not isinstance(alarm_type, list):
             alarm_type = [alarm_type]
         try:
@@ -2892,6 +2955,12 @@ class AnalyticsVerification(fixtures.Fixture):
             service_ip = self.inputs.compute_ips[0]
         elif role == 'analytics-node':
             service_ip = self.inputs.collector_ips[0]
+        elif role == 'prouter':
+            tor_tsn_ips = []
+            for pdevice in self.inputs.physical_routers_data:
+                if self.inputs.physical_routers_data[pdevice].get('tor_agents'):
+                    service_ip = self.inputs.physical_routers_data[pdevice]['mgmt_ip']
+                    break
         elif role == 'all':
             service_ip = {
                 'config-node': self.inputs.cfgm_ips[0],
@@ -2963,6 +3032,10 @@ class AnalyticsVerification(fixtures.Fixture):
         elif trigger == 'partial_sysinfo_config' and role == 'config-node':
             alarm_type = 'partial-sysinfo-config'
             if not self._verify_alarms_partial_sysinfo_config(service_ip, role, alarm_type, multi_instances):
+                result = result and False
+        elif trigger == 'prouter_connectivity' and role == 'prouter':
+            alarm_type = 'prouter-connectivity'
+            if not self._verify_alarms_prouter_connectivity(service_ip, role, alarm_type, multi_instances):
                 result = result and False
         else:
             self.logger.error("No valid alarm-type found")
