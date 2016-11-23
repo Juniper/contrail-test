@@ -62,7 +62,8 @@ class TestTor(BaseTorTest):
         self.setup_tor_port(self.tor1_fixture, port_index=0, 
                             vlan_id=vlan_id, vmi_objs=vmis)
         bms_fixture = self.setup_bms(self.tor1_fixture, port_index=0, 
-                                     ns_mac_address=bms_mac, vlan_id=vlan_id)
+                                     ns_mac_address=bms_mac, vlan_id=vlan_id,
+                                     namespace='ns11',ns_intf='tap1')
         
         vm1_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_with_certainty(bms_ip),\
@@ -132,9 +133,11 @@ class TestTor(BaseTorTest):
         self.setup_tor_port(self.tor2_fixture, port_index=0,
                             vlan_id=vlan_id, vmi_objs=[vmis[1]])
         bms1_fixture = self.setup_bms(self.tor1_fixture, port_index=0,
-                                     ns_mac_address=bms1_mac)
+                                     ns_mac_address=bms1_mac,
+                                     namespace='ns11',ns_intf='tap1')
         bms2_fixture = self.setup_bms(self.tor2_fixture, port_index=0,
-                                     ns_mac_address=bms2_mac)
+                                     ns_mac_address=bms2_mac,
+                                     namespace='ns22',ns_intf='tap2')
 
         self.do_ping_test(bms1_fixture, bms1_ip, bms2_ip)
 
@@ -178,9 +181,11 @@ class TestTor(BaseTorTest):
             port_index=0, vmi_objs=[vmis[1]])
         bms1_fixture = self.setup_bms(self.tor1_fixture, port_index=0,
                                      ns_mac_address=vmis[0].mac_address,
-                                     vlan_id=vlan_id)
+                                     vlan_id=vlan_id,
+                                     namespace='ns11',ns_intf='tap1')
         bms2_fixture = self.setup_bms(self.tor2_fixture, port_index=0,
-                                     ns_mac_address=vmis[1].mac_address)
+                                     ns_mac_address=vmis[1].mac_address,
+                                     namespace='ns22',ns_intf='tap1')
 
         # Remove first bms' vmi from lif
         lif1_obj.delete_virtual_machine_interface(vmis[0].uuid) 
@@ -215,9 +220,11 @@ class TestTor(BaseTorTest):
             port_index=0, vmi_objs=[vmis[1]])
         bms1_fixture = self.setup_bms(self.tor1_fixture, port_index=0,
                                      ns_mac_address=vmis[0].mac_address,
-                                     vlan_id=vlan_id)
+                                     vlan_id=vlan_id,
+                                     namespace='ns11',ns_intf='tap1')
         bms2_fixture = self.setup_bms(self.tor2_fixture, port_index=0,
-                                     ns_mac_address=vmis[1].mac_address)
+                                     ns_mac_address=vmis[1].mac_address,
+                                     namespace='ns22',ns_intf='tap2')
 
         # Remove first bms' vmi from lif
         lif1_obj.delete_virtual_machine_interface(vmis[0].uuid) 
@@ -425,9 +432,11 @@ class TestTor(BaseTorTest):
         self.setup_tor_port(self.tor1_fixture, vmi_objs=[vmi1])
         self.setup_tor_port(self.tor2_fixture, vmi_objs=[vmi2])
         bms1_fixture = self.setup_bms(self.tor1_fixture, 
-            ns_mac_address=vmi1.mac_address)
+            ns_mac_address=vmi1.mac_address,
+            namespace='ns11',ns_intf='tap1')
         bms2_fixture = self.setup_bms(self.tor2_fixture,
-            ns_mac_address=vmi2.mac_address)
+            ns_mac_address=vmi2.mac_address,
+            namespace='ns22',ns_intf='tap2')
         assert vm1_fixture.wait_till_vm_is_up()
 
         bms1_ip = bms1_fixture.info['inet_addr']
@@ -661,9 +670,11 @@ class TestVxlanIDWithRouting(TwoToROneRouterBase):
         self.setup_tor_port(self.tor1_fixture, vmi_objs=[vn1_vmi_fixture])
         self.setup_tor_port(self.tor2_fixture, vmi_objs=[vn2_vmi_fixture])
         bms1_fixture = self.setup_bms(self.tor1_fixture,
-            ns_mac_address=vn1_vmi_fixture.mac_address)
+            ns_mac_address=vn1_vmi_fixture.mac_address,
+            namespace='ns11',ns_intf='tap1')
         bms2_fixture = self.setup_bms(self.tor2_fixture,
-            ns_mac_address=vn2_vmi_fixture.mac_address)
+            ns_mac_address=vn2_vmi_fixture.mac_address,
+            namespace='ns22',ns_intf='tap2')
 
         # Extend VNs to router
         self.phy_router_fixture.setup_physical_ports()
@@ -744,9 +755,11 @@ class TestBasicBMSInterVN(TwoToROneRouterBase):
         self.setup_tor_port(self.tor2_fixture, port_index=0,
                             vlan_id=vlan_id, vmi_objs=[vn2_vmi])
         bms1_fixture = self.setup_bms(self.tor1_fixture, port_index=0,
-                                     ns_mac_address=bms1_mac)
+                                     ns_mac_address=bms1_mac,
+                                     namespace='ns11',ns_intf='tap1')
         bms2_fixture = self.setup_bms(self.tor2_fixture, port_index=0,
-                                     ns_mac_address=bms2_mac)
+                                     ns_mac_address=bms2_mac,
+                                     namespace='ns22',ns_intf='tap2')
 
         # Extend VNs to router
         self.phy_router_fixture.setup_physical_ports()
@@ -804,9 +817,11 @@ class TestBasicBMSInterVN(TwoToROneRouterBase):
         self.setup_tor_port(self.tor1_fixture, vmi_objs=[vn1_vmi_fixture])
         self.setup_tor_port(self.tor2_fixture, vmi_objs=[vn2_vmi_fixture])
         bms1_fixture = self.setup_bms(self.tor1_fixture, 
-            ns_mac_address=vn1_vmi_fixture.mac_address)
+            ns_mac_address=vn1_vmi_fixture.mac_address,
+            namespace='ns11',ns_intf='tap1')
         bms2_fixture = self.setup_bms(self.tor2_fixture, 
-            ns_mac_address=vn2_vmi_fixture.mac_address)
+            ns_mac_address=vn2_vmi_fixture.mac_address,
+            namespace='ns22',ns_intf='tap2')
 
         # Extend VNs to router
         self.phy_router_fixture.setup_physical_ports()
@@ -1004,9 +1019,11 @@ class TestBMSWithExternalDHCPServer(TwoToROneRouterBase):
         self.setup_tor_port(self.tor2_fixture, port_index=0,
             vmi_objs=[self.vn1_vmi2_fixture])
         bms1_fixture = self.setup_bms(self.tor1_fixture, port_index=0,
-            ns_mac_address=self.vn1_vmi1_fixture.mac_address)
+            ns_mac_address=self.vn1_vmi1_fixture.mac_address,
+            namespace='ns11',ns_intf='tap1')
         bms2_fixture = self.setup_bms(self.tor2_fixture, port_index=0,
-            ns_mac_address=self.vn1_vmi2_fixture.mac_address)
+            ns_mac_address=self.vn1_vmi2_fixture.mac_address,
+            namespace='ns22',ns_intf='tap2')
         self.validate_dhcp_forwarding(bms1_fixture, bms2_fixture)
     # end test_dhcp_forwarding_with_dhcp_disabled
 
