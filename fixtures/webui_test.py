@@ -3937,7 +3937,7 @@ class WebuiTest:
                 result = result and False
             rows = self.ui.get_rows(canvas=True)
             for index in range(len(rows)):
-                self.ui.click_element('icon-cog', 'class', browser=rows[index])
+                self.ui.click_element('fa-cog', 'class', browser=rows[index])
                 self.ui.click_element('tooltip-success', 'class')
                 try:
                     ipams = self.ui.find_element(
@@ -4501,7 +4501,7 @@ class WebuiTest:
             for net in rows:
                 if net.text:
                     if (self.ui.get_slick_cell_text(net, 2) == fixture.vn):
-                        self.ui.click_element('icon-cog', 'class', browser=net)
+                        self.ui.click_element('fa-cog', 'class', browser=net)
                         self.ui.wait_till_ajax_done(self.browser)
                         self.ui.click_element(['tooltip-success', 'i'], ['class', 'tag'])
                         self.ui.wait_till_ajax_done(self.browser)
@@ -4547,7 +4547,7 @@ class WebuiTest:
                              (policy_fq_names))
             for net in rows:
                 if (self.ui.get_slick_cell_text(net, 2) == fixture.vn):
-                    self.ui.click_element('icon-cog', 'class', net)
+                    self.ui.click_element('fa-cog', 'class', net)
                     self.ui.wait_till_ajax_done(self.browser)
                     self.ui.click_element(['tooltip-success', 'i'], ['class', 'tag'])
                     self.ui.wait_till_ajax_done(self.browser)
