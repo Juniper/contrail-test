@@ -5927,3 +5927,340 @@ class WebuiTest:
             raise
         return result
     # verify_vn_after_edit_ui
+
+    def verify_port_api_data(self, port_details, action='create', expected_result=None):
+        self.logger.info(
+            "Verifying ports api server data on Config->Networking->Ports page ...")
+        self.logger.debug(self.dash)
+        result = True
+        if type(port_details) is dict:
+            port_name_list = port_details.keys()
+        else:
+            port_name_list = port_details
+        port_list_api = self.ui.get_vm_intf_refs_list_api()
+        for port in range(len(port_list_api['virtual-machine-interfaces'])):
+            parent_tag = False
+            api_fq_name = port_list_api[
+                'virtual-machine-interfaces'][port]['fq_name'][2]
+            project_name = port_list_api[
+                'virtual-machine-interfaces'][port]['fq_name'][1]
+            if project_name == 'default-project':
+                continue
+            self.ui.click_configure_ports()
+            self.ui.select_project(project_name)
+            rows = self.ui.get_rows()
+            if not api_fq_name in port_name_list:
+                continue
+            self.logger.info(
+                "Port fq_name %s exists in api server..checking if exists in webui as well" %
+                (api_fq_name))
+            for row in range(len(rows)):
+                dom_arry_basic = []
+                match_flag = 0
+                text = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)[2].text
+                if api_fq_name in text:
+                    self.logger.info(
+                        "Port fq_name %s matched in webui..Verifying basic view details..." %
+                        (api_fq_name))
+                    self.logger.debug(self.dash)
+                    match_index = row
+                    match_flag = 1
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "Ports fq name exists in apiserver but %s not found in webui..." %
+                    (api_fq_name))
+                self.logger.debug(self.dash)
+            else:
+                self.ui.click_configure_ports_basic(match_index)
+                rows = self.ui.get_rows()
+                self.logger.info(
+                    "Verify basic view details for port fq_name %s " %
+                    (api_fq_name))
+                row_container = self.ui.find_element('slick-row-detail-container', 'class', \
+                                browser=rows[match_index+1])
+                row_fluid = self.ui.find_element('row-fluid', 'class', browser=row_container)
+                rows_detail = self.ui.find_element('row', 'class', browser=row_fluid, \
+                              elements=True)
+                for detail in range(len(rows_detail)):
+                    key_value = rows_detail[detail].text.split('\n')
+                    key = str(key_value.pop(0))
+                    if len(key_value) > 1 :
+                        value = key_value
+                    elif len(key_value) ==  1:
+                        value = key_value[0]
+                    else:
+                        value = None
+                    if key == 'Security Groups':
+                       sg_value = str(key_value[1]).split(',')
+                       if sg_value:
+                           value = []
+                           for sg in sg_value:
+                               search_value = re.search("(.*)\(.*:(.*)", sg)
+                               if search_value:
+                                   sec_group = search_value.group(2).strip('\)') + '-' + \
+                                               search_value.group(1).strip()
+                               else:
+                                   sec_group = project_name + '-' + sg.strip()
+                               value.append((sec_group))
+                    if key == 'DHCP Options':
+                        if isinstance(value, list):
+                            value.pop(0)
+                        new_value_list = []
+                        if len(value) > 1:
+                            for text in value:
+                                new_value = text.replace('-', '')
+                                new_value_list.append(new_value)
+                        value = new_value_list
+                    if key == 'FatFlow' or key == 'Bindings':
+                        key = key.title()
+                        if isinstance(value, list):
+                            value.pop(0)
+                    if key == 'Allowed address pairs':
+                        if isinstance(value, list):
+                            status = value.pop(0)
+                            if status == 'Enabled':
+                                value.pop(0)
+                            else:
+                                value = 'Disabled'
+                    if key == 'Mirror to':
+                        for text in range(len(value)):
+                            if value[text].startswith('Routing Instance'):
+                                mirror_key = 'Routing_Instance'
+                                search_value = re.search('.* \: (.*)\((.*)', value[text])
+                                if search_value:
+                                    mirror_value = search_value.group(2).strip('\)') + \
+                                                   ':' + search_value.group(1).strip()
+                                else:
+                                    route_instance = re.search('.* \: (.*)', value[text]).group(1)
+                                    mirror_value = 'default-domain:' + project_name + ':' + \
+                                                    route_instance + ':' + route_instance
+                            else:
+                                value_multi_string = re.search('(\w+\s+\w+\s+\w+)\s+\: (.*)',
+                                                              value[text])
+                                value_double_string = re.search('(\w+\s+\w+)\s+\: (.*)',
+                                                               value[text])
+                                if value_multi_string:
+                                    key_value = value_multi_string
+                                elif value_double_string:
+                                    key_value = value_double_string
+                                if key_value:
+                                    mirror_key = key_value.group(1).replace(' ', '_')
+                                    mirror_value = key_value.group(2)
+                            if mirror_value != '-':
+                                dom_arry_basic.append({'key': mirror_key, 'value': mirror_value})
+                        continue
+                    if key == 'Owner Permissions' or key == 'Global Permissions' or key == 'Owner' \
+                       or key == 'Shared List':
+                        continue
+                    if key == 'Parent Port':
+                        parent_tag = True
+                    key = key.replace(' ', '_')
+                    if value == '-':
+                        continue
+                    else:
+                        dom_arry_basic.append({'key': key, 'value': value})
+                port_api_data = self.ui.get_details(
+                                port_list_api['virtual-machine-interfaces'][port]['href'])
+                complete_api_data = []
+                if 'virtual-machine-interface' in port_api_data:
+                    api_data_basic = port_api_data.get('virtual-machine-interface')
+                display_name = api_data_basic.get('display_name')
+                if display_name:
+                    complete_api_data.append(
+                        {'key': 'Display_Name', 'value': display_name})
+                if 'virtual_network_refs' in api_data_basic:
+                    complete_api_data.append({'key': 'Network', \
+                        'value': api_data_basic['virtual_network_refs'][0]['to'][2]})
+                if 'uuid' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'UUID', 'value': api_data_basic.get('uuid')})
+                if 'id_perms' in api_data_basic:
+                    if api_data_basic['id_perms']['enable'] == True:
+                        state = 'Up'
+                    else:
+                        state = 'Down'
+                    complete_api_data.append({'key': 'Admin_State', 'value': state})
+                if 'virtual_machine_interface_mac_addresses' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'MAC_Address', 'value': api_data_basic[
+                             'virtual_machine_interface_mac_addresses'].get('mac_address')[0]})
+                if 'instance_ip_back_refs' in api_data_basic:
+                    fixed_ip_list = []
+                    fixed_ip_count = len(api_data_basic['instance_ip_back_refs'])
+                    if fixed_ip_count:
+                        for fixed_ip in range(fixed_ip_count):
+                            fixed_ip_api = self.ui.get_details(api_data_basic[
+                                           'instance_ip_back_refs'][fixed_ip]['href'])
+                            fixed_ip = fixed_ip_api['instance-ip']['instance_ip_address']
+                            fixed_ip_list.append(fixed_ip)
+                    complete_api_data.append({'key': 'Fixed_IPs', 'value': fixed_ip_list})
+                if 'floating_ip_back_refs' in api_data_basic:
+                    float_ip_list = []
+                    float_ips_count = len(api_data_basic['floating_ip_back_refs'])
+                    for float_ip in range(float_ips_count):
+                        float_ip_api = self.ui.get_details(api_data_basic[
+                                       'floating_ip_back_refs'][float_ip]['href'])
+                        float_ip = float_ip_api['floating-ip']['floating_ip_address']
+                        float_ip_list.append(float_ip)
+                    complete_api_data.append({'key': 'Floating_IPs', 'value': float_ip_list})
+                if 'security_group_refs' in api_data_basic:
+                    sec_group_refs = api_data_basic['security_group_refs']
+                    sec_group_list = []
+                    for sec_grp in range(len(sec_group_refs)):
+                        sec_project = sec_group_refs[sec_grp]['to'][1]
+                        sec_name = sec_group_refs[sec_grp]['to'][2]
+                        sec_group_list.append(sec_project + '-' + sec_name)
+                    complete_api_data.append({'key': 'Security_Groups', 'value': sec_group_list})
+                if 'virtual_machine_interface_dhcp_option_list' in api_data_basic:
+                    dhcp_list = api_data_basic['virtual_machine_interface_dhcp_option_list']
+                    dhcp_option_list = dhcp_list.get('dhcp_option')
+                    dhcp_detail_list = []
+                    if dhcp_option_list:
+                        for dhcp in range(len(dhcp_option_list)):
+                            dhcp_value = dhcp_option_list[dhcp]['dhcp_option_value']
+                            dhcp_value_bytes = dhcp_option_list[dhcp]['dhcp_option_value_bytes']
+                            dhcp_name = dhcp_option_list[dhcp]['dhcp_option_name']
+                            dhcp_detail = dhcp_name + " " + dhcp_value + " " + dhcp_value_bytes
+                            dhcp_detail_list.append(dhcp_detail)
+                    complete_api_data.append({'key': 'DHCP_Options', 'value': dhcp_detail_list})
+                if 'qos_config_refs' in api_data_basic:
+                    qos = api_data_basic['qos_config_refs'][0]['to'][2]
+                    if qos:
+                        complete_api_data.append({'key': 'QoS', 'value': qos})
+                if 'ecmp_hashing_include_fields' in api_data_basic:
+                    ecmp_fields = api_data_basic['ecmp_hashing_include_fields']
+                    if ecmp_fields:
+                        ecmp_keys = ecmp_fields.keys()
+                        ecmp_values = ecmp_fields.values()
+                        value = ''
+                        for ecmp in range(len(ecmp_values)):
+                            if ecmp_values[ecmp]:
+                                if ecmp_keys[ecmp] == 'hashing_configured':
+                                    continue
+                                value += str(ecmp_keys[ecmp]).replace('_', '-') + ', '
+                        complete_api_data.append(
+                            {'key': 'ECMP_Hashing_Fields', 'value': value.rstrip(', ')})
+                if 'service_health_check_refs' in api_data_basic:
+                    service_health = api_data_basic['service_health_check_refs'][0]['to']
+                    service_health_name = service_health[-1] + " (" + service_health[0] + ":" + \
+                                          service_health[1] + ")"
+                    complete_api_data.append(
+                        {'key': 'Service_Health_Check', 'value': service_health_name})
+                if 'virtual_machine_interface_properties' in api_data_basic:
+                    vmi_props = api_data_basic['virtual_machine_interface_properties']
+                    if vmi_props:
+                        if vmi_props['local_preference']:
+                            complete_api_data.append(
+                                {'key': 'Local_Preference', 'value': str(vmi_props[
+                                'local_preference'])})
+                        port_mirror = vmi_props['interface_mirror']
+                        if port_mirror:
+                            mirror_to = port_mirror['mirror_to']
+                            if mirror_to['juniper_header']:
+                                juniper_header = 'Enabled'
+                            else:
+                                juniper_header = 'Disabled'
+                            if mirror_to['nh_mode'] == 'static':
+                                static_header = mirror_to['static_nh_header']
+                                vtep_dest_ip = static_header['vtep_dst_ip_address']
+                                vtep_dest_mac = static_header['vtep_dst_mac_address']
+                                vxlan = str(static_header['vni'])
+                            else:
+                                static_header = ""
+                                vtep_dest_ip = ""
+                                vtep_dest_mac = ""
+                                vxlan = ""
+                            if mirror_to['analyzer_mac_address']:
+                                analyzer_mac = mirror_to['analyzer_mac_address']
+                            else:
+                                analyzer_mac = ""
+                            self.ui.keyvalue_list(
+                            complete_api_data,
+                            Analyzer_IP=mirror_to['analyzer_ip_address'],
+                            UDP_Port=str(mirror_to['udp_port']),
+                            Analyzer_Name=mirror_to['analyzer_name'],
+                            Routing_Instance=mirror_to['routing_instance'],
+                            Juniper_Header=juniper_header,
+                            Analyzer_MAC=analyzer_mac,
+                            Traffic_Direction=port_mirror['traffic_direction'].title(),
+                            Nexthop_Mode=mirror_to['nh_mode'].title(),
+                            VTEP_Dest_IP=vtep_dest_ip,
+                            VTEP_Dest_MAC=vtep_dest_mac,
+                            VxLAN_ID=vxlan)
+                        if 'sub_interface_vlan_tag' in vmi_props:
+                            complete_api_data.append({'key' : 'Sub_Interface_VLAN', 'value':
+                                str(vmi_props['sub_interface_vlan_tag'])})
+                if 'virtual_machine_interface_fat_flow_protocols' in api_data_basic:
+                    flat_protocols = api_data_basic['virtual_machine_interface_fat_flow_protocols'][
+                                     'fat_flow_protocol']
+                    if flat_protocols:
+                        protocol_list = []
+                        for protocol in range(len(flat_protocols)):
+                            port = str(flat_protocols[protocol]['protocol']) + " " + \
+                                   str(flat_protocols[protocol]['port'])
+                            protocol_list.append(port)
+                        complete_api_data.append({'key': 'Fatflow', 'value': protocol_list})
+                if 'virtual_machine_interface_bindings' in api_data_basic:
+                    bindings = api_data_basic['virtual_machine_interface_bindings'][
+                               'key_value_pair']
+                    if bindings:
+                        key_value_list = []
+                        for bind in range(len(bindings)):
+                            key_value = bindings[bind]['key'] + " " + bindings[bind]['value']
+                            key_value_list.append(key_value)
+                        complete_api_data.append({'key': 'Bindings', 'value': key_value_list})
+                if 'virtual_machine_interface_allowed_address_pairs' in api_data_basic:
+                    address_pair = api_data_basic['virtual_machine_interface_allowed_address_pairs']
+                    if address_pair:
+                        address_pair_values = address_pair['allowed_address_pair']
+                        if address_pair_values:
+                           address_pair_list = []
+                           for pair in range(len(address_pair_values)):
+                               ip_address = address_pair_values[pair]['ip']['ip_prefix'] + '/' + \
+                                            str(address_pair_values[pair]['ip']['ip_prefix_len'])
+                               mac_address = address_pair_values[pair]['mac']
+                               ip_mac_pair = ip_address + " " + mac_address
+                               address_pair_list.append(ip_mac_pair)
+                        else:
+                            address_pair_list = 'Disabled'
+                        complete_api_data.append(
+                            {'key': 'Allowed_address_pairs', 'value': address_pair_list})
+                if 'virtual_machine_interface_refs' in api_data_basic:
+                    sub_interfaces = api_data_basic['virtual_machine_interface_refs']
+                    sub_interface_list = []
+                    for sub_interface in range(len(sub_interfaces)):
+                        sub_interface_list.append(sub_interfaces[sub_interface]['uuid'])
+                    if parent_tag:
+                        key = 'Parent_Port'
+                    else:
+                        key = 'Sub_Interfaces'
+                    complete_api_data.append(
+                        {'key': key, 'value': sub_interface_list})
+                if 'virtual_machine_interface_disable_policy' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'Disable_Policy', 'value': str(api_data_basic[
+                         'virtual_machine_interface_disable_policy'])})
+                if action == 'create':
+                    if self.ui.match_ui_kv(complete_api_data, dom_arry_basic):
+                        self.logger.info(
+                            "Port config details matched on Config->Networking->Ports page")
+                    else:
+                        self.logger.error(
+                            "Port config details match failed on Config->Networking->Ports page")
+                        result = result and False
+                else:
+                    if self.ui.match_ui_kv(expected_result, dom_arry_basic, data=
+                           'Expected_key_value', matched_with='WebUI') and self.ui.match_ui_kv(
+                           expected_result, complete_api_data, data='Expected_key_value',
+                           matched_with='API'):
+                        self.logger.info(
+                            "%s of port matched on WebUI/API after editing" % (expected_result))
+                    else:
+                        self.logger.error(
+                            "%s of port match failed on WebUI/API after editing" %
+                            (expected_result))
+                        result = result and False
+                    return result
+        return result
+    # end verify_port_api_data_in_webui
