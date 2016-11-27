@@ -328,7 +328,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
             self.webui.logger.debug('Virtual networks config data verification in OPS failed')
             result = result and False
         self.webui.logger.debug("Step 5 : Edit the VN without changing anything")
-        if not self.webui_common.edit_vn_without_change():
+        if not self.webui_common.edit_without_change('network'):
             self.webui.logger.debug('Editing Network failed')
             result = result and False
         self.webui.logger.debug("Step 6 : Verify WebUI server after editing")
@@ -1234,5 +1234,79 @@ class WebuiTestSanity(base.WebuiBaseTest):
                     result = result and False
         return result
     # test4_7_create_vn_with_spl_char
+
+    @preposttest_wrapper
+    def test6_1_edit_port_without_change(self):
+        ''' Test to edit the port without changing anything and
+            check the UUID in API and WebUI
+            1. Go to Configure->Networking->Ports. Then select one of the ports.
+            2. Click the Edit button and Click the save button without changing anything.
+            3. Verify the Port's UUID in WebUI and API server.
+
+            Pass Criteria: UUID shouldn't be changed after editing
+        '''
+        result = True
+        self.webui.logger.debug("Step 1 : Get the uuid before editing")
+        uuid_port = self.webui_common.get_ui_value('Ports', 'UUID', name=topo.port_list[0])
+        self.webui.logger.debug("UUID before editing " + str(uuid_port))
+        self.webui.logger.debug("Step 2 : Edit the port without changing anything")
+        if not self.webui_common.edit_without_change('Ports'):
+            self.webui.logger.debug('Editing Port failed')
+            result = result and False
+        self.webui.logger.debug("Step 3 : Verify WebUI and API server after editing")
+        if not self.webui.verify_port_api_data([topo.port_list[0]], action='edit',
+                                              expected_result=uuid_port):
+            self.webui.logger("Verifying port in WebUI and API is failed")
+            result = result and False
+        return result
+    # end test6_1_edit_port_without_change
+
+    @preposttest_wrapper
+    def test6_2_edit_port_vn_port_name(self):
+        ''' Test to edit the port's VN and Port name
+            1. Go to Configure->Networking->Ports. Then select any of the ports.
+            2. Click the Edit button and Try to edit vn and port name.
+            3. Verify the vn and port name disabled for existing port.
+
+            Pass Criteria: Step 3 should pass
+        '''
+        self.webui.logger.debug("Step 1 : Edit VN and port in port page")
+        assert self.webui_common.edit_port_with_vn_port('Ports'), \
+                                 'VN and Port name not disabled for editing'
+        return True
+    # end test6_2_edit_port_vn_port_name
+
+    @preposttest_wrapper
+    def test6_3_edit_port_by_add_security_group(self):
+        ''' Test to edit the existing port by security group
+            1. Go to Configure->Networking->Ports. Then select the one of the port
+               and click the edit button.
+            2. Attach one security group for the port and save.
+            3. Check that attached security group is there in WebUI and API.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        result = True
+        sec_group_value = []
+        self.webui.logger.debug("Step 1 : Attach security group to the port")
+        sec_group_list = self.webui_common.get_ui_value('Ports', 'Security Groups',
+                             name=topo.port_list[0])
+        sec_name = self.webui_common.add_port_with_sec_group('Ports', topo.port_list[0])
+        if sec_name:
+            sec_group_value.append(sec_name)
+        else:
+            result = result and False
+        sec_group_value.append(sec_group_list[0]['value'])
+        sec_group_list = self.webui_common.format_sec_group_name(sec_group_value,
+                                                                self.webui.project_name_input)
+        self.webui.logger.debug("Step 2 : Verify the port for the attached security group \
+                                in WebUI and API server")
+        expected_sec_group_list = [{'key': 'Security_Groups', 'value': sec_group_list}]
+        if not self.webui.verify_port_api_data([topo.port_list[0]], action='edit',
+                                              expected_result=expected_sec_group_list):
+            self.webui.logger.debug('API and UI verification failed for Security Group')
+            result = result and False
+        return result
+    #end test6_3_edit_port_by_add_security_group
 
 # end WebuiTestSanity
