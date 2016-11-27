@@ -641,7 +641,7 @@ def check_5tuple_in_rules(rule, rules):
     return (match, rules.index(r))
 # end check_5tuple_in_rules
 
-def _create_n_policy_n_rules(self, number_of_policy, valid_rules, number_of_dummy_rules, option='quantum'):
+def _create_n_policy_n_rules(self, number_of_policy, valid_rules, number_of_dummy_rules, option='quantum', verify=True):
     ''' Create n number of policy & n number of rules
     created policy will be policy1,policy2,policy3...policyn so on
     Sample rules_list:
@@ -700,6 +700,10 @@ def _create_n_policy_n_rules(self, number_of_policy, valid_rules, number_of_dumm
     number_of_policy += 1
     policy_objs_list = []
     for i in range(1, number_of_policy):
+        if i > 1:
+            for j in range(0, number_of_dummy_rules):
+                rules_list[j]['src_ports'] = (rules_list[j]['src_ports'][0]+(number_of_dummy_rules + 5) , rules_list[j]['src_ports'][1]+(number_of_dummy_rules + 5))
+                rules_list[j]['dst_ports'] = (rules_list[j]['dst_ports'][0]+(number_of_dummy_rules + 5) , rules_list[j]['dst_ports'][1]+(number_of_dummy_rules + 5))
         try:
             if option == 'quantum':
                 policy_fixture = self.useFixture(
@@ -724,7 +728,8 @@ def _create_n_policy_n_rules(self, number_of_policy, valid_rules, number_of_dumm
                 (total_policy, len(rules_list)))
         if option == 'quantum':
             policy_objs_list.append(policy_fixture.policy_obj)
-            policy_fixture.verify_policy_in_api_server()
+            if verify == True:
+                policy_fixture.verify_policy_in_api_server()
         else:
             policy_objs_list.append(policy_fixture._obj)
             policy_read = self.vnc_lib.network_policy_read(
