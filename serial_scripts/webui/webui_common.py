@@ -846,10 +846,13 @@ class WebuiCommon:
     def get_memory_string(self, dictn, unit='B', control_flag=0):
         memory_list = []
         if isinstance(dictn, dict):
-            if not control_flag:
-                memory = dictn.get('cpu_info').get('meminfo').get('res')
+            if dictn.get('cpu_info'):
+                if not control_flag:
+                    memory = dictn.get('cpu_info').get('meminfo').get('res')
+                else:
+                    memory = dictn.get('cpu_info')[0].get('mem_res')
             else:
-                memory = dictn.get('cpu_info')[0].get('mem_res')
+                memory = dictn.get('mem_res')
         else:
             memory = dictn
             memory = memory / 1024.0
@@ -896,10 +899,13 @@ class WebuiCommon:
 
     def get_cpu_string(self, dictn):
         offset = 15
-        if isinstance(dictn.get('cpu_info'), list):
-            cpu = float(dictn.get('cpu_info')[0].get('cpu_share'))
+        if dictn.get('cpu_info'):
+            if isinstance(dictn.get('cpu_info'), list):
+                cpu = float(dictn.get('cpu_info')[0].get('cpu_share'))
+            else:
+                cpu = float(dictn.get('cpu_info').get('cpu_share'))
         else:
-            cpu = float(dictn.get('cpu_info').get('cpu_share'))
+            cpu = dictn.get('cpu_share')
         cpu_range = range(int(cpu * 100) - offset, int(cpu * 100) + offset)
         cpu_range = map(lambda x: x / 100.0, cpu_range)
         cpu_list = [str('%.2f' % cpu) + ' %' for cpu in cpu_range]
@@ -1908,7 +1914,7 @@ class WebuiCommon:
 
     def get_basic_view_infra(self):
         domArry = json.loads(self.browser.execute_script(
-            "var eleList = $('[class^=item-list]').find('li').find('span'),dataSet = []; for(var i = 0; i < eleList.length-1; i++){if(eleList[i].classList.contains('key', 'span5') && eleList[i + 1].classList.contains('value', 'span7')){dataSet.push({key : eleList[i].innerHTML.replace(/(&nbsp;)*/g&&/^\s+|\s+$/g,''),value:eleList[i+1].innerHTML.replace(/\s+/g, ' ')});}} return JSON.stringify(dataSet);"))
+        "var eleList = $('div.col-xs-12').find('div.row').find('div'),dataSet = []; for(var i = 0; i < eleList.length-1; i++){if(eleList[i].classList.contains('key') && eleList[i + 1].classList.contains('value')){dataSet.push({key : eleList[i].innerHTML.replace(/(&nbsp;)*/g&&/^\s+|\s+$/g,''),value:eleList[i+1].innerHTML.replace(/\s+/g, ' ')});}} return JSON.stringify(dataSet);"))
         return domArry
     # end get_basic_view_infra
 
