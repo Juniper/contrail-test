@@ -123,6 +123,30 @@ class WebuiTestSanity(base.WebuiBaseTest):
         assert self.res.setup_obj.create_dns_record(), 'DNS record creation failed'
         return True
     # end test_create_dns_records
+    
+    @preposttest_wrapper
+    def test2_4_create_floating_ips(self):
+        '''UI Config : Networking -> Networks : Test Floating IP creation
+        '''
+        assert self.res.setup_obj.create_floating_ip(), 'Floating IP creation failed'
+        return True
+    # end test_create_floating_ips
+    
+    @preposttest_wrapper
+    def test2_5_allocate_floating_ips(self):
+        '''UI Config : Networking -> Floating IPs : Test allocation of FIPs
+        '''
+        assert self.res.setup_obj.allocate_floating_ip(), 'Allocation of fip failed'
+        return True
+    # end test_allocate_floating_ips
+    
+    @preposttest_wrapper
+    def test2_6_associate_floating_ips(self):
+        '''UI Config : Networking -> Floating IPs : Test association of FIPs
+        '''
+        assert self.res.setup_obj.associate_floating_ip(), 'Association of fip failed'
+        return True
+    # end test_associate_floating_ips
 
     # UI verification tests
 
