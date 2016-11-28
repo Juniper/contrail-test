@@ -90,10 +90,10 @@ class FloatingIPFixture(fixtures.Fixture):
         self.webui.create_floatingip_pool(self, pool_name, vn_name)
     # end create_floatingip_pool_webui
 
-    def create_and_assoc_fip_webui(self, fip_pool_vn_id, vm_id, vm_name, project=None):
-        self.webui.create_and_assoc_fip(
-            self, fip_pool_vn_id, vm_id, vm_name, project=None)
-    # end create_and_assoc_fip_webui
+    def alloc_and_assoc_fip_webui(self, fip_pool_vn_id, vm_id, vm_ip, vm_name, assoc=True, project=None):
+        self.webui.alloc_and_assoc_fip(
+            self, fip_pool_vn_id, vm_id, vm_ip, vm_name, assoc, project=None)
+    # end alloc_and_assoc_fip_webui
 
     def verify_on_setup(self):
         result = True
@@ -477,8 +477,8 @@ class FloatingIPFixture(fixtures.Fixture):
 #        time.sleep(10)
     # end disassoc_and_delete_fip
 
-    def disassoc_and_delete_fip_webui(self, vm_id):
-        self.webui.disassoc_floatingip(self, vm_id)
+    def disassoc_and_delete_fip_webui(self, vm_id, vm_ip, assoc):
+        self.webui.disassoc_disalloc_fip(self, vm_id, vm_ip, assoc)
     # end disassoc_and_delete_fip_webui
 
     def create_floatingips(self, fip_pool_vn_id, count=1):
