@@ -193,70 +193,18 @@ class GenericTestBase(test_v1.BaseTestCase_v1):
             q_h = self.quantum_h
         q_h.delete_security_group(sg_id)
 
-    def config_aap(self, port1, port2, ip, vsrx=False, zero_mac=False):
-        self.logger.info('Configuring AAP on ports %s and %s' %
-                         (port1['id'], port2['id']))
-        if is_v4(ip):
-            prefix = '/32'
-        elif is_v6(ip):
-            prefix = '/128'
-
-        if zero_mac:
-            port1_dict = {'allowed_address_pairs': [
-                {"ip_address": ip + prefix , "mac_address": '00:00:00:00:00:00'}]}
-            port2_dict = {'allowed_address_pairs': [
-                {"ip_address": ip + prefix, "mac_address": '00:00:00:00:00:00'}]}
+    def config_aap(self, port, prefix, prefix_len=32, mac='', aap_mode='active-standby', contrail_api=False):
+        self.logger.info('Configuring AAP on port %s' %port['id'])
+        if is_v6(prefix):
+            prefix_len = 128
+        if contrail_api:
+            self.vnc_h.add_allowed_pair(port['id'], prefix, prefix_len, mac, aap_mode)
         else:
-            if vsrx:
-                port1_dict = {'allowed_address_pairs': [
-                    {"ip_address": ip + prefix, "mac_address": '00:00:5e:00:01:01'}]}
-                port2_dict = {'allowed_address_pairs': [
-                    {"ip_address": ip + prefix, "mac_address": '00:00:5e:00:01:01'}]}
-            else:
-                port1_dict = {'allowed_address_pairs': [
-                    {"ip_address": ip + prefix}]}
-                port2_dict = {'allowed_address_pairs': [
-                    {"ip_address": ip + prefix}]}
-        port1_rsp = self.update_port(port1['id'], port1_dict)
-        port2_rsp = self.update_port(port2['id'], port2_dict)
+            port_dict = {'allowed_address_pairs': [
+                {"ip_address": prefix + '/' + str(prefix_len) , "mac_address": mac}]}
+            port_rsp = self.update_port(port['id'], port_dict)
         return True
-    # end config_aap
-
-    def config_aap_contrail (self, port1, port2, ip, vsrx=False, zero_mac=False):
-        if zero_mac:
-            port1_dict = {'allowed_address_pairs': [
-                {"ip_address": ip + '/32', "mac_address": '00:00:00:00:00:00'}]}
-            port2_dict = {'allowed_address_pairs': [
-                {"ip_address": ip + '/32', "mac_address": '00:00:00:00:00:00'}]}
-        else:
-            if vsrx:
-                port1_dict = {'allowed_address_pairs': [
-                    {"ip_address": ip + '/32', "mac_address": '00:00:5e:00:01:01'}]}
-                port2_dict = {'allowed_address_pairs': [
-                    {"ip_address": ip + '/32', "mac_address": '00:00:5e:00:01:01'}]}
-            else:
-                port1_dict = {'allowed_address_pairs': [
-                    {"ip_address": ip + '/32'}]}
-                port2_dict = {'allowed_address_pairs': [
-                    {"ip_address": ip + '/32'}]}
-        ip1 = SubnetType(ip_prefix=port1_dict['allowed_address_pairs'][0]['ip_address'].split('/')[0],\
-                         ip_prefix_len=int(port1_dict['allowed_address_pairs'][0]['ip_address'].split('/')[1]))
-        aap1 = AllowedAddressPair(ip=ip1, mac=port1_dict['allowed_address_pairs'][0]['mac_address'])
-        aaps1 = AllowedAddressPairs(allowed_address_pair=[aap1])
-        self.vmi1_obj = self.vnc_lib.virtual_machine_interface_read(id=port1['id'])
-        #self.vmi1_obj.set_virtual_machine_interface_allowed_address_pairs([aaps1])
-        self.vmi1_obj.set_virtual_machine_interface_allowed_address_pairs(aaps1)
-
-        ip2 = SubnetType(ip_prefix=port2_dict['allowed_address_pairs'][0]['ip_address'].split('/')[0],\
-                         ip_prefix_len=int(port2_dict['allowed_address_pairs'][0]['ip_address'].split('/')[1]))
-        aap2 = AllowedAddressPair(ip=ip2, mac=port2_dict['allowed_address_pairs'][0]['mac_address'])
-        aaps2 = AllowedAddressPairs(allowed_address_pair=[aap2])
-        self.vmi2_obj = self.vnc_lib.virtual_machine_interface_read(id=port2['id'])
-        #self.vmi2_obj.set_virtual_machine_interface_allowed_address_pairs([aaps2])
-        self.vmi2_obj.set_virtual_machine_interface_allowed_address_pairs(aaps2)
-        self.vnc_lib.virtual_machine_interface_update(self.vmi1_obj)
-        self.vnc_lib.virtual_machine_interface_update(self.vmi2_obj)
-        return True 
+    #end config_aap
 
     def remove_from_cleanups(self, func_call, *args):
         for cleanup in self._cleanups:

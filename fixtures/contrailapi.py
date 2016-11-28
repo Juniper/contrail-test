@@ -49,6 +49,15 @@ class ContrailVncApi:
         self._vnc.floating_ip_update(fip_obj)
         return fip_obj
 
+    def add_allowed_pair(self, vmi_id, prefix, prefix_len, mac, mode):
+        vmi = self._vnc.virtual_machine_interface_read(id=vmi_id)
+        ip = SubnetType(ip_prefix=prefix, ip_prefix_len=prefix_len)
+        aap = AllowedAddressPair(ip=ip, mac=mac)
+        aap.set_address_mode(mode)
+        aaps = AllowedAddressPairs(allowed_address_pair=[aap])
+        vmi.set_virtual_machine_interface_allowed_address_pairs(aaps)
+        self._vnc.virtual_machine_interface_update(vmi)
+
     def add_security_group(self, vm_id, sg_id, **kwargs):
         sg = self.get_security_group(sg_id)
         vnc_vm = self._vnc.virtual_machine_read(id=vm_id)

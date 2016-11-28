@@ -23,6 +23,8 @@ from fabric.exceptions import CommandTimeout, NetworkError
 from fabric.contrib.files import exists
 from fabric.context_managers import settings, hide, cd
 from fabric.state import connections as fab_connections
+from paramiko.ssh_exception import ChannelException
+#from tcutils.util import retry
 import ConfigParser
 from testtools.testcase import TestSkipped
 import functools
@@ -245,7 +247,7 @@ def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
     if username == 'cirros':
         shell = '/bin/sh -l -c'
 
-    _run = sudo if with_sudo else run
+    _run = safe_sudo if with_sudo else safe_run
 
     #with hide('everything'), settings(host_string=host_string,
     with settings(host_string=host_string,
@@ -360,6 +362,32 @@ def fab_put_file_to_vm(host_string, password, src, dest,
 # end fab_put_file_to_vm
 
 
+@retry(tries=10, delay=3)
+def safe_sudo(cmd, timeout=10, pty=True):
+    try:
+        output = sudo(cmd, timeout=timeout, pty=pty)
+    except ChannelException, e:
+        # Handle too many concurrent sessions
+        if 'Administratively prohibited' in str(e):
+            time.sleep(random.randint(1, 5))
+            return (False, None)
+    return (True, output)
+ # end safe_sudo
+
+
+@retry(tries=10, delay=3)
+def safe_run(cmd, timeout=10):
+    try:
+        output = run(cmd, timeout=timeout)
+    except ChannelException, e:
+        # Handle too many concurrent sessions
+        if 'Administratively prohibited' in str(e):
+            time.sleep(random.randint(1, 5))
+            return (False, None)
+    return (True, output)
+ # end safe_run
+
+
 def sshable(host_string, password=None, gateway=None, gateway_password=None,
             logger=None, timeout=3):
     logger = logger or contrail_logging.getLogger(__name__)
@@ -369,11 +397,11 @@ def sshable(host_string, password=None, gateway=None, gateway_password=None,
                                       password=gateway_password,
                                       warn_only=True):
         try:
-            result = run('(echo > /dev/tcp/%s/%s)' % (host_string_split[1],
-                                                      host_port), timeout=timeout)
+            (ret_val, result) = safe_run('(echo > /dev/tcp/%s/%s)' % (host_string_split[1],
+                                                                      host_port), timeout=timeout)
             if result.succeeded:
                 time.sleep(5)
-                if run('(echo > /dev/tcp/%s/%s)' % (host_string_split[1], host_port)).succeeded:
+                if safe_run('(echo > /dev/tcp/%s/%s)' % (host_string_split[1], host_port), timeout=timeout)[1].succeeded:
                     return True
                 else:
                     logger.error("Error on ssh to %s" % host_string)

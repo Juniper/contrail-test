@@ -20,6 +20,7 @@ from subprocess import Popen, PIPE
 from ipam_test import *
 from vn_test import *
 from tcutils.util import *
+from tcutils.util import safe_run, safe_sudo
 from contrail_fixtures import *
 from tcutils.pkgs.install import PkgHost, build_and_install
 from security_group import get_secgrp_id_from_name, list_sg_rules
@@ -1036,11 +1037,10 @@ class VMFixture(fixtures.Fixture):
                 host_string='%s@%s' % (host['username'], self.vm_node_ip),
                 password=host['password'],
                     warn_only=True, abort_on_prompts=False):
-            #   Workaround till Bug 1615048 is fixed
-            #   output = run('ping %s -c 1' % (self.local_ips[vn_fq_name]))
-            #   expected_result = ' 0% packet loss'
-                output = run('ping %s -c 2 -W %s' % (
-                              self.local_ips[vn_fq_name], timeout))
+                #		output = run('ping %s -c 1' % (self.local_ips[vn_fq_name]))
+                #                expected_result = ' 0% packet loss'
+                output = safe_run('ping %s -c 2 -W %s' %
+                                  (self.local_ips[vn_fq_name], timeout))
                 failure = ' 100% packet loss'
                 self.logger.debug(output)
             #   if expected_result not in output:
