@@ -807,13 +807,12 @@ class WebuiTest:
                 version = json.loads(analytics_nodes_ops_data.get('CollectorState').get(
                     'build_info')).get('build-info')[0].get('build-id')
                 version = self.ui.get_version_string(version)
-                module_cpu_info_len = len(
-                    analytics_nodes_ops_data.get('ModuleCpuState').get('module_cpu_info'))
-                for i in range(module_cpu_info_len):
-                    if analytics_nodes_ops_data.get('ModuleCpuState').get(
-                            'module_cpu_info')[i]['module_id'] == 'contrail-collector':
-                        cpu_mem_info_dict = analytics_nodes_ops_data.get(
-                            'ModuleCpuState').get('module_cpu_info')[i]
+                module_cpu_info = analytics_nodes_ops_data.get(
+                        'NodeStatus').get('process_mem_cpu_usage')
+                module_cpu_info_len = len(module_cpu_info)
+                for key, value in module_cpu_info.iteritems():
+                    if key == 'contrail-collector':
+                        cpu_mem_info_dict = value
                         break
                 cpu = self.ui.get_cpu_string(cpu_mem_info_dict)
                 memory = self.ui.get_memory_string(cpu_mem_info_dict)
@@ -926,7 +925,6 @@ class WebuiTest:
                             'key': 'Version', 'value': version}, {
                                 'key': 'Status', 'value': overall_node_status_string}, {
                                     'key': 'Generators', 'value': generators_count}])
-
                 if self.verify_analytics_nodes_ops_grid_page_data(
                         host_name,
                         ops_data):
