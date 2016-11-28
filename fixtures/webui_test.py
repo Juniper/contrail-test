@@ -1460,9 +1460,9 @@ class WebuiTest:
                     vrouters_list_ops[n]['href'])
                 new_list = []
                 element_list = [
-                    ('connected_networks', 10), ('interface_list', 9),
-                    ('virtual_machine_list', 7), ('dns_server_list_cfg', 6),
-                    ('self_ip_list', 5)]
+                    ('connected_networks', 11), ('interface_list', 10),
+                    ('virtual_machine_list', 8), ('dns_server_list_cfg', 7),
+                    ('vhost_cfg', 6), ('self_ip_list', 5)]
                 agent_name = 'VrouterAgent'
                 for element in element_list:
                     key1, val1, flag = self.ui.get_advanced_view_list(
