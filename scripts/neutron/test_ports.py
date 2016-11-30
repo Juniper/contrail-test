@@ -676,8 +676,9 @@ class TestPorts(BaseNeutronTest):
         assert vm2_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
         assert vm_test_fixture.wait_till_vm_is_up(
         ), 'VM does not seem to be up'
-
-        self.config_aap(port1_obj, port2_obj, vIP)
+        port_list = [port1_obj, port2_obj]
+        for port in port_list:
+            self.config_aap(port, vIP, mac=port['mac_address'])
         self.config_vrrp(vm1_fixture, vIP, '20')
         self.config_vrrp(vm2_fixture, vIP, '10')
         time.sleep(10)
@@ -766,7 +767,9 @@ class TestPorts(BaseNeutronTest):
                 port_ids=port_ids2, zone='nova'))
         vm_test_fixture = self.create_vm(vn1_fixture, vm_test_name,
                                          image_name='ubuntu-traffic')
-        self.config_aap(lvn_port_obj1, lvn_port_obj2, vIP, vsrx=True)
+        port_list = [lvn_port_obj1, lvn_port_obj2]
+        for port in port_list:
+            self.config_aap(port, vIP, mac='00:00:5e:00:01:01')
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
         self.logger.info('We will configure VRRP on the two vSRX')
@@ -826,8 +829,9 @@ class TestPorts(BaseNeutronTest):
         assert vm2_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
         assert vm_test_fixture.wait_till_vm_is_up(
         ), 'VM does not seem to be up'
-
-        self.config_aap(port1_obj, port2_obj, vIP)
+        port_list = [port1_obj, port2_obj]
+        for port in port_list:
+            self.config_aap(port, vIP, mac=port['mac_address'])
         self.config_vrrp(vm1_fixture, vIP, '20')
         self.config_vrrp(vm2_fixture, vIP, '10')
         assert self.vrrp_mas_chk(vm1_fixture, vn1_fixture, vIP)
@@ -896,20 +900,18 @@ class TestPorts(BaseNeutronTest):
         '''
 
         vn1_name = get_random_name('vn1')
-        vn1_subnets = ['10.10.10.0/24']
+        vn1_subnets = [get_random_cidr()]
         vm1_name = get_random_name('vm1')
         vm2_name = get_random_name('vm2')
         vm_test_name = get_random_name('vm_test')
-        vIP = '10.10.10.250'
         vID = '51'
         result = False
 
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
-
-        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
-
+        vIP = get_an_ip(vn1_subnets[0], offset=10)
         port1_obj = self.create_port(net_id=vn1_fixture.vn_id)
         port2_obj = self.create_port(net_id=vn1_fixture.vn_id)
+        port_list = [port1_obj, port2_obj]
         vm1_fixture = self.create_vm(vn1_fixture, vm1_name,
                                      image_name='ubuntu-keepalive',
                                      port_ids=[port1_obj['id']])
@@ -922,7 +924,9 @@ class TestPorts(BaseNeutronTest):
         assert vm2_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
         assert vm_test_fixture.wait_till_vm_is_up(
         ), 'VM does not seem to be up'
-        self.config_aap_contrail(port1_obj, port2_obj, vIP, zero_mac=True)
+        for port in port_list:
+            self.config_aap(
+                port, vIP, mac='00:00:00:00:00:00', contrail_api=True)
         self.config_keepalive(vm1_fixture, vIP, vID, '10')
         self.config_keepalive(vm2_fixture, vIP, vID, '20')
 
