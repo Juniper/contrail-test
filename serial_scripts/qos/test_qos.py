@@ -107,3 +107,39 @@ class TestQosPolicyEncap(TestQosPolicyBase):
             src_compute_fixture=self.vn1_vm1_compute_fixture,
             encap="MPLSoGRE")
     # end test_qos_remark_exp_dscp_on_policy_gre_encap
+    
+    @preposttest_wrapper
+    def test_qos_config_on_policy_for_all_dscp_entries(self):
+        '''
+        Create a qos config with all valid DSCP values and verify traffic
+        for all dscp values
+        Steps:
+        1. Create 62 FC IDs having unique DSCP values in all
+        2. Create a qos config and map all DSCP to unique FC ID
+        3. Validate that packets with dscp 1 on fabric from A to B 
+           have DSCP marked to 62
+        4. Validate that packets with dscp 62 on fabric from A to B 
+           have DSCP marked to 1
+        5. Similarly, verify for all DSCP values
+        '''
+        fcs = []
+        dscp_map = {}
+        for i in range(1, 63):
+            fc = {'name': "FC_Test" + str(i), 'fc_id': i, 'dscp': i}
+            fcs.append(fc)
+            dscp_map[i] = 63 - i
+        fc_fixtures = self.setup_fcs(fcs)
+        qos_fixture = self.setup_qos_config(dscp_map=dscp_map)
+        self.update_policy_qos_config(self.policy_fixture, qos_fixture)
+        validate_method_args = {
+            'src_vm_fixture': self.vn1_vm1_fixture,
+            'dest_vm_fixture': self.vn2_vm1_fixture,
+            'dscp': None,
+            'expected_dscp': None,
+            'src_compute_fixture': self.vn1_vm1_compute_fixture,
+            'encap': "MPLSoUDP"}
+        for i in range(1, 63):
+            validate_method_args['expected_dscp'] = i
+            validate_method_args['dscp'] = 63 - i
+            assert self.validate_packet_qos_marking(**validate_method_args)
+    # end test_qos_config_on_policy_for_all_dscp_entries
