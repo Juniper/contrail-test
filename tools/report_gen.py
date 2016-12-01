@@ -73,6 +73,7 @@ class ContrailReportInit:
                                              'Mail', 'mailSender', 'contrailbuild@juniper.net')
         self.ts = self.get_os_env('SCRIPT_TS') or \
             datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
+        self.core_location = self.ts
         self.single_node = self.get_os_env('SINGLE_NODE_IP')
         self.jenkins_trigger = self.get_os_env('JENKINS_TRIGGERED')
         if self.jenkins_trigger:
@@ -346,7 +347,7 @@ class ContrailReportInit:
         debug_logs_location = ''
         if self.jenkins_trigger:
             debug_logs_location = "/cs-shared/test_runs" \
-                "/%s/%s" % (self.host_data[self.cfgm_ips[0]]['name'], self.ts)
+                "/%s/%s" % (self.host_data[self.cfgm_ips[0]]['name'], self.core_location)
             config.set('Test', 'CoreLocation', debug_logs_location)
         config.write(details_h)
         details_h.close()
