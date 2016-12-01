@@ -1935,6 +1935,26 @@ class WebuiCommon:
         return key1, val1, flag
     # end get_advanced_view_list
 
+    def click_basic_and_get_row_details(
+            self,
+            func_suffix,
+            index=0,
+            canvas=False):
+        click_func = 'self.' + 'click_configure_' + func_suffix + '_basic'
+        eval(click_func)(index)
+        self.logger.info(
+            "Click and retrieve basic view details in webui of %s " %
+                (func_suffix))
+        rows = self.get_rows(canvas)
+        slick_row_detail = self.find_element(
+                'slick-row-detail-container', 'class',
+                        browser = rows[index + 1])
+        rows_detail = self.find_element([
+                        'item-list', 'row'], ['class', 'class'],
+                        browser = slick_row_detail, if_elements=[1])
+        return rows, rows_detail
+    # end click_basic_and_get_row_details
+
     def trim_spl_char(self, d):
         data = []
         for item in d:
