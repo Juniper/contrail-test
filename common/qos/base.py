@@ -1,4 +1,5 @@
 import re
+from tcutils.util import Lock
 
 from common.neutron.base import BaseNeutronTest
 from compute_node_test import ComputeNodeFixture
@@ -521,3 +522,40 @@ class TestQosSVCBase(QosTestExtendedBase):
         cls.st_fixture.cleanUp()
         super(TestQosSVCBase, cls).tearDownClass()
     # end tearDownClass
+    
+class FcIdGenerator():
+    '''
+        This class parse through the FCs present and 
+        return a unique FC ID which is not in use.
+    '''
+    
+    def __init__(self, vnc_lib):
+        self.vnc_lib = vnc_lib
+    
+    def get_free_fc_ids(self, number):
+        ''' "number" is number of free fc_ids to be returned'''
+        try:
+            file = '/tmp/fc_id.lock'
+            lock = Lock(file)
+            lock.acquire()
+            fc_uuids = []
+            for elem in self.vnc_lib.forwarding_classs_list()['forwarding-classs']:
+                fc_uuids.append(elem['uuid'])
+            fc_ids = []
+            for elem in fc_uuids:
+                fc_ids.append(self.vnc_lib.forwarding_class_read(id =elem).\
+                            forwarding_class_id)
+            returned_fc_ids = []
+            count = 0
+            for fc_id in range(0, 256):
+                if number > 0:
+                    if fc_id not in fc_ids:
+                        returned_fc_ids.append(fc_id)
+                        count = count +1
+                        if count == number:
+                            break
+                else:
+                    break
+        finally:
+            lock.release()
+            return returned_fc_ids
