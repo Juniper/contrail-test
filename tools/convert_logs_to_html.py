@@ -36,7 +36,10 @@ def create_css_file(logdir):
     css_fh.close()
 
 logdir = sys.argv[1]
+skip_files = ['introspect.log']
 for filename in glob.glob('%s/*.log' % (logdir)):
+    if filename in skip_files:
+        continue
     print filename
     create_css_file(logdir)
     write_html_file(filename)
