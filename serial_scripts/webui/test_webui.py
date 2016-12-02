@@ -143,6 +143,20 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_networking_virtual_networks
 
     @preposttest_wrapper
+    def test_verify_config_networking_ports(self):
+        '''Test to verify ports on config->Networking->Ports
+           1. Go to Configure->Networking->Ports.
+           2. Get all the details of ports from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_port_api_data(topo.port_params), \
+                                              'Ports config data verification failed'
+        return True
+    # end test_verify_config_networking_ports
+
+    @preposttest_wrapper
     def test_verify_config_networking_ipams(self):
         '''Test ipams on config->Networking->IP Address Management page
         '''
