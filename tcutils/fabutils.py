@@ -16,7 +16,7 @@ import tempfile
 def remote_cmd(host_string, cmd, password=None, gateway=None,
                gateway_password=None, with_sudo=False, timeout=120,
                as_daemon=False, raw=False, cwd=None, warn_only=True, tries=1,
-               pidfile=None, logger=None):
+               pidfile=None, logger=None, abort_on_prompts=True):
     """ Run command on remote node.
     remote_cmd method to be used to run command on any remote nodes - whether it
     is a remote server or VM or between VMs. This method has capability to
@@ -59,6 +59,9 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
         raw: If raw is True, will return the fab _AttributeString object itself without removing any unwanted output
         pidfile : When run in background, use pidfile to store the pid of the 
                   running process
+        abort_on_prompts : Run command with abort_on_prompts set to True
+                           Note that this SystemExit does get caught and 
+                           counted against `tries`
     """
     if not logger:
         logger = contrail_logging.getLogger(__name__)
@@ -93,7 +96,7 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
             warn_only=warn_only,
             shell=shell,
             disable_known_hosts=True,
-            abort_on_prompts=False):
+            abort_on_prompts=abort_on_prompts):
         update_env_passwords(host_string, password, gateway, gateway_password)
 
         logger.debug(cmd)
@@ -101,8 +104,8 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
         while tries > 0:
             try:
                 output = _run(cmd, timeout=timeout, pty=not as_daemon)
-            except (CommandTimeout, NetworkError) as e:
-                logger.warn('Unable to run command %s: %s' % (cmd, str(e)))
+            except (CommandTimeout, NetworkError, SystemExit) as e:
+                logger.exception('Unable to run command %s: %s' % (cmd, str(e)))
                 tries -= 1
                 time.sleep(5)
                 continue
