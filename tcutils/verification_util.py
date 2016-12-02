@@ -24,8 +24,10 @@ class JsonDrv (object):
         self._headers = None
         self._args = args
         self._use_admin_auth = use_admin_auth
+        msg_size = os.getenv('INTROSPECT_LOG_MAX_MSG', '10240')
         self.more_logger = contrail_logging.getLogger('introspect',
-                                                      log_to_console=False)
+                                                      log_to_console=False,
+                                                      max_message_size=msg_size)
         # Since introspect log is a single file, need locks
         self.lock = threading.Lock()
 
@@ -36,7 +38,7 @@ class JsonDrv (object):
             else:
                 url = "%s://%s:%s%s" % (self._args.auth_protocol,
                                         self._args.auth_ip,
-                                        self._args.auth_port, 
+                                        self._args.auth_port,
                                         self._DEFAULT_AUTHN_URL)
             insecure = bool(os.getenv('OS_INSECURE',True))
             verify = not insecure

@@ -13,7 +13,6 @@ cwd = os.path.join(os.path.dirname(__file__), os.pardir)
 LOG_KEY = 'default'
 TS = time.time()
 ST = datetime.datetime.fromtimestamp(TS).strftime('%Y-%m-%d_%H:%M:%S')
-LOG_FORMAT = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
 if not '_loggers' in locals():
     _loggers = {}
@@ -40,7 +39,7 @@ def getLogger(name='unknown',**kwargs):
     return _loggers[name].logger
 
 class ContrailLogger:
-    def __init__(self, name, log_to_console=True):
+    def __init__(self, name, log_to_console=True, max_message_size=None):
         self.name = name
         self.logger = logging.getLogger(name or LOG_KEY)
         self.logger.disabled = False
@@ -49,17 +48,21 @@ class ContrailLogger:
         self.log_file = name
         self.log_to_console = log_to_console
         self.console_h = None
+        if not max_message_size:
+            max_message_size = ''
+        self.log_format = logging.Formatter('%(asctime)s - %(levelname)s'
+                              ' - %(message)' + '%ss' %(str(max_message_size)))
 
     def setUp(self):
         self.fileHandler = CustomFileHandler(fileName = self.log_file)
-        self.fileHandler.setFormatter(LOG_FORMAT)
+        self.fileHandler.setFormatter(self.log_format)
         self.fileHandler.setLevel(logging.DEBUG)
         self.logger.addHandler(self.fileHandler)
 
         if self.log_to_console:
             self.console_h= logging.StreamHandler()
             self.console_h.setLevel(logging.INFO)
-            self.console_h.setFormatter(LOG_FORMAT)
+            self.console_h.setFormatter(self.log_format)
             self.logger.addHandler(self.console_h)
         self.logger.addHandler(NullHandler())
 
