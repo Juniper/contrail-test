@@ -1425,35 +1425,30 @@ class VMFixture(fixtures.Fixture):
         finally:
             return bgp_ips
 
-    def get_ctrl_nodes_in_rt_group(self):
-        if getattr(self, 'bgp_ips', None):
-            return self.bgp_ips
+    def get_ctrl_nodes_in_rt_group(self,vn_fq_name):
         rt_list = []
         peer_list = []
-        for vn_fq_name in self.vn_fq_names:
-            vn_name = vn_fq_name.split(':')[-1]
-            ri_name = vn_fq_name + ':' + vn_name
-            ri = self.vnc_lib_fixture.routing_instance_read(fq_name=[ri_name])
-            rt_refs = ri.get_route_target_refs()
-            for rt_ref in rt_refs:
-                rt_obj = self.vnc_lib_fixture.route_target_read(id=rt_ref['uuid'])
-                rt_list.append(rt_obj.name)
-        for rt in rt_list:
-            ctrl_node = self.get_active_controller()
-            ctrl_node = self.inputs.host_data[ctrl_node]['host_ip']
-            peer_list.append(ctrl_node)
-            rt_group_entry = self.cn_inspect[
-                ctrl_node].get_cn_rtarget_group(rt)
-            if rt_group_entry['peers_interested'] is not None:
-                for peer in rt_group_entry['peers_interested']:
-                    if peer in self.inputs.host_names:
-                        peer = self.inputs.host_data[peer]['host_ip']
-                        peer_list.append(peer)
-                    else:
-                        self.logger.info(
-                            '%s is not defined as a control node in the topology' % peer)
-        self.bgp_ips = list(set(peer_list))
-        return self.bgp_ips
+        vn_name = vn_fq_name.split(':')[-1]
+        ri_name = vn_fq_name + ':' + vn_name
+        ri = self.vnc_lib_fixture.routing_instance_read(fq_name=[ri_name])
+        rt_refs = ri.get_route_target_refs()
+        for rt_ref in rt_refs:
+            rt_obj = self.vnc_lib_fixture.route_target_read(id=rt_ref['uuid'])
+            rt_list.append(rt_obj.name)
+        for ctrl_node in self.inputs.bgp_ips:
+            for rt in rt_list:
+                rt_group_entry = self.cn_inspect[
+                    ctrl_node].get_cn_rtarget_group(rt)
+                if rt_group_entry['peers_interested'] is not None:
+                    for peer in rt_group_entry['peers_interested']:
+                        if peer in self.inputs.host_names:
+                            peer_ip = self.inputs.host_data[peer]['host_ip']
+                            peer_list.append(peer_ip)
+                        else:
+                            self.logger.info(
+                                '%s is not defined as a control node in the topology' % peer)
+        bgp_ips = list(set(peer_list))
+        return bgp_ips
     # end get_ctrl_nodes_in_rt_group
 
     @retry(delay=5, tries=20)
@@ -1464,7 +1459,7 @@ class VMFixture(fixtures.Fixture):
         self.vm_in_cn_flag = True
         for vn_fq_name in self.vn_fq_names:
             if self.vnc_lib_fixture.get_active_forwarding_mode(vn_fq_name) != 'l2':
-                for cn in self.get_ctrl_nodes_in_rt_group():
+                for cn in self.get_ctrl_nodes_in_rt_group(vn_fq_name):
                     vn_name = vn_fq_name.split(':')[-1]
                     ri_name = vn_fq_name + ':' + vn_name
                     # Check for VM route in each control-node
@@ -1514,7 +1509,7 @@ class VMFixture(fixtures.Fixture):
             return True
         for vn_fq_name in self.vn_fq_names:
             if 'l2' in self.vnc_lib_fixture.get_active_forwarding_mode(vn_fq_name):
-                for cn in self.get_ctrl_nodes_in_rt_group():
+                for cn in self.get_ctrl_nodes_in_rt_group(vn_fq_name):
                     ri_name = vn_fq_name + ':' + vn_fq_name.split(':')[-1]
                     self.logger.debug('Starting all layer2 verification'
                                       ' in %s Control Node' % (cn))
@@ -1619,7 +1614,7 @@ class VMFixture(fixtures.Fixture):
         for vn_fq_name in self.vn_fq_names:
             if self.vnc_lib_fixture.get_active_forwarding_mode(vn_fq_name) != 'l2':
                 ri_name = vn_fq_name + ':' + vn_fq_name.split(':')[-1]
-                for cn in self.get_ctrl_nodes_in_rt_group():
+                for cn in self.get_ctrl_nodes_in_rt_group(vn_fq_name):
                     # Check for VM route in each control-node
                     for vm_ip in self.vm_ip_dict[vn_fq_name]:
                         cn_routes = self.cn_inspect[cn].get_cn_route_table_entry(

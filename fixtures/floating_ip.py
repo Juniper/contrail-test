@@ -327,7 +327,7 @@ class FloatingIPFixture(fixtures.Fixture):
         if self.inputs.vcenter_gw_setup:
             return True #To do:Need to fix the control node verification
                         #for vcenter gateway case. 
-        self.ctrl_nodes= vm_fixture.get_ctrl_nodes_in_rt_group()
+        self.ctrl_nodes= vm_fixture.get_ctrl_nodes_in_rt_group(fip_vn_fixture.vn_fq_name)
         agent_label = vm_fixture.get_agent_label()
         for cn in self.ctrl_nodes:
             ri_name = fip_vn_fixture.get_vrf_name()
