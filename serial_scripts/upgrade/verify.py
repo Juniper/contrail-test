@@ -177,8 +177,8 @@ class BaseResource(fixtures.Fixture, ConfigSvcChain, VerifySvcChain, BaseTestLba
             self.policy_fixtures, self.vn1_fixture)
         self.vn2_policy_fix = self.attach_policy_to_vn(
             self.policy_fixtures, self.vn2_fixture)
-        self.vm1_fixture = self.config_vm(self.vn1_fixture, self.vm1_name)
-        self.vm2_fixture = self.config_vm(self.vn2_fixture, self.vm2_name)
+        self.vm1_fixture = self.config_vm(vn_fix=self.vn1_fixture, vm_name=self.vm1_name)
+        self.vm2_fixture = self.config_vm(vn_fix=self.vn1_fixture, vm_name=self.vm1_name)
         #self.vm1_fixture.verify_on_setup()
         #self.vm2_fixture.verify_on_setup()
         self.vm1_fixture.wait_till_vm_is_up()
