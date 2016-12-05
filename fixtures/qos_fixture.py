@@ -208,7 +208,7 @@ class QosForwardingClassFixture(QosBaseFixture):
         for compute, vrouter_fc in vrouter_fcs.iteritems():
             self.id[compute] = vrouter_fc['id']
             (result, mismatches) = compare_dict(vrouter_fc, vrouter_fc_reference,
-                                                ignore_keys=['id'])
+                                                ignore_keys=['id', 'qos_queue'])
             if not result:
                 self.logger.warn('On Compute %s(vrouter), mismatch found in qos fc'
                                  'entries, Unmatched items: %s' % (compute, mismatches))
