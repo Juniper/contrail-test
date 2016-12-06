@@ -130,6 +130,14 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         host_dict['username'] = host_string.split('@')[0]
         host_dict['password'] =get_env_passwords(host_string)
         host_dict['roles'] = []
+        
+        if host_string in env.qos.keys():
+            role_dict = env.qos[host_string]
+            host_dict['qos'] = role_dict
+            
+        if host_string in env.qos_niantic.keys():
+            role_dict = env.qos_niantic[host_string]
+            host_dict['qos_niantic'] = role_dict
 
         if host_string in env.roledefs['openstack']:
             role_dict = {'type': 'openstack', 'params': {'cfgm': cfgm_host_name}}

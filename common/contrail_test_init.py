@@ -405,7 +405,18 @@ class TestInputs(object):
         self.tor = {}
         self.tor_hosts_data = {}
         self.physical_routers_data = {}
-
+        self.qos_queue = []
+        ''' self.qos_queue used for populating HW to Logical map
+            format self.qos_queue = [['comput_ip' , [{'hw_q_id':[logical_ids]}, {'hw_q_id':[logical_ids]}]]]
+            eg, self.qos_queue= [['10.204.217.128', [{u'3': [u'1', u'6-10', u'12-15']}, {u'11': [u'40-46']}]],
+                            , ['10.204.217.130', [{u'4': [u'1', u'6-10', u'12-15']}, {u'12': [u'40-46']}]]]'''
+        self.qos_queue_pg_properties = []
+        ''' self.qos_queue_pg_properties used for populating per Priority Group Properties
+            format self.qos_queue_pg_properties = [['comput_ip' , [{1st PG properties}, {2nd PG properties}]]]
+            eg, self.qos_queue_pg_properties = [['10.204.217.128', [{u'scheduling': u'strict', u'bandwidth': u'0', u'priority_id': u'0'},
+                                                                {u'scheduling': u'rr', u'bandwidth': u'10', u'priority_id': u'2'}]],
+                            ,                ['10.204.217.130', [{u'scheduling': u'strict', u'bandwidth': u'0', u'priority_id': u'1'},
+                                                                {u'scheduling': u'rr', u'bandwidth': u'25', u'priority_id': u'3'}]]]'''
         self.esxi_vm_ips = {}
         self.vgw_data = {}
         for host in json_data['hosts']:
@@ -422,6 +433,12 @@ class TestInputs(object):
             self.host_data[host['name']]['host_ip'] = host_ip
             self.host_data[host['name']]['host_data_ip'] = host_data_ip
             self.host_data[host['name']]['host_control_ip'] = host_control_ip
+            qos_queue_per_host, qos_queue_pg_properties_per_host = \
+                                    self._process_qos_data(host_ip)
+            if qos_queue_per_host:
+                self.qos_queue.append(qos_queue_per_host)
+            if qos_queue_pg_properties_per_host:
+                self.qos_queue_pg_properties.append(qos_queue_pg_properties_per_host)
             roles = host["roles"]
             for role in roles:
                 if role['type'] == 'openstack':
@@ -536,8 +553,49 @@ class TestInputs(object):
         for orch in self.orchs:
             if orch['type'] == 'vcenter':
                 return random.choice(orch['gateway_vrouters'])
-              
-            
+
+    def _process_qos_data(self, host_ip):
+        '''
+        Reads and populate qos related values
+        '''
+        qos_queue_per_host = []
+        qos_queue_pg_properties_per_host = []
+        try: 
+            if self.host_data[host_ip]['qos']:
+                hw_to_logical_map_list = []
+                for entry in self.host_data[host_ip]['qos']:
+                    if "default" in entry.keys() and \
+                    "logical_queue" in entry.keys():
+                        entry["logical_queue"].append("default")
+                        hw_to_logical_map = {entry["hardware_q_id"] :
+                                             entry["logical_queue"]}
+                    elif "default" in entry.keys() and \
+                    "logical_queue" not in entry.keys():
+                        hw_to_logical_map = {entry["hardware_q_id"] :
+                                             ["default"]}
+                    else:
+                        hw_to_logical_map = {entry["hardware_q_id"] : 
+                                             entry["logical_queue"]}
+                    hw_to_logical_map_list.append(hw_to_logical_map)
+                qos_queue_per_host = [host_ip , hw_to_logical_map_list]
+        except KeyError, e:
+            pass
+        try: 
+            if self.host_data[host_ip]['qos_niantic']:
+                pg_properties_list = []
+                for entry in self.host_data[host_ip]['qos_niantic']:
+                    if 'bandwidth' not in entry.keys():
+                        entry.update({'bandwidth' : "0"})
+                        pg_property = entry
+                    else:
+                        pg_property = entry
+                    pg_properties_list.append(pg_property)
+                qos_queue_pg_properties_per_host = [host_ip ,
+                                                     pg_properties_list]
+        except KeyError, e:
+            pass
+        return (qos_queue_per_host, qos_queue_pg_properties_per_host)
+        
     def _process_tor_data(self):
         for (device_name, device_dict) in self.physical_routers_data.iteritems():
             device_dict['tor_agents'] = []

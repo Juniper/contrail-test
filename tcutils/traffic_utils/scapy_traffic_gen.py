@@ -83,7 +83,7 @@ class ScapyTraffic:
 
     def start(self):
         stream = self.scapy_build_stream()
-        cmd = "sendp(%s,iface='%s',inter=%d,count=%d)" %\
+        cmd = "sendp(%s,iface='%s',inter=%f,count=%d)" %\
                             (stream, self.interface,
                             self.interval, self.count)
         python_code = Template('''
@@ -93,7 +93,8 @@ $scapy_cmd''')
         code = python_code.substitute(data = self.payload,
                                              scapy_cmd = cmd)
         self.src_vm_fixture.run_python_code(code, 
-                                            pidfile= self.pid_file)
+                                            pidfile= self.pid_file,
+                                            as_daemon = True)
         return cmd
     # end start
     

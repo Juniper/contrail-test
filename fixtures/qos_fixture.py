@@ -42,13 +42,20 @@ class QosBaseFixture(vnc_api_test.VncLibFixture):
 class QosQueueFixture(QosBaseFixture):
 
     '''
+    Fixture for creating Qos Queue object
     '''
 
     def __init__(self, *args, **kwargs):
         super(QosQueueFixture, self).__init__(self, *args, **kwargs)
         self.name = kwargs.get('name', get_random_name('qos_queue'))
-        self.min_bandwidth = kwargs.get('min_bandwidth', None)
-        self.max_bandwidth = kwargs.get('max_bandwidth', None)
+        self.queue_id= kwargs.get('queue_id', None)
+        self.uuid = kwargs.get('uuid', None)
+        
+        self.is_already_present = False
+        self.obj = None
+        self.fq_name = None
+        self.verify_is_run = False
+        self.id = {}
 
     def setUp(self):
         super(QosQueueFixture, self).setUp()
@@ -61,13 +68,109 @@ class QosQueueFixture(QosBaseFixture):
     def create(self):
         if self.uuid:
             return self.read()
-        pass
+        self.parent_obj = self.get_parent_obj()
+        fq_name = self.parent_obj.fq_name + [self.name]
+        try:
+            queue_obj = self.vnc_api_h.qos_queue_read(fq_name=fq_name)
+            self.uuid = queue_obj.uuid
+            return self.read()
+        except NoIdError, e:
+            pass
+        queue_uuid = self.vnc_h.create_queue(self.name,
+                              queue_id=self.queue_id,
+                              parent_obj=self.parent_obj)
+        queue_obj = self.vnc_api_h.qos_queue_read(id = queue_uuid)
+        self._populate_attr(queue_obj)
+    # end create
+    
+    def verify_on_setup(self):
+        if not self.agent_inspect:
+            self.logger.warn('Cluster information missing. Cannot proceed')
+            return None
+        if not self.verify_qq_in_all_agents():
+            self.logger.error('Verification of Qos Queue %s in agent failed' % (
+                self.fq_name))
+            return False
+        self.verify_is_run = True
+        return True
+    # end verify_on_setup
+
+    def verify_on_cleanup(self):
+        if not self.verify_is_run:
+            return
+        msg = 'Cleanup verification of Qos Queue %s in agent failed' \
+                % (self.fq_name)
+        assert self.verify_qq_not_in_all_agents(), msg
+        return True
+    # end verify_on_cleanup
+
+    @retry(delay=2, tries=5)
+    def verify_qq_in_all_agents(self):
+        agent_qos_queues= {}
+        for compute in self.inputs.compute_ips:
+            inspect_h = self.agent_inspect[compute]
+            agent_qos_queues[compute] = inspect_h.get_agent_qos_queue(
+                self.uuid)
+            if not agent_qos_queues[compute]:
+                self.logger.warn('Qos Queue %s not found in Compute %s' % (
+                    self.uuid, compute))
+                return False
+        agent_qq_reference = agent_qos_queues[self.inputs.compute_ips[0]]
+
+        # Check that all values are same across all agents
+        for compute, agent_qq in agent_qos_queues.iteritems():
+            self.id[compute] = agent_qq['id']
+            (result, mismatches) = compare_dict(agent_qq, agent_qq_reference)
+            if not result:
+                self.logger.warn('On Compute %s, mismatch found in qos queue'
+                                 'entries, Unmatched items: %s' % (compute, mismatches))
+                return False
+        self.logger.info('Validated Qos Queue UUID %s in agents of all '
+                         ' computes' % (self.uuid))
+        return True
+    # end verify_qq_in_all_agents
+
+    @retry(delay=2, tries=5)
+    def verify_qq_not_in_all_agents(self):
+        for compute in self.inputs.compute_ips:
+            inspect_h = self.agent_inspect[compute]
+            agent_qos_queue = inspect_h.get_agent_qos_queue(self.uuid)
+            if agent_qos_queue:
+                self.logger.warn('Qos Queue %s is still in Compute %s' % (
+                    self.uuid, compute))
+                return False
+        self.logger.info('Validated Qos Queue UUID %s deleted in agents of all '
+                         ' computes' % (self.uuid))
+        return True
+    # end verify_qq_not_in_all_agents
 
     def read(self):
-        pass
+        try:
+            self.logger.info('Reading existing Queue with UUID %s' % (
+                                                        self.uuid))
+            queue_obj = self.vnc_api_h.qos_queue_read(id=self.uuid) 
+        except NoIdError, e:
+            self.logger.exception('UUID %s not found, unable to read Queue' % (
+                self.uuid))
+            raise e
+        self._populate_attr(queue_obj)
+        self.is_already_present = True
+    # end read
 
     def delete(self):
-        pass
+        if self.is_already_present:
+            self.logger.info('Skipping deletion of Queue %s' % (self.fq_name))
+            return
+        self.vnc_h.delete_queue(self.uuid)
+        self.verify_on_cleanup()
+    # end delete
+    
+    def _populate_attr(self, queue_obj):
+        self.obj = queue_obj
+        self.fq_name = queue_obj.fq_name
+        self.queue_id = queue_obj.qos_queue_identifier
+        self.uuid = queue_obj.uuid
+    # end _populate_attr
 
 
 class QosForwardingClassFixture(QosBaseFixture):
@@ -117,7 +220,8 @@ class QosForwardingClassFixture(QosBaseFixture):
                                                     parent_obj=self.parent_obj,
                                                     dscp=self.dscp,
                                                     dot1p=self.dot1p,
-                                                    exp=self.exp)
+                                                    exp=self.exp,
+                                                    queue_uuid=self.queue_uuid)
         fc_obj = self.vnc_api_h.forwarding_class_read(id=fc_uuid)
         self._populate_attr(fc_obj)
     # end create
