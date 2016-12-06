@@ -2456,8 +2456,8 @@ class WebuiCommon:
         for index in range(len(item_list)):
             intf_dict = {}
             label = self.find_element(
-                'label',
-                'tag',
+                'row',
+                'class',
                 browser=item_list[index],
                 elements=True)
             for lbl in label:
