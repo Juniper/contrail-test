@@ -222,7 +222,8 @@ class WebuiCommon:
             for k, v in kargs.iteritems():
                 if not isinstance(v, list):
                     v = str(v)
-                list_obj.append({'key': str(k), 'value': v})
+                if v:
+                    list_obj.append({'key': str(k), 'value': v})
     # end keyvalue_list
 
     def screenshot(self, string, browser=None, log=True):
@@ -1508,6 +1509,16 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
     # end click_configure_networks_basic_in_webui
 
+    def click_configure_ports_basic(self, row_index):
+        self.click_element('Ports', 'link_text')
+        self.check_error_msg("configure ports")
+        rows = self.get_rows()
+        port = self.find_element('div', 'tag', browser=rows[row_index],
+            elements=True)[0]
+        self.click_element('i', 'tag', browser=port)
+        self.wait_till_ajax_done(self.browser)
+    # end click_configure_ports_basic_in_webui
+
     def click_configure_policies_basic(self, row_index):
         self.click_element('Policies', 'link_text')
         self.check_error_msg("configure policies")
@@ -2104,9 +2115,9 @@ class WebuiCommon:
             current_date_time.split()[0] + '_' + current_date_time.split()[1]
     # end date_time_string
 
-    def match_ui_kv(self, complete_ops_data, merged_arry):
-        self.logger.info("opserver data to be matched : %s"% complete_ops_data)
-        self.logger.info("webui data to be matched : %s"%  merged_arry)
+    def match_ui_kv(self, complete_ops_data, merged_arry, data='Ops/API', matched_with='WebUI'):
+        self.logger.info("%s data to be matched : %s"% (data, complete_ops_data))
+        self.logger.info("%s data to be matched : %s"%  (matched_with, merged_arry))
         self.logger.debug(self.dash)
         no_error_flag = True
         match_count = 0
@@ -2297,8 +2308,8 @@ class WebuiCommon:
                 if (item_ops_key == item_webui_key and (item_ops_value == item_webui_value or (
                         item_ops_value == 'None' and item_webui_value == 'null') or (item_ops_value == 'None Total' and item_webui_value == '0 Total'))):
                     self.logger.info(
-                        "Ops/api key %s : value %s matched" %
-                        (item_ops_key, item_ops_value))
+                        "%s key %s : value %s matched" %
+                        (data, item_ops_key, item_ops_value))
                     matched_flag = 1
                     match_count += 1
                     break
@@ -2306,35 +2317,35 @@ class WebuiCommon:
                       and item_webui_value == 'false' or item_ops_key == 'build_info'):
                     if item_ops_key == 'build_info':
                         self.logger.info(
-                            "Skipping : ops key %s : value %s skipping match" %
-                            (item_ops_key, item_ops_value))
+                            "Skipping : %s key %s : value %s skipping match" %
+                            (data, item_ops_key, item_ops_value))
                         skipped_count = +1
                     else:
                         self.logger.info(
-                            "Ops/api key %s : value %s matched" %
-                            (item_ops_key, item_ops_value))
+                            "%s key %s : value %s matched" %
+                            (data, item_ops_key, item_ops_value))
                         match_count += 1
                     matched_flag = 1
                     break
 
                 elif (check_type_of_item_webui_value and item_ops_key == item_webui_key and item_ops_value == (item_webui_value + '.0')):
                     self.logger.info(
-                        "Ops/api key %s.0 : value %s matched" %
-                        (item_ops_key, item_ops_value))
+                        "%s key %s.0 : value %s matched" %
+                        (data, item_ops_key, item_ops_value))
                     matched_flag = 1
                     match_count += 1
                     break
                 elif item_ops_key == item_webui_key and not isinstance(item_webui_value, list) and isinstance(item_ops_value, list) and (item_webui_value in item_ops_value):
                     self.logger.info(
-                        "Webui key %s : value : %s matched in ops/api value range list %s " %
-                        (item_webui_key, item_webui_value, item_ops_value))
+                        "%s key %s : value : %s matched in %s value range list %s " %
+                        (matched_with, item_webui_key, item_webui_value, data, item_ops_value))
                     matched_flag = 1
                     match_count += 1
                     break
                 elif item_ops_key == item_webui_key and not isinstance(item_ops_value, list) and isinstance(item_webui_value, list) and (item_ops_value in item_webui_value):
                     self.logger.info(
-                        "Ops/api key %s : value %s matched in webui value range list %s " %
-                        (item_ops_key, item_ops_value, item_webui_value))
+                        "%s key %s : value %s matched in %s value range list %s " %
+                        (data, item_ops_key, item_ops_value, matched_with, item_webui_value))
                     matched_flag = 1
                     match_count += 1
                     break
@@ -2351,8 +2362,8 @@ class WebuiCommon:
                                 break
                     if(count == len(item_webui_value)):
                         self.logger.info(
-                            "Ops key %s.0 : value %s matched" %
-                            (item_ops_key, item_ops_value))
+                            "%s key %s.0 : value %s matched" %
+                            (data, item_ops_key, item_ops_value))
                         matched_flag = 1
                         match_count += 1
                     break
@@ -2365,13 +2376,13 @@ class WebuiCommon:
                 # webui data"%(item_ops_key, item_ops_value))
                 if key_found_flag:
                     self.logger.error(
-                        "Ops/api key %s : value %s not matched key-value pairs list %s" %
-                        (item_ops_key, item_ops_value, webui_match_try_list))
+                        "%s key %s : value %s not matched key-value pairs list %s" %
+                        (data, item_ops_key, item_ops_value, webui_match_try_list))
                     self.screenshot('ERROR_MISMATCH_' + item_ops_key)
                 else:
                     self.logger.error(
-                        "Ops/api key %s : value %s not found, webui key %s webui value %s " %
-                        (item_ops_key, item_ops_value, item_webui_key, item_webui_value))
+                        "%s key %s : value %s not found, webui key %s webui value %s " %
+                        (data, item_ops_key, item_ops_value, item_webui_key, item_webui_value))
                     self.screenshot('ERROR_NOT_FOUND_' + item_ops_key)
                 not_matched_count += 1
                 for k in range(len(merged_arry)):
@@ -2379,15 +2390,15 @@ class WebuiCommon:
                         webui_key = merged_arry[k]['key']
                         webui_value = merged_arry[k]['value']
                 no_error_flag = False
-        self.logger.info("Total ops/api key-value count is %s" %
-                         (str(len(complete_ops_data))))
+        self.logger.info("Total %s key-value count is %s" %
+                         (data, str(len(complete_ops_data))))
         self.logger.info(
-            "Total ops/api key-value matched count is %s" %
-            (str(match_count)))
-        self.logger.info("Total ops/api key-value not matched count is %s" %
-                         str(not_matched_count))
-        self.logger.info("Total ops/api key-value match skipped count is %s" %
-                         str(skipped_count))
+            "Total %s key-value matched count is %s" %
+            (data, str(match_count)))
+        self.logger.info("Total %s key-value not matched count is %s" %
+                         (data, str(not_matched_count)))
+        self.logger.info("Total %s key-value match skipped count is %s" %
+                         (data, str(skipped_count)))
         if not_matched_count <= 3:
             no_error_flag = True
             if not_matched_count > 0:
