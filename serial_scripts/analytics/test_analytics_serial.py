@@ -199,7 +199,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         assert self.analytics_obj.verify_analytics_alarms()
         return True
 
-    @test.attr(type=['sanity','vcenter'])
+    @test.attr(type=['ci_sanity', 'sanity','vcenter'])
     def test_control_node_process_status_alarms(self):
         ''' Test whether process status alarm gets generated/cleared
             after stopping the process
