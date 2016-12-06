@@ -1053,14 +1053,12 @@ class WebuiTest:
                     version = json.loads(config_nodes_ops_data.get('ModuleCpuState').get(
                         'build_info')).get('build-info')[0].get('build-id')
                     version = self.ui.get_version_string(version)
-                module_cpu_info_len = len(
-                    config_nodes_ops_data.get('ModuleCpuState').get('module_cpu_info'))
-                cpu_mem_info_dict = {}
-                for i in range(module_cpu_info_len):
-                    if config_nodes_ops_data.get('ModuleCpuState').get(
-                            'module_cpu_info')[i]['module_id'] == 'contrail-api':
-                        cpu_mem_info_dict = config_nodes_ops_data.get(
-                            'ModuleCpuState').get('module_cpu_info')[i]
+                module_cpu_info = config_nodes_ops_data.get(
+                    'NodeStatus').get('process_mem_cpu_usage')
+                module_cpu_info_len = len(module_cpu_info)
+                for key, value in module_cpu_info.iteritems():
+                    if key == 'contrail-api:0':
+                        cpu_mem_info_dict = value
                         break
                 # special handling for overall node status value
                 dom_basic_view = self.ui.get_basic_view_infra()
