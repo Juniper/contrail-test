@@ -58,7 +58,7 @@ class QosTestBase(BaseNeutronTest):
     # end setup_qos_config_on_vmi
 
     def remove_qos_config_on_vmi(self, qos_fixture, vmi_uuid):
-        self._remove_from_cleanup(qos_fixture.remove_from_vmi, vmi_uuid)
+        self.remove_from_cleanups(qos_fixture.remove_from_vmi, vmi_uuid)
         return qos_fixture.remove_from_vmi(vmi_uuid)
 
     def setup_qos_config_on_vn(self, qos_fixture, vn_uuid):
@@ -68,12 +68,12 @@ class QosTestBase(BaseNeutronTest):
     # end setup_qos_config_on_vn
 
     def remove_qos_config_on_vn(self, qos_fixture, vn_uuid):
-        self._remove_from_cleanup(qos_fixture.remove_from_vn, vn_uuid)
+        self.remove_from_cleanups(qos_fixture.remove_from_vn, vn_uuid)
         return qos_fixture.remove_from_vn(vn_uuid)
 
     def delete_qos_config(self, qos_fixture):
         qos_fixture.cleanUp()
-        self._remove_from_cleanup(qos_fixture.cleanUp)
+        self.remove_from_cleanups(qos_fixture.cleanUp)
     # end delete_qos_config
     
     def validate_packet_qos_marking(self,
