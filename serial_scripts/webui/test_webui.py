@@ -143,7 +143,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_networking_virtual_networks
 
     @preposttest_wrapper
-    def test_verify_config_ports(self):
+    def test_verify_config_networking_ports(self):
         '''Test to verify ports on config->Networking->Ports
            1. Go to Configure->Networking->Ports.
            2. Get all the details of ports from both WebUI and API server.
@@ -153,6 +153,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         '''
         assert self.webui.verify_port_api_data(topo.port_params), \
                                               'Ports config data verification failed'
+        return True
     # end test_verify_config_ports
 
     @preposttest_wrapper
@@ -328,7 +329,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
             self.webui.logger.debug('Virtual networks config data verification in OPS failed')
             result = result and False
         self.webui.logger.debug("Step 5 : Edit the VN without changing anything")
-        if not self.webui_common.edit_vn_without_change():
+        if not self.webui_common.edit_without_change('networks'):
             self.webui.logger.debug('Editing Network failed')
             result = result and False
         self.webui.logger.debug("Step 6 : Verify WebUI server after editing")
@@ -558,7 +559,8 @@ class WebuiTestSanity(base.WebuiBaseTest):
                 subnet = self.webui_common.get_vn_detail_ui('Subnet', index=ind)
                 self.webui.logger.debug("Step 2 - " + subnet_type + \
                                         ": Verify the VN for subnet in WebUI")
-                if not self.webui.verify_vn_after_edit_ui(subnet_type, subnet, opt_list, index=ind):
+                if not self.webui.verify_vn_after_edit_ui(subnet_type, subnet, opt_list,
+                                                          index=ind):
                     self.webui.logger.debug('Virtual networks config data \
                                              verification in UI failed')
                     result = result and False
@@ -581,7 +583,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
                     result = result and False
         self.webui.logger.debug("Step 6 : Remove the VN which is added")
         if not self.webui_common.edit_remove_option("Networks", 'remove', \
-                                                   vn_name=topo.vn_disp_name):
+                                                   display_name=topo.vn_disp_name):
             self.webui.logger.debug('Editing network with advanced options is failed')
             result = result and False
         return result
@@ -680,7 +682,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
             result = result and False
         self.webui.logger.debug("Step 5 : Remove the VN which is added")
         if not self.webui_common.edit_remove_option("Networks", 'remove', \
-                                                   vn_name=topo.vn_disp_name):
+                                                   display_name=topo.vn_disp_name):
             self.webui.logger.debug('Editing network with advanced options is failed')
             result = result and False
         return result
@@ -712,7 +714,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
             result = result and False
         self.webui.logger.debug("Step 3 : Remove the VN which is added")
         if not self.webui_common.edit_remove_option("Networks", 'remove', \
-                                                   vn_name=topo.vn_disp_name):
+                                                   display_name=topo.vn_disp_name):
             self.webui.logger.debug('Editing network with advanced options is failed')
             result = result and False
         return result
@@ -1229,10 +1231,83 @@ class WebuiTestSanity(base.WebuiBaseTest):
                                             in OPS failed')
                     result = result and False
                 self.webui.logger.debug("Step 5 : Remove the VN which is added")
-                if not self.webui_common.edit_remove_option("Networks", 'remove', vn_name='vn1'):
+                if not self.webui_common.edit_remove_option("Networks", 'remove',
+                                                           display_name='vn1'):
                     self.webui.logger.debug('Editing network with advanced options is failed')
                     result = result and False
         return result
     # test4_7_create_vn_with_spl_char
+
+    @preposttest_wrapper
+    def test6_1_edit_port_without_change(self):
+        ''' Test to edit the port without changing anything and
+            check the UUID in API and WebUI
+            1. Go to Configure->Networking->Ports. Then select one of the ports.
+            2. Click the Edit button and Click the save button without changing anything.
+            3. Verify the Port's UUID in WebUI and API server.
+
+            Pass Criteria: UUID shouldn't be changed after editing
+        '''
+        result = True
+        self.webui.logger.debug("Step 1 : Get the uuid before editing")
+        uuid_port = self.webui_common.get_ui_value('Ports', 'UUID', name=topo.port_list[0])
+        self.webui.logger.debug("UUID before editing " + str(uuid_port))
+        self.webui.logger.debug("Step 2 : Edit the port without changing anything")
+        if not self.webui_common.edit_without_change('Ports'):
+            self.webui.logger.debug('Editing Port failed')
+            result = result and False
+        self.webui.logger.debug("Step 3 : Verify WebUI and API server after editing")
+        if not self.webui.verify_port_api_data([topo.port_list[0]], action='edit',
+                                              expected_result=uuid_port):
+            self.webui.logger("Verifying port in WebUI and API is failed")
+            result = result and False
+        return result
+    # end test6_1_edit_port_without_change
+
+    @preposttest_wrapper
+    def test6_2_edit_port_vn_port_name(self):
+        ''' Test to edit the port's VN and Port name
+            1. Go to Configure->Networking->Ports. Then select any of the ports.
+            2. Click the Edit button and Try to edit vn and port name.
+            3. Verify the vn and port name disabled for existing port.
+
+            Pass Criteria: Step 3 should pass
+        '''
+        self.webui.logger.debug("Step 1 : Edit VN and port in port page")
+        assert self.webui_common.edit_port_with_vn_port('Ports'), \
+                                 'VN and Port name not disabled for editing'
+        return True
+    # end test6_2_edit_port_vn_port_name
+
+    @preposttest_wrapper
+    def test6_3_edit_port_by_add_security_group(self):
+        ''' Test to edit the existing port by security group
+            1. Go to Configure->Networking->Ports. Then select the one of the port
+               and click the edit button.
+            2. Attach one security group for the port and save.
+            3. Check that attached security group is there in WebUI and API.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        result = True
+        sec_group_value = []
+        self.webui.logger.debug("Step 1 : Attach security group to the port")
+        sg_list = [topo.sg_list[0], 'default (default-domain:admin)']
+        self.webui_common.edit_port_with_sec_group('Ports', topo.port_list[0],
+                                                  sg_list)
+        sec_group_value = self.webui_common.get_ui_value('ports', 'Security Groups',
+                         name=topo.port_list[0])
+        sec_groups = sec_group_value[0]['value'].split(',')
+        sec_group_list = self.webui_common.format_sec_group_name(sec_groups,
+                                                                self.webui.project_name_input)
+        self.webui.logger.debug("Step 2 : Verify the port for the attached security group \
+                                in WebUI and API server")
+        expected_sec_group_list = [{'key': 'Security_Groups', 'value': sec_group_list}]
+        if not self.webui.verify_port_api_data([topo.port_list[0]], action='edit',
+                                              expected_result=expected_sec_group_list):
+            self.webui.logger.debug('API and UI verification failed for Security Group')
+            result = result and False
+        return result
+    #end test6_3_edit_port_by_add_security_group
 
 # end WebuiTestSanity
