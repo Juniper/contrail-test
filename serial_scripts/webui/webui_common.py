@@ -2979,6 +2979,8 @@ class WebuiCommon:
                         self.wait_till_ajax_done(self.browser, wait=10)
                         imp_route_target = 'ui-accordion-import_route_target_accordian-header-0'
                         route = self.find_element(imp_route_target)
+                        self.browser.execute_script(
+                            "return arguments[0].scrollIntoView();", route)
                         route.click()
                         ind = 6
                         self.wait_till_ajax_done(self.browser)
@@ -2986,11 +2988,14 @@ class WebuiCommon:
                             route.click()
                         self.wait_till_ajax_done(self.browser)
                 if button == 'add':
-                    edit_grid = "//a[contains(@class,'editable-grid-add-link')]"
-                    self.click_element(edit_grid, 'xpath', elements=True, index=ind)
+                    add_link = self.find_element('editable-grid-add-link', 'class', \
+                                                 elements=True)
+                    self.browser.execute_script(
+                        "return arguments[0].scrollIntoView();", add_link[ind])
+                    add_link[ind].click()
                     self.wait_till_ajax_done(self.browser)
-                    self.send_keys(asn_no_ip, "//input[contains(@name,'asn')]", 'xpath')
-                    self.send_keys(target_no, "//input[contains(@name,'target')]", 'xpath')
+                    self.send_keys(asn_no_ip, 'asn', 'name')
+                    self.send_keys(target_no, 'target', 'name')
                 else:
                     if rt_type == 'IRT':
                         self.click_element('import_route_target_accordian')
