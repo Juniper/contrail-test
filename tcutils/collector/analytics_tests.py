@@ -2828,7 +2828,7 @@ class AnalyticsVerification(fixtures.Fixture):
         return result
 
     def _verify_alarms_by_type(self, service, service_ip, role, alarm_type, multi_instances=False,
-            soak_timer=15, verify_alarm_cleared=False):
+            soak_timer=15, verify_alarm_cleared=False, built_in=True):
         result = True
         soaking = False
         supervisor = False
@@ -3086,6 +3086,8 @@ class AnalyticsVerification(fixtures.Fixture):
 
         for nalarms in role_alarms:
             if built_in:
+                fqname = 'default-global-system-config'
+                prefix = 'system-defined-'
                 h_name = nalarms['name'].split('.')[0]
                 alarm_type = inbuild_alarm_type
             else:
@@ -3104,7 +3106,7 @@ class AnalyticsVerification(fixtures.Fixture):
                         return False
                     for type_alarms in type_alarms_list:
                         #print type_alarms['type']
-                        if type_alarms['type'] == 'system-defined-' + alarm_type:
+                        if type_alarms['type'] ==  alarm_type:
                             if not clear:
                                 self.logger.info("%s alarms generated" % alarm_type)
                             if not service:
