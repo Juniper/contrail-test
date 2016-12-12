@@ -249,7 +249,7 @@ run_docker_cmd () {
     else
         echo "$docker run ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg -e FEATURE=$feature -e TEST_TAGS=$test_tags -e SCENARIOS=$scenarios $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
     fi
-    bash $tempfile | tee $run_log; rv=$?
+    bash $tempfile | tee $run_log; rv=${PIPESTATUS[0]}
     return $rv
 }
 
