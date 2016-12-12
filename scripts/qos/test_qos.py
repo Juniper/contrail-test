@@ -49,8 +49,7 @@ class TestQos(QosTestExtendedBase):
             expected_dot1p=fcs[0]['dot1p'],
             src_port='10000',
             dest_port='20000',
-            src_compute_fixture=self.vn1_vm1_compute_fixture,
-            encap="VxLAN")
+            src_compute_fixture=self.vn1_vm1_compute_fixture)
     # end test_qos_remark_dscp_on_vmi
 
     @preposttest_wrapper
@@ -91,7 +90,6 @@ class TestQos(QosTestExtendedBase):
             Apply the qos config to VM A
             Validate that packets from A to B have all fields marked correctly
             Giving a valid destination mac in the packet.
-            Unicast traffic will be VxLAN encapsulated.
         '''
         fc_id = self.fc_id_obj.get_free_fc_ids(1)
         fcs = [{'fc_id': fc_id[0], 'dscp': 12, 'dot1p': 6, 'exp': 2}]
@@ -192,7 +190,6 @@ class TestQos(QosTestExtendedBase):
             src_mac=self.vn1_vm1_fixture.mac_addr[
                 self.vn1_fixture.vn_fq_name])
         # As dst_mac is not mentioned, it will be set to bcast mac.
-        # The Bcast L2 traffic will go via UDP encap. Validating that.
     # end test_qos_remark_dot1p_on_vn
 
     @preposttest_wrapper
@@ -324,8 +321,7 @@ class TestQos(QosTestExtendedBase):
             'dscp': dscp_map.keys()[0],
             'expected_dscp': fcs[1]['dscp'],
             'expected_dot1p': fcs[1]['dot1p'],
-            'src_compute_fixture': self.vn1_vm1_compute_fixture,
-            'encap': "VxLAN"}
+            'src_compute_fixture': self.vn1_vm1_compute_fixture}
         assert self.validate_packet_qos_marking(**validate_method_args)
         validate_method_args['dscp'] = 31
         validate_method_args['expected_dscp'] = fcs[0]['dscp']
@@ -363,8 +359,7 @@ class TestQos(QosTestExtendedBase):
             'dscp': 40,
             'expected_dscp': fcs[0]['dscp'],
             'expected_dot1p': fcs[0]['dot1p'],
-            'src_compute_fixture': self.vn1_vm1_compute_fixture,
-            'encap': "VxLAN"}
+            'src_compute_fixture': self.vn1_vm1_compute_fixture}
         assert self.validate_packet_qos_marking(**validate_method_args)
         qos_fixture.set_default_fc(fc_ids[2])
         validate_method_args['expected_dscp'] = fcs[2]['dscp']
