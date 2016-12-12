@@ -213,7 +213,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_services_service_instances
 
     @preposttest_wrapper
-    def test_verify_config_infra_project_quotas(self):
+    def test_verify_project_quotas(self):
         '''Test project quotas on config->Networking->Project Quotas page
         '''
         assert self.webui.verify_project_quotas(), 'Project Quotas config data verification failed'
