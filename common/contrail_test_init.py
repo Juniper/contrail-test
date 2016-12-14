@@ -408,6 +408,7 @@ class TestInputs(object):
 
         self.esxi_vm_ips = {}
         self.vgw_data = {}
+        self.hypervisors = {}
         for host in json_data['hosts']:
             host['name'] = host['name']
             self.host_names.append(host['name'])
@@ -501,6 +502,10 @@ class TestInputs(object):
             self.config_amqp_ips = self.cfgm_control_ips
 
         self.many_computes = (len(self.compute_ips) > 10) or False
+
+        if 'hypervisor' in json_data:
+            self.hypervisors = json_data['hypervisor']
+
         return json_data
     # end read_prov_file
 

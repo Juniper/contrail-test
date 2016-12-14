@@ -1008,6 +1008,22 @@ def skip_because(*args, **kwargs):
                     skip = True
                     msg = "Skipped as testcase is not supported with Service Template v2"
                     raise testtools.TestCase.skipException(msg)
+
+            if "hypervisor" in kwargs:
+                if (not self.inputs.hypervisors) and \
+                        ('openstack' == self.inputs.orchestrator.lower()):
+                    hypervisors = self.connections.nova_h.hypervisors
+                    #convert to lower case, as values in nova seen as- for docker:'docker', for qemu:'QEMU'
+                    #create the dict in format- {host-ip:hypervisor-type}
+                    self.inputs.hypervisors = {x.host_ip: x.hypervisor_type.lower()
+                                                   for x in hypervisors}
+                if kwargs["hypervisor"].lower() in self.inputs.hypervisors.values():
+                    skip = True
+                    msg = "Skipped as currently test not supported on %s hypervisor." % kwargs["hypervisor"]
+                    if "msg" in kwargs:
+                        msg = msg + kwargs["msg"]
+                    raise testtools.TestCase.skipException(msg)
+
             return f(self, *func_args, **func_kwargs)
         return wrapper
     return decorator
