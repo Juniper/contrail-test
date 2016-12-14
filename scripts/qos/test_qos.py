@@ -111,7 +111,7 @@ class TestQos(QosTestExtendedBase):
             src_mac=self.vn1_vm1_fixture.mac_addr[
                 self.vn1_fixture.vn_fq_name],
             dst_mac=self.vn1_vm2_fixture.mac_addr[
-                self.vn1ixture.vn_fq_name])
+                self.vn1_fixture.vn_fq_name])
     # end test_qos_remark_dot1p_on_vmi
 
     @preposttest_wrapper
