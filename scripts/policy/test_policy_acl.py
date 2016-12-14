@@ -133,7 +133,7 @@ class TestPolicyAcl(BasePolicyTest):
                 policy_name=policy_name,
                 rules_list=rules,
                 inputs=self.inputs,
-                connections=self.connections))
+                connections=self.connections, api=True))
 
         policy_name = 'policy21'
         rules = []
@@ -150,7 +150,7 @@ class TestPolicyAcl(BasePolicyTest):
                 policy_name=policy_name,
                 rules_list=rules,
                 inputs=self.inputs,
-                connections=self.connections))
+                connections=self.connections, api=True))
 
         policy_name = 'policy13'
         rules = []
@@ -167,7 +167,7 @@ class TestPolicyAcl(BasePolicyTest):
                 policy_name=policy_name,
                 rules_list=rules,
                 inputs=self.inputs,
-                connections=self.connections))
+                connections=self.connections, api=True))
 
         # attach policy to VN
         VN1_policy_fixture = self.useFixture(
