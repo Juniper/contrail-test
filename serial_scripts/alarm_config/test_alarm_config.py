@@ -84,7 +84,7 @@ class TestAlarmConfigCases(BaseAlarmConfigTest, VerifyAlarms):
         exp4 = {'operation': '>=', 'operand1': 'UveVirtualNetworkConfig.total_acl_rules',
                 'operand2': {'json_value': '3'}}
         exp_list = [exp1, exp2, exp3]
-        update_list = [exp1, exp4, exp3]
+        update_list = [exp2, exp4, exp3]
         self.verify_alarm_config(exp_list=exp_list, update_list=update_list,
                                  parent_type='global', alarm_case='multi_condition')
 
@@ -112,7 +112,7 @@ class TestAlarmConfigCases(BaseAlarmConfigTest, VerifyAlarms):
         exp4 = {'operation': '>=', 'operand1': 'UveVirtualNetworkConfig.total_acl_rules',
                 'operand2': {'json_value': '3'}}
         exp_list = [exp1, exp2, exp3]
-        update_list = [exp1, exp4, exp3]
+        update_list = [exp2, exp4, exp3]
         self.verify_alarm_config(exp_list=exp_list, update_list=update_list,
                                  parent_type='project', alarm_case='multi_condition')
 
@@ -130,8 +130,10 @@ class TestAlarmConfigCases(BaseAlarmConfigTest, VerifyAlarms):
         '''
         exp1 = {'operation': '<=', 'operand1': "UveVirtualNetworkConfig.total_acl_rules",
                 'operand2': {'json_value': '2'}}
-        self.verify_alarm_config(
-            exp_list=[exp1], parent_type='global', alarm_case='invalid')
+        exp2 = {'operation': '>==', 'operand1': 'UveVirtualNetworkConfig.total_acl_rules',
+                'operand2': {'json_value': '1'}}
+        self.verify_alarm_config(exp_list=[exp1], update_list=[
+                                 exp2], parent_type='project', alarm_case='invalid')
 
     # end test_alarm_conf_with_invalid_cases_in_global_config
 
@@ -155,7 +157,7 @@ class TestAlarmConfigCases(BaseAlarmConfigTest, VerifyAlarms):
     # end test_alarm_conf_with_invalid_cases_in_projects
 
     @preposttest_wrapper
-    def test_alarm_scaling_under_global_config(self):
+    def test_alarm_scaling_in_global_config(self):
         '''
         1. Create an alarm on global config
         2. Try Creating 1000 projects
@@ -163,15 +165,15 @@ class TestAlarmConfigCases(BaseAlarmConfigTest, VerifyAlarms):
         4. Verify alarms are being generated for each project
         5. Delete the policies on every vn and verify alarms cleared
         '''
-        exp1 = {'operation': '<=', 'operand1': "UveVirtualNetworkConfig.total_acl_rules",
-                'operand2': {'json_value': '2'}}
+        exp1 = {'operation': '>=', 'operand1': "UveVirtualNetworkConfig.total_acl_rules",
+                'operand2': {'json_value': '1'}}
         self.verify_alarm_config(
             exp_list=[exp1], parent_type='global', alarm_case='scaling')
 
-    # end test_alarm_scaling_under_global_config
+    # end test_alarm_scaling_in_global_config
 
     @preposttest_wrapper
-    def test_alarm_scaling_under_project(self):
+    def test_alarm_scaling_in_projects(self):
         '''
         1. Try Creating 1000 projects
         2. Create an alarm on each project 
@@ -179,8 +181,8 @@ class TestAlarmConfigCases(BaseAlarmConfigTest, VerifyAlarms):
         4. Verify alarms are being generated for each project
         5. Delete the policies on every vn and verify alarms cleared
         '''
-        exp1 = {'operation': '<=', 'operand1': "UveVirtualNetworkConfig.total_acl_rules",
-                'operand2': {'json_value': '2'}}
+        exp1 = {'operation': '>=', 'operand1': "UveVirtualNetworkConfig.total_acl_rules",
+                'operand2': {'json_value': '1'}}
         self.verify_alarm_config(
             exp_list=[exp1], parent_type='project', alarm_case='scaling')
-    # end test_alarm_scaling_under_project
+    # end test_alarm_scaling_in_projects
