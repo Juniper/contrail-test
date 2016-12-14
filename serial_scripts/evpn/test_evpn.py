@@ -9,6 +9,7 @@ from tcutils.wrappers import preposttest_wrapper
 from verify import VerifyEvpnCases
 import base
 import test
+from tcutils.util import skip_because
 
 class TestEvpnCasesMplsoGre(base.BaseEvpnTest, VerifyEvpnCases):
      
@@ -192,6 +193,7 @@ class TestEvpnCasesVxlan(base.BaseEvpnTest, VerifyEvpnCases):
         pass
     #end runTest
 
+    @skip_because(hypervisor='docker',msg='Bug 1461423:Need privileged access')
     @test.attr(type=['serial', 'sanity' ])
     @preposttest_wrapper
     def test_with_vxlan_encap_dns_disabled_for_l2_vn(self):
@@ -237,6 +239,7 @@ class TestEvpnCasesVxlan(base.BaseEvpnTest, VerifyEvpnCases):
         
         return self.verify_change_of_l3_vn_forwarding_mode(encap='vxlan')
 
+    @skip_because(hypervisor='docker',msg='Bug 1461423:Need privileged access')
     @test.attr(type=['serial', 'sanity' ])
     @preposttest_wrapper
     def test_with_vxlan_encap_to_verify_l2_vm_file_trf_by_scp(self):
@@ -245,6 +248,7 @@ class TestEvpnCasesVxlan(base.BaseEvpnTest, VerifyEvpnCases):
         '''
         return self.verify_l2_vm_file_trf_by_scp(encap='vxlan')
 
+    @skip_because(hypervisor='docker',msg='Bug 1461423:Need privileged access')
     @test.attr(type=['serial', 'sanity' ])
     @preposttest_wrapper
     def test_with_vxlan_encap_to_verify_l2_vm_file_trf_by_tftp(self):

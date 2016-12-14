@@ -185,6 +185,7 @@ class TestPorts(BaseNeutronTest):
                                                 vm2_fixture.vm_ip)
     # end test_ports_specific_subnet_ip
 
+    @skip_because(hypervisor='docker',msg='Bug 1461423:Need privileged access')
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ports_multiple_specific_subnet_ips(self):
