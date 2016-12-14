@@ -2415,7 +2415,7 @@ class WebuiTest:
                 config_nodes_ops_data = self.ui.get_details(
                     config_nodes_list_ops[n]['href'])
                 key1, val1, flag = self.ui.get_advanced_view_list(
-                        'ModuleCpuState', 'config_node_ip', 1)
+                        'ModuleCpuState', 'config_node_ip', 0)
                 self.ui.expand_advance_details()
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = self.ui.get_advanced_view_str()
