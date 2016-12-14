@@ -188,11 +188,18 @@ class sdn_webui_config ():
         # scheduler or contrail vm naming scheme
         self.vn_of_vm = {'left_vm': 'left_vn',
                          'right_vm': 'right_vn', 'vmc0': 'vnet0'}
-        #
+
+        # Define FIP pool
+        self.fip_pools = {project: {
+            'p1-vn3-pool1': {'host_vn': 'vnet3', 'target_projects': [project]}}}
+          
         # Define VN to VM mappings for each of the floating ip pools to be
         # created.
-        self.fvn_vm_map = {'admin': {
-            'vnet3': {'admin': ['vmc0']}}}
+        self.fvn_vm_map = {project: {
+            'vnet3': {project: ['vmc0']}}}
+        
+        self.fvn_vm_map_dict = {'vnet3': ['vmc0']}
+        
         # Define network policy rules
         self.rules = {}
 

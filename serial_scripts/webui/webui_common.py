@@ -1639,6 +1639,20 @@ class WebuiCommon:
         return self.check_error_msg("configure ipam")
     # end click_configure_ipam_in_webui
 
+    def click_fip_vn(self, browser=None):
+        if not browser:
+            browser = self.browser
+        try:
+            self.click_element('fa-cog', 'class', browser)
+            self.click_element(['tooltip-success', 'i'], ['class', 'tag'])
+            fip_element = self.find_element('fip_pool_accordian')
+            self.browser.execute_script("return arguments[0].scrollIntoView();", fip_element)
+            fip_element.click()
+        except WebDriverException:
+            self.logger.error("Click on Floating IP Pool(s) under VN failed")
+            self.screenshot('Click_on_fip_vn_failed')
+    # end click_fip_vn
+
     def click_instances(self, br=None):
         if not br:
             br = self.browser
