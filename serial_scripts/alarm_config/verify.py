@@ -17,71 +17,85 @@ class VerifyAlarms():
             self.verify_vn_acl_alarm(
                 alarm_fix, update_list, alarm_case, exp_list)
 
-    def update_alarm_rules_and_verify(self, alarm_fix, update_list, multi_or_conditions=False):
+    def update_alarm_rules_and_verify(self, vn_pol_dict, update_list, multi_or_conditions=False):
         self.logger.info('Update alarm with new rules')
-        assert alarm_fix.set_alarm_rules(
+        assert vn_pol_dict['alarm_fix'].set_alarm_rules(
             update_list, multi_or_conditions), 'set alarm rules failed'
-        assert alarm_fix.verify_alarm_setup()
+        assert vn_pol_dict['alarm_fix'].verify_alarm_setup()
         sleep(10)
-        return self.analytics_obj.verify_configured_alarm(alarm_name=alarm_fix.alarm_name)
+        alarm_fq_name = vn_pol_dict['alarm_fix'].alarm_fq_name
+        vn_fq_name = vn_pol_dict['vn_fixture'].vn_fq_name
+        return self.analytics_obj.verify_configured_alarm(
+                                alarm_type=alarm_fq_name,
+                                alarm_name=vn_fq_name)
 
-    def create_and_verify_vn_acl_config(self, alarm_name, project_fixture=None, project_name=None):
+    def create_and_verify_vn_acl_config(self, alarm_fq_name, project_fixture=None, project_name=None):
         vn_pol_dict = self.create_vn_policy_config(
             project_fixture, project_name)
         sleep(10)
+        vn_fq_name = vn_pol_dict['vn_fixture'].vn_fq_name
         assert self.analytics_obj.verify_configured_alarm(
-            alarm_name=alarm_name), 'Alarm not raised'
+            alarm_type=alarm_fq_name,alarm_name=vn_fq_name), 'Alarm not raised'
         return vn_pol_dict
 
     def delete_and_verify_vn_acl_config(self, vn_pol_dict):
         vn_pol_dict['vn_fixture'].unbind_policies(
             vn_pol_dict['vn_fixture'].vn_id)
         sleep(10)
-        alarm_name = vn_pol_dict['alarm_fix'].alarm_name
+        alarm_fq_name = vn_pol_dict['alarm_fix'].alarm_fq_name
+        vn_fq_name = vn_pol_dict['vn_fixture'].vn_fq_name
         assert self.analytics_obj.verify_configured_alarm(
-            alarm_name=alarm_name, verify_alarm_cleared=True), 'Alarm not cleared'
+            alarm_type=alarm_fq_name,alarm_name=vn_fq_name, verify_alarm_cleared=True), 'Alarm not cleared'
 
     def verify_vn_acl_alarm(self, alarm_fix, update_list, alarm_type, exp_list):
         if alarm_type == 'basic':
             vn_pol_dict = self.create_and_verify_vn_acl_config(
-                alarm_fix.alarm_name)
+                alarm_fix.alarm_fq_name)
             vn_pol_dict['alarm_fix'] = alarm_fix
             assert self.update_alarm_rules_and_verify(
-                alarm_fix, update_list), 'Alarm not raised'
+                vn_pol_dict, update_list), 'Alarm not raised'
             self.delete_and_verify_vn_acl_config(vn_pol_dict)
 
         elif alarm_type == 'multi_condition':
             self.logger.info(
                 'Created alarm_config rules with multiple And conditions')
             vn_pol_dict = self.create_and_verify_vn_acl_config(
-                alarm_fix.alarm_name)
+                alarm_fix.alarm_fq_name)
             vn_pol_dict['alarm_fix'] = alarm_fix
             self.logger.info('Update alarm with new And rules.'
                              ' Verify that the alarm does not gets raised when only few of the conditions met')
             assert not self.update_alarm_rules_and_verify(
-                alarm_fix, update_list=update_list)
+                vn_pol_dict, update_list=update_list)
             self.logger.info(
                 'Update alarm_config rules with multiple Or conditions')
             assert self.update_alarm_rules_and_verify(
-                alarm_fix, update_list=update_list, multi_or_conditions=True), 'Alarm not raised'
+                vn_pol_dict, update_list=update_list, multi_or_conditions=True), 'Alarm not raised'
             self.delete_and_verify_vn_acl_config(vn_pol_dict)
 
-        elif alarm_type == 'invalid_cases':
-            assert not alarm_fix.set_alarm_severity(
-                '50'), 'Severity should not be allowed to set 50'
-            assert not alarm_fix.set_alarm_rules(
-                []), 'Empty alarm rules should not be allowed'
-            assert not alarm_fix.set_uve_keys(
-                ['invalid_key']), 'Invalid UVE keys should not be allowed'
-            assert not alarm_fix.set_uve_keys(
-                []), 'Empty UVE keys should not be allowed'
-            assert not alarm_fix.set_alarm_rules(
-                update_list), 'Invalid operation should not be allowed'
+        elif alarm_type == 'invalid':
+            result = True
+            
+            if alarm_fix.set_alarm_severity('50'):
+                self.logger.warn('Severity should not be allowed to set 50')
+                result = result and False
+            if alarm_fix.set_alarm_rules([]):
+                self.logger.warn('Empty alarm rules should not be allowed')
+                result = result and False
+            if alarm_fix.set_uve_keys(['invalid_key']):
+                self.logger.warn('Invalid UVE keys should not be allowed')
+                result = result and False
+            if alarm_fix.set_uve_keys([]):
+                self.logger.warn('Empty UVE keys should not be allowed')
+                result = result and False
+            if alarm_fix.set_alarm_rules(update_list):
+                self.logger.warn('Invalid operation should not be allowed')
+                result = result and False
+            assert result
 
         elif alarm_type == 'scaling':
             alarm_count = 0
             vn_pol_list = []
-            scaling_factor = 1000
+            scaling_factor = 4
             # if self.parent_type == 'global':
             #    alarm_fix = self.create_alarm(exp_list,alarm_name,uve_keys,parent_type=self.parent_type)
             for i in range(0, scaling_factor):
@@ -96,7 +110,7 @@ class VerifyAlarms():
                         exp_list, alarm_name, self.uve_keys, self.parent_type, project_fixture)
                     assert alarm_fix.verify_alarm_setup()
                 vn_pol_dict = self.create_and_verify_vn_acl_config(
-                    alarm_fix.alarm_name, project_fixture, project_name)
+                    alarm_fix.alarm_fq_name, project_fixture, project_name)
                 vn_pol_dict['alarm_fix'] = alarm_fix
                 vn_pol_list.append(vn_pol_dict)
                 alarm_count = alarm_count + 1
