@@ -2720,16 +2720,11 @@ class WebuiTest:
                     (api_fq_name))
                 self.logger.debug(self.dash)
             else:
-                self.ui.click_configure_networks_basic(match_index)
-                rows = self.ui.get_rows(canvas=True)
+                rows, rows_detail = self.ui.click_basic_and_get_row_details(
+                                'networks', match_index)
                 self.logger.info(
                     "Verify basic view details for VN fq_name %s " %
                     (api_fq_name))
-                span_obj = rows[match_index + 1]
-                rows_detail = self.ui.find_element([
-                        'slick-row-detail-container', 'label'], [
-                            'class', 'tag'], browser = rows[
-                                match_index + 1], if_elements=[1])
                 for detail in range(len(rows_detail)):
                     key_arry = self.ui.find_element(
                         'key', 'class', browser = rows_detail[detail]).text
@@ -3031,14 +3026,10 @@ class WebuiTest:
                     (api_fq_name))
                 self.logger.debug(self.dash)
             else:
-                self.ui.click_configure_service_template_basic(
-                    match_index)
-                rows = self.ui.get_rows()
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'service_template', match_index)[1]
                 self.logger.info(
-                    "Verify basic view details for service templatefq_name %s " %
-                    (api_fq_name))
-                rows_detail = rows[match_index + 1].find_element_by_class_name(
-                    'slick-row-detail-container').find_elements_by_tag_name('label')
+                    "Verify basic view details for fq_name %s" % (api_fq_name))
                 for detail in range(len(rows_detail)):
                     key_arry = rows_detail[
                         detail].find_element_by_class_name('key').text
@@ -3310,14 +3301,11 @@ class WebuiTest:
                     (api_fq_name))
                 self.logger.debug(self.dash)
             else:
-                self.ui.click_configure_policies_basic(match_index)
-                rows = self.ui.get_rows()
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'policies', match_index)[1]
                 self.logger.info(
                     "Verify basic view details for policy fq_name %s " %
                     (api_fq_name))
-                rows_detail = rows[match_index + 1].find_element_by_class_name(
-                    'slick-row-detail-container').find_element_by_class_name(
-                        'row-fluid').find_elements_by_class_name('inline')
                 for detail in range(len(rows_detail)):
                     text1 = rows_detail[detail].text.split('\n')
                     text2 = str(text1.pop(0))
@@ -3522,14 +3510,11 @@ class WebuiTest:
                     (api_fq_name))
                 self.logger.debug(self.dash)
             else:
-                self.ui.click_configure_ipam_basic(match_index)
-                rows = self.ui.get_rows()
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'ipam', match_index)[1]
                 self.logger.info(
-                    "Verify basic view details for ipam fq_name %s " %
+                    "Verify basic view details for fq_name %s " %
                     (api_fq_name))
-                rows_detail = rows[match_index + 1].find_element_by_class_name(
-                    'slick-row-detail-container').find_element_by_class_name(
-                        'row-fluid').find_elements_by_class_name('inline')
                 for detail in range(len(rows_detail)):
                     key_arry = self.ui.find_element(
                         'key', 'class', browser = rows_detail[detail]).text
@@ -5046,15 +5031,10 @@ class WebuiTest:
                     (api_fq_name))
                 self.logger.info(self.dash)
             else:
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'service_instance', match_index)[1]
                 self.logger.info(
-                    "Click and retrieve basic view details in webui for service instance fq_name %s " %
-                    (api_fq_name))
-                self.ui.click_configure_service_instance_basic(match_index)
-                rows = self.ui.get_rows(canvas=True)
-                rows_detail = self.ui.find_element([
-                        'slick-row-detail-container', 'label'], [
-                            'class', 'tag'], browser = rows[
-                                match_index + 1], if_elements=[1])
+                    "Verify basic view details for fq_name %s" % (api_fq_name))
                 for detail in range(len(rows_detail)):
                     key_arry = self.ui.find_element(
                         'key', 'class', browser = rows_detail[detail]).text
@@ -5062,7 +5042,7 @@ class WebuiTest:
                         'value', 'class', browser = rows_detail[detail]).text
                     if key_arry == '# Instance(s)':
                         key_arry = 'Number of instances'
-                    if key_arry == 'Instance Status':    
+                    if key_arry == 'Instance Status':
                         dom_arry_basic1 = []
                         complete_api_data1 = []
                         network_list = []
