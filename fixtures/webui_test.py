@@ -3166,7 +3166,7 @@ class WebuiTest:
                 'floating-ips')[fips].get('fq_name')[1]
             if project_name == 'default-project':
                 continue
-            self.ui.select_project(project_name)
+            self.ui.select_project(self.project_name_input)
             rows = self.ui.get_rows()
             self.logger.info(
                 "fip fq_name %s exists in api server..checking if exists in webui as well" %
@@ -3174,8 +3174,8 @@ class WebuiTest:
             for i in range(len(rows)):
                 match_flag = 0
                 j = 0
-                if rows[i].find_elements_by_tag_name(
-                        'div')[4].text == api_fq_name:
+                if self.ui.find_element(
+                        'div', 'tag', browser=rows[i], elements=True)[4].text == api_fq_name:
                     self.logger.info(
                         "fip fq_name %s matched in webui..Verifying basic view details now" %
                         (api_fq_name))
@@ -3184,15 +3184,17 @@ class WebuiTest:
                     match_flag = 1
                     dom_arry_basic = []
                     dom_arry_basic.append(
-                        {'key': 'IP Address', 'value': rows[i].find_elements_by_tag_name('div')[2].text})
-                    interface_val = rows[i].find_elements_by_tag_name('div')[3].text
+                        {'key': 'IP Address', 'value': self.ui.find_element(
+                            'div', 'tag', browser=rows[i], elements=True)[2].text})
+                    interface_val = self.ui.find_element('div', 'tag', browser=rows[i], elements=True)[3].text
                     int_val = '-'
                     if not interface_val == '-':
                         int_val = interface_val.split()[1].strip('()')
                     dom_arry_basic.append(
                         {'key': 'Mapped Interface', 'value': int_val})
-                    dom_arry_basic.append({'key': 'Floating IP and Pool', 'value': rows[
-                                          i].find_elements_by_tag_name('div')[4].text})
+                    dom_arry_basic.append(
+                        {'key': 'Floating IP and Pool', 'value': self.ui.find_element(
+                            'div', 'tag', browser=rows[i], elements=True)[4].text})
                     break
             if not match_flag:
                 self.logger.error(
@@ -3200,22 +3202,17 @@ class WebuiTest:
                     (api_fq_name))
                 self.logger.info(self.dash)
             else:
-                self.ui.click_configure_fip_basic(match_index)
-                rows = self.ui.get_rows()
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                                'fip', match_index)[1]
                 self.logger.info(
                     "Verify basic view details for fip fq_name %s " %
                     (api_fq_name))
-                detail_rows = self.ui.find_element([
-                    'slick-row-detail-container', 'row-fluid'], [
-                    'class', 'class'], browser = rows[match_index + 1])
-                rows_detail = self.ui.find_element(
-                    'inline', 'class', elements=True,
-                        browser = detail_rows)[1]
-                key1 = self.ui.find_element(
-                    'key', 'class', browser = rows_detail).text
-                val1 = self.ui.find_element(
-                    'value', 'class', browser = rows_detail).text
-                dom_arry_basic.append({'key': key1, 'value': val1})
+                for detail in range(len(rows_detail)):
+                    key1 = self.ui.find_element(
+                        'key', 'class', browser = rows_detail[detail]).text
+                    val1 = self.ui.find_element(
+                        'value', 'class', browser = rows_detail[detail]).text
+                    dom_arry_basic.append({'key': key1, 'value': val1})
                 fip_api_data = self.ui.get_details(
                     fip_list_api['floating-ips'][fips]['href'])
                 complete_api_data = []
@@ -3511,7 +3508,7 @@ class WebuiTest:
                 rows_detail = self.ui.click_basic_and_get_row_details(
                                 'ipam', match_index)[1]
                 self.logger.info(
-                    "Verify basic view details for fq_name %s " %
+                    "Verify basic view details for ipam fq_name %s " %
                     (api_fq_name))
                 for detail in range(len(rows_detail)):
                     key_arry = self.ui.find_element(
@@ -4416,58 +4413,6 @@ class WebuiTest:
         return result
     # end verify_vm
 
-    def create_floatingip_pool(self, fixture, pool_name, vn_name):
-        try:
-            if not self.ui.click_configure_networks():
-                result = result and False
-            self.ui.select_project(fixture.project_name)
-            rows = self.ui.get_rows()
-            self.logger.info(
-                "Creating floating ip pool %s using contrail-webui" %
-                (pool_name))
-            for net in rows:
-                if (self.ui.get_slick_cell_text(net, 2) == fixture.vn_name):
-                    net.find_element_by_class_name('icon-cog').click()
-                    time.sleep(3)
-                    self.browser.find_element_by_class_name(
-                        'tooltip-success').find_element_by_tag_name('i').click()
-                    time.sleep(2)
-                    self.ui.click_element(
-                        "//span[contains(text(), 'Floating IP Pools')]",
-                        'xpath')
-                    time.sleep(2)
-                    icon = self.ui.find_element(
-                        "//div[@title='Add Floating IP Pool below']",
-                        'xpath')
-                    icon.find_element_by_tag_name('i').click()
-                    self.ui.send_keys(
-                        fixture.pool_name,
-                        "//input[@placeholder='Pool Name']",
-                        'xpath')
-                    self.browser.find_element_by_id(
-                        'fipTuples').find_elements_by_tag_name('input')[1].click()
-                    project_elements = self.browser.find_elements_by_xpath(
-                        "//*[@class = 'select2-match']/..")
-                    self._click_if_element_found(
-                        fixture.project_name, project_elements)
-                    self.ui.wait_till_ajax_done(self.browser)
-                    self.browser.find_element_by_xpath(
-                        "//button[@id = 'btnCreateVNOK']").click()
-                    self.ui.wait_till_ajax_done(self.browser)
-                    time.sleep(2)
-                    if not self.ui.check_error_msg("Creating fip pool"):
-                        raise Exception("Create fip pool failed")
-                    self.logger.info(
-                        "Fip pool %s created using contrail-webui" %
-                        (fixture.pool_name))
-                    break
-        except WebDriverException:
-            self.logger.error("Fip %s Error while creating floating ip pool " %
-                              (fixture.pool_name))
-            self.ui.screenshot("fip_create_error")
-            raise
-    # end create_floatingip_pool
-
     def bind_policies(self, fixture):
         result = True
         policy_fq_names = [
@@ -4560,108 +4505,203 @@ class WebuiTest:
             self.ui.screenshot("policy_detach_error")
     # end detach_policies
 
-    def create_and_assoc_fip(
+    def create_floatingip_pool(self, fixture, pool_name, vn_name):
+        result = True
+        try:
+            if not self.ui.click_configure_networks():
+                result = result and False
+            self.ui.select_project(fixture.project_name)
+            self.ui.wait_till_ajax_done(self.browser)
+            rows = self.ui.get_rows()
+            self.logger.info(
+                "Creating floating ip pool %s using contrail-webui" %
+                (pool_name))
+            for net in rows:
+                if (self.ui.get_slick_cell_text(net, 2) == fixture.vn_name):
+                    self.ui.click_fip_vn(browser=net)
+                    self.ui.wait_till_ajax_done(self.browser)
+                    self.ui.click_element([
+                        'floating_ip_pools', 'editable-grid-add-link'], [
+                            'id', 'class'])
+                    self.ui.wait_till_ajax_done(self.browser)
+                    self.ui.send_keys(fixture.pool_name, 'name', 'name')
+                    proj_name = ['default-domain:' + fixture.project_name]
+                    self.ui.click_select_multiple('s2id_projects_dropdown', proj_name)
+                    if not self.ui.click_on_create('Network', 'network', save=True):
+                        self.ui.click_on_cancel_if_failure('cancelBtn')
+                        self.logger.error("Fip %s Error while creating floating ip pool " %
+                              (fixture.pool_name))
+                        result = result and False
+                    else:
+                        self.logger.info(
+                            "Fip pool %s created using contrail-webui" %
+                            (fixture.pool_name))
+                    break
+        except WebDriverException:
+            self.logger.error("Fip %s Error while creating floating ip pool" %
+                              (fixture.pool_name))
+            self.ui.screenshot("fip_create_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            result = result and False
+            raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end create_floatingip_pool
+    
+    def alloc_and_assoc_fip(
             self,
             fixture,
             fip_pool_vn_id,
             vm_id,
+            vm_ip,
             vm_name,
+            assoc=True,
             project=None):
         result = True
+        fixture.vm_name = vm_name
+        fixture.vm_id = vm_id
+        vn_name = fixture.vn_name
+        pool_name = fixture.pool_name
+        if not assoc:
+            self.alloc_fip(fixture, fip_pool_vn_id, vm_id, vm_ip, vm_name, vn_name, pool_name)
+        else:
+            self.assoc_fip(fixture, fip_pool_vn_id, vm_id, vm_ip, vm_name, vn_name, pool_name)
+    # end alloc_and_assoc_fip
+      
+    def alloc_fip(
+            self,
+            fixture,
+            fip_pool_vn_id,
+            vm_id,
+            vm_ip,
+            vm_name,
+            vn_name,
+            pool_name
+            ):
+        result = True
+        self.logger.info(
+            "Creating and associating fip %s using contrail-webui" %
+            (fip_pool_vn_id))
         try:
-            fixture.vm_name = vm_name
-            fixture.vm_id = vm_id
-            if not self.ui.click_configure_networks():
+            if not self.ui.click_on_create(
+                    'Floating IP',
+                    'fip',
+                    pool_name,
+                    prj_name=fixture.project_name):
                 result = result and False
-            self.ui.select_project(fixture.project_name)
-            rows = self.ui.get_rows()
-            self.logger.info(
-                "Creating and associating fip %s using contrail-webui" %
-                (fip_pool_vn_id))
-            for net in rows:
-                if (self.ui.get_slick_cell_text(net, 2) == fixture.vn_name):
-                    self.ui.click_element(
-                        ['config_net_fip', 'a'], ['id', 'tag'])
-                    self.ui.select_project(fixture.project_name)
-                    self.ui.click_element('btnCreatefip')
-                    self.ui.click_element(
-                        ["//div[@id='s2id_ddFipPool']", 'a'], ['xpath', 'tag'])
-                    fip_fixture_fq = fixture.project_name + ':' + \
-                        fixture.vn_name + ':' + fixture.pool_name
-                    if not self.ui.select_from_dropdown(
-                            fip_fixture_fq,
-                            grep=True):
-                        self.logger.error(
-                            "Fip %s not found in dropdown " %
-                            (fip_fixture_fq))
-                        self.ui.click_element('btnCreatefipCancel')
-                    else:
-                        self.ui.click_element('btnCreatefipOK')
-                    if not self.ui.check_error_msg("Creating Fip"):
-                        raise Exception("Create fip failed")
-                    fip_rows = self.ui.find_element('grid-canvas', 'class')
-                    rows1 = self.ui.get_rows(fip_rows)
-                    fixture_vn_pool = fixture.vn_name + ':' + fixture.pool_name
-                    for element in rows1:
-                        fip_ui_fq = self.ui.get_slick_cell_text(element, 3)
-                        if fip_ui_fq == fixture_vn_pool:
-                            element.find_element_by_class_name(
-                                'icon-cog').click()
-                            self.ui.wait_till_ajax_done(self.browser)
-                            element.find_element_by_xpath(
-                                "//a[@class='tooltip-success']").click()
-                            self.ui.wait_till_ajax_done(self.browser)
-                            pool = self.browser.find_element_by_xpath(
-                                "//div[@id='s2id_ddAssociate']").find_element_by_tag_name('a').click()
-                            time.sleep(1)
-                            self.ui.wait_till_ajax_done(self.browser)
-                            if self.ui.select_from_dropdown(vm_id, grep=True):
-                                self.ui.click_element('btnAssociatePopupOK')
-                            else:
-                                self.ui.click_element(
-                                    'btnAssociatePopupCancel')
-                                self.logger.error(
-                                    "not able to associate vm id %s as it is not found in dropdown " %
-                                    (vm_id))
-                            break
-                    if not self.ui.check_error_msg("Fip Associate"):
-                        raise Exception("Fip association failed")
-                    time.sleep(1)
-                    break
+            self.ui.click_element('s2id_user_created_floating_ip_pool_dropdown')
+            fip_fixture_fq = fixture.project_name + ':' + \
+                vn_name + ':' + pool_name
+            self.ui.select_from_dropdown(fip_fixture_fq, grep=True)
+            if not self.ui.click_on_create(
+                    'Floating IP', 'fip', save=True):
+                self.ui.click_on_cancel_if_failure('cancelBtn')
+                self.logger.error("Fip %s Error while associating floating ip pool" %
+                                  (pool_name))
+                result = result and False
+            else:
+                self.logger.info(
+                    "Fip pool %s associated using contrail webui" %
+                        (pool_name))
         except WebDriverException:
-            self.logger.error(
-                "Error while creating floating ip and associating it.")
-            self.ui.screenshot("fip_assoc_error")
+            self.logger.error("Error while creating %s" % (pool_name))
+            self.ui.screenshot("FIP_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
             result = result and False
             raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
-    # end create_and_assoc_fip
-
-    def disassoc_floatingip(self, fixture, vm_id):
+    # end alloc_fip
+        
+    def assoc_fip(
+            self,
+            fixture,
+            fip_pool_vn_id,
+            vm_id,
+            vm_ip,
+            vm_name,
+            vn_name,
+            pool_name
+            ):
+        result = True
+        self.logger.info(
+            "Associating Floating IP to port %s using contrail-webui" %
+            (vm_id))
         try:
             if not self.ui.click_configure_fip():
                 result = result and False
             self.ui.select_project(fixture.project_name)
-            gridfip = self.ui.find_element('gridfip')
-            rows = self.ui.get_rows(gridfip)
-            self.logger.info("Disassociating fip %s using contrail-webui" %
-                             (fixture.pool_name))
+            fip_rows = self.ui.find_element('grid-canvas', 'class')
+            rows = self.ui.get_rows(fip_rows)
+            fixture_vn_pool = vn_name + ':' + pool_name
             for element in rows:
-                if self.ui.get_slick_cell_text(element, 2) == vm_id:
-                    element.find_element_by_class_name('icon-cog').click()
+                fip_ui_fq = self.ui.get_slick_cell_text(element, 4)
+                if fip_ui_fq == fixture_vn_pool:
+                    self.ui.click_element(
+                        'fa-cog', 'class', browser=element)
                     self.ui.wait_till_ajax_done(self.browser)
-                    element.find_elements_by_xpath(
-                        "//a[@class='tooltip-success']")[1].click()
+                    self.ui.click_element(
+                        ['tooltip-success', 'i'], ['class', 'tag'])
                     self.ui.wait_till_ajax_done(self.browser)
-                    self.ui.click_element('btnDisassociatePopupOK')
+                    self.ui.click_element(
+                        's2id_virtual_machine_interface_refs_dropdown')
+                    self.ui.wait_till_ajax_done(self.browser)
+                    if self.ui.select_from_dropdown(vm_ip, grep=True):
+                        self.ui.click_element('configure-fipbtn1')
+                    else:
+                        self.ui.click_element('cancelBtn')
+                        self.logger.error(
+                            "Not able to associate vm_id %s as it is not found in dropdown" %
+                                    (vm_id))
+                        result = result and False
+                        break
+        except WebDriverException:
+            self.logger.error(
+                "Error while creating floating ip and associating it.")
+            self.ui.screenshot("fip_assoc_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            result = result and False
+            raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end create_and_assoc_fip
+
+    def disassoc_disalloc_fip(self, fixture, vm_id, vm_ip, assoc):
+        result = True
+        fixture.vm_id = vm_id
+        vn_name = fixture.vn_name
+        pool_name = fixture.pool_name
+        if assoc:
+            self.disassoc_fip(fixture, vm_id, vm_ip, pool_name)
+        self.ui.delete_element(fixture, 'disassociate_fip') 
+    # end disassoc_disalloc_fip
+    
+    def disassoc_fip(self, fixture, vm_id, vm_ip, pool_name):
+        result = True
+        try:
+            if not self.ui.click_configure_fip():
+                result = result and False
+            self.ui.select_project(fixture.project_name)
+            rows = self.ui.get_rows()
+            self.logger.info("Disassociating fip %s using contrail-webui" %
+                                (pool_name))
+            for element in rows:
+                if vm_ip in self.ui.get_slick_cell_text(element, 3):
+                    self.ui.click_element('fa-cog', 'class', browser=element)
+                    self.ui.click_element(
+                        "//a[@data-original-title='Disassociate Port']", 'xpath')
+                    self.ui.wait_till_ajax_done(self.browser)
+                    self.ui.click_element('configure-fipbtn1')
                     self.ui.check_error_msg('disassociate_vm')
-                    self.ui.delete_element(fixture, 'disassociate_fip')
                     break
         except WebDriverException:
             self.logger.error(
                 "Error while disassociating fip.")
             self.ui.screenshot("fip_disassoc_error")
-    # end disassoc_floatingip
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            result = result and False
+        return result
+    # end disassoc_fip
 
     def delete_floatingip_pool(self, fixture):
         result = True
@@ -4674,33 +4714,36 @@ class WebuiTest:
                              (fixture.pool_name))
             for net in rows:
                 if (self.ui.get_slick_cell_text(net, 2) == fixture.vn_name):
-                    net.find_element_by_class_name('icon-cog').click()
+                    self.ui.click_fip_vn(browser=net)
                     self.ui.wait_till_ajax_done(self.browser)
-                    self.browser.find_element_by_class_name(
-                        'tooltip-success').find_element_by_tag_name('i').click()
-                    self.ui.wait_till_ajax_done(self.browser)
-                    fip_text = net.find_element_by_xpath(
-                        "//span[contains(text(), 'Floating IP Pools')]")
-                    fip_text.find_element_by_xpath(
-                        '..').find_element_by_tag_name('i').click()
+                    self.ui.find_element('name', 'name').clear()
                     self.ui.click_element(
-                        ['fipTuples', 'icon-minus'], ['id', 'class'])
-                    self.browser.find_element_by_xpath(
-                        "//button[@id = 'btnCreateVNOK']").click()
+                        ['s2id_projects_dropdown', 'select2-search-choice-close'],
+                        ['id', 'class'])
                     self.ui.wait_till_ajax_done(self.browser)
-                    time.sleep(2)
-                    if not self.ui.check_error_msg("Deleting_fip"):
-                        raise Exception("Delete fip failed")
-                    self.logger.info(
-                        "Deleted fip pool  %s  using contrail-webui" %
-                        (fixture.pool_name))
-                    time.sleep(20)
+                    fip_browser = self.ui.find_element('floating_ip_pools')
+                    self.ui.click_element('fa-minus', 'class', browser=fip_browser)
+                    self.ui.wait_till_ajax_done(self.browser)
+                    if not self.ui.click_on_create('Network', 'network', save=True):
+                        self.ui.click_on_cancel_if_failure('cancelBtn')
+                        self.logger.error("Fip %s error while deleting floating ip pool " %
+                              (fixture.pool_name))
+                        result = result and False
+                    else:
+                        self.logger.info(
+                            "Fip pool %s deleted using contrail-webui" %
+                            (fixture.pool_name))
                     break
         except WebDriverException:
             self.logger.error(
                 "Error while %s deleting fip" %
-                (fixture.pool_name))
+                    (fixture.pool_name))
             self.ui.screenshot("fip_delete_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            result = result and False
+            raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
     # end delete_fip
 
     def verify_fip_in_webui(self, fixture):

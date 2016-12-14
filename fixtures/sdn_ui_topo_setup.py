@@ -69,6 +69,7 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
         }
         self.config_option = config_option
         self.secgrp_fixture = None
+        self.config_topo = {}
         topo_helper_obj = topology_helper(self.topo)
         self.topo.vmc_list = topo_helper_obj.get_vmc_list()
         self.topo.policy_vn = topo_helper_obj.get_policy_vn()
@@ -128,9 +129,24 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
     # end create_vn
 
     def create_floating_ip(self):
-        assert topo_steps.allocNassocFIP(self)
+        self.config_topo = {
+            self.project_fixture.keys()[0] : {'vn' : self.vn_fixture, 
+                                              'vm' : self.vm_fixture,
+                                              'fip' : self.fip_fixture}
+                       }
+        assert topo_steps.createAllocateAssociateVnFIPPools(self, self.config_topo, alloc=False)
         return True
     # end create_floating_ip
+
+    def allocate_floating_ip(self):
+        assert topo_steps.allocNassocFIP(self, self.config_topo, assoc=False)
+        return True
+    # end allocate_floating_ip
+
+    def associate_floating_ip(self):
+        assert topo_steps.allocNassocFIP(self, self.config_topo)
+        return True
+    # end associate_floating_ip
 
     def create_port(self):
         assert ui_topo_steps.createPort(self)
