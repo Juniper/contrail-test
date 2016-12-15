@@ -2895,6 +2895,20 @@ class AnalyticsVerification(fixtures.Fixture):
                             if time_taken > 5:
                                 self.logger.warn("Time taken %s is > 5 secs" %(time_taken))
                             self.logger.info("Time taken to generate the alarms is %s secs" %(time_taken))
+                            dup_alarms = None
+                            counter = 0
+                            while not dup_alarms:
+                                dup_alarms = self.get_alarms(all_alarms, hostname, role, alarm_t,
+                                    service=service, built_in=built_in, check_duplicate_alarm=True)
+                                time.sleep(1)
+                                counter = counter + 1
+                                if counter > 5:
+                                    self.logger.info("Duplicate alarms verifiation passed")
+                                    break
+                            if dup_alarms:
+                                self.logger.error("Duplicate alarms generated: \n%s" % pprint.pprint(dup_alarms))
+                                result = result and False
+
                         if retry > MAX_RETRY_COUNT:
                             self.logger.error("Alarm type %s not generated for role %s" % (
                                 alarm_t, role))
@@ -3043,7 +3057,8 @@ class AnalyticsVerification(fixtures.Fixture):
         return result
     # end _verify_contrail_alarms
 
-    def get_alarms(self, alarms, hostname, role, alarm_type=None, service=None, clear=False):
+    def get_alarms(self, alarms, hostname, role, alarm_type=None, service=None, clear=False,
+            built_in=True, check_duplicate_alarm=False):
         '''To return the dict of alarms based on host, service or alarm type
         hostname = host
         role = analytics-node, vrouter, database-node, config-node, control-node
@@ -3059,7 +3074,7 @@ class AnalyticsVerification(fixtures.Fixture):
             supervisor = True
         if role in alarms:
             role_alarms = alarms[role]
-            if not clear:
+            if not clear and not check_duplicate_alarm:
                 self.logger.info("%s alarms generated for %s " % (role, hostname))
         else:
             return None
@@ -3072,6 +3087,11 @@ class AnalyticsVerification(fixtures.Fixture):
                 else:
                     type_alarms_list = nalarms['value']['UVEAlarms']['alarms']
                     #print type_alarms_list
+                    if check_duplicate_alarm:
+                        duplicate_alarm = self.check_for_duplicate_alarms(type_alarms_list)
+                        if duplicate_alarm:
+                            return duplicate_alarm
+                        return False
                     for type_alarms in type_alarms_list:
                         #print type_alarms['type']
                         if type_alarms['type'] == alarm_type:
@@ -3120,6 +3140,24 @@ class AnalyticsVerification(fixtures.Fixture):
                             self.logger.warn("Alarm type %s alarms not generated yet ..wait .checking again" % (alarm_type))
                     return None
     # end get_alarms
+
+    def check_for_duplicate_alarms(self, alarms):
+        if not alarms:
+            return None
+        or_list = []
+        new_or_list = []
+        dup_items = []
+        for alarm in alarms:
+            or_list.append(alarm.get('alarm_rules').get('or_list'))
+        for or_item in or_list:
+            if or_item not in new_or_list:
+               new_or_list.append(or_item)
+            else:
+               dup_items.append(or_item)
+        return dup_items
+    # end check_for_duplicate_alarms
+
+
 
 # Config-node uve verification
 
