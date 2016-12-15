@@ -242,6 +242,13 @@ python tools/tor/setup_tors.py $TEST_CONFIG_FILE
 )
 }
 
+function setup_tor_agents {
+(
+export PYTHONPATH=$PWD:$PWD/fixtures;
+python tools/tor/setup_tor_agents.py $TEST_CONFIG_FILE
+)
+}
+
 function apply_testtools_patch_for_centos {
 
 find_python_version
@@ -275,6 +282,7 @@ if [ ! -z $ci_image ]; then
 fi
 
 check_test_discovery
+setup_tor_agents
 setup_tors
 run_tests
 run_tests_serial
