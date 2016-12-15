@@ -152,7 +152,8 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
 
     @test.attr(type=['sanity', 'suite1', 'ci_sanity'])
     @preposttest_wrapper
-    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6',
+        hypervisor='docker',msg='Bug 1461423:Need privileged access')
     def test_ping_within_vn_two_vms_two_different_subnets(self):
         '''
         Description:  Validate Ping between 2 VMs in the same VN, 2 VMs in different VNs.
