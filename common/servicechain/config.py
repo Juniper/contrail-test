@@ -15,7 +15,7 @@ from svc_template_fixture import SvcTemplateFixture
 from common.connections import ContrailConnections
 from common.policy.config import AttachPolicyFixture
 from tcutils.util import retry
-
+import random
 
 class ConfigSvcChain(fixtures.TestWithFixtures):
 
@@ -128,18 +128,20 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
                         self.trans_left_vn_name, self.trans_left_vn_subnets)
                     self.trans_right_vn_fixture = self.config_vn(
                         self.trans_right_vn_name, self.trans_right_vn_subnets)
+                non_docker_zones = [x for x in self.nova_h.zones if x != 'nova/docker']
                 for i in range(max_inst):
                     svm_name = get_random_name("pt_svm" + str(i))
                     pt_name = get_random_name("port_tuple" + str(i))
                     if svc_mode == 'transparent':
                         svm_fixture = self.config_and_verify_vm(
-                            svm_name, image_name=svc_img_name, vns=[self.trans_mgmt_vn_fixture, self.trans_left_vn_fixture, self.trans_right_vn_fixture], count=1, flavor='m1.large')
+                            svm_name, image_name=svc_img_name, vns=[self.trans_mgmt_vn_fixture, self.trans_left_vn_fixture, self.trans_right_vn_fixture], count=1, flavor='m1.large', zone=random.choice(non_docker_zones))
                     else:
                         svm_fixture = self.config_and_verify_vm(
                             svm_name, image_name=svc_img_name,
                             vns=[mgmt_vn_fixture, left_vn_fixture,
                                 right_vn_fixture],
-                            count=1, flavor='m1.large')
+                            count=1, flavor='m1.large',
+                            zone=random.choice(non_docker_zones))
                     si_fixture.add_port_tuple(svm_fixture, pt_name)
             si_fixture.verify_on_setup()
             si_fixtures.append(si_fixture)
@@ -175,29 +177,33 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
             self.inputs, self.connections, vn_fix, policy_fix, policy_type))
         return policy_attach_fix
 
-    def config_and_verify_vm(self, vm_name, vn_fix=None, image_name='ubuntu-traffic', vns=[], count=1, flavor='contrail_flavor_small'):
+    def config_and_verify_vm(self, vm_name, vn_fix=None, image_name='ubuntu-traffic', vns=[], count=1, flavor='contrail_flavor_small',
+            zone=None):
         if vns:
             vn_objs = [vn.obj for vn in vns]
             vm_fixture = self.config_vm(
                 vm_name, vns=vn_objs, image_name=image_name, count=count,
-                flavor=flavor)
+                flavor=flavor, zone=zone)
         else:
             vm_fixture = self.config_vm(
                 vm_name, vn_fix=vn_fix, image_name=image_name, count=count,
-                flavor=flavor)
+                flavor=flavor, zone=zone)
         assert vm_fixture.verify_on_setup(), 'VM verification failed'
         assert vm_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
         return vm_fixture
 
-    def config_vm(self, vm_name, vn_fix=None, node_name=None, image_name='ubuntu-traffic', flavor='contrail_flavor_small', vns=[], count=1):
+    def config_vm(self, vm_name, vn_fix=None, node_name=None, image_name='ubuntu-traffic', flavor='contrail_flavor_small', vns=[], count=1,
+            zone=None):
         if vn_fix:
             vm_fixture = self.useFixture(VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn_fix.obj, vm_name=vm_name, node_name=node_name, image_name=image_name, flavor=flavor, count=count))
+                vn_obj=vn_fix.obj, vm_name=vm_name, node_name=node_name, image_name=image_name, flavor=flavor, count=count,
+                zone=zone))
         elif vns:
             vm_fixture = self.useFixture(VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vm_name=vm_name, node_name=node_name, image_name=image_name, flavor=flavor, vn_objs=vns, count=count))
+                vm_name=vm_name, node_name=node_name, image_name=image_name, flavor=flavor, vn_objs=vns, count=count,
+                zone=zone))
 
         return vm_fixture
 
