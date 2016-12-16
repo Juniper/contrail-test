@@ -65,7 +65,9 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-testrargs+=" $test_tag"
+if [[ -z $testrargs ]];then
+    testrargs+=" $test_tag"
+fi
 export TAGS="$test_tag"
 
 prepare

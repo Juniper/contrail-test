@@ -1,7 +1,6 @@
 import pprint
 
 import vnc_api_test
-from contrailapi import ContrailVncApi
 from cfgm_common.exceptions import NoIdError
 
 from tcutils.util import get_random_name, retry, compare_dict, get_dashed_uuid
@@ -21,7 +20,6 @@ class InterfaceRouteTableFixture(vnc_api_test.VncLibFixture):
 
     def setUp(self):
         super(InterfaceRouteTableFixture, self).setUp()
-        self.vnc_h = ContrailVncApi(self.vnc_api_h, self.logger)
         self.create()
 
     def cleanUp(self):

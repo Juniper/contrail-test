@@ -105,6 +105,7 @@ clear_colors () {
 }
 
 add_contrail_env () {
+    EXTRA_RUN_TEST_ARGS=${testcase:-${EXTRA_RUN_TEST_ARGS:-''}}
     arg_env[0]=" -e TEST_RUN_CMD='$TEST_RUN_CMD' -e EXTRA_RUN_TEST_ARGS='$EXTRA_RUN_TEST_ARGS' "
     n=1
     for i in `env | grep '^CT_' | sed 's/ /\|/'`; do
@@ -307,7 +308,7 @@ $GREEN  -f, --feature FEATURE           $NO_COLOR Features or Tags to test - val
                                             ci_webui_sanity, devstack_sanity, upgrade_only. Default: sanity
                                             NOTE: this is only valid for Full contrail-test suite.
 $GREEN -T, --test-tags TEST_TAGS        $NO_COLOR test tags to run specific tests
-
+$GREEN -c, --testcase TESTCASE          $NO_COLOR testcase to execute
 NOTE: Either testbed.py (-t) or both testbed-json and params-file required
 
 ${GREEN}Possitional Parameters:
@@ -318,7 +319,7 @@ ${GREEN}Possitional Parameters:
 EOF
     }
 
-    while getopts "ibhf:t:p:sS:k:K:nrT:P:m:j:" flag; do
+    while getopts "ibhf:t:p:sS:k:K:nrT:P:m:j:c:" flag; do
         case "$flag" in
             t) testbed=$OPTARG;;
             j) testbed_json=$OPTARG;;
@@ -336,6 +337,7 @@ EOF
             n) clear_colors ;;
             T) test_tags=$OPTARG;;
             m) mount_local=$OPTARG;;
+            c) testcase=$OPTARG;;
         esac
     done
 

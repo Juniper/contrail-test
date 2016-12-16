@@ -17,6 +17,7 @@ class SvcTemplateFixture(fixtures.Fixture):
         self.domain_name = domain_name
         self.st_name = st_name
         self.st_obj = None
+        self.uuid = None
         self.domain_fq_name = [self.domain_name]
         self.st_fq_name = [self.domain_name, self.st_name]
         self.image_name = svc_img_name
@@ -63,7 +64,7 @@ class SvcTemplateFixture(fixtures.Fixture):
             self.logger.debug(
                 "Service template: %s already exists", self.st_fq_name)
         except NoIdError:
-            domain = self.vnc_lib_h.domain_read(fq_name=self.domain_fq_name)
+            domain = self.connections.vnc_lib_fixture.domain_read(fq_name=self.domain_fq_name)
             svc_template = ServiceTemplate(
                 name=self.st_name, parent_obj=domain)
             svc_properties = ServiceTemplateType()
@@ -87,7 +88,7 @@ class SvcTemplateFixture(fixtures.Fixture):
             if self.inputs.is_gui_based_config():
                 self.webui.create_svc_template(self)
             else:
-                self.vnc_lib_h.service_template_create(svc_template)
+                self.uuid = self.vnc_lib_h.service_template_create(svc_template)
             svc_template = self.vnc_lib_h.service_template_read(
                 fq_name=self.st_fq_name)
 

@@ -8,6 +8,7 @@ from quantum_test import *
 from vnc_api_test import *
 from contrail_fixtures import *
 from common.connections import ContrailConnections
+from common.contrail_test_init import ContrailTestInit
 from tcutils.util import retry
 from time import sleep
 from openstack import OpenstackAuth
@@ -16,7 +17,7 @@ from vcenter import VcenterAuth
 
 class ProjectFixture(fixtures.Fixture):
 
-    def __init__(self, vnc_lib_h, connections, auth=None, project_name=None,
+    def __init__(self, connections, auth=None, project_name=None,
                  username=None, password=None, role='admin',
                  domain_name=None, uuid=None):
         self.inputs = connections.inputs
@@ -30,25 +31,24 @@ class ProjectFixture(fixtures.Fixture):
         self.project_obj = None
         self.already_present = False
         self.project_fq_name = [self.domain_name, self.project_name]
-        self.username = username
-        self.password = password
+        self.project_username = self.username = username
+        self.project_user_password = self.password = password
         self.role = role
         self.user_dict = {}
         self._create_user_set = {}
-        self.project_connections = None
+        self.project_connections = dict()
+        self.project_inputs = dict()
         self.api_server_inspects = self.connections.api_server_inspects
         self.verify_is_run = False
         if not self.auth:
             if self.inputs.orchestrator == 'openstack':
-                self.auth = OpenstackAuth(self.inputs.stack_user,
-                              self.inputs.stack_password,
-                              self.inputs.project_name, self.inputs, self.logger)
+                self.auth = OpenstackAuth(self.inputs.admin_username,
+                              self.inputs.admin_password,
+                              self.inputs.admin_tenant, self.inputs, self.logger)
             else: # vcenter
-                self.auth = VcenterAuth(self.inputs.stack_user,
-                              self.inputs.stack_password,
-                              self.inputs.project_name, self.inputs)
-        self.project_username = None
-        self.project_user_password = None
+                self.auth = VcenterAuth(self.inputs.admin_username,
+                              self.inputs.admin_password,
+                              self.inputs.admin_tenant, self.inputs)
     # end __init__
 
     def read(self):
@@ -154,16 +154,28 @@ class ProjectFixture(fixtures.Fixture):
         username = username or self.project_username or self.inputs.stack_user
         password = password or self.project_user_password or \
             self.inputs.stack_password
-        if not self.project_connections:
-            self.project_connections = ContrailConnections(
-                inputs=self.inputs,
+        inputs = self.get_inputs(username=username, password=password)
+        if username not in self.project_connections:
+            self.project_connections[username] = ContrailConnections(
+                inputs=inputs,
                 logger=self.logger,
                 project_name=self.project_name,
                 username=username,
                 password=password,
                 domain_name=self.domain_name)
-        return self.project_connections
+        return self.project_connections[username]
     # end get_project_connections
+
+    def get_inputs(self, username=None, password=None):
+        username = username or self.project_username or self.inputs.stack_user
+        password = password or self.project_user_password or self.inputs.stack_password
+        if username not in self.project_inputs:
+            self.project_inputs[username] = ContrailTestInit(self.inputs.ini_file,
+                 stack_user=username,
+                 stack_password=password,
+                 stack_tenant=self.project_name,
+                 logger=self.logger)
+        return self.project_inputs[username]
 
     def verify_on_setup(self):
         result = True

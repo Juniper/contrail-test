@@ -114,7 +114,7 @@ class ContrailConnections():
             self.vnc_lib_fixture = VncLibFixture(
                 username=self.username, password=self.password,
                 domain=self.domain_name, project_name=self.project_name,
-                inputs = self.inputs,
+                inputs=self.inputs,
                 cfgm_ip=cfgm_ip,
                 api_server_port=self.inputs.api_server_port,
                 auth_server_ip=self.inputs.auth_ip,

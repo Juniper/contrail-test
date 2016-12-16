@@ -63,6 +63,7 @@ class TestInputs(object):
         self.jenkins_trigger = self.get_os_env('JENKINS_TRIGGERED')
         self.os_type = custom_dict(self.get_os_version, 'os_type')
         self.config = None
+        self.ini_file = ini_file
         if ini_file:
             self.config = ConfigParser.ConfigParser()
             self.config.read(ini_file)
@@ -88,15 +89,15 @@ class TestInputs(object):
         self.admin_username = read_config_option(self.config,
             'Basic',
             'adminUser',
-            os.getenv('OS_USERNAME', None))
+            os.getenv('OS_USERNAME', 'admin'))
         self.admin_password = read_config_option(self.config,
             'Basic',
             'adminPassword',
-            os.getenv('OS_PASSWORD', None))
+            os.getenv('OS_PASSWORD', 'contrail123'))
         self.admin_tenant = read_config_option(self.config,
             'Basic',
             'adminTenant',
-            os.getenv('OS_TENANT_NAME', None))
+            os.getenv('OS_TENANT_NAME', 'admin'))
 
         self.stack_user = read_config_option(
             self.config,
@@ -587,6 +588,7 @@ class TestInputs(object):
                   'project_name': self.stack_tenant,
                   'auth_ip': self.auth_ip,
                   'auth_port': self.auth_port,
+                  'auth_protocol': self.auth_protocol,
                   'api_server_port': self.api_server_port,
                  }
         api_h = VNCApiInspect(cfgm_ip, inputs=type('', (), kwargs))
@@ -742,6 +744,7 @@ class ContrailTestInit(object):
         # address_family = read_config_option(self.config,
         #                      'Basic', 'AddressFamily', 'dual')
         self.address_family = 'v4'
+        self.use_admin_auth = False
     # end __init__
 
     def set_af(self, af):

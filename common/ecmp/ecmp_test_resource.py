@@ -118,7 +118,7 @@ class ECMPSolnSetup():
 
         # Get the project_fixture
         self.project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+            project_name=self.inputs.project_name, connections=self.connections))
         # Read the project obj and set to the floating ip object.
         self.fip_obj.set_project(self.project_fixture.project_obj)
 

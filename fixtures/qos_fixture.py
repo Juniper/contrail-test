@@ -1,7 +1,6 @@
 import pprint
 
 import vnc_api_test
-from contrailapi import ContrailVncApi
 from vnc_api.vnc_api import QosQueue, ForwardingClass,\
     QosIdForwardingClassPairs, QosIdForwardingClassPair, QosConfig
 from cfgm_common.exceptions import NoIdError
@@ -17,12 +16,10 @@ class QosBaseFixture(vnc_api_test.VncLibFixture):
     def __init__(self, *args, **kwargs):
         super(QosBaseFixture, self).__init__(self, *args, **kwargs)
         self.agent_inspect = None
-        self.vnc_h = None
         self.verify_is_run = False
 
     def setUp(self):
         super(QosBaseFixture, self).setUp()
-        self.vnc_h = ContrailVncApi(self.vnc_api_h, self.logger)
         if self.connections:
             self.agent_inspect = self.connections.agent_inspect
 

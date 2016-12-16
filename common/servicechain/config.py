@@ -17,7 +17,17 @@ from common.policy.config import AttachPolicyFixture
 from tcutils.util import retry
 import random
 
-class ConfigSvcChain(fixtures.TestWithFixtures):
+class ConfigSvcChain(fixtures.Fixture):
+
+    def __init__(self, use_vnc_api=False, connections=None):
+        self.use_vnc_api = use_vnc_api
+        if connections:
+            self.connections = connections
+            self.inputs = connections.inputs
+            self.orch = connections.orch
+            self.vnc_lib = connections.vnc_lib
+            self.logger = connections.logger
+        super(ConfigSvcChain, self).__init__()
 
     def delete_si_st(self, si_fixtures, st_fix):
         for si_fix in si_fixtures:
@@ -159,10 +169,12 @@ class ConfigSvcChain(fixtures.TestWithFixtures):
 
     def config_policy(self, policy_name, rules):
         """Configures policy."""
+        use_vnc_api = getattr(self, 'use_vnc_api', None)
         # create policy
         policy_fix = self.useFixture(PolicyFixture(
             policy_name=policy_name, rules_list=rules,
-            inputs=self.inputs, connections=self.connections))
+            inputs=self.inputs, connections=self.connections,
+            api=use_vnc_api))
         return policy_fix
 
     def config_vn(self, vn_name, vn_net):

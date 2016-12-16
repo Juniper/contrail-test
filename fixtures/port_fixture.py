@@ -4,7 +4,6 @@ import json
 import uuid
 from netaddr import EUI
 import netaddr
-from contrailapi import ContrailVncApi
 
 class PortFixture(vnc_api_test.VncLibFixture):
 
@@ -53,7 +52,6 @@ class PortFixture(vnc_api_test.VncLibFixture):
 
     def setUp(self):
         super(PortFixture, self).setUp()
-        self.vnc_h = ContrailVncApi(self.vnc_api_h, self.logger)
         self.vn_obj = self.vnc_api_h.virtual_network_read(id=self.vn_id)
 
         if self.api_type == 'neutron':

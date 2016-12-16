@@ -61,7 +61,7 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
         ttl = 100
         ipam_name = get_random_name('ipam1')
         project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+            project_name=self.inputs.project_name, connections=self.connections))
         project_connections = project_fixture.get_project_connections()
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,
@@ -242,7 +242,7 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
         rev_zone = '.'.join((rev_zone[0], rev_zone[1], rev_zone[2]))
         rev_zone = rev_zone + '.in-addr.arpa'
         project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+            project_name=self.inputs.project_name, connections=self.connections))
         project_connections = project_fixture.get_project_connections()
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,

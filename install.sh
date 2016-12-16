@@ -161,7 +161,7 @@ if [ $sendmail -eq 1 ]; then
 fi
 
 cd /contrail-test
-./run_ci.sh $mail_arg --contrail-fab-path $CONTRAIL_FABPATH
+./run_ci.sh $mail_arg --contrail-fab-path $CONTRAIL_FABPATH $EXTRA_RUN_TEST_ARGS
 
 if [ -d /contrail-test.save ]; then
     cp -f ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py /contrail-test.save/
@@ -235,29 +235,29 @@ if [ ! $TESTBED -ef ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py ]; then
 fi
 
 cd /contrail-test
-run_tests="./run_tests.sh --contrail-fab-path $CONTRAIL_FABPATH $EXTRA_RUN_TEST_ARGS "
+run_tests="./run_tests.sh --contrail-fab-path $CONTRAIL_FABPATH "
 if [[ -n $TEST_RUN_CMD ]]; then
     $TEST_RUN_CMD $EXTRA_RUN_TEST_ARGS
     rv_run_test=$?
 elif [[ -n $TEST_TAGS ]]; then
-    $run_tests -T $TEST_TAGS
+    $run_tests -T $TEST_TAGS $EXTRA_RUN_TEST_ARGS
     rv_run_test=$?
 else
     case $FEATURE in
         sanity)
-            $run_tests --sanity --send-mail -U
+            $run_tests --sanity --send-mail -U $EXTRA_RUN_TEST_ARGS
             rv_run_test=$?
             ;;
         quick_sanity)
-            $run_tests -T quick_sanity --send-mail -t
+            $run_tests -T quick_sanity --send-mail -t $EXTRA_RUN_TEST_ARGS
             rv_run_test=$?
             ;;
         ci_sanity)
-            $run_tests -T ci_sanity --send-mail -U
+            $run_tests -T ci_sanity --send-mail -U $EXTRA_RUN_TEST_ARGS
             rv_run_test=$?
             ;;
         ci_sanity_WIP)
-            $run_tests -T ci_sanity_WIP --send-mail -U
+            $run_tests -T ci_sanity_WIP --send-mail -U $EXTRA_RUN_TEST_ARGS
             rv_run_test=$?
             ;;
         ci_svc_sanity)
@@ -265,7 +265,7 @@ else
             rv_run_test=$?
             ;;
         upgrade)
-            $run_tests -T upgrade --send-mail -U
+            $run_tests -T upgrade --send-mail -U $EXTRA_RUN_TEST_ARGS
             rv_run_test=$?
             ;;
         webui_sanity)

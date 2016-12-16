@@ -4,16 +4,19 @@ import logging
 from tcutils.util import *
 from vnc_api.vnc_api import *
 
-class ContrailVncApi:
+class ContrailVncApi(object):
 
     def __init__(self, vnc, logger=None):
         self._vnc = vnc
         self._log = logger or logging.getLogger(__name__)
 
-    def __getattr__(self, name, *args, **kwargs):
+    def __getattr__(self, name):
         # Call self._vnc method if no matching method exists
-        method = getattr(self._vnc, name)
-        return method(*args, **kwargs)
+        if hasattr(self._vnc, name):
+            return getattr(self._vnc, name)
+        else:
+            raise AttributeError('%s object has no attribute %s'%(
+                                 self.__class__.__name__, name))
 
     def get_policy(self, fq_name, **kwargs):
         return self._vnc.network_policy_read(fq_name=fq_name)
@@ -332,6 +335,133 @@ class ContrailVncApi:
         self._vnc.qos_config_update(qos_config_obj)
         return qos_config_obj
     # end del_qos_config_entry
+
+    def _get_rbac_prop(self, rule_object=None, rule_field=None, perms=None):
+        rule_perms = []
+        for perm in perms or []:
+            role = perm.get('role', '*')
+            crud = perm.get('crud', 'CRUD')
+            rule_perms.append(RbacPermType(role_name=role, role_crud=crud))
+        return RbacRuleType(rule_object=rule_object, rule_field=rule_field, rule_perms=rule_perms)
+
+    def update_api_access_list(self, uuid, rules, delete=False):
+        '''
+            :param uuid : fqname of the object (list)
+            :param rules : dictionary of rule_object, rule_field, list of perms dict('role', 'crud')
+                           eg: [{'rule_object': 'virtual_network',
+                                 'rule_field': 'route_target_list',
+                                 'perms': [{'role': 'admin', 'crud': 'CRUD'},
+                                           {'role': '_member_', 'crud': 'R'}]
+                                 },
+                                 {'rule_object': '*',
+                                  'rule_field': '*',
+                                  'perms': [{'role': '*', 'crud': 'R'}]
+                                 }
+                                ]
+        '''
+        obj = self.get_api_access_list(id=uuid)
+        current_prop = obj.get_api_access_list_entries()
+        if delete is True:
+            # Convert existing rules to dict
+            current_rules = list()
+            for rule in current_prop.get_rbac_rule() or []:
+                perms = list()
+                for perm in rule.get_rule_perms() or []:
+                    perms.append({'role': perm.get_role_name(),
+                                  'crud': perm.get_role_crud()})
+                current_rules.append({'rule_object': rule.get_rule_object(),
+                                   'rule_field': rule.get_rule_field(),
+                                   'perms': perms})
+            # Remove the to be removed from the list
+            for rule in rules or []:
+                current_rules.remove(rule)
+            # Readd the rules
+            to_add_rules = list()
+            for rule in current_rules:
+                to_add_rules.append(self._get_rbac_prop(**rule))
+            current_prop.set_rbac_rule(to_add_rules)
+        else:
+            for rule in rules or []:
+                current_prop.add_rbac_rule(self._get_rbac_prop(**rule))
+        obj.set_api_access_list_entries(current_prop)
+        return self._vnc.api_access_list_update(obj)
+
+    def create_api_access_list(self, fq_name, parent_type, rules=None):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param parent_type : parents type 'project' or 'domain'
+            Optional:
+               :param rules : list of dictionary of rule_object, rule_field, list of perms dict('role', 'crud')
+                              eg: [{'rule_object': 'virtual_network',
+                                   'rule_field': 'route_target_list',
+                                   'perms': [{'role': 'admin', 'crud': 'CRUD'},
+                                             {'role': '_member_', 'crud': 'R'}]
+                                   },
+                                   {'rule_object': '*',
+                                    'rule_field': '*',
+                                    'perms': [{'role': '*', 'crud': 'R'}]
+                                   }
+                                  ]
+        '''
+        name = fq_name[-1]
+        prop = list()
+        for rule in rules or []:
+            prop.append(self._get_rbac_prop(**rule))
+        obj = ApiAccessList(name, parent_type=parent_type, fq_name=fq_name,
+                            api_access_list_entries=RbacRuleEntriesType(rbac_rule=prop))
+        return self._vnc.api_access_list_create(obj)
+
+    def delete_api_access_list(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        return self._vnc.api_access_list_delete(**kwargs)
+
+    def get_api_access_list(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        return self._vnc.api_access_list_read(**kwargs)
+
+    def _get_obj(self, object_type, uuid):
+        api = 'self._vnc.'+object_type+'_read'
+        return eval(api)(id=uuid)
+
+    def get_perms2(self, obj):
+        '''
+            :param object_type : for eg: virtual_network, virtual_machine, etal
+            :param obj : object itself
+        '''
+        perms2 = obj.get_perms2()
+        if not perms2:
+            obj = self._get_obj(object_type=obj.object_type, uuid=obj.uuid)
+            perms2 = obj.get_perms2()
+        return perms2
+
+    def set_perms2(self, perms2, obj):
+        obj.set_perms2(perms2)
+        object_type = obj.object_type
+        api = 'self._vnc.'+object_type+'_update'
+        eval(api)(obj)
+
+    def set_global_access(self, rwx=7, obj=None, object_type=None, uuid=None):
+        if not obj:
+            obj = self._get_obj(object_type, uuid)
+        perms2 = self.get_perms2(obj)
+        perms2.set_global_access(rwx)
+        self.set_perms2(perms2, obj)
+
+    def set_share_tenants(self, tenant, tenant_access, obj=None, object_type=None, uuid=None):
+        if not obj:
+            obj = self._get_obj(object_type, uuid)
+        perms2 = self.get_perms2(obj)
+        share = ShareType(tenant=tenant, tenant_access=tenant_access)
+        perms2.add_share(share)
+        self.set_perms2(perms2, obj)
 
     def update_virtual_router_type(self,name,vrouter_type):
         vr_fq_name = ['default-global-system-config', name]

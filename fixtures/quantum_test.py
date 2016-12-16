@@ -891,11 +891,7 @@ class QuantumHelper():
             subnet_id = self.get_subnet_ids(network_id)[0]
         lb_dict = {'name': name, 'vip_subnet_id': subnet_id,
                    'vip_address': address}
-        try:
-             resp = self.obj.create_loadbalancer({'loadbalancer': lb_dict})
-        except CommonNetworkClientException as e:
-            self.logger.error('Create Loadbalancer failed')
-            return None
+        resp = self.obj.create_loadbalancer({'loadbalancer': lb_dict})
         return resp['loadbalancer']
 
     def list_loadbalancers(self, **kwargs):
@@ -932,11 +928,7 @@ class QuantumHelper():
         listener_dict = {'loadbalancer_id': lb_id, 'protocol_port': port,
                          'protocol': protocol, 'name': name, 'default_tls_container_ref': default_tls_container}
 #                         'connection_limit': connection_limit}
-        try:
-            resp = self.obj.create_listener({'listener': listener_dict})
-        except CommonNetworkClientException as e:
-            self.logger.error('Create Listener failed')
-            return None
+        resp = self.obj.create_listener({'listener': listener_dict})
         return resp['listener']
 
     def update_listener(self, listener_id, admin_state):
@@ -974,11 +966,7 @@ class QuantumHelper():
         pool_dict = {'listener_id': listener_id, 'protocol': protocol,
                      'lb_algorithm': lb_algorithm, 'name': name,
                      'session_persistence':session_persistence}
-        try:
-            resp = self.obj.create_lbaas_pool({'pool': pool_dict})
-        except CommonNetworkClientException as e:
-            self.logger.error('Create loadbalancer Pool failed')
-            return None
+        resp = self.obj.create_lbaas_pool({'pool': pool_dict})
         return resp['pool']
 
     def list_lbaas_pools(self, **kwargs):

@@ -42,7 +42,6 @@ class TestProjectBasic(BaseProjectTest):
             username=self.inputs.admin_username,
             password=self.inputs.admin_password,
             project_name=project_name,
-            vnc_lib_h=self.vnc_lib,
             connections=self.admin_connections))
         user_fixture.add_user_to_tenant(project_name,
             self.inputs.admin_username,
