@@ -1,5 +1,6 @@
 import time
 from netaddr import * 
+from random import randint
 
 from common.neutron.base import BaseNeutronTest
 
@@ -146,8 +147,8 @@ class BaseTorTest(BaseNeutronTest):
         return (pif_fixture, lif_fixture)
     # end setup_tor_port
 
-    def setup_bms(self, tor_fixture, port_index=0, namespace='ns1',
-        ns_intf='tap1', ns_mac_address=None, 
+    def setup_bms(self, tor_fixture, port_index=0, namespace=None,
+        ns_intf=None, ns_mac_address=None, 
         ns_ip_address=None,
         ns_netmask=None,
         ns_gateway=None,
@@ -169,6 +170,10 @@ class BaseTorTest(BaseNeutronTest):
             verify         : If True, does dhclient on the netns intf and 
                              verifies if it has got the expected IP
         '''
+        if namespace is None:
+            namespace='ns'+str(randint(0,99))
+        if ns_intf is None:
+            ns_intf='tap'+str(randint(0,99))
         tor_ip = tor_fixture.mgmt_ip
         tor_name = tor_fixture.name
         host_info = self.inputs.tor_hosts_data[tor_ip][port_index]
