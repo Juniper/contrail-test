@@ -561,7 +561,6 @@ class VpcSanityTests1(base.VpcBaseTest):
         # Just Read the existing vpc as a fixture
         vpc1_contrail_fixture = self.useFixture(
             ProjectFixture(
-                vnc_lib_h=self.vnc_lib,
                 project_name=vpc1_id,
                 username=self.admin_inputs.stack_user,
                 password=self.admin_inputs.stack_password,
@@ -974,7 +973,6 @@ class VpcSanityTests3(base.VpcBaseTest):
         # Just Read the existing vpc as a fixture
         vpc1_contrail_fixture = self.useFixture(
             ProjectFixture(
-                vnc_lib_h=self.vnc_lib,
                 project_name=vpc1_id,
                 username=self.admin_inputs.stack_user,
                 password=self.admin_inputs.stack_password,

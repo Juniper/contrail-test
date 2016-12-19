@@ -38,7 +38,6 @@ class BaseVgwTest(test.BaseTestCase):
     def setup_common_objects(cls):
 
         cls.project_fixture = ProjectFixture(
-            vnc_lib_h=cls.vnc_lib,
             project_name=cls.inputs.project_name,
             connections=cls.connections)
         cls.project_fixture.setUp()

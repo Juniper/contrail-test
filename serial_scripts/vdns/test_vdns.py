@@ -490,7 +490,6 @@ class TestvDNSRestart(BasevDNSTest):
             project_fixture = self.useFixture(
                 ProjectFixture(
                     project_name=proj,
-                    vnc_lib_h=self.vnc_lib,
                     username=var_obj.proj_user[proj],
                     password=var_obj.proj_pass[proj],
                     connections=self.admin_connections))
@@ -629,7 +628,6 @@ class TestvDNSRestart(BasevDNSTest):
             project_fixture = self.useFixture(
                 ProjectFixture(
                     project_name=proj,
-                    vnc_lib_h=self.vnc_lib,
                     username=var_obj.proj_user[proj],
                     password=var_obj.proj_pass[proj],
                     connections=self.admin_connections))

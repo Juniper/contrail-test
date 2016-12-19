@@ -75,7 +75,8 @@ class TestvDNS0(BasevDNSTest):
         rev_zone = rev_zone + '.in-addr.arpa'
         policy_name = 'policy1'
         project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+            project_name=self.inputs.project_name, connections=self.connections))
+        project_connections = project_fixture.get_project_connections()
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,
             default_ttl_seconds=ttl, record_order='random', reverse_resolution=True)
@@ -257,7 +258,8 @@ class TestvDNS0(BasevDNSTest):
                           vm_list[1]: vm2_ping_list, vm_list[2]: vm3_ping_list}
 
         project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+            project_name=self.inputs.project_name, connections=self.connections))
+        project_connections = project_fixture.get_project_connections()
         dns_server_name_list = ['vdns1', 'vdns2', 'vdns3']
         domain_name_list = {'vdns1': 'juniper.net', 'vdns2':
                             'bng.juniper.net', 'vdns3': 'eng.juniper.net'}
@@ -449,7 +451,8 @@ class TestvDNS0(BasevDNSTest):
         ipam_name = 'ipam1'
         fip_pool_name1 = 'some-pool1'
         project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+            project_name=self.inputs.project_name, connections=self.connections))
+        project_connections = project_fixture.get_project_connections()
         # VDNS
         dns_data = VirtualDnsType(
             domain_name=domain_name, dynamic_records_from_client=True,
@@ -554,7 +557,7 @@ class TestvDNS0(BasevDNSTest):
                     connections=self.connections, username=proj_user[proj], password=proj_pass[proj]))
             project_fixture = self.useFixture(
                 ProjectFixture(
-                    project_name=proj, vnc_lib_h=self.vnc_lib, username=self.inputs.admin_username,
+                    project_name=proj, username=self.inputs.admin_username,
                     password=self.inputs.admin_password, connections=admin_con))
             user_fixture.add_user_to_tenant(proj, proj_user[proj] , 'admin')
             project_fixture.set_user_creds(proj_user[proj], proj_pass[proj])
@@ -638,7 +641,8 @@ class TestvDNS0(BasevDNSTest):
         fip_subnets = [self.inputs.fip_pool]
 
         project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+            project_name=self.inputs.project_name, connections=self.connections))
+        project_connections = project_fixture.get_project_connections()
         # VN Creation
         fvn_fixture = self.useFixture(
             VNFixture(
@@ -827,7 +831,8 @@ class TestvDNS1(BasevDNSTest):
 
         ttl = 1000
         project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+            project_name=self.inputs.project_name, connections=self.connections))
+        project_connections = project_fixture.get_project_connections()
         dns_server_name_list = [
             'vdns501', 'vdns502', 'vdns503', 'vdns504', 'vdns505', 'vdns506', 'vdns507',
             'vdns508', 'vdns509', 'vdns510', 'vdns511', 'vdns512', 'vdns513', 'vdns514', 'vdns515', 'vdns516']
@@ -970,7 +975,8 @@ class TestvDNS2(BasevDNSTest):
         # Number of records per server
         record_num = 1
         project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+            project_name=self.inputs.project_name, connections=self.connections))
+        project_connections = project_fixture.get_project_connections()
         vdns_fixt = {}
         vdns_verify = []
         i = 1

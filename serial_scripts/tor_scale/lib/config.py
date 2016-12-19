@@ -43,7 +43,7 @@ class ConfigScale(object):
         # time.sleep(4)
         try:
             self.project = project_test.ProjectFixture(project_name=self.project_name, auth=self.auth,
-                                                       vnc_lib_h=self.vnc_lib, username=self.user, password=self.password,
+                                                       username=self.user, password=self.password,
                                                        connections=self.connections)
             self.project.setUp()
         except Exception as e:
@@ -71,7 +71,7 @@ class ConfigScale(object):
             self.vn = vn_test.VNFixture(project_name=self.project_name, connections=self.connections,
                                         inputs=self.inputs, vn_name=self.vn_name, subnets=self.vn_subnet,
                                         project_obj=self.project_obj,
-                                        option='api',
+                                        option='contrail',
                                         vxlan_id=self.vxlan_id)
             self.vn.setUp()
         except Exception as e:
