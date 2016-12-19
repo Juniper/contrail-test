@@ -392,13 +392,13 @@ class TestBasicVMVN0(BaseVnVmTest):
                 policy_name=policy2_name, 
                 rules_list=rev_rules, inputs=self.inputs,
                 connections=self.connections))
-        vn1_fixture = self.create_vn(vn1_name, vn1_subnets,option = 'api')
+        vn1_fixture = self.create_vn(vn1_name, vn1_subnets, option='contrail')
         assert vn1_fixture.verify_on_setup()
         vn1_fixture.bind_policies(
             [policy1_fixture.policy_fq_name], vn1_fixture.vn_id)
         self.addCleanup(vn1_fixture.unbind_policies,
                         vn1_fixture.vn_id, [policy1_fixture.policy_fq_name])
-        vn2_fixture = self.create_vn(vn2_name, vn2_subnets, option = 'api')
+        vn2_fixture = self.create_vn(vn2_name, vn2_subnets, option='contrail')
         assert vn2_fixture.verify_on_setup()
         vn2_fixture.bind_policies(
             [policy2_fixture.policy_fq_name], vn2_fixture.vn_id)
@@ -435,7 +435,7 @@ class TestBasicVMVN0(BaseVnVmTest):
 
         vn3_name = get_random_name('vn3')
         vn3_subnets = ["192.168.4.0/24"]
-        vn3_fixture = self.create_vn(vn3_name, vn3_subnets,option = 'api')
+        vn3_fixture = self.create_vn(vn3_name, vn3_subnets, option='contrail')
         assert vn1_fixture.verify_on_setup()
 
         vm3_fixture = self.create_vm(vn1_fixture, vn1_vm2_name)

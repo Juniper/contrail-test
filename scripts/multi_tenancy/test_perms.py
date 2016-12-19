@@ -731,7 +731,7 @@ class TestMultitenancy(BaseMultitenancyTest):
             vn_obj = self.useFixture(
                 VNFixture(
                     project_name=proj_name, connections=test_proj_connections1,
-                    vn_name='vn211', option='api', inputs=test_proj_inputs1, subnets=['200.100.100.0/24', '200.100.101.0/24']))
+                    vn_name='vn211', option='contrail', inputs=test_proj_inputs1, subnets=['200.100.100.0/24', '200.100.101.0/24']))
         except Exception as e:
             self.logger.exception('Got exception as %s' % (e))
             testfail += 1
@@ -935,7 +935,7 @@ class TestMultitenancy(BaseMultitenancyTest):
             vn_obj = self.useFixture(
                 VNFixture(
                     project_name=proj_name, connections=test_proj_connections1,
-                    vn_name='vn211', option='api', inputs=test_proj_inputs1, subnets=['200.100.100.0/24', '200.100.101.0/24']))
+                    vn_name='vn211', option='contrail', inputs=test_proj_inputs1, subnets=['200.100.100.0/24', '200.100.101.0/24']))
         except Exception as e:
             self.logger.exception('Got exception as %s' % (e))
             testfail += 1
