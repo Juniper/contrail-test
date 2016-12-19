@@ -23,7 +23,7 @@ from tcutils.util import *
 from fabric.state import connections
 from scripts.securitygroup.config import ConfigSecGroup
 
-class BaseResource(fixtures.Fixture, ConfigSvcChain, VerifySvcChain, BaseTestLbaas, BaseNeutronTest):
+class BaseResource(ConfigSvcChain, VerifySvcChain, BaseTestLbaas, BaseNeutronTest):
 
     def setUp(self, inputs, connections, logger):
         super(BaseResource , self).setUp()
