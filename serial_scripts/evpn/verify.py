@@ -52,12 +52,12 @@ class VerifyEvpnCases():
         vn3_fixture = self.useFixture(
                 VNFixture(
                     project_name=self.inputs.project_name, connections=self.connections,
-                    vn_name=self.vn3_name,option='api', inputs=self.inputs, subnets=self.vn3_subnets))
+                    vn_name=self.vn3_name,option='contrail', inputs=self.inputs, subnets=self.vn3_subnets))
 
         vn4_fixture = self.useFixture(
                 VNFixture(
                     project_name=self.inputs.project_name, connections=self.connections,
-                    vn_name=self.vn4_name, option='api', inputs=self.inputs,
+                    vn_name=self.vn4_name, option='contrail', inputs=self.inputs,
                     subnets=self.vn4_subnets, dhcp_option_list=dhcp_option_list,
                     enable_dhcp=False,forwarding_mode='l2'))
         assert vn3_fixture.verify_on_setup()
