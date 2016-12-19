@@ -42,7 +42,6 @@ class BaseVgwTest(test.BaseTestCase):
     def setup_common_objects(cls):
 
         cls.project_fixture = ProjectFixture(
-            vnc_lib_h=cls.vnc_lib,
             project_name=cls.inputs.project_name,
             connections=cls.connections)
         cls.project_fixture.setUp()
@@ -72,7 +71,7 @@ class BaseVgwTest(test.BaseTestCase):
             for key in cls.vgw_vn_list:
                 vn = VNFixture(
                     project_name=key.split(':')[1],
-                    option='api',
+                    option='contrail',
                     connections=cls.connections,
                     inputs=cls.inputs,
                     vn_name=key.split(":")[3],

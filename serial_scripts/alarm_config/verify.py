@@ -102,8 +102,7 @@ class VerifyAlarms():
                 alarm_name = get_random_name('vn_acl_rule')
                 project_name = get_random_name('project')
                 project_fixture = self.useFixture(
-                    ProjectFixture(vnc_lib_h=self.vnc_lib,
-                                   project_name=project_name,
+                    ProjectFixture(project_name=project_name,
                                    connections=self.connections))
                 if self.parent_type == 'project':
                     alarm_fix = self.create_alarm(
@@ -158,6 +157,6 @@ class VerifyAlarms():
                                                               inputs=self.inputs,
                                                               vn_name=vn_name,
                                                               subnets=vn_subnets,
-                                                              option='api',
+                                                              option='contrail',
                                                               policy_objs=[policy_obj]))
         return vn_pol_dict
