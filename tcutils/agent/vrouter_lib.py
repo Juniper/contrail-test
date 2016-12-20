@@ -7,6 +7,11 @@ def is_nh_local(nh):
     else:
         return False
 
+def is_nh_tunnel(nh):
+    if 'TUNNEL' in nh.get('flags'):
+        return True
+    else:
+        return False
 
 def is_nh_of_local_interface(inspect_h, nh, intf_name, logger=None):
     '''

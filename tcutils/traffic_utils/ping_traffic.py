@@ -47,7 +47,7 @@ class Ping:
         self.logger.info('Starting %s on %s, args: %s' % (self.ping_cmd,
             self.sender_vm_fixture.vm_name, self.args_string))
         self.logger.debug('%s cmd : %s' % (self.ping_cmd, cmd))
-        self.sender_vm_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True,
+        self.sender_vm_fixture.run_cmd_on_vm(cmds=[cmd],
             as_daemon=True, pidfile=self.pid_file)
         if wait:
             self.wait_till_ping_completes()
@@ -71,7 +71,7 @@ class Ping:
         self.logger.debug('Ensuring ping instance with result file %s '
             'on %s is stopped' % (self.result_file,
                                   self.sender_vm_fixture.vm_name))
-        self.sender_vm_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        self.sender_vm_fixture.run_cmd_on_vm(cmds=[cmd])
         (stats, log) = self.parse_result_file()
         self.delete_log_files()
         return (stats, log)
@@ -90,7 +90,7 @@ class Ping:
         }
         '''
         cmd = 'cat %s | xargs kill -3 ' % (self.pid_file)
-        self.sender_vm_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        self.sender_vm_fixture.run_cmd_on_vm(cmds=[cmd])
 
         result_data = {'sent': None, 'received': None, 'loss': None}
         search1 = '''(\S+)\/(\S+) packets, (\S+)% loss'''
@@ -123,6 +123,17 @@ class Ping:
         --- juniper.net ping statistics ---
         4 packets transmitted, 3 received, 25% packet loss, time 3003ms
         rtt min/avg/max/mdev = 213.115/219.307/231.394/8.564 ms
+
+        OR for cirros images :
+
+        64 bytes from 160.109.238.3: seq=63 ttl=63 time=0.418 ms
+        64 bytes from 160.109.238.3: seq=64 ttl=63 time=0.453 ms
+        64 bytes from 160.109.238.3: seq=65 ttl=63 time=0.394 ms
+        64 bytes from 160.109.238.3: seq=66 ttl=63 time=0.394 ms
+
+        --- 160.109.238.3 ping statistics ---
+        67 packets transmitted, 67 packets received, 0% packet loss
+        round-trip min/avg/max = 0.299/0.445/1.247 ms
         '''
         result_file = result_file or self.result_file
         reg_result = None
@@ -130,8 +141,12 @@ class Ping:
         result_data = {'sent': None, 'received': None, 'loss': None,
             'time':None, 'rtt_min':None, 'rtt_avg':None, 'rtt_max':None,
             'rtt_mdev':None}
+
+        # For cirros images, pattern is slightly different
         search1 = '''(\S+) packets transmitted, (\S+) received, (\S+)% packet loss, time (\S+)ms'''
+        search1_alt = '''(\S+) packets transmitted, (\S+) packets received, (\S+)% packet loss'''
         search2 = '''rtt min/avg/max/mdev = (\S+)\/(\S+)\/(\S+)\/(\S+) '''
+        search2_alt = ''' min/avg/max = (\S+)\/(\S+)\/(\S+) '''
 
         cmds = ['cat %s' %(result_file),
                 'cat %s' %(self.log_file)]
@@ -140,19 +155,27 @@ class Ping:
         result_content = result[cmds[0]]
         result_log = result[cmds[1]]
         if result_content:
-            reg_result = re.search(search1, result_content)
-            rtt_result = re.search(search2, result_content)
+            reg_result = re.search(search1, result_content) or \
+                            re.search(search1_alt, result_content)
+            rtt_result = re.search(search2, result_content) or \
+                            re.search(search2_alt, result_content)
         if reg_result:
             result_data['sent'] = reg_result.group(1)
             result_data['received'] = reg_result.group(2)
             result_data['loss'] = reg_result.group(3)
-            result_data['time'] = reg_result.group(4)
+            if len(reg_result.group()) == 4:
+                result_data['time'] = reg_result.group(4)
+            else:
+                result_data['time'] = 'N/A'
         if rtt_result:
             result_data['rtt_min'] = rtt_result.group(1)
             result_data['rtt_avg'] = rtt_result.group(2)
             result_data['rtt_max'] = rtt_result.group(3)
-            result_data['rtt_mdev'] = rtt_result.group(4)
-        if 'None' in  result_data.values():
+            if len(rtt_result.group()) == 4:
+                result_data['rtt_mdev'] = rtt_result.group(4)
+            else:
+                result_data['rtt_mdev'] = 'N/A'
+        if None in result_data.values():
             self.logger.warn('Parsing of ping had problems. Got stats: %s'
                 'Please check debug logs'  %(result_data))
             self.logger.debug(result_content)
@@ -210,6 +233,6 @@ class Ping:
 
     def delete_log_files(self):
         cmd = 'rm -f %s;rm -f %s' % (self.log_file, self.result_file)
-        output = self.sender_vm_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        output = self.sender_vm_fixture.run_cmd_on_vm(cmds=[cmd])
 
         self.logger.debug('Result for removing the log files: %s' % (output))

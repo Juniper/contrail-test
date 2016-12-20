@@ -1,8 +1,8 @@
 import re
 
-from common.neutron.base import BaseNeutronTest
+from common.vrouter.base import BaseVrouterTest
 
-class FlowTestBase(BaseNeutronTest):
+class FlowTestBase(BaseVrouterTest):
 
     @classmethod
     def setUpClass(cls):
