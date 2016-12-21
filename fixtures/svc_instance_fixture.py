@@ -571,4 +571,22 @@ class SvcInstanceFixture(fixtures.Fixture):
             self.vnc_lib.virtual_machine_interface_update(vmi_obj)
     # end add_port_tuple
 
+    def add_port_tuple_subIntf(self, mgmt_vmi_id, left_vmi_id, right_vmi_id, pt_name):
+        pt_obj = PortTuple(name=pt_name, parent_obj=self.si_obj)
+        pt_uuid = self.vnc_lib.port_tuple_create(pt_obj)
+        ports_list = []
+        ports_list.append(mgmt_vmi_id)
+        ports_list.append(left_vmi_id)
+        ports_list.append(right_vmi_id)
+        for index in range(0, len(self.if_list)):
+            port_id = ports_list[index]
+            vmi_obj = self.vnc_lib.virtual_machine_interface_read(id=port_id)
+            vmi_props = VirtualMachineInterfacePropertiesType()
+            vmi_props.set_service_interface_type(self.if_list[index][0])
+            vmi_obj.set_virtual_machine_interface_properties(vmi_props)
+            vmi_obj.add_port_tuple(pt_obj)
+            self.vnc_lib.virtual_machine_interface_update(vmi_obj)
+    # end add_port_tuple
+
+
 # end SvcInstanceFixture
