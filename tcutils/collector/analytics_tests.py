@@ -2802,7 +2802,7 @@ class AnalyticsVerification(fixtures.Fixture):
         cfgm_services = ['contrail-config-nodemgr', 'contrail-device-manager']
         try:
             if service in cfgm_services and dist in ['centos', 'fedora', 'redhat']:
-                supervisorctl_cfg = 'supervisorctl -s unix:///tmp/supervisord_config.sock'
+                supervisorctl_cfg = 'supervisorctl -s unix:///var/run/supervisord_config.sock'
                 issue_stop_cmd = supervisorctl_cfg + ' stop ' + service
                 issue_start_cmd = supervisorctl_cfg + ' start ' + service
                 cfgm_ndmgr_ctl_required = True
