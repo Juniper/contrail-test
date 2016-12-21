@@ -22,7 +22,7 @@ class TestVcenter(BaseVnVmTest):
 
     def is_test_applicable(self):
         if self.inputs.orchestrator != 'vcenter':
-            return(False, 'Skipping Test. Require %s setup' % orch)
+            return (False, 'Skipping Test. Require vcenter setup')
         return (True, None)
 
     @test.attr(type=['vcenter'])

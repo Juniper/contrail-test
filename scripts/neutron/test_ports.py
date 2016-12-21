@@ -934,7 +934,7 @@ class TestPorts(BaseNeutronTest):
             vm.start_webserver()
             output = vm.run_cmd_on_vm(
                 ['sudo ifconfig eth0:10 ' + vIP + ' netmask 255.255.255.0'])
-            self.check_master_in_agent(vm, vn1_fixture, vIP, ecmp=True)
+            #self.check_master_in_agent(vm, vn1_fixture, vIP, ecmp=True)
         self.logger.info('Curl requests to %s should be answered by either %s or %s' % (
             vIP, vm1_fixture.vm_name, vm2_fixture.vm_name))
         cmd1 = "curl --local-port 9001 -i " + vIP + ":8000"
