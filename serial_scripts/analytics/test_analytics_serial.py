@@ -24,13 +24,6 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         pass
     # end runTest
 
-    def is_test_applicable(self):
-        if len(self.inputs.tor_hosts_data.keys()) == 0 :
-            info_str = 'Skipping Test. No BMS details seen in the Test cluster'
-            return (False, info_str)
-        return (True, None)
-    # end is_test_applicable
-
     @preposttest_wrapper
     def test_prouter_connectivity_alarm(self):
         ''' Test to check prouter process connectivity alarm
@@ -42,10 +35,14 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
                 4) undo step1
                 5) Expect prouter connectivity alarm gets cleared
         '''
+        info_str = 'Skipping Test. No BMS details seen in the Test cluster'
+        if len(self.inputs.tor_hosts_data.keys()) == 0 :
+            raise self.skipTest(info_str)
         assert self.analytics_obj.verify_prouter_connectivity_alarm()
         return True
     # end test_prouter_connectivity_alarm
 
+    @preposttest_wrapper
     def test_vrouter_intf_alarm(self):
         ''' Test to check vrouter-interface alarm
             Steps:
@@ -86,6 +83,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         return True
     # end test_vrouter_intf_alarm
 
+    @preposttest_wrapper
     def test_disk_usage_alarms(self):
         ''' Test to check disk-usage alarms
             Steps:
@@ -96,6 +94,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         assert self.analytics_obj.verify_disk_usage_alarm()
         return True
 
+    @preposttest_wrapper
     def test_conf_incorrect_alarms(self):
         ''' Test to check conf-incorrect alarms
             Steps:
@@ -106,6 +105,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         assert self.analytics_obj.verify_conf_incorrect_alarm()
         return True
 
+    @preposttest_wrapper
     def test_contrail_control_process_connectivity_alarm(self):
         ''' Test to check contrail-control process connectivity alarm
             Steps:
@@ -117,6 +117,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         assert self.analytics_obj.verify_process_connectivity_contrail_control_alarm()
         return True
 
+    @preposttest_wrapper
     def test_partial_sysinfo_config_alarm(self):
         ''' Test to check PartialSysinfoConfig alarm
             Steps:
@@ -128,6 +129,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         assert self.analytics_obj.verify_partial_sysinfo_config_alarm()
         return True
 
+    @preposttest_wrapper
     def test_vrouter_agent_process_connectivity_alarm(self):
         ''' Test to check vrouter agent process connectivity alarm
             Steps:
@@ -138,6 +140,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         assert self.analytics_obj.verify_process_connectivity_vrouter_agent_alarm()
         return True
 
+    @preposttest_wrapper
     def test_address_mismatch_control_alarm(self):
         ''' Test to check contrail AddressMismatchControl alarm
             Steps:
@@ -148,6 +151,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         assert self.analytics_obj.verify_address_mismatch_control_alarm()
         return True
 
+    @preposttest_wrapper
     def test_control_node_bgp_connectivity_alarm(self):
         ''' Test whether contrail bgp connectivity alarm is generated 
             when there is bgp peer mismatch
@@ -156,6 +160,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         return True
 
     @test.attr(type=['sanity', 'vcenter'])
+    @preposttest_wrapper
     def test_cfgm_node_process_status_alarms(self):
         ''' Test whether process status alarm gets generated/cleared
             after stopping the process
@@ -171,6 +176,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         return True
 
     @test.attr(type=['sanity','vcenter'])
+    @preposttest_wrapper
     def test_db_node_process_status_alarms(self):
         ''' Test whether process status alarm gets generated/cleared
             after stopping the process
@@ -186,6 +192,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         return True
 
     @test.attr(type=['sanity','vcenter'])
+    @preposttest_wrapper
     def test_analytics_node_process_status_alarms(self):
         ''' Test whether process status alarm gets generated/cleared
             after stopping the process
@@ -200,6 +207,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         return True
 
     @test.attr(type=['sanity','vcenter'])
+    @preposttest_wrapper
     def test_control_node_process_status_alarms(self):
         ''' Test whether process status alarm gets generated/cleared
             after stopping the process
@@ -215,7 +223,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         return True
 
     @test.attr(type=['sanity','vcenter'])
-    def test_vrouter_alarms(self):
+    def test_vrouter_process_status_alarms(self):
         ''' Test whether process status alarm gets generated/cleared
             after stopping the process
             Steps:
