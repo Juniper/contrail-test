@@ -178,7 +178,9 @@ class DisablePolicyEcmp(BaseVrouterTest):
 
         self.disable_policy_for_vms(vm_fix_list)
 
-        self.config_aap(port1_obj, port2_obj, vIP)
+        port_list = [port1_obj, port2_obj]
+        for port in port_list:
+            self.config_aap(port, vIP, mac=port['mac_address'])
         self.config_vrrp(vm1_fixture, vIP, '20')
         self.config_vrrp(vm2_fixture, vIP, '10')
         vrrp_master = vm1_fixture
@@ -225,7 +227,8 @@ class DisablePolicyEcmp(BaseVrouterTest):
         assert self.send_nc_traffic(client_fixture, vrrp_master,
             sport, dport, proto, ip=vIP)
 
-        for fixture in compute_fixtures:
+        for fixture in set([self.compute_fixtures_dict[client_fixture.vm_node_ip], \
+            self.compute_fixtures_dict[vm2_fixture.vm_node_ip]]):
             vrf_id = fixture.get_vrf_id(vrrp_master.vn_fq_names[0])
             self.verify_flow_on_compute(fixture, client_fixture.vm_ip,
                         vIP, vrf_id, vrf_id, sport, dport, proto,
