@@ -38,6 +38,11 @@ class CeilometerTest(
         pass
     # end runTest
 
+    def is_test_applicable(self):
+        if not self.connections.orch.is_feature_supported('ceilometer'):
+            return(False, 'ceilometer tests not supported in this environment ')
+        return (True, None)
+
     @preposttest_wrapper
     def test_resources_by_admin_tenant(self):
         """Verifying ceilometer resources - admin tenant"""
