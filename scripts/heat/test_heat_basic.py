@@ -87,6 +87,11 @@ class TestBasicHeatv2IPv6(TestBasicHeatv2):
         super(TestBasicHeatv2IPv6, cls).setUpClass()
         cls.inputs.set_af('v6')
 
+    def is_test_applicable(self):
+        if not self.connections.orch.is_feature_supported('ipv6'):
+            return(False, 'IPv6 tests not supported in this environment ')
+        return (True, None)
+
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_svc_creation_with_heat(self):

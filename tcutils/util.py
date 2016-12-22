@@ -1000,8 +1000,8 @@ def skip_because(*args, **kwargs):
             if "feature" in kwargs:
                 if not self.orch.is_feature_supported(kwargs["feature"]):
                     skip = True
-                    msg = "Skipped as feature %s not supported in %s \
-				orchestration setup" % (kwargs["feature"], self.inputs.orchestrator)
+                    msg = "Skipped as feature %s not supported in this environment"%(
+				kwargs["feature"])
                     raise testtools.TestCase.skipException(msg)
 
             if 'ha_setup' in kwargs:
