@@ -2097,6 +2097,11 @@ class TestBasicVMVN6(BaseVnVmTest):
         pass
     #end runTes 
 
+    def is_test_applicable(self):
+        if not self.connections.orch.is_feature_supported('ipv6'):
+            return(False, 'IPv6 tests not supported in this environment ')
+        return (True, None)
+
     @preposttest_wrapper
     def test_vn_subnet_types(self):
         '''
@@ -2849,6 +2854,11 @@ class TestBasicIPv6VMVN6(TestBasicVMVN6):
         super(TestBasicIPv6VMVN6, cls).setUpClass()
         cls.inputs.set_af('v6')
 
+    def is_test_applicable(self):
+        if not self.connections.orch.is_feature_supported('ipv6'):
+            return(False, 'IPv6 tests not supported in this environment ')
+        return (True, None)
+
 class TestBasicIPv6VMVN9(TestBasicVMVN9):
 
     @classmethod
@@ -3184,6 +3194,11 @@ class TestBasicIPv6VMVNx(TestBasicVMVNx):
         super(TestBasicIPv6VMVNx, cls).setUpClass()
         cls.inputs.set_af('v6')
 
+    def is_test_applicable(self):
+        if not self.connections.orch.is_feature_supported('ipv6'):
+            return(False, 'IPv6 tests not supported in this environment ')
+        return (True, None)
+
     @test.attr(type=['sanity', 'quick_sanity'])
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
@@ -3199,6 +3214,11 @@ class TestBasicIPv6VMVN(test_vm_basic.TestBasicVMVN):
     def setUpClass(cls):
         super(TestBasicIPv6VMVN, cls).setUpClass()
         cls.inputs.set_af('v6')
+
+    def is_test_applicable(self):
+        if not self.connections.orch.is_feature_supported('ipv6'):
+            return(False, 'IPv6 tests not supported in this environment ')
+        return (True, None)
 
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter')

@@ -339,6 +339,8 @@ class TestDetailedPolicy0Ipv4v6(test_policy_basic.TestDetailedPolicy0):
     def is_test_applicable(self):
         if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported('ipv6'):
             return(False, 'Skipping IPv6 Test on vcenter setup')
+        if not self.connections.orch.is_feature_supported('ipv6'):
+            return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
 
     @test.attr(type=['sanity'])
