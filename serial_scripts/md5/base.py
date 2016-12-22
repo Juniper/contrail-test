@@ -104,12 +104,12 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
         vm61_fixture = self.useFixture(VMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
             vn_obj=vn61_fixture.obj, vm_name=vm61_name, node_name=None,
-            image_name='cirros-0.3.0-x86_64-uec', flavor='m1.tiny'))
+            image_name='cirros', flavor='m1.tiny'))
 
         vm62_fixture = self.useFixture(VMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
             vn_obj=vn62_fixture.obj, vm_name=vm62_name, node_name=None,
-            image_name='cirros-0.3.0-x86_64-uec', flavor='m1.tiny'))
+            image_name='cirros', flavor='m1.tiny'))
         vm61_fixture.wait_till_vm_is_up()
         vm62_fixture.wait_till_vm_is_up()
 
@@ -158,7 +158,7 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
 
         self.multi_vm_fixture = self.useFixture(MultipleVMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
-            vm_count_per_vn=1, vn_objs=vns, image_name='cirros-0.3.0-x86_64-uec',
+            vm_count_per_vn=1, vn_objs=vns, image_name='cirros',
             flavor='m1.tiny'))
         vms = self.multi_vm_fixture.get_all_fixture()
         (self.vm1_name, self.vm1_fix) = vms[0]

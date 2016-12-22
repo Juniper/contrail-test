@@ -14,7 +14,7 @@ from tcutils.util import *
 from netaddr import IPNetwork, IPAddress
 import test
 
-CIRROS_IMAGE_NAME='cirros-0.3.0-x86_64-uec'
+CIRROS_IMAGE_NAME='cirros'
 
 class TestRoutes(BaseVrouterTest):
 
