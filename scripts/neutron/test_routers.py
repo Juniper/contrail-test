@@ -50,7 +50,7 @@ class TestRouters(BaseNeutronTest):
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
         vn1_fixture.verify_on_setup()
         vm1_fixture = self.create_vm(vn1_fixture, vm1_name,
-                                         image_name='cirros-0.3.0-x86_64-uec')
+                                         image_name='cirros')
         vm1_fixture.wait_till_vm_is_up()
 
         ext_vn_name = get_random_name('ext_vn')
@@ -69,7 +69,7 @@ class TestRouters(BaseNeutronTest):
 
         vm2_name = get_random_name('vm_right')
         vm2_fixture = self.create_vm(ext_vn_fixture, vm2_name,
-                                         image_name='cirros-0.3.0-x86_64-uec')
+                                         image_name='cirros')
         vm2_fixture.wait_till_vm_is_up()
 
         router_name = get_random_name('router1')
@@ -103,9 +103,9 @@ class TestRouters(BaseNeutronTest):
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
         vn2_fixture = self.create_vn(vn2_name, vn2_subnets)
         vn1_vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
-                                         image_name='cirros-0.3.0-x86_64-uec')
+                                         image_name='cirros')
         vn2_vm1_fixture = self.create_vm(vn2_fixture, vn2_vm1_name,
-                                         image_name='cirros-0.3.0-x86_64-uec')
+                                         image_name='cirros')
         assert vn1_vm1_fixture.wait_till_vm_is_up()
         assert vn2_vm1_fixture.wait_till_vm_is_up()
         assert vn1_vm1_fixture.ping_with_certainty(vn2_vm1_fixture.vm_ip,
@@ -158,9 +158,9 @@ class TestRouters(BaseNeutronTest):
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
         vn2_fixture = self.create_vn(vn2_name, vn2_subnets)
         vn1_vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
-                                         image_name='cirros-0.3.0-x86_64-uec')
+                                         image_name='cirros')
         vn2_vm1_fixture = self.create_vm(vn2_fixture, vn2_vm1_name,
-                                         image_name='cirros-0.3.0-x86_64-uec')
+                                         image_name='cirros')
         assert vn1_vm1_fixture.wait_till_vm_is_up()
         assert vn2_vm1_fixture.wait_till_vm_is_up()
         assert vn1_vm1_fixture.ping_with_certainty(vn2_vm1_fixture.vm_ip,
@@ -206,9 +206,9 @@ class TestRouters(BaseNeutronTest):
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
         vn2_fixture = self.create_vn(vn2_name, vn2_subnets)
         vn1_vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
-                                         image_name='cirros-0.3.0-x86_64-uec')
+                                         image_name='cirros')
         vn2_vm1_fixture = self.create_vm(vn2_fixture, vn2_vm1_name,
-                                         image_name='cirros-0.3.0-x86_64-uec')
+                                         image_name='cirros')
         assert vn1_vm1_fixture.wait_till_vm_is_up()
         assert vn2_vm1_fixture.wait_till_vm_is_up()
         assert vn1_vm1_fixture.ping_with_certainty(vn2_vm1_fixture.vm_ip,

@@ -351,10 +351,10 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
             self.update_stack(svc_pt_hs, change_sets=[['left_vn_fqdn', left_vn_fqdn], ['right_vn_fqdn', right_vn_fqdn], ['service_instance1_fq_name', si_fqdn], ['service_instance2_fq_name', si2_fqdn]])
         else:
             self.update_stack(svc_pt_hs, change_sets=[['left_vn_fqdn', left_vn_fqdn], ['right_vn_fqdn', right_vn_fqdn], ['service_instance_fq_name', si_fqdn]])
-        left_vm = VMFixture(connections=self.connections,uuid = left_vm_id, image_name = 'cirros-0.3.0-x86_64-uec')
+        left_vm = VMFixture(connections=self.connections,uuid = left_vm_id, image_name = 'cirros')
         left_vm.read()
         left_vm.verify_on_setup()
-        right_vm = VMFixture(connections=self.connections,uuid = right_vm_id, image_name = 'cirros-0.3.0-x86_64-uec')
+        right_vm = VMFixture(connections=self.connections,uuid = right_vm_id, image_name = 'cirros')
         right_vm.read()
         right_vm.verify_on_setup()
         assert left_vm.ping_with_certainty(right_vm.vm_ip, expectation=True)

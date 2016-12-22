@@ -7,7 +7,7 @@ ecmp_pt = {
      "protocol": "any",
      "service_template_properties_version": 2,
      "svm2_name": "pt_svm2",
-     "image": "cirros-0.3.0-x86_64-uec",
+     "image": "cirros",
      "dst_port_start": -1,
      "service_template_properties_service_type": "firewall",
      "service_template_properties_service_mode": "in-network-nat",
@@ -83,7 +83,7 @@ pt_multi_inline = {
      "network_ipam_refs_data_ipam_subnets_subnet_ip_prefix_len_1": 24,
      "service_template_properties_interface_type_service_interface_type_1":
      "management",
-     "image": "cirros-0.3.0-x86_64-uec",
+     "image": "cirros",
      "src_port_end": -1,
      "service_instance2_fq_name": "",
      "service_template2_properties_image_name": "vsrx",
