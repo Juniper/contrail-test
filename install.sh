@@ -15,7 +15,7 @@ PACKAGES_REQUIRED_UBUNTU="python-pip ant python-novaclient python-neutronclient 
     patch git ipmitool python-requests"
 PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD="$PACKAGES_REQUIRED_UBUNTU python-dev libxslt1-dev libz-dev libyaml-dev sshpass"
 PACKAGES_REQUIRED_RALLY="libssl-dev libffi-dev python-dev libxml2-dev libxslt1-dev libpq-dev libpq5=9.3.15-0ubuntu0.14.04"
-EXTRAS="http://launchpadlibrarian.net/264517293/libexpat1_2.1.0-4ubuntu1.3_amd64.deb http://launchpadlibrarian.net/264517288/libexpat1-dev_2.1.0-4ubuntu1.3_amd64.deb https://launchpad.net/~ubuntu-security/+archive/ubuntu/ppa/+build/7566120/+files/libpython2.7-dev_2.7.6-8ubuntu0.2_amd64.deb https://launchpad.net/~ubuntu-security/+archive/ubuntu/ppa/+build/7566120/+files/python2.7-dev_2.7.6-8ubuntu0.2_amd64.deb"
+EXTRAS="http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libexpat1-dev_2.1.0-4ubuntu1.3_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libexpat1_2.1.0-4ubuntu1.3_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libpython2.7-dev_2.7.6-8ubuntu0.3_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/python2.7-dev_2.7.6-8ubuntu0.3_amd64.deb"
 
 usage () {
     cat <<EOF
