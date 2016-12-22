@@ -384,6 +384,12 @@ try:
             super(TestHeatIPv6, cls).setUpClass()
             cls.inputs.set_af('v6')
 
+        def is_test_applicable(self):
+            if not self.connections.orch.is_feature_supported('ipv6'):
+                return(False, 'IPv6 tests not supported in this environment ')
+            return (True, None)
+
+
     class TestHeatv2(TestHeat):
 
         @classmethod
@@ -437,6 +443,12 @@ try:
         def setUpClass(cls):
             super(TestHeatv2IPv6, cls).setUpClass()
             cls.inputs.set_af('v6')
+
+    	def is_test_applicable(self):
+            if not self.connections.orch.is_feature_supported('ipv6'):
+                return(False, 'IPv6 tests not supported in this environment ')
+            return (True, None)
+
 
 except ImportError:
     print 'Missing Heat Client. Will skip tests'

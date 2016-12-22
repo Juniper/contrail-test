@@ -178,7 +178,8 @@ class TestVcenter2(BaseVnVmTest):
                        dst_vm_fix), "Ping from %s to %s failed" % \
                        (src_vm_fix.vm_name, dst_vm_fix.vn_name)
 
-    @test.attr(type=['vcenter'])
+    # commenting this as agreed with script dev
+    #@test.attr(type=['vcenter'])
     @preposttest_wrapper
     def test_vcenter_host_maintenance(self):
         '''
