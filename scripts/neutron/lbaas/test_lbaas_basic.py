@@ -43,13 +43,13 @@ class TestBasicLbaas(BaseTestLbaas):
         vn_vip_fixture = self.create_vn(vn_vip, vn_vip_subnets)
         assert vn_vip_fixture.verify_on_setup()
         pool_vm1_fixture = self.create_vm(vn_pool_fixture,vm_name=pool_vm1,
-                                          image_name='cirros-0.3.0-x86_64-uec')
+                                          image_name='cirros')
         pool_vm2_fixture = self.create_vm(vn_pool_fixture,vm_name=pool_vm2,
-                                          image_name='cirros-0.3.0-x86_64-uec')
+                                          image_name='cirros')
         pool_vm3_fixture = self.create_vm(vn_pool_fixture,vm_name=pool_vm3,
-                                          image_name='cirros-0.3.0-x86_64-uec')
+                                          image_name='cirros')
         client_vm1_fixture = self.create_vm(vn_vip_fixture,vm_name=client_vm1,
-                                          image_name='cirros-0.3.0-x86_64-uec')
+                                          image_name='cirros')
 
         lb_pool_servers = [pool_vm1_fixture, pool_vm2_fixture, pool_vm3_fixture]
 
@@ -158,13 +158,13 @@ class TestBasicLbaas(BaseTestLbaas):
         vn_vip_fixture = vn_pool_fixture
         assert vn_vip_fixture.verify_on_setup()
         pool_vm1_fixture = self.create_vm(vn_pool_fixture,vm_name=pool_vm1,
-                                          image_name='cirros-0.3.0-x86_64-uec')
+                                          image_name='cirros')
         pool_vm2_fixture = self.create_vm(vn_pool_fixture,vm_name=pool_vm2,
-                                          image_name='cirros-0.3.0-x86_64-uec')
+                                          image_name='cirros')
         pool_vm3_fixture = self.create_vm(vn_pool_fixture,vm_name=pool_vm3,
-                                          image_name='cirros-0.3.0-x86_64-uec')
+                                          image_name='cirros')
         client_vm1_fixture = self.create_vm(vn_vip_fixture,vm_name=client_vm1,
-                                          image_name='cirros-0.3.0-x86_64-uec')
+                                          image_name='cirros')
 
         lb_pool_servers = [pool_vm1_fixture, pool_vm2_fixture, pool_vm3_fixture]
 

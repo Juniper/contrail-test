@@ -499,16 +499,16 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         if 'cidr' in stack_name:
                 if 'src_cidr' in stack_name:
                     # 2 VMs in the left_vn
-                    left_vm1 = VMFixture(connections=self.connections,uuid = left_vm1_id, image_name = 'cirros-0.3.0-x86_64-uec')
+                    left_vm1 = VMFixture(connections=self.connections,uuid = left_vm1_id, image_name = 'cirros')
                     left_vm1.read()
                     left_vm1.verify_on_setup()
 
-                    left_vm2 = VMFixture(connections=self.connections,uuid = left_vm2_id, image_name = 'cirros-0.3.0-x86_64-uec')
+                    left_vm2 = VMFixture(connections=self.connections,uuid = left_vm2_id, image_name = 'cirros')
                     left_vm2.read()
                     left_vm2.verify_on_setup()
 
                     # One VM in the right_vn
-                    right_vm = VMFixture(connections=self.connections,uuid = right_vm_id, image_name = 'cirros-0.3.0-x86_64-uec')
+                    right_vm = VMFixture(connections=self.connections,uuid = right_vm_id, image_name = 'cirros')
                     right_vm.read()
                     right_vm.verify_on_setup()
 
@@ -518,10 +518,10 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
                     # Ping from left_vm2 to right_vm should fail
                     assert left_vm2.ping_with_certainty(right_vm.vm_ip, expectation=False)
         else:
-            left_vm = VMFixture(connections=self.connections,uuid = left_vm_id, image_name = 'cirros-0.3.0-x86_64-uec')
+            left_vm = VMFixture(connections=self.connections,uuid = left_vm_id, image_name = 'cirros')
             left_vm.read()
             left_vm.verify_on_setup()
-            right_vm = VMFixture(connections=self.connections,uuid = right_vm_id, image_name = 'cirros-0.3.0-x86_64-uec')
+            right_vm = VMFixture(connections=self.connections,uuid = right_vm_id, image_name = 'cirros')
             right_vm.read()
             right_vm.verify_on_setup()
             assert left_vm.ping_with_certainty(right_vm.vm_ip, expectation=True)

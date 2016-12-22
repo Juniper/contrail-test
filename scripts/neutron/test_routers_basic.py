@@ -37,7 +37,7 @@ class TestRoutersBasic(BaseNeutronTest):
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
         vn1_fixture.verify_on_setup()
         vm1_fixture = self.create_vm(vn1_fixture, vm1_name,
-                                         image_name='cirros-0.3.0-x86_64-uec')
+                                         image_name='cirros')
         vm1_fixture.wait_till_vm_is_up()
 
         ext_vn_name = get_random_name('ext_vn')
@@ -56,7 +56,7 @@ class TestRoutersBasic(BaseNeutronTest):
 
         vm2_name = get_random_name('vm_right')
         vm2_fixture = self.create_vm(ext_vn_fixture, vm2_name,
-                                         image_name='cirros-0.3.0-x86_64-uec')
+                                         image_name='cirros')
         vm2_fixture.wait_till_vm_is_up()
 
         router_name = get_random_name('router1')
