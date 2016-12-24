@@ -28,6 +28,12 @@ class OpenstackOrchestrator(Orchestrator):
        #for vcenter as compute
        self.vcntr_handle = self.get_vcenter_handle()
 
+   def is_feature_supported(self, feature):
+        if self.inputs.vcenter_compute:
+            unsupported_features = ['ipv6', 'trans_svc', 'lbaasv1', 'ceilometer']
+            return feature not in unsupported_features
+        return True
+
    def get_vcenter_handle(self):
        if self.inputs and self.inputs.vcenter_dc:
            vcntr = VcenterOrchestrator(user=self.inputs.vcenter_username,
