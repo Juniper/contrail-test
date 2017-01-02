@@ -103,12 +103,10 @@ class KeystoneCommands():
 
         return self.keystone.tenants.list()
 
-    def create_roles(self, role):
-
+    def create_role(self, role):
         self.keystone.roles.create(role)
 
-    def delete_roles(self, role):
-
+    def delete_role(self, role):
         role = self.get_role_dct(role)
         self.keystone.roles.delete(role)
 
@@ -143,7 +141,7 @@ class KeystoneCommands():
 
     def create_user(self, user, password, email='', tenant_name=None, enabled=True):
 
-        tenant_id = self.get_tenant_dct(tenant_name).id
+        tenant_id = self.get_tenant_dct(tenant_name).id if tenant_name else None
         self.keystone.users.create(user, password, email, tenant_id, enabled)
 
     @retry(delay=3, tries=5)

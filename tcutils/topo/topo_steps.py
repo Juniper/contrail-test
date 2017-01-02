@@ -46,7 +46,7 @@ def createProject(self):
     self.project_fixture = {}
     self.project_fixture[self.topo.project] = self.useFixture(
         ProjectFixture(
-            project_name=self.topo.project, vnc_lib_h=self.vnc_lib,
+            project_name=self.topo.project,
             username=self.topo.username, password=self.topo.password,
             connections=self.connections))
     self.project_fixture[self.topo.project].set_user_creds(self.topo.username,
@@ -61,19 +61,11 @@ def createProject(self):
             self.topo.project,
             self.topo.username,
             'admin')
-    self.project_inputs = ContrailTestInit(
-        self.ini_file,
-        stack_user=self.project_fixture[self.topo.project].project_username,
-        stack_password=self.project_fixture[self.topo.project].project_user_password,
-        stack_tenant=self.topo.project,
-        logger=self.logger)
+    self.project_connections = self.project_fixture[self.topo.project].get_project_connections()
+    self.project_inputs = self.project_connections.inputs
     #update the af type for the new project
     self.project_inputs.set_af(self.inputs.get_af())
-    self.project_connections = ContrailConnections(
-        self.project_inputs,
-        self.logger)
     #update new connection in project fixture 
-    self.project_fixture[self.topo.project].project_connections = self.project_connections
     self.project_parent_fixt = self.useFixture(
         ProjectTestFixtureGen(self.vnc_lib, project_name=self.topo.project))
     if self.skip_verify == 'no':

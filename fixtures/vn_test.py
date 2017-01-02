@@ -12,6 +12,7 @@ import threading
 import sys
 from quantum_test import NetworkClientException
 from tcutils.test_lib.contrail_utils import get_interested_computes
+from cfgm_common.exceptions import PermissionDenied
 try:
     from webui_test import *
 except ImportError:
@@ -332,6 +333,8 @@ class VNFixture(fixtures.Fixture):
             self.api_vn_obj = VirtualNetwork(
                 name=vn_name, parent_obj=project_obj)
             if not self.verify_if_vn_already_present(self.api_vn_obj, project_obj):
+                if self.shared:
+                    self.api_vn_obj.is_shared = self.shared
                 self.uuid = self.vnc_lib_h.virtual_network_create(
                     self.api_vn_obj)
                 with self.lock:
@@ -360,15 +363,16 @@ class VNFixture(fixtures.Fixture):
             self.api_vn_obj.add_network_ipam(ipam, VnSubnetsType(ipam_sn_lst))
             self.vnc_lib_h.virtual_network_update(self.api_vn_obj)
             self.vn_fq_name = self.api_vn_obj.get_fq_name_str()
-            self.obj = self.quantum_h.get_vn_obj_if_present(self.vn_name,
-                                                                  self.project_id)
-            if self.obj is None:
-                raise ValueError('could not find %s in neutron/quantum' % (self.vn_name))
-
+        except PermissionDenied:
+            self.logger.info('Permission denied to create VirtualNetwork')
+            raise
         except Exception as e:
             with self.lock:
                 self.logger.exception(
                     'Api exception while creating network %s' % (self.vn_name))
+        self.obj = self.orchestrator.get_vn_obj_from_id(self.uuid)
+        if self.obj is None:
+            raise ValueError('could not find %s in neutron/quantum' % (self.vn_name))
 
     def get_api_obj(self):
         return self.api_vn_obj
@@ -386,7 +390,7 @@ class VNFixture(fixtures.Fixture):
             return self.read()
         if self.inputs.is_gui_based_config():
             self.webui.create_vn(self)
-        elif (self.option == 'api'):
+        elif (self.option == 'contrail'):
             self._create_vn_api(self.vn_name, self.project_obj)
         else:
             self._create_vn_orch()
@@ -1263,7 +1267,7 @@ class VNFixture(fixtures.Fixture):
                     self.delete_port(port_id=each_port_id)
             if self.inputs.is_gui_based_config():
                 self.webui.delete_vn(self)
-            elif (self.option == 'api'):
+            elif (self.option == 'contrail'):
                 self.logger.debug("Deleting VN %s using Api server" %
                                  self.vn_name)
                 self.vnc_lib_h.virtual_network_delete(id=self.uuid)

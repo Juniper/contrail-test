@@ -21,7 +21,9 @@ class JsonDrv (object):
     def __init__(self, vub, logger=LOG, args=None, use_admin_auth=False):
         self.log = logger
         self._vub = vub
-        self._headers = None
+        self._headers = dict()
+        if args and hasattr(args, 'use_admin_auth'):
+            use_admin_auth = use_admin_auth or args.use_admin_auth
         self._args = args
         self._use_admin_auth = use_admin_auth
         msg_size = os.getenv('INTROSPECT_LOG_MAX_MSG', '10240')
@@ -73,6 +75,17 @@ class JsonDrv (object):
 
         self.common_log("Response Code: %d" % resp.status_code)
         return None
+
+    def put(self, url, payload, retry=True):
+        self.common_log("Posting: %s, payload %s"%(url, payload))
+        self._headers.update({'Content-type': 'application/json; charset="UTF-8"'})
+        data = json.dumps(payload)
+        resp = requests.put(url, headers=self._headers, data=data)
+        if resp.status_code == 401:
+            if retry:
+                self._auth()
+                return self.put(url, payload, retry=False)
+        return resp
 
     def common_log(self, line, mode=LOG.DEBUG):
         self.log.log(mode, line)
@@ -146,6 +159,14 @@ class VerificationUtilBase (object):
             return None
     # end dict_get
 
+    def put(self, payload, path='', url=''):
+        try:
+            if path:
+                return self._drv.put(self._mk_url_str(path), payload)
+            if url:
+                return self._drv.put(url, payload)
+        except urllib2.HTTPError:
+            return None
 
 def elem2dict(node, alist=False):
     d = list() if alist else dict()

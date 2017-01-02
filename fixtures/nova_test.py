@@ -30,6 +30,9 @@ class NovaHelper():
         self.inputs = inputs
         self.username = username or inputs.stack_user
         self.password = password or inputs.stack_password
+        self.admin_username = inputs.admin_username
+        self.admin_password = inputs.admin_password
+        self.admin_tenant = inputs.admin_tenant
         self.project_name = project_name
         self.cfgm_ip = inputs.cfgm_ip
         self.openstack_ip = inputs.openstack_ip
@@ -165,16 +168,18 @@ class NovaHelper():
     def get_vm_if_present(self, vm_name=None, project_id=None, vm_id=None):
         try:
             vm_list = self.obj.servers.list(search_opts={"all_tenants": True})
-            for vm in vm_list:
-                if project_id and vm.tenant_id != self.strip(project_id):
-                    continue
-                if (vm_name and vm.name == vm_name) or (vm_id and vm.id == vm_id):
-                    return vm
+        except novaException.Forbidden:
+            vm_list = self.admin_obj.obj.servers.list(search_opts={"all_tenants": True})
         except novaException.NotFound:
             return None
         except Exception:
             self.logger.exception('Exception while finding a VM')
             return None
+        for vm in vm_list:
+            if project_id and vm.tenant_id != self.strip(project_id):
+                continue
+            if (vm_name and vm.name == vm_name) or (vm_id and vm.id == vm_id):
+                return vm
         return None
     # end get_vm_if_present
 
@@ -193,18 +198,22 @@ class NovaHelper():
     def _install_flavor(self, name):
         flavor_info = self.flavor_info[name]
         try:
+            try:
+                self.obj.flavors.create(name=name,
+                                    vcpus=flavor_info['vcpus'],
+                                    ram=flavor_info['ram'],
+                                    disk=flavor_info['disk'])
+            except novaException.Forbidden:
+                self.admin_obj.obj.flavors.create(name=name,
+                                   vcpus=flavor_info['vcpus'],
+                                    ram=flavor_info['ram'],
+                                    disk=flavor_info['disk'])
             if bool(self.inputs.dpdk_data):
-                self.obj.flavors.create(name=name,
-                                    vcpus=flavor_info['vcpus'],
-                                    ram=flavor_info['ram'],
-                                    disk=flavor_info['disk'])
-                flavor = self.obj.flavors.find(name=name)
+                try:
+                    flavor = self.obj.flavors.find(name=name)
+                except novaException.Forbidden:
+                    flavor = self.admin_obj.obj.flavors.find(name=name)
                 flavor.set_keys({'hw:mem_page_size': 'any'})
-            else:
-                self.obj.flavors.create(name=name,
-                                    vcpus=flavor_info['vcpus'],
-                                    ram=flavor_info['ram'],
-                                    disk=flavor_info['disk'])
         except Exception, e:
             self.logger.exception('Exception adding flavor %s' % (name))
             raise e
@@ -331,9 +340,9 @@ class NovaHelper():
                 --os-tenant-name %s --os-auth-url %s \
                 --os-region-name %s image-create --name "%s" \
                 %s %s --file %s)' % (insecure,
-                                     self.username,
-                                     self.password,
-                                     self.project_name,
+                                     self.admin_username,
+                                     self.admin_password,
+                                     self.admin_tenant,
                                      self.auth_url,
                                      self.region_name,
                                      generic_image_name,
@@ -591,7 +600,10 @@ class NovaHelper():
 
         '''
         final_vm_list = []
-        vm_list = self.obj.servers.list(search_opts={"all_tenants": True})
+        try:
+            vm_list = self.obj.servers.list(search_opts={"all_tenants": True})
+        except novaException.Forbidden:
+            vm_list = self.admin_obj.obj.servers.list(search_opts={"all_tenants": True})
         for vm_obj in vm_list:
             match_obj = re.match(r'%s' %
                                  name_pattern, vm_obj.name, re.M | re.I)
@@ -633,9 +645,9 @@ class NovaHelper():
     def admin_obj(self):
         if not getattr(self, '_admin_obj', None):
             self._admin_obj = NovaHelper(inputs=self.inputs,
-                                         project_name=self.inputs.admin_tenant,
-                                         username=self.inputs.admin_username,
-                                         password=self.inputs.admin_password)
+                                         project_name=self.admin_tenant,
+                                         username=self.admin_username,
+                                         password=self.admin_password)
         return self._admin_obj
 
     @property

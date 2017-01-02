@@ -72,6 +72,8 @@ def parse_astute_7(params):
                 host_dict['role'].add('contrail_config')
             if 'contrail-control' in role:
                 host_dict['role'].add('contrail_control')
+            if 'contrail-analytics' in role and not 'contrail-analytics-db' in role:
+                host_dict['role'].add('contrail_analytics')
             if 'contrail-db' in role:
                 host_dict['role'].add('contrail_db')
         if host_dict['role']:
@@ -137,6 +139,7 @@ def create_testbed_file(pargs, astute_dict, openrc_dict):
     env_test = {}
     env_password = {}
     login_name = pargs.login_username
+    is_analytics_isolated = False
     for host_dict in astute_dict['hosts']:
         host_name = gen_host_name(host_dict['host_name'])
         hosts.append(host_name)
@@ -150,13 +153,20 @@ def create_testbed_file(pargs, astute_dict, openrc_dict):
         if 'contrail_config' in host_dict['role']:
             env_roledefs['cfgm'].append(host_name)
             env_roledefs['webui'].append(host_name)
+        if 'contrail_analytics' in host_dict['role']:
             env_roledefs['collector'].append(host_name)
+            is_analytics_isolated = True
         if 'contrail_control' in host_dict['role']:
             env_roledefs['control'].append(host_name)
         if 'contrail_db' in host_dict['role']:
             env_roledefs['database'].append(host_name)
         if 'compute' in host_dict['role']:
             env_roledefs['compute'].append(host_name)
+    if not is_analytics_isolated:
+        for host_dict in astute_dict['hosts']:
+            if 'contrail_config' in host_dict['role']:
+                host_name = gen_host_name(host_dict['host_name'])
+                env_roledefs['collector'].append(host_name)
 
     for k,v in env_roledefs.iteritems():
         env_roledefs[k] = list(set(v))

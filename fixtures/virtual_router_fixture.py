@@ -1,5 +1,4 @@
 from netaddr import *
-from contrailapi import ContrailVncApi
 import vnc_api_test
 
 
@@ -17,7 +16,6 @@ class VirtualRouterBase(vnc_api_test.VncLibFixture):
         self.name = args[0]
         self.virtual_router_type = args[1]
         self.vr = None
-        self.vnc_h = ContrailVncApi(self.vnc_api_h, self.logger)
 
      # end __init__
     def setUp(self):

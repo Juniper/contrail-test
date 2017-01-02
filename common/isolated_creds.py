@@ -63,7 +63,6 @@ class IsolatedCreds(fixtures.Fixture):
             project = project_test.ProjectFixture(
                 project_name = project_name,
                 auth=self.auth,
-                vnc_lib_h= self.vnc_lib,
                 username= self.username,
                 password= self.password,
                 connections= self.connections)
@@ -164,7 +163,6 @@ class AdminIsolatedCreds(fixtures.Fixture):
             project = project_test.ProjectFixture(
                 project_name = project_name,
                 auth=self.auth,
-                vnc_lib_h= self.vnc_lib,
                 username= self.username,
                 password= self.password,
                 connections= self.connections)

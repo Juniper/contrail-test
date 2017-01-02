@@ -14,7 +14,7 @@ from traffic.core.stream import Stream
 from traffic.core.profile import StandardProfile, ContinuousProfile, ContinuousSportRange
 from traffic.core.helpers import Host, Sender, Receiver
 
-class VerifySvcChain(fixtures.TestWithFixtures):
+class VerifySvcChain(object):
 
     def verify_si(self, si_fixtures):
         for si_fix in si_fixtures:
@@ -24,7 +24,7 @@ class VerifySvcChain(fixtures.TestWithFixtures):
     def validate_vn(self, vn_name, domain_name='default-domain',
                     project_name='admin', right_vn=False):
         ri_fq_name = [domain_name, project_name, vn_name, vn_name]
-        ri_obj = self.vnc_lib.routing_instance_read(fq_name=ri_fq_name)
+        ri_obj = self.connections.vnc_lib_fixture.routing_instance_read(fq_name=ri_fq_name)
         errmsg = "RI object not found for RI: %s" % ri_fq_name
         if not ri_obj:
             self.logger.warn(errmsg)

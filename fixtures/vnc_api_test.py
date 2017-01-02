@@ -9,7 +9,6 @@ from tcutils.util import get_dashed_uuid
 from openstack import OpenstackAuth, OpenstackOrchestrator
 from vcenter import VcenterAuth
 from common import log_orig as contrail_logging
-from contrailapi import ContrailVncApi
 
 class VncLibFixture(fixtures.Fixture):
     ''' Wrapper for VncApi
@@ -26,7 +25,6 @@ class VncLibFixture(fixtures.Fixture):
     :param logger         : logger object
     '''
     def __init__(self, *args, **kwargs):
-
         self.username = os.getenv('OS_USERNAME') or \
                         kwargs.get('username', 'admin')
         self.password = os.getenv('OS_PASSWORD') or \
@@ -38,10 +36,10 @@ class VncLibFixture(fixtures.Fixture):
         self.connections = kwargs.get('connections', None)
         self.orchestrator = kwargs.get('orchestrator', 'openstack')
         self.vnc_api_h = None
-        self.inputs = self.connections.inputs if self.connections \
-                      else kwargs.get('inputs', None)
+        self.inputs = kwargs.get('inputs', self.connections.inputs
+                                           if self.connections else None)
         self.neutron_handle = None
-        self.cfgm_ip = kwargs.get('cfgm_ip', self.inputs.cfgm_ip if self.inputs else '127.0.0.1')
+        self.cfgm_ip = kwargs.get('cfgm_ip', None) or self.inputs.cfgm_ip if self.inputs else '127.0.0.1'
         self.auth_server_ip = self.inputs.auth_ip if self.inputs else \
                         kwargs.get('auth_server_ip', '127.0.0.1')
         self.auth_url = self.inputs.auth_url if self.inputs else \
@@ -89,9 +87,7 @@ class VncLibFixture(fixtures.Fixture):
                                                     self.inputs
                                                     )
                     self.project_id = self.auth_client.get_project_id()
-
-        self.vnc_h = ContrailVncApi(self.vnc_api_h, self.logger)
-
+        self.vnc_h = self.orch.vnc_h
     # end setUp
 
     def cleanUp(self):
@@ -101,17 +97,79 @@ class VncLibFixture(fixtures.Fixture):
         return self.vnc_api_h
     # end get_handle
 
+    @property
+    def admin_h(self):
+        if not getattr(self, '_admin_h', None):
+            self._admin_h = VncLibFixture(username=self.inputs.admin_username,
+                                          password=self.inputs.admin_password,
+                                          project_name=self.inputs.admin_tenant,
+                                          domain=self.inputs.stack_domain,
+                                          inputs=self.inputs,
+                                          cfgm_ip=self.cfgm_ip,
+                                          api_server_port=self.api_server_port,
+                                          auth_server_ip=self.auth_server_ip,
+                                          orchestrator=self.orchestrator,
+                                          logger=self.logger)
+            self._admin_h.setUp()
+        return self._admin_h
+
+    # fallback to ContrailApi when attr is not found and handle permission denied
+    def __getattr__(self, attr):
+        # WA to avoid recursive getattr calls
+        if attr == '_orch' or attr == 'vnc_h' or attr == '_admin_h':
+            return None
+        if not hasattr(self.vnc_h, attr):
+            raise AttributeError('%s object has no attribute %s'%(
+                                 self.__class__.__name__, attr))
+        act_attr = getattr(self.vnc_h, attr)
+        if callable(act_attr):
+            def hook(*args, **kwargs):
+                try:
+                    act_attr = getattr(self.vnc_h, self._attr)
+                    return act_attr(*args, **kwargs)
+                except PermissionDenied:
+                    act_attr = getattr(self.admin_h.vnc_h, self._attr)
+                    return act_attr(*args, **kwargs)
+            self._attr = attr
+            return hook
+        else:
+            return act_attr
+
+    @property
+    def orch(self):
+        if not getattr(self, '_orch', None):
+            self._orch = self.get_orch_h()
+        return self._orch
+
+    def get_orch_h(self):
+        if self.connections:
+            return self.connections.orch
+        else:
+            if self.orchestrator == 'openstack':
+                return OpenstackOrchestrator(username=self.username,
+                    password=self.password,
+                    project_id=self.project_id,
+                    project_name=self.project_name,
+                    auth_server_ip=self.auth_server_ip,
+                    vnclib=self.vnc_api_h,
+                    logger=self.logger, inputs=self.inputs)
+            elif self.orchestrator == 'vcenter':
+                vcenter_dc = self.inputs.vcenter_dc if self.inputs else \
+                             os.getenv('VCENTER_DC', None)
+                return VcenterOrchestrator(user=self.username,
+                    pwd=self.password,
+                    host=self.auth_server_ip,
+                    port=self.inputs.auth_port if self.inputs else '443',
+                    dc_name=vcenter_dc,
+                    vnc=self.vnc_api_h,
+                    inputs=self.inputs,
+                    logger=self.logger)
+        return
+
     def get_neutron_handle(self):
         if self.neutron_handle:
             return self.neutron_handle
         else:
-            self.orch = OpenstackOrchestrator(username=self.username,
-                  password=self.password,
-                  project_id=self.project_id,
-                  project_name=self.project_name,
-                  auth_server_ip=self.auth_server_ip,
-                  vnclib=self.vnc_api_h,
-                  logger=self.logger, inputs=self.inputs)
             self.neutron_handle = self.orch.get_network_handler()
             return self.neutron_handle
     # end get_neutron_handle
@@ -124,10 +182,12 @@ class VncLibFixture(fixtures.Fixture):
         else:
             project_id = self.vnc_api_h.project_read(
                 fq_name_str='default-domain:default-project').uuid
-        parent_obj = self.vnc_api_h.project_read(id=project_id)
+        try:
+            parent_obj = self.vnc_api_h.project_read(id=project_id)
+        except PermissionDenied:
+            parent_obj = self.admin_h.vnc_api_h.project_read(id=project_id)
         return parent_obj
     # end get_parent_obj
-
 
     def get_forwarding_mode(self, vn_fq_name):
         vnc_lib = self.vnc_api_h
@@ -216,7 +276,10 @@ class VncLibFixture(fixtures.Fixture):
     def get_global_forwarding_mode(self):
         fq_name = [ 'default-global-system-config',
                     'default-global-vrouter-config']
-        gsc_obj = self.vnc_api_h.global_vrouter_config_read(fq_name=fq_name)
+        try:
+            gsc_obj = self.vnc_api_h.global_vrouter_config_read(fq_name=fq_name)
+        except PermissionDenied:
+            gsc_obj = self.admin_h.vnc_api_h.global_vrouter_config_read(fq_name=fq_name)
         return gsc_obj.get_forwarding_mode()
     # end get_global_forwarding_mode
 
@@ -225,7 +288,7 @@ class VncLibFixture(fixtures.Fixture):
         Returns Vn's forwarding mode if set.
         If VN forwarding mode is not set, returns global forwarding mode
         If global forwarding mode too is not set, returns 'l2_l3' since this is the default.
-         "'''
+        '''
         if type(vn_fq_name).__name__ == 'str':
             vn_fq_name = vn_fq_name.split(':')
         gl_fw_mode = self.get_global_forwarding_mode()
