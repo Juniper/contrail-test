@@ -10,6 +10,7 @@ from compute_node_test import ComputeNodeFixture
 from common.agent.flow_table import FlowTable
 from tcutils.traffic_utils.base_traffic import BaseTraffic
 
+CIRROS_IMAGE_NAME='cirros-0.3.0-x86_64-uec'
 
 class ExtendedFlowTestsBase(FlowTestBase):
 
@@ -568,3 +569,57 @@ send(a, count=10000, inter=0, iface='eth0')
         # Now validate that later pings between vms work
         self.do_ping_test(vm1_fixture, vm1_fixture.vm_ip, vm2_fixture.vm_ip)
     # end test_with_fuzz_bug_1504710
+
+    @preposttest_wrapper
+    def test_flow_update_on_route_update(self):
+        '''
+        '''
+        vn1_fixture = self.create_vn()
+        vn2_fixture = self.create_vn()
+
+        vm1_fixture = self.create_vm(vn1_fixture, image_name=CIRROS_IMAGE_NAME)
+        vm1_fixture.wait_till_vm_is_up()
+
+        public_vn = self.create_vn(router_external=True)
+        router_dict = self.create_router()
+        self.add_vn_to_router(router_dict['id'], vn1_fixture)
+        self.add_vn_to_router(router_dict['id'], vn2_fixture)
+        self.quantum_h.router_gateway_set(router_dict['id'],
+                                          public_vn.vn_id)
+
+        ip = vn2_fixture.get_an_ip(index=3)
+        vm2_port = self.setup_vmi(vn2_fixture.vn_id,
+                                  fixed_ips=[{'ip_address':ip}])
+        # Run ping
+        ping_h = self.start_ping(vm1_fixture, dst_ip=ip)
+        compute_fixture = ComputeNodeFixture(self.connections,
+                                             vm1_fixture.vm_node_ip)
+        self.sleep(5)
+        (flow_entry, rev_flow) = compute_fixture.get_flow_entry(
+            source_ip=vm1_fixture.vm_ip,
+            dest_ip=ip,
+            proto='icmp',
+            vrf_id=compute_fixture.get_vrf_id(vn1_fixture.vn_fq_name)
+        )
+        assert flow_entry, 'Expected flow not seen'
+        # Boot a VM  with that IP now
+        vm2_fixture = self.create_vm(port_ids=[vm2_port.uuid],
+                                     vn_ids=[vn2_fixture.vn_id],
+                                     image_name=CIRROS_IMAGE_NAME)
+        vm2_fixture.wait_till_vm_is_up()
+
+        # Check that the earlier flow entry has got updated to point to this IP
+        (curr_flow_entry, curr_rev_flow) = compute_fixture.get_flow_entry(
+                                               index=flow_entry.index)
+
+        # Ping should have started to pass after the new VM booted
+        (ping_stats, log) = self.stop_ping(ping_h)
+        assert int(ping_stats['loss']) != 100, ('Pings failed to VM')
+
+        assert curr_flow_entry, 'Expected flow not found'
+        msg = 'Flow nh not updated to point to the newly created VM'
+        assert self.is_flow_pointing_to_vm(curr_flow_entry,
+                                           compute_fixture,
+                                           vm2_fixture), msg
+
+    # end test_flow_update_on_route_update
