@@ -312,7 +312,6 @@ class TestRouterSNAT(BaseNeutronTest):
             username=self.inputs.stack_user,
             password=self.inputs.stack_password,
             project_name=project_name,
-            vnc_lib_h=self.vnc_lib,
             connections=self.connections))
         user_fixture.add_user_to_tenant(project_name, 'test_usr', 'admin')
         assert project_fixture_obj.verify_on_setup()
@@ -325,7 +324,6 @@ class TestRouterSNAT(BaseNeutronTest):
             username=self.inputs.stack_user,
             password=self.inputs.stack_password,
             project_name=project_name1,
-            vnc_lib_h=self.vnc_lib,
             connections=self.connections))
         user_fixture1.add_user_to_tenant(project_name1, 'test_usr1', 'admin')
         assert project_fixture_obj1.verify_on_setup()
@@ -403,7 +401,6 @@ class TestRouterSNAT(BaseNeutronTest):
             username=self.inputs.stack_user,
             password=self.inputs.stack_password,
             project_name=project_name,
-            vnc_lib_h=self.vnc_lib,
             connections=self.connections))
         user_fixture.add_user_to_tenant(project_name, 'test_usr', 'admin')
         assert project_fixture_obj.verify_on_setup()
@@ -416,7 +413,6 @@ class TestRouterSNAT(BaseNeutronTest):
             username=self.inputs.stack_user,
             password=self.inputs.stack_password,
             project_name=project_name1,
-            vnc_lib_h=self.vnc_lib,
             connections=self.connections))
         user_fixture1.add_user_to_tenant(project_name1, 'test_usr1', 'admin')
         assert project_fixture_obj1.verify_on_setup()
