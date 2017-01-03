@@ -762,14 +762,12 @@ class ContrailVncApi(object):
             return intf_route_table_obj
         else:
             nw_route_table=RouteTable(name, parent_obj)
-            nw_route_table.set_routes([])
-            uuid=self._vnc.route_table_create(nw_route_table)
             if prefixes:
                 for prefix in prefixes:
                     rt1=RouteType(prefix=prefix, next_hop=next_hop, next_hop_type=next_hop_type)
                     route_table.set_route([rt1])
             nw_route_table.set_routes(route_table)
-            self._vnc.route_table_update(nw_route_table)
+            uuid=self._vnc.route_table_create(nw_route_table)
             network_route_table_obj = self._vnc.route_table_read(id=uuid)
             self._log.info('Created NetworkRouteTable %s(UUID %s), prefixes : %s'\
                 %(network_route_table_obj.fq_name, network_route_table_obj.uuid, prefixes))
