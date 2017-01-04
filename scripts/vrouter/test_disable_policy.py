@@ -74,7 +74,8 @@ class DisablePolicyEcmp(BaseVrouterTest):
         self.disable_policy_for_vms([vm1_fixture])
         self.disable_policy_for_vms(vm_fixtures)
 
-        assert self.verify_traffic_load_balance(vm1_fixture,
+        assert self.verify_ecmp_routes([vm2_fixture,vm3_fixture], prefix)
+        assert self.verify_traffic_for_ecmp(vm1_fixture,
                             [vm2_fixture,vm3_fixture], static_ip)
 
         self.verify_vms([vm4_fixture])
@@ -85,7 +86,8 @@ class DisablePolicyEcmp(BaseVrouterTest):
                             [vm4_fixture],
                             ip=static_ip)
         self.delete_vms([vm2_fixture])
-        assert self.verify_traffic_load_balance(vm1_fixture,
+        assert self.verify_ecmp_routes([vm3_fixture,vm4_fixture], prefix)
+        assert self.verify_traffic_for_ecmp(vm1_fixture,
                         [vm3_fixture, vm4_fixture],
                         static_ip)
 
@@ -124,7 +126,8 @@ class DisablePolicyEcmp(BaseVrouterTest):
 
         static_ip = self.add_static_routes_on_vms(prefix, [vm2_fixture,vm3_fixture])
         self.disable_policy_for_vms(vm_fixtures)
-        assert self.verify_traffic_load_balance(vm1_fixture, [vm2_fixture,vm3_fixture], static_ip)
+        assert self.verify_ecmp_routes([vm2_fixture,vm3_fixture], prefix)
+        assert self.verify_traffic_for_ecmp(vm1_fixture, [vm2_fixture,vm3_fixture], static_ip)
 
     @preposttest_wrapper
     def test_disable_policy_with_aap(self):
@@ -178,7 +181,10 @@ class DisablePolicyEcmp(BaseVrouterTest):
 
         self.disable_policy_for_vms(vm_fix_list)
 
-        self.config_aap(port1_obj, port2_obj, vIP)
+        port_list = [port1_obj, port2_obj]                                      
+        for port in port_list:                                                  
+            self.config_aap(port, vIP, mac=port['mac_address'])
+
         self.config_vrrp(vm1_fixture, vIP, '20')
         self.config_vrrp(vm2_fixture, vIP, '10')
         vrrp_master = vm1_fixture
@@ -281,14 +287,16 @@ class DisablePolicyEcmp(BaseVrouterTest):
         self.disable_policy_for_vms([vm1_fixture], disable=False)
         self.disable_policy_for_vms(vm_fixtures, disable=False)
 
-        assert self.verify_traffic_load_balance(vm1_fixture,
+        assert self.verify_ecmp_routes([vm2_fixture,vm3_fixture], prefix)
+        assert self.verify_traffic_for_ecmp(vm1_fixture,
                             [vm2_fixture,vm3_fixture], static_ip, flow_count=1)
 
         #Disable the policy on all the VMIs
         self.disable_policy_for_vms([vm1_fixture])
         self.disable_policy_for_vms(vm_fixtures)
 
-        assert self.verify_traffic_load_balance(vm1_fixture,
+        assert self.verify_ecmp_routes([vm2_fixture,vm3_fixture], prefix)
+        assert self.verify_traffic_for_ecmp(vm1_fixture,
                             [vm2_fixture,vm3_fixture], static_ip)
 
     @preposttest_wrapper
@@ -344,7 +352,8 @@ class DisablePolicyEcmp(BaseVrouterTest):
         self.disable_policy_for_vms([vm1_fixture], disable=False)
         self.disable_policy_for_vms(vm_fixtures, disable=False)
 
-        assert self.verify_traffic_load_balance(vm1_fixture,
+        assert self.verify_ecmp_routes([vm2_fixture,vm3_fixture], prefix)
+        assert self.verify_traffic_for_ecmp(vm1_fixture,
                             [vm2_fixture,vm3_fixture], static_ip, flow_count=1)
         #Get ping stats
         stats = ping_h.get_stats()
@@ -357,7 +366,9 @@ class DisablePolicyEcmp(BaseVrouterTest):
         #Get ping stats again
         stats = ping_h.get_stats()
         assert stats['loss'] == '0', ('Ping loss seen after disabling policy with active flow')
-        assert self.verify_traffic_load_balance(vm1_fixture,
+
+        assert self.verify_ecmp_routes([vm2_fixture,vm3_fixture], prefix)
+        assert self.verify_traffic_for_ecmp(vm1_fixture,
                             [vm2_fixture,vm3_fixture], static_ip)
 
         (stats, ping_log) = self.stop_ping(ping_h)
@@ -404,7 +415,9 @@ class DisablePolicyEcmp(BaseVrouterTest):
         self.disable_policy_for_vms(vm_fixtures)
         #Remove the SG from all VMs
         self.remove_sg_from_vms(vm_fixtures)
-        assert self.verify_traffic_load_balance(vm1_fixture, [vm2_fixture,vm3_fixture], static_ip)
+
+        assert self.verify_ecmp_routes([vm2_fixture,vm3_fixture], prefix)
+        assert self.verify_traffic_for_ecmp(vm1_fixture, [vm2_fixture,vm3_fixture], static_ip)
 
         #Get ping stats
         stats = ping_h.get_stats()
@@ -471,7 +484,9 @@ class DisablePolicyEcmp(BaseVrouterTest):
         assert stats['loss'] == '100', ('Ping succeeded without SG')
 
         self.disable_policy_for_vms(vm_fixtures)
-        assert self.verify_traffic_load_balance(vm1_fixture, [vm2_fixture,vm3_fixture], static_ip)
+
+        assert self.verify_ecmp_routes([vm2_fixture,vm3_fixture], prefix)
+        assert self.verify_traffic_for_ecmp(vm1_fixture, [vm2_fixture,vm3_fixture], static_ip)
 
         #Get ping stats
         stats = ping_h.get_stats()
