@@ -1047,7 +1047,7 @@ class VMFixture(fixtures.Fixture):
                 failure = ' 100% packet loss'
                 self.logger.debug(output)
             #   if expected_result not in output:
-                if failure in output:
+                if failure in output[1]:
                     self.logger.debug(
                     "Ping to Metadata IP %s of VM %s failed!" %
                     (self.local_ips[vn_fq_name], self.vm_name))
