@@ -11,7 +11,7 @@ class KeystoneCommands():
 
     def __init__(self, username=None, password=None, tenant=None,
                  auth_url=None, token=None, endpoint=None,
-                 insecure=True, region_name=None,
+                 insecure=True, region_name=None, cert=None, key=None, cacert=None,
                  logger=None):
 
         self.logger = logger or contrail_logging.getLogger(__name__)
@@ -21,7 +21,8 @@ class KeystoneCommands():
         else:
             self.keystone = keystone_client.Client(
                 username=username, password=password, tenant_name=tenant, auth_url=auth_url,
-                insecure=insecure, region_name=region_name or 'RegionOne')
+                insecure=insecure, region_name=region_name or 'RegionOne',
+                cert=cert, key=key, cacert=cacert)
 
     def get_session(self):
         auth = keystoneclient.auth.identity.v2.Password(auth_url=self.keystone.auth_url,

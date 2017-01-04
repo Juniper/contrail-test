@@ -42,6 +42,10 @@ user_isolation=$__user_isolation__
 auth_ip=$__auth_ip__
 auth_port=$__auth_port__
 auth_protocol=$__auth_protocol__
+keystone_certfile=$__keystone_certfile__
+keystone_keyfile=$__keystone_keyfile__
+keystone_cafile=$__keystone_cafile__
+keystone_insecure_flag=$__keystone_insecure_flag__
 
 # To enable multi tenancy set the below to True, default False
 multiTenancy=$__multi_tenancy__
@@ -164,6 +168,14 @@ vcenter_username=$__vcenter_username__
 vcenter_password=$__vcenter_password__
 vcenter_datacenter=$__vcenter_datacenter__
 vcenter_compute=$__vcenter_compute__
+
+[cfgm]
+#API protocol, certs file location
+api_protocol=$__api_auth_protocol__
+api_certfile=$__api_certfile__
+api_keyfile=$__api_keyfile__
+api_cafile=$__api_cafile__
+api_insecure_flag=$__api_insecure_flag__
 
 [debug]
 # To pause the test execution, in pdb prompt, on failure set stop_on_fail to True, default False

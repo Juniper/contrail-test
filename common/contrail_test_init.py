@@ -30,6 +30,7 @@ import subprocess
 import ast
 from collections import namedtuple
 import random
+from cfgm_common import utils
 
 # monkey patch subprocess.check_output cos its not supported in 2.6
 if "check_output" not in dir(subprocess):  # duck punch it in!
@@ -145,6 +146,10 @@ class TestInputs(object):
                                             'Basic', 'auth_port', 5000)
         self.auth_protocol = read_config_option(self.config,
                                             'Basic', 'auth_protocol', 'http')
+        self.api_protocol = read_config_option(self.config,
+                                          'cfgm', 'api_protocol', 'http')
+        self.api_insecure = read_config_option(self.config,
+                                          'cfgm', 'api_insecure_flag', True)
         self.ds_port = read_config_option(self.config, 'services',
                                           'discovery_port', '5998')
         self.api_server_port = read_config_option(self.config, 'services',
@@ -338,6 +343,34 @@ class TestInputs(object):
             'supervisor-analytics',
             'contrail-snmp-collector', 'contrail-topology']
         self.correct_states = ['active', 'backup']
+        self.apicertfile = read_config_option(self.config,
+                                             'cfgm', 'api_certfile', None)
+        self.apikeyfile = read_config_option(self.config,
+                                            'cfgm', 'api_keyfile', None)
+        self.apicafile = read_config_option(self.config,
+                                           'cfgm', 'api_cafile', None)
+        self.keystonecertfile = read_config_option(self.config,
+                                                  'Basic', 'keystone_certfile', None)
+        self.keystonekeyfile = read_config_option(self.config,
+                                                 'Basic', 'keystone_keyfile', None)
+        self.keystonecafile = read_config_option(self.config,
+                                                'Basic', 'keystone_cafile', None)
+        self.insecure = os.getenv('OS_INSECURE')
+        if self.insecure:
+            self.insecure = bool(self.insecure)
+        else:
+            self.insecure = read_config_option(self.config,
+                                              'Basic', 'keystone_insecure_flag', True)
+        if self.auth_url.startswith('https') and not self.insecure:
+           self.keystone_bundle = '/tmp/' + get_random_string() + '.pem'
+           if self.keystonecertfile and self.keystonekeyfile and \
+                  self.keystonecafile:
+               self.certs = [self.keystonecertfile, self.keystonekeyfile,
+                            self.keystonecafile]
+               self.keycertbundle = utils.getCertKeyCaBundle(self.keystone_bundle,
+                                        self.certs)
+        else:
+            self.keycertbundle = None
 
     def get_os_env(self, var, default=''):
         if var in os.environ:
@@ -617,13 +650,15 @@ class TestInputs(object):
         if self.orchestrator.lower() == 'openstack':
             auth_url = os.getenv('OS_AUTH_URL', None) or \
                        'http://127.0.0.1:5000/v2.0'
-            insecure = bool(os.getenv('OS_INSECURE', True))
             keystone = KeystoneCommands(self.stack_user,
                                         self.stack_password,
                                         self.stack_tenant,
                                         auth_url,
                                         region_name=self.region_name,
-                                        insecure=insecure,
+                                        insecure=self.insecure,
+                                        cert=self.keystone_certfile,
+                                        key=self.keystone_keyfile,
+                                        cacert=self.keycertbundle,
                                         logger=self.logger)
             match = re.match(pattern, keystone.get_endpoint('identity')[0])
             self.auth_ip = match.group('ip')
