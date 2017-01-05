@@ -59,9 +59,9 @@ class TestVirtualNetwork(BaseNeutronTest):
         vn1_vm2_name = get_random_name('vn1-vm2')
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
         vn1_vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
-                                         image_name='cirros-0.3.0-x86_64-uec')
+                                         image_name='cirros')
         vn1_vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
-                                         image_name='cirros-0.3.0-x86_64-uec')
+                                         image_name='cirros')
         assert vn1_vm1_fixture.wait_till_vm_is_up()
         assert vn1_vm2_fixture.wait_till_vm_is_up()
         assert vn1_vm1_fixture.ping_with_certainty(vn1_vm2_fixture.vm_ip)
