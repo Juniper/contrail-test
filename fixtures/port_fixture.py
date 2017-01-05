@@ -133,6 +133,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
         self.vmi_obj = self.vnc_api_h.virtual_machine_interface_create(vmi_obj)
         self.uuid = vmi_id
 
+        self.iip_objs = []
         if self.fixed_ips:
             for fixed_ip in self.fixed_ips:
                 iip_id = str(uuid.uuid4())
@@ -141,8 +142,13 @@ class PortFixture(vnc_api_test.VncLibFixture):
                 iip_obj.uuid = iip_id
                 iip_obj.add_virtual_machine_interface(vmi_obj)
                 iip_obj.add_virtual_network(self.vn_obj)
-                iip_obj.set_instance_ip_address(fixed_ip['ip_address'])
-                self.vnc_api_h.instance_ip_create(iip_obj)
+                if fixed_ip.get("ip_address", None):
+                    iip_obj.set_instance_ip_address(fixed_ip['ip_address'])
+                if fixed_ip.get("instance_ip_secondary", False):
+                    iip_obj.instance_ip_secondary = True
+                id = self.vnc_api_h.instance_ip_create(iip_obj)
+                iip_obj = self.vnc_api_h.instance_ip_read(id=id)
+                self.iip_objs.append(iip_obj)
         else:
             iip_id = str(uuid.uuid4())
             iip_obj = vnc_api_test.InstanceIp(name=iip_id)
