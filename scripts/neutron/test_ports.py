@@ -569,6 +569,43 @@ class TestPorts(BaseNeutronTest):
     # end test_ports_device_owner_and_id
 
     @preposttest_wrapper
+    def test_ports_secondary_ip_attach(self):
+        '''
+        Validate when 2 different Instance IPs are associated with same VMI,
+        and "instance_ip_secondary" is set True for 2nd Instance IP, 1st Instance IP
+        should act as native IP of VM. This script verifies following bug:
+        https://bugs.launchpad.net/juniperopenstack/+bug/1645414
+        
+        Create a VN.
+        Create a VMI/Port and add set "instance_ip_secondary" = False.
+        This will result in 2 instances getting created and attached to same VMI.
+        1 IIP Primary and 2nd IIP as Secondary.
+        Create a VM using that port and verify that IP from primary IIP gets assigned by DHCP 
+        '''
+        result = True
+        vn1_name = get_random_name('vn1')
+        vn1_subnets = [get_random_cidr()]
+        vn1_vm1_name = get_random_name('vn1-vm1')
+        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+        port_vm1_obj = self.useFixture(PortFixture(vn1_fixture.uuid,
+                                api_type = "contrail",
+                                instance_ip_secondary = True,
+                                connections=self.connections))
+        assert port_vm1_obj.verify_on_setup()
+        vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
+                                     image_name='ubuntu-traffic',
+                                     port_ids=[port_vm1_obj.uuid])
+        assert vm1_fixture.wait_till_vm_is_up()
+        if port_vm1_obj.iip_objs[0].instance_ip_address == vm1_fixture.vm_ip:
+            self.logger.debug("VM Ip is successfully set to Primary IIP")
+        elif port_vm1_obj.iip_objs[1].instance_ip_address == vm1_fixture.vm_ip:
+            self.logger.debug("VM Ip is set to secondary IIP")
+            assert False, "VM Ip is set to secondary IIP"
+        else:
+            assert False, "VM Ip is none among any IIP"
+    # end test_ports_secondary_ip_attach
+    
+    @preposttest_wrapper
     def test_shutoff_vm_route_withdrawal(self):
         '''Test shutdown of VM using nova command and correponfing route withdrawal.
         Shutoff the VM using nova stop
