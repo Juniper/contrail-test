@@ -285,9 +285,9 @@ class SimpleTCPFlowEvictionTests(ExtendedFlowTestsBase):
         self.vn1_fixture = self.create_vn()
         self.vn2_fixture = self.create_vn()
         self.vn1_vm1_fixture = self.create_vm(self.vn1_fixture,
-                                              image_name='cirros-0.3.0-x86_64-uec')
+                                              image_name='cirros')
         self.vn1_vm2_fixture = self.create_vm(self.vn1_fixture,
-                                              image_name='cirros-0.3.0-x86_64-uec')
+                                              image_name='cirros')
         self.vn1_vm1_fixture.wait_till_vm_is_up()
         self.vn1_vm2_fixture.wait_till_vm_is_up()
         self.vn1_vm1_vrouter_fixture = self.useFixture(ComputeNodeFixture(
