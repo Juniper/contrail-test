@@ -5961,12 +5961,8 @@ class WebuiTest:
             parent_tag = False
             api_fq_name = port_list_api[
                 'virtual-machine-interfaces'][port]['fq_name'][2]
-            project_name = port_list_api[
-                'virtual-machine-interfaces'][port]['fq_name'][1]
-            if project_name == 'default-project':
-                continue
             self.ui.click_configure_ports()
-            self.ui.select_project(project_name)
+            self.ui.select_project(self.project_name_input)
             rows = self.ui.get_rows()
             if not api_fq_name in port_name_list:
                 continue
@@ -5991,16 +5987,8 @@ class WebuiTest:
                     (api_fq_name))
                 self.logger.debug(self.dash)
             else:
-                self.ui.click_configure_ports_basic(match_index)
-                rows = self.ui.get_rows()
-                self.logger.info(
-                    "Verify basic view details for port fq_name %s " %
-                    (api_fq_name))
-                row_container = self.ui.find_element('slick-row-detail-container', 'class', \
-                                browser=rows[match_index+1])
-                row_fluid = self.ui.find_element('row-fluid', 'class', browser=row_container)
-                rows_detail = self.ui.find_element('row', 'class', browser=row_fluid, \
-                              elements=True)
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'ports', match_index)[1]
                 for detail in range(len(rows_detail)):
                     key_value = rows_detail[detail].text.split('\n')
                     key = str(key_value.pop(0))
@@ -6013,15 +6001,8 @@ class WebuiTest:
                     if key == 'Security Groups':
                        sg_value = str(key_value[1]).split(',')
                        if sg_value:
-                           value = []
-                           for sg in sg_value:
-                               search_value = re.search("(.*)\(.*:(.*)", sg)
-                               if search_value:
-                                   sec_group = search_value.group(2).strip('\)') + '-' + \
-                                               search_value.group(1).strip()
-                               else:
-                                   sec_group = project_name + '-' + sg.strip()
-                               value.append((sec_group))
+                           value = self.ui.format_sec_group_name(sg_value,
+                                                        self.project_name_input)
                     if key == 'DHCP Options':
                         if isinstance(value, list):
                             value.pop(0)
@@ -6052,7 +6033,7 @@ class WebuiTest:
                                                    ':' + search_value.group(1).strip()
                                 else:
                                     route_instance = re.search('.* \: (.*)', value[text]).group(1)
-                                    mirror_value = 'default-domain:' + project_name + ':' + \
+                                    mirror_value = 'default-domain:' + self.project_name_input + ':' + \
                                                     route_instance + ':' + route_instance
                             else:
                                 value_multi_string = re.search('(\w+\s+\w+\s+\w+)\s+\: (.*)',
@@ -6063,9 +6044,13 @@ class WebuiTest:
                                     key_value = value_multi_string
                                 elif value_double_string:
                                     key_value = value_double_string
+                                else:
+                                    key_value = None
                                 if key_value:
                                     mirror_key = key_value.group(1).replace(' ', '_')
                                     mirror_value = key_value.group(2)
+                                else:
+                                    mirror_value = '-'
                             if mirror_value != '-':
                                 dom_arry_basic.append({'key': mirror_key, 'value': mirror_value})
                         continue
@@ -6211,13 +6196,14 @@ class WebuiTest:
                             complete_api_data.append({'key' : 'Sub_Interface_VLAN', 'value':
                                 str(vmi_props['sub_interface_vlan_tag'])})
                 if 'virtual_machine_interface_fat_flow_protocols' in api_data_basic:
-                    flat_protocols = api_data_basic['virtual_machine_interface_fat_flow_protocols'][
-                                     'fat_flow_protocol']
-                    if flat_protocols:
+                    fat_flow_protocols = api_data_basic[
+                                         'virtual_machine_interface_fat_flow_protocols'][
+                                         'fat_flow_protocol']
+                    if fat_flow_protocols:
                         protocol_list = []
-                        for protocol in range(len(flat_protocols)):
-                            port = str(flat_protocols[protocol]['protocol']) + " " + \
-                                   str(flat_protocols[protocol]['port'])
+                        for protocol in range(len(fat_flow_protocols)):
+                            port = str(fat_flow_protocols[protocol]['protocol']) + " " + \
+                                   str(fat_flow_protocols[protocol]['port'])
                             protocol_list.append(port)
                         complete_api_data.append({'key': 'Fatflow', 'value': protocol_list})
                 if 'virtual_machine_interface_bindings' in api_data_basic:
