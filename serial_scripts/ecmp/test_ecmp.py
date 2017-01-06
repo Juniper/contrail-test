@@ -53,14 +53,16 @@ class TestECMPMultipleSC(GenericTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
             vn1_subnet_list= [vn1_subnets]
             vn2_subnets = '20.%s.1.0/24' % i
             vn2_subnet_list= [vn2_subnets]
-            ret_dict = self.verify_svc_in_network_datapath(si_count=1, svc_scaling=True,
-                max_inst=3, left_vn_subnets=vn1_subnet_list,
-                right_vn_subnets=vn2_subnet_list)
+            ret_dict = self.verify_svc_chain(max_inst=3,
+                                             left_vn_subnets=vn1_subnet_list,
+                                             right_vn_subnets=vn2_subnet_list,
+                                             service_mode='in-network',
+                                             create_vms=True)
             vm1_fixture = ret_dict['left_vm_fixture']
             vm2_fixture = ret_dict['right_vm_fixture']
             dst_vm_list= [vm2_fixture]
             self.verify_traffic_flow(vm1_fixture, dst_vm_list,
-                ret_dict['si_fixtures'][0], ret_dict['left_vn_fixture'])
+                ret_dict['si_fixture'], ret_dict['left_vn_fixture'])
     # end test_ecmp_svc_in_network_with_multiple_service_chains
 
 class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
@@ -96,26 +98,26 @@ class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         for i in range(4, 17, 4):
             self.logger.info(
                 '%%%%%%%%%% Will launch %s instances in the Service Chain %%%%%%%%%%' % i)
-            ret_dict = self.verify_svc_in_network_datapath(
-                si_count=1, svc_scaling=True, max_inst=i,
-                svc_mode='in-network-nat', **self.common_args)
-            si_fixtures = ret_dict['si_fixtures']
+            ret_dict = self.verify_svc_chain(max_inst=i,
+                                             service_mode='in-network-nat',
+                                             create_svms=True,
+                                             **self.common_args)
+            si_fixture = ret_dict['si_fixture']
             st_fixture = ret_dict['st_fixture']
-            svm_ids = si_fixtures[0].svm_ids
+            svm_ids = si_fixture.svm_ids
             self.get_rt_info_tap_intf_list(
                 ret_dict['left_vn_fixture'],
                 ret_dict['left_vm_fixture'],
                 ret_dict['right_vm_fixture'],
                 svm_ids,
-                si_fixtures)
+                si_fixture)
             dst_vm_list= [self.right_vm_fixture]
             self.verify_traffic_flow(self.left_vm_fixture, dst_vm_list,
-                si_fixtures[0], self.left_vn_fixture)
-            for si in si_fixtures:
-                self.logger.info('Deleting the SI %s' % si.st_name)
-                si.cleanUp()
-                self.remove_from_cleanups(si.cleanUp)
-                si.verify_on_cleanup()
+                si_fixture, self.left_vn_fixture)
+            self.logger.info('Deleting the SI %s' % si_fixture.st_name)
+            si_fixture.cleanUp()
+            self.remove_from_cleanups(si_fixture.cleanUp)
+            assert si_fixture.verify_on_cleanup()
             self.logger.info('Deleting the ST %s' %
                              st_fixture.st_name)
             st_fixture.cleanUp()
@@ -138,17 +140,18 @@ class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         om vm1 and vice-versa even after the restarts.
         Maintainer : ganeshahv@juniper.net
         """
-        ret_dict = self.verify_svc_in_network_datapath(
-                       si_count=1, svc_scaling=True, max_inst=3,
-                       **self.common_args)
-        si_fixtures = ret_dict['si_fixtures']
-        svm_ids = si_fixtures[0].svm_ids
+        ret_dict = self.verify_svc_chain(max_inst=3,
+                                         service_mode='in-network',
+                                         create_svms=True,
+                                         **self.common_args)
+        si_fixture = ret_dict['si_fixture']
+        svm_ids = si_fixture.svm_ids
         self.get_rt_info_tap_intf_list(
             self.left_vm_fixture, self.left_vm_fixture, self.right_vm_fixture,
-            svm_ids, si_fixtures)
+            svm_ids, si_fixture)
         dst_vm_list = [self.right_vm_fixture]
         self.verify_traffic_flow(self.left_vm_fixture, dst_vm_list,
-            si_fixtures[0], self.left_vm_fixture)
+            si_fixture, self.left_vm_fixture)
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter', [compute_ip])
 
@@ -164,10 +167,10 @@ class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
 
         self.get_rt_info_tap_intf_list(
             self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture,
-            svm_ids, si_fixtures)
+            svm_ids, si_fixture)
         fab_connections.clear()
         self.verify_traffic_flow(self.left_vm_fixture, dst_vm_list,
-            si_fixtures[0], self.left_vn_fixture)
+            si_fixture, self.left_vn_fixture)
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control', [bgp_ip])
 
@@ -181,11 +184,11 @@ class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
 
         self.get_rt_info_tap_intf_list(
             self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture,
-            svm_ids, si_fixtures)
+            svm_ids, si_fixture)
 
         fab_connections.clear()
         self.verify_traffic_flow(self.left_vm_fixture, dst_vm_list,
-            si_fixtures[0], self.left_vn_fixture)
+            si_fixture, self.left_vn_fixture)
     # end test_ecmp_svc_in_network_with_3_instance_service_restarts
 
     @preposttest_wrapper
@@ -204,21 +207,22 @@ class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         Maintainer : ganeshahv@juniper.net
         """
         cmd = 'reboot'
-        ret_dict = self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=3,
-            flavor='contrail_flavor_2cpu', **self.common_args)
-        si_fixtures = ret_dict['si_fixtures']
-        svm_ids = si_fixtures[0].svm_ids
+        ret_dict = self.verify_svc_chain(max_inst=3,
+                                         service_mode='in-network',
+                                         create_svms=True,
+                                         **self.common_args)
+        si_fixture = ret_dict['si_fixture']
+        svm_ids = si_fixture.svm_ids
         self.get_rt_info_tap_intf_list(
             self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture,
-            svm_ids, si_fixtures)
-        
+            svm_ids, si_fixture)
+
         dst_vm_list= [self.right_vm_fixture]
         self.verify_traffic_flow(self.left_vm_fixture, dst_vm_list,
-                                 si_fixtures[0], self.left_vn_fixture)
+                                 si_fixture, self.left_vn_fixture)
         self.logger.info('Will shutdown the SVMs and VMs before rebooting the nodes')
         si_svms= []
-        si_svms= self.get_svms_in_si(si_fixtures[0], self.inputs.project_name)
+        si_svms= self.get_svms_in_si(si_fixture)
         vms= [self.left_vm_fixture, self.right_vm_fixture]
         for svm in si_svms:
             svm.stop()

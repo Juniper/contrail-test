@@ -8,7 +8,7 @@ import random
 
 AF_TEST = 'v6'
 
-class FatFlowSerial(BaseVrouterTest, ConfigSvcChain, VerifySvcChain):
+class FatFlowSerial(BaseVrouterTest, VerifySvcChain):
 
     @classmethod
     def setUpClass(cls):
@@ -152,35 +152,16 @@ class FatFlowSerial(BaseVrouterTest, ConfigSvcChain, VerifySvcChain):
         st_name = get_random_name("in_net_svc_template_1")
         si_prefix = get_random_name("in_net_svc_instance") + "_"
         policy_name = get_random_name("policy_in_network")
-        si_count = 1
         svc_mode = 'in-network'
 
-        st_fixture, si_fixtures = self.config_st_si(
-            st_name, si_prefix, si_count,
-            mgmt_vn=vn_mgmt.vn_fq_name,
-            left_vn=vn1_fixture.vn_fq_name,
-            right_vn=vn2_fixture.vn_fq_name, svc_mode=svc_mode,
-            svc_img_name='vsrx',
-            project=self.inputs.project_name, st_version=1)
-        action_list = self.chain_si(
-            si_count, si_prefix, self.inputs.project_name)
-        rules = [
-            {
-                'direction': '<>',
-                'protocol': 'any',
-                'source_network': vn1_fixture.vn_fq_name,
-                'src_ports': [0, -1],
-                'dest_network': vn2_fixture.vn_fq_name,
-                'dst_ports': [0, -1],
-                'simple_action': None,
-                'action_list': {'apply_service': action_list}
-            },
-        ]
-        policy_fixture = self.config_policy(policy_name, rules)
-        vn1_policy_fix = self.attach_policy_to_vn(
-            policy_fixture, vn1_fixture)
-        vn2_policy_fix = self.attach_policy_to_vn(
-            policy_fixture, vn2_fixture)
+        svc_chain_info = self.config_svc_chain(
+            left_vn_fixture=vn1_fixture,
+            right_vn_fixture=vn2_fixture,
+            mgmt_vn_fixture=vn_mgmt,
+            service_mode=svc_mode,
+            svc_img_name='vsrx')
+        st_fixture = svc_chain_info['st_fixture']
+        si_fixture = svc_chain_info['si_fixture']
 
         self.verify_vms(client_fixtures)
         self.verify_vms(server_fixtures)

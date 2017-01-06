@@ -10,7 +10,7 @@ from common.servicechain.verify import VerifySvcChain
 
 AF_TEST = 'v6'
 
-class DisablePolicyEcmpSerial(BaseVrouterTest, ConfigSvcChain, VerifySvcChain):
+class DisablePolicyEcmpSerial(BaseVrouterTest, VerifySvcChain):
 
     @classmethod
     def setUpClass(cls):
@@ -51,45 +51,30 @@ class DisablePolicyEcmpSerial(BaseVrouterTest, ConfigSvcChain, VerifySvcChain):
         image = 'tiny_trans_fw'
         svc_mode = 'transparent'
 
-        st_fixture, si_fixtures = self.config_st_si(
-            st_name, si_prefix, si_count,
-            mgmt_vn=vn_mgmt.vn_fq_name,
-            left_vn=vn_left.vn_fq_name,
-            right_vn=vn_right.vn_fq_name, svc_mode=svc_mode, svc_img_name=image,
-            project=self.inputs.project_name, st_version=2, max_inst=max_inst)
-        action_list = self.chain_si(
-            si_count, si_prefix, self.inputs.project_name)
-        rules = [
-            {
-                'direction': '<>',
-                'protocol': 'any',
-                'source_network': vn_left.vn_fq_name,
-                'src_ports': [0, -1],
-                'dest_network': vn_right.vn_fq_name,
-                'dst_ports': [0, -1],
-                'simple_action': None,
-                'action_list': {'apply_service': action_list}
-            },
-        ]
-
-        policy_fixture = self.config_policy(policy_name, rules)
-        vnl_policy_fix = self.attach_policy_to_vn(
-            policy_fixture, vn_left)
-        vnr_policy_fix = self.attach_policy_to_vn(
-            policy_fixture, vn_right)
+        svc_chain_info = self.config_svc_chain(
+            left_vn_fixture=vn_fixtures[0],
+            right_vn_fixture=vn_fixtures[1],
+            mgmt_vn_fixture=vn_fixtures[2],
+            service_mode=svc_mode,
+            svc_img_name=image,
+            left_vm_fixture=vm_left,
+            right_vm_fixture=vm_right,
+            max_inst=max_inst)
+        st_fixture = svc_chain_info['st_fixture']
+        si_fixture = svc_chain_info['si_fixture']
 
         self.verify_vms([vm_left, vm_right])
-        self.verify_vms(si_fixtures[0].svm_list)
+        self.verify_vms(si_fixture.svm_list)
         self.disable_policy_for_vms([vm_left, vm_right])
-        self.disable_policy_for_vms(si_fixtures[0].svm_list)
+        self.disable_policy_for_vms(si_fixture.svm_list)
 
         assert self.verify_traffic_load_balance_si(vm_left,
-            si_fixtures[0].svm_list, vm_right)
+            si_fixture.svm_list, vm_right)
 
         self.disable_policy_for_vms([vm_left, vm_right], disable=False)
 
         assert self.verify_traffic_load_balance_si(vm_left,
-            si_fixtures[0].svm_list, vm_right, flow_count=True)
+            si_fixture.svm_list, vm_right, flow_count=True)
 
 class DisablePolicyEcmpSerialIpv6(DisablePolicyEcmpSerial):
     @classmethod

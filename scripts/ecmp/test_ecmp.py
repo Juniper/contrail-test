@@ -1,9 +1,5 @@
 import sys
 import os
-import fixtures
-import testtools
-import unittest
-import time
 from vn_test import *
 from floating_ip import *
 from quantum_test import *
@@ -13,21 +9,14 @@ from nova_test import *
 from vm_test import *
 from tcutils.util import skip_because
 from tcutils.wrappers import preposttest_wrapper
-from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from common.servicechain.firewall.verify import VerifySvcFirewall
 from common.ecmp.base import ECMPTestBase
 from common.ecmp.ecmp_traffic import ECMPTraffic
 from common.ecmp.ecmp_verify import ECMPVerify
 sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
 from traffic.core.stream import Stream
-from traffic.core.profile import create, ContinuousProfile, ContinuousSportRange
-from traffic.core.helpers import Host
-from traffic.core.helpers import Sender, Receiver
-from fabric.state import connections as fab_connections
 from common.ecmp.ecmp_test_resource import ECMPSolnSetup
 from common.base import GenericTestBase
-from common import isolated_creds
-import inspect
 import test
 
 
@@ -43,25 +32,6 @@ class TestECMPSanity(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
         super(TestECMPSanity, cls).tearDownClass()
     # end tearDownClass
 
-    @test.attr(type=['ci_sanity_WIP', 'sanity'])
-    @preposttest_wrapper
-    @skip_because(feature='trans_svc')
-    def test_ecmp_svc_transparent_with_3_instance(self):
-        """
-           Description: Validate ECMP with service chaining transparent mode datapath having service instance
-           Test steps:
-                1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
-                2.Creating a service instance in transparent mode with 3 instances.
-                3.Creating a service chain by applying the service instance as a service in a policy between the VNs.
-                4.Checking for ping and bidirectional tcp traffic between vm1 and vm2.
-           Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1 and vice-versa.
-           Maintainer : ganeshahv@juniper.net
-        """
-        self.verify_svc_transparent_datapath(
-            si_count=1, svc_scaling=True, max_inst=2, svc_mode='transparent',
-            **self.common_args)
-    # end test_ecmp_svc_transparent_with_3_instance
-
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ecmp_svc_v2_transparent_with_3_instance(self):
@@ -75,9 +45,10 @@ class TestECMPSanity(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
            Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1 and vice-versa.
            Maintainer : ganeshahv@juniper.net
         """
-        self.verify_svc_transparent_datapath(
-            si_count=1, svc_scaling=True, max_inst=2, svc_mode='transparent',
-            st_version=2, **self.common_args)
+        self.verify_svc_chain(max_inst=2,
+                              service_mode='transparent',
+                              create_svms=True,
+                              **self.common_args)
     # end test_ecmp_svc_v2_transparent_with_3_instance
 
     @test.attr(type=['sanity'])
@@ -96,17 +67,18 @@ class TestECMPSanity(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
                   from vm1 and vice-versa.
         Maintainer : ganeshahv@juniper.net
         """
-        ret_dict = self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=3, svc_mode='in-network',
-            **self.common_args)
-        si_fixtures = ret_dict['si_fixtures']
-        svm_ids = si_fixtures[0].svm_ids
+        ret_dict = self.verify_svc_chain(max_inst=3,
+                              service_mode='in-network',
+                              create_svms=True,
+                              **self.common_args)
+        si_fixture = ret_dict['si_fixture']
+        svm_ids = si_fixture.svm_ids
         self.get_rt_info_tap_intf_list(
             self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture,
-            svm_ids, si_fixtures)
+            svm_ids, si_fixture)
         dst_vm_list = [self.right_vm_fixture]
         self.verify_traffic_flow(
-            self.left_vm_fixture, dst_vm_list, si_fixtures[0],
+            self.left_vm_fixture, dst_vm_list, si_fixture,
             self.left_vn_fixture)
     # end test_ecmp_svc_in_network_with_3_instance
 
@@ -127,25 +99,27 @@ class TestECMPSanity(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
         """
         static_route = None
         if self.inputs.get_af() == 'v6':
-            static_route = ['None', self.right_vn_subnets[0], self.left_vn_subnets[0]]
+            static_route = {'management': 'None',
+                            'left': self.right_vn_subnets[0],
+                            'right': self.left_vn_subnets[0] }
 
         if not static_route:
-            static_route = ['None', self.right_vn_subnets[0], self.left_vn_subnets[0]]
-        ret_dict = self.verify_svc_in_network_datapath(
-                       si_count=1,
-                       svc_mode='in-network',
-                       svc_scaling=True,
-                       max_inst=1,
-                       static_route=static_route,
-                       **self.common_args)
-        si_fixtures = ret_dict['si_fixtures']
-        svm_ids = si_fixtures[0].svm_ids
+            static_route = {'management': 'None',
+                            'left': self.right_vn_subnets[0],
+                            'right': self.left_vn_subnets[0]}
+        ret_dict = self.verify_svc_chain(max_inst=1,
+                              service_mode='in-network',
+                              create_svms=True,
+                              static_route=static_route,
+                              **self.common_args)
+        si_fixture = ret_dict['si_fixture']
+        svm_ids = si_fixture.svm_ids
         self.get_rt_info_tap_intf_list(
             self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture,
-            svm_ids, si_fixtures)
+            svm_ids, si_fixture)
         dst_vm_list = [self.right_vm_fixture]
         self.verify_traffic_flow(
-            self.left_vm_fixture, dst_vm_list, si_fixtures[0],
+            self.left_vm_fixture, dst_vm_list, si_fixture,
             self.left_vn_fixture)
         self.logger.info(
             '%%%%% Will Detach the policy from the networks and delete it %%%%%')
@@ -188,9 +162,11 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
            Pass criteria: Ping and UDP Traffic between the VMs should fail, while TCP traffic should reach vm2 from vm1.
            Maintainer : ganeshahv@juniper.net
         """
-        self.verify_svc_transparent_datapath(
-            svc_mode='transparent', si_count=1, svc_scaling=True, max_inst=3, proto='tcp',
-            **self.common_args)
+        ret_dict = self.verify_svc_chain(max_inst=3,
+                              service_mode='transparent',
+                              create_svms=True,
+                              proto='tcp',
+                              **self.common_args)
         self.left_vm_fixture.put_pub_key_to_vm()
         self.right_vm_fixture.put_pub_key_to_vm()
         # TFTP from Left VM to Right VM is expected to fail
@@ -221,9 +197,11 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                           After updating the policy, TCP traffic should be blocked, while UDP should flow thru.
            Maintainer : ganeshahv@juniper.net
         """
-        ret_dict = self.verify_svc_transparent_datapath(
-            svc_mode='transparent', si_count=1, svc_scaling=True, max_inst=3, proto='tcp',
-            **self.common_args)
+        ret_dict = self.verify_svc_chain(max_inst=3,
+                              service_mode='transparent',
+                              create_svms=True,
+                              proto='tcp',
+                              **self.common_args)
         self.left_vm_fixture.put_pub_key_to_vm()
         self.right_vm_fixture.put_pub_key_to_vm()
         # TFTP from Left VM to Right VM is expected to fail
@@ -248,7 +226,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         pol_id = policy_fixture.policy_obj['policy']['id']
         new_data = {'policy': {'entries': new_entry}}
         policy_fixture.update_policy(pol_id, new_data)
-        time.sleep(5)
+        self.sleep(5)
         # TFTP from Left VM to Right VM is expected to pass
         errmsg1 = "TFTP to right VM ip %s from left VM failed; expected to pass" % self.right_vm_fixture.vm_ip
         assert self.left_vm_fixture.check_file_transfer(
@@ -262,26 +240,6 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         assert self.left_vm_fixture.check_file_transfer(
             dest_vm_fixture=self.right_vm_fixture, mode='scp', size='202', expectation=False), errmsg2
     # end test_ecmp_in_pol_based_svc_pol_update
-
-    @preposttest_wrapper
-    def test_multi_SC_with_ecmp(self):
-        """
-        Description: Validate Multiple Service Instances with ECMP.
-        Test steps:
-                    1. Creating vm's - vm1 and vm2 in networks vn1 and vn2.
-                    2.  Creating 3 service instances in transparent mode with 3 instances each.
-                    3.  Creating a service chain by applying the service instance as a service in a policy b
-            etween the VNs.
-                    4.  Checking for ping and tcp traffic between vm1 and vm2.
-        Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 f
-                  rom vm1.
-        Maintainer : ganeshahv@juniper.net
-        """
-        self.verify_svc_transparent_datapath(
-            svc_mode='transparent', si_count=3, svc_scaling=True, max_inst=3,
-            **self.common_args)
-        return True
-    # end test_multi_SC_with_ecmp
 
     @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
@@ -298,38 +256,12 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
          Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1.
          Maintainer : ganeshahv@juniper.net
         """
-        if self.inputs.orchestrator != 'vcenter':
-            self.verify_svc_in_network_datapath(
-                si_count=1, svc_scaling=True, max_inst=2, svc_mode='in-network-nat', st_version=2,
-                **self.common_args)
-        else:
-            self.verify_svc_in_network_datapath(
-                si_count=1, svc_scaling=True, max_inst=2, svc_mode='in-network-nat', st_version=2,
-                **self.common_args)
-
-        return True
+        self.verify_svc_chain(max_inst=2,
+                              service_mode='in-network-nat',
+                              create_svms=True,
+                              **self.common_args)
     # end test_ecmp_svc_v2_in_network_nat_with_3_instance
 
-    @test.attr(type=['ci_sanity_WIP'])
-    @preposttest_wrapper
-    def test_ecmp_svc_in_network_nat_with_3_instance(self):
-        """
-         Description: Validate ECMP with service chaining in-network-nat mode datapath having service instance
-         Test steps:
-           1.	Creating vm's - vm1 and vm2 in networks vn1 and vn2.
-           2.	Creating a service instance in in-network-nat mode with 3 instances and
-                left-interface of the service instances sharing the IP and enabled for static route.
-
-           3.	Creating a service chain by applying the service instance as a service in a policy between the VNs.
-           4.	Checking for ping and tcp traffic between vm1 and vm2.
-         Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1.
-         Maintainer : ganeshahv@juniper.net
-        """
-        self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=2, svc_mode='in-network-nat',
-            **self.common_args)
-        return True
-    # end test_ecmp_svc_in_network_nat_with_3_instance
 
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance_add_flows(self):
@@ -348,14 +280,15 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                        rom vm1.
         Maintainer : ganeshahv@juniper.net
         """
-        ret_dict = self.verify_svc_in_network_datapath(
-            svc_mode='in-network', si_count=1, svc_scaling=True, max_inst=3,
-            **self.common_args)
-        si_fixtures = ret_dict['si_fixtures']
-        svm_ids = si_fixtures[0].svm_ids
+        ret_dict = self.verify_svc_chain(max_inst=3,
+                              service_mode='in-network',
+                              create_svms=True,
+                              **self.common_args)
+        si_fixture = ret_dict['si_fixture']
+        svm_ids = si_fixtur.svm_ids
         self.get_rt_info_tap_intf_list(
             self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture, svm_ids,
-            si_fixtures)
+            si_fixture)
         vm_list = [self.left_vm_fixture, self.right_vm_fixture]
         for vm in vm_list:
             vm.install_pkg("Traffic")
@@ -376,14 +309,13 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
         self.logger.info(
             'Sending traffic for 10 seconds and will start more flows')
-        time.sleep(10)
+        self.sleep(10)
         self.verify_traffic_flow(
-            self.left_vm_fixture, dst_vm_list, si_fixtures[0], self.left_vn_fixture)
+            self.left_vm_fixture, dst_vm_list, si_fixture, self.left_vn_fixture)
         self.verify_flow_records(
             self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
         self.stop_traffic(
             old_sender, old_receiver, dst_vm_list, old_stream_list)
-        return True
     # end test_ecmp_svc_in_network_with_3_instance_add_flows
 
     @preposttest_wrapper
@@ -403,14 +335,15 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             rom vm1.
          Maintainer : ganeshahv@juniper.net
          """
-        ret_dict = self.verify_svc_in_network_datapath(
-            svc_mode='in-network', si_count=1, svc_scaling=True, max_inst=3,
-            **self.common_args)
-        si_fixtures = ret_dict['si_fixtures']
-        svm_ids = si_fixtures[0].svm_ids
+        ret_dict = self.verify_svc_chain(max_inst=3,
+                              service_mode='in-network',
+                              create_svms=True,
+                              **self.common_args)
+        si_fixture = ret_dict['si_fixture']
+        svm_ids = si_fixture.svm_ids
         self.get_rt_info_tap_intf_list(
             self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture, svm_ids,
-            si_fixtures)
+            si_fixture)
         vm_list = [self.left_vm_fixture, self.right_vm_fixture]
         for vm in vm_list:
             vm.install_pkg("Traffic")
@@ -432,7 +365,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
 
         self.logger.info('Sending traffic for 10 seconds')
-        time.sleep(10)
+        self.sleep(10)
 
         self.verify_flow_records(
             self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
@@ -458,14 +391,15 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             rom vm1.
         Maintainer : ganeshahv@juniper.net
         """
-        ret_dict = self.verify_svc_in_network_datapath(
-            svc_mode='in-network', si_count=1, svc_scaling=True, max_inst=3,
-            **self.common_args)
-        si_fixtures = ret_dict['si_fixtures']
-        svm_ids = si_fixtures[0].svm_ids
+        ret_dict = self.verify_svc_chain(max_inst=3,
+                              service_mode='in-network',
+                              create_svms=True,
+                              **self.common_args)
+        si_fixture = ret_dict['si_fixture']
+        svm_ids = si_fixture.svm_ids
         self.get_rt_info_tap_intf_list(
             self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture,
-            svm_ids, si_fixtures)
+            svm_ids, si_fixture)
         dest_vm2 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
@@ -495,7 +429,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         dst_vm_list = [self.right_vm_fixture]
         sender, receiver = self.start_traffic(self.left_vm_fixture, dst_vm_list, stream_list,
                                self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
-        time.sleep(1)
+        self.sleep(1)
         self.verify_flow_records(
             self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
         self.stop_traffic(
@@ -518,16 +452,17 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                 rom vm1.
         Maintainer : ganeshahv@juniper.net
         """
-        ret_dict = self.verify_svc_in_network_datapath(
-            svc_mode='in-network', si_count=1, svc_scaling=True, max_inst=3,
-            **self.common_args)
-        si_fixtures = ret_dict['si_fixtures']
-        svm_ids = si_fixtures[0].svm_ids
+        ret_dict = self.verify_svc_chain(max_inst=3,
+                              service_mode='in-network',
+                              create_svms=True,
+                              **self.common_args)
+        si_fixture = ret_dict['si_fixture']
+        svm_ids = si_fixture.svm_ids
         self.get_rt_info_tap_intf_list(
             self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture, svm_ids)
         dst_vm_list = [self.right_vm_fixture]
         self.verify_traffic_flow(
-            self.left_vm_fixture, dst_vm_list, si_fixtures[0], self.left_vn_fixture)
+            self.left_vm_fixture, dst_vm_list, si_fixture, self.left_vn_fixture)
         self.logger.info(
             'Will Detach the policy from the networks and delete it')
         self.detach_policy(ret_dict['left_vn_policy_fix'])
@@ -546,7 +481,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         self.sleep(30)
         self.logger.info('Traffic between the VMs should pass now')
         self.verify_traffic_flow(
-            self.left_vm_fixture, dst_vm_list, si_fixtures[0], self.left_vn_fixture)
+            self.left_vm_fixture, dst_vm_list, si_fixture, self.left_vn_fixture)
     # end test_ecmp_svc_in_network_with_policy_bind_unbind
 
 
@@ -572,10 +507,11 @@ class TestECMPwithFIP_1(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraf
         Pass criteria: Traffic should reach the other VMs from vm1.
         Maintainer : ganeshahv@juniper.net
         """
-        ret_dict = self.verify_svc_in_network_datapath(
-            si_count=1, svc_scaling=True, max_inst=3,
-            **self.common_args)
-        si_fixtures = ret_dict['si_fixtures']
+        ret_dict = self.verify_svc_chain(max_inst=3,
+                              service_mode='in-network',
+                              create_svms=True,
+                              **self.common_args)
+        si_fixture = ret_dict['si_fixture']
         self.logger.info('.' * 80)
         self.logger.info(
             'We will create 3 VMs at the destination and make them share the same FIP address')
@@ -626,12 +562,11 @@ class TestECMPwithFIP_1(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraf
             fip_obj.add_virtual_machine_interface(intf)
         self.vnc_lib.floating_ip_create(fip_obj)
         self.addCleanup(self.vnc_lib.floating_ip_delete, fip_obj.fq_name)
-        svm_ids = si_fixtures[0].svm_ids
+        svm_ids = si_fixture.svm_ids
         self.get_rt_info_tap_intf_list(
             self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture,
-            svm_ids, si_fixtures)
+            svm_ids, si_fixture)
         self.left_vm_fixture.ping_with_certainty(my_fip)
-        return True
     # end test_ecmp_with_svc_with_fip_dest
 
 class TestECMPwithFIP_2(GenericTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
@@ -711,7 +646,7 @@ class TestECMPwithFIP_2(GenericTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPT
         self.sender, self.receiver = self.start_traffic(
             self.fvn_vm1, vm_list, stream_list, self.fvn_vm1.vm_ip, self.my_fip)
         self.logger.info('Sending traffic for 10 seconds')
-        time.sleep(10)
+        self.sleep(10)
         self.verify_flow_records(self.fvn_vm1, self.fvn_vm1.vm_ip, self.my_fip)
         return True
 
@@ -742,7 +677,7 @@ class TestECMPwithFIP_2(GenericTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPT
         self.sender, self.receiver = self.start_traffic(
             self.fvn_vm1, vm_list, stream_list, self.fvn_vm1.vm_ip, self.my_fip)
         self.logger.info('Sending traffic for 10 seconds')
-        time.sleep(10)
+        self.sleep(10)
         self.verify_flow_records(self.fvn_vm1, self.fvn_vm1.vm_ip, self.my_fip)
         return True
 
@@ -772,14 +707,14 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
            Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1 and vice-versa.
            Maintainer : ganeshahv@juniper.net
         """
-        ret_dict = self.verify_svc_in_network_datapath(
-            svc_mode='in-network', si_count=1, svc_scaling=True, max_inst=3,
-            **self.common_args)
-        si_fixtures = ret_dict['si_fixtures']
-        svms = self.get_svms_in_si(
-            si_fixtures[0], self.inputs.project_name)
+        ret_dict = self.verify_svc_chain(max_inst=3,
+                              service_mode='in-network',
+                              create_svms=True,
+                              **self.common_args)
+        si_fixture = ret_dict['si_fixture']
+        svms = self.get_svms_in_si(si_fixture)
         self.logger.info('The Service VMs in the Service Instance %s are %s' % (
-            si_fixtures[0].si_name, svms))
+            si_fixture.si_name, svms))
         for svm in svms:
             self.logger.info('SVM %s is in %s state' % (svm, svm.status))
         self.logger.info('Will send traffic between the VMs')
@@ -789,13 +724,13 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
         sender, receiver = self.start_traffic(
             self.left_vm_fixture, dst_vm_list, stream_list,
             self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
-        self.verify_flow_thru_si(si_fixtures[0], self.left_vm_fixture)
+        self.verify_flow_thru_si(si_fixture, self.left_vm_fixture)
         while(len(svms) > 1):
             old_count = len(svms)
             self.logger.info(
                 'Will reduce the SVM count from %s to %s' % (old_count, len(svms) - 1))
             si_obj = self.vnc_lib.service_instance_read(
-                fq_name=si_fixtures[0].si_fq_name)
+                fq_name=si_fixture.si_fq_name)
             si_prop = si_obj.get_service_instance_properties()
             scale_out = my_vnc_api.ServiceScaleOutType(
                 max_instances=(len(svms) - 1))
@@ -804,8 +739,7 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
             self.vnc_lib.service_instance_update(si_obj)
 #            svms[-1].delete()  Instead of deleting the SVMs, we will reduce the max_inst
             self.sleep(10)
-            svms = self.get_svms_in_si(
-                si_fixtures[0], self.inputs.project_name)
+            svms = self.get_svms_in_si(si_fixture)
             svms = sorted(set(svms))
             if None in svms:
                 svms.remove(None)
@@ -813,16 +747,16 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
             errmsg = 'The SVMs count has not decreased'
             assert new_count < old_count, errmsg
             self.logger.info('The Service VMs in the Service Instance %s are %s' % (
-                si_fixtures[0].si_name, svms))
+                si_fixture.si_name, svms))
             svm_ids = []
             for svm in svms:
                 svm_ids.append(svm.id)
             self.get_rt_info_tap_intf_list(
                 self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture,
-                svm_ids, si_fixtures)
+                svm_ids, si_fixture)
             self.verify_flow_records(
                 self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
-            self.verify_flow_thru_si(si_fixtures[0], self.left_vn_fixture)
+            self.verify_flow_thru_si(si_fixture, self.left_vn_fixture)
     # end test_ecmp_with_svm_deletion
 
     @preposttest_wrapper
@@ -838,14 +772,14 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
            Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2 from vm1 and vice-versa.
            Maintainer : ganeshahv@juniper.net
         """
-        ret_dict = self.verify_svc_transparent_datapath(
-            svc_mode='transparent', si_count=1, svc_scaling=True, max_inst=3,
-            **self.common_args)
-        si_fixtures = ret_dict['si_fixtures']
-        svms = self.get_svms_in_si(
-            si_fixtures[0], self.inputs.project_name)
+        ret_dict = self.verify_svc_chain(max_inst=3,
+                              service_mode='transparent',
+                              create_svms=True,
+                              **self.common_args)
+        si_fixture = ret_dict['si_fixture']
+        svms = self.get_svms_in_si(si_fixture)
         self.logger.info('The Service VMs in the Service Instance %s are %s' % (
-            si_fixtures[0].si_name, svms))
+            si_fixture.si_name, svms))
         for svm in svms:
             self.logger.info('SVM %s is in %s state' % (svm, svm.status))
         self.logger.info('Will send traffic between the VMs')
@@ -854,7 +788,7 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
             self.left_vm_fixture, dst_vm_list, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
         sender, receiver = self.start_traffic(
             self.left_vm_fixture, dst_vm_list, stream_list, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
-        self.verify_flow_thru_si(si_fixtures[0])
+        self.verify_flow_thru_si(si_fixture)
 
         self.logger.info(
             '%%%%%% Will suspend the SVMs and check traffic flow %%%%%%')
@@ -864,13 +798,12 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
             sleep(30)
             self.verify_flow_records(
                 self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
-            self.verify_flow_thru_si(si_fixtures[0])
+            self.verify_flow_thru_si(si_fixture)
 
         self.logger.info(
             '%%%%%% Will resume the suspended SVMs and check traffic flow %%%%%%')
         for i in range(len(svms)):
-            svms = self.get_svms_in_si(
-                si_fixtures[0], self.inputs.project_name)
+            svms = self.get_svms_in_si(si_fixture)
             if svms[i].status == 'SUSPENDED':
                 self.logger.info(
                     'Will resume the suspended SVM %s' % svms[i].name)
@@ -880,7 +813,7 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
                 self.logger.info('SVM %s is not SUSPENDED' % svms[i].name)
             self.verify_flow_records(
                 self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
-            self.verify_flow_thru_si(si_fixtures[0])
+            self.verify_flow_thru_si(si_fixture)
 
     # end test_ecmp_with_svm_suspend_start
 
@@ -915,11 +848,16 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
         Pass criteria: Ping between the VMs should be successful.
         Maintainer : ganeshahv@juniper.net
         """
-        si_list = [
-            ('transparent', 1), ('in-network', 1), ('in-network-nat', 1)]
+        si_list = [ { 'service_mode' : 'transparent'},
+                    { 'service_mode' : 'in-network'},
+                    { 'service_mode' : 'in-network-nat'} ]
+
+
         if self.inputs.get_af() == 'v6':
-            si_list = [('transparent', 1), ('in-network', 1)]
-        self.verify_multi_inline_svc(si_list=si_list, **self.common_args)
+            si_list = [ { 'service_mode' : 'transparent'},
+                        { 'service_mode' : 'in-network'}]
+        self.verify_multi_inline_svc(si_list=si_list, create_svms=True,
+                                     **self.common_args)
     # end test_three_stage_SC
 
     @test.attr(type=['sanity', 'vcenter'])
@@ -937,13 +875,13 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
         Maintainer : ganeshahv@juniper.net
         """
         if self.inputs.orchestrator == 'vcenter':
-            self.verify_multi_inline_svc(
-                si_list=[('in-network', 1), ('in-network-nat', 1)], st_version=2,
-                **self.common_args)
+            si_list = [ { 'service_mode' : 'in-network'},
+                        { 'service_mode' : 'in-network-nat'}]
         else:
-            self.verify_multi_inline_svc(
-                si_list=[('transparent', 1), ('in-network-nat', 1)], st_version=2,
-                **self.common_args)
+            si_list = [ { 'service_mode' : 'transparent'},
+                        { 'service_mode' : 'in-network-nat'} ]
+        self.verify_multi_inline_svc(si_list=si_list, create_svms=True,
+                                     **self.common_args)
     # end test_three_stage_v2_SC
 
     @preposttest_wrapper
@@ -960,11 +898,14 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
                    from vm1 and vice-versa.
         Maintainer : ganeshahv@juniper.net
         """
-        si_list = [
-            ('transparent', 2), ('in-network', 2), ('in-network-nat', 2)]
+        si_list = [ { 'service_mode' : 'transparent', 'max_inst' : 2 },
+                    { 'service_mode' : 'in-network',  'max_inst' : 2 },
+                    { 'service_mode' : 'in-network-nat',  'max_inst' : 2 } ]
         if self.inputs.get_af() == 'v6':
-            si_list = [('transparent', 2), ('in-network', 2)]
-        self.verify_multi_inline_svc(si_list=si_list, **self.common_args)
+            si_list = [ { 'service_mode' : 'transparent', 'max_inst' : 2 },
+                        { 'service_mode' : 'in-network',  'max_inst' : 2 }]
+        self.verify_multi_inline_svc(si_list=si_list, create_svms=True,
+                                     **self.common_args)
     # end test_three_stage_SC_with_ECMP
 
     @preposttest_wrapper
@@ -981,20 +922,19 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
                  from vm1 and vice-versa.
         Maintainer : ganeshahv@juniper.net
         """
-        si_list = [
-            ('transparent', 2), ('in-network', 2), ('in-network-nat', 2)]
+        si_list = [ { 'service_mode' : 'transparent', 'max_inst' : 2 },
+                    { 'service_mode' : 'in-network',  'max_inst' : 2 },
+                    { 'service_mode' : 'in-network-nat',  'max_inst' : 2 } ]
         if self.inputs.get_af() == 'v6':
-            si_list = [('transparent', 2), ('in-network', 2)]
-        ret_dict = self.verify_multi_inline_svc(si_list=si_list)
-        si_fixtures = ret_dict['si_fixture_list'][-1]
-        tap_list = []
-        svm_ids = si_fixtures[0].svm_ids
-        tap_list = self.get_rt_info_tap_intf_list(
-            self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture,
-            svm_ids,si_fixtures)
+            si_list = [ { 'service_mode' : 'transparent', 'max_inst' : 2 },
+                        { 'service_mode' : 'in-network',  'max_inst' : 2 }]
+        ret_dict = self.verify_multi_inline_svc(si_list=si_list, create_svms=True,
+                                     **self.common_args)
+        last_si_fixture = ret_dict['si_fixtures'][-1]
+        svm_ids = last_si_fixture.svm_ids
         dst_vm_list = [self.right_vm_fixture]
         self.verify_traffic_flow(
-            self.left_vm_fixture, dst_vm_list, si_fixtures[0],
+            self.left_vm_fixture, dst_vm_list, last_si_fixture,
             self.left_vn_fixture)
 
     # end test_three_stage_SC_with_traffic
@@ -1106,10 +1046,10 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         # Verify traffic from vn1 (left) to vn2 (right), with user specified
         # flow count
         flow_count = 5
-        si_fixtures = ret_dict['si_fixtures']
+        si_fixture = ret_dict['si_fixture']
         dst_vm_list = [right_vm_fixture]
         self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
-                                 si_fixtures[0], left_vn_fixture,
+                                 si_fixture, left_vn_fixture,
                                  ecmp_hash=ecmp_hash, flow_count=flow_count)
         return True
     # end test_ecmp_hash_src_ip
@@ -1160,10 +1100,10 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         # Verify traffic from vn1 (left) to vn2 (right), with user specified
         # flow count
         flow_count = 5
-        si_fixtures = ret_dict['si_fixtures']
+        si_fixture = ret_dict['si_fixture']
         dst_vm_list = [right_vm_fixture]
         self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
-                                 si_fixtures[0], left_vn_fixture,
+                                 si_fixture, left_vn_fixture,
                                  ecmp_hash=ecmp_hash, flow_count=flow_count)
         return True
     # end test_ecmp_hash_dest_ip
@@ -1214,9 +1154,9 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         # flow count
         flow_count = 5
         dst_vm_list = [right_vm_fixture]
-        si_fixtures = ret_dict['si_fixtures']
+        si_fixture = ret_dict['si_fixture']
         self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
-                                 si_fixtures[0], left_vn_fixture,
+                                 si_fixture, left_vn_fixture,
                                  ecmp_hash=ecmp_hash, flow_count=flow_count)
         return True
     # end test_ecmp_hash_src_port
@@ -1268,11 +1208,10 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         # flow count
         flow_count = 5
         dst_vm_list = [right_vm_fixture]
-        si_fixtures = ret_dict['si_fixtures']
+        si_fixture = ret_dict['si_fixture']
         self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
-                                 si_fixtures[0], left_vn_fixture,
+                                 si_fixture, left_vn_fixture,
                                  ecmp_hash=ecmp_hash, flow_count=flow_count)
-        return True
     # end test_ecmp_hash_dest_port
 
     def test_ecmp_hash_protocol(self):
@@ -1315,10 +1254,10 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         # Verify traffic from vn1 (left) to vn2 (right), with user specified
         # flow count
         flow_count = 5
-        si_fixtures = ret_dict['si_fixtures']
+        si_fixture = ret_dict['si_fixture']
         dst_vm_list = [right_vm_fixture]
         self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
-                                 si_fixtures[0], left_vn_fixture,
+                                 si_fixture, left_vn_fixture,
                                  ecmp_hash=ecmp_hash, flow_count=flow_count)
         return True
     # end test_ecmp_hash_protocol
@@ -1380,10 +1319,10 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         # Verify traffic from vn1 (left) to vn2 (right), with user specified
         # flow count
         flow_count = 5
-        si_fixtures = ret_dict['si_fixtures']
+        si_fixture = ret_dict['si_fixture']
         dst_vm_list = [right_vm_fixture]
         self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
-                                 si_fixtures[0], left_vn_fixture,
+                                 si_fixture, left_vn_fixture,
                                  ecmp_hash=ecmp_hash, flow_count=flow_count)
 
         # Delete the ECMP Hash config at Global, VN and VMI level
@@ -1446,10 +1385,10 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         # Verify traffic from vn1 (left) to vn2 (right), with user specified
         # flow count
         flow_count = 5
-        si_fixtures = ret_dict['si_fixtures']
+        si_fixture = ret_dict['si_fixture']
         dst_vm_list = [right_vm_fixture]
         self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
-                                 si_fixtures[0], left_vn_fixture,
+                                 si_fixture, left_vn_fixture,
                                  ecmp_hash=ecmp_hash, flow_count=flow_count)
         return True
     # end test_ecmp_hash_deletion
@@ -1491,10 +1430,9 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
                               left_vm_fixture=left_vm_fixture,
                               right_vm_fixture=right_vm_fixture)
 
-        si_fixtures = ret_dict['si_fixtures']
-        svms = self.get_svms_in_si(si_fixtures[0],
-                                   self.inputs.project_name)
-        self.logger.info('The Service VMs in the Service Instance %s are %s'% (si_fixtures[0].si_name, svms))
+        si_fixture = ret_dict['si_fixture']
+        svms = self.get_svms_in_si(si_fixture)
+        self.logger.info('The Service VMs in the Service Instance %s are %s'% (si_fixture.si_name, svms))
         for svm in svms:
             self.logger.info('SVM %s is in %s state' % (svm, svm.status))
         self.logger.info('%% Will suspend the SVMs and check traffic flow %%')
@@ -1508,12 +1446,11 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
             svms[i].suspend()
             sleep(30)
             self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
-                                     si_fixtures[0], left_vn_fixture,
+                                     si_fixture, left_vn_fixture,
                                      ecmp_hash=ecmp_hash, flow_count=flow_count)
         self.logger.info('%% Will resume the suspended SVMs and check traffic flow %%%%%%')
         for i in range(len(svms)):
-            svms = self.get_svms_in_si(si_fixtures[0],
-                                       self.inputs.project_name)
+            svms = self.get_svms_in_si(si_fixture)
             if svms[i].status == 'SUSPENDED':
                 self.logger.info('Will resume the suspended SVM %s' % svms[i].name)
                 svms[i].resume()
@@ -1522,7 +1459,7 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
                 self.logger.info('SVM %s is not SUSPENDED' % svms[i].name)
 
             self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
-                                     si_fixtures[0], left_vn_fixture,
+                                     si_fixture, left_vn_fixture,
                                      ecmp_hash=ecmp_hash, flow_count=flow_count)
 
 

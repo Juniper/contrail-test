@@ -15,7 +15,6 @@ from traffic.core.profile import create, ContinuousProfile, StandardProfile, Bur
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
 
-from common.servicechain.config import ConfigSvcChain
 from common.servicechain.verify import VerifySvcChain
 from fabric.api import run, local
 from analytics import base
@@ -26,7 +25,6 @@ import test
 
 class AnalyticsTestSanityWithResource(
         base.AnalyticsBaseTest,
-        ConfigSvcChain,
         VerifySvcChain):
 
     @classmethod
@@ -61,7 +59,6 @@ class AnalyticsTestSanityWithResource(
         self.action_list = []
         self.if_list = [['management', False], ['left', True], ['right', True]]
         self.st_name = 'in_net_svc_template_1'
-        si_prefix = 'in_net_svc_instance_'
         si_count = 1
         svc_scaling = False
         max_inst = 1
@@ -83,51 +80,19 @@ class AnalyticsTestSanityWithResource(
                 self.vn2_fixture = self.config_vn(
                     self.vn2_name,
                     self.vn2_subnets)
-            self.st_fixture, self.si_fixtures = self.config_st_si\
-                                                (self.st_name,
-                                                si_prefix, si_count, svc_scaling,
-                                                max_inst, project=self.inputs.project_name,
-                                                left_vn_fixture=self.vn1_fixture,
-                                                right_vn_fixture=self.vn2_fixture,
-                                                svc_mode=svc_mode)
-            self.action_list = self.chain_si(
-                si_count,
-                si_prefix,
-                self.inputs.project_name)
-            self.rules = [
-                {
-                    'direction': '<>',
-                    'protocol': 'any',
-                    'source_network': self.vn1_name,
-                    'src_ports': [0, -1],
-                    'dest_network': self.vn2_name,
-                    'dst_ports': [0, -1],
-                    'simple_action': None,
-                    'action_list': {'apply_service': self.action_list}
-                },
-            ]
-            self.policy_fixture = self.config_policy(
-                self.policy_name,
-                self.rules)
+            svc_chain_info = self.config_svc_chain(
+                left_vn_fixture=self.vn1_fixture,
+                right_vn_fixture=self.vn2_fixture,
+                max_inst=max_inst,
+                st_name=self.st_name,
+                service_mode=svc_mode)
+            self.st_fixture = svc_chain_info['st_fixture']
+            self.si_fixture = svc_chain_info['si_fixture']
 
-            self.vn1_policy_fix = self.attach_policy_to_vn(
-                self.policy_fixture,
-                self.vn1_fixture)
-            self.vn2_policy_fix = self.attach_policy_to_vn(
-                self.policy_fixture,
-                self.vn2_fixture)
+            self.si_fixture.verify_on_setup()
 
-            self.validate_vn(
-                self.vn1_name,
-                project_name=self.inputs.project_name)
-            self.validate_vn(
-                self.vn2_name,
-                project_name=self.inputs.project_name)
-            for si_fix in self.si_fixtures:
-                si_fix.verify_on_setup()
-
-            domain, project, name = self.si_fixtures[0].si_fq_name
-            si_name = ':'.join(self.si_fixtures[0].si_fq_name)
+            domain, project, name = self.si_fixture.si_fq_name
+            si_name = ':'.join(self.si_fixture.si_fq_name)
             # Getting nova uuid of the service instance
             try:
                 assert self.analytics_obj.verify_service_chain_uve(self.vn1_fq_name,
@@ -179,50 +144,48 @@ class AnalyticsTestSanityWithResource(
                 result = result and False
 
             si_uuids = []
-            for si_fix in self.si_fixtures:
-                for el in si_fix.si_obj.get_virtual_machine_back_refs():
-                    si_uuids.append(el['uuid'])
+            for el in self.si_fixture.si_obj.get_virtual_machine_back_refs():
+                si_uuids.append(el['uuid'])
 
-                for si_uuid in si_uuids:
-                    try:
-                        assert self.analytics_obj.verify_vm_list_in_vn_uve(
-                            vn_fq_name=self.vn1_fixture.vn_fq_name,
-                            vm_uuid_lst=[si_uuid])
-                    except Exception as e:
-                        self.logger.warn(
-                            "Service instance not shown in %s uve" %
-                            (self.vn1_fixture.vn_fq_name))
-                        result = result and False
-                    try:
-                        assert self.analytics_obj.verify_vm_list_in_vn_uve(
-                            vn_fq_name=self.vn2_fixture.vn_fq_name,
-                            vm_uuid_lst=[si_uuid])
-                    except Exception as e:
-                        self.logger.warn("Service instance not shown in %s\
-                                uve" % (self.vn2_fixture.vn_fq_name))
-                        result = result and False
-            for si_fix in self.si_fixtures:
-                self.logger.info("Deleting service instance")
-                si_fix.cleanUp()
-                self.remove_from_cleanups(si_fix)
-                time.sleep(10)
+            for si_uuid in si_uuids:
                 try:
-                    self.analytics_obj.verify_si_uve_not_in_analytics(
-                        instance=si_name,
-                        st_name=self.st_name,
-                        left_vn=self.vn1_fq_name,
-                        right_vn=self.vn2_fq_name)
-                    for si_uuid in si_uuids:
-                        self.analytics_obj.verify_vn_uve_for_vm_not_in_vn(
-                            vn_fq_name=self.vn2_fixture.vn_fq_name,
-                            vm=si_uuid)
-                        self.analytics_obj.verify_vn_uve_for_vm_not_in_vn(
-                            vn_fq_name=self.vn1_fixture.vn_fq_name,
-                            vm=si_uuid)
+                    assert self.analytics_obj.verify_vm_list_in_vn_uve(
+                        vn_fq_name=self.vn1_fixture.vn_fq_name,
+                        vm_uuid_lst=[si_uuid])
                 except Exception as e:
                     self.logger.warn(
-                        "Service instance uve not removed from analytics")
+                        "Service instance not shown in %s uve" %
+                        (self.vn1_fixture.vn_fq_name))
                     result = result and False
+                try:
+                    assert self.analytics_obj.verify_vm_list_in_vn_uve(
+                        vn_fq_name=self.vn2_fixture.vn_fq_name,
+                        vm_uuid_lst=[si_uuid])
+                except Exception as e:
+                    self.logger.warn("Service instance not shown in %s\
+                            uve" % (self.vn2_fixture.vn_fq_name))
+                    result = result and False
+            self.logger.info("Deleting service instance")
+            self.si_fixture.cleanUp()
+            self.remove_from_cleanups(self.si_fixture)
+            time.sleep(10)
+            try:
+                self.analytics_obj.verify_si_uve_not_in_analytics(
+                    instance=si_name,
+                    st_name=self.st_name,
+                    left_vn=self.vn1_fq_name,
+                    right_vn=self.vn2_fq_name)
+                for si_uuid in si_uuids:
+                    self.analytics_obj.verify_vn_uve_for_vm_not_in_vn(
+                        vn_fq_name=self.vn2_fixture.vn_fq_name,
+                        vm=si_uuid)
+                    self.analytics_obj.verify_vn_uve_for_vm_not_in_vn(
+                        vn_fq_name=self.vn1_fixture.vn_fq_name,
+                        vm=si_uuid)
+            except Exception as e:
+                self.logger.warn(
+                    "Service instance uve not removed from analytics")
+                result = result and False
 
             self.logger.info("Deleting service template")
             self.st_fixture.cleanUp()

@@ -106,28 +106,28 @@ class TestSubInterfacesECMP(BaseVrouterTest,ConfigSvcChain):
         svc_img_name='tiny_in_net'
         svc_type = 'firewall'
         static_route=[None, None, None]
-        mgmt_props = ['management', False, False]
         left_scaling = False
         right_scaling = False
-        if_list = [mgmt_props,
-                   ['left', left_scaling, bool(static_route[1])],
-                   ['right', right_scaling, bool(static_route[2])],
-                   ]
+        if_details = { 'management' : { 'shared_ip_enable' : False,
+                                        'static_route_enable' : False },
+                       'left' : { 'shared_ip_enable' : left_scaling,
+                                  'static_route_enable' : False },
+                       'right' : { 'shared_ip_enable' : right_scaling,
+                                  'static_route_enable' : False }}
         flavor='contrail_flavor_2cpu'
         st_version=2
-        ordered_interfaces=True
         si_name= get_random_name("in_net_svc_instance")
         svc_mode = 'in-network'
         st_fixture = self.useFixture(SvcTemplateFixture(
-            connections=self.connections, inputs=self.inputs, domain_name=self.inputs.domain_name,
-            st_name=st_name, svc_img_name=svc_img_name, svc_type=svc_type,
-            if_list=if_list, svc_mode=svc_mode, svc_scaling=svc_scaling, flavor=flavor, ordered_interfaces=ordered_interfaces, version=st_version))
+            connections=self.connections,
+            st_name=st_name, svc_type=svc_type,
+            if_details=if_details, svc_mode=svc_mode, version=st_version))
 
         si_fixture = self.useFixture(SvcInstanceFixture(
-                connections=self.connections, inputs=self.inputs,
-                domain_name=self.inputs.domain_name, project_name=self.inputs.project_name, si_name=si_name,
-                svc_template=st_fixture.st_obj, if_list=if_list,
-                mgmt_vn_name=self.mgmt_vn_fixture.vn_fq_name, left_vn_name=self.left_vn_fixture.vn_fq_name, right_vn_name=self.right_vn_fixture.vn_fq_name, do_verify=True, max_inst=max_inst, static_route=static_route))
+                connections=self.connections,
+                si_name=si_name,
+                svc_template=st_fixture.st_obj, if_details=if_details,
+                mgmt_vn_name=self.mgmt_vn_fixture.vn_fq_name, left_vn_name=self.left_vn_fixture.vn_fq_name, right_vn_name=self.right_vn_fixture.vn_fq_name, do_verify=True, max_inst=max_inst))
 
         return si_fixture
 

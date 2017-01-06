@@ -158,7 +158,7 @@ class sdn_webui_config ():
 
         # define service templates ##
         self.st_list = ['tcp_svc_template']
-        self.st_params = {'tcp_svc_template': {'svc_img_name': 'vsrx-bridge',
+        self.st_params = {'tcp_svc_template': {'svc_img_name': 'tiny_trans_fw',
                                                'svc_type': 'firewall',
                                                'if_list': [['management',
                                                             False,
@@ -171,8 +171,8 @@ class sdn_webui_config ():
                                                             False]],
                                                'svc_mode': 'transparent',
                                                'svc_scaling': False,
-                                               'flavor': 'm1.medium',
-                                               'ordered_interfaces': True}}
+                                               'flavor': 'm1.tiny',
+                                               }}
 
         # define service instance
         self.si_list = ['svcinst1']
