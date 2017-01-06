@@ -666,20 +666,26 @@ class sdn_topo_mx_with_si():
 					    }
 			 }
 
+        if_details = {
+            'management' : { 'shared_ip_enable' : False,
+                             'static_route_enable': False },
+            'left' : { 'shared_ip_enable': False,
+                       'static_route_enable' : False},
+            'right' : { 'shared_ip_enable': False,
+                       'static_route_enable' : False}}
         # define service templates
         self.st_list = ['st_trans_firewall']
-        self.st_params = {self.st_list[0]: {'svc_img_name': 'vsrx-bridge', 'svc_type': 'firewall', 'if_list':
-                                            [['management', False, False], ['left', False, False],
-                                            ['right', False, False]], 'svc_mode': 'transparent',
-                                            'svc_scaling': False, 'flavor': 'm1.medium',
-                                            'ordered_interfaces': True
+        self.st_params = {self.st_list[0]: {'svc_img_name': 'tiny_trans_fw', 'svc_type': 'firewall',
+                                            'if_details' : if_details,
+                                            'svc_mode': 'transparent',
+                                            'svc_scaling': False, 'flavor': 'm1.tiny',
                                             }}
 
         # define service instance
         self.si_list = ['si_trans_firewall']
         self.si_params = {
-            self.si_list[0]: {'if_list': [['management', False, False], ['left', False, False],
-                              ['right', False, False]], 'svc_template': self.st_list[0],
+            self.si_list[0]: {'if_details' : if_details,
+                              'svc_template': self.st_list[0],
                               'left_vn': None, 'right_vn': None
                              }}
 

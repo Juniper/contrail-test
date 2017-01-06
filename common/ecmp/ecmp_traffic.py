@@ -14,11 +14,10 @@ from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from fabric.state import connections as fab_connections
-from common.servicechain.config import ConfigSvcChain
 from common.servicechain.verify import VerifySvcChain
 
 
-class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
+class ECMPTraffic(VerifySvcChain):
 
     def verify_traffic_flow(self, src_vm, dst_vm_list, si_fix, src_vn, src_ip=None, dst_ip=None):
         fab_connections.clear()
@@ -113,7 +112,7 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
         flowcount = 0
         result = True
         flow_pattern = {}
-        svms = self.get_svms_in_si(si_fix, self.inputs.project_name)
+        svms = self.get_svms_in_si(si_fix)
         svms = sorted(set(svms))
         if None in svms:
             svms.remove(None)
@@ -137,7 +136,7 @@ class ECMPTraffic(ConfigSvcChain, VerifySvcChain):
         sleep(15)
 
         self.logger.info('%%%%% Will check the result of tcpdump %%%%%')
-        svms = self.get_svms_in_si(si_fix, self.inputs.project_name)
+        svms = self.get_svms_in_si(si_fix)
         svms = sorted(set(svms))
         if None in svms:
             svms.remove(None)

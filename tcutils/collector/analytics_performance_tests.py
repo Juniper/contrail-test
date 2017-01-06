@@ -162,17 +162,21 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
         max_ip = ip_list[-1]
         return [min_ip, max_ip]
 
-    def create_svc_chains(self, st_name, si_prefix, si_count, max_inst,
+    def create_svc_chains(self, st_name, si_prefix, max_inst,
                           left_vn_fixture=None, right_vn_fixture=None,
-                          svc_mode='in-network', svc_scaling=False):
+                          svc_mode='in-network'):
 
         self.action_list = []
         self.if_list = [['management', False], ['left', True], ['right', True]]
-        self.st_fixture, self.si_fixtures = self.config_st_si(
-            st_name, si_prefix, si_count,
-            svc_scaling, max_inst, left_vn_fixture=left_vn_fixture,
-            right_vn_fixture=right_vn_fixture, svc_mode=svc_mode)
-        self.action_list = self.chain_si(si_count, si_prefix)
+
+        svc_chain_info = self.config_svc_chain(
+            left_vn_fixture=left_vn_fixture,
+            right_vn_fixture=right_vn_fixture,
+            service_mode=svc_mode,
+            st_name=st_name,
+            max_inst=max_inst)
+        self.st_fixture = svc_chain_info['st_fixture']
+        self.si_fixture = svc_chain_info['si_fixture']
 
     def create_policy(self, policy_name='policy_in_network', rules=[], src_vn_fixture=None, dest_vn_fixture=None):
 
@@ -194,7 +198,7 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
             right_vn_fixture=None, svc_mode='in-network'):
 
         self.create_svc_chains(
-            st_name, si_prefix, si_count, max_inst, svc_scaling=svc_scaling,
+            st_name, si_prefix, max_inst,
             left_vn_fixture=left_vn_fixture,
             right_vn_fixture=right_vn_fixture, svc_mode=svc_mode)
 
@@ -295,21 +299,6 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
         self.setup_service_instance(
             left_vn_fixture=left_vn_fix, right_vn_fixture=right_vn_fix)
 
-        # Creating rules and policy
-        rules = [
-            {
-                'direction': '<>',
-                'protocol': 'any',
-                'source_network': left_vn_fq_name,
-                'src_ports': [0, -1],
-                'dest_network': right_vn_fq_name,
-                'dst_ports': [0, -1],
-                'simple_action': 'pass',
-                'action_list': {'apply_service': self.action_list}
-            },
-        ]
-        self.setup_policy(policy_rules=rules,
-                          src_vn_fixture=left_vn_fix, dest_vn_fixture=right_vn_fix)
         # Sending traffic
         prefix = '111.1.0.0/16'
         vm_uuid = self.setup_fixture.vm_valuelist[0].vm_obj.id

@@ -659,7 +659,11 @@ class TestInputs(object):
     # end _process_tor_data
 
     def get_host_ip(self, name):
-        ip = self.host_data[name]['host_ip']
+        try:
+            ip = self.host_data[name]['host_ip']
+        except KeyError:
+            short_name = name.split('.')[0]
+            ip = self.host_data[short_name]['host_ip']
         if ip in self.ha_tmp_list:
             ip = self.contrail_external_vip
         return ip

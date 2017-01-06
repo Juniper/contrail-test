@@ -2964,6 +2964,14 @@ class VMFixture(fixtures.Fixture):
         self.run_cmd_on_vm(cmd, as_sudo=True)
     # end add_route_in_vm
 
+    def disable_interface_policy(self, value=True, vmi_ids=[]):
+        vmi_ids = vmi_ids or self.vmi_ids.values()
+        for vmi_id in vmi_ids:
+            vmi_obj = self.vnc_lib_h.virtual_machine_interface_read(id=vmi_id)
+            vmi_obj.set_virtual_machine_interface_disable_policy(bool(value))
+            self.vnc_lib_h.virtual_machine_interface_update(vmi_obj)
+    # end set_interface_policy
+
 # end VMFixture
 
 class VMData(object):

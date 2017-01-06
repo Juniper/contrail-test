@@ -13,17 +13,26 @@ from tcutils.util import retry
 from traffic.core.stream import Stream                                                                                                                                                                                                      
 from traffic.core.profile import StandardProfile, ContinuousProfile, ContinuousSportRange
 from traffic.core.helpers import Host, Sender, Receiver
+from common.servicechain.config import ConfigSvcChain
 
-class VerifySvcChain(object):
+class VerifySvcChain(ConfigSvcChain):
 
-    def verify_si(self, si_fixtures):
+    def verify_si(self, si_fixture):
+        return si_fixture.verify_on_setup()
+
+    def verify_sis(self, si_fixtures):
+        result = True
         for si_fix in si_fixtures:
-            si_fix.verify_on_setup()
+            result = result and si_fix.verify_on_setup()
+        return result
 
-    @retry(delay=5, tries=6)
-    def validate_vn(self, vn_name, domain_name='default-domain',
-                    project_name='admin', right_vn=False):
-        ri_fq_name = [domain_name, project_name, vn_name, vn_name]
+    @retry(delay=5, tries=15)
+    def validate_vn(self, vn_fq_name, right_vn=False):
+        '''
+        vn_fq_name : VN fq_name_str
+        '''
+        ri_fq_name = vn_fq_name.split(':')
+        ri_fq_name.append(ri_fq_name[-1])
         ri_obj = self.connections.vnc_lib_fixture.routing_instance_read(fq_name=ri_fq_name)
         errmsg = "RI object not found for RI: %s" % ri_fq_name
         if not ri_obj:
@@ -42,6 +51,7 @@ class VerifySvcChain(object):
                 self.logger.warn(errmsg)
                 return False, errmsg
 
+        self.logger.info('VMI and/or RI refs are present for VN %s' % (vn_fq_name))
         return True, "VN valdation passed."
 
     def verify_traffic(self, sender_vm, receiver_vm, proto, sport, dport, count=None, fip=None):
@@ -91,3 +101,33 @@ class VerifySvcChain(object):
         receiver.stop()
         self.logger.debug("Sent: %s; Received: %s", sender.sent, receiver.recv)
         return (sender.sent, receiver.recv)
+
+    def verify_svc_chain(self, *args, **kwargs):
+        svc_chain_info = kwargs.get('svc_chain_info')
+        ret_dict = svc_chain_info or self.config_svc_chain(*args, **kwargs)
+        proto = kwargs.get('proto', 'any')
+        left_vn_fq_name = ret_dict.get('left_vn_fixture').vn_fq_name
+        right_vn_fq_name = ret_dict.get('right_vn_fixture').vn_fq_name
+        left_vm_fixture = ret_dict.get('left_vm_fixture')
+        right_vm_fixture = ret_dict.get('right_vm_fixture')
+        st_fixture = ret_dict.get('st_fixture')
+        si_fixture = ret_dict.get('si_fixture')
+
+        assert st_fixture.verify_on_setup(), 'ST Verification failed'
+        assert si_fixture.verify_on_setup(), 'SI Verification failed'
+
+        result, msg = self.validate_vn(left_vn_fq_name)
+        assert result, msg
+        right_vn = True if st_fixture.service_mode == 'in-network-nat' else False
+        result, msg = self.validate_vn(right_vn_fq_name, right_vn=right_vn)
+        assert result, msg
+
+        if proto not in ['any', 'icmp']:
+            self.logger.info('Will skip Ping test')
+        else:
+            # Ping from left VM to right VM
+            errmsg = "Ping to Right VM %s from Left VM failed" % right_vm_fixture.vm_ip
+            assert left_vm_fixture.ping_with_certainty(
+                right_vm_fixture.vm_ip, count='3'), errmsg
+        return ret_dict
+    # end verify_svc_chain

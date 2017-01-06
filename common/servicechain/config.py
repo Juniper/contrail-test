@@ -1,5 +1,7 @@
+import os
 import time
-import paramiko
+import random
+
 import fixtures
 from fabric.api import run, hide, settings
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
@@ -16,6 +18,21 @@ from common.connections import ContrailConnections
 from common.policy.config import AttachPolicyFixture
 from tcutils.util import retry
 import random
+
+SVC_TYPE_PROPS = {
+    'firewall': {'in-network-nat': 'tiny_nat_fw',
+                 'in-network': 'tiny_in_net',
+                 'transparent': 'tiny_trans_fw',
+                 },
+    'analyzer': {'transparent': 'analyzer',
+                 'in-network' : 'analyzer',
+                 }
+}
+
+# To check what kind of intfs need to be configured for a image 
+SVC_IMAGE_PROPS = {
+    'analyzer' : { 'management' : False, 'left' : True, 'right' : False }
+}
 
 class ConfigSvcChain(fixtures.Fixture):
 
@@ -39,133 +56,85 @@ class ConfigSvcChain(fixtures.Fixture):
         st_fix.cleanUp()
         self.remove_from_cleanups(st_fix.cleanUp)
 
-    def config_st_si(self, st_name, si_name_prefix, si_count,
-                     svc_scaling=False, max_inst=1, domain='default-domain',
-                     project='admin', mgmt_vn_fixture=None, left_vn_fixture=None,
-                     right_vn_fixture=None, svc_type='firewall',
-                     svc_mode='transparent', flavor='contrail_flavor_2cpu',
-                     static_route=[None, None, None], ordered_interfaces=True,
-                     svc_img_name=None, st_version=1):
+    def config_st(self,
+                  st_name,
+                  mgmt=None,
+                  left=None,
+                  right=None,
+                  st_version=2,
+                  service_mode='transparent',
+                  service_type='firewall'):
+        '''
+        mgmt, left, right are VN fq name strings
+        '''
+        if_details = {}
+        if mgmt:
+            if_details['management'] = {}
+        if left:
+            if_details['left'] = {}
+        if right:
+            if_details['right'] = {}
 
-        svc_type_props = {
-            'firewall': {'in-network-nat': 'tiny_nat_fw',
-                         'in-network': 'tiny_in_net',
-                         'transparent': 'tiny_trans_fw',
-                         },
-            'analyzer': {'transparent': 'analyzer',
-                         'in-network' : 'analyzer',
-                         }
-        }
-
-        svc_mode_props = {
-            'in-network-nat':   {'left': {'shared': True},
-                                 'right': {'shared': False},
-                                 },
-            'in-network':       {'left': {'shared': True},
-                                 'right': {'shared': True}
-                                 },
-            'transparent':      {'left': {'shared': True},
-                                 'right': {'shared': True}
-                                 }
-        }
-
-        mgmt_props = ['management', False, False]
-        left_scaling = False
-        right_scaling = False
-        if svc_scaling:
-            left_scaling = True
-            right_scaling = svc_mode_props[svc_mode]['right']['shared']
-        svc_img_name = svc_img_name or svc_type_props[svc_type][svc_mode]
-        images_info = parse_cfg_file('configs/images.cfg')
-        flavor = flavor or images_info[svc_img_name]['flavor']
-        if_list = [mgmt_props,
-                   ['left', left_scaling, bool(static_route[1])],
-                   ['right', right_scaling, bool(static_route[2])],
-                   ]
-        if svc_type == 'analyzer':
-            left_scaling = svc_mode_props[svc_mode]['left']['shared']
-            if_list = [['left', left_scaling, bool(static_route[1])]]
-
-        self.logger.debug('SI properties:'"\n"
-                          'type: %s '"\n"
-                          'mode: %s' "\n"
-                          'image: %s' "\n"
-                          'flavor: %s' "\n"
-                          'intf_list: %s' % (svc_type, svc_mode, svc_img_name, flavor, if_list))
-        # create service template
         st_fixture = self.useFixture(SvcTemplateFixture(
-            connections=self.connections, inputs=self.inputs, domain_name=domain,
-            st_name=st_name, svc_img_name=svc_img_name, svc_type=svc_type,
-            if_list=if_list, svc_mode=svc_mode, svc_scaling=svc_scaling, flavor=flavor, ordered_interfaces=ordered_interfaces, version=st_version))
+            connections=self.connections,
+            st_name=st_name, service_type=service_type,
+            if_details=if_details, service_mode=service_mode, version=st_version))
         assert st_fixture.verify_on_setup()
+        return st_fixture
+    # end config_st
 
-        mgmt_vn_name = mgmt_vn_fixture.vn_fq_name if mgmt_vn_fixture else None
-        left_vn_name=left_vn_fixture.vn_fq_name if left_vn_fixture else None
-        right_vn_name=right_vn_fixture.vn_fq_name if right_vn_fixture else None
 
-        # create service instances
+    def config_sis(self,
+                   si_name,
+                   st_fixture,
+                   si_count=1,
+                   **kwargs):
         si_fixtures = []
-        for i in range(0, si_count):
-            verify_vn_ri = True
-            if i:
-                verify_vn_ri = False
-            si_name = si_name_prefix + str(i + 1)
-            si_fixture = self.useFixture(SvcInstanceFixture(
-                connections=self.connections, inputs=self.inputs,
-                domain_name=domain, project_name=project, si_name=si_name,
-                svc_template=st_fixture.st_obj, if_list=if_list,
-                mgmt_vn_name=mgmt_vn_name,
-                left_vn_name=left_vn_name,
-                right_vn_name=right_vn_name,
-                do_verify=verify_vn_ri, max_inst=max_inst,
-                static_route=static_route))
-            if st_version == 2:
-                self.logger.debug('Launching SVM')
-                if svc_mode == 'transparent':
-                    self.trans_mgmt_vn_name = get_random_name('trans_mgmt_vn')
-                    self.trans_mgmt_vn_subnets = [
-                        get_random_cidr(af=self.inputs.get_af())]
-                    self.trans_left_vn_name = get_random_name('trans_left_vn')
-                    self.trans_left_vn_subnets = [
-                        get_random_cidr(af=self.inputs.get_af())]
-                    self.trans_right_vn_name = get_random_name(
-                        'trans_right_vn')
-                    self.trans_right_vn_subnets = [
-                        get_random_cidr(af=self.inputs.get_af())]
-                    self.trans_mgmt_vn_fixture = self.config_vn(
-                        self.trans_mgmt_vn_name, self.trans_mgmt_vn_subnets)
-                    self.trans_left_vn_fixture = self.config_vn(
-                        self.trans_left_vn_name, self.trans_left_vn_subnets)
-                    self.trans_right_vn_fixture = self.config_vn(
-                        self.trans_right_vn_name, self.trans_right_vn_subnets)
-                non_docker_zones = [x for x in self.nova_h.zones if x != 'nova/docker']
-                for i in range(max_inst):
-                    svm_name = get_random_name("pt_svm" + str(i))
-                    pt_name = get_random_name("port_tuple" + str(i))
-                    if svc_mode == 'transparent':
-                        svm_fixture = self.config_and_verify_vm(
-                            svm_name, image_name=svc_img_name, vns=[self.trans_mgmt_vn_fixture, self.trans_left_vn_fixture, self.trans_right_vn_fixture], count=1, flavor='m1.large', zone=random.choice(non_docker_zones))
-                    else:
-                        svm_fixture = self.config_and_verify_vm(
-                            svm_name, image_name=svc_img_name,
-                            vns=[mgmt_vn_fixture, left_vn_fixture,
-                                right_vn_fixture],
-                            count=1, flavor='m1.large',
-                            zone=random.choice(non_docker_zones))
-                    si_fixture.add_port_tuple(svm_fixture, pt_name)
-            si_fixture.verify_on_setup()
+        for index in range(si_count):
+            si_fixture = self.config_si(si_name, st_fixture, **kwargs)
             si_fixtures.append(si_fixture)
+        return si_fixtures
 
-        return (st_fixture, si_fixtures)
 
-    def chain_si(self, si_count, si_prefix, project_name):
-        action_list = []
-        for i in range(0, si_count):
-            si_name = si_prefix + str(i + 1)
-            # chain services by appending to action list
-            si_fq_name = 'default-domain' + ':' + project_name + ':' + si_name
-            action_list.append(si_fq_name)
-        return action_list
+    def config_si(self,
+                  si_name,
+                  st_fixture,
+                  mgmt_vn_fq_name=None,
+                  left_vn_fq_name=None,
+                  right_vn_fq_name=None,
+                  port_tuples_props=[],
+                  svm_fixtures=[],
+                  static_route=None,
+                  max_inst=1):
+        si_name = si_name or get_random_name('si')
+        if_details = {
+            'management' : {'vn_name' : mgmt_vn_fq_name},
+            'left' : {'vn_name' : left_vn_fq_name},
+            'right': {'vn_name': right_vn_fq_name}
+        }
+        if svm_fixtures:
+            port_tuples_props = []
+            for svm in svm_fixtures:
+                svm_pt_props = {}
+                if mgmt_vn_fq_name:
+                    svm_pt_props['management'] = svm.vmi_ids[mgmt_vn_fq_name]
+                if left_vn_fq_name:
+                    svm_pt_props['left'] = svm.vmi_ids[left_vn_fq_name]
+                if right_vn_fq_name:
+                    svm_pt_props['right'] = svm.vmi_ids[right_vn_fq_name]
+                svm_pt_props['name'] = get_random_name("port_tuple")
+                port_tuples_props.append(svm_pt_props)
+
+        si_fixture = self.useFixture(SvcInstanceFixture(
+            connections=self.connections,
+            si_name=si_name,
+            svc_template=st_fixture.st_obj,
+            if_details=if_details,
+            max_inst=max_inst,
+            port_tuples_props=port_tuples_props,
+            static_route=static_route))
+        return si_fixture
+    # end config_si
 
     def config_policy(self, policy_name, rules):
         """Configures policy."""
@@ -189,33 +158,46 @@ class ConfigSvcChain(fixtures.Fixture):
             self.inputs, self.connections, vn_fix, policy_fix, policy_type))
         return policy_attach_fix
 
-    def config_and_verify_vm(self, vm_name, vn_fix=None, image_name='ubuntu-traffic', vns=[], count=1, flavor='contrail_flavor_small',
-            zone=None):
+    def config_and_verify_vm(self,
+                             vm_name,
+                             vn_fix=None,
+                             image_name='ubuntu-traffic',
+                             vns=[],
+                             count=1,
+                             flavor='contrail_flavor_small',
+                             zone=None,
+                             node_name=None):
         if vns:
-            vn_objs = [vn.obj for vn in vns]
+            vn_objs = [vn.obj for vn in vns if vn is not None]
             vm_fixture = self.config_vm(
                 vm_name, vns=vn_objs, image_name=image_name, count=count,
-                flavor=flavor, zone=zone)
+                flavor=flavor, zone=zone, node_name=node_name)
         else:
             vm_fixture = self.config_vm(
                 vm_name, vn_fix=vn_fix, image_name=image_name, count=count,
-                flavor=flavor, zone=zone)
-        assert vm_fixture.verify_on_setup(), 'VM verification failed'
+                flavor=flavor, zone=zone, node_name=node_name)
         assert vm_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
         return vm_fixture
 
-    def config_vm(self, vm_name, vn_fix=None, node_name=None, image_name='ubuntu-traffic', flavor='contrail_flavor_small', vns=[], count=1,
-            zone=None):
+    def config_vm(self,
+                  vm_name,
+                  vn_fix=None,
+                  node_name=None,
+                  image_name='ubuntu-traffic',
+                  flavor='contrail_flavor_small',
+                  vns=[],
+                  count=1,
+                  zone=None):
         if vn_fix:
             vm_fixture = self.useFixture(VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_obj=vn_fix.obj, vm_name=vm_name, node_name=node_name, image_name=image_name, flavor=flavor, count=count,
-                zone=zone))
+                vn_obj=vn_fix.obj, vm_name=vm_name, node_name=node_name,
+                image_name=image_name, flavor=flavor, count=count, zone=zone))
         elif vns:
             vm_fixture = self.useFixture(VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vm_name=vm_name, node_name=node_name, image_name=image_name, flavor=flavor, vn_objs=vns, count=count,
-                zone=zone))
+                vm_name=vm_name, node_name=node_name, image_name=image_name,
+                flavor=flavor, vn_objs=vns, count=count, zone=zone))
 
         return vm_fixture
 
@@ -340,3 +322,365 @@ class ConfigSvcChain(fixtures.Fixture):
         out, err = execute_cmd_out(session, output_cmd, self.logger)
         return out
     # end stop_tcpdump_on_intf
+
+    def create_service_vms(self, vns, service_mode='transparent', max_inst=1,
+            svc_img_name=None, service_type='firewall',
+            hosts=[]):
+        non_docker_zones = [x for x in self.nova_h.zones if x != 'nova/docker']
+        svm_fixtures = []
+        svc_img_name = svc_img_name or SVC_TYPE_PROPS[service_type][service_mode]
+        for i in range(max_inst):
+            svm_name = get_random_name("pt_svm" + str(i))
+            svm_fixture = self.config_and_verify_vm(
+                svm_name,
+                image_name=svc_img_name,
+                vns=vns,
+                node_name=hosts[i%len(hosts)] if hosts else None,
+                zone=random.choice(non_docker_zones))
+            svm_fixtures.append(svm_fixture)
+            if service_type == 'analyzer':
+                svm_fixture.disable_interface_policy()
+        return svm_fixtures
+    # end create_service_vms
+
+
+    def _get_vn_for_config(self,
+                          vn_name,
+                          vn_subnets,
+                          vn_fixture,
+                          vn_name_prefix):
+        if vn_fixture:
+            vn_name = vn_fixture.vn_name
+            vn_subnets = [x['cidr'] for x in vn_fixture.vn_subnets]
+        else:
+            vn_name = vn_name or get_random_name(vn_name_prefix)
+            vn_subnets = vn_subnets or \
+                                  [get_random_cidr(af=self.inputs.get_af())]
+            vn_fixture = vn_fixture or self.config_vn(vn_name, vn_subnets)
+        vn_fq_name = vn_fixture.vn_fq_name
+        return (vn_name, vn_subnets, vn_fixture, vn_fq_name)
+    # end _get_vn_for_config
+
+    def _get_end_vm_image(self, image_name):
+        if os.environ.get('ci_image') and self.inputs.get_af() == 'v4':
+            image_name = 'cirros-0.3.0-x86_64-uec'
+        else:
+            image_name = image_name or 'ubuntu-traffic'
+        return image_name
+    # end _get_end_vm_image
+
+    def _get_if_needed(self, svc_img_name, intf_type, value):
+        '''
+        Returns `value` if intf_type is required to launch svm with
+            image svc_img_name. Else returns None
+
+        intf_type : One of management/left/right
+        '''
+        svm_intf_ctrl = SVC_IMAGE_PROPS.get(svc_img_name)
+        if not svm_intf_ctrl:
+            return value
+        else:
+            if svm_intf_ctrl.get(intf_type, True):
+                return value
+        return None
+    # end _get_if_needed
+
+
+    def config_svc_chain(self,
+                        service_mode='transparent',
+                        service_type='firewall',
+                        max_inst=1,
+                        proto='any',
+                        src_ports =[0, 65535],
+                        dst_ports =[0, 65535],
+                        svc_img_name=None,
+                        st_version=2,
+                        mgmt_vn_name=None,
+                        mgmt_vn_subnets=[],
+                        mgmt_vn_fixture=None,
+                        left_vn_name=None,
+                        left_vn_subnets=[],
+                        left_vn_fixture=None,
+                        right_vn_name=None,
+                        right_vn_subnets=[],
+                        right_vn_fixture=None,
+                        left_vm_name=None,
+                        left_vm_fixture=None,
+                        right_vm_name=None,
+                        right_vm_fixture=None,
+                        image_name=None,
+                        policy_fixture=None,
+                        st_fixture=None,
+                        si_fixture=None,
+                        port_tuples_props=[],
+                        static_route=None,
+                        svm_fixtures=[],
+                        create_svms=False,
+                        hosts=[],
+                        **kwargs):
+        '''
+        service_mode : transparent/in-network/in-network-nat
+        '''
+        trans_left_vn_name = kwargs.get('trans_left_vn_name', None)
+        trans_left_vn_subnets = kwargs.get('trans_left_vn_subnets', [])
+        trans_left_vn_fixture = kwargs.get('trans_left_vn_fixture', None)
+        trans_right_vn_name = kwargs.get('trans_right_vn_name', None)
+        trans_right_vn_subnets = kwargs.get('trans_right_vn_subnets', [])
+        trans_right_vn_fixture = kwargs.get('trans_right_vn_fixture', None)
+
+        image_name = self._get_end_vm_image(image_name)
+
+        svc_img_name = svc_img_name or SVC_TYPE_PROPS[service_type][service_mode]
+
+        # Mgmt
+        (mgmt_vn_name,
+         mgmt_vn_subnets,
+         mgmt_vn_fixture,
+         mgmt_vn_fq_name) = self._get_vn_for_config(mgmt_vn_name,
+                                                    mgmt_vn_subnets,
+                                                    mgmt_vn_fixture,
+                                                    'mgmt_vn')
+
+        # Left
+        (left_vn_name,
+         left_vn_subnets,
+         left_vn_fixture,
+         left_vn_fq_name) = self._get_vn_for_config(left_vn_name,
+                                                    left_vn_subnets,
+                                                    left_vn_fixture,
+                                                    'left_vn')
+
+        # Right 
+        (right_vn_name,
+         right_vn_subnets,
+         right_vn_fixture,
+         right_vn_fq_name) = self._get_vn_for_config(right_vn_name,
+                                                     right_vn_subnets,
+                                                     right_vn_fixture,
+                                                     'right_vn')
+
+        # Transparent SVMs should not be part of left and right VNs
+        if service_mode == 'transparent' and service_type == 'firewall':
+            (si_left_vn_name,
+             si_left_vn_subnets,
+             si_left_vn_fixture,
+             si_left_vn_fq_name) = self._get_vn_for_config(trans_left_vn_name,
+                                                         trans_left_vn_subnets,
+                                                         trans_left_vn_fixture,
+                                                         'trans_left_vn')
+            (si_right_vn_name,
+             si_tvn_subnets,
+             si_right_vn_fixture,
+             si_right_vn_fq_name) = self._get_vn_for_config(trans_right_vn_name,
+                                                         trans_right_vn_subnets,
+                                                         trans_right_vn_fixture,
+                                                         'trans_right_vn')
+        else :
+            si_left_vn_name = left_vn_name
+            si_left_vn_subnets = left_vn_subnets
+            si_left_vn_fixture = left_vn_fixture
+            s_left_vn_fq_name = left_vn_fq_name
+            si_right_vn_name = right_vn_name
+            si_right_vn_subnets = right_vn_subnets
+            si_right_vn_fixture = right_vn_fixture
+            si_left_vn_fq_name = si_left_vn_fixture.vn_fq_name
+            si_right_vn_fq_name = si_right_vn_fixture.vn_fq_name
+
+        vns = [self._get_if_needed(svc_img_name, 'management', mgmt_vn_fixture),
+               self._get_if_needed(svc_img_name, 'left', si_left_vn_fixture),
+               self._get_if_needed(svc_img_name, 'right', si_right_vn_fixture)]
+
+        # End VMs
+        left_vm_name = left_vm_name or get_random_name('left_vm')
+        right_vm_name = right_vm_name or get_random_name('right_vm')
+        left_vm_fixture = left_vm_fixture or self.config_and_verify_vm(
+            left_vm_name, vn_fix=left_vn_fixture, image_name=image_name)
+        right_vm_fixture = right_vm_fixture or self.config_and_verify_vm(
+            right_vm_name, vn_fix=right_vn_fixture, image_name=image_name)
+
+        # SI
+        if_list = []
+        if not st_fixture:
+            st_name = kwargs.get('st_name', get_random_name('service_template_1'))
+            st_fixture = self.config_st(st_name,
+                mgmt=self._get_if_needed(svc_img_name, 'management', mgmt_vn_fq_name),
+                left=self._get_if_needed(svc_img_name, 'left', si_left_vn_fq_name),
+                right=self._get_if_needed(svc_img_name, 'right', si_right_vn_fq_name),
+                st_version=st_version,
+                service_mode=service_mode,
+                service_type=service_type)
+        if not si_fixture:
+            si_name = get_random_name('si')
+            si_fixture = self.config_si(si_name,
+                st_fixture,
+                mgmt_vn_fq_name=self._get_if_needed(svc_img_name, 'management', mgmt_vn_fq_name),
+                left_vn_fq_name=self._get_if_needed(svc_img_name, 'left', si_left_vn_fq_name),
+                right_vn_fq_name=self._get_if_needed(svc_img_name, 'right', si_right_vn_fq_name),
+                port_tuples_props=port_tuples_props,
+                static_route=static_route,
+                max_inst=max_inst,
+                svm_fixtures=svm_fixtures)
+        # Create SI VMs now
+        if not svm_fixtures and create_svms:
+            svm_fixtures = self.create_service_vms(vns,
+                                                   svc_img_name=svc_img_name,
+                                                   service_mode=service_mode,
+                                                   service_type=service_type,
+                                                   hosts=hosts,
+                                                   max_inst=max_inst)
+        if svm_fixtures and not port_tuples_props:
+            # Set port tuples now
+            for i in range(max_inst):
+                svm_pt_props = {'name' : get_random_name("port_tuple" + str(i))}
+                if self._get_if_needed(svc_img_name, 'management', mgmt_vn_name):
+                    svm_pt_props['management'] = svm_fixtures[i].vmi_ids[mgmt_vn_fq_name]
+                if self._get_if_needed(svc_img_name, 'left', si_left_vn_name):
+                    svm_pt_props['left'] = svm_fixtures[i].vmi_ids[si_left_vn_fq_name]
+                if self._get_if_needed(svc_img_name, 'right', si_right_vn_name):
+                    svm_pt_props['right'] = svm_fixtures[i].vmi_ids[si_right_vn_fq_name]
+                si_fixture.add_port_tuple(svm_pt_props)
+
+        if not policy_fixture:
+            policy_name = get_random_name('policy')
+            si_fq_name_list = [si_fixture.fq_name_str]
+
+            if service_type == 'analyzer':
+                action_list = {'mirror_to': {'analyzer_name': si_fq_name_list[0]}}
+            else:
+                action_list = {'apply_service': si_fq_name_list}
+            rules = [
+                {
+                    'direction': '<>',
+                    'protocol': proto,
+                    'source_network': left_vn_fq_name,
+                    'src_ports': src_ports,
+                    'dest_network': right_vn_fq_name,
+                    'dst_ports': dst_ports,
+                    'action_list': action_list,
+                },
+            ]
+            policy_fixture = self.config_policy(policy_name, rules)
+
+        # endif policy_fixture
+        left_vn_policy_fix = self.attach_policy_to_vn(
+            policy_fixture, left_vn_fixture)
+        right_vn_policy_fix = self.attach_policy_to_vn(
+            policy_fixture, right_vn_fixture)
+
+        ret_dict = {
+            'st_fixture' : st_fixture,
+            'si_fixture': si_fixture,
+            'svm_fixtures' : svm_fixtures,
+            'policy_fixture' : policy_fixture,
+            'left_vn_policy_fix' : left_vn_policy_fix,
+            'right_vn_policy_fix' : right_vn_policy_fix,
+            'mgmt_vn_fixture' : mgmt_vn_fixture,
+            'left_vn_fixture' : left_vn_fixture,
+            'right_vn_fixture' : right_vn_fixture,
+            'left_vm_fixture' : left_vm_fixture,
+            'right_vm_fixture' : right_vm_fixture,
+            'si_left_vn_fixture' : si_left_vn_fixture,
+            'si_right_vn_fixture' : si_right_vn_fixture,
+        }
+        return ret_dict
+
+    def get_svms_in_si(self, si):
+        svm_ids= si.svm_ids
+        svm_list= []
+        for svm_id in svm_ids:
+            svm_list.append(self.nova_h.get_vm_by_id(svm_id))
+        return svm_list
+    #end get_svms_in_si
+
+    def config_multi_inline_svc(
+            self,
+            si_list,
+            **kwargs):
+        '''
+        Similar to config_svc_chain , but has multiple SIs as action
+        si_list :
+            [ {service_mode: 'transparent',
+               max_inst : 2,
+               st_fixture : <>,
+               hosts : [ 'nodek3', 'nodek2'],
+               svm_fixtures : <list of svm fixtures>,
+               svc_img_name : tiny-in-net }, {},...]
+            max_inst     : Default is 1
+            svm_fixtures : Default is []
+            st_fixture   : Default is None
+            svc_img_name : Default is auto ( get from SVC_TYPE_PROPS)
+        '''
+        svms = []
+        create_svms = kwargs.get('create_svms')
+        service_type = 'firewall'
+        first_si_mode = si_list[0].get('service_mode', 'transparent')
+        first_si_max_inst = si_list[0].get('max_inst', 1)
+        first_svc_img_name = si_list[0].get('svc_img_name', 'transparent')
+        hosts = si_list[0].get('hosts', [])
+        ret_dict = self.config_svc_chain(
+            service_mode=first_si_mode,
+            service_type=service_type,
+            max_inst=first_si_max_inst,
+            hosts=hosts,
+            **kwargs)
+        policy_fixture = ret_dict['policy_fixture']
+        rules_list = policy_fixture.rules_list
+        sis = []
+        mgmt_vn_fq_name = getattr(ret_dict.get('mgmt_vn_fixture'),
+                                  'vn_fq_name', None)
+        left_vn_fq_name = getattr(ret_dict.get('left_vn_fixture'),
+                                  'vn_fq_name', None)
+        right_vn_fq_name = getattr(ret_dict.get('right_vn_fixture'),
+                                  'vn_fq_name', None)
+        st_fixtures = [ret_dict['st_fixture']]
+        si_fixtures = [ret_dict['si_fixture']]
+        svm_fixtures_list = [ret_dict['svm_fixtures']]
+        for si in si_list[1:] :
+            if si['service_mode'] == 'transparent':
+                si_left_vn_fixture = ret_dict.get('si_left_vn_fixture')
+                si_right_vn_fixture = ret_dict.get('si_right_vn_fixture')
+            else:
+                si_left_vn_fixture = ret_dict.get('left_vn_fixture')
+                si_right_vn_fixture = ret_dict.get('right_vn_fixture')
+            vns = [ ret_dict.get('mgmt_vn_fixture'),
+                    si_left_vn_fixture, si_right_vn_fixture ]
+            si_name = get_random_name('si')
+            st_name = get_random_name('st')
+            st_fixture = self.config_st(st_name,
+                                        mgmt=mgmt_vn_fq_name,
+                                        left=si_left_vn_fixture.vn_fq_name,
+                                        right=si_right_vn_fixture.vn_fq_name,
+                                        service_mode=si['service_mode'],
+                                        service_type=service_type)
+            if not si.get('svm_fixtures') and create_svms:
+                svms = self.create_service_vms(vns,
+                                               service_mode=si.get('service_mode'),
+                                               service_type=service_type,
+                                               max_inst=si.get('max_inst', 1),
+                                               svc_img_name=si.get('svc_img_name'),
+                                               hosts=si.get('hosts', []))
+
+            si_fixture = self.config_si(si_name,
+                                        st_fixture,
+                                        mgmt_vn_fq_name=mgmt_vn_fq_name,
+                                        left_vn_fq_name=si_left_vn_fixture.vn_fq_name,
+                                        right_vn_fq_name=si_right_vn_fixture.vn_fq_name,
+                                        svm_fixtures=svms)
+            st_fixtures.append(st_fixture)
+            si_fixtures.append(si_fixture)
+            svm_fixtures_list.append(svms)
+        # end for si
+
+        # Update policy to apply all Sis
+        si_fq_names = [x.fq_name_str for x in si_fixtures]
+        for rule in rules_list:
+            rule['action_list']['apply_service'] = si_fq_names
+#            action_list.append(rule)
+        policy_fixture.update_policy_api(rules_list)
+        ret_dict['policy_fixture'] = policy_fixture
+        ret_dict['si_fixtures'] = si_fixtures
+        ret_dict['st_fixtures'] = st_fixtures
+        ret_dict['svm_fixtures_list'] = svm_fixtures_list
+
+        return ret_dict
+    # end config_multi_inline_svc

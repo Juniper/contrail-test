@@ -20,6 +20,7 @@ class GenericTestBase(test_v1.BaseTestCase_v1):
         cls.cn_inspect = cls.connections.cn_inspect
         cls.analytics_obj = cls.connections.analytics_obj
         cls.api_s_inspect = cls.connections.api_server_inspect
+        cls.orch = cls.connections.orch
         try:
             address_family = cls.address_family or 'v4'
         except AttributeError:

@@ -200,6 +200,17 @@ class PortFixture(vnc_api_test.VncLibFixture):
                 return False
         return True
 
+    def disable_policy(self):
+        return self.set_policy(self, False)
+
+    def enable_policy(self):
+        return self.set_policy(self, True)
+
+    def set_policy(self, value):
+        vmi_obj = self.vnc_h.virtual_machine_interface_read(self.uuid)
+        vmi_obj.set_virtual_machine_interface_disable_policy(bool(value))
+        self.vnc_h.virtual_machine_interface_update(vmi_obj)
+
     def verify_port_in_control_node_ifmap(self):
         pass
 

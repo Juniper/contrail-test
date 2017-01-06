@@ -481,7 +481,7 @@ class CsVMResult (Result):
     '''
 
     def fq_name(self):
-        return ':'.join(self.xpath('virtual-network', 'fq_name'))
+        return ':'.join(self.xpath('virtual-machine', 'fq_name'))
 
     def vr_link(self):
         return self.xpath('virtual-machine', 'virtual_router_back_refs',
@@ -497,6 +497,9 @@ class CsVMResult (Result):
 #        return self.xpath ('virtual-machine', 'virtual_machine_interfaces',
 #                0, 'href')
 
+    def service_instance_refs(self):
+        si_refs = self.xpath('virtual-machine', 'service_instance_refs')
+        return si_refs
 
 class CsVMIResult (Result):
     def get_bindings(self):

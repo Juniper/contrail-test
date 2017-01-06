@@ -17,15 +17,15 @@ from tcutils.wrappers import preposttest_wrapper
 class ECMPVerify():
 
     def get_rt_info_tap_intf_list(self, src_vn, src_vm, dst_vm, svm_ids,
-            si_fixtures):
+            si_fixture):
         shared_ip= self.find_rt_in_ctrl_node(src_vn, src_vm, dst_vm, svm_ids,
-                                             si_fixtures)
+                                             si_fixture)
         self.find_rt_in_agent(src_vn, src_vm, dst_vm)
         return self.get_tap_intf_list(src_vn, src_vm, dst_vm, shared_ip)
     #end get_rt_info_tap_intf_list
 
     def find_rt_in_ctrl_node(self, src_vn, src_vm, dst_vm, svm_ids,
-                             si_fixtures):
+                             si_fixture):
         right_ip = {}
         left_ip = {}
         count= 0
@@ -44,10 +44,10 @@ class ECMPVerify():
         svm_route_entry = {}
         for svm_id in svm_ids:
             svc_obj = self.nova_h.get_vm_by_id(svm_id)
-            left_ip[svm_id] = svc_obj.addresses[si_fixtures[0]
-                                                .left_vn_name.split(':')[2]][0]['addr']
-            right_ip[svm_id] = svc_obj.addresses[si_fixtures[0]
-                                                 .right_vn_name.split(':')[2]][0]['addr']
+            left_ip[svm_id] = svc_obj.addresses[si_fixture
+                                                .left_vn_fq_name.split(':')[2]][0]['addr']
+            right_ip[svm_id] = svc_obj.addresses[si_fixture
+                                                 .right_vn_fq_name.split(':')[2]][0]['addr']
             self.logger.info('%s has %s as left_ip and %s as right_ip' %
                              (svc_obj.name, left_ip[svm_id], right_ip[svm_id]))
             shared_ip= left_ip[svm_id]
@@ -166,11 +166,3 @@ class ECMPVerify():
         vn_vrf_id = agent_vrf_obj['ucindex']
         return vn_vrf_id
     #end get_vrf_id
- 
-    def get_svms_in_si(self, si, proj_name):
-        svm_ids= si.svm_ids                                                                                                                                                                
-        svm_list= []
-        for svm_id in svm_ids:
-            svm_list.append(self.nova_h.get_vm_by_id(svm_id))
-        return svm_list
-    #end get_svms_in_si

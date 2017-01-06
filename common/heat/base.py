@@ -263,13 +263,15 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         svc_img_name = env['parameters'].get('image', None)
         flavor = env['parameters'].get('flavor', None)
         svc_type = env['parameters']['type']
-        if_list = ['management', 'left', 'right']
+        # Does not matter what if_details has, since svc template would have 
+        # already got created
+        if_details = ['management', 'left', 'right']
         svc_mode = env['parameters']['mode']
         svc_scaling = scaling
         st_fix = self.useFixture(SvcTemplateFixture(
-            connections=self.connections, inputs=self.inputs, domain_name='default-domain',
-            st_name=st_name, svc_img_name=svc_img_name, svc_type=svc_type, version=ver,
-            if_list=if_list, svc_mode=svc_mode, svc_scaling=svc_scaling, flavor=flavor, ordered_interfaces=True))
+            connections=self.connections,
+            st_name=st_name, svc_img_name=svc_img_name, service_type=svc_type, version=ver,
+            if_details=if_details, service_mode=svc_mode, svc_scaling=svc_scaling, flavor=flavor))
         assert st_fix.verify_on_setup()
         return st_fix
     # end verify_st
@@ -384,9 +386,9 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
 
     def verify_si(self, stack, stack_name, si_name, st_fix, max_inst, svc_mode, image):
         svc_inst = self.useFixture(SvcInstanceFixture(
-            connections=self.connections, inputs=self.inputs,
-            domain_name='default-domain', project_name=self.inputs.project_name, si_name=si_name,
-            svc_template=st_fix.st_obj, if_list=st_fix.if_list, max_inst=max_inst))
+            connections=self.connections,
+            si_name=si_name,
+            svc_template=st_fix.st_obj, if_details=st_fix.if_details, max_inst=max_inst))
         assert svc_inst.verify_on_setup()
         if self.pt_based_svc:
             svm_ids = list()

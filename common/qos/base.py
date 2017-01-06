@@ -1034,20 +1034,22 @@ class TestQosSVCBase(QosTestExtendedBase):
     @classmethod
     def setUpClass(cls):
         super(TestQosSVCBase, cls).setUpClass()
-        if_list = [['left', False, False], ['right', False, False]]
-        cls.st_fixture= SvcTemplateFixture(connections=cls.connections, inputs=cls.inputs,
-                        domain_name=cls.inputs.domain_name, st_name="service_template", 
+        if_details = { 'left': {'shared_ip_enable': False,
+                                'static_route_enable' : False},
+                       'right': {'shared_ip_enable': False,
+                                'static_route_enable' : False}}
+        cls.st_fixture= SvcTemplateFixture(connections=cls.connections,
+                        st_name="service_template",
                         svc_img_name='ubuntu-in-net', svc_type='firewall',
-                        if_list=if_list, svc_mode='in-network',
-                        svc_scaling=False, flavor='contrail_flavor_2cpu', 
-                        ordered_interfaces=True, availability_zone_enable = True)
+                        if_details=if_details, svc_mode='in-network',
+                        svc_scaling=False, flavor='contrail_flavor_2cpu',
+                        availability_zone_enable = True)
         cls.st_fixture.setUp()
-        cls.si_fixture= SvcInstanceFixture(connections=cls.connections, inputs=cls.inputs,
-                        domain_name=cls.inputs.domain_name, project_name= cls.inputs.project_name,
+        cls.si_fixture= SvcInstanceFixture(connections=cls.connections,
                         si_name="service_instance", svc_template= cls.st_fixture.st_obj,
-                        if_list=if_list, left_vn_name=cls.vn1_fixture.vn_fq_name,
+                        if_details=if_details, left_vn_name=cls.vn1_fixture.vn_fq_name,
                         right_vn_name=cls.vn2_fixture.vn_fq_name,
-                        do_verify=True, max_inst=1, static_route=['None', 'None', 'None'],
+                        do_verify=True, max_inst=1,
                         availability_zone = "nova:"+cls.first_node_name)
         cls.si_fixture.setUp()
         cls.si_fixture.verify_on_setup()

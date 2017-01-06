@@ -438,6 +438,10 @@ class QuantumHelper():
         return result
     # end delete_policy
 
+    def show_policy(self, uuid):
+        return self.obj.show_policy(uuid)
+    # end show_security_group
+
     def get_policy_fq_name(self, policy_obj):
         try:
             return policy_obj['policy']['fq_name']

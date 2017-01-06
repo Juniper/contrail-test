@@ -1,6 +1,6 @@
 import fixtures
 from vnc_api.vnc_api import *
-from tcutils.util import retry
+from tcutils.util import retry, get_random_name
 from time import sleep
 from tcutils.services import get_status
 from vm_test import VMFixture
@@ -12,32 +12,43 @@ except ImportError:
 
 class SvcInstanceFixture(fixtures.Fixture):
 
-    def __init__(self, connections, inputs, domain_name, project_name, si_name,
-                 svc_template, if_list, mgmt_vn_name=None, left_vn_name=None, right_vn_name=None, do_verify=True, max_inst=1, static_route=['None', 'None', 'None'],
-                 availability_zone = None):
+    def __init__(self,
+                 connections,
+                 si_name,
+                 svc_template,
+                 if_details,
+                 max_inst=1,
+                 static_route=None,
+                 availability_zone = None,
+                 port_tuples_props=[]):
+        '''
+        svc_template : instance of ServiceTemplate
+        '''
+        self.static_route = static_route or { 'management':None,
+                                              'left' : None,
+                                              'right': None}
+        self.port_tuples_props = port_tuples_props
+
         self.connections = connections
         self.vnc_lib = connections.vnc_lib
         self.api_s_inspect = connections.api_server_inspect
         self.nova_h = connections.nova_h
-        self.inputs = connections.inputs
-        self.domain_name = domain_name
-        self.project_name = project_name
+        self.domain_name = connections.domain_name
+        self.project_name = connections.project_name
         self.si_name = si_name
         self.svc_template = svc_template
         self.st_name = svc_template.name
+        self.si_version = svc_template.service_template_properties.version
         self.si_obj = None
         self.domain_fq_name = [self.domain_name]
         self.project_fq_name = [self.domain_name, self.project_name]
         self.si_fq_name = [self.domain_name, self.project_name, self.si_name]
-        self.logger = inputs.logger
-        self.left_vn_name = left_vn_name
-        self.right_vn_name = right_vn_name
-        self.management_vn_name = mgmt_vn_name
+        self.fq_name_str = ':'.join(self.si_fq_name)
+        self.inputs = connections.inputs
+        self.logger = self.inputs.logger
         self.already_present = False
-        self.do_verify = do_verify
-        self.if_list = if_list
+        self.if_details = if_details
         self.max_inst = max_inst
-        self.static_route = static_route
         self.si = None
         self.svm_ids = []
         self.cs_svc_vns = []
@@ -48,11 +59,19 @@ class SvcInstanceFixture(fixtures.Fixture):
             self.browser = connections.browser
             self.browser_openstack = connections.browser_openstack
             self.webui = WebuiTest(connections, inputs)
+
+        self.si_v2 = self.si_version == 2 or False
+        self.si_v1 = self.si_version == 1 or False
+        self.service_mode = svc_template.service_template_properties.service_mode
+        self.port_tuples_uuids = []
+        self.left_vn_fq_name = if_details.get('left', {}).get('vn_name', None)
+        self.right_vn_fq_name = if_details.get('right', {}).get('vn_name', None)
+        self.mgmt_vn_fq_name = if_details.get('management', {}).get('vn_name', None)
     # end __init__
 
     def setUp(self):
         super(SvcInstanceFixture, self).setUp()
-        self.si_obj = self._create_si()
+        self._create_si()
     # end setUp
 
     def cleanUp(self):
@@ -77,7 +96,6 @@ class SvcInstanceFixture(fixtures.Fixture):
     # end cleanUp
 
     def _create_si(self):
-        self.logger.debug("Creating service instance: %s", self.si_fq_name)
         try:
             svc_instance = self.vnc_lib.service_instance_read(
                 fq_name=self.si_fq_name)
@@ -85,51 +103,37 @@ class SvcInstanceFixture(fixtures.Fixture):
             self.logger.debug(
                 "Service instance: %s already exists", self.si_fq_name)
         except NoIdError:
+            self.logger.debug("Creating service instance: %s", self.si_fq_name)
             project = self.vnc_lib.project_read(fq_name=self.project_fq_name)
             svc_instance = ServiceInstance(self.si_name, parent_obj=project)
-            if self.left_vn_name and self.right_vn_name:
-                si_prop = ServiceInstanceType(
-                    left_virtual_network=self.left_vn_name,
-                    right_virtual_network=self.right_vn_name,
-                    management_virtual_network=self.management_vn_name)
-                bridge = False
-                if 'bridge_svc_instance_1' in self.si_fq_name:
-                    bridge = True
-                for itf in self.if_list:
-                    if (itf[0] == 'left' and not bridge):
-                        virtual_network = self.left_vn_name
-                    elif (itf[0] == 'right' and not bridge):
-                        virtual_network = self.right_vn_name
-                    elif (itf[0] == 'management' and not bridge):
-                        virtual_network = self.management_vn_name
-                    else:
-                        virtual_network = ""
-                    if_type = ServiceInstanceInterfaceType(
-                        virtual_network=virtual_network,
-                        static_routes=RouteTableType([RouteType(prefix=self.static_route[self.if_list.index(itf)])]))
-                    if_type.set_static_routes(
-                        RouteTableType([RouteType(prefix=self.static_route[self.if_list.index(itf)])]))
-                    si_prop.add_interface_list(if_type)
+            si_type_args = None
+            si_intf_type_args = {}
+            left_vn_name = self.left_vn_fq_name.split(':')[-1] if self.left_vn_fq_name else None
+            right_vn_name = self.right_vn_fq_name.split(':')[-1] if self.right_vn_fq_name else None
+            mgmt_vn_name = self.mgmt_vn_fq_name.split(':')[-1] if self.mgmt_vn_fq_name else None
+            si_prop = ServiceInstanceType(
+                left_virtual_network=left_vn_name,
+                right_virtual_network=right_vn_name,
+                management_virtual_network=mgmt_vn_name)
 
-            else:
-                if self.left_vn_name:
-                    # In Network mode
-                    si_prop = ServiceInstanceType(
-                        left_virtual_network=self.left_vn_name)
-                    intf_count = 1
-                    virtual_network = self.left_vn_name
-                else:
-                    # Transparent mode
-                    si_prop = ServiceInstanceType()
-                    intf_count = 1
-                    virtual_network = ""
-                    if self.svc_template.service_template_properties.service_type == 'firewall':
-                        # Transparent mode firewall
-                        intf_count = 3
-                for i in range(intf_count):
-                    if_type = ServiceInstanceInterfaceType(
-                        virtual_network=virtual_network)
-                    si_prop.add_interface_list(if_type)
+            for itf in self.if_details:
+                virtual_network = None
+                if itf == 'left':
+                    virtual_network = left_vn_name
+                elif itf == 'right':
+                    virtual_network = right_vn_name
+                elif itf == 'management':
+                    virtual_network = mgmt_vn_name
+
+                if self.service_mode == 'transparent' and self.si_v1:
+                    virtual_network = None
+                if_type = ServiceInstanceInterfaceType(
+                    virtual_network=virtual_network)
+                if_type.set_static_routes(
+                    RouteTableType(
+                        [RouteType(prefix=self.static_route[itf])]))
+                si_prop.add_interface_list(if_type)
+
             si_prop.set_scale_out(ServiceScaleOutType(self.max_inst))
             if self.availability_zone:
                 si_prop.set_availability_zone(self.availability_zone)
@@ -139,9 +143,11 @@ class SvcInstanceFixture(fixtures.Fixture):
                 self.webui.create_svc_instance(self)
             else:
                 self.vnc_lib.service_instance_create(svc_instance)
-            svc_instance = self.vnc_lib.service_instance_read(
+            self.si_obj = self.vnc_lib.service_instance_read(
                 fq_name=self.si_fq_name)
-        return svc_instance
+            for port_tuple_props in self.port_tuples_props:
+                self.add_port_tuple(port_tuple_props)
+        return self.si_obj
     # end _create_si
 
     def _delete_si(self):
@@ -238,34 +244,35 @@ class SvcInstanceFixture(fixtures.Fixture):
             self.pt_refs = None
 
         try:
-            self.vm_refs = self.cs_si[
+            vm_refs = self.cs_si[
                 'service-instance']['virtual_machine_back_refs']
             self.svm_ids = [vm_ref['to'][0] for vm_ref in self.vm_refs]
         except KeyError:
-            self.vm_refs = None
+            vm_refs = None
 
         if self.pt_refs:
-            self.vm_refs = []
+            vm_refs = []
             for pt in self.pt_refs:
-                self.cs_pt = self.api_s_inspect.get_cs_pt_by_id(pt['uuid'])
-                self.pt_vmi_refs = self.cs_pt[
+                cs_pt = self.api_s_inspect.get_cs_pt_by_id(pt['uuid'])
+                pt_vmi_refs = cs_pt[
                     'port-tuple']['virtual_machine_interface_back_refs']
-                for vmi in self.pt_vmi_refs:
-                    self.vmi = self.api_s_inspect.get_cs_vmi_by_id(vmi['uuid'])
-                    self.vm_refs_vmi = self.vmi[
+                for vmi in pt_vmi_refs:
+                    vmi = self.api_s_inspect.get_cs_vmi_by_id(vmi['uuid'])
+                    vm_refs_vmi = vmi[
                         'virtual-machine-interface']['virtual_machine_refs']
-                    for vm_ref in self.vm_refs_vmi:
-                        self.vm_refs.append(vm_ref['to'][0])
-            self.svm_ids = set(self.vm_refs)
+                    for vm_ref in vm_refs_vmi:
+                        vm_refs.append(vm_ref['to'][0])
+            self.svm_ids = set(vm_refs)
 
-        if not self.vm_refs:
+        if not vm_refs:
             errmsg = "SI %s does not have any Service VM" % self.si_name
             self.logger.warn(errmsg)
             return (False, errmsg)
 
         if self.svc_template.service_template_properties.version == 1:
-            if len(self.vm_refs) != self.max_inst:
-                errmsg = "SI %s does not have all Service VMs" % self.si_name
+            if len(vm_refs) != self.max_inst:
+                errmsg = ("SI %s does not have all Service VMs. Expected: %s"
+                          ", Got : %s" % (self.si_name, self.max_inst, len(vm_refs)))
                 self.logger.warn(errmsg)
                 return (False, errmsg)
 
@@ -276,16 +283,17 @@ class SvcInstanceFixture(fixtures.Fixture):
                 self.logger.warn(errmsg)
                 return (False, errmsg)
         self.logger.debug("Service VM for SI '%s' is launched", self.si_name)
-        for vm in self.svm_list:
-            if self.svc_template.service_template_properties.service_mode != 'transparent':
-                assert vm.wait_till_vm_is_up()
+        if self.service_mode != 'transparent':
+            for vm in self.svm_list:
+                assert vm.wait_till_vm_is_up(), 'SVM is not up'
+        self.vm_refs = vm_refs
         return True, None
 
     @retry(delay=1, tries=5)
-    def verify_interface_props(self):
+    def verify_interface_props(self, svc_vm_if):
         """check if properties"""
         try:
-            vm_if_props = self.svc_vm_if[
+            vm_if_props = svc_vm_if[
                 'virtual-machine-interface']['virtual_machine_interface_properties']
         except KeyError:
             vm_if_props = None
@@ -297,7 +305,7 @@ class SvcInstanceFixture(fixtures.Fixture):
             "VM interface present in Service VM of SI %s", self.si_name)
 
         self.if_type = vm_if_props['service_interface_type']
-        if (not self.if_type and self.if_type not in self.if_list):
+        if (not self.if_type and self.if_type not in self.if_details.keys()):
             errmsg = "Interface type '%s' is not present in Servcice VM of SI '%s'" % (
                 self.if_type, self.si_name)
             self.logger.warn(errmsg)
@@ -307,10 +315,10 @@ class SvcInstanceFixture(fixtures.Fixture):
         return True, None
 
     @retry(delay=1, tries=5)
-    def verify_vn_links(self):
+    def verify_vn_links(self, svc_vm_if):
         """check vn links"""
         try:
-            vn_refs = self.svc_vm_if[
+            vn_refs = svc_vm_if[
                 'virtual-machine-interface']['virtual_network_refs']
         except KeyError:
             vn_refs = None
@@ -335,10 +343,10 @@ class SvcInstanceFixture(fixtures.Fixture):
         return True, None
 
     @retry(delay=1, tries=5)
-    def verify_ri(self):
+    def verify_ri(self, svc_vm_if):
         """check routing instance"""
         try:
-            ri_refs = self.svc_vm_if[
+            ri_refs = svc_vm_if[
                 'virtual-machine-interface']['routing_instance_refs']
         except KeyError:
             ri_refs = None
@@ -399,25 +407,26 @@ class SvcInstanceFixture(fixtures.Fixture):
                 self.logger.warn(errmsg)
                 return False, errmsg
 
-            elif len(svm_ifs) != len(self.if_list):
-                errmsg = "Service VM dosen't have all the interfaces %s" % self.if_list
+            elif len(svm_ifs) != len(self.if_details):
+                errmsg = ('Service VM does not have all the interfaces. Got %s,'
+                         'Expected : %s' % (svm_ifs, self.if_details))
                 self.logger.warn(errmsg)
                 return False, errmsg
 
-            svc_vm_if = self.api_s_inspect.get_cs_vmi_of_vm(
+            svc_vm_ifs = self.api_s_inspect.get_cs_vmi_of_vm(
                 svm_id, refresh=True)
-            for self.svc_vm_if in svc_vm_if:
-                result, msg = self.verify_interface_props()
+            for svc_vm_if in svc_vm_ifs:
+                result, msg = self.verify_interface_props(svc_vm_if)
                 if not result:
                     return result, msg
 
-                result, msg = self.verify_vn_links()
+                result, msg = self.verify_vn_links(svc_vm_if)
                 if not result:
                     return result, msg
 
-            result, msg = self.verify_ri()
-            if not result:
-                return result, msg
+                result, msg = self.verify_ri(svc_vm_if)
+                if not result:
+                    return result, msg
         return True, None
 
     def verify_on_setup(self, report=True):
@@ -478,13 +487,17 @@ class SvcInstanceFixture(fixtures.Fixture):
 
     @retry(delay=5, tries=20)
     def verify_svm_not_in_api_server(self):
+        '''
+        SVM can still be present , but it should not be linked to the SI
+        '''
         for svm_id in self.svm_ids:
             cs_svm = self.api_s_inspect.get_cs_vm(vm_id=svm_id, refresh=True)
-            if cs_svm:
-                errmsg = "Service VM for SI '%s' not deleted" % self.si_name
+            if cs_svm and cs_svm.service_instance_refs():
+                errmsg = "Service VM %s still has ref for SI %s" % (
+                            cs_svm.fq_name, cs_svm.service_instance_refs)
                 self.logger.warn(errmsg)
                 return (False, errmsg)
-        self.logger.debug("Serivce VM for SI '%s' is deleted", self.si_name)
+        self.logger.debug("All Service VMs unlinked from SI %s" % (self.si_name))
         return (True, None)
 
     def si_exists(self):
@@ -546,7 +559,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         assert result, msg
         result, msg = self.verify_svm_not_in_api_server()
         assert result, msg
-        if self.do_verify:
+        if self.service_mode != 'in-network-nat':
             result, msg = self.verify_svn_not_in_api_server()
             assert result, msg
             result, msg = self.verify_ri_not_in_api_server()
@@ -555,17 +568,31 @@ class SvcInstanceFixture(fixtures.Fixture):
         return result
     # end verify_on_cleanup
 
-    def add_port_tuple(self, svm, pt_name):
+    def delete_port_tuple(self, port_tuples_uuid):
+        pass
+
+
+#    def add_port_tuple(self, svm, pt_name):
+    def add_port_tuple(self, svm_pt_props={}):
+        '''
+            svm_pt_props : { 'manangement' : VMI uuid ,
+                             'left' : VMI uuid , etc }
+        '''
+        if not svm_pt_props:
+            return
+        pt_name = svm_pt_props.get('name', get_random_name('port_tuple'))
         pt_obj = PortTuple(name=pt_name, parent_obj=self.si_obj)
         pt_uuid = self.vnc_lib.port_tuple_create(pt_obj)
-        ports_list = []
-        for vn in svm.vn_fq_names:
-            ports_list.append(svm.vmi_ids[vn])
-        for index in range(0, len(self.if_list)):
-            port_id = ports_list[index]
-            vmi_obj = self.vnc_lib.virtual_machine_interface_read(id=port_id)
-            vmi_props = VirtualMachineInterfacePropertiesType()
-            vmi_props.set_service_interface_type(self.if_list[index][0])
+        self.port_tuples_uuids.append(pt_uuid)
+#        ports_list = []
+
+        for intf_type, vmi_id in svm_pt_props.iteritems():
+            if intf_type == 'name':
+                continue
+            vmi_obj = self.vnc_lib.virtual_machine_interface_read(id=vmi_id)
+            vmi_props = vmi_obj.virtual_machine_interface_properties or \
+                            VirtualMachineInterfacePropertiesType()
+            vmi_props.set_service_interface_type(intf_type)
             vmi_obj.set_virtual_machine_interface_properties(vmi_props)
             vmi_obj.add_port_tuple(pt_obj)
             self.vnc_lib.virtual_machine_interface_update(vmi_obj)

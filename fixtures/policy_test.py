@@ -22,7 +22,6 @@ class PolicyFixture(fixtures.Fixture):
     def __init__(self, policy_name, rules_list, inputs, connections, api=None,
                                                         project_fixture= None):
         self.inputs = inputs
-        self.rules_list = rules_list
         self.project_fq_name = self.inputs.project_fq_name
         self.connections = connections
         self.agent_inspect = self.connections.agent_inspect
@@ -47,8 +46,9 @@ class PolicyFixture(fixtures.Fixture):
         if self.project_fixture:
             self.project_fq_name = self.project_fixture.project_fq_name
             self.project_name = self.project_fixture.project_name
+        self.input_rules_list = rules_list
         self.rules_list = policy_test_utils.update_rules_with_icmpv6(self.inputs.get_af(),
-                                                self.rules_list)
+                                                rules_list)
 
     # end __init__
 
@@ -74,7 +74,7 @@ class PolicyFixture(fixtures.Fixture):
             try:
                 self.policy_obj = self.vnc_lib.network_policy_read(fq_name=self.project_fq_name+[unicode(self.policy_name)])
             except:
-                self.policy_fq_name = self._create_policy_api(self.policy_name, self.rules_list)
+                self.policy_fq_name = self._set_policy_api(self.policy_name, self.rules_list)
             else:
                 self.already_present = True
                 self.policy_fq_name=self.policy_obj.fq_name
@@ -159,7 +159,7 @@ class PolicyFixture(fixtures.Fixture):
                 new_rule[key] = rule_dict[key]
             # end for
             new_rule['action_list'][
-                'simple_action'] = rule_dict['simple_action']
+                'simple_action'] = rule_dict.get('simple_action')
             if 'qos_action' in rule_dict:
                 new_rule['action_list'][
                     'qos_action'] = rule_dict['qos_action']
@@ -319,7 +319,7 @@ class PolicyFixture(fixtures.Fixture):
         return policy_rsp
     # end  _create_policy
 
-    def _create_policy_api(self, policy_name, rules_list):
+    def _set_policy_api(self, policy_name, rules_list, policy_obj=None):
         ''' Create a policy from the supplied rules
         Sample rules_list:
         src_ports and dst_ports : can be 'any'/tuple/list as shown below
@@ -366,7 +366,7 @@ class PolicyFixture(fixtures.Fixture):
                 new_rule[key] = rule_dict[key]
             # end for
             new_rule['action_list'][
-                'simple_action'] = rule_dict['simple_action']
+                'simple_action'] = rule_dict.get('simple_action')
             if 'qos_action' in rule_dict:
                 new_rule['action_list'][
                     'qos_action'] = rule_dict['qos_action']
@@ -530,13 +530,36 @@ class PolicyFixture(fixtures.Fixture):
         # end for
         self.logger.debug("Policy np_rules : %s" % (np_rules))
         pol_entries = PolicyEntriesType(np_rules)
-        proj = self.vnc_lib.project_read(self.project_fq_name)
-        self.policy_obj = NetworkPolicy(
-            policy_name, network_policy_entries=pol_entries, parent_obj=proj)
-        uid = self.vnc_lib.network_policy_create(self.policy_obj)
-        self.policy_obj = self.vnc_lib.network_policy_read(id=uid)
-        return self.policy_obj.fq_name
-    # end  _create_policy_api
+        if policy_obj:
+            policy_obj.network_policy_entries = pol_entries
+            self.vnc_lib.network_policy_update(policy_obj)
+        else:
+            proj = self.vnc_lib.project_read(self.project_fq_name)
+            self.policy_obj = NetworkPolicy(
+                policy_name, network_policy_entries=pol_entries, parent_obj=proj)
+            uid = self.vnc_lib.network_policy_create(self.policy_obj)
+        self._populate_attr()
+        return self.policy_fq_name
+    # end  _set_policy_api
+
+    def create_policy_api(self, name, rules_list):
+        return self._set_policy_api(name, policy_obj=None,
+                                    rules_list=rules_list)
+
+    def _populate_attr(self):
+        id = self.get_id()
+        policy_api_obj = self.vnc_lib.network_policy_read(id=id)
+        if isinstance(self.policy_obj, NetworkPolicy):
+            self.policy_obj = policy_api_obj
+        else:
+            self.policy_obj = self.quantum_h.show_policy(id)
+        self.policy_fq_name = policy_api_obj.fq_name
+
+    def update_policy_api(self, rules_list):
+        curr_policy_obj = self.vnc_lib.network_policy_read(id=self.get_id())
+        ret_val = self._set_policy_api(self.policy_name,
+                                    policy_obj=curr_policy_obj,
+                                    rules_list=rules_list)
 
     def cleanUp(self):
         super(PolicyFixture, self).cleanUp()
