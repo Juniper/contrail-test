@@ -6,7 +6,6 @@ import test
 from tcutils.util import get_random_cidr, get_random_name, is_v6, skip_because
 import random
 from security_group import get_secgrp_id_from_name
-from common.servicechain.config import ConfigSvcChain
 from common.servicechain.verify import VerifySvcChain
 from netaddr import IPNetwork
 
@@ -496,7 +495,7 @@ class DisablePolicyEcmp(BaseVrouterTest):
         (stats, ping_log) = self.stop_ping(ping_h)
         assert int(stats['loss']) != 100, ('Ping failed without SG even when policy disabled')
 
-class DisablePolicy(BaseVrouterTest, ConfigSvcChain, VerifySvcChain):
+class DisablePolicy(BaseVrouterTest, VerifySvcChain):
 
     @classmethod
     def setUpClass(cls):

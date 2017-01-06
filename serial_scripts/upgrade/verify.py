@@ -23,7 +23,7 @@ from tcutils.util import *
 from fabric.state import connections
 from scripts.securitygroup.config import ConfigSecGroup
 
-class BaseResource(ConfigSvcChain, VerifySvcChain, BaseTestLbaas, BaseNeutronTest):
+class BaseResource(VerifySvcChain, BaseTestLbaas, BaseNeutronTest):
 
     def setUp(self, inputs, connections, logger):
         super(BaseResource , self).setUp()
@@ -156,40 +156,18 @@ class BaseResource(ConfigSvcChain, VerifySvcChain, BaseTestLbaas, BaseNeutronTes
 
         self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
         self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
-        self.st_fixture, self.si_fixtures = self.config_st_si(
-            self.st_name, si_prefix, si_count, svc_scaling, max_inst,
-            project=self.inputs.project_name, left_vn_fixture=self.vn1_fixture,
-            right_vn_fixture=self.vn2_fixture, svc_mode=svc_mode, flavor=flavor)
-        self.action_list = self.chain_si(si_count, si_prefix, self.inputs.project_name)
-        self.rules = [
-            {
-                'direction': '<>',
-                'protocol': 'any',
-                'source_network': self.vn1_name,
-                'src_ports': [0, -1],
-                'dest_network': self.vn2_name,
-                'dst_ports': [0, -1],
-                'simple_action': None,
-                'action_list': {'apply_service': self.action_list}
-            },
-        ]
-        self.policy_fixtures = self.config_policy(self.policy_name, self.rules)
-
-        self.vn1_policy_fix = self.attach_policy_to_vn(
-            self.policy_fixtures, self.vn1_fixture)
-        self.vn2_policy_fix = self.attach_policy_to_vn(
-            self.policy_fixtures, self.vn2_fixture)
         self.vm1_fixture = self.config_vm(vn_fix=self.vn1_fixture, vm_name=self.vm1_name)
         self.vm2_fixture = self.config_vm(vn_fix=self.vn1_fixture, vm_name=self.vm1_name)
-        #self.vm1_fixture.verify_on_setup()
-        #self.vm2_fixture.verify_on_setup()
-        self.vm1_fixture.wait_till_vm_is_up()
-        self.vm2_fixture.wait_till_vm_is_up()
-
-        result, msg = self.validate_vn(self.vn1_name, project_name=self.inputs.project_name)
-        assert result, msg
-        result, msg = self.validate_vn(self.vn2_name, project_name=self.inputs.project_name)
-        assert result, msg
+        svc_chain_info = self.config_svc_chain(
+            left_vn_fixture=self.vn1_fixture,
+            right_vn_fixture=self.vn2_fixture,
+            service_mode=svc_mode,
+            max_inst=max_inst,
+            left_vm_fixture=self.vm1_fixture,
+            right_vm_fixture=self.vm2_fixture)
+        self.st_fixture = svc_chain_info['st_fixture']
+        self.si_fixture = svc_chain_info['si_fixture']
+        self.policy_fixture = svc_chain_info['policy_fixture']
 
         # non-admin tenant config
         result = True
@@ -303,8 +281,7 @@ class VerifyFeatureTestCases(ConfigSecGroup):
 
         # Validate the service chaining in network  datapath ###
 
-        for si_fix in self.res.si_fixtures:
-            si_fix.verify_on_setup()
+        assert self.res.si_fixture.verify_on_setup()
 
         assert self.res.vm1_fixture.ping_with_certainty(
             self.res.vm2_fixture.vm_ip)
@@ -455,8 +432,7 @@ class VerifyFeatureTestCases(ConfigSecGroup):
             assert result
         # Validate the service chaining in network  datapath ###
 
-        for si_fix in self.res.si_fixtures:
-            si_fix.verify_on_setup()
+        assert self.res.si_fixture.verify_on_setup()
 
         assert self.res.vm1_fixture.ping_with_certainty(
             self.res.vm2_fixture.vm_ip)
