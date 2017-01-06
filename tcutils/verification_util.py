@@ -6,6 +6,8 @@ import requests
 import threading
 import logging as LOG
 from lxml import etree
+from tcutils.util import *
+from cfgm_common import utils
 
 from common import log_orig as contrail_logging
 
@@ -32,6 +34,13 @@ class JsonDrv (object):
                                                       max_message_size=msg_size)
         # Since introspect log is a single file, need locks
         self.lock = threading.Lock()
+        if self._args and self._args.api_protocol == 'https':
+            self.api_bundle = '/tmp/' + get_random_string() + '.pem'
+            if self._args.apicertfile and self._args.apikeyfile and \
+                   self._args.apicafile and not self._args.api_insecure:
+                self.certs=[self._args.apicertfile, self._args.apikeyfile,
+                           self._args.apicafile]
+                self.apicertbundle=utils.getCertKeyCaBundle(self.api_bundle, self.certs)
 
     def _auth(self):
         if self._args:
@@ -42,8 +51,10 @@ class JsonDrv (object):
                                         self._args.auth_ip,
                                         self._args.auth_port,
                                         self._DEFAULT_AUTHN_URL)
-            insecure = bool(os.getenv('OS_INSECURE',True))
-            verify = not insecure
+            if self._args.insecure:
+                verify = not self._args.insecure
+            else:
+                verify = self._args.keycertbundle
             self._authn_body = \
                 '{"auth":{"passwordCredentials":{"username": "%s", "password": "%s"}, "tenantName":"%s"}}' % (
                     self._args.admin_username if self._use_admin_auth else self._args.stack_user,
@@ -62,7 +73,10 @@ class JsonDrv (object):
 
     def load(self, url, retry=True):
         self.common_log("Requesting: %s" %(url))
-        resp = requests.get(url, headers=self._headers)
+        if url.startswith('https:'):
+            resp = requests.get(url, headers=self._headers, verify=self.apicertbundle)
+        else:
+            resp = requests.get(url, headers=self._headers)
         if resp.status_code == 401:
             if retry:
                 self._auth()
@@ -130,12 +144,14 @@ class XmlDrv (object):
 
 class VerificationUtilBase (object):
 
-    def __init__(self, ip, port, drv=JsonDrv, logger=LOG, args=None, use_admin_auth=False):
+    def __init__(self, ip, port, drv=JsonDrv, logger=LOG, args=None, use_admin_auth=False,
+                    protocol='http'):
         self.log = logger
         self._ip = ip
         self._port = port
         self._drv = drv(self, logger=logger, args=args, use_admin_auth=use_admin_auth)
         self._force_refresh = False
+        self._protocol = protocol
 
     def get_force_refresh(self):
         return self._force_refresh
@@ -145,9 +161,10 @@ class VerificationUtilBase (object):
         return self.get_force_refresh()
 
     def _mk_url_str(self, path=''):
-        if path.startswith('http:'):
+        if path.startswith('http' or 'https'):
             return path
-        return "http://%s:%s/%s" % (self._ip, str(self._port), path)
+        else:
+            return self._protocol + "://%s:%s/%s" % (self._ip, str(self._port), path)
 
     def dict_get(self, path='',url=''):
         try:

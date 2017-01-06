@@ -46,6 +46,10 @@ class VncLibFixture(fixtures.Fixture):
                         os.getenv('OS_AUTH_URL') or \
                         'http://%s:5000/v2.0'%self.auth_server_ip
         self.project_id = kwargs.get('project_id', None)
+        self.certfile = kwargs.get('certfile', None)
+        self.keyfile = kwargs.get('keyfile', None)
+        self.cacert = kwargs.get('cacert', None)
+        self.insecure = kwargs.get('insecure', True)
     # end __init__
 
     def setUp(self):
@@ -61,16 +65,21 @@ class VncLibFixture(fixtures.Fixture):
             self.cfgm_ip = self.inputs.cfgm_ip
             self.auth_server_ip = self.inputs.auth_ip
             self.project_id = self.connections.project_id
-            self.auth_url = 'http://' + self.inputs.auth_ip + ':5000/v2.0'
+            self.auth_url = self.inputs.auth_url
         else:
             self.logger = self.logger or contrail_logging.getLogger(__name__)
+            if self.auth_url.startswith('https:'):
+                use_ssl=True
+            else:
+                use_ssl=False
             self.vnc_api_h = VncApi(
                               username=self.username,
                               password=self.password,
                               tenant_name=self.project_name,
                               api_server_host=self.cfgm_ip,
                               api_server_port=self.api_server_port,
-                              auth_host=self.auth_server_ip)
+                              auth_host=self.auth_server_ip,
+                              api_server_use_ssl=use_ssl)
             if not self.project_id:
                 if self.orchestrator == 'openstack':
                     self.auth_client = OpenstackAuth(
@@ -78,6 +87,10 @@ class VncLibFixture(fixtures.Fixture):
                                     self.password,
                                     self.project_name,
                                     auth_url=self.auth_url,
+                                    certfile=self.certfile,
+                                    keyfile=self.keyfile,
+                                    cacert=self.cacert,
+                                    insecure=self.insecure,
                                     logger=self.logger)
                     self.project_id = self.auth_client.get_project_id()
                 elif self.orchestrator == 'vcenter':
