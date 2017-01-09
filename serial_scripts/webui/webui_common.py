@@ -1224,8 +1224,8 @@ class WebuiCommon:
             if not self.click_configure_ports():
                 result = result and False
             element_name = fixture.vn_name
-            element_id  = 'btnDeletePort'
-            id_port_delete = 'icon-trash'
+            element_id  = 'icon-trash'
+            id_port_delete = "//a[@data-original-title='Delete']"
             popup_id = 'configure-Portsbtn1'
         elif element_type == 'router_delete':
             if not self.click_configure_routers():
@@ -1288,7 +1288,8 @@ class WebuiCommon:
                 if element_type in ['policy_delete', 'router_delete']:
                     self.click_element(element_id, 'class')
                 elif element_type == 'port_delete':
-                    self.click_element("//a[@data-original-title='Delete']", 'xpath')
+                    self.click_element(element_id, 'class')
+                    self.click_element(id_port_delete, 'xpath')
                 else:
                     self.click_element(element_id)
                 self.click_element(popup_id, screenshot=False)
