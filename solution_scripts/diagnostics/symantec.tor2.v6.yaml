@@ -1,0 +1,169 @@
+global_config:
+    config:
+        encap_priority: "VxLAN GRE UDP"
+        ip_fab_subnets: "172.16.180.0"
+    #host_aggregates:
+    #  - name: "AG1"
+    #    zone_name: "AZ1"
+    #    hosts:
+    #      - name: "csol1-node10"
+    #      - name: "csol1-node11"
+    #  - name: "AG2"
+    #    zone_name: "AZ2"
+    #    hosts:
+    #      - name: "csol1-node12"
+    pr_mx:
+      - name: "tasman"
+        mgmt_ip: "10.87.140.107"
+        vtep_ip: "172.16.184.200"
+        bgp_gw: "tasman" # not used
+        netconf:
+            uname: "root"
+            password: "Embe1mpls"
+            auto_config: True
+            junos_si: "si-2/0/0"
+        pr_interface:
+            name: "ge-0/1/1"
+            vlan: 2001
+            vn: "MGMT"
+            mac: "52:54:00:12:34:57"
+            ip: "192.168.255.240"
+      - name: "sydney"
+        mgmt_ip: "10.87.140.222"
+        vtep_ip: "172.16.187.200"
+        bgp_gw: "sydney"
+        netconf:
+            uname: "root"
+            password: "Embe1mpls"
+            auto_config: True
+            junos_si: "si-0/0/0"
+
+
+    vDNS:
+        name:
+        domain_name: "tenantXXX.testZZZ.mgmt.soln.com"
+        dyn_updates: True
+        rec_resolution_order: "round-robin"
+        floating_ip_record: "dashed-ip"
+        ttl: 2 
+        forwarder:
+        external_visible: False
+        reverse_resolution: True
+    service_template:
+        - name: "ST-transparent"
+          count: 1
+          version: 1
+          service_mode: "transparent"
+          service_type: "firewall"
+          image_name: "soln-trans"
+          interface_list: ["left","right","management"]
+          scaling: False
+          availability_zone: False
+          instance_flavor: "m1.medium"
+        - name: "ST-in-network"
+          count: 1
+          version: 1
+          service_mode: "in-network"
+          service_type: "firewall"
+          image_name: "soln-slave"
+          interface_list: ["left","right","management"]
+          static_routes: [True,False,False]
+          scaling: False
+          availability_zone: False
+          instance_flavor: "m1.medium"
+        - name: "ST-in-network-nat"
+          count: 1
+          version: 1
+          service_mode: "in-network-nat"
+          service_type: "firewall"
+          image_name: "soln-nat"
+          interface_list: ["left","right","management"]
+          static_routes: [False,False,False]
+          scaling: True
+          availability_zone: False # to debug..fails if True
+          instance_flavor: "m1.medium"
+
+    IPAM:
+        name: "tenantXXX.test_idZZZ.ipam"
+        count: 1
+    virtual_network:
+        name: "MGMT"
+        count: 1 
+        fwd_mode:
+        policies:
+        adv_options:
+            external_flag: False
+        subnets:
+          - count: 1
+            cidr: "192.168.0.0/16"
+            alloc_pool:
+            gw_flag: False
+            dns_flag: False
+    LLS:
+        name: "lls.service.###"
+        count: 10
+        lls_ip: 169.254.169.1 #start address
+        lls_port: 7000 
+        fab_ip: 172.16.180.2 #fab start port  
+        fab_port: 80 #fab start port 
+        fab_dns:  "lls.service.###.soln.com"
+        
+tests:
+  - name: "Symantec"
+    id: 1 #test count
+    procedure: "symantec_func"
+    tenants:
+      - name_prefix: "symantec.Tenant"
+        count: 5 
+        vDNS:
+            name: "symantec.tenantXXX.test_idZZZ"
+            domain_name: "tenantXXX.testZZZ.data.soln.com"
+            dyn_updates: True
+            rec_resolution_order: "round-robin"
+            floating_ip_record: "dashed-ip"
+            ttl: 86400
+            forwarder:
+            external_visible: False
+            reverse_resolution: True
+        IPAM:
+            name: "tenantXXX.test_idZZZ.ipam"
+            count: 1
+        policies:
+            name: "tenantXXX.test_idZZZ.pol"
+            count: 1
+            rules: 
+                 action: allow
+                 protocol: any
+                 #allow_rules_network: ["VN1 VN4", "VN2 VN3"]
+                 #allow_rules_port:  ["any any", "any 8100"]
+                 allow_rules_network: ["any any"]
+                 allow_rules_port:  ["any any"]
+                 direction:
+                 services_flag:
+        virtual_networks:
+          - name: "tenantXXX.test_idZZZ.Private_VNYYY"
+            count: 1
+            ipv4_cidr: True
+            ipv6_cidr: True
+            subnets:
+              - count: 1
+            adv_options:
+                external_flag: True
+                extend_to_pr_flag: True
+            route_targets:
+                count: 1
+                asn: 64512
+                rt_number: 12100
+          - name: "tenantXXX.test_idZZZ.Private_SC_Left_VNYYY"
+            subnets:
+              - count: 1
+            adv_options:
+                external_flag: False
+                extend_to_pr_flag: False
+          - name: "tenantXXX.test_idZZZ.Private_SC_Right_VNYYY"
+            ipv6_cidr: "fd66:b5f3:1b1e::/48"
+            subnets:
+              - count: 1
+            adv_options:
+                external_flag: False
+                extend_to_pr_flag: False

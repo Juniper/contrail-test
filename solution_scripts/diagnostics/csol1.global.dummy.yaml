@@ -1,0 +1,259 @@
+global_config:
+    forwarding_mode: "l2_l3"
+    vxlan_identifier_mode: "automatic"
+    qos:
+      - name: 'qos1'
+        default_forwarding_class_id: 0
+        dscp_entries:
+           - key: 'ALL'
+             forwarding_class_id: 1
+        mpls_entries:
+           - key: 'ALL'
+             forwarding_class_id: 1
+        vlan_entries:
+           - key: 'ALL'
+             forwarding_class_id: 1
+    encap_priority:
+       - "VXLAN"
+       - "MPLSoGRE"
+       - "MPLSoUDP"
+    ip_fab_subnets: "172.16.80.0/24"
+    ecmp_hashing:
+       - "destination-ip"
+       - "ip-protocol"
+       - "source-ip"
+       - "source-port"
+       - "destination-port"
+    #flow_aging:
+    #   - protocol: "udp"
+    #     port: 0
+    #     timeout: 160
+    #   - protocol: "tcp"
+    #     port: 0
+    #     timeout: 100
+    #   - protocol: "icmp"
+    #     port: 0
+    #     timeout: 90
+    host_aggregates:
+      - name: "AG1"
+        zone_name: "AZ1"
+        hosts:
+          - name: "csol1-node10"
+          - name: "csol1-node11"
+      - name: "AG2"
+        zone_name: "AZ2"
+        hosts:
+          - name: "csol1-node12"
+    non_dpdk_config: 
+       - zone_name: "AZ1"
+         flavor: "m1.small"
+    dpdk_config:
+       - zone_name: "AZ1"
+         flavor: "contrail_flavor_2cpu" 
+    pr_mx:
+      - name: "vibrant"
+        mgmt_ip: "10.87.128.54"
+        vtep_ip: "172.16.89.200"
+        bgp_gw: "vibrant" # not used
+        netconf:
+            enabled: True
+            uname: "root"
+            password: "Embe1mpls"
+            auto_config: True
+            junos_si: "si-0/0/0"
+        pr_interface:
+            name: "ge-0/0/0"
+            vlan: 2001
+            vn: "MGMT1"
+            mac: "52:54:00:12:34:56"
+            ip: "192.169.255.240"
+      - name: "h1droid"
+        mgmt_ip: "10.87.128.59"
+        vtep_ip: "172.16.86.200"
+        bgp_gw: "h1droid"
+        netconf:
+            enabled: False
+            uname: "root"
+            password: "Embe1mpls"
+            auto_config: True
+            junos_si: "si-3/0/0"
+    pr_qfx:
+      - name: "csol1-tor2"
+        mgmt_ip: "172.16.90.1"
+        vtep_ip: "172.16.90.1"
+        tsn: "csol1-node9"
+        tsn_ip: "172.16.80.9"
+        ta: "csol1-node9-2"
+        bms:
+          - bms_name: "bms-2"
+            tor_interface: "xe-0/0/2"
+            physical_server_interface: "p5p2"
+            physical_server_mac: "00:e0:ed:22:5c:59"
+            physical_server_mgmt_ip: "10.87.140.129"
+    vDNS:
+        name:
+        domain_name: "tenantXXX.testZZZ.mgmt.soln2.com"
+        dyn_updates: True
+        rec_resolution_order: "round-robin"
+        floating_ip_record: "dashed-ip"
+        ttl: 2 
+        forwarder:
+        external_visible: False
+        reverse_resolution: True
+    service_template:
+        - name: "ST-transparent-v1"
+          count: 1
+          version: 1
+          service_mode: "transparent"
+          service_type: "firewall"
+          image_name: "soln-trans"
+          interface_list: ["left","right","management"]
+          scaling: True
+          availability_zone: True
+          instance_flavor: "m1.medium"
+        - name: "ST-in-network-v1"
+          count: 1
+          version: 1
+          service_mode: "in-network"
+          service_type: "firewall"
+          #image_name: "soln-slave"
+          image_name: "ubuntu"
+          interface_list: ["left","right","management"]
+          static_routes: [True,True,False]
+          scaling: True
+          availability_zone: True
+          instance_flavor: "m1.medium"
+        - name: "ST-in-network-nat-v1"
+          count: 1
+          version: 1
+          service_mode: "in-network-nat"
+          service_type: "firewall"
+          image_name: "soln-nat"
+          interface_list: ["left","right","management"]
+          static_routes: [False,False,False]
+          scaling: True
+          availability_zone: True # to debug..fails if True
+          instance_flavor: "m1.medium"
+        - name: "ST-transparent-v2"
+          count: 1
+          version: 2
+          service_mode: "transparent"
+          service_type: "firewall"
+          image_name: "soln-trans"
+          interface_list: ["left","right","management"]
+          scaling: True
+          availability_zone: True
+          instance_flavor: "m1.medium"
+        - name: "ST-in-network-v2"
+          count: 1
+          version: 2
+          service_mode: "in-network"
+          service_type: "firewall"
+          #image_name: "soln-slave"
+          image_name: "ubuntu"
+          interface_list: ["left","right","management"]
+          static_routes: [True,True,False]
+          scaling: True
+          availability_zone: True
+          instance_flavor: "m1.medium"
+        - name: "ST-in-network-nat-v2"
+          count: 1
+          version: 2
+          service_mode: "in-network-nat"
+          service_type: "firewall"
+          image_name: "soln-nat"
+          interface_list: ["left","right","management"]
+          static_routes: [False,False,False]
+          scaling: True
+          availability_zone: True # to debug..fails if True
+          instance_flavor: "m1.medium"
+        - name: "ST-transparent-v1-dpdk"
+          count: 1
+          version: 1
+          service_mode: "transparent"
+          service_type: "firewall"
+          image_name: "soln-trans"
+          interface_list: ["left","right","management"]
+          scaling: True
+          availability_zone: True
+          instance_flavor: "contrail_flavor_2cpu"
+        - name: "ST-in-network-v1-dpdk"
+          count: 1
+          version: 1
+          service_mode: "in-network"
+          service_type: "firewall"
+          #image_name: "soln-slave"
+          image_name: "ubuntu"
+          interface_list: ["left","right","management"]
+          static_routes: [True,True,False]
+          scaling: True
+          availability_zone: True
+          instance_flavor: "contrail_flavor_2cpu"
+        - name: "ST-in-network-nat-v1-dpdk"
+          count: 1
+          version: 1
+          service_mode: "in-network-nat"
+          service_type: "firewall"
+          image_name: "soln-nat"
+          interface_list: ["left","right","management"]
+          static_routes: [False,False,False]
+          scaling: True
+          availability_zone: True # to debug..fails if True
+          instance_flavor: "contrail_flavor_2cpu"
+        - name: "ST-transparent-v2-dpdk"
+          count: 1
+          version: 2
+          service_mode: "transparent"
+          service_type: "firewall"
+          image_name: "soln-trans"
+          interface_list: ["left","right","management"]
+          scaling: True
+          availability_zone: True
+          instance_flavor: "contrail_flavor_2cpu"
+        - name: "ST-in-network-v2-dpdk"
+          count: 1
+          version: 2
+          service_mode: "in-network"
+          service_type: "firewall"
+          #image_name: "soln-slave"
+          image_name: "ubuntu"
+          interface_list: ["left","right","management"]
+          static_routes: [True,True,False]
+          scaling: True
+          availability_zone: True
+          instance_flavor: "contrail_flavor_2cpu"
+        - name: "ST-in-network-nat-v2-dpdk"
+          count: 1
+          version: 2
+          service_mode: "in-network-nat"
+          service_type: "firewall"
+          image_name: "soln-nat"
+          interface_list: ["left","right","management"]
+          static_routes: [False,False,False]
+          scaling: True
+          availability_zone: True # to debug..fails if True
+          instance_flavor: "contrail_flavor_2cpu"
+    IPAM:
+        name: "tenant1XXX.test_idZZZ.ipam"
+        count: 1
+    virtual_network:
+        name: "MGMT1"
+        count: 1 
+        fwd_mode:
+        policies:
+        adv_options:
+            external_flag: False
+        subnets:
+          - count: 1
+            cidr: "192.169.0.0/16"
+            alloc_pool:
+            gw_flag: False
+            dns_flag: False
+    LLS:
+        name: "lls.service.###"
+        count: 10
+        lls_ip: 169.254.169.1 #start address
+        lls_port: 7000 
+        fab_ip: 172.16.80.2 #fab start port  
+        fab_port: 80 #fab start port 
+        fab_dns:  "lls.service.###.soln.com"

@@ -1,0 +1,1 @@
+"""RSYSLOG TEST CASES."""

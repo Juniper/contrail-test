@@ -1,0 +1,173 @@
+global_config:
+    config:
+        encap_priority: "VxLAN GRE UDP"
+        ip_fab_subnets: "172.16.80.0"
+    pr_mx:
+      - name: "vibrant"
+        mgmt_ip: "10.87.128.54"
+        vtep_ip: "172.16.89.200"
+        bgp_gw: "vibrant" # not used
+        netconf:
+            uname: "root"
+            password: "Embe1mpls"
+            auto_config: True
+            junos_si: "si-0/0/0"
+        pr_interface:
+            name: "ge-0/0/0"
+            vlan: 2001
+            vn: "MGMT"
+            mac: "52:54:00:12:34:56"
+            ip: "192.168.255.240"
+      - name: "h1droid"
+        mgmt_ip: "10.87.128.59"
+        vtep_ip: "172.16.86.200"
+        bgp_gw: "h1droid"
+        netconf:
+            uname: "root"
+            password: "Embe1mpls"
+            auto_config: True
+            junos_si: "si-3/0/0"
+    pr_qfx:
+      - name: "csol1-tor2"
+        mgmt_ip: "172.16.90.1"
+        vtep_ip: "172.16.90.1"
+        tsn: "csol1-node9"
+        tsn_ip: "172.16.80.9"
+        ta: "csol1-node9-2"
+        bms:
+          - bms_name: "bms-2"
+            tor_interface: "xe-0/0/2"
+            physical_server_interface: "p5p2"
+            physical_server_mac: "00:e0:ed:22:5c:59"
+            physical_server_mgmt_ip: "10.87.140.129"
+    vDNS:
+        name:
+        domain_name: "tenantXXX.testZZZ.mgmt.soln.com"
+        dyn_updates: True
+        rec_resolution_order: "round-robin"
+        floating_ip_record: "dashed-ip"
+        ttl: 2 
+        forwarder:
+        external_visible: False
+        reverse_resolution: True
+    IPAM:
+        name: "tenantXXX.test_idZZZ.ipam"
+        count: 1
+    virtual_network:
+        name: "MGMT"
+        count: 1 
+        fwd_mode:
+        policies:
+        adv_options:
+            external_flag: False
+        subnets:
+          - count: 1
+            cidr: "192.168.0.0/16"
+            alloc_pool:
+            gw_flag: False
+            dns_flag: False
+    LLS:
+        name: "lls.service.###"
+        count: 10
+        lls_ip: 169.254.169.1 #start address
+        lls_port: 7000 
+        fab_ip: 172.16.80.2 #fab start port  
+        fab_port: 80 #fab start port 
+        fab_dns:  "lls.service.###.soln.com"
+        
+tests:
+  - name: "Symantec"
+    id: 1 #test count
+    procedure: "symantec_func"
+    traffic_block:
+        duration: "1200"
+        sampling_interval: "60"
+        external_server:
+            ip: ""
+            pvn_ext_port_start: "100"
+            snat_ext_port_start: "20099"
+        baremetal_servers: ["10.87.140.129"]
+        client_comm:
+            c_iperf3: ["iperf3", "-P", "1", "-V", "--json", "-b", "100M"]
+            c_httpload_short: ["httpload", "-rate", "3"]
+            c_httpload_lls: ["httpload", "-rate", "3"]
+            c_lbaas: ["httpload", "-rate", "100"]
+            c_udp_ucast: ["iperf3", "-u", "-P", "2", "-V"]
+            c_udp_mcast: ["/usr/local/bin/iperf", "-u", "-T", "32", "-l", "1200", "-c", "224.0.50.50"]
+            c_ping: ["ping", "-c", "3", "-W", "3"]
+        server_comm:
+            s_iperf3: ["iperf3", "-s", "-D"]
+            s_udp_mcast: ["/usr/local/bin/iperf", "-s", "-D", "-u", "-B", "224.0.50.50"]
+    tenants:
+      - name_prefix: "symantec.Tenant"
+        count: 1 
+        vDNS:
+            name: "symantec.tenantXXX.test_idZZZ"
+            domain_name: "tenantXXX.testZZZ.data.soln.com"
+            dyn_updates: True
+            rec_resolution_order: "round-robin"
+            floating_ip_record: "dashed-ip"
+            ttl: 86400
+            forwarder:
+            external_visible: False
+            reverse_resolution: True
+        IPAM:
+            name: "tenantXXX.test_idZZZ.ipam"
+            count: 1
+        policies:
+            name: "tenantXXX.test_idZZZ.pol"
+            count: 1
+            rules: 
+                 action: allow
+                 protocol: any
+                 #allow_rules_network: ["VN1 VN4", "VN2 VN3"]
+                 #allow_rules_port:  ["any any", "any 8100"]
+                 allow_rules_network: ["any any"]
+                 allow_rules_port:  ["any any"]
+                 direction:
+                 services_flag:
+        virtual_networks:
+          - name: "tenantXXX.test_idZZZ.Private_VNYYY"
+            count: 1
+            attach_policy: True
+            attach_fip: True
+            subnets:
+              - count: 1
+            adv_options:
+                extend_to_pr_flag: True
+            vm:
+                name: "vm.QQQ"
+                attach_fip: True
+                count: 1
+          - name: "tenantXXX.test_idZZZ.Private_SNAT_VNYYY"
+            count: 2
+            attach_policy: False
+            subnets:
+              - count: 1
+            adv_options:
+                extend_to_pr_flag: True
+            vm:
+                name: "vm.QQQ"
+                count: 1 
+          - name: "tenantXXX.test_idZZZ.Public_FIP_VNYYY"
+            count: 1
+            subnets:
+              - count: 1
+            adv_options:
+                external_flag: True
+                extend_to_pr_flag: True
+            route_targets:
+                count: 1
+                asn: 64512
+                rt_number: 12100
+            vm:
+                name: "vm.QQQ"
+                count: 1 
+        routers:
+          - name: "tenantXXX.test_idZZZ.router.YYY"
+            count: 1
+        FIP:
+            floating_ip_pool: "tenantXXX.test_idZZZ.Pool"
+            fip_gw_vn_name: "tenantXXX.test_idZZZ.Public_FIP_VNYYY"
+            alloc_type: "Dynamic"
+            count: 30 # 

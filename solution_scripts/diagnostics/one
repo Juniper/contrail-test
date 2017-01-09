@@ -1,0 +1,223 @@
+  def __init__(self,cidr):
+  def get_next_cidr(self):
+      def __init__(self, value):
+      def __str__(self):
+def generate_vdns_conf(global_conf,tenant_conf,vdns):
+       vdns_next_vdns = "default-domain:" + re.sub("\.","-",vdns.get_forwarder())
+    conf['domain']                  = "default-domain"
+def generate_domain_name(global_conf,tenant_conf,tenant_indx):
+def generate_domain_server_name(global_conf,tenant_conf,tenant_indx):
+def generate_fip_pool_name(global_conf,tenant_conf,tenant_indx,pool_indx):
+def generate_policy_name(global_conf,tenant_conf,tenant_indx):
+def generate_mgmt_vn_name(global_conf,tenant_conf):
+def generate_vn_name(global_conf,tenant_conf,tenant_indx,vn_name_pattern,vn_indx):
+def generate_router_name(global_conf,tenant_conf,tenant_indx,router_indx):
+def generate_ipam_name(global_conf,tenant_conf,tenant_index):
+def get_tenant_index(tenant_conf,tenant_name):
+def get_vn_type(vn_name):
+def generate_rt_number():
+def generate_cidr(tenant_name,vn_type):
+def single_thread(debug_enabled=False):
+    def wrapper1(func):
+      def wrapper2(*args,**kwargs):
+def parallel_threads(debug_enabled=False):
+    def wrapper1(func):
+      def wrapper2(self,*args,**kwargs):
+def check_if_rt_already_used(*args,**kwargs):
+def check_if_cidr_already_used(*args,**kwargs):
+def sorted_nicely( l ):
+def retrieve_configured_tenant_list(*args,**kwargs):
+    exclude_tenants = [u'invisible_to_admin', u'admin', u'default-project', u'demo','service']
+    def __init__(self, connections):
+    def fq_name(self, uuid=None):
+    def uuid(self):
+    def get_connection_handle(self,project_name="admin"):
+    def create(self,inputs,policy_name,rules,connections,api=None):
+    def delete(self, policy_fixture):
+    def get_fixture(self,uuid=None):
+    def construct_policy_rules(self,allow_rules_network,allow_rules_port):
+    def create_policy(self,args,kwargs):
+           self.connections.vnc_lib.network_policy_read(fq_name=[u'default-domain',u'%s'%tenant_name,unicode(policy_name)])
+           print "Policy: %s already available...skipping create.."%str([u'default-domain',u'%s'%tenant_name,unicode(policy_name)])
+           print "Policy: %s not available..creating.."%str([u'default-domain',u'%s'%tenant_name,unicode(policy_name)])
+    def create_policies(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+    def delete_policy(self,args,kwargs):
+          policy_obj = self.connections.vnc_lib.network_policy_read(fq_name=[u'default-domain',u'%s'%tenant_name,unicode(policy_name)])
+    def delete_policies(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+    def attach(self,tenant_name,vn_fq_name,vn_uuid,policy_name):
+        policy_obj = self.connections.vnc_lib.network_policy_read(fq_name=[u'default-domain',u'%s'%tenant_name,unicode(policy_name)])
+    def detach(self,tenant_name,vn_fq_name):
+    def attach_policy(self,args,kwargs):
+    def attach_policies(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+    def detach_policy(self,args,kwargs):
+    def detach_policies(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+    def create(self, name):
+    def create_tenant(self,args,kwargs):
+        uuid = self.auth.get_project_id("default-domain",tenant_name)
+    def create_tenants(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+    def update_security_group(self,args,kwargs):
+        obj = self.connections.vnc_lib.project_read(fq_name=[u'default-domain', u'%s'%tenant_name])
+        self.update_default_sg(uuid=obj.uuid)
+    def update_security_groups(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+    def add_user_to_tenant(self, uuid):
+    def update_default_sg(self, uuid=None):
+    def get_connections(self, uuid=None):
+    def delete(self, uuid):
+    def delete_tenant(self,args,kwargs):
+           if fq_name == [u'default-domain', u'%s'%tenant_name]:
+    def delete_tenants(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+    def verify(self, uuid):
+    def get_fixture(self, uuid):
+      def __init__(self,domain_name):
+      def get_domain(self):
+      def set_uuid(self,uuid):
+      def get_uuid(self):
+      def get_forwarder(self):
+    def create(self, name):
+    def delete(self, uuid):
+    def verify(self, uuid):
+    def get_fixture(self, uuid):
+    def generate_vdns_list(self,vdns,domain_name):
+    def delete_record(self,args,kwargs):
+               if record['fq_name'] == [u'default-domain',u'%s'%forwarder_name,u'%s'%domain_name] :
+    def create_record(self,args,kwargs):
+          self.connections.vnc_lib.virtual_DNS_record_read(fq_name=['default-domain',forwarder.split(':')[-1],rec_name])
+          print "Record: default-domain:%s found..skipping create"%rec_name
+          print "default-domain:%s NOT found.."%rec_name
+    def create_vdns(self,args,kwargs):
+        vdns_data = VirtualDnsType(domain_name=dns_domain, dynamic_records_from_client=dyn_updates, record_order=rec_order, default_ttl_seconds=int(ttl),next_virtual_DNS=next_vdns,reverse_resolution=reverse_resolution,floating_ip_record=fip_record)
+    def create_mgmt_vdns_tree(self,thread_count,global_conf,tenant_conf):
+    def create_data_vdns_tree(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+    def create_vdns_tree(self,global_conf,tenant_conf,domain_list):
+              conf['rec_data']   = "default-domain:%s"%conf['rec_name']
+    def delete_record_per_tenant(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+    def delete_vdns_tree(self,args,kwargs):
+    def delete_vdns(self):
+       root_domain = 'default-domain:soln-com'
+    def create(self, name, vdns_id=None):
+    def create_ipam(self,args,kwargs):
+           self.connections.vnc_lib.network_ipam_read(fq_name=[u'default-domain',u'%s'%tenant_name,unicode(ipam_name)])
+           print "IPAM: %s already available...skipping create.."%str([u'default-domain',u'%s'%tenant_name,unicode(ipam_name)])
+           print "IPAM: %s not available..creating.."%str([u'default-domain',u'%s'%tenant_name,unicode(ipam_name)])
+        domain_obj = self.connections.vnc_lib.virtual_DNS_read(fq_name=[u"default-domain",u"%s"%domain_server_name])
+    def create_ipams(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+    def delete(self, uuid):
+    def delete_ipam(self,args,kwargs):
+           ipam_obj = self.connections.vnc_lib.network_ipam_read(fq_name=[u'default-domain',u'%s'%tenant_name,u'%s'%ipam_name])
+          print "ipam: %s missing..skipping delete"%str([u'default-domain',u'%s'%tenant_name,u'%s'%ipam_name])
+    def delete_ipams(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+    def verify(self, uuid):
+    def get_fixture(self, uuid):
+def retrieve_vm_info(*args,**kwargs):
+          proj_obj  = obj.connections.vnc_lib.project_read(fq_name=[u'default-domain', u'%s'%tenant_name])
+def list_vn(*args,**kwargs):
+      proj_obj  = obj.connections.vnc_lib.project_read(fq_name=[u'default-domain', u'%s'%tenant_name])
+def get_router_id(*args,**kwargs):
+      router_obj = obj.connections.vnc_lib.logical_router_read(fq_name=[u'default-domain',u'%s'%tenant_name,unicode(router_name)])
+def get_vn_ids(*args,**kwargs):
+      project_obj = obj.connections.vnc_lib.project_read(fq_name=[u'default-domain',u'%s'%tenant_name])
+def filter_vms_in_vn(vms,vn_names):
+def list_vms(*args,**kwargs):
+      proj_obj = obj.connections.vnc_lib.project_read(fq_name=[u'default-domain', u'%s'%tenant_name])
+    def create(self, name, subnets=[], ipam_id=None, external=False,shared=False,disable_gateway=False,rt_number=None,project_obj=None,forwarding_mode=None):
+    def add_extend_to_pr(self,args,kwargs):
+           vn_obj = self.connections.vnc_lib.virtual_network_read(fq_name=[u'default-domain', u'%s'%tenant_name, u'%s'%vn_name])
+              pr_obj = self.connections.vnc_lib.physical_router_read(fq_name=[u'default-global-system-config', u'%s'%router_name])
+    def delete_extend_to_pr(self,args,kwargs):
+              pr_obj = self.connections.vnc_lib.physical_router_read(fq_name=[u'default-global-system-config', u'%s'%router_name])
+    def delete_extend_to_physical_routers(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+    def update_extend_to_physical_routers(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+    def create_vn(self,args,kwargs):
+           self.connections.vnc_lib.virtual_network_read(fq_name=[u'default-domain',u'%s'%tenant_name,unicode(vn_name)])
+           ipam_id = self.connections.vnc_lib.network_ipam_read(fq_name=[u'default-domain',u'%s'%tenant_name,unicode(ipam_name)]).uuid
+        project_obj = self.connections.vnc_lib.project_read(fq_name=[u'default-domain', u'%s'%tenant_name])      
+        project_obj.project_fq_name=[u'default-domain', u'%s'%tenant_name]
+    def create_vns(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+    def add_policy(self,policy_obj):
+    def delete_policy(self,policy_obj):
+    def delete(self, uuid, subnets=[]):
+    def delete_vn_by_name_process(self,tenant_name,vn_name) :
+           obj = self.connections.vnc_lib.project_read(fq_name=[u'default-domain', u'%s'%tenant_name])
+           if net['fq_name'] == [u'default-domain', u'%s'%tenant_name, u'%s'%vn_name] :
+    def delete_vn_by_name(self,args,kwargs):
+    def delete_vn(self,args,kwargs):
+    def delete_vns(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+    def get_subnets(self, uuid):
+    def verify(self, uuid, subnets=[]):
+    def get_fixture(self, uuid, subnets=[]):
+    def create(self, name, vn_ids, image='ubuntu'):
+    def create_vm(self,args,kwargs):
+           if fq_name == [u'default-domain', u'%s'%tenant_name]:
+           elif fq_name == [u'default-domain', u'admin']:
+    def create_vms(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+    def get_vm_creds(self):
+    def delete(self, uuid, vn_ids=[],verify=False):
+    def delete_vm(self,args,kwargs):
+    def delete_vms(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+    def verify(self, uuid, vn_ids=[], username='ubuntu', password='ubuntu'):
+    def vm_ip(self, uuid, vn_name=None):
+    def vm_name(self, uuid):
+    def ping(self, uuid, dst, username='ubuntu', password='ubuntu'):
+    def copy_file_to_vm(self, uuid, localfile, dst='/tmp/',
+    def get_fixture(self, uuid, vn_ids=[]):
+    def tcpecho(self, uuid, dst, dport=50000,
+    def run_cmd(self, uuid, cmd, sudo=False, daemon=False):
+    def create(self, vn_id, name=None):
+    def create_fip_pool(self,args,kwargs):
+    def create_fip_pools(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+                kwarg['vn_id']         = vn_info_dict[u'default-domain:%s:%s'%(tenant_name,fip_gw_vn_names[indx])]
+    def delete(self, uuid):
+    def delete_fip_pool(self,args,kwargs):
+           project_obj = self.connections.vnc_lib.project_read(fq_name=[u'default-domain',u'%s'%tenant_name])
+    def delete_fip_pools(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+    def associate_fip(self,args,kwargs):
+        # delete default-fip-pool
+           pool_obj = self.connections.vnc_lib.floating_ip_pool_read(fq_name=[u'default-domain', u'%s'%tenant_name, u'%s'%fip_gw_vn_name, u'floating-ip-pool'])
+           project_obj = self.connections.vnc_lib.project_read(fq_name=[u'default-domain',u'%s'%tenant_name])
+        # delete default-fip-pool
+        fip_pool_obj = self.connections.vnc_lib.floating_ip_pool_read(fq_name=[u'default-domain', u'%s'%tenant_name, u'%s'%fip_gw_vn_name, u'%s'%fip_pool_name])
+    def associate_fips(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+            fip_gw_vn_id   = vn_info_dict[u'default-domain:%s:%s'%(tenant_name,fip_gw_vn_name)]
+                       private_vn_id = vn_info_dict[u'default-domain:%s:%s'%(tenant_name,vn_name)]
+    def disassociate_fip(self, uuid, fip_id):
+    def get_fip_from_id(self, fip_id):
+    def verify_fip(self, uuid, fip_id, vm_id, vn_ids, vm_connections):
+    def verify_no_fip(self, uuid, fip_id, vm_id, fip=None):
+    def verify(self, uuid):
+    def get_associated_fips(self, uuid):
+    def get_fip_pool_id(self, fip_id):
+    def get_fixture(self, uuid):
+    def create(self, name, vn_ids=[], gw=None):
+    def create_logical_router(self,args,kwargs):
+    def create_logical_routers(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+               kwargs['gw_nw']       = vn_info_dict[u'default-domain:%s:%s'%(tenant_name,gw_vn_name)]
+    def delete_logical_router(self,args,kwargs):
+    def delete_logical_routers(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+    def attach_vns_to_logical_router(self,args,kwargs):
+    def attach_vns_to_logical_routers(self,thread_count,global_conf,tenant_conf,tenant_name_list):
+                    private_vn_ids.append(vn_info_dict[u'default-domain:%s:%s'%(tenant_name,vn_name)])
+    def set_gw(self, uuid, gw):
+    def clear_gw(self, uuid):
+    def attach_vn(self, uuid, vn_id):
+    def detach_vn(self, uuid, vn_id):
+    def delete(self, uuid):
+    def uuid(self):
+    def fq_name(self, uuid=None):
+    def retrieve_existing_services(self,*args,**kwargs):
+                                fq_name=['default-global-system-config',
+                                         'default-global-vrouter-config'])
+    def create(self,service_name,service_ip,service_port,fabric_dns_name,fabric_ip,fabric_port):
+                                fq_name=['default-global-system-config',
+                                         'default-global-vrouter-config'])
+    def delete(self,service_name):
+                                fq_name=['default-global-system-config',
+                                         'default-global-vrouter-config'])
+    def create_link_local_service(self,args,kwargs):
+    def create_link_local_services(self,thread_count,global_conf,tenant_conf):
+    def delete_link_local_service(self,args,kwargs):
+    def delete_link_local_services(self,thread_count,global_conf,tenant_conf):
+     def create_lb_pool(self,args,kwargs):
+     def create_lb_pools(self,thread_count,global_conf,tenant_conf):
+     def create_lb_member(self,args,kwargs):
+     def create_lb_members(self,thread_count,global_conf,tenant_conf):
+     #def create_lb_vips(self,thread_count,global_conf,tenant_conf):

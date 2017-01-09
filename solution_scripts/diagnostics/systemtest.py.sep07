@@ -1,0 +1,458 @@
+import os
+import threading
+import argparse
+import sys
+
+import pdb
+import re
+from netaddr import IPNetwork
+import ipaddr
+from tcutils.cfgparser import parse_cfg_file
+from common.contrail_test_init import ContrailTestInit
+from common.connections import ContrailConnections
+import  yaml
+from config import *
+from config import Project as ConfigProject
+
+OS_USERNAME    = os.environ['OS_USERNAME']
+OS_PASSWORD    = os.environ['OS_PASSWORD']
+OS_TENANT_NAME = os.environ['OS_TENANT_NAME']
+OS_AUTH_URL    = os.environ['OS_AUTH_URL']
+
+import string
+import random
+from common.contrail_test_init import ContrailTestInit
+import multiprocessing as mp
+from common import log_orig as logging
+from common.connections import ContrailConnections
+from diagnostics.config import Project
+
+def parse_yaml_cfg_file(conf_file):
+  
+   fp = open(conf_file,"r")
+   conf = yaml.load(fp)
+
+   return conf
+
+lock = threading.Lock()
+
+class CIDR:
+
+  def __init__(self,cidr):
+   self.cidr  = cidr
+   self.index = 0
+   self.mask  = self.cidr.split("/")[1]
+
+  def get_next_cidr(self):
+    lock.acquire()
+    if self.index == 0 :
+      self.index += 1
+    else: 
+      ip = IPNetwork(self.cidr)[0]
+      new_ip = ipaddr.IPAddress(ip) + 256
+      self.cidr = str(new_ip) + "/" + self.mask
+    lock.release()
+    return self.cidr
+  
+class Struct(object):
+    def __init__(self, entries):
+        self.__dict__.update(entries)
+
+def validate_args(args):
+    for key, value in args.__dict__.iteritems():
+        if value == 'None':
+            args.__dict__[key] = None
+        if value == 'False':
+            args.__dict__[key] = False
+        if value == 'True':
+            args.__dict__[key] = True
+
+def update_args(ini_args, cli_args):
+    for key in cli_args.keys():
+        if cli_args[key]:
+            ini_args[key] = cli_args[key]
+    return ini_args
+
+def parse_cli(args):
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    return dict(parser.parse_known_args(args)[0]._get_kwargs())
+
+
+def get_mysql_token():
+
+    fptr = open("/etc/contrail/mysql.token","r")
+    return fptr.readline().strip()
+
+
+def construct_policy_rules(allow_rules_network,allow_rules_port):
+            
+    rules = []
+
+    for rule_index in xrange(len(allow_rules_network)):
+
+       r = allow_rules_network[rule_index].split()
+       src_nw = r[0]
+       dst_nw = r[1]
+       r = allow_rules_port[rule_index].split()
+       src_port = r[0]
+       dst_port = r[1]
+       rule = {
+                   'direction': '<>', 'simple_action': 'pass',
+                   'protocol': 'any',
+                   'src_ports': '%s'%src_port, 'dst_ports': '%s'%dst_port,
+                   'source_network': '%s'%src_nw, 'dest_network': '%s'%dst_nw,
+               } 
+
+       print "rule:",rule
+       rules.append(rule)
+
+    return rules
+
+
+ 
+class Test(object):
+
+    def __init__(self,yaml_global_conf,ini_global_conf,test_conf):
+
+        self.yaml_global_conf = yaml_global_conf
+        self.ini_global_conf = ini_global_conf
+        self.test_conf = test_conf
+        self.tenant_conf = test_conf['tenants']
+
+        #self.mysql_passwd = get_mysql_token()
+
+    def cleanUpTest(self):
+
+        conf = {}
+        conf['tenant_name,pattern']  = self.tenant_conf['tenant,name_pattern']
+        conf['timeout']       = 600
+        conf['testbed_file']  = self.testbed_file
+        conf['tenant_index,replace_str']   = 'XXX'
+
+        count = self.tenant_conf['tenant,count']
+
+        vm_obj = VM(None)
+        count = self.tenant_conf['tenant,count']
+        vm_obj.delete_vms(count,conf)
+
+        vn_obj = VN(None)
+        count = self.tenant_conf['tenant,count']
+        vn_obj.delete_vns(count,conf)
+
+        for tenant_index in xrange(self.tenant_conf['tenant,count']):
+              conf = {}
+              conf['tenant_index,replace_str']   = 'XXX'
+              conf['tenant_name,pattern']        = self.tenant_conf['tenant,name_pattern']
+              conf['tenant_index']               = tenant_index
+              conf['ipam,name_pattern']          = self.tenant_conf['ipam,name_pattern']
+              conf['domain_name_pattern']        = self.tenant_conf['vdns,domain_name_pattern']
+              count      = self.tenant_conf['ipam,count']
+              ipam_obj   = IPAM(None)
+              ipam_obj.delete_ipams(count,conf)
+ 
+        for tenant_index in xrange(self.tenant_conf['tenant,count']):
+              conf = {}
+              conf['tenant_index,replace_str']   = 'XXX'
+              conf['tenant_name,pattern']        = self.tenant_conf['tenant,name_pattern']
+              conf['tenant_index']               = tenant_index
+              conf['policy,name_pattern']        = self.tenant_conf['policy,name_pattern']
+              count      = self.tenant_conf['policy,count']
+              policy_obj = Policy(None)
+              policy_obj.delete_policies(count,conf)
+
+        conf = {}
+        conf['tenant_index,replace_str']   = 'XXX'
+        conf['tenant_name,pattern']        = self.tenant_conf['tenant,name_pattern']
+        count = self.tenant_conf['tenant,count']
+
+        project_obj = ConfigProject(None)
+        project_obj.delete_tenants(count,conf)
+
+        mgmt_vn_name   = self.global_conf['mgmt,vn_name']
+        kwargs = {}
+        vn_obj = VN(None)
+        vn_obj.delete_vn_by_name(args=('admin',mgmt_vn_name),kwargs=kwargs)
+
+        vdns_obj = vDNS(None)
+        vdns_obj.delete_vdns()
+
+        return
+
+    def parse_config(self):
+
+        self.image_conf = {}
+        self.global_conf = {}
+        self.tenant_conf = {}
+
+        self.image_conf['glance,image_name'] = self.ini_global_conf['GLOBALS']['glance_image_name']
+
+        self.global_conf['mgmt,vn_name']                  = self.yaml_global_conf['virtual_network']['name']
+        self.global_conf['mgmt,subnet_name']              = self.yaml_global_conf['virtual_network']['name'] + "_subnet"
+        self.global_conf['mgmt,cidr_start']               = self.yaml_global_conf['virtual_network']['subnets'][0]['cidr']
+        self.global_conf['mgmt,vdns_domain_name_pattern'] = self.yaml_global_conf['vDNS']['domain_name']
+
+        global_vdns_conf = self.yaml_global_conf['vDNS']
+        self.global_conf['vdns,name_pattern']         = global_vdns_conf['name']
+        self.global_conf['vdns,domain_name_pattern']  = global_vdns_conf['domain_name']
+        self.global_conf['vdns,dyn_updates']          = global_vdns_conf['dyn_updates']
+        self.global_conf['vdns,rec_resolution_order'] = global_vdns_conf['rec_resolution_order']
+        self.global_conf['vdns,floating_ip_record']   = global_vdns_conf['floating_ip_record']
+        self.global_conf['vdns,ttl']                  = global_vdns_conf['ttl']
+        self.global_conf['vdns,forwarder']            = global_vdns_conf['forwarder']
+        self.global_conf['vdns,external_visible']     = global_vdns_conf['external_visible']
+        self.global_conf['vdns,reverse_resolution']   = global_vdns_conf['reverse_resolution']
+
+        global_ipam_conf = self.yaml_global_conf['IPAM']
+        self.global_conf['ipam,name_pattern']  = global_ipam_conf['name']
+        self.global_conf['ipam,count']         = global_ipam_conf['count']
+
+        self.test_name    = self.test_conf['name']
+        self.test_id      = self.test_conf['id']
+
+        tenant_conf              = self.test_conf['tenants'][0]
+        self.tenant_conf['tenant,name_pattern'] = tenant_conf['name']
+        self.tenant_conf['tenant,count']        = tenant_conf['count'] 
+        self.tenant_conf['tenant,vn_group_list'] = []
+
+        tenant_network_conf      = tenant_conf['virtual_networks']
+        self.tenant_conf['tenant,vn_group_list']     = []
+
+        for i in xrange(len(tenant_network_conf)):
+            vn_info                 = {}
+            vn_info['name_pattern']         = tenant_network_conf[i]['name']
+            vn_info['count']        = tenant_network_conf[i]['count']
+            vn_info['subnet,count'] = tenant_network_conf[i]['subnets'][0]['count']
+            vn_info['subnet,cidr']  = tenant_network_conf[i]['subnets'][0]['cidr']
+            if tenant_network_conf[i].has_key('vm'):
+              vn_info['vm,name_pattern']      = tenant_network_conf[i]['vm']['name']
+              vn_info['vm,count']             = tenant_network_conf[i]['vm']['count']
+            self.tenant_conf['tenant,vn_group_list'].append(vn_info)
+
+        tenant_vdns_conf = tenant_conf['vDNS']
+        self.tenant_conf['vdns,name_pattern']         = tenant_vdns_conf['name']
+        self.tenant_conf['vdns,domain_name_pattern']  = tenant_vdns_conf['domain_name']
+        self.tenant_conf['vdns,dyn_updates']          = tenant_vdns_conf['dyn_updates']
+        self.tenant_conf['vdns,rec_resolution_order'] = tenant_vdns_conf['rec_resolution_order']
+        self.tenant_conf['vdns,floating_ip_record']   = tenant_vdns_conf['floating_ip_record']
+        self.tenant_conf['vdns,ttl']                  = tenant_vdns_conf['ttl']
+        self.tenant_conf['vdns,forwarder']            = tenant_vdns_conf['forwarder']
+        self.tenant_conf['vdns,external_visible']     = tenant_vdns_conf['external_visible']
+        self.tenant_conf['vdns,reverse_resolution']   = tenant_vdns_conf['reverse_resolution']
+
+        tenant_ipam_conf = tenant_conf['IPAM']
+        self.tenant_conf['ipam,name_pattern']  = tenant_ipam_conf['name']
+        self.tenant_conf['ipam,count']         = tenant_ipam_conf['count']
+
+        tenant_policy = tenant_conf['policies']
+        self.tenant_conf['policy,name_pattern']        = tenant_policy['name']
+        self.tenant_conf['policy,count']               = tenant_policy['count']
+        self.tenant_conf['policy,allow_rules_network'] = tenant_policy['rules']['allow_rules_network']
+        self.tenant_conf['policy,allow_rules_port']    = tenant_policy['rules']['allow_rules_port']
+
+    def initTest(self):
+
+        self.parse_config()
+
+        self.testbed_file    = self.ini_global_conf['ENV']['testbed_file']
+
+    def runTest(self):
+        conf = {}
+        conf['tenant_name,pattern']  = self.tenant_conf['tenant,name_pattern']
+        conf['timeout']       = 600
+        conf['testbed_file']  = self.testbed_file
+        conf['tenant_index,replace_str']   = 'XXX'
+
+        count = self.tenant_conf['tenant,count']
+
+        project_obj = ConfigProject(None)
+        project_obj.create_tenants(count,conf)
+
+        project_obj = ConfigProject(None)
+        project_obj.update_security_groups(count,conf)
+
+        allow_rules_network = self.tenant_conf['policy,allow_rules_network']
+        allow_rules_port    = self.tenant_conf['policy,allow_rules_port']
+        policy_rules        = construct_policy_rules(allow_rules_network,allow_rules_port)
+
+        domain_list = []
+
+        mgmt_vdns_domain_name_pattern = self.global_conf['vdns,domain_name_pattern']
+        mgmt_vdns_domain_name = re.sub('ZZZ',str(self.test_id),mgmt_vdns_domain_name_pattern)
+        domain_list.append(mgmt_vdns_domain_name)
+
+        for tenant_index in xrange(self.tenant_conf['tenant,count']):
+              tenant_vdns_domain_name_pattern = self.tenant_conf['vdns,domain_name_pattern']
+              tenant_vdns_domain_name = re.sub('ZZZ',str(self.test_id),tenant_vdns_domain_name_pattern)
+              tenant_vdns_domain_name = re.sub('XXX',str(tenant_index),tenant_vdns_domain_name)
+              domain_list.append(tenant_vdns_domain_name)
+
+        conf = {}
+        conf['rec_type']   = "NS"
+        conf['rec_class']  = "IN"
+        conf['rec_ttl']    = 86400
+        conf['vdns_dyn_updates'] = self.global_conf['vdns,dyn_updates']
+        conf['vdns_rec_order']   = self.global_conf['vdns,rec_resolution_order']
+        conf['vdns_ttl']         = self.global_conf['vdns,ttl']
+        conf['vdns_fip_record']  = self.global_conf['vdns,floating_ip_record']
+        conf['vdns_external_visible'] =  self.global_conf['vdns,external_visible']
+        conf['vdns_reverse_resolution'] = self.global_conf['vdns,reverse_resolution']
+
+        vdns_obj = vDNS(None)
+        vdns_obj.create_vdns_tree(domain_list,conf)
+
+        for tenant_index in xrange(self.tenant_conf['tenant,count']):
+              conf = {}
+              conf['tenant_index,replace_str']   = 'XXX'
+              conf['tenant_name,pattern']        = self.tenant_conf['tenant,name_pattern']
+              conf['tenant_index']               = tenant_index
+              conf['policy,name_pattern']        = self.tenant_conf['policy,name_pattern']
+              conf['policy,allow_rules_network'] = self.tenant_conf['policy,allow_rules_network']
+              conf['policy,allow_rules_port']    = self.tenant_conf['policy,allow_rules_port']
+              conf['rules']                      = policy_rules
+              count      = self.tenant_conf['policy,count']
+              policy_obj = Policy(None)
+              policy_obj.create_policies(count,conf)
+
+        for tenant_index in xrange(self.tenant_conf['tenant,count']):
+              conf = {}
+              conf['tenant_index,replace_str']   = 'XXX'
+              conf['tenant_name,pattern']        = self.tenant_conf['tenant,name_pattern']
+              conf['tenant_index']               = tenant_index
+              conf['ipam,name_pattern']          = self.tenant_conf['ipam,name_pattern']
+              conf['domain_name_pattern']        = self.tenant_conf['vdns,domain_name_pattern']
+              count      = self.tenant_conf['ipam,count']
+              ipam_obj = IPAM(None)
+              ipam_obj.create_ipams(count,conf)
+
+        test_id = 1
+
+        for tenant_index in xrange(self.tenant_conf['tenant,count']):
+           vn_index = 0
+           for vn_group_index in xrange(len(self.tenant_conf['tenant,vn_group_list'])):
+              vn_info       = self.tenant_conf['tenant,vn_group_list'][vn_group_index]
+              vn_count      = vn_info['count']
+              data_cidr     = vn_info['subnet,cidr']
+              data_cidr_obj = CIDR(data_cidr)
+              conf          = {}
+              conf['cidr_list']           = [ data_cidr_obj.get_next_cidr()for x in xrange(vn_count)]
+              conf['vn_name,pattern']     = vn_info['name_pattern']
+              conf['vn_id,replace_str']   = 'YYY'
+              conf['test_id']             = test_id
+              conf['test_id,replace_str'] = 'ZZZ'
+              conf['tenant_index']        = tenant_index
+              conf['tenant_index,replace_str'] = 'XXX'
+              conf['tenant_name,pattern']      = self.tenant_conf['tenant,name_pattern']
+              conf['vn_index']          = vn_index
+              conf['ipam,name_pattern'] = self.tenant_conf['ipam,name_pattern']
+              vn_obj = VN(None)
+              vn_obj.create_vns(vn_count,conf)
+              vn_index += vn_count
+
+        mgmt_vn_name   = self.global_conf['mgmt,vn_name']
+        mgmt_cidr      = self.global_conf['mgmt,cidr_start']
+        mgmt_cidr_obj  = CIDR(mgmt_cidr)
+        cidr           = mgmt_cidr_obj.get_next_cidr()
+
+        conf = {}
+        conf['tenant_name'] = 'admin'
+        conf['cidr']        = cidr
+        conf['vn_name,pattern'] = mgmt_vn_name
+        conf['vn_id,replace_str'] = "XXXXXX"
+        conf['vn_index'] = 123
+        conf['tenant_index,replace_str'] = "XXXXXX"
+        conf['tenant_index']  = 123   
+        conf['test_id,replace_str'] = "ZZZ" 
+        conf['disable_gateway'] = True
+        conf['test_id'] = self.test_id
+        conf['cidr_list'] = [cidr]
+        conf['ipam,name_pattern'] = self.global_conf['ipam,name_pattern']
+
+        vn_obj  = VN(None)
+        vn_obj.create_vns(1,conf)
+
+        for tenant_index in xrange(self.tenant_conf['tenant,count']):
+              conf = {}
+              conf['tenant_index,replace_str']   = 'XXX'
+              conf['tenant_name,pattern']        = self.tenant_conf['tenant,name_pattern']
+              conf['tenant_index']               = tenant_index
+              conf['policy,name_pattern']        = self.tenant_conf['policy,name_pattern']
+
+              policy_obj = Policy(None)
+              policy_obj.attach_policies(1,conf)
+
+        #for tenant_index in xrange(self.tenant_conf['tenant,count']):
+        #      conf = {}
+        #      conf['tenant_index,replace_str']   = 'XXX'
+        #      conf['tenant_name,pattern']        = self.tenant_conf['tenant,name_pattern']
+        #      conf['tenant_index']               = tenant_index
+        #      conf['ipam,name_pattern']        = self.tenant_conf['ipam,name_pattern']
+
+        #      ipam_obj = IPAM(None)
+        #      ipam_obj.attach_ipams(1,conf)
+
+        vm_index = 0
+        for tenant_index in xrange(self.tenant_conf['tenant,count']):
+           vn_index = 0
+           for vn_group_index in xrange(len(self.tenant_conf['tenant,vn_group_list'])):
+              vn_info = self.tenant_conf['tenant,vn_group_list'][vn_group_index]
+              for vn_indx  in xrange(vn_info['count']):
+                 vn_name_pattern = vn_info['name_pattern']
+                 vn_name = re.sub('XXX',str(tenant_index),vn_name_pattern)
+                 vn_name = re.sub('ZZZ',str(self.test_id),vn_name)
+                 vn_name = re.sub('YYY',str(vn_index),vn_name)
+                 if vn_info.has_key('vm,count') :
+                   vm_count = vn_info['vm,count']
+                   conf = {}
+                   conf['tenant_index'] = tenant_index
+                   conf['tenant_name,pattern'] = self.tenant_conf['tenant,name_pattern']
+                   conf['tenant_index,replace_str'] = 'XXX'
+                   conf['vm,name_pattern'] = vn_info['vm,name_pattern'] 
+                   conf['vm_index']        = vm_index
+                   vm_index += vm_count
+                   conf['data_vn_name']         = vn_name
+                   conf['vm,replace_str']  = 'QQQ'
+                   conf['mgmt_vn_name']      = mgmt_vn_name
+                   vm_name_pattern = vn_info['vm,name_pattern']
+                   conf['image'] = "ubuntu"
+                   vm_obj = VM(None)
+                   vm_obj.create_vms(vm_count,conf)
+                 vn_index += 1
+
+        return 
+
+
+def main():
+
+   parser = argparse.ArgumentParser(add_help=False)
+   parser.add_argument("-i", "--ini_file", default=None,help="Specify global conf file", metavar="FILE")
+   parser.add_argument("-c", "--yaml_config_file", default=None,help="Specify Test conf file", metavar="FILE")
+
+   args, remaining_argv = parser.parse_known_args(sys.argv[1:])
+   cli_args = parse_cli(remaining_argv)
+
+   ini_conf = parse_cfg_file(args.ini_file)
+
+   yaml_conf = parse_yaml_cfg_file(args.yaml_config_file)
+
+   print "INI_CONF:",ini_conf
+   print "YAML_CONF:",yaml_conf
+
+   #Do Global Configurations First
+   #Setup MGMT VN: simple network, 1 CIDR for mgmt traffic. Set 'shared' flag for VN so that 
+   #all tenants can use the same VN  
+      
+   yaml_global_conf = yaml_conf['global_config']
+
+   tests = yaml_conf['tests']
+
+   for test_conf in tests:
+      #for i in xrange(10):
+        test_obj = Test(yaml_global_conf,ini_conf,test_conf)
+        test_obj.initTest()
+        test_obj.cleanUpTest()
+        test_obj.runTest()
+   print "Exiting test"
+
+main()
+
