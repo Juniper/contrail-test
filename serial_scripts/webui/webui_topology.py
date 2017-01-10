@@ -378,6 +378,24 @@ class sdn_webui_config ():
         self.vn_name_end_spl_char = "vn1~!@#$%^&*()_+|}{\"?><,./;\'[]\=-`"
         self.vn_name_mid_spl_char = "vn1~!@#$%^&*()_+|}{\"?><,./;\'[]\=-`vn1"
         self.port_name = 'port1'
+        self.dhcp_option_code = '15'
+        self.dhcp_option_value = '16'
+        self.invalid_ip_mask = '8,8,8,8/32'
+        self.invalid_mac = '02,87,2a,82,8d,bc'
+        self.invalid_port = '6ab'
+        self.port_advanced_option = {
+            'analyzer_name': 'ana1',
+            'allowed_address_pair_mac': '02:87:2a:82:8d:bc',
+            'analyzer_ip': '7.7.7.7',
+            'analyzer_mac': '02:87:2a:82:8d:32',
+            'allowed_address_pair_ip': '5.5.5.5/32',
+            'subnet_ip': '10.1.1.9',
+            'port': '5',
+            'vtep_dst_ip_address': '9.9.9.9',
+            'vtep_dst_mac_address': '02:87:2a:82:8d:de',
+            'vxlan_id': '10'
+        }
+        self.fat_flow_values = {'TCP':'5', 'ICMP':'2', 'UDP':'4', 'SCTP':'7'}
         # end __init__
 
 if __name__ == '__main__':
