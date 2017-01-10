@@ -127,7 +127,23 @@ class ContrailVncApi(object):
         return self._vnc.security_group_update(sg)
 
     def get_vn_list(self, **kwargs):
-       return self._vnc.virtual_networks_list(kwargs['parent_id'])['virtual-networks'] 
+       return self._vnc.virtual_networks_list(kwargs['parent_id'])['virtual-networks']
+
+    def create_queue(self, name, queue_id, parent_obj=None):
+        queue_obj = QosQueue(name=name,
+                              qos_queue_identifier=queue_id,
+                              parent_obj=parent_obj)
+        queue_uuid = self._vnc.qos_queue_create(queue_obj)
+        self._log.info('Created Queue %s, UUID %s' % (self._vnc.id_to_fq_name(queue_uuid),
+                         queue_uuid))
+        return queue_uuid
+    # end create_queue
+    
+    def delete_queue(self, uuid):
+        fq_name = self._vnc.id_to_fq_name(uuid)
+        self._log.info('Deleting Queue %s, UUID: %s' %(fq_name, uuid))
+        return self._vnc.qos_queue_delete(id=uuid)
+    # end delete_queue
 
     def create_forwarding_class(self, name, fc_id, parent_obj=None,
                                 dscp=None, dot1p=None, exp=None, queue_uuid=None):
