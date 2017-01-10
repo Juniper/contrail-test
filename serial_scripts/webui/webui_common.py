@@ -3099,6 +3099,7 @@ class WebuiCommon:
             value_arry = self.find_element(
                         'value', 'class', browser = rows_detail[detail]).text
             if key_arry == search_key:
+                key_arry = key_arry.replace(' ', '_')
                 dom_arry.append({'key': key_arry, 'value': value_arry})
                 break
         return dom_arry
@@ -3170,3 +3171,174 @@ class WebuiCommon:
             self.format_sec_group_list.append(sec_group)
         return self.format_sec_group_list
     # format_sec_group_name
+
+    def edit_port_with_advanced_option(self, option, port_name,
+        port_admin_state, params_list, subnet=True, allowed_address_pair=True,
+        ecmp=True, mirror=True, mirror_enabled_already=False, header_mode='Enabled',
+        traffic_direction='Both', next_hop_mode='Dynamic', tc='positive'):
+        result = True
+        try:
+            self.edit_port_result = self.edit_remove_option(option, 'edit',
+                                        display_name=port_name)
+            if self.edit_port_result:
+                self.click_element('advanced_options')
+                mac_address = self.find_element('macAddress', 'name')
+                mode = mac_address.get_attribute('data-bind')
+                mac_out = re.search('disable: true', mode)
+                if not mac_out:
+                    result = result and False
+                self.click_element('s2id_enable_dropdown')
+                if not self.select_from_dropdown(port_admin_state, grep=False):
+                    result = result and False
+                add_value = self.find_element('editable-grid-add-link', 'class',
+                                elements=True)
+                combobox = self.find_element('custom-combobox-input', 'class',
+                               elements=True)
+                if subnet:
+                    add_value[0].click()
+                    subnet_grid = self.find_element('data-row', 'class', elements=True)
+                    self.click_element('s2id_subnet_uuid_dropdown', browser=subnet_grid[1])
+                    if not self.select_from_dropdown(params_list[0], grep=False):
+                        result = result and False
+                    self.send_keys(params_list[9], 'fixedIp', 'name', browser=subnet_grid[1],
+                        clear=True)
+                    combobox[0].send_keys('100')
+                if allowed_address_pair:
+                    add_value[1].click()
+                    self.send_keys(params_list[8], 'ipPrefixVal', 'name', clear=True)
+                    self.send_keys(params_list[6], 'mac', 'name', clear=True)
+                if ecmp:
+                    self.click_element('s2id_ecmpHashingIncFields_dropdown')
+                    if not self.select_from_dropdown('destination-ip', grep=False):
+                        result = result and False
+                combo_state = combobox[1].get_attribute('disabled')
+                if not combo_state:
+                    result = result and False
+                if not mirror_enabled_already:
+                    self.click_element('virtual_machine_interface_disable_policy', 'name')
+                    self.click_element('is_mirror', 'name')
+                if mirror:
+                    self.send_keys(params_list[5], 'analyzer_ip_address', 'name', clear=True)
+                    self.send_keys(params_list[10], 'udp_port', 'name', clear=True)
+                    self.send_keys(params_list[1], 'analyzer_name', 'name', clear=True)
+                    self.click_element('s2id_mirrorToRoutingInstance_dropdown')
+                    self.click_element('select2-highlighted', 'class')
+                    self.send_keys(params_list[2], 'analyzer_mac_address', 'name', clear=True)
+                    self.click_element('s2id_juniper_header_dropdown')
+                    if not self.select_from_dropdown(header_mode, grep=False):
+                        result = result and False
+                    self.click_element('s2id_traffic_direction_dropdown')
+                    if not self.select_from_dropdown(traffic_direction, grep=False):
+                        result = result and False
+                    self.click_element('s2id_mirrorToNHMode_dropdown')
+                    if self.select_from_dropdown(next_hop_mode, grep=False):
+                        if next_hop_mode == 'Static':
+                           self.send_keys(params_list[7], 'vtep_dst_ip_address',
+                                         'name', clear=True)
+                           self.send_keys(params_list[3], 'vtep_dst_mac_address',
+                                         'name', clear=True)
+                           self.send_keys(params_list[4], 'vni', 'name', clear=True)
+                    else:
+                        result = result and False
+                self.click_element('configure-Portsbtn1')
+                if tc != 'positive':
+                    result = self.negative_test_proc(option)
+                self.wait_till_ajax_done(self.browser)
+            else:
+                self.logger.error("There are no rows to edit")
+                result = result and False
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.screenshot(option)
+            result = result and False
+            raise
+        self.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # edit_port_with_advanced_option
+
+    def edit_port_with_dhcp_option(self, option, port_name, dhcp_option):
+        result = True
+        try:
+            self.edit_port_result = self.edit_remove_option(option, 'edit',
+                                                           display_name=port_name)
+            if self.edit_port_result:
+                self.click_element('dhcpOptionsAccordion')
+                self.wait_till_ajax_done(self.browser)
+                self.click_element('editable-grid-add-link', 'class',
+                                  elements=True, index=3)
+                self.send_keys(dhcp_option[0], 'dhcp_option_name', 'name', clear=True)
+                self.send_keys(dhcp_option[1], 'dhcp_option_value', 'name', clear=True)
+                self.send_keys(int(dhcp_option[1])/8, 'dhcp_option_value_bytes',
+                              'name', clear=True)
+                self.click_element('configure-Portsbtn1')
+                self.wait_till_ajax_done(self.browser)
+            else:
+                self.logger.error("Clicking the Edit Button is not working")
+                result = result and False
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.screenshot(option)
+            result = result and False
+            self.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+    # edit_port_with_dhcp_option
+
+    def edit_port_with_fat_flow(self, option, port_name, fat_flow_values, tc='positive'):
+        result = True
+        try:
+            self.edit_port_result = self.edit_remove_option(option, 'edit',
+                                                           display_name=port_name)
+            if self.edit_port_result:
+                self.click_element('fatFlowAccordion')
+                self.wait_till_ajax_done(self.browser)
+                fat_flow_protocol_list = fat_flow_values.keys()
+                fat_flow_port_list = fat_flow_values.values()
+                for protocol in range(len(fat_flow_protocol_list)):
+                    self.click_element('editable-grid-add-link', 'class',
+                                      elements=True, index=4)
+                    fat_flow = self.find_element('fatFlowCollection')
+                    fat_flow_tuple = self.find_element('data-row', 'class',
+                                     browser=fat_flow, elements=True)
+                    self.click_element('s2id_protocol_dropdown',
+                                      browser=fat_flow_tuple[protocol])
+                    if not self.select_from_dropdown(fat_flow_protocol_list[protocol],
+                                                    grep=False):
+                        result = result and False
+                    if fat_flow_protocol_list[protocol] == 'ICMP':
+                        port = self.find_element('port', 'name')
+                        mode = port.get_attribute('data-bind')
+                        vn_out = re.search('disable: true', mode)
+                    else:
+                        self.send_keys(fat_flow_port_list[protocol], 'port', 'name',
+                                      browser=fat_flow_tuple[protocol])
+                self.click_element('configure-Portsbtn1')
+                if tc != 'positive':
+                    result = self.negative_test_proc(option)
+                self.wait_till_ajax_done(self.browser)
+            else:
+                self.logger.error("Clicking the Edit Button is not working")
+                result = result and False
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.screenshot(option)
+            result = result and False
+            self.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+    # edit_port_with_dhcp_option
+
+    def negative_test_proc(self, option):
+        result = True
+        warn_button = self.find_element('alert-error', 'class')
+        if warn_button.get_attribute('style') == "":
+            form_error =  option + "_form_error"
+            span = "//span[contains(@data-bind, " + form_error + ")]"
+            error = self.find_element(span, 'xpath')
+            self.logger.info("Getting %s error message while saving" % (error.text))
+            self.click_on_cancel_if_failure('cancelBtn')
+            self.wait_till_ajax_done(self.browser)
+            return result
+        else:
+            return result and False
+    # negative_test_proc
