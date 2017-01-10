@@ -870,3 +870,80 @@ class ContrailVncApi(object):
         gsc_obj = self._vnc.global_system_config_read(id=gsc_id)
         return gsc_obj
     # end get_global_config_obj
+    
+    def get_health_check(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        return self._vnc.service_health_check_read(**kwargs)
+
+    def create_health_check(self, fq_name, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            Optional:
+            :param health_check_type : 'link-local' or 'end-to-end'
+            :param enabled : Health check status (True, False)
+            :param monitor_type : Health check probe type (PING, HTTP)
+            :param delay : delay in secs between probes
+            :param timeout : timeout for each probe, must be < delay
+            :param max_retries : max no of retries
+            :param http_method : One of GET/PUT/PUSH default:GET
+            :param url_path : HTTP URL Path
+            :param expected_codes : HTTP reply codes
+        '''
+        name = fq_name[-1]
+        prop = ServiceHealthCheckType(**kwargs)
+        obj = ServiceHealthCheck(name, parent_type='project', fq_name=fq_name,
+                                 service_health_check_properties=prop)
+        return self._vnc.service_health_check_create(obj)
+
+    def update_health_check_properties(self, hc_uuid, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            Optional:
+            :param health_check_type : 'link-local' or 'end-to-end'
+            :param enabled : Health check status (True, False)
+            :param monitor_type : Health check probe type (PING, HTTP)
+            :param delay : delay in secs between probes
+            :param timeout : timeout for each probe, must be < delay
+            :param max_retries : max no of retries
+            :param http_method : One of GET/PUT/PUSH default:GET
+            :param url_path : HTTP URL Path
+            :param expected_codes : HTTP reply codes
+        '''
+        hc_obj = self._vnc.service_health_check_read(id=hc_uuid)
+        curr_prop = hc_obj.get_service_health_check_properties()
+        for k,v in kwargs.iteritems():
+            setattr(curr_prop, k, v)
+        hc_obj.set_service_health_check_properties(curr_prop)
+        return self._vnc.service_health_check_update(hc_obj)
+
+    def delete_health_check(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        return self._vnc.service_health_check_delete(**kwargs)
+
+    def assoc_health_check_to_si(self, si_uuid, hc_uuid, intf_type):
+        '''
+            :param si_uuid : UUID of the Service Instance object
+            :param hc_uuid : UUID of HealthCheck object
+        '''
+        hc_obj = self._vnc.service_health_check_read(id=hc_uuid)
+        si_obj = self._vnc.service_instance_read(id=si_uuid)
+        hc_obj.add_service_instance(si_obj,ServiceInterfaceTag(interface_type=intf_type))
+        return self._vnc.service_health_check_update(hc_obj)
+
+    def disassoc_health_check_from_si(self, si_uuid, hc_uuid):
+        '''
+            :param si_uuid : UUID of the Service Instance object
+            :param hc_uuid : UUID of HealthCheck object
+        '''
+        hc_obj = self._vnc.service_health_check_read(id=hc_uuid)
+        si_obj = self._vnc.service_instance_read(id=si_uuid)
+        hc_obj.del_service_instance(si_obj)
+        return self._vnc.service_health_check_update(hc_obj)

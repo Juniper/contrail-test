@@ -1113,6 +1113,12 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         return nh
     # end get_nh_for_route_in_vrouter
 
+    def get_health_check(self, uuid):
+        hc_obj = self.dict_get('Snh_HealthCheckSandeshReq?uuid=%s'%uuid)
+        if hc_obj is None:
+           return None
+        return VnaHealthCheckResult(hc_obj)
+
 if __name__ == '__main__':
     v = AgentInspect('10.204.216.221')
     x = v.get_vrouter_route_table('4')

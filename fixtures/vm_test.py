@@ -767,6 +767,11 @@ class VMFixture(fixtures.Fixture):
         tap_intfs = inspect_h.get_vna_tap_interface_by_vm(vm_id=self.vm_id)
         return tap_intfs
 
+    def get_vmi_id(self, vn_fq_name):
+        vmi_ids = self.get_vmi_ids()
+        if vmi_ids and vn_fq_name in vmi_ids:
+            return vmi_ids[vn_fq_name]
+
     def get_vmi_ids(self, refresh=False):
         if not getattr(self, 'vmi_ids', None) or refresh:
             self.vmi_ids = dict()
