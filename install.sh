@@ -6,9 +6,9 @@ CONTRAIL_TEST_REPO=https://github.com/juniper/contrail-test
 CONTRAIL_TEST_REF=master
 CONTRAIL_FAB_REPO=https://github.com/juniper/contrail-fabric-utils
 CONTRAIL_FAB_REF=master
-CIRROS_IMAGE_URL=${CIRROS_IMAGE_URL:-http://10.204.216.50/images/converts/cirros-0.3.0-x86_64-disk.vmdk.gz}
-SVC_IN_NET_NAT_URL=${SVC_IN_NET_NAT_URL:-http://10.204.216.50/images/tinycore/tinycore-in-network-nat.qcow2.gz}
-SVC_IN_NET_URL=${SVC_IN_NET_URL:-http://10.204.216.50/images/tinycore/tinycore-in-network.qcow2.gz}
+CIRROS_IMAGE_URL=${CIRROS_IMAGE_URL:-http://10.84.5.120/cs-shared/images/converts/cirros-0.3.0-x86_64-disk.vmdk.gz}
+SVC_IN_NET_NAT_URL=${SVC_IN_NET_NAT_URL:-http://10.84.5.120/cs-shared/images/tinycore/tinycore-in-network-nat.qcow2.gz}
+SVC_IN_NET_URL=${SVC_IN_NET_URL:-http://10.84.5.120/cs-shared/images/tinycore/tinycore-in-network.qcow2.gz}
 BASE_DIR=`dirname $(readlink -f $0)`
 PACKAGES_REQUIRED_UBUNTU="python-pip ant python-novaclient python-neutronclient python-cinderclient \
     python-contrail python-glanceclient python-heatclient python-ceilometerclient python-setuptools contrail-utils \
