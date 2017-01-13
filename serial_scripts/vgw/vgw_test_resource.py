@@ -36,7 +36,7 @@ class SolnSetup(fixtures.Fixture):
     def setup_common_objects(self):
 
         self.project_fixture = self.useFixture(ProjectFixture(
-            vnc_lib_h=self.vnc_lib, project_name=self.inputs.project_name, connections=self.connections))
+            project_name=self.inputs.project_name, connections=self.connections))
         self.logger.info(
             'Default SG to be edited for allow all on project: %s' %
             self.inputs.project_name)

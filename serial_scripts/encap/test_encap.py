@@ -81,7 +81,6 @@ class TestEncapCases(base.BaseEncapTest):
 
             self.project_fixture = self.useFixture(
                 ProjectFixture(
-                    vnc_lib_h=self.vnc_lib,
                     project_name=self.inputs.project_name,
                     connections=self.connections))
             self.logger.info(
@@ -233,7 +232,6 @@ class TestEncapCases(base.BaseEncapTest):
 
             self.project_fixture = self.useFixture(
                 ProjectFixture(
-                    vnc_lib_h=self.vnc_lib,
                     project_name=self.inputs.project_name,
                     connections=self.connections))
             self.logger.info(
@@ -467,7 +465,6 @@ class TestEncapCases(base.BaseEncapTest):
 
             self.project_fixture = self.useFixture(
                 ProjectFixture(
-                    vnc_lib_h=self.vnc_lib,
                     project_name=self.inputs.project_name,
                     connections=self.connections))
             self.logger.info(
