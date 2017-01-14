@@ -135,6 +135,19 @@ select_image () {
     fi
 }
 
+make_entrypoint_tempest () {
+	#Function to generate a shell script, that will be used as an entry for tempest run
+cat <<EOF
+#!/bin/bash -x
+cd /tempest
+source testbed_env
+chmod +x tempest_run.sh
+/tempest/tempest_run.sh
+cp result*.xml ./logs
+cp build_id.txt ./logs
+EOF
+}
+
 docker_run () {
     # Volumes to be mounted to container
 
@@ -144,6 +157,12 @@ docker_run () {
         -v /etc/localtime:/etc/localtime:ro \
         -v /etc/hosts:/etc/hosts:ro"
 
+    #In case of tempest , mount the tempest directory
+    if [[ $tempest_dir ]]; then
+        arg_base_vol="$arg_base_vol -v $tempest_dir:/tempest"
+        mkdir -p $tempest_dir/logs
+        make_entrypoint_tempest > ${tempest_dir}/tempest_entrypoint.sh
+    fi
 
     if [[ -e $mount_local ]]; then
         mount_local=`readlink -f $mount_local`
@@ -194,7 +213,11 @@ docker_run () {
     if [[ $shell ]]; then
         arg_shell=" -it --entrypoint=/bin/bash "
     else
-        arg_shell=" --entrypoint=/entrypoint.sh "
+        if [[ $tempest_dir ]]; then
+            arg_shell=" --entrypoint=/tempest/tempest_entrypoint.sh "
+        else
+            arg_shell=" --entrypoint=/entrypoint.sh "
+        fi
     fi
 
     # Keep the container
@@ -296,6 +319,7 @@ $GREEN  -i, --use-ci-image              $NO_COLOR Use ci image, by default it wi
 $GREEN  -r, --rm	                    $NO_COLOR Remove the container on container exit, Default: Container will be kept.
 $GREEN  -b, --background                $NO_COLOR run the container in background
 $GREEN  -n, --no-color                  $NO_COLOR Disable output coloring
+$GREEN  -z, --tempest_dir TEMPEST DIR           $NO_COLOR Path to the tempest , where it is cloned
 $GREEN  -t, --testbed TESTBED           $NO_COLOR Path to testbed file in the host,
                                             Default: /opt/contrail/utils/fabfile/testbeds/testbed.py
 $GREEN  -j, --testbed-json TESTBED_JSON $NO_COLOR Optional testbed json file.
@@ -319,9 +343,10 @@ ${GREEN}Possitional Parameters:
 EOF
     }
 
-    while getopts "ibhf:t:p:sS:k:K:nrT:P:m:j:c:" flag; do
+    while getopts "ibhf:t:p:sS:k:K:nrT:P:m:j:c:z:" flag; do
         case "$flag" in
             t) testbed=$OPTARG;;
+            z) tempest_dir=$OPTARG;;
             j) testbed_json=$OPTARG;;
             P) params_file=$OPTARG;;
             f) feature=$OPTARG;;
