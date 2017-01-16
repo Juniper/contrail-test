@@ -1104,4 +1104,29 @@ class AnalyticsTestSanityWithResource(
                     self.logger.error("%s not shown in vn uve %s"%(elem,vn))
         return True
 
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_verify_contrail_logs_cli_command_not_broken(self):
+        '''1.Run command 'contrail-logs --object-type virtual-network'
+           2.Verify the command runs properly and its returning some output
+           3.Do not verify the correctness of the output
+        '''
+        cmd = 'contrail-logs --object-type virtual-network'
+        analytics = self.res.inputs.collector_ips[0]
+        output = self.res.inputs.run_cmd_on_server(analytics,cmd)
+        assert output.failed is False,'contrail-logs command failed..'
+        return True
+    
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_verify_contrail_stats_cli_command_not_broken(self):
+        '''1.Run command 'contrail-stats --table SandeshMessageStat.msg_info --select "SUM(msg_info.messages)" msg_info.type --sort "SUM(msg_info.messages)"'
+           2.Verify the command runs properly and its returning some output
+           3.Do not verify the correctness of the output
+        '''
+        cmd = 'contrail-stats --table SandeshMessageStat.msg_info --select "SUM(msg_info.messages)" msg_info.type --sort "SUM(msg_info.messages)"'
+        analytics = self.res.inputs.collector_ips[0]
+        output = self.res.inputs.run_cmd_on_server(analytics,cmd)
+        assert output.failed is False,'contrail-stats command failed..'
+        return True
 #End AnalyticsTestSanityWithResource        
