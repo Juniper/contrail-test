@@ -300,7 +300,9 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
         fat_flow_config = {'proto':proto,'port':dport}
         self.add_fat_flow_to_vmis([port1_obj['id'], port2_obj['id']], fat_flow_config)
 
-        self.config_aap(port1_obj, port2_obj, vIP)
+        port_list = [port1_obj, port2_obj]                                      
+        for port in port_list:                                                  
+            self.config_aap(port, vIP, mac=port['mac_address'])
         self.config_vrrp(vm1_fixture, vIP, '20')
         self.config_vrrp(vm2_fixture, vIP, '10')
         vrrp_master = vm1_fixture
