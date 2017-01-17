@@ -11,7 +11,7 @@ from vn_policy_test import VN_Policy_Fixture
 
 from tcutils.traffic_utils.scapy_traffic_gen import ScapyTraffic
 from tcutils.traffic_utils.traffic_analyzer import TrafficAnalyzer
-
+from tcutils.util import skip_because
 
 class TestQos(QosTestExtendedBase):
 
@@ -28,6 +28,7 @@ class TestQos(QosTestExtendedBase):
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    @skip_because(hypervisor='docker',msg='Bug 1654955')
     def test_qos_remark_dscp_on_vmi(self):
         ''' Create a qos config for remarking DSCP 1 to 10
             Have VMs A, B
