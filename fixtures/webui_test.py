@@ -6007,7 +6007,7 @@ class WebuiTest:
                         if isinstance(value, list):
                             value.pop(0)
                         new_value_list = []
-                        if len(value) > 1:
+                        if len(value):
                             for text in value:
                                 new_value = text.replace('-', '')
                                 new_value_list.append(new_value)
