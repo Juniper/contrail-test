@@ -59,7 +59,6 @@ class TestDiscoveryBasic(BaseDiscoveryTest):
             assert self.ds_obj.verify_bgp_connection(ip)
         return True
 
-    @test.attr(type=['sanity', 'ci_sanity', 'vcenter', 'suite1'])
     @preposttest_wrapper
     def test_webui_subscribed_to_apiserver_service(self):
         ''' Validate webui subscribed to apiserver service
@@ -69,7 +68,6 @@ class TestDiscoveryBasic(BaseDiscoveryTest):
         )
         return True
 
-    @test.attr(type=['sanity', 'ci_sanity', 'vcenter', 'suite1'])
     @preposttest_wrapper
     def test_webui_subscribed_to_opserver_service(self):
         ''' Validate webui subscribed to opserver service
