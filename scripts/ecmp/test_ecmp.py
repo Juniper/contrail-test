@@ -41,6 +41,7 @@ class TestECMPSanity(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
 
     @test.attr(type=['ci_sanity_WIP', 'sanity'])
     @preposttest_wrapper
+    @skip_because(feature='trans_svc')
     def test_ecmp_svc_transparent_with_3_instance(self):
         """
            Description: Validate ECMP with service chaining transparent mode datapath having service instance
@@ -961,12 +962,23 @@ class TestECMPSanityIPv6(TestECMPSanity):
         super(TestECMPSanityIPv6, cls).setUpClass()
         cls.inputs.set_af('v6')
 
+    def is_test_applicable(self):
+        if not self.connections.orch.is_feature_supported('ipv6'):
+            return(False, 'IPv6 tests not supported in this environment ')
+        return (True, None)
+
 class TestECMPFeatureIPv6(TestECMPFeature):
 
     @classmethod
     def setUpClass(cls):
         super(TestECMPFeatureIPv6, cls).setUpClass()
         cls.inputs.set_af('v6')
+
+    def is_test_applicable(self):
+        if not self.connections.orch.is_feature_supported('ipv6'):
+            return(False, 'IPv6 tests not supported in this environment ')
+        return (True, None)
+
 
 class TestECMPwithSVMChangeIPv6(TestECMPwithSVMChange):
 
@@ -975,9 +987,20 @@ class TestECMPwithSVMChangeIPv6(TestECMPwithSVMChange):
         super(TestECMPwithSVMChangeIPv6, cls).setUpClass()
         cls.inputs.set_af('v6')
 
+    def is_test_applicable(self):
+        if not self.connections.orch.is_feature_supported('ipv6'):
+            return(False, 'IPv6 tests not supported in this environment ')
+        return (True, None)
+
 class TestMultiInlineSVCIPv6(TestMultiInlineSVC):
 
     @classmethod
     def setUpClass(cls):
         super(TestMultiInlineSVCIPv6, cls).setUpClass()
         cls.inputs.set_af('v6')
+
+    def is_test_applicable(self):
+        if not self.connections.orch.is_feature_supported('ipv6'):
+            return(False, 'IPv6 tests not supported in this environment ')
+        return (True, None)
+

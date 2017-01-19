@@ -36,6 +36,7 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ConfigSvcChain, ECMPVerify)
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    @skip_because(feature='trans_svc')
     def test_svc_v2_transparent_datapath(self):
         return self.verify_svc_transparent_datapath(svc_mode='transparent', st_version=2)
 
@@ -46,6 +47,7 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ConfigSvcChain, ECMPVerify)
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    @skip_because(feature='trans_svc')
     def test_svc_transparent_with_3_instance(self):
         return self.verify_svc_transparent_datapath(si_count=3)
 
@@ -192,6 +194,11 @@ class TestSvcRegrIPv6(TestSvcRegr):
         super(TestSvcRegrIPv6, cls).setUpClass()
         cls.inputs.set_af('v6')
 
+    def is_test_applicable(self):
+        if not self.connections.orch.is_feature_supported('ipv6'):
+            return(False, 'IPv6 tests not supported in this environment ')
+        return (True, None)
+
     @preposttest_wrapper
     def test_svc_in_network_datapath(self):
         return self.verify_svc_in_network_datapath(svc_mode='in-network')
@@ -211,12 +218,22 @@ class TestSvcRegrFeatureIPv6(TestSvcRegrFeature):
         super(TestSvcRegrFeatureIPv6, cls).setUpClass()
         cls.inputs.set_af('v6')
 
+    def is_test_applicable(self):
+        if not self.connections.orch.is_feature_supported('ipv6'):
+            return(False, 'IPv6 tests not supported in this environment ')
+        return (True, None)
+
 class TestSvcRegrwithMirrorIPv6(TestSvcRegrwithMirror):
 
     @classmethod
     def setUpClass(cls):
         super(TestSvcRegrwithMirrorIPv6, cls).setUpClass()
         cls.inputs.set_af('v6')
+
+    def is_test_applicable(self):
+        if not self.connections.orch.is_feature_supported('ipv6'):
+            return(False, 'IPv6 tests not supported in this environment ')
+        return (True, None)
 
     @preposttest_wrapper
     def test_firewall_in_network_with_mirroring_transparent_mode(self):
