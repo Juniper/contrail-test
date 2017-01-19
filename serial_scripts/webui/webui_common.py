@@ -2514,7 +2514,10 @@ class WebuiCommon:
                 tool_tip[1].click()
                 self.click_element('configure-networkbtn1', browser=browser)
             elif type =='Ports':
-                tool_tip[2].click()
+                if option == 'subinterface':
+                    tool_tip[1].click()
+                else:
+                    tool_tip[2].click()
                 self.click_element('configure-Portsbtn1', browser=browser)
         self.wait_till_ajax_done(index)
     # end click_icon_cog
@@ -3099,64 +3102,11 @@ class WebuiCommon:
             value_arry = self.find_element(
                         'value', 'class', browser = rows_detail[detail]).text
             if key_arry == search_key:
+                key_arry = key_arry.replace(' ', '_')
                 dom_arry.append({'key': key_arry, 'value': value_arry})
                 break
         return dom_arry
     # get_ui_value
-
-    def edit_port_with_vn_port(self, option):
-        result = True
-        try:
-            self.edit_port_result = self.edit_remove_option(option, 'edit')
-            if self.edit_port_result:
-                vn_drop = self.find_element('virtualNetworkName_dropdown')
-                mode = vn_drop.get_attribute('data-bind')
-                vn_out = re.search('disable: true', mode)
-                port_disp_name = self.find_element('display_name', 'name')
-                port_mode = port_disp_name.get_attribute('data-bind')
-                port_out = re.search('disable: true', port_mode)
-                if vn_out and port_out:
-                    self.logger.info("Editing is failed for vn and port name as expected")
-                else:
-                    self.logger.error("Clicking the Edit Button is not working")
-                    result = result and False
-            else:
-                self.logger.error("There are no rows to edit")
-                result = result and False
-        except WebDriverException:
-            self.logger.error("Error while trying to edit %s" % (option))
-            self.screenshot(option)
-            result = result and False
-            raise
-        self.click_on_cancel_if_failure('cancelBtn')
-        return result
-    # edit_port_with_vn_port
-
-    def edit_port_with_sec_group(self, option, port_name, sg_list):
-        result = True
-        try:
-            self.edit_port_result = self.edit_remove_option(option, 'edit',
-                                                           display_name=port_name)
-            if self.edit_port_result:
-                for sg in sg_list:
-                    self.click_element('s2id_securityGroupValue_dropdown')
-                    if not self.select_from_dropdown(sg, grep=False):
-                        result = result and False
-                    self.wait_till_ajax_done(self.browser, wait=3)
-                self.click_on_create(option.strip('s'),
-                                    option.strip('s').lower(), save=True)
-                self.wait_till_ajax_done(self.browser)
-            else:
-                self.logger.error("Clicking the Edit Button is not working")
-                result = result and False
-        except WebDriverException:
-            self.logger.error("Error while trying to edit %s" % (option))
-            self.screenshot(option)
-            result = result and False
-            self.click_on_cancel_if_failure('cancelBtn')
-            raise
-        return result
-    # edit_port_with_sec_group
 
     def format_sec_group_name(self, sec_group_list, project_name):
         self.format_sec_group_list = []
@@ -3170,3 +3120,18 @@ class WebuiCommon:
             self.format_sec_group_list.append(sec_group)
         return self.format_sec_group_list
     # format_sec_group_name
+
+    def negative_test_proc(self, option):
+        result = True
+        warn_button = self.find_element('alert-error', 'class')
+        if warn_button.get_attribute('style') == "":
+            form_error =  option + "_form_error"
+            span = "//span[contains(@data-bind, " + form_error + ")]"
+            error = self.find_element(span, 'xpath')
+            self.logger.info("Getting %s error message while saving" % (error.text))
+            self.click_on_cancel_if_failure('cancelBtn')
+            self.wait_till_ajax_done(self.browser)
+            return result
+        else:
+            return result and False
+    # negative_test_proc
