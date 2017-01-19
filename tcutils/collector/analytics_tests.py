@@ -3104,7 +3104,7 @@ class AnalyticsVerification(fixtures.Fixture):
                         return False
                     for type_alarms in type_alarms_list:
                         #print type_alarms['type']
-                        if type_alarms['type'] == alarm_type:
+                        if type_alarms['type'] == 'system-defined-' + alarm_type:
                             if not clear:
                                 self.logger.info("%s alarms generated" % alarm_type)
                             if not service:
