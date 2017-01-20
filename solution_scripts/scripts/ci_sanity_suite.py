@@ -50,10 +50,11 @@ if __name__ == "__main__":
     suite.addTest(TestVMVN('test_vm_file_trf_scp_tests'))
     suite.addTest(TestSanity('test_remove_policy_with_ref'))
     suite.addTest(TestSanityFixture('test_project_add_delete'))
-    suite.addTest(
-        TestDiscoveryFixture('test_agent_gets_control_nodes_from_discovery'))
-    suite.addTest(
-        TestDiscoveryFixture('test_control_nodes_subscribed_to_ifmap_service'))
+    # Commented 4 test cases below as discovery will change from R4.0-Bug 1658035 
+    #suite.addTest(
+    #    TestDiscoveryFixture('test_agent_gets_control_nodes_from_discovery'))
+    #suite.addTest(
+    #    TestDiscoveryFixture('test_control_nodes_subscribed_to_ifmap_service'))
     suite.addTest(
         TestSanityFixture('test_process_restart_with_multiple_vn_vm'))
     suite.addTest(TestSanityFixture('test_metadata_service'))

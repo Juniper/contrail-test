@@ -35,7 +35,7 @@ class TestDiscovery(BaseDiscoveryTest):
             assert self.ds_obj.verify_agents_connected_to_dns_service(ip)
         return True
 
-    @test.attr(type=['sanity', 'vcenter'])
+    #@test.attr(type=['sanity', 'vcenter']) # Disabling discovery sanity run due to changes in R4.0-Bug 1658035 
     @preposttest_wrapper
     def test_agents_connected_to_collector_service(self):
         '''
@@ -126,7 +126,7 @@ class TestDiscovery(BaseDiscoveryTest):
         resp = self.ds_obj.cleanup_service_from_discovery(self.inputs.cfgm_ip)
         return True
 
-    @test.attr(type=['sanity', 'vcenter'])
+    #@test.attr(type=['sanity', 'vcenter']) # Disabling discovery sanity run due to changes in R4.0-Bug 1658035 
     @preposttest_wrapper
     def test_control_nodes_subscribed_to_ifmap_service(self):
         '''

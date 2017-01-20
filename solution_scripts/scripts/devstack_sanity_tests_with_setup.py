@@ -46,15 +46,15 @@ if __name__ == "__main__":
     print "\nTest Log File : %s" % (inputs.log_file)
     suite = unittest.TestSuite()
     test_result = unittest.TestResult()
-
-    suite.addTest(TestDiscoveryFixture(
-        'test_all_publishers_registered_to_discovery_service'))
-    suite.addTest(
-        TestDiscoveryFixture('test_agent_gets_control_nodes_from_discovery'))
-    suite.addTest(
-        TestDiscoveryFixture('test_control_nodes_subscribed_to_ifmap_service'))
-    suite.addTest(
-        TestDiscoveryFixture('test_agents_connected_to_collector_service'))
+    # Commented 4 test cases below as discovery will change from R4.0-Bug 1658035 
+    #suite.addTest(TestDiscoveryFixture(
+    #    'test_all_publishers_registered_to_discovery_service'))
+    #suite.addTest(
+    #    TestDiscoveryFixture('test_agent_gets_control_nodes_from_discovery'))
+    #suite.addTest(
+    #    TestDiscoveryFixture('test_control_nodes_subscribed_to_ifmap_service'))
+    #suite.addTest(
+    #    TestDiscoveryFixture('test_agents_connected_to_collector_service'))
 
     suite.addTest(TestSanity('test_vn_add_delete'))
     suite.addTest(TestSanity('test_vm_add_delete'))
