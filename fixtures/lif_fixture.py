@@ -75,7 +75,7 @@ class LogicalInterfaceFixture(vnc_api_test.VncLibFixture):
 
     def create_lif(self):
         self.logger.info('Creating Logical port %s' % (self.fq_name))
-        lif_obj = vnc_api_test.LogicalInterface(name=self.name,
+        lif_obj = vnc_api_test.LogicalInterface(name=self.name.replace(':', '__'),
                                    parent_obj=self.pif_obj,
                                    display_name=self.name)
         lif_obj.set_logical_interface_vlan_tag(self.vlan_id)

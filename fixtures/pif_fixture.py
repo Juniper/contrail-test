@@ -63,7 +63,7 @@ class PhysicalInterfaceFixture(vnc_api_test.VncLibFixture):
     def create_pif(self):
         self.logger.info('Creating physical port %s:' % (
             self.fq_name))
-        pif_obj = vnc_api_test.PhysicalInterface(name=self.name,
+        pif_obj = vnc_api_test.PhysicalInterface(name=self.name.replace(':', '__'),
                                     parent_obj=self.device_obj,
                                     display_name=self.name)
         self.uuid = self.vnc_api_h.physical_interface_create(pif_obj)
