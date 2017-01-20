@@ -32,6 +32,10 @@ class TestBMSNegative(BaseTorTest):
 
     @preposttest_wrapper
     def test_vmi_delete_when_lif_bound(self):
+        '''
+           Verify port should not be allowed to delete when it is
+           still attached to LIF
+        '''
         result = True
         vn1_fixture = self.create_vn()
         port_fixture = self.setup_vmi(vn1_fixture.uuid)

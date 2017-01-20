@@ -294,6 +294,9 @@ class TestTor(BaseTorTest):
 
     @preposttest_wrapper
     def test_two_vmis_on_lif(self):
+        ''' 
+            Test multiple VMI on same logical interface 
+        '''
         vn1_fixture = self.create_vn(disable_dns=True)
 
         # BMS VMI
@@ -891,7 +894,10 @@ class TestExtendedBMSInterVN(TwoToROneRouterBase):
 
     @preposttest_wrapper
     def test_routing_with_tor_agent_restarts(self):
-
+        ''' 
+            Verify reachability between 2 BMS restored after restart
+            of contrail tor agent service. 
+        '''  
         tor_agent_dicts = self.tor1_fixture.get_tor_agents_details()
         for tor_agent_dict in tor_agent_dicts:
             tor_agent_service = 'contrail-tor-agent-%s' % (
@@ -905,6 +911,10 @@ class TestExtendedBMSInterVN(TwoToROneRouterBase):
             
     @preposttest_wrapper
     def test_routing_with_ovs_restarts(self):
+        ''' 
+            Verify reachability between 2 BMS restored after restart
+            of ovs  service. 
+        '''
         self.tor1_fixture.restart_ovs()
         self.do_reachability_checks()
         self.tor2_fixture.restart_ovs()
@@ -979,6 +989,12 @@ class TestBMSWithExternalDHCPServer(TwoToROneRouterBase):
 
     @preposttest_wrapper
     def test_dhcp_behavior(self):
+        ''' 
+            Verify BMS can get IP from external DHCP serverm when DHCP 
+            service is diabled in VN.
+            Verify communication between BMS is successful when it got
+            IP from external DHCP server. 
+        '''
         self.setup_tor_port(self.tor1_fixture, port_index=0,
             vmi_objs=[self.vn1_vmi1_fixture])
         self.setup_tor_port(self.tor2_fixture, port_index=0,
@@ -999,6 +1015,10 @@ class TestBMSWithExternalDHCPServer(TwoToROneRouterBase):
 
     @preposttest_wrapper
     def test_dhcp_forwarding_with_dhcp_disabled(self):
+        '''
+            Verify when DHCP service is diabled in VN, TSN floods the
+            DHCP request and it reecahes all the end host. 
+        '''
         self.setup_tor_port(self.tor1_fixture, port_index=0,
             vmi_objs=[self.vn1_vmi1_fixture])
         self.setup_tor_port(self.tor2_fixture, port_index=0,
