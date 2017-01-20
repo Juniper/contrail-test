@@ -55,10 +55,11 @@ def preposttest_wrapper(function):
         testskip = None
         try:
             # check state of the connections.
-            if not self.inputs.verify_control_connection(
-                    connections=self.connections):
-                log.warn("Pre-Test validation failed.."
-                         " Skipping test %s" % (function.__name__))
+            # Commenting below 4 lines due to discovery changes in R4.0 - Bug 1658035
+            #if not self.inputs.verify_control_connection(
+            #        connections=self.connections):
+            #    log.warn("Pre-Test validation failed.."
+            #             " Skipping test %s" % (function.__name__))
       #WA for bug 1362020 
       #          assert False, "Test did not run since Pre-Test validation failed\
       #                         due to BGP/XMPP connection issue"

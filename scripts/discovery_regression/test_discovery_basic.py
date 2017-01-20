@@ -25,7 +25,7 @@ class TestDiscoveryBasic(BaseDiscoveryTest):
         pass
     # end runTest
 
-    @test.attr(type=['sanity', 'ci_sanity', 'vcenter', 'suite1'])
+    #@test.attr(type=['sanity', 'ci_sanity', 'vcenter', 'suite1']) # Disabling discovery sanity run due to changes in R4.0-Bug 1658035 
     @preposttest_wrapper
     def test_all_publishers_registered_to_discovery_service(self):
         '''
@@ -44,7 +44,7 @@ class TestDiscoveryBasic(BaseDiscoveryTest):
         return True
 
 
-    @test.attr(type=['sanity', 'ci_sanity', 'vcenter', 'suite1'])
+    #@test.attr(type=['sanity', 'ci_sanity', 'vcenter', 'suite1']) # Disabling discovery sanity run due to changes in R4.0-Bug 1658035 
     @preposttest_wrapper
     def test_agent_gets_control_nodes_from_discovery(self):
         '''
