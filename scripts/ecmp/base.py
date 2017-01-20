@@ -9,11 +9,12 @@ class BaseECMPTest(test_v1.BaseTestCase_v1):
         super(BaseECMPTest, cls).setUpClass()
         cls.quantum_h= cls.connections.quantum_h
         cls.nova_h = cls.connections.nova_h
-        cls.vnc_lib= cls.connections.vnc_lib
-        cls.agent_inspect= cls.connections.agent_inspect
-        cls.cn_inspect= cls.connections.cn_inspect
-        cls.analytics_obj=cls.connections.analytics_obj
-    #end setUpClass
+        cls.vnc_lib = cls.connections.vnc_lib
+        cls.agent_inspect = cls.connections.agent_inspect
+        cls.orch = cls.connections.orch
+        cls.cn_inspect = cls.connections.cn_inspect
+        cls.analytics_obj = cls.connections.analytics_obj
+    # end setUpClass
 
     @classmethod
     def tearDownClass(cls):
