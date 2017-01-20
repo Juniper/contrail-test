@@ -183,6 +183,18 @@ class sdn_webui_config ():
                         'management', False, False], [
                         'left', False, False], [
                         'right', False, False]], 'svc_template': 'tcp_svc_template', 'left_vn': None, 'right_vn': None}}
+        
+        # define service health check
+        self.shc_list = ['svc_health_check1']
+        self.shc_params = {
+            'svc_health_check1': {
+                'probe_type': 'PING',
+                'http_url': 'local-ip',
+                'delay': 3,
+                'timeout': 5,
+                'max_retries': 2,
+                'hc_type': 'link-local'}}
+        
         # Define VM's
         # VM distribution on available compute nodes is handled by nova
         # scheduler or contrail vm naming scheme
