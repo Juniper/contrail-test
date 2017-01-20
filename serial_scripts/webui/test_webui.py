@@ -148,6 +148,14 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_associate_floating_ips
 
+    @preposttest_wrapper
+    def test2_7_create_svc_health_check(self):
+        '''UI Config : Networking -> Services -> Health Check : Test svc health check creation
+        '''
+        assert self.res.setup_obj.create_svc_health_check(), 'Creation of health check failed'
+        return True
+    # end test_create_svc_health_check
+
     # UI verification tests
 
     @preposttest_wrapper

@@ -183,6 +183,18 @@ class sdn_webui_config ():
                         'management', False, False], [
                         'left', False, False], [
                         'right', False, False]], 'svc_template': 'tcp_svc_template', 'left_vn': None, 'right_vn': None}}
+
+        # define service health check
+        self.shc_list = ['svc_health_check1']
+        self.shc_params = {
+            'svc_health_check1': {
+                'probe_type': 'PING',
+                'http_url': 'local-ip',
+                'delay': 3,
+                'timeout': 5,
+                'max_retries': 2,
+                'hc_type': 'link-local'}}
+
         # Define VM's
         # VM distribution on available compute nodes is handled by nova
         # scheduler or contrail vm naming scheme
@@ -192,7 +204,7 @@ class sdn_webui_config ():
         # Define FIP pool
         self.fip_pools = {project: {
             'p1-vn3-pool1': {'host_vn': 'vnet3', 'target_projects': [project]}}}
-          
+
         # Define VN to VM mappings for each of the floating ip pools to be
         # created.
         self.fvn_vm_map = {project: {
