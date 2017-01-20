@@ -491,6 +491,50 @@ class WebuiTest:
         return result
     # end create_svc_instance
 
+    def create_svc_health_check(self, fixture):
+        result = True
+        try:
+            if not self.ui.click_on_create(
+                    'Health Check Service',
+                    'service_health_check',
+                    fixture.name,
+                    prj_name=fixture.project_name):
+                result = result and False
+            self.ui.send_keys(fixture.name, 'name', 'name')
+            self.ui.click_element([
+                's2id_monitor_type_dropdown', 'select2-choice'], [
+                    'id', 'class'])
+            self.ui.select_from_dropdown(fixture.probe_type)
+            url_browser = self.ui.find_element(['url_path', 'input-group-addon'], [
+                'id', 'class'])
+            self.ui.click_on_caret_down(browser=url_browser)
+            self.ui.find_select_from_dropdown(fixture.http_url)
+            self.ui.send_keys(fixture.delay, 'delay', 'name', clear=True)
+            self.ui.send_keys(fixture.timeout, 'timeout', 'name', clear=True)
+            self.ui.send_keys(fixture.max_retries, 'max_retries', 'name', clear=True)
+            self.ui.click_element([
+                's2id_health_check_type_dropdown', 'select2-choice'], [
+                    'id', 'class'])
+            self.ui.select_from_dropdown(fixture.hc_type.title())
+            if not self.ui.click_on_create('Health Check Service',
+                    'HealthCheckServices', save=True):
+                result = result and False
+            rows_detail = self.ui.click_basic_and_get_row_details(
+                'service_health_check', 0)[1]
+            fixture.uuid = self.ui.get_value_of_key(rows_detail, 'UUID')
+            self.logger.info("Running verify_on_setup..")
+            fixture.verify_on_setup()
+        except WebDriverException:
+            self.logger.error(
+                "Error while creating svc health check %s" %
+                (fixture.name))
+            self.ui.screenshot("svc health check creation failed")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            result = result and False
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end create_svc_health_check
+
     def create_ipam(self, fixture):
         result = True
         ip_blocks = False
@@ -3861,6 +3905,10 @@ class WebuiTest:
             return False
         return True
     # end delete_policy_in_webui
+
+    def delete_svc_health_check(self, fixture):
+        self.ui.delete_element(fixture, 'svc_health_check_delete')
+    # end svc_health_check_delete
 
     def delete_svc_instance(self, fixture):
         self.ui.delete_element(fixture, 'svc_instance_delete')
