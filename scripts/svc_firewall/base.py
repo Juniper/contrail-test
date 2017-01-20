@@ -14,6 +14,7 @@ class BaseSvc_FwTest(test_v1.BaseTestCase_v1):
         cls.agent_inspect= cls.connections.agent_inspect
         cls.cn_inspect= cls.connections.cn_inspect
         cls.analytics_obj=cls.connections.analytics_obj
+        cls.orch = cls.connections.orch
         if cls.inputs.admin_username:
             public_creds = cls.admin_isolated_creds
         else:
