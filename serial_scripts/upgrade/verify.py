@@ -11,7 +11,7 @@ from tcutils.topo.sdn_topo_setup import sdnTopoSetupFixture
 from sdn_topo_with_multi_project import *
 from common.servicechain.config import ConfigSvcChain
 from common.servicechain.verify import VerifySvcChain
-from scripts.securitygroup.config import ConfigSecGroup
+from common.securitygroup.config import ConfigSecGroup
 from common.neutron.base import BaseNeutronTest
 from common.neutron.lbaas.base import BaseTestLbaas
 from tcutils import get_release
@@ -21,7 +21,6 @@ from nova_test import NovaHelper
 from tcutils.commands import *
 from tcutils.util import *
 from fabric.state import connections
-from scripts.securitygroup.config import ConfigSecGroup
 
 class BaseResource(ConfigSvcChain, VerifySvcChain, BaseTestLbaas, BaseNeutronTest):
 
