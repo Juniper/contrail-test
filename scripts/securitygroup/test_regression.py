@@ -24,6 +24,7 @@ from tcutils.util import get_random_name
 from base_traffic import *
 from tcutils.util import skip_because
 import test_regression_basic
+from sdn_sg_test_topo import get_sg_rule 
 
 AF_TEST = 'v6'
 
@@ -401,11 +402,13 @@ class SecurityGroupRegressionTests4(BaseSGTest, VerifySecGroup, ConfigPolicy):
                 username=self.project.username,
                 password=self.project.password,
                 compute_node_list=self.connections.orch.get_hosts(),
-                config_option=self.option)
+                config_option=self.option,
+                af_test=self.inputs.get_af())
         except (AttributeError, NameError):
             topo = topology_class_name(
                 compute_node_list=self.connections.orch.get_hosts(),
-                config_option=self.option)
+                config_option=self.option,
+                af_test=self.inputs.get_af())
 
         #
         # Test setup: Configure policy, VN, & VM
@@ -660,7 +663,7 @@ class SecurityGroupRegressionTests6(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         self.logger.info("Scenario for the test used is: %s" %
                          (topology_class_name))
-        topo = topology_class_name()
+        topo = topology_class_name(af_test=self.inputs.get_af())
         try:
             # provided by wrapper module if run in parallel test env
             topo.build_topo_sg_stateful(
@@ -690,61 +693,6 @@ class SecurityGroupRegressionTests6(BaseSGTest, VerifySecGroup, ConfigPolicy):
     # end test_sg_stateful
 
     @preposttest_wrapper
-    @skip_because(feature='multi-tenant')
-    def test_sg_multiproject(self):
-        """
-        Description: Test SG across projects
-        Steps:
-            1. define the topology for the test
-            2. create the resources as defined in the topo
-            3. verify the traffic
-        Pass criteria: step 3 should pass
-        """
-
-        topology_class_name = None
-
-        result = True
-        msg = []
-        if not topology_class_name:
-            topology_class_name = sdn_sg_test_topo.sdn_topo_config_multiproject
-
-        self.logger.info("Scenario for the test used is: %s" %
-                         (topology_class_name))
-
-        topo = topology_class_name()
-        self.topo = topo
-
-        #
-        # Test setup: Configure policy, VN, & VM
-        # return {'result':result, 'msg': err_msg, 'data': [self.topo, config_topo]}
-        # Returned topo is of following format:
-        # config_topo= {'policy': policy_fixt, 'vn': vn_fixture, 'vm': vm_fixture}
-        topo_objs = {}
-        config_topo = {}
-        setup_obj = self.useFixture(
-            sdnTopoSetupFixture(self.connections, topo))
-        out = setup_obj.sdn_topo_setup(config_option=self.option)
-        self.assertEqual(out['result'], True, out['msg'])
-        if out['result']:
-            topo_objs, config_topo, vm_fip_info = out['data']
-
-        secgrp_fq_name = ':'.join(['default-domain',
-                                   self.inputs.admin_tenant,
-                                   'default'])
-        sg_id = get_secgrp_id_from_name(
-            self.connections,
-            secgrp_fq_name)
-        assert set_default_sg_rules(self.connections, sg_id,
-                                    remote_sg=secgrp_fq_name)
-        self.start_traffic_and_verify_multiproject(
-            topo_objs,
-            config_topo,
-            traffic_reverse=False)
-
-        return True
-    # end test_sg_multiproject
-
-    @preposttest_wrapper
     @skip_because(feature='multi-subnet')
     def test_sg_no_rule(self):
         """
@@ -767,7 +715,7 @@ class SecurityGroupRegressionTests6(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         self.logger.info("Scenario for the test used is: %s" %
                          (topology_class_name))
-        topo = topology_class_name()
+        topo = topology_class_name(af_test=self.inputs.get_af())
         try:
             # provided by wrapper module if run in parallel test env
             topo.build_topo(
@@ -835,7 +783,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         self.logger.info("Scenario for the test used is: %s" %
                          (topology_class_name))
-        topo = topology_class_name()
+        topo = topology_class_name(af_test=self.inputs.get_af())
         try:
             # provided by wrapper module if run in parallel test env
             topo.build_topo(
@@ -870,82 +818,70 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         else:
             src_vn_fq_name = ':'.join(src_vn_fix._obj.get_fq_name())
 
+        if self.inputs.get_af() == 'v4':
+            #icmp type 3 code 3, port unreachable
+            filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (
+                dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        elif self.inputs.get_af() == 'v6':
+            #icmp6 type 1 code 4, port unreachable
+            filters = '\'(icmp6 and ip6[40]=1 and ip6[41]=4 and src host %s and dst host %s)\'' % (
+                dst_vm_fix.vm_ip, src_vm_fix.vm_ip) 
+
         # start tcpdump on src VM
-        filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (
-            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
         session, pcap = start_tcpdump_for_vm_intf(
             self, src_vm_fix, src_vn_fq_name, filters=filters)
         # start traffic
-        sender, receiver = self.start_traffic_scapy(
-            src_vm_fix, dst_vm_fix, 'udp', port, port, recvr=False)
+        assert self.send_nc_traffic(
+            src_vm_fix, dst_vm_fix, port, port, 'udp', receiver=False)
 
         # verify packet count and stop tcpdump
         assert verify_tcpdump_count(self, session, pcap)
-        # stop traffic
-        sent, recv = self.stop_traffic_scapy(sender, receiver, recvr=False)
 
         # Test with SG rule, ingress-egress-udp only
-        rule = [{'direction': '>',
-                 'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_addresses': [{'security_group': 'local'}],
-                 },
-                {'direction': '>',
-                 'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_addresses': [{'security_group': 'local'}],
-                 }]
+        rule = [get_sg_rule('egress',af=self.inputs.get_af(), 
+            proto='udp'),
+                get_sg_rule('ingress',af=self.inputs.get_af(), 
+            proto='udp')
+                 ]
         config_topo['sec_grp'][topo_obj.sg_list[0]].replace_rules(rule)
 
         # start tcpdump on src VM
-        filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (
-            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
         session, pcap = start_tcpdump_for_vm_intf(
             self, src_vm_fix, src_vn_fq_name, filters=filters)
         # start traffic
-        sender, receiver = self.start_traffic_scapy(
-            src_vm_fix, dst_vm_fix, 'udp', port, port, recvr=False)
+        assert self.send_nc_traffic(                                            
+            src_vm_fix, dst_vm_fix, port, port, 'udp', receiver=False)
 
         # verify packet count and stop tcpdump
         assert verify_tcpdump_count(self, session, pcap)
-        # stop traffic
-        sent, recv = self.stop_traffic_scapy(sender, receiver, recvr=False)
 
         # Test with SG rule, ingress-egress-all
         dst_vm_fix = config_topo['vm']['vm2']
-        rule = [{'direction': '>',
-                 'protocol': 'any',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_addresses': [{'security_group': 'local'}],
-                 },
-                {'direction': '>',
-                 'protocol': 'any',
-                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_addresses': [{'security_group': 'local'}],
-                 }]
+        rule = [get_sg_rule('egress',af=self.inputs.get_af(),                   
+            proto='any'),
+                get_sg_rule('ingress',af=self.inputs.get_af(),                   
+            proto='any')
+                 ]
         config_topo['sec_grp'][topo_obj.sg_list[0]].replace_rules(rule)
 
         # start tcpdump on src VM
-        filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (
-            dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+        if self.inputs.get_af() == 'v4':                                        
+            #icmp type 3 code 3, port unreachable                               
+            filters = '\'(icmp[0]=3 and icmp[1]=3 and src host %s and dst host %s)\'' % (
+                dst_vm_fix.vm_ip, src_vm_fix.vm_ip)                             
+        elif self.inputs.get_af() == 'v6':                                      
+            #icmp6 type 1 code 4, port unreachable                              
+            filters = '\'(icmp6 and ip6[40]=1 and ip6[41]=4 and src host %s and dst host %s)\'' % (
+                dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+
         session, pcap = start_tcpdump_for_vm_intf(
             self, src_vm_fix, src_vn_fq_name, filters=filters)
         # start traffic
-        sender, receiver = self.start_traffic_scapy(
-            src_vm_fix, dst_vm_fix, 'udp', port, port, recvr=False)
+        assert self.send_nc_traffic(                                            
+            src_vm_fix, dst_vm_fix, port, port, 'udp', receiver=False)
 
         # verify packet count and stop tcpdump
         assert verify_tcpdump_count(self, session, pcap)
-        # stop traffic
-        sent, recv = self.stop_traffic_scapy(sender, receiver, recvr=False)
 
         return True
     # end test_icmp_error_handling1
@@ -1076,6 +1012,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         vm2_name = 'dest_vm'
         #vm1_fixture = self.config_vm(vn1_fixture, vm1_name)
         #vm2_fixture = self.config_vm(vn2_fixture, vm2_name)
+        af_old = self.inputs.get_af()
         self.inputs.set_af('dual')
         vm1_fixture = self.useFixture(
             VMFixture(
@@ -1198,7 +1135,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
 #            output = vm1_fixture.run_cmd_on_vm(cmds='rm /tmp/op.log', as_sudo=True)
             return False
         stop_tcpdump_for_vm_intf(self, session, pcap)
-
+        self.inputs.set_af(af_old)
         return True
         # end test_icmp_error_handling2
 
@@ -1422,8 +1359,6 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
             sender, receiver = self.start_traffic_scapy(
                 dst_vm_fix, src_vm_fix, 'icmp', port, port, payload="payload", icmp_type=icmp_type, icmp_code=icmp_code, count=pkt_cnt)
             sent, recv = self.stop_traffic_scapy(sender, receiver)
-            assert sent != 0, "sent count is ZERO for icmp type %s and code %s" % (
-                icmp_type, icmp_code)
             # verify packet count and stop tcpdump
             assert verify_tcpdump_count(
                 self, session, pcap, exp_count=0), "pkt count in tcpdump is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
@@ -1439,8 +1374,6 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
             sender, receiver = self.start_traffic_scapy(
                 dst_vm_fix, src_vm_fix, 'icmp', port, port, payload="payload", icmp_type=icmp_type, icmp_code=icmp_code, count=pkt_cnt)
             sent, recv = self.stop_traffic_scapy(sender, receiver)
-            assert sent != 0, "sent count is ZERO for icmp type %s and code %s" % (
-                icmp_type, icmp_code)
             # verify packet count and stop tcpdump
             assert verify_tcpdump_count(
                 self, session, pcap, exp_count=0), "pkt count in tcpdump is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
@@ -1456,8 +1389,6 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
             sender, receiver = self.start_traffic_scapy(
                 dst_vm_fix, src_vm_fix, 'icmp', port, port, payload="payload", icmp_type=icmp_type, icmp_code=icmp_code, count=pkt_cnt)
             sent, recv = self.stop_traffic_scapy(sender, receiver)
-            assert sent != 0, "sent count is ZERO for icmp type %s and code %s" % (
-                icmp_type, icmp_code)
             # verify packet count and stop tcpdump
             assert verify_tcpdump_count(
                 self, session, pcap, exp_count=0), "pkt count in tcpdump is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
@@ -1473,8 +1404,6 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
             sender, receiver = self.start_traffic_scapy(
                 dst_vm_fix, src_vm_fix, 'icmp', port, port, payload="payload", icmp_type=icmp_type, icmp_code=icmp_code, count=pkt_cnt)
             sent, recv = self.stop_traffic_scapy(sender, receiver)
-            assert sent != 0, "sent count is ZERO for icmp type %s and code %s" % (
-                icmp_type, icmp_code)
             # verify packet count and stop tcpdump
             assert verify_tcpdump_count(
                 self, session, pcap, exp_count=0), "pkt count in tcpdump is not ZERO for icmp type %s and code %s" % (icmp_type, icmp_code)
@@ -1514,7 +1443,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         """
 
         topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
-        topo = topology_class_name()
+        topo = topology_class_name(af_test=self.inputs.get_af())
         try:
             # provided by wrapper module if run in parallel test env
             topo.build_topo(
@@ -1551,10 +1480,9 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
                       'default']))
 
         # test with default SG
-        traffic_obj = BaseTraffic.factory(proto=proto)
-        assert traffic_obj
-        assert traffic_obj.start(src_vm_fix, dst_vm_fix,
-                                 proto, port, port)
+        assert self.send_nc_traffic(
+            src_vm_fix, dst_vm_fix, port, port, proto)
+
 
         assert self.verify_flow_to_sg_rule_mapping(
             src_vm_fix,
@@ -1564,7 +1492,6 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
             default_secgrp_id,
             proto,
             port)
-        sent, recv = traffic_obj.stop()
 
         # test with user-defined SG
         sg_name = topo_obj.sg_list[0]
@@ -1579,10 +1506,8 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         src_vm_fix.add_security_group(secgrp=secgrp_id)
         dst_vm_fix.add_security_group(secgrp=secgrp_id)
 
-        traffic_obj = BaseTraffic.factory(proto=proto)
-        assert traffic_obj
-        assert traffic_obj.start(src_vm_fix, dst_vm_fix,
-                                 proto, port, port)
+        assert self.send_nc_traffic(
+            src_vm_fix, dst_vm_fix, port, port, proto)
 
         assert self.verify_flow_to_sg_rule_mapping(
             src_vm_fix,
@@ -1592,7 +1517,6 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
             secgrp_id,
             proto,
             port)
-        sent, recv = traffic_obj.stop()
 
         return True
     # end test_flow_to_sg_rule_mapping
@@ -1612,7 +1536,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         """
 
         topology_class_name = sdn_sg_test_topo.sdn_topo_flow_to_sg_rule_mapping
-        topo = topology_class_name()
+        topo = topology_class_name(af_test=self.inputs.get_af())
         try:
             # provided by wrapper module if run in parallel test env
             topo.build_topo2(
@@ -1643,16 +1567,15 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
 
         # start traffic
-        traffic_obj_udp = BaseTraffic.factory(proto='udp')
-        assert traffic_obj_udp
-        assert traffic_obj_udp.start(src_vm_fix, dst_vm_fix,
-                                     'udp', port, port)
-        traffic_obj_tcp = BaseTraffic.factory(proto='tcp')
-        assert traffic_obj_tcp
-        assert traffic_obj_tcp.start(src_vm_fix, dst_vm_fix,
-                                     'tcp', port, port)
-        sender_icmp, receiver_icmp = self.start_traffic_scapy(
-            src_vm_fix, dst_vm_fix, 'icmp', port, port, payload="payload")
+        assert self.send_nc_traffic(                                            
+            src_vm_fix, dst_vm_fix, port, port, 'udp')
+        if self.inputs.get_af() == 'v4':
+            traffic_obj_tcp = BaseTraffic.factory(proto='tcp')
+            assert traffic_obj_tcp
+            assert traffic_obj_tcp.start(src_vm_fix, dst_vm_fix,
+                'tcp', port, port)    
+            sender_icmp, receiver_icmp = self.start_traffic_scapy(
+                src_vm_fix, dst_vm_fix, 'icmp', port, port, payload="payload")
 
         sg_name = topo_obj.sg_list[0]
         secgrp_id = get_secgrp_id_from_name(
@@ -1677,36 +1600,35 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
                       self.inputs.project_name,
                       sg_name]))
 
-        assert self.verify_flow_to_sg_rule_mapping(
-            src_vm_fix,
-            dst_vm_fix,
-            src_vn_fix,
-            dst_vn_fix,
-            secgrp_id,
-            'tcp',
-            port)
+        if self.inputs.get_af() == 'v4':
+            assert self.verify_flow_to_sg_rule_mapping(                             
+                src_vm_fix,                                                         
+                dst_vm_fix,                                                         
+                src_vn_fix,                                                         
+                dst_vn_fix,                                                         
+                secgrp_id,                                                          
+                'tcp',                                                              
+                port)
 
-        port = 0
-        sg_name = topo_obj.sg_list[0]
-        secgrp_id = get_secgrp_id_from_name(
-            self.connections,
-            ':'.join([self.inputs.domain_name,
-                      self.inputs.project_name,
-                      sg_name]))
+            port = 0
+            sg_name = topo_obj.sg_list[0]
+            secgrp_id = get_secgrp_id_from_name(
+                self.connections,
+                ':'.join([self.inputs.domain_name,
+                          self.inputs.project_name,
+                          sg_name]))
 
-        assert self.verify_flow_to_sg_rule_mapping(
-            src_vm_fix,
-            dst_vm_fix,
-            src_vn_fix,
-            dst_vn_fix,
-            secgrp_id,
-            'icmp',
-            port)
+            assert self.verify_flow_to_sg_rule_mapping(
+                src_vm_fix,
+                dst_vm_fix,
+                src_vn_fix,
+                dst_vn_fix,
+                secgrp_id,
+                'icmp',
+                port)
 
-        # stop traffic
-        sent, recv = traffic_obj_udp.stop()
-        sent, recv = traffic_obj_tcp.stop()
-        sent, recv = self.stop_traffic_scapy(sender_icmp, receiver_icmp)
+            sent, recv = traffic_obj_tcp.stop()
+            sent, recv = self.stop_traffic_scapy(sender_icmp, receiver_icmp)
 
         return True
     # end test_flow_to_sg_rule_mapping_multiple_rules
@@ -1725,7 +1647,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         """
 
         topology_class_name = sdn_sg_test_topo.sdn_topo_icmp_error_handling
-        topo = topology_class_name()
+        topo = topology_class_name(af_test=self.inputs.get_af())
         try:
             # provided by wrapper module if run in parallel test env
             topo.build_topo2(
@@ -1743,20 +1665,11 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         if out['result']:
             topo_obj, config_topo = out['data']
 
-        rule = [{'direction': '>',
-                 'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_addresses': [{'security_group': 'local'}],
-                 },
-                {'direction': '>',
-                 'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_addresses': [{'security_group': 'local'}],
-                 }]
+        rule = [get_sg_rule('egress',af=self.inputs.get_af(), 
+            proto='udp'),
+                get_sg_rule('ingress',af=self.inputs.get_af(), 
+            proto='udp')]
+
         config_topo['sec_grp'][topo_obj.sg_list[0]].replace_rules(rule)
 
         proto = 'udp'
@@ -1783,20 +1696,22 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
                       self.inputs.project_name,
                       src_sg_name]))
         # start traffic
-        traffic_obj = BaseTraffic.factory(proto=proto)
-        assert traffic_obj
-        assert traffic_obj.start(src_vm_fix, dst_vm_fix,
-                                 proto, port, port)
+        assert self.send_nc_traffic(                                            
+            src_vm_fix, dst_vm_fix, port, port, proto)
 
-        # get the egress rule uuid
+        # get the egress rule uuid                                              
         rule_uuid = None
-        rules = list_sg_rules(self.connections, secgrp_id)
-        for rule in rules:
-            if rule['direction'] == 'egress' and (
-                    rule['ethertype'] == 'IPv4' or rule['remote_ip_prefix'] == '0.0.0.0/0') and (
-                    rule['protocol'] == 'any' or rule['protocol'] == proto):
-                rule_uuid = rule['id']
-                break
+        rules = list_sg_rules(self.connections, secgrp_id)                      
+        af = self.inputs.get_af()                                               
+        for rule in rules:                                                      
+            if rule['direction'] == 'egress' and \
+               ((af == 'v4' and (rule['ethertype'] == 'IPv4' or \
+                   rule['remote_ip_prefix'] == '0.0.0.0/0')) or \
+                (af == 'v6' and (rule['ethertype'] == 'IPv6' or \
+                   rule['remote_ip_prefix'] == '::/0'))) and \
+               (rule['protocol'] == 'any' or rule['protocol'] == proto):        
+                rule_uuid = rule['id']                                          
+                break                                                           
         assert rule_uuid, "Egress rule id could not be found"
 
         test_result = True
@@ -1827,8 +1742,14 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
             rule_uuid = None
             rules = list_sg_rules(self.connections, secgrp_id)
             for rule in rules:
-                if rule['direction'] == 'ingress' and (
-                        rule['protocol'] == 'any' or rule['protocol'] == proto):
+                if rule['direction'] == 'ingress' and \
+                   ((af == 'v4' and (rule['ethertype'] == 'IPv4' or \
+                        rule['remote_ip_prefix'] == '0.0.0.0/0' or \
+                        rule['remote_group_id'] == secgrp_id)) or \
+                    (af == 'v6' and (rule['ethertype'] == 'IPv6' or \
+                        rule['remote_group_id'] == secgrp_id or \
+                        rule['remote_ip_prefix'] == '::/0'))) and \
+                   (rule['protocol'] == 'any' or rule['protocol'] == proto):
                     rule_uuid = rule['id']
                     break
             assert rule_uuid, "Ingress rule id could not be found"
@@ -1845,8 +1766,6 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
                     rule_uuid, dst_vm_fix.vm_node_ip):
                 test_result = False
 
-        # stop traffic
-        sent, recv = traffic_obj.stop()
         assert test_result
 
         return True
@@ -1859,6 +1778,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         1. Verify uuid for each sg rule in api/control introspect and neutron cli"""
 
         topology_class_name = None
+        af = self.inputs.get_af()
         #
         # Get config for test from topology
         result = True
@@ -1868,7 +1788,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         self.logger.info("Scenario for the test used is: %s" %
                          (topology_class_name))
-        topo = topology_class_name()
+        topo = topology_class_name(af_test=af)
         try:
             # provided by wrapper module if run in parallel test env
             topo.build_topo2(
@@ -1887,22 +1807,10 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         if out['result']:
             topo_obj, config_topo = out['data']
 
-        rule = [{'direction': '>',
-                 'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_addresses': [{'security_group': 'local'}],
-                 'ethertype': 'IPv4'
-                 },
-                {'direction': '>',
-                 'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_addresses': [{'security_group': 'local'}],
-                 'ethertype': 'IPv4'
-                 }]
+        rule = [get_sg_rule('egress',af=af, 
+            proto='udp'),
+                get_sg_rule('ingress',af=af, 
+            proto='udp')]
         config_topo['sec_grp'][topo_obj.sg_list[0]].replace_rules(rule)
 
         sg_list = ['default', topo_obj.sg_list[0]]
@@ -1937,8 +1845,13 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
                 elif rule['direction'] == 'egress' and rule['ethertype'] == 'IPv6':
                     egress_ipv6_id = rule['id']
 
-            assert egress_ipv4_id, "Egress rule id could not be found"
-            assert ingress_ipv4_id, "Ingress rule id could not be found"
+            if af == 'v4': 
+                assert egress_ipv4_id, "Egress rule id could not be found"
+                assert ingress_ipv4_id, "Ingress rule id could not be found"
+
+            elif af == 'v6':
+                assert egress_ipv6_id, "Egress rule id could not be found"
+                assert ingress_ipv6_id, "Ingress rule id could not be found"
 
             # get SG rule uuid from api and match with neutron uuid
             api_secgrp_obj = self.api_s_inspect.get_cs_secgrp(
@@ -1962,17 +1875,21 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
                 elif rule['dst_addresses'][0]['security_group'] == "local" and rule['ethertype'] == 'IPv6':
                     uuid_ingress_ipv6 = rule['rule_uuid']
 
-            assert uuid_egress_ipv4 == egress_ipv4_id, "egress IPv4 rule uuid is not same in API and \
-                                                        neutron for SG:%s" % (sg_name)
-            assert uuid_ingress_ipv4 == ingress_ipv4_id, "ingress IPv4 rule uuid is not same in API \
-                                                        and neutron for SG:%s" % (sg_name)
-
+            if egress_ipv4_id:
+                assert uuid_egress_ipv4 == egress_ipv4_id, ("egress IPv4 rule "
+                    "uuid is not same in API and neutron for SG:%s" % (sg_name))
+            if ingress_ipv4_id:
+                assert uuid_ingress_ipv4 == ingress_ipv4_id, ("ingress IPv4 "
+                    "rule uuid is not same in API "
+                    "and neutron for SG:%s" % (sg_name))
+                    
             if ingress_ipv6_id:
-                assert ingress_ipv6_id == uuid_ingress_ipv6, "ingress IPv6 rule uuid is not same in API \
-                                                        and neutron for SG:%s" % (sg_name)
+                assert ingress_ipv6_id == uuid_ingress_ipv6, ("ingress IPv6 "
+                    "rule uuid is not same in API "
+                    "and neutron for SG:%s" % (sg_name))
             if egress_ipv6_id:
-                assert egress_ipv6_id == uuid_egress_ipv6, "egress IPv6 rule uuid is not same in API \
-                                                        and neutron for SG:%s" % (sg_name)
+                assert egress_ipv6_id == uuid_egress_ipv6, ("egress IPv6 rule "
+                    "uuid is not same in API and neutron for SG:%s" % (sg_name))
 
             self.logger.info(
                 "%s security group rule uuid matches in API with neutron" %
@@ -1995,16 +1912,22 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
                     elif rule['dst-addresses']['security-group'] == 'local' and rule['ethertype'] == 'IPv6':
                         uuid_ingress_ipv6 = rule['rule-uuid']
 
-                assert uuid_egress_ipv4 == egress_ipv4_id, "egress rule uuid are not same in control \
-                                                        and neutron for SG:%s" % (sg_name)
-                assert uuid_ingress_ipv4 == ingress_ipv4_id, "ingress rule uuid are not same in control \
-                                                        and neutron for SG:%s" % (sg_name)
+                if egress_ipv4_id:
+                    assert uuid_egress_ipv4 == egress_ipv4_id, ("egress rule "
+                        "uuid are not same in control and neutron for SG:%s" % (
+                        sg_name))
+                if ingress_ipv4_id:
+                    assert uuid_ingress_ipv4 == ingress_ipv4_id, ("ingress rule"
+                        " uuid are not same in control and neutron for SG:%s" % (
+                        sg_name))
                 if ingress_ipv6_id:
-                    assert ingress_ipv6_id == uuid_ingress_ipv6, "ingress IPv6 rule uuid is not same in control \
-                                                        and neutron for SG:%s" % (sg_name)
+                    assert ingress_ipv6_id == uuid_ingress_ipv6, ("ingress IPv6"
+                        " rule uuid is not same in control "
+                        "and neutron for SG:%s" % (sg_name))
                 if egress_ipv6_id:
-                    assert egress_ipv6_id == uuid_egress_ipv6, "egress IPv6 rule uuid is not same in control \
-                                                        and neutron for SG:%s" % (sg_name)
+                    assert egress_ipv6_id == uuid_egress_ipv6, ("egress IPv6 "
+                        "rule uuid is not same in control "
+                        "and neutron for SG:%s" % (sg_name))
 
             self.logger.info(
                 "%s security group rule uuid matches in control with neutron" %
@@ -2455,9 +2378,9 @@ class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
         Pass criteria:
             step 7 should PASS
         """
-
+        af = self.inputs.get_af()
         topology_class_name = sdn_sg_test_topo.sdn_topo_icmp_error_handling
-        topo = topology_class_name()
+        topo = topology_class_name(af_test=af)
         try:
             # provided by wrapper module if run in parallel test env
             topo.build_topo2(
@@ -2469,31 +2392,13 @@ class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
             topo.build_topo2(compute_node_list=self.inputs.compute_ips)
 
         topo.sg_rules[topo.sg_list[0]] = [
-            {'direction': '>',
-             'protocol': 'any',
-             'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0',
-                                           'ip_prefix_len': 0}}],
-             'dst_ports': [{'start_port': 0, 'end_port': -1}],
-             'src_ports': [{'start_port': 0, 'end_port': -1}],
-             'src_addresses': [{'security_group': 'local'}],
-             }]
+            get_sg_rule('egress',af=af, 
+                proto='any')]
         topo.sg_rules[topo.sg_list[1]] = [
-            {'direction': '>',
-             'protocol': 'any',
-             'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0',
-                                           'ip_prefix_len': 0}}],
-             'dst_ports': [{'start_port': 0, 'end_port': -1}],
-             'src_ports': [{'start_port': 0, 'end_port': -1}],
-             'src_addresses': [{'security_group': 'local'}],
-             },
-            {'direction': '>',
-             'protocol': 'any',
-             'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0',
-                                           'ip_prefix_len': 0}}],
-             'dst_ports': [{'start_port': 0, 'end_port': -1}],
-             'src_ports': [{'start_port': 0, 'end_port': -1}],
-             'dst_addresses': [{'security_group': 'local'}],
-             }]
+            get_sg_rule('egress',af=af, 
+                proto='any'),
+            get_sg_rule('ingress',af=af, 
+                proto='any')]
 
         setup_obj = self.useFixture(
             sdnTopoSetupFixture(self.connections, topo))
@@ -2558,12 +2463,12 @@ class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
                 src=path,
                 dest='/tmp')
 
-        cmd1 = 'chmod +x /tmp/syn_server.py;/tmp/syn_server.py %s %s \
+        cmd1 = 'chmod +x /tmp/syn_server.py;/tmp/syn_server.py %s %s %s \
                     2>/tmp/server.log 1>/tmp/server.log' \
-                    % (src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
-        cmd2 = 'chmod +x /tmp/syn_client.py;/tmp/syn_client.py %s %s \
+                    % (src_vm_fix.vm_ip, dst_vm_fix.vm_ip, af)
+        cmd2 = 'chmod +x /tmp/syn_client.py;/tmp/syn_client.py %s %s %s \
                     2>/tmp/client.log 1>/tmp/client.log' \
-                    % (dst_vm_fix.vm_ip, src_vm_fix.vm_ip)
+                    % (dst_vm_fix.vm_ip, src_vm_fix.vm_ip, af)
         output_cmd_dict = dst_vm_fix.run_cmd_on_vm(
             cmds=[cmd1],
             as_sudo=True,
@@ -2691,6 +2596,29 @@ class SecurityGroupRegressionTests9_contrail(SecurityGroupRegressionTests9):
         super(SecurityGroupRegressionTests9, cls).setUpClass()
         cls.option = 'contrail'
 
+class SecurityGroupRegressionTests1Ipv6(                                        
+        test_regression_basic.SecurityGroupBasicRegressionTests1):              
+                                                                                
+    @classmethod                                                                
+    def setUpClass(cls):                                                        
+        super(SecurityGroupRegressionTests1Ipv6, cls).setUpClass()              
+        cls.inputs.set_af(AF_TEST)                                              
+                                                                                
+    def is_test_applicable(self):                                               
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported(
+                'ipv6'):                                                        
+            return(False, 'Skipping IPv6 Test on vcenter setup')                
+        return (True, None)                                                     
+                                                                                
+    @test.attr(type=['sanity'])                                                 
+    @preposttest_wrapper                                                        
+    def test_sec_group_add_delete(self):                                        
+        super(SecurityGroupRegressionTests1Ipv6, self).test_sec_group_add_delete()
+                                                                                
+    @test.attr(type=['sanity'])                                                 
+    @preposttest_wrapper                                                        
+    def test_vm_with_sec_group(self):                                           
+        super(SecurityGroupRegressionTests1Ipv6, self).test_vm_with_sec_group()
 
 class SecurityGroupRegressionTests2Ipv6(SecurityGroupRegressionTests2):
 
@@ -2719,6 +2647,18 @@ class SecurityGroupRegressionTests3Ipv6(SecurityGroupRegressionTests3):
             return(False, 'Skipping IPv6 Test on vcenter setup')
         return (True, None)
 
+class SecurityGroupRegressionTests4Ipv6(SecurityGroupRegressionTests4):
+                                                                                
+    @classmethod                                                                
+    def setUpClass(cls):                                                        
+        super(SecurityGroupRegressionTests4Ipv6, cls).setUpClass()              
+        cls.inputs.set_af(AF_TEST)                                              
+                                                                                
+    def is_test_applicable(self):                                               
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported(
+                'ipv6'):                                                        
+            return(False, 'Skipping IPv6 Test on vcenter setup')                
+        return (True, None)
 
 class SecurityGroupRegressionTests5Ipv6(SecurityGroupRegressionTests5):
 
@@ -2731,4 +2671,57 @@ class SecurityGroupRegressionTests5Ipv6(SecurityGroupRegressionTests5):
         if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported(
                 'ipv6'):
             return(False, 'Skipping IPv6 Test on vcenter setup')
+        return (True, None)
+
+class SecurityGroupRegressionTests6Ipv6(SecurityGroupRegressionTests6):
+                                                                                
+    @classmethod                                                                
+    def setUpClass(cls):                                                        
+        super(SecurityGroupRegressionTests6Ipv6, cls).setUpClass()
+        cls.inputs.set_af(AF_TEST)                                              
+                                                                                
+    def is_test_applicable(self):                                               
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported(
+                'ipv6'):                                                        
+            return(False, 'Skipping IPv6 Test on vcenter setup')             
+        return (True, None)
+
+class SecurityGroupRegressionTests7Ipv6(SecurityGroupRegressionTests7):
+                                                                                
+    @classmethod                                                                
+    def setUpClass(cls):                                                        
+        super(SecurityGroupRegressionTests7Ipv6, cls).setUpClass()           
+        cls.inputs.set_af(AF_TEST)                                              
+                                                                                
+    def is_test_applicable(self):                                               
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported(
+                'ipv6'):                                                        
+            return(False, 'Skipping IPv6 Test on vcenter setup')                
+        return (True, None)
+
+
+class SecurityGroupRegressionTests8Ipv6(SecurityGroupRegressionTests8):
+                                                                                
+    @classmethod                                                                
+    def setUpClass(cls):                   
+        super(SecurityGroupRegressionTests8Ipv6, cls).setUpClass()
+        cls.inputs.set_af(AF_TEST)                                              
+                                                                                
+    def is_test_applicable(self):                                               
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported(
+                'ipv6'):                                                        
+            return(False, 'Skipping IPv6 Test on vcenter setup')                
+        return (True, None)
+
+class SecurityGroupSynAckTestIpv6(SecurityGroupSynAckTest):
+                                                                                
+    @classmethod                                                                
+    def setUpClass(cls):                   
+        super(SecurityGroupSynAckTestIpv6, cls).setUpClass()
+        cls.inputs.set_af(AF_TEST)                                              
+                                                                                
+    def is_test_applicable(self):                                               
+        if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported(
+                'ipv6'):                                                        
+            return(False, 'Skipping IPv6 Test on vcenter setup')                
         return (True, None)
