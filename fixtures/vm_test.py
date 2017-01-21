@@ -493,7 +493,7 @@ class VMFixture(fixtures.Fixture):
         '''
         for vn_fq_name in self.vn_fq_names:
             if self.vnc_lib_fixture.get_active_forwarding_mode(vn_fq_name) =='l2':
-                # TODO 
+                # TODO
                 # After bug 1614824 is fixed
                 # L2 route verification
                 continue
@@ -526,7 +526,7 @@ class VMFixture(fixtures.Fixture):
                     self.logger.debug('Validated VM route %s in vrouter of %s' %(
                         prefix, compute_ip))
 
-                    # Check the label and nh details 
+                    # Check the label and nh details
                     route = route_table[0]
                     if compute_ip == self.vm_node_ip:
                         result = validate_local_route_in_vrouter(route,
@@ -557,7 +557,7 @@ class VMFixture(fixtures.Fixture):
 
     def verify_on_setup(self, force=False):
         #TO DO: sandipd - Need adjustments in multiple places to make verification success
-        # in vcenter gateway setup.Will do gradually.For now made changes just needed to make few functionality 
+        # in vcenter gateway setup.Will do gradually.For now made changes just needed to make few functionality
         #test cases pass
         if isinstance(self.orch,VcenterGatewayOrch):
             self.logger.debug('Skipping VM %s verification for vcenter gateway setup' % (self.vm_name))
@@ -940,12 +940,12 @@ class VMFixture(fixtures.Fixture):
                 for agent_path in self.agent_path[vn_fq_name]:
                     for intf in agent_path['path_list']:
                         if 'itf' in intf['nh']:
-                            intf_name = intf['nh']['itf'] 
+                            intf_name = intf['nh']['itf']
                             if not intf['nh'].get('mc_list', None):
                                 agent_label = intf['label']
-                            break 
+                            break
                         self.agent_label[vn_fq_name].append(agent_label)
-    
+
                         if intf_name != \
                               self.tap_intf[vn_fq_name]['name']:
                            self.logger.warning("Active route in agent for %s is "
@@ -2339,11 +2339,11 @@ class VMFixture(fixtures.Fixture):
 
     def nc_file_transfer(self, dest_vm_fixture, size='100',
             local_port='10001', remote_port='10000', nc_options='', ip=None,
-            expectation=True, retry=False):
+            expectation=True, retry=False, receiver=True):
         '''
         This method can use used to send tcp/udp traffic using netcat and
             will work for IPv4 as well as IPv6.
-        Starts the netcat on both sender as well as receiver.
+        Starts the netcat on sender and on receiver if receiver is True
         IPv6 will work only with ubuntu and ubuntu-traffic images,
             cirros does not support IPv6.
         Creates a file of "size" bytes and transfers to the VM in dest_vm_fixture using netcat.
@@ -2360,17 +2360,17 @@ class VMFixture(fixtures.Fixture):
         listen_port = remote_port
 
         dest_host = self.inputs.host_data[dest_vm_fixture.vm_node_ip]
-
-        # Launch nc on dest_vm. For some reason, it exits after the first
-        # client disconnect
-        nc_cmd = 'nc ' + nc_options
-        #Some version of netcat does not support -p option in listener mode
-        #so run without -p option also
-        nc_l = ['%s -ll -p %s > %s' % (nc_cmd, listen_port, filename),
-                    '%s -ll %s > %s' % (nc_cmd, listen_port, filename)]
-        cmds=[ 'rm -f %s;ls -la' % (filename) ]
-        dest_vm_fixture.run_cmd_on_vm(cmds=cmds, as_sudo=True, as_daemon=True)
-        dest_vm_fixture.run_cmd_on_vm(cmds=nc_l, as_sudo=True, as_daemon=True)
+        if receiver:
+            # Launch nc on dest_vm. For some reason, it exits after the first
+            # client disconnect
+            nc_cmd = 'nc ' + nc_options
+            #Some version of netcat does not support -p option in listener mode
+            #so run without -p option also
+            nc_l = ['%s -ll -p %s > %s' % (nc_cmd, listen_port, filename),
+                        '%s -ll %s > %s' % (nc_cmd, listen_port, filename)]
+            cmds=[ 'rm -f %s;ls -la' % (filename) ]
+            dest_vm_fixture.run_cmd_on_vm(cmds=cmds, as_sudo=True, as_daemon=True)
+            dest_vm_fixture.run_cmd_on_vm(cmds=nc_l, as_sudo=True, as_daemon=True)
 
         self.nc_send_file_to_ip(filename, dest_vm_ip, size=size,
             local_port=local_port, remote_port=listen_port,
@@ -2378,13 +2378,15 @@ class VMFixture(fixtures.Fixture):
 
         msg1 = 'File transfer verification for file size %s failed on the VM %s' % (size, dest_vm_fixture.vm_name)
         msg2 = 'File transfer verification for file size %s passed on the VM %s' % (size, dest_vm_fixture.vm_name)
-        # Check if file exists on dest VM
-        if dest_vm_fixture.verify_file_size_on_vm(filename, size=size, expectation=expectation):
-            self.logger.info(msg2)
-            return True
-        else:
-            self.logger.info(msg1)
-            return False
+        if receiver:
+            # Check if file exists on dest VM
+            if dest_vm_fixture.verify_file_size_on_vm(filename, size=size, expectation=expectation):
+                self.logger.info(msg2)
+                return True
+            else:
+                self.logger.info(msg1)
+                return False
+        return True
 
     # end nc_file_transfer
 

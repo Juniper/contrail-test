@@ -46,22 +46,22 @@ class sdnTopoSetupFixture(fixtures.Fixture):
     # end setUp
 
     def topo_setup(self, config_option='openstack', skip_verify='no', flavor='contrail_flavor_small', vms_on_single_compute=False, VmToNodeMapping=None):
-        '''Take topology to be configured as input and return received & configured topology -collection 
-        of dictionaries. we return received topology as some data is updated and is required for 
+        '''Take topology to be configured as input and return received & configured topology -collection
+        of dictionaries. we return received topology as some data is updated and is required for
         reference.
         Bring up with 2G RAM to support multiple traffic streams..For scaling tests, min of 8192 is recommended.
         Available config_option for SDN topo setup
-        1. 'openstack': Configures all sdn entities like VN,policy etc using Openstack API 
+        1. 'openstack': Configures all sdn entities like VN,policy etc using Openstack API
            a. Project: Keystone
            b. Policy:  Quantum
            c. IPAM:    Contrail API
            d. VN:      Quantum
            e. VM:      Nova
-        2. 'contrail': Configures all sdn entities like VN,policy etc using Contrail API 
+        2. 'contrail': Configures all sdn entities like VN,policy etc using Contrail API
            a. Project: Keystone
-           b. Policy:  Contrail API 
+           b. Policy:  Contrail API
            c. IPAM:    Contrail API
-           d. VN:      Contrail API 
+           d. VN:      Contrail API
            e. VM:      Nova
         '''
         config_option = 'contrail' if self.inputs.orchestrator == 'vcenter' else config_option
@@ -155,6 +155,7 @@ class sdnTopoSetupFixture(fixtures.Fixture):
                                         "',username='" + self.topo.user_of_project[project] +
                                         "',password='" + self.topo.pass_of_project[project] +
                                         "',config_option='" + config_option +
+                                        "',af_test='" + self.inputs.get_af() +
                                         "')")
             except (NameError, AttributeError):
                 topo[project] = eval("topo_obj.build_topo_" + project + "()")

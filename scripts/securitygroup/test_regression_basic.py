@@ -1,27 +1,15 @@
 import unittest
 from tcutils.wrappers import preposttest_wrapper
 from vnc_api.vnc_api import NoIdError
-from verify import VerifySecGroup
-from policy_test import PolicyFixture
-from vn_test import MultipleVNFixture
-from vm_test import MultipleVMFixture
-from base import BaseSGTest
+from common.securitygroup.verify import VerifySecGroup
+from common.securitygroup.base import BaseSGTest
 from common.policy.config import ConfigPolicy
-from security_group import SecurityGroupFixture,get_secgrp_id_from_name
 from vn_test import VNFixture
 from vm_test import VMFixture
-from tcutils.topo.topo_helper import *
 import os
 import sys
-sys.path.append(os.path.realpath('scripts/flow_tests'))
-from tcutils.topo.sdn_topo_setup import *
 import test
-import sdn_sg_test_topo
-from tcutils.tcpdump_utils import *
-from time import sleep
-from tcutils.util import get_random_name
-from base_traffic import *
-from tcutils.util import skip_because
+from tcutils.util import get_random_name, get_random_cidrs
 
 class SecurityGroupBasicRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
@@ -43,9 +31,13 @@ class SecurityGroupBasicRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolic
             2. Delete custom security group
         Pass criteria: Step 1 and 2 should pass
         """
+        (prefix, prefix_len) = get_random_cidrs(self.inputs.get_af())[0].split('/')
+        prefix_len = int(prefix_len)
+
         rule = [{'direction': '>',
                 'protocol': 'tcp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': prefix,
+                    'ip_prefix_len': prefix_len}}],
                  'dst_ports': [{'start_port': 8000, 'end_port': 8000}],
                  'src_ports': [{'start_port': 9000, 'end_port': 9000}],
                  'src_addresses': [{'security_group': 'local'}],
@@ -69,16 +61,19 @@ class SecurityGroupBasicRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolic
         Pass criteria: Step 2,3,4,5 and 6 should pass
         """
         vn_name = get_random_name("test_sec_vn")
-        vn_net = ['11.1.1.0/24']
+        vn_net = get_random_cidrs(self.inputs.get_af())
         vn = self.useFixture(VNFixture(
             project_name=self.inputs.project_name, connections=self.connections,
             vn_name=vn_name, inputs=self.inputs, subnets=vn_net))
         assert vn.verify_on_setup()
 
         secgrp_name = get_random_name('test_sec_group')
+        (prefix, prefix_len) = get_random_cidrs(self.inputs.get_af())[0].split('/')
+        prefix_len = int(prefix_len)
         rule = [{'direction': '>',
                 'protocol': 'tcp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '10.1.1.0', 'ip_prefix_len': 24}}],
+                 'dst_addresses': [{'subnet': {'ip_prefix': prefix,
+                    'ip_prefix_len': prefix_len}}],
                  'dst_ports': [{'start_port': 8000, 'end_port': 8000}],
                  'src_ports': [{'start_port': 9000, 'end_port': 9000}],
                  'src_addresses': [{'security_group': 'local'}],
