@@ -1334,4 +1334,18 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return result
     #end test6_3_edit_port_by_add_security_group
 
+    @preposttest_wrapper
+    def test_verify_config_infra_global_config(self):
+        '''Test to verify global config on config->Infrastructure->Global Config
+           1. Go to Configure->Infrastructure->Global Config.
+           2. Get all the details of global config from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_global_api_data(), \
+                                              'Global config data verification failed'
+        return True
+    # end test_verify_config_infra_global_config
+
 # end WebuiTestSanity
