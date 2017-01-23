@@ -156,6 +156,14 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_svc_health_check
 
+    @preposttest_wrapper
+    def test2_8_create_bgp_aas(self):
+        '''UI Config : Networking -> Services -> BGP as a Service : Test bgpaas creation
+        '''
+        assert self.res.setup_obj.create_bgp_aas(), 'Creation of bgpaas failed'
+        return True
+    # end test_create_bgp_aas
+
     # UI verification tests
 
     @preposttest_wrapper

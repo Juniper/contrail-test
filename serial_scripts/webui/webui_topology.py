@@ -212,6 +212,15 @@ class sdn_webui_config ():
         
         self.fvn_vm_map_dict = {'vnet3': ['vmc0']}
         
+        #Define BGP as a Service parameters
+        self.bgpaas_list = ['bgpaas1']
+        self.bgpaas_params = {
+            'bgpaas1': {
+                'autonomous_system': 65000,
+                'ip_address': '10.1.1.5',
+                'hold_time': 60,
+                'loop_count': 2 }}
+        
         # Define network policy rules
         self.rules = {}
 
