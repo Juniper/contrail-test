@@ -535,6 +535,40 @@ class WebuiTest:
         return result
     # end create_svc_health_check
 
+    def create_bgpaas(
+            self,
+            bgpaas_name,
+            autonomous_system=None,
+            ip_addr=None,
+            hold_time=60,
+            loop_count=2):
+        result = True
+        try:
+            if not self.ui.click_on_create(
+                    'BGP as a Service',
+                    'bgp_as_a_service',
+                    bgpaas_name,
+                    prj_name=self.project_name_input):
+                result = result and False
+            self.ui.send_keys(bgpaas_name, 'display_name', 'name')
+            self.ui.send_keys(autonomous_system, 'autonomous_system', 'name')
+            self.ui.click_on_accordian('bgpasas_advanced_opts')
+            self.ui.wait_till_ajax_done(self.browser)
+            self.ui.send_keys(ip_addr, 'bgpaas_ip_address', 'name')
+            self.ui.send_keys(hold_time, 'hold_time', 'name')
+            self.ui.send_keys(loop_count, 'loop_count', 'name')
+            if not self.ui.click_on_create('BGP as a Service', 'bgp_as_a_service', save=True):
+                result = result and False
+        except WebDriverException:
+            self.logger.error("Error while creating %s" % (bgpaas_name))
+            self.ui.screenshot("bgpaas_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            result = result and False
+            raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end create_bgpaas
+
     def create_ipam(self, fixture):
         result = True
         ip_blocks = False
@@ -3940,8 +3974,13 @@ class WebuiTest:
 
     def cleanup(self):
         self.detach_ipam_from_dns_server()
+        self.delete_bgp_aas()
         return True
     # end cleanup
+
+    def delete_bgp_aas(self):
+        self.ui.delete_element(element_type='bgp_aas_delete')
+    # end delete_bgpaas
 
     def delete_dns_server_and_record(self):
         self.detach_ipam_from_dns_server()

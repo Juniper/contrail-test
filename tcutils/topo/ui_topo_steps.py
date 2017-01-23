@@ -116,3 +116,25 @@ def createDnsRecord(self, option='contrail'):
             result = result and False
     return result
 # end createDnsRecord
+
+def createBgpaas(self, option='contrail'):
+    if not hasattr(self.topo, 'bgpaas_list'):
+        self.logger.info("No bgpaas config found in topo file")
+        return True
+    result = True
+    self.logger.info("Setup step: Creating bgpaas")
+    for bgpaas in self.topo.bgpaas_list:
+        autonomous_system = self.topo.bgpaas_params[bgpaas]['autonomous_system']
+        ip_addr = self.topo.bgpaas_params[bgpaas]['ip_address']
+        hold_time = self.topo.bgpaas_params[bgpaas]['hold_time']
+        loop_count = self.topo.bgpaas_params[bgpaas]['loop_count']
+        bgpaas_name = bgpaas
+        if not self.webui.create_bgpaas(
+                bgpaas_name,
+                autonomous_system,
+                ip_addr,
+                hold_time,
+                loop_count):
+            result = result and False
+    return result
+# end createBgpaas
