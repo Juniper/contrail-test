@@ -1191,6 +1191,12 @@ class WebuiCommon:
             element_name = fixture.si_name
             element_id = 'btnActionDelSvcInst'
             popup_id = 'configure-service_instancebtn1'
+        if element_type == 'svc_health_check_delete':
+            if not self.click_configure_service_health_check():
+                result = result and False
+            element_name = fixture.name
+            element_id = 'linkSvcHealthChkDelete'
+            popup_id = 'configure-HealthCheckServicesbtn1'
         elif element_type == 'vn_delete':
             if not self.click_configure_networks():
                 result = result and False
@@ -1585,7 +1591,24 @@ class WebuiCommon:
         time.sleep(2)
         return self.check_error_msg("configure service template")
     # end click_configure_service_template
+    
+    def click_configure_service_health_check(self):
+        self._click_on_config_dropdown(self.browser, 3)
+        self.click_element(['config_service_healthchk', 'a'], ['id', 'tag'])
+        self.wait_till_ajax_done(self.browser)
+        return self.check_error_msg("configure service health check")
+    # end click_configure_service_health_check
 
+    def click_configure_service_health_check_basic(self, row_index):
+        self.click_configure_service_health_check()
+        rows = self.get_rows()
+        div_browser = self.find_element(
+            'div', 'tag', if_elements=[1], elements=True,
+            browser=rows[row_index])[0]
+        self.click_element('i', 'tag', browser = div_browser)
+        self.wait_till_ajax_done(self.browser)
+    #end click_configure_service_health_check_basic
+    
     def click_configure_physical_routers(self):
         self.wait_till_ajax_done(self.browser)
         self._click_on_config_dropdown(self.browser, 1)
@@ -2490,7 +2513,23 @@ class WebuiCommon:
             except (WebDriverException, TimeoutException):
                 break
     # end expand_advance_details
-
+    
+    def get_value_of_key(self, rows_detail, exp_key):
+        """
+            Returns the value of a specific key when a list of row details is passed
+            PARAMETERS :
+                rows_detail : Details of a row on expansion; in list of dicts format
+                exp_key : Expected key whose value needs to be returned
+        """
+        value1 = ''
+        for item in rows_detail:
+            key1 = self.find_element('key', 'class', browser=item).text
+            if key1 == exp_key:
+                value1 = self.find_element('value', 'class', browser=item).text
+                break
+        return value1
+    # end get_value_of_key
+    
     def get_api_detail(self, uuid, option):
         self.vn_api_url = option + uuid
         return self._get_list_api(self.vn_api_url)
