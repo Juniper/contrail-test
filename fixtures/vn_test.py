@@ -423,7 +423,7 @@ class VNFixture(fixtures.Fixture):
         # Configure forwarding mode
         if self.forwarding_mode is not None:
             self.add_forwarding_mode(
-                self.project_obj.project_fq_name, self.vn_name, self.forwarding_mode)
+                self.project_obj.fq_name, self.vn_name, self.forwarding_mode)
 
         # Configure vxlan_id
         if self.vxlan_id is not None:
