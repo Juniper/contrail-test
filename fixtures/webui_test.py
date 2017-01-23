@@ -10,6 +10,7 @@ from project_test import *
 from tcutils.util import *
 from vnc_api.vnc_api import *
 from contrail_fixtures import *
+from common.ui.edit import WebuiEdit
 from webui.webui_common import WebuiCommon
 import re
 
@@ -29,6 +30,7 @@ class WebuiTest:
         self.frequency = 3
         self.logger = inputs.logger
         self.ui = WebuiCommon(self)
+        self.webui_edit = WebuiEdit(self)
         self.dash = "-" * 60
         self.vnc_lib = connections.vnc_lib_fixture
         self.log_path = None
@@ -6269,3 +6271,50 @@ class WebuiTest:
                     return result
         return result
     # end verify_port_api_data_in_webui
+
+    def edit_port(self, category, option, port_name, **kwargs):
+        result = True
+        if category == 'vn_port':
+            result = self.webui_edit.edit_port_with_vn_port(option)
+        elif category == 'security_group':
+            result = self.webui_edit.edit_port_with_sec_group(option, port_name, **kwargs)
+        elif category == 'advanced_option':
+            result = self.webui_edit.edit_port_with_advanced_option(option, port_name,
+                                                                   **kwargs)
+        elif category == 'dhcp':
+            result = self.webui_edit.edit_port_with_dhcp_option(option, port_name,
+                                                               **kwargs)
+        elif category == 'FatFlow':
+            result = self.webui_edit.edit_port_with_fat_flow(option, port_name,
+                         **kwargs)
+        return result
+    # edit_port
+
+    def add_subinterface_ports(self, option, port_name, params_list, tc='positive'):
+        result = True
+        try:
+            self.sub_interface = self.ui.edit_remove_option(option, 'subinterface',
+                                                        display_name=port_name)
+            if self.sub_interface:
+                self.ui.click_element('s2id_virtualNetworkName_dropdown')
+                if not self.ui.select_from_dropdown(params_list[0], grep=False):
+                    result = result and False
+                self.ui.send_keys(params_list[1], 'display_name', 'name')
+                self.ui.click_element('advanced_options')
+                self.ui.send_keys(params_list[2], 'sub_interface_vlan_tag', 'name')
+                self.ui.click_on_create(option.strip('s'),
+                                    option.strip('s').lower(), save=True)
+                if tc != 'positive':
+                    result = self.ui.negative_test_proc(option)
+                self.ui.wait_till_ajax_done(self.browser)
+            else:
+                self.logger.error("Clicking the Edit Button is not working")
+                result = result and False
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.ui.screenshot(option)
+            result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+    # add_subinterface_ports
