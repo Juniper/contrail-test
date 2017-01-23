@@ -15,8 +15,9 @@ from tcutils.wrappers import preposttest_wrapper
 import base
 from webui_topology import *
 topo = sdn_webui_config()
-global count
+global count, mirror_enabled_already
 count = 1
+mirror_enabled_already = False
 
 class WebuiTestSanity(base.WebuiBaseTest):
 
@@ -1304,7 +1305,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
             Pass Criteria: Step 3 should pass
         '''
         self.webui.logger.debug("Step 1 : Edit VN and port in port page")
-        assert self.webui_common.edit_port_with_vn_port('Ports'), \
+        assert self.webui.edit_port('vn_port', 'Ports', topo.port_list[0]), \
                                  'VN and Port name not disabled for editing'
         return True
     # end test6_2_edit_port_vn_port_name
@@ -1323,8 +1324,8 @@ class WebuiTestSanity(base.WebuiBaseTest):
         sec_group_value = []
         self.webui.logger.debug("Step 1 : Attach security group to the port")
         sg_list = [topo.sg_list[0], 'default (default-domain:admin)']
-        self.webui_common.edit_port_with_sec_group('Ports', topo.port_list[0],
-                                                  sg_list)
+        self.webui.edit_port('security_group', 'Ports', topo.port_list[0],
+                                                  sg_list=sg_list)
         sec_group_value = self.webui_common.get_ui_value('ports', 'Security Groups',
                          name=topo.port_list[0])
         sec_group = sec_group_value[0]['value'].split('\n')
@@ -1341,5 +1342,325 @@ class WebuiTestSanity(base.WebuiBaseTest):
             result = result and False
         return result
     #end test6_3_edit_port_by_add_security_group
+
+    @preposttest_wrapper
+    def test6_4_edit_port_by_add_advanced_option_with_nh_mode_dynamic(self):
+        ''' Test to edit the existing port by Advanced Options
+            1. Go to Configure->Networking->Ports. Then select the last port
+               and click the edit button
+            2. Editing the port by adding the values and setting default values for
+               juniper header, next hop mode and Traffic direction under advanced options.
+            3. Verify the values added under advanced option with WebUI's and API's values.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        result = True
+        global mirror_enabled_already
+        self.webui.logger.debug("Step 1 : Edit the port by adding the values \
+                               under advanced option")
+        params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
+        fixed_ip = self.webui_common.get_ui_value('Ports', 'Fixed IPs',
+                                                 name=topo.port_list[0])
+        fixed_ip[0]['value'] = [fixed_ip[0].values()[0]] + \
+                               [topo.port_advanced_option['subnet_ip']]
+        result = self.webui.edit_port('advanced_option', 'Ports',
+                     topo.port_list[0], port_admin_state='Down', params_list=params_list)
+        if result:
+            mirror_enabled_already = True
+        adv_option_list = [{'key': 'Admin_State', 'value': 'Down'},
+                          {'key': 'Local_Preference', 'value': '100'},
+                          {'key': 'Allowed_address_pairs', 'value':
+                              [topo.port_advanced_option['allowed_address_pair_ip'] + ' ' +
+                              topo.port_advanced_option['allowed_address_pair_mac']]},
+                          {'key': 'Analyzer_IP', 'value':
+                              topo.port_advanced_option['analyzer_ip']},
+                          {'key': 'UDP_Port', 'value':
+                          topo.port_advanced_option['port']},
+                          {'key': 'Analyzer_Name', 'value':
+                              topo.port_advanced_option['analyzer_name']},
+                          {'key': 'Routing_Instance', 'value': topo.domain + ":" +
+                              self.webui.project_name_input + ":" +
+                              topo.vnet_list[0] + ":" + topo.vnet_list[0]},
+                          {'key': 'Juniper_Header', 'value': 'Enabled'},
+                          {'key': 'Analyzer_MAC', 'value':
+                              topo.port_advanced_option['analyzer_mac']},
+                          {'key': 'Traffic_Direction', 'value': 'Both'},
+                          {'key': 'Nexthop_Mode', 'value': 'Dynamic'},
+                          {'key': 'Disable_Policy', 'value': 'True'},
+                          {'key': 'ECMP_Hashing_Fields', 'value': 'destination-ip'}] + \
+                          fixed_ip
+        self.webui.logger.debug("Step 2 : Verify the port with WebUI and API")
+        if not self.webui.verify_port_api_data([topo.port_list[0]], action='edit',
+                                              expected_result=adv_option_list):
+            result = result and False
+        return result
+    #end test6_4_edit_port_by_add_advanced_option_with_nh_mode_dynamic
+
+    @preposttest_wrapper
+    def test6_5_edit_port_by_add_advanced_option_with_nh_mode_static(self):
+        ''' Test to edit the existing port by Advanced Options
+            1. Go to Configure->Networking->Ports. Then select the last port
+               and click the edit button
+            2. Editing the port by adding the values and setting juniper header
+               as disabled, next hop mode as static and Traffic direction as
+               egress under advanced options.
+            3. Verify the values added under advanced option with WebUI's and
+               API's values.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        global mirror_enabled_already
+        result = True
+        self.webui.logger.debug("Step 1 : Edit the port by adding the values \
+                               under advanced option")
+        params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
+        result = self.webui.edit_port('advanced_option', 'Ports',
+                     topo.port_list[0], params_list=params_list, subnet=False,
+                     allowed_address_pair=False, ecmp=False, mirror=True,
+                     mirror_enabled_already=mirror_enabled_already, header_mode='Disabled',
+                     traffic_direction='Egress', next_hop_mode='Static')
+        if result:
+            mirror_enabled_already = True
+        adv_option_list = [{'key': 'Admin_State', 'value': 'Up'},
+                          {'key': 'Local_Preference', 'value': '100'},
+                          {'key': 'Allowed_address_pairs', 'value':
+                              [topo.port_advanced_option['allowed_address_pair_ip'] + ' ' +
+                              topo.port_advanced_option['allowed_address_pair_mac']]},
+                          {'key': 'Analyzer_IP', 'value':
+                              topo.port_advanced_option['analyzer_ip']},
+                          {'key': 'UDP_Port', 'value':
+                          topo.port_advanced_option['port']},
+                          {'key': 'Analyzer_Name', 'value':
+                              topo.port_advanced_option['analyzer_name']},
+                          {'key': 'Routing_Instance', 'value': topo.domain + ":" +
+                              self.webui.project_name_input + ":" +
+                              topo.vnet_list[0] + ":" + topo.vnet_list[0]},
+                          {'key': 'Juniper_Header', 'value': 'Disabled'},
+                          {'key': 'Analyzer_MAC', 'value':
+                              topo.port_advanced_option['analyzer_mac']},
+                          {'key': 'Traffic_Direction', 'value': u'Egress'},
+                          {'key': 'Nexthop_Mode', 'value': 'Static'},
+                          {'key': 'Disable_Policy', 'value': 'True'},
+                          {'key': 'ECMP_Hashing_Fields', 'value': 'destination-ip'},
+                          {'key': 'VTEP_Dest_IP', 'value':
+                              topo.port_advanced_option['vtep_dst_ip_address']},
+                          {'key': 'VTEP_Dest_MAC', 'value':
+                              topo.port_advanced_option['vtep_dst_mac_address']},
+                          {'key': 'VxLAN_ID', 'value':
+                              topo.port_advanced_option['vxlan_id']}]
+        self.webui.logger.debug("Step 2 : Verify the port with WebUI and API")
+        if not self.webui.verify_port_api_data([topo.port_list[0]], action='edit',
+                                              expected_result=adv_option_list):
+            result = result and False
+        return result
+    #end test6_5_edit_port_by_add_advanced_option_with_nh_mode_static
+
+    @preposttest_wrapper
+    def test6_6_edit_port_by_dhcp_option(self):
+        ''' Test to edit the existing port with DHCP options
+            1. Go to Configure->Networking->Ports. Then select one of the port
+               and click the edit button
+            2. Try to edit the port with DHCP options.
+            3. Verify DHCP code, value exactly updated or not in WebUI and API.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        self.webui.logger.debug("Step 1 : Add the DHCP options")
+        expected_dhcp_value = [{'key': 'DHCP_Options', 'value': topo.dhcp_option_code +
+                               " " +  topo.dhcp_option_value + " " + str(int
+                               (topo.dhcp_option_value)/8)}]
+        dhcp_option_list = [topo.dhcp_option_code, topo.dhcp_option_value]
+        result = self.webui.edit_port('dhcp', 'Ports', topo.port_list[0],
+                                     dhcp_option=dhcp_option_list)
+        if not self.webui.verify_port_api_data([topo.port_list[0]], action='edit',
+                                              expected_result=expected_dhcp_value):
+            self.webui.logger.debug('API and UI verification failed for DHCP Option')
+            result = result and False
+        return result
+    #end test6_6_edit_port_by_dhcp_option
+
+    @preposttest_wrapper
+    def test6_7_edit_port_by_fat_flow_protocol(self):
+        ''' Test to edit the existing port with FatFlow options
+            1. Go to Configure->Networking->Ports. Then select one of the port
+               and click the edit button
+            2. Try to edit the port with Fat flow protocols.
+            3. Verify Fat flow protocol value exactly updated or not in WebUI and API.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        self.webui.logger.debug("Step 1 : Add the Fat Flow Protocol")
+        fat_flow_list = []
+        for key, value in topo.fat_flow_values.items():
+            if key == 'ICMP':
+                value = '0'
+            fat_flow_list.append(key.lower() + ' ' + value)
+        expected_fat_flow = [{'key': 'Fatflow', 'value': fat_flow_list}]
+        result = self.webui.edit_port('FatFlow', 'Ports', topo.port_list[0],
+                                     fat_flow_values=topo.fat_flow_values)
+        if not self.webui.verify_port_api_data([topo.port_list[0]], action='edit',
+                                              expected_result=expected_fat_flow):
+            self.webui.logger.debug('API and UI verification failed for DHCP Option')
+            result = result and False
+        return result
+    #end test6_7_edit_port_by_fat_flow_protocol
+
+    @preposttest_wrapper
+    def test6_8_1_edit_port_by_add_advanced_option_allowed_address_neg(self):
+        ''' Test to edit the existing port by Advanced Options
+            1. Go to Configure->Networking->Ports. Then select the last port
+               and click the edit button.
+            2. Editing the port by adding invalid allowed address pair under
+               advanced options.
+            3. WebUI should throw an error message while saving.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        self.webui.logger.debug("Step 1 : Edit the port by adding the values \
+                               under advanced option")
+        params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
+        params_list[8] = topo.invalid_ip_mask
+        params_list[6] = topo.invalid_mac
+        assert self.webui.edit_port('advanced_option', 'Ports',
+                     topo.port_list[0], params_list=params_list, subnet=False,
+                     allowed_address_pair=True, ecmp=False, mirror=False,
+                     mirror_enabled_already=True, header_mode='Disabled',
+                     traffic_direction='Egress', next_hop_mode='Static', tc='negative'), \
+                     'Editing the port with invalid allowed address pair is passed'
+        return True
+    #end test6_8_1_edit_port_by_add_advanced_option_allowed_address_neg
+
+    @preposttest_wrapper
+    def test6_8_2_edit_port_by_add_advanced_option_analyzer_neg(self):
+        ''' Test to edit the existing port by Advanced Options
+            1. Go to Configure->Networking->Ports. Then select the last port
+               and click the edit button.
+            2. Editing the port by adding invalid Analyzer IP and Analyzer MAC
+               under Advanced Options.
+            3. WebUI should throw an error message while saving.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        result = True
+        self.webui.logger.debug("Step 1 : Edit the port by adding the values \
+                               under advanced option")
+        global mirror_enabled_already
+        params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
+        params_list[5] = topo.invalid_ip_mask
+        params_list[2] = topo.invalid_mac
+        params_list[10] = topo.invalid_port
+        if self.webui.edit_port('advanced_option', 'Ports',
+               topo.port_list[0], params_list=params_list, subnet=False,
+               allowed_address_pair=False, ecmp=False, mirror=True,
+               mirror_enabled_already=mirror_enabled_already, header_mode='Disabled',
+               traffic_direction='Egress', tc='negative'):
+            mirror_enabled_already = True
+            self.logger.info('WebUI throws an error as expected for \
+                            invalid Analyzer IP and MAC')
+        else:
+            result = result and False
+        return result
+    #end test6_8_2_edit_port_by_add_advanced_option_analyzer_neg
+
+    @preposttest_wrapper
+    def test6_8_3_edit_port_by_add_advanced_option_nh_static_neg(self):
+        ''' Test to edit the existing port by Advanced Options
+            1. Go to Configure->Networking->Ports. Then select the last port
+               and click the edit button.
+            2. Editing the port by adding invalid VTEP IP and VTEP MAC under
+               Advanced Options.
+            3. WebUI should throw an error message while saving.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        result = True
+        self.webui.logger.debug("Step 1 : Edit the port by adding the values \
+                               under advanced option")
+        global mirror_enabled_already
+        params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
+        params_list[7] = topo.invalid_ip_mask
+        params_list[3] = topo.invalid_mac
+        if self.webui.edit_port('advanced_option', 'Ports',
+                     topo.port_list[0], params_list=params_list, subnet=False,
+                     allowed_address_pair=True, ecmp=False, mirror=True,
+                     mirror_enabled_already=mirror_enabled_already, header_mode='Disabled',
+                     traffic_direction='Egress', next_hop_mode='Static', tc='negative'):
+            mirror_enabled_already = True
+            self.logger.info('WebUI throws an error as expected for \
+                            invalid VTEP IP and VTEP MAC')
+        else:
+            result = result and False
+        return result
+    #end test6_8_3_edit_port_by_add_advanced_option_nh_static_neg
+
+    @preposttest_wrapper
+    def test6_7_1_edit_port_by_fat_flow_protocol_neg(self):
+        ''' Test to edit the existing port with Invalid FatFlow Protocol options
+            1. Go to Configure->Networking->Ports. Then select one of the port
+               and click the edit button
+            2. Try to edit the port with invalid Fat flow ports.
+            3. WebUI should throw an error message while saving.
+
+            Pass Criteria : Step 3 should pass
+        '''
+        self.webui.logger.debug("Step 1 : Add the Fat Flow Protocol with invalid port")
+        fat_flow = {'TCP':'abcd'}
+        assert self.webui.edit_port('FatFlow', 'Ports', topo.port_list[0],
+                    fat_flow_values=fat_flow, tc='negative'), 'WebUI throws an error as expected \
+                    for invalid fat flow port'
+        return True
+    #end test6_7_1_edit_port_by_fat_flow_protocol_neg
+
+    @preposttest_wrapper
+    def test6_9_add_sub_interface(self):
+        ''' Test to add the sub interface for the existing port
+            1. Go to Configure->Networking->Ports. Then select one of the port
+               and add the sub interface
+            2. Verify the sub-interface in WebUI and API.
+
+            Pass Criteria : Step 2 should pass
+        '''
+        result = True
+        self.webui.logger.debug('Step 1 : Add subinterface for the exiting port')
+        uuid_port = self.webui_common.get_ui_value('Ports', 'UUID', name=topo.port_list[0])
+        params_list = [topo.vnet_list[0], topo.sub_interface_name, topo.vlan_id]
+        if self.webui.add_subinterface_ports('Ports', topo.port_list[0],
+                                                   params_list):
+            self.webui.logger.debug('WebUI throws an error as expected \
+                                   for invalid fat flow port')
+        else:
+            result = result and False
+        self.webui.logger.debug('Step 2 : Verify the Sub-Interface details in both WebUI \
+                               and API')
+        expected_result = [{'key': 'Parent_Port', 'value': uuid_port[0].values()[0]},
+                           {'key': 'Sub_Interface_VLAN', 'value': topo.vlan_id}]
+        if not self.webui.verify_port_api_data([topo.sub_interface_name], action='edit',
+                                              expected_result=expected_result):
+            self.webui.logger.debug('API and UI verification failed for Subinterface')
+            result = result and False
+        if not self.webui_common.edit_remove_option('Ports', 'subinterface', \
+                                                   display_name=topo.sub_interface_name):
+            self.webui.logger.debug('Deleting the existing sub-interface is failed')
+            result = result and False
+        return result
+    #end test6_9_add_sub_interface
+
+    @preposttest_wrapper
+    def test6_9_1_add_sub_interface_with_invalid_vlan_id(self):
+        ''' Test to add the sub interface for the existing port
+            1. Go to Configure->Networking->Ports. Then select one of the port
+               and add the sub interface with invalid vlan id
+            2. WebUI shoud throw error while saving.
+
+            Pass Criteria : Step 2 should pass
+        '''
+        result = True
+        self.webui.logger.debug('Step 1 : Add subinterface for the exiting port')
+        params_list = [topo.vnet_list[0], topo.sub_interface_name, topo.invalid_vlan_id]
+        assert self.webui.add_subinterface_ports('Ports', topo.port_list[0],
+                    params_list, tc='negative'), 'WebUI throws is not throwing an error \
+                    as expected for invalid vlan id while adding sub-interface'
+        return True
+    #end test6_9_1_add_sub_interface_with_invalid_vlan_id
 
 # end WebuiTestSanity
