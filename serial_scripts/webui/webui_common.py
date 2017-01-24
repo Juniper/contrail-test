@@ -1203,7 +1203,10 @@ class WebuiCommon:
         if WebuiCommon.count_in == False:
             if not element_type == 'svc_template_delete':
                 self.click_configure_networks()
-                self.select_project(fixture.project_name)
+                if not fixture:
+                    self.select_project(self.inputs.project_name)
+                else:
+                    self.select_project(fixture.project_name)
                 WebuiCommon.count_in = True
         if element_type == 'svc_instance_delete':
             if not self.click_configure_service_instance():
@@ -1217,6 +1220,12 @@ class WebuiCommon:
             element_name = fixture.name
             element_id = 'linkSvcHealthChkDelete'
             popup_id = 'configure-HealthCheckServicesbtn1'
+        if element_type == 'bgp_aas_delete':
+            if not self.click_configure_bgp_as_a_service():
+                result = result and False
+            element_name = 'all'
+            element_id = 'btnDeleteBGPAsAService'
+            popup_id = 'configure-bgp_as_a_servicebtn1'
         elif element_type == 'vn_delete':
             if not self.click_configure_networks():
                 result = result and False
@@ -1300,7 +1309,8 @@ class WebuiCommon:
                     element_text = element.find_elements_by_tag_name(
                         'div')[3].text
                     div_obj = element.find_elements_by_tag_name('div')[1]
-                elif element_type in ['router_delete', 'dns_server_delete', 'dns_record_delete']:
+                elif element_type in ['router_delete', 'dns_server_delete',
+                                      'dns_record_delete', 'bgp_aas_delete']:
                     element_text = 'all'
                     div_obj = element.find_elements_by_tag_name('div')[1]
                 else:
@@ -1628,7 +1638,14 @@ class WebuiCommon:
         self.click_element('i', 'tag', browser = div_browser)
         self.wait_till_ajax_done(self.browser)
     #end click_configure_service_health_check_basic
-    
+
+    def click_configure_bgp_as_a_service(self):
+        self._click_on_config_dropdown(self.browser, 3)
+        self.click_element(['config_sc_bgpasaservice', 'a'], ['id', 'tag'])
+        self.wait_till_ajax_done(self.browser)
+        return self.check_error_msg("configure bgp as a service")
+    # end click_configure_bgp_as_a_service
+
     def click_configure_physical_routers(self):
         self.wait_till_ajax_done(self.browser)
         self._click_on_config_dropdown(self.browser, 1)
