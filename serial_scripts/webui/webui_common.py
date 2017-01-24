@@ -16,7 +16,6 @@ from vnc_api.vnc_api import *
 from tcutils.verification_util import *
 from selenium.common.exceptions import ElementNotVisibleException
 
-
 def wait_for_ajax(driver):
     while True:
         if (driver.execute_script("return jQuery.active") == 0):
@@ -185,6 +184,10 @@ class WebuiCommon:
     def get_vn_list_api(self):
         return self._get_list_api('virtual-networks')
     # end get_vn_list_api
+
+    def get_global_config_api(self, option):
+        return self._get_list_api(option)
+    # end get_global_config_api
 
     def get_details(self, url):
         obj = self.jsondrv.load(url)
@@ -1590,6 +1593,14 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
         return self.check_error_msg("configure project quotas")
     # end click_configure_project_quota
+
+    def click_configure_global_config(self):
+        self._click_on_config_dropdown(self.browser, index=0)
+        self.click_element(
+            ['config_infra_gblconfig', 'Global Config'], ['id', 'link_text'])
+        self.wait_till_ajax_done(self.browser)
+        return self.check_error_msg("configure global config")
+    # end click_configure_global_config
 
     def click_configure_service_template_basic(self, row_index):
         self.click_element(['config_service_templates', 'a'], ['id', 'tag'])
@@ -3211,3 +3222,38 @@ class WebuiCommon:
         else:
             return result and False
     # negative_test_proc
+
+    def get_global_config_api_href(self, option):
+        api_str = 'global-' + option + '-configs'
+        global_config_api = self.get_global_config_api(api_str)
+        global_config_href = {}
+        if len(global_config_api):
+            global_config_href = self.get_details(
+                global_config_api[api_str][0]['href'])
+        return global_config_href
+    # get_global_config_api_href
+
+    def get_global_config_row_details_webui(self, webui_global_key_value=[], index=0):
+        rows = self.find_element('grid-canvas', 'class', elements=True)[index]
+        rows_detail = self.get_rows(rows)
+        for row in rows_detail:
+            key_value = row.text.split('\n')
+            key = str(key_value.pop(0))
+            if key == 'Graceful Restart':
+                webui_global_key_value.append({'key': 'Graceful_Restart',
+                                             'value': key_value[0]})
+                if key_value[0] == 'Enabled':
+                    timer_values = key_value[-1].split(' ')
+                    self.keyvalue_list(webui_global_key_value, BGP_Helper=timer_values[0],
+                        Restart_Time=timer_values[1], LLGR_Time=timer_values[2],
+                        End_of_RIB=timer_values[3])
+                continue
+            if len(key_value) == 1:
+                key_value = key_value[0]
+                if key_value == '-':
+                    continue
+            key = key.replace(' ', '_')
+            webui_global_key_value.append({'key': key, 'value': key_value})
+        return webui_global_key_value
+    # get_global_config_row_details_webui
+
