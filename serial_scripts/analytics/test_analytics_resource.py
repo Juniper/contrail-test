@@ -1105,6 +1105,21 @@ class AnalyticsTestSanityWithResource(
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    def test_verify_contrail_flows_cli_command_not_broken(self):
+        '''1.Run command 'contrail-flows --vrouter vrouter-ip'
+           2.Verify the command runs properly and its returning some output
+           3.Do not verify the correctness of the output
+        '''
+        assert self.res.vn1_vm1_fixture.ping_with_certainty(dst_vm_fixture=self.res.vn1_vm2_fixture)
+        vrouter_ip = self.res.vn1_vm1_fixture._vm_node_ip
+        cmd = 'contrail-flows --vrouter ' + vrouter_ip
+        analytics = self.res.inputs.collector_ips[0]
+        output = self.res.inputs.run_cmd_on_server(analytics, cmd)
+        assert output.failed is False,'contrail-flows command failed..'
+        return True
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
     def test_verify_contrail_logs_cli_command_not_broken(self):
         '''1.Run command 'contrail-logs --object-type virtual-network'
            2.Verify the command runs properly and its returning some output
