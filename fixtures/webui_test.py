@@ -10,10 +10,9 @@ from project_test import *
 from tcutils.util import *
 from vnc_api.vnc_api import *
 from contrail_fixtures import *
-from common.ui.edit import WebuiEdit
+from common.ui.webui_edit import WebuiEdit
 from webui.webui_common import WebuiCommon
 import re
-
 
 class WebuiTest:
 
@@ -6405,3 +6404,113 @@ class WebuiTest:
             raise
         return result
     # add_subinterface_ports
+
+    def verify_global_api_data(self, expected_result=None):
+        self.logger.info("Verifying global config api server data on \
+                        Config->Infrastructure->Global Config page ...")
+        self.logger.debug(self.dash)
+        result = True
+        complete_api_data = []
+        global_config_forwarding = self.ui.get_global_config_api_href('vrouter')
+        global_config_bgp = self.ui.get_global_config_api_href('system')
+        if global_config_forwarding:
+            vrouter_config = global_config_forwarding.get('global-vrouter-config')
+            if vrouter_config:
+                forward_mode = vrouter_config.get('forwarding_mode')
+                if forward_mode:
+                    if '_' in forward_mode:
+                        forward_mode = forward_mode.title().replace('_', ' and ')
+                    else:
+                        forward_mode = forward_mode.title() + ' Only'
+                else:
+                    forward_mode = 'Default'
+                vxlan = vrouter_config.get('vxlan_network_identifier_mode')
+                vxlan = 'Auto Configured' if vxlan == 'automatic' else 'User Configured'
+                encap_priority = vrouter_config.get('encapsulation_priorities')
+                if vrouter_config.get('encapsulation_priorities'):
+                    encapsulation = vrouter_config.get(
+                                    'encapsulation_priorities').get('encapsulation')
+                    encap_list = []
+                    for encap in encapsulation:
+                        if 'o' in encap or 'X' in encap:
+                            encap = encap.replace('o', ' Over ')
+                            encap = encap.replace('X', 'x')
+                        encap_list.append(encap)
+                ecmp_fields = vrouter_config.get('ecmp_hashing_include_fields')
+                if ecmp_fields:
+                    ecmp_keys = ecmp_fields.keys()
+                    ecmp_values = ecmp_fields.values()
+                    ecmp_value = ''
+                    for ecmp in range(len(ecmp_values)):
+                        if ecmp_values[ecmp]:
+                            if ecmp_keys[ecmp] == 'hashing_configured':
+                                continue
+                            ecmp_value += str(ecmp_keys[ecmp]).replace('_', '-') + ', '
+                    ecmp_value = ecmp_value.rstrip(', ')
+                flow_export_rate = vrouter_config.get('flow_export_rate')
+                if flow_export_rate:
+                    complete_api_data.append(
+                        {'key': 'Flow_Export_Rate', 'value': str(flow_export_rate)})
+            else:
+                result = result and False
+        else:
+            result = result and False
+        if global_config_bgp:
+            bgp_system_config = global_config_bgp.get('global-system-config')
+            if bgp_system_config:
+                asn = bgp_system_config.get('autonomous_system')
+                full_mesh = bgp_system_config.get('ibgp_auto_mesh')
+                full_mesh = 'Enabled' if full_mesh else 'Disabled'
+                grace_restart = bgp_system_config.get('graceful_restart_parameters')
+                ip_fabric = bgp_system_config.get('ip_fabric_subnets')
+                if ip_fabric:
+                    subnet = ip_fabric.get('subnet')
+                    subnet = str(subnet[0].values()[0]) + '/' + str(subnet[0].values()[1])
+                    complete_api_data.append({'key': 'IP_Fabric_Subnets', 'value':
+                                            subnet})
+                if grace_restart['enable']:
+                    bgp_helper = 'Enabled' if grace_restart['bgp_helper_enable'] else \
+                                 'Disabled'
+                    self.ui.keyvalue_list(complete_api_data, Graceful_Restart='Enabled',
+                        BGP_Helper=bgp_helper, Restart_Time=str(grace_restart['restart_time']),
+                        LLGR_Time=str(grace_restart['long_lived_restart_time']),
+                        End_of_RIB=str(grace_restart['end_of_rib_timeout']))
+                else:
+                    complete_api_data.append({'key': 'Graceful_Restart', 'value': 'Disabled'})
+            else:
+                result = result and False
+        else:
+            result = result and False
+        self.ui.keyvalue_list(complete_api_data, Forwarding_Mode=forward_mode,
+             VxLAN_Identifier_Mode=vxlan, Encapsulation_Priority_Order=encap_list,
+             ECMP_Hashing_Fields=ecmp_value, Global_ASN=asn, iBGP_Auto_Mesh=full_mesh)
+        if not self.ui.click_configure_global_config():
+            result = result and False
+        webui_global_key_value = self.ui.get_global_config_row_details_webui()
+        self.ui.click_element('bgp_options_tab-tab-link')
+        webui_global_key_value = self.ui.get_global_config_row_details_webui(
+                                     webui_global_key_value=webui_global_key_value,
+                                     index=1)
+        if not expected_result:
+            if self.ui.match_ui_kv(complete_api_data, webui_global_key_value):
+                self.logger.info("Global config details matched on \
+                                Config->Infrastructure->Global config page")
+            else:
+                self.logger.error("Global config details match failed on \
+                                 Config->Infrastructure-Global Config page")
+                result = result and False
+        else:
+            if self.ui.match_ui_kv(expected_result, webui_global_key_value, data=
+                   'Expected_key_value', matched_with='WebUI') and self.ui.match_ui_kv(
+                    expected_result, complete_api_data, data='Expected_key_value',
+                    matched_with='API'):
+                    self.logger.info(
+                         "%s of global config  matched on WebUI/API after editing" %
+                         (expected_result))
+            else:
+                self.logger.error(
+                     "%s of global config match failed on WebUI/API after editing" %
+                     (expected_result))
+                result = result and False
+        return result
+    # end verify_global_api_data
