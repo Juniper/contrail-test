@@ -235,4 +235,74 @@ class WebuiEdit:
             self.ui.click_on_cancel_if_failure('cancelBtn')
             raise
         return result
-    # edit_port_with_dhcp_option
+    # edit_port_with_fat_flow
+
+    def edit_global_config_forwarding_option(self, paramater_list, **kwargs):
+        result = True
+        try:
+            default = kwargs.get('default', True)
+            tc = kwargs.get('tc', 'positive')
+            if not self.ui.click_configure_global_config():
+                result = result and False
+            self.ui.click_element('fa-pencil-square-o', 'class')
+            self.ui.click_element('s2id_forwarding_mode_dropdown')
+            if not self.ui.select_from_dropdown(paramater_list[0], grep=False):
+                result = result and False
+            flow_rate = '' if default else paramater_list[1]
+            self.ui.send_keys(flow_rate, 'flow_export_rate', 'name', clear=True)
+            self.ui.click_element('vxlan_network_identifier_mode')
+            config_mode = 'automatic' if default else 'configured'
+            config_mode_xpath = "//input[contains(@value, '" + config_mode + "')]"
+            self.ui.click_element(config_mode_xpath, 'xpath')
+            self.ui.click_element('configure-global_forwarding_optionsbtn1')
+            self.ui.wait_till_ajax_done(self.browser)
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.ui.screenshot(option)
+            result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+    # edit_global_config_forwarding_option
+
+    def edit_global_config_bgp_option(self, parameter_list, **kwargs):
+        result = True
+        try:
+            default = kwargs.get('default', True)
+            tc = kwargs.get('tc', 'positive')
+            grace_restart = kwargs.get('grace_restart', True)
+            subnet = kwargs.get('subnet', True)
+            if not self.ui.click_configure_global_config():
+                result = result and False
+            self.ui.click_element('bgp_options_tab-tab-link')
+            self.ui.click_element('fa-pencil-square-o', 'class', elements=True, index=1)
+            self.ui.send_keys(parameter_list[0], 'autonomous_system', 'name', clear=True)
+            self.ui.click_element('ibgp_auto_mesh', 'name')
+            if grace_restart:
+                self.ui.click_element('graceful_restart_enable', 'name')
+            if not default:
+                self.ui.click_element('s2id_bgp_helper_enable_dropdown')
+                if not self.ui.select_from_dropdown(parameter_list[1], grep=False):
+                   result = result and False
+                self.ui.send_keys(parameter_list[2], 'restart_time', 'name', clear=True)
+                self.ui.send_keys(parameter_list[3], 'long_lived_restart_time', 'name',
+                                 clear=True)
+                self.ui.send_keys(parameter_list[4], 'end_of_rib_timeout', 'name',
+                                 clear=True)
+                if subnet:
+                    self.ui.click_element('editable-grid-add-link', 'class')
+                    self.ui.send_keys(parameter_list[5], 'ip_fabric_subnets', 'name', clear=True)
+            else:
+                self.ui.click_element('fa-minus', 'class')
+            self.ui.click_element('configure-global_bgp_optionsbtn1')
+            if tc != 'positive':
+                result = self.ui.negative_test_proc('global_bgp_options')
+            self.ui.wait_till_ajax_done(self.browser)
+        except WebDriverException:
+            self.logger.error("Error while trying to edit %s" % (option))
+            self.ui.screenshot(option)
+            result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            raise
+        return result
+    # edit_global_config_bgp_option
