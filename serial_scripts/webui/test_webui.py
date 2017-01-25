@@ -168,6 +168,20 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # UI verification tests
 
     @preposttest_wrapper
+    def test_verify_config_infra_global_config(self):
+        '''Test to verify global config on config->Infrastructure->Global Config
+           1. Go to Configure->Infrastructure->Global Config.
+              and Get all the details of global config from both WebUI and API server.
+              and Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 1 should pass
+        '''
+        assert self.webui.verify_global_api_data(), \
+                                              'Global config data verification failed'
+        return True
+    # end test_verify_config_infra_global_config
+
+    @preposttest_wrapper
     def test_verify_config_networking_floating_ips(self):
         '''Test floating ips on config->Networking->Manage Floating IPs page
         '''
