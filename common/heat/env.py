@@ -290,7 +290,7 @@ svc_inst_pt_dual_v2 = svc_inst_pt_v2
 
 pt_svm = {
   u'parameters': {
-    u'image': u'tiny_in_net', u'flavor': u'contrail_flavor_tiny', u'svm_name': u'',
+    u'image': u'tiny_nat_fw', u'flavor': u'contrail_flavor_tiny', u'svm_name': u'',
     u'si_fqdn': u'',u'mgmt_net_id': u'', u'left_net_id': u'', u'right_net_id': u'',u'intf_rt_table_fqdn': u'',
     u'def_sg_id': u''
   }
