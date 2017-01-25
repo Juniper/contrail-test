@@ -1,8 +1,9 @@
 import test_v1
 from common.connections import ContrailConnections
 from common import isolated_creds
+from common.base import GenericTestBase
 
-class BaseIntfMirrorTest(test_v1.BaseTestCase_v1):
+class BaseIntfMirrorTest(GenericTestBase):
 
     @classmethod
     def setUpClass(cls):
