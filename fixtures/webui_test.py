@@ -6376,7 +6376,7 @@ class WebuiTest:
         return result
     # edit_port
 
-    def add_subinterface_ports(self, option, port_name, params_list, tc='positive'):
+    def add_subinterface_ports(self, option, port_name, params_list):
         result = True
         try:
             self.sub_interface = self.ui.edit_remove_option(option, 'subinterface',
@@ -6390,8 +6390,7 @@ class WebuiTest:
                 self.ui.send_keys(params_list[2], 'sub_interface_vlan_tag', 'name')
                 self.ui.click_on_create(option.strip('s'),
                                     option.strip('s').lower(), save=True)
-                if tc != 'positive':
-                    result = self.ui.negative_test_proc(option)
+                result = self.ui.negative_test_proc(option)
                 self.ui.wait_till_ajax_done(self.browser)
             else:
                 self.logger.error("Clicking the Edit Button is not working")
@@ -6515,9 +6514,13 @@ class WebuiTest:
         return result
     # end verify_global_api_data
 
-
-    def edit_global_config(self, option, paramater_list, **kwargs):
+    def edit_and_verify_global_config(self, option, paramater_list, **kwargs):
+        result = True
+        self.logger.info('Edit the global config %s option' %(option))
         option = 'self.webui_edit.edit_global_config_' + option + '_option'
         result = eval(option)(paramater_list, **kwargs)
+        self.logger.info('Verify the global config option after editing')
+        if not self.verify_global_api_data():
+            result = result and False
         return result
-    # def edit_global_config
+    # def edit_and_verify_global_config
