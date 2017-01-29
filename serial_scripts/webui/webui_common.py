@@ -3209,7 +3209,6 @@ class WebuiCommon:
     # format_sec_group_name
 
     def negative_test_proc(self, option):
-        result = True
         warn_button = self.find_element('alert-error', 'class')
         if warn_button.get_attribute('style') == "":
             form_error =  option + "_form_error"
@@ -3218,9 +3217,9 @@ class WebuiCommon:
             self.logger.info("Getting %s error message while saving" % (error.text))
             self.click_on_cancel_if_failure('cancelBtn')
             self.wait_till_ajax_done(self.browser)
-            return result
+            return False
         else:
-            return result and False
+            return True
     # negative_test_proc
 
     def get_global_config_api_href(self, option):

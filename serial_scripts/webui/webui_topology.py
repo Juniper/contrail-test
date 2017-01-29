@@ -418,6 +418,16 @@ class sdn_webui_config ():
         }
         self.fat_flow_values = {'TCP':'5', 'ICMP':'2', 'UDP':'4', 'SCTP':'7'}
         self.sub_interface_name = 'port1-subinterface1'
+        self.orig_bgp_asn = '64512'
+        self.bgp_restart_time = '120'
+        self.invalid_bgp_restart_time = ['60abc', '60abc!@#$%^~&*()_+|}:;/.,<>?']
+        self.orig_bgp_restart_time = '60'
+        self.bgp_llgr_time = '600'
+        self.orig_bgp_llgr_time = '300'
+        self.invalid_bgp_llgr_time = ['300abc', '300abc!@#$%^~&*()_+|}:;/.,<>?']
+        self.bgp_end_rib = '60'
+        self.orig_bgp_end_rib = '30'
+        self.invalid_bgp_end_rib = ['30abc', '30abc!@#$%^~&*()_+|}:;/.,<>?']
         # end __init__
 
 if __name__ == '__main__':
