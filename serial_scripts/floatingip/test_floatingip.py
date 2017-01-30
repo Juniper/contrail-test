@@ -32,7 +32,7 @@ from fabric.context_managers import settings
 from fabric.api import run
 import base
 import test
-
+from compute_node_test import *
 
 class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
 
@@ -386,14 +386,24 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
         # Verify Ingress Traffic
         self.logger.info('Verifying Ingress Flow Record')
         vn_fq_name=vn1_vm1_traffic_fixture.vn_fq_name
-        flow_rec1 = inspect_h1.get_vna_fetchflowrecord(
-            nh=vn1_vm1_traffic_fixture.tap_intf[vn_fq_name]['flow_key_idx'],
-            sip=vn1_vm1_traffic_fixture.vm_ip,
-            dip=fvn1_vm1_traffic_fixture.vm_ip,
-            sport='0',
-            dport='0',
-            protocol='1')
-
+        compute_node_fixture = self.useFixture(ComputeNodeFixture(
+                self.connections, vn1_vm1_traffic_fixture.vm_node_ip))
+        fwd_flow, rev_flow = compute_node_fixture.get_flow_entry(
+                                    source_ip = vn1_vm1_traffic_fixture.vm_ip,
+                                    dest_ip = fvn1_vm1_traffic_fixture.vm_ip,
+                                    dest_port = '0',
+                                    proto = '1')
+        if fwd_flow: 
+            sport = fwd_flow.source_port 
+            flow_rec1 = inspect_h1.get_vna_fetchflowrecord(
+                nh=vn1_vm1_traffic_fixture.tap_intf[vn_fq_name]['flow_key_idx'],
+                sip=vn1_vm1_traffic_fixture.vm_ip,
+                dip=fvn1_vm1_traffic_fixture.vm_ip,
+                sport=sport,
+                dport='0',
+                protocol='1')
+	else:
+            flow_rec1 = None
         if flow_rec1 is not None:
             self.logger.info('Verifying NAT in flow records')
             match = inspect_h1.match_item_in_flowrecord(
@@ -420,14 +430,16 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
         # Check VMs are in same agent or not. Need to compute source vrf
         # accordingly
         self.logger.info('Verifying Egress Flow Records')
-        flow_rec2 = inspect_h1.get_vna_fetchflowrecord(
-            nh=vn1_vm1_traffic_fixture.tap_intf[vn_fq_name]['flow_key_idx'],
-            sip=fvn1_vm1_traffic_fixture.vm_ip,
-            dip=fip_fixture1.fip[fip_id1],
-            sport='0',
-            dport='0',
-            protocol='1')
-        
+        if fwd_flow:
+            flow_rec2 = inspect_h1.get_vna_fetchflowrecord(
+                nh=vn1_vm1_traffic_fixture.tap_intf[vn_fq_name]['flow_key_idx'],
+                sip=fvn1_vm1_traffic_fixture.vm_ip,
+                dip=fip_fixture1.fip[fip_id1],
+                sport=sport,
+                dport='0',
+                protocol='1')
+        else:
+            flow_rec2 = False
         if flow_rec2 is not None:
             self.logger.info('Verifying NAT in flow records')
             match = inspect_h1.match_item_in_flowrecord(
