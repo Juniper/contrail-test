@@ -39,7 +39,8 @@ class VNCApiInspect (VerificationUtilBase):
             'lr': {},
             'table': {},
             'loadbalancer': {},
-            'api-access-list': {}
+            'api-access-list': {},
+            'alarm':{},
         }
 
     def update_cache(self, otype, fq_path, d):
@@ -796,6 +797,12 @@ class VNCApiInspect (VerificationUtilBase):
         ''' set rbac mode '''
         dct = {'aaa-mode': aaa_mode}
         self.put(path='aaa-mode', payload=dct)
+
+    def get_cs_alarm(self,alarm_id):
+        obj = self.dict_get('alarm/%s' %alarm_id)
+        if obj:
+            return CsAlarmResult(obj)
+        return None
 
 if __name__ == '__main__':
     va = VNCApiInspect('10.84.7.2')

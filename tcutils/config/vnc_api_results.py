@@ -179,6 +179,19 @@ class CsProjectResult (Result):
         if si_list:
             return filter(lambda x: x['to'][-1] == si, si_list)
 
+    def alarm_list(self):
+        result = self.xpath('project', 'alarms')
+        if not result:
+            return []
+        return result
+
+    def alarm(self,alarm):
+        return filter(lambda x: x['to'][-1] == alarm, self.alarm_list())
+
+class CsAlarmResult(Result):
+
+    def fq_name(self):
+        return ':'.join(self.xpath('alarm','fq_name'))
 
 class CsVdnsResult(Result):
 

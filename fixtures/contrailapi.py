@@ -839,3 +839,34 @@ class ContrailVncApi(object):
         self._vnc.route_table_delete(id=uuid)
         self._log.info('Deleted Network route table %s' % (uuid))
     # end delete_network_route_table
+
+    def get_alarm(self,alarm_id):
+        try:
+            return self._vnc.alarm_read(id=alarm_id)
+        except:
+            try:
+                return self._vnc.alarm_read(fq_name=alarm_id)
+            except:
+                return None
+    #end get_alarm
+
+    def create_alarm(self, name, parent_obj, alarm_rules, alarm_severity, uve_keys):
+        alarm_obj = Alarm(name=name, parent_obj=parent_obj,
+                                   alarm_rules=alarm_rules, alarm_severity=alarm_severity,
+                                   uve_keys=uve_keys)
+        return self._vnc.alarm_create(alarm_obj)
+    #end create_alarm
+
+    def update_alarm(self,alarm_obj):
+        return self._vnc.alarm_update(alarm_obj)
+    #end update_alarm
+
+    def delete_alarm(self,alarm_id):
+        self._vnc.alarm_delete(id=alarm_id)
+    #end delete_alarm
+  
+    def get_global_config_obj(self):
+        gsc_id = self._vnc.get_default_global_system_config_id()
+        gsc_obj = self._vnc.global_system_config_read(id=gsc_id)
+        return gsc_obj
+    # end get_global_config_obj
