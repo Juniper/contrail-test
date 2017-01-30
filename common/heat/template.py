@@ -2869,11 +2869,11 @@ pt_svm = {
   u'outputs': {
     u'svm_left_vmi_id': {
       u'description': u'ID of the left vmi of the SVM',
-      u'value': {u'get_attr': [u'svm_left_vmi', u'show', u'uuid']}
+      u'value': {u'get_resource': u'svm_left_vmi'}
     },
     u'svm_right_vmi_id': {
       u'description': u'ID of the right vmi of the SVM',
-      u'value': {u'get_attr': [u'svm_right_vmi', u'show', u'uuid']}
+      u'value': {u'get_resource': u'svm_right_vmi'}
     },
   },
   u'parameters': {
