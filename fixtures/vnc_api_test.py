@@ -50,6 +50,8 @@ class VncLibFixture(fixtures.Fixture):
         self.keyfile = kwargs.get('keyfile', None)
         self.cacert = kwargs.get('cacert', None)
         self.insecure = kwargs.get('insecure', True)
+
+        self.multi_tenancy = kwargs.get('multi_tenancy', self.inputs.multi_tenancy)
     # end __init__
 
     def setUp(self):
@@ -69,7 +71,7 @@ class VncLibFixture(fixtures.Fixture):
             self.auth_url = self.inputs.auth_url
         else:
             self.logger = self.logger or contrail_logging.getLogger(__name__)
-            if self.auth_url.startswith('https:'):
+            if self.multi_tenancy and self.auth_url.startswith('https:'):
                 use_ssl=True
             else:
                 use_ssl=False
@@ -100,7 +102,8 @@ class VncLibFixture(fixtures.Fixture):
                                                 )
             if not self.project_id:
                 self.project_id = self.auth_client.get_project_id()
-        self.vnc_h = self.orch.vnc_h
+        if self.orch:
+            self.vnc_h = self.orch.vnc_h
     # end setUp
 
     def cleanUp(self):

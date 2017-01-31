@@ -49,7 +49,10 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     cfgm_host = env.roledefs['cfgm'][0]
 
     auth_protocol = get_authserver_protocol()
-    auth_server_ip = get_authserver_ip()
+    try:
+        auth_server_ip = get_authserver_ip()
+    except IndexError, e:
+        auth_server_ip = None
     auth_server_port = get_authserver_port()
     api_auth_protocol = get_apiserver_protocol()
 
@@ -109,9 +112,10 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
        contents_sample_ini = fd_sample_ini.read()
     sanity_ini_templ = string.Template(contents_sample_ini)
 
-    if env.get('orchestrator', 'openstack') != 'vcenter':
+    if env.get('orchestrator', 'openstack') == 'openstack':
         with settings(host_string = env.roledefs['openstack'][0]), hide('everything'):
             openstack_host_name = run("hostname")
+
 
     with settings(host_string = env.roledefs['cfgm'][0]), hide('everything'):
         cfgm_host_name = run("hostname")
@@ -180,7 +184,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         if host_string in env.roledefs['cfgm']:
             role_dict = {'type': 'cfgm', 'params': {'collector': host_name, 'cassandra': ' '.join(cassandra_host_names)}}
 
-            if env.get('orchestrator', 'openstack') != 'vcenter':
+            if env.get('orchestrator', 'openstack') == 'openstack':
                 role_dict['openstack'] = openstack_host_name
             host_dict['roles'].append(role_dict)
 
@@ -360,6 +364,8 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
                                      os.getenv('AVAILABILITY_ZONE') or None)
     ci_flavor = env.test.get('ci_flavor',
                              os.getenv('CI_FLAVOR') or None)
+    kube_config_file = env.test.get('kube_config_file',
+                                     '/etc/kubernetes/admin.conf')
 
     use_devicemanager_for_md5 = getattr(testbed, 'use_devicemanager_for_md5', False)
     orch = getattr(env, 'orchestrator', 'openstack')
@@ -567,6 +573,15 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
 
     with open(vnc_api_ini,'w') as f:
         config.write(f)
+
+    # For now, assume first config node is same as kubernetes master node
+    # Get kube config file to the testrunner node
+    if orch == 'kubernetes':
+        if not os.path.exists(kube_config_file):
+            os.makedirs(os.path.dirname(kube_config_file))
+            with settings(host_string = env.roledefs['cfgm'][0]):
+                get(kube_config_file, kube_config_file)
+            
 
     # If webui = True, in testbed, setup webui for sanity
     if webui:

@@ -208,6 +208,9 @@ class TestInputs(object):
                                                'ui', 'webui', False)
         self.verify_horizon = read_config_option(self.config,
                                                  'ui', 'horizon', False)
+        self.kube_config_file = read_config_option(self.config, 
+                                                   'kubernetes', 'config_file',
+                                                   '/etc/kubernetes/admin.conf')
         if not self.ui_browser and (self.verify_webui or self.verify_horizon):
             raise ValueError(
                 "Verification via GUI needs 'browser' details. Please set the same.")
@@ -286,6 +289,7 @@ class TestInputs(object):
                         '%s://%s:%s/v2.0'%(self.auth_protocol,
                                            self.auth_ip,
                                            self.auth_port)
+        self._set_auth_vars()
         self.apicertfile = read_config_option(self.config,
                                              'cfgm', 'api_certfile', None)
         self.apikeyfile = read_config_option(self.config,
@@ -394,6 +398,17 @@ class TestInputs(object):
         else:
             return default
     # end get_os_env
+
+    def _set_auth_vars(self):
+        '''
+        Set auth_protocol, auth_ip, auth_port from self.auth_url
+        '''
+        match = re.match(r'(.*?)://(.*?):([\d]+).*$', self.auth_url, re.M|re.I)
+        if match:
+            self.auth_protocol = match.group(1)
+            self.auth_ip = match.group(2)
+            self.auth_port = match.group(3)
+    # end _set_auth_vars
 
     def get_os_version(self, host_ip):
         '''
