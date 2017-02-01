@@ -6,9 +6,9 @@ from vnc_api.vnc_api import *
 
 class ContrailVncApi(object):
 
-    def __init__(self, vnc, logger=None):
+    def __init__(self, vnc, _log=None):
         self._vnc = vnc
-        self._log = logger or logging.getLogger(__name__)
+        self._log = _log or logging.get_log(__name__)
 
     def __getattr__(self, name):
         # Call self._vnc method if no matching method exists
@@ -138,7 +138,7 @@ class ContrailVncApi(object):
                          queue_uuid))
         return queue_uuid
     # end create_queue
-    
+
     def delete_queue(self, uuid):
         fq_name = self._vnc.id_to_fq_name(uuid)
         self._log.info('Deleting Queue %s, UUID: %s' %(fq_name, uuid))
@@ -187,7 +187,7 @@ class ContrailVncApi(object):
         self._log.info('Deleting FC %s, UUID: %s' %(fq_name, uuid))
         return self._vnc.forwarding_class_delete(id=uuid)
     # end delete_forwarding_class
-        
+
     def create_qos_config(self, name,
                           parent_obj=None,
                           dscp_mapping=None,
@@ -239,7 +239,7 @@ class ContrailVncApi(object):
         self._vnc.qos_config_update(qos_config_obj)
         return qos_config_obj
     # end set_qos_config_entries
-    
+
     def set_default_fc_id(self, uuid, default_fc_id=0):
         ''' Updates the default FC ID associated with this qos config
         '''
@@ -748,7 +748,7 @@ class ContrailVncApi(object):
 
             For network route table:
             route_table_type : type of static table, Either interface table or network table
-                               This also determines the parameters to be passed. 
+                               This also determines the parameters to be passed.
                                Interface table only needs prefix.
                                Network table would need atleast next-hop ip with prefix
             prefixes : list of x.y.z.a/mask entries for Interface route table
@@ -864,13 +864,13 @@ class ContrailVncApi(object):
     def delete_alarm(self,alarm_id):
         self._vnc.alarm_delete(id=alarm_id)
     #end delete_alarm
-  
+
     def get_global_config_obj(self):
         gsc_id = self._vnc.get_default_global_system_config_id()
         gsc_obj = self._vnc.global_system_config_read(id=gsc_id)
         return gsc_obj
     # end get_global_config_obj
-    
+
     def get_health_check(self, **kwargs):
         '''
             :param fq_name : fqname of the object (list)
@@ -947,3 +947,121 @@ class ContrailVncApi(object):
         si_obj = self._vnc.service_instance_read(id=si_uuid)
         hc_obj.del_service_instance(si_obj)
         return self._vnc.service_health_check_update(hc_obj)
+
+    def create_bd(self, bd_name=None, parent_obj=None, cleanup=True, **kwargs):
+        '''
+            Creates a bridge domain
+        '''
+        if not bd_name:
+            bd_name = get_random_name('bd')
+        mac_learning_enabled = kwargs.get('mac_learning_enabled', None)
+        mac_limit_control = kwargs.get('mac_limit_control', None)
+        mac_move_control = kwargs.get('mac_move_control', None)
+        mac_aging_time = kwargs.get('mac_aging_time', 300)
+        isid = kwargs.get('isid', None)
+
+        bd_obj = BridgeDomain(name=bd_name,
+                              parent_obj=parent_obj,
+                              mac_learning_enabled=mac_learning_enabled,
+                              mac_limit_control=mac_limit_control,
+                              mac_move_control=mac_move_control,
+                              mac_aging_time=mac_aging_time,
+                              isid=isid)
+        uuid = self._vnc.bridge_domain_create(bd_obj)
+        self._log.info('Created Bridge Domain%s, UUID: %s' % (
+                         self._vnc.id_to_fq_name(uuid), uuid))
+        return bd_obj
+    # end create_bd
+
+    def update_bd(self, uuid=None, **kwargs):
+        '''
+            Updates bridge domain
+        '''
+        mac_learning_enabled = kwargs.get('mac_learning_enabled', None)
+        mac_limit_control = kwargs.get('mac_limit_control', None)
+        mac_move_control = kwargs.get('mac_move_control', None)
+        mac_aging_time = kwargs.get('mac_aging_time', None)
+        isid = kwargs.get('isid', None)
+        bd_obj = self.vnc_lib.bridge_domain_read(id=uuid)
+        if mac_learning_enabled:
+            bd_obj.set_mac_learning_enabled(mac_learning_enabled)
+        if mac_limit_control:
+            bd_obj.set_mac_limit_control(mac_limit_control)
+        if mac_move_control:
+            bd_obj.set_mac_move_control(mac_move_control)
+        if mac_aging_time:
+            bd_obj.set_mac_aging_time(mac_aging_time)
+        if isid:
+            bd_obj.set_isid(isid)
+
+        self._log.info('Updated Bridge Domain%s, UUID: %s' % (
+                         self.vnc_lib.id_to_fq_name(uuid), uuid))
+        return uuid
+    # end update_bd
+
+
+    def delete_bd(self, uuid=None):
+        '''
+        Delete Bridge Domain object
+
+        Args:
+            uuid : UUID of BridgeDomain object
+        '''
+        self._vnc.bridge_domain_delete(id=uuid)
+        self._log.info('Deleted Bridge Domain%s' % (uuid))
+    # end delete_bd
+
+    def read_bd(self, uuid=None):
+        '''
+        Read Bridge Domain object
+
+        Args:
+            uuid : UUID of BridgeDomain object
+        '''
+        bd_obj = self._vnc.bridge_domain_read(id=uuid)
+        self._log.info('Bridge Domain%s info' % (uuid,bd_obj))
+    # end read_bd
+
+    def get_bd(self, uuid=None):
+        '''
+        Get Bridge Domain object
+
+        Args:
+            uuid : UUID of BridgeDomain object
+        '''
+        bd_obj = self._vnc.bridge_domain_read(id=uuid)
+        self._log.info('Bridge Domain%s info' % (uuid,bd_obj))
+        bd_obj.dump()
+    # end dump_bd
+
+    def add_bd_to_vmi(self, bd_id, vmi_id, vlan_tag):
+        '''
+        Adding Bridge Domain to VMI
+
+        Args:
+            bd_id: ID of BridgeDomain
+            vmi_id: ID of VMI
+            vlan_tag: vlan tag
+        '''
+        self._log.info('Adding Bridge Domain%s to VMI%s' % (bd_id,vmi_id))
+        vmi = self._vnc.virtual_machine_interface_read(id=vmi_id)
+        bd_obj = self._vnc.bridge_domain_read(id=bd_id)
+        bmeb = BridgeDomainMembershipType()
+        bmeb.set_vlan_tag(vlan_tag)
+        vmi.add_bridge_domain(bd_obj, bmeb)
+        self._vnc.virtual_machine_interface_update(vmi)
+
+    def enable_vlan_tag_based_bridge_domain(self, vmi_id, vlan_tag_based_bridge_domain):
+        '''
+        Enabling vlan tag based bridge domain
+
+        Args:
+            vmi_id: ID of VMI
+            vlan_tag_based_bridge_domain: vlan tag based bridge domain
+        '''
+        self._log.info('Enabling vlan tag based bridge domain%s on  VMI%s' % (vlan_tag_based_bridge_domain, vmi_id))
+        vmi = self._vnc.virtual_machine_interface_read(id=vmi_id)
+        vmi.set_vlan_tag_based_bridge_domain(vlan_tag_based_bridge_domain)
+        self._vnc.virtual_machine_interface_update(vmi)
+
+

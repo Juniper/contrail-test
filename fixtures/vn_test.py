@@ -125,6 +125,13 @@ class VNFixture(fixtures.Fixture):
         self._vrf_ids = {}
         self._interested_computes = []
         self.vn_network_id = None
+        self.mac_learning_enabled = kwargs.get('mac_learning_enabled', None)
+        self.mac_limit_control = kwargs.get('mac_limit_control', None)
+        self.mac_move_control = kwargs.get('mac_move_control', None)
+        self.mac_aging_time = kwargs.get('mac_aging_time', None)
+        self.pbb_evpn_enable = kwargs.get('pbb_evpn_enable', None)
+        self.pbb_etree_enable = kwargs.get('pbb_etree_enable', None)
+        self.layer2_control_word = kwargs.get('layer2_control_word', None)
     # end __init__
 
     def read(self):
@@ -270,7 +277,7 @@ class VNFixture(fixtures.Fixture):
                                                 disable_gateway=self.disable_gateway)
                 if self.obj:
                     self.logger.info('Created VN %s' %(self.vn_name))
-                    self.created = True #Introducing this flag to make sure if 
+                    self.created = True #Introducing this flag to make sure if
                                         #vn was created by this fixture object,
                                         #delete it on cleanup.
             else:
@@ -602,7 +609,7 @@ class VNFixture(fixtures.Fixture):
                     self.rt_number, self.rt_names))
                 self.api_verification_flag = self.api_verification_flag and False
                 return False
-        
+
         self.api_s_routing_instance = self.api_s_inspect.get_cs_routing_instances(
             vn_id=self.uuid)
         if not self.api_s_routing_instance:
@@ -1436,6 +1443,152 @@ class VNFixture(fixtures.Fixture):
             cidr = self.vn_subnet_objs[0]['cidr']
         return get_an_ip(cidr, index)
     # end get_an_ip
+
+    def set_pbb_evpn_enable(self, pbb_evpn_enable=None):
+        ''' Configure PBB EVPN on virtual network '''
+        self.logger.debug('Updating PBB EVPN on VN %s to %s' % (
+            self.vn_fq_name, pbb_evpn_enable))
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        vn_obj.set_pbb_evpn_enable(pbb_evpn_enable)
+        self.vnc_lib_h.virtual_network_update(vn_obj)
+    # end set_pbb_evpn_enable
+
+    def set_pbb_etree_enable(self, pbb_etree_enable=None):
+        ''' Configure PBB etree on virtual network '''
+        self.logger.debug('Updating PBB etree on VN %s to %s' % (
+            self.vn_fq_name, pbb_etree_enable))
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        vn_obj.set_pbb_etree_enable(pbb_etree_enable)
+        self.vnc_lib_h.virtual_network_update(vn_obj)
+    # end set_pbb_etree_enable
+
+    def set_layer2_control_word(self, layer2_control_word=None):
+        ''' Configure Layer2 control word on virtual network
+            This configuration knob controls the insertion of 4-octet control word
+            between bottom of MPLS label stack and L2 payload.'''
+        self.logger.debug('Updating Layer2 control word on VN %s to %s' % (
+            self.vn_fq_name, layer2_control_word))
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        vn_obj.set_layer2_control_word(layer2_control_word)
+        self.vnc_lib_h.virtual_network_update(vn_obj)
+    # end set_layer2_control_word
+
+    def set_mac_learning_enabled(self, mac_learning_enabled=None):
+        ''' Configure MAC Learning on virtual network '''
+        self.logger.debug('Updating MAC Learning on VN %s to %s' % (
+            self.vn_fq_name, mac_learning_enabled))
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        vn_obj.set_mac_learning_enabled(mac_learning_enabled)
+        self.vnc_lib_h.virtual_network_update(vn_obj)
+    # end set_mac_learning_enabled
+
+    def set_mac_limit_control(self, mac_limit_control=None):
+        ''' Configure MAC Limit Control on virtual network '''
+        self.logger.debug('Updating MAC Limit control on VN %s to %s' % (
+            self.vn_fq_name, mac_limit_control))
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        vn_obj.set_mac_limit_control(mac_limit_control)
+        self.vnc_lib_h.virtual_network_update(vn_obj)
+    # end set_mac_limit_control
+
+    def set_mac_move_control(self, mac_move_control=None):
+        ''' Configure MAC Move on virtual network '''
+        self.logger.debug('Updating MAC Move on VN %s to %s' % (
+            self.vn_fq_name, mac_move_control))
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        vn_obj.set_mac_move_control(mac_move_control)
+        self.vnc_lib_h.virtual_network_update(vn_obj)
+    # end set_mac_move_control
+
+    def set_mac_aging_time(self, mac_aging_time=None):
+        ''' Configure MAC Aging on virtual network '''
+        self.logger.debug('Updating MAC Aging on VN %s to %s' % (
+            self.vn_fq_name, mac_aging_time))
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        vn_obj.set_mac_aging_time(mac_aging_time)
+        self.vnc_lib_h.virtual_network_update(vn_obj)
+    # end set_mac_aging_time
+
+    def get_pbb_evpn_enable(self):
+        ''' Get PBB EVPN on virtual network '''
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        pbb_evpn_enable = vn_obj.get_pbb_evpn_enable()
+        self.logger.debug('PBB EVPN on VN %s is %s' % (
+            self.vn_fq_name, pbb_etree_enable))
+        return pbb_evpn_enable
+    # end get_pbb_evpn_enable
+
+    def get_pbb_etree_enable(self):
+        ''' Get PBB etree on virtual network '''
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        pbb_etree_enable = vn_obj.get_pbb_etree_enable()
+        self.logger.debug('PBB etree on VN %s is %s' % (
+            self.vn_fq_name, pbb_etree_enable))
+        return pbb_etree_enable
+    # end get_pbb_etree_enable
+
+    def get_layer2_control_word(self):
+        ''' Get Layer2 control word on virtual network '''
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        layer2_control_word = vn_obj.get_layer2_control_word()
+        self.logger.debug('Layer2 control word on VN %s is %s' % (
+            self.vn_fq_name, layer2_control_word))
+        return layer2_control_word
+    # end get_layer2_control_word
+
+    def get_mac_learning_enabled(self):
+        ''' Get MAC Learning on virtual network '''
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        mac_learning_enabled = vn_obj.get_mac_learning_enabled()
+        self.logger.debug('MAC Learning on VN %s is %s' % (
+            self.vn_fq_name, mac_learning_enabled))
+        return mac_learning_enabled
+    # end get_mac_learning_enabled
+
+    def get_mac_limit_control(self):
+        ''' Get MAC Limit Control on virtual network '''
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        mac_limit_control = vn_obj.get_mac_limit_control()
+        self.logger.debug('MAC Limit control on VN %s is %s' % (
+            self.vn_fq_name, mac_limit_control))
+        return mac_limit_control
+    # end get_mac_limit_control
+
+    def get_mac_move_control(self):
+        ''' Get MAC Move on virtual network '''
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        mac_move_control = vn_obj.get_mac_move_control()
+        self.logger.debug('MAC Move on VN %s is %s' % (
+            self.vn_fq_name, mac_move_control))
+        return mac_move_control
+    # end get_mac_move_control
+
+    def get_mac_aging_time(self):
+        ''' Get MAC Aging on virtual network '''
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        mac_aging_time = vn_obj.get_mac_aging_time()
+        self.vnc_lib_h.virtual_network_update(vn_obj)
+        self.logger.debug('MAC Aging on VN %s is %s' % (
+            self.vn_fq_name, mac_aging_time))
+        return mac_aging_time
+    # end get_mac_aging_time
+
+    def add_bridge_domain(self, bd_obj=None):
+        ''' Adding bridge doamin to VN '''
+        self.logger.info('Adding bridge domain %s to VN %s' % (bd_obj,self.uuid))
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        vn_obj.add_bridge_domain(bd_obj)
+        self.vnc_lib_h.virtual_network_update(vn_obj)
+    # end add_bridge_domain
+
+    def del_bridge_domain(self, bd_obj=None):
+        ''' Deleting bridge doamin from  VN '''
+        self.logger.info('Deleting bridge domain %s from VN %s' % (bd_obj,self.uuid))
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        vn_obj.del_bridge_domain(bd_obj)
+        self.vnc_lib_h.virtual_network_update(vn_obj)
+    # end del_bridge_domain
+
 
 # end VNFixture
 

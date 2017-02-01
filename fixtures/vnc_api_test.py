@@ -347,4 +347,44 @@ class VncLibFixture(fixtures.Fixture):
         self.logger.info('Setting flow export rate: %s' % (value))
         return True
     # end set_flow_export_rate
+
+    def get_global_mac_limit_control(self):
+        gsc_id = self.vnc_api_h.get_default_global_system_config_id()
+        gsc_obj = self.vnc_api_h.global_system_config_read(id=gsc_id)
+        return gsc_obj.get_mac_limit_control()
+    # end get_global_mac_limit_control
+
+    def set_global_mac_limit_control(self, mac_limit_control=None):
+        gsc_id = self.vnc_api_h.get_default_global_system_config_id()
+        gsc_obj = self.vnc_api_h.global_system_config_read(id=gsc_id)
+        gsc_obj.set_mac_limit_control(mac_limit_control)
+        self.vnc_api_h.global_system_config_update(gsc_obj)
+    # end set_global_mac_limit_control
+
+    def get_global_mac_move_control(self):
+        gsc_id = self.vnc_api_h.get_default_global_system_config_id()
+        gsc_obj = self.vnc_api_h.global_system_config_read(id=gsc_id)
+        return gsc_obj.get_mac_move_control()
+    # end get_global_mac_move_control
+
+    def set_global_mac_move_control(self, mac_move_control=None):
+        gsc_id = self.vnc_api_h.get_default_global_system_config_id()
+        gsc_obj = self.vnc_api_h.global_system_config_read(id=gsc_id)
+        gsc_obj.set_mac_move_control(mac_move_control)
+        self.vnc_api_h.global_system_config_update(gsc_obj)
+    # end set_global_mac_move_control
+
+    def get_global_mac_aging_time(self):
+        gsc_id = self.vnc_api_h.get_default_global_system_config_id()
+        gsc_obj = self.vnc_api_h.global_system_config_read(id=gsc_id)
+        return gsc_obj.get_mac_aging_time()
+    # end get_global_mac_aging_time
+
+    def set_global_mac_aging_time(self, mac_aging_time=None):
+        gsc_id = self.vnc_api_h.get_default_global_system_config_id()
+        gsc_obj = self.vnc_api_h.global_system_config_read(id=gsc_id)
+        gsc_obj.set_mac_aging_time(mac_aging_time)
+        self.vnc_api_h.global_system_config_update(gsc_obj)
+    # end set_global_mac_aging_time
+
 # end VncLibFixture
