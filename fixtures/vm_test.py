@@ -2667,11 +2667,15 @@ class VMFixture(fixtures.Fixture):
 
     def get_arp_entry(self, ip_address=None, mac_address=None):
         out_dict = self.run_cmd_on_vm(["arp -an"])
+        if ip_address and not search_arp_entry(out_dict.values()[0], ip_address, mac_address)[0]:
+            cmd = 'ping %s -c 2' %ip_address
+            self.run_cmd_on_vm([cmd])
+            out_dict = self.run_cmd_on_vm(["arp -an"])
         return search_arp_entry(out_dict.values()[0], ip_address, mac_address)
     # end get_arp_entry
 
     def get_gateway_ip(self):
-        cmd = '''netstat -anr  |grep ^0.0.0.0 | awk '{ print \\\\$2 }' '''
+        cmd = '''netstat -anr  |grep ^0.0.0.0 | awk '{ print $2 }' '''
         out_dict = self.run_cmd_on_vm([cmd])
         return out_dict.values()[0].rstrip('\r')
     # end get_gateway_ip
