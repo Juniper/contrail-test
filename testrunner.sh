@@ -162,6 +162,7 @@ docker_run () {
         arg_base_vol="$arg_base_vol -v $tempest_dir:/tempest"
         mkdir -p $tempest_dir/logs
         make_entrypoint_tempest > ${tempest_dir}/tempest_entrypoint.sh
+        chmod +x ${tempest_dir}/tempest_entrypoint.sh
     fi
 
     if [[ -e $mount_local ]]; then
