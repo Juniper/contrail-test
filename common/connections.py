@@ -107,11 +107,11 @@ class ContrailConnections():
         return env[attr]
 
     def get_vnc_lib_h(self, refresh=False):
-        attr = '_vnc_lib_' + self.project_name + '_' + self.username
+        attr = '_vnc_lib_fixture_' + self.project_name + '_' + self.username
         cfgm_ip = self.inputs.api_server_ip or \
                   self.inputs.contrail_external_vip or self.inputs.cfgm_ip
         if not getattr(env, attr, None) or refresh:
-            self.vnc_lib_fixture = VncLibFixture(
+            env[attr] = VncLibFixture(
                 username=self.username, password=self.password,
                 domain=self.domain_name, project_name=self.project_name,
                 inputs=self.inputs,
@@ -125,8 +125,9 @@ class ContrailConnections():
                 cacert = self.inputs.keycertbundle,
                 insecure = self.inputs.insecure,
                 logger=self.logger)
-            self.vnc_lib_fixture.setUp()
-            self.vnc_lib = self.vnc_lib_fixture.get_handle()
+            env[attr].setUp()
+        self.vnc_lib_fixture = env[attr]
+        self.vnc_lib = self.vnc_lib_fixture.get_handle()
         return self.vnc_lib
 
     def get_api_inspect_handle(self, host):
