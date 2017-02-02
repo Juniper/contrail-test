@@ -86,7 +86,7 @@ while getopts ":t:p:mu" opt; do
       ;;
   esac
 done
-export ci_image=${CI_IMAGE:-'cirros-0.3.0-x86_64-uec'}
+export ci_image=${CI_IMAGE:-'cirros'}
 TESTBED=${testbed_input:-${TESTBED:-'/opt/contrail/utils/fabfile/testbeds/testbed.py'}}
 CONTRAIL_FABPATH=${contrail_fabpath_input:-${CONTRAIL_FABPATH:-'/opt/contrail/utils'}}
 SCENARIOS=${scenarios_list:-${SCENARIOS:-''}}
@@ -141,7 +141,7 @@ while getopts ":t:p:mu" opt; do
       ;;
   esac
 done
-export ci_image=${CI_IMAGE:-'cirros-0.3.0-x86_64-uec'}
+export ci_image=${CI_IMAGE:-'cirros'}
 TESTBED=${testbed_input:-${TESTBED:-'/opt/contrail/utils/fabfile/testbeds/testbed.py'}}
 CONTRAIL_FABPATH=${contrail_fabpath_input:-${CONTRAIL_FABPATH:-'/opt/contrail/utils'}}
 

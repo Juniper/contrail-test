@@ -23,7 +23,7 @@ run_path="${HOME}/contrail-test-runs"
 arg_shell=''
 declare -a arg_env
 SCRIPT_TIMESTAMP=${SCRIPT_TIMESTAMP:-`date +"%Y_%m_%d_%H_%M_%S"`}
-DEFAULT_CI_IMAGE='cirros-0.3.0-x86_64-uec'
+DEFAULT_CI_IMAGE='cirros'
 CI_IMAGE_ORIG=${CI_IMAGE:-$DEFAULT_CI_IMAGE}
 # ansi colors for formatting heredoc
 ESC=$(printf "\e")

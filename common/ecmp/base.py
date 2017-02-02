@@ -35,7 +35,7 @@ class ECMPTestBase(GenericTestBase):
 
         ci = os.environ.has_key('ci_image')
         if ci and cls.inputs.get_af() == 'v4':
-            cls.image_name = 'cirros-0.3.0-x86_64-uec'
+            cls.image_name = 'cirros'
         else:
             cls.image_name = 'ubuntu-traffic'
 
