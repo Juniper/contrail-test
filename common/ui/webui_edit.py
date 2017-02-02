@@ -82,7 +82,6 @@ class WebuiEdit:
             header_mode = kwargs.get('header_mode', 'Enabled')
             traffic_direction = kwargs.get('traffic_direction', 'Both')
             next_hop_mode = kwargs.get('next_hop_mode', 'Dynamic')
-            tc = kwargs.get('tc', 'positive')
             if self.edit_port_result:
                 self.ui.click_element('advanced_options')
                 mac_address = self.ui.find_element('macAddress', 'name')
@@ -145,8 +144,7 @@ class WebuiEdit:
                         result = result and False
                 self.ui.click_on_create(option.strip('s'),
                                     option.strip('s').lower(), save=True)
-                if tc != 'positive':
-                    result = self.ui.negative_test_proc(option)
+                result = self.ui.negative_test_proc(option)
                 self.ui.wait_till_ajax_done(self.browser)
             else:
                 self.logger.error("There are no rows to edit")
@@ -196,7 +194,6 @@ class WebuiEdit:
             self.edit_port_result = self.ui.edit_remove_option(option, 'edit',
                                                            display_name=port_name)
             fat_flow_values = kwargs.get('fat_flow_values')
-            tc = kwargs.get('tc', 'positive')
             if self.edit_port_result:
                 self.ui.click_element('fatFlowAccordion')
                 self.ui.wait_till_ajax_done(self.browser)
@@ -222,8 +219,7 @@ class WebuiEdit:
                                       browser=fat_flow_tuple[protocol])
                 self.ui.click_on_create(option.strip('s'),
                                     option.strip('s').lower(), save=True)
-                if tc != 'positive':
-                    result = self.ui.negative_test_proc(option)
+                result = self.ui.negative_test_proc(option)
                 self.ui.wait_till_ajax_done(self.browser)
             else:
                 self.logger.error("Clicking the Edit Button is not working")
@@ -241,7 +237,6 @@ class WebuiEdit:
         result = True
         try:
             default = kwargs.get('default', True)
-            tc = kwargs.get('tc', 'positive')
             if not self.ui.click_configure_global_config():
                 result = result and False
             self.ui.click_element('fa-pencil-square-o', 'class')
@@ -269,7 +264,6 @@ class WebuiEdit:
         result = True
         try:
             default = kwargs.get('default', True)
-            tc = kwargs.get('tc', 'positive')
             grace_restart = kwargs.get('grace_restart', True)
             subnet = kwargs.get('subnet', True)
             if not self.ui.click_configure_global_config():
@@ -295,8 +289,7 @@ class WebuiEdit:
             else:
                 self.ui.click_element('fa-minus', 'class')
             self.ui.click_element('configure-global_bgp_optionsbtn1')
-            if tc != 'positive':
-                result = self.ui.negative_test_proc('global_bgp_options')
+            result = self.ui.negative_test_proc('global_bgp_options')
             self.ui.wait_till_ajax_done(self.browser)
         except WebDriverException:
             self.logger.error("Error while trying to edit %s" % (option))
