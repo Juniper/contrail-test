@@ -724,7 +724,7 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
         sender, receiver = self.start_traffic(
             self.left_vm_fixture, dst_vm_list, stream_list,
             self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
-        self.verify_flow_thru_si(si_fixture, self.left_vm_fixture)
+        self.verify_flow_thru_si(si_fixture, self.left_vn_fixture)
         while(len(svms) > 1):
             old_count = len(svms)
             self.logger.info(
