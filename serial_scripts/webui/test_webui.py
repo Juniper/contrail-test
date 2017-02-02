@@ -1380,13 +1380,13 @@ class WebuiTestSanity(base.WebuiBaseTest):
         global mirror_enabled_already
         self.webui.logger.debug("Step 1 : Edit the port by adding the values \
                                under advanced option")
-        params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
+        port_params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
         fixed_ip = self.webui_common.get_ui_value('Ports', 'Fixed IPs',
                                                  name=topo.port_list[0])
         fixed_ip[0]['value'] = [fixed_ip[0].values()[0]] + \
                                [topo.port_advanced_option['subnet_ip']]
         result = self.webui.edit_port('advanced_option', 'Ports',
-                     topo.port_list[0], port_admin_state='Down', params_list=params_list)
+                     topo.port_list[0], port_admin_state='Down', params_list=port_params_list)
         if result:
             mirror_enabled_already = True
         adv_option_list = [{'key': 'Admin_State', 'value': 'Down'},
@@ -1435,9 +1435,9 @@ class WebuiTestSanity(base.WebuiBaseTest):
         result = True
         self.webui.logger.debug("Step 1 : Edit the port by adding the values \
                                under advanced option")
-        params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
+        port_params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
         result = self.webui.edit_port('advanced_option', 'Ports',
-                     topo.port_list[0], params_list=params_list, subnet=False,
+                     topo.port_list[0], params_list=port_params_list, subnet=False,
                      allowed_address_pair=False, ecmp=False, mirror=True,
                      mirror_enabled_already=mirror_enabled_already, header_mode='Disabled',
                      traffic_direction='Egress', next_hop_mode='Static')
@@ -1540,14 +1540,14 @@ class WebuiTestSanity(base.WebuiBaseTest):
         '''
         self.webui.logger.debug("Step 1 : Edit the port by adding the values \
                                under advanced option")
-        params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
-        params_list[8] = topo.invalid_ip_mask
-        params_list[6] = topo.invalid_mac
-        assert self.webui.edit_port('advanced_option', 'Ports',
-                     topo.port_list[0], params_list=params_list, subnet=False,
+        port_params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
+        port_params_list[8] = topo.invalid_ip_mask
+        port_params_list[6] = topo.invalid_mac
+        assert not self.webui.edit_port('advanced_option', 'Ports',
+                     topo.port_list[0], params_list=port_params_list, subnet=False,
                      allowed_address_pair=True, ecmp=False, mirror=False,
                      mirror_enabled_already=True, header_mode='Disabled',
-                     traffic_direction='Egress', next_hop_mode='Static', tc='negative'), \
+                     traffic_direction='Egress', next_hop_mode='Static'), \
                      'Editing the port with invalid allowed address pair is passed'
         return True
     #end test6_8_1_edit_port_by_add_advanced_option_allowed_address_neg
@@ -1567,15 +1567,15 @@ class WebuiTestSanity(base.WebuiBaseTest):
         self.webui.logger.debug("Step 1 : Edit the port by adding the values \
                                under advanced option")
         global mirror_enabled_already
-        params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
-        params_list[5] = topo.invalid_ip_mask
-        params_list[2] = topo.invalid_mac
-        params_list[10] = topo.invalid_port
-        if self.webui.edit_port('advanced_option', 'Ports',
-               topo.port_list[0], params_list=params_list, subnet=False,
+        port_params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
+        port_params_list[5] = topo.invalid_ip_mask
+        port_params_list[2] = topo.invalid_mac
+        port_params_list[10] = topo.invalid_port
+        if not self.webui.edit_port('advanced_option', 'Ports',
+               topo.port_list[0], params_list=port_params_list, subnet=False,
                allowed_address_pair=False, ecmp=False, mirror=True,
                mirror_enabled_already=mirror_enabled_already, header_mode='Disabled',
-               traffic_direction='Egress', tc='negative'):
+               traffic_direction='Egress'):
             mirror_enabled_already = True
             self.logger.info('WebUI throws an error as expected for \
                             invalid Analyzer IP and MAC')
@@ -1599,14 +1599,14 @@ class WebuiTestSanity(base.WebuiBaseTest):
         self.webui.logger.debug("Step 1 : Edit the port by adding the values \
                                under advanced option")
         global mirror_enabled_already
-        params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
-        params_list[7] = topo.invalid_ip_mask
-        params_list[3] = topo.invalid_mac
-        if self.webui.edit_port('advanced_option', 'Ports',
-                     topo.port_list[0], params_list=params_list, subnet=False,
+        port_params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
+        port_params_list[7] = topo.invalid_ip_mask
+        port_params_list[3] = topo.invalid_mac
+        if not self.webui.edit_port('advanced_option', 'Ports',
+                     topo.port_list[0], params_list=port_params_list, subnet=False,
                      allowed_address_pair=True, ecmp=False, mirror=True,
                      mirror_enabled_already=mirror_enabled_already, header_mode='Disabled',
-                     traffic_direction='Egress', next_hop_mode='Static', tc='negative'):
+                     traffic_direction='Egress', next_hop_mode='Static'):
             mirror_enabled_already = True
             self.logger.info('WebUI throws an error as expected for \
                             invalid VTEP IP and VTEP MAC')
@@ -1627,8 +1627,8 @@ class WebuiTestSanity(base.WebuiBaseTest):
         '''
         self.webui.logger.debug("Step 1 : Add the Fat Flow Protocol with invalid port")
         fat_flow = {'TCP':'abcd'}
-        assert self.webui.edit_port('FatFlow', 'Ports', topo.port_list[0],
-                    fat_flow_values=fat_flow, tc='negative'), 'WebUI throws an error as expected \
+        assert not self.webui.edit_port('FatFlow', 'Ports', topo.port_list[0],
+                    fat_flow_values=fat_flow), 'WebUI throws an error as expected \
                     for invalid fat flow port'
         return True
     #end test6_7_1_edit_port_by_fat_flow_protocol_neg
@@ -1645,9 +1645,9 @@ class WebuiTestSanity(base.WebuiBaseTest):
         result = True
         self.webui.logger.debug('Step 1 : Add subinterface for the exiting port')
         uuid_port = self.webui_common.get_ui_value('Ports', 'UUID', name=topo.port_list[0])
-        params_list = [topo.vnet_list[0], topo.sub_interface_name, topo.vlan_id]
+        port_params_list = [topo.vnet_list[0], topo.sub_interface_name, topo.vlan_id]
         if self.webui.add_subinterface_ports('Ports', topo.port_list[0],
-                                                   params_list):
+                                                   port_params_list):
             self.webui.logger.debug('WebUI throws an error as expected \
                                    for invalid fat flow port')
         else:
@@ -1678,11 +1678,78 @@ class WebuiTestSanity(base.WebuiBaseTest):
         '''
         result = True
         self.webui.logger.debug('Step 1 : Add subinterface for the exiting port')
-        params_list = [topo.vnet_list[0], topo.sub_interface_name, topo.invalid_vlan_id]
-        assert self.webui.add_subinterface_ports('Ports', topo.port_list[0],
-                    params_list, tc='negative'), 'WebUI throws is not throwing an error \
+        port_params_list = [topo.vnet_list[0], topo.sub_interface_name, topo.invalid_vlan_id]
+        assert not self.webui.add_subinterface_ports('Ports', topo.port_list[0],
+                    port_params_list), 'WebUI throws is not throwing an error \
                     as expected for invalid vlan id while adding sub-interface'
         return True
     #end test6_9_1_add_sub_interface_with_invalid_vlan_id
+
+    @preposttest_wrapper
+    def test7_1_edit_config_infra_global_config_forwarding_option(self):
+        '''Test to verify global config on config->Infrastructure->Global Config
+           ->Forwarding Option
+           1. Go to Configure->Infrastructure->Global Config->Forwarding Option.
+
+           2. Get all the details of global config from both WebUI and API server.
+              and Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 2 should pass
+        '''
+        result = True
+        if not self.webui.edit_and_verify_global_config('forwarding', ['L2 and L3', '10'],
+                                            default=False):
+            result = result and False
+        if not self.webui.edit_and_verify_global_config('forwarding', ['Default']):
+            result = result and False
+        return result
+    # end test7_1_edit_config_infra_global_config_forwarding_option
+
+    @preposttest_wrapper
+    def test7_2_edit_config_infra_global_config_bgp_option(self):
+        '''Test to verify global config on config->Infrastructure->Global Config->
+           BGP Option
+           1. Go to Configure->Infrastructure->Global Config->BGP Option.
+              and Edit the global config bgp options on WebUI.
+           2. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 2 should pass
+        '''
+        result = True
+        bgp_params_list  = [topo.asn_num, 'Disabled', topo.bgp_restart_time,
+                          topo.bgp_llgr_time, topo.bgp_end_rib, topo.host_prefix]
+        if not self.webui.edit_and_verify_global_config('bgp', bgp_params_list, default=False):
+            result = result and False
+        bgp_orig_params_list = [topo.orig_bgp_asn, 'Enabled', topo.orig_bgp_restart_time,
+                         topo.orig_bgp_llgr_time, topo.orig_bgp_end_rib]
+        if not self.webui.edit_and_verify_global_config('bgp', bgp_orig_params_list, default=False,
+                                              grace_restart=False, subnet=False):
+            result = result and False
+        if not self.webui.edit_and_verify_global_config('bgp', bgp_orig_params_list,
+                                                       grace_restart=True):
+            result = result and False
+        return result
+    # end test7_2_edit_config_infra_global_config_bgp_option
+
+    @preposttest_wrapper
+    def test7_2_1_edit_config_infra_global_config_bgp_option_invalid_values(self):
+        '''Test to verify global config on config->Infrastructure->Global Config->
+           BGP Option
+           1. Go to Configure->Infrastructure->Global Config->BGP Option.
+              and edit with invalid bgp option values on WebUI.
+           2. WebUI should throw an error while editing.
+
+           Pass Criteria: Step 2 should pass
+        '''
+        bgp_invalid_params_list  = [topo.invalid_asn_num, 'Enabled',
+                          topo.invalid_bgp_restart_time[1],
+                          topo.invalid_bgp_llgr_time[1], topo.invalid_bgp_end_rib[1],
+                          topo.invalid_ip_mask]
+        assert not self.webui.edit_and_verify_global_config('bgp', bgp_invalid_params_list,
+                                            default=False), \
+                                            'Edit global config under infrastructure is \
+                                            failed for invalid asn and timers'
+        return True
+    # end test7_2_1_edit_config_infra_global_config_bgp_option_invalid_values
 
 # end WebuiTestSanity
