@@ -164,6 +164,20 @@ class WebuiTestSanity(base.WebuiBaseTest):
         assert self.res.setup_obj.create_bgp_aas(), 'Creation of bgpaas failed'
         return True
     # end test_create_bgp_aas
+    
+    @preposttest_wrapper
+    def test2_1_1_create_physical_router(self):
+        '''
+        Description: Test to create Physical Router on UI
+        Steps:
+            1. On the Contrail UI, go to Configure -> Physical Devices -> Physical Routers
+            2. Click on create, enter the config details in the fields and click on 'Save'
+        Pass criteria:
+            1. Step 2 above should pass
+        '''
+        assert self.res.setup_obj.create_physical_router(), 'Creation of physical router failed'
+        return True
+    # end test_create_physical_router
 
     # UI verification tests
 
