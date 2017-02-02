@@ -21,7 +21,7 @@ from analytics import base
 import fixtures
 
 import test
-
+import pprint
 
 class AnalyticsTestSanityWithResource(
         base.AnalyticsBaseTest,
@@ -1067,20 +1067,106 @@ class AnalyticsTestSanityWithResource(
                     self.logger.error("%s not shown in vn uve %s"%(elem,vn))
         return True
 
+
     @test.attr(type=['sanity'])
     @preposttest_wrapper
-    def test_verify_contrail_flows_cli_command_not_broken(self):
-        '''1.Run command 'contrail-flows --vrouter vrouter-ip'
-           2.Verify the command runs properly and its returning some output
-           3.Do not verify the correctness of the output
+    def test_run_contrail_flows_cli_cmds(self):
+        '''1. Test to verify  contrail-flows cli cmd with various optional arguments is not broken..
+
+              Run the following commands:
+
+              cmd1: contrail-flows --source-vn default-domain:ctest-AnalyticsTestSanityWithResource-70247115:ctest-vn1-92886157
+                    --source-ip 107.191.91.3 --source-port 1453 --protocol 1 --direction ingress --tunnel-info
+                    --start-time now-30m --end-time now'
+
+              cmd2: contrail-flows --destination-vn default-domain:ctest-AnalyticsTestSanityWithResource-70247115:ctest-vn1-92886157
+                    --destination-ip 107.191.91.4 --destination-port 0 --action pass --protocol 1 --verbose --last 1h
+
+              cmd3: contrail-flows --vrouter-ip 'vrouter-ip' --other-vrouter-ip 'peer-vrouter-ip' --start-time now-10m --end-time now
+
+              cmd4: contrail-flows --vrouter 'vrouter-name' --last 10m'
+
+           2.Verify the command runs properly
+
+           3.Verify the cmd is returning non null output
         '''
-        assert self.res.vn1_vm1_fixture.ping_with_certainty(dst_vm_fixture=self.res.vn1_vm2_fixture)
+        result = True
+        src_vn = self.res.vn1_vm1_fixture.vn_fq_names[0]
+        dst_vn = self.res.vn1_vm2_fixture.vn_fq_names[0]
+
+        other_vrouter_ip = self.res.vn1_vm2_fixture._vm_node_ip
         vrouter_ip = self.res.vn1_vm1_fixture._vm_node_ip
-        cmd = 'contrail-flows --vrouter ' + vrouter_ip
-        analytics = self.res.inputs.collector_ips[0]
-        output = self.res.inputs.run_cmd_on_server(analytics, cmd)
-        assert output.failed is False,'contrail-flows command failed..'
-        return True
+
+        src_vm_host = self.res.vn1_vm1_fixture.get_host_of_vm()
+        dst_vm_host = self.res.vn1_vm2_fixture.get_host_of_vm()
+
+        src_vm_introspect = self.agent_inspect[src_vm_host]
+        dst_vm_introspect = self.agent_inspect[dst_vm_host]
+
+        src_vm_ip =  self.res.vn1_vm1_fixture.get_vm_ips()[0]
+        dst_vm_ip = self.res.vn1_vm2_fixture.get_vm_ips()[0]
+        vm_ips = [src_vm_ip, dst_vm_ip]
+
+        timer = 0
+        while True:
+            flows = []
+            my_flows = []
+            assert self.res.vn1_vm1_fixture.ping_with_certainty(dst_vm_fixture=self.res.vn1_vm2_fixture)
+            all_flows = src_vm_introspect.get_vna_fetchallflowrecords()
+            for flow in all_flows:
+                proto = flow['protocol']
+                src_ip = flow.get('sip')
+                dst_ip = flow.get('dip')
+                action = flow['action_str'][0]['action']
+                if proto == '1':
+                    my_flows.append((proto, src_ip, dst_ip))
+                if proto == '1' and action == 'pass' and src_ip in vm_ips and dst_ip in vm_ips:
+                    flows.append(flow)
+
+            self.logger.info(pprint.pprint(my_flows)); print vm_ips
+            try:
+                src_flow = flows[0]
+                dst_flow = flows[1]
+                break
+            except (IndexError, KeyError):
+                time.sleep(2)
+                timer = timer + 1
+                print timer
+                if timer > 30:
+                    self.logger.error("Flow not found")
+                    return False
+
+        protocol = src_flow['protocol']
+        dip = src_flow['dip']
+        dst_port = src_flow['dst_port']
+        dst_vn = self.res.vn1_vm2_fixture.vn_fq_names[0]
+        direction = src_flow['direction']
+        action = 'pass'
+
+        src_vn = self.res.vn1_vm1_fixture.vn_fq_names[0]
+        src_port = src_flow['src_port']
+        sip = src_flow['sip']
+        vmi_uuid = self.res.vn1_vm1_fixture.get_vmi_ids().values()[0]
+
+        cmd1 = 'contrail-flows --source-vn ' +  src_vn + ' --source-ip ' + sip + ' --source-port ' + src_port + \
+            ' --protocol ' + protocol + ' --direction ' + direction + ' --tunnel-info --start-time now-30m --end-time now'
+
+        cmd2 = 'contrail-flows --destination-vn ' +  dst_vn + ' --destination-ip ' + dip + ' --destination-port ' + dst_port + \
+            ' --action ' + action + ' --protocol ' + protocol + ' --verbose --last 1h'
+
+        cmd3 = 'contrail-flows --vrouter-ip ' + vrouter_ip + ' --other-vrouter-ip ' + other_vrouter_ip + \
+            ' --start-time now-10m --end-time now'
+
+        cmd4 = 'contrail-flows --vrouter ' + src_vm_host + ' --last 10m'
+
+        cmds = [cmd1, cmd2, cmd3, cmd4]
+
+        for cmd in cmds:
+            self.logger.info("Running the following cmd:%s \n" %cmd)
+            if not self.execute_cli_cmd(cmd, check_output=True):
+                self.logger.error('%s contrail-flows command failed..' % cmd)
+                result = result and False
+        return result
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
@@ -1090,9 +1176,9 @@ class AnalyticsTestSanityWithResource(
            3.Do not verify the correctness of the output
         '''
         cmd = 'contrail-logs --object-type virtual-network'
-        analytics = self.res.inputs.collector_ips[0]
-        output = self.res.inputs.run_cmd_on_server(analytics,cmd)
-        assert output.failed is False,'contrail-logs command failed..'
+        if not self.execute_cli_cmd(cmd):
+            self.logger.error('%s contrail-logs command failed..' % cmd)
+            return False
         return True
     
     @test.attr(type=['sanity'])
@@ -1103,8 +1189,8 @@ class AnalyticsTestSanityWithResource(
            3.Do not verify the correctness of the output
         '''
         cmd = 'contrail-stats --table SandeshMessageStat.msg_info --select "SUM(msg_info.messages)" msg_info.type --sort "SUM(msg_info.messages)"'
-        analytics = self.res.inputs.collector_ips[0]
-        output = self.res.inputs.run_cmd_on_server(analytics,cmd)
-        assert output.failed is False,'contrail-stats command failed..'
+        if not self.execute_cli_cmd(cmd):
+            self.logger.error('%s contrail-stats command failed..' % cmd)
+            return False
         return True
 #End AnalyticsTestSanityWithResource        
