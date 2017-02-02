@@ -221,6 +221,17 @@ class sdn_webui_config ():
                 'hold_time': 60,
                 'loop_count': 2 }}
 
+        #Define Physical Router parameters
+        self.pr_list = ['phy_rtr1']
+        self.pr_params = {
+            'phy_rtr1': {
+                'mgmt_ip': '20.1.1.5',
+                'vendor': 'Juniper',
+                'model': 'mx',
+                'ssh_username': 'root',
+                'ssh_password': 'Embe1mpls',
+                'tunnel_ip': '30.1.1.15' }}
+
         # Define network policy rules
         self.rules = {}
 
