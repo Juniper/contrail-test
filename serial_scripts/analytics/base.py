@@ -39,6 +39,33 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
                 break
     #end remove_from_cleanups
 
+    def _form_cmd(self, cmd_type, cmd_args):
+        cmd = cmd_type
+        for k,v in cmd_args.iteritems():
+            if k == 'no_key':
+                for elem in v:
+                    cmd = cmd + ' --' +  elem
+            else:
+                cmd = cmd + ' --' + k + ' ' + v
+        return cmd
+    # _form_cmd
+
+    def execute_cli_cmd(self, cmd, check_output=False):
+        result = True
+        analytics = self.res.inputs.collector_ips[0]
+        output = self.res.inputs.run_cmd_on_server(analytics, cmd)
+        self.logger.info("Output: %s \n" % output)
+        if output.failed:
+            self.logger.error('%s command failed..' % cmd)
+            result = result and False
+        if check_output:
+            output_str = str(output)
+            if not output_str:
+                self.logger.error("Output is empty")
+                result = result and False
+        return result
+    # end execute_cli_cmd
+
 class ResourceFactory:
     factories = {}
     def createResource(id):
