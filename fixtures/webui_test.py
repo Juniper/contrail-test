@@ -217,42 +217,41 @@ class WebuiTest:
         return result
     # end create_router
 
-    def create_physical_router(
-            self,
-            router_name,
-            model,
-            mgmt_ip,
-            tunnel_ip,
-            vendor='Juniper'):
+    def create_physical_router(self, fixture):
         result = True
         try:
-            project_name = 'admin'
             if not self.ui.click_on_create(
                     'PhysicalRouter',
-                    'physical_routers',
-                    router_name,
-                    prj_name=project_name):
+                    'physical_router',
+                    fixture.name,
+                    select_project=False):
                 result = result and False
-            self.ui.send_keys(router_name, 'txtPhysicalRouterName')
-            self.ui.send_keys(vendor, 'txtVendor')
-            self.ui.send_keys(model, 'txtModel')
-            self.ui.send_keys(mgmt_ip, 'txtMgmtIPAddress')
-            self.ui.send_keys(tunnel_ip, 'txtDataIPAddress')
-            icon_carets = self.ui.find_element(
-                'grey icon-caret-right',
-                'class',
-                elements=True)
-            icon_caret[1].click()
-            # To be implemented
-            if not self.ui.click_on_create('PhysicalRouter', save=True):
+            self.ui.click_element(
+                "//a[@data-original-title='Physical Router']", 'xpath')
+            fields_dict = {fixture.name: 'name',
+                           fixture.vendor: 'physical_router_vendor_name',
+                           fixture.model: 'physical_router_product_name',
+                           fixture.mgmt_ip: 'physical_router_management_ip',
+                           fixture.tunnel_ip: 'physical_router_dataplane_ip'}
+            for field_val, text_box in fields_dict.iteritems():
+                self.ui.send_keys(field_val, text_box, 'name')
+            self.ui.click_element('ui-id-3')
+            self.ui.click_element('physical_router_vnc_managed', 'name')
+            self.ui.send_keys(fixture.ssh_username, 'netConfUserName', 'name')
+            self.ui.send_keys(fixture.ssh_password, 'netConfPasswd', 'name')
+            if not self.ui.click_on_create(
+                'PhysicalRouter', 'physical_router',
+                save=True):
                 result = result and False
         except WebDriverException:
             self.logger.error(
                 "Error while creating %s physical router" %
-                (router_name))
+                (fixture.name))
             self.ui.screenshot("physical_router_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
             result = result and False
             raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_physical_router
 
@@ -3952,6 +3951,10 @@ class WebuiTest:
 
     def delete_svc_template(self, fixture):
         self.ui.delete_element(fixture, 'svc_template_delete')
+    # end svc_template_delete
+
+    def delete_physical_router(self, fixture):
+        self.ui.delete_element(fixture, 'phy_router_delete')
     # end svc_template_delete
 
     def delete_vn(self, fixture):

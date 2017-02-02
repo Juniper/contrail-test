@@ -168,6 +168,11 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
         return True
     # end create_svc_health_check
 
+    def create_physical_router(self):
+        assert topo_steps.createPhysicalRouter(self)
+        return True
+    # end create_physical_router
+
     def create_bgp_aas(self):
         assert ui_topo_steps.createBgpaas(self)
         return True
