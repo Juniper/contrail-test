@@ -747,11 +747,16 @@ class TestPorts(BaseNeutronTest):
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
-    def test_aap_with_vMAC(self):
-        '''Create 2 VSRXs and enable VRRP between them, specifying a vIP.
-        Update the ports of the respective VMs to allow the vIP so configured.
-        Cause a VRRP Mastership switchover by changing the VRRP priority.
-        The vIP should still be accessible via the new VRRP master.
+    def test_aap_with_fip(self):
+        '''
+        1. Create 2 VSRXs and enable VRRP between them, specifying a vIP.
+        2. Update the ports of the respective VMs to allow the vIP so configured.
+        3. Associate the same FIP to both the ports using API.
+        4. In the Floating IP object, add the vIP as the fixed_ip_address.
+        5. Ping to the vIP and FIP should be answered by the AAP active port.
+        6. Cause a VRRP Mastership switchover by changing the VRRP priority.
+        7. The vIP and FIP should still be accessible via the new VRRP master.
+
         '''
         if ('MX_GW_TEST' not in os.environ) or (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') != '1')):
             self.logger.info(
@@ -768,14 +773,14 @@ class TestPorts(BaseNeutronTest):
             self.inputs.project_name, 'default')
 
         vn1_name = get_random_name('left-vn')
-        vn1_subnets = ['10.10.10.0/24']
+        vn1_subnets = [get_random_cidr()]
         vn2_name = get_random_name('right-vn')
-        vn2_subnets = ['20.20.20.0/24']
+        vn2_subnets = [get_random_cidr()]
 
         vsrx1_name = get_random_name('vsrx1')
         vsrx2_name = get_random_name('vsrx2')
         vm_test_name = get_random_name('vm_test')
-        vIP = '10.10.10.10'
+        vIP = get_an_ip(vn1_subnets[0], offset=10)
         result = False
 
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
@@ -806,7 +811,35 @@ class TestPorts(BaseNeutronTest):
                 image_name='vsrx', vm_name=vsrx2_name,
                 port_ids=port_ids2, zone='nova'))
         vm_test_fixture = self.create_vm(vn1_fixture, vm_test_name,
-                                         image_name='ubuntu-traffic')
+                                         image_name='cirros')
+
+        self.logger.info('Create a FVN. Create a FIP-Pool and FIP')
+        fvn_name = get_random_name('fvn')
+        fvn_subnets = [get_random_cidr()]
+        fvn_vm_name = get_random_name('fvn-vm')
+        fvn_fixture = self.create_vn(fvn_name, fvn_subnets)
+        fvn_vm_fixture = self.create_vm(fvn_fixture, fvn_vm_name,
+                                        image_name='cirros')
+        assert fvn_vm_fixture.wait_till_vm_is_up(
+        ), 'VM does not seem to be up'
+        fip_pool_name = 'some-pool1'
+        my_fip_name = 'fip'
+        fvn_obj = fvn_fixture.obj
+        fvn_id = fvn_fixture.vn_id
+        fip_fixture = self.useFixture(
+            FloatingIPFixture(
+                project_name=self.inputs.project_name, inputs=self.inputs,
+                connections=self.connections, pool_name=fip_pool_name, vn_id=fvn_fixture.vn_id))
+        assert fip_fixture.verify_on_setup()
+        fIP = self.create_fip(fip_fixture)
+        self.logger.info('Use VNC API to associate the same fIP to two ports')
+        self.logger.info('Add the vIP as Fixed IP of the fIP')
+        vm1_l_vmi_id = vm1_fixture.get_vmi_ids()[vn1_fixture.vn_fq_name]
+        vm2_l_vmi_id = vm2_fixture.get_vmi_ids()[vn1_fixture.vn_fq_name]
+        self.assoc_fip(fIP[1], vm1_fixture.vm_id, vmi_id=vm1_l_vmi_id)
+        self.assoc_fip(fIP[1], vm2_fixture.vm_id, vmi_id=vm2_l_vmi_id)
+        self.assoc_fixed_ip_to_fip(fIP[1], vIP)
+
         port_list = [lvn_port_obj1, lvn_port_obj2]
         for port in port_list:
             self.config_aap(port, vIP, mac='00:00:5e:00:01:01')
@@ -823,6 +856,8 @@ class TestPorts(BaseNeutronTest):
         assert self.vrrp_mas_chk(vm1_fixture, vn1_fixture, vIP, vsrx=True)
         assert self.verify_vrrp_action(
             vm_test_fixture, vm1_fixture, vIP, vsrx=True)
+        assert self.verify_vrrp_action(
+            fvn_vm_fixture, vm1_fixture, fIP[0], vsrx=True)
 
         self.logger.info(
             'Will reduce the VRRP priority on %s, causing a VRRP mastership switch' % vm1_fixture.vm_name)
@@ -834,8 +869,12 @@ class TestPorts(BaseNeutronTest):
         assert self.vrrp_mas_chk(vm2_fixture, vn1_fixture, vIP, vsrx=True)
         assert self.verify_vrrp_action(
             vm_test_fixture, vm2_fixture, vIP, vsrx=True)
+        assert self.verify_vrrp_action(
+            fvn_vm_fixture, vm2_fixture, fIP[0], vsrx=True)
+        self.disassoc_fip(fIP[1])
+        self.del_fip(fIP[1])
 
-    # end test_aap_with_vMAC
+    # end test_aap_with_fip
 
     @preposttest_wrapper
     def test_aap_with_vrrp_priority_change(self):
@@ -925,17 +964,14 @@ class TestPorts(BaseNeutronTest):
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
-    def test_aap_with_fip_active_active_mode(self):
+    def test_aap_active_active_mode(self):
         '''
-        Verify  FIP reachability, when it is tied to AAP IP and AAP in active-active mode
+        Verify AAP in active-active mode
             1. Launch 2 vms on same virtual network. 
             2. Configure AAP between the two ports in active-active mode.
             3. Launch a test VM in the same network.
-            4. Configure a static ARP to the vMAC on the test VM.(Bug 1625939)
-            5. Create a alias on both the VMs for the vIP.
-            6. Associate the same FIP to both the ports using API.
-            7. In the Floating IP object, add the AAP as the fixed_ip_address.
-            8. Ping to the FIP should be answered by the AAP active port.
+            4. Create a alias on both the VMs for the vIP.
+            5. cURL request to the vIP should be answered by either of the two VMs.
 
         Maintainer: ganeshahv@juniper.net
         '''
@@ -976,47 +1012,11 @@ class TestPorts(BaseNeutronTest):
             self.check_master_in_agent(vm, vn1_fixture, vIP, ecmp=True)
         self.logger.info('Curl requests to %s should be answered by either %s or %s' % (
             vIP, vm1_fixture.vm_name, vm2_fixture.vm_name))
-        cmd1 = "curl --local-port 9001 -i " + vIP + ":8000"
-        cmd2 = "curl --local-port 9002 -i " + vIP + ":8000"
-        result = vm_test_fixture.run_cmd_on_vm(cmds=[cmd1, cmd2])
-        assert vm1_fixture.vm_name and vm2_fixture.vm_name in (
-            result[cmd1] + result[cmd2]), 'Requests not being distributed'
-
-        ''' Create a VN. Add a Floating IP Pool. Assign a single FIP to the two VMIs.
-	    Assign the vIP as fixed_ip_address under the FIP
-	    Curl requests from one VM in the Floating IP VN to the FIP should be answered by either of the two VMs.
-	'''
-        fvn_name = get_random_name('fvn')
-        fvn_subnets = [get_random_cidr()]
-        fvn_vm_name = get_random_name('fvn-vm')
-        fvn_fixture = self.create_vn(fvn_name, fvn_subnets)
-        fvn_vm_fixture = self.create_vm(fvn_fixture, fvn_vm_name,
-                                        image_name='ubuntu')
-        assert fvn_vm_fixture.wait_till_vm_is_up(
-        ), 'VM does not seem to be up'
-        fip_pool_name = 'some-pool1'
-        my_fip_name = 'fip'
-        fvn_obj = fvn_fixture.obj
-        fvn_id = fvn_fixture.vn_id
-        fip_fixture = self.useFixture(
-            FloatingIPFixture(
-                project_name=self.inputs.project_name, inputs=self.inputs,
-                connections=self.connections, pool_name=fip_pool_name, vn_id=fvn_fixture.vn_id))
-        assert fip_fixture.verify_on_setup()
-        fIP = self.create_fip(fip_fixture)
-        self.assoc_fip(fIP[1], vm1_fixture.vm_id)
-        self.assoc_fip(fIP[1], vm2_fixture.vm_id)
-        self.logger.info('Curl requests to %s should be answered by either %s or %s' % (
-            fIP[0], vm1_fixture.vm_name, vm2_fixture.vm_name))
-        cmd3 = "curl --local-port 9003 -i " + fIP[0] + ":8000"
-        cmd4 = "curl --local-port 9004 -i " + fIP[0] + ":8000"
-        result = fvn_vm_fixture.run_cmd_on_vm(cmds=[cmd3, cmd4])
-        assert vm1_fixture.vm_name and vm2_fixture.vm_name in (
-            result[cmd3] + result[cmd4]), 'Requests not being distributed'
-        self.disassoc_fip(fIP[1])
-        self.del_fip(fIP[1])
-
-    # end test_aap_with_fip_active_active_mode
+        cmd = "curl --local-port 9001 -i " + vIP + ":8000"
+        result = vm_test_fixture.run_cmd_on_vm(cmds=[cmd])
+        assert (vm1_fixture.vm_name or vm2_fixture.vm_name) and '200 OK' in result[
+            cmd], 'Requests not being answered'
+    # end test_aap_active_active_mode
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
