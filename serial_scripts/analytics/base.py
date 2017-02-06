@@ -39,6 +39,26 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
                 break
     #end remove_from_cleanups
 
+
+    def test_cmd_output(self, cmd_type, cmd_args_list, check_output=False):
+        failed_cmds = []
+        passed_cmds = []
+        result = True
+        for cmd_args in cmd_args_list:
+            cmd = self._form_cmd(cmd_type, cmd_args)
+            self.logger.info("Running the following cmd:%s \n" %cmd)
+            if not self.execute_cli_cmd(cmd, check_output):
+                self.logger.error('%s command failed..' % cmd)
+                failed_cmds.append(cmd)
+                result = result and False
+            else:
+                passed_cmds.append(cmd)
+
+        self.logger.info('%s commands passed..\n' % passed_cmds)
+        self.logger.info('%s commands failed..\n ' % failed_cmds)
+        return result
+   # end test_cmd_output
+
     def _form_cmd(self, cmd_type, cmd_args):
         cmd = cmd_type
         for k,v in cmd_args.iteritems():
