@@ -278,6 +278,9 @@ class WebuiCommon:
         elif element_type == 'IPAM':
             element = 'Create ' + element_type
             element_new = element_type
+        elif element_type == 'PhysicalRouter':
+            element = 'btnAdd' + element_type
+            element_new = func_suffix
         else:
             element = 'Create ' + element_type
             element_new = func_suffix
@@ -299,16 +302,19 @@ class WebuiCommon:
             self.logger.info("Creating %s %s using contrail-webui" %
                              (element_type, name))
         if not save:
-            try:
-                browser.find_element_by_xpath(
-                    "//a[@class='widget-toolbar-icon' and @title='%s']" %
-                     element).click()
-            except WebDriverException:
+            if element_type == 'PhysicalRouter':
+                self.click_element(element)
+            else:
                 try:
-                    self.click_element('close', 'class', screenshot=False)
-                except:
-                    pass
-                raise
+                    browser.find_element_by_xpath(
+                        "//a[@class='widget-toolbar-icon' and @title='%s']" %
+                        element).click()
+                except WebDriverException:
+                    try:
+                        self.click_element('close', 'class', screenshot=False)
+                    except:
+                        pass
+                    raise
             self.wait_till_ajax_done(self.browser)
         if save:
             self.click_element(elem)
@@ -1296,6 +1302,12 @@ class WebuiCommon:
             element_name = fixture.secgrp_name
             element_id = 'btnActionDelSecGrp'
             popup_id = 'configure-security_groupbtn1'
+        elif element_type == 'phy_router_delete':
+            if not self.click_configure_physical_router():
+                result = result and False
+            element_name = fixture.name
+            element_id = 'btnDeletePhysicalRouter'
+            popup_id = 'configure-physical_routerbtn1'
         rows = self.get_rows(canvas=True)
         ln = 0
         if rows:
@@ -1657,13 +1669,13 @@ class WebuiCommon:
         return self.check_error_msg("configure bgp as a service")
     # end click_configure_bgp_as_a_service
 
-    def click_configure_physical_routers(self):
+    def click_configure_physical_router(self):
         self.wait_till_ajax_done(self.browser)
         self._click_on_config_dropdown(self.browser, 1)
         self.click_element(['config_pd_physicalRouters', 'a'], ['id', 'tag'])
-        time.sleep(2)
-        return self.check_error_msg("configure physical routers")
-    # end click_configure_physical_routers
+        self.wait_till_ajax_done(self.browser)
+        return self.check_error_msg("configure physical router")
+    # end click_configure_physical_router
 
     def click_configure_interfaces(self):
         self.wait_till_ajax_done(self.browser)
