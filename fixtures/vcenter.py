@@ -54,8 +54,11 @@ class NFSDatastore:
         self.vcpath = '/vmfs/volumes/nfs-ds/'
 
         if vc._find_obj(vc._dc, 'ds', {'name':self.name}):
-            return
-
+            nas_ds=vc._find_obj(vc._dc, 'ds', {'name':self.name})
+            if nas_ds.summary.accessible:#In vrouter gateway scenario, we are not provisioning
+                return                   #the vcenter server/reimaging the esxi hosts,we are only provisioning 
+                                         #the contrail-controllers.Hence, the nfs datastore becomes 
+                                         #in-accessiable.We need to create and mount the nfs datastore again. 
         username = inputs.host_data[self.server]['username']
         password = inputs.host_data[self.server]['password']
         with settings(host_string=username+'@'+self.server, password=password,
