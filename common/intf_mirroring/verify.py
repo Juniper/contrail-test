@@ -7,7 +7,6 @@ from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 
 from common.servicechain.mirror.verify import VerifySvcMirror
 from random import randint
-from common.openstack_libs import network_exception as exceptions
 
 from vnc_api.gen.resource_xsd import MirrorActionType
 from vnc_api.gen.resource_xsd import InterfaceMirrorType

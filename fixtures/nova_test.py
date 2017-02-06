@@ -13,6 +13,7 @@ import time
 import re
 import ast
 from common import vcenter_libs
+import openstack
 
 #from contrail_fixtures import contrail_fix_ext
 
@@ -20,47 +21,56 @@ from common import vcenter_libs
 
 
 class NovaHelper():
-
-    def __init__(self, inputs,
-                 project_name,
-                 key='key1',
-                 username=None,
-                 password=None):
-        httpclient = None
-        self.inputs = inputs
-        self.username = username or inputs.stack_user
-        self.password = password or inputs.stack_password
+    '''
+       Wrapper around nova client library
+       Optional params:
+       :param inputs: ContrailTestInit object which has test env details
+       :param auth_h: OpenstackAuth object
+       :param key: name of nova keypair (prefix)
+       :param logger: logger object
+       :param auth_url: Identity service endpoint for authorization.
+       :param username: Username for authentication.
+       :param password: Password for authentication.
+       :param project_name: Tenant name for tenant scoping.
+       :param region_name: Region name of the endpoints.
+       :param certfile: Public certificate file
+       :param keyfile: Private Key file
+       :param cacert: CA certificate file
+       :param verify: Enable or Disable ssl cert verification
+    '''
+    def __init__(self, inputs, auth_h=None, key='key1', **kwargs):
+        self.inputs = kwargs['inputs'] = inputs
+        self.username = inputs.stack_user
+        self.password = inputs.stack_password
+        self.project_name = inputs.project_name
         self.admin_username = inputs.admin_username
         self.admin_password = inputs.admin_password
         self.admin_tenant = inputs.admin_tenant
-        self.project_name = project_name
+        self.auth_url = inputs.auth_url
+        self.logger = inputs.logger
+        self.region_name = kwargs.get('region_name') or inputs.region_name
+        if not auth_h:
+            auth_h = self.get_auth_h(**kwargs)
+        self.auth_h = auth_h
         self.cfgm_ip = inputs.cfgm_ip
         self.openstack_ip = inputs.openstack_ip
         self.zone = inputs.availability_zone
+        self.endpoint_type = inputs.endpoint_type
         # 1265563 keypair name can only be alphanumeric. Fixed in icehouse
         self.key = 'ctest_' + self.project_name+self.username+key
-        self.obj = None
-        self.auth_url = inputs.auth_url
-        self.region_name = inputs.region_name
-        self.logger = inputs.logger
         self.images_info = parse_cfg_file('configs/images.cfg')
         self.flavor_info = parse_cfg_file('configs/flavors.cfg')
-        self.endpoint_type = inputs.endpoint_type
-        self._connect_to_openstack()
         self.hypervisor_type = os.environ.get('HYPERVISOR_TYPE') \
                                 if os.environ.has_key('HYPERVISOR_TYPE') \
                                 else None
+        self._connect_to_openstack()
     # end __init__
 
+    def get_auth_h(self, **kwargs):
+        return openstack.OpenstackAuth(**kwargs)
+
     def _connect_to_openstack(self):
-        insecure = bool(os.getenv('OS_INSECURE',True))
-        self.obj = mynovaclient.Client('2',
-                                       username=self.username,
-                                       project_id=self.project_name,
-                                       api_key=self.password,
-                                       auth_url=self.auth_url,
-                                       insecure=insecure,
-                                       endpoint_type=self.endpoint_type,
+        self.obj = mynovaclient.Client('2', session=self.auth_h.get_session(),
                                        region_name=self.region_name
                                       )
         if 'keypair' not in env:
@@ -78,7 +88,7 @@ class NovaHelper():
         self.hosts_list = []
         self.hosts_dict = self._list_hosts()
 
-    # end setUp
+    # end _connect_to_openstack
 
     def get_hosts(self, zone=None):
         if zone and self.hosts_dict.has_key(zone):
@@ -644,10 +654,10 @@ class NovaHelper():
     @property
     def admin_obj(self):
         if not getattr(self, '_admin_obj', None):
-            self._admin_obj = NovaHelper(inputs=self.inputs,
-                                         project_name=self.admin_tenant,
-                                         username=self.admin_username,
-                                         password=self.admin_password)
+            from openstack import OpenstackAuth
+            auth_h = OpenstackAuth(self.admin_username, self.admin_password,
+                                   self.admin_tenant, self.inputs, self.logger)
+            self._admin_obj = NovaHelper(inputs=self.inputs, auth_h=auth_h)
         return self._admin_obj
 
     @property

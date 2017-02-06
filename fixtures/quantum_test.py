@@ -1,10 +1,11 @@
 import os
 from tcutils.util import *
 from common import log_orig as contrail_logging
-from common.openstack_libs import network_client as client
-from common.openstack_libs import network_http_client as HTTPClient
-from common.openstack_libs import network_client_exception as CommonNetworkClientException
+from common.openstack_libs import neutron_client as client
+from common.openstack_libs import neutron_http_client as HTTPClient
+from common.openstack_libs import neutron_client_exception as CommonNetworkClientException
 from netaddr import IPNetwork
+import openstack
 
 class NetworkClientException(CommonNetworkClientException):
 
@@ -21,35 +22,44 @@ class NetworkClientException(CommonNetworkClientException):
 
 class QuantumHelper():
 
+    '''
+       Wrapper around neutron client library
+       Optional params:
+       :param auth_h: OpenstackAuth object
+       :param inputs: ContrailTestInit object which has test env details
+       :param logger: logger object
+       :param auth_url: Identity service endpoint for authorization.
+       :param username: Username for authentication.
+       :param password: Password for authentication.
+       :param project_name: Tenant name for tenant scoping.
+       :param region_name: Region name of the endpoints.
+       :param certfile: Public certificate file
+       :param keyfile: Private Key file
+       :param cacert: CA certificate file
+       :param verify: Enable or Disable ssl cert verification
+    '''
     def __init__(
             self,
-            username,
-            password,
-            project_id,
-            inputs,
-            auth_server_ip=None):
-        self.username = username
-        self.password = password
-        self.project_id = get_plain_uuid(project_id)
+            auth_h=None,
+            **kwargs):
         self.obj = None
-        self.auth_server_ip = inputs.auth_ip if inputs else auth_server_ip or \
-                                  '127.0.0.1'
-        self.logger = inputs.logger if inputs else \
-                          contrail_logging.getLogger(__name__)
-        self.auth_url = inputs.auth_url if inputs else \
-                        os.getenv('OS_AUTH_URL') or \
-                        'http://%s:5000/v2.0' % self.auth_server_ip
-        self.region_name = inputs.region_name if inputs else None
+        inputs = kwargs.get('inputs')
+        self.logger = kwargs.get('logger') or inputs.logger if inputs \
+                          else contrail_logging.getLogger(__name__)
+        self.region_name = kwargs.get('region_name') or \
+                           inputs.region_name if inputs else None
+        if not auth_h:
+            auth_h = self.get_auth_h(**kwargs)
+        self.auth_h = auth_h
+        self.project_id = get_plain_uuid(auth_h.get_project_id())
     # end __init__
 
+    def get_auth_h(self, **kwargs):
+        return openstack.OpenstackAuth(**kwargs)
+
     def setUp(self):
-        insecure = bool(os.getenv('OS_INSECURE', True))
-        self.obj = client.Client('2.0', username=self.username,
-                                 password=self.password,
-                                 tenant_id=self.project_id,
-                                 auth_url=self.auth_url,
-                                 region_name=self.region_name,
-                                 insecure=insecure)
+        self.obj = client.Client('2.0', session=self.auth_h.get_session(),
+                                 region_name=self.region_name)
     # end __init__
 
     def get_handle(self):

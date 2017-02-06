@@ -1,14 +1,12 @@
-try:
-    from barbicanclient import client
-except:
-    pass
+from common.openstack_libs import barbican_client
 import requests, json
 
 class BarbicanHelper(object):
 
     def __init__(self, **kwargs):
         self.connections = kwargs.get('connections', None)
-        self.barbican = client.Client(session=self.connections.auth.keystone.get_session())
+        self.barbican = barbican_client.Client(session=self.connections.auth.get_session(),
+                                               region_name=self.connections.inputs.region_name)
 
     def create_secrets(self, name, payload, payload_content_type):
         secrets = self.barbican.secrets.create()

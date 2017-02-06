@@ -115,7 +115,8 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         if env == None:
             env = self.get_env(env_name=stack_name)
         return self.useFixture(HeatStackFixture(connections=self.connections,
-                                                inputs=self.inputs, stack_name=stack_name, project_fq_name=self.inputs.project_fq_name, template=template, env=env))
+                                                stack_name=stack_name,
+                                                template=template, env=env))
     # end config_heat_obj
 
     def config_fip_pool(self, vn):

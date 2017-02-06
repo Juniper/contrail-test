@@ -56,14 +56,11 @@ class ContrailConnections():
                 self.browser = self.ui_login.browser
                 self.browser_openstack = self.ui_login.browser_openstack
 
-            self.orch = OpenstackOrchestrator(username=self.username,
-                                              password=self.password,
-                                              project_id=self.project_id,
-                                              project_name=self.project_name,
-                                              inputs=self.inputs,
+            self.orch = OpenstackOrchestrator(inputs=self.inputs,
                                               vnclib=self.vnc_lib,
                                               logger=self.logger,
-                                             auth_server_ip=self.inputs.auth_ip)
+                                              auth_h=self.auth
+                                             )
             self.nova_h = self.orch.get_compute_handler()
             self.quantum_h = self.orch.get_network_handler()
         elif self.inputs.orchestrator == 'vcenter': # vcenter

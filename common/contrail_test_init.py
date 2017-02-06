@@ -724,14 +724,14 @@ class TestInputs(object):
                                         key=self.keystonekeyfile,
                                         cacert=self.keycertbundle,
                                         logger=self.logger)
-            match = re.match(pattern, keystone.get_endpoint('identity')[0])
+            match = re.match(pattern, keystone.get_endpoint('identity'))
             self.auth_ip = match.group('ip')
             self.auth_port = match.group('port')
 
         # Assume contrail-config runs in the same node as neutron-server
         discovery = os.getenv('DISCOVERY_IP', None) or \
                     (keystone and re.match(pattern,
-                    keystone.get_endpoint('network')[0]).group('ip'))
+                    keystone.get_endpoint('network')).group('ip'))
         ds_client = VerificationDsSrv(discovery)
         services = ds_client.get_ds_services().info
         cfgm = database = services['config']
