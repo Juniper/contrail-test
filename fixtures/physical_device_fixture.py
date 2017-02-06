@@ -3,7 +3,10 @@ from netaddr import *
 import vnc_api_test
 from pif_fixture import PhysicalInterfaceFixture
 from common.device_connection import ConnectionFactory
-
+try:
+    from webui_test import *
+except ImportError:
+    pass
 
 class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
 
@@ -13,7 +16,7 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
     :param name   : name of the device
     :param mgmt_ip  : Management IP
 
-    Optional: 
+    Optional:
     :param vendor : juniper
     :param model  : mx
     :param asn    : default is 64512
@@ -53,6 +56,10 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         self.already_present = False
         self.physical_port_fixtures = {}
 
+        if self.inputs.verify_thru_gui():
+            connections = kwargs.get('connections', None)
+            self.webui = WebuiTest(connections, self.inputs)
+
      # end __init__
 
     def _get_ip_fabric_ri_obj(self):
@@ -72,7 +79,10 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         pr.physical_router_vnc_managed = True
         uc = vnc_api_test.UserCredentials(self.ssh_username, self.ssh_password)
         pr.set_physical_router_user_credentials(uc)
-        pr_id = self.vnc_api_h.physical_router_create(pr)
+        if self.inputs.is_gui_based_config():
+            self.webui.create_physical_router(self)
+        else:
+            pr_id = self.vnc_api_h.physical_router_create(pr)
         self.logger.info('Created Physical device %s with ID %s' % (
             pr.fq_name, pr.uuid))
         return pr
@@ -118,7 +128,10 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
             self.logger.info('Skipping deletion of device %s' % (
                 self.phy_device.fq_name))
         if do_cleanup:
-            self.delete_device()
+            if self.inputs.is_gui_based_config():
+                self.webui.delete_physical_router(self)
+            else:
+                self.delete_device()
 
     def add_virtual_network(self, vn_id):
         self.logger.debug('Adding VN %s to physical device %s' % (

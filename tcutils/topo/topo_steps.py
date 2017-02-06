@@ -26,6 +26,7 @@ from common.policy import policy_test_helper
 from svc_template_fixture import SvcTemplateFixture
 from svc_instance_fixture import SvcInstanceFixture
 from security_group import SecurityGroupFixture
+from physical_device_fixture import PhysicalDeviceFixture
 try:
     from webui_test import *
 except ImportError:
@@ -800,6 +801,24 @@ def createServiceInstance(self):
 
     return self
 # end createServiceInstance
+
+def createPhysicalRouter(self):
+    self.pr_fixture = {}
+    if not hasattr(self.topo, 'pr_list'):
+        return self
+    for pr_name in self.topo.pr_list:
+        self.pr_fixture[pr_name] = self.useFixture(
+            PhysicalDeviceFixture(
+                pr_name,
+                self.topo.pr_params[pr_name]['mgmt_ip'],
+                vendor=self.topo.pr_params[pr_name]['vendor'],
+                model=self.topo.pr_params[pr_name]['model'],
+                ssh_username=self.topo.pr_params[pr_name]['ssh_username'],
+                ssh_password=self.topo.pr_params[pr_name]['ssh_password'],
+                tunnel_ip=self.topo.pr_params[pr_name]['tunnel_ip'],
+                connections=self.project_connections))
+    return self
+# end createPhysicalRouter
 
 
 def allocNassocFIP(self, config_topo=None, assoc=True):
