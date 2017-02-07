@@ -18,11 +18,17 @@ def start_tcpdump_for_vm_intf(obj, vm_fix, vn_fq_name, filters='-v'):
     return (session, pcap)
 
 def stop_tcpdump_for_vm_intf(obj, session, pcap):
-    cmd = 'rm -f %s' % pcap
-    execute_cmd(session, cmd, obj.logger)
     cmd = 'kill $(ps -ef|grep tcpdump | grep pcap| awk \'{print $2}\')'
     execute_cmd(session, cmd, obj.logger)
     return True
+
+def read_tcpdump(obj, session, pcap):
+    cmd = 'tcpdump -n -r %s' % pcap
+    out, err = execute_cmd_out(session, cmd, obj.logger)
+    return out
+
+def delete_pcap(session, pcap):
+    execute_cmd_out(session, 'rm -f %s' % (pcap))
 
 @retry(delay=2, tries=6)
 def verify_tcpdump_count(obj, session, pcap, exp_count=None):
@@ -47,4 +53,5 @@ def verify_tcpdump_count(obj, session, pcap, exp_count=None):
             "%s packets are found in tcpdump output as expected",
             count)
         stop_tcpdump_for_vm_intf(obj, session, pcap)
+        delete_pcap(obj, sesion, pcap)
     return result 
