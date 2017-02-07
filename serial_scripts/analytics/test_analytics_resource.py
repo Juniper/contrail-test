@@ -1153,12 +1153,12 @@ class AnalyticsTestSanityWithResource(
         cmd_args_list = [ { 'source-vn':src_vn, 'source-ip':sip, 'source-port':src_port,
             'protocol':protocol, 'direction':direction, 'no_key':['start-time now-30m', 'end-time now']},
             {'destination-vn':dst_vn, 'destination-ip':dip, 'destination-port':dst_port,
-            'action':action, 'protocol':protocol, 'no_key':['verbose, last 1h']},
+            'action':action, 'protocol':protocol, 'no_key':['verbose', 'last 1h']},
             {'vrouter-ip':vrouter_ip, 'other-vrouter-ip':other_vrouter_ip, 'no_key':['start-time now-10m', 'end-time now']},
             {'vrouter':src_vm_host, 'no_key': ['last 10m']}, {'vmi-uuid':vmi_uuid, 'no_key': ['last 20m']}]
 
 
-        return self.test_cmd_output('contrail-flows', cmd_args_list)
+        return self.test_cmd_output('contrail-flows', cmd_args_list, check_output=True)
 
     @preposttest_wrapper
     def test_run_contrail_logs_cli_cmd_with_optional_arg_module(self):
@@ -1192,7 +1192,7 @@ class AnalyticsTestSanityWithResource(
         for arg_type in module:
             cmd = {'module':arg_type, 'no_key': ['last 10m']}
             cmd_args_list.append(cmd)
-        return self.test_cmd_output('contrail-logs', cmd_args_list)
+        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True)
 
     @preposttest_wrapper
     def test_run_contrail_logs_cli_cmd_with_optional_arg_object_type(self):
@@ -1207,7 +1207,7 @@ class AnalyticsTestSanityWithResource(
             'server', 'virtual-machine', 'vrouter', 'storage-disk', 'storage-pool', 'service-instance', 'config-node']
 
         object_type_ = [ 'service-chain', 'storage-osd', 'logical-interface', 'prouter', 'loadbalancer', 'user-defined-log-statistic',
-            'storage-cluster', 'physical-interface', 'server', 'storage-disk', 'storage-pool', 'service-instance']
+            'storage-cluster', 'physical-interface', 'server', 'storage-disk', 'storage-pool', 'service-instance', 'analytics-query-id', 'analytics-query']
 
         object_type = list(set(object_type) - set(object_type_))
 
@@ -1228,7 +1228,7 @@ class AnalyticsTestSanityWithResource(
             for cmd in cmds:
                 cmd_args_list.append(cmd)
 
-        return self.test_cmd_output('contrail-logs', cmd_args_list)
+        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True)
 
     @preposttest_wrapper
     def test_run_contrail_logs_cli_cmd_with_optional_arg_message_type(self):
@@ -1251,7 +1251,7 @@ class AnalyticsTestSanityWithResource(
             for cmd in cmds:
                 cmd_args_list.append(cmd)
 
-        return self.test_cmd_output('contrail-logs', cmd_args_list)
+        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True)
 
     @preposttest_wrapper
     def test_run_contrail_logs_cli_cmd_with_optional_arg_level_type(self):
@@ -1280,7 +1280,7 @@ class AnalyticsTestSanityWithResource(
         for arg_type in node_type:
             cmd = {'node-type':arg_type, 'no_key':['last 5m', 'verbose']}
             cmd_args_list.append(cmd)
-        return self.test_cmd_output('contrail-logs', cmd_args_list)
+        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True)
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
@@ -1314,18 +1314,64 @@ class AnalyticsTestSanityWithResource(
             {'module': 'contrail-analytics-api', 'source':cfgm, 'node-type': 'Analytics'}
             ]
 
-        return self.test_cmd_output('contrail-logs', cmd_args_list)
+        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True)
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
-    def test_verify_contrail_stats_cli_command_not_broken(self):
-        '''1.Run command 'contrail-stats --table SandeshMessageStat.msg_info --select "SUM(msg_info.messages)" msg_info.type --sort "SUM(msg_info.messages)"'
+    def test_run_contrail_stats_cli_commands(self):
+        '''1.Run contrail-stats commands with various options
            2.Verify the command runs properly and its returning some output
            3.Do not verify the correctness of the output
         '''
-        cmd = 'contrail-stats --table SandeshMessageStat.msg_info --select "SUM(msg_info.messages)" msg_info.type --sort "SUM(msg_info.messages)"'
-        if not self.execute_cli_cmd(cmd):
-            self.logger.error('%s contrail-stats command failed..' % cmd)
-            return False
-        return True
+
+        src_vn = self.res.vn1_vm1_fixture.vn_fq_names[0]
+        dst_vn = self.res.vn1_vm2_fixture.vn_fq_names[0]
+        src_vm_host = self.res.vn1_vm1_fixture.get_host_of_vm()
+
+        cmd_args_list = [
+
+            'contrail-stats --table UveVMInterfaceAgent.if_stats --select "SUM(if_stats.in_bytes)" \
+            name --where name="*" --start-time now-11h --end-time now-10h',
+
+            'contrail-stats --table NodeStatus.process_mem_cpu_usage --select "T=120" "AVG(process_mem_cpu_usage.cpu_share)" \
+            "AVG(process_mem_cpu_usage.mem_res)" --where process_mem_cpu_usage.__key=cassandra --last 30m',
+
+            'contrail-stats --table UveVirtualNetworkAgent.vn_stats --select "T=60" "SUM(vn_stats.in_bytes)" --where name="*"',
+
+            'contrail-stats --table SandeshMessageStat.msg_info --select "SUM(msg_info.messages)" \
+            msg_info.type --sort "SUM(msg_info.messages)"',
+
+            'contrail-stats --table UveVirtualNetworkAgent.vn_stats --select "T=60" "SUM(vn_stats.in_bytes)" \
+            --where name=' + src_vn + ' --last 1h',
+
+            'contrail-stats --table VrouterStatsAgent.phy_band_in_bps --select phy_band_in_bps.__value phy_band_in_bps.__key',
+
+            'contrail-stats --table SandeshMessageStat.msg_info --select "SUM(msg_info.messages)" msg_info.type --sort "SUM(msg_info.messages)"',
+
+            'contrail-stats --table AnalyticsApiStats.api_stats  --select "PERCENTILES(api_stats.response_size_bytes)" \
+            "SUM(api_stats.response_size_objects)" name --where name="*"',
+
+            'contrail-stats --table NodeStatus.process_mem_cpu_usage --select "UUID" "process_mem_cpu_usage.cpu_share" \
+            "AVG(process_mem_cpu_usage.cpu_share)" "name" --where name="*"',
+
+            'contrail-stats --table AnalyticsApiStats.api_stats --select "name" "api_stats.useragent" "AVG(api_stats.response_size_bytes)" --where name="*"',
+
+            'contrail-stats --table UveVirtualNetworkAgent.vn_stats --select "T=60" "SUM(vn_stats.in_bytes)" --where name=' + src_vn + ' --last 1h',
+
+            'contrail-stats --table UveVirtualNetworkAgent.vn_stats --where "name=' + src_vn + '" \
+            --select vn_stats.other_vn "SUM(vn_stats.out_bytes)" "SUM(vn_stats.in_bytes)" "COUNT(vn_stats)" --last 1h',
+
+            'contrail-stats --table UveVirtualNetworkAgent.vn_stats  --where "name=' + src_vn + ' AND vn_stats.vrouter=' + src_vm_host + '" \
+                --select "T" "vn_stats.other_vn" "UUID" "vn_stats.out_bytes" "vn_stats.in_bytes" --last 10m'
+
+            'contrail-stats --table UveVirtualNetworkAgent.vn_stats --where "name=' + src_vn + ' AND vn_stats.vrouter=' + src_vm_host + '" \
+            --select T vn_stats.other_vn UUID vn_stats.out_bytes vn_stats.in_bytes --last 40m',
+
+            'contrail-stats --table UveVirtualNetworkAgent.vn_stats --where "name=' + src_vn + '" --select vn_stats.other_vn \
+            "SUM(vn_stats.out_bytes)" "SUM(vn_stats.in_bytes)" "COUNT(vn_stats)" --last 1h',
+
+            'contrail-stats --table UveVirtualNetworkAgent.vn_stats --where "name=' + src_vn + ' AND vn_stats.other_vn=' + dst_vn + '" \
+            --select T=300 "SUM(vn_stats.out_bytes)" "SUM(vn_stats.in_bytes)" --last 1h' ]
+
+        return self.test_cmd_output('contrail-stats', cmd_args_list, check_output=True, form_cmd=False)
 #End AnalyticsTestSanityWithResource        
