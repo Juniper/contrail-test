@@ -18,7 +18,6 @@ import json
 from pprint import pformat
 from common.openstack_libs import neutron_client as client
 from common.openstack_libs import neutron_http_client as HTTPClient
-from common.openstack_libs import neutron_exception as exceptions
 
 
 class VnCfg(object):
