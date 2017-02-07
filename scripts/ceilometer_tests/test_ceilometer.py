@@ -15,17 +15,8 @@ class CeilometerTest(
     def setUpClass(cls):
         super(CeilometerTest, cls).setUpClass()
         cls.res.setUp(cls.inputs, cls.connections, cls.public_vn_obj)
-        cls.auth = OpenstackAuth(cls.inputs.stack_user,
-                              cls.inputs.stack_password,
-                              cls.inputs.project_name, cls.inputs, cls.logger)
-        cls.auth_url = cls.auth.auth_url
-        cls.c_url = 'http://%s:8777/'%cls.inputs.openstack_ip
-        cls.cclient = ceilometer_client.CeilometerClient(cls.auth_url, 
-                                 cls.inputs.stack_user,
-                                 cls.inputs.stack_password,
-                                 cls.inputs.project_name,
-                                 cls.c_url,
-                                 insecure = True)
+        cls.auth = cls.connections.auth
+        cls.cclient = ceilometer_client.CeilometerClient(cls.auth)
         cls.cclient = cls.cclient.get_cclient() 
 
     @classmethod

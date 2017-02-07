@@ -44,8 +44,7 @@ try:
             '''
             stacks_list = []
             self.stacks = self.useFixture(
-                HeatFixture(connections=self.connections, username=self.inputs.username, password=self.inputs.password,
-                            project_fq_name=self.inputs.project_fq_name, inputs=self.inputs, cfgm_ip=self.inputs.cfgm_ip, openstack_ip=self.inputs.openstack_ip))
+                HeatFixture(connections=self.connections))
             stacks_list = self.stacks.list_stacks()
             self.logger.info(
                 'The following are the stacks currently : %s' % stacks_list)
