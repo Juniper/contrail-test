@@ -746,6 +746,10 @@ class VcenterVM:
         self.id = vm.summary.config.instanceUuid
         self.macs = {}
         self.ips = {}
+        tools_status = vm.guest.toolsStatus
+        if (tools_status == 'toolsNotInstalled' or
+                tools_status == 'toolsNotRunning'):
+            self.install_vmware_tools(self.vcenter,vm)
         for intf in vm.guest.net:
             self.macs[intf.network] = intf.macAddress
             self.ips[intf.network] = intf.ipAddress[0]
@@ -836,6 +840,22 @@ class VcenterVM:
             return False
         time.sleep(60)
         return True
+
+    @retry(tries=120, delay=5)
+    def install_vmware_tools(self, vcenter ,vm):
+        if not vm.guest.guestOperationsReady:
+            self.vcenter._log.error("Vm not yet operational.retrying....")
+            return False
+        cmd_path = '/usr/bin/sudo'
+        user = 'ubuntu'
+        password = 'ubuntu'
+        vm_id = self.id
+        cmd = './vmware-tools-distrib/vmware-install.pl -d'#Assuming that package is there in the disk image,
+        try:                                               #but not installed 
+            vcenter.run_a_command(vm_id,user,password,cmd_path,cmd)
+            return True
+        except Exception as e:
+            return False
 
     def bring_up_interfaces(self, vcenter ,vm , intfs=[]):
         time.sleep(20)
