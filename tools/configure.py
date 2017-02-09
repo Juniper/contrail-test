@@ -401,6 +401,13 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
                 for k in env.vcenter_servers:
                     vcenter_dc = env.vcenter_servers[k]['datacenter']
 
+    #global controller
+    gc_host_mgmt = getattr(testbed, 'gc_host_mgmt', '')
+    gc_host_control_data =  getattr(testbed, 'gc_host_control_data', '')
+    gc_user_name = getattr(testbed, 'gc_user_name', '')
+    gc_user_pwd = getattr(testbed, 'gc_user_pwd', '')
+    keystone_password = getattr(testbed, 'keystone_password', '')
+
     sanity_params = sanity_ini_templ.safe_substitute(
         {'__testbed_json_file__'   : 'sanity_testbed.json',
          '__nova_keypair_name__'   : keypair_name,
@@ -490,6 +497,12 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
          '__keystone_keyfile__'    : keystone_keyfile,
          '__keystone_cafile__'     : keystone_cafile,
          '__keystone_insecure_flag__': keystone_insecure_flag,
+         '__gc_host_mgmt__'        : gc_host_mgmt,
+         '__gc_host_control_data__': gc_host_control_data,
+         '__gc_user_name__'        : gc_user_name,
+         '__gc_user_pwd__'         : gc_user_pwd,
+         '__keystone_password__'   : keystone_password,
+
         })
 
     ini_file = test_dir + '/' + 'sanity_params.ini'

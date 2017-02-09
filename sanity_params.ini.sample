@@ -183,3 +183,11 @@ stop_on_fail=$__stop_on_fail__
 
 # set to False to skip verification of VM launch, default True
 verify_on_setup=$__test_verify_on_setup__
+
+#Ukai global-controller
+[global-controller]
+gc_host_mgmt=$__gc_host_mgmt__
+gc_host_control_data=$__gc_host_control_data__
+gc_user_name=$__gc_user_name__
+gc_user_pwd=$__gc_user_pwd__
+keystone_password=$__keystone_password__

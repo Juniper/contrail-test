@@ -150,6 +150,9 @@ class VMFixture(fixtures.Fixture):
     # end __init__
 
     def read(self):
+        if not self.vm_id:
+            self.fq_name = [self.domain_name, self.project_name, self.vm_name]
+            self.vm_id = self.vnc_lib_h.fq_name_to_id('virtual-machine', self.fq_name)
         if self.vm_id:
             self.vm_obj = self.orch.get_vm_by_id(vm_id=self.vm_id)
             if not self.vm_obj:

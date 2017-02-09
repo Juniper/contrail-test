@@ -372,6 +372,22 @@ class TestInputs(object):
             'contrail-snmp-collector', 'contrail-topology']
         self.correct_states = ['active', 'backup']
 
+        self.gc_host_mgmt = read_config_option(self.config,
+                                             'global-controller', 'gc_host_mgmt', 'None')
+
+        self.gc_host_control_data = read_config_option(self.config,
+                                             'global-controller', 'gc_host_control_data', 'None')
+
+        self.gc_user_name = read_config_option(self.config,
+                                             'global-controller', 'gc_user_name', 'None')
+
+        self.gc_user_pwd = read_config_option(self.config,
+                                             'global-controller', 'gc_user_pwd', 'None')
+
+        self.keystone_password = read_config_option(self.config,
+                                             'global-controller', 'keystone_password', 'None')
+
+
     def get_os_env(self, var, default=''):
         if var in os.environ:
             return os.environ.get(var)
