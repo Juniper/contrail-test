@@ -281,6 +281,9 @@ class WebuiCommon:
         elif element_type == 'PhysicalRouter':
             element = 'btnAdd' + element_type
             element_new = func_suffix
+        elif element_type == 'Interface':
+            element = 'Add ' + element_type
+            element_new = func_suffix
         else:
             element = 'Create ' + element_type
             element_new = func_suffix
@@ -297,6 +300,8 @@ class WebuiCommon:
             if select_project:
                 if element_type == 'DNS Record':
                     self.select_dns_server(prj_name)
+                elif element_type == 'Interface':
+                    self.select_project(prj_name, proj_type='prouter')
                 elif not element_type in ['DNS Server']:
                     self.select_project(prj_name)
             self.logger.info("Creating %s %s using contrail-webui" %
@@ -828,12 +833,16 @@ class WebuiCommon:
         return True
     # end click_if_element_found
 
-    def select_project(self, project_name='admin'):
+    def select_project(self, project_name='admin', proj_type='project'):
+        if proj_type == 'project':
+            proj_crumb = 's2id_projects\-breadcrumb\-dropdown'
+        elif proj_type == 'prouter':
+            proj_crumb = 's2id_prouter\-breadcrumb\-dropdown'
         current_project = self.find_element(
-            ['s2id_projects\-breadcrumb\-dropdown', 'span'], ['id', 'tag']).text
+            [proj_crumb, 'span'], ['id', 'tag']).text
         if not current_project == project_name:
             self.click_element(
-                ['s2id_projects\-breadcrumb\-dropdown', 'a'], ['id', 'tag'], jquery=False, wait=4)
+                [proj_crumb, 'a'], ['id', 'tag'], jquery=False, wait=4)
             elements_obj_list = self.find_select2_drop_elements(self.browser)
             self.click_if_element_found(elements_obj_list, project_name)
     # end select_project
@@ -1210,13 +1219,16 @@ class WebuiCommon:
         delete_success = None
         ver_flag = False
         if WebuiCommon.count_in == False:
-            if not element_type == 'svc_template_delete':
-                self.click_configure_networks()
-                if not fixture:
-                    self.select_project(self.inputs.project_name)
-                else:
-                    self.select_project(fixture.project_name)
-                WebuiCommon.count_in = True
+            if element_type == 'phy_interface_delete':
+                pass
+            else:
+                if not element_type == 'svc_template_delete':
+                    self.click_configure_networks()
+                    if not fixture:
+                        self.select_project(self.inputs.project_name)
+                    else:
+                        self.select_project(fixture.project_name)
+                    WebuiCommon.count_in = True
         if element_type == 'svc_instance_delete':
             if not self.click_configure_service_instance():
                 result = result and False
@@ -1308,6 +1320,12 @@ class WebuiCommon:
             element_name = fixture.name
             element_id = 'btnDeletePhysicalRouter'
             popup_id = 'configure-physical_routerbtn1'
+        elif element_type == 'phy_interface_delete':
+            if not self.click_configure_interfaces():
+                result = result and False
+            element_name = fixture.name
+            element_id = 'fa-trash'
+            popup_id = 'configure-interfacebtn1'
         rows = self.get_rows(canvas=True)
         ln = 0
         if rows:
@@ -1347,6 +1365,9 @@ class WebuiCommon:
                     self.click_element(element_id, 'class')
                 elif element_type == 'port_delete':
                     self.click_element("//a[@data-original-title='Delete']", 'xpath')
+                elif element_type == 'phy_interface_delete':
+                    self.click_element(element_id, 'class')
+                    self.click_element("//a[@data-original-title='Delete Interface(s)']", 'xpath')
                 else:
                     self.click_element(element_id)
                 self.click_element(popup_id, screenshot=False)
@@ -1677,11 +1698,21 @@ class WebuiCommon:
         return self.check_error_msg("configure physical router")
     # end click_configure_physical_router
 
+    def click_configure_physical_router_basic(self, row_index):
+        self.click_configure_physical_router()
+        rows = self.get_rows()
+        div_browser = self.find_element(
+            'div', 'tag', if_elements=[1], elements=True,
+            browser=rows[row_index])[0]
+        self.click_element('i', 'tag', browser = div_browser)
+        self.wait_till_ajax_done(self.browser)
+    #end click_configure_physical_router_basic
+
     def click_configure_interfaces(self):
         self.wait_till_ajax_done(self.browser)
         self._click_on_config_dropdown(self.browser, 1)
         self.click_element(['config_pd_interfaces', 'a'], ['id', 'tag'])
-        time.sleep(2)
+        self.wait_till_ajax_done(self.browser)
         return self.check_error_msg("configure physical device's interfaces")
     # end click_configure_interfaces
 

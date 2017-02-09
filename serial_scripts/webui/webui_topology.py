@@ -232,6 +232,12 @@ class sdn_webui_config ():
                 'ssh_password': 'Embe1mpls',
                 'tunnel_ip': '30.1.1.15' }}
 
+        #Define Physical Interface parameters
+        self.pif_list = ['ge-0/0/0']
+        self.pif_params = {
+            'ge-0/0/0': {
+                'int_type': 'Physical' }}
+
         # Define network policy rules
         self.rules = {}
 
