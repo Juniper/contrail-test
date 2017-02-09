@@ -9,6 +9,7 @@ import os
 import fixtures
 import testtools
 import time
+import datetime
 
 from vn_test import *
 from vm_test import *
@@ -21,6 +22,7 @@ import test
 from tcutils.util import *
 from netaddr import IPNetwork, IPAddress
 from floating_ip import FloatingIPFixture
+from tcutils import tcpdump_utils
 
 
 class TestPorts(BaseNeutronTest):
@@ -1104,3 +1106,121 @@ class TestPorts(BaseNeutronTest):
                                binding_profile=bind_dict))
         assert port.verify_on_setup(), 'VMI %s verification has failed'%port.uuid
     # end test_ports_bindings
+
+    def test_aap_backoff(self):
+        '''
+        Verify  VIP reachability over L2 network when AAP MAC is configured with all zeo
+            1. Launch 2 vms on same virtual network.
+            2. Configure high availability between them with keepalived.
+            3. Launch third VM in same VM.
+            4. Check the reachability of VIP from 3rd VM.
+            5. Break VRRP link, VRRP state toggles
+            6. vRouter query to VM should start to incrementally backoff
+            7. Check Max backoff interval is 32 secs
+            8. Stop VRRP toggle, VRRP state should stable & ping to VIP passes
+            9. Break VRRP link again
+            10. Check that backoff interval is reset
+
+        Pass criteria: Step 4,6,7,8 and 10 should pass
+        Maintainer: chhandak@juniper.net
+        '''
+
+        vn1_name = get_random_name('vn1')
+        vn1_subnets = [get_random_cidr()]
+        vm1_name = get_random_name('vm1')
+        vm2_name = get_random_name('vm2')
+        vm_test_name = get_random_name('vm_test')
+        vID = '51'
+        result = False
+
+        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+        vIP = get_an_ip(vn1_subnets[0], offset=10)
+        port1_obj = self.create_port(net_id=vn1_fixture.vn_id)
+        port2_obj = self.create_port(net_id=vn1_fixture.vn_id)
+        port_list = [port1_obj, port2_obj]
+        vm1_fixture = self.create_vm(vn1_fixture, vm1_name,
+                                     image_name='ubuntu-keepalive',
+                                     flavor='contrail_flavor_large',
+                                     port_ids=[port1_obj['id']])
+        vm2_fixture = self.create_vm(vn1_fixture, vm2_name,
+                                     image_name='ubuntu-keepalive',
+                                     flavor='contrail_flavor_large',
+                                     port_ids=[port2_obj['id']])
+        vm_test_fixture = self.create_vm(vn1_fixture, vm_test_name,
+                                          image_name='ubuntu')
+        assert vm1_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
+        assert vm2_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
+        assert vm_test_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
+        for port in port_list:
+            self.config_aap(port, vIP, mac=port['mac_address'])
+        self.config_keepalive(vm1_fixture, vIP, vID, '10')
+        self.config_keepalive(vm2_fixture, vIP, vID, '20')
+
+        self.logger.info('Ping to the Virtual IP from the test VM (Same Network)')
+        assert vm_test_fixture.ping_with_certainty(vIP), ''\
+            'Ping to the Virtual IP %s from the test VM  %s, failed' % (vIP,
+                                                vm_test_fixture.vm_ip)
+
+        self.logger.info('Break VRRP link, by setting mismatching server Id')
+        self.service_keepalived(vm2_fixture, 'stop')
+        filter_cmd = 'arp host %s and ether src 00:00:5e:00:01:00' % vIP
+        session, pcap = tcpdump_utils.start_tcpdump_for_vm_intf(self.connections, vm2_fixture,
+                                                                vn1_fixture.vn_fq_name, filter_cmd)
+        self.config_keepalive(vm2_fixture, vIP, '50', '20')
+        time.sleep(120)
+        tcpdump_utils.stop_tcpdump_for_vm_intf(self.connections, session, pcap)
+        self.verify_arp_backoff(vIP, tcpdump_utils.read_tcpdump(self.connections, session, pcap))
+        tcpdump_utils.delete_pcap(session, pcap)
+
+        self.logger.info('Restore VRRP link')
+        self.service_keepalived(vm2_fixture, 'stop')
+        self.config_keepalive(vm2_fixture, vIP, vID, '20')
+        time.sleep(30)
+
+        self.logger.info('Break VRRP link, by setting mismatching server Id')
+        self.service_keepalived(vm2_fixture, 'stop')
+        session, pcap = tcpdump_utils.start_tcpdump_for_vm_intf(self.connections, vm2_fixture,
+                                                                vn1_fixture.vn_fq_name, filter_cmd)
+        self.config_keepalive(vm2_fixture, vIP, '50', '20')
+        time.sleep(120)
+        tcpdump_utils.stop_tcpdump_for_vm_intf(self.connections, session, pcap)
+        self.verify_arp_backoff(vIP, tcpdump_utils.read_tcpdump(self.connections, session, pcap))
+        tcpdump_utils.delete_pcap(session, pcap)
+
+        self.logger.info('Restore VRRP link')
+        self.service_keepalived(vm2_fixture, 'stop')
+        self.config_keepalive(vm2_fixture, vIP, vID, '20')
+        time.sleep(2)
+        self.logger.info('Ping to the Virtual IP after stablizing VRRP link')
+        assert vm_test_fixture.ping_with_certainty(vIP), \
+            'Ping to the Virtual IP %s from the test VM  %s, failed' % (vIP,
+                                                vm_test_fixture.vm_ip)
+    # end test_aap_backoff
+
+    def verify_arp_backoff (self, vIP, msgs):
+        msgs = msgs.split('\n')
+        prev_ts = None
+        cur_ts = None
+        expected = [8, 16, 32]
+        cur_idx = 0
+        ret = True
+        start_backoff = False
+        for i in range(len(msgs)):
+            if not msgs[i]:
+                continue
+            x = time.strptime(msgs[i][0:8], '%H:%M:%S')
+            cur_ts = datetime.timedelta(hours=x.tm_hour, minutes=x.tm_min, seconds=x.tm_sec).total_seconds()
+            if prev_ts:
+                intval = cur_ts - prev_ts
+                if intval < 1.0 and start_backoff == False:
+                    start_backoff = True
+                if intval > 1.0 and start_backoff == True:
+                    diff = intval - expected[cur_idx]
+                    if diff >= 0 and diff <= 2.0:
+                        cur_idx = min(cur_idx + 1, len(expected) - 1)
+                    else:
+                        ret = False
+                        self.logger.warn('expected backoff %d, got %d\n%s\n%s' % (expected[cur_idx],
+                                          intval, msgs[i-1], msgs[i]))
+            prev_ts = cur_ts
+        assert ret, "AAP ARP backoff not as expected %s" % expected
