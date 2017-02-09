@@ -256,7 +256,7 @@ class BaseNeutronTest(GenericTestBase):
         if is_v6(prefix):
             prefix_len = 128
         if contrail_api:
-            self.vnc_h.add_allowed_pair(
+            self.vnc_h.add_allowed_address_pair(
                 port['id'], prefix, prefix_len, mac, aap_mode)
         else:
             port_dict = {'allowed_address_pairs': [
@@ -397,7 +397,7 @@ class BaseNeutronTest(GenericTestBase):
         cmd = 'tcpdump -nni %s -c 2 icmp > /tmp/%s_out.log' % (
             vm_tapintf, vm_tapintf)
         execute_cmd(session, cmd, self.logger)
-        assert src_vm.ping_with_certainty(ip), 'Ping to vIP failure'
+        assert src_vm.ping_with_certainty(ip)
         output_cmd = 'cat /tmp/%s_out.log' % vm_tapintf
         output, err = execute_cmd_out(session, output_cmd, self.logger)
         if src_vm.vm_ip in output:
