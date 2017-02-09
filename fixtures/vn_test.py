@@ -67,7 +67,7 @@ class VNFixture(fixtures.Fixture):
         self.uuid = uuid
         self.obj = None
         self.ipam_fq_name = ipam_fq_name or NetworkIpam().get_fq_name()
-        self.policy_objs = policy_objs
+        self.policy_objs = self.convert_policy_objs_vnc_to_neutron(policy_objs)
         self.af = self.get_af_from_subnet(subnets=subnets) or af or self.inputs.get_af()
         if self.inputs.get_af() == 'v6' and self.af == 'v4':
             raise v4OnlyTestException("Skipping Test. v4 specific testcase")
@@ -126,6 +126,20 @@ class VNFixture(fixtures.Fixture):
         self._interested_computes = []
         self.vn_network_id = None
     # end __init__
+
+    def convert_policy_objs_vnc_to_neutron(self, policy_objs):
+        objs = list()
+        for policy_obj in policy_objs:
+            if isinstance(policy_obj, NetworkPolicy):
+                dct = {'fq_name': policy_obj.fq_name,
+                       'id': policy_obj.uuid,
+                       'name': policy_obj.name,
+                      }
+                objs.append({'policy': dct})
+            else:
+                objs.append(policy_obj)
+        return objs
+
 
     def read(self):
         if self.uuid:
