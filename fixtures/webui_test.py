@@ -258,6 +258,34 @@ class WebuiTest:
         return result
     # end create_physical_router
 
+    def create_physical_interface(self, fixture):
+        result = True
+        try:
+            if not self.ui.click_on_create(
+                    'Interface',
+                    'interfaces',
+                    fixture.name,
+                    prj_name=fixture.device_name):
+                result = result and False
+            self.ui.click_element([
+                's2id_type_dropdown', 'select2-choice'], [
+                    'id', 'class'])
+            self.ui.select_from_dropdown(fixture.int_type)
+            self.ui.send_keys(fixture.name, 'name', 'name')
+            if not self.ui.click_on_create('Interface',
+                    'interface', save=True):
+                result = result and False
+        except WebDriverException:
+            self.logger.error(
+                "Error while creating physical interface %s" %
+                (fixture.name))
+            self.ui.screenshot("physical interface creation failed")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            result = result and False
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end create_physical_interface
+
     def create_dns_server(
             self,
             server_name,
@@ -3958,7 +3986,11 @@ class WebuiTest:
 
     def delete_physical_router(self, fixture):
         self.ui.delete_element(fixture, 'phy_router_delete')
-    # end svc_template_delete
+    # end delete_physical_router
+
+    def delete_physical_interface(self, fixture):
+        self.ui.delete_element(fixture, 'phy_interface_delete')
+    # end delete_physical_interface
 
     def delete_vn(self, fixture):
         self._delete_port(fixture)
