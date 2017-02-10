@@ -179,6 +179,20 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_physical_router
 
+    @preposttest_wrapper
+    def test2_1_2_create_physical_interfaces(self):
+        '''
+        Description: Test to create Physical Interfaces on UI
+        Steps:
+            1. On the Contrail UI, go to Configure -> Physical Devices -> Interfaces
+            2. Click on create, enter the config details in the fields and click on 'Save'
+        Pass criteria:
+            1. Step 2 above should pass
+        '''
+        assert self.res.setup_obj.create_physical_interface(), 'Creation of physical interface failed'
+        return True
+    # end test_create_physical_interface
+
     # UI verification tests
 
     @preposttest_wrapper
