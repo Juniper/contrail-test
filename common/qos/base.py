@@ -689,7 +689,7 @@ class QosTestBase(BaseNeutronTest):
             first_node_name = cls.inputs.compute_names[0]
             first_node_interface_bw = "1000Mb/s"
         for elem in cls.inputs.compute_ips:
-            if elem != cls.qos_node_ip:
+            if elem != cls.qos_node_ip and cls.qos_node_ip!= '':
                 second_node_ip = elem
                 break
             else:
