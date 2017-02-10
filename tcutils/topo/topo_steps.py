@@ -27,6 +27,7 @@ from svc_template_fixture import SvcTemplateFixture
 from svc_instance_fixture import SvcInstanceFixture
 from security_group import SecurityGroupFixture
 from physical_device_fixture import PhysicalDeviceFixture
+from pif_fixture import PhysicalInterfaceFixture
 try:
     from webui_test import *
 except ImportError:
@@ -819,6 +820,20 @@ def createPhysicalRouter(self):
                 connections=self.project_connections))
     return self
 # end createPhysicalRouter
+
+def createPhysicalInterface(self, config_topo):
+    self.pif_fixture = {}
+    if not hasattr(self.topo, 'pif_list'):
+        return self
+    for pif_name in self.topo.pif_list:
+        self.pif_fixture[pif_name] = self.useFixture(
+            PhysicalInterfaceFixture(
+                pif_name,
+                device_id=config_topo['pr'][self.pr_name].uuid,
+                int_type=self.topo.pif_params[pif_name]['int_type'],
+                connections=self.project_connections))
+    return self
+# end createPhysicalInterface
 
 
 def allocNassocFIP(self, config_topo=None, assoc=True):
