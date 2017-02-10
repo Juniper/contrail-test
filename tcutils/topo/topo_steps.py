@@ -806,16 +806,16 @@ def createPhysicalRouter(self):
     self.pr_fixture = {}
     if not hasattr(self.topo, 'pr_list'):
         return self
-    for pr_name in self.topo.pr_list:
-        self.pr_fixture[pr_name] = self.useFixture(
+    for self.pr_name in self.topo.pr_list:
+        self.pr_fixture[self.pr_name] = self.useFixture(
             PhysicalDeviceFixture(
-                pr_name,
-                self.topo.pr_params[pr_name]['mgmt_ip'],
-                vendor=self.topo.pr_params[pr_name]['vendor'],
-                model=self.topo.pr_params[pr_name]['model'],
-                ssh_username=self.topo.pr_params[pr_name]['ssh_username'],
-                ssh_password=self.topo.pr_params[pr_name]['ssh_password'],
-                tunnel_ip=self.topo.pr_params[pr_name]['tunnel_ip'],
+                self.pr_name,
+                self.topo.pr_params[self.pr_name]['mgmt_ip'],
+                vendor=self.topo.pr_params[self.pr_name]['vendor'],
+                model=self.topo.pr_params[self.pr_name]['model'],
+                ssh_username=self.topo.pr_params[self.pr_name]['ssh_username'],
+                ssh_password=self.topo.pr_params[self.pr_name]['ssh_password'],
+                tunnel_ip=self.topo.pr_params[self.pr_name]['tunnel_ip'],
                 connections=self.project_connections))
     return self
 # end createPhysicalRouter

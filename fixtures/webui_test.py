@@ -243,6 +243,9 @@ class WebuiTest:
                 'PhysicalRouter', 'physical_router',
                 save=True):
                 result = result and False
+            rows_detail = self.ui.click_basic_and_get_row_details(
+                'physical_router', 0)[1]
+            fixture.uuid = self.ui.get_value_of_key(rows_detail, 'UUID')
         except WebDriverException:
             self.logger.error(
                 "Error while creating %s physical router" %
