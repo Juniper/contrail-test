@@ -29,6 +29,7 @@ from security_group import SecurityGroupFixture
 from physical_device_fixture import PhysicalDeviceFixture
 from pif_fixture import PhysicalInterfaceFixture
 from physical_router_fixture import PhysicalRouterFixture
+from virtual_router_fixture import VirtualRouterFixture
 try:
     from webui_test import *
 except ImportError:
@@ -947,6 +948,20 @@ def createBGPRouter(self):
                 ))
     return self
 # end createBGPRouter
+
+def createVirtualRouter(self):
+    self.vrouter_fixture = {}
+    if not hasattr(self.topo, 'vrouter_params'):
+        return self
+    for vrouter in self.topo.vrouter_list:
+        self.vrouter_fixture[vrouter] = self.useFixture(
+            VirtualRouterFixture(vrouter,
+                self.topo.vrouter_params[vrouter]['type'],
+                self.topo.vrouter_params[vrouter]['ip'],
+                connections=self.project_connections,
+                inputs=self.project_inputs))
+    return self
+# end createVirtualRouter
 
 if __name__ == '__main__':
     ''' Unit test to invoke sdn topo setup utils.. '''

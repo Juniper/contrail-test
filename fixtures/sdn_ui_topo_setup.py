@@ -194,6 +194,11 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
         return True
     # end create_link_local_service
 
+    def create_virtual_router(self):
+        assert topo_steps.createVirtualRouter(self)
+        return True
+    # end create_virtual_router
+
     def cleanUp(self):
         if self.inputs.fixture_cleanup == 'yes':
             super(sdnUiTopoSetupFixture, self).cleanUp()

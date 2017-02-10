@@ -4045,6 +4045,7 @@ class WebuiTest:
         self.detach_ipam_from_dns_server()
         self.delete_bgp_aas()
         self.delete_link_local_service()
+        self.delete_virtual_router()
         return True
     # end cleanup
 
@@ -4055,6 +4056,10 @@ class WebuiTest:
     def delete_link_local_service(self):
         self.ui.delete_element(element_type='link_local_service_delete')
     # end delete_link_local_service
+
+    def delete_virtual_router(self):
+        self.ui.delete_element(element_type='vrouter_delete')
+    # end delete_virtual_router
 
     def delete_dns_server_and_record(self):
         self.detach_ipam_from_dns_server()
@@ -6693,3 +6698,27 @@ class WebuiTest:
         self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_link_local_service
+
+    def create_virtual_router(self, fixture):
+        result = True
+        try:
+            if not self.ui.click_on_create(
+                    'Virtual Router',
+                    'vrouter',
+                    fixture.name,
+                    select_project=False):
+                result = result and False
+            self.ui.send_keys(fixture.name, 'name', 'name', clear=True)
+            self.ui.click_element('s2id_virtual_router_type_dropdown')
+            if not self.ui.select_from_dropdown(fixture.virtual_router_type, grep=False):
+                    result = result and False
+            self.ui.send_keys(fixture.ip, 'virtual_router_ip_address', 'name', clear=True)
+            self.ui.click_on_create('Virtual Router', 'config_vrouter', save=True)
+        except WebDriverException:
+            self.logger.error(
+                "Error while creating virtual router %s" % (fixture.name))
+            self.ui.screenshot("Virtual Router creation failed")
+            result = result and False
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end create_virtual_router
