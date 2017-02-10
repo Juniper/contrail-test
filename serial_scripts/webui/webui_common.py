@@ -1337,6 +1337,11 @@ class WebuiCommon:
                 result = result and False
             element_id = 'btnActionDelLLS'
             popup_id = 'configure-link_local_servicesbtn1'
+        elif element_type == 'vrouter_delete':
+            if not self.click_configure_vrouter():
+                result = result and False
+            element_id = 'linkvRouterDelete'
+            popup_id = 'configure-config_vrouterbtn1'
         rows = self.get_rows(canvas=True)
         ln = 0
         if rows:
@@ -1368,6 +1373,17 @@ class WebuiCommon:
                     div_obj = self.find_element('div', 'tag', elements=True,
                                   browser=element)[1]
                     if element_text == 'metadata':
+                        continue
+                    else:
+                        element_name = element_text
+                elif element_type == 'vrouter_delete':
+                    element_text = self.find_element('div', 'tag', elements=True,
+                                       browser=element)[2].text
+                    element_ip = self.find_element('div', 'tag', elements=True,
+                                     browser=element)[4].text
+                    div_obj = self.find_element('div', 'tag', elements=True,
+                                  browser=element)[1]
+                    if element_ip == self.inputs.auth_ip:
                         continue
                     else:
                         element_name = element_text
@@ -1686,6 +1702,14 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser, wait=2)
         return self.check_error_msg("configure link local services")
     # end click_configure_link_local_service
+
+    def click_configure_vrouter(self):
+        self.wait_till_ajax_done(self.browser)
+        self._click_on_config_dropdown(self.browser, 0)
+        self.click_element(['config_infra_vrouters', 'a'], ['id', 'tag'])
+        self.wait_till_ajax_done(self.browser, wait=2)
+        return self.check_error_msg("configure virtual routers")
+    # end click_configure_vrouter
 
     def _click_on_config_dropdown(self, br, index=2):
         # index = 3 if svc_instance or svc_template
