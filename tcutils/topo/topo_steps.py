@@ -28,6 +28,7 @@ from svc_instance_fixture import SvcInstanceFixture
 from security_group import SecurityGroupFixture
 from physical_device_fixture import PhysicalDeviceFixture
 from pif_fixture import PhysicalInterfaceFixture
+from physical_router_fixture import PhysicalRouterFixture
 try:
     from webui_test import *
 except ImportError:
@@ -926,6 +927,26 @@ def createAllocateAssociateVnFIPPools(self, config_topo=None, alloc=True):
             allocNassocFIP(self, config_topo)
     return self
 # end createAllocateAssociateVnFIPPools
+
+def createBGPRouter(self):
+    self.bgp_router_fixture = {}
+    if not hasattr(self.topo, 'pr_params'):
+        return self
+    for bgp_router in self.topo.pr_list:
+        self.bgp_router_fixture[bgp_router] = self.useFixture(
+            PhysicalRouterFixture(bgp_router,
+                self.topo.pr_params[bgp_router]['tunnel_ip'],
+                connections=self.project_connections,
+                inputs=self.project_inputs,
+                vendor=self.topo.pr_params[bgp_router]['vendor'],
+                router_type=self.topo.pr_params[bgp_router]['router_type'],
+                source_port=self.topo.pr_params[bgp_router]['source_port'],
+                auth_type=self.topo.pr_params[bgp_router]['auth_type'],
+                auth_key=self.topo.pr_params[bgp_router]['auth_key'],
+                hold_time=self.topo.pr_params[bgp_router]['hold_time']
+                ))
+    return self
+# end createBGPRouter
 
 if __name__ == '__main__':
     ''' Unit test to invoke sdn topo setup utils.. '''

@@ -184,6 +184,11 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
         return True
     # end create_bgp_aas
 
+    def create_bgp_router(self):
+        assert topo_steps.createBGPRouter(self)
+        return True
+    # end create_bgp_router
+
     def cleanUp(self):
         if self.inputs.fixture_cleanup == 'yes':
             super(sdnUiTopoSetupFixture, self).cleanUp()

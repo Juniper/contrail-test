@@ -44,7 +44,10 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
 
         self.bgp_router = None
         self.bgp_router_already_present = False
-
+        if self.inputs.verify_thru_gui():
+            from webui_test import WebuiTest
+            self.webui = WebuiTest(self.connections, self.inputs)
+            self.kwargs = kwargs
      # end __init__
 
     def create_bgp_router(self):
@@ -98,9 +101,12 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
                 bgp_fq_name))
             self.bgp_router_already_present = True
         except vnc_api_test.NoIdError:
-            self.bgp_router = self.create_bgp_router()
-
-        self.add_bgp_router(self.bgp_router)
+            if self.inputs.is_gui_based_config():
+                self.bgp_router = self.webui.create_bgp_router(self)
+            else:
+                self.bgp_router = self.create_bgp_router()
+        if not self.inputs.is_gui_based_config():
+            self.add_bgp_router(self.bgp_router)
         self.router_session = self.get_connection_obj(self.vendor,
             host=self.mgmt_ip,
             username=self.ssh_username,
@@ -113,7 +119,10 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
         if self.bgp_router_already_present:
             do_cleanup = False
         if do_cleanup:
-            self.delete_bgp_router()
+            if self.inputs.is_gui_based_config():
+                self.webui.delete_bgp_router(self)
+            else:
+                self.delete_bgp_router()
 
     def get_irb_mac(self):
         return self.router_session.get_mac_address('irb')
