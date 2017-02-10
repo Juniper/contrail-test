@@ -91,6 +91,18 @@ class sdn_webui_config ():
                 'networks': [
                     'vnet0',
                     'vnet1']}}
+
+        # Define Link Local Service
+        self.link_local_service_list = ['link_service1']
+        self.link_local_service_params = {
+            'link_service1': {
+                'service_name': 'link_service1',
+                'service_ip': '30.0.0.7',
+                'service_port' : '30',
+                'address_type': 'IP',
+                'fabric_ip' : ['10.9.0.9', '10.8.0.10'],
+                'fabric_port' : '10'}}
+
         # define dns_servers #
         self.dns_server_list = ['dserver1']
         self.dns_server_params = {

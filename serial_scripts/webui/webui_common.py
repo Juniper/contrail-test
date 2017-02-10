@@ -1332,6 +1332,11 @@ class WebuiCommon:
             element_name = fixture.name
             element_id = 'btnDeleteBGP'
             popup_id = 'configure-bgp_routerbtn1'
+        elif element_type == 'link_local_service_delete':
+            if not self.click_configure_link_local_service():
+                result = result and False
+            element_id = 'btnActionDelLLS'
+            popup_id = 'configure-link_local_servicesbtn1'
         rows = self.get_rows(canvas=True)
         ln = 0
         if rows:
@@ -1357,6 +1362,15 @@ class WebuiCommon:
                                        browser=element)[5].text
                     div_obj = self.find_element('div', 'tag', elements=True,
                                   browser=element)[1]
+                elif element_type == 'link_local_service_delete':
+                    element_text = self.find_element('div', 'tag', elements=True,
+                                       browser=element)[2].text
+                    div_obj = self.find_element('div', 'tag', elements=True,
+                                  browser=element)[1]
+                    if element_text == 'metadata':
+                        continue
+                    else:
+                        element_name = element_text
                 else:
                     element_text = element.find_elements_by_tag_name(
                         'div')[2].text
@@ -1664,6 +1678,14 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser, wait=2)
         return self.check_error_msg("configure bgp routers")
     # end click_configure_bgp_router
+
+    def click_configure_link_local_service(self):
+        self.wait_till_ajax_done(self.browser)
+        self._click_on_config_dropdown(self.browser, 0)
+        self.click_element(['config_infra_lls', 'a'], ['id', 'tag'])
+        self.wait_till_ajax_done(self.browser, wait=2)
+        return self.check_error_msg("configure link local services")
+    # end click_configure_link_local_service
 
     def _click_on_config_dropdown(self, br, index=2):
         # index = 3 if svc_instance or svc_template
@@ -2660,15 +2682,19 @@ class WebuiCommon:
             tool_tip[0].click()
         else:
             if type == 'Networks':
-                tool_tip[1].click()
-                self.click_element('configure-networkbtn1', browser=browser)
-            elif type =='Ports':
+                click_element = type.lower().strip('s')
+            else:
+                click_element = type
+            if type =='Ports':
                 if option == 'subinterface':
                     tool_tip[1].click()
                 else:
                     tool_tip[2].click()
-                self.click_element('configure-Portsbtn1', browser=browser)
-        self.wait_till_ajax_done(index)
+            else:
+                tool_tip[1].click()
+            self.wait_till_ajax_done(self.browser, wait=3)
+            self.click_element('configure-' + click_element + 'btn1', browser=browser)
+        self.wait_till_ajax_done(self.browser, wait=3)
     # end click_icon_cog
 
     def get_vn_detail_ui(self, search_key, index=0, vn_name=None):
