@@ -4001,6 +4001,36 @@ class WebuiTest:
         return True
     # end vn_delete
 
+    def delete_bgp_router(self, fixture):
+        if self.disassoc_phy_router_under_bgp_router(fixture):
+            self.ui.delete_element(fixture, 'bgp_router_delete')
+            result = True
+        else:
+            self.logger.error('Deleting the bgp router is failed')
+            result = False
+        return result
+    # end delete_bgp_router
+
+    def disassoc_prouter_from_bgp_router(self, fixture):
+        result = True
+        try:
+            bgp_router = self.ui.edit_remove_option('bgp_router', 'edit',
+                                                   display_name=fixture.name)
+            self.ui.click_element('advance_options_accordion')
+            self.ui.click_element('s2id_user_created_physical_router_dropdown')
+            if not self.ui.select_from_dropdown('None', grep=False):
+                result = result and False
+            self.ui.click_on_create('BGP Router', 'bgp_router', save=True)
+        except WebDriverException:
+            self.logger.error(
+                "Error while disassociate physical router %s" %
+                (fixture.name))
+            self.ui.screenshot("Disassociate Physical Router")
+            result = result and False
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end disassoc_prouter_from_bgp_router
+
     def _delete_router(self, fixture):
         self.ui.delete_element(fixture, 'router_delete')
 
@@ -6562,3 +6592,50 @@ class WebuiTest:
             result = result and False
         return result
     # def edit_and_verify_global_config
+
+    def create_bgp_router(self, fixture):
+        result = True
+        try:
+            router_type = fixture.kwargs.get('router_type', 'BGP Router')
+            auth_type = fixture.kwargs.get('auth_type', None)
+            auth_key = fixture.kwargs.get('auth_key', None)
+            hold_time = fixture.kwargs.get('hold_time', '90')
+            if not self.ui.click_on_create(
+                    'BGP Router',
+                    'bgp_router',
+                    fixture.name,
+                    select_project=False):
+                result = result and False
+            self.ui.click_element('s2id_user_created_router_type_dropdown')
+            if not self.ui.select_from_dropdown(router_type, grep=False):
+                    result = result and False
+            self.ui.send_keys(fixture.name, 'display_name', 'name', clear=True)
+            self.ui.send_keys(fixture.vendor, 'user_created_vendor', 'name', clear=True)
+            self.ui.send_keys(fixture.mgmt_ip, 'user_created_address', 'name',
+                             clear=True)
+            self.ui.send_keys(fixture.asn, 'user_created_autonomous_system', 'name',
+                             clear=True)
+            self.ui.click_element('advance_options_accordion')
+            self.ui.click_element('s2id_user_created_auth_key_type_dropdown')
+            if not self.ui.select_from_dropdown(auth_type, grep=False):
+                result = result and False
+            if auth_type == 'md5':
+                self.ui.send_keys(auth_key, 'user_created_auth_key', 'name', clear=True)
+            self.ui.click_element('s2id_user_created_physical_router_dropdown')
+            if not self.ui.select_from_dropdown(fixture.name, grep=False):
+                result = result and False
+            self.ui.click_element('peer_selection_accordian')
+            self.ui.click_element('editable-grid-add-link', 'class')
+            self.ui.click_element('s2id_peerName_dropdown')
+            self.ui.click_element('select2-highlighted', 'class')
+            self.ui.send_keys(hold_time, 'hold_time', 'name', clear=True)
+            self.ui.click_on_create('BGP Router', 'bgp_router', save=True)
+        except WebDriverException:
+            self.logger.error(
+                "Error while creating bgp router %s" %
+                (fixture.name))
+            self.ui.screenshot("BGP Router creation failed")
+            result = result and False
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end create_bgp_router
