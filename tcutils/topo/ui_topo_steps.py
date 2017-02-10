@@ -138,3 +138,16 @@ def createBgpaas(self, option='contrail'):
             result = result and False
     return result
 # end createBgpaas
+
+def createLinkLocalService(self):
+    result = True
+    if not hasattr(self.topo, 'link_local_service_list'):
+        self.logger.warn("No link local service config in topo file")
+        return result
+    self.logger.info("Create Link Local Service")
+    if not self.webui.create_link_local_service(
+               self.topo.link_local_service_list,
+               self.topo.link_local_service_params):
+        result = False
+    return result
+# end createLinkLocalService
