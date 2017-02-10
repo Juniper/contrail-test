@@ -396,6 +396,19 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test3_1_1_create_bgp_router
 
     @preposttest_wrapper
+    def test3_1_2_create_link_local_service(self):
+        '''Test to create Link Local service on UI
+           1. Go to Configure->Infrastructure->LinkLocalService.
+           2. Click on create and enter the config details and save.
+
+           Pass Criteria: Step 2 should pass without any error
+        '''
+        assert self.res.setup_obj.create_link_local_service(), \
+                                  'LinkLocalSerice creation failed'
+        return True
+    # end test3_1_2_create_link_local_service
+
+    @preposttest_wrapper
     def test3_1_edit_net_without_change(self):
         '''Test to edit the existing network without changing anything
            1. Go to Configure->Networking->Networks. Then select any of the vn and
