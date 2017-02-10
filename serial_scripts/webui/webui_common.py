@@ -1326,6 +1326,12 @@ class WebuiCommon:
             element_name = fixture.name
             element_id = 'fa-trash'
             popup_id = 'configure-interfacebtn1'
+        elif element_type == 'bgp_router_delete':
+            if not self.click_configure_bgp_router():
+                result = result and False
+            element_name = fixture.name
+            element_id = 'btnDeleteBGP'
+            popup_id = 'configure-bgp_routerbtn1'
         rows = self.get_rows(canvas=True)
         ln = 0
         if rows:
@@ -1346,6 +1352,11 @@ class WebuiCommon:
                                       'dns_record_delete', 'bgp_aas_delete']:
                     element_text = 'all'
                     div_obj = element.find_elements_by_tag_name('div')[1]
+                elif element_type == 'bgp_router_delete':
+                    element_text = self.find_element('div', 'tag', elements=True,
+                                       browser=element)[5].text
+                    div_obj = self.find_element('div', 'tag', elements=True,
+                                  browser=element)[1]
                 else:
                     element_text = element.find_elements_by_tag_name(
                         'div')[2].text
@@ -1645,6 +1656,14 @@ class WebuiCommon:
             'div')[0].find_element_by_tag_name('i').click()
         self.wait_till_ajax_done(self.browser)
     # end click_configure_service_template_basic_in_webui
+
+    def click_configure_bgp_router(self):
+        self.wait_till_ajax_done(self.browser)
+        self._click_on_config_dropdown(self.browser, 0)
+        self.click_element(['config_infra_bgp', 'a'], ['id', 'tag'])
+        self.wait_till_ajax_done(self.browser, wait=2)
+        return self.check_error_msg("configure bgp routers")
+    # end click_configure_bgp_router
 
     def _click_on_config_dropdown(self, br, index=2):
         # index = 3 if svc_instance or svc_template

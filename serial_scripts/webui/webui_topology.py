@@ -230,7 +230,12 @@ class sdn_webui_config ():
                 'model': 'mx',
                 'ssh_username': 'root',
                 'ssh_password': 'Embe1mpls',
-                'tunnel_ip': '30.1.1.15' }}
+                'tunnel_ip': '30.1.1.15',
+                'router_type': 'BGP Router',
+                'source_port': '15',
+                'hold_time': '180',
+                'auth_type': 'md5',
+                'auth_key': '123' }}
 
         #Define Physical Interface parameters
         self.pif_list = ['ge-0/0/0']
