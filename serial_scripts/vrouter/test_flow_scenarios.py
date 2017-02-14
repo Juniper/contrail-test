@@ -10,7 +10,7 @@ from compute_node_test import ComputeNodeFixture
 from common.agent.flow_table import FlowTable
 from tcutils.traffic_utils.base_traffic import BaseTraffic
 
-CIRROS_IMAGE_NAME='cirros-0.3.0-x86_64-uec'
+CIRROS_IMAGE_NAME='cirros'
 
 class ExtendedFlowTestsBase(FlowTestBase):
 

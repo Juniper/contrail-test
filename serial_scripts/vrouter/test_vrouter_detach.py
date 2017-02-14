@@ -63,9 +63,9 @@ class TestVrouterDetach(BaseNeutronTest):
         cmd_vr_reload = 'modprobe -a vrouter'
         vn1_fixture = self.create_vn()
         vm1_fixture = self.create_vm(vn1_fixture,
-                                              image_name='cirros-0.3.0-x86_64-uec')
+                                              image_name='cirros')
         vm2_fixture = self.create_vm(vn1_fixture,
-                                              image_name='cirros-0.3.0-x86_64-uec')
+                                              image_name='cirros')
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
         compute_ip = vm1_fixture.vm_node_ip
