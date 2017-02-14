@@ -69,7 +69,8 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ConfigSvcChain, ECMPVerify)
         self.project.set_sec_group_for_allow_all(
             self.inputs.project_name, 'default')
         self.verify_svc_in_network_datapath(
-            svc_mode='in-network-nat', vn2_fixture=public_vn_fixture, vn2_subnets=[public_vn_subnet])
+            svc_mode='in-network-nat', right_vn_fixture=public_vn_fixture,
+            right_vn_subnets=[public_vn_subnet])
         self.logger.info('Ping to outside world from left VM')
         svms = self.get_svms_in_si(
             self.si_fixtures[0], self.inputs.project_name)
