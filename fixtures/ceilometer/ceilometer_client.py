@@ -1,5 +1,4 @@
 import os
-from common.openstack_libs import ks_auth_identity_v2 as v2
 from common.openstack_libs import ks_session as session
 from common.openstack_libs import ceilo_client as client
 from common.structure import DynamicArgs
@@ -40,29 +39,6 @@ def make_query(user_id=None, tenant_id=None, resource_id=None,
         query.append({"field": "resource_id", "op": "eq", "value": r_id})
 
     return query
-
-
-class AuthToken(DynamicArgs):
-    """Returns auth_token
-    :Parameters:
-      - `username`: user_id
-      - `tenant_id`: tenant_id
-      - `password`: password
-      - `auth_url`: auth url
-    """
-
-    _fields = ['auth_url', 'username', 'password', 'tenant_id', 'insecure']
-                    
-    def get_token(self):
-        '''Return auth token'''
-        auth=v2.Password(auth_url=self.auth_url
-                        ,username=self.username, 
-                        password=self.password, 
-                        tenant_id=self.tenant_id)
-
-        sess = session.Session(auth=auth,verify=False)         
-        self.token = auth.get_token(sess)
-        return self.token
 
 class CeilometerClient(DynamicArgs):
     """Returns ceilometer clent  

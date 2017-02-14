@@ -855,8 +855,8 @@ class LBaasV2Fixture(LBBaseFixture):
         return self.container_certs
 
     def add_neutron_user_to_acl(self, user='neutron'):
-        self.connections.auth.keystone.add_user_to_tenant(self.connections.project_name, user, '_member_')
-        auth_token = self.connections.auth.keystone.keystone.get_token(self.connections.auth.keystone.get_session())
+        self.connections.auth.add_user_to_project(user, self.connections.project_name, '_member_')
+        auth_token = self.connections.auth.get_token()
         user_id = str(self.connections.auth.keystone.get_user_dct(user).id)
         for secrets in self.container_certs.secret_refs:
             self.tls_container.add_users_to_refs_acl(auth_token, [user_id], str(self.container_certs.secret_refs[secrets]))

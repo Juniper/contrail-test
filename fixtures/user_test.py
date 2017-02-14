@@ -8,13 +8,11 @@ from tcutils.util import retry
 from time import sleep
 from tcutils.util import get_dashed_uuid
 
-from common.openstack_libs import ks_client as ksclient
 from common.openstack_libs import ks_exceptions
-from common.openstack_libs import keystoneclient
 
 class UserFixture(fixtures.Fixture):
 
-    def __init__(self, connections, username=None, password=None, tenant=None, role='admin', token=None, endpoint=None):
+    def __init__(self, connections, username=None, password=None, tenant=None, role='admin'):
         self.inputs= connections.inputs
         self.connections= connections
         self.logger = self.inputs.logger
@@ -30,17 +28,8 @@ class UserFixture(fixtures.Fixture):
         self.tenant = tenant
         self.role = role
         self.email = str(username) + "@example.com"
-        self.token = token
-        self.endpoint = endpoint
         self.verify_is_run = False
-        if self.token:
-            self.keystone = keystoneclient.Client(
-                token=self.token, endpoint=self.endpoint)
-        else:
-            self.keystone = ksclient.Client(
-                username=self.inputs.stack_user, password=self.inputs.stack_password,
-                tenant_name=self.inputs.project_name, auth_url=self.auth_url,
-                insecure=insecure)
+        self.keystone = connections.auth.keystone.get_handle()
     # end __init__
 
     def get_role_dct(self, role_name):
@@ -157,15 +146,6 @@ class UserFixture(fixtures.Fixture):
 
         return self.keystone.users.list()
 
-    def _reauthenticate_keystone(self):
-        if self.token:
-            self.keystone = keystoneclient.Client(
-                token=self.token, endpoint=self.endpoint)
-        else:
-            self.keystone = ksclient.Client(
-                username=self.inputs.stack_user, password=self.inputs.stack_password, tenant_name=self.inputs.project_name, auth_url=self.auth_url)
-    # end _reauthenticate_keystone
-
     def setUp(self):
         super(UserFixture, self).setUp()
         if self.inputs.orchestrator == 'vcenter':
@@ -212,7 +192,6 @@ class UserFixture(fixtures.Fixture):
         if self.inputs.fixture_cleanup == 'force':
             do_cleanup = True
         if do_cleanup:
-            self._reauthenticate_keystone()
             self.logger.info('Deleting user %s' %self.username)
             self.delete_user(self.username)
             if self.verify_is_run:

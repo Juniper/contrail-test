@@ -1,8 +1,6 @@
 ''' This module provides utils for setting up sdn topology given the topo inputs'''
 import os
 import copy
-from common.openstack_libs import nova_client as mynovaclient
-from common.openstack_libs import nova_exception as novaException
 import fixtures
 import topo_steps
 from common.contrail_test_init import ContrailTestInit

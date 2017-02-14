@@ -8,8 +8,6 @@
 import os
 from time import sleep
 
-from common.openstack_libs import nova_client as mynovaclient
-from common.openstack_libs import nova_exception as novaException
 import fixtures
 from common.contrail_test_init import ContrailTestInit
 from vn_test import *

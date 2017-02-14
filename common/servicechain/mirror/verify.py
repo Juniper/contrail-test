@@ -9,8 +9,6 @@ from common.servicechain.verify import VerifySvcChain
 from common.ecmp.ecmp_verify import ECMPVerify
 from common.floatingip.config import CreateAssociateFip
 from random import randint
-from common.openstack_libs import network_exception as exceptions
-
 
 class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 

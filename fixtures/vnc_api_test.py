@@ -64,6 +64,7 @@ class VncLibFixture(fixtures.Fixture):
             self.password = self.connections.password
             self.cfgm_ip = self.inputs.cfgm_ip
             self.auth_server_ip = self.inputs.auth_ip
+            self.auth_client = self.connections.auth
             self.project_id = self.connections.project_id
             self.auth_url = self.inputs.auth_url
         else:
@@ -80,9 +81,8 @@ class VncLibFixture(fixtures.Fixture):
                               api_server_port=self.api_server_port,
                               auth_host=self.auth_server_ip,
                               api_server_use_ssl=use_ssl)
-            if not self.project_id:
-                if self.orchestrator == 'openstack':
-                    self.auth_client = OpenstackAuth(
+            if self.orchestrator == 'openstack':
+                self.auth_client = OpenstackAuth(
                                     self.username,
                                     self.password,
                                     self.project_name,
@@ -92,14 +92,14 @@ class VncLibFixture(fixtures.Fixture):
                                     cacert=self.cacert,
                                     insecure=self.insecure,
                                     logger=self.logger)
-                    self.project_id = self.auth_client.get_project_id()
-                elif self.orchestrator == 'vcenter':
-                    self.auth_client = VcenterAuth(self.username,
-                                                    self.password,
-                                                    self.project_name,
-                                                    self.inputs
-                                                    )
-                    self.project_id = self.auth_client.get_project_id()
+            elif self.orchestrator == 'vcenter':
+                self.auth_client = VcenterAuth(self.username,
+                                                self.password,
+                                                self.project_name,
+                                                self.inputs
+                                                )
+            if not self.project_id:
+                self.project_id = self.auth_client.get_project_id()
         self.vnc_h = self.orch.vnc_h
     # end setUp
 
@@ -159,13 +159,11 @@ class VncLibFixture(fixtures.Fixture):
             return self.connections.orch
         else:
             if self.orchestrator == 'openstack':
-                return OpenstackOrchestrator(username=self.username,
-                    password=self.password,
-                    project_id=self.project_id,
-                    project_name=self.project_name,
-                    auth_server_ip=self.auth_server_ip,
+                return OpenstackOrchestrator(
                     vnclib=self.vnc_api_h,
-                    logger=self.logger, inputs=self.inputs)
+                    logger=self.logger,
+                    auth_h=self.auth_client,
+                    inputs=self.inputs)
             elif self.orchestrator == 'vcenter':
                 vcenter_dc = self.inputs.vcenter_dc if self.inputs else \
                              os.getenv('VCENTER_DC', None)
