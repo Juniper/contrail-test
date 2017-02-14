@@ -46,9 +46,10 @@ class ContrailVncApi(object):
     def assoc_floating_ip(self, fip_id, vm_id, **kwargs):
         fip_obj = self._vnc.floating_ip_read(id=fip_id)
         vm_obj = self._vnc.virtual_machine_read(id=vm_id)
-        vmi = vm_obj.get_virtual_machine_interface_back_refs()[0]['uuid']
-        if kwargs['vmi_id']:
+        if kwargs.get('vmi_id'):
             vmi = kwargs['vmi_id']
+        else:
+            vmi = vm_obj.get_virtual_machine_interface_back_refs()[0]['uuid']
         vmintf = self._vnc.virtual_machine_interface_read(id=vmi)
         fip_obj.add_virtual_machine_interface(vmintf)
         self._log.debug('Associating FIP:%s with VMI:%s' % (fip_id, vm_id))
@@ -62,7 +63,7 @@ class ContrailVncApi(object):
         self._vnc.floating_ip_update(fip_obj)
         return fip_obj
 
-    def add_allowed_pair(self, vmi_id, prefix, prefix_len, mac, mode):
+    def add_allowed_address_pair(self, vmi_id, prefix, prefix_len, mac, mode):
         vmi = self._vnc.virtual_machine_interface_read(id=vmi_id)
         ip = SubnetType(ip_prefix=prefix, ip_prefix_len=prefix_len)
         aap = AllowedAddressPair(ip=ip, mac=mac)
