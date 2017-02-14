@@ -832,14 +832,16 @@ class TestPorts(BaseNeutronTest):
                 connections=self.connections, pool_name=fip_pool_name, vn_id=fvn_fixture.vn_id))
         assert fip_fixture.verify_on_setup()
         fIP = self.create_fip(fip_fixture)
+        self.addCleanup(self.del_fip, fIP[1])
         self.logger.info('Use VNC API to associate the same fIP to two ports')
-        self.logger.info('Add the vIP as Fixed IP of the fIP')
+        self.logger.info(
+            'Add the vIP- %s as Fixed IP of the fIP- %s' % (vIP, fIP[0]))
         vm1_l_vmi_id = vm1_fixture.get_vmi_ids()[vn1_fixture.vn_fq_name]
         vm2_l_vmi_id = vm2_fixture.get_vmi_ids()[vn1_fixture.vn_fq_name]
         self.assoc_fip(fIP[1], vm1_fixture.vm_id, vmi_id=vm1_l_vmi_id)
         self.assoc_fip(fIP[1], vm2_fixture.vm_id, vmi_id=vm2_l_vmi_id)
         self.assoc_fixed_ip_to_fip(fIP[1], vIP)
-
+        self.addCleanup(self.disassoc_fip, fIP[1])
         port_list = [lvn_port_obj1, lvn_port_obj2]
         for port in port_list:
             self.config_aap(port, vIP, mac='00:00:5e:00:01:01')
@@ -871,8 +873,6 @@ class TestPorts(BaseNeutronTest):
             vm_test_fixture, vm2_fixture, vIP, vsrx=True)
         assert self.verify_vrrp_action(
             fvn_vm_fixture, vm2_fixture, fIP[0], vsrx=True)
-        self.disassoc_fip(fIP[1])
-        self.del_fip(fIP[1])
 
     # end test_aap_with_fip
 
