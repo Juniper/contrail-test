@@ -93,7 +93,7 @@ class sdn_webui_config ():
                     'vnet1']}}
 
         # Define Link Local Service
-        self.link_local_service_list = ['link_service1']
+        self.link_local_service_list = ['link_service1', 'link_service2']
         self.link_local_service_params = {
             'link_service1': {
                 'service_name': 'link_service1',
@@ -101,7 +101,27 @@ class sdn_webui_config ():
                 'service_port' : '30',
                 'address_type': 'IP',
                 'fabric_ip' : ['10.9.0.9', '10.8.0.10'],
-                'fabric_port' : '10'}}
+                'fabric_port' : '10'},
+            'link_service2': {
+                'service_name': 'link_service2',
+                'service_ip': '40.0.0.7',
+                'service_port' : '34',
+                'address_type': 'DNS',
+                'fabric_ip' : '11.9.0.9',
+                'fabric_port' : '11'}}
+
+        # Define Virtual Routers
+        self.vrouter_list = ['vrouter1', 'vrouter2', 'vrouter3']
+        self.vrouter_params = {
+            'vrouter1': {
+                'type': 'Embedded',
+                'ip': '90.1.0.5'},
+            'vrouter2': {
+                'type': 'TOR Agent',
+                'ip': '80.1.0.5'},
+            'vrouter3': {
+                'type': 'TOR Service Node',
+                'ip' : '70.1.0.5'}}
 
         # define dns_servers #
         self.dns_server_list = ['dserver1']
