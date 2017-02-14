@@ -254,7 +254,35 @@ class sdn_webui_config ():
         self.pif_params = {
             'ge-0/0/0': {
                 'int_type': 'Physical' }}
-
+        
+        #Define Forwarding Class parameters
+        self.fc_list = ['1', '2', '3', '4']
+        self.fc_params = {
+            '1': {
+                'fc_id': 1,
+                'dscp': 'ef (101110)',
+                'dot1p': 'be (000)',
+                'exp': 'af12 (101)',
+                'queue_num': 1},
+            '2': {
+                'fc_id': 2,
+                'dscp': 'af12 (001100)',
+                'dot1p': 'ef (010)',
+                'exp': 'be1 (001)',
+                'queue_num': 2},
+            '3': {
+                'fc_id': 3,
+                'dscp': 'cs1 (001000)',
+                'dot1p': 'nc1/cs6 (110)',
+                'exp': 'nc2/cs7 (111)',
+                'queue_num': 3},
+            '4': {
+                'fc_id': 4,
+                'dscp': 'nc1/cs6 (110000)',
+                'dot1p': 'af12 (101)',
+                'exp': 'af11 (100)',
+                'queue_num': 4}}
+        
         # Define network policy rules
         self.rules = {}
 

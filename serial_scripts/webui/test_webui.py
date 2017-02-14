@@ -192,6 +192,20 @@ class WebuiTestSanity(base.WebuiBaseTest):
         assert self.res.setup_obj.create_physical_interface(), 'Creation of physical interface failed'
         return True
     # end test_create_physical_interface
+    
+    @preposttest_wrapper
+    def test2_1_3_create_forwarding_classes(self):
+        '''
+        Description: Test to create Forwarding Classes on the UI
+        Steps:
+            1. On the Contrail UI, go to Configure -> Infrastructure -> Global Config -> Forwarding Classes
+            2. Click on create, enter the config details in the fields and click on 'Save'
+        Pass criteria:
+            1. Step 2 above should pass
+        '''
+        assert self.res.setup_obj.create_forwarding_class(), 'Forwarding class creation failed'
+        return True
+    # end test_create_forwarding_classes
 
     # UI verification tests
 

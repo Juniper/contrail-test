@@ -1218,8 +1218,9 @@ class WebuiCommon:
         result = True
         delete_success = None
         ver_flag = False
+        br = None
         if WebuiCommon.count_in == False:
-            if element_type == 'phy_interface_delete':
+            if element_type in ['phy_interface_delete', 'fc_delete']:
                 pass
             else:
                 if not element_type == 'svc_template_delete':
@@ -1326,6 +1327,13 @@ class WebuiCommon:
             element_name = fixture.name
             element_id = 'fa-trash'
             popup_id = 'configure-interfacebtn1'
+        elif element_type == 'fc_delete':
+            if not self.click_configure_forwarding_class():
+                result = result and False
+            element_name = fixture.name
+            element_id = 'btnDeleteForwardingClass'
+            popup_id = 'configure-forwarding_classbtn1'
+            br = self.find_element('forwarding-class-grid')
         elif element_type == 'bgp_router_delete':
             if not self.click_configure_bgp_router():
                 result = result and False
@@ -1337,7 +1345,9 @@ class WebuiCommon:
                 result = result and False
             element_id = 'btnActionDelLLS'
             popup_id = 'configure-link_local_servicesbtn1'
-        rows = self.get_rows(canvas=True)
+        if not br:
+            br = self.browser
+        rows = self.get_rows(br, canvas=True)
         ln = 0
         if rows:
             ln = len(rows)
@@ -1756,6 +1766,31 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
         return self.check_error_msg("configure physical device's interfaces")
     # end click_configure_interfaces
+    
+    def click_configure_forwarding_class(self):
+        self.click_configure_global_config()
+        self.wait_till_ajax_done(self.browser)
+        self.click_element('fc_global_tab-tab-link')
+        self.wait_till_ajax_done(self.browser)
+        return self.check_error_msg("configure forwarding classes")
+    # end click_configure_forwarding_class
+    
+    def click_configure_forwarding_class_basic(self, row_index):
+        self.click_configure_forwarding_class()
+        br = self.find_element('forwarding-class-grid')
+        rows = self.get_rows(browser=br)
+        div_browser = self.find_element(
+            'div', 'tag', if_elements=[1], elements=True,
+            browser=rows[row_index])[0]
+        self.click_element('i', 'tag', browser = div_browser)
+        self.wait_till_ajax_done(self.browser)
+    #end click_configure_forwarding_class_basic
+    
+    def click_configure_forwarding_class_advanced(self, row_index):
+        self.click_configure_forwarding_class_basic(row_index)
+        self.click_element('fa-code', 'class')
+        self.wait_till_ajax_done(self.browser)
+    #end click_configure_forwarding_class_advanced
 
     def click_configure_dns_servers(self):
         self.wait_till_ajax_done(self.browser)
@@ -2125,18 +2160,34 @@ class WebuiCommon:
             self,
             func_suffix,
             index=0,
-            canvas=False):
-        click_func = 'self.' + 'click_configure_' + func_suffix + '_basic'
+            view='basic',
+            canvas=False,
+            search_ele=None,
+            search_by='id',
+            browser=None):
+        if not browser:
+            browser = self.browser
+        click_func = 'self.' + 'click_configure_' + func_suffix + '_' + view
         eval(click_func)(index)
         self.logger.info(
-            "Click and retrieve basic view details in webui of %s " %
-                (func_suffix))
-        rows = self.get_rows(canvas)
+            "Click and retrieve %s view details in webui of %s " %
+                (view, func_suffix))
+        try:
+            self.logger.debug('browser is %s' % (browser.text))
+        except StaleElementReferenceException:
+            browser = self.find_element(search_ele, search_by)
+        rows = self.get_rows(browser, canvas)
         slick_row_detail = self.find_element(
                 'slick-row-detail-container', 'class',
                         browser = rows[index + 1])
-        rows_detail = self.find_element([
-                        'item-list', 'row'], ['class', 'class'],
+        if view == 'advanced':
+            find_element = ['pre', 'key-value']
+            find_by = ['tag', 'class']
+        else:
+            find_element = ['item-list', 'row']
+            find_by = ['class', 'class']
+        rows_detail = self.find_element(
+                        find_element, find_by,
                         browser = slick_row_detail, if_elements=[1])
         return rows, rows_detail
     # end click_basic_and_get_row_details
