@@ -35,7 +35,7 @@ class BaseDropStats(GenericTestBase) :
     def verify_flow_action_drop_stats(self, drop_type='ds_flow_action_drop'):
         result = True
         ping_count = 5
-        image_name = 'cirros-0.3.0-x86_64-uec'
+        image_name = 'cirros'
 
         compute_ips = self.inputs.compute_ips
         compute0 = compute_ips[0]

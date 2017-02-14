@@ -168,7 +168,7 @@ class BaseRbac(test_v1.BaseTestCase_v1):
         connections = connections or self.connections
         vm_fixture = self.create_fixture(VMFixture, connections=connections,
                                          vn_obj=vn_fixture.obj,
-                                         image_name='cirros-0.3.0-x86_64-uec')
+                                         image_name='cirros')
         if vm_fixture and verify:
             assert vm_fixture.verify_on_setup(), 'VM verification failed'
         return vm_fixture
