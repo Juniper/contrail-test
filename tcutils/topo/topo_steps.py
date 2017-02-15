@@ -28,6 +28,7 @@ from physical_device_fixture import PhysicalDeviceFixture
 from pif_fixture import PhysicalInterfaceFixture
 from physical_router_fixture import PhysicalRouterFixture
 from virtual_router_fixture import VirtualRouterFixture
+from qos_fixture import QosForwardingClassFixture
 try:
     from webui_test import *
 except ImportError:
@@ -835,6 +836,28 @@ def createPhysicalInterface(self, config_topo):
     return self
 # end createPhysicalInterface
 
+def createForwardingClass(self):
+    if hasattr(self.topo, 'fc_list'):
+        self.qos_fixture = {}
+        for index, fc_name in enumerate(self.topo.fc_list):
+            result = True
+            msg = []
+            self.qos_fixture[fc_name] = self.useFixture(
+                QosForwardingClassFixture(
+                    connections=self.project_connections,
+                    name=fc_name,
+                    index=index,
+                    fc_id=self.topo.fc_params[fc_name]['fc_id'],
+                    dscp=self.topo.fc_params[fc_name]['dscp'],
+                    dot1p=self.topo.fc_params[fc_name]['dot1p'],
+                    exp=self.topo.fc_params[fc_name]['exp'],
+                    queue_num=self.topo.fc_params[fc_name]['queue_num']))
+            if self.skip_verify == 'no':
+                ret, msg = self.qos_fixture[fc_name].verify_on_setup()
+                assert ret, "Verifications for forwarding class :%s has failed and its error message: %s" % (
+                    fc_name, msg)
+    return self
+# end of create_forwarding_class
 
 def allocNassocFIP(self, config_topo=None, assoc=True):
     # Need Floating VN fixture in current project and destination VM fixtures from all projects
