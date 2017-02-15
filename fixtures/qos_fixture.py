@@ -418,13 +418,19 @@ class QosConfigFixture(QosBaseFixture):
         self.parent_obj = None
         self.id = {}
 
+        if self.inputs.verify_thru_gui():
+            self.webui = WebuiTest(self.connections, self.inputs)
+
     def setUp(self):
         super(QosConfigFixture, self).setUp()
         self.create()
 
     def cleanUp(self):
         super(QosConfigFixture, self).cleanUp()
-        self.delete()
+        if self.inputs.is_gui_based_config():
+            self.webui.delete_qos(self)
+        else:
+            self.delete()
 
     def _get_code_point_to_fc_map(self, mapping_dict=None):
         if not mapping_dict:
@@ -447,8 +453,10 @@ class QosConfigFixture(QosBaseFixture):
             return self.read()
         except NoIdError, e:
             pass
-
-        self.uuid = self.vnc_h.create_qos_config(name=self.name,
+        if self.inputs.is_gui_based_config():
+            self.webui.create_qos(self)
+        else:
+            self.uuid = self.vnc_h.create_qos_config(name=self.name,
                                    parent_obj=self.parent_obj,
                                    dscp_mapping=self.dscp_mapping,
                                    dot1p_mapping=self.dot1p_mapping,
