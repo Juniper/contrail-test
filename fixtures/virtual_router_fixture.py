@@ -1,7 +1,6 @@
 from netaddr import *
 import vnc_api_test
 
-
 class VirtualRouterBase(vnc_api_test.VncLibFixture):
 
     '''Fixture to manage virtual router objects
@@ -47,6 +46,10 @@ class VirtualRouterBase(vnc_api_test.VncLibFixture):
 class VirtualRouterFixture(VirtualRouterBase):
     def __init__(self, *args, **kwargs):
         super(VirtualRouterFixture,self).__init__(*args, **kwargs)
+        if self.inputs.verify_thru_gui():
+            from webui_test import WebuiTest
+            self.webui = WebuiTest(self.connections, self.inputs)
+            self.ip = args[2]
 
     def setUp(self):
         super(VirtualRouterFixture, self).setUp()
@@ -57,8 +60,12 @@ class VirtualRouterFixture(VirtualRouterBase):
             self.logger.info('virtual router %s already present' % (
                 vr_fq_name))
         except vnc_api_test.NoIdError:
-            self.vr = self.create_virtual_router()
-        self.update_virtual_router_type()
+            if self.inputs.is_gui_based_config():
+                self.vr = self.webui.create_virtual_router(self)
+            else:
+                self.vr = self.create_virtual_router()
+        if not self.inputs.is_gui_based_config():
+            self.update_virtual_router_type()
 
     def cleanUp(self):
         super(VirtualRouterFixture, self).cleanUp()
