@@ -166,6 +166,21 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_create_bgp_aas
 
     @preposttest_wrapper
+    def test2_9_create_qos_config(self):
+        '''
+        Description: Test to create QoS config on UI
+        Steps:
+            1. On the Contrail UI, go to Config -> Networking -> QoS
+            2. Click on create, enter the config details in the fields and click on 'Save'
+            3. Verify the creation of the QoS config
+        Pass criteria:
+            1. Step 2 and 3 above should pass
+        '''
+        assert self.res.setup_obj.create_qos_config(), 'Creation of QoS failed'
+        return True
+    # end test_create_qos_config
+
+    @preposttest_wrapper
     def test2_1_1_create_physical_router(self):
         '''
         Description: Test to create Physical Router on UI
