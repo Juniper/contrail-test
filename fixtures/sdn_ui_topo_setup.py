@@ -197,6 +197,16 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
         return True
     # end create_virtual_router
 
+    def create_service_appliance_set(self):
+        assert ui_topo_steps.createSVCApplianceSet(self)
+        return True
+    # end create_service_appliance_set
+
+    def create_service_appliances(self):
+        assert ui_topo_steps.createSVCAppliances(self)
+        return True
+    # end create_service_appliances
+
     def cleanUp(self):
         if self.inputs.fixture_cleanup == 'yes':
             super(sdnUiTopoSetupFixture, self).cleanUp()

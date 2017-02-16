@@ -151,3 +151,29 @@ def createLinkLocalService(self):
         result = False
     return result
 # end createLinkLocalService
+
+def createSVCApplianceSet(self):
+    result = True
+    if not hasattr(self.topo, 'svc_appl_set_list'):
+        self.logger.warn("No Service Appliance set in topo file")
+        return result
+    self.logger.info("Create Service Appliance Set")
+    if not self.webui.create_service_appliance_set(
+               self.topo.svc_appl_set_list,
+               self.topo.svc_appl_set_params):
+        result = False
+    return result
+# end createServApplianceSet
+
+def createSVCAppliances(self):
+    result = True
+    if not hasattr(self.topo, 'svc_appliances_list'):
+        self.logger.warn("No Service Appliance set in topo file")
+        return result
+    self.logger.info("Create Service Appliance Set")
+    if not self.webui.create_service_appliances(
+               self.topo.svc_appliances_list,
+               self.topo.svc_appliances_params):
+        result = False
+    return result
+# end createServAppliances
