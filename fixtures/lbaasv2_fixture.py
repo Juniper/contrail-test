@@ -165,22 +165,26 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
     # The test is expected to add start_active_vrouter in addCleanup
     def stop_active_vrouter(self):
         active_vr = self.get_active_vrouter()
-        self.inputs.stop_service('supervisor-vrouter', [active_vr])
+        self.inputs.stop_service('supervisor-vrouter', [active_vr],
+                                 container='agent')
         self._populate_vars()
 
     def start_active_vrouter(self):
         active_vr = self.get_active_vrouter()
-        self.inputs.start_service('supervisor-vrouter', [active_vr])
+        self.inputs.start_service('supervisor-vrouter', [active_vr],
+                                  container='agent')
 
     # The test is expected to add start_standby_vrouter in addCleanup
     def stop_standby_vrouter(self):
         standby_vr = self.get_standby_vrouter()
-        self.inputs.stop_service('supervisor-vrouter', [standby_vr])
+        self.inputs.stop_service('supervisor-vrouter', [standby_vr],
+                                 container='agent')
         self._populate_vars()
 
     def start_standby_vrouter(self):
         standby_vr = self.get_standby_vrouter()
-        self.inputs.start_service('supervisor-vrouter', [standby_vr])
+        self.inputs.start_service('supervisor-vrouter', [standby_vr],
+                                  container='agent')
 
     @retry(tries=12, delay=5)
     def _get_active_svc(self):
@@ -200,7 +204,8 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
 
     def restart_active_svc_mon(self):
         active_svc = self.get_active_svc()
-        self.inputs.restart_service('contrail-svc-monitor', [active_svc])
+        self.inputs.restart_service('contrail-svc-monitor', [active_svc],
+									container='controller')
         self.get_active_svc(refresh=True)
 
     def get_si(self):
@@ -481,7 +486,8 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
                              ' info not available')
             return False
         cmd_str = 'ip netns list | grep %s:%s | grep -v grep'%(vm_id, self.lb_uuid)
-        output = self.inputs.run_cmd_on_server(vrouter, cmd_str)
+        output = self.inputs.run_cmd_on_server(vrouter, cmd_str,
+                                               container='agent')
         if not output:
             self.logger.debug('netns instance %s:%s not found'
                              %(vm_id, self.lb_uuid))
@@ -491,7 +497,8 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
                              %(vm_id, self.lb_uuid))
             return False
         cmd_str = 'ps ax | grep haproxy | grep %s | grep -v grep' %self.lb_uuid
-        if not self.inputs.run_cmd_on_server(vrouter, cmd_str):
+        if not self.inputs.run_cmd_on_server(vrouter, cmd_str,
+                                             container='agent'):
             self.logger.debug('haproxy not found for LB %s'%self.lb_uuid)
             return False
         self.logger.info("netns got launched, so do haproxy")

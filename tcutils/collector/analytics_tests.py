@@ -2259,7 +2259,8 @@ class AnalyticsVerification(fixtures.Fixture):
     def verify_alarms(self, role, alarm_type='process-status', service=None, verify_alarm_cleared=False):
         result = True
         analytics = self.inputs.collector_ips[0]
-        underlay = self.inputs.run_cmd_on_server(analytics, 'contrail-status | grep contrail-snmp-collector')
+        underlay = self.inputs.run_cmd_on_server(analytics, 'contrail-status | grep contrail-snmp-collector',
+                                                 container='analytics')
         cfgm_processes = ['supervisor-config', 'contrail-config-nodemgr',
             'contrail-device-manager', 'contrail-discovery', 'contrail-schema',
             'contrail-svc-monitor']
@@ -2448,7 +2449,8 @@ class AnalyticsVerification(fixtures.Fixture):
                     tor_agents.append(tor_data)
                 break
         for tagent in tor_agents:
-            self.inputs.stop_service(tagent['service'], host_ips=[tagent['tor_ip']], contrail_service=True)
+            self.inputs.stop_service(tagent['service'], host_ips=[tagent['tor_ip']], contrail_service=True,
+                                     container='agent')
         try:
             if not self._verify_alarms_by_type(None, service_ip, role, alarm_type, multi_instances=False,
                     soak_timer=15):
@@ -2457,7 +2459,8 @@ class AnalyticsVerification(fixtures.Fixture):
             self.logger.exception('Exception occured while verifying alarms %s' % (alarm_type))
         finally:
             for tagent in tor_agents:
-                self.inputs.start_service(tagent['service'], host_ips=[tagent['tor_ip']], contrail_service=True)
+                self.inputs.start_service(tagent['service'], host_ips=[tagent['tor_ip']], contrail_service=True,
+                                          container='agent')
             time.sleep(15)
             if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances,
                     soak_timer=15, verify_alarm_cleared=True):
@@ -2492,10 +2495,12 @@ class AnalyticsVerification(fixtures.Fixture):
         return result
     # end _verify_vrouter_interface_alarm
 
-    def update_contrail_conf(self, node, ip, conf_file_type, section, value, cluster_verify=False):
+    def update_contrail_conf(self, node, ip, conf_file_type, section, value, cluster_verify=False,
+                             container=None):
         file_loc = '/etc/contrail/' + conf_file_type + '.conf'
         self._update_contrail_conf(file_loc, 'set', section,
-            value, node, conf_file_type, ip, cluster_verify)
+            value, node, conf_file_type, ip, cluster_verify,
+			container=container)
     # end update_contrail_conf
 
     def update_contrail_control_conf_file_and_verify_alarms(self, section, value, service_ip, role,
@@ -2506,9 +2511,11 @@ class AnalyticsVerification(fixtures.Fixture):
             new_host_ip = self.new_ip_addr
             if multi_instances:
                 for ip in self.inputs.bgp_control_ips:
-                    self.update_contrail_conf(ip, new_host_ip, 'contrail-control', section, value)
+                    self.update_contrail_conf(ip, new_host_ip, 'contrail-control', section, value,
+                                              container='controller')
             else:
-                self.update_contrail_conf(service_ip, new_host_ip, 'contrail-control', section, value)
+                self.update_contrail_conf(service_ip, new_host_ip, 'contrail-control', section, value,
+                                          container='controller')
             self.wait_for_system_stability()
             if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances=False, soak_timer=15):
                 result = result and False
@@ -2521,9 +2528,11 @@ class AnalyticsVerification(fixtures.Fixture):
                 for ip in self.inputs.bgp_control_ips:
                     if ip == self.inputs.bgp_control_ips[len_of_bgp_control_ips-1]:
                         cluster_verify = False
-                    self.update_contrail_conf(ip, ip, 'contrail-control', section, value, cluster_verify=cluster_verify)
+                    self.update_contrail_conf(ip, ip, 'contrail-control', section, value, cluster_verify=cluster_verify,
+                                              container='controller')
             else:
-                self.update_contrail_conf(service_ip, service_ip, 'contrail-control', section, value, cluster_verify=False)
+                self.update_contrail_conf(service_ip, service_ip, 'contrail-control', section, value, cluster_verify=False,
+                                          container='controller')
             self.wait_for_system_stability()
             if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances=False,
                     soak_timer=15, verify_alarm_cleared=True):
@@ -2560,9 +2569,11 @@ class AnalyticsVerification(fixtures.Fixture):
             len_of_cfgm_ips = len(self.inputs.cfgm_ips)
             if multi_instances:
                 for ip in self.inputs.cfgm_ips:
-                    self.update_contrail_conf(ip, new_host_ip, 'contrail-api', section, value)
+                    self.update_contrail_conf(ip, new_host_ip, 'contrail-api', section, value,
+                                              container='controller')
             else:
-                self.update_contrail_conf(api_service_ip, new_host_ip, 'contrail-api', section, value)
+                self.update_contrail_conf(api_service_ip, new_host_ip, 'contrail-api', section, value,
+                                          container='controller')
             self.wait_for_system_stability()
             if role == 'all':
                 for role_type in ['analytics-node', 'config-node', 'vrouter', 'database-node', 'control-node']:
@@ -2581,9 +2592,11 @@ class AnalyticsVerification(fixtures.Fixture):
                 for ip in self.inputs.cfgm_ips:
                     if ip == self.inputs.cfgm_ips[len_of_cfgm_ips-1]:
                         cluster_verify = False
-                    self.update_contrail_conf(ip, ip, 'contrail-api', section, value, cluster_verify=cluster_verify)
+                    self.update_contrail_conf(ip, ip, 'contrail-api', section, value, cluster_verify=cluster_verify,
+                                              container='controller')
             else:
-                self.update_contrail_conf(api_service_ip, api_service_ip, 'contrail-api', section, value, cluster_verify=True)
+                self.update_contrail_conf(api_service_ip, api_service_ip, 'contrail-api', section, value, cluster_verify=True,
+                                          container='controller')
             self.wait_for_system_stability()
             if role == 'all':
                 for role_type in ['analytics-node', 'config-node', 'vrouter', 'database-node', 'control-node']:
@@ -2606,28 +2619,32 @@ class AnalyticsVerification(fixtures.Fixture):
         return result
     # end _verify_alarms_address_mismatch_control
 
-    def _verify_alarms_disk_usage(self, service_ip, role, alarm_type, multi_instances):
+    def _verify_alarms_disk_usage(self, service_ip, role, alarm_type, multi_instances, container):
         result = True
         if not self.fill_91_disk_usage_and_verify_alarms(service_ip, role,
-            alarm_type, multi_instances):
+            alarm_type, multi_instances, container):
             result = result and False
         return result
     # end _verify_alarms_disk_usage
 
 
-    def fill_91_disk_usage_and_verify_alarms(self, service_ip, role, alarm_type, multi_instances):
+    def fill_91_disk_usage_and_verify_alarms(self, service_ip, role, alarm_type,
+                                             multi_instances, container):
         result = True
         is_file_created = {  'config-node':False, 'analytics-node':False,
             'vrouter':False, 'database-node':False, 'control-node':False }
         try:
             for role in is_file_created:
                 svc_ip = service_ip[role]
+                contnr = container[role]
                 hostname = self.inputs.host_data[svc_ip]['name']
                 cmd = "df -h /dev/mapper/" + hostname + "--vg-root"
                 cmd1 = cmd + " | awk 'NR==2 {print $2}'"
                 cmd2 = cmd + " | awk 'NR==2 {print $3}'"
-                total = int(self.inputs.run_cmd_on_server(svc_ip, cmd1).split('G')[0])
-                used = int(self.inputs.run_cmd_on_server(svc_ip, cmd2).split('G')[0])
+                total = int(self.inputs.run_cmd_on_server(svc_ip, cmd1,
+                            container=contnr).split('G')[0])
+                used = int(self.inputs.run_cmd_on_server(svc_ip, cmd2,
+                           container=contnr).split('G')[0])
                 diff = 0
                 limit = 0.91 * total
                 if not used > limit:
@@ -2637,22 +2654,22 @@ class AnalyticsVerification(fixtures.Fixture):
                 dd_cmd = 'fallocate -l ' + str_mb + ' large_test_file.txt'
                 self.logger.info('Disk usage alarm verification for role %s' % (role))
                 if not is_file_created[role]:
-                    status = self.inputs.run_cmd_on_server(svc_ip, cmd)
+                    status = self.inputs.run_cmd_on_server(svc_ip, cmd, container=contnr)
                     self.logger.debug('Printing df -h before file creation: \n %s \n' % (status))
                     if diff:
                         self.logger.info('Creating a file of size %s GB(%s MB) to fill 91 percent of the disk space on %s' %
                             (str(mb/1024), str(mb), role))
-                        self.inputs.run_cmd_on_server(svc_ip, dd_cmd)
+                        self.inputs.run_cmd_on_server(svc_ip, dd_cmd, container=contnr)
                     else:
                         self.logger.info('Disk usage is already more than 91 percent, disk usage alarm expected')
-                    status = self.inputs.run_cmd_on_server(svc_ip, cmd)
+                    status = self.inputs.run_cmd_on_server(svc_ip, cmd, container=contnr)
                     self.logger.debug('Printing df -h after file creation: \n %s \n' % (status))
                     self.wait_for_system_stability(wait=10)
                     for node_role in is_file_created:
                         if svc_ip == service_ip[node_role]:
                             is_file_created[node_role] = True
                 else:
-                   status = self.inputs.run_cmd_on_server(svc_ip, cmd)
+                   status = self.inputs.run_cmd_on_server(svc_ip, cmd, container=contnr)
                    self.logger.debug('Printing current disk usage: \n\n %s' % (status))
                    self.logger.debug('Large file already created on %s, skipping creation, disk usage is above 91 percent' % (role))
                 if not self._verify_alarms_by_type(None, svc_ip, role, alarm_type, multi_instances=False,
@@ -2715,14 +2732,15 @@ class AnalyticsVerification(fixtures.Fixture):
         return result
     # end _verify_alarms_process_connectivity_vrouter_agent
 
-    def _update_contrail_conf(self, conf_file, operation, section, knob, node, service, value, cluster_verify):
+    def _update_contrail_conf(self, conf_file, operation, section, knob, node, service, value, cluster_verify,
+							  container=None):
         if operation == 'del':
             cmd = 'openstack-config --del %s %s %s' % (conf_file, section, knob)
-            xmpp_status = self.inputs.run_cmd_on_server(node, cmd)
+            xmpp_status = self.inputs.run_cmd_on_server(node, cmd, container=container)
         if operation == 'set':
             cmd = 'openstack-config --set %s %s %s %s' % (conf_file, section, knob, value)
-        status = self.inputs.run_cmd_on_server(node, cmd)
-        self.inputs.restart_service(service, [node])
+        status = self.inputs.run_cmd_on_server(node, cmd, container=container)
+        self.inputs.restart_service(service, [node], container=container)
         if cluster_verify:
             cluster_status, error_nodes = ContrailStatusChecker().wait_till_contrail_cluster_stable()
             assert cluster_status, 'Hash of error nodes and services : %s' % (error_nodes)
@@ -2813,9 +2831,11 @@ class AnalyticsVerification(fixtures.Fixture):
                 issue_stop_cmd = supervisorctl_cfg + ' stop ' + service
                 issue_start_cmd = supervisorctl_cfg + ' start ' + service
                 cfgm_ndmgr_ctl_required = True
-                self.inputs.run_cmd_on_server(service_ip, issue_stop_cmd, username, password, pty=True)
+                self.inputs.run_cmd_on_server(service_ip, issue_stop_cmd, username, password, pty=True,
+                                              container='controller')
             else:
-                self.inputs.stop_service(service, host_ips=[service_ip], contrail_service=True)
+                self.inputs.stop_service(service, host_ips=[service_ip], contrail_service=True,
+                                         container='agent')
             self.logger.info("Process %s stopped" % (service))
             if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances, soak_timer):
                 result = result and False
@@ -2824,7 +2844,8 @@ class AnalyticsVerification(fixtures.Fixture):
             result = result and False
         finally:
             if cfgm_ndmgr_ctl_required:
-                self.inputs.run_cmd_on_server(service_ip, issue_start_cmd, username, password, pty=True)
+                self.inputs.run_cmd_on_server(service_ip, issue_start_cmd, username, password, pty=True,
+                                              container='controller')
             else:
                 self.inputs.start_service(service, host_ips=[service_ip],
                     contrail_service=True)
@@ -2971,14 +2992,19 @@ class AnalyticsVerification(fixtures.Fixture):
         result = True
         if role == 'config-node':
             service_ip = self.inputs.cfgm_ips[0]
+            container = 'controller'
         elif role == 'database-node':
             service_ip = self.inputs.database_ips[0]
+            container = 'controller'
         elif role == 'control-node':
             service_ip = self.inputs.bgp_control_ips[0]
+            container = 'controller'
         elif role == 'vrouter':
             service_ip = self.inputs.compute_ips[0]
+            container = 'agent'
         elif role == 'analytics-node':
             service_ip = self.inputs.collector_ips[0]
+            container = 'analytics'
         elif role == 'prouter':
             tor_tsn_ips = []
             for pdevice in self.inputs.physical_routers_data:
@@ -2992,19 +3018,32 @@ class AnalyticsVerification(fixtures.Fixture):
                 'control-node': self.inputs.bgp_control_ips[0],
                 'vrouter': self.inputs.compute_ips[0],
                 'analytics-node': self.inputs.collector_ips[0]}
+            container = {
+                'config-node' : 'controller',
+                'database-node' : 'controller',
+                'control-node' : 'controller',
+                'vrouter' : 'agent',
+                'analytics-node' : 'analytics',
+            }
         elif isinstance(role, list):
             service_ip = {}
+            container = {}
             for r in role:
                 if r == 'config-node':
                     service_ip['config-node'] = self.inputs.cfgm_ips[0]
+                    container['config-node'] = 'controller'
                 elif r == 'database-node':
                     service_ip['database-node']  = self.inputs.database_ips[0]
+                    container['config-node'] = 'controller'
                 elif r == 'control-node':
                     service_ip['control-node'] = self.inputs.bgp_control_ips[0]
+                    container['config-node'] = 'controller'
                 elif r == 'vrouter':
                     service_ip['vrouter'] = self.inputs.compute_ips[0]
+                    container['config-node'] = 'agent'
                 elif r == 'analytics-node':
                     service_ip['analytics-node'] = self.inputs.collector_ips[0]
+                    container['config-node'] = 'analytics'
 
         process_connectivity = ['contrail-api', 'contrail-database']
         if service in process_connectivity:
@@ -3021,7 +3060,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 result = result and False
         elif trigger == 'disk_usage':
             alarm_type = 'disk-usage'
-            if not self._verify_alarms_disk_usage(service_ip, role, alarm_type, multi_instances):
+            if not self._verify_alarms_disk_usage(service_ip, role, alarm_type, multi_instances, container):
                 result = result and False
         elif role == 'control-node':
              if trigger == 'address_mismatch':

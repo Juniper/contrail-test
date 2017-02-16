@@ -803,17 +803,33 @@ def run_once(f):
 
 def run_cmd_on_server(issue_cmd, server_ip, username,
                       password, pty=True, as_sudo=False,
-                      logger=None):
+                      logger=None,
+                      container=None,
+                      detach=None,
+                      shell_prefix='/bin/bash -c '
+                      ):
+    '''
+    container : name or id of the container to run the cmd( str)
+    '''
     logger = logger or contrail_logging.getLogger(__name__)
     logger.debug('[%s]: Running cmd : %s' % (server_ip, issue_cmd))
     with hide('everything'):
         with settings(
             host_string='%s@%s' % (username, server_ip), password=password,
                 warn_only=True, abort_on_prompts=False):
-            if as_sudo:
-                output = sudo('%s' % (issue_cmd), pty=pty) 
+            _run = sudo if as_sudo else run
+            if container:
+                container_args = ''
+                container_args += ' -d ' if detach else ''
+                container_args += ' --privileged ' if as_sudo else ''
+                container_args += ' -it ' if pty else ''
+                container_args += container
+                updated_cmd = 'docker exec %s %s \'%s\'' % (container_args,
+                                                       shell_prefix,
+                                                       issue_cmd)
+                output = run(updated_cmd)
             else:
-                output = run('%s' % (issue_cmd), pty=pty)
+                output = _run('%s' % (issue_cmd), pty=pty)
             logger.debug('Output : %s' % (output))
             return output
 # end run_cmd_on_server
@@ -864,8 +880,10 @@ def read_config_option(config, section, option, default_option):
 # end read_config_option
 
 
-def copy_file_to_server(host, src, dest, filename, force=False):
-
+def copy_file_to_server(host, src, dest, filename, force=False,
+                        container=None):
+    if container:
+        dest = '/tmp'
     fname = "%s/%s" % (dest, filename)
     with settings(host_string='%s@%s' % (host['username'],
                                          host['ip']), password=host['password'],
@@ -873,6 +891,8 @@ def copy_file_to_server(host, src, dest, filename, force=False):
         if not exists(fname) or force:
             time.sleep(random.randint(1, 10))
             put(src, dest)
+            if container:
+                run('docker cp %s/%s %s:%s' %(dest, filename, container, dest))
 # end copy_file_to_server
 
 def get_host_domain_name(host):
@@ -1042,13 +1062,16 @@ def skip_because(*args, **kwargs):
     return decorator
 
 
-def get_build_sku(openstack_node_ip, openstack_node_password='c0ntrail123', user='root'):
+def get_build_sku(openstack_node_ip, openstack_node_password='c0ntrail123', user='root',
+                  container=None):
     build_sku = get_os_env("SKU")
     if build_sku is not None:
         return str(build_sku).lower()
     else:
         host_str='%s@%s' % (user, openstack_node_ip)
         cmd = 'nova-manage version'
+        if container:
+            cmd = 'docker exec -it openstack %s /bin/bash -c \'%s\'' % (container, cmd)
         tries = 10
         while not build_sku and tries:
             try:

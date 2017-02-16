@@ -347,22 +347,26 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
     # The test is expected to add start_active_vrouter in addCleanup
     def stop_active_vrouter(self):
         active_vr = self.get_active_vrouter()
-        self.inputs.stop_service('supervisor-vrouter', [active_vr])
+        self.inputs.stop_service('supervisor-vrouter', [active_vr],
+                                 container='agent')
         self._populate_vars_from_vip_obj()
 
     def start_active_vrouter(self):
         active_vr = self.get_active_vrouter()
-        self.inputs.start_service('supervisor-vrouter', [active_vr])
+        self.inputs.start_service('supervisor-vrouter', [active_vr],
+                                  container='agent')
 
     # The test is expected to add start_standby_vrouter in addCleanup
     def stop_standby_vrouter(self):
         standby_vr = self.get_standby_vrouter()
-        self.inputs.stop_service('supervisor-vrouter', [standby_vr])
+        self.inputs.stop_service('supervisor-vrouter', [standby_vr],
+                                 container='agent')
         self._populate_vars_from_vip_obj()
 
     def start_standby_vrouter(self):
         standby_vr = self.get_standby_vrouter()
-        self.inputs.start_service('supervisor-vrouter', [standby_vr])
+        self.inputs.start_service('supervisor-vrouter', [standby_vr],
+                                  container='agent')
 
     def delete(self):
         self.logger.info('Deleting LoadBalancer %s(%s)'%(self.name, self.uuid))
@@ -818,7 +822,8 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
                              ' info not available')
             return False
         cmd_str = 'ip netns list | grep %s:%s | grep -v grep'%(vm_id,self.uuid)
-        output = self.inputs.run_cmd_on_server(vrouter, cmd_str)
+        output = self.inputs.run_cmd_on_server(vrouter, cmd_str,
+                                               container='agent')
         if not output:
             self.logger.debug('netns instance %s:%s not found'
                              %(vm_id, self.uuid))
@@ -828,7 +833,8 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
                              %(vm_id, self.uuid))
             return False
         cmd_str = 'ps ax | grep haproxy | grep %s | grep -v grep' % self.uuid
-        if not self.inputs.run_cmd_on_server(vrouter, cmd_str):
+        if not self.inputs.run_cmd_on_server(vrouter, cmd_str,
+                                             container='agent'):
             self.logger.debug('haproxy not found for LB %s'%self.uuid)
             return False
         if not self.is_custom_attr_in_haproxy_conf(vrouter):
@@ -842,7 +848,8 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
             if cmd.startswith('option '):
                 value = '' if value == 'True' else 'no'
             cmd_str = 'grep "%s" %s | grep -v grep'%(cmd, haproxy_cfg)
-            ret = self.inputs.run_cmd_on_server(vrouter, cmd_str)
+            ret = self.inputs.run_cmd_on_server(vrouter, cmd_str,
+                                                container='agent')
             if not ret or 'No such file or directory' in ret or\
                cmd not in ret or str(value) not in ret:
                 self.logger.debug('custom attr (%s, %s) not found '

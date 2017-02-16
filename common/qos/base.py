@@ -610,7 +610,7 @@ class QosTestBase(BaseNeutronTest):
         # Searching for fabric interface on which to test queuing
         cmd = 'cat /etc/contrail/contrail-vrouter-agent.conf \
                | grep "physical_interface=" | grep -v "vmware"'
-        output = cls.inputs.run_cmd_on_server(node_ip, cmd)
+        output = cls.inputs.run_cmd_on_server(node_ip, cmd, container='agent')
         fabric_interface = output.split('=')[-1]
         # Getting the speed of the interface
         cmd= 'ethtool %s | grep "Speed"' % fabric_interface
@@ -777,15 +777,15 @@ class QosTestBase(BaseNeutronTest):
         for hw_queue in range(0,64):
             cmd = 'openstack-config --del %s QUEUE-%d' % (conf_file,
                                                           hw_queue)
-            cls.inputs.run_cmd_on_server(cls.qos_node_ip, cmd)
+            cls.inputs.run_cmd_on_server(cls.qos_node_ip, cmd, container='agent')
         cmd = 'openstack-config --del %s QOS' % (conf_file)
-        cls.inputs.run_cmd_on_server(cls.qos_node_ip, cmd)
+        cls.inputs.run_cmd_on_server(cls.qos_node_ip, cmd, container='agent')
         for priority_group in range(0,8):
             cmd = 'openstack-config --del %s PG-%d' % (conf_file,
                                                         priority_group)
-            cls.inputs.run_cmd_on_server(cls.qos_node_ip, cmd)
+            cls.inputs.run_cmd_on_server(cls.qos_node_ip, cmd, container='agent')
         cmd = 'openstack-config --del %s QOS-NIANTIC' % (conf_file)
-        cls.inputs.run_cmd_on_server(cls.qos_node_ip, cmd)
+        cls.inputs.run_cmd_on_server(cls.qos_node_ip, cmd, container='agent')
         
     @classmethod
     def update_conf_file_queueing(cls):
@@ -832,9 +832,10 @@ class QosTestBase(BaseNeutronTest):
         cmds.append('openstack-config --set %s PG-3 bandwidth 40' 
                     % (conf_file))
         for cmd in cmds:
-            cls.inputs.run_cmd_on_server(cls.qos_node_ip, cmd)
+            cls.inputs.run_cmd_on_server(cls.qos_node_ip, cmd, container='agent')
         cls.inputs.restart_service("contrail-vrouter-agent",
-                                     [cls.qos_node_ip])
+                                     [cls.qos_node_ip],
+									container='agent')
         cluster_status, error_nodes = ContrailStatusChecker(
                                     ).wait_till_contrail_cluster_stable()
         assert cluster_status, 'Hash of error nodes and services : %s' % (
@@ -892,9 +893,10 @@ class QosTestBase(BaseNeutronTest):
             cmds.append('openstack-config --set %s PG-%s bandwidth %s'
                         % (conf_file, priority_id, bandwidth))
         for cmd in cmds:
-            cls.inputs.run_cmd_on_server(cls.qos_node_ip, cmd)
+            cls.inputs.run_cmd_on_server(cls.qos_node_ip, cmd, container='agent')
         cls.inputs.restart_service("contrail-vrouter-agent",
-                                     [cls.qos_node_ip])
+                                     [cls.qos_node_ip],
+									container='agent')
         cluster_status, error_nodes = ContrailStatusChecker(
                                     ).wait_till_contrail_cluster_stable()
         assert cluster_status, 'Hash of error nodes and services : %s' % (

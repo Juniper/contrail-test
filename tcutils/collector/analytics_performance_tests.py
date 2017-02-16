@@ -208,12 +208,14 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
             policy_name=policy_name, rules=policy_rules, src_vn_fixture=src_vn_fixture,
             dest_vn_fixture=dest_vn_fixture)
 
-    def restart_service(self, ip_list, service, command='restart'):
+    def restart_service(self, ip_list, service, command='restart',
+						container=None):
 
         for ip in ip_list:
             cmd = 'service %s %s' % (service, command)
             self.inputs.run_cmd_on_server(
-                ip, cmd, username='root', password='c0ntrail123')
+                ip, cmd, username='root', password='c0ntrail123',
+				container=container)
 
     def reboot_node(self, ip_list):
 
@@ -225,7 +227,8 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
 
         vm.run_cmd_on_vm([cmd])
 
-    def triggers(self, preference='', ip=[], command='', service='', vm=None):
+    def triggers(self, preference='', ip=[], command='', service='', vm=None,
+				 container=None):
         '''
         preference : agent restart - to restart vrouter service
                      control restart
@@ -244,7 +247,7 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
 
         if not preference:
             if (ip and service):
-                self.restart_service(ip, service)
+                self.restart_service(ip, service, container=container)
             if vm:
                 self.reboot_vm(vm)
             if ip:
@@ -252,13 +255,13 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
             return
         if (preference in 'agent restart') or (preference in 'control restart') or (preference in 'collector restart'):
             if (ip and service):
-                self.restart_service(ip, service)
+                self.restart_service(ip, service, container=container)
         if (preference in 'agent stop') or (preference in 'control stop') or (preference in 'collector stop'):
             if (ip and service):
-                self.restart_service(ip, service)
+                self.restart_service(ip, service, container=container)
         if (preference in 'agent start') or (preference in 'control start') or (preference in 'collector start'):
             if (ip and service):
-                self.restart_service(ip, service)
+                self.restart_service(ip, service, container=container)
         if (preference in 'agent reboot') or (preference in 'control reboot') or (preference in 'collector reboot'):
             if ip:
                 self.reboot_node(ip)
@@ -341,21 +344,24 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
         temp = self.inputs.compute_ips[:]
         self.inputs.compute_ips.remove(self.tx_vm_node_ip)
         self.triggers(preference='agent restart', ip=self.inputs.compute_ips,
-                      command='restart', service='contrail-vrouter')
+                      command='restart', service='contrail-vrouter',
+					  container='agent')
         time.sleep(20)
         self.verifications(verify='uve')
         self.inputs.compute_ips = temp[:]
         # switchover collector
         self.logger.info("Verifying collector start/stop")
         self.triggers(preference='collector stop', ip=[
-                      self.inputs.collector_ips[0]], command='stop', service='supervisor-analytics')
+                      self.inputs.collector_ips[0]], command='stop', service='supervisor-analytics',
+					  container='analytics')
         temp = self.inputs.collector_ips[:]
         self.inputs.collector_ips.remove(self.inputs.collector_ips[0])
         time.sleep(10)
         self.verifications(verify='uve')
         self.inputs.collector_ips = temp[:]
         self.triggers(preference='collector start', ip=[
-                      self.inputs.collector_ips[0]], command='start', service='supervisor-analytics')
+                      self.inputs.collector_ips[0]], command='start', service='supervisor-analytics',
+                      container='analytics')
         time.sleep(10)
         # collector reboot
         self.logger.info("Verifying collector reboot")

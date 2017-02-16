@@ -135,7 +135,8 @@ class HeatCli:
     def execute_command(self, cmd):
         output = self.inputs.run_cmd_on_server(self.inputs.openstack_ip, cmd,
                                                self.openstack_node_user,
-                                               self.openstack_node_password)
+                                               self.openstack_node_password,
+                                               container='openstack')
 
     def create_stack(self, project, **kwargs):
         cmd = command(**kwargs)
@@ -210,12 +211,12 @@ class Inputs(object):
 
     def run_cmd_on_server(self, server_ip, issue_cmd, username=None,
                           password=None, pty=True):
-        with hide('everything'):
-            with settings(
-                host_string='%s@%s' % (username, server_ip), password=password,
-                    warn_only=True, abort_on_prompts=False):
-                output = run('%s' % (issue_cmd), pty=pty)
-                return output
+        return run_cmd_on_server(issue_cmd, server_ip, username,
+                                 password
+                                 pty=pty,
+                                 as_sudo=True,
+                                 logger=self.logger,
+                                 container='openstack')
     # end run_cmd_on_server
 
 
