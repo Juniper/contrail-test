@@ -38,7 +38,8 @@ class VerifyDynamicVgwCases():
         cmd= cmd1 + ";" + cmd2
         output = self.inputs.run_cmd_on_server(vgw_compute['ip'], cmd,
                              vgw_compute['username'],
-                             vgw_compute['password'])
+                             vgw_compute['password'],
+                             container='agent')
         # Creating Virtual network with VGW FQ name
         vn_fixture = self.useFixture(
             VNFixture(
@@ -74,7 +75,8 @@ class VerifyDynamicVgwCases():
         cmd= cmd1 + ";" + cmd3
         output = self.inputs.run_cmd_on_server(vgw_compute['ip'], cmd,
                              vgw_compute['username'],
-                             vgw_compute['password'])
+                             vgw_compute['password'],
+                             container='agent')
         
         if not result:
             self.logger.error(

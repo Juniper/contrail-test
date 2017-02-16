@@ -65,7 +65,8 @@ class TestRsyslog(BaseRsyslogTest):
         cmd = cmd + "grep 'THISISMYTESTLOG'"
         output = self.inputs.run_cmd_on_server(server_ip, cmd,
                              self.inputs.host_data[server_ip]['username'],
-                             self.inputs.host_data[server_ip]['password'])
+                             self.inputs.host_data[server_ip]['password'],
+                             container='analytics')
         if log_mesg in output:
             result = True
         return result
@@ -109,7 +110,8 @@ class TestRsyslog(BaseRsyslogTest):
         cmd = "grep 'syslog_port.=.[0-9]\{1,5\}' "+COLLECTOR_CONF_FILE
         output = self.inputs.run_cmd_on_server(server_ip, cmd,
                                  self.inputs.host_data[server_ip]['username'],
-                                 self.inputs.host_data[server_ip]['password'])
+                                 self.inputs.host_data[server_ip]['password'],
+                                 container='analytics')
 
         # If syslog_port not configured and not same as
         # rsyslog.conf bail out.

@@ -157,7 +157,8 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
 
         self.logger.info('Will restart compute  services now')
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter', [compute_ip])
+            self.inputs.restart_service('contrail-vrouter', [compute_ip],
+										container='agent')
         sleep(10)
         assert fvn1_vm1_fixture.verify_on_setup()
         assert fvn2_vm1_fixture.verify_on_setup()
@@ -168,7 +169,8 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
 
         self.logger.info('Will restart control services now')
         for bgp_ip in self.inputs.bgp_ips:
-            self.inputs.restart_service('contrail-control', [bgp_ip])
+            self.inputs.restart_service('contrail-control', [bgp_ip],
+										container='controller')
         sleep(10)
         assert fvn1_vm1_fixture.verify_on_setup()
         assert fvn2_vm1_fixture.verify_on_setup()
@@ -350,7 +352,8 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
         # Stop on Active node
         self.logger.info('Stoping the Control service in  %s' %
                          (active_controller))
-        self.inputs.stop_service('contrail-control', [active_controller])
+        self.inputs.stop_service('contrail-control', [active_controller],
+                                 container='controller')
         sleep(5)
 
         # Check the control node shifted to other control node
@@ -466,7 +469,8 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
         # Start the control node service again
         self.logger.info('Starting the Control service in  %s' %
                          (active_controller))
-        self.inputs.start_service('contrail-control', [active_controller])
+        self.inputs.start_service('contrail-control', [active_controller],
+                                  container='controller')
 
         sleep(10)
         # Check the BGP peering status from the currently active control node

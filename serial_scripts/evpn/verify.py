@@ -1881,7 +1881,8 @@ class VerifyEvpnCases():
         self.logger.info('Stoping the Control service in  %s' %
                          (active_controller_host_ip))
         self.inputs.stop_service(
-            'contrail-control', [active_controller_host_ip])
+            'contrail-control', [active_controller_host_ip],
+            container='controller')
         sleep(5)
 
         # Check the control node shifted to other control node
@@ -1913,7 +1914,8 @@ class VerifyEvpnCases():
         self.logger.info('Starting the Control service in  %s' %
                          (active_controller_host_ip))
         self.inputs.start_service(
-            'contrail-control', [active_controller_host_ip])
+            'contrail-control', [active_controller_host_ip],
+            container='controller')
 
         # Check the BGP peering status from the currently active control node
         sleep(5)
@@ -2011,7 +2013,8 @@ class VerifyEvpnCases():
         result = verify_tcpdump_count(self, session, pcap, exp_count=10,mac=self.mac2)
         self.logger.info('Will restart compute  services now')
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter', [compute_ip])
+            self.inputs.restart_service('contrail-vrouter', [compute_ip],
+										container='agent')
         sleep(10)
         self.logger.info(
             'Verifying L2 route and other VM verification after restart')

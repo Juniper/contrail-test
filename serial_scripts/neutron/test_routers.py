@@ -59,10 +59,12 @@ class TestRouterSNAT(BaseNeutronTest):
         assert self.verify_snat(vm1_fixture)
 
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter', [compute_ip])
+            self.inputs.restart_service('contrail-vrouter', [compute_ip],
+										container='agent')
 
         for cfgm_ip in self.inputs.cfgm_ips:
-            self.inputs.restart_service('contrail-api', [cfgm_ip])
+            self.inputs.restart_service('contrail-api', [cfgm_ip],
+										container='controller')
 
         time.sleep(30)
         vm2_name = get_random_name('new_private_vm')
@@ -98,10 +100,12 @@ class TestRouterSNAT(BaseNeutronTest):
         assert self.verify_snat(vm1_fixture)
         assert self.verify_snat_with_fip(ext_vn_fixture, vm2_fixture, vm1_fixture, connections= self.connections, inputs = self.inputs)
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter', [compute_ip])
+            self.inputs.restart_service('contrail-vrouter', [compute_ip],
+										container='agent')
 
         for cfgm_ip in self.inputs.cfgm_ips:
-            self.inputs.restart_service('contrail-api', [cfgm_ip])
+            self.inputs.restart_service('contrail-api', [cfgm_ip],
+										container='controller')
 
         time.sleep(30)
 
@@ -169,9 +173,11 @@ class TestRouterSNAT(BaseNeutronTest):
         assert self.verify_snat(vm2_fixture)
         active_snat_node = self.get_active_snat_node(vm1_fixture, vn1_fixture)
         self.logger.info("Stop Compute Service on active snat node")
-        self.inputs.stop_service('contrail-vrouter', [active_snat_node])
+        self.inputs.stop_service('contrail-vrouter', [active_snat_node],
+                                 container='agent')
         self.addCleanup(self.inputs.start_service,
-                        'contrail-vrouter', [active_snat_node])
+                        'contrail-vrouter', [active_snat_node],
+                        container='agent')
         self.addCleanup(sleep, 10)
         sleep(10)
         if vm1_fixture.vm_node_ip != active_snat_node:

@@ -18,7 +18,8 @@ class TestHAService(HABaseTest):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('keystone', [self.inputs.cfgm_ips[0]])
+        return self.ha_service_single_failure_test('keystone', [self.inputs.cfgm_ips[0]],
+                                                   container='openstack')
 
     @preposttest_wrapper
     def test_ha_glance_single_failure(self):
@@ -27,7 +28,8 @@ class TestHAService(HABaseTest):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('glance-api', [self.inputs.cfgm_ips[0]])
+        return self.ha_service_single_failure_test('glance-api', [self.inputs.cfgm_ips[0]],
+                                                   container='openstack')
 
     @preposttest_wrapper
     def test_ha_mysql_single_failure(self):
@@ -36,7 +38,8 @@ class TestHAService(HABaseTest):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('mysql', [self.inputs.cfgm_ips[0]])
+        return self.ha_service_single_failure_test('mysql', [self.inputs.cfgm_ips[0]],
+                                                   container='openstack')
 
     @preposttest_wrapper
     def test_ha_nova_api_single_failure(self):
@@ -45,7 +48,8 @@ class TestHAService(HABaseTest):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('nova-api', [self.inputs.cfgm_ips[0]])
+        return self.ha_service_single_failure_test('nova-api', [self.inputs.cfgm_ips[0]],
+                                                   container='openstack')
 
     @preposttest_wrapper
     def test_ha_nova_conductor_single_failure(self):
@@ -54,7 +58,8 @@ class TestHAService(HABaseTest):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('nova-conductor', [self.inputs.cfgm_ips[0]])
+        return self.ha_service_single_failure_test('nova-conductor', [self.inputs.cfgm_ips[0]],
+                                                   container='openstack')
 
     @preposttest_wrapper
     def test_ha_nova_scheduler_single_failure(self):
@@ -63,7 +68,8 @@ class TestHAService(HABaseTest):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('nova-scheduler', [self.inputs.cfgm_ips[0]])
+        return self.ha_service_single_failure_test('nova-scheduler', [self.inputs.cfgm_ips[0]],
+                                                   container='openstack')
 
     @test.attr(type=['ha', 'vcenter'])
     @preposttest_wrapper
@@ -74,7 +80,8 @@ class TestHAService(HABaseTest):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('contrail-api', [self.inputs.cfgm_ips[0]])
+        return self.ha_service_single_failure_test('contrail-api', [self.inputs.cfgm_ips[0]],
+                                                   container='controller')
 
     @test.attr(type=['vcenter'])
     @preposttest_wrapper
@@ -85,7 +92,8 @@ class TestHAService(HABaseTest):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('ifmap', [self.inputs.cfgm_ips[0]])
+        return self.ha_service_single_failure_test('ifmap', [self.inputs.cfgm_ips[0]],
+                                                   container='controller')
 
     @preposttest_wrapper
     def test_ha_schema_transformer_single_failure(self):
@@ -94,7 +102,8 @@ class TestHAService(HABaseTest):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        ret = self.ha_service_single_failure_test('contrail-schema', [self.inputs.cfgm_ips[0]])
+        ret = self.ha_service_single_failure_test('contrail-schema', [self.inputs.cfgm_ips[0]],
+                                                  container='controller')
         time.sleep(30)
         return ret
 
@@ -105,7 +114,8 @@ class TestHAService(HABaseTest):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('contrail-discovery', [self.inputs.cfgm_ips[0]])
+        return self.ha_service_single_failure_test('contrail-discovery', [self.inputs.cfgm_ips[0]],
+                                                   container='controller')
 
     @preposttest_wrapper
     def test_ha_svc_monitor_single_failure(self):
@@ -114,7 +124,8 @@ class TestHAService(HABaseTest):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        ret = self.ha_service_single_failure_test('contrail-svc-monitor', [self.inputs.cfgm_ips[0]])
+        ret = self.ha_service_single_failure_test('contrail-svc-monitor', [self.inputs.cfgm_ips[0]],
+                                                  container='controller')
         time.sleep(30)
         return ret
 
@@ -127,7 +138,8 @@ class TestHAService(HABaseTest):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        ret =  self.ha_service_single_failure_test('contrail-control', [self.inputs.bgp_ips[0]])
+        ret =  self.ha_service_single_failure_test('contrail-control', [self.inputs.bgp_ips[0]],
+                                                   container='controller')
         time.sleep(60)
         self.ha_service_restart('contrail-vrouter-agent', self.inputs.compute_ips)
         return ret 
@@ -139,7 +151,8 @@ class TestHAService(HABaseTest):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('contrail-dns', [self.inputs.bgp_ips[0]])
+        return self.ha_service_single_failure_test('contrail-dns', [self.inputs.bgp_ips[0]],
+                                                   container='controller')
 
     @preposttest_wrapper
     def test_ha_named_single_failure(self):
@@ -148,7 +161,8 @@ class TestHAService(HABaseTest):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('contrail-named', [self.inputs.bgp_ips[0]])
+        return self.ha_service_single_failure_test('contrail-named', [self.inputs.bgp_ips[0]],
+                                                   container='controller')
 
     @test.attr(type=['vcenter'])
     @preposttest_wrapper
@@ -159,7 +173,8 @@ class TestHAService(HABaseTest):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('rabbitmq-server', [self.inputs.cfgm_ips[0]])
+        return self.ha_service_single_failure_test('rabbitmq-server', [self.inputs.cfgm_ips[0]],
+                                                   container='controller')
 
     @preposttest_wrapper
     def test_ha_zookeeper_single_failure(self):
@@ -168,7 +183,8 @@ class TestHAService(HABaseTest):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('zookeeper', [self.inputs.cfgm_ips[0]])
+        return self.ha_service_single_failure_test('zookeeper', [self.inputs.cfgm_ips[0]],
+                                                   container='controller')
 
     @preposttest_wrapper
     def test_ha_cassandra_single_failure(self):
@@ -177,7 +193,8 @@ class TestHAService(HABaseTest):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('contrail-database', [self.inputs.ds_server_ip[0]])
+        return self.ha_service_single_failure_test('contrail-database', [self.inputs.ds_server_ip[0]],
+                                                   container='controller')
 
     @preposttest_wrapper
     def test_ha_haproxy_single_failure(self):
@@ -186,7 +203,8 @@ class TestHAService(HABaseTest):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        ret = self.ha_service_single_failure_test('haproxy', [self.inputs.cfgm_ips[0]])
+        ret = self.ha_service_single_failure_test('haproxy', [self.inputs.cfgm_ips[0]],
+                                                  container='controller')
         time.sleep(20)
         return ret
  
@@ -206,7 +224,8 @@ class TestHAService(HABaseTest):
             instance fails. System should bypass the failure.
             Pass crietria: Should be able to spawn a VM 
         '''
-        return self.ha_service_single_failure_test('neutron-server', [self.inputs.cfgm_ips[0]])
+        return self.ha_service_single_failure_test('neutron-server', [self.inputs.cfgm_ips[0]],
+                                                   container='controller')
 
 #end TestHAServiceSanity
 

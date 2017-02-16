@@ -173,17 +173,19 @@ class BaseTestLbaas(BaseNeutronTest):
         execute_cmd(session, cmd, self.logger)
         return count
 
-    def start_stop_service(self, server_ip, service, action):
+    def start_stop_service(self, server_ip, service, action, container):
         cmd =  "service %s %s" % (service, action)
         out = self.inputs.run_cmd_on_server(
                                    server_ip, cmd,
                                    self.inputs.host_data[server_ip]['username'],
-                                   self.inputs.host_data[server_ip]['password'])
+                                   self.inputs.host_data[server_ip]['password'],
+                                   container=container)
         cmd = "service %s status" % (service)
         output = self.inputs.run_cmd_on_server(
                                    server_ip, cmd,
                                    self.inputs.host_data[server_ip]['username'],
-                                   self.inputs.host_data[server_ip]['password'])
+                                   self.inputs.host_data[server_ip]['password'],
+                                   container=container)
         if action == 'stop' and 'STOPPED' in output:
                 self.logger.info("%s service stopped in server %s" % (service, server_ip))
         elif action == 'start' and 'RUNNING' in output:

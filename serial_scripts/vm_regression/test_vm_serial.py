@@ -65,9 +65,11 @@ class TestBasicVMVN0(BaseVnVmTest):
         # Stop all the control node
         for entry in controller_list:
             self.logger.info('Stoping the Control service in  %s' % (entry))
-            self.inputs.stop_service('contrail-control', [entry])
+            self.inputs.stop_service('contrail-control', [entry],
+                                     container='controller')
             self.addCleanup(self.inputs.start_service,
-                            'contrail-control', [entry])
+                            'contrail-control', [entry],
+                            container='controller')
         sleep(30)
 
         vn1_vm1_name = get_random_name('vm1')
@@ -131,7 +133,8 @@ class TestBasicVMVN0(BaseVnVmTest):
         # Start all the control node
         for entry in controller_list:
             self.logger.info('Starting the Control service in  %s' % (entry))
-            self.inputs.start_service('contrail-control', [entry])
+            self.inputs.start_service('contrail-control', [entry],
+                                      container='controller')
         sleep(10)
 
         self.logger.info('Checking the VM came up properly or not')
@@ -184,9 +187,11 @@ class TestBasicVMVN0(BaseVnVmTest):
         self.logger.info('Will restart the services now')
         for compute_ip in self.inputs.compute_ips:
             pass
-            self.inputs.restart_service('contrail-vrouter-agent',[compute_ip])
+            self.inputs.restart_service('contrail-vrouter-agent',[compute_ip],
+										container='agent')
         for bgp_ip in self.inputs.bgp_ips:
-            self.inputs.restart_service('contrail-control',[bgp_ip])
+            self.inputs.restart_service('contrail-control',[bgp_ip],
+										container='controller')
             pass
 
         cluster_status, error_nodes = ContrailStatusChecker().wait_till_contrail_cluster_stable()
@@ -229,9 +234,11 @@ class TestBasicVMVN0(BaseVnVmTest):
 
         self.logger.info('vm1 launched successfully.Stopping vrouter service')
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.stop_service('contrail-vrouter-agent', [compute_ip])
+            self.inputs.stop_service('contrail-vrouter-agent', [compute_ip],
+                                     container='agent')
             self.addCleanup(self.inputs.start_service,
-                            'contrail-vrouter-agent', [compute_ip])
+                            'contrail-vrouter-agent', [compute_ip],
+                            container='agent')
         self.logger.info('Trying to delete vm1')
         assert not vm1_fixture.cleanUp()
         self.logger.info(
@@ -244,7 +251,8 @@ class TestBasicVMVN0(BaseVnVmTest):
         self.logger.info(
             'vm2 has not booted up as expected.Starting vrouter service')
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.start_service('contrail-vrouter-agent', [compute_ip])
+            self.inputs.start_service('contrail-vrouter-agent', [compute_ip],
+                                      container='agent')
         vm2_fixture.wait_till_vm_is_up()
         self.logger.info('vm2 is up now as expected')
         assert vm2_fixture.verify_on_setup()
@@ -280,16 +288,19 @@ class TestBasicVMVN0(BaseVnVmTest):
         vm1_fixture.verify_vm_launched()
         self.logger.info('VM launched successfully.Stopping vrouter service')
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.stop_service('contrail-vrouter-agent', [compute_ip])
+            self.inputs.stop_service('contrail-vrouter-agent', [compute_ip],
+                                     container='agent')
         #    self.addCleanup( sleep(10))
             self.addCleanup(self.inputs.start_service,
-                            'contrail-vrouter-agent', [compute_ip])
+                            'contrail-vrouter-agent', [compute_ip],
+                            container='agent')
         self.logger.info('Trying to delete the VM')
         assert not vm1_fixture.cleanUp()
         self.logger.info('VM is not deleted as expected')
         for compute_ip in self.inputs.compute_ips:
             self.logger.info('Starting Vrouter Service')
-            self.inputs.start_service('contrail-vrouter-agent', [compute_ip])
+            self.inputs.start_service('contrail-vrouter-agent', [compute_ip],
+                                      container='agent')
             sleep(10)
         return True
     # end test_multistep_vm_delete_with_stop_start_service
@@ -329,8 +340,10 @@ class TestBasicVMVN0(BaseVnVmTest):
             vm_host_ip = vmobj.vm_node_ip
             if vm_host_ip not in compute_ip:
                 compute_ip.append(vm_host_ip)
-        self.inputs.restart_service('openstack-nova-compute', compute_ip)
-        self.inputs.restart_service('openstack-nova-scheduler', compute_ip)
+        self.inputs.restart_service('openstack-nova-compute', compute_ip,
+									container='openstack')
+        self.inputs.restart_service('openstack-nova-scheduler', compute_ip,
+									container='openstack')
         sleep(30)
         for vmobj in vm_fixture.vm_obj_dict.values():
             assert vmobj.verify_on_setup()
@@ -413,11 +426,14 @@ class TestBasicVMVN0(BaseVnVmTest):
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
 
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter-agent', [compute_ip])
+            self.inputs.restart_service('contrail-vrouter-agent', [compute_ip],
+										container='agent')
         for bgp_ip in self.inputs.bgp_ips:
-            self.inputs.restart_service('contrail-control', [bgp_ip])
+            self.inputs.restart_service('contrail-control', [bgp_ip],
+										container='controller')
         for cfgm_ip in self.inputs.cfgm_ips:
-            self.inputs.restart_service('contrail-api', [cfgm_ip])
+            self.inputs.restart_service('contrail-api', [cfgm_ip],
+										container='controller')
 
         # Wait for cluster to be stable
         cs_obj = ContrailStatusChecker(self.inputs)
@@ -486,7 +502,8 @@ class TestBasicVMVN0(BaseVnVmTest):
             vm_host_ip = vmobj.vm_node_ip
             if vm_host_ip not in compute_ip:
                 compute_ip.append(vm_host_ip)
-        self.inputs.restart_service('contrail-vrouter-agent', compute_ip)
+        self.inputs.restart_service('contrail-vrouter-agent', compute_ip,
+									container='agent')
         sleep(50)
         for vmobj in vm_fixture.vm_obj_dict.values():
             assert vmobj.verify_on_setup()
@@ -625,7 +642,8 @@ class TestBasicVMVN0(BaseVnVmTest):
         self.logger.info('Stoping the Control service in  %s' %
                          (active_controller_host_ip))
         self.inputs.stop_service(
-            'contrail-control', [active_controller_host_ip])
+            'contrail-control', [active_controller_host_ip],
+            container='controller')
         sleep(5)
 
         # Check the control node shifted to other control node
@@ -656,7 +674,8 @@ class TestBasicVMVN0(BaseVnVmTest):
         self.logger.info('Starting the Control service in  %s' %
                          (active_controller_host_ip))
         self.inputs.start_service(
-            'contrail-control', [active_controller_host_ip])
+            'contrail-control', [active_controller_host_ip],
+            container='controller')
 
         # Check the BGP peering status from the currently active control node
         sleep(5)
@@ -890,7 +909,8 @@ class TestBasicVMVN0(BaseVnVmTest):
         output=self.inputs.run_cmd_on_server(
                 self.inputs.compute_ips[0], cmd,
                 self.inputs.host_data[item]['username'],
-                self.inputs.host_data[item]['password'])
+                self.inputs.host_data[item]['password'],
+                container='agent')
         sleep(5)
         
         # Stop tcpdump

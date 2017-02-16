@@ -359,7 +359,7 @@ class HABaseTest(test_v1.BaseTestCase_v1):
 
         return True
 
-    def service_command(self, operation, service, node):
+    def service_command(self, operation, service, node, container=None):
         ''' Routine return True if "operation" was successful for "service"
             on the "node".
 
@@ -417,7 +417,7 @@ class HABaseTest(test_v1.BaseTestCase_v1):
 
         return True
 
-    def ha_service_restart_test(self, service, nodes):
+    def ha_service_restart_test(self, service, nodes, container=None):
         ''' Test service instance crash/restart
             Ensure that that system is operational when a signle service
             instance crashes/restarted.
@@ -427,7 +427,8 @@ class HABaseTest(test_v1.BaseTestCase_v1):
         sleep(10)
         assert self.ha_start(), "Basic HA setup failed"
         for node in nodes:
-            if not self.service_command('restart', service, node):
+            if not self.service_command('restart', service, node,
+                                        container=container):
                return False
             sleep(60);
             if not self.ha_basic_test():
@@ -441,11 +442,12 @@ class HABaseTest(test_v1.BaseTestCase_v1):
         '''
         sleep(10)
         for node in nodes:
-            if not self.service_command('restart', service, node):
+            if not self.service_command('restart', service, node,
+                                        container=container):
                return False
         return True
 
-    def ha_service_single_failure_test(self, service, nodes):
+    def ha_service_single_failure_test(self, service, nodes, container=None):
         ''' Test single service instance failure
             Ensure that that system is operational when a signle service
             instance fails. System should bypass the failure.
@@ -460,7 +462,8 @@ class HABaseTest(test_v1.BaseTestCase_v1):
         sleep(10)
         assert self.ha_start(), "Basic HA setup failed"
         for node in nodes:
-            if not self.service_command('stop', service, node):
+            if not self.service_command('stop', service, node,
+                                        container=container):
                 return False
             if service == 'haproxy':
                 self.update_handles(hosts=[node], service=service)
@@ -471,12 +474,14 @@ class HABaseTest(test_v1.BaseTestCase_v1):
                 sleep(120)
             if not self.ha_basic_test():
                 self.logger.error("Error in Launching new ha_new_vm after failure")
-                self.service_command('start', service, node)
+                self.service_command('start', service, node,
+                                     container=container)
                 if service == 'haproxy':
                     self.reset_handles([node], service=service)
                     sleep(240)
                 return False
-            if not self.service_command('start', service, node):
+            if not self.service_command('start', service, node,
+                                        container=container):
                 self.logger.error("Error in starting service ")
                 if service == 'haproxy':
                     self.reset_handles([node], service=service)
@@ -503,7 +508,8 @@ class HABaseTest(test_v1.BaseTestCase_v1):
                 if len(service_status) == 2:
                     status = service_status[1].strip()
                 if (status == "dead" or status == "failed"):
-                    if not self.service_command('start', service, node):
+                    if not self.service_command('start', service, node,
+                                                container='openstack'):
                         return False
         return True
 

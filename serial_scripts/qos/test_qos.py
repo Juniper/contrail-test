@@ -272,7 +272,8 @@ class TestQosQueueSerial(QosTestExtendedBase):
             init_pkt_count = self.get_queue_count(self.vn1_vm1_fixture.vm_node_ip,
                                               interface, queue_id = hw_queue)
             
-            self.inputs.run_cmd_on_server(self.vn1_vm1_fixture.vm_node_ip, cmd )
+            self.inputs.run_cmd_on_server(self.vn1_vm1_fixture.vm_node_ip, cmd,
+                                          container='agent')
             final_pkt_count = self.get_queue_count(
                                         self.vn1_vm1_fixture.vm_node_ip,
                                         interface, queue_id = hw_queue)

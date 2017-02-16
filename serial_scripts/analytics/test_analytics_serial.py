@@ -265,7 +265,8 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
                 "Stopping the control node in %s" %
                 (self.inputs.bgp_ips[0]))
             self.inputs.stop_service(
-                'contrail-control', [self.inputs.bgp_ips[0]])
+                'contrail-control', [self.inputs.bgp_ips[0]],
+                container='controller')
             self.logger.info(
                 "Waiting for the logs to be updated in database..")
             time.sleep(20)
@@ -356,7 +357,8 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
                 self.inputs.compute_ips[0])
             time.sleep(2)
             self.inputs.start_service(
-                'contrail-control', [self.inputs.bgp_ips[0]])
+                'contrail-control', [self.inputs.bgp_ips[0]],
+                container='controller')
             self.logger.info(
                 "Waiting for the logs to be updated in database..")
             time.sleep(30)
@@ -455,7 +457,8 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
             result = result and False
         finally:
             self.inputs.start_service(
-                'contrail-control', [self.inputs.bgp_ips[0]])
+                'contrail-control', [self.inputs.bgp_ips[0]],
+                container='controller')
             time.sleep(4)
             result = result and result1 and result2 and result3 and result4\
                 and result5 and result6 and result7 and result8
@@ -477,7 +480,8 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
                 "Stopping the xmpp node in %s" %
                 (self.inputs.compute_ips[0]))
             self.inputs.stop_service(
-                'contrail-vrouter-agent', [self.inputs.compute_ips[0]])
+                'contrail-vrouter-agent', [self.inputs.compute_ips[0]],
+                container='agent')
             self.logger.info(
                 "Waiting for the logs to be updated in database..")
             time.sleep(20)
@@ -511,7 +515,8 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
                 self.inputs.compute_ips[0])
             time.sleep(2)
             self.inputs.start_service(
-                'contrail-vrouter-agent', [self.inputs.compute_ips[0]])
+                'contrail-vrouter-agent', [self.inputs.compute_ips[0]],
+                container='agent')
             self.logger.info(
                 "Waiting for the logs to be updated in database..")
             time.sleep(30)
@@ -548,7 +553,8 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         finally:
             #            start_time=self.analytics_obj.getstarttime(self.inputs.compute_ips[0])
             self.inputs.start_service(
-                'contrail-vrouter-agent', [self.inputs.compute_ips[0]])
+                'contrail-vrouter-agent', [self.inputs.compute_ips[0]],
+                container='agent')
             time.sleep(20)
             self.logger.info(
                 "Verifying ObjectVRouter Table through opserver %s.." %
