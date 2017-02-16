@@ -123,6 +123,26 @@ class sdn_webui_config ():
                 'type': 'TOR Service Node',
                 'ip' : '70.1.0.5'}}
 
+        # Define Service Appliance Sets
+        self.svc_appl_set_list = ['svc_appl_set1']
+        self.svc_appl_set_params = {
+            'svc_appl_set1': {
+                'load_balancer': 'lbdriver1',
+                'ha_mode': 'HA',
+                'key': 'testkey',
+                'value': 'testvalue'}}
+
+        # Define Service Appliance Sets
+        self.svc_appliances_list = ['svc_appl1']
+        self.svc_appliances_params = {
+            'svc_appl1': {
+                'svc_appl_set': 'svc_appl_set1',
+                'svc_appl_ip': '60.1.1.7',
+                'user_name': 'svcappl1',
+                'password': 'svcappl1',
+                'key': 'testkey',
+                'value': 'testvalue'}}
+
         # define dns_servers #
         self.dns_server_list = ['dserver1']
         self.dns_server_params = {
