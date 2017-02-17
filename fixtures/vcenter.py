@@ -59,6 +59,11 @@ class NFSDatastore:
                 return                   #the vcenter server/reimaging the esxi hosts,we are only provisioning 
                                          #the contrail-controllers.Hence, the nfs datastore becomes 
                                          #in-accessiable.We need to create and mount the nfs datastore again. 
+            else:
+                hosts = [host for cluster in vc._dc.hostFolder.childEntity for host in cluster.host]
+                for host in hosts:
+                    self._delete_datastore(host,nas_ds)
+                
         username = inputs.host_data[self.server]['username']
         password = inputs.host_data[self.server]['password']
         with settings(host_string=username+'@'+self.server, password=password,
@@ -74,6 +79,10 @@ class NFSDatastore:
                         localPath=self.name, accessMode='readWrite')
         for host in hosts:
             host.configManager.datastoreSystem.CreateNasDatastore(spec)
+
+    def _delete_datastore(self,host,datastore):
+        host.configManager.datastoreSystem.RemoveDatastore(datastore)  
+                    
 
 class VcenterPvtVlanMgr:
 
