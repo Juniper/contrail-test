@@ -95,7 +95,7 @@ class TestvDNSBasic0(BasevDNSTest):
         vn_fixt = self.useFixture(
             VNFixture(
                 self.connections, self.inputs,
-                vn_name=vn_name, subnets=[vn1_ip], ipam_fq_name=ipam_fixt1.fq_name, option='contrail'))
+                vn_name=vn_name, subnets=[vn1_ip], ipam_fq_name=ipam_fixt1.fq_name))
         vm_fixture = {}
         # Launch  VM with VN Created above. This test verifies on launch of VM agent should updated DNS 'A' and 'PTR' records
         # The following code will verify the same. Also, we should be able ping
