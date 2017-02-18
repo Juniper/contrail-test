@@ -7,10 +7,13 @@ from tcutils.util import get_random_name, retry
 class PodFixture(fixtures.Fixture):
     '''
     '''
-    def __init__(self, connections, name=None):
+    def __init__(self, connections, name = None, namespace = 'default' , \
+                 container_list = [{'pod_name':str(get_random_name('nginx')), 'image':'nginx'}]):
         self.logger = connections.logger or contrail_logging.getLogger(__name__)
         self.name = name or get_random_name('pod')
+        self.namespace = namespace
         self.k8s_client = connections.k8s_client
+        self.container_list = container_list
 
         self.already_exists = False
 
@@ -18,18 +21,18 @@ class PodFixture(fixtures.Fixture):
         super(PodFixture, self).setUp()    
         self.create()
 
-    def verify_on_setup()
+    def verify_on_setup(self):
         if not self.verify_pod_is_running():
-            self.logger.error('POD %s verification failed', %(
-                               self.name))
+            self.logger.error('POD %s verification failed'
+                             %(self.name))
             return False
         if not self.verify_pod_in_contrail_api():
-            self.logger.error('POD %s not seen in Contrail API' %(
-                               self.name))
+            self.logger.error('POD %s not seen in Contrail API' 
+                             %(self.name))
             return False
         if not self.verify_pod_in_contrail_control():
-            self.logger.error('POD %s not seen in Contrail control' %(
-                               self.name))
+            self.logger.error('POD %s not seen in Contrail control'
+                             %(self.name))
             return False
         if not self.verify_pod_in_contrail_agent():
             self.logger.error('POD %s not seen in Contrail agent' %(
@@ -60,7 +63,7 @@ class PodFixture(fixtures.Fixture):
 
     def read(self):
         try:
-            self.obj = self.k8s_client.read_pod(self.name,self.namespace='default')
+            self.obj = self.k8s_client.read_pod(self.namespace, self.name)
             self._populate_attr()
             self.already_exists = True
         except ApiException as e:
@@ -69,17 +72,16 @@ class PodFixture(fixtures.Fixture):
     # end read
 
     def create(self):
-        #ns_exists = self.read()
-        ns_exits=False ;#  Will if necessary 
-        if ns_exists:
-            return ns_exists
-        self.obj = self.k8s_client.create_pod(self.namespace='default',self.name, self.image='nginx')
+        ns_exits = self.read() 
+        if ns_exits:
+            return ns_exits
+        self.obj = self.k8s_client.create_pod(self.namespace, self.name,  self.container_list)
         self._populate_attr() 
     # end create
 
     def delete(self):
         if not self.already_exists:
-            return self.k8s_client.delete_pod(self.namespace='default', self.name)
+            return self.k8s_client.delete_pod(self.namespace, self.name)
     # end delete
 
     @retry(delay=1, tries=10)

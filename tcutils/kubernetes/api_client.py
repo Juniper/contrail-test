@@ -29,7 +29,7 @@ class Client():
         namespace: Namespace in which POD to be created 
         name: Name of the POD
         containers_list: List of dict specify the details of container. 
-                         format [{'name':'value','image':'value'}]
+                         format [{'pod_name':'value','image':'value'}]
         return pod instance
         '''
 
@@ -37,8 +37,9 @@ class Client():
         body.metadata = client.V1ObjectMeta(name=name)
         
         container_obj_list = []
-        for container in containers_list:
-            container_obj = self.create_container(container['name'], container['image'])
+        for container  in containers_list:
+             
+            container_obj = self.create_container(container['pod_name'], container['image'])
             container_obj_list.append(container_obj)
         spec = self.create_spec(container_obj_list)
         body.spec = spec
@@ -46,7 +47,7 @@ class Client():
         return resp
     # end create_pod
 
-    def delete_pod (self, namespace, name_period_seconds=0, orphan_dependents=True):
+    def delete_pod (self, namespace, name, grace_period_seconds=0, orphan_dependents=True):
         '''
         grace_period_seconds: Type  int , The duration in seconds before the object 
                               should be deleted. Value must be non-negative integer. 
@@ -59,18 +60,19 @@ class Client():
                               If true/false, the \"orphan\" finalizer will be added 
                               to/removed from the object's finalizers list. (optional)         
         ''' 
-        return self.v1_h.delete_namespaced_pod(name, namespace, body, pretty=pretty, \
+        body = client.V1DeleteOptions()
+        return self.v1_h.delete_namespaced_pod(name, namespace, body,
                                                grace_period_seconds=grace_period_seconds,\
                                                orphan_dependents=orphan_dependents)        
 
-    def read_pod (name, namespace='default', exact=True, export=True):
+    def read_pod (self, name, namespace='default', exact=True, export=True):
         '''
         exact = Type bool | Should the export be exact.  Exact export maintains 
                             cluster-specific fields like 'Namespace' (optional)
         export = Type bool | Should this value be exported.  Export strips fields 
                             that a user can not specify. (optional)
         ''' 
-        return v1.read_namespaced_pod(name, namespace, exact=exact,\
+        return self.v1_h.read_namespaced_pod(name, namespace, exact=exact,\
                                       export=export)
 
     def create_container (self, name,  image): 
