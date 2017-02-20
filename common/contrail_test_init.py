@@ -148,8 +148,6 @@ class TestInputs(object):
                                             'Basic', 'auth_protocol', 'http')
         self.api_protocol = read_config_option(self.config,
                                           'cfgm', 'api_protocol', 'http')
-        self.api_insecure = read_config_option(self.config,
-                                          'cfgm', 'api_insecure_flag', True)
         self.ds_port = read_config_option(self.config, 'services',
                                           'discovery_port', '5998')
         self.api_server_port = read_config_option(self.config, 'services',
@@ -296,18 +294,20 @@ class TestInputs(object):
                                             'cfgm', 'api_keyfile', None)
         self.apicafile = read_config_option(self.config,
                                            'cfgm', 'api_cafile', None)
+        self.api_insecure = read_config_option(self.config,
+                                          'cfgm', 'api_insecure_flag', True)
         self.keystonecertfile = read_config_option(self.config,
                                                   'Basic', 'keystone_certfile', None)
         self.keystonekeyfile = read_config_option(self.config,
                                                  'Basic', 'keystone_keyfile', None)
         self.keystonecafile = read_config_option(self.config,
                                                 'Basic', 'keystone_cafile', None)
-        self.insecure = os.getenv('OS_INSECURE')
-        if self.insecure:
-            self.insecure = bool(self.insecure)
-        else:
-            self.insecure = read_config_option(self.config,
-                                              'Basic', 'keystone_insecure_flag', True)
+        self.insecure = read_config_option(self.config,
+                                          'Basic', 'keystone_insecure_flag', True)
+        insecure = os.getenv('OS_INSECURE')
+        if insecure:
+            self.api_insecure = self.insecure = bool(insecure)
+        self.keycertbundle = None
         if self.auth_url.startswith('https') and not self.insecure:
            self.keystone_bundle = '/tmp/' + get_random_string() + '.pem'
            if self.keystonecertfile and self.keystonekeyfile and \
@@ -316,8 +316,6 @@ class TestInputs(object):
                             self.keystonecafile]
                self.keycertbundle = utils.getCertKeyCaBundle(self.keystone_bundle,
                                         self.certs)
-        else:
-            self.keycertbundle = None
         self.prov_file = self.prov_file or self._create_prov_file()
         self.prov_data = self.read_prov_file()
         #vcenter server

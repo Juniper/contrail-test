@@ -98,9 +98,11 @@ def parse_openrc(filename):
     openrc_dict = dict()
     openrc_values = dict()
     for line in open(filename, 'r').readlines():
-        obj = re.match("export\s+(\w+)\s*=\s*'(.*)'", line)
+        obj = re.match("export\s+(\w+)\s*=\s*(.*)", line)
         if obj:
-            openrc_values.update({obj.group(1):obj.group(2)})
+            val = obj.group(2).strip("'")
+            val = val.strip('"')
+            openrc_values.update({obj.group(1):val})
 
     openrc_dict['admin_tenant'] = openrc_values.get('OS_TENANT_NAME', '')
     openrc_dict['admin_user'] = openrc_values.get('OS_USERNAME', '')
@@ -137,6 +139,7 @@ def create_testbed_file(pargs, astute_dict, openrc_dict):
     control_data = {}
     env_keystone = {}
     env_test = {}
+    env_cfgm = {}
     env_password = {}
     login_name = pargs.login_username
     is_analytics_isolated = False
@@ -177,6 +180,7 @@ def create_testbed_file(pargs, astute_dict, openrc_dict):
     env_keystone.update({'admin_password': openrc_dict['admin_password']})
     env_keystone.update({'admin_tenant': openrc_dict['admin_tenant']})
     env_keystone.update({'region_name': openrc_dict['region_name']})
+    env_keystone.update({'insecure': 'True'})
 
     env_test.update({'discovery_ip': astute_dict['contrail_vip']})
     env_test.update({'config_api_ip': astute_dict['contrail_vip']})
@@ -190,10 +194,14 @@ def create_testbed_file(pargs, astute_dict, openrc_dict):
     env_test.update({'user_isolation': False})
     env_test.update({'neutron_username': astute_dict['neutron_username']})
     env_test.update({'availability_zone': pargs.availability_zone_name})
+    if pargs.use_ssl:
+        env_cfgm.update({'auth_protocol': 'https'})
+        env_cfgm.update({'insecure': 'True'})
 
     tb_list = list()
     tb_list.append("env.test = %s"%json.dumps(env_test, sort_keys=True, indent=4))
     tb_list.append("env.keystone = %s"%json.dumps(env_keystone, sort_keys=True, indent=4))
+    tb_list.append("env.cfgm = %s"%json.dumps(env_cfgm, sort_keys=True, indent=4))
     tb_list.append("control_data = %s"%json.dumps(control_data, sort_keys=True, indent=4))
     tb_list.append("env.roledefs = %s"%json.dumps(env_roledefs, sort_keys=True, indent=4))
     tb_list.append("env.openstack_admin_password = '%s'"%
@@ -214,8 +222,8 @@ def parse_cli(args):
     parser.add_argument('--mos_version', help='mos version in use, optional')
     parser.add_argument('--availability_zone_name', help='Name of the nova availability zone to use for test', default='nova')
     parser.add_argument('--login_username', help='Username to use to login to the hosts (default: root)', default='root')
-    parser.add_argument('--tb_filename', default='testbed.py',
-                        help='Testbed output file name')
+    parser.add_argument('--tb_filename', default='testbed.py', help='Testbed output file name')
+    parser.add_argument('--use_ssl', action='store_true', help='Use https communication with contrail-api service')
     return parser.parse_args(args)
 
 def main(args):

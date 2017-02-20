@@ -9,11 +9,10 @@ from fabric.api import env, run, local, lcd
 from fabric.context_managers import settings, hide
 sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir))
 from common import log_orig as contrail_logging
-from fabric.operations import get
+from fabric.contrib.files import exists
 
 def detect_ostype():
     return platform.dist()[0].lower()
-
 
 def get_address_family():
     address_family = os.getenv('AF', 'dual')
@@ -21,7 +20,6 @@ def get_address_family():
     if os.getenv('GUESTVM_IMAGE', None):
         address_family = 'v4'
     return address_family
-
 
 def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contrail-test'):
     """
@@ -44,7 +42,19 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     from fabfile.utils.multitenancy import get_mt_enable
     from fabfile.utils.interface import get_data_ip
     from fabfile.tasks.install import update_config_option, update_js_config
+    from fabfile.utils.fabos import get_as_sudo
     logger = contrail_logging.getLogger(__name__)
+
+    def validate_and_copy_file(filename, source_host):
+        with settings(host_string='%s' %(source_host),
+                      warn_only=True, abort_on_prompts=False):
+            if exists(filename):
+                filedir = os.path.dirname(filename)
+                if not os.path.exists(filedir):
+                    os.makedirs(filedir)
+                get_as_sudo(filename, filename)
+                return filename
+            return ""
 
     cfgm_host = env.roledefs['cfgm'][0]
 
@@ -57,9 +67,9 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     api_auth_protocol = get_apiserver_protocol()
 
     if api_auth_protocol == 'https':
-        api_certfile = get_apiserver_certfile()
-        api_keyfile = get_apiserver_keyfile()
-        api_cafile = get_apiserver_cafile()
+        api_certfile = validate_and_copy_file(get_apiserver_certfile(), cfgm_host)
+        api_keyfile = validate_and_copy_file(get_apiserver_keyfile(), cfgm_host)
+        api_cafile = validate_and_copy_file(get_apiserver_cafile(), cfgm_host)
         api_insecure_flag = get_apiserver_insecure_flag()
     else:
        api_certfile = ""
@@ -67,13 +77,12 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
        api_cafile = ""
        api_insecure_flag = True
 
-    api_ssl_cert_files_list = [api_certfile, api_cafile, api_keyfile]
-
+    cert_dir = os.path.dirname(api_certfile)
     if auth_protocol == 'https':
-        keystone_certfile = os.path.dirname(api_certfile) + '/' + os.path.basename(
-                            get_keystone_certfile())
-        keystone_cafile = os.path.dirname(api_cafile) + '/' + os.path.basename(
-                          get_keystone_cafile())
+        keystone_cafile = validate_and_copy_file(cert_dir + '/' +\
+                          os.path.basename(get_keystone_cafile()), cfgm_host)
+        keystone_certfile = validate_and_copy_file(cert_dir + '/' +\
+                          os.path.basename(get_keystone_certfile()), cfgm_host)
         keystone_keyfile = keystone_certfile
         keystone_insecure_flag = get_keystone_insecure_flag()
     else:
@@ -558,7 +567,6 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         config.set('global','cafile', api_cafile)
         config.set('global','keyfile', api_keyfile)
         config.set('global','insecure',api_insecure_flag)
-        copy_cert_ca_key_file(api_ssl_cert_files_list, cfgm_host)
 
     if auth_protocol == 'https':
         if 'auth' not in config.sections():
@@ -567,9 +575,6 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         config.set('auth','cafile', keystone_cafile)
         config.set('auth','keyfile', keystone_keyfile)
         config.set('auth','insecure', keystone_insecure_flag)
-        keystone_ssl_cert_files_list = [keystone_certfile, keystone_cafile,
-                                        keystone_keyfile]
-        copy_cert_ca_key_file(keystone_ssl_cert_files_list, cfgm_host)
 
     with open(vnc_api_ini,'w') as f:
         config.write(f)
@@ -590,15 +595,6 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
                              '86400','keystone')
         update_js_config('openstack', '/etc/contrail/config.global.js',
                          'contrail-webui')
-
-def copy_cert_ca_key_file(ssl_cert_files_list, source_host):
-    for cert_file in ssl_cert_files_list:
-        cert_file_dir = os.path.dirname(cert_file)
-        if not os.path.exists(cert_file_dir):
-            os.makedirs(cert_file_dir)
-        with settings(host_string='%s' %(source_host),
-                  warn_only=True, abort_on_prompts=False):
-            get(cert_file, cert_file)
 
 def main(argv=sys.argv):
     ap = argparse.ArgumentParser(
