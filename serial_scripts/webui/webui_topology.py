@@ -242,6 +242,11 @@ class sdn_webui_config ():
                 'exp_mapping': {'be1 (001)': '3'},
                 'dot1p_mapping': {'ef1 (011)': '4'}}}
         
+        #Define parameters for attaching Qos config to VN
+        self.vn_qos_list = ['qos1']
+        self.vn_qos_params = {
+            'vnet1': 'qos1' }
+        
         #Define Physical Router parameters
         self.pr_list = ['phy_rtr1']
         self.pr_params = {

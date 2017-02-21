@@ -166,7 +166,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_create_bgp_aas
 
     @preposttest_wrapper
-    def test2_9_create_qos_config(self):
+    def test2_1_4_create_qos_config(self):
         '''
         Description: Test to create QoS config on UI
         Steps:
@@ -221,6 +221,22 @@ class WebuiTestSanity(base.WebuiBaseTest):
         assert self.res.setup_obj.create_forwarding_class(), 'Forwarding class creation failed'
         return True
     # end test_create_forwarding_classes
+    
+    @preposttest_wrapper
+    def test2_1_5_attach_qos_config_to_vn(self):
+        '''
+        Description: Test to attach a created QoS config to VN on UI
+        Steps:
+            1. On the Contrail UI, go to Config -> Networking -> Networks
+            2. Click on edit on one of the VNs
+            3. Click on 'Advanced Options', attach Qos config
+            4. Click on 'Save'
+        Pass criteria:
+            1. Steps 3 and 4 above should pass
+        '''
+        assert self.res.setup_obj.attach_qos_config_to_vn(), 'Creation of QoS failed'
+        return True
+    # end test_attach_qos_config_to_vn
 
     # UI verification tests
 
