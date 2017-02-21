@@ -76,7 +76,8 @@ class TestBasicRTFilterRestart(BaseRtFilterTest):
         self.logger.info(
             'Will restart contrail-vrouter service and check if the RT entries persist')
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter', [compute_ip])
+            self.inputs.restart_service('contrail-vrouter', [compute_ip],
+										container='agent')
         self.logger.info('Sleeping for 30 seconds')
         sleep(30)
         self.logger.info(
@@ -89,7 +90,8 @@ class TestBasicRTFilterRestart(BaseRtFilterTest):
         self.logger.info(
             'Will restart contrail-control service and check if the RT entries persist')
         for bgp_ip in self.inputs.bgp_ips:
-            self.inputs.restart_service('contrail-control', [bgp_ip])
+            self.inputs.restart_service('contrail-control', [bgp_ip],
+										container='controller')
         self.logger.info('Sleeping for 30 seconds')
         sleep(30)
         self.logger.info(

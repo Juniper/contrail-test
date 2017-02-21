@@ -1184,9 +1184,12 @@ class AnalyticsTestSanityWithResource(
         analytics = self.res.inputs.collector_ips[0]
         cfgm = self.res.inputs.cfgm_ips[0]
 
-        self.inputs.restart_service('contrail-topology', [analytics])
-        self.inputs.restart_service('contrail-snmp-collector', [analytics])
-        self.inputs.restart_service('contrail-device-manager', [cfgm])
+        self.inputs.restart_service('contrail-topology', [analytics],
+                                    container='analytics')
+        self.inputs.restart_service('contrail-snmp-collector', [analytics],
+                                    container='analytics')
+        self.inputs.restart_service('contrail-device-manager', [cfgm],
+                                    container='controller')
 
         cmd_args_list = []
         for arg_type in module:
@@ -1212,7 +1215,8 @@ class AnalyticsTestSanityWithResource(
         object_type = list(set(object_type) - set(object_type_))
 
         control = self.inputs.bgp_control_ips[0]
-        self.inputs.restart_service('contrail-dns', [control])
+        self.inputs.restart_service('contrail-dns', [control],
+                                    container='controller')
 
         failed_cmds = []
         passed_cmds = []

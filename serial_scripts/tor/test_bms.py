@@ -905,7 +905,8 @@ class TestExtendedBMSInterVN(TwoToROneRouterBase):
             # Assuming tor-agent node is same as TSN node
             tor_agent_node = self.get_mgmt_ip_of_node(
                 tor_agent_dict['tor_tsn_ip'])
-            self.inputs.restart_service(tor_agent_service, [tor_agent_node])
+            self.inputs.restart_service(tor_agent_service, [tor_agent_node],
+										container='agent')
             self.do_reachability_checks()
     # end test_routing_with_tor_agent_restarts
             
@@ -929,9 +930,10 @@ class TestExtendedBMSInterVN(TwoToROneRouterBase):
         '''
         tsn_ip1 = self.tor1_fixture.get_active_tor_agent_ip('host_control_ip')
         tsn_ip2 = self.tor1_fixture.get_backup_tor_agent_ip('host_control_ip')
-        self.inputs.stop_service('supervisor-vrouter', [tsn_ip1]) 
+        self.inputs.stop_service('supervisor-vrouter', [tsn_ip1],
+                                 container='agent')
         self.addCleanup(self.inputs.start_service, 'supervisor-vrouter',
-            [tsn_ip1])
+            [tsn_ip1], container='agent')
         time.sleep(5)
         new_tor1_tsn = self.tor1_fixture.get_remote_flood_vtep(
             self.vn1_fixture.uuid) 

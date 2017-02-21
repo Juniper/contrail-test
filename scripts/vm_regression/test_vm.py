@@ -2407,9 +2407,10 @@ class TestBasicVMVN6(BaseVnVmTest):
         # Stop all the control node
         for entry in controller_list:
             self.logger.info('Stoping the Control service in  %s' % (entry))
-            self.inputs.stop_service('contrail-control', [entry])
+            self.inputs.stop_service('contrail-control', [entry],
+                                     container='controller')
             self.addCleanup(self.inputs.start_service,
-                            'contrail-control', [entry])
+                            'contrail-control', [entry], container='controller')
             sleep(5)
 
         # Wait for cleanup to begin
@@ -2431,7 +2432,8 @@ class TestBasicVMVN6(BaseVnVmTest):
         # Start all the control node
         for entry in controller_list:
             self.logger.info('Starting the Control service in  %s' % (entry))
-            self.inputs.start_service('contrail-control', [entry])
+            self.inputs.start_service('contrail-control', [entry],
+                                      container='controller')
             sleep(30)
         # Check everything came up fine
         vm_id_list = inspect_h.get_vna_vm_list()

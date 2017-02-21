@@ -45,7 +45,8 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
         for elem in svc_lst:
             ip = elem[0]
             self.logger.info("Stopping service %s.." % (elem,))
-            self.inputs.stop_service('contrail-control', [ip])
+            self.inputs.stop_service('contrail-control', [ip],
+                                     container='controller')
         
         for elem in svc_lst:
             ip = elem[0]
@@ -59,7 +60,8 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
         for elem in svc_lst:
             ip = elem[0]
             self.logger.info("Starting service %s.." % (elem,))
-            self.inputs.start_service('contrail-control', [ip])
+            self.inputs.start_service('contrail-control', [ip],
+                                      container='controller')
         for elem in svc_lst:
             ip = elem[0]
             svc_status = self.ds_obj.get_service_status(self.inputs.cfgm_ip, elem, 'up', 6)
@@ -90,17 +92,21 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 3000\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
-                    ip, cmd, username='root', password='c0ntrail123')
+                    ip, cmd, username='root', password='c0ntrail123',
+                    container='controller')
             cmd = 'cd /etc/contrail;sed -i \'/ttl_short/c\\ttl_short = 2\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
-                    ip, cmd, username='root', password='c0ntrail123')
+                    ip, cmd, username='root', password='c0ntrail123',
+                    container='controller')
             cmd = 'cd /etc/contrail;cat contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 out_put = self.inputs.run_cmd_on_server(
-                    ip, cmd, username='root', password='c0ntrail123')
+                    ip, cmd, username='root', password='c0ntrail123',
+                    container='controller')
                 self.logger.info("%s" % (out_put))
-                self.inputs.restart_service('contrail-discovery', [ip])
+                self.inputs.restart_service('contrail-discovery', [ip],
+											container='controller')
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             time.sleep(10)  
@@ -177,17 +183,21 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 3\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
-                    ip, cmd, username='root', password='c0ntrail123')
+                    ip, cmd, username='root', password='c0ntrail123',
+                    container='controller')
             cmd = 'cd /etc/contrail;sed -i \'/ttl_short/c\\ttl_short = 1\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
-                    ip, cmd, username='root', password='c0ntrail123')
+                    ip, cmd, username='root', password='c0ntrail123',
+                    container='controller')
             cmd = 'cd /etc/contrail;cat contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 out_put = self.inputs.run_cmd_on_server(
-                    ip, cmd, username='root', password='c0ntrail123')
+                    ip, cmd, username='root', password='c0ntrail123',
+                    container='controller')
                 self.logger.info("%s" % (out_put))
-                self.inputs.restart_service('contrail-discovery', [ip])
+                self.inputs.restart_service('contrail-discovery', [ip],
+											container='controller')
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             time.sleep(10)  
@@ -303,17 +313,21 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 3000\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
-                    ip, cmd, username='root', password='c0ntrail123')
+                    ip, cmd, username='root', password='c0ntrail123',
+                    container='controller')
             cmd = 'cd /etc/contrail;sed -i \'/ttl_short/c\\ttl_short = 2\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
-                    ip, cmd, username='root', password='c0ntrail123')
+                    ip, cmd, username='root', password='c0ntrail123',
+                    container='controller')
             cmd = 'cd /etc/contrail;cat contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 out_put = self.inputs.run_cmd_on_server(
-                    ip, cmd, username='root', password='c0ntrail123')
+                    ip, cmd, username='root', password='c0ntrail123',
+                    container='controller')
                 self.logger.info("%s" % (out_put))
-                self.inputs.restart_service('contrail-discovery', [ip])
+                self.inputs.restart_service('contrail-discovery', [ip],
+											container='controller')
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             time.sleep(10)  
@@ -399,17 +413,21 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss/c\hc_max_miss = 3\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
-                    ip, cmd, username='root', password='c0ntrail123')
+                    ip, cmd, username='root', password='c0ntrail123',
+                    container='controller')
             cmd = 'cd /etc/contrail;sed -i \'/ttl_short/c\\ttl_short = 1\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
-                    ip, cmd, username='root', password='c0ntrail123')
+                    ip, cmd, username='root', password='c0ntrail123',
+                    container='controller')
             cmd = 'cd /etc/contrail;cat contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 out_put = self.inputs.run_cmd_on_server(
-                    ip, cmd, username='root', password='c0ntrail123')
+                    ip, cmd, username='root', password='c0ntrail123',
+                    container='controller')
                 self.logger.info("%s" % (out_put))
-                self.inputs.restart_service('contrail-discovery', [ip])
+                self.inputs.restart_service('contrail-discovery', [ip],
+											container='controller')
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             time.sleep(40)
@@ -434,8 +452,10 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss.*=.*/c\hc_max_miss = 10\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
-                    ip, cmd, username='root', password='c0ntrail123')
-                self.inputs.restart_service('contrail-discovery', [ip])
+                    ip, cmd, username='root', password='c0ntrail123',
+                    container='controller')
+                self.inputs.restart_service('contrail-discovery', [ip],
+											container='controller')
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             result = True
@@ -453,7 +473,8 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             for elem in svc_lst:
                 ip = elem[0]
                 self.logger.info("Stopping service %s.." % (elem,))
-                self.inputs.stop_service('contrail-control', [ip])
+                self.inputs.stop_service('contrail-control', [ip],
+                                         container='controller')
             first_cfgm = True
             for elem in svc_lst:
                 ip = elem[0]
@@ -481,7 +502,8 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             for elem in svc_lst:
                 ip = elem[0]
                 self.logger.info("Starting service %s.." % (elem,))
-                self.inputs.start_service('contrail-control', [ip])
+                self.inputs.start_service('contrail-control', [ip],
+                                          container='controller')
             time.sleep(6)
         except Exception as e:
             print e
@@ -490,8 +512,10 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             cmd = 'cd /etc/contrail;sed -i \'/hc_max_miss.*=.*/c\hc_max_miss = 7\' contrail-discovery.conf'
             for ip in self.inputs.cfgm_ips:
                 self.inputs.run_cmd_on_server(
-                    ip, cmd, username='root', password='c0ntrail123')
-                self.inputs.restart_service('contrail-discovery', [ip])
+                    ip, cmd, username='root', password='c0ntrail123',
+                    container='controller')
+                self.inputs.restart_service('contrail-discovery', [ip],
+											container='controller')
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             time.sleep(10)
@@ -501,27 +525,30 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             self.logger.info("Changing the discovery policy to round-robin")
             cmd = 'cd /etc/contrail;echo \'policy = round-robin \'>> contrail-discovery.conf'
             self.inputs.run_cmd_on_server(
-                self.inputs.cfgm_ip, cmd, username='root', password='c0ntrail123')
+                self.inputs.cfgm_ip, cmd, username='root', password='c0ntrail123',
+                container='controller')
             self.inputs.restart_service(
-                'contrail-discovery', [self.inputs.cfgm_ip])
+                'contrail-discovery', [self.inputs.cfgm_ip], container='controller')
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             assert self.ds_obj.verify_bgp_connection()
             self.logger.info("Changing the discovery policy to fixed")
             cmd = 'cd /etc/contrail;sed -i \'/policy = round-robin/c\policy = fixed\' contrail-discovery.conf'
             self.inputs.run_cmd_on_server(
-                self.inputs.cfgm_ip, cmd, username='root', password='c0ntrail123')
+                self.inputs.cfgm_ip, cmd, username='root', password='c0ntrail123',
+                container='controller')
             self.inputs.restart_service(
-                'contrail-discovery', [self.inputs.cfgm_ip])
+                'contrail-discovery', [self.inputs.cfgm_ip], container='controller')
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             assert self.ds_obj.verify_bgp_connection()
             self.logger.info("Reverting back policy to default")
             cmd = 'cd /etc/contrail;sed -i \'/policy = fixed/c\ \' contrail-discovery.conf'
             self.inputs.run_cmd_on_server(
-                self.inputs.cfgm_ip, cmd, username='root', password='c0ntrail123')
+                self.inputs.cfgm_ip, cmd, username='root', password='c0ntrail123',
+                container='controller')
             self.inputs.restart_service(
-                'contrail-discovery', [self.inputs.cfgm_ip])
+                'contrail-discovery', [self.inputs.cfgm_ip], container='controller')
             assert self.analytics_obj.verify_cfgm_uve_module_state(
                 self.inputs.collector_ips[0], self.inputs.cfgm_names[0], 'contrail-discovery')
             assert self.ds_obj.verify_bgp_connection()
@@ -1498,16 +1525,19 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                     result = False
             self.logger.debug("#### Stopping the discovery server process on all nodes ###")
             for ip in self.inputs.cfgm_ips:
-                self.inputs.stop_service('contrail-discovery', [ip])
+                self.inputs.stop_service('contrail-discovery', [ip],
+                                         container='controller')
             self.logger.debug("\n #### Waiting for 60 seconds so that all clients\n \
             again try to resubscribe when discovery server is down ###")
             sleep(60)
             self.logger.debug("#### Starting the discovery server process on all nodes ###")
             for ip in self.inputs.cfgm_ips:
-                self.inputs.start_service('contrail-discovery', [ip])
+                self.inputs.start_service('contrail-discovery', [ip],
+                                          container='controller')
             for ip in self.inputs.cfgm_ips:
                 client_status = self.inputs.confirm_service_active(\
-                                                'contrail-discovery',ip)
+                                                'contrail-discovery',ip,
+                                                container='controller')
                 if client_status == False:
                     self.logger.error("Some issue happened after restart of discovery process")
                     result = False
@@ -1610,27 +1640,30 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                     result = False
             self.logger.info("#### Restarting the xmpp, dns and Collector server process on all nodes ###")
             for ip in self.inputs.collector_ips:
-                self.inputs.restart_service('contrail-collector', [ip])
+                self.inputs.restart_service('contrail-collector', [ip], container='analytics')
             for ip in self.inputs.bgp_ips:
-                self.inputs.restart_service('contrail-control', [ip])
-                self.inputs.restart_service('contrail-dns', [ip])
+                self.inputs.restart_service('contrail-control', [ip], container='controller')
+                self.inputs.restart_service('contrail-dns', [ip], container='controller')
             for ip in self.inputs.collector_ips:
                 client_status = self.inputs.confirm_service_active(\
-                                                'contrail-collector', ip)
+                                                'contrail-collector', ip,
+                                                container='analytics')
                 if client_status == False:
                     self.logger.error("Some issue happened after restart of server process")
                     result = False
                     assert result
             for ip in self.inputs.bgp_ips:
                 client_status = self.inputs.confirm_service_active(\
-                                                'contrail-control', ip)
+                                                'contrail-control', ip,
+                                                container='controller')
                 if client_status == False:
                     self.logger.error("Some issue happened after restart of server process")
                     result = False
                     assert result
             for ip in self.inputs.bgp_ips:
                 client_status = self.inputs.confirm_service_active(\
-                                                    'contrail-dns', ip)
+                                                'contrail-dns', ip,
+                                                container='controller')
                 if client_status == False:
                     self.logger.error("Some issue happened after restart of server process")
                     result = False
@@ -1715,7 +1748,8 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             self.logger.debug("# Verifying that discovery server auto load balance for 'IfmapServer' #")
             self.logger.info("# Stopping the IfmapServer on one of the config node until it looses all subscribers #")
             self.inputs.stop_service('supervisor-config',\
-                                     host_ips=[self.inputs.cfgm_ips[0]])
+                                     host_ips=[self.inputs.cfgm_ips[0]],
+                                     container='controller')
             self.logger.debug("# Waiting for 45 seconds to wait for server to lose all subscriptions #")
             sleep(45)
             count=self.ds_obj.get_service_in_use(ds_ip,(self.inputs.cfgm_control_ips[0],\
@@ -1726,9 +1760,11 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                 self.logger.error("\n # Even if Server is not running, it still\n \
                  has %d *in use* subscription. Something is wrong #" % count)
                 self.inputs.start_service('supervisor-config',\
-                                      host_ips=[self.inputs.cfgm_ips[0]])
-                self.inputs.confirm_service_active(\
-                                    'supervisor-config',self.inputs.cfgm_ips[0])
+                                      host_ips=[self.inputs.cfgm_ips[0]],
+                                      container='controller')
+                self.inputs.confirm_service_active(
+                                    'supervisor-config',self.inputs.cfgm_ips[0],
+                                    container='controller')
                 self.ds_obj.modify_discovery_conf_file_params( 'set_policy',\
                     publisher_type="IFMAPSERVER",policy='load-balance')
                 result = False
@@ -1736,9 +1772,11 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             self.logger.info("\n # Starting the IfmapServer on one of the config node\n \
             expecting that subscriptions will happen again #")
             self.inputs.start_service('supervisor-config',\
-                                      host_ips=[self.inputs.cfgm_ips[0]])
+                                      host_ips=[self.inputs.cfgm_ips[0]],
+                                      container='controller')
             client_status = self.inputs.confirm_service_active(\
-                                    'supervisor-config',self.inputs.cfgm_ips[0])
+                                    'supervisor-config',self.inputs.cfgm_ips[0],
+                                    container='controller')
             if client_status == False:
                 self.logger.error("# Some issue happened after restart of config server #")
                 self.ds_obj.modify_discovery_conf_file_params( 'set_policy',\
@@ -1763,7 +1801,8 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             self.logger.info("\n # Stopping the IfmapServer on one of the config\n \
             node until it looses all subscribers #")
             self.inputs.stop_service('supervisor-config',\
-                                     host_ips=[self.inputs.cfgm_ips[0]])
+                                     host_ips=[self.inputs.cfgm_ips[0]],
+                                     container='controller')
             self.logger.debug("# Waiting for 45 seconds to wait for server to lose all subscriptions #")
             sleep(45)
             count=self.ds_obj.get_service_in_use(ds_ip,(self.inputs.cfgm_control_ips[0],\
@@ -1775,16 +1814,20 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                 *in use* subscription. Something is wrong #" % count)
                 result = False
                 self.inputs.start_service('supervisor-config',\
-                                      host_ips=[self.inputs.cfgm_ips[0]])
+                                      host_ips=[self.inputs.cfgm_ips[0]],
+                                      container='controller')
                 self.inputs.confirm_service_active(\
-                                    'supervisor-config',self.inputs.cfgm_ips[0])
+                                    'supervisor-config',self.inputs.cfgm_ips[0],
+                                    container='controller')
                 assert result
             self.logger.info("\n # Starting the IfmapServer on one of the config node\n \
             expecting that re-subscription will not happen again as auto load balance is off #")
             self.inputs.start_service('supervisor-config',\
-                                      host_ips=[self.inputs.cfgm_ips[0]])
+                                      host_ips=[self.inputs.cfgm_ips[0]],
+                                      container='controller')
             client_status = self.inputs.confirm_service_active(\
-                                    'supervisor-config',self.inputs.cfgm_ips[0])
+                                    'supervisor-config',self.inputs.cfgm_ips[0],
+                                    container='controller')
             if client_status == False:
                 self.logger.error("# Some issue happened after restart of config server #")
                 result = False
@@ -1835,7 +1878,8 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             self.logger.debug("# Verifying that discovery server auto load balance for 'XmppServer' #")
             self.logger.info("# Stopping the XmppServer on one of the control node until it looses all subscribers #")
             self.inputs.stop_service('contrail-control',\
-                                    host_ips=[self.inputs.bgp_ips[0]])
+                                    host_ips=[self.inputs.bgp_ips[0]],
+                                    container='controller')
             self.logger.debug("# Waiting for 20 seconds to wait for server to lose all subscriptions #")
             sleep(20)
             count=self.ds_obj.get_service_in_use(ds_ip,(self.inputs.bgp_control_ips[0],\
@@ -1848,18 +1892,22 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                  *in use* subscription. Something is wrong #" % count)
                 result = False
                 self.inputs.start_service('contrail-control',\
-                                      host_ips=[self.inputs.bgp_ips[0]])
+                                      host_ips=[self.inputs.bgp_ips[0]],
+                                      container='controller')
                 self.inputs.confirm_service_active(\
-                                        'contrail-control',self.inputs.bgp_ips[0])
+                                        'contrail-control',self.inputs.bgp_ips[0],
+                                        container='controller')
                 self.ds_obj.modify_discovery_conf_file_params( 'set_policy',\
                     publisher_type="XMPP-SERVER",policy='load-balance')
                 assert result
             self.logger.info("\n# Starting the XmppServer on one of the control node\n \
              expecting that subscriptions will happen again #")
             self.inputs.start_service('contrail-control',\
-                                      host_ips=[self.inputs.bgp_ips[0]])
+                                      host_ips=[self.inputs.bgp_ips[0]],
+                                      container='controller')
             client_status = self.inputs.confirm_service_active(\
-                                        'contrail-control',self.inputs.bgp_ips[0])
+                                        'contrail-control',self.inputs.bgp_ips[0],
+                                        container='controller')
             if client_status == False:
                 self.logger.error("# Some issue happened after restart of control server #")
                 self.ds_obj.modify_discovery_conf_file_params( 'set_policy',\
@@ -1884,7 +1932,8 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             self.logger.info("\n# Stopping the XmppServer on one of the control \n \
             node until it looses all subscribers #")
             self.inputs.stop_service('contrail-control',\
-                                     host_ips=[self.inputs.bgp_ips[0]])
+                                     host_ips=[self.inputs.bgp_ips[0]],
+                                     container='controller')
             self.logger.debug("# Waiting for 20 seconds to wait for server to lose all subscriptions #")
             sleep(20)
             count=self.ds_obj.get_service_in_use(ds_ip,(self.inputs.bgp_control_ips[0],\
@@ -1896,17 +1945,21 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                 self.logger.error("\n# Even if Server is not running, it still has %d\n\
                  *in use* subscription. Something is wrong #" % count)
                 self.inputs.start_service('contrail-control',\
-                                      host_ips=[self.inputs.bgp_ips[0]])
+                                      host_ips=[self.inputs.bgp_ips[0]],
+                                      container='controller')
                 self.inputs.confirm_service_active(\
-                                        'contrail-control',self.inputs.bgp_ips[0])
+                                        'contrail-control',self.inputs.bgp_ips[0],
+                                        container='controller')
                 result = False
                 assert result
             self.logger.info("\n# Starting the XmppServer on one of the control node\n \
              expecting that re-subscription will not happen again as auto load balance is off #")
             self.inputs.start_service('contrail-control',\
-                                      host_ips=[self.inputs.bgp_ips[0]])
+                                      host_ips=[self.inputs.bgp_ips[0]],
+                                      container='controller')
             client_status = self.inputs.confirm_service_active(\
-                                        'contrail-control',self.inputs.bgp_ips[0])
+                                        'contrail-control',self.inputs.bgp_ips[0],
+                                        container='controller')
             if client_status == False:
                 self.logger.error("# Some issue happened after restart of control server #")
                 result = False
@@ -1951,18 +2004,25 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
         self.addCleanup(self.ds_obj.modify_discovery_conf_file_params,"change_min_max_ttl")
         self.logger.info("#### Restarting the required subscriber services so that TTL takes effect immediately ###")
         for ip in self.inputs.collector_ips:
-            self.inputs.restart_service('supervisor-analytics', [ip])
+            self.inputs.restart_service('supervisor-analytics', [ip],
+										container='analytics')
         for ip in self.inputs.compute_ips:
-            self.inputs.restart_service('supervisor-vrouter', [ip])
+            self.inputs.restart_service('supervisor-vrouter', [ip],
+										container='agent')
         for ip in self.inputs.bgp_ips:
-            self.inputs.restart_service('supervisor-control', [ip])
+            self.inputs.restart_service('supervisor-control', [ip],
+										container='controller')
         for ip in self.inputs.cfgm_ips:
-            self.inputs.restart_service('supervisor-config', [ip])
+            self.inputs.restart_service('supervisor-config', [ip],
+										container='controller')
         for ip in self.inputs.webui_ips:
-            self.inputs.restart_service('supervisor-webui', [ip])
+            self.inputs.restart_service('supervisor-webui', [ip],
+										container='controller')
         for ip in self.inputs.database_ips:
-            self.inputs.restart_service('contrail-database', [ip])
-            self.inputs.restart_service('contrail-database-nodemgr', [ip])
+            self.inputs.restart_service('contrail-database', [ip],
+										container='controller')
+            self.inputs.restart_service('contrail-database-nodemgr', [ip],
+										container='controller')
         client_status = ContrailStatusChecker()
         client_status.wait_till_contrail_cluster_stable(self.inputs.host_ips)      
         self.logger.info("# Setting auto load balance to true in contrail-discovery.conf file #")  
@@ -1972,7 +2032,8 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             self.logger.debug("# Verifying that discovery server auto load balance for 'Collector'#")
             self.logger.info("# Stopping the Collector on one of the Analytic node until it looses all subscribers #")
             self.inputs.stop_service('contrail-collector',\
-                                     host_ips=[self.inputs.collector_ips[0]])
+                                     host_ips=[self.inputs.collector_ips[0]],
+                                     container='analytics')
             self.logger.debug("# Waiting for 45 seconds to wait for server to lose all subscriptions #")
             sleep(45)
             count=self.ds_obj.get_service_in_use(ds_ip,\
@@ -1984,18 +2045,22 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                 it still has %d *in use* subscription. Something is wrong #" % count)
                 result = False
                 self.inputs.start_service('contrail-collector',\
-                                      host_ips=[self.inputs.collector_ips[0]])
+                                      host_ips=[self.inputs.collector_ips[0]],
+                                      container='analytics')
                 self.inputs.confirm_service_active(\
-                            'contrail-collector',self.inputs.collector_ips[0])
+                            'contrail-collector',self.inputs.collector_ips[0],
+                            container='analytics')
                 self.ds_obj.modify_discovery_conf_file_params( 'set_policy',\
                     publisher_type="COLLECTOR",policy='load-balance')
                 assert result
             self.logger.info("\n # Starting the Collector on one of the Analytic node\n \
              expecting that subscriptions will happen again #")
             self.inputs.start_service('contrail-collector',\
-                                      host_ips=[self.inputs.collector_ips[0]])
+                                      host_ips=[self.inputs.collector_ips[0]],
+                                      container='analytics')
             client_status = self.inputs.confirm_service_active(\
-                            'contrail-collector',self.inputs.collector_ips[0])
+                            'contrail-collector',self.inputs.collector_ips[0],
+                            container='analytics')
             if client_status == False:
                 self.logger.error("# Some issue happened after restart of Collector#")
                 self.ds_obj.modify_discovery_conf_file_params( 'set_policy',\
@@ -2020,7 +2085,8 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             self.logger.info("\n # Stopping the Collector on one of the Analytic node\n \
              until it looses all subscribers #")
             self.inputs.stop_service('contrail-collector',\
-                                     host_ips=[self.inputs.collector_ips[0]])
+                                     host_ips=[self.inputs.collector_ips[0]],
+                                     container='analytics')
             self.logger.debug("# Waiting for 45 seconds to wait for server to lose all subscriptions #")
             sleep(45)
             count=self.ds_obj.get_service_in_use(ds_ip,\
@@ -2031,17 +2097,21 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                 self.logger.error("\n # Even if Server is not running, it still has %d\n \
                  *in use* subscription. Something is wrong #" % count)
                 self.inputs.start_service('contrail-collector',\
-                                      host_ips=[self.inputs.collector_ips[0]])
+                                      host_ips=[self.inputs.collector_ips[0]],
+                                      container='analytics')
                 self.inputs.confirm_service_active(\
-                            'contrail-collector',self.inputs.collector_ips[0])
+                            'contrail-collector',self.inputs.collector_ips[0],
+                            container='analytics')
                 result = False
                 assert result
             self.logger.info("\n # Starting the Collector on one of the Analytic node\n \
              expecting that re-subscription will not happen again as auto load balance is off # ")
             self.inputs.start_service('contrail-collector',\
-                                      host_ips=[self.inputs.collector_ips[0]])
+                                      host_ips=[self.inputs.collector_ips[0]],
+                                      container='analytics')
             client_status = self.inputs.confirm_service_active(\
-                            'contrail-collector',self.inputs.collector_ips[0])
+                            'contrail-collector',self.inputs.collector_ips[0],
+                            container='analytics')
             if client_status == False:
                 self.logger.error("# Some issue happened after restart of Collector #")
                 result = False

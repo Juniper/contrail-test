@@ -103,7 +103,8 @@ class TestRbac(BaseRbac):
         '''
         self.global_acl.delete()
         # Restart one contrail-api service alone
-        self.inputs.restart_service('contrail-api', [self.inputs.cfgm_ip])
+        self.inputs.restart_service('contrail-api', [self.inputs.cfgm_ip],
+									container='controller')
         self.populate_default_rules_in_global_acl()
         assert not self.global_acl.created, "Global ACL didnt get auto created upon restart"
 

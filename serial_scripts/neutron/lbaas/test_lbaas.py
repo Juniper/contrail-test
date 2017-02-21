@@ -156,7 +156,8 @@ class TestLbaas(BaseTestLbaas):
 
         #stop the agent service in agent and check if the failover scenario is working.
         self.logger.info("stopping the agent service in active: %s to check the failover scenario" % (active))
-        self.start_stop_service(self.inputs.compute_info[active], 'contrail-vrouter-agent', 'stop')
+        self.start_stop_service(self.inputs.compute_info[active], 'contrail-vrouter-agent', 'stop',
+                                container='agent')
 
         #start tcpdump on Active
         pcap_active,session_active = self.start_tcpdump(self.inputs.compute_info[active], left_int_active)
@@ -174,7 +175,8 @@ class TestLbaas(BaseTestLbaas):
 
         #start the agent service in agent and check if the failover scenario is working.
         self.logger.info("start the agent service back in active: %s" % (active))
-        self.start_stop_service(self.inputs.compute_info[active], 'contrail-vrouter-agent', 'start')
+        self.start_stop_service(self.inputs.compute_info[active], 'contrail-vrouter-agent', 'start',
+                                container='agent')
 
         if (count_active == 0) and (count_standby !=0):
             self.logger.info("traffic is flowing only through standby %s, failover working" % (standby))
@@ -252,11 +254,15 @@ class TestLbaas(BaseTestLbaas):
         #Restart the agent service in Active and Standby
         self.logger.info("stop and start the agent service in active: %s and standby %s"
                          " to verify the garbage collector functionallity" % (active, standby))
-        self.start_stop_service(self.inputs.compute_info[active], 'contrail-vrouter-agent', 'stop')
-        self.start_stop_service(self.inputs.compute_info[standby], 'contrail-vrouter-agent', 'stop')
+        self.start_stop_service(self.inputs.compute_info[active], 'contrail-vrouter-agent', 'stop',
+                                container='agent')
+        self.start_stop_service(self.inputs.compute_info[standby], 'contrail-vrouter-agent', 'stop',
+                                container='agent')
         sleep(5)
-        self.start_stop_service(self.inputs.compute_info[active], 'contrail-vrouter-agent', 'start')
-        self.start_stop_service(self.inputs.compute_info[standby], 'contrail-vrouter-agent', 'start')
+        self.start_stop_service(self.inputs.compute_info[active], 'contrail-vrouter-agent', 'start',
+                                container='agent')
+        self.start_stop_service(self.inputs.compute_info[standby], 'contrail-vrouter-agent', 'start',
+                                container='agent')
         result, msg = self.verify_agent_process_active(active)
         if not result:
             self.logger.error("Agent process did not come to active state in compute %s"
@@ -279,7 +285,8 @@ class TestLbaas(BaseTestLbaas):
 
         #Stop the agent process and delete the vip. Verify netns gets deleted and haproxy gets killed
         #after agent is started.
-        self.start_stop_service(self.inputs.compute_info[active], 'contrail-vrouter-agent', 'stop')
+        self.start_stop_service(self.inputs.compute_info[active], 'contrail-vrouter-agent', 'stop',
+                                container='agent')
         sleep(5)
 
         #Delete VIP while the agent is stopped
@@ -289,7 +296,8 @@ class TestLbaas(BaseTestLbaas):
         result, msg = self.verify_vip_delete(lb_vip['id'])
         assert result, msg
 
-        self.start_stop_service(self.inputs.compute_info[active], 'contrail-vrouter-agent', 'start')
+        self.start_stop_service(self.inputs.compute_info[active], 'contrail-vrouter-agent', 'start',
+                                container='agent')
         result, msg = self.verify_agent_process_active(active)
         if not result:
             self.logger.error("Agent process did not come to active state in compute %s"

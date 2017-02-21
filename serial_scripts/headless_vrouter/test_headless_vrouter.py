@@ -141,7 +141,8 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
             dest_vm)
 
         headless_vr_utils.stop_all_control_services(self)
-        self.addCleanup(self.inputs.start_service, 'supervisor-control', self.inputs.bgp_ips)
+        self.addCleanup(self.inputs.start_service, 'supervisor-control', self.inputs.bgp_ips,
+                        container='controller')
 
         headless_vr_utils.check_through_tcpdump(self, dest_vm, src_vm)
 
@@ -373,7 +374,8 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
             dest_vm)
 
         headless_vr_utils.stop_all_control_services(self)
-        self.addCleanup(self.inputs.start_service, 'supervisor-control', self.inputs.bgp_ips)
+        self.addCleanup(self.inputs.start_service, 'supervisor-control', self.inputs.bgp_ips,
+                        container='controller')
         time.sleep(10)
         headless_vr_utils.check_through_tcpdump(self, dest_vm, src_vm)
 

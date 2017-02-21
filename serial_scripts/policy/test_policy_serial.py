@@ -511,9 +511,11 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         # Stop on Active node
         self.logger.info('Stoping the Control service in  %s' %
                          (active_controller))
-        self.inputs.stop_service('contrail-control', [active_controller])
+        self.inputs.stop_service('contrail-control', [active_controller],
+                                 container='controller')
         self.addCleanup(self.inputs.start_service,
-                        'contrail-control', [active_controller])
+                        'contrail-control', [active_controller],
+                        container='controller')
         time.sleep(5)
 
         # Check the control node shifted to other control node
@@ -590,7 +592,8 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         # Start the control node service again
         self.logger.info('Starting the Control service in  %s' %
                          (active_controller))
-        self.inputs.start_service('contrail-control', [active_controller])
+        self.inputs.start_service('contrail-control', [active_controller],
+                                  container='controller')
 
         time.sleep(10)
         #get the management ip corresponding to new_active_controller
@@ -611,9 +614,11 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         self.logger.info("Will fallback to original primary control-node..")
         self.logger.info('Stoping the Control service in  %s' %
                          (new_active_controller))
-        self.inputs.stop_service('contrail-control', [new_active_controller])
+        self.inputs.stop_service('contrail-control', [new_active_controller],
+                                 container='controller')
         self.addCleanup(self.inputs.start_service,
-                        'contrail-control', [new_active_controller])
+                        'contrail-control', [new_active_controller],
+                        container='controller')
         time.sleep(5)
 
         # Check the control node shifted back to previous cont
@@ -666,7 +671,8 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         # Start the control node service again
         self.logger.info('Starting the Control service in  %s' %
                          (new_active_controller))
-        self.inputs.start_service('contrail-control', [new_active_controller])
+        self.inputs.start_service('contrail-control', [new_active_controller],
+                                  container='controller')
         if not result:
             self.logger.error('Switchover of control node failed')
             assert result
@@ -2383,7 +2389,8 @@ class TestSerialPolicy(BaseSerialPolicyTest):
             result = False
 
         service = 'ifmap'
-        self.inputs.restart_service(service, host_ips=self.inputs.cfgm_ips)
+        self.inputs.restart_service(service, host_ips=self.inputs.cfgm_ips,
+									container='controller')
 
         status_checker = ContrailStatusChecker(self.inputs)
         #wait for all the services,as ifmap impacts other services too

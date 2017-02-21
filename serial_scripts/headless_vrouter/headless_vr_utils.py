@@ -4,7 +4,8 @@ import time
 def start_all_control_services(self):
     """ Start all the control services running in the topology.
     """
-    self.inputs.start_service('supervisor-control', self.inputs.bgp_ips)
+    self.inputs.start_service('supervisor-control', self.inputs.bgp_ips,
+                              container='controller')
     time.sleep(5)
 # end stop_all_control_services
 
@@ -12,7 +13,8 @@ def start_all_control_services(self):
 def stop_all_control_services(self):
     """ Stop all the control services running in the topology.
     """
-    self.inputs.stop_service('supervisor-control', self.inputs.bgp_ips)
+    self.inputs.stop_service('supervisor-control', self.inputs.bgp_ips,
+                             container='controller')
     time.sleep(5)
 # end stop_all_control_services
 
@@ -42,7 +44,8 @@ def get_flow_index_list(self, src_vm, dest_vm):
         output = self.inputs.run_cmd_on_server(
             src_vm.vm_node_ip, cmd, self.inputs.host_data[
                 src_vm.vm_node_ip]['username'], self.inputs.host_data[
-                src_vm.vm_node_ip]['password'])
+                src_vm.vm_node_ip]['password'],
+                container='agent')
 
     except Exception as e:
         self.logger.exception(

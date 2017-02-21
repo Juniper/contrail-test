@@ -211,7 +211,8 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
         sleep(10)
         for node in self.inputs.bgp_control_ips:
             cmd = 'netstat -tnp | grep :179 | awk \'{print $6}\''
-            tcp_status = self.inputs.run_cmd_on_server(node, cmd)
+            tcp_status = self.inputs.run_cmd_on_server(node, cmd,
+                                                       container='controller')
             tcp_status=tcp_status.split('\n')
             for status in tcp_status:
                 if not ('ESTABLISHED' in status):

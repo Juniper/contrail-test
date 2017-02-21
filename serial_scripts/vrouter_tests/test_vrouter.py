@@ -29,7 +29,7 @@ class TestVrouter(base.BaseVrouterTest):
         compute_ip=self.inputs.compute_ips[0]
         compute_user = self.inputs.host_data[compute_ip]['username']
         compute_password = self.inputs.host_data[compute_ip]['password']
-        self.inputs.stop_service(v_agent,[compute_ip])
+        self.inputs.stop_service(v_agent,[compute_ip], container='agent')
         self.logger.info('SSH to compute node to verify xconnect mode')
         session = ssh(compute_ip, compute_user, compute_password)
         status=execute_cmd_out(session,v_agent_status,self.logger)
@@ -42,8 +42,9 @@ class TestVrouter(base.BaseVrouterTest):
             status=execute_cmd_out(session, verify_Xconnect, self.logger)
             assert status[0],'Xconnect mode not enabled'
             self.logger.info('Xconnect mode got enabled')
-            self.inputs.start_service(v_agent,[compute_ip])
-            result=self.inputs.verify_service_state(compute_ip,v_agent,compute_user,compute_password)
+            self.inputs.start_service(v_agent,[compute_ip], container='agent')
+            result=self.inputs.verify_service_state(compute_ip,v_agent,compute_user,compute_password,
+                                                    container='agent')
             assert result,'Contrail-vrouter-agent service is inactive'
             self.logger.info('Verify vrouter Xconnect mode test passed')
     #end test_vrouter_xconnect

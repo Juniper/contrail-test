@@ -75,7 +75,8 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
     def execute_cli_cmd(self, cmd, check_output=False):
         result = True
         analytics = self.res.inputs.collector_ips[0]
-        output = self.res.inputs.run_cmd_on_server(analytics, cmd)
+        output = self.res.inputs.run_cmd_on_server(analytics, cmd,
+                                                   container='analytics')
         self.logger.info("Output: %s \n" % output)
         if output.failed:
             self.logger.error('%s command failed..' % cmd)

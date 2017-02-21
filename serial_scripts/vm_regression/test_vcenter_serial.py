@@ -56,8 +56,10 @@ class TestVcenterSerial(BaseVnVmTest):
             "Ping from %s to %s failed" % (vn1_vm2_name, vn1_vm1_name)
         for cfgm in self.inputs.cfgm_ips:
             cmd = 'netstat -nalp | grep :443 && service contrail-vcenter-plugin restart'
-            plugin_mstr = self.inputs.run_cmd_on_server(cfgm, cmd)
-            status = self.inputs.run_cmd_on_server(cfgm, 'contrail-status | grep vcenter')
+            plugin_mstr = self.inputs.run_cmd_on_server(cfgm, cmd,
+                              container='controller')
+            status = self.inputs.run_cmd_on_server(cfgm, 'contrail-status | grep vcenter',
+                                                   container='controller')
             self.logger.info('Vcenter plugin status on cfgm %s is %s' % (cfgm, status))
             sleep(6)
             if 'active' not in status.split():
@@ -98,7 +100,8 @@ class TestVcenterSerial(BaseVnVmTest):
         self.vm_host2 = vm2_fixture.vm_obj.host
         esxi_hosts = self.inputs.esxi_vm_ips
         for ip in self.inputs.compute_ips:
-            status_before = self.inputs.run_cmd_on_server(ip, 'contrail-status').split()
+            status_before = self.inputs.run_cmd_on_server(ip, 'contrail-status',
+                                                          container='agent').split()
             print status_before
             count = status_before.count('active')
             self.logger.info('compute VM status before rebooting VM %s is %s' % (ip, status_before))
@@ -110,7 +113,8 @@ class TestVcenterSerial(BaseVnVmTest):
         self.inputs.run_cmd_on_server(self.vm2_compute_vm, 'reboot')
         sleep(20)
         for ip in self.inputs.compute_ips:
-            status_after = self.inputs.run_cmd_on_server(ip, 'contrail-status').split()
+            status_after = self.inputs.run_cmd_on_server(ip, 'contrail-status',
+                                                         container='agent').split()
             print status_after
             self.logger.info('compute VM status after rebooting VM %s is %s' % (ip, status_after))
             if status_before != status_after:

@@ -153,7 +153,8 @@ class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         self.verify_traffic_flow(self.left_vm_fixture, dst_vm_list,
             si_fixture, self.left_vm_fixture)
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter', [compute_ip])
+            self.inputs.restart_service('contrail-vrouter', [compute_ip],
+ 										container='agent')
 
         # Wait for service stability
         cs_checker = ContrailStatusChecker()
@@ -172,7 +173,8 @@ class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         self.verify_traffic_flow(self.left_vm_fixture, dst_vm_list,
             si_fixture, self.left_vn_fixture)
         for bgp_ip in self.inputs.bgp_ips:
-            self.inputs.restart_service('contrail-control', [bgp_ip])
+            self.inputs.restart_service('contrail-control', [bgp_ip],
+										container='controller')
 
         cluster_status, error_nodes = cs_checker.wait_till_contrail_cluster_stable(
                                           self.inputs.bgp_ips)

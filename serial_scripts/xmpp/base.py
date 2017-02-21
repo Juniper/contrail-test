@@ -134,7 +134,8 @@ class XmppBase(test_v1.BaseTestCase_v1, ConfigPolicy):
                 knob='xmpp_auth_enable',
                 value='true',
                 node=node,
-                service='supervisor-control')
+                service='supervisor-control',
+                container='controller')
         for node in self.inputs.compute_ips:
             self.update_contrail_conf(
                 conf_file='/etc/contrail/contrail-vrouter-agent.conf',
@@ -143,7 +144,8 @@ class XmppBase(test_v1.BaseTestCase_v1, ConfigPolicy):
                 knob='xmpp_auth_enable',
                 value='true',
                 node=node,
-                service='supervisor-vrouter')
+                service='supervisor-vrouter',
+                container='agent')
 
     def update_contrail_conf(
         self,
@@ -153,17 +155,20 @@ class XmppBase(test_v1.BaseTestCase_v1, ConfigPolicy):
         knob,
         node,
         service,
-            value=None):
+        value=None,
+        container=None):
 
         if operation == 'del':
             cmd = 'openstack-config --del %s %s %s' % (conf_file,
                                                        section, knob)
-            xmpp_status = self.inputs.run_cmd_on_server(node, cmd)
+            xmpp_status = self.inputs.run_cmd_on_server(node, cmd,
+                              container=container)
         if operation == 'set':
             cmd = 'openstack-config --set %s %s %s %s' % (conf_file,
                                                           section, knob, value)
-            xmpp_status = self.inputs.run_cmd_on_server(node, cmd)
-        self.inputs.restart_service(service, [node])
+            xmpp_status = self.inputs.run_cmd_on_server(node, cmd,
+                              container=container)
+        self.inputs.restart_service(service, [node], container=container)
         cluster_status, error_nodes = ContrailStatusChecker(
         ).wait_till_contrail_cluster_stable()
         assert cluster_status, 'Hash of error nodes and services : %s' % (

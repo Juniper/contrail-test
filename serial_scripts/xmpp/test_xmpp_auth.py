@@ -174,7 +174,8 @@ class TestXmpptests(XmppBase, ConfigPolicy):
         self.addCleanup(self.enable_auth_on_cluster)
         for i in range(1, 10):
             for node in self.inputs.compute_ips:
-                self.inputs.restart_service('supervisor-vrouter', [node])
+                self.inputs.restart_service('supervisor-vrouter', [node],
+											container='agent')
                 cluster_status, error_nodes = ContrailStatusChecker(
                 ).wait_till_contrail_cluster_stable(nodes=[node])
                 assert cluster_status, 'Hash of error nodes and services : %s' % (
@@ -185,7 +186,8 @@ class TestXmpptests(XmppBase, ConfigPolicy):
         assert (self.check_if_cluster_has_xmpp), "XMPP connections not found"
         for i in range(1, 10):
             for node in self.inputs.bgp_control_ips:
-                self.inputs.restart_service('supervisor-control', [node])
+                self.inputs.restart_service('supervisor-control', [node],
+											container='controller')
                 cluster_status, error_nodes = ContrailStatusChecker(
                 ).wait_till_contrail_cluster_stable(nodes=[node])
                 assert cluster_status, 'Hash of error nodes and services : %s' % (

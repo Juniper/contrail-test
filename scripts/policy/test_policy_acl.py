@@ -626,7 +626,8 @@ class TestPolicyAcl(BasePolicyTest):
             flow_record = self.inputs.run_cmd_on_server(
                 self.VM11_fixture.vm_node_ip, cmd,
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
-                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'])
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'],
+                container='agent')
             if flow_record > 0:
                 self.logger.info("Found %s matching flows" % flow_record)
                 self.logger.info("Test with src as policy and dst as cidr PASSED")
@@ -749,7 +750,8 @@ class TestPolicyAcl(BasePolicyTest):
             flow_record = self.inputs.run_cmd_on_server(
                 self.VM11_fixture.vm_node_ip, cmd,
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
-                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'])
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'],
+                container='agent')
             if flow_record > 0:
                 self.logger.info("Test with src as VN and dst as cidr PASSED")
             else:
@@ -928,7 +930,8 @@ class TestPolicyAcl(BasePolicyTest):
             flow_record = self.inputs.run_cmd_on_server(
                 self.VM11_fixture.vm_node_ip, cmd,
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
-                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'])
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'],
+                container='agent')
             if flow_record > 0:
                 self.logger.info("Test with src as VN and dst as cidr PASSED")
             else:
@@ -950,7 +953,8 @@ class TestPolicyAcl(BasePolicyTest):
             flow_record = self.inputs.run_cmd_on_server(
                 self.VM11_fixture.vm_node_ip, cmd,
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
-                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'])
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'],
+                container='agent')
             if flow_record > 0:
                 self.logger.info("Test with src as VN and dst as cidr PASSED")
             else:
@@ -1073,7 +1077,8 @@ class TestPolicyAcl(BasePolicyTest):
             flow_record = self.inputs.run_cmd_on_server(
                 self.VM11_fixture.vm_node_ip, cmd,
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
-                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'])
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'],
+                container='agent')
             if flow_record > 0:
                 self.logger.info("Found %s matching flows" % flow_record)
                 self.logger.info("Test with src as CIDR and dst as ANY PASSED")
@@ -1294,7 +1299,8 @@ class TestPolicyAcl(BasePolicyTest):
             flow_record = self.inputs.run_cmd_on_server(
                 self.VM11_fixture.vm_node_ip, cmd,
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
-                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'])
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'],
+                container='agent')
             if flow_record > 0:
                 self.logger.info(
                 "ICMP traffic is not allowed between VM11 and VM12, by policy1112 and policy1211.")
@@ -1321,7 +1327,8 @@ class TestPolicyAcl(BasePolicyTest):
             flow_record = self.inputs.run_cmd_on_server(
                 self.VM11_fixture.vm_node_ip, cmd,
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
-                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'])
+                self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'],
+                container='agent')
             if flow_record > 0:
                 self.logger.info(
                 "ICMP traffic is allowed between VM11 and VM21, by policy1121 and policy2111.")
