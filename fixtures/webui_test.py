@@ -820,6 +820,63 @@ class WebuiTest:
         return result
     # end create_policy
 
+    def create_qos(self, fixture):
+        result = True
+        try:
+            if not self.ui.click_on_create(
+                    'QoS',
+                    'qos',
+                    fixture.name,
+                    prj_name=fixture.project_name):
+                result = result and False
+            self.ui.send_keys(fixture.name, 'display_name', 'name')
+            self.ui.send_keys(fixture.default_fc_id,
+                              'default_forwarding_class_id', 'name')
+            element_list = ['dscp', 'mpls_exp', 'vlan_priority']
+            for index, element in enumerate(element_list):
+                if element == 'mpls_exp':
+                    element_key = 'fixture.exp_mapping'
+                elif element == 'vlan_priority':
+                    element_key = 'fixture.dot1p_mapping'
+                else:
+                    element_key = 'fixture.' + element +'_mapping'
+                (ele, fc_value), = eval(element_key).items()
+                fc_pair = element + '_entries_fc_pair'
+                element_browser = self.ui.find_element(fc_pair)
+                self.ui.click_element('editable-grid-add-link', 'class',
+                                      browser=element_browser)
+                self.ui.click_on_caret_down(browser=element_browser)
+                self.ui.find_select_from_dropdown(ele)
+                fc_browser = self.ui.find_element(
+                                'data-cell-forwarding_class_id',
+                                'class', browser=element_browser)
+                self.ui.click_on_caret_down(browser=fc_browser)
+                self.ui.find_select_from_dropdown(fc_value, browser=fc_browser)
+            if not self.ui.click_on_create('QoS', 'qos', save=True):
+                self.ui.click_on_cancel_if_failure('cancelBtn')
+                self.logger.error("Error while creating Qos %s" %
+                                  (fixture.name))
+                result = result and False
+            else:
+                self.logger.info(
+                    "Qos %s creation successful" %
+                        (fixture.name))
+            rows_detail = self.ui.click_basic_and_get_row_details(
+                'qos', 0)[1]
+            fixture.uuid = self.ui.get_value_of_key(rows_detail, 'UUID')
+            fixture.verify_on_setup()
+        except WebDriverException:
+            self.logger.error(
+                "Error while creating Qos %s" %
+                (fixture.name))
+            self.ui.screenshot("qos_create_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            result = result and False
+            raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end create_qos
+
     def create_security_group(self, fixture):
         result = True
         try:
@@ -4049,6 +4106,10 @@ class WebuiTest:
     def delete_forwarding_class(self, fixture):
         self.ui.delete_element(fixture, 'fc_delete')
     # end delete_forwarding_class
+
+    def delete_qos(self, fixture):
+        self.ui.delete_element(fixture, 'qos_config_delete')
+    # end delete_qos
 
     def delete_vn(self, fixture):
         self._delete_port(fixture)
