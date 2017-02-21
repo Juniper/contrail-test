@@ -374,7 +374,7 @@ fi
 if [[ ! -z $path ]];then
     for p in $path
         do
-            if [ $p != 'webui']; then
+            if [ $p != 'webui' ]; then
                 export EMAIL_SUBJECT_PREFIX=$p
             fi
             run_tests $p
