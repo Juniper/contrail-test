@@ -284,6 +284,9 @@ class WebuiCommon:
         elif element_type == 'Interface':
             element = 'Add ' + element_type
             element_new = func_suffix
+        elif element_type == 'QoS':
+            element = 'Create ' + element_type
+            element_new = func_suffix +'_cofig'
         else:
             element = 'Create ' + element_type
             element_new = func_suffix
@@ -758,8 +761,6 @@ class WebuiCommon:
                 break
         if not flag:
             self.logger.debug('%s not found in the dropdown' % element_text)
-            result = result and False
-        else:
             result = result and False
         return result
     # end find_select_from_dropdown
@@ -1334,6 +1335,12 @@ class WebuiCommon:
             element_id = 'btnDeleteForwardingClass'
             popup_id = 'configure-forwarding_classbtn1'
             br = self.find_element('forwarding-class-grid')
+        elif element_type == 'qos_config_delete':
+            if not self.click_configure_qos():
+                result = result and False
+            element_name = fixture.name
+            element_id = 'btnDeleteQOS'
+            popup_id = 'configure-qos_cofigbtn1'
         elif element_type == 'bgp_router_delete':
             if not self.click_configure_bgp_router():
                 result = result and False
@@ -1829,6 +1836,23 @@ class WebuiCommon:
         return self.check_error_msg("configure ipam")
     # end click_configure_ipam_in_webui
 
+    def click_configure_qos(self):
+        self._click_on_config_dropdown(self.browser)
+        self.click_element(['config_net_qos', 'a'], ['id', 'tag'])
+        self.wait_till_ajax_done(self.browser)
+        return self.check_error_msg("configure qos")
+    # end click_configure_qos
+
+    def click_configure_qos_basic(self, row_index):
+        self.click_configure_qos()
+        rows = self.get_rows()
+        div_browser = self.find_element(
+            'div', 'tag', if_elements=[1], elements=True,
+            browser=rows[row_index])[0]
+        self.click_element('i', 'tag', browser = div_browser)
+        self.wait_till_ajax_done(self.browser)
+    #end click_configure_qos_basic
+
     def click_fip_vn(self, browser=None):
         if not browser:
             browser = self.browser
@@ -2173,7 +2197,10 @@ class WebuiCommon:
             "Click and retrieve %s view details in webui of %s " %
                 (view, func_suffix))
         try:
-            self.logger.debug('browser is %s' % (browser.text))
+            if 'WebDriver' in str(type(browser)):
+                pass
+            else:
+                self.logger.debug('browser is %s' % (browser.text))
         except StaleElementReferenceException:
             browser = self.find_element(search_ele, search_by)
         rows = self.get_rows(browser, canvas)
@@ -2233,7 +2260,7 @@ class WebuiCommon:
                         list_out.append(dictn)
                         break
             elif value is None:
-                dictn = {}
+                dictn = {} 
                 dictn['key'] = key
                 dictn['value'] = None
                 list_out.append(dictn)

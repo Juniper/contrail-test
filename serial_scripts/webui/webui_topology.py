@@ -233,6 +233,15 @@ class sdn_webui_config ():
                 'hold_time': 60,
                 'loop_count': 2 }}
 
+        #Define QoS parameters
+        self.qos_list = ['qos1']
+        self.qos_params = {
+            'qos1': {
+                'default_fc_id': '1',
+                'dscp_mapping': {'af11 (001010)': '2'},
+                'exp_mapping': {'be1 (001)': '3'},
+                'dot1p_mapping': {'ef1 (011)': '4'}}}
+        
         #Define Physical Router parameters
         self.pr_list = ['phy_rtr1']
         self.pr_params = {
@@ -254,7 +263,7 @@ class sdn_webui_config ():
         self.pif_params = {
             'ge-0/0/0': {
                 'int_type': 'Physical' }}
-        
+
         #Define Forwarding Class parameters
         self.fc_list = ['1', '2', '3', '4']
         self.fc_params = {
