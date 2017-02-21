@@ -209,8 +209,9 @@ class CNFixture(fixtures.Fixture):
             self.logger.info('Restarting %s.service in %s' %
                              (service_name, self.inputs.host_data[host]['name']))
             issue_cmd = 'service %s restart' % (service_name)
-            self.inputs.run_cmd_on_server(host, issue_cmd, username, password)
-    # end restart_service
+            self.inputs.run_cmd_on_server(host, issue_cmd, username, password,
+                                          container='controller')
+    # end restart_control_node
 
     def stop_control_node(self, host_ips=[]):
         '''
@@ -226,7 +227,8 @@ class CNFixture(fixtures.Fixture):
             self.logger.info('Stoping %s.service in %s' %
                              (service_name, self.inputs.host_data[host]['name']))
             issue_cmd = 'service %s stop' % (service_name)
-            self.inputs.run_cmd_on_server(host, issue_cmd, username, password)
+            self.inputs.run_cmd_on_server(host, issue_cmd, username, password,
+                                          container='controller')
     # end stop_service
 
     def start_control_node(self, host_ips=[]):
@@ -243,7 +245,8 @@ class CNFixture(fixtures.Fixture):
             self.logger.info('Starting %s.service in %s' %
                              (service_name, self.inputs.host_data[host]['name']))
             issue_cmd = 'service %s start' % (service_name)
-            self.inputs.run_cmd_on_server(host, issue_cmd, username, password)
+            self.inputs.run_cmd_on_server(host, issue_cmd, username, password,
+                                          container='controller')
     # end start_service
 
     def cleanUp(self):

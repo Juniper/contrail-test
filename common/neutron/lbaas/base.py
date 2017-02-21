@@ -34,7 +34,8 @@ class BaseTestLbaas(BaseNeutronTest):
             out = self.inputs.run_cmd_on_server(
                                        compute_ip, cmd1,
                                        self.inputs.host_data[compute_ip]['username'],
-                                       self.inputs.host_data[compute_ip]['password'])
+                                       self.inputs.host_data[compute_ip]['password'],
+                                       container='agent')
             output = [] if out == '' else out.strip().split('\n')
             if not output:
                 self.logger.warn("'ip netns list' with the pool id %s returned no output. "
@@ -52,7 +53,8 @@ class BaseTestLbaas(BaseNeutronTest):
             out = self.inputs.run_cmd_on_server(
                                        compute_ip, cmd2,
                                        self.inputs.host_data[compute_ip]['username'],
-                                       self.inputs.host_data[compute_ip]['password'])
+                                       self.inputs.host_data[compute_ip]['password'],
+                                       container='agent')
             pid = []
             output = out.split('\n')
             for out in output:
@@ -174,7 +176,8 @@ chmod 777 %s'''%(server.vm_ip, webserver_script, webserver_script)
         out = self.inputs.run_cmd_on_server(
                                        server_ip, cmd,
                                        self.inputs.host_data[server_ip]['username'],
-                                       self.inputs.host_data[server_ip]['password'])
+                                       self.inputs.host_data[server_ip]['password'],
+                                       container='agent')
         pattern = "vrouter-((\w+-)+\w+):"
         match = re.match(pattern, out)
         if match:
@@ -205,17 +208,20 @@ chmod 777 %s'''%(server.vm_ip, webserver_script, webserver_script)
         execute_cmd(session, cmd, self.logger)
         return count
 
-    def start_stop_service(self, server_ip, service, action):
+    def start_stop_service(self, server_ip, service, action,
+                           container=None):
         cmd =  "service %s %s" % (service, action)
         out = self.inputs.run_cmd_on_server(
                                    server_ip, cmd,
                                    self.inputs.host_data[server_ip]['username'],
-                                   self.inputs.host_data[server_ip]['password'])
+                                   self.inputs.host_data[server_ip]['password'],
+                                   container=container)
         cmd = "service %s status" % (service)
         output = self.inputs.run_cmd_on_server(
                                    server_ip, cmd,
                                    self.inputs.host_data[server_ip]['username'],
-                                   self.inputs.host_data[server_ip]['password'])
+                                   self.inputs.host_data[server_ip]['password'],
+                                   container=container)
         if action == 'stop' and 'STOPPED' in output:
                 self.logger.info("%s service stopped in server %s" % (service, server_ip))
         elif action == 'start' and 'RUNNING' in output:

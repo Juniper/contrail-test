@@ -807,7 +807,8 @@ class NovaHelper():
         username = self.inputs.host_data[node_ip]['username']
         password = self.inputs.host_data[node_ip]['password']
         output = self.inputs.run_cmd_on_server(
-            server_ip=node_ip, issue_cmd=issue_cmd, username=username, password=password)
+            server_ip=node_ip, issue_cmd=issue_cmd, username=username, password=password,
+            container='openstack')
         return output
     # end get_vm_in_nova_db
 

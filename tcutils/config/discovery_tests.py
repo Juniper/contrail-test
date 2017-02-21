@@ -1425,7 +1425,8 @@ class DiscoveryVerification(fixtures.Fixture):
             ips = [ip]
         for ds_ip in ips:
             command = self.inputs.run_cmd_on_server(
-                ds_ip, '/usr/lib/zookeeper/bin/zkServer.sh status', password='c0ntrail123')
+                ds_ip, '/usr/lib/zookeeper/bin/zkServer.sh status', password='c0ntrail123',
+                container='controller')
             status = command.split(":")[-1]
             zoo_keeper_status[ds_ip] = status
         return zoo_keeper_status
@@ -1439,7 +1440,8 @@ class DiscoveryVerification(fixtures.Fixture):
             cmd = cmd_set + conf_file + section + ' ' + option
         for ip in self.inputs.cfgm_ips:
             self.inputs.run_cmd_on_server(ip, cmd, self.inputs.host_data[ip]['username']\
-                                          , self.inputs.host_data[ip]['password'])
+                                          , self.inputs.host_data[ip]['password'],
+                                          container='controller')
     # end modify_conf_file
          
     def modify_discovery_conf_file_params(self, operation, **args):
@@ -1537,10 +1539,13 @@ class DiscoveryVerification(fixtures.Fixture):
         for ip in self.inputs.cfgm_ips:
             out_put = self.inputs.run_cmd_on_server(ip, cmd, \
                 self.inputs.host_data[ip]['username'], \
-                self.inputs.host_data[ip]['password'])
+                self.inputs.host_data[ip]['password'],
+                container='controller')
             self.logger.debug("%s" % (out_put))
-            self.inputs.restart_service('contrail-discovery', [ip])
-            status = self.inputs.confirm_service_active('contrail-discovery', ip)
+            self.inputs.restart_service('contrail-discovery', [ip],
+                                        container='controller')
+            status = self.inputs.confirm_service_active('contrail-discovery', ip,
+                                                        container='controller')
             if status == False:
                 self.logger.info("Discovery Service on cfgm with ip as %s did not \
                  came UP after restart" % ip)
@@ -1569,10 +1574,13 @@ class DiscoveryVerification(fixtures.Fixture):
         for ip in self.inputs.cfgm_ips:
             out_put = self.inputs.run_cmd_on_server(ip, cmd, \
                     self.inputs.host_data[ip]['username'], \
-                    self.inputs.host_data[ip]['password'])
+                    self.inputs.host_data[ip]['password'],
+                    container='controller')
             self.logger.debug("%s" % (out_put))
-            self.inputs.restart_service('contrail-discovery', [ip])
-            status = self.inputs.confirm_service_active('contrail-discovery', ip)
+            self.inputs.restart_service('contrail-discovery', [ip],
+                                        container='controller')
+            status = self.inputs.confirm_service_active('contrail-discovery', ip,
+                                                        container='controller')
             if status == False:
                 self.logger.info("Discovery Service on cfgm with ip as %s did\
                  not came UP after restart" % ip)
@@ -1867,55 +1875,67 @@ class DiscoveryVerification(fixtures.Fixture):
         self.logger.debug("#### Restarting the required subscriber services so that TTL takes effect immediately ###")
         if "contrail-vrouter-agent" in subscribers:
             for ip in self.inputs.compute_ips:
-                self.inputs.restart_service('contrail-vrouter-agent', [ip])
+                self.inputs.restart_service('contrail-vrouter-agent', [ip],
+                                            container='agent')
             for ip in self.inputs.compute_ips:
                 client_status = self.inputs.confirm_service_active(\
-                                    'contrail-vrouter-agent', ip)
+                                    'contrail-vrouter-agent', ip,
+                                    container='agent')
             if client_status == False:
                 self.logger.error("Some issue happened after restart of client process")
                 result = False
         if "contrail-control" in subscribers:
             for ip in self.inputs.bgp_ips:
-                self.inputs.restart_service('contrail-control', [ip])
+                self.inputs.restart_service('contrail-control', [ip],
+                                            container='controller')
             for ip in self.inputs.bgp_ips:
                 client_status = self.inputs.confirm_service_active(\
-                            'contrail-control', ip)
+                            'contrail-control', ip,
+                            container='controller')
             if client_status == False:
                 self.logger.error("Some issue happened after restart of client process")
                 result = False
         if "supervisor-webui" in subscribers:
             for ip in self.inputs.webui_ips:
-                self.inputs.restart_service('supervisor-webui', [ip])
+                self.inputs.restart_service('supervisor-webui', [ip],
+                                            container='controller')
             for ip in self.inputs.webui_ips:
                 client_status = self.inputs.confirm_service_active(\
-                                            'supervisor-webui', ip)
+                                            'supervisor-webui', ip,
+                                            container='controller')
             if client_status == False:
                 self.logger.error("Some issue happened after restart of client process")
                 result = False
         if "contrail-topology" in subscribers:
             for ip in self.inputs.collector_ips:
-                self.inputs.restart_service('contrail-topology', [ip])
+                self.inputs.restart_service('contrail-topology', [ip],
+                                            container='analytics')
             for ip in self.inputs.collector_ips:
                 client_status = self.inputs.confirm_service_active(\
-                                            'contrail-topology', ip)
+                                            'contrail-topology', ip,
+                                            container='analytics')
             if client_status == False:
                 self.logger.error("Some issue happened after restart of client process")
                 result = False
         if "contrail-api" in subscribers:
             for ip in self.inputs.cfgm_ips:
-                self.inputs.restart_service('contrail-api', [ip])
+                self.inputs.restart_service('contrail-api', [ip],
+                                            container='controller')
             for ip in self.inputs.cfgm_ips:
                 client_status = self.inputs.confirm_service_active(\
-                                            'contrail-api', ip)
+                                            'contrail-api', ip,
+                                            container='controller')
             if client_status == False:
                 self.logger.error("Some issue happened after restart of client process")
                 result = False
         if "supervisor-control" in subscribers:
             for ip in self.inputs.bgp_ips:
-                self.inputs.restart_service('supervisor-control', [ip])
+                self.inputs.restart_service('supervisor-control', [ip],
+                                            container='controller')
             for ip in self.inputs.bgp_ips:
                 client_status = self.inputs.confirm_service_active(\
-                                                        'supervisor-control', ip)
+                                                        'supervisor-control', ip,
+                                                        container='controller')
             if client_status == False:
                 self.logger.error("# Some issue happened after restart of client process #")
                 result = False 

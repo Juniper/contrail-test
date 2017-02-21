@@ -415,15 +415,17 @@ class TestInputs(object):
         Figure out the os type on each node in the cluster
         '''
         output = None
+        a_container = None
         if host_ip in self.os_type:
             return self.os_type[host_ip]
         username = self.host_data[host_ip]['username']
         password = self.host_data[host_ip]['password']
+        containers = self.host_data[host_ip]['containers'].keys()
+        if containers :
+            a_container = containers[0]
         with hide('output','running','warnings'):
-            with settings(host_string='%s@%s' % (username, host_ip),
-                          password=password, warn_only=True,
-                          abort_on_prompts=False):
-                output = run('uname -a')
+            output = self.inputs.run_cmd_on_server(host_ip,
+                        'uname -a', username, password, container=a_container)
         if 'el6' in output:
             self.os_type[host_ip] = 'centos_el6'
         elif 'fc17' in output:
@@ -438,6 +440,25 @@ class TestInputs(object):
             raise KeyError('Unsupported OS')
         return self.os_type[host_ip]
     # end get_os_version
+
+    def _check_containers(self, host_dict):
+        '''
+        Find out which components have containers and set 
+        corresponding attributes in host_dict to True if present
+        '''
+        host_dict['containers'] = {}
+        cmd = 'docker ps 2>/dev/null |grep contrail | awk \'{print $NF}\''
+        output = self.run_cmd_on_server(host_dict['ip'], cmd)
+        # If not a docker cluster, return
+        if not output:
+            return
+        attr_list = output.split('\n')
+        attr_list = [x.rstrip('\r') for x in attr_list]
+
+        for attr in attr_list:
+            host_dict['containers'][attr] =  True
+        return
+    # end _check_containers
 
     def read_prov_file(self):
         prov_file = open(self.prov_file, 'r')
@@ -499,6 +520,7 @@ class TestInputs(object):
             self.host_data[host['name']]['host_ip'] = host_ip
             self.host_data[host['name']]['host_data_ip'] = host_data_ip
             self.host_data[host['name']]['host_control_ip'] = host_control_ip
+            self._check_containers(host)
             qos_queue_per_host, qos_queue_pg_properties_per_host = \
                                     self._process_qos_data(host_ip)
             if qos_queue_per_host:
@@ -679,7 +701,7 @@ class TestInputs(object):
                         device_dict['tor_ovs_protocol'] = ta[
                             'tor_ovs_protocol']
                         device_dict['tor_agents'].append('%s:%s' % (host_str,
-                                                                    ta['tor_agent_id']))
+                                                                    ta['tor_id']))
                         device_dict['tor_agent_dicts'].append(ta)
                         device_dict['tor_tsn_ips'].append(ta['tor_tsn_ip'])
                         if self.ha_setup == True:
@@ -825,7 +847,8 @@ class TestInputs(object):
             self.openstack_ip,
             cmd,
             username,
-            password)
+            password,
+            container='openstack')
         return self.mysql_token
     # end get_mysql_token
 
@@ -835,18 +858,34 @@ class TestInputs(object):
                              self.host_data[self.openstack_ip]['username'])
 
     def run_cmd_on_server(self, server_ip, issue_cmd, username=None,
-                          password=None, pty=True):
+                          password=None, pty=True, as_sudo=True,
+                          container=None, detach=None):
+        '''
+        container : name or id of the container
+        '''
         if server_ip in self.host_data.keys():
             if not username:
                 username = self.host_data[server_ip]['username']
             if not password:
                 password = self.host_data[server_ip]['password']
-        with hide('everything'):
-            with settings(
-                host_string='%s@%s' % (username, server_ip), password=password,
-                    warn_only=True, abort_on_prompts=False):
-                output = sudo('%s' % (issue_cmd), pty=pty)
-                return output
+        if container:
+            # If the container does not exist on this host, log it and 
+            # run the cmd on the host itself 
+            # This helps backward compatibility
+            if not self.host_data[server_ip].get('containers', {}).get(container):
+                container = None
+                self.logger.debug('Container %s not in host %s, running on '
+                    ' host itself' % (container, server_ip))
+        output = run_cmd_on_server(issue_cmd,
+                          server_ip,
+                          username,
+                          password,
+                          pty=pty,
+                          as_sudo=as_sudo,
+                          logger=self.logger,
+                          container=container,
+                          detach=detach)
+        return output
     # end run_cmd_on_server
 
 
@@ -910,35 +949,40 @@ class ContrailTestInit(object):
                         host,
                         service,
                         username,
-                        password)
+                        password,
+                        container='agent')
             if host in self.bgp_ips:
                 for service in self.control_services:
                     result = result and self.verify_service_state(
                         host,
                         service,
                         username,
-                        password)
+                        password,
+                        container='controller')
             if host in self.cfgm_ips:
                 for service in self.cfgm_services:
                     result = result and self.verify_service_state(
                         host,
                         service,
                         username,
-                        password)
+                        password,
+                        container='controller')
             if host in self.collector_ips:
                 for service in self.collector_services:
                     result = result and self.verify_service_state(
                         host,
                         service,
                         username,
-                        password)
+                        password,
+                        container='analytics')
             if host in self.webui_ips:
                 for service in self.webui_services:
                     result = result and self.verify_service_state(
                         host,
                         service,
                         username,
-                        password)
+                        password,
+                        container='controller')
             # Need to enhance verify_service_state to verify openstack services status as well
             # Commenting out openstack service verifcation untill then
             # if host == self.openstack_ip:
@@ -961,11 +1005,12 @@ class ContrailTestInit(object):
                 return cls
         return None
 
-    def verify_service_state(self, host, service, username, password):
+    def verify_service_state(self, host, service, username, password,
+                             container=None):
         m = None
         cls = None
         try:
-            m = self.get_contrail_status(host)
+            m = self.get_contrail_status(host, container=container)
             cls = self.get_service_status(m, service)
             if (cls.state in self.correct_states):
                 return True
@@ -1012,11 +1057,12 @@ class ContrailTestInit(object):
     # end reboot
 
     @retry(delay=10, tries=10)
-    def confirm_service_active(self, service_name, host):
+    def confirm_service_active(self, service_name, host, container=None):
         cmd = 'contrail-status | grep %s | grep " active "' % (service_name)
         output = self.run_cmd_on_server(
             host, cmd, self.host_data[host]['username'],
-            self.host_data[host]['password'])
+            self.host_data[host]['password'],
+            container=container)
         if output is not None:
             return True
         else:
@@ -1027,7 +1073,8 @@ class ContrailTestInit(object):
             self,
             service_name,
             host_ips=[],
-            contrail_service=True):
+            contrail_service=True,
+            container=None):
         result = True
         if len(host_ips) == 0:
             host_ips = self.host_ips
@@ -1041,12 +1088,13 @@ class ContrailTestInit(object):
             else:
                 issue_cmd = 'service %s restart' % (service_name)
             self.run_cmd_on_server(
-                host, issue_cmd, username, password, pty=False)
-            assert self.confirm_service_active(service_name, host), \
+                host, issue_cmd, username, password, pty=False, container=container)
+            assert self.confirm_service_active(service_name, host, container=container), \
                 "Service Restart failed for %s" % (service_name)
     # end restart_service
 
-    def stop_service(self, service_name, host_ips=[], contrail_service=True):
+    def stop_service(self, service_name, host_ips=[], contrail_service=True,
+                     container=None):
         result = True
         if len(host_ips) == 0:
             host_ips = self.host_ips
@@ -1060,10 +1108,12 @@ class ContrailTestInit(object):
             else:
                 issue_cmd = 'service %s stop' % (service_name)
             self.run_cmd_on_server(
-                host, issue_cmd, username, password, pty=False)
+                host, issue_cmd, username, password, pty=True,
+                container=container)
     # end stop_service
 
-    def start_service(self, service_name, host_ips=[], contrail_service=True):
+    def start_service(self, service_name, host_ips=[], contrail_service=True,
+                      container=None):
         result = True
         if len(host_ips) == 0:
             host_ips = self.host_ips
@@ -1077,7 +1127,8 @@ class ContrailTestInit(object):
             else:
                 issue_cmd = 'service %s start' % (service_name)
             self.run_cmd_on_server(
-                host, issue_cmd, username, password, pty=False)
+                host, issue_cmd, username, password, pty=True,
+                container=container)
     # end start_service
 
     def _compare_service_state(
@@ -1104,8 +1155,9 @@ class ContrailTestInit(object):
     # end _compare_service_state
 
     def get_contrail_status(self, server_ip, username='root',
-                            password='contrail123'):
-        cache = self.run_cmd_on_server(server_ip, 'contrail-status')
+                            password='contrail123', container=None):
+        cache = self.run_cmd_on_server(server_ip, 'contrail-status',
+                                       container=container)
         m = dict([(n, tuple(l.split(';')))
                   for n, l in enumerate(cache.split('\n'))])
         return m
@@ -1132,7 +1184,8 @@ class ContrailTestInit(object):
                                                                oper)
 
             output = self.run_cmd_on_server(
-                self.cfgm_ip, issue_cmd, username, password)
+                self.cfgm_ip, issue_cmd, username, password,
+                container='controller')
             if output.return_code != 0:
                 self.logger.exception('Fail to execute provision_control.py')
                 return output
@@ -1157,7 +1210,8 @@ class ContrailTestInit(object):
             api_server_ip, api_server_port,
             router_name, router_ip, router_asn, oper)
         output = self.run_cmd_on_server(
-            self.cfgm_ip, issue_cmd, username, password)
+            self.cfgm_ip, issue_cmd, username, password,
+            container='controller')
         if output.return_code != 0:
             self.logger.exception('Fail to execute provision_mx.py')
             return output
@@ -1180,7 +1234,8 @@ class ContrailTestInit(object):
             router_asn, api_server_ip, api_server_port)
 
         output = self.run_cmd_on_server(
-            self.cfgm_ip, issue_cmd, username, password)
+            self.cfgm_ip, issue_cmd, username, password,
+            container='controller')
         if output.return_code != 0:
             self.logger.exception('Fail to execute add_route_target.py')
             return output
@@ -1271,9 +1326,10 @@ class ContrailTestInit(object):
             return os_release
     # end get_openstack_release
 
-    def copy_file_to_server(self, ip, src, dstdir, dst, force=False):
+    def copy_file_to_server(self, ip, src, dstdir, dst, force=False,
+                            container=None):
         host = {}
         host['ip'] = ip
         host['username'] = self.host_data[ip]['username']
         host['password'] = self.host_data[ip]['password']
-        copy_file_to_server(host, src, dstdir, dst, force)
+        copy_file_to_server(host, src, dstdir, dst, force, container=container)

@@ -49,6 +49,6 @@ if __name__ == "__main__":
 
                 # Restart tor-agent
                 init_obj.restart_service('contrail-tor-agent-%s' % (tor_agent_id),
-                                         [ip])
+                                         [ip], container='agent')
         # end for tor_agent
     # end for

@@ -134,6 +134,25 @@ class ContrailReportInit:
             return default
     # end get_os_env
 
+    #TODO
+    # Duplicating code from contrail_test_init.py :(
+    # due to legacy..need to cleanup
+    def _check_containers(self, host_dict):
+        '''
+        Find out which components have containers and set
+        corresponding attributes in host_dict to True if present
+        '''
+        cmd = 'docker ps |grep contrail | awk \'{print $NF}\''
+        output = self.run_cmd_on_server(host_dict['ip'], cmd)
+        attr_list = output.split('\n')
+        attr_list = [x.rstrip('\r') for x in attr_list]
+
+        host_dict['containers'] = {}
+        for attr in attr_list:
+            host_dict['containers'][attr] =  True
+        return
+    # end _check_containers
+
     def _read_prov_file(self):
         prov_file = open(self.prov_file, 'r')
         prov_data = prov_file.read()
@@ -176,6 +195,7 @@ class ContrailReportInit:
             self.host_data[host['name']]['host_ip'] = host_ip
             self.host_data[host['name']]['host_data_ip'] = host_data_ip
             self.host_data[host['name']]['host_control_ip'] = host_control_ip
+            self._check_containers()
             roles = host["roles"]
             for role in roles:
                 if role['type'] == 'openstack':
@@ -374,7 +394,10 @@ class ContrailReportInit:
             tries -= 1
         build_sku = self.get_os_env("SKU")
         if build_sku is None:
-            build_sku=get_build_sku(self.openstack_ips[0],self.host_data[self.openstack_ip]['password'])
+            container = self.host_data[self.openstack_ips[0]].get(
+                            'containers', {}).get('openstack')
+            build_sku=get_build_sku(self.openstack_ips[0],self.host_data[self.openstack_ip]['password'],
+                                    container=container)
         if (build_id.count('.') > 3):
             build_id=re.match(r'([0-9\.-]*)\.',build_id).group(1)
         return [build_id.rstrip('\n'), build_sku]
@@ -397,18 +420,35 @@ class ContrailReportInit:
         return self.distro
     # end get_distro
 
-    def run_cmd_on_server(self, server_ip, issue_cmd, username=None, password=None, pty=True):
+    def run_cmd_on_server(self, server_ip, issue_cmd, username=None,
+                          password=None, pty=True, as_sudo=True,
+                          container=None, detach=None):
+        '''
+        container : name or id of the container
+        '''
         if server_ip in self.host_data.keys():
             if not username:
                 username = self.host_data[server_ip]['username']
             if not password:
                 password = self.host_data[server_ip]['password']
-        with hide('everything'):
-            with settings(
-                host_string='%s@%s' % (username, server_ip), password=password,
-                    warn_only=True, abort_on_prompts=False):
-                output = run('%s' % (issue_cmd), pty=pty)
-                return output
+        if container:
+            # If the container does not exist on this host, log it and 
+            # run the cmd on the host itself 
+            # This helps backward compatibility
+            self.logger.debug('Container %s not in host %s, running on '
+                ' host itself' % (container, server_ip))
+            if not self.host_data[server_ip].get('containers', {}).get(container):
+                container = None
+        output = run_cmd_on_server(issue_cmd,
+                          server_ip,
+                          username,
+                          password,
+                          pty=pty,
+                          as_sudo=as_sudo,
+                          logger=self.logger,
+                          container=container,
+                          detach=detach)
+        return output
     # end run_cmd_on_server
 
     def get_cores(self):
@@ -427,13 +467,18 @@ class ContrailReportInit:
     def get_cores_node(self, node_ip, user, password):
         """Get the list of cores in one of the nodes in the test setup.
         """
-        cores = {}
-        with hide('everything'):
-            with settings(
-                host_string='%s@%s' % (user, node_ip), password=password,
-                    warn_only=True, abort_on_prompts=False):
-                with cd(CORE_DIR):
-                    core = run("ls core.* 2>/dev/null")
+        core = ''
+        cmd = 'ls core.* 2>/dev/null'
+        containers = self.host_data[node_ip].get('containers', {}).keys()
+        if not containers:
+            core = run_cmd_on_server(cmd, node_ip, user, password)
+            return core
+
+        for container in containers:
+            with cd(CORE_DIR):
+                 output = run_cmd_on_server(cmd, node_ip, user, password,
+                            container=container)
+                 core = '%s %s' (core, output)
         return core
 
 # end

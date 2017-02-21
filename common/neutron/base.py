@@ -70,7 +70,8 @@ class BaseNeutronTest(GenericTestBase):
                 cfgm_ip,
                 issue_cmd,
                 self.inputs.host_data[cfgm_ip]['username'],
-                self.inputs.host_data[cfgm_ip]['password'])
+                self.inputs.host_data[cfgm_ip]['password'],
+                container='controller')
 
         self.addCleanup(
             self.restore_default_quota_list,
@@ -122,13 +123,15 @@ class BaseNeutronTest(GenericTestBase):
                     cfgm_ip,
                     issue_cmd,
                     self.inputs.host_data[cfgm_ip]['username'],
-                    self.inputs.host_data[cfgm_ip]['password'])
+                    self.inputs.host_data[cfgm_ip]['password'],
+                    container='controller')
                 count = count + 1
 
         # Restart contrail-api service on all cfgm nodes
 
         for cfgm_ip in self.inputs.cfgm_ips:
-            self.inputs.restart_service('contrail-api', [cfgm_ip])
+            self.inputs.restart_service('contrail-api', [cfgm_ip],
+										container='controller')
 
         cs_obj = ContrailStatusChecker(self.inputs)
         clusterstatus, error_nodes = cs_obj.wait_till_contrail_cluster_stable()
@@ -150,10 +153,12 @@ class BaseNeutronTest(GenericTestBase):
                 cfgm_ip,
                 issue_cmd,
                 self.inputs.host_data[cfgm_ip]['username'],
-                self.inputs.host_data[cfgm_ip]['password'])
+                self.inputs.host_data[cfgm_ip]['password'],
+                container='controller')
 
         for cfgm_ip in self.inputs.cfgm_ips:
-            self.inputs.restart_service('contrail-api', [cfgm_ip])
+            self.inputs.restart_service('contrail-api', [cfgm_ip],
+										container='controller')
 
         cs_obj = ContrailStatusChecker(self.inputs)
         clusterstatus, error_nodes = cs_obj.wait_till_contrail_cluster_stable()
@@ -540,7 +545,8 @@ class BaseNeutronTest(GenericTestBase):
         out = self.inputs.run_cmd_on_server(
             compute_ip, cmd,
             self.inputs.host_data[compute_ip]['username'],
-            self.inputs.host_data[compute_ip]['password'])
+            self.inputs.host_data[compute_ip]['password'],
+            container='agent')
         if out:
             self.logger.warn("NET NS: %s still present for pool name: %s with UUID: %s"
                              " even after VIP delete in compute node %s"
@@ -560,7 +566,8 @@ class BaseNeutronTest(GenericTestBase):
         out = self.inputs.run_cmd_on_server(
             compute_ip, cmd,
             self.inputs.host_data[compute_ip]['username'],
-            self.inputs.host_data[compute_ip]['password'])
+            self.inputs.host_data[compute_ip]['password'],
+            container='agent')
         output = out.split('\n')
         for out in output:
             match = re.search("nobody\s+(\d+)\s+", out)

@@ -198,7 +198,7 @@ class ContrailConnections():
             for cfgm_ip in self.inputs.cfgm_ips:
                 #contrail-status would increase run time hence netstat approach
                 cmd = 'netstat -antp | grep 8088 | grep LISTEN'
-                if self.inputs.run_cmd_on_server(cfgm_ip, cmd) is not None:
+                if self.inputs.run_cmd_on_server(cfgm_ip, cmd, container='controller') is not None:
                     self._svc_mon_inspect = SvcMonInspect(cfgm_ip,
                                            logger=self.logger)
                     break

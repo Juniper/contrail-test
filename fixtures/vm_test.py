@@ -2412,17 +2412,26 @@ class VMFixture(fixtures.Fixture):
 
     def copy_file_to_vm(self, localfile, dstdir=None, force=False):
         host = self.inputs.get_host_ip(self.vm_node_ip)
-        filename = localfile.split('/')[-1]
-        if dstdir:
-            remotefile = dstdir + '/' + filename
-        else:
-            remotefile = filename
-        self.inputs.copy_file_to_server(
-            host, localfile, '/tmp/', filename, force)
-        cmd = 'fab -u %s -p "%s" -H %s ' % (
-            self.vm_username, self.vm_password, self.local_ip)
-        cmd = cmd + 'fput:%s,%s' % ('/tmp/' + filename, remotefile)
-        self.inputs.run_cmd_on_server(host, cmd)
+#        filename = localfile.split('/')[-1]
+#        if dstdir:
+#            remotefile = dstdir + '/' + filename
+#        else:
+#            remotefile = filename
+#        self.inputs.copy_file_to_server(
+#            host, localfile, '/tmp/', filename, force)
+#        cmd = 'fab -u %s -p "%s" -H %s ' % (
+#            self.vm_username, self.vm_password, self.local_ip)
+#        cmd = cmd + 'fput:%s,%s' % ('/tmp/' + filename, remotefile)
+#        self.inputs.run_cmd_on_server(host, cmd)
+
+        dstdir = '%s@%s:%s' % (self.vm_username, self.local_ip, dstdir)
+        dest_gw_username = self.inputs.host_data[self.vm_node_ip]['username']
+        dest_gw_password = self.inputs.host_data[self.vm_node_ip]['password']
+        dest_gw_ip = self.vm_node_ip
+        dest_gw_login = "%s@%s" % (dest_gw_username,dest_gw_ip)
+        remote_copy(localfile, dstdir, dest_password=self.vm_password,
+                    dest_gw=dest_gw_login, dest_gw_password=dest_gw_password)
+    # end copy_file_to_vm
 
     def get_vm_ipv6_addr_from_vm(self, intf='eth0', addr_type='link'):
         ''' Get VM IPV6 from Ifconfig output executed on VM
@@ -2485,7 +2494,8 @@ class VMFixture(fixtures.Fixture):
         output = self.inputs.run_cmd_on_server(self.vm_node_ip, cmd,
                                                self.inputs.host_data[
                                                    self.vm_node_ip]['username'],
-                                               self.inputs.host_data[self.vm_node_ip]['password'])
+                                               self.inputs.host_data[self.vm_node_ip]['password'],
+                                               container='agent')
         matches = [x for x in self.vm_ips if '%s:' % x in output]
         if matches:
             self.logger.warn(

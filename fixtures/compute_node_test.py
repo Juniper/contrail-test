@@ -118,12 +118,13 @@ class ComputeNodeFixture(fixtures.Fixture):
         with open(self.new_agent_conf_file.name, 'w') as file_to_update:
             self.config.write(file_to_update)
 
-    def execute_cmd(self, cmd):
+    def execute_cmd(self, cmd, container='agent'):
         return self.inputs.run_cmd_on_server(
             self.ip,
             cmd,
             username=self.username,
-            password=self.password)
+            password=self.password,
+            container=container)
 
     def file_transfer(self, type, node_file, local_file):
         with settings(hide('everything'),host_string='%s@%s' % (
@@ -261,7 +262,7 @@ class ComputeNodeFixture(fixtures.Fixture):
     def restart_service(self, service_name):
         ''' Restart any contrail service on this compute node
         '''
-        self.inputs.restart_service(service_name, [self.ip])
+        self.inputs.restart_service(service_name, [self.ip], container='agent')
 
     def restart_agent(self):
         self.restart_service('contrail-vrouter-agent')
@@ -291,7 +292,7 @@ class ComputeNodeFixture(fixtures.Fixture):
                 'Get count of flows in node %s with action %s' %
                 (self.ip, action))
             cmd = 'flow -l | grep Action | grep %s | wc -l ' % (action)
-            flow_count[action] = self.execute_cmd(cmd)
+            flow_count[action] = self.execute_cmd(cmd, container=None)
         now = datetime.now()
         self.logger.info(
             "Flow count @ time %s in node %s is %s" %
@@ -318,8 +319,8 @@ class ComputeNodeFixture(fixtures.Fixture):
             cmd = cmd + '| grep %s' %  filters
 
         now = datetime.now()
-        flow = self.execute_cmd(cmd)
-        flow_count = self.execute_cmd(cmd + '| wc -l')
+        flow = self.execute_cmd(cmd, container=None)
+        flow_count = self.execute_cmd(cmd + '| wc -l', container=None)
         self.logger.info(
             "Flow count @ time %s in node %s is %s" %
             (now, self.ip, flow_count))
@@ -349,11 +350,11 @@ class ComputeNodeFixture(fixtures.Fixture):
                 src_ip, dst_ip, proto, vrf)
             cmd_3 = 'flow -l |grep %s -A1| grep %s -A1 |grep \"%s (%s\" -A1 |grep Action |grep FlowLim| wc -l' % (
                 src_ip, dst_ip, proto, vrf)
-            flow_count['all'] += int(self.execute_cmd(cmd_1))
+            flow_count['all'] += int(self.execute_cmd(cmd_1, container=None))
             self.logger.debug('Command issued: %s, all flows: %s' %(cmd_1, flow_count['all']))
-            flow_count['allowed'] += int(self.execute_cmd(cmd_2))
+            flow_count['allowed'] += int(self.execute_cmd(cmd_2, container=None))
             self.logger.debug('Command issued: %s, allowed flows: %s' %(cmd_2, flow_count['allowed']))
-            flow_count['dropped_by_limit'] += int(self.execute_cmd(cmd_3))
+            flow_count['dropped_by_limit'] += int(self.execute_cmd(cmd_3, container=None))
             self.logger.debug('Command issued: %s, Limit dropped flows: %s' %(cmd_3, flow_count['dropped_by_limit']))
         self.logger.info(
             "Flow count in node %s is %s" %
@@ -542,9 +543,15 @@ class ComputeNodeFixture(fixtures.Fixture):
         '''Reload vrouter module without restarting the compute node
         '''
         self.logger.info('Reloading vrouter module on %s' % (self.ip))
-        self.execute_cmd('service supervisor-vrouter stop; '
+        if self.inputs.host_data[self.ip].get('containers', {}).get('agent'):
+            stop_cmd = 'docker exec -it agent service supervisor-vrouter stop'
+            start_cmd = 'docker exec -it agent service supervisor-vrouter start'
+        else:
+            stop_cmd = 'service supervisor-vrouter stop'
+            start_cmd = 'service supervisor-vrouter start'
+        self.execute_cmd('%s; '
             'modprobe -r vrouter || rmmod vrouter; '
-            'service supervisor-vrouter start')
+            '%s ' % (stop_cmd, start_cmd), container=None)
         if wait:
             status = ContrailStatusChecker(self.inputs)
             status.wait_till_contrail_cluster_stable([self.ip])

@@ -11,7 +11,8 @@ def get_OsVersion(self):
 def get_VrouterReleaseVersion(self):
     buildlist = []
     myBuild = self.inputs.run_cmd_on_server(
-        self.inputs.compute_ips[0], 'contrail-version | grep contrail-vrouter-agent | awk \'{print $2}\'')
+        self.inputs.compute_ips[0], 'contrail-version | grep contrail-vrouter-agent | awk \'{print $2}\'',
+        container='agent')
     myRel = myBuild.split("-", 1)
     return myRel[0]
 # end get_VrouterReleaseVersion
@@ -20,7 +21,8 @@ def get_VrouterReleaseVersion(self):
 def get_VrouterBuildVersion(self):
     buildlist = []
     myBuild = self.inputs.run_cmd_on_server(
-        self.inputs.compute_ips[0], 'contrail-version | grep contrail-vrouter-agent | awk \'{print $3}\'')
+        self.inputs.compute_ips[0], 'contrail-version | grep contrail-vrouter-agent | awk \'{print $3}\'',
+        container='agent')
     return myBuild
 # end get_VrouterBuildVersion
 

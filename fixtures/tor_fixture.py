@@ -147,7 +147,7 @@ class ToRFixture(physical_device_fixture.PhysicalDeviceFixture):
                 ta_id =  tor_agent.split('@')[1].split(':')[1]
                 ta_ip =  tor_agent.split('@')[1].split(':')[0]
                 self.inputs.restart_service('contrail-tor-agent-%s' % (ta_id),
-                    [ta_ip])
+                    [ta_ip], container='agent')
                 time.sleep(20)
     # end restart_backup_tor_agent
 
