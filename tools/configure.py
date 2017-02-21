@@ -38,7 +38,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         get_apiserver_protocol, get_apiserver_certfile, get_apiserver_keyfile, \
         get_apiserver_cafile, get_keystone_insecure_flag, \
         get_apiserver_insecure_flag, get_keystone_certfile, get_keystone_keyfile, \
-        get_keystone_cafile
+        get_keystone_cafile, get_keystone_version
     from fabfile.utils.multitenancy import get_mt_enable
     from fabfile.utils.interface import get_data_ip
     from fabfile.tasks.install import update_config_option, update_js_config
@@ -141,7 +141,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
             with settings(host_string = cassandra_host), hide('everything'):
                 host_name = run("hostname")
                 cassandra_host_names.append(host_name)
-
+    keystone_version = get_keystone_version()
     internal_vip = get_openstack_internal_vip()
     external_vip = get_openstack_external_vip()
     contrail_internal_vip = get_contrail_internal_vip()
@@ -312,6 +312,22 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     stack_password = env.test.get('stack_password',
                          os.getenv('STACK_PASSWORD') or '')
     stack_tenant = env.test.get('stack_tenant', os.getenv('STACK_TENANT') or '')
+    if not env.has_key('domain_isolation'):
+        env.domain_isolation = False
+    if not env.has_key('cloud_admin_domain'):
+        env.cloud_admin_domain = 'Default'
+    if not env.has_key('cloud_admin_user'):
+        env.cloud_admin_user = 'admin'
+    if not env.has_key('cloud_admin_password'):
+        env.cloud_admin_password = env.openstack_admin_password
+    domain_isolation = env.test.get('domain_isolation',
+                           os.getenv('DOMAIN_ISOLATION') or env.domain_isolation)
+    cloud_admin_domain = env.test.get('cloud_admin_domain',
+                           os.getenv('CLOUD_ADMIN_DOMAIN') or env.cloud_admin_domain)
+    cloud_admin_user = env.test.get('cloud_admin_user',
+                           os.getenv('CLOUD_ADMIN_USER') or env.cloud_admin_user)
+    cloud_admin_password = env.test.get('cloud_admin_password',
+                           os.getenv('CLOUD_ADMIN_PASSWORD') or env.cloud_admin_password)
     tenant_isolation = env.test.get('tenant_isolation',
                            os.getenv('TENANT_ISOLATION') or '')
 
@@ -425,11 +441,16 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
 
     sanity_params = sanity_ini_templ.safe_substitute(
         {'__testbed_json_file__'   : 'sanity_testbed.json',
+         '__keystone_version__'    : keystone_version,
          '__nova_keypair_name__'   : keypair_name,
          '__orch__'                : orch,
          '__admin_user__'          : admin_user,
          '__admin_password__'      : admin_password,
          '__admin_tenant__'        : admin_tenant,
+         '__domain_isolation__'    : domain_isolation,
+         '__cloud_admin_domain__'  : cloud_admin_domain,
+         '__cloud_admin_user__'    : cloud_admin_user,
+         '__cloud_admin_password__': cloud_admin_password,
          '__tenant_isolation__'    : tenant_isolation,
          '__stack_user__'          : stack_user,
          '__stack_password__'      : stack_password,
@@ -556,7 +577,10 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     config.set('auth','AUTHN_PROTOCOL', auth_protocol)
     config.set('auth','AUTHN_SERVER', auth_server_ip)
     config.set('auth','AUTHN_PORT', auth_server_port)
-    config.set('auth','AUTHN_URL', '/v2.0/tokens')
+    if keystone_version == 'v3':
+        config.set('auth','AUTHN_URL', '/v3/auth/tokens')
+    else:
+        config.set('auth','AUTHN_URL', '/v2.0/tokens')
     if bool(os.getenv('OS_INSECURE', True)):
         config.set('auth', 'insecure', 'True')
 

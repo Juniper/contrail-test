@@ -75,7 +75,18 @@ class TestInputs(object):
                                             'Basic', 'provFile', None)
         self.key = read_config_option(self.config,
                                       'Basic', 'key', 'key1')
-
+        self.keystone_version = read_config_option(self.config,        
+                                                   'Basic',        
+                                                   'keystone_version',        
+                                                   'v2')
+        self.domain_isolation = read_config_option(self.config,
+            'Basic',
+            'domain_isolation',
+            False)
+        self.cloud_admin_domain = read_config_option(self.config,
+            'Basic',
+            'cloud_admin_domain',
+            'Default')
         self.tenant_isolation = read_config_option(self.config,
             'Basic',
             'tenant_isolation',
@@ -99,6 +110,11 @@ class TestInputs(object):
             'Basic',
             'adminTenant',
             os.getenv('OS_TENANT_NAME', 'admin'))
+        
+        self.admin_domain = read_config_option(self.config,
+            'Basic',
+            'adminDomain',
+            os.getenv('OS_DOMAIN_NAME','Default'))
 
         self.stack_user = read_config_option(
             self.config,
@@ -119,7 +135,7 @@ class TestInputs(object):
             self.config,
             'Basic',
             'stackDomain',
-            os.getenv('OS_DOMAIN_NAME', 'default-domain'))
+            os.getenv('OS_DOMAIN_NAME', self.admin_domain))
         self.region_name = read_config_option(
             self.config,
             'Basic',
@@ -283,7 +299,21 @@ class TestInputs(object):
         self.public_host = read_config_option(self.config, 'Basic',
                                               'public_host', '10.204.216.50')
 
-        self.auth_url = os.getenv('OS_AUTH_URL') or \
+        if self.keystone_version == 'v3':
+            #Set to run testecases in V2 mode
+            self.v2_in_v3 = os.getenv('KSV2_IN_KSV3',None)
+            if self.v2_in_v3:
+                self.domain_isolation = False
+                self.auth_url = '%s://%s:%s/v2.0'%(self.auth_protocol,
+                                           self.auth_ip,
+                                           self.auth_port)
+            else:
+                self.auth_url = os.getenv('OS_AUTH_URL') or \
+                            '%s://%s:%s/v3'%(self.auth_protocol,
+                                               self.auth_ip,
+                                               self.auth_port)
+        else:
+            self.auth_url = os.getenv('OS_AUTH_URL') or \
                         '%s://%s:%s/v2.0'%(self.auth_protocol,
                                            self.auth_ip,
                                            self.auth_port)
@@ -749,7 +779,7 @@ class TestInputs(object):
                * OS_USERNAME (default: admin)
                * OS_PASSWORD (default: contrail123)
                * OS_TENANT_NAME (default: admin)
-               * OS_DOMAIN_NAME (default: default-domain)
+               * OS_DOMAIN_NAME (default: Default)
                * OS_AUTH_URL (default: http://127.0.0.1:5000/v2.0)
                * OS_INSECURE (default: True)
               login creds:

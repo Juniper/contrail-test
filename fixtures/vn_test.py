@@ -61,6 +61,8 @@ class VNFixture(fixtures.Fixture):
         self.cn_inspect = self.connections.cn_inspect
         self.analytics_obj = self.connections.analytics_obj
         self.domain_name = self.connections.domain_name
+        if self.domain_name == 'Default':
+            self.domain_name = 'default-domain'
         self.project_name = project_name or self.connections.project_name
         self.vn_name = vn_name or get_random_name(self.project_name)
         self.project_id = self.connections.get_project_id()
@@ -575,7 +577,8 @@ class VNFixture(fixtures.Fixture):
         """
         self.api_verification_flag = True
         self.api_s_vn_obj = self.api_s_inspect.get_cs_vn(
-            project=self.project_name, vn=self.vn_name, refresh=True)
+            domain=self.domain_name, project=self.project_name,
+            vn=self.vn_name, refresh=True)
         if not self.api_s_vn_obj:
             self.logger.debug("VN %s is not found in API-Server" %
                              (self.vn_name))
@@ -780,7 +783,8 @@ class VNFixture(fixtures.Fixture):
             "====Verifying policy data for %s in API_Server ======" %
             (self.vn_name))
         self.api_s_vn_obj = self.api_s_inspect.get_cs_vn(
-            project=self.project_name, vn=self.vn_name, refresh=True)
+            domain=self.domain_name, project=self.project_name,
+            vn=self.vn_name, refresh=True)
         try:
             vn_pol = self.api_s_vn_obj[
                 'virtual-network']['network_policy_refs']
@@ -842,7 +846,9 @@ class VNFixture(fixtures.Fixture):
             self.logger.warn("RI %s is still found in API-Server" % self.ri_ref['name'])
             self.not_in_api_verification_flag = False
             return False
-        if self.api_s_inspect.get_cs_vn(project=self.project_name, vn=self.vn_name, refresh=True):
+        if self.api_s_inspect.get_cs_vn(domain=self.domain_name, 
+                                        project=self.project_name, 
+                                        vn=self.vn_name, refresh=True):
             self.logger.debug("VN %s is still found in API-Server" %
                              (self.vn_name))
             self.not_in_api_verification_flag = False
@@ -879,7 +885,7 @@ class VNFixture(fixtures.Fixture):
         self.cn_verification_flag = True
         for cn in self.inputs.bgp_ips:
             cn_config_vn_obj = self.cn_inspect[cn].get_cn_config_vn(
-                vn_name=self.vn_name, project=self.project_name)
+                vn_name=self.vn_name, project=self.project_name, domain=self.domain_name)
             if not cn_config_vn_obj:
                 self.logger.warn('Control-node %s does not have VN %s info ' %
                                  (cn, self.vn_name))
@@ -968,7 +974,8 @@ class VNFixture(fixtures.Fixture):
                 result = result and False
                 self.not_in_cn_verification_flag = result
         # end for
-        if self.cn_inspect[cn].get_cn_config_vn(vn_name=self.vn_name, project=self.project_name):
+        if self.cn_inspect[cn].get_cn_config_vn(vn_name=self.vn_name,
+                                project=self.project_name, domain=self.domain_name):
             self.logger.debug("Control-node config DB still has VN %s" %
                              (self.vn_name))
             result = result and False
@@ -1029,14 +1036,14 @@ class VNFixture(fixtures.Fixture):
         for compute_ip in self.inputs.compute_ips:
             inspect_h = self.agent_inspect[compute_ip]
             vn = inspect_h.get_vna_vn(
-                project=self.project_name, vn_name=self.vn_name)
+                domain=self.domain_name, project=self.project_name, vn_name=self.vn_name)
             if vn:
                 self.logger.debug('VN %s is still found in %s ' %
                                  (self.vn_name, compute_ip))
                 return False
                 self.not_in_agent_verification_flag = False
             vrf_objs = inspect_h.get_vna_vrf_objs(
-                project=self.project_name, vn_name=self.vn_name)
+                domain=self.domain_name, project=self.project_name, vn_name=self.vn_name)
             if len(vrf_objs['vrf_list']) != 0:
                 self.logger.debug(
                     'VRF %s for VN %s is still found in agent %s' %

@@ -60,7 +60,7 @@ class QuantumHelper():
     def setUp(self):
         self.obj = client.Client('2.0', session=self.auth_h.get_session(),
                                  region_name=self.region_name)
-    # end __init__
+    # end setUp
 
     def get_handle(self):
         return self.obj

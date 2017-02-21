@@ -69,6 +69,8 @@ class VNCApiInspect (VerificationUtilBase):
             returns CsDomainResult object, None if not found
 
         '''
+        if domain == 'Default':
+            domain = 'default-domain'
         d = self.try_cache('domain', [domain], refresh)
         if not d:
             # cache miss
