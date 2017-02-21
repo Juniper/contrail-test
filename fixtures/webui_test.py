@@ -600,6 +600,60 @@ class WebuiTest:
         return result
     # end create_bgpaas
 
+    def create_forwarding_class(self, fixture):
+        result = True
+        index = fixture.kwargs.get('index', 0)
+        queue_num = fixture.kwargs.get('queue_num', 1)
+        fc_id=fixture.kwargs.get('fc_id', fixture.name)
+        try:
+            if not self.ui.click_on_create(
+                    'Forwarding Class',
+                    'forwarding_class',
+                    fixture.name,
+                    select_project=False):
+                result = result and False
+            self.ui.send_keys(fc_id, 'forwarding_class_id', 'name')
+            element_list = ['dscp', 'mpls_exp', 'vlan_priority']
+            for element in element_list:
+                fc_element = 'forwarding_class_' + element
+                fc_browser = self.ui.find_element(fc_element)
+                self.ui.click_on_caret_down(browser=fc_browser)
+                if element == 'mpls_exp':
+                    fc_value = 'fixture.exp'
+                elif element == 'vlan_priority':
+                    fc_value = 'fixture.dot1p'
+                else:
+                    fc_value = 'fixture.' + element
+                self.ui.find_select_from_dropdown(eval(fc_value))
+            queue_browser = self.ui.find_element('qos_queue_refs')
+            self.ui.send_keys(queue_num,
+                              'custom-combobox-input',
+                              'class',
+                              browser=queue_browser)
+            if not self.ui.click_on_create('Forwarding Class',
+                    'forwarding_class', save=True):
+                result = result and False
+            br = self.ui.find_element('forwarding-class-grid')
+            rows_detail = self.ui.click_basic_and_get_row_details(
+                    'forwarding_class', index,
+                    view='advanced',
+                    search_ele='forwarding-class-grid',
+                    browser=br)[1]
+            fixture.uuid = self.ui.get_value_of_key(rows_detail, 'uuid')
+            self.logger.info("Running verify_on_setup..")
+            fixture.verify_on_setup()
+        except WebDriverException:
+            self.logger.error(
+                "Error while creating forwarding class %s" %
+                (fixture.name))
+            self.ui.screenshot("forwarding_class_creation_failed")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            result = result and False
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end create_forwarding_class
+
+
     def create_ipam(self, fixture):
         result = True
         ip_blocks = False
@@ -3991,6 +4045,10 @@ class WebuiTest:
     def delete_physical_interface(self, fixture):
         self.ui.delete_element(fixture, 'phy_interface_delete')
     # end delete_physical_interface
+
+    def delete_forwarding_class(self, fixture):
+        self.ui.delete_element(fixture, 'fc_delete')
+    # end delete_forwarding_class
 
     def delete_vn(self, fixture):
         self._delete_port(fixture)

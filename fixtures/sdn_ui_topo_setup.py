@@ -192,6 +192,11 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
         return True
     # end create_link_local_service
 
+    def create_forwarding_class(self):
+        assert topo_steps.createForwardingClass(self)
+        return True
+    # end create_forwarding_class
+
     def create_virtual_router(self):
         assert topo_steps.createVirtualRouter(self)
         return True

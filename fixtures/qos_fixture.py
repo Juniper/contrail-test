@@ -4,6 +4,10 @@ import vnc_api_test
 from vnc_api.vnc_api import QosQueue, ForwardingClass,\
     QosIdForwardingClassPairs, QosIdForwardingClassPair, QosConfig
 from cfgm_common.exceptions import NoIdError
+try:
+    from webui_test import *
+except ImportError:
+    pass
 
 from tcutils.util import get_random_name, retry, compare_dict
 
@@ -190,6 +194,11 @@ class QosForwardingClassFixture(QosBaseFixture):
         self.fq_name = None
         self.verify_is_run = False
         self.id = {}
+
+        if self.inputs.verify_thru_gui():
+            self.webui = WebuiTest(self.connections, self.inputs)
+            self.kwargs = kwargs
+
     # end __init__
 
     def setUp(self):
@@ -198,7 +207,10 @@ class QosForwardingClassFixture(QosBaseFixture):
 
     def cleanUp(self):
         super(QosForwardingClassFixture, self).cleanUp()
-        self.delete()
+        if self.inputs.is_gui_based_config():
+            self.webui.delete_forwarding_class(self)
+        else:
+            self.delete()
 
     def create(self):
         if self.uuid:
@@ -212,7 +224,11 @@ class QosForwardingClassFixture(QosBaseFixture):
         except NoIdError, e:
             pass
 
-        fc_uuid = self.vnc_h.create_forwarding_class(self.name,
+        if self.inputs.is_gui_based_config():
+            self.webui.create_forwarding_class(self)
+            fc_uuid = self.uuid
+        else:
+            fc_uuid = self.vnc_h.create_forwarding_class(self.name,
                                                     fc_id=self.fc_id,
                                                     parent_obj=self.parent_obj,
                                                     dscp=self.dscp,
