@@ -4471,7 +4471,9 @@ class AnalyticsVerification(fixtures.Fixture):
 
     def verify_process_and_connection_infos_control_node(self):
 
-        port_dict = {'ifmap':'8443',
+        port_dict = {
+                     'cassandra': '9042',
+                     'rabbitmq': '5672',
                      'collector':'8086',
                      'disco':'5998'
                     }
@@ -4482,12 +4484,24 @@ class AnalyticsVerification(fixtures.Fixture):
             assert self.verify_process_status(ops_inspect,\
                             'contrail-control')
             result = False
-            for ip in self.inputs.cfgm_control_ips:
-                server = "%s:%s"%(ip,port_dict['ifmap'])
+
+            for ip in self.inputs.database_control_ips:
+                server = "%s:%s"%(ip,port_dict['cassandra'])
+                result = result or self.verify_connection_infos(ops_inspect,\
+                            'contrail-control',\
+                            server,node = bgp)
+            assert result, 'Control node %s not connected to any cassandra' % (
+                            bgp)
+
+            result = False
+            for ip in self.inputs.config_amqp_ips:
+                server = "%s:%s"%(ip,port_dict['rabbitmq'])
                 result = result or self.verify_connection_infos(ops_inspect,\
                                 'contrail-control',\
-                                [server],node = bgp)
-            assert result    
+                                server,node = bgp)
+            assert result, 'Control node %s not connected to any AMQP' % (
+                            bgp)
+
             result = False
             for ip in self.inputs.cfgm_control_ips:
                 if self.contrail_internal_vip:
