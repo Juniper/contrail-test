@@ -86,8 +86,8 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         '''Test to validate config node uve.
         '''
         result=True
-        process_list = ['contrail-discovery', 'contrail-config-nodemgr'
-                        ,'contrail-svc-monitor', 'ifmap', 'contrail-api', 'contrail-schema']
+        process_list = ['contrail-config-nodemgr', 'contrail-svc-monitor', 'ifmap', 'contrail-api',
+                        'contrail-schema']
         for process in process_list:
             result = result and self.analytics_obj.verify_cfgm_uve_module_state(self.inputs.collector_names[0],
 				self.inputs.cfgm_names[0],process)
