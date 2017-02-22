@@ -1155,7 +1155,8 @@ class AnalyticsTestSanityWithResource(
             {'destination-vn':dst_vn, 'destination-ip':dip, 'destination-port':dst_port,
             'action':action, 'protocol':protocol, 'no_key':['verbose', 'last 1h']},
             {'vrouter-ip':vrouter_ip, 'other-vrouter-ip':other_vrouter_ip, 'no_key':['start-time now-10m', 'end-time now']},
-            {'vrouter':src_vm_host, 'no_key': ['last 10m']}, {'vmi-uuid':vmi_uuid, 'no_key': ['last 20m']}]
+            {'vrouter':src_vm_host, 'no_key': ['last 10m']}, {'vmi-uuid':vmi_uuid, 'no_key': ['last 20m']},
+            {'no_key': ['help']}]
 
 
         return self.test_cmd_output('contrail-flows', cmd_args_list, check_output=True)
@@ -1315,7 +1316,8 @@ class AnalyticsTestSanityWithResource(
             {'object-type': 'virtual-machine', 'object-id':vm_id, 'no_key': ['verbose', 'raw', 'json']},
             {'node-type': 'Analytics', 'module': 'contrail-analytics-api',  'message-type': 'AnalyticsApiStats'},
             {'object-type' :'virtual-network', 'module':'contrail-control','no_key': ['last 10m']},
-            {'module': 'contrail-analytics-api', 'source':cfgm, 'node-type': 'Analytics'}
+            {'module': 'contrail-analytics-api', 'source':cfgm, 'node-type': 'Analytics'},
+            {'no_key': ['help']}
             ]
 
         return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True)
@@ -1375,7 +1377,9 @@ class AnalyticsTestSanityWithResource(
             "SUM(vn_stats.out_bytes)" "SUM(vn_stats.in_bytes)" "COUNT(vn_stats)" --last 1h',
 
             'contrail-stats --table UveVirtualNetworkAgent.vn_stats --where "name=' + src_vn + ' AND vn_stats.other_vn=' + dst_vn + '" \
-            --select T=300 "SUM(vn_stats.out_bytes)" "SUM(vn_stats.in_bytes)" --last 1h' ]
+            --select T=300 "SUM(vn_stats.out_bytes)" "SUM(vn_stats.in_bytes)" --last 1h',
+
+            'contrail-stats --help']
 
         return self.test_cmd_output('contrail-stats', cmd_args_list, check_output=True, form_cmd=False)
 #End AnalyticsTestSanityWithResource        
