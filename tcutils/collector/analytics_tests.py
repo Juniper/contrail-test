@@ -100,7 +100,6 @@ GENERATORS = {'Compute' : ['contrail-vrouter-agent',
                             ], 
             'Database' : ['contrail-database-nodemgr'],
             'Config' : ['contrail-api',
-                        'contrail-discovery',
                         'contrail-svc-monitor',
                         'contrail-config-nodemgr',
                         'contrail-schema',
@@ -387,25 +386,6 @@ class AnalyticsVerification(fixtures.Fixture):
                     result = result and False
             # Verifying module_id from ApiServer
             expected_cfgm_modules = 'contrail-schema'
-            expected_node_type = 'Config'
-            expected_instance_id = '0'
-            for cfgm_node in self.inputs.cfgm_names:
-                result1 = True
-                is_established = self.verify_connection_status(
-                    cfgm_node, expected_cfgm_modules, expected_node_type, expected_instance_id)
-                if is_established:
-                    # collector=self.output['collector_name']
-                    result1 = result1 and True
-                    break
-                else:
-                    result1 = result1 and False
-                    st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
-                                                            node=self.inputs.collector_names[0], \
-                                                            module='Contrail-Analytics-Api', trace_buffer_name='DiscoveryMsg')
-                    self.logger.info("status: %s" % (st))
-            result = result and result1
-            # Verifying module_id from DiscoveryService 
-            expected_cfgm_modules = 'contrail-discovery'
             expected_node_type = 'Config'
             expected_instance_id = '0'
             for cfgm_node in self.inputs.cfgm_names:
@@ -2262,8 +2242,7 @@ class AnalyticsVerification(fixtures.Fixture):
         underlay = self.inputs.run_cmd_on_server(analytics, 'contrail-status | grep contrail-snmp-collector',
                                                  container='analytics')
         cfgm_processes = ['supervisor-config', 'contrail-config-nodemgr',
-            'contrail-device-manager', 'contrail-discovery', 'contrail-schema',
-            'contrail-svc-monitor']
+            'contrail-device-manager', 'contrail-schema', 'contrail-svc-monitor']
         db_processes = ['supervisor-database',
             'contrail-database-nodemgr', 'kafka']
         analytics_processes = ['contrail-query-engine', 'contrail-collector', 'supervisor-analytics', 'contrail-analytics-nodemgr']
@@ -2500,7 +2479,7 @@ class AnalyticsVerification(fixtures.Fixture):
         file_loc = '/etc/contrail/' + conf_file_type + '.conf'
         self._update_contrail_conf(file_loc, 'set', section,
             value, node, conf_file_type, ip, cluster_verify,
-			container=container)
+                       container=container)
     # end update_contrail_conf
 
     def update_contrail_control_conf_file_and_verify_alarms(self, section, value, service_ip, role,
@@ -2693,18 +2672,21 @@ class AnalyticsVerification(fixtures.Fixture):
 
     def _verify_alarms_conf_incorrect(self, service_ip, role, alarm_type, multi_instances):
         result = True
-        if not self.update_discovery_server_ip_in_contrail_api_conf_and_verify_alarms(service_ip, role,
-                alarm_type, multi_instances):
-            result = result and False
+        #Alarm gen verification routines need to use different trigger, after discovery removal in R4.0 
+        #if not self.update_discovery_server_ip_in_contrail_api_conf_and_verify_alarms(service_ip, role,
+        #        alarm_type, multi_instances):
+        #    result = result and False
         return result
     # end _verify_alarms_conf_incorrect
 
     def _verify_alarms_process_connectivity_alarm_gen(self, service_ip, role, alarm_type, multi_instances):
         result = True
-        if not self.update_discovery_server_ip_in_contrail_api_conf_and_verify_alarms(service_ip, role,
-                alarm_type, multi_instances, service='contrail-alarm-gen'):
-            result = result and False
+        #Alarm gen verification routines need to use different trigger, after discovery removal in R4.0 
+        #if not self.update_discovery_server_ip_in_contrail_api_conf_and_verify_alarms(service_ip, role,
+        #        alarm_type, multi_instances, service='contrail-alarm-gen'):
+        #    result = result and False
         return result
+    # end _verify_alarms_process_connectivity_alarm_gen
 
     def _verify_alarms_process_connectivity_control(self, service_ip, role, alarm_type, multi_instances):
         result = True
@@ -2713,13 +2695,14 @@ class AnalyticsVerification(fixtures.Fixture):
             result = result and False
         return result
 
-    # end _verify_alarms_process_connectivity_alarm_gen
+    # end _verify_alarms_process_connectivity_control
 
     def _verify_alarms_partial_sysinfo_config(self, service_ip, role, alarm_type, multi_instances):
         result = True
-        if not self.update_discovery_server_ip_in_contrail_api_conf_and_verify_alarms(service_ip, role,
-                alarm_type, multi_instances):
-            result = result and False
+        #Alarm gen verification routines need to use different trigger, after discovery removal in R4.0 
+        #if not self.update_discovery_server_ip_in_contrail_api_conf_and_verify_alarms(service_ip, role,
+        #        alarm_type, multi_instances):
+        #    result = result and False
         return result
     # end _verify_alarms_partial_sys_info_config
 
@@ -2733,7 +2716,7 @@ class AnalyticsVerification(fixtures.Fixture):
     # end _verify_alarms_process_connectivity_vrouter_agent
 
     def _update_contrail_conf(self, conf_file, operation, section, knob, node, service, value, cluster_verify,
-							  container=None):
+                              container=None):
         if operation == 'del':
             cmd = 'openstack-config --del %s %s %s' % (conf_file, section, knob)
             xmpp_status = self.inputs.run_cmd_on_server(node, cmd, container=container)
@@ -3072,6 +3055,11 @@ class AnalyticsVerification(fixtures.Fixture):
                  if not self._verify_alarms_process_connectivity_control(service_ip, role, alarm_type, multi_instances):
                      result = result and False
 
+        # need verification routines for alarms:-
+        # process-connectivity on analytics-node
+        # incorrect configuration / conf mismatch
+        # partial_sysinfo_config on config_node
+
         elif trigger == 'address_mismatch' and role == 'vrouter':
             alarm_type = 'address-mismatch-compute'
             if not self._verify_alarms_address_mismatch_compute(service_ip, role, alarm_type, multi_instances):
@@ -3223,7 +3211,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
         res = None
 
-        if ((process == 'contrail-discovery') or (process == 'contrail-api')):
+        if process == 'contrail-api':
             process = '%s:%s' % (process, instanceid)
 
         try:
@@ -4131,8 +4119,7 @@ class AnalyticsVerification(fixtures.Fixture):
         result = True
         port_dict = {'xmpp':'5269',
                      'dns' :'53',
-                     'collector':'8086',
-                     'disco':'5998'
+                     'collector':'8086'
                     }
         server_list = []
         for vrouter in self.inputs.compute_names:
@@ -4194,7 +4181,6 @@ class AnalyticsVerification(fixtures.Fixture):
         port_dict = {'zookeeper':'2181',
                      'rmq' :'5672',
                      'collector':'8086',
-                     'disco':'5998',
                      'cassandra':'9160',
                      'api':'8082',
                      'ifmap':'8443'
@@ -4202,23 +4188,19 @@ class AnalyticsVerification(fixtures.Fixture):
         module_connection_dict = {'DeviceManager':['zookeeper',\
                                                     'rmq',\
                                                     'collector',\
-                                                    'disco',\
                                                     'cassandra',\
                                                     'api'],\
 
                                   'contrail-schema':['zookeeper',\
                                                     'collector',\
-                                                    'disco',\
                                                     'cassandra',\
                                                     'api'],\
                                   'contrail-svc-monitor':['zookeeper',\
                                                     'collector',\
-                                                    'disco',\
                                                     'cassandra',\
                                                     'api'],\
                                   'contrail-api':['zookeeper',\
                                                     'collector',\
-                                                    'disco',\
                                                     'cassandra',\
                                                     'api',\
                                                     'ifmap',\
@@ -4252,24 +4234,6 @@ class AnalyticsVerification(fixtures.Fixture):
                             'contrail-api',\
                             server,node = cfgm)
             assert result   
-            result = False    
-            for ip in self.inputs.cfgm_control_ips:
-                if self.contrail_internal_vip:
-                    ip = self.contrail_internal_vip
-                server = "%s:%s"%(ip,port_dict['disco'])
-                result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-api',\
-                            server,node = cfgm)
-                if self.contrail_internal_vip:
-                    break
-            assert result   
-           # result = False    
-           # for ip in self.inputs.cfgm_ips:
-           #     server = "%s:%s"%(ip,port_dict['api'])
-           #     result = result or self.verify_connection_infos(ops_inspect,\
-           #                 'contrail-api',\
-           #                 [server])
-           # assert result   
             result = False    
             for ip in self.inputs.database_control_ips:
                 server = "%s:%s"%(ip,port_dict['cassandra'])
@@ -4317,17 +4281,6 @@ class AnalyticsVerification(fixtures.Fixture):
                 result = result or self.verify_connection_infos(ops_inspect,\
                         'DeviceManager',\
                         server,node = cfgm)
-            assert result   
-            result = False    
-            for ip in self.inputs.cfgm_control_ips:
-               if self.contrail_internal_vip:
-                   ip = self.contrail_internal_vip
-               server = "%s:%s"%(ip,port_dict['disco'])
-               result = result or self.verify_connection_infos(ops_inspect,\
-                        'DeviceManager',\
-                        server,node = cfgm)
-               if self.contrail_internal_vip:
-                   break
             assert result   
             result = False    
             for ip in self.inputs.cfgm_control_ips:
@@ -4385,17 +4338,6 @@ class AnalyticsVerification(fixtures.Fixture):
             for ip in self.inputs.cfgm_control_ips:
                if self.contrail_internal_vip:
                    ip = self.contrail_internal_vip
-               server = "%s:%s"%(ip,port_dict['disco'])
-               result = result or self.verify_connection_infos(ops_inspect,\
-                        'contrail-schema',\
-                        server,node = cfgm)
-               if self.contrail_internal_vip:
-                   break
-            assert result   
-            result = False    
-            for ip in self.inputs.cfgm_control_ips:
-               if self.contrail_internal_vip:
-                   ip = self.contrail_internal_vip
                server = "%s:%s"%(ip,port_dict['api'])
                result = result or self.verify_connection_infos(ops_inspect,\
                             'contrail-schema',\
@@ -4441,17 +4383,6 @@ class AnalyticsVerification(fixtures.Fixture):
             for ip in self.inputs.cfgm_control_ips:
                if self.contrail_internal_vip:
                    ip = self.contrail_internal_vip
-               server = "%s:%s"%(ip,port_dict['disco'])
-               result = result or self.verify_connection_infos(ops_inspect,\
-                        'contrail-svc-monitor',\
-                        server,node = cfgm)
-               if self.contrail_internal_vip:
-                   break
-            assert result   
-            result = False    
-            for ip in self.inputs.cfgm_control_ips:
-               if self.contrail_internal_vip:
-                   ip = self.contrail_internal_vip
                server = "%s:%s"%(ip,port_dict['api'])
                result = result or self.verify_connection_infos(ops_inspect,\
                             'contrail-svc-monitor',\
@@ -4474,8 +4405,7 @@ class AnalyticsVerification(fixtures.Fixture):
         port_dict = {
                      'cassandra': '9042',
                      'rabbitmq': '5672',
-                     'collector':'8086',
-                     'disco':'5998'
+                     'collector':'8086'
                     }
         server_list = []            
         for bgp in self.inputs.bgp_names:
@@ -4525,18 +4455,15 @@ class AnalyticsVerification(fixtures.Fixture):
 
         port_dict = {
                      'collector':'8086',
-                     'disco':'5998',
                      'cassandra':'9042',
                     }
         module_connection_dict = {'contrail-collector':[
                                                     'collector',\
-                                                    'disco',\
                                                     'cassandra'\
                                                     ],\
 
                                   'contrail-analytics-api':[\
                                                     'collector',\
-                                                    'disco',\
                                                     ],\
                                   'contrail-query-engine':[\
                                                     'collector',\
@@ -4587,25 +4514,6 @@ class AnalyticsVerification(fixtures.Fixture):
                             'contrail-collector',\
                           [server],node = collector)
                assert result
-            result = False
-            try:    
-                for ip in self.inputs.cfgm_control_ips:
-                    if self.contrail_internal_vip:
-                        ip = self.contrail_internal_vip
-                    server = "%s:%s"%(ip,port_dict['disco'])
-                    result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-collector',\
-                            [server],node = collector)
-                    if self.contrail_internal_vip:
-                        break
-                assert result 
-            except Exception as e:
-               for ip in self.inputs.cfgm_control_ips:
-                   server = "%s:%s"%('127.0.0.1',port_dict['disco'])
-                   result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-collector',\
-                          [server],node = collector)
-               assert result
               
             result = False    
             try:
@@ -4644,7 +4552,6 @@ class AnalyticsVerification(fixtures.Fixture):
                            [server],node = collector)
                 assert result
                
-            result = False
             #To do : Verify Redis connection status once https://bugs.launchpad.net/juniperopenstack/+bug/1459973
             #fixed 
            # try:    
@@ -4662,26 +4569,6 @@ class AnalyticsVerification(fixtures.Fixture):
            #                [server],node = collector)
            #     assert result
                
-            result = False    
-            try:
-                for ip in self.inputs.cfgm_control_ips:
-                    if self.contrail_internal_vip:
-                        ip = self.contrail_internal_vip
-                    server = "%s:%s"%(ip,port_dict['disco'])
-                    result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-analytics-api',\
-                            [server],node = collector)
-                    if self.contrail_internal_vip:
-                        break
-                assert result 
-            except Exception as e:    
-                for ip in self.inputs.cfgm_control_ips:
-                    server = "%s:%s"%('127.0.0.1',port_dict['disco'])
-                    result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-analytics-api',\
-                           [server],node = collector)
-                assert result
-
         for collector in self.inputs.collector_names:
             ops_inspect = self.ops_inspect[self.inputs.\
                    collector_ips[0]].get_ops_collector(collector)
@@ -4702,7 +4589,6 @@ class AnalyticsVerification(fixtures.Fixture):
                            [server],node = collector)
                 assert result 
               
-            result = False    
             #To do : Verify Redis connection status once https://bugs.launchpad.net/juniperopenstack/+bug/1459973
             #fixed 
             #try:
@@ -4719,26 +4605,6 @@ class AnalyticsVerification(fixtures.Fixture):
             #                'contrail-analytics-api',\
             #                [server],node = collector)
             #    assert result   
-
-            result = False
-            try:    
-                for ip in self.inputs.cfgm_control_ips:
-                    if self.contrail_internal_vip:
-                        ip = self.contrail_internal_vip
-                    server = "%s:%s"%(ip,port_dict['disco'])
-                    result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-analytics-api',\
-                            [server],node = collector)
-                    if self.contrail_internal_vip:
-                        break
-                assert result 
-            except Exception as e:    
-                for ip in self.inputs.cfgm_control_ips:
-                    server = "%s:%s"%('127.0.0.1',port_dict['disco'])
-                    result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-analytics-api',\
-                            [server],node = collector)
-                assert result 
 
         for collector in self.inputs.collector_names:
             ops_inspect = self.ops_inspect[self.inputs.\
