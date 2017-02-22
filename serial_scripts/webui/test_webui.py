@@ -477,6 +477,20 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test3_1_5_create_service_appliances
 
     @preposttest_wrapper
+    def test3_1_6_create_alarms_in_project_and_in_global(self):
+        '''Test to create alarms in both project wise and global wise on UI
+           1. Go to Configure->Alarms->Project.
+           2. Click on create and enter the config details and save.
+           3. Go to Infrastructure->Global Config->Alarm Rules.
+           4. Click on create and enter the config details and save.
+
+           Pass Criteria: Both Step 2 and 4 should pass without any error
+        '''
+        assert self.res.setup_obj.create_alarms(), 'Alarm creation failed'
+        return True
+    # end test3_1_6_create_alarms_in_project_and_in_global
+
+    @preposttest_wrapper
     def test3_1_edit_net_without_change(self):
         '''Test to edit the existing network without changing anything
            1. Go to Configure->Networking->Networks. Then select any of the vn and
