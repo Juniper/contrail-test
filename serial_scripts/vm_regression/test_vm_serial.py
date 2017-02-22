@@ -863,7 +863,10 @@ class TestBasicVMVN0(BaseVnVmTest):
                 item, cmd,
                 self.inputs.host_data[item]['username'],
                 self.inputs.host_data[item]['password'])
-        broadcast_address=output.split(" ")[3].split(":")[1]
+        try:
+            broadcast_address=output.split(" ")[3].split(":")[1] #Handling for ubuntu
+        except Exception as e:
+            broadcast_address = output.split(" ")[-1] #Handling for centos
 
         # Start tcpdump on receiving compute
         inspect_h = self.agent_inspect[self.inputs.compute_ips[1]]
