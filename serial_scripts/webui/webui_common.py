@@ -1215,6 +1215,15 @@ class WebuiCommon:
         return self.check_error_msg("configure service instances")
     # end click_configure_service_instance_in_webui
 
+    def find_div_element_by_tag(self, index, browser, return_type='text'):
+        element = self.find_element('div', 'tag', elements=True,
+                                       browser=browser)[index]
+        if return_type == 'text':
+            return element.text
+        else:
+            return element
+    # end find_div_element_by_tag
+
     def delete_element(self, fixture=None, element_type=None):
         result = True
         delete_success = None
@@ -1352,6 +1361,11 @@ class WebuiCommon:
                 result = result and False
             element_id = 'btnActionDelLLS'
             popup_id = 'configure-link_local_servicesbtn1'
+        elif element_type == 'vrouter_delete':
+            if not self.click_configure_vrouter():
+                result = result and False
+            element_id = 'linkvRouterDelete'
+            popup_id = 'configure-config_vrouterbtn1'
         if not br:
             br = self.browser
         rows = self.get_rows(br, canvas=True)
@@ -1389,15 +1403,19 @@ class WebuiCommon:
                     else:
                         element_name = element_text
                 else:
-                    element_text = element.find_elements_by_tag_name(
-                        'div')[2].text
-                    div_obj = element.find_elements_by_tag_name('div')[1]
+                    element_text = self.find_div_element_by_tag(2, element)
+                    div_obj = self.find_div_element_by_tag(1, element, return_type='obj')
                     if not ver_flag:
                         if element_type == 'svc_template_delete':
                             version = re.match('\S+(\s.*)', element_text)
                             element_name+= version.group(1)
                             ver_flag = True
-
+                    if element_type == 'vrouter_delete':
+                        element_ip = self.find_div_element_by_tag(4, browser=element)
+                        if element_ip == self.inputs.auth_ip:
+                            continue
+                        else:
+                            element_name = element_text
                 if (element_text == element_name):
                     div_obj.find_element_by_tag_name('input').click()
                     if_select = True
@@ -1703,6 +1721,22 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser, wait=2)
         return self.check_error_msg("configure link local services")
     # end click_configure_link_local_service
+
+    def click_configure_vrouter(self):
+        return self.click_configure_elements(0, 'config_infra_vrouters',
+                                  msg="configure virtual routers")
+    # end click_configure_vrouter
+
+    def click_configure_elements(self, index, element, msg=None, wait=2):
+        self.wait_till_ajax_done(self.browser)
+        self._click_on_config_dropdown(self.browser, index)
+        self.click_element([element, 'a'], ['id', 'tag'])
+        self.wait_till_ajax_done(self.browser, wait)
+        if msg:
+            return self.check_error_msg(msg)
+        else:
+            return True
+    # end click_configure_elements
 
     def _click_on_config_dropdown(self, br, index=2):
         # index = 3 if svc_instance or svc_template
