@@ -305,6 +305,8 @@ class WebuiCommon:
                     self.select_dns_server(prj_name)
                 elif element_type == 'Interface':
                     self.select_project(prj_name, proj_type='prouter')
+                elif element_type == 'Service Appliance':
+                    self.select_project(prj_name, proj_type='service appliance set')
                 elif not element_type in ['DNS Server']:
                     self.select_project(prj_name)
             self.logger.info("Creating %s %s using contrail-webui" %
@@ -834,11 +836,9 @@ class WebuiCommon:
         return True
     # end click_if_element_found
 
-    def select_project(self, project_name='admin', proj_type='project'):
-        if proj_type == 'project':
-            proj_crumb = 's2id_projects\-breadcrumb\-dropdown'
-        elif proj_type == 'prouter':
-            proj_crumb = 's2id_prouter\-breadcrumb\-dropdown'
+    def select_project(self, project_name='admin', proj_type='projects'):
+        proj_type = proj_type.replace(' ', '\-')
+        proj_crumb = 's2id_' + proj_type + '\-breadcrumb\-dropdown'
         current_project = self.find_element(
             [proj_crumb, 'span'], ['id', 'tag']).text
         if not current_project == project_name:
@@ -1366,6 +1366,14 @@ class WebuiCommon:
                 result = result and False
             element_id = 'linkvRouterDelete'
             popup_id = 'configure-config_vrouterbtn1'
+        elif element_type == 'svc_appliance_delete':
+            element_id = 'btnActionDelSecGrp'
+            popup_id = 'configure-svcAppliancebtn1'
+        elif element_type == 'svc_appliance_set_delete':
+            if not self.click_configure_svc_appliance_set():
+                result = result and False
+            element_id = 'btnActionDelSecGrp'
+            popup_id = 'configure-svcApplianceSetbtn1'
         if not br:
             br = self.browser
         rows = self.get_rows(br, canvas=True)
@@ -1416,6 +1424,13 @@ class WebuiCommon:
                             continue
                         else:
                             element_name = element_text
+                    if element_type == 'svc_appliance_set_delete':
+                        if element_text in ['opencontrail', 'native']:
+                            continue
+                        else:
+                            element_name = element_text
+                    if element_type == 'svc_appliance_delete':
+                        element_name = element_text
                 if (element_text == element_name):
                     div_obj.find_element_by_tag_name('input').click()
                     if_select = True
@@ -1737,6 +1752,16 @@ class WebuiCommon:
         else:
             return True
     # end click_configure_elements
+
+    def click_configure_svc_appliance_set(self):
+        return self.click_configure_elements(0, 'config_infra_sapset',
+                                             msg="configure Service Appliance Set")
+    # end click_configure_svc_appliance_set
+
+    def click_configure_svc_appliances(self):
+        return self.click_configure_elements(0, 'config_infra_sap',
+                                             msg="configure Service Appliance Set")
+    # end click_configure_svc_appliances
 
     def _click_on_config_dropdown(self, br, index=2):
         # index = 3 if svc_instance or svc_template
@@ -3456,3 +3481,13 @@ class WebuiCommon:
         return webui_global_key_value
     # get_global_config_row_details_webui
 
+    def send_keys_values(self, key_values_dict):
+        result = True
+        try:
+            for key, value in key_values_dict.iteritems():
+                for inner_key, inner_value in value.iteritems():
+                    self.send_keys(inner_value, inner_key, key, clear=True)
+        except WebDriverException:
+            result = False
+        return result
+    # end send_keys_values
