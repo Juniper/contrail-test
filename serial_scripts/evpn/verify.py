@@ -396,6 +396,9 @@ class VerifyEvpnCases():
             project_fq_name=self.inputs.project_fq_name,
             vn_name=self.vn1_name,
             forwarding_mode='l2_l3')
+        cmd='dhclient eth1'
+        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        vn_l2_vm2_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
         assert self.verify_eth1_ip_from_vm(vn_l2_vm1_fixture),'VM did not got IP after enabling dhcp'
         assert self.verify_eth1_ip_from_vm(vn_l2_vm2_fixture),'VM did not got IP after enabling dhcp'
         assert self.vn1_fixture.verify_on_setup()
