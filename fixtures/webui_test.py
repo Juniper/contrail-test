@@ -877,6 +877,46 @@ class WebuiTest:
         return result
     # end create_qos
 
+    def attach_qos_to_vn(
+            self,
+            qos_name,
+            vn):
+        result = True
+        try:
+            if not self.ui.click_configure_networks():
+                result = result and False
+            self.ui.select_project(self.project_name_input)
+            rows = self.ui.get_rows()
+            self.logger.info("Attaching qos config %s using contrail-webui" %
+                             (qos_name))
+            for net in rows:
+                if net.text:
+                    if (self.ui.get_slick_cell_text(net, 2) == vn):
+                        self.ui.click_element('fa-cog', 'class', browser=net)
+                        self.ui.wait_till_ajax_done(self.browser)
+                        self.ui.click_element(['tooltip-success', 'i'], ['class', 'tag'])
+                        self.ui.click_element('advanced_options')
+                        self.ui.click_element('s2id_qos_config_refs_dropdown')
+                        self.ui.wait_till_ajax_done(self.browser)
+                        self.ui.select_from_dropdown(qos_name)
+                        if not self.ui.click_on_create('Network', 'network', save=True):
+                            result = result and False
+                            raise Exception("Qos attachment to VN failed")
+                        else:
+                            self.logger.info(
+                                "Attached qos config %s using contrail-webui" %
+                                    (qos_name))
+                        break
+        except WebDriverException:
+            self.logger.error("Error while attaching %s" % (qos_name))
+            self.ui.screenshot("qos_attach_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            result = result and False
+            raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end attach_qos_to_vn
+
     def create_security_group(self, fixture):
         result = True
         try:
@@ -4243,6 +4283,46 @@ class WebuiTest:
                 self.logger.warning("ipam detach from router failed")
         return result
     # end detach_ipam_from_dns_server
+
+    def detach_qos_from_vn(
+            self,
+            qos_name,
+            vn):
+        result = True
+        try:
+            if not self.ui.click_configure_networks():
+                result = result and False
+            self.ui.select_project(self.project_name_input)
+            rows = self.ui.get_rows()
+            self.logger.info("Detaching qos config %s using contrail-webui" %
+                             (qos_name))
+            for net in rows:
+                if net.text:
+                    if (self.ui.get_slick_cell_text(net, 2) == vn):
+                        self.ui.click_element('fa-cog', 'class', browser=net)
+                        self.ui.wait_till_ajax_done(self.browser)
+                        self.ui.click_element(['tooltip-success', 'i'], ['class', 'tag'])
+                        self.ui.click_element('advanced_options')
+                        self.ui.click_element('s2id_qos_config_refs_dropdown')
+                        self.ui.wait_till_ajax_done(self.browser)
+                        self.ui.select_from_dropdown('None')
+                        if not self.ui.click_on_create('Network', 'network', save=True):
+                            result = result and False
+                            raise Exception("Qos detachment from VN failed")
+                        else:
+                            self.logger.info(
+                                "Detached qos config %s using contrail-webui" %
+                                    (qos_name))
+                        break
+        except WebDriverException:
+            self.logger.error("Error while detaching %s" % (qos_name))
+            self.ui.screenshot("qos_detach_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            result = result and False
+            raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end detach_qos_from_vn
 
     def service_template_delete_in_webui(self, fixture):
         if not self.ui.click_configure_service_template():

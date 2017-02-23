@@ -177,3 +177,21 @@ def createSVCAppliances(self):
         result = False
     return result
 # end createServAppliances
+
+def attachQosToVN(self):
+    if not hasattr(self.topo, 'vn_qos_list'):
+        self.logger.info("No qos config for VN found in topo file")
+        return True
+    result = True
+    self.logger.info("Setup step: Editing VN to attach QoS config")
+    for vn in self.topo.vnet_list:
+        if vn in self.topo.vn_qos_params:
+            qos_name = self.topo.vn_qos_params[vn]
+            if not self.webui.attach_qos_to_vn(
+                    qos_name,
+                    vn):
+                result = result and False
+            self.addCleanup(
+                self.webui.detach_qos_from_vn(qos_name, vn))
+    return result
+# end attachQosToVN

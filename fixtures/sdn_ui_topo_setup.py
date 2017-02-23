@@ -202,6 +202,11 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
         return True
     # end create_qos_config
 
+    def attach_qos_config_to_vn(self):
+        assert ui_topo_steps.attachQosToVN(self)
+        return True
+    # end attach_qos_config_to_vn
+
     def create_virtual_router(self):
         assert topo_steps.createVirtualRouter(self)
         return True
