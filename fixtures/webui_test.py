@@ -4165,6 +4165,7 @@ class WebuiTest:
         self.delete_bgp_aas()
         self.delete_link_local_service()
         self.delete_virtual_router()
+        self.delete_svc_appliance_set()
         return True
     # end cleanup
 
@@ -4179,6 +4180,24 @@ class WebuiTest:
     def delete_virtual_router(self):
         self.ui.delete_element(element_type='vrouter_delete')
     # end delete_virtual_router
+
+    def delete_svc_appliance(self):
+        self.ui.delete_element(element_type='svc_appliance_delete')
+    # end delete_svc_appliance
+
+    def delete_svc_appliance_set(self):
+        self.ui.click_configure_svc_appliance_set()
+        rows = self.ui.get_rows(canvas=True)
+        for row in rows:
+            element_text = self.ui.find_div_element_by_tag(2, row)
+            if element_text in ['opencontrail', 'native']:
+                continue
+            else:
+                self.ui.click_configure_svc_appliances()
+                self.ui.select_project(element_text, proj_type='service appliance set')
+                self.delete_svc_appliance()
+        self.ui.delete_element(element_type='svc_appliance_set_delete')
+    # end delete_svc_appliance_set
 
     def delete_dns_server_and_record(self):
         self.detach_ipam_from_dns_server()
@@ -6841,3 +6860,81 @@ class WebuiTest:
         self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_virtual_router
+
+    def create_service_appliance_set(self, appliance_list, appliance_params):
+        result = True
+        try:
+            for appl in appliance_list:
+                appl_lbdriver = appliance_params[appl]['load_balancer']
+                appl_mode = appliance_params[appl]['ha_mode']
+                appl_key = appliance_params[appl]['key']
+                appl_value = appliance_params[appl]['value']
+                if not self.ui.click_on_create(
+                        'Service Appliance Set',
+                        'svc_appliance_set',
+                        appl,
+                        select_project=False):
+                    result = result and False
+                send_key_values = {
+                    'name': {
+                        'display_name': appl,
+                        'service_appliance_ha_mode': appl_mode,
+                        'key': appl_key,
+                        'value': appl_value},
+                    'class': {
+                        'custom-combobox-input': appl_lbdriver}}
+                self.ui.click_element('ui-accordion-header-icon', 'class')
+                self.ui.click_element('editable-grid-add-link', 'class')
+                if not self.ui.send_keys_values(send_key_values):
+                    result = result and False
+                self.ui.click_on_create('Service Appliance Set',
+                                       'svcApplianceSet', save=True)
+        except WebDriverException:
+            self.logger.error(
+                "Error while creating service appliance set")
+            self.ui.screenshot("ServiceApplianceSet")
+            result = result and False
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end create_service_appliances_set
+
+    def create_service_appliances(self, appliance_list, appliance_params):
+        result = True
+        try:
+            for appl in appliance_list:
+                appl_set = appliance_params[appl]['svc_appl_set']
+                appl_ip = appliance_params[appl]['svc_appl_ip']
+                appl_uname =  appliance_params[appl]['user_name']
+                appl_pword = appliance_params[appl]['password']
+                appl_key = appliance_params[appl]['key']
+                appl_value = appliance_params[appl]['value']
+                if not self.ui.click_on_create(
+                        'Service Appliance',
+                        'svc_appliances',
+                        appl,
+                        prj_name=appl_set):
+                    result = result and False
+                key_values = {
+                    'name': {
+                        'display_name': appl,
+                        'service_appliance_ip_address': appl_ip,
+                        'username': appl_uname,
+                        'password': appl_pword,
+                        'key': appl_key,
+                        'value': appl_value}}
+                for index in range(0,2):
+                    self.ui.click_element('ui-accordion-header-icon',
+                                         'class', elements=True, index=index)
+                self.ui.click_element('editable-grid-add-link', 'class')
+                if not self.ui.send_keys_values(key_values):
+                    result = result and False
+                self.ui.click_on_create('Service Appliance',
+                                       'svcAppliance', save=True)
+        except WebDriverException:
+            self.logger.error(
+                "Error while creating service appliances")
+            self.ui.screenshot("ServiceAppliances")
+            result = result and False
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end create_service_appliances
