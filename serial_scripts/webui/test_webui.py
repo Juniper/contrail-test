@@ -166,6 +166,20 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_create_bgp_aas
 
     @preposttest_wrapper
+    def test2_9_create_global_qos_config(self):
+        '''
+        Description: Test to create Global QoS config on the UI
+        Steps:
+            1. On the Contrail UI, go to Configure -> Infrastructure -> Global Config -> QoS
+            2. Click on create, enter the config details in the fields and click on 'Save'
+        Pass criteria:
+            1. Step 2 above should pass
+        '''
+        assert self.res.setup_obj.create_global_qos_config(), 'Global QoS config creation failed'
+        return True
+    # end test_create_global_qos_config
+
+    @preposttest_wrapper
     def test2_1_4_create_qos_config(self):
         '''
         Description: Test to create QoS config on UI

@@ -282,6 +282,23 @@ class sdn_webui_config ():
                 'exp_mapping': {'be1 (001)': '3'},
                 'dot1p_mapping': {'ef1 (011)': '4'}}}
 
+        #Define Global QoS parameters
+        self.qos_glob_list = ['qos_glob1', 'qos_glob2']
+        self.qos_glob_params = {
+            'qos_glob1': {
+                'qos_config_type': 'vHost',
+                'default_fc_id': '2',
+                'dscp_mapping': {'cs1 (001000)': '4'},
+                'exp_mapping': {'ef (010)': '1'},
+                'dot1p_mapping': {'af11 (100)': '3'}},
+            'qos_glob2': {
+                'qos_config_type': 'Fabric',
+                'default_fc_id': '3',
+                'dscp_mapping': {'nc2/cs7 (111000)': '1'},
+                'exp_mapping': {'af12 (101)': '2'},
+                'dot1p_mapping': {'be1 (001)': '4'}}
+                }
+
         #Define parameters for attaching Qos config to VN
         self.vn_qos_list = ['qos1']
         self.vn_qos_params = {
