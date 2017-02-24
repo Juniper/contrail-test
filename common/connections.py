@@ -47,8 +47,8 @@ class ContrailConnections():
         # ToDo: msenthil/sandipd rest of init needs to be better handled
         self.auth = self.get_auth_h()
         self.vnc_lib = self.get_vnc_lib_h()
+	self.project_id = self.get_project_id()
         if self.inputs.orchestrator == 'openstack':
-            self.project_id = self.get_project_id()
             if self.inputs.verify_thru_gui():
                 self.ui_login = UILogin(self, self.inputs, project_name, username, password)
                 self.browser = self.ui_login.browser
