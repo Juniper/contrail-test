@@ -1388,6 +1388,7 @@ class TestBasicVMVN4(BaseVnVmTest):
                                       vn_objs=[vn1_fixture.obj,vn2_fixture.obj],
                                       project_name=self.inputs.project_name))
         assert vm1_fixture.verify_on_setup()
+        assert vm1_fixture.wait_till_vm_is_up()
         list_of_ips = vm1_fixture.vm_ips
         cmd = '/sbin/ifconfig -a'
         ret = vm1_fixture.run_cmd_on_vm(cmds=[cmd])
