@@ -822,13 +822,26 @@ class WebuiTest:
 
     def create_qos(self, fixture):
         result = True
+        title_type = None
         try:
+            if fixture.global_flag:
+                ele_type = 'QOS'
+                func_suffix = 'global_qos'
+                select_project = False
+                title_type = "//a[@data-original-title='" + fixture.qos_config_type + " QoS']"
+            else:
+                ele_type = 'QoS'
+                func_suffix = 'qos'
+                select_project = True
             if not self.ui.click_on_create(
-                    'QoS',
-                    'qos',
+                    ele_type,
+                    func_suffix,
                     fixture.name,
-                    prj_name=fixture.project_name):
+                    prj_name=fixture.project_name,
+                    select_project=select_project):
                 result = result and False
+            if title_type :
+                self.ui.click_element(title_type, 'xpath')
             self.ui.send_keys(fixture.name, 'display_name', 'name')
             self.ui.send_keys(fixture.default_fc_id,
                               'default_forwarding_class_id', 'name')
@@ -852,7 +865,8 @@ class WebuiTest:
                                 'class', browser=element_browser)
                 self.ui.click_on_caret_down(browser=fc_browser)
                 self.ui.find_select_from_dropdown(fc_value, browser=fc_browser)
-            if not self.ui.click_on_create('QoS', 'qos', save=True):
+            if not self.ui.click_on_create(
+                    ele_type, func_suffix, save=True):
                 self.ui.click_on_cancel_if_failure('cancelBtn')
                 self.logger.error("Error while creating Qos %s" %
                                   (fixture.name))
@@ -862,7 +876,7 @@ class WebuiTest:
                     "Qos %s creation successful" %
                         (fixture.name))
             rows_detail = self.ui.click_basic_and_get_row_details(
-                'qos', 0)[1]
+                func_suffix, 0)[1]
             fixture.uuid = self.ui.get_value_of_key(rows_detail, 'UUID')
             fixture.verify_on_setup()
         except WebDriverException:
