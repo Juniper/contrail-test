@@ -1,7 +1,6 @@
 import os
-from common.openstack_libs import ks_session as session
+import openstack
 from common.openstack_libs import ceilo_client as client
-from common.structure import DynamicArgs
 
 VERSION = 2
 
@@ -40,31 +39,35 @@ def make_query(user_id=None, tenant_id=None, resource_id=None,
 
     return query
 
-class CeilometerClient(DynamicArgs):
-    """Returns ceilometer clent  
-    :Parameters:
-      - `username`: user_id
-      - `tenant_id`: tenant_id
-      - `password`: password
-      - `auth_url`: auth url
-      - `ceilometer_url`: ceilometer url
-    """
-    _fields = ['auth_url', 'username', 'password', 'tenant_name',
-                'ceilometer_url']
+class CeilometerClient(object):
+    '''
+       Wrapper around ceilometer client library
+       Optional params:
+       :param auth_h: OpenstackAuth object
+       :param inputs: ContrailTestInit object which has test env details
+       :param logger: logger object
+       :param auth_url: Identity service endpoint for authorization.
+       :param username: Username for authentication.
+       :param password: Password for authentication.
+       :param project_name: Tenant name for tenant scoping.
+       :param region_name: Region name of the endpoints.
+       :param certfile: Public certificate file
+       :param keyfile: Private Key file
+       :param cacert: CA certificate file
+       :param verify: Enable or Disable ssl cert verification
+    '''
+    def __init__(self, auth_h=None, **kwargs):
+        if not auth_h:
+            auth_h = self.get_auth_h(**kwargs)
+        self.auth_h = auth_h
+
+    def get_auth_h(self, **kwargs):
+        return openstack.OpenstackAuth(**kwargs)
 
     def get_cclient(self):
-
-        #TO DO - working with auth token
-        #auth_client = AuthToken(self.auth_url,
-        #                        username = self.username,
-        #                        password = self.password,
-        #                        tenant_id = self.tenant_name)
-        #token = auth_client.get_token()
-        self.cclient = client.get_client(VERSION, os_username = self.username,
-                                        os_password = self.password,
-                                        os_auth_url = self.auth_url,
-                                        os_tenant_name = self.tenant_name,
-                                        insecure = True)
+        ceilometer_url = self.auth_h.get_endpoint('metering')
+        auth_token = self.auth_h.get_token()
+        self.cclient = client.Client(VERSION, endpoint=ceilometer_url, token=auth_token, insecure=True)
         return self.cclient
 
 class Meter:
