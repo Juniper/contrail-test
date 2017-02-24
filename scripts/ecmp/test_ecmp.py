@@ -433,7 +433,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         self.verify_flow_records(
             self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
         self.stop_traffic(
-            self.sender, self.receiver, dst_vm_list, stream_list)
+            sender, receiver, dst_vm_list, stream_list)
     # end test_ecmp_svc_in_network_with_3_instance_incr_dip
 
     @preposttest_wrapper
@@ -459,7 +459,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         si_fixture = ret_dict['si_fixture']
         svm_ids = si_fixture.svm_ids
         self.get_rt_info_tap_intf_list(
-            self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture, svm_ids)
+            self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture, svm_ids, si_fixtures)
         dst_vm_list = [self.right_vm_fixture]
         self.verify_traffic_flow(
             self.left_vm_fixture, dst_vm_list, si_fixture, self.left_vn_fixture)
