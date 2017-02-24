@@ -23,6 +23,7 @@ class VncLibFixture(fixtures.Fixture):
     :param auth_server_ip : default is 127.0.0.1
     :param project_id     : defualt is None
     :param logger         : logger object
+    :param use_ssl        : default False (use https to connect to API server)
     '''
     def __init__(self, *args, **kwargs):
         self.username = os.getenv('OS_USERNAME') or \
@@ -39,7 +40,8 @@ class VncLibFixture(fixtures.Fixture):
         self.inputs = kwargs.get('inputs', self.connections.inputs
                                            if self.connections else None)
         self.neutron_handle = None
-        self.cfgm_ip = kwargs.get('cfgm_ip', None) or self.inputs.cfgm_ip if self.inputs else '127.0.0.1'
+        self.cfgm_ip = kwargs.get('cfgm_ip', None) or self.inputs.cfgm_ip \
+                       if self.inputs else '127.0.0.1'
         self.auth_server_ip = self.inputs.auth_ip if self.inputs else \
                         kwargs.get('auth_server_ip', '127.0.0.1')
         self.auth_url = self.inputs.auth_url if self.inputs else \
@@ -49,9 +51,10 @@ class VncLibFixture(fixtures.Fixture):
         self.certfile = kwargs.get('certfile', None)
         self.keyfile = kwargs.get('keyfile', None)
         self.cacert = kwargs.get('cacert', None)
-        self.insecure = kwargs.get('insecure', True)
-
-        self.multi_tenancy = kwargs.get('multi_tenancy', self.inputs.multi_tenancy)
+        self.insecure = self.inputs.insecure if self.inputs \
+                       else kwargs.get('insecure', True)
+        self.use_ssl = self.inputs.api_protocol == 'https' if self.inputs \
+                       else kwargs.get('use_ssl', False)
     # end __init__
 
     def setUp(self):
@@ -71,10 +74,6 @@ class VncLibFixture(fixtures.Fixture):
             self.auth_url = self.inputs.auth_url
         else:
             self.logger = self.logger or contrail_logging.getLogger(__name__)
-            if self.multi_tenancy and self.auth_url.startswith('https:'):
-                use_ssl=True
-            else:
-                use_ssl=False
             self.vnc_api_h = VncApi(
                               username=self.username,
                               password=self.password,
@@ -82,7 +81,7 @@ class VncLibFixture(fixtures.Fixture):
                               api_server_host=self.cfgm_ip,
                               api_server_port=self.api_server_port,
                               auth_host=self.auth_server_ip,
-                              api_server_use_ssl=use_ssl)
+                              api_server_use_ssl=self.use_ssl)
             if self.orchestrator == 'openstack':
                 self.auth_client = OpenstackAuth(
                                     self.username,

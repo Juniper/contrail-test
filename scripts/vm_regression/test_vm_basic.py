@@ -353,10 +353,12 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
          --ipfabric_dns_service_name %s\
          --ipfabric_service_port %s\
          --admin_tenant_name %s\
+         --api_server_use_ssl %s\
          " % (cfgm_ip, self.inputs.api_server_port,
               self.inputs.stack_user, self.inputs.stack_password,
               cfgm_host_new_name, cfgm_intro_port,
-              self.inputs.project_name)
+              self.inputs.project_name,
+              self.inputs.api_protocol == 'https')
         if not self.inputs.devstack:
             cmd = "python /usr/share/contrail-utils/provision_linklocal.py --oper add %s" % (link_local_args)
         else:

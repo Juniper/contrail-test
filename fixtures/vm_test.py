@@ -2582,7 +2582,8 @@ class VMFixture(fixtures.Fixture):
                 --virtual_machine_interface_id %s \
                 --user %s\
                 --password %s\
-                --route_table_name %s" % (prefix,
+                --route_table_name %s \
+                --api_server_use_ssl %s" % (prefix,
                                           tenant_name,
                                           api_server_ip,
                                           api_server_port,
@@ -2590,7 +2591,8 @@ class VMFixture(fixtures.Fixture):
                                           virtual_machine_interface_id,
                                           user,
                                           password,
-                                          route_table_name)
+                                          route_table_name,
+                                          self.inputs.api_protocol == 'https')
         args = shlex.split(cmd)
         process = Popen(args, stdout=PIPE)
         stdout, stderr = process.communicate()

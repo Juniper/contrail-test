@@ -893,10 +893,12 @@ class VcenterAuth(OrchestratorAuth):
         self.passwd = passwd
         self.domain = domain
         self.project_name = project_name
+        use_ssl = self.inputs.api_protocol == 'https'
         self.vnc = VncApi(username=user, password=passwd,
                           tenant_name=project_name,
                           api_server_host=self.inputs.cfgm_ip,
-                          api_server_port=self.inputs.api_server_port)
+                          api_server_port=self.inputs.api_server_port,
+                          api_server_use_ssl=use_ssl)
 
     def get_project_id(self, project_name=None):
        if not project_name:

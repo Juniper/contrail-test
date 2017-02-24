@@ -34,13 +34,16 @@ class JsonDrv (object):
                                                       max_message_size=msg_size)
         # Since introspect log is a single file, need locks
         self.lock = threading.Lock()
+        self.verify = True
+        if self._args and hasattr(self._args, 'api_insecure'):
+            self.verify = not self._args.api_insecure
         if self._args and self._args.api_protocol == 'https':
             self.api_bundle = '/tmp/' + get_random_string() + '.pem'
             if self._args.apicertfile and self._args.apikeyfile and \
                    self._args.apicafile and not self._args.api_insecure:
                 self.certs=[self._args.apicertfile, self._args.apikeyfile,
                            self._args.apicafile]
-                self.apicertbundle=utils.getCertKeyCaBundle(self.api_bundle, self.certs)
+                self.verify=utils.getCertKeyCaBundle(self.api_bundle, self.certs)
 
     def _auth(self):
         if self._args:
@@ -74,7 +77,7 @@ class JsonDrv (object):
     def load(self, url, retry=True):
         self.common_log("Requesting: %s" %(url))
         if url.startswith('https:'):
-            resp = requests.get(url, headers=self._headers, verify=self.apicertbundle)
+            resp = requests.get(url, headers=self._headers, verify=self.verify)
         else:
             resp = requests.get(url, headers=self._headers)
         if resp.status_code == 401:
