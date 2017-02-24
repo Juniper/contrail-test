@@ -231,7 +231,7 @@ class TestvDNSRestart(BasevDNSTest):
             2. Create 2 VMs each on both compute nodes.
             3. Check that ping between 2 VMs on same compute and across different compute
             4. Ping local records and verify in introspect logs that DNS query is sent to all control nodes in cluster
-            5. Search for all DNS servers assigned to vrouter agents by discovery
+            5. Search for all DNS servers assigned to vrouter agents
             6. Stop the *contrail-named* processes on both assigned DNS servers to vrouter agent of compute 1.
             7. Verify all cases of nslookup during and after subscription TTL expiry.
         Pass criteria: DNS queries should reach every DNS server in network and any server can resolve it.
@@ -292,7 +292,7 @@ class TestvDNSRestart(BasevDNSTest):
         output_2 = str(inspect_h_agent1.get_vna_dns_query_to_named())
         diff = difflib.ndiff(output_1,output_2)
         delta = ''.join(x[2:] for x in diff if x.startswith('+ '))
-        # Getting the list of DNS servers in use by every Compute node as per discovery server assignment
+        # Getting the list of DNS servers in use by every Compute node
         for i in range(0,len(self.inputs.bgp_ips)):
             if "DNS query sent to named server : %s" % self.inputs.bgp_control_ips[i] in delta:
                 self.logger.debug("DNS query sent successfully to DNS server on %s" % 

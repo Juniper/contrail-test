@@ -542,7 +542,6 @@ class TestBasicVMVN0(BaseVnVmTest):
             'contrail-query-engine': 'collector',
             'contrail-collector': 'collector',
             'contrail-analytics-api': 'collector',
-            'contrail-discovery': 'cfgm',
             'contrail-api': 'cfgm',
             'contrail-svc-monitor': 'cfgm'
         }
