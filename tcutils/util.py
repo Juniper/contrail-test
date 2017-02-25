@@ -812,24 +812,24 @@ def run_cmd_on_server(issue_cmd, server_ip, username,
     container : name or id of the container to run the cmd( str)
     '''
     logger = logger or contrail_logging.getLogger(__name__)
-    logger.debug('[%s]: Running cmd : %s' % (server_ip, issue_cmd))
+    updated_cmd = issue_cmd
     with hide('everything'):
         with settings(
             host_string='%s@%s' % (username, server_ip), password=password,
                 warn_only=True, abort_on_prompts=False):
             _run = sudo if as_sudo else run
             if container:
+                _run = sudo
                 container_args = ''
                 container_args += ' -d ' if detach else ''
-                container_args += ' --privileged ' if as_sudo else ''
+                container_args += ' --privileged '
                 container_args += ' -it ' if pty else ''
                 container_args += container
                 updated_cmd = 'docker exec %s %s \'%s\'' % (container_args,
                                                        shell_prefix,
                                                        issue_cmd)
-                output = run(updated_cmd)
-            else:
-                output = _run('%s' % (issue_cmd), pty=pty)
+            logger.debug('[%s]: Running cmd : %s' % (server_ip, updated_cmd))
+            output = _run(updated_cmd, pty=pty)
             logger.debug('Output : %s' % (output))
             return output
 # end run_cmd_on_server

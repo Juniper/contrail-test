@@ -16,6 +16,7 @@ from fabric.context_managers import settings, hide
 from fabric.exceptions import NetworkError
 from tcutils.util import *
 from tcutils.custom_filehandler import *
+from common import log_orig as contrail_logging
 
 CORE_DIR = '/var/crashes'
 logging.getLogger("paramiko").setLevel(logging.WARNING)
@@ -23,9 +24,10 @@ logging.getLogger("paramiko").setLevel(logging.WARNING)
 
 class ContrailReportInit:
 
-    def __init__(self, ini_file, report_details):
+    def __init__(self, ini_file, report_details, logger=None):
         self.build_id = None
         self.bgp_stress = False
+        self.logger = logger or contrail_logging.getLogger(__name__)
         self.config = ConfigParser.ConfigParser()
         self.config.read(ini_file)
         self.orch = read_config_option(self.config, 'Basic', 'orchestrator',
@@ -195,7 +197,7 @@ class ContrailReportInit:
             self.host_data[host['name']]['host_ip'] = host_ip
             self.host_data[host['name']]['host_data_ip'] = host_data_ip
             self.host_data[host['name']]['host_control_ip'] = host_control_ip
-            self._check_containers()
+            self._check_containers(host)
             roles = host["roles"]
             for role in roles:
                 if role['type'] == 'openstack':
