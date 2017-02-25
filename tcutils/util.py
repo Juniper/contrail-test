@@ -1125,3 +1125,5 @@ def is_uuid(value):
     return True
 # end is_uuid
 
+def istrue(value):
+    return str(value).lower() in ['1', 'true', 'yes', 'y']

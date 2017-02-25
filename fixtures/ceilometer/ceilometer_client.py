@@ -60,6 +60,10 @@ class CeilometerClient(object):
         if not auth_h:
             auth_h = self.get_auth_h(**kwargs)
         self.auth_h = auth_h
+        self.certfile = kwargs.get('certfile') or auth_h.keystone_certfile
+        self.cacert = kwargs.get('cacert') or auth_h.certbundle
+        self.keyfile = kwargs.get('keyfile') or auth_h.keystone_keyfile
+        self.insecure = kwargs.get('insecure') or auth_h.insecure
 
     def get_auth_h(self, **kwargs):
         return openstack.OpenstackAuth(**kwargs)
@@ -67,7 +71,13 @@ class CeilometerClient(object):
     def get_cclient(self):
         ceilometer_url = self.auth_h.get_endpoint('metering')
         auth_token = self.auth_h.get_token()
-        self.cclient = client.Client(VERSION, endpoint=ceilometer_url, token=auth_token, insecure=True)
+        kwargs = {
+            'ca_file': self.cacert,
+            'cert_file': self.certfile,
+            'key_file': self.keyfile,
+            'insecure': self.insecure,
+        }
+        self.cclient = client.Client(VERSION, endpoint=ceilometer_url, token=auth_token, **kwargs)
         return self.cclient
 
 class Meter:

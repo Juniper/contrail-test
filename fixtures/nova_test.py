@@ -357,7 +357,7 @@ class NovaHelper():
         else:
             public_arg = "--visibility public"
 
-        insecure = '--insecure' if bool(os.getenv('OS_INSECURE', True)) else ''
+        insecure = '--insecure' # Always use insecure till a glance client lib is added
         cmd = '(glance %s --os-username %s --os-password %s \
                 --os-tenant-name %s --os-auth-url %s \
                 --os-region-name %s image-create --name "%s" \

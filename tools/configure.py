@@ -10,6 +10,7 @@ from fabric.context_managers import settings, hide
 sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir))
 from common import log_orig as contrail_logging
 from fabric.contrib.files import exists
+from cfgm_common import utils
 
 def detect_ostype():
     return platform.dist()[0].lower()
@@ -84,7 +85,8 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         keystone_certfile = validate_and_copy_file(cert_dir + '/' +\
                           os.path.basename(get_keystone_certfile()), cfgm_host)
         keystone_keyfile = keystone_certfile
-        keystone_insecure_flag = get_keystone_insecure_flag()
+        keystone_insecure_flag = os.getenv('OS_INSECURE', \
+                                 get_keystone_insecure_flag())
     else:
         keystone_certfile = ""
         keystone_keyfile = ""
@@ -382,7 +384,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     dns_port = env.test.get('dns_port', os.getenv('DNS_PORT') or '')
     agent_port = env.test.get('agent_port', os.getenv('AGENT_PORT') or '')
     user_isolation = env.test.get('user_isolation',
-                                  bool(os.getenv('USER_ISOLATION') or True))
+                                  os.getenv('USER_ISOLATION') or True)
     neutron_username = env.test.get('neutron_username',
                                     os.getenv('NEUTRON_USERNAME') or None)
     availability_zone = env.test.get('availability_zone',
@@ -553,6 +555,12 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     if not os.path.exists('/etc/contrail'):
         os.makedirs('/etc/contrail')
 
+    keycertbundle = None
+    if keystone_cafile and keystone_keyfile and keystone_certfile:
+        bundle = '/tmp/keystonecertbundle.pem'
+        certs = [keystone_certfile, keystone_keyfile, keystone_cafile]
+        keycertbundle = utils.getCertKeyCaBundle(bundle, certs)
+
     with open('/etc/contrail/openstackrc','w') as rc:
         rc.write("export OS_USERNAME=%s\n" % admin_user)
         rc.write("export OS_PASSWORD=%s\n" % admin_password)
@@ -561,6 +569,10 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         rc.write("export OS_AUTH_URL=%s://%s:%s/v2.0\n" % (auth_protocol,
                                                            auth_server_ip,
                                                            auth_server_port))
+        rc.write("export OS_CACERT=%s\n" % keycertbundle)
+        rc.write("export OS_CERT=%s\n" % keystone_certfile)
+        rc.write("export OS_KEY=%s\n" % keystone_keyfile)
+        rc.write("export OS_INSECURE=%s\n" % keystone_insecure_flag)
         rc.write("export OS_NO_CACHE=1\n")
 
     # Write vnc_api_lib.ini - this is required for vnc_api to connect to keystone
@@ -581,8 +593,6 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         config.set('auth','AUTHN_URL', '/v3/auth/tokens')
     else:
         config.set('auth','AUTHN_URL', '/v2.0/tokens')
-    if bool(os.getenv('OS_INSECURE', True)):
-        config.set('auth', 'insecure', 'True')
 
     if api_auth_protocol == 'https':
         if 'global' not in config.sections():

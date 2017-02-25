@@ -125,7 +125,7 @@ class ContrailConnections():
                 project_id=self.get_project_id(),
                 certfile = self.inputs.keystonecertfile,
                 keyfile = self.inputs.keystonekeyfile,
-                cacert = self.inputs.keycertbundle,
+                cacert = self.inputs.certbundle,
                 insecure = self.inputs.insecure,
                 logger=self.logger)
             env[attr].setUp()

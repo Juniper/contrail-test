@@ -324,28 +324,43 @@ class TestInputs(object):
                                             'cfgm', 'api_keyfile', None)
         self.apicafile = read_config_option(self.config,
                                            'cfgm', 'api_cafile', None)
-        self.api_insecure = read_config_option(self.config,
-                                          'cfgm', 'api_insecure_flag', True)
+        self.api_insecure = bool(read_config_option(self.config,
+                                 'cfgm', 'api_insecure_flag', False))
         self.keystonecertfile = read_config_option(self.config,
-                                                  'Basic', 'keystone_certfile', None)
+                                'Basic', 'keystone_certfile',
+                                os.getenv('OS_CERT', None))
         self.keystonekeyfile = read_config_option(self.config,
-                                                 'Basic', 'keystone_keyfile', None)
+                               'Basic', 'keystone_keyfile',
+                               os.getenv('OS_KEY', None))
         self.keystonecafile = read_config_option(self.config,
-                                                'Basic', 'keystone_cafile', None)
-        self.insecure = read_config_option(self.config,
-                                          'Basic', 'keystone_insecure_flag', True)
-        insecure = os.getenv('OS_INSECURE')
+                              'Basic', 'keystone_cafile',
+                              os.getenv('OS_CACERT', None))
+        self.insecure = bool(read_config_option(self.config,
+                             'Basic', 'keystone_insecure_flag', False))
+        insecure = istrue(os.getenv('OS_INSECURE', False))
         if insecure:
-            self.api_insecure = self.insecure = bool(insecure)
-        self.keycertbundle = None
-        if self.auth_url.startswith('https') and not self.insecure:
-           self.keystone_bundle = '/tmp/' + get_random_string() + '.pem'
-           if self.keystonecertfile and self.keystonekeyfile and \
-                  self.keystonecafile:
-               self.certs = [self.keystonecertfile, self.keystonekeyfile,
-                            self.keystonecafile]
-               self.keycertbundle = utils.getCertKeyCaBundle(self.keystone_bundle,
-                                        self.certs)
+            self.api_insecure = self.insecure = insecure
+        keycertbundle = None
+        if not self.insecure and self.auth_protocol == 'https' and \
+           self.keystonecertfile and self.keystonekeyfile and \
+           self.keystonecafile:
+            keystone_bundle = '/tmp/' + get_random_string() + '.pem'
+            keycertbundle = utils.getCertKeyCaBundle(keystone_bundle,
+                            [self.keystonecertfile, self.keystonekeyfile,
+                             self.keystonecafile])
+        apicertbundle = None
+        if not self.api_insecure and self.api_protocol == 'https' and \
+           self.apicertfile and self.apikeyfile and self.apicafile:
+            api_bundle = '/tmp/' + get_random_string() + '.pem'
+            apicertbundle = utils.getCertKeyCaBundle(api_bundle,
+                            [self.apicertfile, self.apikeyfile,
+                             self.apicafile])
+        self.certbundle = None
+        if keycertbundle or apicertbundle:
+            bundle = '/tmp/' + get_random_string() + '.pem'
+            certs = [cert for cert in [keycertbundle, apicertbundle] if cert]
+            self.certbundle = utils.getCertKeyCaBundle(bundle, certs)
+
         self.prov_file = self.prov_file or self._create_prov_file()
         self.prov_data = self.read_prov_file()
         #vcenter server
@@ -781,7 +796,7 @@ class TestInputs(object):
                * OS_TENANT_NAME (default: admin)
                * OS_DOMAIN_NAME (default: Default)
                * OS_AUTH_URL (default: http://127.0.0.1:5000/v2.0)
-               * OS_INSECURE (default: True)
+               * OS_INSECURE (default: False)
               login creds:
                * USERNAME (default: root)
                * PASSWORD (default: c0ntrail123)
@@ -803,7 +818,7 @@ class TestInputs(object):
                                         insecure=self.insecure,
                                         cert=self.keystonecertfile,
                                         key=self.keystonekeyfile,
-                                        cacert=self.keycertbundle,
+                                        cacert=self.certbundle,
                                         logger=self.logger)
             match = re.match(pattern, keystone.get_endpoint('identity'))
             self.auth_ip = match.group('ip')
