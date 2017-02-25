@@ -373,7 +373,7 @@ class TestRouterSNAT(BaseNeutronTest):
                     vm_name=vm2_name))
         vm2_fixture.wait_till_vm_is_up()
         router_name = get_random_name('router1')
-        router_dict = self.create_router(router_name, tenant_id=project_fixture_obj1.uuid)
+        router_dict = self.quantum_h.create_router(router_name, tenant_id=project_fixture_obj1.uuid)
         router_rsp = self.quantum_h.router_gateway_set(
                 router_dict['id'],
                 self.public_vn_obj.public_vn_fixture.vn_id)
@@ -381,7 +381,7 @@ class TestRouterSNAT(BaseNeutronTest):
 
         assert self.verify_snat(vm1_fixture)
         router_name = get_random_name('router2')
-        router_dict = self.create_router(router_name, tenant_id=project_fixture_obj.uuid)
+        router_dict = self.quantum_h.create_router(router_name, tenant_id=project_fixture_obj.uuid)
         router_rsp = self.quantum_h.router_gateway_set(
                 router_dict['id'],
                 self.public_vn_obj.public_vn_fixture.vn_id)
@@ -472,14 +472,14 @@ class TestRouterSNAT(BaseNeutronTest):
         vm3_fixture.wait_till_vm_is_up()
 
         router_name = get_random_name('router1')
-        router_dict = self.create_router(router_name, tenant_id=project_fixture_obj1.uuid)
+        router_dict = self.quantum_h.create_router(router_name, tenant_id=project_fixture_obj1.uuid)
         router_rsp = self.quantum_h.router_gateway_set(
                 router_dict['id'],
                 self.public_vn_obj.public_vn_fixture.vn_id)
         self.add_vn_to_router(router_dict['id'], vn1_fixture)
         assert self.verify_snat(vm1_fixture)
         router_name = get_random_name('router2')
-        router_dict = self.create_router(router_name, tenant_id=project_fixture_obj.uuid)
+        router_dict = self.quantum_h.create_router(router_name, tenant_id=project_fixture_obj.uuid)
         router_rsp = self.quantum_h.router_gateway_set(
                 router_dict['id'],
                 self.public_vn_obj.public_vn_fixture.vn_id)
