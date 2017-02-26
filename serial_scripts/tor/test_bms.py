@@ -148,6 +148,91 @@ class TestTor(BaseTorTest):
 
     # end test_ping_between_two_tors_intra_vn
 
+    @preposttest_wrapper
+    def test_fip_intra_vn(self):
+        '''
+        Create two tagged BMSs on two TORs in the same VN
+        Test ping between them
+        Validate that the MACs are resolved correctly for each others' IP
+        Create a FIP network, make BMS reachable to outside world
+        '''
+        vlan_id = 0
+        vn1_fixture = self.create_vn(disable_dns=True)
+
+        bms1_ip = get_an_ip(vn1_fixture.vn_subnet_objs[0]['cidr'],3)
+        bms1_mac = '00:00:00:00:00:01'
+
+        # BMS VMI
+        vmis=self.setup_vmis(vn1_fixture.uuid,
+                mac_address=bms1_mac,
+                fixed_ips=[{'subnet_id': vn1_fixture.vn_subnet_objs[0]['id'],
+                            'ip_address': bms1_ip,
+                          }],
+                count=2)
+        self.setup_tor_port(self.tor1_fixture, port_index=0,
+                            vlan_id=vlan_id, vmi_objs=[vmis[0]])
+        bms1_fixture = self.setup_bms(self.tor1_fixture, port_index=0,
+                                     ns_mac_address=bms1_mac)
+        fip_pool_name = 'fip_dm_pool'
+        # Adding further projects to floating IP.
+        self.logger.info('Adding project %s to FIP pool %s' %
+                         (self.inputs.project_name, fip_pool_name))
+        project_obj = self.public_vn_obj.fip_fixture.assoc_project\
+                        (self.inputs.project_name)
+        fip_id = self.public_vn_obj.fip_fixture.create_and_assoc_fip(
+            self.public_vn_obj.public_vn_fixture.vn_id, vmis[0].vmi_obj.uuid, project_obj)
+        self.addCleanup(self.public_vn_obj.fip_fixture.disassoc_and_delete_fip, fip_id)
+
+        self.logger.info(
+            "BGP Peer configuraion done and trying to outside the VN cluster")
+
+        self.do_ping_test(bms1_fixture, bms1_ip, '8.8.8.8')
+
+    # end test_fip_intra_vn
+
+    @preposttest_wrapper
+    def test_snat_intra_vn(self):
+        '''
+        Create two tagged BMSs on two TORs in the same VN
+        Test ping between them
+        Validate that the MACs are resolved correctly for each others' IP
+        Create a FIP network, make BMS reachable to outside world
+        '''
+        vlan_id = 0
+        vn1_fixture = self.create_vn(disable_dns=True)
+        bms1_ip = get_an_ip(vn1_fixture.vn_subnet_objs[0]['cidr'],3)
+        bms1_mac = '00:00:00:00:00:01'
+
+        # BMS VMI
+        vmis=self.setup_vmis(vn1_fixture.uuid,
+                mac_address=bms1_mac,
+                fixed_ips=[{'subnet_id': vn1_fixture.vn_subnet_objs[0]['id'],
+                            'ip_address': bms1_ip,
+                          }],
+                count=2)
+        self.setup_tor_port(self.tor1_fixture, port_index=0,
+                            vlan_id=vlan_id, vmi_objs=[vmis[0]])
+        bms1_fixture = self.setup_bms(self.tor1_fixture, port_index=0,
+                                     ns_mac_address=bms1_mac)
+        fip_pool_name = 'fip_dm_pool'
+        # Adding further projects to floating IP.
+        self.logger.info('Adding project %s to FIP pool %s' %
+                         (self.inputs.project_name, fip_pool_name))
+        project_obj = self.public_vn_obj.fip_fixture.assoc_project\
+                        (self.inputs.project_name)
+        router_dict = self.create_router('neutron_router')
+        self.add_vn_to_router(router_dict['id'], vn1_fixture)
+        self.add_vn_to_router(router_dict['id'], self.public_vn_obj.public_vn_fixture)
+        router_ports = self.quantum_h.get_router_interfaces(
+            router_dict['id'])
+        router_port_ips = [item['fixed_ips'][0]['ip_address']
+                           for item in router_ports]
+        self.logger.info(
+            "BGP Peer configuraion done and trying to outside the VN cluster")
+
+        self.do_ping_test(bms1_fixture, bms1_ip, '8.8.8.8')
+
+    # end test_snat_intra_vn
 
     @preposttest_wrapper
     def test_add_remove_vmi_from_tor_lif(self):
@@ -294,9 +379,6 @@ class TestTor(BaseTorTest):
 
     @preposttest_wrapper
     def test_two_vmis_on_lif(self):
-        ''' 
-            Test multiple VMI on same logical interface 
-        '''
         vn1_fixture = self.create_vn(disable_dns=True)
 
         # BMS VMI
@@ -894,10 +976,7 @@ class TestExtendedBMSInterVN(TwoToROneRouterBase):
 
     @preposttest_wrapper
     def test_routing_with_tor_agent_restarts(self):
-        ''' 
-            Verify reachability between 2 BMS restored after restart
-            of contrail tor agent service. 
-        '''  
+
         tor_agent_dicts = self.tor1_fixture.get_tor_agents_details()
         for tor_agent_dict in tor_agent_dicts:
             tor_agent_service = 'contrail-tor-agent-%s' % (
@@ -905,17 +984,12 @@ class TestExtendedBMSInterVN(TwoToROneRouterBase):
             # Assuming tor-agent node is same as TSN node
             tor_agent_node = self.get_mgmt_ip_of_node(
                 tor_agent_dict['tor_tsn_ip'])
-            self.inputs.restart_service(tor_agent_service, [tor_agent_node],
-										container='agent')
+            self.inputs.restart_service(tor_agent_service, [tor_agent_node])
             self.do_reachability_checks()
     # end test_routing_with_tor_agent_restarts
             
     @preposttest_wrapper
     def test_routing_with_ovs_restarts(self):
-        ''' 
-            Verify reachability between 2 BMS restored after restart
-            of ovs  service. 
-        '''
         self.tor1_fixture.restart_ovs()
         self.do_reachability_checks()
         self.tor2_fixture.restart_ovs()
@@ -930,10 +1004,9 @@ class TestExtendedBMSInterVN(TwoToROneRouterBase):
         '''
         tsn_ip1 = self.tor1_fixture.get_active_tor_agent_ip('host_control_ip')
         tsn_ip2 = self.tor1_fixture.get_backup_tor_agent_ip('host_control_ip')
-        self.inputs.stop_service('supervisor-vrouter', [tsn_ip1],
-                                 container='agent')
+        self.inputs.stop_service('supervisor-vrouter', [tsn_ip1]) 
         self.addCleanup(self.inputs.start_service, 'supervisor-vrouter',
-            [tsn_ip1], container='agent')
+            [tsn_ip1])
         time.sleep(5)
         new_tor1_tsn = self.tor1_fixture.get_remote_flood_vtep(
             self.vn1_fixture.uuid) 
@@ -991,12 +1064,6 @@ class TestBMSWithExternalDHCPServer(TwoToROneRouterBase):
 
     @preposttest_wrapper
     def test_dhcp_behavior(self):
-        ''' 
-            Verify BMS can get IP from external DHCP serverm when DHCP 
-            service is diabled in VN.
-            Verify communication between BMS is successful when it got
-            IP from external DHCP server. 
-        '''
         self.setup_tor_port(self.tor1_fixture, port_index=0,
             vmi_objs=[self.vn1_vmi1_fixture])
         self.setup_tor_port(self.tor2_fixture, port_index=0,
@@ -1017,10 +1084,6 @@ class TestBMSWithExternalDHCPServer(TwoToROneRouterBase):
 
     @preposttest_wrapper
     def test_dhcp_forwarding_with_dhcp_disabled(self):
-        '''
-            Verify when DHCP service is diabled in VN, TSN floods the
-            DHCP request and it reecahes all the end host. 
-        '''
         self.setup_tor_port(self.tor1_fixture, port_index=0,
             vmi_objs=[self.vn1_vmi1_fixture])
         self.setup_tor_port(self.tor2_fixture, port_index=0,
