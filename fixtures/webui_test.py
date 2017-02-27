@@ -4243,6 +4243,10 @@ class WebuiTest:
         self.ui.delete_element(fixture, 'alarm_delete')
     # end delete_alarms
 
+    def delete_rbac(self, fixture):
+        self.ui.delete_element(fixture, 'rbac_delete')
+    # end delete_rbac
+
     def delete_dns_server_and_record(self):
         self.detach_ipam_from_dns_server()
         self.delete_dns_record()
@@ -7075,3 +7079,46 @@ class WebuiTest:
         self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_alarms
+
+    def create_rbac(self, fixture):
+        result = True
+        try:
+            func_suffix = 'rbac_in_' + fixture.parent_type
+            if not self.ui.click_on_create('API Access', func_suffix,
+                                          fixture.name, select_project=False):
+                result = result and False
+            if fixture.parent_type == 'project':
+                self.ui.click_element('s2id_project_dropdown')
+                self.ui.send_keys(self.project_name_input, 's2id_project_dropdown')
+                self.ui.click_element('select2-highlighted', 'class')
+            self.ui.click_element('editable-grid-add-link', 'class')
+            element_list = ['object', 'field', 'perms']
+            for element in element_list:
+                rule_element = 'rule_' + element
+                rule_browser = self.ui.find_element(rule_element)
+                if element == 'perms':
+                    rule = fixture.rules.get('perms')[0].get('role')
+                else:
+                    rule = fixture.rules.get(rule_element)
+                rule_browser.click()
+                self.ui.wait_till_ajax_done(self.browser, wait=3)
+                self.ui.send_keys(rule, 'custom-combobox-input', 'class',
+                                 browser=rule_browser)
+            for choice in range(0,4):
+                search_choice = self.ui.find_element('select2-search-choice', 'class')
+                self.ui.click_element('select2-search-choice-close', 'class',
+                                     browser=search_choice)
+            crud_list = fixture.rules.get('perms')[0].get('crud').split(',')
+            for crud in crud_list:
+                self.ui.click_element('s2id_role_crud_dropdown')
+                if not self.ui.select_from_dropdown(crud.strip(), grep=False):
+                    result = result and False
+            self.ui.click_on_create('RBAC', 'rbac', save=True)
+        except WebDriverException:
+            self.logger.error(
+                "Error while creating rbac under %s " %(fixture.parent_type))
+            self.ui.screenshot("RBAC")
+            result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end create_rbac

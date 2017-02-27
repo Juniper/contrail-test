@@ -38,6 +38,9 @@ class RbacFixture(vnc_api_test.VncLibFixture):
             else:
                 self.parent_fqname = 'default-global-system-config'
         self.fq_name = '%s:%s'%(self.parent_fqname, self.name)
+        if self.connections.inputs.verify_thru_gui():
+            from webui_test import WebuiTest
+            self.webui = WebuiTest(self.connections, self.inputs)
 
     def setUp(self):
         super(RbacFixture, self).setUp()
@@ -49,7 +52,10 @@ class RbacFixture(vnc_api_test.VncLibFixture):
             self.logger.info('Skipping deletion of RBAC ACL %s :'
                               %(self.fq_name))
         else:
-            return self.delete()
+            if self.inputs.is_gui_based_config():
+                self.webui.delete_rbac(self)
+            else:
+                return self.delete()
 
     def read(self):
         obj = self.vnc_h.get_api_access_list(id=self.uuid)
@@ -73,12 +79,16 @@ class RbacFixture(vnc_api_test.VncLibFixture):
                 obj = self.vnc_h.get_api_access_list(fq_name_str=self.fq_name)
                 self.uuid = obj.uuid
             except NoIdError:
-                self.uuid = self.vnc_h.create_api_access_list(
-                                 parent_type=self.parent_type,
-                                 fq_name=self.fq_name.split(':'),
-                                 rules=self.rules)
+                if self.inputs.is_gui_based_config():
+                    self.webui.create_rbac(self)
+                else:
+                    self.uuid = self.vnc_h.create_api_access_list(
+                                     parent_type=self.parent_type,
+                                     fq_name=self.fq_name.split(':'),
+                                     rules=self.rules)
                 self.created = True
-        self.read()
+        if not self.inputs.is_gui_based_config():
+            self.read()
 
     def add_rule(self, rule_object=None, rule_field=None, role='*', crud='CRUD'):
         rule = {'rule_object': rule_object,

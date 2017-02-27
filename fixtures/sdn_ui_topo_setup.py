@@ -227,6 +227,11 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
         return True
     # end create_alarms
 
+    def create_rbac(self):
+        assert topo_steps.createRBAC(self)
+        return True
+    # end create_rbac
+
     def cleanUp(self):
         if self.inputs.fixture_cleanup == 'yes':
             super(sdnUiTopoSetupFixture, self).cleanUp()
