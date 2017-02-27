@@ -507,6 +507,22 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test3_1_6_create_alarms_in_project_and_in_global
 
     @preposttest_wrapper
+    def test3_1_7_create_rbac(self):
+        '''Test to create rbac in both global, domain and project wise on UI
+           1. Go to Configure->Infrastructure->RBAC->Global.
+           2. Click on create and enter the config details and save.
+           3. Go to Configure->Infrastructure->RBAC->Domain.
+           4. Click on create and enter the config details and save.
+           5. Go to Configure->Infrastructure->RBAC->Project.
+           6. Click on create and enter the config details and save.
+
+           Pass Criteria: Both Step 2, 4 and 6 should pass without any error
+        '''
+        assert self.res.setup_obj.create_rbac(), 'RBAC creation failed'
+        return True
+    # end test3_1_7_create_rbac
+
+    @preposttest_wrapper
     def test3_1_edit_net_without_change(self):
         '''Test to edit the existing network without changing anything
            1. Go to Configure->Networking->Networks. Then select any of the vn and

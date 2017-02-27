@@ -266,6 +266,7 @@ class WebuiCommon:
             select_project=True,
             prj_name='admin'):
         browser = self.browser
+        index = 0
         if element_type in ('Security Group', 'DNS Server', 'DNS Record'):
             element = 'Create ' + element_type
             element_new = func_suffix[:-1]
@@ -311,14 +312,20 @@ class WebuiCommon:
                     self.select_project(prj_name)
             self.logger.info("Creating %s %s using contrail-webui" %
                              (element_type, name))
+            rbac = re.search('rbac_in_(.*)', func_suffix)
+            if rbac:
+                if rbac.group(1) in ['domain', 'project']:
+                    index = 1
+                else:
+                    index = 0
+            toolbar_xpath = "//a[@class='widget-toolbar-icon' and @title='%s']" % element
         if not save:
             if element_type == 'PhysicalRouter':
                 self.click_element(element)
             else:
                 try:
-                    browser.find_element_by_xpath(
-                        "//a[@class='widget-toolbar-icon' and @title='%s']" %
-                        element).click()
+                    self.click_element(toolbar_xpath, 'xpath', browser=browser,
+                                      elements=True, index=index)
                 except WebDriverException:
                     try:
                         self.click_element('close', 'class', screenshot=False)
@@ -1386,6 +1393,18 @@ class WebuiCommon:
             element_name = fixture.alarm_name
             element_id = 'btnDeleteAlarm'
             popup_id = 'configure-configalarmbtn1'
+        elif element_type == 'rbac_delete':
+            click_func = 'self.click_configure_rbac_in_' + fixture.parent_type
+            if not eval(click_func)():
+                result = result and False
+            else:
+                br = self.find_element('rbac-' + fixture.parent_type + '-grid')
+            if fixture.parent_type == 'global':
+                element_id = 'btnDeleteRBAC'
+            else:
+                element_id = 'btnDelete' + fixture.parent_type.title() + 'RBAC'
+            popup_id = 'configure-rbacbtn1'
+            element_name = 'all'
         if not br:
             br = self.browser
         rows = self.get_rows(br, canvas=True)
@@ -1405,7 +1424,8 @@ class WebuiCommon:
                         'div')[3].text
                     div_obj = element.find_elements_by_tag_name('div')[1]
                 elif element_type in ['router_delete', 'dns_server_delete',
-                                      'dns_record_delete', 'bgp_aas_delete']:
+                                      'dns_record_delete', 'bgp_aas_delete',
+                                      'rbac_delete']:
                     element_text = 'all'
                     div_obj = element.find_elements_by_tag_name('div')[1]
                 elif element_type == 'bgp_router_delete':
@@ -1787,6 +1807,25 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser, wait=3)
         return self.check_error_msg("configure alarms globally")
     # end click_configure_alarms_in_global
+
+    def click_configure_rbac_in_global(self, option='global'):
+        if not self.click_configure_elements(0, 'config_infra_rbac',
+                                            msg="Configure RBAC Globally"):
+            return False
+        else:
+            self.click_element("rbac_" + option + "_tab-tab-link")
+            self.wait_till_ajax_done(self.browser, wait=3)
+            return self.check_error_msg("configure RBAC in " + option)
+
+    # end click_configure_rbac_in_global
+
+    def click_configure_rbac_in_domain(self):
+        return self.click_configure_rbac_in_global(option='domain')
+    # end click_configure_rbac_in_domain
+
+    def click_configure_rbac_in_project(self):
+        return self.click_configure_rbac_in_global(option='project')
+    # end click_configure_rbac_in_project
 
     def _click_on_config_dropdown(self, br, index=2):
         # index = 3 if svc_instance or svc_template
