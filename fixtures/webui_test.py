@@ -4239,6 +4239,10 @@ class WebuiTest:
         self.ui.delete_element(element_type='svc_appliance_set_delete')
     # end delete_svc_appliance_set
 
+    def delete_alarms(self, fixture):
+        self.ui.delete_element(fixture, 'alarm_delete')
+    # end delete_alarms
+
     def delete_dns_server_and_record(self):
         self.detach_ipam_from_dns_server()
         self.delete_dns_record()
@@ -7018,3 +7022,56 @@ class WebuiTest:
         self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_service_appliances
+
+    def create_alarms(self, fixture):
+        result = True
+        try:
+            if fixture.parent_obj_type == 'project':
+                func_suffix = 'alarms_in_project'
+                select_project = True
+            else:
+                func_suffix = 'alarms_in_global'
+                select_project = False
+            if not self.ui.click_on_create(
+                    'Alarm Rule',
+                    func_suffix,
+                    fixture.alarm_name,
+                    prj_name=fixture.project_name,
+                    select_project=select_project):
+                result = result and False
+            self.ui.click_element('s2id_severity_dropdown')
+            if fixture.alarm_severity == 'minor':
+                index = 2
+            elif fixture.alarm_severity == 'major':
+                index = 1
+            else:
+                index = 0
+            self.ui.click_element('select2-results-dept-0', 'class', elements=True,
+                                 index=index)
+            des_xpath = "//textarea[contains(@name, 'description')]"
+            send_key_values = {
+                'name': {
+                    'display_name': fixture.alarm_name,
+                    'operand1': fixture.operand1,
+                    'operand2': fixture.operand2},
+                'id': {
+                    'uve_keys_dropdown': fixture.uve_keys[0]},
+                'xpath': {
+                    des_xpath: fixture.alarm_name}}
+            if not self.ui.send_keys_values(send_key_values):
+                result = result and False
+            self.ui.click_element('s2id_operation_dropdown')
+            operation = self.ui.find_element('select2-results-dept-1', 'class', elements=True)
+            for index, oper in enumerate(operation, start=8):
+                if fixture.alarm_rules == oper.text:
+                    operation[index].click()
+                    break
+            self.ui.click_on_create('Alarms', 'configalarm', save=True)
+        except WebDriverException:
+            self.logger.error(
+                "Error while creating alarms %s " %(fixture.alarm_name))
+            self.ui.screenshot("Alarm")
+            result = result and False
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end create_alarms

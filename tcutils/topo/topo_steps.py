@@ -30,6 +30,7 @@ from physical_router_fixture import PhysicalRouterFixture
 from virtual_router_fixture import VirtualRouterFixture
 from qos_fixture import QosForwardingClassFixture
 from qos_fixture import QosConfigFixture
+from alarm_test import AlarmFixture
 try:
     from webui_test import *
 except ImportError:
@@ -1006,6 +1007,25 @@ def createVirtualRouter(self):
                 inputs=self.project_inputs))
     return self
 # end createVirtualRouter
+
+def createAlarms(self):
+    self.alarm_fixture = {}
+    if not hasattr(self.topo, 'alarms_params'):
+        return self
+    for alarm in self.topo.alarms_list:
+        self.alarm_fixture[alarm] = self.useFixture(
+            AlarmFixture(self.project_connections,
+                alarm_name=alarm,
+                uve_keys=self.topo.alarms_params[alarm]['uve_keys'],
+                alarm_severity=self.topo.alarms_params[alarm]['alarm_severity'],
+                alarm_rules = self.topo.alarms_params[alarm]['operation'],
+                operand1=self.topo.alarms_params[alarm]['operand1'],
+                operand2=self.topo.alarms_params[alarm]['operand2'],
+                description=alarm,
+                parent_obj_type=self.topo.alarms_params[alarm]['parent_type']))
+        self.alarm_fixture[alarm].create(self.alarm_fixture[alarm].alarm_rules)
+    return self
+# end createAlarms
 
 if __name__ == '__main__':
     ''' Unit test to invoke sdn topo setup utils.. '''

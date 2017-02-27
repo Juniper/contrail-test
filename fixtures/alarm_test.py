@@ -50,6 +50,9 @@ class AlarmFixture(fixtures.Fixture):
         self.clean_up = clean_up
         self.obj = None
         self.created = False
+        if self.inputs.verify_thru_gui():
+            from webui_test import WebuiTest
+            self.webui = WebuiTest(self.connections, self.inputs)
     # end __init__
 
     def read(self):
@@ -86,12 +89,15 @@ class AlarmFixture(fixtures.Fixture):
             if not self.alarm_rules:
                 self.alarm_rules = self.create_alarm_rules()
             uve_keys_type = UveKeysType(self.uve_keys)
-            self.alarm_id = self.vnc_h.create_alarm(name=self.alarm_name, parent_obj=self.parent_obj,
+            if self.inputs.is_gui_based_config():
+                self.alarms = self.webui.create_alarms(self)
+            else:
+                self.alarm_id = self.vnc_h.create_alarm(name=self.alarm_name, parent_obj=self.parent_obj,
                                    alarm_rules=self.alarm_rules, alarm_severity=self.alarm_severity,
                                    uve_keys=uve_keys_type)
-            # need to set rules and other parameters before passing alarm_obj
-            self.alarm_obj = self.vnc_h.get_alarm(self.alarm_id)
-            self.alarm_fq_name = self.get_fq_name()
+                # need to set rules and other parameters before passing alarm_obj
+                self.alarm_obj = self.vnc_h.get_alarm(self.alarm_id)
+                self.alarm_fq_name = self.get_fq_name()
             self.created = True
     # end create
 
@@ -282,9 +288,12 @@ class AlarmFixture(fixtures.Fixture):
         if self.clean_up == False:
             do_cleanup = False
         if do_cleanup:
-            self._delete_alarm()
-            self.logger.info('Deleted alarm %s' % self.alarm_name)
-            assert self.verify_alarm_not_in_api_server()
+            if self.inputs.is_gui_based_config():
+                self.webui.delete_alarms(self)
+            else:
+                self._delete_alarm()
+                self.logger.info('Deleted alarm %s' % self.alarm_name)
+                assert self.verify_alarm_not_in_api_server()
         else:
             self.logger.debug('Skippping deletion of alarm %s' %
                               self.alarm_name)

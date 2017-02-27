@@ -222,6 +222,11 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
         return True
     # end create_service_appliances
 
+    def create_alarms(self):
+        assert topo_steps.createAlarms(self)
+        return True
+    # end create_alarms
+
     def cleanUp(self):
         if self.inputs.fixture_cleanup == 'yes':
             super(sdnUiTopoSetupFixture, self).cleanUp()
