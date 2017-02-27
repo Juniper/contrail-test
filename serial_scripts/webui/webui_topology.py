@@ -143,6 +143,24 @@ class sdn_webui_config ():
                 'key': 'testkey',
                 'value': 'testvalue'}}
 
+        # Define Alarms
+        self.alarms_list = ['vn_acl_project', 'vn_acl_global']
+        self.alarms_params = {
+            'vn_acl_project': {
+                'uve_keys': ['virtual-network'],
+                'alarm_severity': 'major',
+                'operand1': 'UveVirtualNetworkConfig.total_acl_rules',
+                'operand2': '2',
+                'operation': '<=',
+                'parent_type': 'project'},
+            'vn_acl_global': {
+                'uve_keys': ['virtual-network'],
+                'alarm_severity': 'minor',
+                'operand1': 'UveVirtualNetworkConfig.total_acl_rules',
+                'operand2': '3',
+                'operation': '<=',
+                'parent_type': 'global'}}
+
         # define dns_servers #
         self.dns_server_list = ['dserver1']
         self.dns_server_params = {

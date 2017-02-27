@@ -1374,6 +1374,18 @@ class WebuiCommon:
                 result = result and False
             element_id = 'btnActionDelSecGrp'
             popup_id = 'configure-svcApplianceSetbtn1'
+        elif element_type == 'alarm_delete':
+            if fixture.parent_obj_type == 'project':
+                if not self.click_configure_alarms_in_project():
+                    result = result and False
+            else:
+                if self.click_configure_alarms_in_global():
+                    br = self.find_element('config-alarm-grid')
+                else:
+                    result = result and False
+            element_name = fixture.alarm_name
+            element_id = 'btnDeleteAlarm'
+            popup_id = 'configure-configalarmbtn1'
         if not br:
             br = self.browser
         rows = self.get_rows(br, canvas=True)
@@ -1762,6 +1774,19 @@ class WebuiCommon:
         return self.click_configure_elements(0, 'config_infra_sap',
                                              msg="configure Service Appliance Set")
     # end click_configure_svc_appliances
+
+    def click_configure_alarms_in_project(self):
+        return self.click_configure_elements(5, 'config_alarm_project',
+                                             msg="Configure Alarms for Project")
+    # end click_configure_alarms_in_project
+
+    def click_configure_alarms_in_global(self):
+        self.click_configure_global_config()
+        self.wait_till_ajax_done(self.browser, wait=3)
+        self.click_element('alarm_rule_global_tab-tab-link')
+        self.wait_till_ajax_done(self.browser, wait=3)
+        return self.check_error_msg("configure alarms globally")
+    # end click_configure_alarms_in_global
 
     def _click_on_config_dropdown(self, br, index=2):
         # index = 3 if svc_instance or svc_template
