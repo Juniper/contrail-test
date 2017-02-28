@@ -48,7 +48,10 @@ class NamespaceFixture(fixtures.Fixture):
     @retry(delay=1, tries=10)
     def verify_namespace_in_contrail_api(self):
         try:
-            self.vnc_api_h.project_read(id=self.uuid)
+            # TODO
+            # Check for fq name for now until bug 1665233 is resolved
+            #self.vnc_api_h.project_read(id=self.uuid)
+            self.vnc_api_h.project_read(fq_name=['default-domain', self.name])
         except NoIdError:
             self.logger.warn('Namespace %s UUID %s not in contrail-api' %(
                              self.name, self.uuid))

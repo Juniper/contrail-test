@@ -5,7 +5,7 @@ import string
 import json
 import os
 import platform
-from fabric.api import env, run, local, lcd
+from fabric.api import env, run, local, lcd, get
 from fabric.context_managers import settings, hide
 sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir))
 from common import log_orig as contrail_logging
