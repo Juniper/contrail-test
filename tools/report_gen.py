@@ -480,7 +480,7 @@ class ContrailReportInit:
             with cd(CORE_DIR):
                  output = run_cmd_on_server(cmd, node_ip, user, password,
                             container=container)
-                 core = '%s %s' (core, output)
+                 core = '%s %s' %(core, output)
         return core
 
 # end

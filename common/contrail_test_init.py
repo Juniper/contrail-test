@@ -422,7 +422,7 @@ class TestInputs(object):
         if containers :
             a_container = containers[0]
         with hide('output','running','warnings'):
-            output = self.inputs.run_cmd_on_server(host_ip,
+            output = self.run_cmd_on_server(host_ip,
                         'uname -a', username, password, container=a_container)
         if 'el6' in output:
             self.os_type[host_ip] = 'centos_el6'
