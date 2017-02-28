@@ -861,20 +861,32 @@ def createForwardingClass(self):
     return self
 # end of create_forwarding_class
 
-def createQos(self):
-    if hasattr(self.topo, 'qos_list'):
+def createQos(self, glob_flag=False):
+    if hasattr(self.topo, 'qos_list' or 'qos_glob_list'):
         self.qos_fixture = {}
-        for qos_name in self.topo.qos_list:
+        if glob_flag:
+            qos_list_option = self.topo.qos_glob_list
+            qos_params_option = self.topo.qos_glob_params
+        else:
+            qos_list_option = self.topo.qos_list
+            qos_params_option = self.topo.qos_params
+            qos_config_type = None
+        for qos_name in qos_list_option:
             result = True
             msg = []
+            qos_param = qos_params_option[qos_name]
+            if 'qos_config_type' in qos_param.keys():
+                qos_config_type = qos_param['qos_config_type']
             self.qos_fixture[qos_name] = self.useFixture(
                 QosConfigFixture(
+                    glob_flag,
                     connections=self.project_connections,
                     name=qos_name,
-                    dscp_mapping=self.topo.qos_params[qos_name]['dscp_mapping'],
-                    exp_mapping=self.topo.qos_params[qos_name]['exp_mapping'],
-                    dot1p_mapping=self.topo.qos_params[qos_name]['dot1p_mapping'],
-                    default_fc_id=self.topo.qos_params[qos_name]['default_fc_id']))
+                    dscp_mapping=qos_param['dscp_mapping'],
+                    exp_mapping=qos_param['exp_mapping'],
+                    dot1p_mapping=qos_param['dot1p_mapping'],
+                    default_fc_id=qos_param['default_fc_id'],
+                    qos_config_type=qos_config_type))
             if self.skip_verify == 'no':
                 ret, msg = self.qos_fixture[qos_name].verify_on_setup()
                 assert ret, "Verifications for qos :%s has failed and its error message: %s" % (

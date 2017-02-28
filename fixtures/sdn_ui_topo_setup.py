@@ -207,6 +207,12 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
         return True
     # end attach_qos_config_to_vn
 
+    def create_global_qos_config(self):
+        glob_flag = True
+        assert topo_steps.createQos(self, glob_flag)
+        return True
+    # end create_global_qos_config
+
     def create_virtual_router(self):
         assert topo_steps.createVirtualRouter(self)
         return True

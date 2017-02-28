@@ -420,6 +420,7 @@ class QosConfigFixture(QosBaseFixture):
 
         if self.inputs.verify_thru_gui():
             self.webui = WebuiTest(self.connections, self.inputs)
+            self.global_flag = args[0]
 
     def setUp(self):
         super(QosConfigFixture, self).setUp()
