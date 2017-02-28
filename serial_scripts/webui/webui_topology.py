@@ -372,6 +372,18 @@ class sdn_webui_config ():
                 'exp': 'af11 (100)',
                 'queue_num': 4}}
         
+        #Define Network Route Table parameters
+        self.nrt_list = ['rtbl1', 'rtbl2']
+        self.nrt_params = {
+            'rtbl1': {
+                'prefix': '17.1.1.0/24',
+                'nh_type': 'ip-address',
+                'nexthop': '15.1.1.3' },
+            'rtbl2': {
+                'prefix': '15.1.1.0/24',
+                'nh_type': 'ip-address',
+                'nexthop': '17.1.1.3' }}
+        
         # Define network policy rules
         self.rules = {}
 

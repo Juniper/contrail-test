@@ -1358,6 +1358,12 @@ class WebuiCommon:
             element_name = fixture.name
             element_id = 'btnDeleteQOS'
             popup_id = 'configure-qos_cofigbtn1'
+        if element_type == 'network_route_table_delete':
+            if not self.click_configure_route_table():
+                result = result and False
+            element_name = 'all'
+            element_id = 'btnActionDelRtTable'
+            popup_id = 'configure-route_tablebtn1'
         elif element_type == 'bgp_router_delete':
             if not self.click_configure_bgp_router():
                 result = result and False
@@ -1413,7 +1419,8 @@ class WebuiCommon:
                         'div')[3].text
                     div_obj = element.find_elements_by_tag_name('div')[1]
                 elif element_type in ['router_delete', 'dns_server_delete',
-                                      'dns_record_delete', 'bgp_aas_delete']:
+                                      'dns_record_delete', 'bgp_aas_delete',
+                                      'network_route_table_delete']:
                     element_text = 'all'
                     div_obj = element.find_elements_by_tag_name('div')[1]
                 elif element_type == 'bgp_router_delete':
@@ -1963,6 +1970,13 @@ class WebuiCommon:
         self.click_element('i', 'tag', browser = div_browser)
         self.wait_till_ajax_done(self.browser)
     #end click_configure_qos_basic
+    
+    def click_configure_route_table(self):
+        self._click_on_config_dropdown(self.browser)
+        self.click_element(['config_net_routing', 'a'], ['id', 'tag'])
+        self.wait_till_ajax_done(self.browser)
+        return self.check_error_msg("configure network route table")
+    # end click_configure_route_table
 
     def click_fip_vn(self, browser=None):
         if not browser:

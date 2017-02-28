@@ -251,6 +251,21 @@ class WebuiTestSanity(base.WebuiBaseTest):
         assert self.res.setup_obj.attach_qos_config_to_vn(), 'Creation of QoS failed'
         return True
     # end test_attach_qos_config_to_vn
+    
+    @preposttest_wrapper
+    def test2_1_6_create_network_route_table(self):
+        '''
+        Description: Test to create Network Route Table on UI
+        Steps:
+            1. On the Contrail UI, go to Config -> Networking -> Routing
+            2. Click on create, enter the config details in the fields and click on 'Save'
+            3. Verify the creation of the Network Route Table
+        Pass criteria:
+            1. Step 2 and 3 above should pass
+        '''
+        assert self.res.setup_obj.create_network_route_table(), 'Creation of Network Route Table failed'
+        return True
+    # end test_create_network_route_table
 
     # UI verification tests
 
