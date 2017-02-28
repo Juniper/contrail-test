@@ -293,18 +293,18 @@ class VerifyIntfMirror(VerifySvcMirror):
         self.rules_vn1_vn2 = [{'direction': '<>',
                        'protocol': 'icmp',
                        'source_network': self.vn1_name,
-                       'src_ports': [0, -1],
+                       'src_ports': [0, 65535],
                        'dest_network': self.vn2_name,
-                       'dst_ports': [0, -1],
+                       'dst_ports': [0, 65535],
                        'simple_action': 'pass',
                        'action_list': {'simple_action': 'pass'}
                        },
                        {'direction': '<>',
                        'protocol': 'icmp6',
                        'source_network': self.vn1_name,
-                       'src_ports': [0, -1],
+                       'src_ports': [0, 65535],
                        'dest_network': self.vn2_name,
-                       'dst_ports': [0, -1],
+                       'dst_ports': [0, 65535],
                        'simple_action': 'pass',
                        'action_list': {'simple_action': 'pass'}
                        }]
@@ -312,18 +312,18 @@ class VerifyIntfMirror(VerifySvcMirror):
         self.rules_vn1_vn3 = [{'direction': '<>',
                        'protocol': 'icmp',
                        'source_network': self.vn1_name,
-                       'src_ports': [0, -1],
+                       'src_ports': [0, 65535],
                        'dest_network': self.vn3_name,
-                       'dst_ports': [0, -1],
+                       'dst_ports': [0, 65535],
                        'simple_action': 'pass',
                        'action_list': {'simple_action': 'pass'}
                        },
                        {'direction': '<>',
                        'protocol': 'icmp6',
                        'source_network': self.vn1_name,
-                       'src_ports': [0, -1],
+                       'src_ports': [0, 65535],
                        'dest_network': self.vn3_name,
-                       'dst_ports': [0, -1],
+                       'dst_ports': [0, 65535],
                        'simple_action': 'pass',
                        'action_list': {'simple_action': 'pass'}
                        }]
@@ -331,21 +331,54 @@ class VerifyIntfMirror(VerifySvcMirror):
         self.rules_vn2_vn3 = [{'direction': '<>',
                        'protocol': 'icmp',
                        'source_network': self.vn2_name,
-                       'src_ports': [0, -1],
+                       'src_ports': [0, 65535],
                        'dest_network': self.vn3_name,
-                       'dst_ports': [0, -1],
+                       'dst_ports': [0, 65535],
                        'simple_action': 'pass',
                        'action_list': {'simple_action': 'pass'}
                        },
                        {'direction': '<>',
                        'protocol': 'icmp6',
                        'source_network': self.vn2_name,
-                       'src_ports': [0, -1],
+                       'src_ports': [0, 65535],
                        'dest_network': self.vn3_name,
-                       'dst_ports': [0, -1],
+                       'dst_ports': [0, 65535],
                        'simple_action': 'pass',
                        'action_list': {'simple_action': 'pass'}
                        }]
+
+        self.rules_vn1_vn3.append({'direction': '<>',
+                                'protocol': 'udp',
+                                'source_network': self.vn1_name,
+                                'src_ports': [0, 65535],
+                                'dest_network': self.vn3_name,
+                                'dst_ports': [0, 65535],
+                                'simple_action': 'pass',
+                                'action_list': {'simple_action': 'pass'}
+                                }
+                               )
+
+        self.rules_vn2_vn3.append({'direction': '<>',
+                                'protocol': 'udp',
+                                'source_network': self.vn2_name,
+                                'src_ports': [0, 65535],
+                                'dest_network': self.vn3_name,
+                                'dst_ports': [0, 65535],
+                                'simple_action': 'pass',
+                                'action_list': {'simple_action': 'pass'}
+                                }
+                               )
+
+        self.rules_vn1_vn2.append({'direction': '<>',
+                                'protocol': 'udp',
+                                'source_network': self.vn1_name,
+                                'src_ports': [0, 65535],
+                                'dest_network': self.vn2_name,
+                                'dst_ports': [0, 65535],
+                                'simple_action': 'pass',
+                                'action_list': {'simple_action': 'pass'}
+                                }
+                               )
 
         self.policy_fixture_vn1_vn2 = self.config_policy(self.policy_name_vn1_vn2, self.rules_vn1_vn2)
         self.policy_fixture_vn1_vn3 = self.config_policy(self.policy_name_vn1_vn3, self.rules_vn1_vn3)
