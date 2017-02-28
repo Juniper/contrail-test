@@ -287,6 +287,9 @@ class WebuiCommon:
         elif element_type == 'QoS':
             element = 'Create ' + element_type
             element_new = func_suffix +'_cofig'
+        elif element_type == 'QOS':
+            element = 'btnCreate' + element_type
+            element_new = 'qos_cofig'
         else:
             element = 'Create ' + element_type
             element_new = func_suffix
@@ -312,7 +315,7 @@ class WebuiCommon:
             self.logger.info("Creating %s %s using contrail-webui" %
                              (element_type, name))
         if not save:
-            if element_type == 'PhysicalRouter':
+            if element_type in ['PhysicalRouter', 'QOS']:
                 self.click_element(element)
             else:
                 try:
@@ -1345,8 +1348,13 @@ class WebuiCommon:
             popup_id = 'configure-forwarding_classbtn1'
             br = self.find_element('forwarding-class-grid')
         elif element_type == 'qos_config_delete':
-            if not self.click_configure_qos():
-                result = result and False
+            if fixture.global_flag:
+                if not self.click_configure_global_qos():
+                    result = result and False
+                br = self.find_element('qos-grid')
+            else:
+                if not self.click_configure_qos():
+                    result = result and False
             element_name = fixture.name
             element_id = 'btnDeleteQOS'
             popup_id = 'configure-qos_cofigbtn1'
@@ -1883,6 +1891,25 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
     #end click_configure_forwarding_class_advanced
 
+    def click_configure_global_qos(self):
+        self.click_configure_global_config()
+        self.wait_till_ajax_done(self.browser)
+        self.click_element('qos_global_tab-tab-link')
+        self.wait_till_ajax_done(self.browser)
+        return self.check_error_msg("configure global qos config")
+    # end click_configure_global_qos
+
+    def click_configure_global_qos_basic(self, row_index):
+        self.click_configure_global_qos()
+        br = self.find_element('qos-grid')
+        rows = self.get_rows(browser=br)
+        div_browser = self.find_element(
+            'div', 'tag', if_elements=[1], elements=True,
+            browser=rows[row_index])[0]
+        self.click_element('i', 'tag', browser = div_browser)
+        self.wait_till_ajax_done(self.browser)
+    #end click_configure_global_qos_basic
+
     def click_configure_dns_servers(self):
         self.wait_till_ajax_done(self.browser)
         self._click_on_config_dropdown(self.browser, 4)
@@ -2288,9 +2315,13 @@ class WebuiCommon:
         except StaleElementReferenceException:
             browser = self.find_element(search_ele, search_by)
         rows = self.get_rows(browser, canvas)
+        if not rows[index + 1].text:
+            ind = index
+        else:
+            ind = index + 1
         slick_row_detail = self.find_element(
                 'slick-row-detail-container', 'class',
-                        browser = rows[index + 1])
+                        browser = rows[ind])
         if view == 'advanced':
             find_element = ['pre', 'key-value']
             find_by = ['tag', 'class']
