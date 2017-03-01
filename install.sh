@@ -1,5 +1,6 @@
 #!/bin/bash
 
+BUILD_PLATFORM=$(cat /etc/lsb-release | grep DISTRIB_RELEASE | cut -d '=' -f2)
 CONTRAIL_TEST_CI_REPO=https://github.com/juniper/contrail-test-ci
 CONTRAIL_TEST_CI_REF=master
 CONTRAIL_TEST_REPO=https://github.com/juniper/contrail-test
@@ -15,7 +16,14 @@ PACKAGES_REQUIRED_UBUNTU="python-pip ant python-novaclient python-neutronclient 
     patch git ipmitool python-requests"
 PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD="$PACKAGES_REQUIRED_UBUNTU python-dev libxslt1-dev libz-dev libyaml-dev sshpass"
 PACKAGES_REQUIRED_RALLY="libssl-dev libffi-dev python-dev libxml2-dev libxslt1-dev libpq-dev libpq5=9.3.15-0ubuntu0.14.04"
-EXTRAS="http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libexpat1-dev_2.1.0-4ubuntu1.3_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libexpat1_2.1.0-4ubuntu1.3_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libpython2.7-dev_2.7.6-8ubuntu0.2_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/python2.7-dev_2.7.6-8ubuntu0.2_amd64.deb"
+if [ ${BUILD_PLATFORM} = "16.04" ]; then
+    PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD="$PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD gcc-5-base=5.4.0-6ubuntu1~16.04.4 libgcc-5-dev=5.4.0-6ubuntu1~16.04.4 libstdc++-5-dev=5.4.0-6ubuntu1~16.04.4"
+    PACKAGES_REQUIRED_RALLY="libssl-dev libffi-dev python-dev libxml2-dev libxslt1-dev libpq-dev libpq5"
+    EXTRAS="libc-dev-bin=2.23-0ubuntu5 libc6-dev=2.23-0ubuntu5 libexpat1-dev libexpat1 libpython2.7-dev python2.7-dev"
+else
+    EXTRAS="http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libexpat1-dev_2.1.0-4ubuntu1.3_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libexpat1_2.1.0-4ubuntu1.3_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libpython2.7-dev_2.7.6-8ubuntu0.2_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/python2.7-dev_2.7.6-8ubuntu0.2_amd64.deb"
+    PACKAGES_REQUIRED_RALLY="libssl-dev libffi-dev python-dev libxml2-dev libxslt1-dev libpq-dev libpq5=9.3.15-0ubuntu0.14.04"
+fi
 
 usage () {
     cat <<EOF
@@ -316,6 +324,12 @@ ARG SSHPASS
 ENV DEBIAN_FRONTEND=noninteractive
 ENV SKU=$openstack_release
 EOF
+    if [[ ${BUILD_PLATFORM} == "16.04" ]]; then
+        cat <<EOF
+RUN apt-get update; apt-get install bzip2 wget sudo perl-modules-5.22
+RUN apt-get install $EXTRAS
+EOF
+    fi
     if [[ $type == 'prep' ]]; then
         if [[ $CONTRAIL_INSTALL_PACKAGE_URL =~ ^http[s]*:// ]]; then
             cat <<EOF
@@ -326,10 +340,19 @@ RUN wget -q --spider $CONTRAIL_INSTALL_PACKAGE_URL
 RUN wget $CONTRAIL_INSTALL_PACKAGE_URL -O /contrail-install-packages.deb && \
     dpkg -i /contrail-install-packages.deb && \
     rm -f /contrail-install-packages.deb && \
-    cd /opt/contrail/contrail_packages/ && ./setup.sh && \
-    cd /opt/contrail/contrail_install_repo/ && wget $EXTRAS && \
-    cd /opt/contrail/contrail_install_repo/ && dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz && apt-get update && \
-    apt-get install -y $PACKAGES_REQUIRED_DOCKER_BUILD && \
+    cd /opt/contrail/contrail_packages/ && ./setup.sh;
+EOF
+            if [[ ${BUILD_PLATFORM} == "16.04" ]]; then
+                cat <<EOF
+RUN cd /opt/contrail/contrail_install_repo/ && apt-get install $EXTRAS;
+EOF
+            else
+RUN cd /opt/contrail/contrail_install_repo/ && wget $EXTRAS && \
+    cd /opt/contrail/contrail_install_repo/ && dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz && apt-get update;
+EOF
+            fi
+            cat <<EOF
+RUN apt-get install -y $PACKAGES_REQUIRED_DOCKER_BUILD && \
     sed -i '/file:\/opt\/contrail\/contrail_install_repo/d' /etc/apt/sources.list ; \
     rm -fr /opt/contrail/* ; apt-get -y autoremove && apt-get -y clean;
 EOF
@@ -343,10 +366,20 @@ RUN apt-get install -y sshpass && \
     sshpass -e scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${sshuser_sub}${server}:${path} /contrail-install-packages.deb && \
     dpkg -i /contrail-install-packages.deb && \
     rm -f /contrail-install-packages.deb && \
-    cd /opt/contrail/contrail_packages/ && ./setup.sh && \
-    cd /opt/contrail/contrail_install_repo/ && wget $EXTRAS && \
-    cd /opt/contrail/contrail_install_repo/ && dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz && apt-get update && \
-    apt-get install -y $PACKAGES_REQUIRED_DOCKER_BUILD && \
+    cd /opt/contrail/contrail_packages/ && ./setup.sh; 
+EOF
+            if [[ ${BUILD_PLATFORM} == "16.04" ]]; then
+                cat <<EOF
+RUN cd /opt/contrail/contrail_install_repo/ && apt-get install $EXTRAS;
+EOF
+            else
+                cat <<EOF
+RUN cd /opt/contrail/contrail_install_repo/ && wget $EXTRAS && \
+    cd /opt/contrail/contrail_install_repo/ && dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz && apt-get update;
+EOF
+            fi
+            cat <<EOF
+RUN apt-get install -y $PACKAGES_REQUIRED_DOCKER_BUILD && \
     sed -i '/file:\/opt\/contrail\/contrail_install_repo/d' /etc/apt/sources.list ; \
     rm -fr /opt/contrail/* ; apt-get -y autoremove; apt-get -y clean
 EOF
