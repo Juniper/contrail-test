@@ -48,7 +48,16 @@ class JsonDrv (object):
     def _auth(self):
         if self._args:
             if os.getenv('OS_AUTH_URL'):
-                url = os.getenv('OS_AUTH_URL') + '/tokens'
+                if 'v3' in os.getenv('OS_AUTH_URL'):
+                   url = os.getenv('OS_AUTH_URL') + '/auth/tokens'
+                else:
+                    url = os.getenv('OS_AUTH_URL') + '/tokens'
+            elif 'v3' in self._args.auth_url:
+                self._DEFAULT_AUTHN_URL = "/v3/auth/tokens"
+                url = "%s://%s:%s%s" % (self._args.auth_protocol,
+                                        self._args.auth_ip,
+                                        self._args.auth_port,
+                                        self._DEFAULT_AUTHN_URL)
             else:
                 url = "%s://%s:%s%s" % (self._args.auth_protocol,
                                         self._args.auth_ip,
@@ -58,11 +67,21 @@ class JsonDrv (object):
                 verify = not self._args.insecure
             else:
                 verify = self._args.keycertbundle
-            self._authn_body = \
-                '{"auth":{"passwordCredentials":{"username": "%s", "password": "%s"}, "tenantName":"%s"}}' % (
-                    self._args.admin_username if self._use_admin_auth else self._args.stack_user,
-                    self._args.admin_password if self._use_admin_auth else self._args.stack_password,
-                    self._args.admin_tenant if self._use_admin_auth else self._args.project_name)
+            if 'v3' in (os.getenv('OS_AUTH_URL') or self._args.auth_url):
+                self._authn_body = \
+                '{"auth": {"identity": {"methods": ["password"],"password": {"user": {"domain": {"name": "%s"},"name": "%s","password": "%s"}}},\
+                    "scope": {"project": {"domain": {"name": "%s"},"name": "%s"}}}}' %(
+                                          self._args.admin_domain,
+                                          self._args.admin_username,
+                                          self._args.admin_password,
+                                          self._args.admin_domain,
+                                          self._args.admin_username)
+            else:
+                self._authn_body = \
+                    '{"auth":{"passwordCredentials":{"username": "%s", "password": "%s"}, "tenantName":"%s"}}' % (
+                        self._args.admin_username if self._use_admin_auth else self._args.stack_user,
+                        self._args.admin_password if self._use_admin_auth else self._args.stack_password,
+                        self._args.admin_tenant if self._use_admin_auth else self._args.project_name)
             response = requests.post(url, data=self._authn_body,
                                      headers=self._DEFAULT_HEADERS,
                                      verify=verify)
@@ -70,6 +89,11 @@ class JsonDrv (object):
                 # plan is to re-issue original request with new token
                 authn_content = json.loads(response.text)
                 self._auth_token = authn_content['access']['token']['id']
+                self._headers = {'X-AUTH-TOKEN': self._auth_token}
+                return
+            elif response.status_code == 201: 
+                authn_content = response.headers
+                self._auth_token = authn_content['X-Subject-Token']
                 self._headers = {'X-AUTH-TOKEN': self._auth_token}
                 return
         raise RuntimeError('Authentication Failure')

@@ -16,14 +16,19 @@ stackPassword=$__stack_password__
 stackTenant=$__stack_tenant__
 stackDomain=$__stack_domain__
 
+# Set domain_isolation to true to Let the tests create and destroy domains
 # Set tenant_isolation to true to Let the tests
 # create and destroy  projects/tenants
 # Setting this to true requires that admin credentials below are populated
 # Admin tenant credentials
+domain_isolation=$__domain_isolation__
 tenant_isolation=$__tenant_isolation__
 adminUser=$__admin_user__
 adminPassword=$__admin_password__
 adminTenant=$__admin_tenant__
+
+#keystone_version
+keystone_version=$__keystone_version__
 
 # Neutron user will have member rights in the dynamically created test tenants
 neutron_username=$__neutron_username__

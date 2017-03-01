@@ -26,7 +26,8 @@ class ProjectFixture(fixtures.Fixture):
         self.connections = connections
         self.auth = auth
         self.project_name = project_name or self.inputs.stack_tenant
-        self.domain_name = domain_name or 'default-domain'
+        self.domain_name = domain_name or self.connections.domain_name
+        self.domain_id = self.connections.domain_id or 'default'
         self.uuid = uuid
         self.project_obj = None
         self.already_present = False
@@ -42,9 +43,16 @@ class ProjectFixture(fixtures.Fixture):
         self.verify_is_run = False
         if not self.auth:
             if self.inputs.orchestrator == 'openstack':
-                self.auth = OpenstackAuth(self.inputs.admin_username,
-                              self.inputs.admin_password,
-                              self.inputs.admin_tenant, self.inputs, self.logger)
+                
+                if self.inputs.domain_isolation:
+                    self.auth=OpenstackAuth(self.username, self.password,
+                           self.project_name, self.inputs, 
+                           self.logger,domain_name=self.domain_name)
+                else:
+                    self.auth = OpenstackAuth(self.inputs.admin_username,
+                                    self.inputs.admin_password,
+                                    self.inputs.admin_tenant, self.inputs, self.logger,
+                                    domain_name=self.inputs.admin_domain)
             else: # vcenter
                 self.auth = VcenterAuth(self.inputs.admin_username,
                               self.inputs.admin_password,
@@ -59,7 +67,7 @@ class ProjectFixture(fixtures.Fixture):
             self.already_present = True
 
     def _create_project(self):
-        self.uuid = self.auth.create_project(self.project_name)
+        self.uuid = self.auth.create_project(self.project_name, self.domain_name)
         self.project_obj = self.vnc_lib_h.project_read(id=self.uuid)
         self.logger.info('Created Project:%s, ID : %s ' % (self.project_name,
                                                            self.uuid))
@@ -76,7 +84,7 @@ class ProjectFixture(fixtures.Fixture):
         self.create()
 
     def create(self):
-        self.uuid = self.uuid or self.auth.get_project_id(self.project_name)
+        self.uuid = self.uuid or self.auth.get_project_id(self.project_name, self.domain_id)
         if self.uuid:
             self.read()
             self.logger.info(
