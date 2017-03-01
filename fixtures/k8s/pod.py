@@ -7,18 +7,22 @@ from tcutils.util import get_random_name, retry
 class PodFixture(fixtures.Fixture):
     '''
     '''
-    def __init__(self, connections, name = None, namespace = 'default' , \
-                 container_list = [{'pod_name':str(get_random_name('nginx')), 'image':'nginx'}]):
+    def __init__(self,
+                 connections,
+                 name = None,
+                 namespace = 'default',
+                 metadata={},
+                 spec={}):
         self.logger = connections.logger or contrail_logging.getLogger(__name__)
-        self.name = name or get_random_name('pod')
+        self.name = name or metadata.get('name') or get_random_name('pod')
         self.namespace = namespace
         self.k8s_client = connections.k8s_client
-        self.container_list = container_list
-
-        self.already_exists = False
+        self.metadata = metadata
+        self.spec = spec
+        self.already_exists = None
 
     def setUp(self):
-        super(PodFixture, self).setUp()    
+        super(PodFixture, self).setUp()
         self.create()
 
     def verify_on_setup(self):
@@ -38,7 +42,7 @@ class PodFixture(fixtures.Fixture):
             self.logger.error('POD %s not seen in Contrail agent' %(
                                self.name))
             return False
-        self.logger.info('Namespace %s verification passed' % (self.name))
+        self.logger.info('Pod %s verification passed' % (self.name))
         return True
     # end verify_on_setup 
 
@@ -66,22 +70,27 @@ class PodFixture(fixtures.Fixture):
             self.obj = self.k8s_client.read_pod(self.namespace, self.name)
             self._populate_attr()
             self.already_exists = True
+            return self.obj
         except ApiException as e:
             self.logger.debug('POD %s not present' % (self.name))
-            return None 
+            return None
     # end read
 
     def create(self):
-        ns_exits = self.read() 
-        if ns_exits:
-            return ns_exits
-        self.obj = self.k8s_client.create_pod(self.namespace, self.name,  self.container_list)
-        self._populate_attr() 
+        pod = self.read()
+        if pod:
+            return pod
+        self.obj = self.k8s_client.create_pod(
+                       self.namespace,
+                       self.name,
+                       self.metadata,
+                       self.spec)
+        self._populate_attr()
     # end create
 
     def delete(self):
         if not self.already_exists:
-            return self.k8s_client.delete_pod(self.namespace, self.name)
+            resp = self.k8s_client.delete_pod(self.namespace, self.name)
     # end delete
 
     @retry(delay=1, tries=10)

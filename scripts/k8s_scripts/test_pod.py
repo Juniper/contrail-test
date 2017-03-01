@@ -15,12 +15,11 @@ class TestPod(BaseK8sTest):
 
     @preposttest_wrapper
     def test_add_delete_pod(self):
-        ''' 
-        Test add and delete of  POD 
         '''
-        pod  = self.useFixture(PodFixture(self.connections))
+        Test add and delete of  POD
+        '''
+        pod  = self.setup_nginx_pod()
         assert pod.verify_on_setup()
 
     # end test_add_delete_pod
-        
 
