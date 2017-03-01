@@ -248,7 +248,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         Pass criteria:
             1. Steps 3 and 4 above should pass
         '''
-        assert self.res.setup_obj.attach_qos_config_to_vn(), 'Creation of QoS failed'
+        assert self.res.setup_obj.attach_qos_config_to_vn(), 'Attaching of QoS failed'
         return True
     # end test_attach_qos_config_to_vn
 
@@ -266,6 +266,22 @@ class WebuiTestSanity(base.WebuiBaseTest):
         assert self.res.setup_obj.create_network_route_table(), 'Creation of Network Route Table failed'
         return True
     # end test_create_network_route_table
+    
+    @preposttest_wrapper
+    def test2_1_7_attach_network_route_table_to_VN(self):
+        '''
+        Description: Test to attach Network Route Table to VN on UI
+        Steps:
+            1. On the Contrail UI, go to Config -> Networking -> Networks
+            2. Click on edit on one of the VNs
+            3. Click on 'Advanced Options', attach Route table
+            4. Click on 'Save'
+        Pass criteria:
+            1. Steps 3 and 4 above should pass
+        '''
+        assert self.res.setup_obj.attach_network_route_table(), 'Attaching of Network Route Table to VN failed'
+        return True
+    # end test_attach_network_route_table_to_VN
 
     # UI verification tests
 
