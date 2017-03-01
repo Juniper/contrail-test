@@ -384,6 +384,12 @@ class sdn_webui_config ():
                 'nh_type': 'ip-address',
                 'nexthop': '17.1.1.3' }}
 
+        #Define parameters for attaching Network Route Table to VN
+        self.vn_nrt_list = ['rtbl1', 'rtbl2']
+        self.vn_nrt_params = {
+            'vnet2': 'rtbl1',
+            'vnet3': 'rtbl2' }
+
         # Define network policy rules
         self.rules = {}
 
