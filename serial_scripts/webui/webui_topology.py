@@ -336,7 +336,42 @@ class sdn_webui_config ():
                 'source_port': '15',
                 'hold_time': '180',
                 'auth_type': 'md5',
-                'auth_key': '123' }}
+                'auth_key': '123',
+                'set_netconf' : False}}
+
+        #Define OVSDB managed ToR
+        self.pr_tor_list = ['phy_rtr_tor1']
+        self.pr_tor_params = {
+            'phy_rtr_tor1': {
+                'mgmt_ip': '21.1.1.5',
+                'vendor': 'Juniper',
+                'model': 'mx',
+                'tunnel_ip': '32.1.1.15',
+                'tor_agent': 'vrouter2',
+                'tor_agent_opt': 'test_tor',
+                'tsn': 'vrouter3',
+                'tsn_opt': 'test_tsn',
+                'set_tor': True}}
+
+        #Define Netconf managed Physical Router
+        self.netconf_pr_list = ['netconf_phy_rtr1']
+        self.netconf_pr_params = {
+            'netconf_phy_rtr1': {
+                'mgmt_ip': '22.1.1.5',
+                'vendor': 'Juniper',
+                'model': 'mx',
+                'tunnel_ip': '33.1.1.15',
+                'ssh_username': 'root',
+                'ssh_password': 'netconf@123',
+                'set_netconf': True}}
+
+        #Define VCPE router
+        self.vcpe_list = ['vcpe_phy_rtr1']
+        self.vcpe_params = {
+            'vcpe_phy_rtr1': {
+                'mgmt_ip': '23.1.1.5',
+                'tunnel_ip': '34.1.1.15',
+                'set_vcpe': True}}
 
         #Define Physical Interface parameters
         self.pif_list = ['ge-0/0/0']
