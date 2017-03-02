@@ -261,7 +261,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
     @preposttest_wrapper
     def test_multi_SC_with_ecmp(self):
         """
-        Description: Validate Multiple Service Instances with ECMP. 
+        Description: Validate Multiple Service Instances with ECMP.
         Test steps:
                     1. Creating vm's - vm1 and vm2 in networks vn1 and vn2.
                     2.  Creating 3 service instances in transparent mode with 3 instances each.
@@ -328,7 +328,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                     1.  Creating vm's - vm1 and vm2 in networks vn1 and vn2.
                     2.  Creating a service instance in in-network-nat mode with 3 instances and
                         left-interface of the service instances sharing the IP and enabled for static route.
-                    3.   Start traffic and and more flows. 
+                    3.   Start traffic and and more flows.
                     4.  Creating a service chain by applying the service instance as a service in a policy b
                         etween the VNs.
                     5.  Checking for ping and tcp traffic between vm1 and vm2.
@@ -383,7 +383,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                     1.  Creating vm's - vm1 and vm2 in networks vn1 and vn2.
                     2.  Creating a service instance in in-network-nat mode with 3 instances and
                          left-interface of the service instances sharing the IP and enabled for static route.
-                    3.   Start traffic and send 3 different protocol traffic to the same destination. 
+                    3.   Start traffic and send 3 different protocol traffic to the same destination.
                     4.  Creating a service chain by applying the service instance as a service in a policy b
                             etween the VNs.
                     5.  Checking for ping and tcp traffic between vm1 and vm2.
@@ -1035,4 +1035,467 @@ class TestMultiInlineSVCIPv6(TestMultiInlineSVC):
         if not self.connections.orch.is_feature_supported('ipv6'):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
+class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestECMPConfigHashFeature, cls).setUpClass()
+
+    def setUp(self):
+        super(TestECMPConfigHashFeature, self).setUp()
+    # end setUp
+
+    @test.attr(type=['ci_sanity_WIP', 'sanity'])
+    @preposttest_wrapper
+    def test_ecmp_hash_src_ip(self):
+        """
+            Validates ecmp hash when only source ip is configured
+            Maintainer : cmallam@juniper.net
+        """
+        # Bringing up the basic service chain setup.
+        max_inst = 2
+        svc_mode = 'in-network-nat'
+        svc_img_name = 'tiny_nat_fw'
+        st_version = 2
+        ecmp_hash = 'default'
+        config_level = "vn"
+
+        ret_dict = self.setup_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
+                                        max_inst=max_inst, svc_mode=svc_mode,
+                                        svc_img_name=svc_img_name,
+                                        st_version=st_version,
+                                        ecmp_hash=ecmp_hash,
+                                        config_level=config_level)
+
+        left_vn_fixture = ret_dict['left_vn_fixture']
+        right_vn_fixture = ret_dict['right_vn_fixture']
+        left_vm_fixture = ret_dict['left_vm_fixture']
+        right_vm_fixture = ret_dict['right_vm_fixture']
+
+        # ECMP Hash with only "source_ip"
+        ecmp_hash = {"source_ip": True}
+        config_level = "vn"
+        self.modify_ecmp_config_hash(ecmp_hash=ecmp_hash,
+                                     config_level=config_level,
+                                     right_vm_fixture=right_vm_fixture,
+                                     right_vn_fixture=right_vn_fixture)
+
+
+        # Verify ECMP Hash at Agent and control node
+        self.verify_ecmp_hash(ecmp_hash=ecmp_hash, vn_fixture=left_vn_fixture,
+                              left_vm_fixture=left_vm_fixture,
+                              right_vm_fixture=right_vm_fixture)
+
+        # Verify traffic from vn1 (left) to vn2 (right), with user specified
+        # flow count
+        flow_count = 5
+        si_fixtures = ret_dict['si_fixtures']
+        dst_vm_list = [right_vm_fixture]
+        self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
+                                 si_fixtures[0], left_vn_fixture,
+                                 ecmp_hash=ecmp_hash, flow_count=flow_count)
+        return True
+    # end test_ecmp_hash_src_ip
+
+    def test_ecmp_hash_dest_ip(self):
+        """
+            Validates ecmp hash when only destination ip is configured
+            Maintainer : cmallam@juniper.net
+        """
+        # Bringing up the basic service chain setup.
+        max_inst = 2
+        svc_mode = 'in-network-nat'
+        svc_img_name = 'tiny_nat_fw'
+        st_version = 2
+        ecmp_hash = 'default'
+        config_level = "vn"
+
+        ret_dict = self.setup_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
+                                        max_inst=max_inst, svc_mode=svc_mode,
+                                        svc_img_name=svc_img_name,
+                                        st_version=st_version,
+                                        ecmp_hash=ecmp_hash,
+                                        config_level=config_level)
+
+        left_vn_fixture = ret_dict['left_vn_fixture']
+        right_vn_fixture = ret_dict['right_vn_fixture']
+        left_vm_fixture = ret_dict['left_vm_fixture']
+        right_vm_fixture = ret_dict['right_vm_fixture']
+
+        # ECMP Hash with only "destination_ip"
+        ecmp_hash = {"destination_ip": True}
+        config_level = "vn"
+        self.modify_ecmp_config_hash(ecmp_hash=ecmp_hash,
+                                     config_level=config_level,
+                                     right_vm_fixture=right_vm_fixture,
+                                     right_vn_fixture=right_vn_fixture)
+
+        # Verify ECMP Hash at Agent and control node
+        self.verify_ecmp_hash(ecmp_hash=ecmp_hash, vn_fixture=left_vn_fixture,
+                              left_vm_fixture=left_vm_fixture,
+                              right_vm_fixture=right_vm_fixture)
+
+        # Verify traffic from vn1 (left) to vn2 (right), with user specified
+        # flow count
+        flow_count = 5
+        si_fixtures = ret_dict['si_fixtures']
+        dst_vm_list = [right_vm_fixture]
+        self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
+                                 si_fixtures[0], left_vn_fixture,
+                                 ecmp_hash=ecmp_hash, flow_count=flow_count)
+        return True
+    # end test_ecmp_hash_dest_ip
+
+    def test_ecmp_hash_src_port(self):
+        """
+            Validates ecmp hash when only source port is configured
+            Maintainer : cmallam@juniper.net
+        """
+        # Bringing up the basic service chain setup.
+        max_inst = 2
+        svc_mode = 'in-network-nat'
+        svc_img_name = 'tiny_nat_fw'
+        st_version = 2
+        ecmp_hash = 'default'
+        config_level = "vn"
+
+        ret_dict = self.setup_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
+                                        max_inst=max_inst, svc_mode=svc_mode,
+                                        svc_img_name=svc_img_name,
+                                        st_version=st_version,
+                                        ecmp_hash=ecmp_hash,
+                                        config_level=config_level)
+
+        left_vn_fixture = ret_dict['left_vn_fixture']
+        right_vn_fixture = ret_dict['right_vn_fixture']
+        left_vm_fixture = ret_dict['left_vm_fixture']
+        right_vm_fixture = ret_dict['right_vm_fixture']
+
+        # ECMP Hash with only "source_port"
+        ecmp_hash = {"source_port": True}
+        config_level = "vn"
+        self.modify_ecmp_config_hash(ecmp_hash=ecmp_hash,
+                                     config_level=config_level,
+                                     right_vm_fixture=right_vm_fixture,
+                                     right_vn_fixture=right_vn_fixture)
+
+        # Verify ECMP Hash at Agent and control node
+        self.verify_ecmp_hash(ecmp_hash=ecmp_hash, vn_fixture=left_vn_fixture,
+                              left_vm_fixture=left_vm_fixture,
+                              right_vm_fixture=right_vm_fixture)
+
+        # Verify traffic from vn1 (left) to vn2 (right), with user specified
+        # flow count
+        flow_count = 5
+        dst_vm_list = [right_vm_fixture]
+        si_fixtures = ret_dict['si_fixtures']
+        self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
+                                 si_fixtures[0], left_vn_fixture,
+                                 ecmp_hash=ecmp_hash, flow_count=flow_count)
+        return True
+    # end test_ecmp_hash_src_port
+
+    def test_ecmp_hash_dest_port(self):
+        """
+            Validates ecmp hash when only destination port is configured
+            Maintainer : cmallam@juniper.net
+        """
+        # Bringing up the basic service chain setup.
+        max_inst = 2
+        svc_mode = 'in-network-nat'
+        svc_img_name = 'tiny_nat_fw'
+        st_version = 2
+        ecmp_hash = 'default'
+        config_level = "vn"
+
+        ret_dict = self.setup_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
+                                        max_inst=max_inst, svc_mode=svc_mode,
+                                        svc_img_name=svc_img_name,
+                                        st_version=st_version,
+                                        ecmp_hash=ecmp_hash,
+                                        config_level=config_level)
+
+        left_vn_fixture = ret_dict['left_vn_fixture']
+        right_vn_fixture = ret_dict['right_vn_fixture']
+        left_vm_fixture = ret_dict['left_vm_fixture']
+        right_vm_fixture = ret_dict['right_vm_fixture']
+
+        # ECMP Hash with only "destionation_port"
+        ecmp_hash = {"destination_port": True}
+        config_level = "vn"
+        self.modify_ecmp_config_hash(ecmp_hash=ecmp_hash,
+                                     config_level=config_level,
+                                     right_vm_fixture=right_vm_fixture,
+                                     right_vn_fixture=right_vn_fixture)
+        # Verify ECMP Hash at Agent and control node
+        self.verify_ecmp_hash(ecmp_hash=ecmp_hash, vn_fixture=left_vn_fixture,
+                              left_vm_fixture=left_vm_fixture,
+                              right_vm_fixture=right_vm_fixture)
+
+        # Verify traffic from vn1 (left) to vn2 (right), with user specified
+        # flow count
+        flow_count = 5
+        dst_vm_list = [right_vm_fixture]
+        si_fixtures = ret_dict['si_fixtures']
+        self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
+                                 si_fixtures[0], left_vn_fixture,
+                                 ecmp_hash=ecmp_hash, flow_count=flow_count)
+        return True
+    # end test_ecmp_hash_dest_port
+
+    def test_ecmp_hash_protocol(self):
+        """
+            Validates ecmp hash when only ip protocol is configured
+            Maintainer : cmallam@juniper.net
+        """
+        # Bringing up the basic service chain setup.
+        max_inst = 2
+        svc_mode = 'in-network-nat'
+        svc_img_name = 'tiny_nat_fw'
+        st_version = 2
+        ecmp_hash = 'default'
+        config_level = "vn"
+        ret_dict = self.setup_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
+                                        max_inst=max_inst, svc_mode=svc_mode,
+                                        svc_img_name=svc_img_name,
+                                        st_version=st_version,
+                                        ecmp_hash=ecmp_hash,
+                                        config_level=config_level)
+
+        left_vn_fixture = ret_dict['left_vn_fixture']
+        right_vn_fixture = ret_dict['right_vn_fixture']
+        left_vm_fixture = ret_dict['left_vm_fixture']
+        right_vm_fixture = ret_dict['right_vm_fixture']
+
+        # ECMP Hash with only "ip_protocol"
+        ecmp_hash = {"ip_protocol": True}
+        config_level = "vn"
+
+        self.modify_ecmp_config_hash(ecmp_hash=ecmp_hash,
+                                     config_level=config_level,
+                                     right_vm_fixture=right_vm_fixture,
+                                     right_vn_fixture=right_vn_fixture)
+        # Verify ECMP Hash at Agent and control node
+        self.verify_ecmp_hash(ecmp_hash=ecmp_hash, vn_fixture=left_vn_fixture,
+                              left_vm_fixture=left_vm_fixture,
+                              right_vm_fixture=right_vm_fixture)
+
+        # Verify traffic from vn1 (left) to vn2 (right), with user specified
+        # flow count
+        flow_count = 5
+        si_fixtures = ret_dict['si_fixtures']
+        dst_vm_list = [right_vm_fixture]
+        self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
+                                 si_fixtures[0], left_vn_fixture,
+                                 ecmp_hash=ecmp_hash, flow_count=flow_count)
+        return True
+    # end test_ecmp_hash_protocol
+
+    def test_ecmp_hash_precedence(self):
+        """
+            Validates ecmp hash config precedence levels
+            Maintainer : cmallam@juniper.net
+        """
+        # Bringing up the basic service chain setup.
+        max_inst = 2
+        svc_mode = 'in-network-nat'
+        svc_img_name = 'tiny_nat_fw'
+        st_version = 2
+        ecmp_hash = 'default'
+        config_level = "vn"
+        ret_dict = self.setup_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
+                                        max_inst=max_inst, svc_mode=svc_mode,
+                                        svc_img_name=svc_img_name,
+                                        st_version=st_version,
+                                        ecmp_hash=ecmp_hash,
+                                        config_level=config_level)
+
+        left_vn_fixture = ret_dict['left_vn_fixture']
+        right_vn_fixture = ret_dict['right_vn_fixture']
+        left_vm_fixture = ret_dict['left_vm_fixture']
+        right_vm_fixture = ret_dict['right_vm_fixture']
+
+        # Default ECMP Hash config at Global level
+        ecmp_hash = "default"
+        config_level = "global"
+        self.modify_ecmp_config_hash(ecmp_hash=ecmp_hash,
+                                     config_level=config_level,
+                                     right_vm_fixture=right_vm_fixture,
+                                     right_vn_fixture=right_vn_fixture)
+
+        # Default ECMP Hash config at VN level
+        ecmp_hash = "default"
+        config_level = "vn"
+        self.modify_ecmp_config_hash(ecmp_hash=ecmp_hash,
+                                     config_level=config_level,
+                                     right_vm_fixture=right_vm_fixture,
+                                     right_vn_fixture=right_vn_fixture)
+
+        # "destination_ip" only ECMP Hash config at VMI level. VMI should take
+        # priority over VN and Global
+        ecmp_hash = {"destination_ip": True}
+        config_level = "vmi"
+        self.modify_ecmp_config_hash(ecmp_hash=ecmp_hash,
+                                     config_level=config_level,
+                                     right_vm_fixture=right_vm_fixture,
+                                     right_vn_fixture=right_vn_fixture)
+
+        # Verify ECMP Hash at Agent and control node
+        self.verify_ecmp_hash(ecmp_hash=ecmp_hash, vn_fixture=left_vn_fixture,
+                              left_vm_fixture=left_vm_fixture,
+                              right_vm_fixture=right_vm_fixture)
+
+        # Verify traffic from vn1 (left) to vn2 (right), with user specified
+        # flow count
+        flow_count = 5
+        si_fixtures = ret_dict['si_fixtures']
+        dst_vm_list = [right_vm_fixture]
+        self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
+                                 si_fixtures[0], left_vn_fixture,
+                                 ecmp_hash=ecmp_hash, flow_count=flow_count)
+
+        # Delete the ECMP Hash config at Global, VN and VMI level
+        ecmp_hash = "None"
+        config_level = "all"
+        self.modify_ecmp_config_hash(ecmp_hash=ecmp_hash,
+                                     config_level=config_level,
+                                     right_vm_fixture=right_vm_fixture,
+                                     right_vn_fixture=right_vn_fixture)
+
+
+        return True
+    # end test_ecmp_hash_precedence
+
+    def test_ecmp_hash_deletion(self):
+        """
+            Validates deletion of ecmp hash configuration. When explicit ecmp hash
+            is deleted, hashing should happen based upon default hash (5 tuple)
+            Maintainer : cmallam@juniper.net
+        """
+        # Bringing up the basic service chain setup.
+        max_inst = 2
+        svc_mode = 'in-network-nat'
+        svc_img_name = 'tiny_nat_fw'
+        st_version = 2
+        ecmp_hash = 'default'
+        config_level = "vn"
+        ret_dict = self.setup_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
+                                        max_inst=max_inst, svc_mode=svc_mode,
+                                        svc_img_name=svc_img_name,
+                                        st_version=st_version,
+                                        ecmp_hash=ecmp_hash,
+                                        config_level=config_level)
+
+        left_vn_fixture = ret_dict['left_vn_fixture']
+        right_vn_fixture = ret_dict['right_vn_fixture']
+        left_vm_fixture = ret_dict['left_vm_fixture']
+        right_vm_fixture = ret_dict['right_vm_fixture']
+
+        # Explicitly delete the ECMP Hashing config
+        ecmp_hash = 'None'
+        config_level = "all"
+        self.modify_ecmp_config_hash(ecmp_hash=ecmp_hash,
+                                     config_level=config_level,
+                                     right_vm_fixture=right_vm_fixture,
+                                     right_vn_fixture=right_vn_fixture)
+
+        # When explicit ecmp hash config is deleted, default hash should takes
+        # place. Verifying whether flows are distributed as per default hash or
+        # not
+        ecmp_hash = {"source_ip": True, "destination_ip": True,
+                     "source_port": True, "destination_port": True,
+                     "ip_protocol": True}
+
+        # Verify ECMP Hash at Agent and control node
+        self.verify_ecmp_hash(ecmp_hash=ecmp_hash, vn_fixture=left_vn_fixture,
+                              left_vm_fixture=left_vm_fixture,
+                              right_vm_fixture=right_vm_fixture)
+
+        # Verify traffic from vn1 (left) to vn2 (right), with user specified
+        # flow count
+        flow_count = 5
+        si_fixtures = ret_dict['si_fixtures']
+        dst_vm_list = [right_vm_fixture]
+        self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
+                                 si_fixtures[0], left_vn_fixture,
+                                 ecmp_hash=ecmp_hash, flow_count=flow_count)
+        return True
+    # end test_ecmp_hash_deletion
+
+    def test_ecmp_hash_vm_suspend_restart(self):
+        """
+            Validates deletion and addition of VMs with ecmp hash configuration.
+            Maintainer : cmallam@juniper.net
+        """
+        # Bringing up the basic service chain setup.
+        max_inst = 3
+        svc_mode = 'in-network-nat'
+        svc_img_name = 'tiny_nat_fw'
+        st_version = 2
+        ecmp_hash = 'default'
+        config_level = "vn"
+        ret_dict = self.setup_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
+                                        max_inst=max_inst, svc_mode=svc_mode,
+                                        svc_img_name=svc_img_name,
+                                        st_version=st_version,
+                                        ecmp_hash=ecmp_hash,
+                                        config_level=config_level)
+
+        left_vn_fixture = ret_dict['left_vn_fixture']
+        right_vn_fixture = ret_dict['right_vn_fixture']
+        left_vm_fixture = ret_dict['left_vm_fixture']
+        right_vm_fixture = ret_dict['right_vm_fixture']
+
+        # ECMP Hashing config with 'destination_ip' and at VN level
+        ecmp_hash = {"destination_ip": True}
+        config_level = "vn"
+        self.modify_ecmp_config_hash(ecmp_hash=ecmp_hash,
+                                     config_level=config_level,
+                                     right_vm_fixture=right_vm_fixture,
+                                     right_vn_fixture=right_vn_fixture)
+
+        # Verify ECMP Hash at Agent and control node
+        self.verify_ecmp_hash(ecmp_hash=ecmp_hash, vn_fixture=left_vn_fixture,
+                              left_vm_fixture=left_vm_fixture,
+                              right_vm_fixture=right_vm_fixture)
+
+        si_fixtures = ret_dict['si_fixtures']
+        svms = self.get_svms_in_si(si_fixtures[0],
+                                   self.inputs.project_name)
+        self.logger.info('The Service VMs in the Service Instance %s are %s'% (si_fixtures[0].si_name, svms))
+        for svm in svms:
+            self.logger.info('SVM %s is in %s state' % (svm, svm.status))
+        self.logger.info('%% Will suspend the SVMs and check traffic flow %%')
+
+        # Verify traffic from vn1 (left) to vn2 (right), with user specified
+        # flow count
+        flow_count = 5
+        dst_vm_list = [right_vm_fixture]
+        for i in range(len(svms) - 1):
+            self.logger.info('Will Suspend SVM %s' % svms[i].name)
+            svms[i].suspend()
+            sleep(30)
+            self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
+                                     si_fixtures[0], left_vn_fixture,
+                                     ecmp_hash=ecmp_hash, flow_count=flow_count)
+        self.logger.info('%% Will resume the suspended SVMs and check traffic flow %%%%%%')
+        for i in range(len(svms)):
+            svms = self.get_svms_in_si(si_fixtures[0],
+                                       self.inputs.project_name)
+            if svms[i].status == 'SUSPENDED':
+                self.logger.info('Will resume the suspended SVM %s' % svms[i].name)
+                svms[i].resume()
+                sleep(30)
+            else:
+                self.logger.info('SVM %s is not SUSPENDED' % svms[i].name)
+
+            self.verify_traffic_flow(left_vm_fixture, dst_vm_list,
+                                     si_fixtures[0], left_vn_fixture,
+                                     ecmp_hash=ecmp_hash, flow_count=flow_count)
+
+
+        return True
+    # end test_ecmp_hash_vm_suspend_restart
+
+
 
