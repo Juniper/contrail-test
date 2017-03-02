@@ -856,16 +856,16 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
 
         self.logger.info(
             '%%%%%% Will resume the suspended SVMs and check traffic flow %%%%%%')
-        for i in range(len(svms)):
-            svms = self.get_svms_in_si(
-                si_fixtures[0], self.inputs.project_name)
-            if svms[i].status == 'SUSPENDED':
+        svms = self.get_svms_in_si(
+            si_fixtures[0], self.inputs.project_name)
+        for svm in svms:
+            if svm.status == 'SUSPENDED':
                 self.logger.info(
-                    'Will resume the suspended SVM %s' % svms[i].name)
-                svms[i].resume()
+                    'Will resume the suspended SVM %s' % svm.name)
+                svm.resume()
                 self.sleep(30)
             else:
-                self.logger.info('SVM %s is not SUSPENDED' % svms[i].name)
+                self.logger.info('SVM %s is not SUSPENDED' % svm.name)
             self.verify_flow_records(
                 self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
             self.verify_flow_thru_si(si_fixtures[0])
