@@ -161,6 +161,12 @@ class sdn_webui_config ():
                 'operation': '<=',
                 'parent_type': 'global'}}
 
+        # Definde LogStatistic
+        self.log_stat_list = ['stats_log']
+        self.log_stat_params = {
+            'stats_log': {
+                'regexp': 'error'}}
+
         # define dns_servers #
         self.dns_server_list = ['dserver1']
         self.dns_server_params = {
