@@ -4,15 +4,13 @@ import test
 
 from common.pbb_evpn.base import *
 
-#from svc_instance_fixture import SvcInstanceFixture
-#from svc_template_fixture import SvcTemplateFixture
 from policy_test import PolicyFixture
 from vn_policy_test import VN_Policy_Fixture
 import socket
 
 from tcutils.traffic_utils.scapy_traffic_gen import ScapyTraffic
 from tcutils.traffic_utils.traffic_analyzer import TrafficAnalyzer
-
+from tcutils.util import get_random_mac
 
 class TestPbbEvpnMacLearning(PbbEvpnTestBase):
 
@@ -26,7 +24,6 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
         super(TestPbbEvpnMacLearning, cls).tearDownClass()
     # end tearDownClass
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_mac_learning_single_isid(self):
         '''
@@ -49,14 +46,14 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
             }
         }
 
-        # Bridge domain parameters
-        bd = {'count':1,
-              'bd1':{'isid':200200},
-             }
-
         # VN parameters
         vn = {'count':1,
               'vn1':{'subnet':'10.10.10.0/24', 'asn':64510, 'target':1},
+             }
+
+        # Bridge domain parameters
+        bd = {'count':1,
+              'bd1':{'isid':200200,'vn':'vn1'},
              }
 
         # VMI parameters
@@ -72,35 +69,35 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
              }
 
         # Traffic
-        traffic = {'count':1,
-                   'stream1': {'src':'vm1','dst':'vm2','count':10}
+        traffic = {
+                   'stream1': {'src':'vm1','dst':'vm2','count':10,
+                                'src_cmac': get_random_mac(),
+                                'dst_cmac': get_random_mac(),
+                                'bd': 'bd1'}
                   }
-
-        # BD to VN mapping parameters
-        bd_vn_mapping = {'bd1':'vn1'}
 
         # BD to VMI mapping parameters
         bd_vmi_mapping = {'bd1':['vmi1','vmi2']}
 
         ret_dict = self.setup_pbb_evpn(pbb_evpn_config=pbb_evpn_config,
                                        bd=bd, vn=vn, vmi=vmi, vm=vm,
-                                       bd_vn_mapping=bd_vn_mapping,
                                        bd_vmi_mapping=bd_vmi_mapping)
         bd_fixtures = ret_dict['bd_fixtures']
         vmi_fixtures = ret_dict['vmi_fixtures']
         vn_fixtures = ret_dict['vn_fixtures']
         vm_fixtures = ret_dict['vm_fixtures']
 
-        # Verification
-        #self.verify_pbb_evpn_config()
+        # Send Traffic
+        for stream in traffic.values():
+            self.send_l2_traffic(vm_fixtures[stream['src']],
+                src_mac=stream['src_cmac'], dst_mac=stream['dst_cmac'],
+                count=stream['count'])
 
-        # Traffic
-        #self.validate_l2_traffic(traffic)
-
-        # Cleanup
-        self.delete_pbb_evpn(bd_fixtures=bd_fixtures,vmi_fixtures=vmi_fixtures,
-                             vm_fixtures=vm_fixtures, vn_fixtures=vn_fixtures)
-
+        #Verify mac learned
+        for stream in traffic.values():
+            src_vmi = vm[stream['src']]['vmi'][0]
+            assert self.verify_mac_learning(vmi_fixtures[src_vmi],
+                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
     # end test_mac_learning_single_isid
 
 
@@ -127,14 +124,14 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
             }
         }
 
-        # Bridge domain parameters
-        bd = {'count':1,
-              'bd1':{'isid':200200},}
-
         # VN parameters
         vn = {'count':2,
               'vn1':{'subnet':'10.10.10.0/24'},
               'vn2':{'subnet':'1.1.1.0/24', 'asn':64510, 'target':1},}
+
+        # Bridge domain parameters
+        bd = {'count':1,
+              'bd1':{'isid':200200,'vn':'vn2'}}
 
         # VMI parameters
         vmi = {'count':4,
@@ -145,33 +142,32 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
 
         # VM parameters
         vm = {'count':2, 'launch_mode':'distribute',
-              'vm1':{'vn':['vn1'], 'vmi':['vmi1'], 'userdata':'user_data1.sh'},
-              'vm2':{'vn':['vn1'], 'vmi':['vmi2'], 'userdata':'user_data1.sh'},}
+              'vm1':{'vn':['vn1'], 'vmi':['vmi1'], 'userdata':{
+                'vlan': str(vmi['vmi3']['vlan'])} },
+              'vm2':{'vn':['vn1'], 'vmi':['vmi2'], 'userdata':{
+                'vlan': str(vmi['vmi4']['vlan'])} }
+            }
 
         # Traffic
-        traffic = {'count':1,'traffic_gen':'scapy',
-                   'stream1': {'src':'vm1','dst':'vm2','count':10}}
-
-
-        # BD to VN mapping parameters
-        bd_vn_mapping = {'bd1':'vn2'}
+        traffic = {
+                   'stream1': {'src':'vm1','dst':'vm2','count':10,
+                                'src_cmac': get_random_mac(),
+                                'dst_cmac': get_random_mac(),
+                                'bd': 'bd1', 'src_vmi': 'vmi3',
+                                'dst_vmi': 'vmi4'}
+                  }
 
         # BD to VMI mapping parameters
         bd_vmi_mapping = {'bd1':['vmi3','vmi4']}
 
         ret_dict = self.setup_pbb_evpn(pbb_evpn_config=pbb_evpn_config,
                                        bd=bd, vn=vn, vmi=vmi, vm=vm,
-                                       bd_vn_mapping=bd_vn_mapping,
                                        bd_vmi_mapping=bd_vmi_mapping)
         bd_fixtures = ret_dict['bd_fixtures']
         vmi_fixtures = ret_dict['vmi_fixtures']
         vn_fixtures = ret_dict['vn_fixtures']
         vm_fixtures = ret_dict['vm_fixtures']
 
-        # Verification
-        #self.verify_pbb_evpn_config()
-
-        # Traffic
         # Pinging all the VMIs
         for src_vm_fixture in vm_fixtures.values():
             for vmi_fixture in vmi_fixtures.values():
@@ -180,19 +176,42 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
                     socket.inet_aton(vmi_ip)
                 except Exception as e:
                     vmi_ip = vmi_fixture.obj['fixed_ips'][1]['ip_address']
-                #assert src_vm_fixture.ping_with_certainty(vmi_ip)
+                assert src_vm_fixture.ping_with_certainty(vmi_ip)
 
-        # Send explicit traffic
-        #self.validate_l2_traffic(traffic=traffic, vm_fixtures=vm_fixtures)
+        src_cmac = get_random_mac()
+        dst_cmac = get_random_mac()
+        src_vmi = 'vmi3'
+        src_vm = 'vm1'
+        dst_vm = 'vm2'
+        dst_vmi = 'vmi4'
 
-        # Cleanup
-        self.delete_pbb_evpn(bd_fixtures=bd_fixtures,vmi_fixtures=vmi_fixtures,
-                             vm_fixtures=vm_fixtures, vn_fixtures=vn_fixtures)
+        # Send Traffic
+        for stream in traffic.values():
+            interface = vm_fixtures[stream['src']].get_vm_interface_name() + '.' + \
+                str(vmi[stream['src_vmi']]['vlan'])
+            self.send_l2_traffic(vm_fixtures[stream['src']],
+                src_mac=stream['src_cmac'], dst_mac=stream['dst_cmac'],
+                count=stream['count'], interface=interface)
 
+            #Verify mac learned
+            assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
+                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+
+        #Send reverse traffic to verify if mac learned earlier could be used further
+        for stream in traffic.values():
+            interface = vm_fixtures[stream['dst']].get_vm_interface_name() + '.' + \
+                str(vmi[stream['dst_vmi']]['vlan'])
+            self.send_l2_traffic(vm_fixtures[stream['dst']],
+                src_mac=stream['dst_cmac'], dst_mac=stream['src_cmac'],
+                count=stream['count'], interface=interface,
+                dst_vm_fixture=vm_fixtures[stream['src']])
+
+            #Verify mac learned
+            assert self.verify_mac_learning(vmi_fixtures[stream['dst_vmi']],
+                bd_fixtures[stream['bd']], cmac=stream['dst_cmac'])
 
     # end test_mac_learning_subIntf_single_isid
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_mac_learning_multi_isid(self):
         '''
@@ -215,16 +234,16 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
             }
         }
 
-        # Bridge domain parameters
-        bd = {'count':2,
-              'bd1':{'isid':200200},
-              'bd2':{'isid':300300},
-             }
-
         # VN parameters
         vn = {'count':2,
               'vn1':{'subnet':'10.10.10.0/24', 'asn':64510, 'target':1},
               'vn2':{'subnet':'20.20.20.0/24', 'asn':64511, 'target':1},
+             }
+
+        # Bridge domain parameters
+        bd = {'count':2,
+              'bd1':{'isid':200200, 'vn':'vn1'},
+              'bd2':{'isid':300300, 'vn':'vn2'},
              }
 
         # VMI parameters
@@ -244,14 +263,16 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
              }
 
         # Traffic
-        traffic = {'count':2,
-                   'stream1': {'src':'vm1','dst':'vm2','count':10},
-                   'stream2': {'src':'vm3','dst':'vm4','count':10}
+        traffic = {
+                   'stream1': {'src':'vm1','dst':'vm2','count':10,
+                                'src_cmac': get_random_mac(),
+                                'dst_cmac': get_random_mac(),
+                                'bd': 'bd1'},
+                   'stream2': {'src':'vm3','dst':'vm4','count':10,
+                                'src_cmac': get_random_mac(),
+                                'dst_cmac': get_random_mac(),
+                                'bd': 'bd2'}
                   }
-
-        # BD to VN mapping parameters
-        bd_vn_mapping = {'bd1':'vn1',
-                         'bd2':'vn2'}
 
         # BD to VMI mapping parameters
         bd_vmi_mapping = {'bd1':['vmi1','vmi2'],
@@ -259,26 +280,25 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
 
         ret_dict = self.setup_pbb_evpn(pbb_evpn_config=pbb_evpn_config,
                                        bd=bd, vn=vn, vmi=vmi, vm=vm,
-                                       bd_vn_mapping=bd_vn_mapping,
                                        bd_vmi_mapping=bd_vmi_mapping)
         bd_fixtures = ret_dict['bd_fixtures']
         vmi_fixtures = ret_dict['vmi_fixtures']
         vn_fixtures = ret_dict['vn_fixtures']
         vm_fixtures = ret_dict['vm_fixtures']
 
-        # Verification
-        #self.verify_pbb_evpn_config()
+        # Send Traffic
+        for stream in traffic.values():
+            self.send_l2_traffic(vm_fixtures[stream['src']],
+                src_mac=stream['src_cmac'], dst_mac=stream['dst_cmac'],
+                count=stream['count'])
 
-        # Traffic
-        #self.validate_l2_traffic(traffic)
-
-        # Cleanup
-        self.delete_pbb_evpn(bd_fixtures=bd_fixtures,vmi_fixtures=vmi_fixtures,
-                             vm_fixtures=vm_fixtures, vn_fixtures=vn_fixtures)
-
+        #Verify mac learned
+        for stream in traffic.values():
+            src_vmi = vm[stream['src']]['vmi'][0]
+            assert self.verify_mac_learning(vmi_fixtures[src_vmi],
+                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
     # end test_mac_learning_multi_isid
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_mac_learning_subIntf_multi_isid(self):
         '''
@@ -301,18 +321,18 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
             }
         }
 
-        # Bridge domain parameters
-        bd = {'count':2,
-              'bd1':{'isid':200200},
-              'bd2':{'isid':300300}
-              }
-
         # VN parameters
         vn = {'count':4,
               'vn1':{'subnet':'10.10.10.0/24'},
               'vn2':{'subnet':'1.1.1.0/24', 'asn':64510, 'target':1},
               'vn3':{'subnet':'20.20.20.0/24'},
               'vn4':{'subnet':'2.2.2.0/24', 'asn':64511, 'target':1}
+              }
+
+        # Bridge domain parameters
+        bd = {'count':2,
+              'bd1':{'isid':200200, 'vn':'vn2'},
+              'bd2':{'isid':300300, 'vn':'vn4'}
               }
 
         # VMI parameters
@@ -323,28 +343,35 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
                'vmi4':{'vn': 'vn2','parent':'vmi2','vlan':212},
                'vmi5':{'vn': 'vn3'},
                'vmi6':{'vn': 'vn3'},
-               'vmi7':{'vn': 'vn3','parent':'vmi5','vlan':213},
-               'vmi8':{'vn': 'vn3','parent':'vmi6','vlan':213}
+               'vmi7':{'vn': 'vn4','parent':'vmi5','vlan':213},
+               'vmi8':{'vn': 'vn4','parent':'vmi6','vlan':213}
                }
 
         # VM parameters
         vm = {'count':4, 'launch_mode':'distribute',
-              'vm1':{'vn':['vn1'], 'vmi':['vmi1'], 'userdata':'user_data1.sh'},
-              'vm2':{'vn':['vn1'], 'vmi':['vmi2'], 'userdata':'user_data1.sh'},
-              'vm3':{'vn':['vn3'], 'vmi':['vmi5'], 'userdata':'user_data1.sh'},
-              'vm4':{'vn':['vn3'], 'vmi':['vmi6'], 'userdata':'user_data1.sh'}
+              'vm1':{'vn':['vn1'], 'vmi':['vmi1'], 'userdata':{
+                'vlan': str(vmi['vmi3']['vlan'])} },
+              'vm2':{'vn':['vn1'], 'vmi':['vmi2'], 'userdata':{
+                'vlan': str(vmi['vmi4']['vlan'])} },
+              'vm3':{'vn':['vn3'], 'vmi':['vmi5'], 'userdata':{
+                'vlan': str(vmi['vmi7']['vlan'])} },
+              'vm4':{'vn':['vn3'], 'vmi':['vmi6'], 'userdata':{
+                'vlan': str(vmi['vmi8']['vlan'])} }
               }
 
         # Traffic
-        traffic = {'count':1,'traffic_gen':'scapy',
-                   'stream1': {'src':'vm1','dst':'vm2','count':10},
-                   'stream1': {'src':'vm5','dst':'vm6','count':10}
-                   }
-
-
-        # BD to VN mapping parameters
-        bd_vn_mapping = {'bd1':'vn2',
-                         'bd2':'vn4'}
+        traffic = {
+                   'stream1': {'src':'vm1','dst':'vm2','count':10,
+                                'src_cmac': get_random_mac(),
+                                'dst_cmac': get_random_mac(),
+                                'bd': 'bd1', 'src_vmi': 'vmi3',
+                                'dst_vmi': 'vmi4'},
+                   'stream2': {'src':'vm3','dst':'vm4','count':10,
+                                'src_cmac': get_random_mac(),
+                                'dst_cmac': get_random_mac(),
+                                'bd': 'bd2', 'src_vmi': 'vmi7',
+                                'dst_vmi': 'vmi8'}
+                  }
 
         # BD to VMI mapping parameters
         bd_vmi_mapping = {'bd1':['vmi3','vmi4'],
@@ -352,33 +379,30 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
 
         ret_dict = self.setup_pbb_evpn(pbb_evpn_config=pbb_evpn_config,
                                        bd=bd, vn=vn, vmi=vmi, vm=vm,
-                                       bd_vn_mapping=bd_vn_mapping,
                                        bd_vmi_mapping=bd_vmi_mapping)
         bd_fixtures = ret_dict['bd_fixtures']
         vmi_fixtures = ret_dict['vmi_fixtures']
         vn_fixtures = ret_dict['vn_fixtures']
         vm_fixtures = ret_dict['vm_fixtures']
 
-        # Verification
-        #self.verify_pbb_evpn_config()
-
         # Traffic
-        # Pinging all the VMIs
-        for src_vm_fixture in vm_fixtures.values():
-            for vmi_fixture in vmi_fixtures.values():
-                vmi_ip = vmi_fixture.obj['fixed_ips'][0]['ip_address']
-                assert src_vm_fixture.ping_with_certainty(vmi_ip)
+        # Pinging all the VMIs as per defined streams in traffic
+        for stream in traffic.values():
+            vmi_ip = vmi_fixtures[stream['dst_vmi']].obj['fixed_ips'][0]['ip_address']
+            assert vm_fixtures[stream['src']].ping_with_certainty(vmi_ip)
 
-        # Send explicit traffic
-        #self.validate_l2_traffic(traffic=traffic, vm_fixtures=vm_fixtures)
+        # Send Traffic
+        for stream in traffic.values():
+            interface = vm_fixtures[stream['src']].get_vm_interface_name() + '.' + \
+                str(vmi[stream['src_vmi']]['vlan'])
+            self.send_l2_traffic(vm_fixtures[stream['src']],
+                src_mac=stream['src_cmac'], dst_mac=stream['dst_cmac'],
+                count=stream['count'], interface=interface)
 
-        # Cleanup
-        self.delete_pbb_evpn(bd_fixtures=bd_fixtures,vmi_fixtures=vmi_fixtures,
-                             vm_fixtures=vm_fixtures, vn_fixtures=vn_fixtures)
-
-
+            #Verify mac learned
+            assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
+                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
     # end test_mac_learning_subIntf_multi_isid
-
 
 
 class TestPbbEvpnMacLimit(PbbEvpnTestBase):
@@ -393,7 +417,6 @@ class TestPbbEvpnMacLimit(PbbEvpnTestBase):
         super(TestPbbEvpnMacLimit, cls).tearDownClass()
     # end tearDownClass
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_mac_limit(self):
         '''
@@ -421,7 +444,6 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
         super(TestPbbEvpnMacAging, cls).tearDownClass()
     # end tearDownClass
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_mac_aging(self):
         '''
@@ -449,7 +471,6 @@ class TestPbbEvpnMacMoveLimit(PbbEvpnTestBase):
         super(TestPbbEvpnMacAging, cls).tearDownClass()
     # end tearDownClass
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_mac_move_limit(self):
         '''
