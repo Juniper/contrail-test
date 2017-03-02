@@ -1,5 +1,5 @@
 import os
-
+import re
 from common.servicechain.verify import VerifySvcChain
 from tcutils.util import get_random_cidr
 from tcutils.util import get_random_name
@@ -647,9 +647,9 @@ class VerifySvcFirewall(VerifySvcChain):
             firewall_svc_mode='in-network', mirror_svc_mode='transparent'):
         """Validate the service chaining in network  datapath"""
 
-        #TODO 
-        # max_inst cannot be more than one in this method since 
-        # analyzer packet count verification logic needs to be updated when 
+        #TODO
+        # max_inst cannot be more than one in this method since
+        # analyzer packet count verification logic needs to be updated when
         # in case of more than one mirror SVM
         max_inst = 1
 
@@ -767,3 +767,62 @@ class VerifySvcFirewall(VerifySvcChain):
                     count = 20
             self.verify_icmp_mirror(svm_name, session, pcap, count)
     # end verify_firewall_with_mirroring
+
+    def verify_ecmp_hash(self, vn_fixture=None, left_vm_fixture=None, right_vm_fixture=None, ecmp_hash='default'):
+        """Verify ECMP configuration hash at Agent and control node """
+        # Sleeping for 10 secs for route update to takes place for ecmp_hash
+        # config fileds
+        self.logger.info('Sleeping for 10 seconds for route update to takes place')
+        self.sleep(10)
+        self.verify_ecmp_hash_at_agent(ecmp_hash=ecmp_hash,vn_fixture=vn_fixture,
+                                       left_vm_fixture=left_vm_fixture,
+                                       right_vm_fixture=right_vm_fixture)
+    # end verify_ecmp_hash
+
+    def verify_ecmp_hash_at_agent(self, vn_fixture=None, left_vm_fixture=None, right_vm_fixture=None, ecmp_hash='default'):
+        """Verify ECMP configuration hash """
+         # Default ECMP hash with 5 tuple
+        if ecmp_hash == 'default':
+            ecmp_hash = {"source_ip": True, "destination_ip": True,
+                         "source_port": True, "destination_port": True,
+                         "ip_protocol": True}
+
+        ecmp_hash_config=[]
+        # ECMP Hash fileds displayed at agent is different from configured
+        # values. Mapping is: source_ip : l3-source-address, destination_ip:
+        # l3-destination-address etc..
+        if 'source_ip' in ecmp_hash:
+            ecmp_hash_config.append('l3-source-address')
+        if 'destination_ip' in ecmp_hash:
+            ecmp_hash_config.append('l3-destination-address')
+        if 'source_port' in ecmp_hash:
+            ecmp_hash_config.append('l4-source-port')
+        if 'destination_port' in ecmp_hash:
+            ecmp_hash_config.append('l4-destination-port')
+        if 'ip_protocol' in ecmp_hash:
+            ecmp_hash_config.append('l4-protocol')
+
+        # Get the ECMP hash next hops at agent
+        (domain, project, vn) = vn_fixture.vn_fq_name.split(':')
+        inspect_h = self.agent_inspect[left_vm_fixture.vm_node_ip]
+        agent_vrf_objs = inspect_h.get_vna_vrf_objs(domain, project, vn)
+        agent_vrf_obj = left_vm_fixture.get_matching_vrf( agent_vrf_objs['vrf_list'], vn_fixture.vrf_name)
+        vn_vrf_id = agent_vrf_obj['ucindex']
+
+        # Get the ECMP Hashing fields at agent
+        ecmp_hashing_fileds = inspect_h.get_vna_active_route(vrf_id=vn_vrf_id, ip=right_vm_fixture.vm_ip, prefix='32')['path_list'][0]['ecmp_hashing_fields']
+        ecmp_hash_at_agent = ecmp_hashing_fileds.split(',')
+
+        # Removing the empty elements
+        ecmp_hash_at_agent = filter(None, ecmp_hash_at_agent)
+
+        # Compare ECMP hash configured value with value programmed at agent
+        if set(ecmp_hash_at_agent) == set(ecmp_hash_config):
+            result =True
+            self.logger.info('ECMP Hash is configured properly at Agent: {%s}' % ecmp_hashing_fileds)
+        else:
+            result = False
+            assert result, 'ECMP Hash is incorrect at Agent. Configured ECMP Hash is: %s, ECMP Hash present at Agent is:%s' % (ecmp_hash_config, ecmp_hash_at_agent)
+        return result
+    # end verify_ecmp_hash_at_agent
+
