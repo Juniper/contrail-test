@@ -607,7 +607,9 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     # Get kube config file to the testrunner node
     if orch == 'kubernetes':
         if not os.path.exists(kube_config_file):
-            os.makedirs(os.path.dirname(kube_config_file))
+            dir_name = os.path.dirname(kube_config_file)
+            if not os.path.exists(dir_name):
+                os.makedirs(dir_name)
             with settings(host_string = env.roledefs['cfgm'][0]):
                 get(kube_config_file, kube_config_file)
             
