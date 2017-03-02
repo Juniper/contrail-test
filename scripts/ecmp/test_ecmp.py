@@ -994,11 +994,12 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
     def setUpClass(cls):
         super(TestECMPConfigHashFeature, cls).setUpClass()
 
-    def setUp(self):
-        super(TestECMPConfigHashFeature, self).setUp()
-    # end setUp
+    @classmethod
+    def tearDownClass(cls):
+        super(TestECMPConfigHashFeature, cls).tearDownClass()
+    # end tearDownClass
 
-    @test.attr(type=['ci_sanity_WIP', 'sanity'])
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ecmp_hash_src_ip(self):
         """
@@ -1007,22 +1008,14 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         """
         # Bringing up the basic service chain setup.
         max_inst = 2
-        svc_mode = 'in-network-nat'
-        svc_img_name = 'tiny_nat_fw'
-        st_version = 2
+        service_mode = 'in-network-nat'
         ecmp_hash = 'default'
         config_level = "vn"
 
-        # Distribute End VMs and service VMs across compute nodes
-        vm_launch_mode = "distribute"
-
-        ret_dict = self.setup_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
-                                        max_inst=max_inst, svc_mode=svc_mode,
-                                        svc_img_name=svc_img_name,
-                                        st_version=st_version,
-                                        ecmp_hash=ecmp_hash,
-                                        config_level=config_level,
-                                        vm_launch_mode=vm_launch_mode)
+        ret_dict = self.setup_ecmp_config_hash_svc(max_inst=max_inst,
+                                                   service_mode=service_mode,
+                                                   ecmp_hash=ecmp_hash,
+                                                   config_level=config_level)
 
         left_vn_fixture = ret_dict['left_vn_fixture']
         right_vn_fixture = ret_dict['right_vn_fixture']
@@ -1036,7 +1029,6 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
                                      config_level=config_level,
                                      right_vm_fixture=right_vm_fixture,
                                      right_vn_fixture=right_vn_fixture)
-
 
         # Verify ECMP Hash at Agent and control node
         self.verify_ecmp_hash(ecmp_hash=ecmp_hash, vn_fixture=left_vn_fixture,
@@ -1061,23 +1053,14 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         """
         # Bringing up the basic service chain setup.
         max_inst = 2
-        svc_mode = 'in-network-nat'
-        svc_img_name = 'tiny_nat_fw'
-        st_version = 2
+        service_mode = 'in-network-nat'
         ecmp_hash = 'default'
         config_level = "vn"
 
-        # Do Not Distribute End VMs and service VMs across compute nodes
-        # End VMs will be brought up in one compute node (random).
-        # Service VMs will be brought up in one more compute node (random).
-        vm_launch_mode = "non-distribute"
-        ret_dict = self.setup_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
-                                        max_inst=max_inst, svc_mode=svc_mode,
-                                        svc_img_name=svc_img_name,
-                                        st_version=st_version,
-                                        ecmp_hash=ecmp_hash,
-                                        config_level=config_level,
-                                        vm_launch_mode=vm_launch_mode)
+        ret_dict = self.setup_ecmp_config_hash_svc(max_inst=max_inst,
+                                                   service_mode=service_mode,
+                                                   ecmp_hash=ecmp_hash,
+                                                   config_level=config_level)
 
         left_vn_fixture = ret_dict['left_vn_fixture']
         right_vn_fixture = ret_dict['right_vn_fixture']
@@ -1115,22 +1098,16 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         """
         # Bringing up the basic service chain setup.
         max_inst = 2
-        svc_mode = 'in-network-nat'
-        svc_img_name = 'tiny_nat_fw'
-        st_version = 2
+        service_mode = 'in-network-nat'
         ecmp_hash = 'default'
         config_level = "vn"
 
         # Distribute End VMs and service VMs across compute nodes
         vm_launch_mode = "distribute"
-
-        ret_dict = self.setup_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
-                                        max_inst=max_inst, svc_mode=svc_mode,
-                                        svc_img_name=svc_img_name,
-                                        st_version=st_version,
-                                        ecmp_hash=ecmp_hash,
-                                        config_level=config_level,
-                                        vm_launch_mode=vm_launch_mode)
+        ret_dict = self.setup_ecmp_config_hash_svc(max_inst=max_inst,
+                                                   service_mode=service_mode,
+                                                   ecmp_hash=ecmp_hash,
+                                                   config_level=config_level)
 
         left_vn_fixture = ret_dict['left_vn_fixture']
         right_vn_fixture = ret_dict['right_vn_fixture']
@@ -1168,24 +1145,14 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         """
         # Bringing up the basic service chain setup.
         max_inst = 2
-        svc_mode = 'in-network-nat'
-        svc_img_name = 'tiny_nat_fw'
-        st_version = 2
+        service_mode = 'in-network-nat'
         ecmp_hash = 'default'
         config_level = "vn"
 
-        # Do Not Distribute End VMs and service VMs across compute nodes
-        # End VMs will be brought up in one compute node (random).
-        # Service VMs will be brought up in one more compute node (random).
-        vm_launch_mode = "non-distribute"
-
-        ret_dict = self.setup_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
-                                        max_inst=max_inst, svc_mode=svc_mode,
-                                        svc_img_name=svc_img_name,
-                                        st_version=st_version,
-                                        ecmp_hash=ecmp_hash,
-                                        config_level=config_level,
-                                        vm_launch_mode=vm_launch_mode)
+        ret_dict = self.setup_ecmp_config_hash_svc(max_inst=max_inst,
+                                                   service_mode=service_mode,
+                                                   ecmp_hash=ecmp_hash,
+                                                   config_level=config_level)
 
         left_vn_fixture = ret_dict['left_vn_fixture']
         right_vn_fixture = ret_dict['right_vn_fixture']
@@ -1221,17 +1188,13 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         """
         # Bringing up the basic service chain setup.
         max_inst = 2
-        svc_mode = 'in-network-nat'
-        svc_img_name = 'tiny_nat_fw'
-        st_version = 2
+        service_mode = 'in-network-nat'
         ecmp_hash = 'default'
         config_level = "vn"
-        ret_dict = self.setup_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
-                                        max_inst=max_inst, svc_mode=svc_mode,
-                                        svc_img_name=svc_img_name,
-                                        st_version=st_version,
-                                        ecmp_hash=ecmp_hash,
-                                        config_level=config_level)
+        ret_dict = self.setup_ecmp_config_hash_svc(max_inst=max_inst,
+                                                   service_mode=service_mode,
+                                                   ecmp_hash=ecmp_hash,
+                                                   config_level=config_level)
 
         left_vn_fixture = ret_dict['left_vn_fixture']
         right_vn_fixture = ret_dict['right_vn_fixture']
@@ -1269,17 +1232,13 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         """
         # Bringing up the basic service chain setup.
         max_inst = 2
-        svc_mode = 'in-network-nat'
-        svc_img_name = 'tiny_nat_fw'
-        st_version = 2
+        service_mode = 'in-network-nat'
         ecmp_hash = 'default'
         config_level = "vn"
-        ret_dict = self.setup_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
-                                        max_inst=max_inst, svc_mode=svc_mode,
-                                        svc_img_name=svc_img_name,
-                                        st_version=st_version,
-                                        ecmp_hash=ecmp_hash,
-                                        config_level=config_level)
+        ret_dict = self.setup_ecmp_config_hash_svc(max_inst=max_inst,
+                                                   service_mode=service_mode,
+                                                   ecmp_hash=ecmp_hash,
+                                                   config_level=config_level)
 
         left_vn_fixture = ret_dict['left_vn_fixture']
         right_vn_fixture = ret_dict['right_vn_fixture']
@@ -1345,17 +1304,13 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         """
         # Bringing up the basic service chain setup.
         max_inst = 2
-        svc_mode = 'in-network-nat'
-        svc_img_name = 'tiny_nat_fw'
-        st_version = 2
+        service_mode = 'in-network-nat'
         ecmp_hash = 'default'
         config_level = "vn"
-        ret_dict = self.setup_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
-                                        max_inst=max_inst, svc_mode=svc_mode,
-                                        svc_img_name=svc_img_name,
-                                        st_version=st_version,
-                                        ecmp_hash=ecmp_hash,
-                                        config_level=config_level)
+        ret_dict = self.setup_ecmp_config_hash_svc(max_inst=max_inst,
+                                                   service_mode=service_mode,
+                                                   ecmp_hash=ecmp_hash,
+                                                   config_level=config_level)
 
         left_vn_fixture = ret_dict['left_vn_fixture']
         right_vn_fixture = ret_dict['right_vn_fixture']
@@ -1400,17 +1355,13 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         """
         # Bringing up the basic service chain setup.
         max_inst = 3
-        svc_mode = 'in-network-nat'
-        svc_img_name = 'tiny_nat_fw'
-        st_version = 2
+        service_mode = 'in-network-nat'
         ecmp_hash = 'default'
         config_level = "vn"
-        ret_dict = self.setup_ecmp_config_hash_svc(si_count=1, svc_scaling=True,
-                                        max_inst=max_inst, svc_mode=svc_mode,
-                                        svc_img_name=svc_img_name,
-                                        st_version=st_version,
-                                        ecmp_hash=ecmp_hash,
-                                        config_level=config_level)
+        ret_dict = self.setup_ecmp_config_hash_svc(max_inst=max_inst,
+                                                   service_mode=service_mode,
+                                                   ecmp_hash=ecmp_hash,
+                                                   config_level=config_level)
 
         left_vn_fixture = ret_dict['left_vn_fixture']
         right_vn_fixture = ret_dict['right_vn_fixture']
