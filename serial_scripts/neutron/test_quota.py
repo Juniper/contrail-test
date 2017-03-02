@@ -225,7 +225,7 @@ class TestQuotaUpdate(BaseNeutronTest):
             get_random_name('sec_grp'),
             connections.quantum_h)
         response_dict['secgrp'] = secgrp_obj
-        router_obj = self.create_router(
+        router_obj = self.quantum_h.create_router(
             get_random_name('router'),
             connections.project_id)
         response_dict['router'] = router_obj
@@ -264,7 +264,7 @@ class TestQuotaUpdate(BaseNeutronTest):
     def create_multiple_router(self, connections, count=1):
         router_objs = []
         for i in range(count):
-            router_obj = self.create_router(
+            router_obj = self.quantum_h.create_router(
                 get_random_name('router'),
                 connections.project_id)
             router_objs.append(router_obj)
