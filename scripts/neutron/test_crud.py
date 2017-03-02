@@ -348,7 +348,7 @@ class TestCRUD(BaseNeutronTest):
     # end
 
     def _delete_port(self, port_id):
-        if self._remove_from_cleanup(self._delete_port, (port_id)):
+        if self.remove_from_cleanups(self._delete_port, (port_id)):
             self.log.info('Deleting port %s' % (port_id))
             try:
                 result = self.neutron_h.delete_port(port_id)
@@ -362,7 +362,7 @@ class TestCRUD(BaseNeutronTest):
         return True
 
     def _delete_network(self, network_id):
-        if self._remove_from_cleanup(self._delete_network, (network_id)):
+        if self.remove_from_cleanups(self._delete_network, (network_id)):
             self.log.info('Deleting network %s' % (network_id))
             try:
                 result = self.neutron_h.delete_network(network_id)
@@ -376,7 +376,7 @@ class TestCRUD(BaseNeutronTest):
         return True
 
     def _delete_subnet(self, subnet_id):
-        if self._remove_from_cleanup(self._delete_subnet, (subnet_id)):
+        if self.remove_from_cleanupself._delete_subnet, (subnet_id)):
             self.log.info('Deleting subnet %s' % (subnet_id))
             try:
                 result = self.neutron_h.delete_subnet(subnet_id)
@@ -390,7 +390,7 @@ class TestCRUD(BaseNeutronTest):
         return False
 
     def _delete_router(self, router_id):
-        if self._remove_from_cleanup(self._delete_router, (router_id)):
+        if self.remove_from_cleanups(self._delete_router, (router_id)):
             self.log.info('Deleting router %s' % (router_id))
             try:
                 result = self.neutron_h.delete_router(router_id)
