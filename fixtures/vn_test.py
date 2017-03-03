@@ -1006,12 +1006,21 @@ class VNFixture(fixtures.Fixture):
             inspect_h = self.agent_inspect[compute_ip]
             vrf_id = self.vrf_ids[compute_ip]
             # Check again if agent does not have this vrf by chance
-            curr_vrf_id = inspect_h.get_vna_vrf_id(
-                    self.vn_fq_name)
-            if curr_vrf_id:
-                self.logger.warn('VRF ID %s is still seen in agent %s' % (
-                    curr_vrf_id, compute_ip))
-                return False
+            curr_vrf = inspect_h.get_vna_vrf_by_id(vrf_id)
+            if curr_vrf:
+                if curr_vrf.get('name') == self.vrf_name:
+                    self.logger.warn('VRF %s is still seen in agent %s' % (
+                        curr_vrf, compute_ip))
+                    return False
+                else:
+                    self.logger.info('VRF id %s already used by some other vrf '
+                        '%s, will have to skip vrouter verification on %s' %(
+                        vrf_id, curr_vrf.get('name'), compute_ip))
+                    return True
+                # endif
+            else:
+                self.logger.debug('VRF %s is not seen in agent %s' % (vrf_id,
+                                   compute_ip))
 
             # Agent has deleted this vrf. Check in kernel too that it is gone
             vrouter_route_table = inspect_h.get_vrouter_route_table(
