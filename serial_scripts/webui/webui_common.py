@@ -290,6 +290,9 @@ class WebuiCommon:
         elif element_type == 'QOS':
             element = 'btnCreate' + element_type
             element_new = 'qos_cofig'
+        elif element_type == 'Flow Aging ':
+            element = 'Edit ' + element_type
+            element_new = func_suffix
         else:
             element = 'Create ' + element_type
             element_new = func_suffix
@@ -1734,12 +1737,16 @@ class WebuiCommon:
         return self.check_error_msg("configure project quotas")
     # end click_configure_project_quota
 
-    def click_configure_global_config(self):
-        self._click_on_config_dropdown(self.browser, index=0)
-        self.click_element(
-            ['config_infra_gblconfig', 'Global Config'], ['id', 'link_text'])
-        self.wait_till_ajax_done(self.browser)
-        return self.check_error_msg("configure global config")
+    def click_configure_global_config(self, tab='forwarding_options',
+                                     msg='Global Config'):
+        if not self.click_configure_elements(0, 'config_infra_gblconfig',
+                                             msg="Configure Global config"):
+            return False
+        else:
+            element = tab + '_tab-tab-link'
+            self.click_element(element)
+            self.wait_till_ajax_done(self.browser, wait=3)
+            return self.check_error_msg("Configure " + msg + " globally")
     # end click_configure_global_config
 
     def click_configure_service_template_basic(self, row_index):
@@ -1801,22 +1808,19 @@ class WebuiCommon:
     # end click_configure_alarms_in_project
 
     def click_configure_alarms_in_global(self):
-        self.click_configure_global_config()
-        self.wait_till_ajax_done(self.browser, wait=3)
-        self.click_element('alarm_rule_global_tab-tab-link')
-        self.wait_till_ajax_done(self.browser, wait=3)
-        return self.check_error_msg("configure alarms globally")
+        return self.click_configure_global_config(tab='alarm_rule_global',
+                                           msg='alarms')
     # end click_configure_alarms_in_global
 
     def click_configure_log_stat_in_global(self):
-        if not self.click_configure_elements(0, 'config_infra_gblconfig',
-                                             msg="Configure Global Log stat"):
-            return False
-        else:
-            self.click_element('user_defined_counter_tab-tab-link')
-            self.wait_till_ajax_done(self.browser, wait=3)
-            return self.check_error_msg("configure log statistic")
+        return self.click_configure_global_config(tab='user_defined_counter',
+                                           msg='Log Statistic')
     # end click_configure_log_stat_in_global
+
+    def click_configure_flow_aging(self):
+        return self.click_configure_global_config(tab='flow_aging',
+                                                 msg='Flow aging')
+    # end click_configure_flow_aging
 
     def _click_on_config_dropdown(self, br, index=2):
         # index = 3 if svc_instance or svc_template
@@ -1889,11 +1893,8 @@ class WebuiCommon:
     # end click_configure_interfaces
 
     def click_configure_forwarding_class(self):
-        self.click_configure_global_config()
-        self.wait_till_ajax_done(self.browser)
-        self.click_element('fc_global_tab-tab-link')
-        self.wait_till_ajax_done(self.browser)
-        return self.check_error_msg("configure forwarding classes")
+        return self.click_configure_global_config(tab='fc_global',
+                                           msg='Fowarding')
     # end click_configure_forwarding_class
 
     def click_configure_forwarding_class_basic(self, row_index):
@@ -1914,11 +1915,8 @@ class WebuiCommon:
     #end click_configure_forwarding_class_advanced
 
     def click_configure_global_qos(self):
-        self.click_configure_global_config()
-        self.wait_till_ajax_done(self.browser)
-        self.click_element('qos_global_tab-tab-link')
-        self.wait_till_ajax_done(self.browser)
-        return self.check_error_msg("configure global qos config")
+        return self.click_configure_global_config(tab='qos_global',
+                                           msg='QOS')
     # end click_configure_global_qos
 
     def click_configure_global_qos_basic(self, row_index):
@@ -3559,12 +3557,14 @@ class WebuiCommon:
         return webui_global_key_value
     # get_global_config_row_details_webui
 
-    def send_keys_values(self, key_values_dict):
+    def send_keys_values(self, key_values_dict, br=None):
         result = True
         try:
+            if not br:
+                br = self.browser
             for key, value in key_values_dict.iteritems():
                 for inner_key, inner_value in value.iteritems():
-                    self.send_keys(inner_value, inner_key, key, clear=True)
+                    self.send_keys(inner_value, inner_key, key, browser=br, clear=True)
         except WebDriverException:
             result = False
         return result

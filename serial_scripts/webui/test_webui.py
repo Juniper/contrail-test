@@ -574,6 +574,19 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test3_2_2_create_log_statistic
 
     @preposttest_wrapper
+    def test3_2_3_create_flow_aging(self):
+        '''Test to create Flow Aging on UI
+           1. Go to Configure->Global Config->Flow Aging.
+           2. Click on create and enter the config details and save.
+
+           Pass Criteria: Step 2 should pass without any error
+        '''
+        assert self.res.setup_obj.create_flow_aging(), \
+                   'Flow Aging creation failed'
+        return True
+    # end test3_2_3_create_flow_aging
+
+    @preposttest_wrapper
     def test3_1_edit_net_without_change(self):
         '''Test to edit the existing network without changing anything
            1. Go to Configure->Networking->Networks. Then select any of the vn and
