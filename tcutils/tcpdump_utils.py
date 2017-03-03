@@ -21,16 +21,42 @@ def stop_tcpdump_for_intf(session, pcap, logger=None):
     execute_cmd(session, cmd, logger)
     return True
 
-def start_tcpdump_for_vm_intf(obj, vm_fix, vn_fq_name, filters='-v'):
-    compute_ip = vm_fix.vm_node_ip
-    compute_user = obj.inputs.host_data[compute_ip]['username']
-    compute_password = obj.inputs.host_data[compute_ip]['password']
-    vm_tapintf = obj.orch.get_vm_tap_interface(vm_fix.tap_intf[vn_fq_name])
-    return start_tcpdump_for_intf(compute_ip, compute_user,
-        compute_password, vm_tapintf, filters, logger=obj.logger)
+def start_tcpdump_for_vm_intf(obj, vm_fix, vn_fq_name, filters='-v', pcap_on_vm=False, vm_intf='eth0'):
+    if not pcap_on_vm:
+        compute_ip = vm_fix.vm_node_ip
+        compute_user = obj.inputs.host_data[compute_ip]['username']
+        compute_password = obj.inputs.host_data[compute_ip]['password']
+        vm_tapintf = obj.orch.get_vm_tap_interface(vm_fix.tap_intf[vn_fq_name])
+        return start_tcpdump_for_intf(compute_ip, compute_user,
+            compute_password, vm_tapintf, filters, logger=obj.logger)
+    else:
+        pcap = '/tmp/%s.pcap' % (get_random_name())
+        cmd_to_tcpdump = [ 'tcpdump -ni %s %s -w %s 1>/dev/null 2>/dev/null' % (vm_intf, filters, pcap) ]
+        pidfile = pcap + '.pid'
+        vm_fix_pcap_pid_files =[]
+        for vm_fixture in vm_fix:
+            vm_fixture.run_cmd_on_vm(cmds=cmd_to_tcpdump, as_daemon=True, pidfile=pidfile, as_sudo=True)
+            vm_fix_pcap_pid_files.append((vm_fixture, pcap, pidfile))
+        return vm_fix_pcap_pid_files
+# end start_tcpdump_for_vm_intf
 
-def stop_tcpdump_for_vm_intf(obj, session, pcap):
-    return stop_tcpdump_for_intf(session, pcap, logger=obj.logger)
+def stop_tcpdump_for_vm_intf(obj, session, pcap, vm_fix_pcap_pid_files=[], filters=''):
+    if not vm_fix_pcap_pid_files:
+        return stop_tcpdump_for_intf(session, pcap, logger=obj.logger)
+    else:
+        output = []
+        pkt_count = []
+        for vm_fix, pcap, pidfile in vm_fix_pcap_pid_files:
+            cmd_to_output  = 'tcpdump -nr %s %s' % (pcap, filters)
+            cmd_to_kill = 'cat %s | xargs kill ' % (pidfile)
+            count = cmd_to_output + '| wc -l'
+            vm_fix.run_cmd_on_vm(cmds=[cmd_to_kill], as_sudo=True)
+            vm_fix.run_cmd_on_vm(cmds=[cmd_to_output], as_sudo=True)
+            output.append(vm_fix.return_output_cmd_dict[cmd_to_output])
+            vm_fix.run_cmd_on_vm(cmds=[count], as_sudo=True)
+            pkt_count.append(vm_fix.return_output_cmd_dict[count].split('\n')[2])
+            return output, pkt_count
+# end stop_tcpdump_for_vm_intf
 
 @retry(delay=2, tries=6)
 def verify_tcpdump_count(obj, session, pcap, exp_count=None, exact_match=True, mac=None):
@@ -78,3 +104,4 @@ def search_in_pcap(session, pcap, search_string):
 
 def delete_pcap(session, pcap):
     execute_cmd_out(session, 'rm -f %s' % (pcap))
+
