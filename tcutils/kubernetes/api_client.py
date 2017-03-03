@@ -166,6 +166,23 @@ class Client():
         '''
         return self.v1_h.list_namespaced_pod("default", **kwargs)
 
+    def read_pod_status (self, name, namespace='default', exact=True, export=True):
+        '''
+        Get the POD status
+        '''
+        return self.v1_h.read_namespaced_pod_status(name, namespace)
+
+    def exec_cmd_on_pod (self, name, cmd, namespace='default', stderr=True,
+                         stdin=True, stdout=True, tty=True):
+
+        output  = self.v1_h.connect_get_namespaced_pod_exec(name, namespace,  
+                                                        command=cmd,
+                                                        stderr=stderr,
+                                                        stdin=stdin,
+                                                        stdout=stdout,
+                                                        tty=tty)
+        return output
+
 
 if __name__ == '__main__':
     c1 = Client()
