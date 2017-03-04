@@ -29,7 +29,7 @@ SVC_TYPE_PROPS = {
                  }
 }
 
-# To check what kind of intfs need to be configured for a image 
+# To check what kind of intfs need to be configured for a image
 SVC_IMAGE_PROPS = {
     'analyzer' : { 'management' : False, 'left' : True, 'right' : False }
 }
@@ -450,7 +450,7 @@ class ConfigSvcChain(fixtures.Fixture):
                                                     left_vn_fixture,
                                                     'left_vn')
 
-        # Right 
+        # Right
         (right_vn_name,
          right_vn_subnets,
          right_vn_fixture,
@@ -684,3 +684,112 @@ class ConfigSvcChain(fixtures.Fixture):
 
         return ret_dict
     # end config_multi_inline_svc
+
+    def setup_ecmp_config_hash_svc(self, max_inst=1, service_mode='in-network-nat',
+                                   ecmp_hash='default',config_level='global'):
+        """Validate the ECMP configuration hash with service chaining in network  datapath"""
+
+        # Default ECMP hash with 5 tuple
+        if ecmp_hash == 'default':
+            ecmp_hash = {"source_ip": True, "destination_ip": True,
+                         "source_port": True, "destination_port": True,
+                         "ip_protocol": True}
+
+        if ecmp_hash == 'None':
+            ecmp_hash_config = {}
+            ecmp_hash_config['hashing_configured'] = False
+        else:
+            ecmp_hash_config = ecmp_hash.copy()
+            ecmp_hash_config['hashing_configured'] = True
+
+        # Bringing up base setup. i.e 2 VNs (vn1 and vn2), 2 VMs, 3 service
+        # instances, policy for service instance and applying policy on 2 VNs
+        ret_dict = self.verify_svc_chain(max_inst=max_inst,
+                                         service_mode=service_mode,
+                                         create_svms=True,
+                                         **self.common_args)
+        # ECMP Hash at VMI interface of right_vm (right side)
+        right_vm_fixture = ret_dict['right_vm_fixture']
+        right_vn_fixture = ret_dict['right_vn_fixture']
+        svm_list = [right_vm_fixture]
+
+        if config_level == 'global' or config_level == 'all':
+            self.config_ecmp_hash_global(ecmp_hash_config)
+        elif config_level == 'vn' or config_level == 'all':
+            right_vn_fixture.set_ecmp_hash(ecmp_hash_config)
+        elif config_level ==  'vmi' or config_level == 'all':
+            self.config_ecmp_hash_vmi(svm_list, ecmp_hash_config)
+        return ret_dict
+    # end setup_ecmp_config_hash_svc
+
+    def modify_ecmp_config_hash(self, ecmp_hash='default',config_level='global',right_vm_fixture=None,right_vn_fixture=None):
+        """Modify the ECMP configuration hash """
+
+        # Default ECMP hash with 5 tuple
+        if ecmp_hash == 'default':
+            ecmp_hash = {"source_ip": True, "destination_ip": True,
+                         "source_port": True, "destination_port": True,
+                         "ip_protocol": True}
+
+
+        if ecmp_hash == 'None':
+            ecmp_hash_config = {}
+            ecmp_hash_config['hashing_configured'] = False
+        else:
+            # Explicitly set "False" to individual tuple, incase not set
+            ecmp_hash_config = ecmp_hash.copy()
+            if not 'source_ip' in ecmp_hash_config:
+                ecmp_hash_config['source_ip'] = False
+            if not 'destination_ip' in ecmp_hash_config:
+                ecmp_hash_config['destination_ip'] = False
+            if not 'source_port' in ecmp_hash_config:
+                ecmp_hash_config['source_port'] = False
+            if not 'destination_port' in ecmp_hash_config:
+                ecmp_hash_config['destination_port'] = False
+            if not 'ip_protocol' in ecmp_hash_config:
+                ecmp_hash_config['ip_protocol'] = False
+            ecmp_hash_config['hashing_configured'] = True
+
+        right_vm_fixture = right_vm_fixture or self.right_vm_fixture
+        right_vn_fixture = right_vn_fixture or self.right_vn_fixture
+        # ECMP Hash at VMI interface of VM2 (right side)
+        svm_list = [right_vm_fixture]
+
+        if config_level == 'global' or config_level == 'all':
+            self.config_ecmp_hash_global(ecmp_hash_config)
+        if config_level == 'vn' or config_level == 'all':
+            right_vn_fixture.set_ecmp_hash(ecmp_hash_config)
+        if config_level ==  'vmi' or config_level == 'all':
+            self.config_ecmp_hash_vmi(svm_list, ecmp_hash_config)
+    # end modify_ecmp_config_hash
+
+    def config_ecmp_hash_vmi(self, svm_list, ecmp_hash=None):
+        """Configure ecmp hash at vmi"""
+        for svm in svm_list:
+            for (vn_fq_name, vmi_uuid) in svm.get_vmi_ids().iteritems():
+                if re.match(r".*in_network_vn2.*|.*bridge_vn2.*|.*right_.*", vn_fq_name):
+                    self.logger.info('Updating ECMP Hash:%s at vmi:%s' % (ecmp_hash, vmi_uuid))
+                    vmi_config = self.vnc_lib.virtual_machine_interface_read(id = str(vmi_uuid))
+                    vmi_config.set_ecmp_hashing_include_fields(ecmp_hash)
+                    self.vnc_lib.virtual_machine_interface_update(vmi_config)
+    # end config_ecmp_hash_vmi
+
+    def config_ecmp_hash_global(self, ecmp_hash=None):
+        """Configure ecmp hash at global"""
+        self.logger.info('Updating ECMP Hash:%s at Global Config Level' % ecmp_hash)
+        global_vrouter_id = self.vnc_lib.get_default_global_vrouter_config_id()
+        global_config = self.vnc_lib.global_vrouter_config_read(id = global_vrouter_id)
+        global_config.set_ecmp_hashing_include_fields(ecmp_hash)
+        self.vnc_lib.global_vrouter_config_update(global_config)
+    # end config_ecmp_hash_global
+
+
+    def del_ecmp_hash_config(self, vn_fixture=None, svm_list=None):
+        """Delete ecmp hash at global, vn and vmi"""
+        self.logger.info('Explicitly deleting ECMP Hash:%s at Global, VN and VMI Level')
+        ecmp_hash = {"hashing_configured": False}
+        self.config_ecmp_hash_global(ecmp_hash)
+        self.config_ecmp_hash_vmi(svm_list, ecmp_hash)
+        vn_fixture.set_ecmp_hash(ecmp_hash)
+    # end del_ecmp_hash_config
+

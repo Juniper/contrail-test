@@ -49,7 +49,7 @@ class VNFixture(fixtures.Fixture):
                  af=None, empty_vn=False, enable_dhcp=True,
                  dhcp_option_list=None, disable_gateway=False,
                  uuid=None, sriov_enable=False, sriov_vlan=None,
-                 sriov_provider_network=None,*args,**kwargs):
+                 sriov_provider_network=None,ecmp_hash=None,*args,**kwargs):
         self.connections = connections
         self.inputs = inputs or connections.inputs
         self.logger = self.connections.logger
@@ -119,6 +119,7 @@ class VNFixture(fixtures.Fixture):
         self.sriov_vlan = sriov_vlan
         self.sriov_provider_network = sriov_provider_network
         self.dhcp_option_list = dhcp_option_list
+        self.ecmp_hash = ecmp_hash
         self.disable_gateway = disable_gateway
         self.vn_port_list=[]
         self.vn_with_route_target = []
@@ -451,6 +452,10 @@ class VNFixture(fixtures.Fixture):
         # Configure vxlan_id
         if self.vxlan_id is not None:
             self.set_vxlan_id()
+
+        # Configure ecmp_hash
+        if self.ecmp_hash is not None:
+            self.set_ecmp_hash()
 
         # Populate the VN Subnet details
         if isinstance(self.orchestrator,OpenstackOrchestrator):
@@ -846,8 +851,8 @@ class VNFixture(fixtures.Fixture):
             self.logger.warn("RI %s is still found in API-Server" % self.ri_ref['name'])
             self.not_in_api_verification_flag = False
             return False
-        if self.api_s_inspect.get_cs_vn(domain=self.domain_name, 
-                                        project=self.project_name, 
+        if self.api_s_inspect.get_cs_vn(domain=self.domain_name,
+                                        project=self.project_name,
                                         vn=self.vn_name, refresh=True):
             self.logger.debug("VN %s is still found in API-Server" %
                              (self.vn_name))
@@ -1272,6 +1277,23 @@ class VNFixture(fixtures.Fixture):
             return vn_prop_obj['vxlan_network_identifier']
         return None
     # end get_vxlan_id
+
+    def set_ecmp_hash(self, ecmp_hash=None):
+        self.logger.info('Updating ECMP Hash of VN %s to %s' % (
+            self.vn_fq_name, ecmp_hash))
+        vnc_lib = self.vnc_lib_h
+        vn_obj = vnc_lib.virtual_network_read(id =self.uuid)
+        vn_obj.set_ecmp_hashing_include_fields(ecmp_hash)
+        vnc_lib.virtual_network_update(vn_obj)
+    # end set_ecmp_hash
+
+    def get_ecmp_hash(self):
+        vnc_lib = self.vnc_lib_h
+        vn_obj = vnc_lib.virtual_network_read(id =self.uuid)
+        ecmp_hash = vn_obj.get_ecmp_hashing_include_fields()
+        self.logger.debug('ECMP Hash of VN %s is %s' % (
+            self.vn_fq_name, ecmp_hash))
+    # end get_ecmp_hash
 
     def add_forwarding_mode(self, project_fq_name, vn_name, forwarding_mode):
         vnc_lib = self.vnc_lib_h

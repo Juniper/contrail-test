@@ -19,7 +19,7 @@ from common.servicechain.verify import VerifySvcChain
 
 class ECMPTraffic(VerifySvcChain):
 
-    def verify_traffic_flow(self, src_vm, dst_vm_list, si_fix, src_vn, src_ip=None, dst_ip=None):
+    def verify_traffic_flow(self, src_vm, dst_vm_list, si_fix, src_vn, src_ip=None, dst_ip=None, ecmp_hash=None, flow_count=3):
         fab_connections.clear()
         src_ip = src_vm.vm_ip
         if dst_ip == None:
@@ -29,28 +29,28 @@ class ECMPTraffic(VerifySvcChain):
             vm.install_pkg("Traffic")
         sleep(5)
         stream_list = self.setup_streams(
-            src_vm, dst_vm_list, src_ip=src_ip, dst_ip=dst_ip)
+            src_vm, dst_vm_list, src_ip=src_ip, dst_ip=dst_ip, flow_count=flow_count)
         sender, receiver = self.start_traffic(
             src_vm, dst_vm_list, stream_list, src_ip=src_ip, dst_ip=dst_ip)
-        self.verify_flow_thru_si(si_fix, src_vn)
-        self.verify_flow_records(src_vm, src_ip=src_ip, dst_ip=dst_ip)
+        self.verify_flow_thru_si(si_fix, src_vn, ecmp_hash=ecmp_hash, flow_count=flow_count)
+        self.verify_flow_records(src_vm, src_ip=src_ip, dst_ip=dst_ip, flow_count=flow_count)
         self.stop_traffic(sender, receiver, dst_vm_list, stream_list)
 
         return True
 
-    def setup_streams(self, src_vm, dst_vm_list, src_ip=None, dst_ip=None):
+    def setup_streams(self, src_vm, dst_vm_list, src_ip=None, dst_ip=None, flow_count=3):
 
         src_ip = src_vm.vm_ip
         if dst_ip == None:
             dst_ip = dst_vm_list[0].vm_ip
 
-        stream1 = Stream(proto="udp", src=src_ip,
-                         dst=dst_ip, sport=8000, dport=9000)
-        stream2 = Stream( proto="udp", src=src_ip,
-                         dst=dst_ip, sport=8000, dport=9001)
-        stream3 = Stream( proto="udp", src=src_ip,
-                         dst=dst_ip, sport=8000, dport=9002)
-        stream_list = [stream1, stream2, stream3]
+        stream_list=[]
+        for i in range(0,flow_count):
+            stream_name = "stream"+str(i+1)
+            dport = 9000+i
+            stream_name = Stream(proto="udp", src=src_ip, dst=dst_ip, sport=8000,
+                                 dport=dport)
+            stream_list.append(stream_name)
 
         return stream_list
         # end setup_streams
@@ -106,7 +106,7 @@ class ECMPTraffic(VerifySvcChain):
         return sender, receiver
         # end start_traffic
 
-    def verify_flow_thru_si(self, si_fix, src_vn=None):
+    def verify_flow_thru_si(self, si_fix, src_vn=None, ecmp_hash=None, flow_count=3):
         self.logger.info(
             'Will start a tcpdump on the left-interfaces of the Service Instances to find out which flow is entering which Service Instance')
         flowcount = 0
@@ -154,21 +154,14 @@ class ECMPTraffic(VerifySvcChain):
                     host['host_ip'], host['username'], host['password'])
                 output_cmd = 'cat /tmp/%s_out.log' % tapintf
                 out, err = execute_cmd_out(session, output_cmd, self.logger)
-                if '9000' in out:
-                    flowcount = flowcount + 1
-                    self.logger.info(
-                        'Flow with dport 9000 seen flowing inside %s' % svm_name)
-                    flow_pattern['9000'] = svm_name
-                if '9001' in out:
-                    flowcount = flowcount + 1
-                    self.logger.info(
-                        'Flow with dport 9001 seen flowing inside %s' % svm_name)
-                    flow_pattern['9001'] = svm_name
-                if '9002' in out:
-                    flowcount = flowcount + 1
-                    self.logger.info(
-                        'Flow with dport 9002 seen flowing inside %s' % svm_name)
-                    flow_pattern['9002'] = svm_name
+
+                for i in range(0,flow_count):
+                    dport = str(9000+i)
+                    if dport in out:
+                        flowcount = flowcount + 1
+                        self.logger.info(
+                            'Flow with dport %s seen flowing inside %s' % (dport,svm_name))
+                        flow_pattern[dport] = svm_name
             else:
                 self.logger.info('%s is not in ACTIVE state' % svm.name)
         if flowcount > 0:
@@ -177,17 +170,49 @@ class ECMPTraffic(VerifySvcChain):
             self.logger.info('%s' % flow_pattern)
         else:
             result = False
-        assert result, 'No Flow distribution seen'
+
+        if ecmp_hash and ecmp_hash != 'default':
+            # count the number of hash fields set
+            hash_var_count = sum(ecmp_hash.values())
+
+            # Incase, only one hash field is set, all flows should go through
+            # single service instance. One exception here is destination_port.
+            # Destination port varies for traffic streams.So, for destination
+            # port, traffic will get load balanced even if ecmp hash is
+            # configured "destination_port" alone.
+            if hash_var_count == 1 and (not 'destination_port' in ecmp_hash):
+                flow_pattern_ref = flow_pattern['9000']
+                if all(flow_pattern_ref  == item for item in flow_pattern.values()):
+                    self.logger.info(
+                        'Flows are flowing through Single Service Instance: %s, as per config hash: %s' % (flow_pattern_ref, ecmp_hash))
+                    self.logger.info('%s' % flow_pattern)
+                else:
+                    result = False
+                    self.logger.error(
+                        'Flows are flowing through multiple Service Instances:%s, where as it should not as per config hash:%s' % (flow_pattern, ecmp_hash))
+                    assert result, 'Config hash is not working for: %s' % ( ecmp_hash)
+            # Incase, multiple ecmp hash fields are configured or default ecmp
+            # hash is present or only 'destionation_port' is configured in
+            # ecmp_hash
+            else:
+                flow_pattern_ref = flow_pattern['9000']
+                if all(flow_pattern_ref  == item for item in flow_pattern.values()):
+                    result = False
+                    self.logger.error(
+                        'Flows are flowing through Single Service Instance:%s, where as it should not as per config hash:%s' % (flow_pattern_ref, ecmp_hash))
+                    #assert result, 'Config hash is not working fine.'
+                else:
+                    self.logger.info(
+                        'Flows are flowing through multiple Service Instances:%s, as per config hash: %s' % (flow_pattern, ecmp_hash))
+                    self.logger.info('%s' % flow_pattern)
+        else:
+            assert result, 'No Flow distribution seen'
+
         # end verify_flow_thru_si
 
-    def verify_flow_records(self, src_vm, src_ip=None, dst_ip=None):
+    def verify_flow_records(self, src_vm, src_ip=None, dst_ip=None, flow_count=3):
 
         self.logger.info('Checking Flow records')
-        src_port = unicode(8000)
-        dpi1 = unicode(9000)
-        dpi2 = unicode(9001)
-        dpi3 = unicode(9002)
-        dpi_list = [dpi1, dpi2, dpi3]
         vn_fq_name = src_vm.vn_fq_name
         items_list = src_vm.tap_intf[vn_fq_name].items()
         for items, values in items_list:
@@ -195,16 +220,19 @@ class ECMPTraffic(VerifySvcChain):
                 nh_id = values
         self.logger.debug('Flow Index of the src_vm is %s' % nh_id)
         inspect_h = self.agent_inspect[src_vm.vm_node_ip]
-        flow_rec = inspect_h.get_vna_fetchflowrecord(
-            nh=nh_id, sip=src_ip, dip=dst_ip, sport=src_port, dport=dpi1, protocol='17')
 
         flow_result = True
-        if flow_rec is None:
-            flow_result = False
-        else:
+        for i in range(0,flow_count):
+            src_port = unicode(8000)
+            dest_port =unicode(9000+i)
+            flow_rec = inspect_h.get_vna_fetchflowrecord(
+                nh=nh_id, sip=src_ip, dip=dst_ip, sport=src_port, dport=dest_port, protocol='17')
+            if flow_rec is None:
+                flow_result = False
+        if flow_result:
             self.logger.info('Flow between %s and %s seen' % (dst_ip, src_ip))
-        assert flow_result, 'Flow between %s and %s not seen' % (
-            dst_ip, src_ip)
+        else:
+            assert flow_result, 'Flow between %s and %s not seen' % ( dst_ip, src_ip)
 
         return True
         # end verify_flow_records
