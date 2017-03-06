@@ -158,7 +158,7 @@ class ProjectFixture(fixtures.Fixture):
         return True
     # end check_no_project_references
 
-    def get_project_connections(self, username=None, password=None):
+    def get_project_connections(self, username=None, password=None, domain_obj=None):
         username = username or self.project_username or self.inputs.stack_user
         password = password or self.project_user_password or \
             self.inputs.stack_password
@@ -170,7 +170,8 @@ class ProjectFixture(fixtures.Fixture):
                 project_name=self.project_name,
                 username=username,
                 password=password,
-                domain_name=self.domain_name)
+                domain_name=self.domain_name,
+                domain_obj=domain_obj)
         return self.project_connections[username]
     # end get_project_connections
 
