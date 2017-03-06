@@ -32,6 +32,10 @@ class HeatFixture(fixtures.Fixture):
             auth_h = self.get_auth_h(**kwargs)
         self.auth = auth_h
         self.obj = None
+        self.certfile = kwargs.get('certfile') or auth_h.keystone_certfile
+        self.cacert = kwargs.get('cacert') or auth_h.certbundle
+        self.keyfile = kwargs.get('keyfile') or auth_h.keystone_keyfile
+        self.insecure = kwargs.get('insecure') or auth_h.insecure
     # end __init__
 
     def get_auth_h(self, **kwargs):
@@ -43,6 +47,10 @@ class HeatFixture(fixtures.Fixture):
         self.auth_token = self.auth.get_token()
         kwargs = {
             'token': self.auth_token,
+            'ca_file': self.cacert,
+            'cert_file': self.certfile,
+            'key_file': self.keyfile,
+            'insecure': self.insecure,
         }
         self.obj = heat_client.Client(
             self.heat_api_version, self.heat_url, **kwargs)
