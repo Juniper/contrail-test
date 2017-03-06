@@ -300,6 +300,7 @@ class TestInputs(object):
         self.sriov_data = {}
         self.dpdk_data = {}
         self.mysql_token = None
+        self.pcap_on_vm = False
 
         self.public_host = read_config_option(self.config, 'Basic',
                                               'public_host', '10.204.216.50')
@@ -556,6 +557,8 @@ class TestInputs(object):
                                                                 {u'scheduling': u'rr', u'bandwidth': u'10', u'priority_id': u'2'}]],
                             ,                ['10.204.217.130', [{u'scheduling': u'strict', u'bandwidth': u'0', u'priority_id': u'1'},
                                                                 {u'scheduling': u'rr', u'bandwidth': u'25', u'priority_id': u'3'}]]]'''
+        self.ns_agilio_vrouter_data = {}
+
         self.esxi_vm_ips = {}
         self.vgw_data = {}
         self.hypervisors = {}
@@ -643,6 +646,10 @@ class TestInputs(object):
 
         if 'physical_routers' in json_data:
             self.physical_routers_data = json_data['physical_routers']
+        if 'ns_agilio_vrouter' in json_data:
+            self.ns_agilio_vrouter_data = json_data['ns_agilio_vrouter']
+            self.pcap_on_vm = True
+
         self._process_tor_data()
         self._process_for_vcenter_gateway()
         self._process_other_orchestrators(json_data)
