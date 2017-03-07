@@ -97,6 +97,17 @@ class TestBasicPolicy(BasePolicyTest):
             config_topo['policy'][policy_name],
             topo,
             'setup')
+
+        # Verify ICMP traffic between the two VM's.
+        if not config_topo['vm'][topo.vmc_list[0]].ping_with_certainty(
+            expectation=True,
+            dst_vm_fixture=config_topo['vm'][topo.vmc_list[1]]):
+            self.logger.error(
+                'Ping from %s to %s failed,expected it to pass' %
+                (config_topo['vm'][topo.vmc_list[0]].vm_name,
+                 config_topo['vm'][topo.vmc_list[1]].vm_name))
+            return False
+
         return True
     # end test_policy
 
