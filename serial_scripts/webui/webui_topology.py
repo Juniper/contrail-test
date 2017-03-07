@@ -180,6 +180,13 @@ class sdn_webui_config ():
                 'port': '1',
                 'timeout': '120'}}
 
+        # Define Interface Route Table
+        self.intf_route_table_list = ['intf_rt1']
+        self.intf_route_table_params = {
+            'intf_rt1': {
+                'prefixes': '100.1.1.0/24',
+                'community': 'accept-own'}}
+
         # define dns_servers #
         self.dns_server_list = ['dserver1']
         self.dns_server_params = {
