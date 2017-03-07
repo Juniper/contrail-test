@@ -151,11 +151,6 @@ function run_tests_serial {
   ${wrapper} testr run --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $serial_result_xml > /dev/null 2>&1
 }
 
-function check_test_discovery {
-   echo "Checking if test-discovery is fine"
-   bash -x tools/check_test_discovery.sh || die "Test discovery failed!"
-}
-
 function get_result_xml {
   result_xml="result_${SCRIPT_TS}_$RANDOM.xml"
   echo $result_xml
@@ -360,8 +355,6 @@ GIVEN_TEST_PATH=${OS_TEST_PATH}
 if [ ! -z $ci_image ]; then
     export ci_image
 fi
-
-check_test_discovery
 
 setup_tor_agents
 setup_tors
