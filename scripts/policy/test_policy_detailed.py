@@ -171,6 +171,7 @@ class TestDetailedPolicy2(BasePolicyTest):
         number_of_valid_rules = 1
         number_of_default_rules = 2
         total_number_of_rules = (number_of_dummy_rules * number_of_policy) + number_of_valid_rules + number_of_default_rules
+        no_of_rules_exp = total_number_of_rules
         valid_rules = [
             {
                 'direction': '<>', 'simple_action': 'pass',
@@ -237,20 +238,24 @@ class TestDetailedPolicy2(BasePolicyTest):
             msg.extend(
                 ["ping failure with scaled policy and rules:", result_msg])
         assertEqual(result, True, msg)
+        if self.inputs.get_af() == af_test:
+            #In v6 test, new rule is added for proto 58 corresponding to v4 icmp rule,
+            #so expected no. of rules should be increamented by 1
+            no_of_rules_exp = total_number_of_rules + 1
 
         vn1_acl_count=len(self.agent_inspect[
             vm1_fixture._vm_node_ip].get_vna_acl_by_vn(vn1_fixture.vn_fq_name)['entries'])
         vn2_acl_count=len(self.agent_inspect[
             vm2_fixture._vm_node_ip].get_vna_acl_by_vn(vn2_fixture.vn_fq_name)['entries'])
-        self.assertEqual(vn1_acl_count, total_number_of_rules,
+        self.assertEqual(vn1_acl_count, no_of_rules_exp,
             "Mismatch in number of ace ID's and total number of rules in agent introspect \
                 for vn %s" %vn1_fixture.vn_fq_name)
-        self.assertEqual(vn2_acl_count, total_number_of_rules,
+        self.assertEqual(vn2_acl_count, no_of_rules_exp,
             "Mismatch in number of ace ID's and total number of rules in agent introspect \
                 for vn %s" %vn2_fixture.vn_fq_name)
         self.logger.info(
             'Verified ace Id\'s were created for %d rules, to test policy scalability' %
-            total_number_of_rules)
+            no_of_rules_exp)
         return True
     # end test_policy_rules_scaling_with_ping
 
@@ -276,6 +281,7 @@ class TestDetailedPolicy2(BasePolicyTest):
         number_of_valid_rules = 2
         number_of_default_rules = 2
         total_number_of_rules=number_of_dummy_rules + number_of_valid_rules + number_of_default_rules
+        no_of_rules_exp = total_number_of_rules
         valid_rules = [
             {
                 'direction': '<>', 'simple_action': 'pass',
@@ -349,20 +355,24 @@ class TestDetailedPolicy2(BasePolicyTest):
             msg.extend(
                 ["ping failure with scaled policy and rules:", result_msg])
         assertEqual(result, True, msg)
+        if self.inputs.get_af() == af_test:
+            #In v6 test, new rule is added for proto 58 corresponding to v4 icmp rule,
+            #so expected no. of rules should be increamented by 1
+            no_of_rules_exp = total_number_of_rules + 1
 
         vn1_acl_count=len(self.agent_inspect[
             vm1_fixture._vm_node_ip].get_vna_acl_by_vn(vn1_fixture.vn_fq_name)['entries'])
         vn2_acl_count=len(self.agent_inspect[
             vm2_fixture._vm_node_ip].get_vna_acl_by_vn(vn2_fixture.vn_fq_name)['entries'])
-        self.assertEqual(vn1_acl_count, total_number_of_rules,
+        self.assertEqual(vn1_acl_count, no_of_rules_exp,
             "Mismatch in number of ace ID's and total number of rules in agent introspect \
                 for vn %s" %vn1_fixture.vn_fq_name)
-        self.assertEqual(vn2_acl_count, total_number_of_rules,
+        self.assertEqual(vn2_acl_count, no_of_rules_exp,
             "Mismatch in number of ace ID's and total number of rules in agent introspect \
                 for vn %s" %vn2_fixture.vn_fq_name)
         self.logger.info(
             'Verified ace Id\'s were created for %d rules, to test policy scalability' %
-            total_number_of_rules)
+            no_of_rules_exp)
         return True
     # end test_one_policy_rules_scaling_with_ping
 
