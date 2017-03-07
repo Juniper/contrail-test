@@ -32,6 +32,7 @@ class ContrailConnections():
         self.logger = logger or self.inputs.logger
         self.nova_h = None
         self.quantum_h = None
+        self.vnc_lib_fixture = None
         self.api_server_inspects = custom_dict(self.get_api_inspect_handle,
                         'api_inspect:'+self.project_name+':'+self.username)
         self.dnsagent_inspect = custom_dict(self.get_dns_agent_inspect_handle,
@@ -50,7 +51,7 @@ class ContrailConnections():
             self.domain_id = get_plain_uuid(domain_obj.uuid)        
         self.auth = self.get_auth_h()
         self.vnc_lib = self.get_vnc_lib_h()
-	self.project_id = self.get_project_id()
+        self.project_id = self.get_project_id()
         if self.inputs.orchestrator == 'openstack':
             if self.inputs.verify_thru_gui():
                 self.ui_login = UILogin(self, self.inputs, project_name, username, password)
@@ -87,7 +88,11 @@ class ContrailConnections():
     def get_project_id(self, project_name=None):
         project_name = project_name or self.project_name
         auth = self.get_auth_h(project_name)
-        return auth.get_project_id(project_name or self.project_name, self.domain_id)
+        if auth:
+            return auth.get_project_id(project_name or self.project_name,
+                                       self.domain_id)
+        else:
+            return self.vnc_lib_fixture.project_id if self.vnc_lib_fixture else None
 
     def get_auth_h(self, refresh=False, project_name=None,
                    username=None, password=None):
@@ -100,18 +105,19 @@ class ContrailConnections():
                 env[attr] = OpenstackAuth(username, password,
                            project_name, self.inputs, self.logger,
                            domain_name=self.domain_name)
-            else:
+            elif self.inputs.orchestrator == 'vcenter':
                 env[attr] = VcenterAuth(username, password,
                                        project_name, self.inputs)
-        return env[attr]
+        return env.get(attr)
 
     def get_vnc_lib_h(self, refresh=False):
         attr = '_vnc_lib_fixture_' + self.project_name + '_' + self.username
         cfgm_ip = self.inputs.api_server_ip or \
                   self.inputs.contrail_external_vip or self.inputs.cfgm_ip
         if not getattr(env, attr, None) or refresh:
-            if self.domain_name == 'default-domain' :
-                self.domain = 'Default'        
+            if self.domain_name == 'default-domain' \
+                    and self.inputs.orchestrator == 'openstack':
+                self.domain = 'Default'
             else:        
                 self.domain = self.domain_name
             env[attr] = VncLibFixture(

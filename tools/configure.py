@@ -321,7 +321,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     if not env.has_key('cloud_admin_user'):
         env.cloud_admin_user = 'admin'
     if not env.has_key('cloud_admin_password'):
-        env.cloud_admin_password = env.openstack_admin_password
+        env.cloud_admin_password = env.get('openstack_admin_password')
     domain_isolation = env.test.get('domain_isolation',
                            os.getenv('DOMAIN_ISOLATION') or env.domain_isolation)
     cloud_admin_domain = env.test.get('cloud_admin_domain',
