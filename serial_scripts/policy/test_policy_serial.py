@@ -1288,12 +1288,12 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         # set project name
         try:
             # provided by wrapper module if run in parallel test env
-            topo_params = "project=self.project.project_name, username=self.project.username, password=self.project.password"
+            topo = topology_class_name(project=self.project.project_name,
+                username=self.project.username, password=self.project.password,
+                num_compute=computes, num_vm_per_compute=vms_per_compute)
         except NameError:
-            topo_params = ""
-        topo_params = topo_params + \
-            "num_compute=computes, num_vm_per_compute=vms_per_compute"
-        topo = topology_class_name(topo_params)
+            topo = topology_class_name(num_compute=computes,
+                num_vm_per_compute=vms_per_compute)
         planned_per_compute_num_streams = vms_per_compute * num_streams
         total_streams_generated = planned_per_compute_num_streams * computes
         self.logger.info("Total streams to be generated per compute: %s" %
@@ -1613,6 +1613,9 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         for project in topo_obj.project_list:
             setup_obj = {}
             topo[project] = eval("topo_obj.build_topo_" + project + "()")
+            if (project == self.inputs.admin_tenant and (not topo[project].username)):
+                topo[project].username = self.inputs.admin_username
+                topo[project].password = self.inputs.admin_password
             setup_obj[project] = self.useFixture(
                 sdnTopoSetupFixture(self.connections, topo[project]))
             out = setup_obj[project].topo_setup()
@@ -2197,7 +2200,10 @@ class TestSerialPolicy(BaseSerialPolicyTest):
     def test_policy_with_implict_rule_proto_traffic(self):
         """ Call policy_test_for_implicit_rule_proto_traffic with multi VN scenario.
         """
-        topo = sdn_policy_traffic_test_topo.sdn_3vn_4vm_config()
+        topo = sdn_policy_traffic_test_topo.sdn_3vn_4vm_config(
+                project=self.connections.project_name,
+                username=self.connections.username,
+                password=self.connections.password)
         return self.policy_test_with_implicit_rule_proto_traffic(topo)
 
     def policy_test_with_implicit_rule_proto_traffic(self, topo):
