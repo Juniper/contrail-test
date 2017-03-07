@@ -283,6 +283,20 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_attach_network_route_table_to_VN
 
+    @preposttest_wrapper
+    def test2_1_8_create_routing_policies(self):
+        '''
+        Description: Test to create Routing Policies on UI
+        Steps:
+            1. On the Contrail UI, go to Config -> Networking -> Routing -> Routing Policies
+            2. Click on create, enter the config details in the fields and click on 'Save'
+        Pass criteria:
+            1. Step 2 above should pass
+        '''
+        assert self.res.setup_obj.create_routing_policies(), 'Creation of Network Route Table failed'
+        return True
+    # end test_create_routing_policies
+
     # UI verification tests
 
     @preposttest_wrapper
