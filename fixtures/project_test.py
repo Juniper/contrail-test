@@ -32,8 +32,8 @@ class ProjectFixture(fixtures.Fixture):
         self.project_obj = None
         self.already_present = False
         self.project_fq_name = [self.domain_name, self.project_name]
-        self.project_username = self.username = username
-        self.project_user_password = self.password = password
+        self.project_username = self.username = username or self.connections.username
+        self.project_user_password = self.password = password or self.connections.password
         self.role = role
         self.user_dict = {}
         self._create_user_set = {}

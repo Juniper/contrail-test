@@ -207,7 +207,7 @@ class AdminIsolatedCreds(fixtures.Fixture):
     def create_domain(self, domain_name):
         if self.inputs.orchestrator  == 'vcenter' or self.inputs.vcenter_gw_setup:
             return
-        if self.inputs.domain_isolation:
+        if 'v3' in self.inputs.auth_url:
             try:
                 domain = domain_test.DomainFixture(connections=self.connections,
                                                        domain_name=domain_name,

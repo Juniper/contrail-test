@@ -38,7 +38,7 @@ class BaseTestCase_v1(BaseTestCase):
                 ini_file=cls.ini_file,
                 logger=cls.logger)
             cls.admin_isolated_creds.setUp()
-            if cls.inputs.domain_isolation:
+            if 'v3' in cls.inputs.auth_url:
                 cls.domain_obj = cls.admin_isolated_creds.create_domain(cls.isolated_creds.domain_name)
                 cls.isolated_creds.domain_obj = cls.domain_obj
             cls.project = cls.admin_isolated_creds.create_tenant(

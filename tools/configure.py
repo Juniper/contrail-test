@@ -310,10 +310,11 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
 
     # generate json file and copy to cfgm
     sanity_testbed_json = json.dumps(sanity_testbed_dict)
-    stack_user = env.test.get('stack_user', os.getenv('STACK_USER') or '')
+    stack_user = env.test.get('stack_user', os.getenv('STACK_USER') or env.get('stack_user', ''))
     stack_password = env.test.get('stack_password',
-                         os.getenv('STACK_PASSWORD') or '')
-    stack_tenant = env.test.get('stack_tenant', os.getenv('STACK_TENANT') or '')
+                         os.getenv('STACK_PASSWORD') or env.get('stack_password',''))
+    stack_tenant = env.test.get('stack_tenant', os.getenv('STACK_TENANT') or env.get('stack_tenant', ''))
+    stack_domain = env.test.get('stack_domain', os.getenv('STACK_DOMAIN') or env.get('stack_domain', 'default-domain'))
     if not env.has_key('domain_isolation'):
         env.domain_isolation = False
     if not env.has_key('cloud_admin_domain'):
@@ -341,7 +342,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     admin_tenant = get_admin_tenant_name()
     # Few hardcoded variables for sanity environment
     # can be removed once we move to python3 and configparser
-    stack_domain = env.get('stack_domain', 'default-domain')
+    
     webserver_host = env.test.get('webserver_host',
                          os.getenv('WEBSERVER_HOST') or '')
     webserver_user = env.test.get('webserver_user',
@@ -383,8 +384,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     control_port = env.test.get('control_port', os.getenv('CONTROL_PORT') or '')
     dns_port = env.test.get('dns_port', os.getenv('DNS_PORT') or '')
     agent_port = env.test.get('agent_port', os.getenv('AGENT_PORT') or '')
-    user_isolation = env.test.get('user_isolation',
-                                  os.getenv('USER_ISOLATION') or True)
+    user_isolation = env.test.get('user_isolation', (os.getenv('USER_ISOLATION')) or False if stack_user else True)
     neutron_username = env.test.get('neutron_username',
                                     os.getenv('NEUTRON_USERNAME') or None)
     availability_zone = env.test.get('availability_zone',
