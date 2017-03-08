@@ -1057,6 +1057,12 @@ def skip_because(*args, **kwargs):
                         msg = msg + kwargs["msg"]
                     raise testtools.TestCase.skipException(msg)
 
+            if "keystone_version" in kwargs:
+                if 'v3' not in self.inputs.auth_url:
+                    skip = True
+                    msg = "Skipped as testcase is not supported with keystone version 2"
+                    raise testtools.TestCase.skipException(msg)
+
             return f(self, *func_args, **func_kwargs)
         return wrapper
     return decorator
