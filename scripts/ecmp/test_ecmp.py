@@ -99,12 +99,12 @@ class TestECMPSanity(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
         """
         static_route = None
         if self.inputs.get_af() == 'v6':
-            static_route = {'management': 'None',
+            static_route = {'management': None,
                             'left': self.right_vn_subnets[0],
                             'right': self.left_vn_subnets[0] }
 
         if not static_route:
-            static_route = {'management': 'None',
+            static_route = {'management': None,
                             'left': self.right_vn_subnets[0],
                             'right': self.left_vn_subnets[0]}
         ret_dict = self.verify_svc_chain(max_inst=1,
@@ -729,15 +729,9 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
             old_count = len(svms)
             self.logger.info(
                 'Will reduce the SVM count from %s to %s' % (old_count, len(svms) - 1))
-            si_obj = self.vnc_lib.service_instance_read(
-                fq_name=si_fixture.si_fq_name)
-            si_prop = si_obj.get_service_instance_properties()
-            scale_out = my_vnc_api.ServiceScaleOutType(
-                max_instances=(len(svms) - 1))
-            si_prop.set_scale_out(scale_out)
-            si_obj.set_service_instance_properties(si_prop)
-            self.vnc_lib.service_instance_update(si_obj)
-#            svms[-1].delete()  Instead of deleting the SVMs, we will reduce the max_inst
+            ret_dict['svm_fixtures'][len(svms) - 1].cleanUp()
+            self.remove_from_cleanups(
+                ret_dict['svm_fixtures'][len(svms) - 1].cleanUp)
             self.sleep(10)
             svms = self.get_svms_in_si(si_fixture)
             svms = sorted(set(svms))
