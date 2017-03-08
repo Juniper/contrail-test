@@ -30,6 +30,23 @@ class AgentInspect (VerificationUtilBase):
     def get_vna_policy(self, domain='default-domain', project='admin', policy='default-network-policy'):
         pass
 
+    def get_vna_vrf_list(self, domain='default-domain', project='admin'):
+        '''
+            method: get_vna_vrf_list returns a list
+            returns None if not found, a dict w/ attrib. eg:
+
+        '''
+        vrfl = self.dict_get('Snh_VrfListReq?name=')
+        avrf = vrfl.xpath('./VrfListResp/vrf_list/list/VrfSandeshData') or \
+            vrfl.xpath('./vrf_list/list/VrfSandeshData')
+        l = []
+        for v in avrf:
+            p = {}
+            for e in v:
+                p[e.tag] = e.text
+            l.append(p)
+        return VnaVrfListResult({'VRFs': l})
+
     def get_vna_vn_list(self, domain='default-domain', project='admin'):
         '''
             method: get_vna_vn_list returns a list

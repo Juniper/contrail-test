@@ -939,6 +939,29 @@ class ContrailVncApi(object):
         '''
         return self._vnc.service_health_check_delete(**kwargs)
 
+    def assoc_intf_rt_table_to_si(self, si_fq_name, intf_rt_table_uuid, intf_type):
+        '''
+            :param si_uuid : UUID of the Service Instance object
+            :param intf_table_uuid : UUID of Interface Route Table object
+        '''
+        intf_rt_table_obj = self._vnc.interface_route_table_read(
+            id=intf_rt_table_uuid)
+        si_obj = self._vnc.service_instance_read(fq_name=si_fq_name)
+        intf_rt_table_obj.add_service_instance(
+            si_obj, ServiceInterfaceTag(interface_type=intf_type))
+        return self._vnc.interface_route_table_update(intf_rt_table_obj)
+
+    def disassoc_intf_rt_table_from_si(self, si_fq_name, intf_rt_table_uuid):
+        '''
+            :param si_uuid : UUID of the Service Instance object
+            :param intf_table_uuid : UUID of Interface Route Table object
+        '''
+        intf_rt_table_obj = self._vnc.interface_route_table_read(
+            id=intf_rt_table_uuid)
+        si_obj = self._vnc.service_instance_read(fq_name=si_fq_name)
+        intf_rt_table_obj.del_service_instance(si_obj)
+        return self._vnc.interface_route_table_update(intf_rt_table_obj)
+
     def assoc_health_check_to_si(self, si_uuid, hc_uuid, intf_type):
         '''
             :param si_uuid : UUID of the Service Instance object
