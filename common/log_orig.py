@@ -51,7 +51,7 @@ class ContrailLogger:
         if not max_message_size:
             max_message_size = ''
         self.log_format = logging.Formatter('%(asctime)s - %(levelname)s'
-                              ' - %(message)' + '%ss' %(str(max_message_size)))
+                              ' - %(message)' + '%.ss' %(str(max_message_size)))
 
     def setUp(self):
         self.fileHandler = CustomFileHandler(fileName = self.log_file)
