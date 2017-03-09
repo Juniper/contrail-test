@@ -65,22 +65,7 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ECMPVerify):
         self.logger.info('Ping to outside world from left VM')
         si_fixture = ret_dict['si_fixture']
         left_vm_fixture = ret_dict['left_vm_fixture']
-
-        svms = self.get_svms_in_si(si_fixture)
-        svm_name = svms[0].name
-        host = self.get_svm_compute(svm_name)
-        tapintf = self.get_svm_tapintf_of_vn(svm_name,
-                                             ret_dict['left_vn_fixture'])
-        self.start_tcpdump_on_intf(host, tapintf)
         assert left_vm_fixture.ping_with_certainty('8.8.8.8', count='10')
-        out = self.stop_tcpdump_on_intf(host, tapintf)
-        print out
-        if '8.8.8.8' in out:
-            self.logger.info(
-                'Ping to 8.8.8.8 is going thru %s ' % svm_name)
-        else:
-            result = False
-            assert result, 'Ping to 8.8.8.8 not going thru the SI'
         return True
 
 
