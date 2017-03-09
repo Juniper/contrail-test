@@ -1252,13 +1252,13 @@ class WebuiCommon:
             element_name = fixture.si_name
             element_id = 'btnActionDelSvcInst'
             popup_id = 'configure-service_instancebtn1'
-        if element_type == 'svc_health_check_delete':
+        elif element_type == 'svc_health_check_delete':
             if not self.click_configure_service_health_check():
                 result = result and False
             element_name = fixture.name
             element_id = 'linkSvcHealthChkDelete'
             popup_id = 'configure-HealthCheckServicesbtn1'
-        if element_type == 'bgp_aas_delete':
+        elif element_type == 'bgp_aas_delete':
             if not self.click_configure_bgp_as_a_service():
                 result = result and False
             element_name = 'all'
@@ -1373,6 +1373,12 @@ class WebuiCommon:
             element_name = 'all'
             element_id = 'btnDeleteRoutingPolicy'
             popup_id = 'configure-routingPolicybtn1'
+        elif element_type == 'route_aggregate_delete':
+            if not self.click_configure_route_aggregate():
+                result = result and False
+            element_name = 'all'
+            element_id = 'btnDeleteRouteAggregate'
+            popup_id = 'configure-route_aggregatebtn1'
         elif element_type == 'bgp_router_delete':
             if not self.click_configure_bgp_router():
                 result = result and False
@@ -1429,7 +1435,8 @@ class WebuiCommon:
                     div_obj = element.find_elements_by_tag_name('div')[1]
                 elif element_type in ['router_delete', 'dns_server_delete',
                                       'dns_record_delete', 'bgp_aas_delete',
-                                      'network_route_table_delete', 'routing_policy_delete']:
+                                      'network_route_table_delete', 'routing_policy_delete',
+                                      'route_aggregate_delete']:
                     element_text = 'all'
                     div_obj = element.find_elements_by_tag_name('div')[1]
                 elif element_type == 'bgp_router_delete':
@@ -1994,6 +2001,14 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
         return self.check_error_msg("configure routing policy")
     # end click_configure_routing_policy
+
+    def click_configure_route_aggregate(self):
+        self.click_configure_route_table()
+        self.wait_till_ajax_done(self.browser)
+        self.click_element('route_aggregates_tab-tab-link')
+        self.wait_till_ajax_done(self.browser)
+        return self.check_error_msg("configure route aggregate")
+    # end click_configure_route_aggregate
 
     def click_fip_vn(self, browser=None):
         if not browser:
