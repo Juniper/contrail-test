@@ -1,6 +1,17 @@
 from tcutils.verification_util import *
 
 
+class VnaVrfListResult (Result):
+
+    '''
+        VnaVrfListResult to provide access to vna_introspect_utils.get_vna_vrf_list
+        dict contrains:
+    '''
+
+    def vrf_list(self):
+        return self.xpath('VRFs')
+
+
 class VnaVnListResult (Result):
 
     '''

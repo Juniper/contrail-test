@@ -27,6 +27,68 @@ class VerifySvcChain(ConfigSvcChain):
         return result
 
     @retry(delay=5, tries=15)
+    def validate_svc_action(self, vn_fq_name, si, dst_vm, src):
+        '''
+        1]. Get a list of all RIs associted with the VN.
+        2]. On the compute node housing the SI, get all the VRFs.
+        3]. See if any one of the RIs match the VRF on the node.
+        4]. Get the paths in that VRF and the next-hop to the destination.  
+        5]. The src is required because for Transparent SIs, the left and right VNs 
+            are different from those in the Service Chain.
+        '''
+        vn1 = self.connections.vnc_lib_fixture.virtual_network_read(
+            fq_name=vn_fq_name.split(':'))
+        ri_list = []
+        for ris in vn1.get_routing_instances():
+            ri_fqn = (":").join(ris['to'])
+            ri_list.append(ri_fqn)
+        vrf_id = None
+        for svm in si.svm_list:
+            svm_node_ip = self.inputs.host_data[svm.vm_node_ip]['host_ip']
+            svm_node_name = self.inputs.host_data[svm.vm_node_ip]['name']
+            inspect_h1 = self.agent_inspect[svm_node_ip]
+            for vrf_list in inspect_h1.get_vna_vrf_list()['VRFs']:
+                if vrf_list['name'] in ri_list:
+                    vrf_id = vrf_list['ucindex']
+                    break
+            errmsg = "RI not created for the SVC"
+            if not vrf_id:
+                self.logger.warn(errmsg)
+                return False, errmsg
+            net = '32'
+            if self.inputs.get_af() == 'v6':
+                net = '128'
+            paths = inspect_h1.get_vna_active_route(
+                vrf_id=vrf_id, ip=dst_vm.vm_ip, prefix=net)
+            errmsg = "Route to %s not seen in %s" % (dst_vm.vm_ip, vn_fq_name)
+            if not paths:
+                self.logger.warn(errmsg)
+                return False, errmsg
+            next_hops = paths['path_list'][0]['nh']
+            if 'ECMP' in next_hops['type']:
+                for entry in next_hops['mc_list']:
+                    if entry['type'] == 'Interface' or entry['type'] == 'Vlan':
+                        itf_nh = entry['itf']
+            elif next_hops['type'] == 'interface' or next_hops['type'] == 'vlan':
+                itf_nh = next_hops['itf']
+            else:
+                itf_nh = None
+            errmsg = "SI is not seen as NH to reach %s from %s" % (
+                dst_vm.vm_ip, vn_fq_name)
+            if src == 'left':
+                si_vn = si.left_vn_fq_name
+            elif src == 'right':
+                si_vn = si.right_vn_fq_name
+            svm_vmi_id = svm.get_vmi_ids()[si_vn]
+            if svm.get_tap_intf_of_vmi(svm_vmi_id)['name'] != itf_nh:
+                self.logger.warn(errmsg)
+                return False, errmsg
+            self.logger.info('Route to %s seen in VRF:%s on %s, and SI %s is seen as the NH' % (
+                dst_vm.vm_ip, vrf_id, svm_node_name, si.si_name))
+        return True, "Route-leak and NH change verified"
+    # end validate_svc_action
+
+    @retry(delay=5, tries=15)
     def validate_vn(self, vn_fq_name, right_vn=False):
         '''
         vn_fq_name : VN fq_name_str
@@ -122,6 +184,13 @@ class VerifySvcChain(ConfigSvcChain):
         result, msg = self.validate_vn(right_vn_fq_name, right_vn=right_vn)
         assert result, msg
 
+        result, msg = self.validate_svc_action(
+            left_vn_fq_name, si_fixture, right_vm_fixture, src='left')
+        assert result, msg
+        if st_fixture.service_mode != 'in-network-nat':
+            result, msg = self.validate_svc_action(
+                right_vn_fq_name, si_fixture, left_vm_fixture, src='right')
+            assert result, msg
         if proto not in ['any', 'icmp']:
             self.logger.info('Will skip Ping test')
         else:

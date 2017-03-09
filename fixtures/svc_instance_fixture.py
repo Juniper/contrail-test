@@ -70,8 +70,11 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.service_mode = svc_template.service_template_properties.service_mode
         self.port_tuples_uuids = []
         self.left_vn_fq_name = if_details.get('left', {}).get('vn_name', None)
-        self.right_vn_fq_name = if_details.get('right', {}).get('vn_name', None)
-        self.mgmt_vn_fq_name = if_details.get('management', {}).get('vn_name', None)
+        self.right_vn_fq_name = if_details.get(
+            'right', {}).get('vn_name', None)
+        self.mgmt_vn_fq_name = if_details.get(
+            'management', {}).get('vn_name', None)
+        self.intf_rt_table = []
     # end __init__
 
     def setUp(self):
@@ -135,14 +138,8 @@ class SvcInstanceFixture(fixtures.Fixture):
                     virtual_network = None
                 if_type = ServiceInstanceInterfaceType(
                     virtual_network=virtual_network)
-                if_type.set_static_routes(
-                    RouteTableType(
-                        [RouteType(prefix=self.static_route[itf])]))
                 si_prop.add_interface_list(if_type)
 
-            si_prop.set_scale_out(ServiceScaleOutType(self.max_inst))
-            if self.availability_zone:
-                si_prop.set_availability_zone(self.availability_zone)
             svc_instance.set_service_instance_properties(si_prop)
             svc_instance.set_service_template(self.svc_template)
             if self.inputs.is_gui_based_config():
@@ -155,8 +152,29 @@ class SvcInstanceFixture(fixtures.Fixture):
                 self.add_port_tuple(port_tuple_props)
             for hc in self.hc_list:
                 self.associate_hc(hc['uuid'], hc['intf_type'])
+            if self.static_route:
+                self.associate_static_route_table(project, self.static_route)
         return self.si_obj
     # end _create_si
+
+    def associate_static_route_table(self, project, static_rt_dict):
+        for intf in static_rt_dict.keys():
+            name = '%s_%s' % (self.si_name, intf)
+            prefix = static_rt_dict[intf]
+            if prefix:
+                intf_rt_table = self._vnc.create_interface_route_table(
+                    name, parent_obj=project, prefixes=[prefix])
+                self.logger.debug("Associating static route table %s to %s" % (
+                    intf_rt_table.name, self.si_fq_name))
+                self._vnc.assoc_intf_rt_table_to_si(
+                    self.si_fq_name, intf_rt_table.uuid, intf)
+                d = {'uuid': intf_rt_table.uuid, 'intf_type': intf}
+                self.intf_rt_table.append(d)
+
+    def disassociate_static_route_table(self, irt_uuid):
+        self.logger.debug(
+            "Disassociating static route table %s from %s" % (irt_uuid, self.si_fq_name))
+        self._vnc.disassoc_intf_rt_table_from_si(self.si_fq_name, irt_uuid)
 
     def associate_hc(self, hc_uuid, intf_type):
         self.logger.debug("Associating hc(%s) to si (%s)"%(hc_uuid, self.uuid))
@@ -227,6 +245,9 @@ class SvcInstanceFixture(fixtures.Fixture):
         for hc in curr_hc_list:
             self.disassociate_hc(hc['uuid'])
         self.verify_hc_not_in_agent(curr_hc_list)
+        intf_rt_table_list = list(self.intf_rt_table)
+        for irt in intf_rt_table_list:
+            self.disassociate_static_route_table(irt['uuid'])
         self.logger.debug("Deleting service instance: %s", self.si_fq_name)
         self.vnc_lib.service_instance_delete(fq_name=self.si_fq_name)
     # end _delete_si
