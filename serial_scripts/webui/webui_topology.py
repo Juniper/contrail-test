@@ -405,6 +405,18 @@ class sdn_webui_config ():
                 'term_then': 'local-preference',
                 'lp_value': 200 }}
 
+        #Define Route Aggregate parameters
+        self.ragg_list = ['ragg1', 'ragg2']
+        self.ragg_params = {
+            'ragg1': [
+                {'prefix': '32.1.1.0/24'},
+                {'prefix': '33.1.1.0/24'}
+                ],
+            'ragg2': [
+                {'prefix': '34.1.1.0/24'},
+                {'prefix': '35.1.1.0/24'}
+                ]}
+
         # Define network policy rules
         self.rules = {}
 

@@ -293,9 +293,23 @@ class WebuiTestSanity(base.WebuiBaseTest):
         Pass criteria:
             1. Step 2 above should pass
         '''
-        assert self.res.setup_obj.create_routing_policies(), 'Creation of Network Route Table failed'
+        assert self.res.setup_obj.create_routing_policies(), 'Creation of Routing Policies failed'
         return True
     # end test_create_routing_policies
+
+    @preposttest_wrapper
+    def test2_1_9_create_route_aggregates(self):
+        '''
+        Description: Test to create Route Aggregates on UI
+        Steps:
+            1. On the Contrail UI, go to Config -> Networking -> Routing -> Route Aggregates
+            2. Click on create, enter the config details in the fields and click on 'Save'
+        Pass criteria:
+            1. Step 2 above should pass
+        '''
+        assert self.res.setup_obj.create_route_aggregates(), 'Creation of Route Aggregates failed'
+        return True
+    # end test_create_route_aggregates
 
     # UI verification tests
 
