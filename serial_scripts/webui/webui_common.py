@@ -189,6 +189,10 @@ class WebuiCommon:
         return self._get_list_api(option)
     # end get_global_config_api
 
+    def get_intf_table_list_api(self):
+        return self._get_list_api('interface-route-tables')
+    # end get_intf_table_list_api
+
     def get_details(self, url):
         obj = self.jsondrv.load(url)
         return obj
@@ -1735,6 +1739,16 @@ class WebuiCommon:
             'div')[0].find_element_by_tag_name('i').click()
         self.wait_till_ajax_done(self.browser)
     # end click_configure_fip_basic
+
+    def click_configure_intf_route_table_basic(self, row_index):
+        self.click_element('Interface Route Tables', 'link_text')
+        self.check_error_msg("configure interface route table")
+        br = self.find_element('inf_rt-table-grid')
+        rows = self.get_rows(browser=br)
+        rows[row_index].find_elements_by_tag_name(
+            'div')[0].find_element_by_tag_name('i').click()
+        self.wait_till_ajax_done(self.browser)
+    # end click_configure_intf_route_table_basic
 
     def click_configure_project_quotas(self):
         self._click_on_config_dropdown(self.browser, index=0)
