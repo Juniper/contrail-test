@@ -176,8 +176,6 @@ class ContrailReportInit:
         self.bgp_ips = []
         self.bgp_control_ips = []
         self.bgp_names = []
-        self.ds_server_ip = []
-        self.ds_server_name = []
         self.host_ips = []
         self.webui_ips = []
         self.openstack_ips = [] 
@@ -208,8 +206,6 @@ class ContrailReportInit:
                     self.cfgm_control_ips.append(host_control_ip)
                     self.cfgm_control_ip = host_control_ip
                     self.cfgm_names.append(host['name'])
-                    self.ds_server_ip.append(host_ip)
-                    self.ds_server_name.append(host['name'])
                     self.masterhost = self.cfgm_ip
                     self.hostname = host['name']
                 if role['type'] == 'compute':
