@@ -248,6 +248,18 @@ class VerificationOpsSrv (VerificationUtilBase):
             print e
         finally:
             return res
+    
+    def get_ops_dns(self, control=None):
+        '''http://nodea18:8081/analytics/uves/dns-node/nodea11?flat'''
+        res = None
+        try:
+            c_dict = self.dict_get(
+                'analytics/uves/dns-node/' + control + '?flat')
+            res = OpConfigResult(c_dict)
+        except Exception as e:
+            print e
+        finally:
+            return res
 
     def get_ops_db(self, db=None):
         '''http://10.204.216.7:8081/analytics/uves/database/nodea11?flat'''
