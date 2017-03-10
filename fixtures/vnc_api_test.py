@@ -40,8 +40,10 @@ class VncLibFixture(fixtures.Fixture):
         self.inputs = kwargs.get('inputs', self.connections.inputs
                                            if self.connections else None)
         self.neutron_handle = None
-        self.cfgm_ip = kwargs.get('cfgm_ip', None) or self.inputs.cfgm_ip \
-                       if self.inputs else '127.0.0.1'
+        self.cfgm_ip = kwargs.get('cfgm_ip',self.inputs.cfgm_ip \
+                          if self.inputs else '127.0.0.1')
+            
+        
         self.auth_server_ip = self.inputs.auth_ip if self.inputs else \
                         kwargs.get('auth_server_ip', '127.0.0.1')
         self.auth_url = self.inputs.auth_url if self.inputs else \
