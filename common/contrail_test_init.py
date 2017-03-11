@@ -1020,8 +1020,7 @@ class ContrailTestInit(object):
                         host,
                         service,
                         username,
-                        password,
-                        container='agent')
+                        password)
             if host in self.bgp_ips:
                 for service in self.control_services:
                     result = result and self.verify_service_state(
@@ -1082,6 +1081,8 @@ class ContrailTestInit(object):
         cls = None
         try:
             m = self.get_contrail_status(host, container=container)
+            if ((container is not None) and ('supervisor' in service)):
+                return True
             cls = self.get_service_status(m, service)
             if (cls.state in self.correct_states):
                 return True
