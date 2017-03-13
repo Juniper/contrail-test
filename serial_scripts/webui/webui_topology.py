@@ -229,19 +229,22 @@ class sdn_webui_config ():
         # define service templates ##
         self.st_list = ['tcp_svc_template']
         self.st_params = {'tcp_svc_template': {'svc_img_name': 'tiny_trans_fw',
-                                               'svc_type': 'firewall',
-                                               'if_list': [['management',
-                                                            False,
-                                                            False],
-                                                           ['left',
-                                                            False,
-                                                            False],
-                                                           ['right',
-                                                            False,
-                                                            False]],
-                                               'svc_mode': 'transparent',
+                                               'service_type': 'firewall',
+                                               'if_details': {
+                                                    'management' : {'shared_ip_enable' : False,
+                                                                    'static_route_enable' : False
+                                                                    },
+                                                    'left' : {'shared_ip_enable' : False,
+                                                              'static_route_enable' : False
+                                                              },
+                                                    'right' : {'shared_ip_enable' : False,
+                                                               'static_route_enable' : False
+                                                               }
+                                                              },
+                                               'service_mode': 'transparent',
                                                'svc_scaling': False,
                                                'flavor': 'm1.tiny',
+                                               'version': 1
                                                }}
 
         # define service instance
