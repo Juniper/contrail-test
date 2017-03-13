@@ -361,6 +361,9 @@ if [ ! -z $ci_image ]; then
     export ci_image
 fi
 
+# Giving executable permissions as a workaround when chmod fails at times
+chmod +x /usr/local/bin/testr
+
 check_test_discovery
 
 setup_tor_agents
