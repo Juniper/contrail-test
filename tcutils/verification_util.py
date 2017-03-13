@@ -96,7 +96,7 @@ class JsonDrv (object):
             resp = requests.get(url, headers=self._headers, verify=self.verify)
         else:
             resp = requests.get(url, headers=self._headers)
-        if resp.status_code == 401:
+        if resp.status_code in [401, 403]:
             if retry:
                 self._auth()
                 return self.load(url, False)
