@@ -4,16 +4,19 @@ from kubernetes.client.rest import ApiException
 from common import log_orig as contrail_logging
 from tcutils.util import get_random_name, retry
 
+
 class PodFixture(fixtures.Fixture):
     '''
     '''
+
     def __init__(self,
                  connections,
-                 name = None,
-                 namespace = 'default',
+                 name=None,
+                 namespace='default',
                  metadata={},
                  spec={}):
-        self.logger = connections.logger or contrail_logging.getLogger(__name__)
+        self.logger = connections.logger or contrail_logging.getLogger(
+            __name__)
         self.inputs = connections.inputs
         self.name = name or get_random_name('pod')
         self.namespace = namespace
@@ -30,19 +33,19 @@ class PodFixture(fixtures.Fixture):
 
         if not self.verify_pod_is_running(self.name, self.namespace):
             self.logger.error('POD %s is not in running state'
-                              %(self.name))
+                              % (self.name))
             return False
         if not self.verify_pod_in_contrail_api():
             self.logger.error('POD %s not seen in Contrail API'
-                             %(self.name))
+                              % (self.name))
             return False
         if not self.verify_pod_in_contrail_control():
             self.logger.error('POD %s not seen in Contrail control'
-                             %(self.name))
+                              % (self.name))
             return False
         if not self.verify_pod_in_contrail_agent():
-            self.logger.error('POD %s not seen in Contrail agent' %(
-                               self.name))
+            self.logger.error('POD %s not seen in Contrail agent' % (
+                self.name))
             return False
         self.logger.info('Pod %s verification passed' % (self.name))
         return True
@@ -72,10 +75,10 @@ class PodFixture(fixtures.Fixture):
         if pod:
             return pod
         self.obj = self.k8s_client.create_pod(
-                       self.namespace,
-                       self.name,
-                       self.metadata,
-                       self.spec)
+            self.namespace,
+            self.name,
+            self.metadata,
+            self.spec)
         self._populate_attr()
     # end create
 
@@ -89,56 +92,56 @@ class PodFixture(fixtures.Fixture):
         result = False
         pod_status = self.k8s_client.read_pod_status(name, namespace)
         if pod_status.status.phase != "Running":
-            self.logger.warning('POD %s not in running state.\
-                               Curentlly in %s' % (self.name,
-                               pod_status.status.phase))
+            self.logger.debug('POD %s not in running state.'
+                               'Currently in %s' % (self.name,
+                                                   pod_status.status.phase))
         else:
-            self.logger.info('POD %s is in running state.\
-                              Got IP %s' % (self.name,
-                               pod_status.status.pod_ip))
+            self.logger.info('POD %s is in running state.'
+                             'Got IP %s' % (self.name,
+                                            pod_status.status.pod_ip))
             self.pod_ip = pod_status.status.pod_ip
             self.host_ip = pod_status.status.host_ip
-            result = True 
+            result = True
         return result
 
     @retry(delay=1, tries=10)
     def verify_pod_in_contrail_api(self):
-        # TODO 
-        return True  
+        # TODO
+        return True
     # end verify_pod_in_contrail_api
-  
+
     @retry(delay=1, tries=10)
-    def verify_pod_in_contrail_control (self):
-        # TODO 
-        return True  
+    def verify_pod_in_contrail_control(self):
+        # TODO
+        return True
     # verify_pod_in_contrail_control
- 
+
     @retry(delay=1, tries=10)
-    def verify_pod_in_contrail_agent (self):
-        # TODO 
-        return True  
+    def verify_pod_in_contrail_agent(self):
+        # TODO
+        return True
     # verify_pod_in_contrail_agent
-    
-    
-    def run_kubectl_cmd_on_master (self, pod_name, cmd):
-        kubectl_command = "kubectl exec %s %s" % (pod_name, cmd)
 
-        ## TODO Currently using  config node IP as Kubernetes master
-        # This need to be changed  
+    def run_kubectl_cmd_on_master(self, pod_name, cmd, shell='/bin/bash -l -c'):
+        kubectl_command = 'kubectl exec %s --namespace=%s -i -t -- %s "%s"' % (
+            pod_name, self.namespace, shell, cmd)
+
+        # TODO Currently using  config node IP as Kubernetes master
+        # This need to be changed
         output = self.inputs.run_cmd_on_server(self.inputs.cfgm_ip,
-                 kubectl_command,
-                 self.inputs.host_data[self.inputs.cfgm_ip]['username'],
-                 self.inputs.host_data[self.inputs.cfgm_ip]['password'])
-
+                                               kubectl_command)
         return output
 
-    def run_cmd_on_pod (self, name, cmd, mode='cli'):
+    def run_cmd(self, cmd, **kwargs):
+        return self.run_cmd_on_pod(cmd, **kwargs)
+
+    def run_cmd_on_pod(self, cmd, mode='api', shell='/bin/bash -l -c'):
         if mode == 'api':
-            command = ['/bin/sh', '-c', cmd]
-            output = self.k8s_client.exec_cmd_on_pod (name, command)
-        else: 
-            output = self.run_kubectl_cmd_on_master(name, cmd)
-        return output  
+            output = self.k8s_client.exec_cmd_on_pod(self.name, cmd,
+                namespace=self.namespace, shell=shell)
+        else:
+            output = self.run_kubectl_cmd_on_master(self.name, cmd, shell)
+        return output
     # run_cmd_on_pod
 
     def ping_to_ip(self, ip, return_output=False, count='5', expectation=True):
@@ -147,9 +150,9 @@ class PodFixture(fixtures.Fixture):
         This method logs into the POD from kubernets master using kubectl and runs ping test to an IP.
         """
         output = ''
-        cmd = "-- ping -c %s %s"  % (count, ip)
+        cmd = "ping -c %s %s" % (count, ip)
         try:
-            output = self.run_cmd_on_pod( self.name, cmd)
+            output = self.run_cmd_on_pod(cmd)
             if return_output is True:
                 return output
         except Exception, e:
@@ -171,4 +174,4 @@ class PodFixture(fixtures.Fixture):
         except Exception as e:
             self.logger.warn("Got exception in ping_to_ip:%s" % (e))
             return False
-      # end ping_to_ip 
+      # end ping_to_ip

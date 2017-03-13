@@ -189,7 +189,8 @@ class ContrailConnections():
         if self.inputs.orchestrator != 'kubernetes':
             return None
         if not getattr(self, 'k8s_client', None):
-            self.k8s_client = Kubernetes_client(self.inputs.kube_config_file)
+            self.k8s_client = Kubernetes_client(self.inputs.kube_config_file,
+                                                self.logger)
         return self.k8s_client
     # end get_k8s_api_client_handle
 

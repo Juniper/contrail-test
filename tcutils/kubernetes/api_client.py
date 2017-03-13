@@ -7,8 +7,9 @@ from tcutils.util import get_random_name
 class Client():
 
     def __init__(self, config_file='/etc/kubernetes/admin.conf', logger=None):
-        config.load_kube_config(config_file='/etc/kubernetes/admin.conf')
-        self.v1_h = client.CoreV1Api()
+        self.api_client = config.new_client_from_config(config_file)
+        self.api_client.config.assert_hostname = False
+        self.v1_h = client.CoreV1Api(self.api_client)
 
         self.logger = logger or contrail_logging.getLogger(__name__)
     # end __init__
@@ -57,9 +58,9 @@ class Client():
             metadata_obj.name = name
         spec_obj = client.V1ServiceSpec(**spec)
         body = client.V1Service(
-                                metadata=metadata_obj,
-                                spec=spec_obj)
-        self.logger.info('Creating service %s' %(metadata_obj.name))
+            metadata=metadata_obj,
+            spec=spec_obj)
+        self.logger.info('Creating service %s' % (metadata_obj.name))
         resp = self.v1_h.create_namespaced_service(namespace, body)
         return resp
     # end create_service
@@ -67,7 +68,7 @@ class Client():
     def delete_service(self,
                        namespace,
                        name):
-        self.logger.info('Deleting service : %s' %(name))
+        self.logger.info('Deleting service : %s' % (name))
         return self.v1_h.delete_namespaced_service(name, namespace)
 
     def create_pod(self,
@@ -118,7 +119,7 @@ class Client():
                               to/removed from the object's finalizers list. (optional)         
         '''
         body = client.V1DeleteOptions()
-        self.logger.info('Deleting pod %s:%s' %(namespace, name))
+        self.logger.info('Deleting pod %s:%s' % (namespace, name))
         return self.v1_h.delete_namespaced_pod(name, namespace, body,
                                                grace_period_seconds=grace_period_seconds,
                                                orphan_dependents=orphan_dependents)
@@ -166,28 +167,31 @@ class Client():
         '''
         return self.v1_h.list_namespaced_pod("default", **kwargs)
 
-    def read_pod_status (self, name, namespace='default', exact=True, export=True):
+    def read_pod_status(self, name, namespace='default', exact=True, export=True):
         '''
         Get the POD status
         '''
         return self.v1_h.read_namespaced_pod_status(name, namespace)
 
-    def exec_cmd_on_pod (self, name, cmd, namespace='default', stderr=True,
-                         stdin=True, stdout=True, tty=True):
+    def exec_cmd_on_pod(self, name, cmd, namespace='default', stderr=True,
+                        stdin=True, stdout=True, tty=True,
+                        shell='/bin/bash -l -c'):
 
-        output  = self.v1_h.connect_get_namespaced_pod_exec(name, namespace,  
-                                                        command=cmd,
-                                                        stderr=stderr,
-                                                        stdin=stdin,
-                                                        stdout=stdout,
-                                                        tty=tty)
+        cmd_prefix = shell.split()
+        cmd_prefix.append(cmd)
+        output = self.v1_h.connect_get_namespaced_pod_exec(name, namespace,
+                                                           command=cmd_prefix,
+                                                           stderr=stderr,
+                                                           stdin=stdin,
+                                                           stdout=stdout,
+                                                           tty=tty)
         return output
 
 
 if __name__ == '__main__':
     c1 = Client()
     pods = c1.get_pods()
-    for pod in pod_list.items:
+    for pod in pods.items:
         print("%s\t%s\t%s" % (pod.metadata.name,
                               pod.status.phase,
                               pod.status.pod_ip))
