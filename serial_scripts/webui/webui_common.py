@@ -1381,6 +1381,7 @@ class WebuiCommon:
                 result = result and False
             element_id = 'linkvRouterDelete'
             popup_id = 'configure-config_vrouterbtn1'
+            element_name = 'all'
         elif element_type == 'svc_appliance_delete':
             element_id = 'btnActionDelSecGrp'
             popup_id = 'configure-svcAppliancebtn1'
