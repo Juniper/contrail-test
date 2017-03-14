@@ -2,7 +2,7 @@ import unittest
 from tcutils.wrappers import preposttest_wrapper
 from vnc_api.vnc_api import NoIdError
 from vnc_api.vnc_api import VncApi
-from scripts.securitygroup.verify import VerifySecGroup
+from common.securitygroup.verify import VerifySecGroup
 from policy_test import PolicyFixture
 from vn_test import MultipleVNFixture
 from vm_test import MultipleVMFixture
