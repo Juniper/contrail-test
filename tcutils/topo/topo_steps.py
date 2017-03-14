@@ -32,6 +32,8 @@ from qos_fixture import QosForwardingClassFixture
 from qos_fixture import QosConfigFixture
 from alarm_test import AlarmFixture
 from rbac_test import RbacFixture
+from tor_fixture import ToRFixture
+from vcpe_router_fixture import VpeRouterFixture
 try:
     from webui_test import *
 except ImportError:
@@ -807,20 +809,21 @@ def createServiceInstance(self):
     return self
 # end createServiceInstance
 
-def createPhysicalRouter(self):
+def createPhysicalRouter(self, pr_list, pr_params):
     self.pr_fixture = {}
-    if not hasattr(self.topo, 'pr_list'):
-        return self
-    for self.pr_name in self.topo.pr_list:
+    self.pr_list = pr_list
+    self.pr_params = pr_params
+    for self.pr_name in self.pr_list:
         self.pr_fixture[self.pr_name] = self.useFixture(
             PhysicalDeviceFixture(
                 self.pr_name,
-                self.topo.pr_params[self.pr_name]['mgmt_ip'],
-                vendor=self.topo.pr_params[self.pr_name]['vendor'],
-                model=self.topo.pr_params[self.pr_name]['model'],
-                ssh_username=self.topo.pr_params[self.pr_name]['ssh_username'],
-                ssh_password=self.topo.pr_params[self.pr_name]['ssh_password'],
-                tunnel_ip=self.topo.pr_params[self.pr_name]['tunnel_ip'],
+                self.pr_params[self.pr_name]['mgmt_ip'],
+                vendor=self.pr_params[self.pr_name]['vendor'],
+                model=self.pr_params[self.pr_name]['model'],
+                ssh_username=self.pr_params[self.pr_name]['ssh_username'],
+                ssh_password=self.pr_params[self.pr_name]['ssh_password'],
+                tunnel_ip=self.pr_params[self.pr_name]['tunnel_ip'],
+                set_netconf=self.pr_params[self.pr_name]['set_netconf'],
                 connections=self.project_connections))
     return self
 # end createPhysicalRouter
@@ -1052,6 +1055,42 @@ def createRBAC(self):
                 connections=self.project_connections))
     return self
 # end createRBAC
+
+def createOVSDBTORAgent(self):
+    self.tor_fixture = {}
+    if not hasattr(self.topo, 'pr_tor_list'):
+        return self
+    for tor in self.topo.pr_tor_list:
+        self.tor_fixture[tor] = self.useFixture(
+            ToRFixture(
+                tor,
+                self.topo.pr_tor_params[tor]['mgmt_ip'],
+                vendor=self.topo.pr_tor_params[tor]['vendor'],
+                model=self.topo.pr_tor_params[tor]['model'],
+                tunnel_ip=self.topo.pr_tor_params[tor]['tunnel_ip'],
+                tor_agent=self.topo.pr_tor_params[tor]['tor_agent'],
+                tsn=self.topo.pr_tor_params[tor]['tsn'],
+                tor_agent_opt=self.topo.pr_tor_params[tor]['tor_agent_opt'],
+                tsn_opt=self.topo.pr_tor_params[tor]['tsn_opt'],
+                set_tor=self.topo.pr_tor_params[tor]['set_tor'],
+                connections=self.project_connections))
+    return self
+# end createOVSDBTORAgent
+
+def createVCPERouter(self):
+    self.vcpe_fixture = {}
+    if not hasattr(self.topo, 'vcpe_list'):
+        return self
+    for vcpe in self.topo.vcpe_list:
+        self.vcpe_fixture[vcpe] = self.useFixture(
+            VpeRouterFixture(
+                vcpe,
+                self.topo.vcpe_params[vcpe]['mgmt_ip'],
+                tunnel_ip=self.topo.vcpe_params[vcpe]['tunnel_ip'],
+                set_vcpe=self.topo.vcpe_params[vcpe]['set_vcpe'],
+                connections=self.project_connections))
+    return self
+# end createVCPERouter
 
 if __name__ == '__main__':
     ''' Unit test to invoke sdn topo setup utils.. '''

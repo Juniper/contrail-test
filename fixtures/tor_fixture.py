@@ -12,7 +12,10 @@ import vnc_api_test
 from pif_fixture import PhysicalInterfaceFixture
 import physical_device_fixture
 from tcutils.util import retry
-
+try:
+    from webui_test import *
+except ImportError:
+    pass
 
 class AbstractToR(object):
     ''' Abstract ToR Switch
@@ -84,7 +87,9 @@ class ToRFixture(physical_device_fixture.PhysicalDeviceFixture):
             '%s/tools/tor/sc-cert.pem' % (pwd))
 
         self.bgp_router = None
-
+        if self.inputs.verify_thru_gui():
+            self.webui = WebuiTest(self.connections, self.inputs)
+            self.kwargs = kwargs
      # end __init__
 
     def setUp(self):

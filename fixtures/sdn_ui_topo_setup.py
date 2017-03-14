@@ -167,7 +167,8 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
     # end create_svc_health_check
 
     def create_physical_router(self):
-        assert topo_steps.createPhysicalRouter(self)
+        assert topo_steps.createPhysicalRouter(self, self.topo.pr_list,
+                                              self.topo.pr_params)
         return True
     # end create_physical_router
 
@@ -237,6 +238,22 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
         assert topo_steps.createRBAC(self)
         return True
     # end create_rbac
+
+    def create_ovsdb_tor_agent(self):
+        assert topo_steps.createOVSDBTORAgent(self)
+        return True
+    # end create_ovsdb_tor_agent
+
+    def create_netconf_prouter(self):
+        assert topo_steps.createPhysicalRouter(self, self.topo.netconf_pr_list,
+                                              self.topo.netconf_pr_params)
+        return True
+    # end create_netconf_prouter
+
+    def create_vcpe_router(self):
+        assert topo_steps.createVCPERouter(self)
+        return True
+    # end create_vcpe_router
 
     def cleanUp(self):
         if self.inputs.fixture_cleanup == 'yes':
