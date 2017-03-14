@@ -510,18 +510,14 @@ class VerifyIntfMirror(VerifySvcMirror):
         self.nova_h.wait_till_vm_is_up(self.src_vm_fixture.vm_obj)
         self.nova_h.wait_till_vm_is_up(self.dst_vm_fixture.vm_obj)
         self.nova_h.wait_till_vm_is_up(self.analyzer_vm_fixture.vm_obj)
-
         if vn1_vmi_ref:
-            result, msg = self.validate_vn(
-                self.vn1_name, project_name=self.inputs.project_name)
+            result, msg = self.validate_vn(vn_fq_name=self.vn1_fq_name)
             assert result, msg
         if vn2_vmi_ref:
-            result, msg = self.validate_vn(
-                self.vn2_name, project_name=self.inputs.project_name)
+            result, msg = self.validate_vn(vn_fq_name=self.vn2_fq_name)
             assert result, msg
         if vn3_vmi_ref:
-            result, msg = self.validate_vn(
-                self.vn3_name, project_name=self.inputs.project_name)
+            result, msg = self.validate_vn(vn_fq_name=self.vn3_fq_name)
             assert result, msg
 
         self.src_vm_ip = self.src_vm_fixture.get_vm_ips(self.src_vn_fq_name)[0]
