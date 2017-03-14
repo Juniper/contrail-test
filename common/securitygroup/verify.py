@@ -10,7 +10,7 @@ from traffic.core.profile import StandardProfile,\
 from tcutils.util import get_random_name
 sys.path.append(os.path.realpath('tcutils/traffic_utils'))
 from base_traffic import *
-from security_group import list_sg_rules 
+from security_group import list_sg_rules
 from tcutils.tcpdump_utils import *
 from common.vrouter.base import BaseVrouterTest
 import random
@@ -507,7 +507,7 @@ class VerifySecGroup(BaseVrouterTest):
             self.logger.info("Flow found in agent %s for nh %s is: %s" % (comp_node_ip, nh, flow_rec1))
             for item in flow_rec1:
                 if key in item:
-                    # compare uuid here 
+                    # compare uuid here
                     if item[key] == uuid_exp:
                         self.logger.info(
                             "security group rule uuid matches with flow secgrp uuid %s" %
@@ -526,7 +526,7 @@ class VerifySecGroup(BaseVrouterTest):
             src_vm_fix,
             dst_vm_fix,
             src_vn_fix,
-            dst_vn_fix, 
+            dst_vn_fix,
             secgrp_id,
             proto,
             port):
@@ -548,10 +548,14 @@ class VerifySecGroup(BaseVrouterTest):
         rule_uuid = None
         # get the egress rule uuid
         rules = list_sg_rules(self.connections, secgrp_id)
+        af = self.inputs.get_af()
         for rule in rules:
-            if rule['direction'] == 'egress' and (rule['ethertype'] == 'IPv4' or \
-                       rule['remote_ip_prefix'] == '0.0.0.0/0') and \
-                       (rule['protocol'] == 'any' or rule['protocol'] == proto):
+            if rule['direction'] == 'egress' and \
+               ((af == 'v4' and (rule['ethertype'] == 'IPv4' or \
+                   rule['remote_ip_prefix'] == '0.0.0.0/0')) or \
+                (af == 'v6' and (rule['ethertype'] == 'IPv6' or \
+                   rule['remote_ip_prefix'] == '::/0'))) and \
+               (rule['protocol'] == 'any' or rule['protocol'] == proto):
                 rule_uuid = rule['id']
                 break
         assert rule_uuid, "Egress rule id could not be found"
@@ -569,7 +573,7 @@ class VerifySecGroup(BaseVrouterTest):
             test_result = False
         # verify reverse flow on src compute node
         if src_vm_fix.vm_node_ip == dst_vm_fix.vm_node_ip:
-            nh = nh_dst 
+            nh = nh_dst
         else:
             nh = nh_src
         if not self.fetch_flow_verify_sg_uuid(
@@ -591,10 +595,13 @@ class VerifySecGroup(BaseVrouterTest):
             rules = list_sg_rules(self.connections, secgrp_id)
             for rule in rules:
                 if rule['direction'] == 'ingress' and \
-                     (rule['ethertype'] == 'IPv4' or \
+                   ((af == 'v4' and (rule['ethertype'] == 'IPv4' or \
+                        rule['remote_ip_prefix'] == '0.0.0.0/0' or \
+                        rule['remote_group_id'] == secgrp_id)) or \
+                    (af == 'v6' and (rule['ethertype'] == 'IPv6' or \
                         rule['remote_group_id'] == secgrp_id or \
-                        rule['remote_ip_prefix'] == '0.0.0.0/0') and \
-                     (rule['protocol'] == 'any' or rule['protocol'] == proto):
+                        rule['remote_ip_prefix'] == '::/0'))) and \
+                   (rule['protocol'] == 'any' or rule['protocol'] == proto):
                     rule_uuid = rule['id']
                     break
             assert rule_uuid, "Ingress rule id could not be found"

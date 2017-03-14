@@ -192,10 +192,10 @@ class BaseVrouterTest(BaseNeutronTest):
         return (stats, hping_log)
 
     def send_nc_traffic(self, sender_vm_fix, dest_vm_fix, sport, dport,
-            proto, size='100', ip=None, exp=True):
+            proto, size='100', ip=None, exp=True, receiver=True):
         '''
         Sends tcp/udp traffic using netcat, this method will work for IPv4 as well as IPv6
-        Starts the netcat on both sender as well as receiver
+        Starts the netcat on both sender and on receiver if receiver is True
         IPv6 will work only with ubuntu and ubuntu-traffic images,
             cirros does not support IPv6.
         '''
@@ -207,7 +207,7 @@ class BaseVrouterTest(BaseNeutronTest):
         result = sender_vm_fix.nc_file_transfer(
             dest_vm_fix, local_port=sport, remote_port=dport,
             nc_options=nc_options, size=size, ip=ip, expectation=exp,
-            retry=True)
+            retry=True, receiver=receiver)
 
         return result
 
@@ -411,8 +411,8 @@ class BaseVrouterTest(BaseNeutronTest):
         pcap = {}
         proto = 'udp'
         destport = '11000'
-        result = False                                                          
-        sport = random.randint(12000, 65000) 
+        result = False
+        sport = random.randint(12000, 65000)
 
         src_compute_fix = self.compute_fixtures_dict[sender_vm_fix.vm_node_ip]
         src_vrf_id = src_compute_fix.get_vrf_id(sender_vm_fix.vn_fq_names[0])
@@ -444,8 +444,8 @@ class BaseVrouterTest(BaseNeutronTest):
                 src_vrf = dst_compute_fix.get_vrf_id(sender_vm_fix.vn_fq_names[0])
                 dst_vrf_on_src = src_compute_fix.get_vrf_id(vm.vn_fq_names[0])
                 self.verify_flow_on_compute(dst_compute_fix,
-                    sender_vm_fix.vm_ip,       
-                    dest_ip, src_vrf, dst_vrf, sport=sport, dport=destport,     
+                    sender_vm_fix.vm_ip,
+                    dest_ip, src_vrf, dst_vrf, sport=sport, dport=destport,
                     proto=proto, ff_exp=flow_count, rf_exp=flow_count)
 
                 break

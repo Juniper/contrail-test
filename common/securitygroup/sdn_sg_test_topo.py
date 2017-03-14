@@ -1,10 +1,42 @@
 from vnc_api.vnc_api import *
-from tcutils.util import get_random_name
+from tcutils.util import get_random_name, get_random_cidrs
 
+def get_sg_rule(direction, af='v4', proto='udp'):
+    prefix_len = 0
+    src_addresses = [{'security_group': 'local', 'subnet' : None}]
+    dst_addresses = src_addresses
+    src_ports = [{'start_port' : 0, 'end_port' : 65535}]
+    dst_ports = src_ports
+
+    if af == 'v4':
+        ip_prefix = '0.0.0.0'
+        ethertype = 'IPv4'
+    elif af == 'v6':
+        ip_prefix = '0::'
+        ethertype = 'IPv6'
+        if proto == 'icmp':
+            proto = '58'
+
+    if direction  == 'egress':
+        dst_addresses = [{'subnet' : {'ip_prefix' : ip_prefix, 'ip_prefix_len' : prefix_len}}]
+    elif direction == 'ingress':
+        src_addresses = [{'subnet' : {'ip_prefix' : ip_prefix, 'ip_prefix_len' : prefix_len}}]
+
+    rule = {'direction' : '>',
+             'protocol' : proto,
+             'src_addresses': src_addresses,
+             'dst_ports': dst_ports,
+             'src_ports': src_ports,
+             'dst_addresses': dst_addresses,
+             'ethertype': ethertype}
+
+    return rule
 ################################################################################
 class sdn_4vn_xvm_config ():
-    def __init__(self, domain= 'default-domain', project= 'admin', compute_node_list= None, username= None, password= None,config_option='openstack'):
-	print "building dynamic topo"
+    def __init__(self, domain= 'default-domain', project= 'admin',
+            compute_node_list= None, username= None, password= None,
+            config_option='openstack', af_test='v4'):
+        self.af_test = af_test
         ##
         # Domain and project defaults: Do not change until support for non-default is tested!
         self.domain= domain; self.project= project; self.username= username; self.password= password
@@ -13,14 +45,39 @@ class sdn_4vn_xvm_config ():
         self.vnet_list=  ['vnet1','vnet2', 'vnet3', 'vnet4']
         ##
         # Define network info for each VN:
+        self.vnet1_subnets = get_random_cidrs(self.af_test)
+        self.vnet2_subnets = get_random_cidrs(self.af_test)
+        self.vnet3_subnets = get_random_cidrs(self.af_test)
+        self.vnet4_subnets = get_random_cidrs(self.af_test)
+
+        self.vnet1_prefix = self.vnet1_subnets[0].split('/')[0]
+        self.vnet1_prefix_len = int(self.vnet1_subnets[0].split('/')[1])
+        self.vnet2_prefix = self.vnet2_subnets[0].split('/')[0]
+        self.vnet2_prefix_len = int(self.vnet2_subnets[0].split('/')[1])
+        self.vnet3_prefix = self.vnet3_subnets[0].split('/')[0]
+        self.vnet3_prefix_len = int(self.vnet3_subnets[0].split('/')[1])
+        self.vnet4_prefix = self.vnet4_subnets[0].split('/')[0]
+        self.vnet4_prefix_len = int(self.vnet4_subnets[0].split('/')[1])
+
 	if config_option == 'openstack':
-            self.vn_nets=  {'vnet1': ['10.1.1.0/24', '11.1.1.0/24'], 'vnet2': ['10.1.2.0/24', '11.1.2.0/24'], 'vnet3': ['10.1.3.0/24', '11.1.3.0/24'], 'vnet4': ['10.1.4.0/24', '11.1.4.0/24']}
+            self.vn_nets=  {'vnet1': self.vnet1_subnets,
+                            'vnet2': self.vnet2_subnets,
+                            'vnet3': self.vnet3_subnets,
+                            'vnet4': self.vnet4_subnets}
         else:
             self.vn_nets = {
-            'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(subnet=SubnetType('10.1.1.0', 24)), IpamSubnetType(subnet=SubnetType('11.1.1.0', 24))]))],
-	    'vnet2': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(subnet=SubnetType('10.1.2.0', 24)), IpamSubnetType(subnet=SubnetType('11.1.2.0', 24))]))],
-	    'vnet3': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(subnet=SubnetType('10.1.3.0', 24)), IpamSubnetType(subnet=SubnetType('11.1.3.0', 24))]))],
-	    'vnet4': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(subnet=SubnetType('10.1.4.0', 24)), IpamSubnetType(subnet=SubnetType('11.1.4.0', 24))]))]
+            'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(
+                        subnet=SubnetType(self.vnet1_prefix,
+                                        self.vnet1_prefix_len))]))],
+	    'vnet2': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(
+                        subnet=SubnetType(self.vnet2_prefix,
+                                        self.vnet2_prefix_len))]))],
+	    'vnet3': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(
+                        subnet=SubnetType(self.vnet3_prefix,
+                                        self.vnet3_prefix_len))]))],
+	    'vnet4': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(
+                        subnet=SubnetType(self.vnet4_prefix,
+                                        self.vnet4_prefix_len))]))]
                            }
 
         ##
@@ -107,19 +164,10 @@ class sdn_4vn_xvm_config ():
         for sg in self.sg_list:
             self.sg_rules[sg] = []
         self.sg_rules[self.sg_list[2]]=[
-               {'direction' : '>',
-                 'protocol' : 'udp',
-                 'dst_addresses': [{'security_group': 'local', 'subnet' : None}],
-                 'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'src_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}],
-                 'rule_uuid': uuid_1
-               },{'direction' : '>',
-                 'protocol' : 'any',
-                 'src_addresses': [{'security_group': 'local', 'subnet' : None}],
-                 'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'dst_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}],'rule_uuid': uuid_2}]
+            get_sg_rule('ingress',af=self.af_test,
+                proto='udp'),
+            get_sg_rule('egress',af=self.af_test,
+                proto='any')]
 
         self.sg_rules[self.sg_list[4]]=[
                {'direction' : '>',
@@ -129,12 +177,9 @@ class sdn_4vn_xvm_config ():
                  'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
                  'src_addresses': [{'security_group': self.domain + ':'+ self.project+ ':'+ self.sg_list[4]}],
                  'rule_uuid': uuid_1
-               },{'direction' : '>',
-                 'protocol' : 'any',
-                 'src_addresses': [{'security_group': 'local', 'subnet' : None}],
-                 'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'dst_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}],'rule_uuid': uuid_2}]
+               },
+               get_sg_rule('egress',af=self.af_test,
+                proto='any')]
 
         ##
         # Define traffic profile.
@@ -151,12 +196,15 @@ class sdn_4vn_xvm_config ():
                                {'src_vm':'vm9', 'dst_vm':'vm12','proto':'udp','sport':8000,'dport':9000,'exp':'pass'},# inter VN, inter compute, same non-default SG
                                {'src_vm':'vm9', 'dst_vm':'vm6', 'proto':'udp','sport':8000,'dport':9000,'exp':'pass'}]# inter VN, intra compute, same non-default SG
 
-        # end __init__ 
+        # end __init__
 # end class sdn_4vn_xvm_config
 
 ################################################################################
 class sdn_topo_config ():
-	#2 VN and 4 VM 
+    def __init__(self, af_test='v4'):
+        self.af_test = af_test
+
+	#2 VN and 4 VM
     def build_topo_sg_stateful(self, domain= 'default-domain', project= 'admin', compute_node_list= None, username= None, password= None,config_option='openstack'):
         print "building dynamic topo"
         ##
@@ -167,12 +215,20 @@ class sdn_topo_config ():
         self.vnet_list=  ['vnet1','vnet2']
         ##
         # Define network info for each VN:
+        self.vnet1_subnets = get_random_cidrs(self.af_test)
+        self.vnet2_subnets = get_random_cidrs(self.af_test)
+
+        self.vnet1_prefix = self.vnet1_subnets[0].split('/')[0]
+        self.vnet1_prefix_len = int(self.vnet1_subnets[0].split('/')[1])
+        self.vnet2_prefix = self.vnet2_subnets[0].split('/')[0]
+        self.vnet2_prefix_len = int(self.vnet2_subnets[0].split('/')[1])
+
 	if config_option == 'openstack':
-            self.vn_nets=  {'vnet1': ['10.1.1.0/24', '11.1.1.0/24'], 'vnet2': ['10.1.2.0/24', '11.1.2.0/24']}
+            self.vn_nets=  {'vnet1': self.vnet1_subnets, 'vnet2': self.vnet2_subnets}
         else:
             self.vn_nets = {
-            'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(subnet=SubnetType('10.1.1.0', 24)), IpamSubnetType(subnet=SubnetType('11.1.1.0', 24))]))],
-            'vnet2': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(subnet=SubnetType('10.1.2.0', 24)), IpamSubnetType(subnet=SubnetType('11.1.2.0', 24))]))]
+            'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(subnet=SubnetType(self.vnet1_prefix, self.vnet1_prefix_len))]))],
+            'vnet2': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(subnet=SubnetType(self.vnet2_prefix, self.vnet2_prefix_len))]))]
                            }
 
         ##
@@ -211,44 +267,18 @@ class sdn_topo_config ():
         self.sg_of_vm['vm1'] = [self.sg_list[0]]; self.sg_of_vm['vm2'] = [self.sg_list[2]]; self.sg_of_vm['vm3'] = [self.sg_list[1]];
         self.sg_of_vm['vm4'] = [self.sg_list[3]];
         ##Define the security group rules
-        '''import uuid
-        uuid_1= uuid.uuid1().urn.split(':')[2]
-        uuid_2= uuid.uuid1().urn.split(':')[2]'''
         self.sg_rules={}
         for sg in self.sg_list:
             self.sg_rules[sg] = []
-        self.sg_rules[self.sg_list[0]]=[
-               {'direction' : '>',
-                 'protocol' : 'udp',
-                 'dst_addresses': [{'security_group': 'local', 'subnet' : None}],
-                 'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'src_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}]}]
 
-        self.sg_rules[self.sg_list[1]]=[
-               {'direction' : '>',
-                 'protocol' : 'udp',
-                 'dst_addresses': [{'security_group': 'local', 'subnet' : None}],
-                 'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'src_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}]}]
-
-        self.sg_rules[self.sg_list[2]]=[
-               {'direction' : '>',
-                 'protocol' : 'udp',
-                 'src_addresses': [{'security_group': 'local', 'subnet' : None}],
-                 'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'dst_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}]}]
-
-        self.sg_rules[self.sg_list[3]]=[
-               {'direction' : '>',
-                 'protocol' : 'udp',
-                 'src_addresses': [{'security_group': 'local', 'subnet' : None}],
-                 'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'dst_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}]}]
-
+        self.sg_rules[self.sg_list[0]]=[get_sg_rule('ingress',af=self.af_test,
+            proto='udp')]
+        self.sg_rules[self.sg_list[1]]=[get_sg_rule('ingress',af=self.af_test,
+            proto='udp')]
+        self.sg_rules[self.sg_list[2]]=[get_sg_rule('egress',af=self.af_test,
+            proto='udp')]
+        self.sg_rules[self.sg_list[3]]=[get_sg_rule('egress',af=self.af_test,
+            proto='udp')]
 
         ##
         # Define traffic profile.
@@ -268,14 +298,19 @@ class sdn_topo_config ():
 
 class sdn_topo_config_multiproject():
 
-    def __init__(self, domain= 'default-domain', project= 'admin', username= None, password= None):
+    def __init__(self, domain= 'default-domain', project= 'admin',
+            username= None, password= None):
         print "building dynamic topo"
 	project1 = 'project1'
         project2 = 'admin'
+        user1 = username or 'user1'
+        user2 = username or 'user2'
+        password1 = password or 'user123'
+        password2 = password or 'user223'
         self.project_list = [project1, project2]
 	self.topo_of_project = {self.project_list[0]:'build_topo1', self.project_list[1]:'build_topo1'}
-	self.user_of_project = {self.project_list[0]:'user1', self.project_list[1]:'user2'}
-	self.pass_of_project = {self.project_list[0]:'user123', self.project_list[1]:'user223'}
+	self.user_of_project = {self.project_list[0]:user1, self.project_list[1]:user2}
+	self.pass_of_project = {self.project_list[0]:password1, self.project_list[1]:password2}
 
         ##
         # Define traffic profile.
@@ -289,8 +324,11 @@ class sdn_topo_config_multiproject():
                                {'src_vm':[project2,'vm1'], 'dst_vm':[project1,'vm2'], 'proto':'udp', 'sport':8000, 'dport':9000, 'exp':'fail'}
                               ]
 
-    
-    def build_topo1(self, domain= 'default-domain', project= 'admin', username= None, password= None,config_option='openstack'):
+
+    def build_topo1(self, domain= 'default-domain', project= 'admin',
+            username= None, password= None,config_option='openstack',
+            af_test='v4'):
+        self.af_test = af_test
         ##
         # Domain and project defaults: Do not change until support for non-default is tested!
         self.domain= domain; self.project= project; self.username= username; self.password= password
@@ -299,19 +337,29 @@ class sdn_topo_config_multiproject():
         self.vnet_list=  ['vnet1']
         ##
         # Define network info for each VN:
+        self.vnet1_subnets = get_random_cidrs(self.af_test)
+        self.vnet2_subnets = get_random_cidrs(self.af_test)
+
+        self.vnet1_prefix = self.vnet1_subnets[0].split('/')[0]
+        self.vnet1_prefix_len = int(self.vnet1_subnets[0].split('/')[1])
+        self.vnet2_prefix = self.vnet2_subnets[0].split('/')[0]
+        self.vnet2_prefix_len = int(self.vnet2_subnets[0].split('/')[1])
+
 	if config_option == 'openstack':
 	    if self.project == self.project_list[1]:
-                self.vn_nets=  {'vnet1': ['11.1.1.0/24', '12.1.1.0/24']}
+                self.vn_nets=  {'vnet1': self.vnet1_subnets}
 	    else:
-                self.vn_nets=  {'vnet1': ['11.2.1.0/24', '12.2.1.0/24']}
+                self.vn_nets=  {'vnet1': self.vnet2_subnets}
 	else:
 	    if self.project == self.project_list[1]:
 		 self.vn_nets = {
-            'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(subnet=SubnetType('11.1.1.0', 24)), IpamSubnetType(subnet=SubnetType('12.1.1.0', 24))]))]
+            'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(
+                subnet=SubnetType(self.vnet1_prefix, self.vnet1_prefix_len))]))]
                            }
 	    else:
                  self.vn_nets = {
-            'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(subnet=SubnetType('11.2.1.0', 24)), IpamSubnetType(subnet=SubnetType('12.2.1.0', 24))]))]
+            'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(
+                subnet=SubnetType(self.vnet2_prefix, self.vnet2_prefix_len))]))]
                            }
 
         ##
@@ -356,25 +404,18 @@ class sdn_topo_config_multiproject():
         for sg in self.sg_list:
             self.sg_rules[sg] = []
         self.sg_rules[self.sg_list[0]]=[
-               {'direction' : '>',
-                 'protocol' : 'udp',
-                 'dst_addresses': [{'security_group': 'local', 'subnet' : None}],
-                 'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'src_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}]},
-               {'direction' : '>',
-                 'protocol' : 'udp',
-                 'src_addresses': [{'security_group': 'local', 'subnet' : None}],
-                 'dst_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'src_ports': [{'start_port' : 0, 'end_port' : 65535}],
-                 'dst_addresses': [{'subnet' : {'ip_prefix' : '0.0.0.0', 'ip_prefix_len' : 0}}]}]
+            get_sg_rule('ingress',af=self.af_test, proto='udp'),
+            get_sg_rule('egress',af=self.af_test, proto='udp')]
 
 	return self
-        # end build_topo1 
-# end class sdn_topo_config_multiproject 
+        # end build_topo1
+# end class sdn_topo_config_multiproject
 ################################################################################
 
 class sdn_topo_1vn_2vm_config ():
+    def __init__(self, af_test='v4'):
+        self.af_test = af_test
+
     def build_topo(self, domain= 'default-domain', project= 'admin', username= None, password= None,config_option='openstack'):
         ##
         # Domain and project defaults: Do not change until support for non-default is tested!
@@ -384,11 +425,17 @@ class sdn_topo_1vn_2vm_config ():
         self.vnet_list=  ['vnet1']
         ##
         # Define network info for each VN:
+        self.vnet1_subnets = get_random_cidrs(self.af_test)
+
+        self.vnet1_prefix = self.vnet1_subnets[0].split('/')[0]
+        self.vnet1_prefix_len = int(self.vnet1_subnets[0].split('/')[1])
+
 	if config_option == 'openstack':
-            self.vn_nets=  {'vnet1': ['10.1.1.0/24', '11.1.1.0/24']}
+            self.vn_nets=  {'vnet1': self.vnet1_subnets}
 	else:
 	    self.vn_nets = {
-            'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(subnet=SubnetType('10.1.1.0', 24)), IpamSubnetType(subnet=SubnetType('11.1.1.0', 24))]))]
+            'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(
+                subnet=SubnetType(self.vnet1_prefix, self.vnet1_prefix_len))]))]
         		   }
 
         ##
@@ -444,6 +491,9 @@ class sdn_topo_1vn_2vm_config ():
 
 ################################################################################
 class sdn_topo_icmp_error_handling():
+    def __init__(self, af_test='v4'):
+        self.af_test = af_test
+
         #2 VN and 3 VM
     def build_topo(self, domain= 'default-domain', project= 'admin', compute_node_list= None, username= None, password= None,config_option='openstack'):
         print "building dynamic topo"
@@ -455,12 +505,22 @@ class sdn_topo_icmp_error_handling():
         self.vnet_list=  ['vnet1','vnet2']
         ##
         # Define network info for each VN:
+        self.vnet1_subnets = get_random_cidrs(self.af_test)
+        self.vnet2_subnets = get_random_cidrs(self.af_test)
+
+        self.vnet1_prefix = self.vnet1_subnets[0].split('/')[0]
+        self.vnet1_prefix_len = int(self.vnet1_subnets[0].split('/')[1])
+        self.vnet2_prefix = self.vnet2_subnets[0].split('/')[0]
+        self.vnet2_prefix_len = int(self.vnet2_subnets[0].split('/')[1])
+
 	if config_option == 'openstack':
-            self.vn_nets=  {'vnet1': ['10.1.1.0/24'], 'vnet2': ['11.1.1.0/24']}
+            self.vn_nets=  {'vnet1': self.vnet1_subnets, 'vnet2': self.vnet2_subnets}
         else:
             self.vn_nets = {
-            'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(subnet=SubnetType('10.1.1.0', 24))]))],
-            'vnet2': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(subnet=SubnetType('11.1.1.0', 24))]))]
+            'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(
+                subnet=SubnetType(self.vnet1_prefix, self.vnet1_prefix_len))]))],
+            'vnet2': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(
+                subnet=SubnetType(self.vnet2_prefix, self.vnet2_prefix_len))]))]
                            }
 
         ##
@@ -502,14 +562,8 @@ class sdn_topo_icmp_error_handling():
         self.sg_rules={}
         for sg in self.sg_list:
             self.sg_rules[sg] = []
-        self.sg_rules[self.sg_list[0]] = [
-		{'direction': '>',
-                'protocol': 'any',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_addresses': [{'security_group': 'local'}],
-                 },
+        self.sg_rules[self.sg_list[0]] = [get_sg_rule('egress',af=self.af_test,
+            proto='any'),
                 {'direction': '>',
                  'protocol': 'udp',
                  'src_addresses':[{'security_group': self.domain + ':'+ self.project+ ':'+ self.sg_list[0]}],
@@ -518,7 +572,7 @@ class sdn_topo_icmp_error_handling():
                  'dst_addresses': [{'security_group': 'local'}],}]
 
 	return self
-        # end build_topo 
+        # end build_topo
 
     #1VN 2 VM
     def build_topo2(self, domain= 'default-domain', project= 'admin', compute_node_list= None, username= None, password= None,config_option='openstack'):
@@ -531,11 +585,17 @@ class sdn_topo_icmp_error_handling():
         self.vnet_list=  ['vnet1']
         ##
         # Define network info for each VN:
+        self.vnet1_subnets = get_random_cidrs(self.af_test)
+
+        self.vnet1_prefix = self.vnet1_subnets[0].split('/')[0]
+        self.vnet1_prefix_len = int(self.vnet1_subnets[0].split('/')[1])
+
 	if config_option == 'openstack':
-            self.vn_nets=  {'vnet1': ['10.1.1.0/24']}
+            self.vn_nets=  {'vnet1': self.vnet1_subnets}
         else:
             self.vn_nets = {
-            'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(subnet=SubnetType('10.1.1.0', 24))]))]
+            'vnet1': [(NetworkIpam(), VnSubnetsType([IpamSubnetType(
+                subnet=SubnetType(self.vnet1_prefix, self.vnet1_prefix_len))]))]
                            }
 
         ##
@@ -600,23 +660,11 @@ class sdn_topo_icmp_error_handling():
         self.sg_rules={}
         for sg in self.sg_list:
             self.sg_rules[sg] = []
-        self.sg_rules[self.sg_list[0]] = [
-                {'direction': '>',
-                'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_addresses': [{'security_group': 'local'}],
-                 }]
+        self.sg_rules[self.sg_list[0]] = [get_sg_rule('egress',af=self.af_test,
+                    proto='udp')]
 
-        self.sg_rules[self.sg_list[1]] = [
-                {'direction': '>',
-                'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_addresses': [{'security_group': 'local'}],
-                 }]
+        self.sg_rules[self.sg_list[1]] = [get_sg_rule('ingress',af=self.af_test,
+                    proto='udp')]
 
         return self
         # end build_topo2
@@ -771,6 +819,9 @@ class sdn_topo_mx_with_si():
 
 ################################################################################
 class sdn_topo_flow_to_sg_rule_mapping():
+    def __init__(self, af_test='v4'):
+        self.af_test = af_test
+
         #2 VN and 2 VM
     def build_topo(self, domain= 'default-domain', project= 'admin',
                      compute_node_list= None, username= None,
@@ -786,22 +837,31 @@ class sdn_topo_flow_to_sg_rule_mapping():
         self.vnet_list=  ['vnet1','vnet2']
         ##
         # Define network info for each VN:
+        self.vnet1_subnets = get_random_cidrs(self.af_test)
+        self.vnet2_subnets = get_random_cidrs(self.af_test)
+
+        self.vnet1_prefix = self.vnet1_subnets[0].split('/')[0]
+        self.vnet1_prefix_len = int(self.vnet1_subnets[0].split('/')[1])
+        self.vnet2_prefix = self.vnet2_subnets[0].split('/')[0]
+        self.vnet2_prefix_len = int(self.vnet2_subnets[0].split('/')[1])
+
         if config_option == 'openstack':
-            self.vn_nets=  {'vnet1': ['10.1.1.0/24'], 'vnet2': ['11.1.1.0/24']}
+            self.vn_nets=  {'vnet1': self.vnet1_subnets,
+                            'vnet2': self.vnet2_subnets}
         else:
             self.vn_nets = {
             'vnet1': [(NetworkIpam(), VnSubnetsType(
                                         [IpamSubnetType(
                                           subnet=SubnetType(
-                                                  '10.1.1.0',
-                                                  24))]))],
+                                                  self.vnet1_prefix,
+                                                  self.vnet1_prefix_len))]))],
             'vnet2': [(NetworkIpam(), VnSubnetsType(
                                        [IpamSubnetType(
                                          subnet=SubnetType(
-                                                  '11.1.1.0',
-                                                  24))]))]
+                                                  self.vnet2_prefix,
+                                                  self.vnet2_prefix_len))]))]
                            }
-            
+
         ##
         # Define network policies
         self.policy_list=  ['policy0']
@@ -873,13 +933,8 @@ class sdn_topo_flow_to_sg_rule_mapping():
         for sg in self.sg_list:
             self.sg_rules[sg] = []
         self.sg_rules[self.sg_list[0]] = [
-                {'direction': '>',
-                'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_addresses': [{'security_group': 'local'}],
-                 },
+                get_sg_rule('egress',af=self.af_test,
+                    proto='udp'),
                 {'direction': '>',
                  'protocol': 'udp',
                  'src_addresses':[{'security_group': self.domain + ':'+ self.project+ ':'+ self.sg_list[0]}],
@@ -904,20 +959,28 @@ class sdn_topo_flow_to_sg_rule_mapping():
         self.vnet_list=  ['vnet1','vnet2']
         ##
         # Define network info for each VN:
+        self.vnet1_subnets = get_random_cidrs(self.af_test)
+        self.vnet2_subnets = get_random_cidrs(self.af_test)
+
+        self.vnet1_prefix = self.vnet1_subnets[0].split('/')[0]
+        self.vnet1_prefix_len = int(self.vnet1_subnets[0].split('/')[1])
+        self.vnet2_prefix = self.vnet2_subnets[0].split('/')[0]
+        self.vnet2_prefix_len = int(self.vnet2_subnets[0].split('/')[1])
+
         if config_option == 'openstack':
-            self.vn_nets=  {'vnet1': ['10.1.1.0/24'], 'vnet2': ['11.1.1.0/24']}
+            self.vn_nets=  {'vnet1': self.vnet1_subnets, 'vnet2': self.vnet2_subnets}
         else:
             self.vn_nets = {
             'vnet1': [(NetworkIpam(), VnSubnetsType(
                                         [IpamSubnetType(
                                           subnet=SubnetType(
-                                                  '10.1.1.0',
-                                                  24))]))],
+                                                  self.vnet1_prefix,
+                                                  self.vnet1_prefix_len))]))],
             'vnet2': [(NetworkIpam(), VnSubnetsType(
                                        [IpamSubnetType(
                                          subnet=SubnetType(
-                                                  '11.1.1.0',
-                                                  24))]))]
+                                                  self.vnet2_prefix,
+                                                  self.vnet2_prefix_len))]))]
                            }
 
         ##
@@ -991,48 +1054,20 @@ class sdn_topo_flow_to_sg_rule_mapping():
         for sg in self.sg_list:
             self.sg_rules[sg] = []
         self.sg_rules[self.sg_list[0]] = [
-                {'direction': '>',
-                'protocol': 'udp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_addresses': [{'security_group': 'local'}],
-                 },
-                {'direction': '>',
-                 'protocol': 'udp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_addresses': [{'security_group': 'local'}],},
-                {'direction': '>',
-                'protocol': 'icmp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_addresses': [{'security_group': 'local'}],
-                 },
-                {'direction': '>',
-                 'protocol': 'icmp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_addresses': [{'security_group': 'local'}],}]
+                get_sg_rule('egress',af=self.af_test,
+                    proto='udp'),
+                get_sg_rule('ingress',af=self.af_test,
+                    proto='udp'),
+                get_sg_rule('egress',af=self.af_test,
+                    proto='icmp'),
+                get_sg_rule('ingress',af=self.af_test,
+                    proto='icmp')]
 
         self.sg_rules[self.sg_list[1]] = [
-                {'direction': '>',
-                'protocol': 'tcp',
-                 'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'src_addresses': [{'security_group': 'local'}],
-                 },
-                {'direction': '>',
-                 'protocol': 'tcp',
-                 'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-                 'src_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
-                 'dst_addresses': [{'security_group': 'local'}],}]
+                get_sg_rule('egress',af=self.af_test,
+                    proto='tcp'),
+                get_sg_rule('ingress',af=self.af_test,
+                    proto='tcp')]
 
         return self
         # end build_topo2
-
