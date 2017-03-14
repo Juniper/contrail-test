@@ -1237,7 +1237,6 @@ class WebuiCommon:
     def delete_element(self, fixture=None, element_type=None):
         result = True
         delete_success = None
-        ver_flag = False
         br = None
         if WebuiCommon.count_in == False:
             if element_type in ['phy_interface_delete', 'fc_delete']:
@@ -1453,11 +1452,6 @@ class WebuiCommon:
                 else:
                     element_text = self.find_div_element_by_tag(2, element)
                     div_obj = self.find_div_element_by_tag(1, element, return_type='obj')
-                    if not ver_flag:
-                        if element_type == 'svc_template_delete':
-                            version = re.match('\S+(\s.*)', element_text)
-                            element_name+= version.group(1)
-                            ver_flag = True
                     if element_type == 'vrouter_delete':
                         element_ip = self.find_div_element_by_tag(4, browser=element)
                         if element_ip == self.inputs.auth_ip:
