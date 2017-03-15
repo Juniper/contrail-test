@@ -68,17 +68,20 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ConfigSvcChain, ECMPVerify)
         # Since the ping is across projects, enabling allow_all in the SG
         self.project.set_sec_group_for_allow_all(
             self.inputs.project_name, 'default')
-        self.verify_svc_in_network_datapath(
+        ret_dict = self.verify_svc_in_network_datapath(
             svc_mode='in-network-nat', right_vn_fixture=public_vn_fixture,
             right_vn_subnets=[public_vn_subnet])
+        si_fixtures = ret_dict['si_fixtures']
+        left_vn_fixture = ret_dict['left_vn_fixture']
+        left_vm_fixture = ret_dict['left_vm_fixture']
         self.logger.info('Ping to outside world from left VM')
         svms = self.get_svms_in_si(
-            self.si_fixtures[0], self.inputs.project_name)
+            si_fixtures[0], self.inputs.project_name)
         svm_name = svms[0].name
         host = self.get_svm_compute(svm_name)
-        tapintf = self.get_svm_tapintf_of_vn(svm_name, self.vn1_fixture)
+        tapintf = self.get_svm_tapintf_of_vn(svm_name, left_vn_fixture)
         self.start_tcpdump_on_intf(host, tapintf)
-        assert self.vm1_fixture.ping_with_certainty('8.8.8.8', count='10')
+        assert left_vm_fixture.ping_with_certainty('8.8.8.8', count='10')
         out = self.stop_tcpdump_on_intf(host, tapintf)
         print out
         if '8.8.8.8' in out:
