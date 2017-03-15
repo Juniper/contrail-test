@@ -361,6 +361,9 @@ if [ ! -z $ci_image ]; then
     export ci_image
 fi
 
+# Workaround when testr does not have execute permission after install
+chmod +x /usr/local/bin/testr
+
 check_test_discovery
 
 setup_tor_agents
