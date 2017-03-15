@@ -63,7 +63,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         if self.inputs.verify_thru_gui():
             self.browser = connections.browser
             self.browser_openstack = connections.browser_openstack
-            self.webui = WebuiTest(connections, inputs)
+            self.webui = WebuiTest(connections, self.inputs)
 
         self.si_v2 = self.si_version == 2 or False
         self.si_v1 = self.si_version == 1 or False

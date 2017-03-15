@@ -459,7 +459,8 @@ class WebuiTest:
     # end create_svc_template
 
     def create_svc_instance(self, fixture):
-        sel_vn = 'Auto Configured'
+        if fixture.service_mode == 'transparent' and fixture.si_v1:
+            sel_vn = 'Auto Configured'
         try:
             result = True
             if not self.ui.click_on_create(

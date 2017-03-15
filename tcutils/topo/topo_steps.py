@@ -780,8 +780,7 @@ def createServiceInstance(self):
                 si_name=si_name,
                 svc_template=self.st_fixture[
                     self.topo.si_params[si_name]['svc_template']].st_obj,
-                if_details=self.topo.si_params[si_name]['if_details'],
-                left_vn_name=self.topo.si_params[si_name]['left_vn']))
+                if_details=self.topo.si_params[si_name]['if_details']))
 
     self.logger.debug("Setup step: Verify Service Instances")
     for si_name in self.topo.si_list:
