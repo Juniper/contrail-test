@@ -5,7 +5,6 @@ from selenium.common.exceptions import WebDriverException
 import time
 import random
 import fixtures
-from ipam_test import *
 from project_test import *
 from tcutils.util import *
 from vnc_api.vnc_api import *
