@@ -470,7 +470,7 @@ class WebuiCommon:
         self.click_element('fa-caret-down', 'class', browser, wait=2)
     # end click_on_caret_down
 
-    def click_on_accordian(self, element_id, browser=None):
+    def click_on_accordian(self, element_id, browser=None, accor=True):
         """
         Clicks on the accordian icon on a create/edit page when the element id is passed
         Also scrolls down to get the fields in view of the page
@@ -481,7 +481,8 @@ class WebuiCommon:
         """
         if not browser:
             browser = self.browser
-        element_id = element_id + '_accordian'
+        if accor:
+            element_id = element_id + '_accordian'
         try:
             element = self.find_element(element_id)
             self.browser.execute_script("return arguments[0].scrollIntoView();", element)
@@ -727,18 +728,18 @@ class WebuiCommon:
     def select_from_dropdown(self, element_text, browser=None, grep=False):
         if not browser:
             browser = self.browser
-            element_list = self.find_select2_drop_elements(browser)
-            if not element_list:
-                return False
-            div_obj_list = [
-                element.find_element_by_tag_name('div') for element in element_list]
-            if not self.click_if_element_found(
-                    div_obj_list,
-                    element_text,
-                    grep):
-                return False
+        element_list = self.find_select2_drop_elements(browser)
+        if not element_list:
+            return False
+        div_obj_list = [
+            element.find_element_by_tag_name('div') for element in element_list]
+        if not self.click_if_element_found(
+                div_obj_list,
+                element_text,
+                grep):
+            return False
         return True
-    # end select_from_dropdown_list
+    # end select_from_dropdown
 
     def find_select_from_dropdown(
             self, element_text,
@@ -777,7 +778,7 @@ class WebuiCommon:
         return result
     # end find_select_from_dropdown
 
-    def dropdown(self, id, element_name, element_type=None, browser_obj=None):
+    def dropdown(self, id, element_name, element_type=None, browser_obj=None, grep=False):
         if browser_obj:
             obj = browser_obj
         else:
@@ -789,7 +790,7 @@ class WebuiCommon:
             else:
                 self.click_element(
                     [id, 'select2-arrow'], [element_type, 'class'], browser=obj)
-            self.select_from_dropdown(element_name)
+            self.select_from_dropdown(element_name, grep=grep)
             self.logger.info(
                 ' %s successfully got selected from the dropdown' %
                 (element_name))
