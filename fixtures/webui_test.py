@@ -401,7 +401,7 @@ class WebuiTest:
 
     def create_svc_template(self, fixture):
         result = True
-        version_num = 'v1'
+        version_num = 'v' + str(fixture.version)
         try:
             if not self.ui.click_on_create(
                     'Service Template',
@@ -410,80 +410,38 @@ class WebuiTest:
                     select_project=False):
                 result = result and False
             self.ui.send_keys(fixture.st_name, 'name', 'name')
-            self.browser.find_element_by_id(
-                's2id_user_created_service_mode_dropdown').find_element_by_class_name(
-                'select2-choice').click()
-            service_mode_list = self.browser.find_element_by_id(
-                "select2-drop").find_elements_by_tag_name('li')
-            for service_mode in service_mode_list:
-                service_mode_text = service_mode.text
-                if service_mode_text.lower() == fixture.svc_mode:
-                    service_mode.click()
-                    break
-            self.browser.find_element_by_id(
-                's2id_user_created_service_type_dropdown').find_element_by_class_name(
-                'select2-choice').click()
-            service_type_list = self.browser.find_element_by_id(
-                "select2-drop").find_elements_by_tag_name('li')
-            for service_type in service_type_list:
-                service_type_text = service_type.text
-                if service_type_text.lower() == fixture.svc_type:
-                    service_type.click()
-                    break
-            self.ui.click_on_select2_arrow('s2id_Version_dropdown')
-            self.ui.select_from_dropdown(version_num)
-            self.browser.find_element_by_id(
-                's2id_image_name_dropdown').find_element_by_class_name(
-                'select2-choice').click()
-            image_name_list = self.browser.find_element_by_id(
-                "select2-drop").find_elements_by_tag_name('li')
-            for image_name in image_name_list:
-                image_name_text = image_name.text
-                if image_name_text.lower() == fixture.image_name:
-                    image_name.click()
-                    break
-            for index, intf_element in enumerate(fixture.if_list):
-                intf_text = intf_element[0]
-                shared_ip = intf_element[1]
-                static_routes = intf_element[2]
+            self.ui.dropdown('s2id_user_created_service_mode_dropdown',
+                                fixture.service_mode.title())
+            self.ui.dropdown('s2id_user_created_service_type_dropdown',
+                                fixture.service_type.title())
+            self.ui.dropdown('s2id_Version_dropdown', version_num)
+            self.ui.wait_till_ajax_done(self.browser)
+            self.ui.dropdown('s2id_image_name_dropdown', fixture.image_name)
+            for index, (intf_element, val) in enumerate(fixture.if_details.iteritems()):
+                intf_text = intf_element
+                shared_ip = val['shared_ip_enable']
+                static_routes = val['static_route_enable']
                 self.ui.click_element('editable-grid-add-link', 'class')
-                self.browser.find_element_by_id(
-                    'interfaces').find_elements_by_class_name(
-                    'data-row')[index].click()
+                int = self.ui.find_element('interfaces')
+                self.browser.execute_script("return arguments[0].scrollIntoView();", int)
+                self.ui.find_element(['interfaces', 'row'],
+                                      ['id', 'class'], if_elements=[1])[index].click()
                 if shared_ip:
-                    self.browser.find_elements_by_id(
-                        'shared_ip')[index].click()
+                    self.ui.find_element('shared_ip', 'name',
+                                         if_elements=[1])[index].click()
                 if static_routes:
-                    self.browser.find_elements_by_id(
-                        'static_route_enable')[index].click()
-                intf_types = self.browser.find_elements_by_class_name(
-                    'ui-autocomplete')[index + 1].find_elements_by_class_name(
-                        'ui-menu-item')
-                intf_dropdown = [element.find_element_by_tag_name('a')
-                                    for element in intf_types]
-                for intf in intf_dropdown:
-                    if intf.text.lower() == intf_text:
-                        intf.click()
-                        break
-            self.ui.click_element('advanced_options', 'id')
-            self.browser.find_element_by_id(
-                's2id_flavor_dropdown').find_element_by_class_name(
-                'select2-choice').click()
-            flavors_list = self.browser.find_elements_by_xpath(
-                "//span[@class = 'select2-match']/..")
-            for flavor in flavors_list:
-                flavor_txt = re.search(r'(\S+)', flavor.text)
-                flavor_text = flavor_txt.group()
-                if 'm1' in flavor_text:
-                    flavor_txt = re.search(r'(m1.(\S+))', flavor_text)
-                    flavor_text = flavor_txt.group(2)
-                if fixture.flavor.find(flavor_text) != -1:
-                    flavor.click()
-                    break
+                    self.ui.find_element('static_route_enable', 'name',
+                                          if_elements=[1])[index].click()
+                svc_int = self.ui.find_element('data-cell-service_interface_type',
+                                               'class', elements=True, if_elements=[1])
+                self.ui.click_element('fa-caret-down', 'class', browser=svc_int[index])
+                self.ui.wait_till_ajax_done(self.browser)
+                self.ui.find_select_from_dropdown(intf_text)
+            self.ui.click_on_accordian('advanced_options', accor=False)
+            self.ui.wait_till_ajax_done(self.browser)
+            self.ui.dropdown('s2id_flavor_dropdown', fixture.flavor, grep=True)
             if fixture.svc_scaling:
-                self.browser.find_element_by_xpath(
-                    "//input[@type = 'checkbox' and \
-                    @name = 'service_scaling']").click()
+                self.ui.click_element('user_created_service_scaling', 'name')
             if not self.ui.click_on_create('Service Template',
                     'service_template', save=True):
                 result = result and False

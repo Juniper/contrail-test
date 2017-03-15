@@ -59,7 +59,7 @@ class SvcTemplateFixture(fixtures.Fixture):
         if self.inputs.verify_thru_gui():
             self.browser = connections.browser
             self.browser_openstack = connections.browser_openstack
-            self.webui = WebuiTest(connections, inputs)
+            self.webui = WebuiTest(connections, self.inputs)
     # end __init__
 
     def setUp(self):

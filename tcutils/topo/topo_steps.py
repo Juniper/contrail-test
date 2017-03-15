@@ -733,11 +733,12 @@ def createServiceTemplate(self):
                 connections=self.project_connections,
                 st_name=st_name,
                 svc_img_name=self.topo.st_params[st_name]['svc_img_name'],
-                svc_type=self.topo.st_params[st_name]['svc_type'],
-                svc_mode=self.topo.st_params[st_name]['svc_mode'],
+                service_type=self.topo.st_params[st_name]['service_type'],
+                service_mode=self.topo.st_params[st_name]['service_mode'],
                 svc_scaling=self.topo.st_params[st_name]['svc_scaling'],
                 flavor=self.topo.st_params[st_name]['flavor'],
-                ordered_interfaces=self.topo.st_params[st_name]['ordered_interfaces']))
+                if_details=self.topo.st_params[st_name]['if_details'],
+                version=self.topo.st_params[st_name]['version']))
         if self.skip_verify == 'no':
             assert self.st_fixture[st_name].verify_on_setup()
     return self
