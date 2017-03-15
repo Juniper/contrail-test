@@ -537,6 +537,46 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test3_1_7_create_rbac
 
     @preposttest_wrapper
+    def test3_1_8_create_ovsdb_tor_agent(self):
+        '''Test to create ovsdb managed tor agent on UI
+           1. Go to Configure->Physical Devices->Physical Routers->OVSDB Managed TOR.
+           2. Click on create and enter the config details and save.
+
+           Pass Criteria: Step 2 should pass without any error
+        '''
+        assert self.res.setup_obj.create_ovsdb_tor_agent(), \
+                   'OVSDB Managed ToR creation failed'
+        return True
+    # end test3_1_8_create_ovsdb_tor_agent
+
+    @preposttest_wrapper
+    def test3_1_9_create_netconf_phy_router(self):
+        '''Test to create netconf managed physical router on UI
+           1. Go to Configure->Physical Devices->Physical Routers->Netconf Managed
+              Physical Router.
+           2. Click on create and enter the config details and save.
+
+           Pass Criteria: Step 2 should pass without any error
+        '''
+        assert self.res.setup_obj.create_netconf_prouter(), \
+                   'Netconf Managed Physical Router creation failed'
+        return True
+    # end test3_1_9_create_netconf_phy_router
+
+    @preposttest_wrapper
+    def test3_2_1_create_vcpe_router(self):
+        '''Test to create vcpe router on UI
+           1. Go to Configure->Physical Devices->Physical Routers->VCPE Router.
+           2. Click on create and enter the config details and save.
+
+           Pass Criteria: Step 2 should pass without any error
+        '''
+        assert self.res.setup_obj.create_vcpe_router(), \
+                   'VCPE Router creation failed'
+        return True
+    # end test3_2_1_create_vcpe_router
+
+    @preposttest_wrapper
     def test3_1_edit_net_without_change(self):
         '''Test to edit the existing network without changing anything
            1. Go to Configure->Networking->Networks. Then select any of the vn and
