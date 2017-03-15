@@ -273,11 +273,13 @@ class sdn_webui_config ():
         self.si_list = ['svcinst1']
         self.si_params = {
             'svcinst1': {
-                'if_list': [
-                    [
-                        'management', False, False], [
-                        'left', False, False], [
-                        'right', False, False]], 'svc_template': 'tcp_svc_template', 'left_vn': None, 'right_vn': None}}
+                'if_details': {
+                    'management' : {'vn_name' : None},
+                    'left' : {'vn_name' : None},
+                    'right' : {'vn_name' : None}
+                              },
+                'svc_template' : 'tcp_svc_template'
+                }}
 
         # define service health check
         self.shc_list = ['svc_health_check1']
