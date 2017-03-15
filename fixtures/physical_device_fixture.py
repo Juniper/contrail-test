@@ -59,7 +59,7 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         if self.inputs.verify_thru_gui():
             connections = kwargs.get('connections', None)
             self.webui = WebuiTest(connections, self.inputs)
-
+            self.kwargs = kwargs
      # end __init__
 
     def _get_ip_fabric_ri_obj(self):
