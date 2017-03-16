@@ -6,6 +6,83 @@ from pif_fixture import PhysicalInterfaceFixture
 from port_fixture import PortFixture
 from openstack import OpenstackAuth, OpenstackOrchestrator
 from contrailapi import ContrailVncApi
+import time
+
+
+def GetVMHosts(content):
+    print("Getting all ESX hosts ...")
+    host_view = content.viewManager.CreateContainerView(content.rootFolder,
+                                                        [vim.HostSystem],
+                                                        True)
+    obj = [host for host in host_view.view]
+    host_view.Destroy()
+    return obj
+
+def GetHostsPortgroups(hosts):
+    print("Collecting portgroups on all hosts. This may take a while ...")
+    hostPgDict = {}
+    for host in hosts:
+        pgs = host.config.network.portgroup
+        hostPgDict[host] = pgs
+        print("\tHost {} done.".format(host.name))
+    print("\tPortgroup collection complete.")
+    return hostPgDict
+
+def getvmnics(content,vm):
+
+    hosts = GetVMHosts(content)
+    hostPgDict = GetHostsPortgroups(hosts)
+    nic = {
+          'vlan_id': None,
+          'port_group':None,
+          'mac' : None
+          }
+    nics = []
+
+    for dev in vm.config.hardware.device:
+        if isinstance(dev, vim.vm.device.VirtualEthernetCard):
+            dev_backing = dev.backing
+            portGroup = None
+            vlanId = None
+            vSwitch = None
+            if hasattr(dev_backing, 'port'):
+                portGroupKey = dev.backing.port.portgroupKey
+                dvsUuid = dev.backing.port.switchUuid
+                try:
+                    dvs = content.dvSwitchManager.QueryDvsByUuid(dvsUuid)
+                except:
+                    portGroup = "** Error: DVS not found **"
+                    vlanId = "NA"
+                    vSwitch = "NA"
+                else:
+                    pgObj = dvs.LookupDvPortGroup(portGroupKey)
+                    portGroup = pgObj.config.name
+                    vlanId = str(pgObj.config.defaultPortConfig.vlan.vlanId)
+                    vSwitch = str(dvs.name)
+            else:
+                portGroup = dev.backing.network.name
+                vmHost = vm.runtime.host
+                # global variable hosts is a list, not a dict
+                host_pos = hosts.index(vmHost)
+                viewHost = hosts[host_pos]
+                # global variable hostPgDict stores portgroups per host
+                pgs = hostPgDict[viewHost]
+                for p in pgs:
+                    if portGroup in p.key:
+                        vlanId = str(p.spec.vlanId)
+                        vSwitch = str(p.spec.vswitchName)
+            if portGroup is None:
+                portGroup = 'NA'
+            if vlanId is None:
+                vlanId = 'NA'
+            if vSwitch is None:
+                vSwitch = 'NA'
+            mac = dev.macAddress
+            nic['vlan_id'] = vlanId
+            nic['port_group'] = portGroup 
+            nic['mac'] = mac
+    nics.append(nic)
+    return nics
 
 class VcenterGatewayOrch(VcenterOrchestrator):
 
@@ -15,37 +92,33 @@ class VcenterGatewayOrch(VcenterOrchestrator):
 
     def create_vn(self, name, subnets, **kwargs):
         vn_obj = super(VcenterGatewayOrch, self).create_vn(name, subnets, **kwargs)
-        self.plug_api.create_network_in_contrail_cluster(name,subnets,**kwargs)
+        vn_id = self.plug_api.create_network_in_contrail_cluster(name,subnets,**kwargs)
+        vn_obj.get()
         return vn_obj
     
     def delete_vn(self, vn_obj, **kwargs):
         super(VcenterGatewayOrch, self).delete_vn(vn_obj, **kwargs)
-        self.plug_api.delete_network_from_contrail_cluster(vn_obj.name,**kwargs)
+        return self.plug_api.delete_network_from_contrail_cluster(vn_obj.name,**kwargs)
 
     def create_vm(self, vm_name, image_name, vn_objs, count=1, zone=None, node_name=None, **kwargs):
         vm_objs = super(VcenterGatewayOrch, self).create_vm(vm_name, image_name, vn_objs, count=1, zone=None, node_name=None, **kwargs)
-        retry_vms = []
-        retry_vms = vm_objs[:]
-        for vm in retry_vms:
-            if self.get_vm_detail(vm):
-                retry_vms.remove(vm) 
-            else:
-                continue    
         for vm in vm_objs:
-            for network in vm.networks:
-                vlanId = network.config.defaultPortConfig.vlan.vlanId
-                net_name = network.name
-                if net_name in vm.macs:
-                    mac = vm.macs[net_name]
-                else:
-                    mac = None  
-                self.plug_api.create_vmi_lif_and_attach_vmi_to_lif(vn_name=net_name,mac_address=mac,vlan=vlanId,vm=vm)
- 
+            nics = None
+            content = self._si.RetrieveContent()
+            nics = getvmnics(content,vm.vmobj)
+            for nic in nics:    
+                self.plug_api.create_vmi_lif_and_attach_vmi_to_lif\
+                      (vn_name=nic['port_group'],mac_address=nic['mac'],vlan=nic['vlan_id'],vm=vm)
+            
+                 
         for vm in vm_objs:
-            vm.bring_up_interfaces(self,vm,intfs=['eth0'])
-        for vm in vm_objs:
-            vm.get()
-            self.plug_api.create_vmobj_in_api_server(vm)
+            if self.get_vm_detail(vm): 
+                try:
+                    self.plug_api.create_vmobj_in_api_server(vm)
+                except Exception as e:
+                    self.logger.error("Create VM object in API server failed..")
+                    self.delete_vm(vm)
+                    raise
         return vm_objs
     
     def create_vn_vmi_for_stp_bpdu_to_be_flooded(self,**kwargs):
@@ -89,11 +162,10 @@ class ContrailPlugApi(object):
 
     def create_network_in_contrail_cluster(self,name,subnet,**kwargs):
         self.vn_uuid = self._create_vn(name,subnet)
-        pass
+        return self.vn_uuid
 
     def delete_network_from_contrail_cluster(self,vn_name,**kwargs):
-        self._delete_vn(vn_name)
-        pass
+        return self._delete_vn(vn_name)
 
     def delete_vmi_and_detach_vmi_to_lif(self,vm):
         self.delete_lif(vm)        
@@ -146,7 +218,7 @@ class ContrailPlugApi(object):
             vnsn_data = VnSubnetsType([subnet_vnc])
             vn_obj.add_network_ipam(self._ipam_obj, vnsn_data)
         try:
-            self._vnc.virtual_network_create(vn_obj)
+            return self._vnc.virtual_network_create(vn_obj)
         except RefsExistError:
             pass
 
@@ -154,8 +226,9 @@ class ContrailPlugApi(object):
         vn_fq_name = VirtualNetwork(vn_name, self._proj_obj).get_fq_name()
         try:
             self._vnc.virtual_network_delete(fq_name=vn_fq_name)
+            return True
         except cfgm_common.exceptions.NoIdError:
-            pass
+            return True
     # end _delete_vn
  
     def _read_vn(self,vn_name):

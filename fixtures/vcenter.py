@@ -161,6 +161,7 @@ class VcenterOrchestrator(Orchestrator):
         self._computes = self._get_computes()
 
     def _find_obj (self, root, vimtype, param):
+        self._content = self._si.RetrieveContent()
         if vimtype == 'ip.Pool':
             items = self._content.ipPoolManager.QueryIpPools(self._dc)
         else:
