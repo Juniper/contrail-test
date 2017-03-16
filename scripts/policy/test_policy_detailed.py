@@ -151,7 +151,14 @@ class TestDetailedPolicy2(BasePolicyTest):
 
     @preposttest_wrapper
     def test_policy_rules_scaling_with_ping(self):
-        ''' Test to validate scaling of policy and rules
+        ''' Test to validate scaling of policy and rules.
+            Test to validate multiple policy scaling with
+            10 rules each. These policies will be attached
+            to two VN's and 2 VM's will be spawned in each
+            of the VN's to verify exact number of acls are
+            created in the agent introspect.
+            Expected ace id's = 150 policy * 10 distinct rules
+            + 1 valid rule + 2 default rules = 1503 ace id's.
         '''
         result = True
         msg = []
@@ -159,10 +166,116 @@ class TestDetailedPolicy2(BasePolicyTest):
         vn2_name = 'vn2'
         vn1_subnets = ['10.1.1.0/24']
         vn2_subnets = ['20.1.1.0/24']
-        number_of_policy = 10
-        # adding workaround to pass the test with less number of rules till
-        # 1006, 1184 fixed
-        number_of_dummy_rules = 148
+        number_of_policy = 150
+        number_of_dummy_rules = 10
+        number_of_valid_rules = 1
+        number_of_default_rules = 2
+        total_number_of_rules = (number_of_dummy_rules * number_of_policy) + number_of_valid_rules + number_of_default_rules
+        valid_rules = [
+            {
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'icmp', 'src_ports': 'any',
+                'dst_ports': 'any',
+                'source_network': 'any',
+                'dest_network': 'any',
+            },
+        ]
+
+        self.logger.info(
+            'Creating %d policy and %d rules to test policy scalability' %
+            (number_of_policy, number_of_dummy_rules + len(valid_rules)))
+        policy_objs_list = policy_test_helper._create_n_policy_n_rules(
+            self, number_of_policy, valid_rules, number_of_dummy_rules, verify=False)
+        time.sleep(5)
+        self.logger.info('Create VN and associate %d policy' %
+                         (number_of_policy))
+        vn1_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_name=vn1_name,
+                inputs=self.inputs,
+                subnets=vn1_subnets,
+                policy_objs=policy_objs_list))
+        assert vn1_fixture.verify_on_setup()
+        vn2_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_name=vn2_name,
+                inputs=self.inputs,
+                subnets=vn2_subnets,
+                policy_objs=policy_objs_list))
+        assert vn2_fixture.verify_on_setup()
+        vn1_vm1_name = 'vm1'
+        vn1_vm2_name = 'vm2'
+        vm1_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn1_fixture.obj,
+                vm_name=vn1_vm1_name))
+        assert vm1_fixture.verify_on_setup()
+        vm2_fixture = self.useFixture(
+            VMFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_obj=vn2_fixture.obj,
+                vm_name=vn1_vm2_name))
+        assert vm2_fixture.verify_on_setup()
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+        self.logger.info("Verify ping to vm %s" % (vn1_vm2_name))
+        ret = vm1_fixture.ping_with_certainty(
+            vm2_fixture.vm_ip, expectation=True,
+            dst_vm_fixture=vm2_fixture)
+        result_msg = "vm ping test result to vm %s is: %s" % (
+            vn1_vm2_name, ret)
+        self.logger.info(result_msg)
+        if not ret:
+            result = False
+            msg.extend(
+                ["ping failure with scaled policy and rules:", result_msg])
+        assertEqual(result, True, msg)
+
+        vn1_acl_count=len(self.agent_inspect[
+            vm1_fixture._vm_node_ip].get_vna_acl_by_vn(vn1_fixture.vn_fq_name)['entries'])
+        vn2_acl_count=len(self.agent_inspect[
+            vm2_fixture._vm_node_ip].get_vna_acl_by_vn(vn2_fixture.vn_fq_name)['entries'])
+        self.assertEqual(vn1_acl_count, total_number_of_rules,
+            "Mismatch in number of ace ID's and total number of rules in agent introspect \
+                for vn %s" %vn1_fixture.vn_fq_name)
+        self.assertEqual(vn2_acl_count, total_number_of_rules,
+            "Mismatch in number of ace ID's and total number of rules in agent introspect \
+                for vn %s" %vn2_fixture.vn_fq_name)
+        self.logger.info(
+            'Verified ace Id\'s were created for %d rules, to test policy scalability' %
+            total_number_of_rules)
+        return True
+    # end test_policy_rules_scaling_with_ping
+
+    @preposttest_wrapper
+    def test_one_policy_rules_scaling_with_ping(self):
+        ''' Test to validate scaling of policy and rules.
+            Test to validate rules scaling on a single
+            policy. The policy will be attached to two
+            VN's and 2 VM's will be spawned in each of
+            the VN's to verify exact number of acls are
+            created in the agent introspect.
+            Expected ace id's = 1 policy * 1498 distinct rules
+            + 2 valid rule + 2 default rules = 1504 ace id's.
+        '''
+        result = True
+        msg = []
+        vn1_name = 'vn1'
+        vn2_name = 'vn2'
+        vn1_subnets = ['10.1.1.0/24']
+        vn2_subnets = ['20.1.1.0/24']
+        number_of_policy = 1
+        number_of_dummy_rules = 1498
+        number_of_valid_rules = 2
+        number_of_default_rules = 2
+        total_number_of_rules=number_of_dummy_rules + number_of_valid_rules + number_of_default_rules
         valid_rules = [
             {
                 'direction': '<>', 'simple_action': 'pass',
@@ -183,7 +296,6 @@ class TestDetailedPolicy2(BasePolicyTest):
         self.logger.info(
             'Creating %d policy and %d rules to test policy scalability' %
             (number_of_policy, number_of_dummy_rules + len(valid_rules)))
-        # for now we are creating limited number of policy and rules
         policy_objs_list = policy_test_helper._create_n_policy_n_rules(
             self, number_of_policy, valid_rules, number_of_dummy_rules)
         time.sleep(5)
@@ -237,8 +349,22 @@ class TestDetailedPolicy2(BasePolicyTest):
             msg.extend(
                 ["ping failure with scaled policy and rules:", result_msg])
         assertEqual(result, True, msg)
+
+        vn1_acl_count=len(self.agent_inspect[
+            vm1_fixture._vm_node_ip].get_vna_acl_by_vn(vn1_fixture.vn_fq_name)['entries'])
+        vn2_acl_count=len(self.agent_inspect[
+            vm2_fixture._vm_node_ip].get_vna_acl_by_vn(vn2_fixture.vn_fq_name)['entries'])
+        self.assertEqual(vn1_acl_count, total_number_of_rules,
+            "Mismatch in number of ace ID's and total number of rules in agent introspect \
+                for vn %s" %vn1_fixture.vn_fq_name)
+        self.assertEqual(vn2_acl_count, total_number_of_rules,
+            "Mismatch in number of ace ID's and total number of rules in agent introspect \
+                for vn %s" %vn2_fixture.vn_fq_name)
+        self.logger.info(
+            'Verified ace Id\'s were created for %d rules, to test policy scalability' %
+            total_number_of_rules)
         return True
-    # end test_policy_rules_scaling_with_ping
+    # end test_one_policy_rules_scaling_with_ping
 
 # end of class TestDetailedPolicy2
 
