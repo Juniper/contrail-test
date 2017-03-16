@@ -1110,6 +1110,8 @@ class TestPorts(BaseNeutronTest):
         assert port.verify_on_setup(), 'VMI %s verification has failed'%port.uuid
     # end test_ports_bindings
 
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
     def test_aap_backoff(self):
         '''
         Verify  VIP reachability over L2 network when AAP MAC is configured with all zeo
