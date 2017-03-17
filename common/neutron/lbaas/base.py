@@ -21,6 +21,8 @@ class BaseTestLbaas(BaseNeutronTest):
             return (False, 'Skipping Test. Openstack required')
         if self.inputs.get_build_sku().lower()[0] > 'k':
             return (False, 'Skipping Test. LBaasV1 is supported till kilo')
+        if not self.connections.orch.is_feature_supported('lbaasv1'):
+            return (False, 'lbaasv1 tests not supported in this environment ')
         return (True, None)
 
     def verify_active_standby(self, compute_ips, pool_uuid):
