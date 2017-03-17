@@ -353,6 +353,23 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_infra_project_quotas
 
     @preposttest_wrapper
+    def test_verify_config_alarms_project_and_global(self):
+        '''Test to verify alarms under project and Global
+           1. Go to Configure->Alarms->Project.
+           2. Get all the details of alarm from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+           4. Then Go to Configure->Global Config->Alarm Rules.
+           5. Get all the details of alarm from both WebUI and API server.
+           6. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 and 6 should pass
+        '''
+        assert self.webui.verify_alarms_api_data(topo.alarms_params), \
+                   'Alarms data verification failed'
+        return True
+    # end test_verify_config_alarms_project_and_global
+
+    @preposttest_wrapper
     def test_verify_monitor_infra_control_node_basic_details(self):
         '''Test control node basic details on monitor->Infrastruture->Control Nodes->Node Details-> Basic view page
         '''
