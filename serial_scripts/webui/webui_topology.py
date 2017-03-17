@@ -270,7 +270,7 @@ class sdn_webui_config ():
                                                }}
 
         # define service instance
-        self.si_list = ['svcinst1']
+        self.si_list = ['svcinst1', 'svcinst2']
         self.si_params = {
             'svcinst1': {
                 'if_details': {
@@ -279,7 +279,15 @@ class sdn_webui_config ():
                     'right' : {'vn_name' : None}
                               },
                 'svc_template' : 'tcp_svc_template'
-                }}
+                },
+            'svcinst2': {
+                'if_details': {
+                    'left' : {'vn_name' : 'vnet1'},
+                    'right' : {'vn_name' : 'vnet2'}
+                              },
+                'svc_template' : 'nat_svc_template'
+                }
+            }
 
         # define service health check
         self.shc_list = ['svc_health_check1']
