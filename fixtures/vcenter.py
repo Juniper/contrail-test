@@ -901,7 +901,7 @@ class VcenterAuth(OrchestratorAuth):
                           api_server_port=self.inputs.api_server_port,
                           api_server_use_ssl=use_ssl)
 
-    def get_project_id(self, project_name=None):
+    def get_project_id(self, project_name=None, domain_id=None):
        if not project_name:
            project_name = self.project_name
        fq_name = [unicode(self.domain), unicode(project_name)]

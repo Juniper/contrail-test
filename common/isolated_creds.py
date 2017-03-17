@@ -62,7 +62,7 @@ class IsolatedCreds(fixtures.Fixture):
     def use_tenant(self, project_fixture):
         self.project = project_fixture
 
-    def create_tenant(self, project_name, domain_name='Default'):
+    def create_tenant(self, project_name, domain_name=None):
         ''' Get a Project. Returns instance of ProjectFixture
             Creates the project if not found
         '''
