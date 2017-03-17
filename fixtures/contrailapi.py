@@ -962,23 +962,24 @@ class ContrailVncApi(object):
         intf_rt_table_obj.del_service_instance(si_obj)
         return self._vnc.interface_route_table_update(intf_rt_table_obj)
 
-    def assoc_health_check_to_si(self, si_uuid, hc_uuid, intf_type):
+    def assoc_health_check_to_si(self, si_fq_name, hc_uuid, intf_type):
         '''
             :param si_uuid : UUID of the Service Instance object
             :param hc_uuid : UUID of HealthCheck object
         '''
         hc_obj = self._vnc.service_health_check_read(id=hc_uuid)
-        si_obj = self._vnc.service_instance_read(id=si_uuid)
-        hc_obj.add_service_instance(si_obj,ServiceInterfaceTag(interface_type=intf_type))
+        si_obj = self._vnc.service_instance_read(fq_name=si_fq_name)
+        hc_obj.add_service_instance(
+            si_obj, ServiceInterfaceTag(interface_type=intf_type))
         return self._vnc.service_health_check_update(hc_obj)
 
-    def disassoc_health_check_from_si(self, si_uuid, hc_uuid):
+    def disassoc_health_check_from_si(self, si_fq_name, hc_uuid):
         '''
             :param si_uuid : UUID of the Service Instance object
             :param hc_uuid : UUID of HealthCheck object
         '''
         hc_obj = self._vnc.service_health_check_read(id=hc_uuid)
-        si_obj = self._vnc.service_instance_read(id=si_uuid)
+        si_obj = self._vnc.service_instance_read(fq_name=si_fq_name)
         hc_obj.del_service_instance(si_obj)
         return self._vnc.service_health_check_update(hc_obj)
 
