@@ -17,7 +17,7 @@ PACKAGES_REQUIRED_UBUNTU="python-pip ant python-novaclient python-neutronclient 
 PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD="$PACKAGES_REQUIRED_UBUNTU python-dev libxslt1-dev libz-dev libyaml-dev sshpass"
 PACKAGES_REQUIRED_RALLY="libssl-dev libffi-dev python-dev libxml2-dev libxslt1-dev libpq-dev libpq5=9.3.15-0ubuntu0.14.04"
 if [ ${BUILD_PLATFORM} = "16.04" ]; then
-    PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD="$PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD gcc-5-base=5.4.0-6ubuntu1~16.04.4 libgcc-5-dev=5.4.0-6ubuntu1~16.04.4 libstdc++-5-dev=5.4.0-6ubuntu1~16.04.4"
+    PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD="$PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD gcc-5-base=5.4.0-6ubuntu1~16.04.4 libgcc-5-dev=5.4.0-6ubuntu1~16.04.4 libstdc++-5-dev=5.4.0-6ubuntu1~16.04.4 libicu55=55.1-7ubuntu0.1"
     PACKAGES_REQUIRED_RALLY="libssl-dev libffi-dev python-dev libxml2-dev libxslt1-dev libpq-dev libpq5"
     EXTRAS="libc-dev-bin=2.23-0ubuntu5 libc6-dev=2.23-0ubuntu5 libexpat1-dev libexpat1 libpython2.7-dev python2.7-dev"
 else
