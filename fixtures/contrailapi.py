@@ -21,6 +21,12 @@ class ContrailVncApi(object):
     def get_policy(self, fq_name, **kwargs):
         return self._vnc.network_policy_read(fq_name=fq_name)
 
+    def create_project(self, project_name):
+        return self._vnc.project_create(project_name)
+
+    def delete_project(self, project_name):
+        return self._vnc.project_delete(project_name)
+
     def get_floating_ip(self, fip_id, **kwargs):
         fip_obj = self._vnc.floating_ip_read(id=fip_id)
         return fip_obj.get_floating_ip_address()
@@ -1121,3 +1127,6 @@ class ContrailVncApi(object):
             if kv.key == 'host_id':
                 vmi_host = kv.value
                 return vmi_host
+
+    def get_vn_obj_from_id(self, uuid):
+        return self._vnc.virtual_network_read(id=uuid)

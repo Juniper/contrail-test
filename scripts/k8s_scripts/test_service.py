@@ -28,16 +28,16 @@ class TestService(BaseK8sTest):
                                           app=app)
         pod1 = self.setup_nginx_pod(namespace=namespace.name,
                                    app=app)
-        assert pod1.verify_on_setup()
-
         pod2 = self.setup_nginx_pod(namespace=namespace.name,
                                    app=app)
-        assert pod2.verify_on_setup()
-
         pod3 = self.setup_busybox_pod(namespace=namespace.name)
+
+        assert pod1.verify_on_setup()
+        assert pod2.verify_on_setup()
         assert pod3.verify_on_setup()
 
         # Now validate load-balancing on the service
-        assert self.validate_nginx_lb(pod3, [pod1, pod2], service.cluster_ip)
+        assert self.validate_nginx_lb([pod1, pod2], service.cluster_ip,
+                                      test_pod=pod3)
     # end test_service_1
 

@@ -74,6 +74,8 @@ class ContrailConnections():
                                             vnc=self.vnc_lib,
                                             inputs=self.inputs,
                                             logger=self.logger)
+        elif self.inputs.orchestrator == 'kubernetes':
+            self.orch = None
         if self.inputs.vcenter_gw_setup: # vcenter_gateway
             self.slave_orch = VcenterGatewayOrch(user=self.inputs.vcenter_username,
                                             pwd=self.inputs.vcenter_password,
@@ -108,6 +110,8 @@ class ContrailConnections():
             elif self.inputs.orchestrator == 'vcenter':
                 env[attr] = VcenterAuth(username, password,
                                        project_name, self.inputs)
+#            elif self.inputs.orchestrator == 'kubernetes':
+#                env[attr] = self.get_k8s_api_client_handle()
         return env.get(attr)
 
     def get_vnc_lib_h(self, refresh=False):

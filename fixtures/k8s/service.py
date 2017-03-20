@@ -63,9 +63,9 @@ class ServiceFixture(fixtures.Fixture):
     # end read
 
     def create(self):
-        service_exits = self.read()
-        if service_exits:
-            return service_exits
+        service_exists = self.read()
+        if service_exists:
+            return service_exists
         self.already_exists = False
         self.obj = self.k8s_client.create_service(
                        self.namespace,

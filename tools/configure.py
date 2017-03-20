@@ -292,6 +292,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
                 host_dict['dv_port_group'] = vcenter_servers[vcenter]['dv_port_group']['dv_portgroup_name']
             sanity_testbed_dict['vcenter_servers'].append(host_dict)
 
+    orch = getattr(env, 'orchestrator', 'openstack')
     #get other orchestrators (vcenter etc) info if any 
     slave_orch = None  
     if env.has_key('other_orchestrators'):
@@ -338,7 +339,10 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     log_scenario = env.get('log_scenario', 'Sanity')
     stack_region_name = get_region_name()
     admin_user, admin_password = get_authserver_credentials()
-    admin_tenant = get_admin_tenant_name()
+    if orch == 'kubernetes':
+        admin_tenant = 'default'
+    else:
+        admin_tenant = get_admin_tenant_name()
     # Few hardcoded variables for sanity environment
     # can be removed once we move to python3 and configparser
     stack_domain = env.get('stack_domain', 'default-domain')
@@ -395,7 +399,6 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
                                      '/etc/kubernetes/admin.conf')
 
     use_devicemanager_for_md5 = getattr(testbed, 'use_devicemanager_for_md5', False)
-    orch = getattr(env, 'orchestrator', 'openstack')
     router_asn = getattr(testbed, 'router_asn', '')
     public_vn_rtgt = getattr(testbed, 'public_vn_rtgt', '')
     public_vn_subnet = getattr(testbed, 'public_vn_subnet', '')

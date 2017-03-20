@@ -13,6 +13,7 @@ from tcutils.util import retry
 from time import sleep
 from openstack import OpenstackAuth
 from vcenter import VcenterAuth
+from cfgm_common.exceptions import NoIdError
 
 
 class ProjectFixture(fixtures.Fixture):
@@ -22,6 +23,7 @@ class ProjectFixture(fixtures.Fixture):
                  domain_name=None, uuid=None):
         self.inputs = connections.inputs
         self.vnc_lib_h = connections.get_vnc_lib_h()
+        self.vnc_lib_fixture = connections.vnc_lib_fixture
         self.logger = connections.logger
         self.connections = connections
         self.auth = auth
@@ -43,50 +45,82 @@ class ProjectFixture(fixtures.Fixture):
         self.verify_is_run = False
         if not self.auth:
             if self.inputs.orchestrator == 'openstack':
-                
                 if self.inputs.domain_isolation:
                     self.auth=OpenstackAuth(self.username, self.password,
-                           self.project_name, self.inputs, 
+                           self.project_name, self.inputs,
                            self.logger,domain_name=self.domain_name)
                 else:
                     self.auth = OpenstackAuth(self.inputs.admin_username,
                                     self.inputs.admin_password,
                                     self.inputs.admin_tenant, self.inputs, self.logger,
                                     domain_name=self.inputs.admin_domain)
-            else: # vcenter
+            elif self.inputs.orchestrator == 'vcenter':
                 self.auth = VcenterAuth(self.inputs.admin_username,
                               self.inputs.admin_password,
                               self.inputs.admin_tenant, self.inputs)
+            else:
+                # Kubernetes 
+                # Set no auth for now
+                self.auth = None
     # end __init__
 
-    def read(self):
-        if self.uuid:
-            self.project_obj = self.vnc_lib_h.project_read(id=self.uuid)
-            self.project_name = self.project_obj.name
-            self.project_fq_name = self.project_obj.get_fq_name()
-            self.already_present = True
-
     def _create_project(self):
-        self.uuid = self.auth.create_project(self.project_name, self.domain_name)
-        self.project_obj = self.vnc_lib_h.project_read(id=self.uuid)
+        if self.auth:
+            self.uuid = self.auth.create_project(self.project_name,
+                                                 self.domain_name)
+            self.project_obj = self.vnc_lib_fixture.project_read(id=self.uuid)
+        else:
+            # Create it in Contrail-api
+            self.project_obj = self.vnc_lib_fixture.create_project(
+                self.project_name)
+        self._populate_attr()
+
+#        self.project_obj = self.vnc_lib_h.project_read(id=self.uuid)
         self.logger.info('Created Project:%s, ID : %s ' % (self.project_name,
                                                            self.uuid))
     # end _create_project
 
     def _delete_project(self):
-        self.auth.delete_project(self.project_name)
+        if self.auth:
+            self.auth.delete_project(self.project_name)
+        else:
+            self.vnc_lib_fixture.delete_project(self.project_name)
         self.logger.info('Deleted project: %s, ID : %s ' % (self.project_name,
                                                             self.uuid))
     # end _delete_project
+
+    def _populate_attr(self):
+        if self.project_obj:
+            self.uuid = self.project_obj.uuid
+            self.project_name = self.project_obj.name
+            self.project_fq_name = self.project_obj.get_fq_name()
 
     def setUp(self):
         super(ProjectFixture, self).setUp()
         self.create()
 
-    def create(self):
-        self.uuid = self.uuid or self.auth.get_project_id(self.project_name, self.domain_id)
+    def read(self):
+        # Incase of kubernetes, read the project from vnc api
+        # In other cases, it can be got from self.auth
+        if self.auth:
+            self.uuid = self.auth.get_project_id(self.project_name,
+                                                 self.domain_id)
         if self.uuid:
-            self.read()
+            args = {'id':self.uuid}
+        else:
+            args = {'fq_name':self.project_fq_name}
+        try:
+            self.project_obj = self.vnc_lib_h.project_read(**args)
+            self._populate_attr()
+            self.already_present = True
+            return self.uuid
+        except NoIdError:
+            return None
+    # end read
+
+    def create(self):
+        self.uuid = self.read()
+        if self.uuid:
             self.logger.info(
                     'Using existing project %s(%s)'%(
                     self.project_fq_name, self.uuid))
@@ -96,7 +130,6 @@ class ProjectFixture(fixtures.Fixture):
             self.logger.info('Project %s not found, creating it' % (
                 self.project_name))
             self._create_project()
-#            time.sleep(2)
 
     def get_uuid(self):
         return self.uuid
@@ -127,7 +160,8 @@ class ProjectFixture(fixtures.Fixture):
                 self.logger.warn('One or more references still present' 
                     ', will not delete the project %s' % (self.project_name))
                 return
-            self.auth.reauth()
+            if self.auth:
+                self.auth.reauth()
             self._delete_project()
             if self.verify_is_run or verify:
                 assert self.verify_on_cleanup()

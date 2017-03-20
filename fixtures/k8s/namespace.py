@@ -19,7 +19,7 @@ class NamespaceFixture(fixtures.Fixture):
         self.already_exists = False
 
     def setUp(self):
-        super(NamespaceFixture, self).setUp()    
+        super(NamespaceFixture, self).setUp()
         self.create()
 
     def verify_on_setup(self):
@@ -74,9 +74,10 @@ class NamespaceFixture(fixtures.Fixture):
             self.obj = self.k8s_client.v1_h.read_namespace(self.name)
             self._populate_attr()
             self.already_exists = True
+            return self.obj
         except ApiException as e:
             self.logger.debug('Namespace %s not present' % (self.name))
-            return None 
+            return None
     # end read
 
     def create(self):
