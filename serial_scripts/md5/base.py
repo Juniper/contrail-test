@@ -191,8 +191,9 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
             if self.inputs.ext_routers:
                 for bgpnodes in cn_bgp_entry:
                     bgpnode = str(bgpnodes)
-                    if self.inputs.ext_routers[0][0] in bgpnode:
-                        cn_bgp_entry.remove(bgpnodes)
+                    for individual_bgp_node in self.inputs.ext_routers:
+                        if individual_bgp_node[0] in bgpnode:
+                            cn_bgp_entry.remove(bgpnodes)
                 cn_bgp_entry = str(cn_bgp_entry)
 
         cn_bgp_entry = str(cn_bgp_entry)
