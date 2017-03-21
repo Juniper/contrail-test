@@ -2671,9 +2671,8 @@ class WebuiCommon:
         try:
             self.edit_vn_result = self.edit_remove_option(option, 'edit')
             if self.edit_vn_result:
-                self.click_element('s2id_network_policy_refs_dropdown')
-                select_highlight = "//li[contains(@class,'select2-highlighted')]"
-                select = self.find_element(select_highlight, 'xpath')
+                self.click_element('select2-search-field', 'class')
+                select = self.find_element('select2-highlighted', 'class')
                 pol_name = select.text
                 select.click()
                 self.click_element('configure-networkbtn1')
@@ -2836,6 +2835,7 @@ class WebuiCommon:
                     minus = self.find_element(minus_icon, 'xpath', elements=True)
                     index = len(minus)
                     minus[index-1].click()
+                self.wait_till_ajax_done(self.browser, wait=3)
                 self.click_element('configure-networkbtn1')
                 self.wait_till_ajax_done(self.browser)
                 if tc == 'neg':
@@ -2940,6 +2940,7 @@ class WebuiCommon:
                     minus = self.find_element(minus_icon, 'xpath', elements=True)
                     index = len(minus)
                     minus[index-1].click()
+                self.wait_till_ajax_done(self.browser, wait=3)
                 self.click_element('configure-networkbtn1')
                 self.wait_till_ajax_done(self.browser)
                 if tc == 'neg':
