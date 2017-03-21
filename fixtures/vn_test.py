@@ -61,8 +61,6 @@ class VNFixture(fixtures.Fixture):
         self.cn_inspect = self.connections.cn_inspect
         self.analytics_obj = self.connections.analytics_obj
         self.domain_name = self.connections.domain_name
-        if self.domain_name == 'Default':
-            self.domain_name = 'default-domain'
         self.project_name = project_name or self.connections.project_name
         self.vn_name = vn_name or get_random_name(self.project_name)
         self.project_id = self.connections.get_project_id()

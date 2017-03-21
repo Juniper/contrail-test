@@ -46,6 +46,8 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
             isolated_creds_obj=public_creds,
             logger=cls.logger)
         cls.public_vn_obj.configure_control_nodes()
+        cls.domain_name = cls.connections.domain_name
+        cls.project_fq_name = [cls.domain_name,cls.inputs.project_name]
 
     # end setUpClass
 
@@ -226,7 +228,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         env = self.get_env(res_name)
         env['parameters']['mode'] = mode
         env['parameters']['name'] = get_random_name(stack_name)
-
+        env['parameters']['domain'] = self.domain_name
         if not self.pt_based_svc:
             if mode == 'transparent':
                 env['parameters']['image'] = 'tiny_trans_fw'
@@ -271,7 +273,8 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         st_fix = self.useFixture(SvcTemplateFixture(
             connections=self.connections,
             st_name=st_name, svc_img_name=svc_img_name, service_type=svc_type, version=ver,
-            if_details=if_details, service_mode=svc_mode, svc_scaling=svc_scaling, flavor=flavor))
+            if_details=if_details, service_mode=svc_mode, svc_scaling=svc_scaling, flavor=flavor,
+            domain_name=self.domain_name))
         assert st_fix.verify_on_setup()
         return st_fix
     # end verify_st
@@ -302,7 +305,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         env['parameters']['mgmt_net_id'] = vn_list[0].vn_fq_name
         env['parameters']['intf_rt_table_fqdn'] = intf_rt_table_fqdn
         env['parameters']['def_sg_id'] = (':').join(
-            self.inputs.project_fq_name) + ':default'
+            self.project_fq_name) + ':default'
         vn_obj_list = []
         for vn in vn_list:
             vn_obj_list.append(vn.obj)
@@ -330,7 +333,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
             env['parameters']['svm_name'] = get_random_name(stack_name)
         if self.pt_based_svc:
             env['parameters']['security_group_ref'] = (':').join(
-                self.inputs.project_fq_name) + ':default'
+                self.project_fq_name) + ':default'
             env['parameters']['mgmt_net_id'] = vn_list[0].vn_fq_name
             if self.inputs.availability_zone:
                 env['parameters']['availability_zone'] = self.inputs.availability_zone
@@ -362,7 +365,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
             env['parameters']['left_net_id'] = vn_list[1].vn_fq_name
         si_hs_obj = self.config_heat_obj(stack_name, template, env)
         si_name = env['parameters']['service_instance_name']
-        si_fix = self.verify_si(si_hs_obj.heat_client_obj, stack_name, si_name, st_fix, max_inst, st_fix.service_mode, st_fix.image_name)
+        si_fix = self.verify_si(si_hs_obj.heat_client_obj, stack_name, si_name, st_fix, max_inst, st_fix.service_mode, st_fix.image_name, domain_name=self.domain_name)
         return si_fix, si_hs_obj
     # end config_svc_instance
 
@@ -384,10 +387,10 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         return result
     # end verify_svm_count
 
-    def verify_si(self, stack, stack_name, si_name, st_fix, max_inst, svc_mode, image):
+    def verify_si(self, stack, stack_name, si_name, st_fix, max_inst, svc_mode, image,domain_name='default-domain'):
         svc_inst = self.useFixture(SvcInstanceFixture(
             connections=self.connections,
-            si_name=si_name,
+            si_name=si_name,domain_name=domain_name,
             svc_template=st_fix.st_obj, if_details=st_fix.if_details, max_inst=max_inst))
         assert svc_inst.verify_on_setup()
         if self.pt_based_svc:

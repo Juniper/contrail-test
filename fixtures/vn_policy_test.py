@@ -20,6 +20,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
         self.connections = connections
         self.inputs = self.connections.inputs
         self.quantum_h = self.connections.quantum_h
+        self.domain_name = self.connections.domain_name
         self.project_name = project_name
         self.vnc_lib = self.connections.vnc_lib
         self.api_s_inspect = self.connections.api_server_inspect
@@ -40,7 +41,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
     def setUp(self):
         super(VN_Policy_Fixture, self).setUp()
         policy_of_vn = self.api_s_inspect.get_cs_vn_policys(
-            project=self.project_name, vn=self.vn, refresh=True)
+            project=self.project_name,domain=self.domain_name, vn=self.vn, refresh=True)
         if policy_of_vn:
             for policy in policy_of_vn:
                 if policy in self.vn_policys:
@@ -97,12 +98,12 @@ class VN_Policy_Fixture(fixtures.Fixture):
         policy_fq_names = []
         if self.policy_obj[self.vn]:
             policy_of_vn = self.api_s_inspect.get_cs_vn_policys(
-                project=self.project_name, vn=self.vn, refresh=True)
+                project=self.project_name, domain=self.domain_name, vn=self.vn, refresh=True)
             if policy_of_vn:
                 if self.option == 'openstack':
                     for policy in policy_of_vn:
                         policy_fq_names.append(self.api_s_inspect.get_cs_policy(
-                            project=self.project_name, policy=policy)['network-policy']['fq_name'])
+                            project=self.project_name,domain=self.domain_name, policy=policy)['network-policy']['fq_name'])
                     if self.inputs.is_gui_based_config():
                         self.webui.detach_policies(self)
                     else:

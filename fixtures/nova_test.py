@@ -82,7 +82,7 @@ class NovaHelper():
            pass
 
     def _connect_to_openstack(self):
-        self.obj = mynovaclient.Client('2', session=self.auth_h.get_session(),
+        self.obj = mynovaclient.Client('2', session=self.auth_h.get_session(scope='project'),
                                        region_name=self.region_name
                                       )
         self.hack_for_liberty_novaclient()

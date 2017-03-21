@@ -13,7 +13,7 @@ class KeystoneCommands():
 
     def __init__(self, username=None, password=None, tenant=None,
                  domain_name=None, auth_url=None, insecure=True, region_name=None,
-		 cert=None, key=None, cacert=None, version=None, logger=None):
+		 cert=None, key=None, cacert=None, version=None, logger=None, scope='domain'):
         self.sessions = dict()
         self.logger = logger or contrail_logging.getLogger(__name__)
         self.auth_url = auth_url
@@ -27,7 +27,8 @@ class KeystoneCommands():
         self.region_name = region_name
         self.insecure = insecure
         self.version = self.get_version(version)
-        self.keystone = self.get_client()
+        self.scope = scope
+        self.keystone = self.get_client(self.scope)
 
     def get_version(self, version):
         if not version:
@@ -69,7 +70,7 @@ class KeystoneCommands():
         return self.sessions[scope]
 
     def get_client(self, scope='domain'):
-        return ks_client.Client(version=self.version, session=self.get_session(scope='domain'),
+        return ks_client.Client(version=self.version, session=self.get_session(scope),
                                       auth_url=self.auth_url, region_name=self.region_name)
 
     def get_handle(self):
@@ -159,19 +160,19 @@ class KeystoneCommands():
         self.keystone.tenants.update(
             tenant_id, tenant_name=tenant_name, description=description, enabled=enabled)
 
+    def add_user_to_domain(self, user, role, domain=None):
+        user = self.get_user_dct(user)
+        role = self.get_role_dct(role)
+        domain=self.find_domain(domain)
+        self.keystone.roles.grant(role, user=user, group=None, domain=domain)
+
     def add_user_to_tenant(self, tenant, user, role, domain=None):
         ''' inputs have to be string '''
         user = self.get_user_dct(user)
         role = self.get_role_dct(role)
         tenant = self.get_tenant_dct(tenant)
         if self.version == '3':
-            domain_id=self.find_domain(domain)
-            mem_role=self.get_role_dct('_member_')
-            self.keystone.roles.grant(role, user=user, group=None, domain=domain_id)
             self.keystone.roles.grant(role, user=user, group=None, project=tenant)
-            self.keystone.roles.grant(mem_role, user=user, group=None, domain=domain_id)
-            self.keystone.roles.grant(mem_role, user=user, group=None, project=tenant)
-
         else:
             self._add_user_to_tenant(tenant, user, role)
 
@@ -184,26 +185,52 @@ class KeystoneCommands():
                 self.logger.debug(str(e))
             else:
                 self.logger.info(str(e))
-    
-    def add_group_to_tenant(self, tenant, group, role, domain=None):
+
+    def add_group_to_domain(self, group, role, domain=None):
+        ''' inputs have to be string '''
+        group = self.get_group_dct(group)
+        role = self.get_role_dct(role)
+        if self.version == '3':
+            domain=self.find_domain(domain)
+            self.keystone.roles.grant(role, user=None, group=group, domain=domain)
+
+    def add_group_to_tenant(self, tenant, group, role):
         ''' inputs have to be string '''
         group = self.get_group_dct(group)
         role = self.get_role_dct(role)
         tenant = self.get_tenant_dct(tenant)
         if self.version == '3':
-            domain_id=self.find_domain(domain)
-            mem_role=self.get_role_dct('_member_')
-            self.keystone.roles.grant(role, user=None, group=group, domain=domain_id)
             self.keystone.roles.grant(role, user=None, group=group, project=tenant)
-            self.keystone.roles.grant(mem_role, user=None, group=group, domain=domain_id)
-            self.keystone.roles.grant(mem_role, user=None, group=group, project=tenant)
+    
+    def remove_user_from_domain(self, user, role, domain):
+        user = self.get_user_dct(user)
+        role = self.get_role_dct(role)
+        domain=self.find_domain(domain)
+        self.keystone.roles.revoke(role, user=None, group=group, domain=domain)
 
     def remove_user_from_tenant(self, tenant, user, role):
 
         user = self.get_user_dct(user)
         role = self.get_role_dct(role)
         tenant = self.get_tenant_dct(tenant)
-        self.keystone.tenants.remove_user(tenant, user, role)
+        if self.version == '3':
+            self.keystone.roles.revoke(role, user=None, group=group, project=tenant)
+        else:
+            self.keystone.tenants.remove_user(tenant, user, role)
+    
+    def remove_group_from_domain(self, group, role, domain=None):
+        group = self.get_group_dct(group)
+        role = self.get_role_dct(role)
+        if self.version == '3':
+            domain=self.find_domain(domain)
+            self.keystone.roles.revoke(role, user=None, group=group, domain=domain)
+    
+    def remove_group_from_tenant(self,tenant, group, role):
+        group = self.get_group_dct(group)
+        role = self.get_role_dct(role)
+        tenant = self.get_tenant_dct(tenant)
+        if self.version == '3':
+            self.keystone.roles.revoke(role, user=None, group=group, project=tenant)
 
     def tenant_list(self, limit=None, marker=None):
         if self.version == '3':
@@ -330,3 +357,8 @@ class KeystoneCommands():
         user = self.get_user_dct(user)
         group = self.get_group_dct(group)
         self.keystone.users.add_to_group(user, group)
+
+    def remove_user_from_group(self,user, group):
+        user = self.get_user_dct(user)
+        group = self.get_group_dct(group)
+        self.keystone.users.remove_from_group(user, group)

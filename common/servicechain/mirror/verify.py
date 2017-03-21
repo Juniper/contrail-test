@@ -25,7 +25,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         return ret_dict
     # end verify_svc_mirroring
 
-
     def _verify_proto_based_mirror(self, si_fixture, left_vm_fixture,
                                   right_vm_fixture, proto, dest_ip=None,
                                   replies=True):

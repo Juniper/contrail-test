@@ -15,10 +15,8 @@ class BaseTestCase_v1(BaseTestCase):
             if cls.inputs.domain_isolation:
                 cls.domain_name = cls.__name__
             #If user wants to run tests in his allocated domain
-            elif cls.inputs.stack_domain != 'default-domain':
-                cls.domain_name = cls.inputs.stack_domain
             else:
-                cls.domain_name = cls.inputs.admin_domain
+                cls.domain_name = cls.inputs.stack_domain
             
         if not cls.inputs.tenant_isolation:
             project_name = cls.inputs.stack_tenant
@@ -40,7 +38,6 @@ class BaseTestCase_v1(BaseTestCase):
             cls.admin_isolated_creds.setUp()
             if 'v3' in cls.inputs.auth_url:
                 cls.domain_obj = cls.admin_isolated_creds.create_domain(cls.isolated_creds.domain_name)
-                cls.isolated_creds.domain_obj = cls.domain_obj
             cls.project = cls.admin_isolated_creds.create_tenant(
                 cls.isolated_creds.project_name,cls.isolated_creds.domain_name)
             cls.admin_inputs = cls.admin_isolated_creds.get_inputs(cls.project)

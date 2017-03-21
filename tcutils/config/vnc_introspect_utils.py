@@ -238,7 +238,7 @@ class VNCApiInspect (VerificationUtilBase):
         '''
         vn_final_policy_list = []
         vn_attach_policy_list = {}
-        vn_obj = self.get_cs_vn(domain='default-domain',
+        vn_obj = self.get_cs_vn(domain=domain,
                                 project=project, vn=vn, refresh=True)
         if 'network_policy_refs' in vn_obj['virtual-network']:
             vn_pol = vn_obj['virtual-network']['network_policy_refs']
