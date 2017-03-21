@@ -307,7 +307,7 @@ class TestvDNSRestart(BasevDNSTest):
         for entry in self.inputs.compute_ips:
             inspect_h = self.agent_inspect[entry]
             dns_list_all_compute_nodes.append(
-                    inspect_h.get_vna_discovered_dns_server())
+                    inspect_h.get_vna_dns_server())
             self.logger.debug("The compute node %s is connected to DNS servers: %s" 
                         %(entry,dns_list_all_compute_nodes[-1]))
         # Specifically for fixed policy, verifying that all agents connected to same set of DNS servers
@@ -337,7 +337,7 @@ class TestvDNSRestart(BasevDNSTest):
             for entry in self.inputs.compute_ips[0],self.inputs.compute_ips[1]:
                 inspect_h = self.agent_inspect[entry]
                 new_dns_list.append(
-                    inspect_h.get_vna_discovered_dns_server())
+                    inspect_h.get_vna_dns_server())
                 self.logger.debug("The compute node %s is connected to DNS servers: %s" 
                         %(entry,new_dns_list[-1]))
             if i == 0 and new_dns_list[0] == new_dns_list[1] and\
@@ -554,7 +554,7 @@ class TestvDNSRestart(BasevDNSTest):
             # another 'PTR' record.
             rec_name = var_obj.vm_list[proj] + "." + domain_name
             agent_inspect_h = self.agent_inspect[vm_fix[proj].vm_node_ip]
-            assigned_dns_ips = agent_inspect_h.get_vna_discovered_dns_server()
+            assigned_dns_ips = agent_inspect_h.get_vna_dns_server()
             vm_dns_exp_data = [{'rec_data': vm_ip,
                                 'rec_type': 'A',
                                 'rec_class': 'IN',
@@ -695,7 +695,7 @@ class TestvDNSRestart(BasevDNSTest):
             domain_name = '%s.net' % (proj)
             rec_name = var_obj.vm_list[proj] + "." + domain_name
             agent_inspect_h = self.agent_inspect[vm_fix[proj].vm_node_ip]
-            assigned_dns_ips = agent_inspect_h.get_vna_discovered_dns_server()
+            assigned_dns_ips = agent_inspect_h.get_vna_dns_server()
             vm_dns_exp_data = [{'rec_data': vm_ip,
                                 'rec_type': 'A',
                                 'rec_class': 'IN',
