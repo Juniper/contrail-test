@@ -462,19 +462,15 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                 return routes
     # end get_vna_route
     
-    def get_vna_discovered_dns_server(self):
-        path = 'Snh_AgentDiscoveryDnsXmppConnectionsRequest'
-        xpath = 'xmpp_inuse_connections/list/AgentXmppInUseConnections'
+    def get_vna_dns_server(self):
+        path = 'Snh_DnsInfo?'
+        xpath = 'DnsStats/dns_resolver'
         p = self.dict_get(path)
-        dnsList = EtreeToDict('./AgentDiscoveryDnsXmppConnectionsResponse/%s' %(xpath)).get_all_entry(p) or \
+        dnsList = EtreeToDict('./__DnsStats_list/%s' %(xpath)).get_all_entry(p) or \
             EtreeToDict('./%s' % (xpath)).get_all_entry(p)
-        if type(dnsList) is dict:
-            dnsList = [dnsList]
-        dnsIps = []
-        for dns in dnsList:
-            dnsIps.append(dns['controller_ip'])
+        dnsIps = dnsList['dns_resolver']
         return dnsIps
-    # end get_vna_discovered_dns_server 
+    # end get_vna_dns_server 
 
     def get_vna_dns_query_to_named(self):
         path = 'Snh_SandeshTraceRequest?x=DnsBind'

@@ -286,7 +286,7 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
             # Frame the Expected DNS data for VM, one for 'A' record and
             # another 'PTR' record.
             agent_inspect_h = self.agent_inspect[vm_fixture[vm_name].vm_node_ip]
-            assigned_dns_ips = agent_inspect_h.get_vna_discovered_dns_server()
+            assigned_dns_ips = agent_inspect_h.get_vna_dns_server()
             rec_name = vm_name + "." + domain_name
             vm_dns_exp_data[vm_name] = [{'rec_data': vm_ip, 'rec_type': 'A', 'rec_class': 'IN', 'rec_ttl': str(
                 ttl), 'rec_name': rec_name, 'installed': 'yes', 'zone': domain_name}, {'rec_data': rec_name, 'rec_type': 'PTR', 'rec_class': 'IN', 'rec_ttl': str(ttl), 'rec_name': vm_rev_ip, 'installed': 'yes', 'zone': rev_zone}]
@@ -380,7 +380,7 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
             self.assertTrue(vm_fixture[vm_name]
                             .ping_with_certainty(ip=vm_name), msg)
             agent_inspect_h = self.agent_inspect[vm_fixture[vm_name].vm_node_ip]
-            assigned_dns_ips = agent_inspect_h.get_vna_discovered_dns_server()
+            assigned_dns_ips = agent_inspect_h.get_vna_dns_server()
             self.verify_vm_dns_data(vm_dns_exp_data[vm_name], assigned_dns_ips[0])
         return True
     # end test_vdns_controlnode_switchover
