@@ -1132,9 +1132,8 @@ class AnalyticsTestSanityWithResource(
         result = True
         src_vn = self.res.vn1_vm1_fixture.vn_fq_names[0]
         dst_vn = self.res.vn1_vm2_fixture.vn_fq_names[0]
-
-        other_vrouter_ip = self.res.vn1_vm2_fixture._vm_node_ip
-        vrouter_ip = self.res.vn1_vm1_fixture._vm_node_ip
+        other_vrouter_ip = self.res.vn1_vm2_fixture.get_compute_host()
+        vrouter_ip = self.res.vn1_vm1_fixture.get_compute_host()
 
         src_vm_host = self.res.vn1_vm1_fixture.get_host_of_vm()
         dst_vm_host = self.res.vn1_vm2_fixture.get_host_of_vm()
@@ -1329,7 +1328,7 @@ class AnalyticsTestSanityWithResource(
         vmi_uuid = self.res.vn1_vm1_fixture.get_vmi_ids().values()[0]
         vm_id = self.res.vn1_vm1_fixture.get_uuid()
         cfgm = self.res.inputs.cfgm_names[0]
-
+        collector = self.res.inputs.collector_names[0]
         cmd_args_list = [
             {'object-type':'vrouter', 'no_key': ['start-time now-5m', 'end-time now']},
             {'object-type':'database-node', 'message-type':'NodeStatusUVE',
@@ -1348,7 +1347,7 @@ class AnalyticsTestSanityWithResource(
             {'object-type': 'virtual-machine', 'object-id':vm_id, 'no_key': ['verbose', 'raw', 'json']},
             {'node-type': 'Analytics', 'module': 'contrail-analytics-api',  'message-type': 'AnalyticsApiStats'},
             {'object-type' :'virtual-network', 'module':'contrail-control','no_key': ['last 10m']},
-            {'module': 'contrail-analytics-api', 'source':cfgm, 'node-type': 'Analytics'}
+            {'module': 'contrail-analytics-api', 'source':collector, 'node-type': 'Analytics'}
             ]
 
         return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True)
