@@ -265,6 +265,11 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
         return True
     # end attach_network_route_table
 
+    def create_routing_policies(self):
+        assert ui_topo_steps.createRoutingPolicy(self)
+        return True
+    # end create_routing_policies
+
     def cleanUp(self):
         if self.inputs.fixture_cleanup == 'yes':
             super(sdnUiTopoSetupFixture, self).cleanUp()
