@@ -1010,6 +1010,42 @@ class WebuiTest:
         return result
     # end create_routing_policy
 
+    def create_route_aggregate(
+            self,
+            ragg_list,
+            ragg_params):
+        result = True
+        try:
+            for ragg in ragg_list:
+                ragg_param = ragg_params[ragg]
+                if not self.ui.click_on_create(
+                        'Route Aggregate',
+                        'route_aggregate',
+                        ragg,
+                        prj_name=self.project_name_input):
+                    result = result and False
+                self.ui.send_keys(ragg, 'display_name', 'name')
+                for index, element in enumerate(ragg_param):
+                    prefix = element.get('prefix')
+                    self.ui.click_element('editable-grid-add-link', 'class')
+                    pref = self.ui.find_element('route', 'name', elements=True)[index]
+                    pref.send_keys(prefix)
+                    self.ui.wait_till_ajax_done(self.browser)
+                if not self.ui.click_on_create('Route Aggregate', 'route_aggregate', save=True):
+                    result = result and False
+                else:
+                    self.logger.info(
+                        "Route Aggregate %s creation successful" % (ragg))
+        except WebDriverException:
+            self.logger.error("Error while creating %s" % (ragg))
+            self.ui.screenshot("ragg_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            result = result and False
+            raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end create_route_aggregate
+
     def attach_nrt_to_vn(
             self,
             nrt_name,
@@ -4340,6 +4376,7 @@ class WebuiTest:
         self.delete_svc_appliance_set()
         self.delete_network_route_table()
         self.delete_routing_policy()
+        self.delete_route_aggregate()
         return True
     # end cleanup
 
@@ -4354,6 +4391,10 @@ class WebuiTest:
     def delete_routing_policy(self):
         self.ui.delete_element(element_type='routing_policy_delete')
     # end delete_routing_policy
+
+    def delete_route_aggregate(self):
+        self.ui.delete_element(element_type='route_aggregate_delete')
+    # end delete_route_aggregate
 
     def delete_link_local_service(self):
         self.ui.delete_element(element_type='link_local_service_delete')
