@@ -475,6 +475,21 @@ class sdn_webui_config ():
         self.vn_nrt_params = {
             'vnet2': 'rtbl1',
             'vnet3': 'rtbl2' }
+
+        #Define Routing Policy parameters
+        self.rp_list = ['rpol1', 'rpol2']
+        self.rp_params = {
+            'rpol1': {
+                'term_from': 'prefix',
+                'prefix': '41.2.2.0/24',
+                'match_type': 'orlonger',
+                'term_then': 'action',
+                'action': 'Accept' },
+            'rpol2': {
+                'term_from': 'protocol',
+                'match_type': 'bgp',
+                'term_then': 'local-preference',
+                'lp_value': 200 }}
  
         # Define network policy rules
         self.rules = {}
