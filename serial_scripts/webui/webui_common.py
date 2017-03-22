@@ -470,7 +470,8 @@ class WebuiCommon:
         self.click_element('fa-caret-down', 'class', browser, wait=2)
     # end click_on_caret_down
 
-    def click_on_accordian(self, element_id, browser=None, accor=True):
+    def click_on_accordian(self, element_id, browser=None,
+                           accor=True, def_type=True):
         """
         Clicks on the accordian icon on a create/edit page when the element id is passed
         Also scrolls down to get the fields in view of the page
@@ -478,11 +479,18 @@ class WebuiCommon:
             element_id : The element which needs to be searched by id using find_element
             browser    : If a specific browser is needed; else, 'None' is taken by default
                             and self.browser will be used
+            accor      : If 'accordian' is not part of the id name, set False;
+                            else, 'True' is taken by default
+            def_type   : Set to 'True' if the element id needs to be appended with '_accordian';
+                            'False' if 'Accordian' needs to be appended
         """
         if not browser:
             browser = self.browser
         if accor:
-            element_id = element_id + '_accordian'
+            if def_type:
+                element_id = element_id + '_accordian'
+            else:
+                element_id = element_id + 'Accordian'
         try:
             element = self.find_element(element_id)
             self.browser.execute_script("return arguments[0].scrollIntoView();", element)
