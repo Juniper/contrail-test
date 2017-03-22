@@ -1488,6 +1488,8 @@ class VNFixture(fixtures.Fixture):
         self.vnc_lib_h.virtual_network_update(vn_obj)
         self.logger.info('Setting flood_unknown_unicast flag of VN %s to %s'
             '' % (self.vn_name, enable))
+
+        return True
     # end set_unknown_unicast_forwarding
 
     def get_an_ip(self, cidr=None, index=2):
@@ -1496,69 +1498,171 @@ class VNFixture(fixtures.Fixture):
         return get_an_ip(cidr, index)
     # end get_an_ip
 
-    def set_pbb_evpn_enable(self, pbb_evpn_enable=None):
-        ''' Configure PBB EVPN on virtual network '''
+    def set_pbb_evpn_enable(self, pbb_evpn_enable=None, verify=True):
+        ''' Configure PBB EVPN on virtual network
+            pbb_evpn_enable: Boolean type
+        '''
         self.logger.debug('Updating PBB EVPN on VN %s to %s' % (
             self.vn_fq_name, pbb_evpn_enable))
         vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
         vn_obj.set_pbb_evpn_enable(pbb_evpn_enable)
         self.vnc_lib_h.virtual_network_update(vn_obj)
+
+        if verify:
+            vn_in_api = self.api_s_inspect.get_cs_vn_by_id(vn_id=self.uuid, refresh=True)
+            if vn_in_api['virtual-network']['pbb_evpn_enable'] != pbb_evpn_enable:
+                self.logger.error("PBB EVPN enabled value in API is not what"
+                    " was set, actual: %s, expected: %s" % (
+                    vn_in_api['virtual-network']['pbb_evpn_enable'],
+                    pbb_evpn_enable))
+                return False
+
+        return True
     # end set_pbb_evpn_enable
 
-    def set_pbb_etree_enable(self, pbb_etree_enable=None):
-        ''' Configure PBB etree on virtual network '''
+    def set_pbb_etree_enable(self, pbb_etree_enable=None, verify=True):
+        ''' Configure PBB etree on virtual network
+            pbb_etree_enable: Boolean type
+        '''
         self.logger.debug('Updating PBB etree on VN %s to %s' % (
             self.vn_fq_name, pbb_etree_enable))
         vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
         vn_obj.set_pbb_etree_enable(pbb_etree_enable)
         self.vnc_lib_h.virtual_network_update(vn_obj)
+
+        if verify:
+            vn_in_api = self.api_s_inspect.get_cs_vn_by_id(vn_id=self.uuid, refresh=True)
+            if vn_in_api['virtual-network']['pbb_etree_enable'] != pbb_etree_enable:
+                self.logger.error("PBB etree enabled value in API is not what"
+                    " was set, actual: %s, expected: %s" % (
+                    vn_in_api['virtual-network']['pbb_etree_enable'],
+                    pbb_etree_enable))
+                return False
+
+        return True
     # end set_pbb_etree_enable
 
-    def set_layer2_control_word(self, layer2_control_word=None):
+    def set_layer2_control_word(self, layer2_control_word=None, verify=True):
         ''' Configure Layer2 control word on virtual network
             This configuration knob controls the insertion of 4-octet control word
-            between bottom of MPLS label stack and L2 payload.'''
+            between bottom of MPLS label stack and L2 payload.
+            layer2_control_word: Boolean type
+        '''
         self.logger.debug('Updating Layer2 control word on VN %s to %s' % (
             self.vn_fq_name, layer2_control_word))
         vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
         vn_obj.set_layer2_control_word(layer2_control_word)
         self.vnc_lib_h.virtual_network_update(vn_obj)
+
+        if verify:
+            vn_in_api = self.api_s_inspect.get_cs_vn_by_id(vn_id=self.uuid, refresh=True)
+            if vn_in_api['virtual-network']['layer2_control_word'] != layer2_control_word:
+                self.logger.error("PBB layer2_control_word value in API is not what"
+                    " was set, actual: %s, expected: %s" % (
+                    vn_in_api['virtual-network']['layer2_control_word'],
+                    layer2_control_word))
+                return False
+
+        return True
     # end set_layer2_control_word
 
-    def set_mac_learning_enabled(self, mac_learning_enabled=None):
-        ''' Configure MAC Learning on virtual network '''
+    def set_mac_learning_enabled(self, mac_learning_enabled=None, verify=True):
+        ''' Configure MAC Learning on virtual network
+            mac_learning_enabled: Boolean type
+        '''
         self.logger.debug('Updating MAC Learning on VN %s to %s' % (
             self.vn_fq_name, mac_learning_enabled))
         vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
         vn_obj.set_mac_learning_enabled(mac_learning_enabled)
         self.vnc_lib_h.virtual_network_update(vn_obj)
+
+        if verify:
+            vn_in_api = self.api_s_inspect.get_cs_vn_by_id(vn_id=self.uuid, refresh=True)
+            if vn_in_api['virtual-network']['mac_learning_enabled'] != mac_learning_enabled:
+                self.logger.error("PBB mac_learning_enabled value in API is not what"
+                    " was set, actual: %s, expected: %s" % (
+                    vn_in_api['virtual-network']['mac_learning_enabled'],
+                    mac_learning_enabled))
+                return False
+
+        return True
     # end set_mac_learning_enabled
 
-    def set_mac_limit_control(self, mac_limit_control=None):
-        ''' Configure MAC Limit Control on virtual network '''
+    def set_mac_limit_control(self, mac_limit_control=None, verify=True):
+        ''' Configure MAC Limit Control on virtual network
+            mac_limit_control: MACLimitControlType obj
+        '''
         self.logger.debug('Updating MAC Limit control on VN %s to %s' % (
             self.vn_fq_name, mac_limit_control))
         vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
         vn_obj.set_mac_limit_control(mac_limit_control)
         self.vnc_lib_h.virtual_network_update(vn_obj)
+
+        if verify:
+            vn_in_api = self.api_s_inspect.get_cs_vn_by_id(vn_id=self.uuid, refresh=True)
+            if (vn_in_api['virtual-network']['mac_limit_control']['mac_limit']
+                != mac_limit_control.mac_limit) \
+                or \
+               (vn_in_api['virtual-network']['mac_limit_control']['mac_limit_action']
+                != mac_limit_control.mac_limit_action):
+                self.logger.error("PBB mac_limit_control in API is not what"
+                    " was set, actual: %s, expected: %s" % (
+                    vn_in_api['virtual-network']['mac_limit_control'],
+                    mac_limit_control))
+                return False
+
+        return True
     # end set_mac_limit_control
 
-    def set_mac_move_control(self, mac_move_control=None):
-        ''' Configure MAC Move on virtual network '''
+    def set_mac_move_control(self, mac_move_control=None, verify=True):
+        ''' Configure MAC Move on virtual network
+            mac_move_control: MACMoveLimitControlType obj
+        '''
         self.logger.debug('Updating MAC Move on VN %s to %s' % (
             self.vn_fq_name, mac_move_control))
         vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
         vn_obj.set_mac_move_control(mac_move_control)
         self.vnc_lib_h.virtual_network_update(vn_obj)
+
+        if verify:
+            vn_in_api = self.api_s_inspect.get_cs_vn_by_id(vn_id=self.uuid, refresh=True)
+            if (vn_in_api['virtual-network']['mac_move_control']
+                    ['mac_move_limit'] != mac_move_control.mac_move_limit) \
+                or \
+                (vn_in_api['virtual-network']['mac_move_control']
+                    ['mac_move_limit_action'] != mac_move_control.mac_move_limit_action) \
+                or \
+                (vn_in_api['virtual-network']['mac_move_control']
+                    ['mac_move_time_window'] != mac_move_control.mac_move_time_window):
+                self.logger.error("PBB mac_move_control in API is not what"
+                    " was set, actual: %s, expected: %s" % (
+                    vn_in_api['virtual-network']['mac_move_control'],
+                    mac_move_control))
+                return False
+
+        return True
     # end set_mac_move_control
 
-    def set_mac_aging_time(self, mac_aging_time=None):
-        ''' Configure MAC Aging on virtual network '''
+    def set_mac_aging_time(self, mac_aging_time=None, verify=True):
+        ''' Configure MAC Aging on virtual network
+            mac_aging_time: in seconds
+        '''
         self.logger.debug('Updating MAC Aging on VN %s to %s' % (
             self.vn_fq_name, mac_aging_time))
         vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
         vn_obj.set_mac_aging_time(mac_aging_time)
         self.vnc_lib_h.virtual_network_update(vn_obj)
+
+        if verify:
+            vn_in_api = self.api_s_inspect.get_cs_vn_by_id(vn_id=self.uuid, refresh=True)
+            if vn_in_api['virtual-network']['mac_aging_time'] != mac_aging_time:
+                self.logger.error("PBB mac_aging_time in API is not what"
+                    " was set, actual: %s, expected: %s" % (
+                    vn_in_api['virtual-network']['mac_aging_time'],
+                    mac_aging_time))
+                return False
+
+        return True
     # end set_mac_aging_time
 
     def get_pbb_evpn_enable(self):
@@ -1624,23 +1728,6 @@ class VNFixture(fixtures.Fixture):
             self.vn_fq_name, mac_aging_time))
         return mac_aging_time
     # end get_mac_aging_time
-
-    def add_bridge_domain(self, bd_obj=None):
-        ''' Adding bridge doamin to VN '''
-        self.logger.info('Adding bridge domain %s to VN %s' % (bd_obj,self.uuid))
-        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
-        vn_obj.add_bridge_domain(bd_obj)
-        self.vnc_lib_h.virtual_network_update(vn_obj)
-    # end add_bridge_domain
-
-    def del_bridge_domain(self, bd_obj=None):
-        ''' Deleting bridge doamin from  VN '''
-        self.logger.info('Deleting bridge domain %s from VN %s' % (bd_obj,self.uuid))
-        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
-        vn_obj.del_bridge_domain(bd_obj)
-        self.vnc_lib_h.virtual_network_update(vn_obj)
-    # end del_bridge_domain
-
 
 # end VNFixture
 

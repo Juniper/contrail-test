@@ -923,3 +923,11 @@ class CsApiAccessList(Result):
 
     def get_rules(self):
         return self.xpath('api-access-list', 'api_access_list_entries', 'rbac_rule')
+
+class CsBridgeDomainResult(Result):
+
+    def fq_name(self):
+        return ':'.join(self.xpath('bridge_domain', 'fq_name'))
+
+    def name(self):
+        return self.xpath('bridge_domain', 'name')

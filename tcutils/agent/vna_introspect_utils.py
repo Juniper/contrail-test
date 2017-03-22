@@ -260,10 +260,10 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         return l
 
     def delete_all_flows(self):
-        '''Delete flows with following introspect url - http://10.204.216.15:8085/Snh_DeleteAllFlowRecords?. 
-        ''' 
+        '''Delete flows with following introspect url - http://10.204.216.15:8085/Snh_DeleteAllFlowRecords?.
+        '''
         resp = self.dict_get('Snh_DeleteAllFlowRecords?')
-           
+
     def match_item_in_flowrecord(self, flow_rec, item, expected):
         '''This proc typically work in pair with get_vna_fetchflowrecord. It parse the output of get_vna_fetchflowrecord and verify for the given item output is matching with the user expected one.'''
         result = False
@@ -298,7 +298,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
     def get_vna_kflowresp(self, index=None, show_evicted=False):
         '''http://10.204.216.15:8085/Snh_KFlowReq?flow_idx=
         introspect has 3 different return values - record_list, record and []
-        
+
         By default, will return non-evicted flows
         '''
         if not index:
@@ -347,7 +347,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                     p[e.tag] = e.text
                 l.append(p)
         return (l, next_index)
-    # end get_vna_next_kflowresp        
+    # end get_vna_next_kflowresp
 
     def get_vna_kflow_entry(self, index=None):
         ''' Requests http://nodek1:8085/Snh_KFlowReq?flow_idx=165172
@@ -572,6 +572,13 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                         for ee in fip:
                             pp[ee.tag] = ee.text
                         p[e.tag].append(pp)
+                if e.tag == 'bridge_domain_list':
+                    p[e.tag] = []
+                    for bd in e.xpath('./list/VmIntfBridgeDomainUuid'):
+                        pp = {}
+                        for ee in bd:
+                            pp[ee.tag] = ee.text
+                        p[e.tag].append(pp)
                 else:
                     p[e.tag] = e.text
             ret_list.append(p)
@@ -717,7 +724,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
 
     def get_sg(self, sg_uuid):
         '''
-            method: get_sg get sg sg_uuid from agent 
+            method: get_sg get sg sg_uuid from agent
             returns None if not found, a dict w/ attrib. eg:
 
         '''
@@ -854,7 +861,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
             return None
         return elem2dict(xml_obj[0])
     # end get_agent_qos_queue
-    
+
     def get_agent_qos_queue_from_id(self, id):
         ''' Get it from http://nodei16:8085/Snh_QosQueueSandeshReq?uuid=&name=&id=1
         '''
@@ -868,7 +875,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
             return None
         return elem2dict(xml_obj[0])
     # end get_agent_qos_queue_from_id
-    
+
     def get_agent_forwarding_class(self, uuid):
         '''   Get it from nodek2:8085/Snh_ForwardingClassSandeshReq?uuid=&name=&id=1
             Sample : {'mpls_exp': '1',
@@ -897,7 +904,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
     def get_vrouter_forwarding_class(self, id):
         ''' http://nodek2:8085/Snh_KForwardingClassReq?index=0
 
-            Returns 
+            Returns
                 {'mpls_exp': '0', 'qos_queue': '0', 'vlan_priority': '0', 'id': '0', 'dscp': '0'}
             or None if id is not found
         '''
@@ -914,9 +921,9 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
     # end get_vrouter_forwarding_class
 
     def get_agent_qos_config(self, uuid):
-        ''' Get it from 
+        ''' Get it from
             http://nodek2:8085/Snh_AgentQosConfigSandeshReq?uuid=4eedad9a-a954-4553-ae8b-9cd95a09b66b&name=&id=
-            Sample return dict: 
+            Sample return dict:
                 {'dscp_list': [{'forwarding_class_id': '1', 'qos_value': '0'}],
                  'id': '1',
                  'name': 'default-global-system-config:default-global-qos-config:fab-qc1',
@@ -949,9 +956,9 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
     # end get_agent_qos_config
 
     def get_vrouter_qos_config(self, id):
-        ''' Get it from 
+        ''' Get it from
             http://nodek2:8085/Snh_KQosConfigReq?index=0
-            Sample return dict: 
+            Sample return dict:
               {'dscp_map': [{'fc_id': '1', 'qos': '0'},
                             {'fc_id': '0', 'qos': '1'},
                             {'fc_id': '0', 'qos': '2'},
@@ -1013,7 +1020,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         for e in xml_obj[0]:
             p[e.tag] = e.text
         return p
-    # end get_vrouter_virtual_interface    
+    # end get_vrouter_virtual_interface
 
     def get_vrouter_nh(self, index):
         ''' http://nodek1:8085/Snh_KNHReq?x=41
@@ -1148,6 +1155,64 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         if hc_obj is None:
            return None
         return VnaHealthCheckResult(hc_obj)
+
+    def get_bd(self, bd_uuid):
+        '''
+            method: get_bd get bd bd_uuid from agent
+            returns None if not found, a dict w/ attrib. eg:
+
+            Example:
+            query: http://nodec12.englab.juniper.net:8085/Snh_BridgeDomainSandeshReq?uuid=4978b5df-deac-4108-930d-76a000be302b
+
+            sample format of bd_dict:
+            {'uuid': '8d6a8fec-91ed-447c-aec3-70caa1af2e1c',
+             'vn': 'f456a09d-3c9b-4c0f-8b4c-4056f4d0adfe',
+             'isid': '200200',
+             'vrf': 'default-domain:ctest-TestPbbEvpnMacLearning-03474827:vn2:vn2:8d6a8fec-91ed-447c-aec3-70caa1af2e1c',
+             'pbb_etree_enabled': 'False',
+             'learning_enabled': 'True',
+             'name': 'default-domain:ctest-TestPbbEvpnMacLearning-03474827:vn2:ctest-bd_ctest-TestPbbEvpnMacLearning-03474827-45482677'}
+        '''
+        query = 'Snh_BridgeDomainSandeshReq?uuid=' + str(bd_uuid)
+        l = []
+
+        bd = self.dict_get(query)
+        abd = bd.xpath('./BridgeDomainSandeshResp/bd_list/list/BridgeDomainSandeshData') or \
+                bd.xpath('./bd_list/list/BridgeDomainSandeshData')
+
+        for bd in abd:
+            bd_dict = elem2dict(bd)
+            l.append(bd_dict)
+        return l
+
+    def _kitf_fltr(self, x, _type, value):
+        if _type == 'name':
+            path = './name'
+        elif _type == 'ip':
+            path = './ip'
+        e = x.xpath(path)
+        if e:
+            return value == e[0].text
+        return False
+
+    def get_vrouter_interface_list(self, _type, value):
+        '''
+            Returns the interface list matching _type and value
+        '''
+        ret_list = []
+        rsp_list = self.dict_get('Snh_KInterfaceReq?if_id=')
+        for rsp in rsp_list:
+            intf_list = rsp.xpath('./KInterfaceResp/if_list/list/KInterfaceInfo') or \
+                    rsp.xpath('./if_list/list/KInterfaceInfo')
+            avn = filter(lambda x:  self._kitf_fltr(x, _type, value), intf_list)
+
+            for intf in avn:
+                intf_dict = elem2dict(intf)
+                ret_list.append(intf_dict)
+        return ret_list
+
+    def get_vrouter_interfaces_by_name(self, itf_name):
+        return self.get_vrouter_interface_list('name', itf_name)
 
 if __name__ == '__main__':
     v = AgentInspect('10.204.216.221')
