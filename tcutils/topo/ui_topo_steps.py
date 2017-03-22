@@ -216,3 +216,21 @@ def createNetworkRouteTable(self):
             result = result and False
     return result
 # end createNetworkRouteTable
+
+def attachNrtToVN(self):
+    if not hasattr(self.topo, 'vn_nrt_list'):
+        self.logger.info("No nrt config for VN found in topo file")
+        return True
+    result = True
+    self.logger.info("Setup step: Editing VN to attach Route table")
+    for vn in self.topo.vnet_list:
+        if vn in self.topo.vn_nrt_params:
+            nrt_name = self.topo.vn_nrt_params[vn]
+            if not self.webui.attach_nrt_to_vn(
+                    nrt_name,
+                    vn):
+                result = result and False
+            self.addCleanup(
+                self.webui.detach_nrt_from_vn(nrt_name, vn))
+    return result
+# end attachNrtToVN

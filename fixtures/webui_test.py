@@ -957,6 +957,46 @@ class WebuiTest:
         return result
     # end create_network_route_table
 
+    def attach_nrt_to_vn(
+            self,
+            nrt_name,
+            vn):
+        result = True
+        try:
+            if not self.ui.click_configure_networks():
+                result = result and False
+            self.ui.select_project(self.project_name_input)
+            rows = self.ui.get_rows()
+            self.logger.info("Attaching route table %s using contrail-webui" %
+                             (nrt_name))
+            for net in rows:
+                if net.text:
+                    if (self.ui.get_slick_cell_text(net, 2) == vn):
+                        self.ui.click_element('fa-cog', 'class', browser=net)
+                        self.ui.wait_till_ajax_done(self.browser)
+                        self.ui.click_element(['tooltip-success', 'i'], ['class', 'tag'])
+                        self.ui.click_element('advanced_options')
+                        self.ui.click_element('s2id_route_table_refs_dropdown')
+                        self.ui.wait_till_ajax_done(self.browser)
+                        self.ui.select_from_dropdown(nrt_name, grep=True)
+                        if not self.ui.click_on_create('Network', 'network', save=True):
+                            result = result and False
+                            raise Exception("Route table attachment to VN failed")
+                        else:
+                            self.logger.info(
+                                "Attached route table %s using contrail-webui" %
+                                    (nrt_name))
+                        break
+        except WebDriverException:
+            self.logger.error("Error while attaching %s" % (nrt_name))
+            self.ui.screenshot("nrt_attach_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            result = result and False
+            raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end attach_nrt_to_vn
+
     def create_security_group(self, fixture):
         result = True
         try:
@@ -4375,6 +4415,56 @@ class WebuiTest:
         self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end detach_qos_from_vn
+
+    def detach_nrt_from_vn(
+            self,
+            nrt_name,
+            vn):
+        result = True
+        try:
+            if not self.ui.click_configure_networks():
+                result = result and False
+            self.ui.select_project(self.project_name_input)
+            rows = self.ui.get_rows()
+            self.logger.info("Detaching route table %s using contrail-webui" %
+                             (nrt_name))
+            for net in rows:
+                if net.text:
+                    if (self.ui.get_slick_cell_text(net, 2) == vn):
+                        self.ui.click_element('fa-cog', 'class', browser=net)
+                        self.ui.wait_till_ajax_done(self.browser)
+                        self.ui.click_element(['tooltip-success', 'i'], ['class', 'tag'])
+                        self.ui.click_element('advanced_options')
+                        try:
+                            nrts = self.ui.find_element(
+                                ['s2id_route_table_refs_dropdown', \
+                                    'select2-search-choice-close'], ['id', 'class'], \
+                                                        if_elements=[1])
+                        except:
+                            nrts = None
+                            pass
+                        for nrt in nrts:
+                            self.ui.click_element([
+                                's2id_route_table_refs_dropdown', \
+                                'select2-search-choice-close'], ['id', 'class'])
+                            self.ui.wait_till_ajax_done(self.browser)
+                        if not self.ui.click_on_create('Network', 'network', save=True):
+                            result = result and False
+                            raise Exception("Route table detachment from VN failed")
+                        else:
+                            self.logger.info(
+                                "Detached route table %s using contrail-webui" %
+                                    (nrt_name))
+                        break
+        except WebDriverException:
+            self.logger.error("Error while detaching %s" % (nrt_name))
+            self.ui.screenshot("nrt_attach_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            result = result and False
+            raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end detach_nrt_from_vn
 
     def service_template_delete_in_webui(self, fixture):
         if not self.ui.click_configure_service_template():
