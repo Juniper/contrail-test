@@ -924,6 +924,39 @@ class WebuiTest:
         return result
     # end attach_qos_to_vn
 
+    def create_network_route_table(
+            self,
+            nrt_name,
+            prefix,
+            nexthop,
+            nh_type='ip-address'):
+        result = True
+        try:
+            if not self.ui.click_on_create(
+                    'Network Route Table',
+                    'route_table',
+                    nrt_name,
+                    prj_name=self.project_name_input):
+                result = result and False
+            self.ui.send_keys(nrt_name, 'display_name', 'name')
+            self.ui.click_element('editable-grid-add-link', 'class')
+            self.ui.send_keys(prefix, 'prefix', 'name')
+            self.ui.click_on_select2_arrow('s2id_next_hop_type_dropdown')
+            self.ui.select_from_dropdown(nh_type)
+            self.ui.wait_till_ajax_done(self.browser)
+            self.ui.send_keys(nexthop, 'next_hop', 'name')
+            if not self.ui.click_on_create('Network Route Table', 'route_table', save=True):
+                result = result and False
+        except WebDriverException:
+            self.logger.error("Error while creating %s" % (nrt_name))
+            self.ui.screenshot("nrt_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            result = result and False
+            raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end create_network_route_table
+
     def create_security_group(self, fixture):
         result = True
         try:
@@ -4212,12 +4245,17 @@ class WebuiTest:
         self.delete_bgp_aas()
         self.delete_link_local_service()
         self.delete_svc_appliance_set()
+        self.delete_network_route_table()
         return True
     # end cleanup
 
     def delete_bgp_aas(self):
         self.ui.delete_element(element_type='bgp_aas_delete')
     # end delete_bgpaas
+
+    def delete_network_route_table(self):
+        self.ui.delete_element(element_type='network_route_table_delete')
+    # end delete_network_route_table
 
     def delete_link_local_service(self):
         self.ui.delete_element(element_type='link_local_service_delete')

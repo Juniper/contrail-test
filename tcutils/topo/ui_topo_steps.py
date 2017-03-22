@@ -195,3 +195,24 @@ def attachQosToVN(self):
                 self.webui.detach_qos_from_vn(qos_name, vn))
     return result
 # end attachQosToVN
+
+def createNetworkRouteTable(self):
+    if not hasattr(self.topo, 'nrt_list'):
+        self.logger.info("No network route table config found in topo file")
+        return True
+    result = True
+    self.logger.info("Setup step: Creating Network Route Table")
+    for nrt in self.topo.nrt_list:
+        nrt_param = self.topo.nrt_params[nrt]
+        prefix = nrt_param['prefix']
+        nh_type = nrt_param['nh_type']
+        nexthop = nrt_param['nexthop']
+        nrt_name = nrt
+        if not self.webui.create_network_route_table(
+                nrt_name,
+                prefix,
+                nexthop,
+                nh_type):
+            result = result and False
+    return result
+# end createNetworkRouteTable
