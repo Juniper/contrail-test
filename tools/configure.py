@@ -85,8 +85,11 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         keystone_certfile = validate_and_copy_file(cert_dir + '/' +\
                           os.path.basename(get_keystone_certfile()), cfgm_host)
         keystone_keyfile = keystone_certfile
-        keystone_insecure_flag = os.getenv('OS_INSECURE', \
-                                 get_keystone_insecure_flag())
+        if os.getenv('OS_INSECURE'):
+            #This handles the case where OS_INSECURE is set to NULL string
+            keystone_insecure_flag = os.getenv('OS_INSECURE')
+        else:
+            keystone_insecure_flag = get_keystone_insecure_flag()
     else:
         keystone_certfile = ""
         keystone_keyfile = ""
