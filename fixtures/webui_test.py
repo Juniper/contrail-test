@@ -459,7 +459,11 @@ class WebuiTest:
 
     def create_svc_instance(self, fixture):
         if fixture.service_mode == 'transparent' and fixture.si_v1:
-            sel_vn = 'Auto Configured'
+            mgmt_vn = left_vn = right_vn = 'Auto Configured'
+        else:
+            mgmt_vn = fixture.mgmt_vn_fq_name
+            left_vn = fixture.left_vn_fq_name
+            right_vn = fixture.right_vn_fq_name
         try:
             result = True
             if not self.ui.click_on_create(
@@ -482,12 +486,17 @@ class WebuiTest:
                         "return arguments[0].scrollIntoView();", service_temp)
                     service_temp.click()
                     break
-            intfs = self.ui.find_element(
-                ['interfaces-collection', 'data-cell-virtualNetwork'],
-                    ['id', 'class'], if_elements=[1])
-            for intf in intfs:
-                intf.click()
-                self.ui.select_from_dropdown(sel_vn)
+            intfs = self.ui.find_element('interfaceType', 'name', elements=True)
+            for index, intf in enumerate(intfs):
+                intf_type = intf.get_attribute('value')
+                if intf_type == 'management':
+                    vn_name = mgmt_vn
+                elif intf_type == 'left':
+                    vn_name = left_vn
+                elif intf_type == 'right':
+                    vn_name = right_vn
+                self.ui.find_element('s2id_virtualNetwork_dropdown', elements=True)[index].click()
+                self.ui.select_from_dropdown(vn_name)
             if not self.ui.click_on_create('Service Instance', 'service_instance', save=True):
                 result = result and False
             time.sleep(40)
