@@ -60,6 +60,13 @@ class NFSDatastore:
                                          #the contrail-controllers.Hence, the nfs datastore becomes 
                                          #in-accessiable.We need to create and mount the nfs datastore again. 
             else:
+                try:
+                    #Delete any existing templates in the nfs-ds
+                    #else datasore delete failes
+                    for vm in nas_ds.vm:
+                        _wait_for_task(vm.UnregisterVM())
+                except Exception as e:
+                    pass
                 hosts = [host for cluster in vc._dc.hostFolder.childEntity for host in cluster.host]
                 for host in hosts:
                     self._delete_datastore(host,nas_ds)
@@ -745,8 +752,8 @@ class VcenterVM:
                        powerOn=True)
         _wait_for_task(template.Clone(folder=vcenter._dc.vmFolder, name=vm.name,
                                       spec=spec))
-        vmobj = vcenter._find_obj(vcenter._dc, 'vm', {'name' : vm.name})
-        vm.get(vmobj)
+        vm.vmobj = vcenter._find_obj(vcenter._dc, 'vm', {'name' : vm.name})
+        vm.get(vm.vmobj)
         return vm
 
     def get(self, vm=None):
@@ -754,15 +761,11 @@ class VcenterVM:
             vm = self.vcenter._find_obj(self.vcenter._dc, 'vm', {'name' : self.name})
         self.host = vm.runtime.host.name
         self.id = vm.summary.config.instanceUuid
-        self.macs = {}
         self.ips = {}
-        tools_status = vm.guest.toolsStatus
-        if (tools_status == 'toolsNotInstalled' or
-                tools_status == 'toolsNotRunning'):
-            self.install_vmware_tools(self.vcenter,vm)
+        self.macs = {}
         for intf in vm.guest.net:
-            self.macs[intf.network] = intf.macAddress
             self.ips[intf.network] = intf.ipAddress[0]
+            self.macs[intf.network] = intf.macAddress
         return len(self.ips) == len(self.nets)
 
     def reboot(self, r):
@@ -856,16 +859,19 @@ class VcenterVM:
         if not vm.guest.guestOperationsReady:
             self.vcenter._log.error("Vm not yet operational.retrying....")
             return False
-        cmd_path = '/usr/bin/sudo'
-        user = 'ubuntu'
-        password = 'ubuntu'
-        vm_id = self.id
-        cmd = './vmware-tools-distrib/vmware-install.pl -d'#Assuming that package is there in the disk image,
-        try:                                               #but not installed 
-            vcenter.run_a_command(vm_id,user,password,cmd_path,cmd)
-            return True
-        except Exception as e:
-            return False
+        tools_status = vm.guest.toolsStatus
+        if (tools_status == 'toolsNotInstalled' or
+                tools_status == 'toolsNotRunning'):
+            cmd_path = '/usr/bin/sudo'
+            user = 'ubuntu'
+            password = 'ubuntu'
+            vm_id = self.id
+            cmd = './vmware-tools-distrib/vmware-install.pl -d'#Assuming that package is there in the disk image,
+            try:                                               #but not installed 
+                vcenter.run_a_command(vm_id,user,password,cmd_path,cmd)
+                return True
+            except Exception as e:
+                return False
 
     def bring_up_interfaces(self, vcenter ,vm , intfs=[]):
         time.sleep(20)
