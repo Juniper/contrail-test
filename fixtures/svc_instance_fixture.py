@@ -177,28 +177,33 @@ class SvcInstanceFixture(fixtures.Fixture):
         self._vnc.disassoc_intf_rt_table_from_si(self.si_fq_name, irt_uuid)
 
     def associate_hc(self, hc_uuid, intf_type):
-        self.logger.debug("Associating hc(%s) to si (%s)"%(hc_uuid, self.uuid))
-        self._vnc.assoc_health_check_to_si(self.uuid, hc_uuid, intf_type)
+        self.logger.debug("Associating hc(%s) to si (%s)" %
+                          (hc_uuid, self.si_fq_name))
+        self._vnc.assoc_health_check_to_si(self.si_fq_name, hc_uuid, intf_type)
         d = {'uuid': hc_uuid, 'intf_type': intf_type}
         if d not in self.hc_list:
             self.hc_list.append(d) 
 
     def disassociate_hc(self, hc_uuid):
-        self.logger.debug("Disassociating hc(%s) from si (%s)"%(hc_uuid, self.uuid))
-        self._vnc.disassoc_health_check_from_si(self.uuid, hc_uuid)
+        self.logger.debug(
+            "Disassociating hc(%s) from si (%s)" % (hc_uuid, self.si_fq_name))
+        self._vnc.disassoc_health_check_from_si(self.si_fq_name, hc_uuid)
+        assert self.verify_hc_is_not_active()
         for hc in list(self.hc_list):
             if hc['uuid'] == hc_uuid:
                 self.hc_list.remove(hc)
 
     def _get_vn_of_intf_type(self, intf_type):
         if (intf_type == 'left'):
-            return self.left_vn_name
+            return self.left_vn_fq_name
         elif (intf_type == 'right'):
-            return self.right_vn_name
+            return self.right_vn_fq_name
         elif (intf_type == 'management'):
-            return self.management_vn_name
+            return self.management_vn_fq_name
 
     def get_hc_status(self):
+        if self.hc_list == []:
+            return False
         for svm in self.svm_list:
             inspect_h = self.connections.agent_inspect[svm.vm_node_ip]
             for hc in self.hc_list:
