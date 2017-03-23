@@ -310,6 +310,20 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_infra_rbac_project
 
     @preposttest_wrapper
+    def test_verify_config_infra_virtual_router(self):
+        '''Test to verify virtual router under Configure->Infrastructure->Virtual Router
+           1. Go to Configure->Infrastructure->Virtual Router.
+           2. Get all the details of virtual router from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_vrouter_api_data(), \
+                   'Virtual Router config data verification failed'
+        return True
+    # end test_verify_config_infra_virtual_router
+
+    @preposttest_wrapper
     def test_verify_config_networking_floating_ips(self):
         '''Test floating ips on config->Networking->Manage Floating IPs page
         '''
