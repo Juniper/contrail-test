@@ -269,6 +269,47 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_infra_global_config
 
     @preposttest_wrapper
+    def test_verify_config_infra_rbac_global(self):
+        '''Test to verify RBAC under Configure->Infrastructure->RBAC->Global
+           1. Go to Configure->Infrastructure->RBAC->Global.
+           2. Get all the details of RBAC from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_rbac_api_data(), 'RBAC config data verification failed'
+        return True
+    # end test_verify_config_infra_rbac_global
+
+    @preposttest_wrapper
+    def test_verify_config_infra_rbac_domain(self):
+        '''Test to verify RBAC under Configure->Infrastructure->RBAC->Domain
+           1. Go to Configure->Infrastructure->RBAC->Domain.
+           2. Get all the details of RBAC from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_rbac_api_data(rbac_type='domain'), \
+                                              'RBAC config data verification failed'
+        return True
+    # end test_verify_config_infra_rbac_domain
+
+    @preposttest_wrapper
+    def test_verify_config_infra_rbac_project(self):
+        '''Test to verify RBAC under Configure->Infrastructure->RBAC->Project
+           1. Go to Configure->Infrastructure->RBAC->Project.
+           2. Get all the details of RBAC from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_rbac_api_data(rbac_type='project'), \
+                                              'RBAC config data verification failed'
+        return True
+    # end test_verify_config_infra_rbac_project
+
+    @preposttest_wrapper
     def test_verify_config_networking_floating_ips(self):
         '''Test floating ips on config->Networking->Manage Floating IPs page
         '''

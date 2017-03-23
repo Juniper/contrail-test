@@ -206,6 +206,10 @@ class WebuiCommon:
         return self._get_list_ops('virtual-machines')
     # end get_vm_list_ops
 
+    def get_access_list_api(self):
+        return self._get_list_api('api-access-lists')
+    # end get_access_list_api
+
     def log_msg(self, t, msg):
         if t == 'info':
             self.logger.info(msg)
@@ -1838,6 +1842,28 @@ class WebuiCommon:
     def click_configure_rbac_in_project(self):
         return self.click_configure_rbac_in_global(option='project')
     # end click_configure_rbac_in_project
+
+    def click_configure_rbac_basic(self, row_index, option='global'):
+        self.click_element('RBAC', 'link_text')
+        self.check_error_msg("configure rbac " + option)
+        self.click_element("rbac_" + option + "_tab-tab-link")
+        rows = self.get_rows()
+        rows[row_index].find_elements_by_tag_name(
+            'div')[0].find_element_by_tag_name('i').click()
+        self.wait_till_ajax_done(self.browser)
+    # end click_configure_rbac_basic
+
+    def click_configure_rbac_in_global_basic(self, row_index):
+        return self.click_configure_rbac_basic(row_index, option='global')
+    # end click_configure_rbac_in_global_basic
+
+    def click_configure_rbac_in_domain_basic(self, row_index):
+        return self.click_configure_rbac_basic(row_index, option='domain')
+    # end click_configure_rbac_in_domain_basic
+
+    def click_configure_rbac_in_project_basic(self, row_index):
+        return self.click_configure_rbac_basic(row_index, option='project')
+    # end click_configure_rbac_in_project_basic
 
     def _click_on_config_dropdown(self, br, index=2):
         # index = 3 if svc_instance or svc_template
