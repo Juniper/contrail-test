@@ -292,3 +292,16 @@ def createLogStatistic(self):
         result = False
     return result
 # end createLogStatistic
+
+def createFlowAging(self):
+    result = True
+    if not hasattr(self.topo, 'flow_age_proto_list'):
+        self.logger.warn("No flow aging config found in topo file")
+        return result
+    self.logger.info("Create Flow aging")
+    if not self.webui.create_flow_aging(
+               flow_list=self.topo.flow_age_proto_list,
+               params=self.topo.flow_age_proto_params):
+        result = False
+    return result
+# end createFlowAging
