@@ -1443,6 +1443,14 @@ class WebuiCommon:
                 element_id = 'btnDelete' + fixture.parent_type.title() + 'RBAC'
             popup_id = 'configure-rbacbtn1'
             element_name = 'all'
+        elif element_type == 'log_statistic_delete':
+            if self.click_configure_log_stat_in_global():
+                br = self.find_element('user-defined-counters-grid')
+            else:
+                result = result and False
+            element_id = 'btnDeleteCounters'
+            popup_id = 'configure-user_defined_countersbtn1'
+            element_name = 'all'
         if not br:
             br = self.browser
         rows = self.get_rows(br, canvas=True)
@@ -1481,6 +1489,9 @@ class WebuiCommon:
                         continue
                     else:
                         element_name = element_text
+                elif element_type == 'log_statistic_delete':
+                    element_text = 'all'
+                    div_obj = self.find_div_element_by_tag(0, element, return_type='obj')
                 else:
                     element_text = self.find_div_element_by_tag(2, element)
                     div_obj = self.find_div_element_by_tag(1, element, return_type='obj')
@@ -1860,6 +1871,16 @@ class WebuiCommon:
     def click_configure_rbac_in_project(self):
         return self.click_configure_rbac_in_global(option='project')
     # end click_configure_rbac_in_project
+
+    def click_configure_log_stat_in_global(self):
+        if not self.click_configure_elements(0, 'config_infra_gblconfig',
+                                             msg="Configure Global Log stat"):
+            return False
+        else:
+            self.click_element('user_defined_counter_tab-tab-link')
+            self.wait_till_ajax_done(self.browser, wait=3)
+            return self.check_error_msg("configure log statistic")
+    # end click_configure_log_stat_in_global
 
     def _click_on_config_dropdown(self, br, index=2):
         # index = 3 if svc_instance or svc_template
