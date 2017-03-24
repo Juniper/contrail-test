@@ -311,6 +311,22 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_route_aggregates
 
+    @preposttest_wrapper
+    def test2_2_1_attach_routing_policy_to_si(self):
+        '''
+        Description: Test to attach a created Routing Policy to SI on UI
+        Steps:
+            1. On the Contrail UI, go to Config -> Services -> Service Instances
+            2. Click on edit on the SI with NAT template
+            3. Click on 'Routing Policy', attach the Routing policy
+            4. Click on 'Save'
+        Pass criteria:
+            1. Steps 3 and 4 above should pass
+        '''
+        assert self.res.setup_obj.attach_routing_policy(), 'Attaching of Routing Policy failed'
+        return True
+    # end test_attach_routing_policy_to_si
+
     # UI verification tests
 
     @preposttest_wrapper

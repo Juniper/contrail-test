@@ -491,6 +491,14 @@ class sdn_webui_config ():
                 'term_then': 'local-preference',
                 'lp_value': 200 }}
 
+        #Define parameters for attaching Routing Policy to SI
+        self.si_rp_list = ['rpol1', 'rpol2']
+        self.si_rp_params = {
+            'svcinst2' : {
+                'left': 'rpol1',
+                'right': 'rpol2'
+            }}
+
         #Define Route Aggregate parameters
         self.ragg_list = ['ragg1', 'ragg2']
         self.ragg_params = {
