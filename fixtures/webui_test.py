@@ -7585,3 +7585,113 @@ class WebuiTest:
         self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end attach_and_detach_intf_tab_to_port
+
+    def verify_intf_route_tab_api_data(self, action='create', expected_result=None):
+        self.logger.info(
+            "Verifying interface route table api server data on \
+            Config->Networking->Ports page ...")
+        self.logger.debug(self.dash)
+        result = True
+        intf_tab_list_api = self.ui.get_intf_table_list_api()
+        for intf in range(len(intf_tab_list_api['interface-route-tables'])):
+            api_fq_name = intf_tab_list_api[
+                'interface-route-tables'][intf]['fq_name'][2]
+            self.ui.click_configure_intf_route_table()
+            br = self.ui.find_element('inf_rt-table-grid')
+            rows = self.ui.get_rows(browser=br)
+            self.logger.info(
+                "Interface route table fq_name %s exists in api server.. \
+                checking if exists in webui as well" % (api_fq_name))
+            for row in range(len(rows)):
+                dom_arry_basic = []
+                match_flag = 0
+                text = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)[2].text
+                if api_fq_name in text:
+                    self.logger.info(
+                        "Interface route table fq_name %s matched in webui.. \
+                        Verifying basic view details..." % (api_fq_name))
+                    self.logger.debug(self.dash)
+                    match_index = row
+                    match_flag = 1
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "Interface route table fq name exists in apiserver \
+                    but %s not found in webui..." % (api_fq_name))
+                self.logger.debug(self.dash)
+            else:
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'intf_route_table', match_index, browser=br)[1]
+                for detail in range(len(rows_detail)):
+                    key_value = rows_detail[detail].text.split('\n')
+                    key = str(key_value.pop(0))
+                    if len(key_value) > 1 :
+                        value = key_value
+                    elif len(key_value) ==  1:
+                        value = key_value[0]
+                    else:
+                        value = None
+                    key = key.replace(' ', '_')
+                    if value == '-':
+                        continue
+                    else:
+                        dom_arry_basic.append({'key': key, 'value': value})
+                intf_tab_api_data = self.ui.get_details(
+                                    intf_tab_list_api['interface-route-tables'][
+                                    intf]['href'])
+                complete_api_data = []
+                if 'interface-route-table' in intf_tab_api_data:
+                    api_data_basic = intf_tab_api_data.get('interface-route-table')
+                    if 'interface_route_table_routes' in api_data_basic:
+                        routes = api_data_basic['interface_route_table_routes'][
+                                'route']
+                        value_list = []
+                        for route in routes:
+                            if route['prefix']:
+                                 community = route['community_attributes']['community_attribute']
+                                 if community:
+                                     comm = ''
+                                     for index, com in enumerate(community):
+                                         if index == len(community)-1:
+                                             comm = comm + com
+                                         else:
+                                             comm = comm + com + ', '
+                                     prefix = 'prefix ' + route['prefix'] + \
+                                              'community-attributes ' + comm
+                                 else:
+                                     prefix = 'prefix ' + route['prefix']
+                                 value_list.append(prefix)
+                        if value_list:
+                            complete_api_data.append({'key': 'Routes', 'value': value_list})
+                    self.ui.keyvalue_list(
+                            complete_api_data,
+                            UUID=api_data_basic.get('uuid'),
+                            Display_Name=api_data_basic.get('display_name'))
+                else:
+                    result = result and False
+                if action == 'create':
+                    if self.ui.match_ui_kv(complete_api_data, dom_arry_basic):
+                        self.logger.info(
+                            "Interface Route Table config details matched on \
+                            Config->Networking->Routing->Interface Route Table page")
+                    else:
+                        self.logger.error(
+                            "Interface Route Table config details match failed on \
+                            Config->Networking->Routing->Interface Route Table page")
+                        result = result and False
+                else:
+                    if self.ui.match_ui_kv(expected_result, dom_arry_basic, data=
+                           'Expected_key_value', matched_with='WebUI') and self.ui.match_ui_kv(
+                           expected_result, complete_api_data, data='Expected_key_value',
+                           matched_with='API'):
+                        self.logger.info(
+                            "%s of Interface Route Table matched on WebUI/API \
+                            after editing" % (expected_result))
+                    else:
+                        self.logger.error(
+                            "%s of Interface Route Table match failed on WebUI/API \
+                            after editing" % (expected_result))
+                        result = result and False
+                    return result
+        return result
+    # end verify_intf_route_tab_api_data
