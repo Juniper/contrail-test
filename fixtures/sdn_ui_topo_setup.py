@@ -255,6 +255,11 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
         return True
     # end create_vcpe_router
 
+    def create_network_route_table(self):
+        assert ui_topo_steps.createNetworkRouteTable(self)
+        return True
+    # end create_network_route_table
+
     def cleanUp(self):
         if self.inputs.fixture_cleanup == 'yes':
             super(sdnUiTopoSetupFixture, self).cleanUp()
