@@ -4502,6 +4502,10 @@ class WebuiTest:
         self.create_flow_aging(option='delete')
     # end delete_flow_aging
 
+    def delete_intf_route_table(self, fixture):
+        self.ui.delete_element(fixture, 'intf_route_tab_delete')
+    # end delete_intf_route_table
+
     def delete_dns_server_and_record(self):
         self.detach_ipam_from_dns_server()
         self.delete_dns_record()
@@ -7496,3 +7500,32 @@ class WebuiTest:
             self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_flow_aging
+
+    def create_intf_route_table(self, fixture):
+        result = True
+        try:
+            if not self.ui.click_on_create(
+                    'Interface Route Table',
+                    'intf_route_table',
+                    fixture.name,
+                    prj_name=fixture.project_name):
+                result = result and False
+            self.ui.click_element('editable-grid-add-link', 'class')
+            send_key_values = {
+                'name': {
+                    'display_name': fixture.name,
+                    'prefix': fixture.prefixes}}
+            if not self.ui.send_keys_values(send_key_values):
+                result = result and False
+            self.ui.click_element('s2id_community_attr_dropdown')
+            if not self.ui.select_from_dropdown(fixture.kwargs['community'], grep=False):
+                result = result and False
+            self.ui.click_on_create('Interface Route Table', 'route_table', save=True)
+        except WebDriverException:
+            self.logger.error(
+                "Error while creating interface route table %s " %(fixture.name))
+            self.ui.screenshot("Interface Route Table")
+            result = result and False
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end create_intf_route_table

@@ -290,6 +290,11 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
         return True
     # end create_flow_aging
 
+    def create_interface_route_table(self):
+        assert topo_steps.createIntfRouteTable(self)
+        return True
+    # end create_interface_route_table
+
     def cleanUp(self):
         if self.inputs.fixture_cleanup == 'yes':
             super(sdnUiTopoSetupFixture, self).cleanUp()
