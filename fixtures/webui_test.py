@@ -8157,3 +8157,94 @@ class WebuiTest:
                                 result = result and False
         return result
     # end verify_rbac_api_data
+
+    def verify_vrouter_api_data(self, action='create', expected_result=None):
+        self.logger.info(
+            "Verifying virutal router api server data on \
+            Config->Networking->Ports page ...")
+        self.logger.debug(self.dash)
+        result = True
+        vrouter_list_api = self.ui.get_vrouter_list_api()
+        for vrouter in range(len(vrouter_list_api['virtual-routers'])):
+            api_fq_name = vrouter_list_api[
+                'virtual-routers'][vrouter]['fq_name'][1]
+            self.ui.click_configure_vrouter()
+            rows = self.ui.get_rows()
+            for row in range(len(rows)):
+                dom_arry_basic = []
+                match_flag = 0
+                text = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)[2].text
+                if api_fq_name in text:
+                    self.logger.info(
+                        "vrouter fq_name %s matched in webui..Verifying basic view details..." %
+                        (api_fq_name))
+                    self.logger.debug(self.dash)
+                    match_index = row
+                    match_flag = 1
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "vrouter fq name exists in apiserver but %s not found in webui..." %
+                    (api_fq_name))
+                self.logger.debug(self.dash)
+            else:
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'vrouter', match_index)[1]
+                for detail in range(len(rows_detail)):
+                    key_value = rows_detail[detail].text.split('\n')
+                    key = str(key_value.pop(0))
+                    if len(key_value) > 1 :
+                        value = key_value
+                    elif len(key_value) ==  1:
+                        value = key_value[0]
+                    else:
+                        value = None
+                    if key == 'Owner Permissions' or key == 'Global Permissions' or key == 'Owner' \
+                       or key == 'Shared List':
+                        continue
+                    key = key.replace(' ', '_')
+                    dom_arry_basic.append({'key': key, 'value': value})
+                vrouter_api_data = self.ui.get_details(
+                                vrouter_list_api['virtual-routers'][vrouter]['href'])
+                complete_api_data = []
+                if 'virtual-router' in vrouter_api_data:
+                    vrouter_data = vrouter_api_data['virtual-router']
+                    if self.inputs.auth_ip == vrouter_data['virtual_router_ip_address']:
+                        continue
+                    vrouter_type = vrouter_data[
+                                   'virtual_router_type'].title().replace('-', ' ')
+                    if re.search('Tor', vrouter_type):
+                        vrouter_type = vrouter_type.replace('Tor', 'TOR')
+                    self.ui.keyvalue_list(
+                        complete_api_data,
+                        Name=vrouter_data.get('name'),
+                        UUID=vrouter_data.get('uuid'),
+                        Type=vrouter_type,
+                        IP_Address=vrouter_data['virtual_router_ip_address'])
+                else:
+                    result = result and False
+                if action == 'create':
+                    if self.ui.match_ui_kv(complete_api_data, dom_arry_basic):
+                        self.logger.info(
+                            "VRouter config details matched on \
+                            Config->Infrastructure->Virtual Router page")
+                    else:
+                        self.logger.error(
+                            "Vrouter config details match failed on \
+                            Config->Infrastructure->Virtual Router page")
+                        result = result and False
+                else:
+                    if self.ui.match_ui_kv(expected_result, dom_arry_basic, data=
+                           'Expected_key_value', matched_with='WebUI') and self.ui.match_ui_kv(
+                           expected_result, complete_api_data, data='Expected_key_value',
+                           matched_with='API'):
+                        self.logger.info(
+                            "%s of Vrouter matched on WebUI/API after editing" % (expected_result))
+                    else:
+                        self.logger.error(
+                            "%s of Vrouter match failed on WebUI/API after editing" %
+                            (expected_result))
+                        result = result and False
+                    return result
+        return result
+    # end verify_vrouter_api_data
