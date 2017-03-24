@@ -222,6 +222,10 @@ class WebuiCommon:
         return self._get_list_api('api-access-lists')
     # end get_access_list_api
 
+    def get_vrouter_list_api(self):
+        return self._get_list_api('virtual-routers')
+    # end get_vrouter_list_api
+
     def log_msg(self, t, msg):
         if t == 'info':
             self.logger.info(msg)
@@ -1858,6 +1862,14 @@ class WebuiCommon:
         return self.click_configure_elements(0, 'config_infra_vrouters',
                                   msg="configure virtual routers")
     # end click_configure_vrouter
+
+    def click_configure_vrouter_basic(self, row_index):
+        self.click_configure_vrouter()
+        rows = self.get_rows()
+        rows[row_index].find_elements_by_tag_name(
+            'div')[0].find_element_by_tag_name('i').click()
+        self.wait_till_ajax_done(self.browser)
+    # end click_configure_vrouter_basic
 
     def click_configure_elements(self, index, element, msg=None, wait=2):
         self.wait_till_ajax_done(self.browser)
