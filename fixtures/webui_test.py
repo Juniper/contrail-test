@@ -7856,11 +7856,11 @@ class WebuiTest:
                     if self.ui.match_ui_kv(complete_api_data, dom_arry_basic):
                         self.logger.info(
                             "Physical Router config details matched on \
-                            Config->Networking->Ports page")
+                            Config->Physical Devices->Physical Routers page")
                     else:
                         self.logger.error(
                             "Physical Router config details match failed on \
-                            Config->Networking->Ports page")
+                            Config->Physical Devices->Physical Routers page")
                         result = result and False
                 else:
                     if self.ui.match_ui_kv(expected_result, dom_arry_basic, data=
@@ -7878,3 +7878,157 @@ class WebuiTest:
                     return result
         return result
     # end verify_phy_rtr_api_data
+
+    def verify_alarms_api_data(self, alarm_params, action='create', expected_result=None):
+        alarms_name_list = alarm_params.keys()
+        result = True
+        for alarm in alarms_name_list:
+            parent_type = alarm_params[alarm].get('parent_type')
+            alarm_list_api = self.ui.get_alarms_list_api()
+            for alarm_api in range(len(alarm_list_api['alarms'])):
+                if parent_type == 'project':
+                    msg = "Config->Alarms->Project"
+                try:
+                    api_fq_name = alarm_list_api['alarms'][alarm_api][
+                                      'fq_name'][2]
+                except IndexError:
+                    msg = "Config->Global Config->Alarm Rules"
+                    api_fq_name = alarm_list_api['alarms'][alarm_api]['fq_name'][1]
+                if api_fq_name != alarm:
+                    continue
+                self.logger.info(
+                    "Verifying Alarms api server data on %s " % (msg))
+                self.logger.debug(self.dash)
+                conf_func = 'self.ui.click_configure_alarms_in_' + parent_type
+                eval(conf_func)()
+                if parent_type == 'global':
+                     br = self.ui.find_element('config-alarm-grid')
+                else:
+                    br = self.browser
+                    self.ui.select_project(self.project_name_input)
+                rows = self.ui.get_rows(browser=br)
+                self.logger.info(
+                    "Alarm fq_name %s exists in api server..checking if exists in webui as well" %
+                    (api_fq_name))
+                for row in range(len(rows)):
+                    dom_arry_basic = []
+                    match_flag = 0
+                    text = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)[2].text
+                    if api_fq_name in text:
+                        self.logger.info(
+                            "Alarm fq_name %s matched in webui..Verifying basic view details..." %
+                            (api_fq_name))
+                        self.logger.debug(self.dash)
+                        match_index = row
+                        match_flag = 1
+                        break
+                if not match_flag:
+                    self.logger.error(
+                        "Alarm fq name exists in apiserver but %s not found in webui..." %
+                        (api_fq_name))
+                    self.logger.debug(self.dash)
+                else:
+                    func = 'alarms_' + parent_type
+                    rows_detail = self.ui.click_basic_and_get_row_details(
+                                func, match_index, browser=br)[1]
+                    for detail in range(len(rows_detail)):
+                        row_data = rows_detail[detail].text
+                        if re.search('Rules', row_data) and re.search('\nOR\n', row_data):
+                            row_data = row_data.replace('\nOR\n', ' OR ')
+                        key_value = row_data.split('\n')
+                        key = str(key_value.pop(0))
+                        if len(key_value) > 1 :
+                            value = key_value
+                        elif len(key_value) ==  1:
+                            value = key_value[0]
+                        else:
+                            value = None
+                        if key == 'UVE Keys':
+                            if type(value) == list:
+                                for index, val in enumerate(value):
+                                    value[index] = value[index].rstrip(',')
+                        if key == 'Severity':
+                            value = value.strip()
+                        if key == 'Owner Permissions' or key == 'Global Permissions' \
+                            or key == 'Owner' or key == 'Shared List':
+                            continue
+                        key = key.replace(' ', '_')
+                        dom_arry_basic.append({'key': key, 'value': value})
+                    alarm_api_details = self.ui.get_details(
+                                     alarm_list_api['alarms'][alarm_api]['href'])
+                    complete_api_data = []
+                    alarm_api_data = alarm_api_details['alarm']
+                    id_perms = alarm_api_data['id_perms']
+                    if 'enable' in id_perms:
+                        enable = id_perms.get('enable')
+                        if enable:
+                            enable = 'true'
+                        else:
+                            enable = 'false'
+                    if 'alarm_severity' in alarm_api_data:
+                        severity = alarm_api_data.get('alarm_severity')
+                        if severity == 2:
+                            severity = 'Minor'
+                        elif severity == 1:
+                            severity = 'Major'
+                        else:
+                            severity = 'Critical'
+                    if 'uve_keys' in alarm_api_data:
+                        if 'uve_key' in alarm_api_data['uve_keys']:
+                            uve_key = alarm_api_data['uve_keys'].get('uve_key')
+                            if len(uve_key) > 1:
+                                uve_value = uve_key
+                            else:
+                                uve_value = uve_key[0]
+                    if 'alarm_rules' in alarm_api_data:
+                        alarm_rule_or_list = alarm_api_data['alarm_rules']['or_list']
+                        or_rule = ''
+                        for or_list in alarm_rule_or_list:
+                            and_rule = ''
+                            alarm_rule_and_list = or_list['and_list']
+                            for and_list in alarm_rule_and_list:
+                                operation = and_list['operation']
+                                operand1 = and_list['operand1']
+                                variables = and_list['variables']
+                                try:
+                                    operand2 = and_list['operand2']['json_value']
+                                except KeyError:
+                                    operand2 = and_list['operand2']['uve_attribute']
+                                if variables:
+                                    and_rule = and_rule + operand1 + ' ' + operation + ' ' + operand2 + \
+                                                    ', variables ' + variables[0] + ' AND '
+                                else:
+                                    and_rule = and_rule + operand1 + ' ' + operation + ' ' + operand2 + ' AND '
+                            or_rule = or_rule + and_rule.rstrip(' AND ') + ' OR '
+                        rule = or_rule.rstrip(' OR ')
+                        self.ui.keyvalue_list(
+                            complete_api_data,
+                            Name=alarm_api_data.get('name'),
+                            Enabled=enable,
+                            Description=id_perms['description'],
+                            Severity=severity,
+                            UVE_Keys=uve_value,
+                            Rules=rule)
+                if action == 'create':
+                    if self.ui.match_ui_kv(complete_api_data, dom_arry_basic):
+                        self.logger.info(
+                            "Alaram config details matched on Config->Alarms page")
+                    else:
+                        self.logger.error(
+                            "Alarm config details match failed on Config->Alarms page")
+                        result = result and False
+                else:
+                    if self.ui.match_ui_kv(expected_result, dom_arry_basic, data=
+                           'Expected_key_value', matched_with='WebUI') and self.ui.match_ui_kv(
+                           expected_result, complete_api_data, data='Expected_key_value',
+                           matched_with='API'):
+                        self.logger.info(
+                            "%s of alarm matched on WebUI/API after editing" % (expected_result))
+                    else:
+                        self.logger.error(
+                            "%s of alarm match failed on WebUI/API after editing" %
+                            (expected_result))
+                        result = result and False
+                break
+        return result
+    # end verify_alarms_api_data
