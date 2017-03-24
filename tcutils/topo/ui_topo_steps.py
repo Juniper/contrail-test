@@ -260,3 +260,22 @@ def createRouteAggregate(self):
         result = result and False
     return result
 # end createRouteAggregate
+
+def attachRpToSI(self):
+    if not hasattr(self.topo, 'si_rp_list'):
+        self.logger.info("No rp config for SI found in topo file")
+        return True
+    result = True
+    self.logger.info("Setup step: Editing SI to attach Routing policy")
+    for si in self.topo.si_list:
+        if si in self.topo.si_rp_params:
+            int_rp = self.topo.si_rp_params[si]
+            if not self.webui.attach_detach_rpol_to_si(
+                    int_rp,
+                    si):
+                result = result and False
+            self.addCleanup(
+                self.webui.attach_detach_rpol_to_si(int_rp, si, attach=False))
+            import pdb; pdb.set_trace()
+    return result
+# end attachRpToSI

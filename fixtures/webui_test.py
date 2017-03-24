@@ -1086,6 +1086,68 @@ class WebuiTest:
         return result
     # end attach_nrt_to_vn
 
+    def attach_detach_rpol_to_si(
+            self,
+            int_rp,
+            si,
+            attach=True):
+        result = True
+        if attach:
+            attach_var = 'Attach'
+        else:
+            attach_var = 'Detach'
+        try:
+            if not self.ui.click_configure_service_instance():
+                result = result and False
+            self.ui.select_project(self.project_name_input)
+            self.logger.info("%s routing policy %s using contrail-webui" %
+                             (attach_var, int_rp))
+            rows = self.ui.get_rows()
+            for sint in rows:
+                if sint.text:
+                    if (self.ui.get_slick_cell_text(sint, 2) == si):
+                        self.ui.click_element('fa-cog', 'class', browser=sint)
+                        self.ui.wait_till_ajax_done(self.browser)
+                        self.ui.click_element(['tooltip-success', 'i'], ['class', 'tag'])
+                        self.ui.click_on_accordian('rtPolicy', def_type=False)
+                        for index, (intf, pol) in enumerate(int_rp.iteritems()):
+                            br = self.ui.find_element('rtPolicys')
+                            if attach:
+                                self.ui.click_element('editable-grid-add-link', 'class',
+                                                      browser=br)
+                                self.ui.wait_till_ajax_done(self.browser)
+                                self.ui.find_element('s2id_interface_type_dropdown',
+                                                     elements=True, browser=br)[index].click()
+                                self.ui.wait_till_ajax_done(self.browser)
+                                self.ui.select_from_dropdown(intf)
+                                self.ui.find_element('s2id_routing_policy_dropdown',
+                                                     elements=True, browser=br)[index].click()
+                                self.ui.wait_till_ajax_done(self.browser)
+                                self.ui.select_from_dropdown(pol)
+                            else:
+                                self.ui.find_element('fa-minus', 'class', browser=br,
+                                                     elements=True)[0].click()
+                        if not attach:
+                            self.ui.click_on_accordian('rtPolicy', def_type=False)
+                        if not self.ui.click_on_create('Service Instance', 'service_instance',
+                                                       save=True):
+                            result = result and False
+                            raise Exception("Routing policy %s to SI failed" % (attach_var))
+                        else:
+                            self.logger.info(
+                                "%s routing policy %s successful using contrail-webui" %
+                                    (int_rp, attach_var))
+                        break
+        except WebDriverException:
+            self.logger.error("Error during %s of routing policy %s" % (attach_var, int_rp))
+            self.ui.screenshot("rp_attach_detach_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            result = result and False
+            raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end attach_detach_rpol_to_si
+
     def create_security_group(self, fixture):
         result = True
         try:
