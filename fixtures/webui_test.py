@@ -957,6 +957,59 @@ class WebuiTest:
         return result
     # end create_network_route_table
 
+    def create_routing_policy(
+            self,
+            rp_list,
+            rp_params):
+        result = True
+        try:
+            for rp in rp_list:
+                rp_param = rp_params[rp]
+                term_from = rp_param.get('term_from')
+                prefix = rp_param.get('prefix')
+                match_type = rp_param.get('match_type')
+                term_then = rp_param.get('term_then')
+                action = rp_param.get('action')
+                lp_value = rp_param.get('lp_value')
+                if not self.ui.click_on_create(
+                        'Routing Policy',
+                        'routing_policy',
+                        rp,
+                        prj_name=self.project_name_input):
+                    result = result and False
+                self.ui.send_keys(rp, 'routingPolicyname', 'name')
+                br = self.ui.find_element('data-cell-from-collection', 'class')
+                self.ui.click_element('s2id_name_dropdown', browser=br)
+                self.ui.select_from_dropdown(term_from)
+                if prefix:
+                    self.ui.send_keys(prefix, 'value', 'name', browser=br)
+                self.ui.click_on_select2_arrow('s2id_additionalValue_dropdown')
+                self.ui.select_from_dropdown(match_type)
+                self.ui.wait_till_ajax_done(self.browser)
+                br = self.ui.find_element('data-cell-then-collection', 'class')
+                self.ui.click_element('s2id_name_dropdown', browser=br)
+                self.ui.select_from_dropdown(term_then)
+                if action:
+                    self.ui.click_on_select2_arrow('s2id_action_condition_dropdown')
+                    self.ui.select_from_dropdown(action)
+                else:
+                    self.ui.send_keys(lp_value, 'value', 'name', browser=br)
+                self.ui.wait_till_ajax_done(self.browser)
+                if not self.ui.click_on_create('Routing Policy', 'routing_policy', save=True):
+                    result = result and False
+                else:
+                    self.logger.info(
+                        "Routing Policy %s creation successful" % (rp))
+        except WebDriverException:
+            self.logger.error("Error while creating %s" % (rp))
+            self.ui.screenshot("rp_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            result = result and False
+            raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end create_routing_policy
+
     def attach_nrt_to_vn(
             self,
             nrt_name,
@@ -4286,6 +4339,7 @@ class WebuiTest:
         self.delete_link_local_service()
         self.delete_svc_appliance_set()
         self.delete_network_route_table()
+        self.delete_routing_policy()
         return True
     # end cleanup
 
@@ -4296,6 +4350,10 @@ class WebuiTest:
     def delete_network_route_table(self):
         self.ui.delete_element(element_type='network_route_table_delete')
     # end delete_network_route_table
+
+    def delete_routing_policy(self):
+        self.ui.delete_element(element_type='routing_policy_delete')
+    # end delete_routing_policy
 
     def delete_link_local_service(self):
         self.ui.delete_element(element_type='link_local_service_delete')

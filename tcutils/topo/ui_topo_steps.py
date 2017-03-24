@@ -234,3 +234,16 @@ def attachNrtToVN(self):
                 self.webui.detach_nrt_from_vn(nrt_name, vn))
     return result
 # end attachNrtToVN
+
+def createRoutingPolicy(self):
+    if not hasattr(self.topo, 'rp_list'):
+        self.logger.info("No routing policy config found in topo file")
+        return True
+    result = True
+    self.logger.info("Setup step: Creating Routing Policy")
+    if not self.webui.create_routing_policy(
+            self.topo.rp_list,
+            self.topo.rp_params):
+        result = result and False
+    return result
+# end createRoutingPolicy
