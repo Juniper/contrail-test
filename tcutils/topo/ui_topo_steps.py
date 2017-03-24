@@ -247,3 +247,16 @@ def createRoutingPolicy(self):
         result = result and False
     return result
 # end createRoutingPolicy
+
+def createRouteAggregate(self):
+    if not hasattr(self.topo, 'ragg_list'):
+        self.logger.info("No route aggregate config found in topo file")
+        return True
+    result = True
+    self.logger.info("Setup step: Creating Route Aggregate")
+    if not self.webui.create_route_aggregate(
+            self.topo.ragg_list,
+            self.topo.ragg_params):
+        result = result and False
+    return result
+# end createRouteAggregate
