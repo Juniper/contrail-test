@@ -8032,3 +8032,128 @@ class WebuiTest:
                 break
         return result
     # end verify_alarms_api_data
+
+    def verify_rbac_api_data(self, rbac_type='global', action='create',
+                            expected_result=None):
+        self.logger.info(
+            "Verifying rbac api server data on Config->Infrastructure->RBAC->%s page ..." %
+            (rbac_type))
+        self.logger.debug(self.dash)
+        result = True
+        access_list_api = self.ui.get_access_list_api()
+        for acl in range(len(access_list_api['api-access-lists'])):
+            api_fq_name = access_list_api['api-access-lists'][acl]['fq_name'][0]
+            text_index = 3
+            if rbac_type == 'global':
+                count = 2
+                text_index = 2
+                if api_fq_name != 'default-global-system-config':
+                    continue
+            elif rbac_type == 'project':
+                count = 5
+                if api_fq_name != 'default-domain' or \
+                    len(access_list_api['api-access-lists'][acl]['fq_name']) != 3:
+                    continue
+            else:
+                count = 4
+                if api_fq_name != 'default-domain' or \
+                    len(access_list_api['api-access-lists'][acl]['fq_name']) != 2:
+                    continue
+            acl_href = self.ui.get_details(access_list_api['api-access-lists']
+                                          [acl]['href'])
+            acl_entries = acl_href['api-access-list'].get('api_access_list_entries')
+            if acl_entries:
+                if 'rbac_rule' in acl_entries:
+                    rbac_rule = acl_entries.get('rbac_rule')
+                    for rbac in rbac_rule:
+                        complete_api_data = []
+                        if 'rule_object' in rbac and 'rule_field' in rbac:
+                            obj_property = rbac['rule_object'] + '.' + \
+                                           rbac['rule_field']
+                        if 'rule_perms' in rbac:
+                            rule_perms = rbac['rule_perms']
+                            acl = []
+                            if rule_perms:
+                                for rule in rule_perms:
+                                    role_crud = rule.get('role_crud')
+                                    role_crud_str = ''
+                                    if 'C' in role_crud:
+                                        role_crud_str = role_crud_str + 'Create' + ', '
+                                    if 'R' in role_crud:
+                                        role_crud_str = role_crud_str + 'Read' + ', '
+                                    if 'U' in role_crud:
+                                        role_crud_str = role_crud_str + 'Update' + ', '
+                                    if 'D' in role_crud:
+                                        role_crud_str = role_crud_str + 'Delete'
+                                    role_crud_str = role_crud_str.rstrip(', ')
+                                    access_rule = rule.get('role_name') + ' ' + role_crud_str
+                                    acl.append(access_rule)
+                        self.ui.keyvalue_list(
+                            complete_api_data,
+                            Object_Property=obj_property,
+                            API_Access_Rules=acl)
+                        eval("self.ui.click_configure_rbac_in_" + rbac_type)()
+                        rows = self.ui.get_rows()
+                        for index, row in enumerate(rows, start=count):
+                            dom_arry_basic = []
+                            match_flag = 0
+                            text = self.ui.find_element('div', 'tag', browser=rows[index],
+                                       elements=True)[text_index].text
+                            if obj_property == text:
+                                self.logger.info(
+                                    "RBAC fq_name %s matched in webui..Verifying basic view details..." %
+                                    (api_fq_name))
+                                self.logger.debug(self.dash)
+                                match_index = index
+                                match_flag = 1
+                                break
+                        if not match_flag:
+                            self.logger.error(
+                                "RBAC fq name exists in apiserver but %s not found in webui..." %
+                                (api_fq_name))
+                            self.logger.debug(self.dash)
+                        else:
+                            rows_detail = self.ui.click_basic_and_get_row_details(
+                                 'rbac_in_' + rbac_type, match_index)[1]
+                            for detail in range(len(rows_detail)):
+                                key_value = rows_detail[detail].text.split('\n')
+                                key = str(key_value.pop(0))
+                                if len(key_value) > 1 :
+                                    value = key_value
+                                elif len(key_value) ==  1:
+                                    value = key_value[0]
+                                else:
+                                    value = None
+                                if key == 'API Access Rules':
+                                    key_value.pop(0)
+                                    value = key_value
+                                if key == 'Owner Permissions' or key == 'Global Permissions' \
+                                    or key == 'Owner' or key == 'Shared List':
+                                    continue
+                                key = key.replace(' ', '_')
+                                key = key.replace('.', '_')
+                                dom_arry_basic.append({'key': key, 'value': value})
+                        if action == 'create':
+                            if self.ui.match_ui_kv(complete_api_data, dom_arry_basic):
+                                self.logger.info(
+                                    "RBAC config details matched on \
+                                    Config->Infrastructure->RBAC->%s page" %(rbac_type))
+                            else:
+                                self.logger.error(
+                                    "RBAC config details match failed on \
+                                    Config->Infrastructure->RBAC->%s page" %(rbac_type))
+                                result = result and False
+                        else:
+                            if self.ui.match_ui_kv(expected_result, dom_arry_basic, data=
+                               'Expected_key_value', matched_with='WebUI') and self.ui.match_ui_kv(
+                               expected_result, complete_api_data, data='Expected_key_value',
+                               matched_with='API'):
+                               self.logger.info(
+                                   "%s of rbac matched on WebUI/API after editing" % (expected_result))
+                            else:
+                                self.logger.error(
+                                "%s of rbac match failed on WebUI/API after editing" %
+                                (expected_result))
+                                result = result and False
+        return result
+    # end verify_rbac_api_data
