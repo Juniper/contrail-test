@@ -135,6 +135,8 @@ class VNFixture(fixtures.Fixture):
         self.pbb_evpn_enable = kwargs.get('pbb_evpn_enable', None)
         self.pbb_etree_enable = kwargs.get('pbb_etree_enable', None)
         self.layer2_control_word = kwargs.get('layer2_control_word', None)
+
+        self.vnc_lib_fixture = connections.vnc_lib_fixture
     # end __init__
 
     def convert_policy_objs_vnc_to_neutron(self, policy_objs):
@@ -150,10 +152,15 @@ class VNFixture(fixtures.Fixture):
                 objs.append(policy_obj)
         return objs
 
+    def _orch_call(self, method, *args, **kwargs):
+        if self.orchestrator:
+            return getattr(self.orchestrator, method)(*args, **kwargs)
+        else:
+            return getattr(self.vnc_lib_fixture, method)(*args, **kwargs)
 
     def read(self):
         if self.uuid:
-            self.obj = self.orchestrator.get_vn_obj_from_id(self.uuid)
+            self.obj = self._orch_call('get_vn_obj_from_id',self.uuid)
             self.api_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.uuid)
             self.vn_name = self.api_vn_obj.name
             self.vn_fq_name = self.api_vn_obj.get_fq_name_str()
@@ -396,9 +403,9 @@ class VNFixture(fixtures.Fixture):
             with self.lock:
                 self.logger.exception(
                     'Api exception while creating network %s' % (self.vn_name))
-        self.obj = self.orchestrator.get_vn_obj_from_id(self.uuid)
+        self.obj = self._orch_call('get_vn_obj_from_id', self.uuid)
         if self.obj is None:
-            raise ValueError('could not find %s in neutron/quantum' % (self.vn_name))
+            raise ValueError('could not find %s in orchestrator' % (self.vn_name))
 
     def get_api_obj(self):
         return self.api_vn_obj

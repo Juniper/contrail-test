@@ -5,6 +5,7 @@ import uuid
 from vnc_api.vnc_api import *
 from cfgm_common.exceptions import NoIdError
 
+from contrailapi import ContrailVncApi
 from tcutils.util import get_dashed_uuid
 from openstack import OpenstackAuth, OpenstackOrchestrator
 from vcenter import VcenterAuth, VcenterOrchestrator
@@ -105,9 +106,11 @@ class VncLibFixture(fixtures.Fixture):
                                                 )
             if not self.project_id:
                 self.project_id = self.vnc_api_h.project_read(
-                    fq_name=[self.domain, self.project_name])
+                    fq_name=[self.domain, self.project_name]).uuid
         if self.orch:
             self.vnc_h = self.orch.vnc_h
+        else:
+            self.vnc_h = ContrailVncApi(self.vnc_api_h, self.logger)
     # end setUp
 
     def cleanUp(self):

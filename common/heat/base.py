@@ -42,9 +42,8 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         else:
             public_creds = cls.isolated_creds
         cls.public_vn_obj = create_public_vn.PublicVn(
-            public_creds,
-            cls.inputs,
-            ini_file=cls.ini_file,
+            connections=cls.connections,
+            isolated_creds_obj=public_creds,
             logger=cls.logger)
         cls.public_vn_obj.configure_control_nodes()
 

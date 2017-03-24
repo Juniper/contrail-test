@@ -10,6 +10,8 @@ class Client():
         self.api_client = config.new_client_from_config(config_file)
         self.api_client.config.assert_hostname = False
         self.v1_h = client.CoreV1Api(self.api_client)
+        self.v1_h.read_namespace('default')
+        self.v1_beta_h = client.ExtensionsV1beta1Api(self.api_client)
 
         self.logger = logger or contrail_logging.getLogger(__name__)
     # end __init__
@@ -30,6 +32,69 @@ class Client():
 
     def _get_metadata(self, mdata_dict):
         return client.V1ObjectMeta(**mdata_dict)
+
+    def _get_ingress_backend(self, backend_dict={}):
+        return client.V1beta1IngressBackend(backend_dict.get('service_name'),
+                                            backend_dict.get('service_port'))
+
+    def _get_ingress_path(self, http):
+        paths = http.get('paths', [])
+        path_objs = []
+        for path_dict in paths:
+            path_obj = client.V1beta1HTTPIngressPath(
+                backend=self._get_ingress_backend(
+                    path_dict.get('backend')),
+                path=path_dict.get('path'))
+            path_objs.append(path_obj)
+        return path_objs
+    # end _get_ingress_path
+
+    def _get_ingress_rules(self, rules):
+        ing_rules = []
+        for rule in rules:
+            rule_obj = client.V1beta1IngressRule(
+                host=rule.get('host'),
+                http=self._get_ingress_path(rule.get('http')))
+            ing_rules.append(rule_obj)
+        return ing_rules
+    # end _get_ingress_rules
+
+    def create_ingress(self,
+                       namespace='default',
+                       name=None,
+                       metadata={},
+                       default_backend={},
+                       rules=[],
+                       tls=[],
+                       spec={}):
+        '''
+        Returns V1beta1Ingress object
+        '''
+        metadata_obj = self._get_metadata(metadata)
+        if name:
+            metadata_obj.name = name
+        spec['backend'] = self._get_ingress_backend(
+            default_backend or spec.get('backend', {}))
+
+        spec['rules'] = self._get_ingress_rules(rules or spec.get('rules', []))
+
+        spec['tls'] = tls
+        spec_obj = client.V1beta1IngressSpec(**spec)
+        body = client.V1beta1Ingress(
+            metadata=metadata_obj,
+            spec=spec_obj)
+        self.logger.info('Creating Ingress %s' % (metadata_obj.name))
+        resp = self.v1_beta_h.create_namespaced_ingress(namespace, body)
+        return resp
+    # end create_ingress
+
+    def delete_ingress(self,
+                       namespace,
+                       name):
+        self.logger.info('Deleting Ingress : %s' % (name))
+        body = client.V1DeleteOptions()
+        return self.v1_beta_h.delete_namespaced_ingress(name, namespace, body)
+    # end delete_ingress
 
     def create_service(self,
                        namespace='default',
@@ -195,3 +260,11 @@ if __name__ == '__main__':
         print("%s\t%s\t%s" % (pod.metadata.name,
                               pod.status.phase,
                               pod.status.pod_ip))
+
+    import pdb
+    pdb.set_trace()
+    ing1 = c1.create_ingress(name='test1',
+                             default_backend={'service_name': 'my-nginx',
+                                              'service_port': 80})
+    import pdb
+    pdb.set_trace()
