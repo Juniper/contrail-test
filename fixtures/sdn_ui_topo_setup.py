@@ -295,6 +295,11 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
         return True
     # end create_interface_route_table
 
+    def attach_intf_route_table(self):
+        assert ui_topo_steps.attachIntfTabToPort(self)
+        return True
+    # end attach_intf_route_table
+
     def cleanUp(self):
         if self.inputs.fixture_cleanup == 'yes':
             super(sdnUiTopoSetupFixture, self).cleanUp()
