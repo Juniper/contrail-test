@@ -279,3 +279,16 @@ def attachRpToSI(self):
             import pdb; pdb.set_trace()
     return result
 # end attachRpToSI
+
+def createLogStatistic(self):
+    result = True
+    if not hasattr(self.topo, 'log_stat_list'):
+        self.logger.warn("No log stat config found in topo file")
+        return result
+    self.logger.info("Create Log Statistic")
+    if not self.webui.create_log_statistic(
+               self.topo.log_stat_list,
+               self.topo.log_stat_params):
+        result = False
+    return result
+# end createLogStatistic
