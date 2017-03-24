@@ -374,6 +374,21 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_networking_ports
 
     @preposttest_wrapper
+    def test_verify_config_networking_intf_table(self):
+        '''Test to verify Interface Route Table
+           on config->Networking->Routing->Interface Route Table
+           1. Go to Configure->Networking->Routing->Interface Route Table.
+           2. Get all the details of interface table from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_intf_route_tab_api_data(), \
+                   'Interface Route Table config data verification failed'
+        return True
+    # end test_verify_config_networking_intf_table
+
+    @preposttest_wrapper
     def test_verify_config_networking_ipams(self):
         '''Test ipams on config->Networking->IP Address Management page
         '''
