@@ -209,6 +209,10 @@ class sdn_webui_config ():
                 'prefixes': '100.1.1.0/24',
                 'community': 'accept-own'}}
 
+        #Define parameters for attaching Interface Route Table to port
+        self.port_intf_params = {
+            'port1': 'intf_rt1'}
+
         # define dns_servers #
         self.dns_server_list = ['dserver1']
         self.dns_server_params = {

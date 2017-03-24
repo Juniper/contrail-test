@@ -691,6 +691,24 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test3_2_4_create_interface_route_table
 
     @preposttest_wrapper
+    def test3_2_5_attach_intf_route_table_to_port(self):
+        '''
+        Description: Test to attach Interface Route Table to Port on UI
+        Steps:
+            1. On the Contrail UI, go to Config -> Networking -> Ports
+            2. Click on edit on one of the Ports
+            3. Click on 'Advanced Options', attach Interface Route table
+               as static route
+            4. Click on 'Save'
+        Pass criteria:
+            1. Steps 3 and 4 above should pass
+        '''
+        assert self.res.setup_obj.attach_intf_route_table(), \
+                   'Attaching of Interface Route Table to Port failed'
+        return True
+    # end test_attach_intf_route_table_to_port
+
+    @preposttest_wrapper
     def test3_1_edit_net_without_change(self):
         '''Test to edit the existing network without changing anything
            1. Go to Configure->Networking->Networks. Then select any of the vn and
