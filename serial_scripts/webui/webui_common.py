@@ -291,6 +291,9 @@ class WebuiCommon:
         elif element_type == 'QOS':
             element = 'btnCreate' + element_type
             element_new = 'qos_cofig'
+        elif element_type == 'Routing Policy':
+            element = 'Create ' + element_type
+            element_new = 'routingPolicy'
         else:
             element = 'Create ' + element_type
             element_new = func_suffix
@@ -301,7 +304,7 @@ class WebuiCommon:
             click_func = getattr(self, click_func)
             if not click_func():
                 self.logger.error(
-                    "Error occured while clicking %s" %
+                    "Error occurred while clicking %s" %
                     (click_func))
                 return False
             if select_project:
@@ -1373,12 +1376,18 @@ class WebuiCommon:
             element_name = fixture.name
             element_id = 'btnDeleteQOS'
             popup_id = 'configure-qos_cofigbtn1'
-        if element_type == 'network_route_table_delete':
+        elif element_type == 'network_route_table_delete':
             if not self.click_configure_route_table():
                 result = result and False
             element_name = 'all'
             element_id = 'btnActionDelRtTable'
             popup_id = 'configure-route_tablebtn1'
+        elif element_type == 'routing_policy_delete':
+            if not self.click_configure_routing_policy():
+                result = result and False
+            element_name = 'all'
+            element_id = 'btnDeleteRoutingPolicy'
+            popup_id = 'configure-routingPolicybtn1'
         elif element_type == 'bgp_router_delete':
             if not self.click_configure_bgp_router():
                 result = result and False
@@ -1448,7 +1457,8 @@ class WebuiCommon:
                     div_obj = element.find_elements_by_tag_name('div')[1]
                 elif element_type in ['router_delete', 'dns_server_delete',
                                       'dns_record_delete', 'bgp_aas_delete',
-                                      'network_route_table_delete', 'rbac_delete']:
+                                      'network_route_table_delete', 'rbac_delete',
+                                      'routing_policy_delete']:
                     element_text = 'all'
                     div_obj = element.find_elements_by_tag_name('div')[1]
                 elif element_type == 'bgp_router_delete':
@@ -2019,6 +2029,14 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
         return self.check_error_msg("configure network route table")
     # end click_configure_route_table
+
+    def click_configure_routing_policy(self):
+        self.click_configure_route_table()
+        self.wait_till_ajax_done(self.browser)
+        self.click_element('routing_policy_tab-tab-link')
+        self.wait_till_ajax_done(self.browser)
+        return self.check_error_msg("configure routing policy")
+    # end click_configure_routing_policy
 
     def click_fip_vn(self, browser=None):
         if not browser:
