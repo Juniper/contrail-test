@@ -7695,3 +7695,186 @@ class WebuiTest:
                     return result
         return result
     # end verify_intf_route_tab_api_data
+
+    def verify_phy_rtr_api_data(self, action='create', expected_result=None):
+        self.logger.info(
+            "Verifying Physical Router api server data on \
+            Config->Networking->Ports page ...")
+        self.logger.debug(self.dash)
+        result = True
+        phy_rtr_list_api = self.ui.get_phy_router_list_api()
+        for rtr in range(len(phy_rtr_list_api['physical-routers'])):
+            api_fq_name = phy_rtr_list_api[
+                'physical-routers'][rtr]['fq_name'][1]
+            self.ui.click_configure_physical_router()
+            rows = self.ui.get_rows()
+            self.logger.info(
+                "Physical Router fq_name %s exists in api server.. \
+                checking if exists in webui as well" %
+                (api_fq_name))
+            for row in range(len(rows)):
+                dom_arry_basic = []
+                match_flag = 0
+                text = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)[2].text
+                if api_fq_name == text:
+                    self.logger.info(
+                        "Physcial Router fq_name %s matched in webui.. \
+                        Verifying basic view details..." %
+                        (api_fq_name))
+                    self.logger.debug(self.dash)
+                    match_index = row
+                    match_flag = 1
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "Physical Router fq name exists in apiserver but %s \
+                    not found in webui..." %
+                    (api_fq_name))
+                self.logger.debug(self.dash)
+            else:
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'physical_router', match_index)[1]
+                for detail in range(len(rows_detail)):
+                    key_value = rows_detail[detail].text.split('\n')
+                    key = str(key_value.pop(0))
+                    if len(key_value) > 1 :
+                        value = key_value
+                    elif len(key_value) ==  1:
+                        value = key_value[0]
+                    else:
+                        value = None
+                    if re.search('Timeout', key):
+                        key = key.rstrip(' \(secs\)')
+                    if key == 'Version':
+                        value = value.rstrip('c')
+                    if key == 'Authrorization Protocol':
+                        key = 'Authorization Protocol'
+                    if key == 'Owner Permissions' or key == 'Global Permissions' or \
+                        key == 'Owner' or key == 'Shared List':
+                        continue
+                    key = key.replace(' ', '_')
+                    dom_arry_basic.append({'key': key, 'value': value})
+                phy_rtr_api_data = self.ui.get_details(
+                                phy_rtr_list_api['physical-routers'][rtr]['href'])
+                phy_rtr_api_data = phy_rtr_api_data.get('physical-router')
+                complete_api_data = []
+                Name = phy_rtr_api_data.get('name')
+                UUID = phy_rtr_api_data.get('uuid')
+                self.ui.keyvalue_list(complete_api_data, Name=Name, UUID=UUID)
+                value_list = ['physical_router_vendor_name', 'physical_router_product_name',
+                             'physical_router_management_ip', 'physical_router_dataplane_ip',
+                             'physical_router_user_credentials', 'physical_router_vnc_managed',
+                             'physical_router_snmp_credentials', 'virtual_router_refs',
+                             'bgp_router_refs', 'physical_router_junos_service_ports',
+                             'virtual_network_refs']
+                key_list = ['Vendor', 'Model', 'Management_IP', 'VTEP_Address', 'Username',
+                           'Auto_Configuration', 'SNMP', 'Associated_Virtual_Router(s)',
+                           'BGP_Gateway', 'Junos_Service_Ports', 'Virtual_Networks']
+                snmp_key_list = ['Version', 'Local_Port', 'Retries', 'Timeout']
+                snmp_value_list = ['version', 'local_port', 'retries', 'timeout']
+                snmpv3_key_list = ['Security_Engine_Id', 'Security_Name', 'Security_Level',
+                                  'Authorization_Protocol', 'Context', 'Engine_Id',
+                                  'Context_Engine_Id', 'Engine_Boots', 'Engine_Time']
+                snmpv3_value_list = ['v3_security_engine_id', 'v3_security_name',
+                                    'v3_security_level', 'v3_authentication_protocol', 'v3_context',
+                                    'v3_engine_id', 'v3_context_engine_id', 'v3_engine_boots',
+                                    'v3_engine_time']
+                for index, val in enumerate(value_list):
+                    try:
+                        if val in phy_rtr_api_data:
+                            value = phy_rtr_api_data.get(val)
+                            if val == 'physical_router_user_credentials':
+                                value = phy_rtr_api_data[val].get('username')
+                            if val == 'physical_router_vnc_managed':
+                                if value:
+                                    value = 'Enabled'
+                                else:
+                                    value = 'Disabled'
+                            if val == 'physical_router_snmp_credentials':
+                                ver_flag = False
+                                if value:
+                                    for index1, snmp in enumerate(snmp_value_list):
+                                        if snmp in value:
+                                            if snmp == 'version':
+                                                ver_flag = True
+                                            complete_api_data.append({'key': snmp_key_list[index1],
+                                                'value': str(value[snmp])})
+                                        if ver_flag:
+                                            if value[snmp] == 3:
+                                                for index2, snmp_v3 in enumerate(snmpv3_value_list):
+                                                    if snmp_v3 in value:
+                                                        if value[
+                                                            'v3_authentication_protocol'] == 'authpriv':
+                                                            if 'v3_privacy_protocol' in value:
+                                                                complete_api_data.append(
+                                                                 {'key': 'Privacy_Protocol',
+                                                                 'value': str(value['v3_privacy_protocol'])})
+                                                                continue
+                                                        complete_api_data.append(
+                                                            {'key': snmpv3_key_list[index2],
+                                                            'value': str(value[snmp_v3])})
+                                            else:
+                                                if 'v2_community' in value:
+                                                    complete_api_data.append({'key': 'Community',
+                                                        'value': value['v2_community']})
+                                continue
+                            if val == 'virtual_router_refs':
+                                if value:
+                                    vrouter_name = ''
+                                    for vrouter in value:
+                                        vrouter_api = self.ui.get_details(
+                                                      vrouter['href'])['virtual-router']
+                                        vrouter_type = vrouter_api.get(
+                                                 'virtual_router_type').title().replace('-', ' ')
+                                        if re.search('Tor', vrouter_type):
+                                            vrouter_type = vrouter_type.replace('Tor', 'ToR')
+                                            vrouter_name = vrouter_name + \
+                                                           vrouter_api.get('display_name') + \
+                                                           ' (' + vrouter_type + ')' + ', '
+                                value = vrouter_name.rstrip(', ')
+                            if val == 'bgp_router_refs':
+                                value = value[0]['to'][4]
+                            if val == 'physical_router_junos_service_ports':
+                                if value:
+                                    junos_svc_ports = value['service_port']
+                                    port_value = ''
+                                    for port in junos_svc_ports:
+                                        port_value = port_value + port + ','
+                                    value = port_value.rstrip(', ')
+                            if val == 'virtual_network_refs':
+                                vn_name = []
+                                for index3, vn in enumerate(value):
+                                    vnet_com = value[index3]['to']
+                                    vn_name.append(vnet_com[2] + ' (' + vnet_com[0] + ':' + \
+                                        vnet_com[1] + ')')
+                                value = vn_name
+                            if value:
+                                complete_api_data.append({'key': key_list[index], 'value': value})
+                    except KeyError:
+                        pass
+                if action == 'create':
+                    if self.ui.match_ui_kv(complete_api_data, dom_arry_basic):
+                        self.logger.info(
+                            "Physical Router config details matched on \
+                            Config->Networking->Ports page")
+                    else:
+                        self.logger.error(
+                            "Physical Router config details match failed on \
+                            Config->Networking->Ports page")
+                        result = result and False
+                else:
+                    if self.ui.match_ui_kv(expected_result, dom_arry_basic, data=
+                           'Expected_key_value', matched_with='WebUI') and self.ui.match_ui_kv(
+                           expected_result, complete_api_data, data='Expected_key_value',
+                           matched_with='API'):
+                        self.logger.info(
+                            "%s of physical router matched on WebUI/API after editing" \
+                            % (expected_result))
+                    else:
+                        self.logger.error(
+                            "%s of physical router match failed on WebUI/API after editing" %
+                            (expected_result))
+                        result = result and False
+                    return result
+        return result
+    # end verify_phy_rtr_api_data
