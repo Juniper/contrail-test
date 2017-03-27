@@ -26,7 +26,7 @@ class DomainFixture(fixtures.Fixture):
         self.uuid = uuid
         self.domain_obj = None
         self.already_present = False
-        self.domain_fq_name = self.domain_name
+        self.domain_fq_name = [self.domain_name]
         self.username = username
         self.password = password
         self.role = role
@@ -50,7 +50,11 @@ class DomainFixture(fixtures.Fixture):
         try:
             self.logger.info('Reading existing Domain with UUID %s' % (
                                                         self.uuid))
-            domain_obj = self.vnc_lib_h.domain_read(id=self.uuid)
+            if self.uuid == 'default':
+                domain_fq_name = 'default-domain'
+            else:
+                domain_fq_name = self.domain_fq_name[0]
+            domain_obj = self.vnc_lib_h.domain_read(fq_name_str=domain_fq_name)
         except NoIdError, e:
             self.logger.exception('UUID %s not found, unable to read Domain' % (
                 self.uuid))
@@ -63,7 +67,6 @@ class DomainFixture(fixtures.Fixture):
         self.domain_obj = domain_obj
         self.domain_fq_name = domain_obj.fq_name
         self.domain_name = domain_obj.name
-        self.uuid = domain_obj.uuid
     # end _populate_attr
 
     def _create_domain(self):
@@ -115,7 +118,7 @@ class DomainFixture(fixtures.Fixture):
         try:
             obj = self.auth.update_domain(domain_id=get_plain_uuid(self.uuid),domain_name=domain_name,
                                     description=description,enabled=enabled)
-            slef.logger.info('Domain updated successfully %s',obj.name)
+            self.logger.info('Domain updated successfully %s',obj.name)
             self.read()
             return obj
         except:
