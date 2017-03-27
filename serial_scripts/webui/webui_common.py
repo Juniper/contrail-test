@@ -1454,6 +1454,13 @@ class WebuiCommon:
             element_id = 'btnDeleteCounters'
             popup_id = 'configure-user_defined_countersbtn1'
             element_name = 'all'
+        elif element_type == 'intf_route_tab_delete':
+            if self.click_configure_intf_route_table():
+                br = self.find_element('inf_rt-table-grid')
+            else:
+                result = result and False
+            element_id = 'btnActionDelInfRtTable'
+            element_name = fixture.name
         if not br:
             br = self.browser
         rows = self.get_rows(br, canvas=True)
@@ -2048,13 +2055,6 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
     #end click_configure_qos_basic
 
-    def click_configure_route_table(self):
-        self._click_on_config_dropdown(self.browser)
-        self.click_element(['config_net_routing', 'a'], ['id', 'tag'])
-        self.wait_till_ajax_done(self.browser)
-        return self.check_error_msg("configure network route table")
-    # end click_configure_route_table
-
     def click_configure_routing_policy(self):
         self.click_configure_route_table()
         self.wait_till_ajax_done(self.browser)
@@ -2070,6 +2070,23 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
         return self.check_error_msg("configure route aggregate")
     # end click_configure_route_aggregate
+
+    def click_configure_route_table(self, tab='network_route',
+                                   msg="Configure network route table"):
+        if not self.click_configure_elements(2, 'config_net_routing',
+                                             msg=msg):
+            return False
+        else:
+            element = tab + '-tab-link'
+            self.click_element(element)
+            self.wait_till_ajax_done(self.browser, wait=3)
+            return self.check_error_msg("Configure " + msg + " globally")
+    # end click_configure_route_table
+
+    def click_configure_intf_route_table(self):
+        return self.click_configure_route_table(tab='interface_route_table',
+                                           msg='Interface Route Table')
+    # end click_configure_intf_route_table
 
     def click_fip_vn(self, browser=None):
         if not browser:

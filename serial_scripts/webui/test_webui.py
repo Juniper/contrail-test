@@ -678,6 +678,19 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test3_2_3_create_flow_aging
 
     @preposttest_wrapper
+    def test3_2_4_create_interface_route_table(self):
+        '''Test to create interface route table on UI
+           1. Go to Configure->Networking->Routing->Interface Route Table.
+           2. Click on create and enter the config details and save.
+
+           Pass Criteria: Step 2 should pass without any error
+        '''
+        assert self.res.setup_obj.create_interface_route_table(), \
+                   'Interface Route Table creation failed'
+        return True
+    # end test3_2_4_create_interface_route_table
+
+    @preposttest_wrapper
     def test3_1_edit_net_without_change(self):
         '''Test to edit the existing network without changing anything
            1. Go to Configure->Networking->Networks. Then select any of the vn and
