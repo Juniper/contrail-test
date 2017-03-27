@@ -279,7 +279,7 @@ class sdn_webui_config ():
                  'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}], 'rule_uuid': uuid_2, 'eth_type': 'IPv4'}]
 
         # define service templates ##
-        self.st_list = ['tcp_svc_template', 'nat_svc_template']
+        self.st_list = ['tcp_svc_template', 'nat_svc_template', 'svc_template_v2']
         self.st_params = {'tcp_svc_template': {'svc_img_name': 'tiny_trans_fw',
                                                'service_type': 'firewall',
                                                'if_details': {
@@ -312,8 +312,23 @@ class sdn_webui_config ():
                                                'svc_scaling': False,
                                                'flavor': 'contrail_flavor_tiny',
                                                'version': 1
+                                               },
+                          'svc_template_v2': {'svc_img_name': None,
+                                               'service_type': 'firewall',
+                                               'if_details': {
+                                                    'left' : {'shared_ip_enable' : False,
+                                                              'static_route_enable' : False
+                                                              },
+                                                    'right' : {'shared_ip_enable' : False,
+                                                               'static_route_enable' : False
+                                                               }
+                                                              },
+                                               'service_mode': 'transparent',
+                                               'svc_scaling': False,
+                                               'flavor': None,
+                                               'version': 2
                                                }
-                         } 
+                         }
 
         # define service instance
         self.si_list = ['svcinst1', 'svcinst2']
