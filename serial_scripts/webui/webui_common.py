@@ -210,6 +210,10 @@ class WebuiCommon:
         return self._get_list_ops('virtual-machines')
     # end get_vm_list_ops
 
+    def get_phy_router_list_api(self):
+        return self._get_list_api('physical-routers')
+    # end get_phy_router_list_api
+
     def log_msg(self, t, msg):
         if t == 'info':
             self.logger.info(msg)
@@ -2461,14 +2465,16 @@ class WebuiCommon:
                 'slick-row-detail-container', 'class',
                         browser = rows[ind])
         if view == 'advanced':
-            find_element = ['pre', 'key-value']
-            find_by = ['tag', 'class']
+            rows_detail = self.find_element(
+                              ['pre', 'key-value'], ['tag', 'class'],
+                              browser = slick_row_detail, if_elements=[1])
         else:
-            find_element = ['item-list', 'row']
-            find_by = ['class', 'class']
-        rows_detail = self.find_element(
-                        find_element, find_by,
-                        browser = slick_row_detail, if_elements=[1])
+            item_list = self.find_element('item-list', 'class', browser=slick_row_detail,
+                                         elements=True)
+            rows_detail = []
+            for item in item_list:
+                rows_detail.extend(self.find_element('row', 'class', browser=item,
+                                  elements=True))
         return rows, rows_detail
     # end click_basic_and_get_row_details
 

@@ -405,6 +405,20 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_networking_policies
 
     @preposttest_wrapper
+    def test_verify_config_phy_dev_phy_rtr(self):
+        '''Test to verify Config->Physical Devices->Physical Routers
+           1. Go to Configure->Physical Devices->Physical Routers.
+           2. Get all the details of interface table from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_phy_rtr_api_data(), \
+                   'Physical Routers data verification failed'
+        return True
+    # end test_verify_config_phy_dev_phy_rtr
+
+    @preposttest_wrapper
     def test_verify_config_services_service_templates(self):
         '''Test svc templates on config->Services->Service Templates page
         '''
