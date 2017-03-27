@@ -209,10 +209,6 @@ class VerifySvcFirewall(VerifySvcChain):
         result, msg = self.validate_svc_action(
             left_vn_fq_name, si_fixtures[0], right_vm_fixture, src='left')
         assert result, msg
-        if st_fixtures[0].service_mode != 'in-network-nat':
-            result, msg = self.validate_svc_action(
-                right_vn_fq_name, si_fixtures[0], left_vm_fixture, src='right')
-            assert result, msg
 
         if proto not in ['any', 'icmp']:
             self.logger.info('Will skip Ping test')
