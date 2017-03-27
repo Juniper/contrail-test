@@ -326,6 +326,22 @@ class WebuiTestSanity(base.WebuiBaseTest):
         assert self.res.setup_obj.attach_routing_policy(), 'Attaching of Routing Policy failed'
         return True
     # end test_attach_routing_policy_to_si
+    
+    @preposttest_wrapper
+    def test2_2_2_attach_route_aggregate_to_si(self):
+        '''
+        Description: Test to attach a created Route Aggregate to SI on UI
+        Steps:
+            1. On the Contrail UI, go to Config -> Services -> Service Instances
+            2. Click on edit on the SI with NAT template
+            3. Click on 'Route Aggregate', attach the Route aggregate
+            4. Click on 'Save'
+        Pass criteria:
+            1. Steps 3 and 4 above should pass
+        '''
+        assert self.res.setup_obj.attach_route_aggregate(), 'Attaching of Route Aggregate failed'
+        return True
+    # end test_attach_route_aggregate_to_si
 
     # UI verification tests
 

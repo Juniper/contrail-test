@@ -540,6 +540,14 @@ class sdn_webui_config ():
                 {'prefix': '34.1.1.0/24'},
                 {'prefix': '35.1.1.0/24'}
                 ]}
+        
+        #Define parameters for attaching Route Aggregate to SI
+        self.si_ra_list = ['ragg1', 'ragg2']
+        self.si_ra_params = {
+            'svcinst2' : {
+                'left': 'ragg1',
+                'right': 'ragg2'
+            }}
  
         # Define network policy rules
         self.rules = {}
