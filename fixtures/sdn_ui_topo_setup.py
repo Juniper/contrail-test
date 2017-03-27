@@ -285,6 +285,11 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
         return True
     # end create_log_statistic
 
+    def create_flow_aging(self):
+        assert ui_topo_steps.createFlowAging(self)
+        return True
+    # end create_flow_aging
+
     def cleanUp(self):
         if self.inputs.fixture_cleanup == 'yes':
             super(sdnUiTopoSetupFixture, self).cleanUp()

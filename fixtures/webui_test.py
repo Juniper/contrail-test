@@ -4440,6 +4440,7 @@ class WebuiTest:
         self.delete_routing_policy()
         self.delete_route_aggregate()
         self.delete_log_statistic()
+        self.delete_flow_aging()
         return True
     # end cleanup
 
@@ -4496,6 +4497,10 @@ class WebuiTest:
     def delete_log_statistic(self):
         self.ui.delete_element(element_type='log_statistic_delete')
     # end delete_log_statistic
+
+    def delete_flow_aging(self):
+        self.create_flow_aging(option='delete')
+    # end delete_flow_aging
 
     def delete_dns_server_and_record(self):
         self.detach_ipam_from_dns_server()
@@ -7450,3 +7455,44 @@ class WebuiTest:
             self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_log_statistic
+
+    def create_flow_aging(self, flow_list=None, params=None, option='create'):
+        result = True
+        try:
+            if not self.ui.click_on_create(
+                    'Flow Aging ',
+                    'flow_aging',
+                    'Flow',
+                    select_project=False):
+                result = result and False
+            if option == 'create':
+                if flow_list and params:
+                    for flow in flow_list:
+                        port = params[flow]['port']
+                        timeout = params[flow]['timeout']
+                        self.ui.click_element('editable-grid-add-link', 'class')
+                        br = self.ui.find_element('data-row', 'class', elements=True)
+                        self.ui.send_keys(flow, 'custom-combobox-input', 'class', browser=br[-1])
+                        send_key_values = {
+                            'name': {
+                                'port': port,
+                                 'timeout_in_seconds': timeout}}
+                        if flow == '1 (ICMP)':
+                            del send_key_values['name']['port']
+                        if not self.ui.send_keys_values(send_key_values, br=br[-1]):
+                            result = result and False
+                else:
+                    result = result and False
+            else:
+                del_row = self.ui.find_element('fa-minus', 'class', elements=True)
+                for row in del_row:
+                    row.click()
+            self.ui.click_on_create('Flow Aging ', 'global_flow_aging', save=True)
+        except WebDriverException:
+            self.logger.error(
+                "Error while creating Flow aging")
+            self.ui.screenshot("Flow Aging")
+            result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end create_flow_aging
