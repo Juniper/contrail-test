@@ -305,3 +305,24 @@ def createFlowAging(self):
         result = False
     return result
 # end createFlowAging
+
+def attachIntfTabToPort(self):
+    if not hasattr(self.topo, 'intf_route_table_list'):
+        self.logger.info("No Intf table config for Port found in topo file")
+        return True
+    result = True
+    self.logger.info("Setup step: Editing Port to attach Interface table")
+    ports = self.topo.port_intf_params.keys()
+    for port in ports:
+        if port in self.topo.port_list:
+            intf_name = self.topo.port_intf_params[port]
+            if not self.webui.attach_and_detach_intf_tab_to_port(
+                   intf_name, port):
+                result = result and False
+            self.addCleanup(
+                self.webui.attach_and_detach_intf_tab_to_port(intf_name, port,
+                option='detach'))
+        else:
+            result = result and False
+    return result
+# end attachIntfTabToPort

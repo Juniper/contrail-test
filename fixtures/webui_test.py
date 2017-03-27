@@ -7181,6 +7181,7 @@ class WebuiTest:
                 (fixture.name))
             self.ui.screenshot("BGP Router creation failed")
             result = result and False
+            raise
         self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_bgp_router
@@ -7230,6 +7231,7 @@ class WebuiTest:
                 (service_name))
             self.ui.screenshot("LinkLocalService")
             result = result and False
+            raise
         self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_link_local_service
@@ -7254,6 +7256,7 @@ class WebuiTest:
                 "Error while creating virtual router %s" % (fixture.name))
             self.ui.screenshot("Virtual Router creation failed")
             result = result and False
+            raise
         self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_virtual_router
@@ -7291,6 +7294,7 @@ class WebuiTest:
                 "Error while creating service appliance set")
             self.ui.screenshot("ServiceApplianceSet")
             result = result and False
+            raise
         self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_service_appliances_set
@@ -7332,6 +7336,7 @@ class WebuiTest:
                 "Error while creating service appliances")
             self.ui.screenshot("ServiceAppliances")
             result = result and False
+            raise
         self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_service_appliances
@@ -7385,6 +7390,7 @@ class WebuiTest:
                 "Error while creating alarms %s " %(fixture.alarm_name))
             self.ui.screenshot("Alarm")
             result = result and False
+            raise
         self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_alarms
@@ -7429,6 +7435,7 @@ class WebuiTest:
             self.ui.screenshot("RBAC")
             result = result and False
             self.ui.click_on_cancel_if_failure('cancelBtn')
+            raise
         return result
     # end create_rbac
 
@@ -7457,6 +7464,7 @@ class WebuiTest:
             self.ui.screenshot("Log Stat")
             result = result and False
             self.ui.click_on_cancel_if_failure('cancelBtn')
+            raise
         return result
     # end create_log_statistic
 
@@ -7498,6 +7506,7 @@ class WebuiTest:
             self.ui.screenshot("Flow Aging")
             result = result and False
             self.ui.click_on_cancel_if_failure('cancelBtn')
+            raise
         return result
     # end create_flow_aging
 
@@ -7526,6 +7535,53 @@ class WebuiTest:
                 "Error while creating interface route table %s " %(fixture.name))
             self.ui.screenshot("Interface Route Table")
             result = result and False
+            raise
         self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_intf_route_table
+
+    def attach_and_detach_intf_tab_to_port(self, intf_name, port, option='attach'):
+        result = True
+        try:
+            edit_result = self.ui.edit_remove_option('Ports', 'edit',
+                                                    display_name=port)
+            self.logger.info("Attaching interface route table %s using contrail-webui" %
+                             (intf_name))
+            if edit_result:
+                self.ui.click_element('advanced_options')
+                stat_route = self.ui.find_element('s2id_staticRoute_dropdown')
+                if option == 'attach':
+                    stat_route.click()
+                    self.ui.select_from_dropdown(intf_name, grep=True)
+                else:
+                    br_ele = self.ui.find_element('select2-search-choice', 'class',
+                                        elements=True, browser=stat_route)
+                    if br_ele:
+                        for br in br_ele:
+                            if br.text == intf_name:
+                                self.ui.click_element('select2-search-choice-close',
+                                    'class', browser=br)
+                                break
+                    else:
+                        self.logger.warn("No interface table attached. So detachment \
+                                         is failed")
+                        result = result and False
+                if not self.ui.click_on_create('Port', 'Ports', save=True):
+                    result = result and False
+                    raise Exception("Interface Route table attachment/detachment \
+                                   to port failed")
+                else:
+                    self.logger.info(
+                        "Attached/Detached Interface Route table %s using contrail-webui" %
+                        (intf_name))
+            else:
+                result = result and False
+        except WebDriverException:
+            self.logger.error("Error while attaching/detaching %s" % (intf_name))
+            self.ui.screenshot("intf_attach_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            result = result and False
+            raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end attach_and_detach_intf_tab_to_port
