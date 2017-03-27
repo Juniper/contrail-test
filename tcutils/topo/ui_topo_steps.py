@@ -280,6 +280,24 @@ def attachRpToSI(self):
     return result
 # end attachRpToSI
 
+def attachRaToSI(self):
+    if not hasattr(self.topo, 'si_ra_list'):
+        self.logger.info("No ra config for SI found in topo file")
+        return True
+    result = True
+    self.logger.info("Setup step: Editing SI to attach Route aggregate")
+    for si in self.topo.si_list:
+        if si in self.topo.si_ra_params:
+            int_ra = self.topo.si_ra_params[si]
+            if not self.webui.attach_detach_ragg_to_si(
+                    int_ra,
+                    si):
+                result = result and False
+            self.addCleanup(
+                self.webui.attach_detach_ragg_to_si(int_ra, si, attach=False))
+    return result
+# end attachRpToSI
+
 def createLogStatistic(self):
     result = True
     if not hasattr(self.topo, 'log_stat_list'):

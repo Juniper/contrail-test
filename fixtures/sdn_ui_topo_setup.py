@@ -275,10 +275,15 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
         return True
     # end create_route_aggregates
 
-    def create_route_aggregates(self):
-        assert ui_topo_steps.createRouteAggregate(self)
+    def attach_routing_policy(self):
+        assert ui_topo_steps.attachRpToSI(self)
         return True
-    # end create_route_aggregates
+    # end attach_routing_policy
+
+    def attach_route_aggregate(self):
+        assert ui_topo_steps.attachRaToSI(self)
+        return True
+    # end attach_route_aggregate
 
     def create_log_statistic(self):
         assert ui_topo_steps.createLogStatistic(self)
