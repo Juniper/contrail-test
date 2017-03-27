@@ -189,6 +189,19 @@ class sdn_webui_config ():
             'stats_log': {
                 'regexp': 'error'}}
 
+        # Define Flow Aging
+        self.flow_age_proto_list = ['6 (TCP)', '17 (UDP)', '1 (ICMP)']
+        self.flow_age_proto_params = {
+            '6 (TCP)': {
+                'port': '5',
+                'timeout': '240'},
+            '17 (UDP)': {
+                'port': '9',
+                'timeout': '180'},
+            '1 (ICMP)': {
+                'port': '1',
+                'timeout': '120'}}
+
         # define dns_servers #
         self.dns_server_list = ['dserver1']
         self.dns_server_params = {
