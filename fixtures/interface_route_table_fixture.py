@@ -4,7 +4,10 @@ import vnc_api_test
 from cfgm_common.exceptions import NoIdError
 
 from tcutils.util import get_random_name, retry, compare_dict, get_dashed_uuid
-
+try:
+    from webui_test import *
+except ImportError:
+    pass
 
 class InterfaceRouteTableFixture(vnc_api_test.VncLibFixture):
 
@@ -17,6 +20,9 @@ class InterfaceRouteTableFixture(vnc_api_test.VncLibFixture):
         self.project_id = kwargs.get('project_id', None)
         self.uuid = kwargs.get('uuid', None)
         self.is_already_present = False
+        if self.inputs.verify_thru_gui():
+            self.webui = WebuiTest(self.connections, self.inputs)
+            self.kwargs = kwargs
 
     def setUp(self):
         super(InterfaceRouteTableFixture, self).setUp()
@@ -38,12 +44,14 @@ class InterfaceRouteTableFixture(vnc_api_test.VncLibFixture):
             return self.read()
         except NoIdError, e:
             pass
-
-        intf_rtb_obj = self.vnc_h.create_interface_route_table(
-            self.name,
-            parent_obj=self.parent_obj,
-            prefixes=self.prefixes)
-        self._populate_attr(intf_rtb_obj)
+        if self.inputs.is_gui_based_config():
+            intf_rtb_obj = self.webui.create_intf_route_table(self)
+        else:
+            intf_rtb_obj = self.vnc_h.create_interface_route_table(
+                self.name,
+                parent_obj=self.parent_obj,
+                prefixes=self.prefixes)
+            self._populate_attr(intf_rtb_obj)
     # end create
 
     def verify_on_setup(self):
@@ -89,8 +97,11 @@ class InterfaceRouteTableFixture(vnc_api_test.VncLibFixture):
             self.logger.info('Skipping deletion of InterfaceRouteTable %s' % (
                              self.fq_name))
             return
-        self.vnc_h.delete_interface_route_table(self.uuid)
-        self.verify_on_cleanup()
+        if self.inputs.is_gui_based_config():
+            self.webui.delete_intf_route_table(self)
+        else:
+            self.vnc_h.delete_interface_route_table(self.uuid)
+            self.verify_on_cleanup()
     # end delete
 
 if __name__ == "__main__":
