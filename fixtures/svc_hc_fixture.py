@@ -1,6 +1,10 @@
 import vnc_api_test
 from cfgm_common.exceptions import NoIdError
 from tcutils.util import get_random_name, retry
+try:
+    from webui_test import *
+except ImportError:
+    pass
 
 class HealthCheckFixture(vnc_api_test.VncLibFixture):
     '''Fixture to handle ServiceHealthCheck object
@@ -44,6 +48,10 @@ class HealthCheckFixture(vnc_api_test.VncLibFixture):
         self.http_url = kwargs.get('http_url', 'local-ip')
         self.http_codes = kwargs.get('http_codes', None)
         self.created = False
+        if self.inputs.verify_thru_gui():
+            self.browser = self.connections.browser
+            self.browser_openstack = self.connections.browser_openstack
+            self.webui = WebuiTest(self.connections, self.inputs)
 
     def setUp(self):
         super(HealthCheckFixture, self).setUp()
@@ -56,6 +64,8 @@ class HealthCheckFixture(vnc_api_test.VncLibFixture):
            self.inputs.fixture_cleanup != 'force':
             self.logger.info('Skipping deletion of Health Check %s :'
                               %(self.fq_name))
+        if self.inputs.is_gui_based_config():
+            self.webui.delete_svc_health_check(self)
         else:
             self.delete()
 
@@ -86,7 +96,10 @@ class HealthCheckFixture(vnc_api_test.VncLibFixture):
             self.read()
         else:
             self.logger.info('Creating Health Check %s'%self.name)
-            self.uuid = self.vnc_h.create_health_check(self.fq_name,
+            if self.inputs.is_gui_based_config():
+                self.webui.create_svc_health_check(self)
+            else:
+                self.uuid = self.vnc_h.create_health_check(self.fq_name,
                                   enabled=self.status,
                                   health_check_type=self.hc_type,
                                   monitor_type=self.probe_type,
