@@ -4865,7 +4865,7 @@ class RouterConfig(Base):
           for pi in pis:
               pi_fq_name  = pi['fq_name']
               router_name = pi_fq_name[1]
-              if router_name == pr_name:
+              if router_name != pr_name:
                  continue
               try:
                  pi_obj=self.connections.vnc_lib.physical_interface_read(id=pi['uuid'])
@@ -5189,7 +5189,7 @@ class RouterConfig(Base):
              return
           kwargs = {'kwargs_list': kwargs_list } if len(kwargs_list) > 1 else kwargs_list[0]
           print "Creating ToR:"
-          self.create_physical_router(count=thread_count,conn_obj_list=conn_obj_list,**kwargs)
+          #self.create_physical_router(count=thread_count,conn_obj_list=conn_obj_list,**kwargs)
 
 
 class VrouterGlobalConfig(Base):
@@ -5503,7 +5503,7 @@ class Bgpaas(Base):
 class HostAggregate(Base):
 
       @Process.wrapper
-      def create(self,*arg,**kwarg):
+      def create_host_aggregate(self,*arg,**kwarg):
          self.connections = kwarg['connection_obj'].connections
          self.logger      = kwarg['connection_obj'].logger
          quantum_h   = self.connections.get_network_h()
@@ -5515,6 +5515,8 @@ class HostAggregate(Base):
 
          aggr_obj = self.nova_h.obj.aggregates.create(aggr_name,zone_name)
          for host in hosts:
+              if host == "INVALID_HOST":
+                 continue
               self.nova_h.obj.aggregates.add_host(aggr_obj.id,host)
 
       def create_host_aggregates(self,conn_obj_list,thread_count,global_conf,tenant_conf,update_properties=False):
@@ -5532,10 +5534,10 @@ class HostAggregate(Base):
            return
 
         kwargs = {'kwargs_list': kwargs_list } if len(kwargs_list) > 1 else kwargs_list[0]
-        self.create(count=thread_count,conn_obj_list=conn_obj_list,**kwargs)
+        self.create_host_aggregate(count=thread_count,conn_obj_list=conn_obj_list,**kwargs)
 
       @Process.wrapper
-      def delete(self,*arg,**kwarg):
+      def delete_host_aggregate(self,*arg,**kwarg):
          self.connections = kwarg['connection_obj'].connections
          self.logger      = kwarg['connection_obj'].logger
          quantum_h   = self.connections.get_network_h()
@@ -5549,7 +5551,7 @@ class HostAggregate(Base):
 
       def delete_host_aggregates(self,conn_obj_list,thread_count,global_conf,tenant_conf):
 
-         self.delete(count=thread_count,conn_obj_list=conn_obj_list)
+         self.delete_host_aggregate(count=thread_count,conn_obj_list=conn_obj_list)
          
 class ServicesConfig(Base):
       @Process.wrapper
@@ -6050,7 +6052,7 @@ class ServicesConfig(Base):
                        st_name = si['service_template_name']
                     kwargs['service_template_name'] = st_name
                     kwargs['num_of_instances']      = si['num_of_instances']
-                    st = self.retrieve_service_template_config(service_templates,si['service_template_name'])
+                    st = self.retrieve_service_template_config(service_templates,st_name)
                     
                     kwargs['service_instance_version'] = st['version']
                     kwargs['service_instance_image']   = st['image_name']

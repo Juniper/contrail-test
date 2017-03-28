@@ -153,19 +153,19 @@ def create_mgmt_vn_ipam(conn_obj_list,thread_count,global_conf,tenant_conf,updat
     cidr           = mgmt_cidr_obj.get_next_cidr()
     cidr1          = mgmt_cidr_obj.get_next_cidr()
 
-    conf = {}
-    conf['ipam_fq_name_list']  = [admin_tenant_fq_name + [ipam_name]]
-    conf['ipv4_cidr_list']     = [cidr1]
-    conf['ipam_name']          = ipam_name
-    conf['tenant']             = admin_tenant
-    conf['vn_name']            = mgmt_vn_name + ".1"
-    conf['disable_gateway']    = True
-    conf['shared_flag']        = True
-    conf['use_fixture']        = False
-    conf['external_flag']      = global_conf['mgmt,external_flag']
+    #conf = {}
+    #conf['ipam_fq_name_list']  = [admin_tenant_fq_name + [ipam_name]]
+    #conf['ipv4_cidr_list']     = [cidr1]
+    #conf['ipam_name']          = ipam_name
+    #conf['tenant']             = admin_tenant
+    #conf['vn_name']            = mgmt_vn_name + ".1"
+    #conf['disable_gateway']    = True
+    #conf['shared_flag']        = True
+    #conf['use_fixture']        = False
+    #conf['external_flag']      = global_conf['mgmt,external_flag']
 
-    vn_obj  = VN(None)
-    extend_to_pr,mgmt_vn_fqname,mgmt_vn_uuid = vn_obj.create_vn(count=1,conn_obj_list=conn_obj_list,**conf)
+    #vn_obj  = VN(None)
+    #extend_to_pr,mgmt_vn_fqname,mgmt_vn_uuid = vn_obj.create_vn(count=1,conn_obj_list=conn_obj_list,**conf)
  
     conf = {}
     conf['ipam_fq_name_list']  = [admin_tenant_fq_name + [ipam_name]]
@@ -782,9 +782,6 @@ class Test(object):
 
         admin_tenant_fq_name = {'fq_name':['default-domain','admin']}
         func_arg1 = conn_obj_list,self.thread_count,self.global_conf,self.tenant_conf,[admin_tenant_fq_name],update_properties
-        #svc_obj = ServicesConfig(None)
-        #svc_obj.create_service_templates(*func_arg)
-        #sys.exit()
 
         project_obj = ProjectConfig(None)
         project_obj.update_security_groups(*func_arg1)
@@ -832,6 +829,8 @@ class Test(object):
         router_obj.create_tors(*func_arg)
         router_obj.create_physical_interfaces(*func_arg)
 
+        host_aggr_obj = HostAggregate(None)
+        host_aggr_obj.delete_host_aggregates(conn_obj_list,self.thread_count,self.global_conf,self.tenant_conf)
         host_aggr_obj = HostAggregate(None)
         host_aggr_obj.create_host_aggregates(*func_arg)
 

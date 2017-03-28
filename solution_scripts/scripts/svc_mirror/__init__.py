@@ -1,1 +1,0 @@
-"""Service chain Mirroring tests."""

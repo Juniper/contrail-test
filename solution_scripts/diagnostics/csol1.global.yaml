@@ -44,41 +44,48 @@ global_config:
       - name: "AG2"
         zone_name: "AZ2"
         hosts:
-          - name: "csol1-node13"
+          - name: "INVALID_HOST"
     non_dpdk_config: 
-       - zone_name: "AZ1"
+       - zone_name: "AZ2"
          flavor: "m1.small"
     dpdk_config:
-       - zone_name: "AZ2"
+       - zone_name: "AZ1"
          flavor: "contrail_flavor_2cpu" 
     pr_mx:
-      - name: "vibrant"
-        mgmt_ip: "10.87.128.54"
-        vtep_ip: "172.16.89.200"
-        bgp_gw: "vibrant" # not used
+      #- name: "vibrant"
+      #  mgmt_ip: "10.87.128.54"
+      #  vtep_ip: "172.16.89.200"
+      #  bgp_gw: "vibrant" # not used
+      #  netconf:
+      #      enabled: True
+      #      uname: "root"
+      #      password: "Embe1mpls"
+      #      auto_config: True
+      #      junos_si: "si-0/0/0"
+      #  pr_interface:
+      #      name: "ge-0/0/0"
+      #      vlan: 2001
+      #      vn: "MGMT"
+      #      mac: "52:54:00:12:34:56"
+      #      ip: "192.168.255.240"
+      - name: "h1droid"
+        mgmt_ip: "10.87.128.59"
+        vtep_ip: "172.16.86.200"
+        bgp_gw: "h1droid"
         netconf:
             enabled: True
             uname: "root"
             password: "Embe1mpls"
             auto_config: True
-            junos_si: "si-0/0/0"
+            junos_si: "si-3/0/0"
         pr_interface:
-            name: "ge-0/0/0"
+            name: "xe-3/3/3"
             vlan: 2001
             vn: "MGMT"
             mac: "52:54:00:12:34:56"
             ip: "192.168.255.240"
-      #- name: "h1droid"
-      #  mgmt_ip: "10.87.128.59"
-      #  vtep_ip: "172.16.86.200"
-      #  bgp_gw: "h1droid"
-      #  netconf:
-      #      enabled: False
-      #      uname: "root"
-      #      password: "Embe1mpls"
-      #      auto_config: True
-      #      junos_si: "si-3/0/0"
-    pr_qfx:
+
+    pr_qfx1:
       - name: "csol1-tor2"
         mgmt_ip: "172.16.90.1"
         vtep_ip: "172.16.90.1"

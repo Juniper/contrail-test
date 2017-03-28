@@ -64,6 +64,8 @@ class ContrailTestInit(fixtures.Fixture):
         self.single_node = self.get_os_env('SINGLE_NODE_IP')
         self.jenkins_trigger = self.get_os_env('JENKINS_TRIGGERED')
         self.os_type = custom_dict(self.get_os_version)
+        
+        
         self.report_details_file = 'report_details.ini'
         self.config = ConfigParser.ConfigParser()
         self.ini_file = ini_file
@@ -340,7 +342,7 @@ class ContrailTestInit(fixtures.Fixture):
                 return 'ubuntu'
             if 'el7' in output:
                 return 'redhat'
-        return None
+        return 'ubuntu'
     # end get_os_version
 
     def read_config_option(self, section, option, default_option):
@@ -1015,9 +1017,10 @@ class ContrailTestInit(fixtures.Fixture):
     # end copy_fabfile_to_agents
 
     def get_openstack_release(self):
+        # TO_FIX : contrail_vip self.host_ips
         with settings(
             host_string='%s@%s' % (
-                self.username, self.cfgm_ips[0]),
+                self.username,self.host_ips[-1]),
                 password=self.password, warn_only=True, abort_on_prompts=False, debug=True):
             ver = run('contrail-version')
             pkg = re.search(r'contrail-install-packages(.*)~(\w+)(.*)', ver)
@@ -1030,12 +1033,13 @@ class ContrailTestInit(fixtures.Fixture):
         if self.contrail_version:
             return self.contrail_version
         build_id_cmd = 'source /opt/contrail/contrail_packages/VERSION'
-        if 'ubuntu' in self.os_type[self.cfgm_ips[0]]:
+        # TO_FIX: contrail_vip self.host_ips self.cfgm_ips[0]
+        if 'ubuntu' in self.os_type[self.host_ips[-1]]:
             release_cmd = 'release=`apt-cache show contrail-install-packages | grep Version | grep -o "[0-9\.]*" | head -1`'
         else:
             release_cmd = 'release=`rpm -qi contrail-install-packages | grep Version | awk \'{print $3}\'`'
         self.contrail_version = self.run_cmd_on_server(
-            self.cfgm_ips[0], "%s ; %s; echo ${release}-${BUILDID}" %
+            self.host_ips[-1], "%s ; %s; echo ${release}-${BUILDID}" %
             (release_cmd, build_id_cmd))
         self.build_id = self.contrail_version
         return self.contrail_version
