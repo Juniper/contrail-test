@@ -285,6 +285,11 @@ class sdnUiTopoSetupFixture(fixtures.Fixture):
         return True
     # end attach_route_aggregate
 
+    def attach_svc_health_check(self):
+        assert ui_topo_steps.attachShcToSI(self)
+        return True
+    # end attach_svc_health_check
+
     def create_log_statistic(self):
         assert ui_topo_steps.createLogStatistic(self)
         return True

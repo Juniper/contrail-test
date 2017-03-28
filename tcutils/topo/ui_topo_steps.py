@@ -276,7 +276,6 @@ def attachRpToSI(self):
                 result = result and False
             self.addCleanup(
                 self.webui.attach_detach_rpol_to_si(int_rp, si, attach=False))
-            import pdb; pdb.set_trace()
     return result
 # end attachRpToSI
 
@@ -296,7 +295,25 @@ def attachRaToSI(self):
             self.addCleanup(
                 self.webui.attach_detach_ragg_to_si(int_ra, si, attach=False))
     return result
-# end attachRpToSI
+# end attachRaToSI
+
+def attachShcToSI(self):
+    if not hasattr(self.topo, 'si_shc_list'):
+        self.logger.info("No shc config for SI found in topo file")
+        return True
+    result = True
+    self.logger.info("Setup step: Editing SI to attach Health Check")
+    for si in self.topo.si_list:
+        if si in self.topo.si_shc_params:
+            int_shc = self.topo.si_shc_params[si]
+            if not self.webui.attach_detach_shc_to_si(
+                    int_shc,
+                    si):
+                result = result and False
+            self.addCleanup(
+                self.webui.attach_detach_shc_to_si(int_shc, si, attach=False))
+    return result
+# end attachShcToSI
 
 def createLogStatistic(self):
     result = True
