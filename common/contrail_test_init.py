@@ -1405,4 +1405,22 @@ class ContrailTestInit(object):
         host['ip'] = ip
         host['username'] = self.host_data[ip]['username']
         host['password'] = self.host_data[ip]['password']
+        if not self.host_data[ip].get('containers', {}).get(container):
+            container = None
+            self.logger.debug('Container %s not in host %s, copying to '
+                ' host itself' % (container, ip))
         copy_file_to_server(host, src, dstdir, dst, force, container=container)
+
+    def copy_file_from_server(self, ip, src_file_path, dest_folder,
+            container=None):
+        host = {}
+        host['ip'] = ip
+        host['username'] = self.host_data[ip]['username']
+        host['password'] = self.host_data[ip]['password']
+        if not self.host_data[ip].get('containers', {}).get(container):
+            container = None
+            self.logger.debug('Container %s not in host %s, copying from '
+                ' host itself' % (container, ip))
+        copy_file_from_server(host, src_file_path, dest_folder,
+            container=container)
+    # end copy_file_from_server

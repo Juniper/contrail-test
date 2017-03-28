@@ -895,6 +895,32 @@ def copy_file_to_server(host, src, dest, filename, force=False,
                 run('docker cp %s/%s %s:%s' %(dest, filename, container, dest))
 # end copy_file_to_server
 
+def copy_file_from_server(host, src_file_path, dest_folder, container=None,
+        logger=None):
+    '''
+    Can copy files using wildcard.
+    Note that docker cp does not support wildcard yet
+    '''
+    logger = logger or contrail_logging.getLogger(__name__)
+    if container:
+        tmp_dest_folder = '/tmp'
+    basename = os.path.basename(src_file_path)
+
+    with settings(host_string='%s@%s' % (host['username'],
+                                         host['ip']), password=host['password'],
+                  warn_only=True, abort_on_prompts=False):
+        if container:
+            run('docker cp %s:%s %s' %(container, src_file_path,
+                tmp_dest_folder))
+        else:
+            tmp_dest_folder = os.path.dirname(src_file_path)
+        tmp_dest_path = '%s/%s' %(tmp_dest_folder, basename)
+        get('%s/%s' %(tmp_dest_folder, basename), dest_folder)
+        if container:
+            run('rm -f %s/%s' %(tmp_dest_folder, basename))
+        return True
+# end copy_file_from_server
+
 def get_host_domain_name(host):
     output = None
     with settings(hide('everything'), host_string='%s@%s' % (host['username'],

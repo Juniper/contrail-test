@@ -1,0 +1,7 @@
+[
+    {
+        "exception_name": "cfgm_common.exceptions.RefsExistError",
+        "exception_text": "plugin_delete_policy",
+        "file": "contrail-api.log"
+    }
+]
