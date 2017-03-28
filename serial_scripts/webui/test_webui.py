@@ -344,6 +344,61 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_infra_global_config
 
     @preposttest_wrapper
+    def test_verify_config_infra_rbac_global(self):
+        '''Test to verify RBAC under Configure->Infrastructure->RBAC->Global
+           1. Go to Configure->Infrastructure->RBAC->Global.
+           2. Get all the details of RBAC from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_rbac_api_data(), 'RBAC config data verification failed'
+        return True
+    # end test_verify_config_infra_rbac_global
+
+    @preposttest_wrapper
+    def test_verify_config_infra_rbac_domain(self):
+        '''Test to verify RBAC under Configure->Infrastructure->RBAC->Domain
+           1. Go to Configure->Infrastructure->RBAC->Domain.
+           2. Get all the details of RBAC from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_rbac_api_data(rbac_type='domain'), \
+                                              'RBAC config data verification failed'
+        return True
+    # end test_verify_config_infra_rbac_domain
+
+    @preposttest_wrapper
+    def test_verify_config_infra_rbac_project(self):
+        '''Test to verify RBAC under Configure->Infrastructure->RBAC->Project
+           1. Go to Configure->Infrastructure->RBAC->Project.
+           2. Get all the details of RBAC from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_rbac_api_data(rbac_type='project'), \
+                                              'RBAC config data verification failed'
+        return True
+    # end test_verify_config_infra_rbac_project
+
+    @preposttest_wrapper
+    def test_verify_config_infra_virtual_router(self):
+        '''Test to verify virtual router under Configure->Infrastructure->Virtual Router
+           1. Go to Configure->Infrastructure->Virtual Router.
+           2. Get all the details of virtual router from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_vrouter_api_data(), \
+                   'Virtual Router config data verification failed'
+        return True
+    # end test_verify_config_infra_virtual_router
+
+    @preposttest_wrapper
     def test_verify_config_networking_floating_ips(self):
         '''Test floating ips on config->Networking->Manage Floating IPs page
         '''
@@ -441,6 +496,23 @@ class WebuiTestSanity(base.WebuiBaseTest):
         assert self.webui.verify_project_quotas(), 'Project Quotas config data verification failed'
         return True
     # end test_verify_config_infra_project_quotas
+
+    @preposttest_wrapper
+    def test_verify_config_alarms_project_and_global(self):
+        '''Test to verify alarms under project and Global
+           1. Go to Configure->Alarms->Project.
+           2. Get all the details of alarm from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+           4. Then Go to Configure->Global Config->Alarm Rules.
+           5. Get all the details of alarm from both WebUI and API server.
+           6. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 and 6 should pass
+        '''
+        assert self.webui.verify_alarms_api_data(topo.alarms_params), \
+                   'Alarms data verification failed'
+        return True
+    # end test_verify_config_alarms_project_and_global
 
     @preposttest_wrapper
     def test_verify_monitor_infra_control_node_basic_details(self):
