@@ -331,7 +331,7 @@ class sdn_webui_config ():
                          }
 
         # define service instance
-        self.si_list = ['svcinst1', 'svcinst2']
+        self.si_list = ['svcinst1', 'svcinst2', 'svcinst3_v2']
         self.si_params = {
             'svcinst1': {
                 'if_details': {
@@ -347,6 +347,13 @@ class sdn_webui_config ():
                     'right' : {'vn_name' : 'vnet2'}
                               },
                 'svc_template' : 'nat_svc_template'
+                },
+            'svcinst3_v2': {
+                'if_details': {
+                    'left' : {'vn_name' : 'left_vn'},
+                    'right' : {'vn_name' : 'right_vn'}
+                              },
+                'svc_template' : 'svc_template_v2'
                 }
             }
 
