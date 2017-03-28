@@ -368,6 +368,13 @@ class sdn_webui_config ():
                 'max_retries': 2,
                 'hc_type': 'link-local'}}
 
+        #Define parameters for attaching service health check template to SI
+        self.si_shc_list = ['svc_health_check1']
+        self.si_shc_params = {
+            'svcinst3_v2' : {
+                'right': 'svc_health_check1'
+            }}
+
         # Define VM's
         # VM distribution on available compute nodes is handled by nova
         # scheduler or contrail vm naming scheme

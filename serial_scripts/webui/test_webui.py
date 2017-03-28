@@ -343,6 +343,22 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_attach_route_aggregate_to_si
 
+    @preposttest_wrapper
+    def test2_2_3_attach_svc_health_check_to_si(self):
+        '''
+        Description: Test to attach a created Service Health Check template to SI on UI
+        Steps:
+            1. On the Contrail UI, go to Config -> Services -> Service Instances
+            2. Click on edit on the SI v2
+            3. Click on 'Service Health Check', attach the health check template
+            4. Click on 'Save'
+        Pass criteria:
+            1. Steps 3 and 4 above should pass
+        '''
+        assert self.res.setup_obj.attach_svc_health_check(), 'Attaching of Health Check failed'
+        return True
+    # end test_attach_svc_health_check_to_si
+
     # UI verification tests
 
     @preposttest_wrapper
