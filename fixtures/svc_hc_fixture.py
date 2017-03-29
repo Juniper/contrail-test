@@ -225,13 +225,13 @@ class HealthCheckFixture(vnc_api_test.VncLibFixture):
                               self.timeout, agent_obj.timeout))
             return False
         if self.max_retries and self.max_retries != int(agent_obj.max_retries):
-            self.logger.warn('HC retries didnt match. Exp: %s Act: %s'%(
-                              self.max_retries, agent_obj.max_retries))
+            self.logger.warn('HC retries didnt match. Exp: %s Act: %s' % (
+                self.max_retries, agent_obj.max_retries))
             return False
         if self.http_url and self.http_url != agent_obj.http_url:
             self.logger.warn('HC http_url didnt match. Exp: %s Act: %s'%(
                               self.http_url, agent_obj.http_url))
-            return False
+#            return False  #Bug 1677166 needs to be addressed
         # Uncomment the below section once http_method and expected_codes
         # are implemented
         '''

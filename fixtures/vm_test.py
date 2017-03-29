@@ -2552,8 +2552,7 @@ class VMFixture(fixtures.Fixture):
         #listen_port = "\"Server "+listen_port+"$\""
         try:
             vm_host_string = '%s@%s' % (self.vm_username, self.local_ip)
-            cmd = "pkill -e -f SimpleHTTPServer"
-            self.logger.info("cmd  is is %s" % cmd)
+            cmd = "pkill -f SimpleHTTPServer"
             output = remote_cmd(
                 vm_host_string, cmd, gateway_password=host['password'],
                 gateway='%s@%s' % (host['username'], self.vm_node_ip),
