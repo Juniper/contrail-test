@@ -499,8 +499,22 @@ class WebuiTest:
                     vn_name = left_vn
                 elif intf_type == 'right':
                     vn_name = right_vn
-                self.ui.find_element('s2id_virtualNetwork_dropdown', elements=True)[index].click()
+                self.ui.find_element('s2id_virtualNetwork_dropdown',
+                                     elements=True)[index].click()
                 self.ui.select_from_dropdown(vn_name)
+            if fixture.si_v2:
+                self.ui.click_on_accordian('portTuplesCollection', accor=False)
+                br = self.ui.find_element('port-tuples-collection')
+                self.ui.click_element('editable-grid-add-link', 'class', browser=br)
+                self.ui.click_element('fa-caret-right', 'class', browser=br)
+                for index in range(2):
+                    int = self.ui.find_element('s2id_interface_dropdown',
+                                         elements=True)[index]
+                    self.browser.execute_script("return arguments[0].scrollIntoView();", int)
+                    int.click()
+                    ele_br = self.ui.find_element(['select2-drop', 'li'],
+                                                  ['id', 'tag'], if_elements=[1])
+                    self.ui.click_element('div', 'tag', browser=ele_br[0])
             if not self.ui.click_on_create('Service Instance', 'service_instance', save=True):
                 result = result and False
             time.sleep(40)
