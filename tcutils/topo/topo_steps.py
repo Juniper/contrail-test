@@ -23,6 +23,7 @@ from netaddr import *
 from common.policy import policy_test_helper
 from svc_template_fixture import SvcTemplateFixture
 from svc_instance_fixture import SvcInstanceFixture
+from svc_hc_fixture import HealthCheckFixture
 from security_group import SecurityGroupFixture
 from physical_device_fixture import PhysicalDeviceFixture
 from pif_fixture import PhysicalInterfaceFixture
@@ -809,6 +810,27 @@ def createServiceInstance(self):
 
     return self
 # end createServiceInstance
+
+def createServiceHealthCheck(self):
+    self.shc_fixture = {}
+    if not hasattr(self.topo, 'shc_list'):
+        return self
+    for shc_name in self.topo.shc_list:
+        shc_param = self.topo.shc_params[shc_name]
+        self.shc_fixture[shc_name] = self.useFixture(
+            HealthCheckFixture(
+                connections=self.project_connections,
+                name = shc_name,
+                hc_type = shc_param['hc_type'],
+                probe_type = shc_param['probe_type'],
+                delay = shc_param['delay'],
+                timeout = shc_param['timeout'],
+                max_retries = shc_param['max_retries'],
+                http_url = shc_param['http_url']))
+        if self.skip_verify == 'no':
+            assert self.shc_fixture[shc_name].verify_on_setup()
+    return self
+# end createServiceHealthCheck
 
 def createPhysicalRouter(self, pr_list, pr_params):
     self.pr_fixture = {}
