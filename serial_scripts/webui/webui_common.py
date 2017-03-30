@@ -521,6 +521,8 @@ class WebuiCommon:
                 element_id = element_id + '_accordian'
             else:
                 element_id = element_id + 'Accordian'
+        if not accor:
+            def_type = False
         try:
             element = self.find_element(element_id)
             self.browser.execute_script("return arguments[0].scrollIntoView();", element)
