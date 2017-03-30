@@ -68,7 +68,7 @@ class TestRoutes(BaseVrouterTest):
         vn1_fixture.verify_on_setup()
         # cleanup also checks for route removal
         vm1_fixture.cleanUp()
-        self._remove_from_cleanup(vm1_fixture.cleanUp)
+        self.remove_method_from_cleanups((vm1_fixture.cleanUp, (), {}))
         self.logger.info('Validate that Vrouter Route table does get cleared')
     # end test_rt_table_scenario_1
 
@@ -215,7 +215,7 @@ class TestRoutes(BaseVrouterTest):
                                        vn_fixture=vn1_fixture,
                                        node_ip=vm1_fixture.vm_node_ip)
         vm3_fixture.cleanUp()
-        self._remove_from_cleanup(vm3_fixture.cleanUp)
+        self.remove_method_from_cleanups((vm3_fixture.cleanUp, (), {}))
         self.del_interface_route_table(port2_fixture, intf_rtb_fixture.uuid)
 
         # Route table compaction should happen in vrouter
@@ -269,7 +269,7 @@ class TestRoutes(BaseVrouterTest):
         vm2_fixture.verify_on_setup()
 
         vm2_fixture.cleanUp()
-        self._remove_from_cleanup(vm2_fixture.cleanUp)
+        self.remove_method_from_cleanups((vm2_fixture.cleanUp, (), {}))
         new_size = self.get_vrouter_route_table_size(
                            vm1_fixture.vm_node_ip,
                            vn_fixture=vn1_fixture)
