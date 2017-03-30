@@ -12,6 +12,7 @@ import logging
 
 from fabric.api import env, run, cd
 from fabric.operations import get, put
+from fabric.contrib.files import exists
 from fabric.context_managers import settings, hide
 from fabric.exceptions import NetworkError
 from tcutils.util import *
@@ -377,19 +378,20 @@ class ContrailReportInit:
         if self.build_id:
             return self.build_id
         build_id = None
-        cmd = 'contrail-version | grep contrail-config | head -1 | awk \'{print $2}\''
-        alt_cmd = 'contrail-version | grep contrail-nodemgr | head -1 | awk \'{print $2}\''
+        cmd = 'contrail-version | grep contrail-config | head -1 '
+        alt_cmd = 'contrail-version | grep contrail-nodemgr | head -1 '
         tries = 50
         while not build_id and tries:
             try:
-                build_id = self.run_cmd_on_server(self.cfgm_ips[0], cmd)
+                build_id = self.run_cmd_on_server(self.cfgm_ips[0], cmd, container='controller')
                 if not build_id:
                     build_id = self.run_cmd_on_server(
-                        self.cfgm_ips[0], alt_cmd)
+                        self.cfgm_ips[0], alt_cmd, container='controller')
             except NetworkError, e:
                 time.sleep(1)
                 pass
             tries -= 1
+        build_id = build_id.split()[1]
         build_sku = self.get_os_env("SKU")
         if build_sku is None:
             container = self.host_data[self.openstack_ips[0]].get(
@@ -410,7 +412,7 @@ class ContrailReportInit:
             fi
             '''
         try:
-            self.distro = self.run_cmd_on_server(self.cfgm_ips[0], cmd)
+            self.distro = self.run_cmd_on_server(self.cfgm_ips[0], cmd, container='controller')
             self.distro = self.distro.replace(')', '')
             self.distro = self.distro.replace('(', '')
         except NetworkError, e:
@@ -466,17 +468,17 @@ class ContrailReportInit:
         """Get the list of cores in one of the nodes in the test setup.
         """
         core = ''
-        cmd = 'ls core.* 2>/dev/null'
+        cmd = 'ls %s/core.* 2>/dev/null' % (CORE_DIR)
         containers = self.host_data[node_ip].get('containers', {}).keys()
         if not containers:
             core = run_cmd_on_server(cmd, node_ip, user, password)
             return core
 
         for container in containers:
-            with cd(CORE_DIR):
-                 output = run_cmd_on_server(cmd, node_ip, user, password,
-                            container=container)
-                 core = '%s %s' %(core, output)
+            output = run_cmd_on_server(cmd, node_ip, user, password,
+                        container=container)
+            output1 = output.replace('%s/' %(CORE_DIR), '')
+            core = '%s %s' %(core, output1)
         return core
 
 # end
