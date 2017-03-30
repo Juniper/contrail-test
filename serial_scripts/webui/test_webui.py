@@ -400,7 +400,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
 
     @preposttest_wrapper
     def test_verify_config_infra_bgp_router(self):
-        '''Test to verify virtual router under Configure->Infrastructure->BGP Routers
+        '''Test to verify BGP router under Configure->Infrastructure->BGP Routers
            1. Go to Configure->Infrastructure->BGP Routers.
            2. Get all the details of bgp router from both WebUI and API server.
            3. Verify the WebUI details against API server details.
@@ -411,6 +411,35 @@ class WebuiTestSanity(base.WebuiBaseTest):
                    'BGP Router config data verification failed'
         return True
     # end test_verify_config_infra_bgp_router
+
+    @preposttest_wrapper
+    def test_verify_config_infra_service_appl_set(self):
+        '''Test to verify Service Appliance Sets under Configure->Infrastructure
+           1. Go to Configure->Infrastructure->Service Appliance Sets.
+           2. Get all the details of service appliance sets from
+              both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_svc_appl_sets_api_data(), \
+                   'Service Appliance Sets config data verification failed'
+        return True
+    # end test_verify_config_infra_service_appl_set
+
+    @preposttest_wrapper
+    def test_verify_config_infra_global_flow_aging(self):
+        '''Test to verify Flow Aging under Configure->Infrastructure->Global Config
+           1. Go to Configure->Infrastructure->Global Config->Flow Aging
+           2. Get all the details of Flow Aging from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_flow_aging_api_data(), \
+                   'Flow Aging config data verification failed'
+        return True
+    # end test_verify_config_infra_global_flow_aging
 
     @preposttest_wrapper
     def test_verify_config_networking_floating_ips(self):

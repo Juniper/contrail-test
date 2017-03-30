@@ -230,6 +230,10 @@ class WebuiCommon:
         return self._get_list_api('bgp-routers')
     # end get_bgp_router_list_api
 
+    def get_svc_appl_sets_list_api(self):
+        return self._get_list_api('service-appliance-sets')
+    # end get_svc_appl_sets_api
+
     def log_msg(self, t, msg):
         if t == 'info':
             self.logger.info(msg)
@@ -1898,6 +1902,14 @@ class WebuiCommon:
         return self.click_configure_elements(0, 'config_infra_sapset',
                                              msg="configure Service Appliance Set")
     # end click_configure_svc_appliance_set
+
+    def click_configure_svc_appliance_set_basic(self, row_index):
+        self.click_configure_svc_appliance_set()
+        rows = self.get_rows()
+        rows[row_index].find_elements_by_tag_name(
+            'div')[0].find_element_by_tag_name('i').click()
+        self.wait_till_ajax_done(self.browser)
+    # end click_configure_svc_appliance_set_basic
 
     def click_configure_svc_appliances(self):
         return self.click_configure_elements(0, 'config_infra_sap',
