@@ -251,6 +251,12 @@ python tools/tor/setup_tor_agents.py $TEST_CONFIG_FILE
 )
 }
 
+function change_testr_permission {
+chmod +x /usr/local/bin/testr
+sync
+sleep 1
+}
+
 function apply_testtools_patch_for_centos {
 
 find_python_version
@@ -284,7 +290,7 @@ if [ ! -z $ci_image ]; then
 fi
 
 # Workaround when testr does not have execute permission after install
-chmod +x /usr/local/bin/testr
+change_testr_permission
 
 check_test_discovery
 setup_tor_agents
