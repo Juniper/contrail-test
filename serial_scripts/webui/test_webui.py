@@ -536,6 +536,22 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_services_service_instances
 
     @preposttest_wrapper
+    def test_verify_config_network_route_table(self):
+        '''
+        Description: Test to verify Network Route Table on UI against Route Table on API
+        Steps:
+            1. On the Contrail UI, go to Config -> Networking -> Routing
+            2. Get all the route table config details from the page
+            3. Go to the API server and fetch all the route table config details
+            4. Verify the WebUI details against the details from the API server
+        Pass criteria:
+            1. Step 4 above should pass
+        '''
+        assert self.webui.verify_route_table_api_basic_data(), 'Network Route Table data verification failed'
+        return True
+    # end test_verify_config_network_route_table
+
+    @preposttest_wrapper
     def test_verify_config_infra_project_quotas(self):
         '''Test project quotas on config->Networking->Project Quotas page
         '''
