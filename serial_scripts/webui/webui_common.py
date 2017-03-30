@@ -226,6 +226,10 @@ class WebuiCommon:
         return self._get_list_api('virtual-routers')
     # end get_vrouter_list_api
 
+    def get_bgp_router_list_api(self):
+        return self._get_list_api('bgp-routers')
+    # end get_bgp_router_list_api
+
     def log_msg(self, t, msg):
         if t == 'info':
             self.logger.info(msg)
@@ -1849,6 +1853,14 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser, wait=2)
         return self.check_error_msg("configure bgp routers")
     # end click_configure_bgp_router
+
+    def click_configure_bgp_router_basic(self, row_index):
+        self.click_configure_bgp_router()
+        rows = self.get_rows()
+        rows[row_index].find_elements_by_tag_name(
+            'div')[0].find_element_by_tag_name('i').click()
+        self.wait_till_ajax_done(self.browser)
+    # end click_configure_bgp_router_basic
 
     def click_configure_link_local_service(self):
         self.wait_till_ajax_done(self.browser)

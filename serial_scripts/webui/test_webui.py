@@ -399,6 +399,20 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_infra_virtual_router
 
     @preposttest_wrapper
+    def test_verify_config_infra_bgp_router(self):
+        '''Test to verify virtual router under Configure->Infrastructure->BGP Routers
+           1. Go to Configure->Infrastructure->BGP Routers.
+           2. Get all the details of bgp router from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_bgp_router_api_data(), \
+                   'BGP Router config data verification failed'
+        return True
+    # end test_verify_config_infra_bgp_router
+
+    @preposttest_wrapper
     def test_verify_config_networking_floating_ips(self):
         '''Test floating ips on config->Networking->Manage Floating IPs page
         '''
