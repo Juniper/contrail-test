@@ -28,7 +28,7 @@ class ExtendedFlowTestsBase(FlowTestBase):
         ''' flow_entry_obj : FlowEntry object
     '''
         (f_entry, r_flow_entry) = compute_fixture.get_flow_entry(
-            index=flow_entry_obj.index)
+            index=flow_entry_obj.index, show_evicted=False)
         assert f_entry is None, ("TCP flow is not evicted ",
                                  "after it is closed. Flow details: %s" % (f_entry.items))
         assert r_flow_entry is None, ("TCP flow is not evicted ",
