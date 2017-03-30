@@ -577,6 +577,68 @@ class WebuiTest:
         return result
     # end create_svc_health_check
 
+    def attach_detach_shc_to_si(
+            self,
+            int_shc,
+            si,
+            attach=True):
+        result = True
+        if attach:
+            attach_var = 'Attach'
+        else:
+            attach_var = 'Detach'
+        try:
+            if not self.ui.click_configure_service_instance():
+                result = result and False
+            self.ui.select_project(self.project_name_input)
+            self.logger.info("%s health check %s using contrail-webui" %
+                             (attach_var, int_shc))
+            rows = self.ui.get_rows()
+            for sint in rows:
+                if sint.text:
+                    if (self.ui.get_slick_cell_text(sint, 2) == si):
+                        self.ui.click_element('fa-cog', 'class', browser=sint)
+                        self.ui.wait_till_ajax_done(self.browser)
+                        self.ui.click_element(['tooltip-success', 'i'], ['class', 'tag'])
+                        self.ui.click_on_accordian('svcHealthChk', def_type=False)
+                        for index, (intf, shc) in enumerate(int_shc.iteritems()):
+                            br = self.ui.find_element('svcHealtchChecks')
+                            if attach:
+                                self.ui.click_element('editable-grid-add-link', 'class',
+                                                      browser=br)
+                                self.ui.wait_till_ajax_done(self.browser)
+                                self.ui.find_element('s2id_interface_type_dropdown',
+                                                     elements=True, browser=br)[index].click()
+                                self.ui.wait_till_ajax_done(self.browser)
+                                self.ui.select_from_dropdown(intf)
+                                self.ui.find_element('s2id_service_health_check_dropdown',
+                                                     elements=True, browser=br)[index].click()
+                                self.ui.wait_till_ajax_done(self.browser)
+                                self.ui.select_from_dropdown(shc, grep=True)
+                            else:
+                                self.ui.find_element('fa-minus', 'class', browser=br,
+                                                     elements=True)[0].click()
+                        if not attach:
+                            self.ui.click_on_accordian('svcHealthChk', def_type=False)
+                        if not self.ui.click_on_create('Service Instance', 'service_instance',
+                                                       save=True):
+                            result = result and False
+                            raise Exception("Health Check %s to SI failed" % (attach_var))
+                        else:
+                            self.logger.info(
+                                "%s health check %s successful using contrail-webui" %
+                                    (int_shc, attach_var))
+                        break
+        except WebDriverException:
+            self.logger.error("Error during %s of health check %s" % (attach_var, int_shc))
+            self.ui.screenshot("shc_attach_detach_error")
+            self.ui.click_on_cancel_if_failure('cancelBtn')
+            result = result and False
+            raise
+        self.ui.click_on_cancel_if_failure('cancelBtn')
+        return result
+    # end attach_detach_shc_to_si
+
     def create_bgpaas(
             self,
             bgpaas_name,
