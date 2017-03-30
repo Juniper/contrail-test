@@ -415,16 +415,17 @@ class WebuiTest:
                                 fixture.service_type.title())
             self.ui.dropdown('s2id_Version_dropdown', version_num)
             self.ui.wait_till_ajax_done(self.browser)
-            self.ui.dropdown('s2id_image_name_dropdown', fixture.image_name)
             for index, (intf_element, val) in enumerate(fixture.if_details.iteritems()):
                 intf_text = intf_element
                 shared_ip = val['shared_ip_enable']
                 static_routes = val['static_route_enable']
-                self.ui.click_element('editable-grid-add-link', 'class')
-                int = self.ui.find_element('interfaces')
+                if fixture.version == 2:
+                    br = self.ui.find_element('interfacesSection_v2')
+                else:
+                    br = None
+                self.ui.click_element('editable-grid-add-link', 'class', browser=br)
+                int = self.ui.find_element('interfaces', browser=br)
                 self.browser.execute_script("return arguments[0].scrollIntoView();", int)
-                self.ui.find_element(['interfaces', 'row'],
-                                      ['id', 'class'], if_elements=[1])[index].click()
                 if shared_ip:
                     self.ui.find_element('shared_ip', 'name',
                                          if_elements=[1])[index].click()
@@ -432,15 +433,18 @@ class WebuiTest:
                     self.ui.find_element('static_route_enable', 'name',
                                           if_elements=[1])[index].click()
                 svc_int = self.ui.find_element('data-cell-service_interface_type',
-                                               'class', elements=True, if_elements=[1])
+                                               'class', elements=True, if_elements=[1],
+                                               browser=br)
                 self.ui.click_element('fa-caret-down', 'class', browser=svc_int[index])
                 self.ui.wait_till_ajax_done(self.browser)
                 self.ui.find_select_from_dropdown(intf_text)
-            self.ui.click_on_accordian('advanced_options', accor=False)
-            self.ui.wait_till_ajax_done(self.browser)
-            self.ui.dropdown('s2id_flavor_dropdown', fixture.flavor, grep=True)
-            if fixture.svc_scaling:
-                self.ui.click_element('user_created_service_scaling', 'name')
+            if fixture.version == 1:
+                self.ui.dropdown('s2id_image_name_dropdown', fixture.image_name)
+                self.ui.click_on_accordian('advanced_options', accor=False)
+                self.ui.wait_till_ajax_done(self.browser)
+                self.ui.dropdown('s2id_flavor_dropdown', fixture.flavor, grep=True)
+                if fixture.svc_scaling:
+                    self.ui.click_element('user_created_service_scaling', 'name')
             if not self.ui.click_on_create('Service Template',
                     'service_template', save=True):
                 result = result and False
