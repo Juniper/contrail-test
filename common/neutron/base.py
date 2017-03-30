@@ -347,7 +347,8 @@ class BaseNeutronTest(GenericTestBase):
             else:
                 result = False
                 self.logger.error('VRRP Master not selected')
-        result = result and self.check_master_in_agent(vm, vn, ip)
+        result = result and self.check_master_in_agent(vm, vn, ip,
+            prefix_len=prefix)
         return result
     # end vrrp_mas_chk
 

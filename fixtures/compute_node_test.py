@@ -19,6 +19,9 @@ PROTO_MAP = {'icmp' : '1',
              '17'   : '17',
              'tcp'  : '6',
              '6'    : '6',
+             '58'   : '58',
+             'icmp6': '58',
+             'icmpv6': '58'
             }
 
 class ComputeNodeFixture(fixtures.Fixture):
