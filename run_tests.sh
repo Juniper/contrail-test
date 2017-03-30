@@ -347,6 +347,12 @@ function parse_results {
     python tools/parse_result.py $serial_result_xml $REPORT_DETAILS_FILE
 }
     
+function change_testr_permission {
+chmod +x /usr/local/bin/testr
+sync
+sleep 1
+}
+
 export PYTHONPATH=$PATH:$PWD/scripts:$PWD/fixtures:$PWD
 apply_patches
 export TEST_DELAY_FACTOR=${TEST_DELAY_FACTOR:-1}
@@ -362,7 +368,7 @@ if [ ! -z $ci_image ]; then
 fi
 
 # Workaround when testr does not have execute permission after install
-chmod +x /usr/local/bin/testr
+change_testr_permission
 
 check_test_discovery
 
