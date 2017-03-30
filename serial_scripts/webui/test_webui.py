@@ -40,7 +40,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_create_svc_template
 
     @preposttest_wrapper
-    def test1_2_create_svc_instances(self):
+    def test1_9_create_svc_instances(self):
         '''UI Config-> Services-> Service Instances : Test svc instance creation
         '''
         assert self.res.setup_obj.create_svc_instance(), 'Svc instance creation failed'
@@ -48,7 +48,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_create_svc_instance
 
     @preposttest_wrapper
-    def test1_3_create_ipams(self):
+    def test1_2_create_ipams(self):
         '''UI Config : Networking -> IP Address Management :  Test ipam creation
         '''
         assert self.res.setup_obj.create_ipam(), 'Ipam creation failed'
@@ -56,7 +56,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_create_svc_instance
 
     @preposttest_wrapper
-    def test1_4_create_virtual_networks(self):
+    def test1_3_create_virtual_networks(self):
         '''UI Config : Networking -> Networks : Test virtual network creation
         '''
         assert self.res.setup_obj.create_vn(),'Virtual network creation failed'
@@ -64,7 +64,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_create_virtual_networks
 
     @preposttest_wrapper
-    def test1_5_create_ports(self):
+    def test1_4_create_ports(self):
         '''UI Config : Networking -> ports : Test port creation
         '''
         assert self.res.setup_obj.create_port(), 'Port creation creation failed'
@@ -72,7 +72,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_create_ports
 
     @preposttest_wrapper
-    def test1_6_create_routers(self):
+    def test1_5_create_routers(self):
         '''UI Config : Networking -> Routers : Test router creation
         '''
         assert self.res.setup_obj.create_router(), 'Router creation failed'
@@ -80,7 +80,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_create_routers
 
     @preposttest_wrapper
-    def test1_7_create_policies(self):
+    def test1_6_create_policies(self):
         '''UI Config : Networking -> Policies : Test Policy creation
         '''
         assert self.res.setup_obj.create_policy(), 'Policy creation failed'
@@ -88,7 +88,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_create_policies
 
     @preposttest_wrapper
-    def test1_8_attach_policy_to_vn(self):
+    def test1_7_attach_policy_to_vn(self):
         '''UI Config : Networking -> Networks : Test attach_policy to vn
         '''
         assert self.res.setup_obj.attach_policy_to_vn(), 'Policy attach to a VN failed'
@@ -96,7 +96,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_attach_policy_to_vn
 
     @preposttest_wrapper
-    def test1_9_launch_virtual_instances(self):
+    def test1_8_launch_virtual_instances(self):
         ''' Horizon Config : Test launch_virtual_instance
         '''
         assert self.res.setup_obj.create_vm(), 'Virtual instance launch failed'
