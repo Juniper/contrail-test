@@ -53,9 +53,9 @@ class DisablePolicyEcmpSerial(BaseVrouterTest, ConfigSvcChain, VerifySvcChain):
 
         st_fixture, si_fixtures = self.config_st_si(
             st_name, si_prefix, si_count,
-            mgmt_vn=vn_mgmt.vn_fq_name,
-            left_vn=vn_left.vn_fq_name,
-            right_vn=vn_right.vn_fq_name, svc_mode=svc_mode, svc_img_name=image,
+            mgmt_vn_fixture=vn_mgmt,
+            left_vn_fixture=vn_left,
+            right_vn_fixture=vn_right, svc_mode=svc_mode, svc_img_name=image,
             project=self.inputs.project_name, st_version=2, max_inst=max_inst)
         action_list = self.chain_si(
             si_count, si_prefix, self.inputs.project_name)
