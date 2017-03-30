@@ -8248,3 +8248,171 @@ class WebuiTest:
                     return result
         return result
     # end verify_vrouter_api_data
+
+    def verify_bgp_router_api_data(self, action='create', expected_result=None):
+        self.logger.info(
+            "Verifying bgp router api server data on \
+            Config->Infrastructure->BGP Routers page ...")
+        self.logger.debug(self.dash)
+        result = True
+        bgp_rtr_list_api = self.ui.get_bgp_router_list_api()
+        bgp_rtr_key_list = ['Name', 'Admin_State', 'Passive', 'Hold_Time', 'Loop_Count',
+                           'Auth_Mode', 'Address_Family']
+        for router in range(len(bgp_rtr_list_api['bgp-routers'])):
+            api_fq_name = bgp_rtr_list_api[
+                'bgp-routers'][router]['fq_name'][4]
+            self.ui.click_configure_bgp_router()
+            rows = self.ui.get_rows()
+            for row in range(len(rows)):
+                dom_arry_basic = []
+                match_flag = 0
+                text = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)[5].text
+                if api_fq_name == text:
+                    self.logger.info(
+                        "Bgp router fq_name %s matched in webui..Verifying basic view details..." %
+                        (api_fq_name))
+                    self.logger.debug(self.dash)
+                    match_index = row
+                    match_flag = 1
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "Bgp router fq name exists in apiserver but %s not found in webui..." %
+                    (api_fq_name))
+                self.logger.debug(self.dash)
+            else:
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'bgp_router', match_index)[1]
+                for detail in range(len(rows_detail)):
+                    key_value = rows_detail[detail].text.split('\n')
+                    key = str(key_value.pop(0))
+                    if len(key_value) > 1 :
+                        value = key_value
+                    elif len(key_value) ==  1:
+                        value = key_value[0]
+                    else:
+                        value = None
+                    if key == 'Peer(s)':
+                        value.pop(0)
+                        peer_data = []
+                        for index, row in enumerate(value):
+                            peer_data = row.split(' ')
+                            for index1, key in enumerate(bgp_rtr_key_list):
+                                dom_arry_basic.append({'key': 'Peer' + str(index+1) + key,
+                                    'value': peer_data[index1]})
+                    if key == 'Owner Permissions' or key == 'Global Permissions' or key == 'Owner' \
+                       or key == 'Shared List':
+                        continue
+                    key = key.replace(' ', '_')
+                    if key != 'Peer(s)':
+                        dom_arry_basic.append({'key': key, 'value': value})
+                bgp_rtr_api_data = self.ui.get_details(
+                                bgp_rtr_list_api['bgp-routers'][router]['href'])
+                complete_api_data = []
+                if 'bgp-router' in bgp_rtr_api_data:
+                    bgp_rtr_data = bgp_rtr_api_data['bgp-router']
+                    if 'bgp_router_parameters' in bgp_rtr_data:
+                        bgp_rtr_params = bgp_rtr_data['bgp_router_parameters']
+                        if 'router_type' in bgp_rtr_params:
+                            rtr_type = bgp_rtr_params['router_type']
+                            if rtr_type == 'router':
+                                rtr_type = 'BGP Router'
+                            elif rtr_type == 'control-node':
+                                rtr_type = 'Control Node'
+                            else:
+                                rtr_type = 'External Control Node'
+                        if 'local_autonomous_system' in bgp_rtr_params:
+                            if bgp_rtr_params['local_autonomous_system']:
+                                complete_api_data.append({'key': 'BGP_Router_ASN',
+                                    'value': str(bgp_rtr_params['local_autonomous_system'])})
+                        if 'address_families' in bgp_rtr_params:
+                            add_family = bgp_rtr_params['address_families']['family']
+                            address_family = ''
+                            for add in add_family:
+                                address_family += add + ', '
+                        if 'source_port' in bgp_rtr_params:
+                            if bgp_rtr_params['source_port']:
+                                complete_api_data.append({'key': 'Source_Port',
+                                    'value': str(bgp_rtr_params['source_port'])})
+                        if 'admin_down' in bgp_rtr_params:
+                            if bgp_rtr_params['admin_down']:
+                                admin_state = 'False'
+                            else:
+                                admin_state = 'True'
+                        if 'auth_data' in bgp_rtr_params:
+                            auth_data = bgp_rtr_params['auth_data']
+                            if auth_data:
+                                mode = auth_data.get('key_type')
+                            else:
+                                mode = '-'
+                        if 'hold_time' in bgp_rtr_params:
+                            hold_time = str(bgp_rtr_params['hold_time']) + ' (seconds)'
+                    if 'bgp_router_refs' in bgp_rtr_data:
+                        bgp_rtr_refs = bgp_rtr_data['bgp_router_refs']
+                        for index, bgp in enumerate(bgp_rtr_refs):
+                            bgp_attr = bgp_rtr_refs[index]['attr']['session'][0][
+                                       'attributes'][0]
+                            if bgp_attr['admin_down']:
+                                state = 'False'
+                            else:
+                                state = 'True'
+                            if not bgp_attr['auth_data'] :
+                                auth_data = '-'
+                            else:
+                                auth_data = bgp_attr['auth_data'].get('key_type')
+                            if not bgp_attr['family_attributes']:
+                                family_attr = '-'
+                            else:
+                                family_attr = bgp_attr['family_attributes']
+                            value_list = [bgp_rtr_refs[index]['to'][4], state, str(bgp_attr['passive']),
+                                         str(bgp_attr['hold_time']), str(bgp_attr['loop_count']),
+                                         auth_data, family_attr]
+                            for index1, key in enumerate(bgp_rtr_key_list):
+                                complete_api_data.append({'key': 'Peer' + str(index+1) + key,
+                                'value': value_list[index1]})
+                    if 'physical_router_back_refs' in bgp_rtr_data:
+                        if bgp_rtr_data['physical_router_back_refs']:
+                            complete_api_data.append({'key': 'Physical_Router',
+                                'value': bgp_rtr_data['physical_router_back_refs'][0]['to'][1]})
+                    self.ui.keyvalue_list(
+                        complete_api_data,
+                        Name=bgp_rtr_data.get('name'),
+                        Display_Name=bgp_rtr_data.get('display_name'),
+                        UUID=bgp_rtr_data.get('uuid'),
+                        Router_Type=rtr_type,
+                        Vendor=bgp_rtr_params['vendor'],
+                        IP_Address=bgp_rtr_params['address'],
+                        Router_ID=bgp_rtr_params['identifier'],
+                        Autonomous_System=bgp_rtr_params['autonomous_system'],
+                        Address_Families=address_family.rstrip(', '),
+                        BGP_Port=bgp_rtr_params['port'],
+                        Hold_Time=hold_time,
+                        Admin_State=admin_state,
+                        Authentication_Mode=mode)
+                else:
+                    result = result and False
+                if action == 'create':
+                    if self.ui.match_ui_kv(complete_api_data, dom_arry_basic):
+                        self.logger.info(
+                            "BGP Router config details matched on \
+                            Config->Infrastructure->BGP Routers page")
+                    else:
+                        self.logger.error(
+                            "BGP Router config details match failed on \
+                            Config->Infrastructure->BGP Routers page")
+                        result = result and False
+                else:
+                    if self.ui.match_ui_kv(expected_result, dom_arry_basic, data=
+                           'Expected_key_value', matched_with='WebUI') and self.ui.match_ui_kv(
+                           expected_result, complete_api_data, data='Expected_key_value',
+                           matched_with='API'):
+                        self.logger.info(
+                            "%s of BGP router matched on WebUI/API after editing" % (expected_result))
+                    else:
+                        self.logger.error(
+                            "%s of BGP router match failed on WebUI/API after editing" %
+                            (expected_result))
+                        result = result and False
+                    return result
+        return result
+    # end verify_bgp_router_api_data
