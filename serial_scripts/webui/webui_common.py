@@ -226,6 +226,10 @@ class WebuiCommon:
         return self._get_list_api('virtual-routers')
     # end get_vrouter_list_api
 
+    def get_svc_appls_list_api(self):
+        return self._get_list_api('service-appliances')
+    # end get_svc_appls_list_api
+
     def get_bgp_router_list_api(self):
         return self._get_list_api('bgp-routers')
     # end get_bgp_router_list_api
