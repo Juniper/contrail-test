@@ -8391,6 +8391,128 @@ class WebuiTest:
         return result
     # end verify_vrouter_api_data
 
+    def verify_svc_appls_api_data(self, svc_appl_params, action='create', expected_result=None):
+        self.logger.info(
+            "Verifying Service Appliances api server data on \
+            Config->Infrastructure->ServiceAppliances page ...")
+        self.logger.debug(self.dash)
+        result = True
+        for svc_appl in svc_appl_params:
+            parent_type = svc_appl_params[svc_appl].get('svc_appl_set')
+            svc_appls_list_api = self.ui.get_svc_appls_list_api()
+            for appl in range(len(svc_appls_list_api['service-appliances'])):
+                api_proj_name = svc_appls_list_api['service-appliances'][appl]['fq_name'][1]
+                if parent_type != api_proj_name:
+                    continue
+                api_fq_name = svc_appls_list_api['service-appliances'][appl]['fq_name'][2]
+                self.ui.click_configure_svc_appliances()
+                self.ui.select_project(api_proj_name, proj_type='service appliance set')
+                rows = self.ui.get_rows()
+                for row in range(len(rows)):
+                    dom_arry_basic = []
+                    match_flag = 0
+                    text = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)[2].text
+                    if api_fq_name in text:
+                        self.logger.info(
+                            "Service Appliance fq_name %s matched in webui.. \
+                            Verifying basic view details..." % (api_fq_name))
+                        self.logger.debug(self.dash)
+                        match_index = row
+                        match_flag = 1
+                        break
+                if not match_flag:
+                    self.logger.error(
+                        "Service Applaince fq name exists in apiserver but %s \
+                        not found in webui..." % (api_fq_name))
+                    self.logger.debug(self.dash)
+                else:
+                    rows[match_index].find_elements_by_tag_name(
+                        'div')[0].find_element_by_tag_name('i').click()
+                    rows = self.ui.get_rows()
+                    slick_row_detail = self.ui.find_element(
+                        'slick-row-detail-container', 'class', browser = rows[match_index + 1])
+                    item_list = self.ui.find_element('item-list', 'class', browser=slick_row_detail,
+                                         elements=True)
+                    rows_detail = []
+                    for item in item_list:
+                        rows_detail.extend(self.ui.find_element('row', 'class', browser=item,
+                            elements=True))
+                    for detail in range(len(rows_detail)):
+                        key_value = rows_detail[detail].text.split('\n')
+                        key = str(key_value.pop(0))
+                        if len(key_value) > 1 :
+                            value = key_value
+                        elif len(key_value) ==  1:
+                            value = key_value[0]
+                        else:
+                            value = None
+                        if key == 'Owner Permissions' or key == 'Global Permissions' or key == 'Owner' \
+                            or key == 'Shared List':
+                            continue
+                        key = key.replace(' ', '_')
+                        dom_arry_basic.append({'key': key, 'value': value})
+                    svc_appl_api_data = self.ui.get_details(
+                                svc_appls_list_api['service-appliances'][appl]['href'])
+                    complete_api_data = []
+                    if 'service-appliance' in svc_appl_api_data:
+                        api_data_basic = svc_appl_api_data.get('service-appliance')
+                        if api_data_basic:
+                            self.ui.keyvalue_list(
+                            complete_api_data,
+                            Display_Name=api_data_basic.get('display_name'),
+                            UUID=api_data_basic.get('uuid')),
+                            Service_Appliance_Set=api_proj_name,
+                            IP_Address=api_data_basic['service_appliance_ip_address']
+                            if 'service_appliance_properties' in api_data_basic:
+                                svc_property = api_data_basic['service_appliance_properties'][
+                                                   'key_value_pair']
+                                if svc_property:
+                                    value = []
+                                    for index1, property in enumerate(svc_property):
+                                        property_data = ''
+                                        prop_dict = dict((k, v) for k, v in property.items())
+                                        for key, val in prop_dict.iteritems():
+                                            property_data += key.title() + ": " + val + " "
+                                        if len(svc_property) >= 1:
+                                            value.append(property_data.strip())
+                                        else:
+                                            value = ''
+                                            value = property_data.strip()
+                                    complete_api_data.append({'key': 'Properties', 'value': value})
+                            if 'physical_interface_refs' in api_data_basic:
+                                phy_int_list = api_data_basic['physical_interface_refs']
+                                interface = []
+                                for phy_int in phy_int_list:
+                                    interface.append(
+                                        phy_int['attr']['interface_type'].title() \
+                                        + ":" + phy_int['to'][2] + " (" + phy_int['to'][1] + ")")
+                                complete_api_data.append({'key': 'Interfaces', 'value': interface})
+                    if action == 'create':
+                        if self.ui.match_ui_kv(complete_api_data, dom_arry_basic):
+                            self.logger.info(
+                                "Service Appliances config details matched on \
+                                Config->Infrastructure->Service Appliances page")
+                        else:
+                            self.logger.error(
+                                "Service Appliances config details match failed \
+                                on Config->Infrastructure->Service Appliances page")
+                            result = result and False
+                    else:
+                        if self.ui.match_ui_kv(expected_result, dom_arry_basic, data=
+                               'Expected_key_value', matched_with='WebUI') and self.ui.match_ui_kv(
+                               expected_result, complete_api_data, data='Expected_key_value',
+                               matched_with='API'):
+                            self.logger.info(
+                                "%s of Service Appliances matched on WebUI/API after editing" \
+                                % (expected_result))
+                        else:
+                            self.logger.error(
+                                "%s of Service Appliances match failed on WebUI/API after editing" %
+                                (expected_result))
+                        result = result and False
+        return result
+    # end verify_svc_appl_api_data
+
     def verify_bgp_router_api_data(self, action='create', expected_result=None):
         self.logger.info(
             "Verifying bgp router api server data on \
