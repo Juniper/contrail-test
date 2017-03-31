@@ -34,3 +34,18 @@ class TestPod(BaseK8sTest):
         assert pod1.ping_to_ip(pod2.pod_ip)
     # end test_add_delete_pod
 
+    @preposttest_wrapper
+    def test_change_pod_label(self):
+        '''
+        Change the label of POD
+        '''
+        app = 'healthy'
+        pod1 = self.setup_nginx_pod(app=app)
+        assert pod1.verify_on_setup()
+        pod2 = self.setup_nginx_pod(app=app)
+        assert pod2.verify_on_setup()
+        assert pod1.ping_to_ip(pod2.pod_ip)
+        pod1.modify_pod_label(label_name="app", label_value="unhealthy")
+        assert pod1.ping_to_ip(pod2.pod_ip)
+
+    # end test_service_1

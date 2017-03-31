@@ -174,4 +174,31 @@ class PodFixture(fixtures.Fixture):
         except Exception as e:
             self.logger.warn("Got exception in ping_to_ip:%s" % (e))
             return False
-      # end ping_to_ip
+    # end ping_to_ip
+
+    def modify_pod_label(self, label_name, label_value):
+        '''
+        Modify the label of POD
+        '''
+        self.logger.debug('Current POD %s labels is/are %s' %
+                         (self.name, self.read().metadata.labels))
+        kubectl_command = 'kubectl label --overwrite pods %s %s=%s' % (
+            self.name, label_name, label_value)
+
+        output = self.inputs.run_cmd_on_server(self.inputs.cfgm_ip,
+                                               kubectl_command)
+
+        self.logger.debug('Modified POD %s labels is/are %s' %
+                         (self.name, self.read().metadata.labels))
+
+        if label_name in self.read().metadata.labels:
+            if self.read().metadata.labels[label_name] != label_value:
+                self.logger.error(
+                    'Label value is not set properly')
+                return False
+        else:
+            self.logger.error(
+                'Label key is not present in modified labels')
+            return False
+        return output
+    # end modify_pod_label
