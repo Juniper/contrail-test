@@ -29,7 +29,10 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     """
     print "Configuring test environment"
     sys.path.insert(0, contrail_fab_path)
-    from fabfile.testbeds import testbed
+    if hasattr(env, 'mytestbed'):
+         testbed = __import__('fabfile.testbeds.%s' % env.mytestbed)
+    else:
+        from fabfile.testbeds import testbed
     from fabfile.utils.host import get_openstack_internal_vip, \
         get_control_host_string, get_authserver_ip, get_admin_tenant_name, \
         get_authserver_port, get_env_passwords, get_authserver_credentials, \
@@ -626,7 +629,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
                 os.makedirs(dir_name)
             with settings(host_string = env.roledefs['cfgm'][0]):
                 get(kube_config_file, kube_config_file)
-            
+
 
     # If webui = True, in testbed, setup webui for sanity
     if webui:
@@ -635,6 +638,39 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
                              '86400','keystone')
         update_js_config('openstack', '/etc/contrail/config.global.js',
                          'contrail-webui')
+
+def testbed_format_conversion(path='/opt/contrail/utils'):
+    tb_file = path + '/fabfile/testbeds/testbed.py'
+    tb_file_tmp = path + '/fabfile/testbeds/testbed_new.py'
+
+    #check if file already has both parameter version.
+    fr=open(tb_file)
+    ftxt=fr.read()
+    if (('contrail-controller' in ftxt) and ('cfgm' in ftxt)):
+        fr.close()
+        return True
+    fr.close()
+
+    fr=open(tb_file)
+    fw=open(tb_file_tmp, 'w')
+
+    for line in fr:
+        if 'contrail-controller' in line:
+            fw.write(line.replace('contrail-controller', 'cfgm'))
+            fw.write(line.replace('contrail-controller', 'control'))
+            fw.write(line.replace('contrail-controller', 'webui'))
+        if 'contrail-analytics\'' in line:
+            fw.write(line.replace('contrail-analytics', 'collector'))
+        if 'contrail-analyticsdb' in line:
+            fw.write(line.replace('contrail-analyticsdb', 'database'))
+        if 'contrail-compute' in line:
+            fw.write(line.replace('contrail-compute', 'compute'))
+        fw.write(line)
+    fr.close()
+    fw.close()
+    env.mytestbed = 'testbed_new'
+
+# end testbed_format_conversion
 
 def main(argv=sys.argv):
     ap = argparse.ArgumentParser(
@@ -645,6 +681,7 @@ def main(argv=sys.argv):
                     help='Contrail fab path on local machine')
     args = ap.parse_args()
 
+    testbed_format_conversion(args.contrail_fab_path)
     configure_test_env(args.contrail_fab_path, args.contrail_test_directory)
 
 if __name__ == "__main__":
