@@ -8300,6 +8300,162 @@ class WebuiTest:
         return result
     # end verify_rbac_api_data
 
+    def verify_log_stat_api_data(self, action='create', expected_result=None):
+        self.logger.info(
+            "Verifying Log Statistic api server data on \
+            Config->Infrastructure->Global Config->Log Statistic page ...")
+        self.logger.debug(self.dash)
+        result = True
+        global_config_log_stat = self.ui.get_global_config_api_href('system')
+        value_list = ['name', 'pattern']
+        key_list = ['Name', 'RegEx_Pattern']
+        complete_api_data = []
+        if global_config_log_stat:
+            log_stat = global_config_log_stat['global-system-config']
+            if 'user_defined_log_statistics' in log_stat:
+                log_stat_data = log_stat['user_defined_log_statistics'][
+                                  'statlist'][0]
+                if log_stat_data:
+                    for index, value in enumerate(value_list):
+                        if value in log_stat_data:
+                            complete_api_data.append({'key': key_list[index],
+                                'value': str(log_stat_data[value])})
+            else:
+                result = result and False
+        self.ui.click_configure_log_stat_in_global()
+        br = self.ui.find_element('user-defined-counters-grid')
+        rows = self.ui.get_rows(browser=br)
+        dom_arry_basic = []
+        if rows:
+            for row in range(len(rows)):
+                elements = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)
+                index = 0
+                for element in elements:
+                    if not element.text:
+                        continue
+                    dom_arry_basic.append({'key': key_list[index], 'value': element.text})
+                    index += 1
+        else:
+            result = result and False
+        if action == 'create':
+            if self.ui.match_ui_kv(complete_api_data, dom_arry_basic):
+                self.logger.info("Log Statistics details matched on \
+                            Config->Infrastructure->Global Config->Log Statistics page")
+            else:
+                self.logger.error("Log Statistics config details match failed on \
+                            Config->Infrastructure->Global Config->Log Statistics page")
+                result = result and False
+        else:
+            if self.ui.match_ui_kv(expected_result, dom_arry_basic, data='Expected_key_value',
+                matched_with='WebUI') and self.ui.match_ui_kv(expected_result,
+                complete_api_data, data='Expected_key_value', matched_with='API'):
+                self.logger.info("%s of Log Statistics matched on WebUI/API \
+                                after editing" % (expected_result))
+            else:
+                self.logger.error("%s of Log Statistics match failed on \
+                     WebUI/API after editing" % (expected_result))
+                result = result and False
+        return result
+    # end verify_log_stat_api_data
+
+    def verify_link_local_services_api_data(self, action='create', expected_result=None):
+        self.logger.info(
+            "Verifying Link Local Service api server data on \
+            Config->Infrastructure->Link Local Services page ...")
+        self.logger.debug(self.dash)
+        result = True
+        link_local_service_config = self.ui.get_global_config_api_href('vrouter')
+        complete_api_data = []
+        if link_local_service_config:
+            lls_entries_api = link_local_service_config['global-vrouter-config'][
+                             'linklocal_services']['linklocal_service_entry']
+        for lls in range(len(lls_entries_api)):
+            api_lls_name = lls_entries_api[lls]['linklocal_service_name']
+            self.ui.click_configure_link_local_service()
+            rows = self.ui.get_rows()
+            for row in range(len(rows)):
+                dom_arry_basic = []
+                match_flag = 0
+                text = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)[2].text
+                if api_lls_name == text:
+                    self.logger.info(
+                        "Link Local Service name %s matched in webui.. \
+                         Verifying basic view details..." % (api_lls_name))
+                    self.logger.debug(self.dash)
+                    match_index = row
+                    match_flag = 1
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "Link Local Services name exists in apiserver but %s \
+                     not found in webui..." % (api_lls_name))
+                self.logger.debug(self.dash)
+            else:
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'link_local_service', match_index)[1]
+                for detail in range(len(rows_detail)):
+                    key_value = rows_detail[detail].text.split('\n')
+                    key = str(key_value.pop(0))
+                    if len(key_value) > 1 :
+                        value = key_value
+                    elif len(key_value) ==  1:
+                        value = key_value[0]
+                    else:
+                        value = None
+                    if key == 'Owner Permissions' or key == 'Global Permissions' or key == 'Owner' \
+                       or key == 'Shared List':
+                        continue
+                    key = key.replace(' ', '_')
+                    if value:
+                        dom_arry_basic.append({'key': key, 'value': value})
+                complete_api_data = []
+                lls_api_key_list = ['linklocal_service_name', 'ip_fabric_service_ip',
+                                   'linklocal_service_ip', 'ip_fabric_service_port',
+                                   'ip_fabric_DNS_service_name', 'linklocal_service_port']
+                key_list = ['Service_Name', 'Fabric_IP', 'Service_IP_Address', 'Fabric_Port',
+                           'Fabric_DNS', 'Service_Port']
+                for index, api_key in enumerate(lls_api_key_list):
+                    if api_key in lls_entries_api[lls]:
+                        value = lls_entries_api[lls][api_key]
+                        if value:
+                            if api_key == 'ip_fabric_service_ip':
+                                value = ''
+                                if len(lls_entries_api[lls][api_key]) > 1:
+                                    fabric_ip = ''
+                                    for api in lls_entries_api[lls][api_key]:
+                                        fabric_ip += api + ', '
+                                    value = fabric_ip.strip(', ')
+                                else:
+                                    value = lls_entries_api[lls][api_key][0]
+                            complete_api_data.append({'key': key_list[index],
+                                                    'value': str(value)})
+                if action == 'create':
+                    if self.ui.match_ui_kv(complete_api_data, dom_arry_basic):
+                        self.logger.info(
+                            "Link Local Services config details matched on \
+                            Config->Infrastructure->Link Local Services page")
+                    else:
+                        self.logger.error(
+                            "Link Local Services config details match failed on \
+                            Config->Infrastructure->Link Local Services page")
+                        result = result and False
+                else:
+                    if self.ui.match_ui_kv(expected_result, dom_arry_basic, data=
+                           'Expected_key_value', matched_with='WebUI') and self.ui.match_ui_kv(
+                           expected_result, complete_api_data, data='Expected_key_value',
+                           matched_with='API'):
+                        self.logger.info(
+                            "%s of Link Local Services matched on \
+                            WebUI/API after editing" % (expected_result))
+                    else:
+                        self.logger.error(
+                            "%s of Link Local Services match failed on \
+                            WebUI/API after editing" % (expected_result))
+                        result = result and False
+                    return result
+        return result
+        # end verify_link_local_services_api_data
+
     def verify_vrouter_api_data(self, action='create', expected_result=None):
         self.logger.info(
             "Verifying virutal router api server data on \
