@@ -188,7 +188,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.logger.debug(
             "Disassociating hc(%s) from si (%s)" % (hc_uuid, self.si_fq_name))
         self._vnc.disassoc_health_check_from_si(self.si_fq_name, hc_uuid)
-        assert self.verify_hc_is_not_active()
+        assert self.verify_hc_ref_not_in_vmi()
         for hc in list(self.hc_list):
             if hc['uuid'] == hc_uuid:
                 self.hc_list.remove(hc)
@@ -223,6 +223,24 @@ class SvcInstanceFixture(fixtures.Fixture):
     @retry(delay=2, tries=10)
     def verify_hc_is_not_active(self):
         return not self.get_hc_status()
+
+    @retry(delay=2, tries=10)
+    def verify_hc_ref_not_in_vmi(self):
+        for svm in self.svm_list:
+            inspect_h = self.connections.agent_inspect[svm.vm_node_ip]
+            for hc in self.hc_list:
+                virtual_network = self._get_vn_of_intf_type(hc['intf_type'])
+                vmi_id = svm.get_vmi_id(virtual_network)
+                vmi_obj = self.vnc_lib.virtual_machine_interface_read(
+                    id=vmi_id)
+                hc_refs = vmi_obj.get_service_health_check_refs()
+                if hc_refs:
+                    for hc_ref in hc_refs:
+                        if hc_ref['uuid'] == hc['uuid']:
+                            self.logger.info('VMI has SHC refs')
+                            return False
+        return True
+    # end verify_hc_ref_in_vmi
 
     @retry(delay=2, tries=10)
     def verify_hc_in_agent(self):
