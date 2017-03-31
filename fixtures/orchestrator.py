@@ -149,7 +149,7 @@ class Orchestrator:
        return self.vnc_h.get_floating_ip(fip_id, **kwargs)
 
    def create_floating_ip(self, pool_vn_id, pool_obj, project_obj, **kwargs):
-       return self.vnc_h.create_floating_ip(pool_vn_id, pool_obj, project_obj,
+       return self.vnc_h.create_floating_ip( pool_obj, project_obj,
                                             **kwargs)
 
    def delete_floating_ip(self, fip_id, **kwargs):
