@@ -213,6 +213,11 @@ function generate_html {
   convert_logs_to_html
 }
 
+function collect_tracebacks {
+    export PYTHONPATH=$PYTHONPATH:$PWD:$PWD/fixtures
+    python tools/collect_bts.py $TEST_CONFIG_FILE
+}
+
 function upload_to_web_server {
   if [ $upload -eq 1 ] ; then
       ${wrapper} python tools/upload_to_webserver.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE $REPORT_FILE
@@ -384,6 +389,7 @@ if [[ ! -z $path ]];then
             run_tests_serial $p
             python tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
             generate_html 
+            collect_tracebacks
             upload_to_web_server
             sleep 2
             send_mail $TEST_CONFIG_FILE $REPORT_FILE $REPORT_DETAILS_FILE
@@ -413,6 +419,7 @@ python tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
 echo "Generated report_details* file: $REPORT_DETAILS_FILE"
 parse_results
 generate_html
+collect_tracebacks
 upload_to_web_server
 sleep 2
 send_mail $TEST_CONFIG_FILE $REPORT_FILE $REPORT_DETAILS_FILE
