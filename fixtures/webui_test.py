@@ -4501,6 +4501,136 @@ class WebuiTest:
         return result
     # end verify_route_aggregate_api_basic_data_in_webui
 
+    def verify_routing_policy_api_basic_data(self):
+        self.logger.info(
+            "Verifying routing policy api server data on \
+                Config -> Networking -> Routing -> Routing Policies page on UI...")
+        self.logger.info(self.dash)
+        result = True
+        rpol_list_api = self.ui.get_rpol_list_api()
+        rpol_api_list = rpol_list_api['routing-policys']
+        for rpol in range(len(rpol_api_list)):
+            api_fq_name = rpol_api_list[rpol]['fq_name'][2]
+            project_name = rpol_api_list[rpol]['fq_name'][1]
+            if project_name == 'default-project':
+                continue
+            self.logger.info(
+                "Routing policy fq_name %s exists in api server..\
+                    checking if it exists in webui as well" % (api_fq_name))
+            self.ui.click_configure_routing_policy()
+            self.ui.select_project(project_name)
+            self.ui.wait_till_ajax_done(self.browser)
+            br = self.ui.find_element('routing_policy_tab')
+            rows = self.ui.get_rows(browser=br)
+            for i in range(len(rows)):
+                match_flag = 0
+                j = 0
+                dom_arry_basic = []
+                row_div_list = self.ui.find_element('div', 'tag',
+                                                    browser=rows[i], elements=True,
+                                                    if_elements=[1])
+                rpol_fq_name = row_div_list[2].text
+                if rpol_fq_name == api_fq_name:
+                    self.logger.info(
+                        "Routing policy fq_name %s matched in webui..\
+                            Verifying basic view details..." % (api_fq_name))
+                    self.logger.debug(self.dash)
+                    match_index = i
+                    match_flag = 1
+                    dom_arry_basic.append(
+                        {'key': 'Name_grid_row', 'value': rpol_fq_name})
+                    dom_arry_basic.append(
+                        {'key': 'Term_grid_row', 'value': row_div_list[3].text})
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "Routing policy fq_name %s exists in API server, \
+                        but not found on Webui" % (api_fq_name))
+                self.logger.debug(self.dash)
+            else:
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'routing_policy', match_index,
+                                search_ele='routing_policy_tab', browser=br)[1]
+                self.logger.info(
+                    "Verify basic view details for Routing Policy fq_name %s " %
+                    (api_fq_name))
+                for detail in range(len(rows_detail)):
+                    key_arry = self.ui.find_element(
+                        'key', 'class', browser = rows_detail[detail]).text
+                    value_arry = self.ui.find_element(
+                        'value', 'class', browser = rows_detail[detail]).text
+                    dom_arry_basic.append({'key': key_arry, 'value': value_arry})
+                ## Fetching API data ##
+                rpol_api_data = self.ui.get_details(rpol_api_list[rpol]['href'])
+                complete_api_data = []
+                if 'routing-policy' in rpol_api_data:
+                    api_data_basic = rpol_api_data.get('routing-policy')
+                if 'fq_name' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'Name_grid_row', 'value': str(api_data_basic['fq_name'][2])})
+                if 'uuid' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'UUID', 'value': str(api_data_basic['uuid'])})
+                if 'display_name' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'Display Name', 'value': str(api_data_basic['display_name'])})
+                if 'routing_policy_entries' in api_data_basic:
+                    api_route_pol = api_data_basic['routing_policy_entries'].get('term')
+                    if api_route_pol:
+                        term_match_con = api_route_pol[0].get('term_match_condition')
+                        space_req = ' '
+                        if 'prefix' in term_match_con:
+                            match_term = 'prefix'
+                            term_mat = term_match_con['prefix']
+                            term_match = '[' + term_mat[0].values()[1] + ' ' + term_mat[0].values()[0] + ']'
+                        elif 'community' in term_match_con:
+                            match_term = 'community'
+                            term_match = term_match_con['community']
+                        else:
+                            tm = term_match_con['protocol']
+                            if tm:
+                                term_match = tm[0]
+                                match_term = 'protocol'
+                            else:
+                                term_match = 'any '
+                                match_term = ''
+                                space_req = ''
+                        term_match_condition = match_term + space_req + term_match
+                        term_action_lst = api_route_pol[0].get('term_action_list')
+                        if 'action' in term_action_lst:
+                            act_term = ''
+                            term_action = term_action_lst.get('action')
+                        else:
+                            act_t = term_action_lst.get('update')
+                            if not act_t:
+                                act_term = ''
+                            else:
+                                if act_t.keys()[0] == 'local_pref':
+                                    act_t_key = 'local-preference'
+                                else:
+                                    act_t_key = act_t.keys()[0]
+                                act_term = act_t_key + ' ' + str(act_t.values()[0]) + ' '
+                            term_action = 'default'
+                        term_action_list = act_term + 'action ' + term_action
+                        term_concat = 'from ' + term_match_condition + ' then ' + term_action_list
+                        complete_api_data.extend((
+                            {'key': 'Term', 'value': term_concat},
+                            {'key': 'Term_grid_row', 'value': term_concat}))
+                ## Service instance refs code to be written after Bug #1678175 is fixed
+                if self.ui.match_ui_kv(
+                        complete_api_data,
+                        dom_arry_basic):
+                    self.logger.info(
+                        "Routing policy data matched on \
+                            Config -> Networking -> Routing -> Routing Policies page on UI")
+                else:
+                    self.logger.error(
+                        "Routing policy data match failed on \
+                            Config -> Networking -> Routing -> Routing Policies page on UI")
+                    result = result and False
+        return result
+    # end verify_routing_policy_api_basic_data_in_webui
+
     def verify_vm_ops_data_in_webui(self, fixture):
         self.logger.info(
             "Verifying vn %s opserver data on Monitor->Networking->Instances page" %
