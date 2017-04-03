@@ -11,6 +11,7 @@ import socket
 from tcutils.traffic_utils.scapy_traffic_gen import ScapyTraffic
 from tcutils.traffic_utils.traffic_analyzer import TrafficAnalyzer
 from tcutils.util import get_random_mac
+from time import sleep
 
 class TestPbbEvpnMacLearning(PbbEvpnTestBase):
 
@@ -96,41 +97,12 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
         # PBB EVPN parameters
         pbb_evpn_config = PBB_EVPN_CONFIG
 
-        # VN parameters
-        vn = {'count':2,
-              'vn1':{'subnet':'10.10.10.0/24'},
-              'vn2':{'subnet':'1.1.1.0/24', 'asn':64510, 'target':1},}
-
-        # Bridge domain parameters
-        bd = {'count':1,
-              'bd1':{'isid':200200,'vn':'vn2'}}
-
-        # VMI parameters
-        vmi = {'count':4,
-               'vmi1':{'vn': 'vn1'},
-               'vmi2':{'vn': 'vn1'},
-               'vmi3':{'vn': 'vn2','parent':'vmi1','vlan':212},
-               'vmi4':{'vn': 'vn2','parent':'vmi2','vlan':212},}
-
-        # VM parameters
-        vm = {'count':2, 'launch_mode':'distribute',
-              'vm1':{'vn':['vn1'], 'vmi':['vmi1'], 'userdata':{
-                'vlan': str(vmi['vmi3']['vlan'])} },
-              'vm2':{'vn':['vn1'], 'vmi':['vmi2'], 'userdata':{
-                'vlan': str(vmi['vmi4']['vlan'])} }
-            }
-
-        # Traffic
-        traffic = {
-                   'stream1': {'src':'vm1','dst':'vm2','count':10,
-                                'src_cmac': get_random_mac(),
-                                'dst_cmac': get_random_mac(),
-                                'bd': 'bd1', 'src_vmi': 'vmi3',
-                                'dst_vmi': 'vmi4'}
-                  }
-
-        # BD to VMI mapping parameters
-        bd_vmi_mapping = {'bd1':['vmi3','vmi4']}
+        vn = BASIC_PBB_RESOURCES['vn']
+        bd = BASIC_PBB_RESOURCES['bd']
+        vmi = BASIC_PBB_RESOURCES['vmi']
+        vm = BASIC_PBB_RESOURCES['vm']
+        traffic = BASIC_PBB_RESOURCES['traffic']
+        bd_vmi_mapping = BASIC_PBB_RESOURCES['bd_vmi_mapping']
 
         ret_dict = self.setup_pbb_evpn(pbb_evpn_config=pbb_evpn_config,
                                        bd=bd, vn=vn, vmi=vmi, vm=vm,
@@ -149,13 +121,6 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
                 except Exception as e:
                     vmi_ip = vmi_fixture.obj['fixed_ips'][1]['ip_address']
                 assert src_vm_fixture.ping_with_certainty(vmi_ip)
-
-        src_cmac = get_random_mac()
-        dst_cmac = get_random_mac()
-        src_vmi = 'vmi3'
-        src_vm = 'vm1'
-        dst_vm = 'vm2'
-        dst_vmi = 'vmi4'
 
         # Send Traffic
         for stream in traffic.values():
@@ -255,6 +220,7 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
             src_vmi = vm[stream['src']]['vmi'][0]
             assert self.verify_mac_learning(vmi_fixtures[src_vmi],
                 bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+
     # end test_mac_learning_multi_isid
 
     @preposttest_wrapper
@@ -346,35 +312,27 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
             #Verify mac learned
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
                 bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+
+        #Update aging time of bd1, it should not affect aging time of bd2 
+        mac_aging_time = 5
+        self.connections.vnc_lib_fixture.vnc_h.update_bd(uuid=bd_fixtures['bd1'].bd_uuid,
+            mac_aging_time=mac_aging_time)
+
+        #Wait till mac ages out for bd1
+        self.logger.info("Waiting for %s seconds, till learnt C-MAC ages out.."
+            % (mac_aging_time))
+        sleep(mac_aging_time)
+
+        #Verify mac aged out for bd1
+        assert self.verify_mac_learning(vmi_fixtures[traffic['stream1']['src_vmi']],
+            bd_fixtures[traffic['stream1']['bd']], cmac=traffic['stream1']['src_cmac'],
+            expectation=False)
+
+        #Verify mac not aged out for bd2
+        assert self.verify_mac_learning(vmi_fixtures[traffic['stream2']['src_vmi']],
+            bd_fixtures[traffic['stream2']['bd']], cmac=traffic['stream2']['src_cmac'])
+
     # end test_mac_learning_subIntf_multi_isid
-
-
-class TestPbbEvpnMacLimit(PbbEvpnTestBase):
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestPbbEvpnMacLimit, cls).setUpClass()
-    # end setUpClass
-
-    @classmethod
-    def tearDownClass(cls):
-        super(TestPbbEvpnMacLimit, cls).tearDownClass()
-    # end tearDownClass
-
-    @preposttest_wrapper
-    def test_mac_limit(self):
-        '''
-        '''
-
-        # Configuration parameters
-
-        # Verification
-
-        # Traffic
-
-        # Verification
-
-    # end test_mac_limit
 
 class TestPbbEvpnMacAging(PbbEvpnTestBase):
 
@@ -389,44 +347,266 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
     # end tearDownClass
 
     @preposttest_wrapper
-    def test_mac_aging(self):
+    def test_mac_aging_default(self):
         '''
+        Test with default mac aging timeout 300 seconds, after which learnt C-MAC should be aged out
         '''
 
-        # Configuration parameters
+        pbb_evpn_config = PBB_EVPN_CONFIG
+        vn = BASIC_PBB_RESOURCES['vn']
+        bd = BASIC_PBB_RESOURCES['bd']
+        vmi = BASIC_PBB_RESOURCES['vmi']
+        vm = BASIC_PBB_RESOURCES['vm']
+        traffic = BASIC_PBB_RESOURCES['traffic']
+        bd_vmi_mapping = BASIC_PBB_RESOURCES['bd_vmi_mapping']
 
-        # Verification
+        ret_dict = self.setup_pbb_evpn(pbb_evpn_config=pbb_evpn_config,
+                                       bd=bd, vn=vn, vmi=vmi, vm=vm,
+                                       bd_vmi_mapping=bd_vmi_mapping)
+        bd_fixtures = ret_dict['bd_fixtures']
+        vmi_fixtures = ret_dict['vmi_fixtures']
+        vn_fixtures = ret_dict['vn_fixtures']
+        vm_fixtures = ret_dict['vm_fixtures']
 
-        # Traffic
+        # Pinging all the VMIs
+        for src_vm_fixture in vm_fixtures.values():
+            for vmi_fixture in vmi_fixtures.values():
+                vmi_ip = vmi_fixture.obj['fixed_ips'][0]['ip_address']
+                try:
+                    socket.inet_aton(vmi_ip)
+                except Exception as e:
+                    vmi_ip = vmi_fixture.obj['fixed_ips'][1]['ip_address']
+                assert src_vm_fixture.ping_with_certainty(vmi_ip)
 
-        # Verification
+        # Send Traffic
+        for stream in traffic.values():
+            interface = vm_fixtures[stream['src']].get_vm_interface_name() + '.' + \
+                str(vmi[stream['src_vmi']]['vlan'])
+            self.send_l2_traffic(vm_fixtures[stream['src']],
+                src_mac=stream['src_cmac'], dst_mac=stream['dst_cmac'],
+                count=stream['count'], interface=interface)
 
-    # end test_mac_aging
+            #Verify mac learned
+            assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
+                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
 
-class TestPbbEvpnMacMoveLimit(PbbEvpnTestBase):
+        #Wait till learnt mac aged out
+        self.logger.info("Waiting for %s seconds, till learnt C-MAC ages out.."
+            % (MAC_AGING_DEFAULT))
+        sleep(MAC_AGING_DEFAULT)
+        #Verify mac aged out
+        for stream in traffic.values():
+            assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
+                bd_fixtures[stream['bd']], cmac=stream['src_cmac'],
+                expectation=False)
+    # end test_mac_aging_default 
+
+    @preposttest_wrapper
+    def test_mac_aging_dynamic_update(self):
+        '''
+        Test with default mac aging timeout 300 seconds, after which learnt C-MAC should be aged out
+        '''
+
+        pbb_evpn_config = PBB_EVPN_CONFIG
+        vn = BASIC_PBB_RESOURCES['vn']
+        bd = BASIC_PBB_RESOURCES['bd']
+        vmi = BASIC_PBB_RESOURCES['vmi']
+        vm = BASIC_PBB_RESOURCES['vm']
+        traffic = BASIC_PBB_RESOURCES['traffic']
+        bd_vmi_mapping = BASIC_PBB_RESOURCES['bd_vmi_mapping']
+
+        ret_dict = self.setup_pbb_evpn(pbb_evpn_config=pbb_evpn_config,
+                                       bd=bd, vn=vn, vmi=vmi, vm=vm,
+                                       bd_vmi_mapping=bd_vmi_mapping)
+        bd_fixtures = ret_dict['bd_fixtures']
+        vmi_fixtures = ret_dict['vmi_fixtures']
+        vn_fixtures = ret_dict['vn_fixtures']
+        vm_fixtures = ret_dict['vm_fixtures']
+
+        # Pinging all the VMIs
+        for src_vm_fixture in vm_fixtures.values():
+            for vmi_fixture in vmi_fixtures.values():
+                vmi_ip = vmi_fixture.obj['fixed_ips'][0]['ip_address']
+                try:
+                    socket.inet_aton(vmi_ip)
+                except Exception as e:
+                    vmi_ip = vmi_fixture.obj['fixed_ips'][1]['ip_address']
+                assert src_vm_fixture.ping_with_certainty(vmi_ip)
+
+        # Send Traffic
+        for stream in traffic.values():
+            interface = vm_fixtures[stream['src']].get_vm_interface_name() + '.' + \
+                str(vmi[stream['src_vmi']]['vlan'])
+            self.send_l2_traffic(vm_fixtures[stream['src']],
+                src_mac=stream['src_cmac'], dst_mac=stream['dst_cmac'],
+                count=stream['count'], interface=interface)
+
+            #Verify mac learned
+            assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
+                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+
+        #Update the mac aging time of BD
+        mac_aging_time = 5
+        self.connections.vnc_lib_fixture.vnc_h.update_bd(uuid=bd_fixtures['bd1'].bd_uuid,
+            mac_aging_time=mac_aging_time)
+
+        #Wait till learnt mac aged out
+        self.logger.info("Waiting for %s seconds, till learnt C-MAC ages out.."
+            % (mac_aging_time))
+        sleep(mac_aging_time)
+
+        #Verify mac aged out
+        for stream in traffic.values():
+            assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
+                bd_fixtures[stream['bd']], cmac=stream['src_cmac'],
+                expectation=False)
+
+    # end test_mac_aging_dynamic_update
+
+    @preposttest_wrapper
+    def test_mac_aging_zero(self):
+        '''
+        Test with mac aging timeout 0, C-MAC should not age out 
+        '''
+
+        pbb_evpn_config = PBB_EVPN_CONFIG
+        pbb_evpn_config['mac_aging'] = 0
+        vn = BASIC_PBB_RESOURCES['vn']
+        bd = BASIC_PBB_RESOURCES['bd']
+        vmi = BASIC_PBB_RESOURCES['vmi']
+        vm = BASIC_PBB_RESOURCES['vm']
+        traffic = BASIC_PBB_RESOURCES['traffic']
+        bd_vmi_mapping = BASIC_PBB_RESOURCES['bd_vmi_mapping']
+
+        ret_dict = self.setup_pbb_evpn(pbb_evpn_config=pbb_evpn_config,
+                                       bd=bd, vn=vn, vmi=vmi, vm=vm,
+                                       bd_vmi_mapping=bd_vmi_mapping)
+        bd_fixtures = ret_dict['bd_fixtures']
+        vmi_fixtures = ret_dict['vmi_fixtures']
+        vn_fixtures = ret_dict['vn_fixtures']
+        vm_fixtures = ret_dict['vm_fixtures']
+
+        # Pinging all the VMIs
+        for src_vm_fixture in vm_fixtures.values():
+            for vmi_fixture in vmi_fixtures.values():
+                vmi_ip = vmi_fixture.obj['fixed_ips'][0]['ip_address']
+                try:
+                    socket.inet_aton(vmi_ip)
+                except Exception as e:
+                    vmi_ip = vmi_fixture.obj['fixed_ips'][1]['ip_address']
+                assert src_vm_fixture.ping_with_certainty(vmi_ip)
+
+        # Send Traffic
+        for stream in traffic.values():
+            interface = vm_fixtures[stream['src']].get_vm_interface_name() + '.' + \
+                str(vmi[stream['src_vmi']]['vlan'])
+            self.send_l2_traffic(vm_fixtures[stream['src']],
+                src_mac=stream['src_cmac'], dst_mac=stream['dst_cmac'],
+                count=stream['count'], interface=interface)
+
+            #Verify mac learned
+            assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
+                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+
+        #Wait for sometime to verify mac not aged out 
+        self.logger.info("Waiting for %s seconds"
+            % (MAC_AGING_DEFAULT))
+        sleep(MAC_AGING_DEFAULT)
+
+        #Verify mac not aged out
+        for stream in traffic.values():
+            assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
+                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+
+
+        #Update the mac aging time of BD, after this mac should age out
+        mac_aging_time = 2
+        self.connections.vnc_lib_fixture.vnc_h.update_bd(uuid=bd_fixtures['bd1'].bd_uuid,
+            mac_aging_time=mac_aging_time)
+
+        #Wait till learnt mac aged out
+        self.logger.info("Waiting for %s seconds, till learnt C-MAC ages out.."
+            % (mac_aging_time))
+        sleep(mac_aging_time)
+
+        #Verify mac aged out
+        for stream in traffic.values():
+            assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
+                bd_fixtures[stream['bd']], cmac=stream['src_cmac'],
+                expectation=False)
+    #end test_mac_aging_zero
+
+class TestPbbEvpnMacMove(PbbEvpnTestBase):
 
     @classmethod
     def setUpClass(cls):
-        super(TestPbbEvpnMacMoveLimit, cls).setUpClass()
+        super(TestPbbEvpnMacMove, cls).setUpClass()
     # end setUpClass
 
     @classmethod
     def tearDownClass(cls):
-        super(TestPbbEvpnMacMoveLimit, cls).tearDownClass()
+        super(TestPbbEvpnMacMove, cls).tearDownClass()
     # end tearDownClass
 
     @preposttest_wrapper
-    def test_mac_move_limit(self):
+    def test_mac_move(self):
         '''
+        Verify Mac is moved to new vrouter when mac movement detected
         '''
+        pbb_evpn_config = PBB_EVPN_CONFIG
+        vn = BASIC_PBB_RESOURCES['vn']
+        bd = BASIC_PBB_RESOURCES['bd']
+        vmi = BASIC_PBB_RESOURCES['vmi']
+        vm = BASIC_PBB_RESOURCES['vm']
+        traffic = BASIC_PBB_RESOURCES['traffic']
+        bd_vmi_mapping = BASIC_PBB_RESOURCES['bd_vmi_mapping']
 
-        # Configuration parameters
+        ret_dict = self.setup_pbb_evpn(pbb_evpn_config=pbb_evpn_config,
+                                       bd=bd, vn=vn, vmi=vmi, vm=vm,
+                                       bd_vmi_mapping=bd_vmi_mapping)
+        bd_fixtures = ret_dict['bd_fixtures']
+        vmi_fixtures = ret_dict['vmi_fixtures']
+        vn_fixtures = ret_dict['vn_fixtures']
+        vm_fixtures = ret_dict['vm_fixtures']
 
-        # Verification
+        # Pinging all the VMIs
+        for src_vm_fixture in vm_fixtures.values():
+            for vmi_fixture in vmi_fixtures.values():
+                vmi_ip = vmi_fixture.obj['fixed_ips'][0]['ip_address']
+                try:
+                    socket.inet_aton(vmi_ip)
+                except Exception as e:
+                    vmi_ip = vmi_fixture.obj['fixed_ips'][1]['ip_address']
+                assert src_vm_fixture.ping_with_certainty(vmi_ip)
 
-        # Traffic
+        # Send Traffic
+        for stream in traffic.values():
+            interface = vm_fixtures[stream['src']].get_vm_interface_name() + '.' + \
+                str(vmi[stream['src_vmi']]['vlan'])
+            self.send_l2_traffic(vm_fixtures[stream['src']],
+                src_mac=stream['src_cmac'], dst_mac=stream['dst_cmac'],
+                count=stream['count'], interface=interface)
 
-        # Verification
+            #Verify mac learned
+            assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
+                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
 
-    # end test_mac_move_limit
+        #Mac move
+        #Send the reverse traffic using earlier learnt C-MAC as src C-MAC from remote VMI,
+        #to get the C-MAC moved and verify it further
+        for stream in traffic.values():
+            interface = vm_fixtures[stream['dst']].get_vm_interface_name() + '.' + \
+                str(vmi[stream['dst_vmi']]['vlan'])
+            self.send_l2_traffic(vm_fixtures[stream['dst']],
+                src_mac=stream['src_cmac'], dst_mac=stream['dst_cmac'],
+                count=stream['count'], interface=interface)
 
+            for i in xrange(0,5):
+                #Verify mac movement
+                result = self.verify_mac_learning(vmi_fixtures[stream['dst_vmi']],
+                    bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+                #Wait for few seconds before retrying mac move verification, agent introspect may take sometime to update
+                sleep(2)
+
+        assert result, ("Mac move verification failed")
+    #end test_mac_move
