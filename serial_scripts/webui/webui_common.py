@@ -135,7 +135,11 @@ class WebuiCommon:
 
     def get_security_group_list_api(self):
         return self._get_list_api('security-groups')
-    # end get_security_group_list_api(
+    # end get_security_group_list_api
+
+    def get_nrt_list_api(self):
+        return self._get_list_api('route-tables')
+    # end get_nrt_list_api
 
     def get_vm_intf_refs_list_api(self):
         return self._get_list_api('virtual-machine-interfaces')
@@ -2167,17 +2171,27 @@ class WebuiCommon:
         return self.check_error_msg("configure route aggregate")
     # end click_configure_route_aggregate
 
-    def click_configure_route_table(self, tab='network_route',
-                                   msg="Configure network route table"):
+    def click_configure_route_table(self, tab=False,
+                                   msg="Network Route Table"):
         if not self.click_configure_elements(2, 'config_net_routing',
                                              msg=msg):
             return False
-        else:
+        if tab:
             element = tab + '-tab-link'
             self.click_element(element)
             self.wait_till_ajax_done(self.browser, wait=3)
-            return self.check_error_msg("Configure " + msg + " globally")
+        return self.check_error_msg("Configure " + msg)
     # end click_configure_route_table
+
+    def click_configure_route_table_basic(self, row_index):
+        self.click_configure_route_table()
+        rows = self.get_rows()
+        div_browser = self.find_element(
+            'div', 'tag', if_elements=[1], elements=True,
+            browser=rows[row_index])[0]
+        self.click_element('i', 'tag', browser = div_browser)
+        self.wait_till_ajax_done(self.browser)
+    #end click_configure_route_table_basic
 
     def click_configure_intf_route_table(self):
         return self.click_configure_route_table(tab='interface_route_table',
