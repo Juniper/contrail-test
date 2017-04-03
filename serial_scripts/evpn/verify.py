@@ -300,13 +300,25 @@ class VerifyEvpnCases():
         vm2_intf = vn_l2_vm2_fixture.tap_intf[vn4_fixture.vn_fq_name]['name']
         vm3_intf = vn_l2_vm3_fixture.tap_intf[vn4_fixture.vn_fq_name]['name']
         filters = 'ether src %s' %(self.mac1)
-        session1,pcap1 = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=vm2_intf)
-        session2,pcap2 = vn_l2_vm3_fixture.start_tcpdump(filters=filters,interface=vm3_intf)
+        if not self.inputs.pcap_on_vm:
+            session1,pcap1 = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=vm2_intf)
+            session2,pcap2 = vn_l2_vm3_fixture.start_tcpdump(filters=filters,interface=vm3_intf)
+        else:
+            pcap1, pid_file1 = vn_l2_vm2_fixture.start_tcpdump(filters=filters, interface='eth1', pcap_on_vm=True)[0]
+            pcap2, pid_file2 = vn_l2_vm3_fixture.start_tcpdump(filters=filters, interface='eth1', pcap_on_vm=True)[0]
+            vm_fix_pcap_pid_files1 = [(vn_l2_vm2_fixture, pcap1, pid_file1)]
+            vm_fix_pcap_pid_files2 = [(vn_l2_vm3_fixture, pcap2, pid_file2)]
         self.logger.info('waiting to get tcpdump started')
         sleep(10)
         self.send_l2_traffic(vn_l2_vm1_fixture,iface='eth1')
-        result1 = verify_tcpdump_count(self, session1, pcap1, exp_count=10,mac=self.mac2)
-        result2 = verify_tcpdump_count(self, session2, pcap2, exp_count=10,mac=self.mac2)
+        if not self.inputs.pcap_on_vm:
+            result1 = verify_tcpdump_count(self, session1, pcap1, exp_count=10, mac=self.mac2)
+            result2 = verify_tcpdump_count(self, session2, pcap2, exp_count=10, mac=self.mac2)
+        else:
+            result1 = verify_tcpdump_count(
+                self, None, pcap1, exp_count=10, mac=self.mac2, exact_match=False, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files1)
+            result2 = verify_tcpdump_count(
+                self, None, pcap2, exp_count=10, mac=self.mac2, exact_match=False, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files2)
         result = result1 and result2
         assert result,'Failed to send multicast traffic'
     # End verify_l2_multicast_traffic
@@ -408,21 +420,34 @@ class VerifyEvpnCases():
         filters = '\'(src host %s and dst host %s and not arp)\'' \
                     % (self.vn_l2_vm1_ip, self.vn_l2_vm2_ip)
         tap_intf = vn_l2_vm2_fixture.tap_intf[self.vn1_fixture.vn_fq_name]['name']
-        session, pcap = vn_l2_vm2_fixture.start_tcpdump(filters = filters,interface = tap_intf)
+        if not self.inputs.pcap_on_vm:
+            session, pcap = vn_l2_vm2_fixture.start_tcpdump(filters = filters,interface = tap_intf)
+        else:
+            pcap, pid_files = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface='eth1', pcap_on_vm=True)[0]
+            vm_fix_pcap_pid_files = [(vn_l2_vm2_fixture, pcap, pid_files)]
         sleep(20)
         self.send_l3_traffic(vn_l2_vm1_fixture)
-        assert verify_tcpdump_count(self,session, pcap,exp_count=10)
-        
+        if not self.inputs.pcap_on_vm:
+            assert verify_tcpdump_count(self,session, pcap,exp_count=10)
+        else:
+            assert verify_tcpdump_count(self, None, pcap,exp_count=10, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
         #send l2 traffic and verify
         self.mac1=vn_l2_vm1_fixture.mac_addr[self.vn1_fixture.vn_fq_name]
         self.mac2=vn_l2_vm2_fixture.mac_addr[self.vn1_fixture.vn_fq_name]
         filters = 'ether src %s' %(self.mac1)
         tap_intf = vn_l2_vm2_fixture.tap_intf[self.vn1_fixture.vn_fq_name]['name']
-        session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        if not self.inputs.pcap_on_vm:
+            session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        else:
+            pcap, pid_file = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface='eth1', pcap_on_vm=True)[0]
+            vm_fix_pcap_pid_files = [(vn_l2_vm2_fixture, pcap, pid_file)]
         sleep(20)
         self.send_l2_traffic(vn_l2_vm1_fixture,iface='eth1')
-        result = verify_tcpdump_count(self, session, pcap, exp_count=10,mac=self.mac2)
-
+        if not self.inputs.pcap_on_vm:
+            result = verify_tcpdump_count(self, session, pcap, exp_count=10,mac=self.mac2)
+        else:
+            result = verify_tcpdump_count(
+                self, None, pcap, exp_count=10, mac=self.mac2, exact_match=False, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
         return result
     # End verify_change_of_l2_vn_forwarding_mode
 
@@ -520,12 +545,20 @@ class VerifyEvpnCases():
         self.mac2=vn_l2_vm2_fixture.mac_addr[self.vn1_fixture.vn_fq_name]
         filters = 'ether src %s' %(self.mac1)
         tap_intf = vn_l2_vm2_fixture.tap_intf[self.vn1_fixture.vn_fq_name]['name']
-        session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        if not self.inputs.pcap_on_vm:
+            session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        else:
+            pcap, pid_file = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface='eth1', pcap_on_vm=True)[0]
+            vm_fix_pcap_pid_files = [(vn_l2_vm2_fixture, pcap, pid_file)]
+
         self.logger.info('waiting to get tcpdump started')
         sleep(20)
         self.send_l2_traffic(vn_l2_vm1_fixture,iface='eth1')
-        result = verify_tcpdump_count(self, session, pcap, exp_count=10,mac=self.mac2)
-        
+        if not self.inputs.pcap_on_vm:
+            result = verify_tcpdump_count(self, session, pcap, exp_count=10,mac=self.mac2)
+        else:
+            result = verify_tcpdump_count(
+                self, None, pcap, exp_count=10, mac=self.mac2, exact_match=False, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
         #for bug-id 1514703
         #check ping working between l2 vms
         #assert vn_l2_vm1_fixture.ping_with_certainty(dst_vm_fixture=vn_l2_vm2_fixture, 
@@ -618,10 +651,18 @@ class VerifyEvpnCases():
         filters = '\'(src host %s and dst host %s and not arp)\'' \
                     % (self.vn_l2_vm1_ip, self.vn_l2_vm2_ip)
         tap_intf = vn_l2_vm2_fixture.tap_intf[self.vn1_fixture.vn_fq_name]['name']
-        session, pcap = vn_l2_vm2_fixture.start_tcpdump(filters = filters,interface = tap_intf)
+        if not self.inputs.pcap_on_vm:
+            session, pcap = vn_l2_vm2_fixture.start_tcpdump(filters = filters,interface = tap_intf)
+        else:
+            pcap, pid_file = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface='eth1', pcap_on_vm=True)[0]
+            vm_fix_pcap_pid_files = [(vn_l2_vm2_fixture, pcap, pid_file)]
         sleep(10)
         output = self.send_l3_traffic(vn_l2_vm1_fixture)
-        assert verify_tcpdump_count(self,session, pcap,exp_count=10)
+        if not self.inputs.pcap_on_vm:
+            assert verify_tcpdump_count(self,session, pcap,exp_count=10)
+        else:
+            assert verify_tcpdump_count(
+                self, None, pcap, exp_count=10, exact_match=False, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
         
         return result
     
@@ -763,13 +804,14 @@ class VerifyEvpnCases():
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
 
         # Pad vxlan_hex_id to length of 4 and grep it in tcpdump
-        if vxlan_random_id < 15:
-            vxlan_hex_id = '0' + vxlan_hex_id
-        self.tcpdump_analyze_on_compute(
-            comp_vm1_ip, encap.upper(), vxlan_id=vxlan_hex_id)
-        self.tcpdump_analyze_on_compute(
-            comp_vm2_ip, encap.upper(), vxlan_id=vxlan_hex_id)
-        self.tcpdump_stop_on_all_compute()
+        if not self.inputs.pcap_on_vm:
+            if vxlan_random_id < 15:
+                vxlan_hex_id = '0' + vxlan_hex_id
+            self.tcpdump_analyze_on_compute(
+                comp_vm1_ip, encap.upper(), vxlan_id=vxlan_hex_id)
+            self.tcpdump_analyze_on_compute(
+                comp_vm2_ip, encap.upper(), vxlan_id=vxlan_hex_id)
+            self.tcpdump_stop_on_all_compute()
 
         return result
     # End verify_vxlan_mode_with_configured_vxlan_id_l2_vn
@@ -882,22 +924,31 @@ class VerifyEvpnCases():
         filters = '\'(src host %s and dst host %s and not arp)\'' \
                     % (self.vn_l2_vm1_ip, self.vn_l2_vm2_ip)
         tap_intf = vn_l2_vm2_fixture.tap_intf[self.vn1_fixture.vn_fq_name]['name']
-        self.tcpdump_start_on_all_compute()
-        session, pcap = vn_l2_vm2_fixture.start_tcpdump(filters = filters,interface = tap_intf)
+        if not self.inputs.pcap_on_vm:
+            self.tcpdump_start_on_all_compute()
+            session, pcap = vn_l2_vm2_fixture.start_tcpdump(filters = filters,interface = tap_intf)
+        else:
+            pcap, pid_file = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface='eth0', pcap_on_vm=True)[0]
+            vm_fix_pcap_pid_files = [(vn_l2_vm2_fixture, pcap, pid_file)]
         sleep(10)
         self.send_l3_traffic(vn_l2_vm1_fixture)
-        assert verify_tcpdump_count(self,session, pcap,exp_count=10)
+        if not self.inputs.pcap_on_vm:
+            assert verify_tcpdump_count(self,session, pcap,exp_count=10)
+        else:
+            assert verify_tcpdump_count(
+                self, None, pcap, exp_count=10, exact_match=False, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
         
         # Pad vxlan_hex_id to length of 4 and grep it in tcpdump
-        if vxlan_random_id < 15:
-           vxlan_hex_id = '0' + vxlan_hex_id
-        self.tcpdump_analyze_on_compute(
-            comp_vm1_ip, encap.upper(), vxlan_id=vxlan_hex_id)
-        self.tcpdump_analyze_on_compute(
-            comp_vm2_ip, encap.upper(), vxlan_id=vxlan_hex_id)
-        self.tcpdump_stop_on_all_compute()
+        if not self.inputs.pcap_on_vm:
+            if vxlan_random_id < 15:
+                vxlan_hex_id = '0' + vxlan_hex_id
+            self.tcpdump_analyze_on_compute(
+                comp_vm1_ip, encap.upper(), vxlan_id=vxlan_hex_id)
+            self.tcpdump_analyze_on_compute(
+                comp_vm2_ip, encap.upper(), vxlan_id=vxlan_hex_id)
+            self.tcpdump_stop_on_all_compute()
 
         return result
     # end verify_vxlan_mode_with_configured_vxlan_id_l2l3_vn
@@ -1430,29 +1481,33 @@ class VerifyEvpnCases():
         assert vn_l2_vm1_fixture.ping_to_ip(
             vn_l2_vm2_fixture_eth1_100_ip, count='15')
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
-        self.tcpdump_analyze_on_compute(
-            comp_vm2_ip, encap.upper(), vlan_id=vlan_id_pattern1)
-        self.tcpdump_start_on_all_compute()
+        if not self.inputs.pcap_on_vm:
+            self.tcpdump_analyze_on_compute(
+                comp_vm2_ip, encap.upper(), vlan_id=vlan_id_pattern1)
+            self.tcpdump_start_on_all_compute()
         assert vn_l2_vm2_fixture.ping_to_ip(
             vn_l2_vm1_fixture_eth1_100_ip, count='15')
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
-        self.tcpdump_analyze_on_compute(
-            comp_vm1_ip, encap.upper(), vlan_id=vlan_id_pattern1)
+        if not self.inputs.pcap_on_vm:
+            self.tcpdump_analyze_on_compute(
+                comp_vm1_ip, encap.upper(), vlan_id=vlan_id_pattern1)
 
-        self.tcpdump_start_on_all_compute()
+            self.tcpdump_start_on_all_compute()
         assert vn_l2_vm1_fixture.ping_to_ip(
             vn_l2_vm2_fixture_eth1_200_ip, count='15')
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
-        self.tcpdump_analyze_on_compute(
-            comp_vm2_ip, encap.upper(), vlan_id=vlan_id_pattern2)
-        self.tcpdump_start_on_all_compute()
+        if not self.inputs.pcap_on_vm:
+            self.tcpdump_analyze_on_compute(
+                comp_vm2_ip, encap.upper(), vlan_id=vlan_id_pattern2)
+            self.tcpdump_start_on_all_compute()
         assert vn_l2_vm2_fixture.ping_to_ip(
             vn_l2_vm1_fixture_eth1_200_ip, count='15')
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
-        self.tcpdump_analyze_on_compute(
-            comp_vm1_ip, encap.upper(), vlan_id=vlan_id_pattern2)
+        if not self.inputs.pcap_on_vm:
+            self.tcpdump_analyze_on_compute(
+                comp_vm1_ip, encap.upper(), vlan_id=vlan_id_pattern2)
 
-        self.tcpdump_stop_on_all_compute()
+            self.tcpdump_stop_on_all_compute()
         return True
     # end verify_vlan_tagged_packets_for_l2_vn
 
@@ -1686,67 +1741,75 @@ class VerifyEvpnCases():
             other_opt='-I eth1.100.1000',
             count='15')
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
-        self.tcpdump_analyze_on_compute(
-            comp_vm2_ip, encap.upper(), vlan_id=vlan_id_pattern1)
-        self.tcpdump_start_on_all_compute()
+        if not self.inputs.pcap_on_vm:
+            self.tcpdump_analyze_on_compute(
+                comp_vm2_ip, encap.upper(), vlan_id=vlan_id_pattern1)
+            self.tcpdump_start_on_all_compute()
         assert vn_l2_vm2_fixture.ping_to_ip(
             vn_l2_vm1_fixture_eth1_100_1000_ip,
             other_opt='-I eth1.100.1000',
             count='15')
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
-        self.tcpdump_analyze_on_compute(
-            comp_vm1_ip, encap.upper(), vlan_id=vlan_id_pattern1)
+        if not self.inputs.pcap_on_vm:
+            self.tcpdump_analyze_on_compute(
+                comp_vm1_ip, encap.upper(), vlan_id=vlan_id_pattern1)
 
-        self.tcpdump_start_on_all_compute()
+            self.tcpdump_start_on_all_compute()
         assert vn_l2_vm1_fixture.ping_to_ip(
             vn_l2_vm2_fixture_eth1_100_2000_ip,
             other_opt='-I eth1.100.2000',
             count='15')
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
-        self.tcpdump_analyze_on_compute(
-            comp_vm2_ip, encap.upper(), vlan_id=vlan_id_pattern3)
-        self.tcpdump_start_on_all_compute()
+        if not self.inputs.pcap_on_vm:
+            self.tcpdump_analyze_on_compute(
+                comp_vm2_ip, encap.upper(), vlan_id=vlan_id_pattern3)
+            self.tcpdump_start_on_all_compute()
         assert vn_l2_vm2_fixture.ping_to_ip(
             vn_l2_vm1_fixture_eth1_100_2000_ip,
             other_opt='-I eth1.100.2000',
             count='15')
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
-        self.tcpdump_analyze_on_compute(
-            comp_vm1_ip, encap.upper(), vlan_id=vlan_id_pattern3)
+        if not self.inputs.pcap_on_vm:
+            self.tcpdump_analyze_on_compute(
+                comp_vm1_ip, encap.upper(), vlan_id=vlan_id_pattern3)
 
-        self.tcpdump_start_on_all_compute()
+            self.tcpdump_start_on_all_compute()
         assert vn_l2_vm1_fixture.ping_to_ip(
             vn_l2_vm2_fixture_eth1_200_1000_ip,
             other_opt='-I eth1.200.1000',
             count='15')
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
-        self.tcpdump_analyze_on_compute(
-            comp_vm2_ip, encap.upper(), vlan_id=vlan_id_pattern2)
-        self.tcpdump_start_on_all_compute()
+        if not self.inputs.pcap_on_vm:
+            self.tcpdump_analyze_on_compute(
+                comp_vm2_ip, encap.upper(), vlan_id=vlan_id_pattern2)
+            self.tcpdump_start_on_all_compute()
         assert vn_l2_vm2_fixture.ping_to_ip(
             vn_l2_vm1_fixture_eth1_200_1000_ip,
             other_opt='-I eth1.200.1000',
             count='15')
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
-        self.tcpdump_analyze_on_compute(
-            comp_vm1_ip, encap.upper(), vlan_id=vlan_id_pattern2)
+        if not self.inputs.pcap_on_vm:
+            self.tcpdump_analyze_on_compute(
+                comp_vm1_ip, encap.upper(), vlan_id=vlan_id_pattern2)
 
-        self.tcpdump_start_on_all_compute()
+            self.tcpdump_start_on_all_compute()
         assert vn_l2_vm1_fixture.ping_to_ip(
             vn_l2_vm2_fixture_eth1_200_2000_ip,
             other_opt='-I eth1.200.2000',
             count='15')
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
-        self.tcpdump_analyze_on_compute(
-            comp_vm2_ip, encap.upper(), vlan_id=vlan_id_pattern4)
-        self.tcpdump_start_on_all_compute()
+        if not self.inputs.pcap_on_vm:
+            self.tcpdump_analyze_on_compute(
+                comp_vm2_ip, encap.upper(), vlan_id=vlan_id_pattern4)
+            self.tcpdump_start_on_all_compute()
         assert vn_l2_vm2_fixture.ping_to_ip(
             vn_l2_vm1_fixture_eth1_200_2000_ip,
             other_opt='-I eth1.200.2000',
             count='15')
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
-        self.tcpdump_analyze_on_compute(
-            comp_vm1_ip, encap.upper(), vlan_id=vlan_id_pattern4)
+        if not self.inputs.pcap_on_vm:
+            self.tcpdump_analyze_on_compute(
+                comp_vm1_ip, encap.upper(), vlan_id=vlan_id_pattern4)
 
         # Ping between interfaces with different outer vlan tag and expect the
         # ping to fail
@@ -1764,8 +1827,8 @@ class VerifyEvpnCases():
         assert not (
             vn_l2_vm2_fixture.ping_to_ip(vn_l2_vm1_fixture_eth1_100_2000_ip,
                                          other_opt='-I eth1.200.2000')), 'Failed in resolving outer vlan tag'
-
-        self.tcpdump_stop_on_all_compute()
+        if not self.inputs.pcap_on_vm:
+            self.tcpdump_stop_on_all_compute()
         return True
     # End verify_vlan_qinq_tagged_packets_for_l2_vn
 
@@ -1853,15 +1916,20 @@ class VerifyEvpnCases():
         self.mac2=vn_l2_vm2_fixture.mac_addr[vn4_fixture.vn_fq_name]
         filters = 'ether src %s' %(self.mac1)
         tap_intf = vn_l2_vm2_fixture.tap_intf[vn4_fixture.vn_fq_name]['name']
-        session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        if not self.inputs.pcap_on_vm:
+            session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        else:
+            pcap, pid_file = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface='eth1', pcap_on_vm=True)[0]
+            vm_fix_pcap_pid_files = [(vn_l2_vm2_fixture, pcap, pid_file)]
         self.logger.info('waiting to get tcpdump started')
         sleep(20)
         self.send_l2_traffic(vn_l2_vm1_fixture,iface='eth1')
         
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
-        self.tcpdump_analyze_on_compute(comp_vm1_ip, encap.upper())
-        self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
+        if not self.inputs.pcap_on_vm:
+            self.tcpdump_analyze_on_compute(comp_vm1_ip, encap.upper())
+            self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
 
         # Figuring the active control node
         active_controller = None
@@ -1934,15 +2002,20 @@ class VerifyEvpnCases():
         self.mac2=vn_l2_vm2_fixture.mac_addr[vn4_fixture.vn_fq_name]
         filters = 'ether src %s' %(self.mac1)
         tap_intf = vn_l2_vm2_fixture.tap_intf[vn4_fixture.vn_fq_name]['name']
-        session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        if not self.inputs.pcap_on_vm:
+            session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        else:
+            pcap, pid_file = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface='eth1', pcap_on_vm=True)[0]
+            vm_fix_pcap_pid_files = [(vn_l2_vm2_fixture, pcap, pid_file)]
         self.logger.info('waiting to get tcpdump started')
         sleep(20)
         self.send_l2_traffic(vn_l2_vm1_fixture,iface='eth1')                                     
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
-        self.tcpdump_analyze_on_compute(comp_vm1_ip, encap.upper())
-        self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
-        self.tcpdump_stop_on_all_compute()
+        if not self.inputs.pcap_on_vm:
+            self.tcpdump_analyze_on_compute(comp_vm1_ip, encap.upper())
+            self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
+            self.tcpdump_stop_on_all_compute()
         
         return result
     # verify_epvn_l2_mode_control_node_switchover
@@ -2004,11 +2077,19 @@ class VerifyEvpnCases():
         self.mac2=vn1_vm2_fixture.mac_addr[vn1_fixture.vn_fq_name]
         filters = 'ether src %s' %(self.mac1)
         tap_intf = vn1_vm2_fixture.tap_intf[vn1_fixture.vn_fq_name]['name']
-        session,pcap = vn1_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        if not self.inputs.pcap_on_vm:
+            session,pcap = vn1_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        else:
+            pcap, pid_file = vn1_l2_vm2_fixture.start_tcpdump(filters=filters,interface='eth0', pcap_on_vm=True)[0]
+            vm_fix_pcap_pid_files = [(vn_l2_vm2_fixture, pcap, pid_file)]
         self.logger.info('waiting to get tcpdump started')
         sleep(20)
         self.send_l2_traffic(vn1_vm1_fixture,iface='eth0')
-        result = verify_tcpdump_count(self, session, pcap, exp_count=10,mac=self.mac2)
+        if not self.inputs.pcap_on_vm:
+            result = verify_tcpdump_count(self, session, pcap, exp_count=10,mac=self.mac2)
+        else:
+            result = verify_tcpdump_count(
+                self, None, pcap, exp_count=10, mac=self.mac2, exact_match=False, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
         self.logger.info('Will restart compute  services now')
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter', [compute_ip])
@@ -2022,11 +2103,19 @@ class VerifyEvpnCases():
         self.mac2=vn1_vm2_fixture.mac_addr[vn1_fixture.vn_fq_name]
         filters = 'ether src %s' %(self.mac1)
         tap_intf = vn1_vm2_fixture.tap_intf[vn1_fixture.vn_fq_name]['name']
-        session,pcap = vn1_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        if not self.inputs.pcap_on_vm:
+            session,pcap = vn1_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        else:
+            pcap, pid_file = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface='eth0', pcap_on_vm=True)[0]
+            vm_fix_pcap_pid_files = [(vn_l2_vm2_fixture, pcap, pid_file)]
         self.logger.info('waiting to get tcpdump started')
         sleep(20)
         self.send_l2_traffic(vn1_vm1_fixture,iface='eth0')
-        result = verify_tcpdump_count(self, session, pcap, exp_count=10,mac=self.mac2)
+        if not self.inputs.pcap_on_vm:
+            result = verify_tcpdump_count(self, session, pcap, exp_count=10,mac=self.mac2)
+        else:
+            result = verify_tcpdump_count(
+                self, None, pcap, exp_count=10, mac=self.mac2, exact_match=False, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
         self.logger.info('Checking the communication between 2 VM after vrouter restart')
         assert vn1_vm1_fixture.ping_with_certainty(dst_vm_fixture=vn1_vm2_fixture, 
                                               vn_fq_name=vn1_fixture.vn_fq_name)
@@ -2113,16 +2202,24 @@ class VerifyEvpnCases():
         filters = 'ether src %s' %(self.mac1)
         tap_intf = vn_l2_vm2_fixture.tap_intf[vn4_fixture.vn_fq_name]['name']
         self.tcpdump_start_on_all_compute()
-        session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        if not self.inputs.pcap_on_vm:
+            session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        else:
+            pcap, pid_file = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface='eth1', pcap_on_vm=True)[0]
+            vm_fix_pcap_pid_files = [(vn_l2_vm2_fixture, pcap, pid_file)]
         self.logger.info('waiting to get tcpdump started')
         sleep(10)
         self.send_l2_traffic(vn_l2_vm1_fixture,iface='eth1')
-        result = verify_tcpdump_count(self, session, pcap, exp_count=10,mac=self.mac2)
-
+        if not self.inputs.pcap_on_vm:
+            result = verify_tcpdump_count(self, session, pcap, exp_count=10,mac=self.mac2)
+        else:
+            result = verify_tcpdump_count(
+                self, None, pcap, exp_count=10, mac=self.mac2, exact_match=False, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
-        if len(self.connections.nova_h.get_hosts()) >= 2:
-            self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
-        self.tcpdump_stop_on_all_compute()
+        if not self.inputs.pcap_on_vm:
+            if len(self.connections.nova_h.get_hosts()) >= 2:
+                self.tcpdump_analyze_on_compute(comp_vm2_ip, encap.upper())
+            self.tcpdump_stop_on_all_compute()
 
         return True
     # End verify_epvn_l2_mode
@@ -2219,7 +2316,11 @@ class VerifyEvpnCases():
         self.logger.info('verify l2_only arp resolution')
         filters = 'arp'
         tap_intf = vn_l2_vm2_fixture.tap_intf[self.vn1_fixture.vn_fq_name]['name']
-        session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        if not self.inputs.pcap_on_vm:
+            session,pcap = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface=tap_intf)
+        else:
+            pcap, pid_file = vn_l2_vm2_fixture.start_tcpdump(filters=filters,interface='eth1', pcap_on_vm=True)[0]
+            vm_fix_pcap_pid_files = [(vn_l2_vm2_fixture, pcap, pid_file)]
         self.logger.info('waiting to get tcpdump started')
         sleep(20)
         
@@ -2228,8 +2329,11 @@ class VerifyEvpnCases():
         intf_name = vn_l2_vm1_fixture.get_vm_interface_name(mac1)
         output,form_output = vn_l2_vm1_fixture.arping(self.vn_l2_vm2_ip,intf_name)
         search_string = self.vn_l2_vm1_ip
-        status = search_in_pcap(session, pcap,search_string)
-        vn_l2_vm2_fixture.stop_tcpdump(session,pcap)
+        if not self.inputs.pcap_on_vm:
+            status = search_in_pcap(session, pcap,search_string)
+            vn_l2_vm2_fixture.stop_tcpdump(session,pcap)
+        else:
+            status = search_in_pcap(None, pcap,search_string, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
         if status and mac2 in output:
             self.logger.info('arp resolution was done by end vm')
         else:
