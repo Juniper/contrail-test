@@ -197,6 +197,7 @@ Run contrail-test in container
         sanity, quick_sanity, ci_sanity, ci_sanity_WIP, ci_svc_sanity,
         upgrade, webui_sanity, ci_webui_sanity, devstack_sanity, upgrade_only
   -T  test tags to run tests. If not provided, try $TEST_TAGS variable
+  -l  path where contrail-test can be found. Default: /contrail-test
 
 EOF
 }
@@ -219,6 +220,9 @@ while getopts ":T:t:p:f:h" opt; do
     T)
       test_tags=$OPTARG
       ;;
+    l)
+      contrail_test_folder=$OPTARG
+      ;;
     :)
       echo "Option -$OPTARG requires an argument." >&2
       exit 1
@@ -228,10 +232,11 @@ done
 
 TESTBED=${testbed_input:-${TESTBED:-'/opt/contrail/utils/fabfile/testbeds/testbed.py'}}
 CONTRAIL_FABPATH=${contrail_fabpath_input:-${CONTRAIL_FABPATH:-'/opt/contrail/utils'}}
+CONTRAIL_TEST_FOLDER=${contrail_test_folder:-${CONTRAIL_TEST_FOLDER:-'/contrail-test'}}
 FEATURE=${feature_input:-${FEATURE:-'sanity'}}
 TEST_TAGS=${test_tags:-$TEST_TAGS}
 
-if [[ ( ! -f /contrail-test/sanity_params.ini || ! -f /contrail-test/sanity_testbed.json ) && ! -f $TESTBED ]]; then
+if [[ ( ! -f ${CONTRAIL_TEST_FOLDER}/sanity_params.ini || ! -f ${CONTRAIL_TEST_FOLDER}/sanity_testbed.json ) && ! -f $TESTBED ]]; then
     echo "ERROR! Either testbed file or sanity_params.ini or sanity_testbed.json under /contrail-test is required.
           you probably forgot to attach them as volumes"
     exit 100
@@ -242,7 +247,7 @@ if [ ! $TESTBED -ef ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py ]; then
     cp $TESTBED ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py
 fi
 
-cd /contrail-test
+cd ${CONTRAIL_TEST_FOLDER}
 run_tests="./run_tests.sh --contrail-fab-path $CONTRAIL_FABPATH "
 if [[ -n $TEST_RUN_CMD ]]; then
     $TEST_RUN_CMD $EXTRA_RUN_TEST_ARGS
@@ -300,9 +305,9 @@ else
 fi
 
 
-if [ -d /contrail-test.save ]; then
-    cp -f ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py /contrail-test.save/
-    rsync -a --exclude logs/ --exclude report/ /contrail-test /contrail-test.save/
+if [ -d ${CONTRAIL_TEST_FOLDER}.save ]; then
+    cp -f ${CONTRAIL_FABPATH}/fabfile/testbeds/testbed.py ${CONTRAIL_TEST_FOLDER}.save/
+    rsync -L -a --exclude logs/ --exclude report/ ${CONTRAIL_TEST_FOLDER} ${CONTRAIL_TEST_FOLDER}.save/
 fi
 
 exit $rv_run_test
