@@ -568,6 +568,22 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_route_aggregates
 
     @preposttest_wrapper
+    def test_verify_config_routing_policies(self):
+        '''
+        Description: Test to verify Routing Policies on UI against Routing Policies on API
+        Steps:
+            1. On the Contrail UI, go to Config -> Networking -> Routing -> Routing Policies
+            2. Get all the routing policy config details from the page
+            3. Go to the API server and fetch all the routing policy config details
+            4. Verify the WebUI details against the details from the API server
+        Pass criteria:
+            1. Step 4 above should pass
+        '''
+        assert self.webui.verify_routing_policy_api_basic_data(), 'Routing Policy data verification failed'
+        return True
+    # end test_verify_config_routing_policies
+
+    @preposttest_wrapper
     def test_verify_config_infra_project_quotas(self):
         '''Test project quotas on config->Networking->Project Quotas page
         '''
