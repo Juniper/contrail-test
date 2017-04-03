@@ -4631,6 +4631,118 @@ class WebuiTest:
         return result
     # end verify_routing_policy_api_basic_data_in_webui
 
+    def verify_forwarding_class_api_basic_data(self):
+        self.logger.info(
+            "Verifying forwarding class api server data with \
+                Config -> Infrastructure -> Global Config -> Forwarding Classes \
+                    page on UI...")
+        self.logger.info(self.dash)
+        result = True
+        fc_list_api = self.ui.get_fc_list_api()
+        fc_api_list = fc_list_api['forwarding-classs']
+        for fc in range(len(fc_api_list)):
+            api_fq_name = fc_api_list[fc]['fq_name'][2]
+            self.logger.info(
+                "Forwarding Class fq_name %s exists in api server..\
+                    checking if it exists in webui as well" % (api_fq_name))
+            self.ui.click_configure_forwarding_class()
+            self.ui.wait_till_ajax_done(self.browser)
+            br = self.ui.find_element('forwarding-class-grid')
+            rows = self.ui.get_rows(browser=br)
+            for i in range(len(rows)):
+                match_flag = 0
+                j = 0
+                dom_arry_basic = []
+                row_div_list = self.ui.find_element('div', 'tag',
+                                                    browser=rows[i], elements=True,
+                                                    if_elements=[1])
+                fc_fq_name = row_div_list[2].text
+                if fc_fq_name == api_fq_name:
+                    self.logger.info(
+                        "Forwarding Class fq_name %s matched in webui..\
+                            Verifying basic view details..." % (api_fq_name))
+                    self.logger.debug(self.dash)
+                    match_index = i
+                    match_flag = 1
+                    dom_arry_basic.append(
+                        {'key': 'Name_grid_row', 'value': fc_fq_name})
+                    dom_arry_basic.append(
+                        {'key': 'Dscp_grid_row',
+                         'value': str(self.ui.extract_and_convert(row_div_list[3].text))})
+                    dom_arry_basic.append(
+                        {'key': 'Mpls_exp_grid_row',
+                         'value': str(self.ui.extract_and_convert(row_div_list[4].text))})
+                    dom_arry_basic.append(
+                        {'key': 'Vlan_priority_grid_row',
+                         'value': str(self.ui.extract_and_convert(row_div_list[5].text))})
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "Forwarding Class fq_name %s exists in API server, \
+                        but not found on Webui" % (api_fq_name))
+                self.logger.debug(self.dash)
+            else:
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'forwarding_class', match_index,
+                                search_ele='fc_global_tab', browser=br)[1]
+                self.logger.info(
+                    "Verify basic view details for Forwarding Class fq_name %s " %
+                    (api_fq_name))
+                for detail in range(len(rows_detail)):
+                    key_arry = self.ui.find_element(
+                        'key', 'class', browser = rows_detail[detail]).text
+                    value_arry = self.ui.find_element(
+                        'value', 'class', browser = rows_detail[detail]).text
+                    if key_arry in ['DSCP bits', 'MPLS EXP bits', 'VLAN Priority bits']:
+                        value_arry = str(self.ui.extract_and_convert(value_arry))
+                    dom_arry_basic.append({'key': key_arry, 'value': value_arry})
+                ## Fetching API data ##
+                fc_api_data = self.ui.get_details(fc_api_list[fc]['href'])
+                complete_api_data = []
+                if 'forwarding-class' in fc_api_data:
+                    api_data_basic = fc_api_data.get('forwarding-class')
+                if 'fq_name' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'Name_grid_row',
+                         'value': str(api_data_basic['fq_name'][2])})
+                # Pavana - Implement fetching UUID when Bug #1679235 is fixed
+                if 'forwarding_class_id' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'Forwarding Class',
+                         'value': str(api_data_basic['forwarding_class_id'])})
+                if 'forwarding_class_dscp' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'DSCP bits',
+                         'value': str(api_data_basic['forwarding_class_dscp'])})
+                if 'forwarding_class_mpls_exp' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'MPLS EXP bits',
+                         'value': str(api_data_basic['forwarding_class_mpls_exp'])})
+                if 'forwarding_class_vlan_priority' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'VLAN Priority bits',
+                         'value': str(api_data_basic['forwarding_class_vlan_priority'])})
+                if 'qos_queue_refs' in api_data_basic:
+                    api_qos_list = api_data_basic['qos_queue_refs'][0]['to']
+                    api_qos_refs = api_qos_list[2]
+                    complete_api_data.append(
+                        {'key': 'Associated QoS Queue', 'value': api_qos_refs})
+                if self.ui.match_ui_kv(
+                        complete_api_data,
+                        dom_arry_basic):
+                    self.logger.info(
+                        "Forwarding Class data matched on \
+                            Config -> Infrastructure -> Global Config -> Forwarding Classes \
+                                page on UI")
+                else:
+                    self.logger.error(
+                        "Forwarding Class data match failed on \
+                            Config -> Infrastructure -> Global Config -> Forwarding Classes \
+                                page on UI")
+                    result = result and False
+        return result
+    # end verify_forwarding_class_api_basic_data_in_webui
+
     def verify_vm_ops_data_in_webui(self, fixture):
         self.logger.info(
             "Verifying vn %s opserver data on Monitor->Networking->Instances page" %
