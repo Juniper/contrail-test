@@ -4385,6 +4385,122 @@ class WebuiTest:
         return result
     # end verify_route_table_api_basic_data_in_webui
 
+    def verify_route_aggregate_api_basic_data(self):
+        self.logger.info(
+            "Verifying route aggregate api server data on \
+                Config -> Networking -> Routing -> Route Aggregates page on UI...")
+        self.logger.info(self.dash)
+        result = True
+        ragg_list_api = self.ui.get_ragg_list_api()
+        ragg_api_list = ragg_list_api['route-aggregates']
+        for ragg in range(len(ragg_api_list)):
+            api_fq_name = ragg_api_list[ragg]['fq_name'][2]
+            project_name = ragg_api_list[ragg]['fq_name'][1]
+            if project_name == 'default-project':
+                continue
+            self.logger.info(
+                "Route aggregate fq_name %s exists in api server..\
+                    checking if it exists in webui as well" % (api_fq_name))
+            self.ui.click_configure_route_aggregate()
+            self.ui.select_project(project_name)
+            self.ui.wait_till_ajax_done(self.browser)
+            br = self.ui.find_element('route-aggregate-grid')
+            rows = self.ui.get_rows(browser=br)
+            for i in range(len(rows)):
+                match_flag = 0
+                j = 0
+                dom_arry_basic = []
+                row_div_list = self.ui.find_element('div', 'tag',
+                                                    browser=rows[i], elements=True,
+                                                    if_elements=[1])
+                ragg_fq_name = row_div_list[2].text
+                if ragg_fq_name == api_fq_name:
+                    self.logger.info(
+                        "Route aggregate fq_name %s matched in webui..\
+                            Verifying basic view details..." % (api_fq_name))
+                    self.logger.debug(self.dash)
+                    match_index = i
+                    match_flag = 1
+                    dom_arry_basic.append(
+                        {'key': 'Name_grid_row', 'value': ragg_fq_name})
+                    dom_arry_basic.append(
+                        {'key': 'Nexthop_grid_row', 'value': row_div_list[3].text})
+                    dom_arry_basic.append(
+                        {'key': 'Routes_grid_row', 'value': row_div_list[4].text.split('\n')})
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "Route aggregate fq_name %s exists in API server, \
+                        but not found on Webui" % (api_fq_name))
+                self.logger.debug(self.dash)
+            else:
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'route_aggregate', match_index,
+                                search_ele='route-aggregate-grid', browser=br)[1]
+                self.logger.info(
+                    "Verify basic view details for Route aggregate fq_name %s " %
+                    (api_fq_name))
+                for detail in range(len(rows_detail)):
+                    key_arry = self.ui.find_element(
+                        'key', 'class', browser = rows_detail[detail]).text
+                    value_arry = self.ui.find_element(
+                        'value', 'class', browser = rows_detail[detail]).text
+                    if key_arry == 'Routes':
+                        value_arry = value_arry.split('\n')
+                    dom_arry_basic.append({'key': key_arry, 'value': value_arry})
+                ## Fetching API data ##
+                ragg_api_data = self.ui.get_details(ragg_api_list[ragg]['href'])
+                complete_api_data = []
+                if 'route-aggregate' in ragg_api_data:
+                    api_data_basic = ragg_api_data.get('route-aggregate')
+                if 'fq_name' in api_data_basic:
+                    complete_api_data.extend((
+                        {'key': 'Name', 'value': str(api_data_basic['fq_name'][2])},
+                        {'key': 'Name_grid_row', 'value': str(api_data_basic['fq_name'][2])}))
+                if 'uuid' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'UUID', 'value': str(api_data_basic['uuid'])})
+                if 'display_name' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'Display Name', 'value': str(api_data_basic['display_name'])})
+                if 'aggregate_route_entries' in api_data_basic:
+                    api_route_agg = api_data_basic['aggregate_route_entries'].get('route')
+                    if api_route_agg:
+                        complete_api_data.extend((
+                            {'key': 'Routes', 'value': api_route_agg},
+                            {'key': 'Routes_grid_row', 'value': api_route_agg}))
+                    else:
+                        complete_api_data.extend((
+                            {'key': 'Routes', 'value': '-'},
+                            {'key': 'Routes_grid_row', 'value': '-'}))
+                if 'service_instance_refs' in api_data_basic:
+                    api_svc_list = api_data_basic['service_instance_refs'][0]['to']
+                    api_svc_refs = api_svc_list[2] + ' ' + '(' + api_svc_list[0] + \
+                                    ':' + api_svc_list[1] + ')'
+                    complete_api_data.append(
+                        {'key': 'Associate Service Instance(s)',
+                         'value': api_svc_refs})
+                if 'nexthop' in api_data_basic:
+                    complete_api_data.extend((
+                        {'key': 'Next Hop', 'value': api_data_basic.get('nexthop')},
+                        {'key': 'Next Hop_grid_row', 'value': api_data_basic.get('nexthop')}))
+                else:
+                    complete_api_data.append(
+                        {'key': 'Nexthop_grid_row', 'value': '-'})
+                if self.ui.match_ui_kv(
+                        complete_api_data,
+                        dom_arry_basic):
+                    self.logger.info(
+                        "Route aggregate data matched on \
+                            Config -> Networking -> Routing -> Route Aggregates page on UI")
+                else:
+                    self.logger.error(
+                        "Route aggregate data match failed on \
+                            Config -> Networking -> Routing -> Route Aggregates page on UI")
+                    result = result and False
+        return result
+    # end verify_route_aggregate_api_basic_data_in_webui
+
     def verify_vm_ops_data_in_webui(self, fixture):
         self.logger.info(
             "Verifying vn %s opserver data on Monitor->Networking->Instances page" %
