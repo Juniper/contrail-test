@@ -552,6 +552,22 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_network_route_table
 
     @preposttest_wrapper
+    def test_verify_config_route_aggregates(self):
+        '''
+        Description: Test to verify Route Aggregates on UI against Route Aggregates on API
+        Steps:
+            1. On the Contrail UI, go to Config -> Networking -> Routing -> Route Aggregates
+            2. Get all the route aggregate config details from the page
+            3. Go to the API server and fetch all the route aggregate config details
+            4. Verify the WebUI details against the details from the API server
+        Pass criteria:
+            1. Step 4 above should pass
+        '''
+        assert self.webui.verify_route_aggregate_api_basic_data(), 'Route Aggregate data verification failed'
+        return True
+    # end test_verify_config_route_aggregates
+
+    @preposttest_wrapper
     def test_verify_config_infra_project_quotas(self):
         '''Test project quotas on config->Networking->Project Quotas page
         '''

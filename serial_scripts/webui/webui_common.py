@@ -141,6 +141,10 @@ class WebuiCommon:
         return self._get_list_api('route-tables')
     # end get_nrt_list_api
 
+    def get_ragg_list_api(self):
+        return self._get_list_api('route-aggregates')
+    # end get_ragg_list_api
+
     def get_vm_intf_refs_list_api(self):
         return self._get_list_api('virtual-machine-interfaces')
     # end get_vm_intf_refs_list_api
@@ -2155,22 +2159,6 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
     #end click_configure_qos_basic
 
-    def click_configure_routing_policy(self):
-        self.click_configure_route_table()
-        self.wait_till_ajax_done(self.browser)
-        self.click_element('routing_policy_tab-tab-link')
-        self.wait_till_ajax_done(self.browser)
-        return self.check_error_msg("configure routing policy")
-    # end click_configure_routing_policy
-
-    def click_configure_route_aggregate(self):
-        self.click_configure_route_table()
-        self.wait_till_ajax_done(self.browser)
-        self.click_element('route_aggregates_tab-tab-link')
-        self.wait_till_ajax_done(self.browser)
-        return self.check_error_msg("configure route aggregate")
-    # end click_configure_route_aggregate
-
     def click_configure_route_table(self, tab=False,
                                    msg="Network Route Table"):
         if not self.click_configure_elements(2, 'config_net_routing',
@@ -2192,6 +2180,30 @@ class WebuiCommon:
         self.click_element('i', 'tag', browser = div_browser)
         self.wait_till_ajax_done(self.browser)
     #end click_configure_route_table_basic
+
+    def click_configure_routing_policy(self):
+        self.click_configure_route_table()
+        self.wait_till_ajax_done(self.browser)
+        self.click_element('routing_policy_tab-tab-link')
+        self.wait_till_ajax_done(self.browser)
+        return self.check_error_msg("configure routing policy")
+    # end click_configure_routing_policy
+
+    def click_configure_route_aggregate(self):
+        return self.click_configure_route_table(tab='route_aggregates_tab',
+                                         msg='Route Aggregate')
+    # end click_configure_route_aggregate
+
+    def click_configure_route_aggregate_basic(self, row_index):
+        self.click_configure_route_aggregate()
+        br = self.find_element('route-aggregate-grid')
+        rows = self.get_rows(browser=br)
+        div_browser = self.find_element(
+            'div', 'tag', if_elements=[1], elements=True,
+            browser=rows[row_index])[0]
+        self.click_element('i', 'tag', browser = div_browser)
+        self.wait_till_ajax_done(self.browser)
+    #end click_configure_route_aggregate_basic
 
     def click_configure_intf_route_table(self):
         return self.click_configure_route_table(tab='interface_route_table',
