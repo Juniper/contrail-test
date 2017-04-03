@@ -148,14 +148,23 @@ class BDFixture(vnc_api_test.VncLibFixture):
         return bd_obj
     # end read_bd
 
+    def update_bd(self, **kwargs):
+        '''
+            Updates bridge domain
+        '''
+        self.parse_bd_kwargs(**kwargs)
+        self.vnc_h.update_bd(uuid=self.bd_uuid, **kwargs)
+
     def add_bd_to_vmi(self, vmi_id, vlan_tag, verify=True):
+        result = True
         bd_id = self.bd_uuid
         self.vnc_h.add_bd_to_vmi(bd_id, vmi_id, vlan_tag)
 
         if verify:
             result = self.verify_bd_for_vmi_in_computes(vmi_uuid=vmi_id)
             result = result and self.verify_bd_for_vn_in_agent(vmi_uuid=vmi_id)
-            return result
+
+        return result
 
     def verify_on_setup(self):
         result = True
@@ -195,6 +204,16 @@ class BDFixture(vnc_api_test.VncLibFixture):
             self.api_verification_flag = self.api_verification_flag and False
             return False
 
+        if self.api_s_bd_obj['bridge-domain']['parent_type'] != 'virtual-network' or \
+            self.api_s_bd_obj['bridge-domain']['parent_uuid'] != self.parent_obj.uuid:
+            self.logger.warn(
+                "BD parent type %s and ID %s in API-Server is not as expected: %s" % (
+                self.api_s_bd_obj['bridge-domain']['parent_type'],
+                self.api_s_bd_obj['bridge-domain']['parent_uuid'],
+                self.parent_obj.uuid))
+            self.api_verification_flag = self.api_verification_flag and False
+
+            return False
         if self.mac_learning_enabled and (
             self.api_s_bd_obj['bridge-domain']['mac_learning_enabled'] !=
                 self.mac_learning_enabled):

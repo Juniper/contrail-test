@@ -12,7 +12,7 @@ from tcutils.traffic_utils.scapy_traffic_gen import ScapyTraffic
 
 import random
 from netaddr import *
-from tcutils.util import retry
+from tcutils.util import retry, get_random_mac
 from tcutils.tcpdump_utils import *
 
 
@@ -29,11 +29,13 @@ vlan-raw-device eth0\" > /etc/network/interfaces
 
 /etc/init.d/networking restart"""
 
+MAC_AGING_DEFAULT = 300 #in Seconds
+
 PBB_EVPN_CONFIG = {
     'pbb_evpn_enable': True,
     'mac_learning': True,
     'pbb_etree': False,
-    'mac_aging':300,
+    'mac_aging':MAC_AGING_DEFAULT,
     'mac_limit': {
         'limit'   :1024,
         'action':'log'
@@ -43,6 +45,110 @@ PBB_EVPN_CONFIG = {
         'action':'log',
         'window': 30
     }
+}
+VLAN_ID1 = 212
+VLAN_ID2 = 213
+PBB_RESOURCES_SINGLE_ISID = {
+
+        # VN parameters
+        'vn': {'count':2,
+              'vn1':{'subnet':'10.10.10.0/24'},
+              'vn2':{'subnet':'1.1.1.0/24', 'asn':64510, 'target':1},},
+
+        # Bridge domain parameters
+        'bd': {'count':1,
+              'bd1':{'isid':200200,'vn':'vn2'}},
+
+        # VMI parameters
+        'vmi': {'count':4,
+               'vmi1':{'vn': 'vn1'},
+               'vmi2':{'vn': 'vn1'},
+               'vmi3':{'vn': 'vn2','parent':'vmi1','vlan':VLAN_ID1},
+               'vmi4':{'vn': 'vn2','parent':'vmi2','vlan':VLAN_ID1},},
+
+        # VM parameters
+        'vm': {'count':2, 'launch_mode':'distribute',
+              'vm1':{'vn':['vn1'], 'vmi':['vmi1'], 'userdata':{
+                'vlan':str(VLAN_ID1)} },
+              'vm2':{'vn':['vn1'], 'vmi':['vmi2'], 'userdata':{
+                'vlan':str(VLAN_ID1)} }
+            },
+
+        # Traffic
+        'traffic': {
+                   'stream1': {'src':'vm1','dst':'vm2','count':10,
+                                'src_cmac': get_random_mac(),
+                                'dst_cmac': get_random_mac(),
+                                'bd': 'bd1', 'src_vmi': 'vmi3',
+                                'dst_vmi': 'vmi4'}
+                  },
+
+        # BD to VMI mapping parameters
+        'bd_vmi_mapping': {'bd1':['vmi3','vmi4']}
+}
+
+PBB_RESOURCES_TWO_ISID = {
+        # VN parameters
+        'vn': {'count':4,
+              'vn1':{'subnet':'10.10.10.0/24'},
+              'vn2':{'subnet':'1.1.1.0/24', 'asn':64510, 'target':1},
+              'vn3':{'subnet':'20.20.20.0/24'},
+              'vn4':{'subnet':'2.2.2.0/24', 'asn':64511, 'target':1}
+              },
+
+        # Bridge domain parameters
+        'bd': {'count':2,
+              'bd1':{'isid':200200, 'vn':'vn2'},
+              'bd2':{'isid':300300, 'vn':'vn4'}
+              },
+
+        # VMI parameters
+        'vmi': {'count':8,
+               'vmi1':{'vn': 'vn1'},
+               'vmi2':{'vn': 'vn1'},
+               'vmi3':{'vn': 'vn2','parent':'vmi1','vlan':VLAN_ID1},
+               'vmi4':{'vn': 'vn2','parent':'vmi2','vlan':VLAN_ID1},
+               'vmi5':{'vn': 'vn3'},
+               'vmi6':{'vn': 'vn3'},
+               'vmi7':{'vn': 'vn4','parent':'vmi5','vlan':VLAN_ID2},
+               'vmi8':{'vn': 'vn4','parent':'vmi6','vlan':VLAN_ID2}
+               },
+
+        # VM parameters
+        'vm': {'count':4, 'launch_mode':'distribute',
+              'vm1':{'vn':['vn1'], 'vmi':['vmi1'], 'userdata':{
+                'vlan': str(VLAN_ID1)} },
+              'vm2':{'vn':['vn1'], 'vmi':['vmi2'], 'userdata':{
+                'vlan': str(VLAN_ID1)} },
+              'vm3':{'vn':['vn3'], 'vmi':['vmi5'], 'userdata':{
+                'vlan': str(VLAN_ID2)} },
+              'vm4':{'vn':['vn3'], 'vmi':['vmi6'], 'userdata':{
+                'vlan': str(VLAN_ID2)} }
+              },
+
+        # Traffic
+        'traffic': {
+                   'stream1': {'src':'vm1','dst':'vm2','count':10,
+                                'src_cmac': get_random_mac(),
+                                'dst_cmac': get_random_mac(),
+                                'bd': 'bd1', 'src_vmi': 'vmi3',
+                                'dst_vmi': 'vmi4'},
+                   'stream2': {'src':'vm3','dst':'vm4','count':10,
+                                'src_cmac': get_random_mac(),
+                                'dst_cmac': get_random_mac(),
+                                'bd': 'bd2', 'src_vmi': 'vmi7',
+                                'dst_vmi': 'vmi8'}
+                  },
+
+        # BD to VMI mapping parameters
+        'bd_vmi_mapping': {'bd1':['vmi3','vmi4'],
+                          'bd2':['vmi7','vmi8']},
+}
+
+BASIC_PBB_RESOURCES = PBB_RESOURCES_SINGLE_ISID
+PBB_EVPN_API_ERROR_MSGS = {
+    'vn_can_have_one_bd': "Virtual network(%s) can have only one bridge domain. Bridge domain(%s) is already created under this virtual network",
+    'vmi_bd_in_same_vn': "Virtual machine interface(%s) can only refer to bridge domain belonging to virtual network(%s)",
 }
 
 class PbbEvpnTestBase(BaseVrouterTest):
@@ -248,7 +354,7 @@ class PbbEvpnTestBase(BaseVrouterTest):
         return vm_fixtures
 
     def setup_pbb_evpn(self,pbb_evpn_config=None, bd=None, vn=None, vmi=None,
-                       vm=None, bd_vmi_mapping=None):
+                       vm=None, bd_vmi_mapping=None, verify=True):
         '''
             Setup PBB EVPN Configuration.
 
@@ -361,7 +467,8 @@ class PbbEvpnTestBase(BaseVrouterTest):
             bd_fixture = bd_fixtures[bd]
             for vmi in vmi_list:
                 vmi_fixture = vmi_fixtures[vmi]
-                assert bd_fixture.add_bd_to_vmi(vmi_fixture.uuid, vlan_tag)
+                assert bd_fixture.add_bd_to_vmi(vmi_fixture.uuid, vlan_tag,
+                    verify=verify)
 
         ret_dict = {
             'bd_fixtures':bd_fixtures,
@@ -437,7 +544,8 @@ class PbbEvpnTestBase(BaseVrouterTest):
         scapy_obj.start()
         return scapy_obj
 
-    def verify_mac_learning(self, vmi_fixture, bd_fixture, cmac=None):
+    def verify_mac_learning(self, vmi_fixture, bd_fixture, cmac=None,
+            expectation=True):
         '''
         Verify if c-mac learned in agents:
             1. in local agent, nh type should be interface
@@ -462,7 +570,14 @@ class PbbEvpnTestBase(BaseVrouterTest):
             vrf = self.get_i_component_vrf(vmi_fixture, bd_uuid, compute_ip=ip)
             vrf_id = self.get_vrf_id(vrf)
 
-            l2_route_in_agent = self.get_vna_layer2_route(ip, vrf_id, mac=cmac)
+            l2_route_in_agent = self.get_vna_layer2_route(ip, vrf_id, mac=cmac,
+                expectation=expectation)
+            if not expectation:
+                result = True if l2_route_in_agent else False 
+                if result:
+                    continue
+                else:
+                    return result
             if not l2_route_in_agent:
                 self.logger.error("C-MAC %s is NOT learned in agent %s" % (
                     cmac, ip))
@@ -505,23 +620,33 @@ class PbbEvpnTestBase(BaseVrouterTest):
     def get_vrf_mpls_label(self, agent_vrf_obj_vn):
         return agent_vrf_obj_vn['table_label']
 
-    @retry(delay=2, tries=3)
-    def get_vna_layer2_route(self, compute_ip, vrf_id, mac=None):
+    @retry(delay=2, tries=7)
+    def get_vna_layer2_route(self, compute_ip, vrf_id, mac=None,
+            expectation=True):
         '''
         Get L2 routes from the agent with retry
         '''
         l2_route_in_agent = self.agent_inspect[compute_ip].get_vna_layer2_route(
             vrf_id=vrf_id, mac=mac)
-
-        if not l2_route_in_agent:
-            self.logger.warn("L2 routes in agent %s not found for vrf id %s" % (
-                compute_ip, vrf_id))
-            return False
+        if expectation:
+            if not l2_route_in_agent:
+                self.logger.warn("L2 routes in agent %s not found for vrf id %s" % (
+                    compute_ip, vrf_id))
+                return False
+            else:
+                self.logger.debug("L2 routes found in agent is: %s" % (
+                    l2_route_in_agent))
+                return (True, l2_route_in_agent['routes'])
         else:
-            self.logger.debug("L2 routes found in agent is: %s" % (
-                l2_route_in_agent))
-            return (True, l2_route_in_agent['routes'])
-
+            if l2_route_in_agent:
+                self.logger.warn("L2 routes found in agent is: %s" % (
+                    l2_route_in_agent))
+                return False
+            else:
+                self.logger.debug("L2 routes in agent %s not found for vrf id %s" % (
+                    compute_ip, vrf_id))
+                return (True, None)
+                
     def validate_pbb_l2_route(self, l2_route_in_agent, cmac, bmac, nh_type,
             mpls_label=None, isid=0):
 
@@ -547,6 +672,8 @@ class PbbEvpnTestBase(BaseVrouterTest):
             self.logger.warn("nh type in agent is not as expected: %s "
                 "got: %s" % (nh_type, route['path_list'][0] ['nh']['type']))
 
+            #No need to proceed further verifications if nh type itself does not match
+            return result
         if (nh_type == 'PBB Tunnel') and (EUI(route['path_list'][0]['nh'][
                 'pbb_bmac']) != EUI(bmac)):
             result = False
