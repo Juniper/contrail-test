@@ -4743,6 +4743,176 @@ class WebuiTest:
         return result
     # end verify_forwarding_class_api_basic_data_in_webui
 
+    def verify_qos_config_api_basic_data(self):
+        self.logger.info("Verifying qos config api server data on UI")
+        self.logger.info(self.dash)
+        result = True
+        qos_list_api = self.ui.get_qos_list_api()
+        qos_api_list = qos_list_api['qos-configs']
+        for qos in range(len(qos_api_list)):
+            api_fq_name = qos_api_list[qos]['fq_name'][2]
+            project_name = qos_api_list[qos]['fq_name'][1]
+            if project_name == 'default-project':
+                continue
+            self.logger.info(
+                "Qos config fq_name %s exists in api server.. checking if it exists in webui \
+                    as well" % (api_fq_name))
+            if project_name == 'default-global-qos-config':
+                self.ui.click_configure_global_qos()
+                page = 'Configure -> Infrastructure -> Global Config -> QoS'
+                br = self.ui.find_element('qos-grid')
+            else:
+                self.ui.click_configure_qos()
+                self.ui.select_project(project_name)
+                page = 'Configure -> Networking -> QoS'
+                br = self.browser
+            self.ui.wait_till_ajax_done(self.browser)
+            rows = self.ui.get_rows(browser=br)
+            for i in range(len(rows)):
+                match_flag = 0
+                j = 0
+                dom_arry_basic = []
+                row_div_list = self.ui.find_element('div', 'tag',
+                                                    browser=rows[i], elements=True,
+                                                    if_elements=[1])
+                qos_fq_name = row_div_list[2].text
+                if qos_fq_name == api_fq_name:
+                    self.logger.info(
+                        "Qos config fq_name %s matched in webui.. Verifying basic view details\
+                            ..." % (api_fq_name))
+                    self.logger.debug(self.dash)
+                    match_index = i
+                    match_flag = 1
+                    dom_arry_basic.append(
+                        {'key': 'Name_grid_row', 'value': qos_fq_name})
+                    element_list = ['Dscp_grid_row', 'Mpls_exp_grid_row',
+                                        'Vlan_priority_grid_row']
+                    ind = 3
+                    for ele in element_list:
+                        qos_bit = str(self.ui.extract_and_convert(
+                                    row_div_list[ind].text.split(':')[0])) + \
+                                        ' :' + str(row_div_list[ind].text).split(':')[1]
+                        dom_arry_basic.append(
+                            {'key': ele, 'value': qos_bit})
+                        ind += 1
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "Qos config fq_name %s exists in API server, but not found on Webui" %
+                    (api_fq_name))
+                self.logger.debug(self.dash)
+            else:
+                if project_name == 'default-global-qos-config':
+                    rows_detail = self.ui.click_basic_and_get_row_details(
+                                    'global_qos', match_index,
+                                    search_ele='qos-grid', browser=br)[1]
+                else:
+                    rows_detail = self.ui.click_basic_and_get_row_details(
+                                    'qos', match_index)[1]
+                self.logger.info(
+                    "Verify basic view details for Qos config fq_name %s " %
+                    (api_fq_name))
+                index = 0
+                for detail in range(len(rows_detail)):
+                    key_arry = self.ui.find_element(
+                        'key', 'class', browser = rows_detail[detail]).text
+                    element_list2 = ['DSCP', 'MPLS EXP', 'VLAN Priority']
+                    if key_arry in element_list2:
+                        val_arry = self.ui.find_element([
+                                'value', "//tr[@style= 'vertical-align:top']"], [
+                                'class', 'xpath'], browser = rows_detail[detail],
+                                                        if_elements=[1])
+                        val_search = re.search('.*(\d+)', val_arry[index].text)
+                        value_arry = str(self.ui.extract_and_convert(
+                                            val_search.group(0))) + ' : ' + \
+                                                str(val_search.group(1))
+                        index += 1
+                    else:
+                        value_arry = self.ui.find_element(
+                            'value', 'class', browser = rows_detail[detail]).text
+                    dom_arry_basic.append({'key': key_arry, 'value': value_arry})
+                ## Fetching API data ##
+                qos_api_data = self.ui.get_details(qos_api_list[qos]['href'])
+                complete_api_data = []
+                if 'qos-config' in qos_api_data:
+                    api_data_basic = qos_api_data.get('qos-config')
+                if 'fq_name' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'Name_grid_row', 'value': str(api_data_basic['fq_name'][2])})
+                if 'name' in qos_api_data:
+                    complete_api_data.append(
+                        {'key': 'Name', 'value': str(api_data_basic['name'])})
+                if 'uuid' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'UUID', 'value': str(api_data_basic['uuid'])})
+                if 'display_name' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'Display Name', 'value': str(api_data_basic['display_name'])})
+                if 'qos_config_type' in api_data_basic:
+                    if api_data_basic['qos_config_type'] == 'vhost':
+                        qos_val = 'vHost'
+                    else:
+                        qos_val = str(api_data_basic['qos_config_type']).title()
+                    complete_api_data.append(
+                        {'key': 'QOS Config Type', 'value': qos_val})
+                if 'default_forwarding_class_id' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'Default Forwarding Class ID',
+                         'value': str(api_data_basic['default_forwarding_class_id'])})
+                if 'dscp_entries' in api_data_basic:
+                    api_dscp = api_data_basic['dscp_entries'].get(
+                                    'qos_id_forwarding_class_pair')
+                    api_dscp_entries = str(api_dscp[0].get('key')) + ' : ' + str(
+                                            api_dscp[0].get('forwarding_class_id'))
+                    complete_api_data.append(
+                        {'key': 'DSCP', 'value': api_dscp_entries})
+                    complete_api_data.append(
+                        {'key': 'Dscp_grid_row', 'value': api_dscp_entries})
+                else:
+                    complete_api_data.append(
+                        {'key': 'DSCP', 'value': '-'})
+                    complete_api_data.append(
+                        {'key': 'Dscp_grid_row', 'value': '-'})
+                if 'mpls_exp_entries' in api_data_basic:
+                    api_mpls = api_data_basic['mpls_exp_entries'].get(
+                                    'qos_id_forwarding_class_pair')
+                    api_mpls_entries = str(api_mpls[0].get('key')) + ' : ' + str(
+                                            api_mpls[0].get('forwarding_class_id'))
+                    complete_api_data.append(
+                        {'key': 'MPLS EXP', 'value': api_mpls_entries})
+                    complete_api_data.append(
+                        {'key': 'Mpls_exp_grid_row', 'value': api_mpls_entries})
+                else:
+                    complete_api_data.append(
+                        {'key': 'MPLS EXP', 'value': '-'})
+                    complete_api_data.append(
+                        {'key': 'Mpls_exp_grid_row', 'value': '-'})
+                if 'vlan_priority_entries' in api_data_basic:
+                    api_vlan = api_data_basic['vlan_priority_entries'].get(
+                                    'qos_id_forwarding_class_pair')
+                    api_vlan_entries = str(api_vlan[0].get('key')) + ' : ' + str(
+                                            api_vlan[0].get('forwarding_class_id'))
+                    complete_api_data.append(
+                        {'key': 'VLAN Priority', 'value': api_vlan_entries})
+                    complete_api_data.append(
+                        {'key': 'Vlan_priority_grid_row', 'value': api_vlan_entries})
+                else:
+                    complete_api_data.append(
+                        {'key': 'VLAN Priority', 'value': '-'})
+                    complete_api_data.append(
+                        {'key': 'Vlan_priority_grid_row', 'value': '-'})
+                if self.ui.match_ui_kv(
+                        complete_api_data,
+                        dom_arry_basic):
+                    self.logger.info(
+                        "Qos config data matched on %s page on UI" % (page))
+                else:
+                    self.logger.error(
+                        "Qos config data match failed on %s page on UI" % (page))
+                    result = result and False
+        return result
+    # end verify_qos_config_api_basic_data_in_webui
+
     def verify_vm_ops_data_in_webui(self, fixture):
         self.logger.info(
             "Verifying vn %s opserver data on Monitor->Networking->Instances page" %
