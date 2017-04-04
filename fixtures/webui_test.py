@@ -4087,6 +4087,208 @@ class WebuiTest:
         return result
     # end verify_policy_api_basic_data_in_webui
 
+    def verify_dns_servers_api_data(self, action='create', expected_result=None):
+        self.logger.info(
+            "Verifying DNS Servers api server data on Config->DNS->Servers page ...")
+        self.logger.debug(self.dash)
+        result = True
+        dns_list_api = self.ui.get_dns_servers_list_api()
+        for dns in range(len(dns_list_api['virtual-DNSs'])):
+            api_fq_name = dns_list_api['virtual-DNSs'][dns]['fq_name'][1]
+            self.ui.click_configure_dns_servers()
+            rows = self.ui.get_rows()
+            for row in range(len(rows)):
+                dom_arry_basic = []
+                match_flag = 0
+                text = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)[2].text
+                if api_fq_name == text:
+                    self.logger.info(
+                        "DNS fq_name %s matched in webui..Verifying basic view details..." %
+                        (api_fq_name))
+                    self.logger.debug(self.dash)
+                    match_index = row
+                    match_flag = 1
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "DNS fq name exists in apiserver but %s not found in webui..." %
+                    (api_fq_name))
+                self.logger.debug(self.dash)
+            else:
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'dns_servers', match_index)[1]
+                for detail in range(len(rows_detail)):
+                    key_value = rows_detail[detail].text.split('\n')
+                    key = str(key_value.pop(0))
+                    if len(key_value) > 1 :
+                        value = key_value
+                    elif len(key_value) ==  1:
+                        value = key_value[0]
+                    else:
+                        value = None
+                    if key == 'Owner Permissions' or key == 'Global Permissions' or key == 'Owner' \
+                       or key == 'Shared List':
+                        continue
+                    key = key.replace(' ', '_')
+                    dom_arry_basic.append({'key': key, 'value': value})
+                dns_api_data = self.ui.get_details(
+                                dns_list_api['virtual-DNSs'][dns]['href'])
+                complete_api_data = []
+                dns_data_detail = dns_api_data['virtual-DNS']
+                if dns_data_detail:
+                    if dns_data_detail['virtual_DNS_data']['external_visible']:
+                        external_visible = 'Enabled'
+                    else:
+                        external_visible = 'Disabled'
+                    if dns_data_detail['virtual_DNS_data']['reverse_resolution']:
+                        rev_resolution = 'Enabled'
+                    else:
+                        rev_resolution = 'Disabled'
+                    self.ui.keyvalue_list(
+                        complete_api_data,
+                        DNS_Server=dns_data_detail['fq_name'][1],
+                        Display_Name=dns_data_detail['display_name'],
+                        UUID=dns_data_detail['uuid'],
+                        Domain_Name=dns_data_detail['virtual_DNS_data']['domain_name'],
+                        Time_To_Live=str(dns_data_detail['virtual_DNS_data'][
+                                     'default_ttl_seconds']) + ' (seconds)',
+                        Record_Resolution_Order=dns_data_detail['virtual_DNS_data'][
+                                                'record_order'].title(),
+                        Floating_IP_Record=dns_data_detail['virtual_DNS_data']['floating_ip_record'],
+                        External_Visibility=external_visible,
+                        Reverse_Resolution=rev_resolution)
+                if 'next_virtual_DNS' in dns_data_detail['virtual_DNS_data']:
+                    complete_api_data.append({'key': 'Forwarder',
+                        'value': dns_data_detail['virtual_DNS_data']['next_virtual_DNS']})
+                if 'network_ipam_back_refs' in dns_data_detail:
+                    ipam_refs = dns_data_detail['network_ipam_back_refs']
+                    ipam_name = ''
+                    for ipam in ipam_refs:
+                        ipam_name += ipam['to'][1] + ":" + ipam['to'][2] + ", "
+                    complete_api_data.append({'key': 'Associated_IPAMs',
+                                            'value': ipam_name.rstrip(', ')})
+                if action == 'create':
+                    if self.ui.match_ui_kv(complete_api_data, dom_arry_basic):
+                        self.logger.info(
+                            "DNS Servers config details matched on Config->DNS->Servers page")
+                    else:
+                        self.logger.error(
+                            "DNS Servers config details match failed on Config->DNS->Servers page")
+                        result = result and False
+                else:
+                    if self.ui.match_ui_kv(expected_result, dom_arry_basic, data=
+                           'Expected_key_value', matched_with='WebUI') and self.ui.match_ui_kv(
+                           expected_result, complete_api_data, data='Expected_key_value',
+                           matched_with='API'):
+                        self.logger.info(
+                            "%s of DNS server matched on WebUI/API after editing" % (expected_result))
+                    else:
+                        self.logger.error(
+                            "%s of DNS Server match failed on WebUI/API after editing" %
+                            (expected_result))
+                        result = result and False
+                    return result
+        return result
+    # end verify_dns_server_api_data
+
+    def verify_dns_records_api_data(self, dns_params, action='create', expected_result=None):
+        self.logger.info(
+            "Verifying DNS Record api server data on Config->DNS->Records page ...")
+        self.logger.debug(self.dash)
+        result = True
+        dns_record_list_api = self.ui.get_dns_records_list_api()
+        server_name_list = dns_params.keys()
+        for server in server_name_list:
+            for dns in range(len(dns_record_list_api['virtual-DNS-records'])):
+                api_project_name = dns_record_list_api[
+                    'virtual-DNS-records'][dns]['fq_name'][1]
+                self.ui.click_configure_dns_records()
+                self.ui.select_dns_server(dns_params[server]['server_name'])
+                rows = self.ui.get_rows()
+                if api_project_name != dns_params[server]['server_name']:
+                    continue
+                dns_record_api_data = self.ui.get_details(
+                                      dns_record_list_api['virtual-DNS-records'][dns]['href'])
+                dns_record_data = dns_record_api_data['virtual-DNS-record']['virtual_DNS_record_data']
+                api_fq_name = dns_record_data['record_name']
+                for row in range(len(rows)):
+                    dom_arry_basic = []
+                    match_flag = 0
+                    text = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)[2].text
+                    if api_fq_name == text:
+                        self.logger.info(
+                            "DNS Record fq_name %s matched in webui.. \
+                            Verifying basic view details..." % (api_fq_name))
+                        self.logger.debug(self.dash)
+                        match_index = row
+                        match_flag = 1
+                        break
+                if not match_flag:
+                    self.logger.error(
+                        "DNS record fq name exists in api server but %s not found in webui..." %
+                        (api_fq_name))
+                    self.logger.debug(self.dash)
+                else:
+                    rows_detail = self.ui.click_basic_and_get_row_details(
+                                  'dns_records', match_index, project=api_project_name)[1]
+                    for detail in range(len(rows_detail)):
+                        key_value = rows_detail[detail].text.split('\n')
+                        key = str(key_value.pop(0))
+                        if len(key_value) > 1 :
+                            value = key_value
+                        elif len(key_value) ==  1:
+                            value = key_value[0]
+                        else:
+                            value = None
+                        if key == 'Owner Permissions' or key == 'Global Permissions' or key == 'Owner' \
+                            or key == 'Shared List':
+                            continue
+                        key = key.replace(' ', '_')
+                        dom_arry_basic.append({'key': key, 'value': value})
+                    record_type = {'AAAA': 'IPv6 Address Record', 'MX': 'Mail Exchanger Record',
+                                  'NS': 'Delegation Record', 'CNAME': 'Alias Record',
+                                  'A': 'IPv4 Address Record', 'PTR': 'Reverse DNS Record'}
+                    complete_api_data = []
+                    if 'record_type' in dns_record_data:
+                        record_key = dns_record_data['record_type']
+                        if record_key in record_type:
+                            record_value = record_type[record_key]
+                            record = record_key + ' (' + record_value + ')'
+                    self.ui.keyvalue_list(
+                        complete_api_data,
+                        DNS_Record_Name=api_fq_name,
+                        UUID=dns_record_api_data['virtual-DNS-record']['uuid'],
+                        DNS_Record_Type=record,
+                        DNS_Record_Data=dns_record_data['record_data'],
+                        Time_To_Live=str(dns_record_data['record_ttl_seconds']) + ' (seconds)',
+                        DNS_Record_Class=dns_record_data['record_class'])
+                    if 'record_mx_preference' in dns_record_data:
+                        complete_api_data.append({'key': 'MX_Preference',
+                                                'value': str(dns_record_data['record_mx_preference'])})
+                    if action == 'create':
+                        if self.ui.match_ui_kv(complete_api_data, dom_arry_basic):
+                            self.logger.info(
+                                "DNS Record config details matched on Config->DNS->Records page")
+                        else:
+                            self.logger.error(
+                                "DNS Record onfig details match failed on Config->DNS->Records page")
+                            result = result and False
+                    else:
+                        if self.ui.match_ui_kv(expected_result, dom_arry_basic, data=
+                               'Expected_key_value', matched_with='WebUI') and self.ui.match_ui_kv(
+                               expected_result, complete_api_data, data='Expected_key_value',
+                               matched_with='API'):
+                            self.logger.info(
+                                "%s of DNS Record matched on WebUI/API after editing" %
+                                (expected_result))
+                        else:
+                            self.logger.error(
+                                "%s of DNS Record match failed on WebUI/API after editing" %
+                                (expected_result))
+                            result = result and False
+        return result
+    # end verify_dns_record_api_data
+
     def verify_ipam_api_data(self):
         self.logger.info(
             "Verifying ipam config data on Config->Networking->IPAMs page")
