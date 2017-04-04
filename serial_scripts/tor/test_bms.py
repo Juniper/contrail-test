@@ -5,6 +5,7 @@ import time
 
 from common.connections import ContrailConnections
 from tcutils.wrappers import preposttest_wrapper
+from common.neutron.lbaasv2.base import BaseLBaaSTest
 
 from common.tor.base import *
 import test
@@ -12,6 +13,12 @@ from tcutils.util import *
 
 from vn_test import VNFixture
 
+HTTP_PORT = 80
+HTTPS_PORT = 8080
+TCP_PORT = 23
+
+HTTP_PROBE = 'HTTP'
+PING_PROBE = 'PING'
 
 class TestTor(BaseTorTest):
 
@@ -1010,3 +1017,90 @@ class TestBMSWithExternalDHCPServer(TwoToROneRouterBase):
         self.validate_dhcp_forwarding(bms1_fixture, bms2_fixture)
     # end test_dhcp_forwarding_with_dhcp_disabled
 
+class TestTorLBaaS(BaseTorTest, BaseLBaaSTest):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestTorLBaaS, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestTorLBaaS, cls).tearDownClass()
+
+    def setUp(self):
+        super(TestTorLBaaS, self).setUp()
+        [self.tor1_fixture, self.tor2_fixture] = self.setup_tors(count=2)
+
+    @preposttest_wrapper
+    def test_tor_lbaas_client_pool_in_same_net(self):
+        '''Create Lbaas pool, member and vip
+           Member, VIP and client all in same VN
+           verify: pool, member and vip gets created
+           create HMON and verify the association
+           verify the HTTP traffic getting loadbalanced using the standby netns
+        '''
+        result = True
+        pool_members = {}
+        members=[]
+
+        vn_vm_fix = self.create_vn_and_its_vms(no_of_vm=3)
+
+        vn_vip_fixture = vn_vm_fix[0]
+        lb_pool_servers = vn_vm_fix[1][1:]
+        client_vm1_fixture = vn_vm_fix[1][0]
+
+        #bms1_ip = get_an_ip(vn_vip_fixture.vn_subnet_objs[0]['cidr'],3)
+        #bms2_ip = get_an_ip(vn_vip_fixture.vn_subnet_objs[0]['cidr'],3)
+        bms1_mac = '00:00:00:00:00:01'
+        bms2_mac = '00:00:00:00:00:02'
+
+        # BMS VMI
+        vn1_vmi=self.setup_vmi(vn_vip_fixture.uuid,
+                mac_address=bms1_mac)
+        vn2_vmi=self.setup_vmi(vn_vip_fixture.uuid,
+                mac_address=bms2_mac)
+        self.setup_tor_port(self.tor1_fixture, port_index=0,
+                            vlan_id=0, vmi_objs=[vn1_vmi])
+        self.setup_tor_port(self.tor2_fixture, port_index=0,
+                            vlan_id=0, vmi_objs=[vn2_vmi])
+        bms1_fixture = self.setup_bms(self.tor1_fixture, port_index=0,
+                                     ns_mac_address=bms1_mac)
+        bms2_fixture = self.setup_bms(self.tor2_fixture, port_index=0,
+                                     ns_mac_address=bms2_mac)
+
+        bms1_ip = bms1_fixture.info['inet_addr']
+        bms2_ip = bms2_fixture.info['inet_addr']
+        assert client_vm1_fixture.wait_till_vm_is_up()
+        for VMs in lb_pool_servers:
+            members.append(VMs.vm_ip)
+        members.append(bms1_ip)
+        members.append(bms2_ip)
+
+        lb_pool_servers.append(bms1_fixture)
+        lb_pool_servers.append(bms2_fixture)
+
+        pool_members.update({'address':members})
+
+        pool_name = get_random_name('mypool')
+        lb_method = 'ROUND_ROBIN'
+        protocol = 'HTTP'
+        protocol_port = 80
+        vip_name = get_random_name('myvip')
+        listener_name = get_random_name('HTTP')
+
+        #Call LB fixutre to create LBaaS VIP, Listener, POOL , Member and associate a Health monitor to the pool
+        lb = self.create_lbaas(vip_name, vn_vip_fixture.get_uuid(),
+              pool_name=pool_name, pool_algorithm=lb_method, pool_protocol=protocol,
+              pool_port=HTTP_PORT, members=pool_members, listener_name=listener_name,
+              vip_port=HTTP_PORT, vip_protocol='HTTP',
+              hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
+
+        #Verify all the creations are success
+        assert lb.verify_on_setup(), "Verify LB method failed"
+
+        #start web server on BMS namesapce
+        self.start_webserver_in_ns(bms1_fixture, 80)
+        self.start_webserver_in_ns(bms2_fixture, 80)
+
+        assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, lb.vip_ip),\
+            "Verify lb method failed"
