@@ -101,7 +101,8 @@ class SecurityGroupBasicRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolic
 
         import time
         time.sleep(4)
-        vm.add_security_group(secgrp=secgrp_name)
+        
+        vm.add_security_group(secgrp=secgrp_id)
         result, msg = vm.verify_security_group(secgrp_name)
         assert result, msg
 
