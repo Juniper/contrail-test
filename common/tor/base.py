@@ -4,6 +4,7 @@ from random import randint
 
 from common.neutron.base import BaseNeutronTest
 
+from policy_test import PolicyFixture, copy
 from pif_fixture import PhysicalInterfaceFixture
 from lif_fixture import LogicalInterfaceFixture
 from physical_router_fixture import PhysicalRouterFixture
@@ -368,3 +369,12 @@ class BaseTorTest(BaseNeutronTest):
         delete_pcap(session, pcap)
         return (result, message)
     # end validate_dhcp_forwarding
+
+    def start_webserver_in_ns(self, bms_fixture, listen_port=8000, content=None):
+        cmd = 'mkdir -p '+bms_fixture.namespace+';'
+        cmd = cmd + 'cd '+bms_fixture.namespace + ';'
+        cmd = cmd + 'echo '+bms_fixture.namespace+' >& index.html;'
+        cmd = cmd + 'nohup python -m SimpleHTTPServer '+str(listen_port) + ' &'
+        cmd = '''bash -c "''' + cmd + '"'
+        bms_fixture.run_cmd(cmd)
+    

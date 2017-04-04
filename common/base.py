@@ -368,6 +368,17 @@ class GenericTestBase(test_v1.BaseTestCase_v1):
                           dip, str(expectation)))
     # end do_ping_test
 
+    def create_policy(self, policy_name, rules=[], **kwargs):
+        policy_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name,
+                rules_list=rules,
+                inputs=self.inputs,
+                connections=self.connections,
+                **kwargs))
+        return policy_fixture
+    #end create_policy
+
     @classmethod
     def check_vms_booted(cls, vms_list):
         for vm_fixture in vms_list:
