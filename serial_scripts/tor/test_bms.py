@@ -3,6 +3,9 @@ import fixtures
 import testtools
 import time
 
+from policy_test import PolicyFixture, copy
+from common.neutron.lbaasv2.base import BaseLBaaSTest
+from scripts.policy.base import BasePolicyTest
 from common.connections import ContrailConnections
 from tcutils.wrappers import preposttest_wrapper
 
@@ -12,6 +15,12 @@ from tcutils.util import *
 
 from vn_test import VNFixture
 
+HTTP_PORT = 80
+HTTPS_PORT = 8080
+TCP_PORT = 23
+
+HTTP_PROBE = 'HTTP'
+PING_PROBE = 'PING'
 
 class TestTor(BaseTorTest):
 
@@ -1031,3 +1040,298 @@ class TestBMSWithExternalDHCPServer(TwoToROneRouterBase):
             ns_mac_address=self.vn1_vmi2_fixture.mac_address)
         self.validate_dhcp_forwarding(bms1_fixture, bms2_fixture)
     # end test_dhcp_forwarding_with_dhcp_disabled
+
+class TestTorPolicy(BaseTorTest, BasePolicyTest):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestTorPolicy, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestTorPolicy, cls).tearDownClass()
+
+    def setUp(self):
+        super(TestTorPolicy, self).setUp()
+        [self.phy_router_fixture] = self.setup_routers(count=1)
+        [self.tor1_fixture, self.tor2_fixture] = self.setup_tors(count=2)
+
+    @preposttest_wrapper
+    def test_tor_basic_policy_intra_vn(self):
+        '''
+           verify policy within VN
+           create a vn, launch A VM , BMS1 and BMS2 in the same VN
+           verify the ping between VM and BMS1
+           create a policy to deny ICMP and apply to the VN
+           Verify the ping between VM and BMS1 fails, whereas BMS1 to BMS2 succeed
+           create a policy to allow and apply to the VN
+           verify the ping between VM and BMS1
+        '''
+        rules1 = [
+            {
+                'direction': '<>', 'simple_action': 'deny',
+                'protocol': 'icmp', 'src_ports': 'any',
+                'dst_ports': 'any',
+                'source_network': 'any',
+                'dest_network': 'any',
+            },
+        ]
+        rules2 = [
+            {
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'any', 'src_ports': 'any',
+                'dst_ports': 'any',
+                'source_network': 'any',
+                'dest_network': 'any',
+            },
+        ]
+        vn1_fixture = self.create_vn(disable_dns=True)
+        assert vn1_fixture.verify_on_setup()
+
+        bms1_mac = '00:00:00:00:00:01'
+        bms2_mac = '00:00:00:00:00:02'
+        vm_mac = '00:00:00:00:00:0a'
+
+        port1_obj = self.create_port(net_id=vn1_fixture.vn_id,
+                                     mac_address=vm_mac)
+        vm1_fixture = self.create_vm(vn1_fixture, port_ids=[port1_obj['id']])
+        assert vm1_fixture.wait_till_vm_is_up()
+
+        # BMS VMI
+        bms1_vmi=self.setup_vmi(vn1_fixture.uuid,
+                mac_address=bms1_mac)
+        bms2_vmi=self.setup_vmi(vn1_fixture.uuid,
+                mac_address=bms2_mac)
+        self.setup_tor_port(self.tor1_fixture, port_index=0,
+                            vlan_id=0, vmi_objs=[bms1_vmi])
+        self.setup_tor_port(self.tor2_fixture, port_index=0,
+                            vlan_id=0, vmi_objs=[bms2_vmi])
+        bms1_fixture = self.setup_bms(self.tor1_fixture, port_index=0,
+                                     ns_mac_address=bms1_mac)
+        bms2_fixture = self.setup_bms(self.tor2_fixture, port_index=0,
+                                     ns_mac_address=bms2_mac)
+
+        bms1_ip = bms1_fixture.info['inet_addr']
+        bms2_ip = bms2_fixture.info['inet_addr']
+
+        assert vm1_fixture.ping_with_certainty(bms1_ip),\
+            self.logger.error('Unable to ping BMS IP %s from VM %s' % (
+                bms1_ip, vm1_fixture.vm_ip))
+        self.do_ping_test(bms1_fixture, bms1_ip, bms2_ip)
+
+        #Create a policy and apply to VN
+        policy1_name = 'p1'
+        policy2_name = 'p2'
+        policy1_fixture = self.create_policy(policy1_name, rules1)
+        policy2_fixture = self.create_policy(policy2_name, rules2)
+        vn1_fixture.bind_policies(
+            [policy1_fixture.policy_fq_name], vn1_fixture.vn_id)
+        self.addCleanup(vn1_fixture.unbind_policies,
+                        vn1_fixture.vn_id, [policy1_fixture.policy_fq_name])
+        assert vm1_fixture.ping_with_certainty(bms1_ip, expectation=False),\
+            self.logger.error('ping BMS IP %s from VM %s expected to fail' % (
+                bms1_ip, vm1_fixture.vm_ip))
+        self.do_ping_test(bms1_fixture, bms1_ip, bms2_ip)
+
+        #Bind policy with allow rule to the VN and verify the PING
+        vn1_fixture.bind_policies(
+            [policy2_fixture.policy_fq_name], vn1_fixture.vn_id)
+        self.addCleanup(vn1_fixture.unbind_policies,
+                        vn1_fixture.vn_id, [policy2_fixture.policy_fq_name])
+        assert vm1_fixture.ping_with_certainty(bms1_ip),\
+            self.logger.error('Unable to ping BMS IP %s from VM %s' % (
+                bms1_ip, vm1_fixture.vm_ip))
+        self.do_ping_test(bms1_fixture, bms1_ip, bms2_ip)
+
+    @preposttest_wrapper
+    def test_tor_basic_policy_inter_vn(self):
+        '''
+           Launch VM1 and configure BMS1 as part of Virtualnetwork VN1
+           VM2 and configure BMS2 as port of VN2
+           configure policy to allow ICMP and apply it to the VN
+           verify the ping between VN1-VM1 to VN2-BMS2
+           configure policy to deny 
+           verify the ping fails
+        '''
+        rules1 = [
+            {
+                'direction': '>', 'simple_action': 'deny',
+                'protocol': 'icmp', 'src_ports': 'any',
+                'dst_ports': 'any',
+                'source_network': 'any',
+                'dest_network': 'any',
+            },
+        ]
+        rules2 = [
+            {
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'any', 'src_ports': 'any',
+                'dst_ports': 'any',
+                'source_network': 'any',
+                'dest_network': 'any',
+            },
+        ]
+        vn1_fixture = self.create_vn(disable_dns=True)
+        vn2_fixture = self.create_vn(disable_dns=True)
+        self.allow_all_traffic_between_vns(vn1_fixture, vn2_fixture)
+        assert vn1_fixture.verify_on_setup()
+        assert vn2_fixture.verify_on_setup()
+
+        bms1_mac = '00:00:00:00:00:01'
+        bms2_mac = '00:00:00:00:00:02'
+        vm1_mac = '00:00:00:00:00:0a'
+        vm2_mac = '00:00:00:00:00:0b'
+
+        port1_obj = self.create_port(net_id=vn1_fixture.vn_id,
+                                     mac_address=vm1_mac)
+        vm1_fixture = self.create_vm(vn1_fixture, port_ids=[port1_obj['id']])
+        assert vm1_fixture.wait_till_vm_is_up()
+
+        port2_obj = self.create_port(net_id=vn2_fixture.vn_id,
+                                     mac_address=vm2_mac)
+        vm2_fixture = self.create_vm(vn2_fixture, port_ids=[port2_obj['id']])
+        assert vm2_fixture.wait_till_vm_is_up()
+
+        # BMS VMI
+        vn1_vmi=self.setup_vmi(vn1_fixture.uuid,
+                mac_address=bms1_mac)
+        vn2_vmi=self.setup_vmi(vn2_fixture.uuid,
+                mac_address=bms2_mac)
+        self.setup_tor_port(self.tor1_fixture, port_index=0,
+                            vlan_id=0, vmi_objs=[vn1_vmi])
+        self.setup_tor_port(self.tor2_fixture, port_index=0,
+                            vlan_id=0, vmi_objs=[vn2_vmi])
+        bms1_fixture = self.setup_bms(self.tor1_fixture, port_index=0,
+                                     ns_mac_address=bms1_mac)
+        bms2_fixture = self.setup_bms(self.tor2_fixture, port_index=0,
+                                     ns_mac_address=bms2_mac)
+
+        bms1_ip = bms1_fixture.info['inet_addr']
+        bms2_ip = bms2_fixture.info['inet_addr']
+
+        # Extend VNs to router
+        self.phy_router_fixture.setup_physical_ports()
+        self.extend_vn_to_physical_router(vn1_fixture, self.phy_router_fixture)
+        self.extend_vn_to_physical_router(vn2_fixture, self.phy_router_fixture)
+        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip),\
+            self.logger.error('Unable to ping BMS IP %s from VM %s' % (
+                vm2_fixture.vm_ip, vm1_fixture.vm_ip))
+        self.do_ping_test(bms1_fixture, bms1_ip, bms2_ip)
+
+        self.logger.info('Apply policy and verify the ping fails')
+        policy1_name = 'p1'
+        policy2_name = 'p2'
+        policy1_fixture = self.create_policy(policy1_name, rules1)
+        policy2_fixture = self.create_policy(policy2_name, rules2)
+        vn1_fixture.bind_policies(
+            [policy1_fixture.policy_fq_name], vn1_fixture.vn_id)
+        vn2_fixture.bind_policies(
+            [policy2_fixture.policy_fq_name], vn2_fixture.vn_id)
+        self.addCleanup(vn1_fixture.unbind_policies,
+                        vn1_fixture.vn_id, [policy1_fixture.policy_fq_name])
+        self.addCleanup(vn2_fixture.unbind_policies,
+                        vn2_fixture.vn_id, [policy2_fixture.policy_fq_name])
+        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip, expectation=False),\
+            self.logger.error('BMS IP %s from VM %s, expected to fail' % (
+                vm2_fixture.vm_ip, vm1_fixture.vm_ip))
+        self.do_ping_test(bms1_fixture, bms1_ip, bms2_ip, expectation=False)
+
+        self.logger.info('Change policy and verify the ping succeeds')
+        vn1_fixture.bind_policies(
+            [policy2_fixture.policy_fq_name], vn1_fixture.vn_id)
+        self.addCleanup(vn1_fixture.unbind_policies,
+                        vn1_fixture.vn_id, [policy2_fixture.policy_fq_name])
+        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip),\
+            self.logger.error('Unable to ping BMS IP %s from VM %s' % (
+                vm2_fixture.vm_ip, vm1_fixture.vm_ip))
+        self.do_ping_test(bms1_fixture, bms1_ip, bms2_ip)
+
+
+
+class TestTorLBaaS(BaseTorTest, BaseLBaaSTest):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestTorLBaaS, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestTorLBaaS, cls).tearDownClass()
+
+    def setUp(self):
+        super(TestTorLBaaS, self).setUp()
+        [self.tor1_fixture, self.tor2_fixture] = self.setup_tors(count=2)
+
+    @preposttest_wrapper
+    def test_tor_lbaas_client_pool_in_same_net(self):
+        '''Create Lbaas pool, member and vip
+           Member, VIP and client all in same VN
+           verify: pool, member and vip gets created
+           create HMON and verify the association
+           verify the HTTP traffic getting loadbalanced using the standby netns
+        '''
+        result = True
+        pool_members = {}
+        members=[]
+
+        vn_vm_fix = self.create_vn_and_its_vms(no_of_vm=3)
+
+        vn_vip_fixture = vn_vm_fix[0]
+        lb_pool_servers = vn_vm_fix[1][1:]
+        client_vm1_fixture = vn_vm_fix[1][0]
+
+        #bms1_ip = get_an_ip(vn_vip_fixture.vn_subnet_objs[0]['cidr'],3)
+        #bms2_ip = get_an_ip(vn_vip_fixture.vn_subnet_objs[0]['cidr'],3)
+        bms1_mac = '00:00:00:00:00:01'
+        bms2_mac = '00:00:00:00:00:02'
+
+        # BMS VMI
+        vn1_vmi=self.setup_vmi(vn_vip_fixture.uuid,
+                mac_address=bms1_mac)
+        vn2_vmi=self.setup_vmi(vn_vip_fixture.uuid,
+                mac_address=bms2_mac)
+        self.setup_tor_port(self.tor1_fixture, port_index=0,
+                            vlan_id=0, vmi_objs=[vn1_vmi])
+        self.setup_tor_port(self.tor2_fixture, port_index=0,
+                            vlan_id=0, vmi_objs=[vn2_vmi])
+        bms1_fixture = self.setup_bms(self.tor1_fixture, port_index=0,
+                                     ns_mac_address=bms1_mac)
+        bms2_fixture = self.setup_bms(self.tor2_fixture, port_index=0,
+                                     ns_mac_address=bms2_mac)
+
+        bms1_ip = bms1_fixture.info['inet_addr']
+        bms2_ip = bms2_fixture.info['inet_addr']
+        assert client_vm1_fixture.wait_till_vm_is_up()
+        for VMs in lb_pool_servers:
+            members.append(VMs.vm_ip)
+        members.append(bms1_ip)
+        members.append(bms2_ip)
+
+        lb_pool_servers.append(bms1_fixture)
+        lb_pool_servers.append(bms2_fixture)
+
+        pool_members.update({'address':members})
+
+        pool_name = get_random_name('mypool')
+        lb_method = 'ROUND_ROBIN'
+        protocol = 'HTTP'
+        protocol_port = 80
+        vip_name = get_random_name('myvip')
+        listener_name = get_random_name('HTTP')
+
+        #Call LB fixutre to create LBaaS VIP, Listener, POOL , Member and associate a Health monitor to the pool
+        lb = self.create_lbaas(vip_name, vn_vip_fixture.get_uuid(),
+              pool_name=pool_name, pool_algorithm=lb_method, pool_protocol=protocol,
+              pool_port=HTTP_PORT, members=pool_members, listener_name=listener_name,
+              vip_port=HTTP_PORT, vip_protocol='HTTP',
+              hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
+
+        #Verify all the creations are success
+        assert lb.verify_on_setup(), "Verify LB method failed"
+
+        #start web server on BMS namesapce
+        self.start_webserver_in_ns(bms1_fixture, 80)
+        self.start_webserver_in_ns(bms2_fixture, 80)
+
+        assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, lb.vip_ip),\
+            "Verify lb method failed"
