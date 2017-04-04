@@ -506,6 +506,34 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_networking_policies
 
     @preposttest_wrapper
+    def test_verify_config_dns_servers(self):
+        '''Test to verify DNS Servers under Configure->DNS->Servers
+           1. Go to Configure->DNS->Servers
+           2. Get all the details of DNS servers from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_dns_servers_api_data(), \
+                   'DNS Servers config data verification failed'
+        return True
+    # end test_verify_config_dns_servers
+
+    @preposttest_wrapper
+    def test_verify_config_dns_records(self):
+        '''Test to verify DNS Records under Configure->DNS->Records
+           1. Go to Configure->DNS->Records
+           2. Get all the details of DNS Records from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_dns_records_api_data(topo.dns_record_params), \
+                   'DNS Records config data verification failed'
+        return True
+    # end test_verify_config_dns_records
+
+    @preposttest_wrapper
     def test_verify_config_phy_dev_phy_rtr(self):
         '''Test to verify Config->Physical Devices->Physical Routers
            1. Go to Configure->Physical Devices->Physical Routers.
