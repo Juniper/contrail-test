@@ -5241,6 +5241,151 @@ class WebuiTest:
         return result
     # end verify_svc_health_check_api_basic_data_in_webui
 
+    def verify_bgpaas_api_basic_data(self):
+        page = 'Configure -> Networking -> Services -> BGP as a Service'
+        self.logger.info("Verifying bgpaas api server data on %s page on UI" % (page))
+        self.logger.info(self.dash)
+        result = True
+        bgpaas_list_api = self.ui.get_bgpaas_list_api()
+        bgpaas_api_list = bgpaas_list_api['bgp-as-a-services']
+        for bgpaas in range(len(bgpaas_api_list)):
+            api_fq_name = bgpaas_api_list[bgpaas]['fq_name'][2]
+            project_name = bgpaas_api_list[bgpaas]['fq_name'][1]
+            if project_name == 'default-project':
+                continue
+            self.logger.info(
+                "Bgpaas fq_name %s exists in api server.. checking if it exists in webui \
+                    as well" % (api_fq_name))
+            self.ui.click_configure_bgp_as_a_service()
+            self.ui.select_project(project_name)
+            self.ui.wait_till_ajax_done(self.browser)
+            rows = self.ui.get_rows()
+            for i in range(len(rows)):
+                match_flag = 0
+                j = 0
+                dom_arry_basic = []
+                row_div_list = self.ui.find_element('div', 'tag',
+                                                    browser=rows[i], elements=True,
+                                                    if_elements=[1])
+                bgpaas_fq_name = row_div_list[2].text
+                if bgpaas_fq_name == api_fq_name:
+                    self.logger.info(
+                        "Bgpaas fq_name %s matched in webui.. Verifying basic view details\
+                            ..." % (api_fq_name))
+                    self.logger.debug(self.dash)
+                    match_index = i
+                    match_flag = 1
+                    dom_arry_basic.append(
+                        {'key': 'Name_grid_row', 'value': bgpaas_fq_name})
+                    dom_arry_basic.append(
+                        {'key': 'IP_Address_grid_row', 'value': row_div_list[3].text})
+                    dom_arry_basic.append(
+                        {'key': 'VM_Interfaces_grid_row',
+                         'value': row_div_list[4].text.split()[0]})
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "Bgpaas fq_name %s exists in API server, but not found on Webui" %
+                    (api_fq_name))
+                self.logger.debug(self.dash)
+            else:
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'bgp_as_a_service', match_index)[1]
+                self.logger.info(
+                    "Verify basic view details for bgpaas fq_name %s " %
+                        (api_fq_name))
+                for detail in range(len(rows_detail)):
+                    key_arry = self.ui.find_element(
+                        'key', 'class', browser = rows_detail[detail]).text
+                    value_arry = self.ui.find_element(
+                        'value', 'class', browser = rows_detail[detail]).text
+                    if key_arry == 'Virtual Machine Interface(s)':
+                        value_arry = value_arry.split()[0]
+                    dom_arry_basic.append({'key': key_arry, 'value': value_arry})
+                ## Fetching API data ##
+                bgpaas_api_data = self.ui.get_details(bgpaas_api_list[bgpaas]['href'])
+                complete_api_data = []
+                if 'bgp-as-a-service' in bgpaas_api_data:
+                    api_data_basic = bgpaas_api_data.get('bgp-as-a-service')
+                if 'fq_name' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'Name_grid_row', 'value': str(api_data_basic['fq_name'][2])})
+                if 'name' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'Name', 'value': str(api_data_basic['name'])})
+                if 'uuid' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'UUID', 'value': str(api_data_basic['uuid'])})
+                if 'display_name' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'Display Name', 'value': str(api_data_basic['display_name'])})
+                if 'autonomous_system' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'Autonomous System', 'value': str(api_data_basic['autonomous_system'])})
+                if 'bgpaas_ip_address' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'IP Address',
+                         'value': str(api_data_basic['bgpaas_ip_address'])})
+                    complete_api_data.append(
+                        {'key': 'IP_Address_grid_row',
+                         'value': str(api_data_basic['bgpaas_ip_address'])})
+                if 'bgpaas_ipv4_mapped_ipv6_nexthop' in api_data_basic:
+                    if api_data_basic['bgpaas_ipv4_mapped_ipv6_nexthop'] == False:
+                        nh_value = 'Disabled'
+                    else:
+                        nh_value = 'Enabled'
+                    complete_api_data.append(
+                        {'key': 'Use IPv4-mapped IPv6 Nexthop', 'value': nh_value})
+                if 'bgpaas_suppress_route_advertisement' in api_data_basic:
+                    if api_data_basic['bgpaas_suppress_route_advertisement'] == False:
+                        ra_value = 'Disabled'
+                    else:
+                        ra_value = 'Enabled'
+                    complete_api_data.append(
+                        {'key': 'Suppress Route Advertisement', 'value': ra_value})
+                if 'bgpaas_session_attributes' in api_data_basic:
+                    bgpaas_prop = api_data_basic['bgpaas_session_attributes']
+                    hold_value = str(bgpaas_prop['hold_time']) + ' (seconds)'
+                    complete_api_data.append(
+                        {'key': 'Hold Time', 'value': hold_value})
+                    complete_api_data.append(
+                        {'key': 'Loop Count', 'value': str(bgpaas_prop['loop_count'])})
+                    if bgpaas_prop['admin_down'] == False:
+                        admin_value = 'Up'
+                    else:
+                        admin_value = 'Down'
+                    complete_api_data.append(
+                        {'key': 'Admin State', 'value': admin_value})
+                    if bgpaas_prop['as_override'] == False:
+                        as_value = 'Disabled'
+                    else:
+                        as_value = 'Enabled'
+                    complete_api_data.append(
+                        {'key': 'AS Override', 'value': as_value})
+                    addr_fam = bgpaas_prop['address_families']['family']
+                    addr_value = ', '.join(addr_fam)
+                    complete_api_data.append(
+                        {'key': 'Address Family', 'value': ', '.join(addr_fam)})
+                if 'virtual_machine_interface_refs' in api_data_basic:
+                    api_bgpaas_list = api_data_basic['virtual_machine_interface_refs'][0]['to']
+                    complete_api_data.append(
+                        {'key': 'Virtual Machine Interface(s)',
+                         'value': api_bgpaas_list[2]})
+                    complete_api_data.append(
+                        {'key': 'VM_Interfaces_grid_row',
+                         'value': api_bgpaas_list[2]})
+                if self.ui.match_ui_kv(
+                        complete_api_data,
+                        dom_arry_basic):
+                    self.logger.info(
+                        "Bgpaas data matched on %s page on UI" % (page))
+                else:
+                    self.logger.error(
+                        "Bgpaas data match failed on %s page on UI" % (page))
+                    result = result and False
+        return result
+    # end verify_bgpaas_api_basic_data_in_webui
+
     def verify_vm_ops_data_in_webui(self, fixture):
         self.logger.info(
             "Verifying vn %s opserver data on Monitor->Networking->Instances page" %
