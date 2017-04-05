@@ -1884,6 +1884,14 @@ class WebuiCommon:
         return self.check_error_msg("configure link local services")
     # end click_configure_link_local_service
 
+    def click_configure_link_local_service_basic(self, row_index):
+        self.click_configure_link_local_service()
+        rows = self.get_rows()
+        rows[row_index].find_elements_by_tag_name(
+            'div')[0].find_element_by_tag_name('i').click()
+        self.wait_till_ajax_done(self.browser)
+    # end click_configure_link_local_service_basic
+
     def click_configure_vrouter(self):
         return self.click_configure_elements(0, 'config_infra_vrouters',
                                   msg="configure virtual routers")
