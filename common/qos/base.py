@@ -114,6 +114,7 @@ class QosTestBase(BaseNeutronTest):
                                     traffic_duration = 5,
                                     min_expected_pkts = 0,
                                     af = "ipv4",
+                                    offset = 110,
                                     **kwargs):
         '''
             dest_compute_fixture should be supplied if underlay traffic is 
@@ -177,7 +178,6 @@ class QosTestBase(BaseNeutronTest):
                 ipv6 = {'tc':tos, 'src':ipv6_src, 'dst':ipv6_dst}
                 ## WA for Bug 1614472. Internal protocol inside IPv6 is must
                 udp_header = {'sport' : 1234}
-            offset =156 if ipv6 else 100
             traffic_obj, scapy_obj = self._generate_scapy_traffic(
                                                         src_vm_fixture, 
                                                         src_compute_fixture,
