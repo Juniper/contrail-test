@@ -161,6 +161,10 @@ class WebuiCommon:
         return self._get_list_api('service-health-checks')
     # end get_shc_list_api
 
+    def get_bgpaas_list_api(self):
+        return self._get_list_api('bgp-as-a-services')
+    # end get_bgpaas_list_api
+
     def get_vm_intf_refs_list_api(self):
         return self._get_list_api('virtual-machine-interfaces')
     # end get_vm_intf_refs_list_api
@@ -2104,6 +2108,16 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
         return self.check_error_msg("configure bgp as a service")
     # end click_configure_bgp_as_a_service
+
+    def click_configure_bgp_as_a_service_basic(self, row_index):
+        self.click_configure_bgp_as_a_service()
+        rows = self.get_rows()
+        div_browser = self.find_element(
+            'div', 'tag', if_elements=[1], elements=True,
+            browser=rows[row_index])[0]
+        self.click_element('i', 'tag', browser = div_browser)
+        self.wait_till_ajax_done(self.browser)
+    #end click_configure_bgp_as_a_service_basic
 
     def click_configure_physical_router(self):
         self.wait_till_ajax_done(self.browser)

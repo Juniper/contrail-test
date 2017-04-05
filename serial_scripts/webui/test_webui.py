@@ -705,6 +705,22 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_svc_health_check
 
     @preposttest_wrapper
+    def test_verify_config_services_bgpaas(self):
+        '''
+        Description: Test to verify BGP As a Service on UI against BGP As a Service on API
+        Steps:
+            1. On the Contrail UI, go to Configure -> Networking -> Services -> BGP as a Service
+            2. Get all the bgppas config details from the page
+            3. Go to the API server and fetch all the bgppas config details
+            4. Verify the WebUI details against the details from the API server
+        Pass criteria:
+            1. Step 4 above should pass
+        '''
+        assert self.webui.verify_bgpaas_api_basic_data(), 'BGP As a Service data verification failed'
+        return True
+    # end test_verify_config_services_bgpaas
+
+    @preposttest_wrapper
     def test_verify_config_infra_project_quotas(self):
         '''Test project quotas on config->Networking->Project Quotas page
         '''
