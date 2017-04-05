@@ -8774,3 +8774,163 @@ class WebuiTest:
                     return result
         return result
     # end verify_bgp_router_api_data
+
+    def verify_svc_appl_sets_api_data(self, action='create', expected_result=None):
+        self.logger.info(
+            "Verifying Service Appliance Sets api server data on \
+            Config->Infrastructure->Service Appliance Sets page ...")
+        self.logger.debug(self.dash)
+        result = True
+        svc_appl_sets_list_api = self.ui.get_svc_appl_sets_list_api()
+        for svc_appl in range(len(svc_appl_sets_list_api['service-appliance-sets'])):
+            api_fq_name = svc_appl_sets_list_api[
+                'service-appliance-sets'][svc_appl]['fq_name'][1]
+            self.ui.click_configure_svc_appliance_set()
+            rows = self.ui.get_rows()
+            for row in range(len(rows)):
+                dom_arry_basic = []
+                match_flag = 0
+                text = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)[2].text
+                if api_fq_name == text:
+                    self.logger.info(
+                        "Service Appliance Sets fq_name %s matched in webui.. \
+                         Verifying basic view details..." % (api_fq_name))
+                    self.logger.debug(self.dash)
+                    match_index = row
+                    match_flag = 1
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "Service Appliance Sets fq name exists in apiserver but %s \
+                     not found in webui..." % (api_fq_name))
+                self.logger.debug(self.dash)
+            else:
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'svc_appliance_set', match_index)[1]
+                for detail in range(len(rows_detail)):
+                    key_value = rows_detail[detail].text.split('\n')
+                    key = str(key_value.pop(0))
+                    if len(key_value) > 1 :
+                        value = key_value
+                    elif len(key_value) ==  1:
+                        value = key_value[0]
+                    else:
+                        value = None
+                    if key == 'Owner Permissions' or key == 'Global Permissions' or key == 'Owner' \
+                       or key == 'Shared List':
+                        continue
+                    key = key.replace(' ', '_')
+                    dom_arry_basic.append({'key': key, 'value': value})
+                svc_appl_set_api_data = self.ui.get_details(
+                                svc_appl_sets_list_api['service-appliance-sets'][svc_appl]['href'])
+                complete_api_data = []
+                svc_api_key_list = ['service_appliance_driver', 'service_appliance_ha_mode',
+                                   'service_appliance_set_properties']
+                api_key_list = ['Load_Balancer_Driver', 'HA_Mode', 'Properties']
+                if 'service-appliance-set' in svc_appl_set_api_data:
+                    svc_appl_set_data = svc_appl_set_api_data['service-appliance-set']
+                    for index, svc_api_key in enumerate(svc_api_key_list):
+                        if svc_api_key in svc_appl_set_data:
+                            if 'properties' in svc_api_key:
+                                svc_property = svc_appl_set_data[svc_api_key]['key_value_pair']
+                                if svc_property:
+                                    property_data = ''
+                                    for index1, property in enumerate(svc_property):
+                                        prop_dict = dict((k, v) for k, v in property.items())
+                                        for key, val in prop_dict.iteritems():
+                                            property_data += key.title() + ": " + val + " "
+                                        if index1 >= 1:
+                                            list(value).append(property_data.strip())
+                                        else:
+                                            value = property_data.strip()
+                            else:
+                                value = svc_appl_set_data[svc_api_key]
+                            if value:
+                                complete_api_data.append({'key': api_key_list[index],
+                                    'value': value})
+                    self.ui.keyvalue_list(
+                        complete_api_data,
+                        Display_Name=svc_appl_set_data.get('display_name'),
+                        UUID=svc_appl_set_data.get('uuid'))
+                else:
+                    result = result and False
+                if action == 'create':
+                    if self.ui.match_ui_kv(complete_api_data, dom_arry_basic):
+                        self.logger.info(
+                            "Service Appliance Sets config details matched on \
+                            Config->Infrastructure->Service Appliance Sets page")
+                    else:
+                        self.logger.error(
+                            "Service Appliance Sets config details match failed on \
+                            Config->Infrastructure->Service Appliance sets page")
+                        result = result and False
+                else:
+                    if self.ui.match_ui_kv(expected_result, dom_arry_basic, data=
+                           'Expected_key_value', matched_with='WebUI') and self.ui.match_ui_kv(
+                           expected_result, complete_api_data, data='Expected_key_value',
+                           matched_with='API'):
+                        self.logger.info(
+                            "%s of Service Appliance Sets matched on \
+                            WebUI/API after editing" % (expected_result))
+                    else:
+                        self.logger.error(
+                            "%s of Service Appliance Sets match failed on \
+                            WebUI/API after editing" % (expected_result))
+                        result = result and False
+                    return result
+        return result
+    # end verify_svc_appl_sets_api_data
+
+    def verify_flow_aging_api_data(self, action='create', expected_result=None):
+        self.logger.info(
+            "Verifying Flow Aging api server data on \
+            Config->Infrastructure->Global Config->Flow Aging page ...")
+        self.logger.debug(self.dash)
+        result = True
+        global_config_flow_aging = self.ui.get_global_config_api_href('vrouter')
+        value_list = ['protocol', 'port', 'timeout_in_seconds']
+        key_list = ['Protocol', 'Port', 'Timeout']
+        complete_api_data = []
+        if global_config_flow_aging:
+            vrouter_config = global_config_flow_aging['global-vrouter-config']
+            if 'flow_aging_timeout_list' in vrouter_config:
+                flow_aging_data = vrouter_config['flow_aging_timeout_list'][
+                                  'flow_aging_timeout'][0]
+                if flow_aging_data:
+                    for index, value in enumerate(value_list):
+                        if value in flow_aging_data:
+                            complete_api_data.append({'key': key_list[index],
+                                'value': str(flow_aging_data[value])})
+            else:
+                result = result and False
+        self.ui.click_configure_flow_aging()
+        br = self.ui.find_element('global-flow-aging-grid')
+        rows = self.ui.get_rows(browser=br)
+        dom_arry_basic = []
+        if rows:
+            for row in range(len(rows)):
+                elements = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)
+                for index, element in enumerate(elements):
+                    dom_arry_basic.append({'key': key_list[index], 'value': element.text})
+        else:
+            result = result and False
+        if action == 'create':
+            if self.ui.match_ui_kv(complete_api_data, dom_arry_basic):
+                self.logger.info("Flow Aging config details matched on \
+                            Config->Infrastructure->Global Config->Flow Aging page")
+            else:
+                self.logger.error("Flow Aging config details match failed on \
+                            Config->Infrastructure->Global Config->Flow Aging page")
+                result = result and False
+        else:
+            if self.ui.match_ui_kv(expected_result, dom_arry_basic, data='Expected_key_value',
+                matched_with='WebUI') and self.ui.match_ui_kv(expected_result,
+                complete_api_data, data='Expected_key_value', matched_with='API'):
+                self.logger.info("%s of Flow Aging matched on WebUI/API \
+                                after editing" % (expected_result))
+            else:
+                self.logger.error("%s of Flow Aging match failed on \
+                     WebUI/API after editing" % (expected_result))
+                result = result and False
+        return result
+    # end verify_flow_aging_api_data
