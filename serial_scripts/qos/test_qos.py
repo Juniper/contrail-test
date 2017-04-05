@@ -331,16 +331,16 @@ class TestQosPolicyEncap(TestQosPolicyBase):
     @classmethod
     def setUpClass(cls):
         super(TestQosPolicyEncap, cls).setUpClass()
-        #cls.existing_encap = cls.connections.read_vrouter_config_encap()
-        # cls.connections.update_vrouter_config_encap(
-        #    'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
+        cls.existing_encap = cls.connections.read_vrouter_config_encap()
+        cls.connections.update_vrouter_config_encap(
+                                        'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
     # end setUpClass
 
     @classmethod
     def tearDownClass(cls):
-        # cls.connections.update_vrouter_config_encap(
-        #    cls.existing_encap[0], cls.existing_encap[1],
-        #    cls.existing_encap[2])
+        cls.connections.update_vrouter_config_encap(
+            cls.existing_encap[0], cls.existing_encap[1],
+            cls.existing_encap[2])
         super(TestQosPolicyEncap, cls).tearDownClass()
     # end tearDownClass
 
@@ -401,7 +401,7 @@ class TestQosPolicyEncap(TestQosPolicyBase):
             'dscp': None,
             'expected_dscp': None,
             'src_compute_fixture': self.vn1_vm1_compute_fixture,
-            'encap': "MPLSoUDP"}
+            'encap': "MPLSoGRE"}
         for i in range(1, 63):
             validate_method_args['expected_dscp'] = i
             validate_method_args['dscp'] = 63 - i

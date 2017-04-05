@@ -81,7 +81,8 @@ class TestQos(QosTestExtendedBase):
             dst_mac=self.vn1_vm2_fixture.mac_addr[
                 self.vn1_fixture.vn_fq_name],
             ipv6_src=str(self.vn1_vm1_fixture.vm_ips[1]),
-            ipv6_dst=str(self.vn1_vm2_fixture.vm_ips[1]))
+            ipv6_dst=str(self.vn1_vm2_fixture.vm_ips[1]),
+            offset = 132)
     # end test_qos_remark_dscp_on_vmi_ipv6
 
     @preposttest_wrapper
@@ -163,7 +164,8 @@ class TestQos(QosTestExtendedBase):
             src_mac=self.vn1_vm1_fixture.mac_addr[
                 self.vn1_fixture.vn_fq_name],
             ipv6_src=str(self.vn1_vm1_fixture.vm_ips[1]),
-            ipv6_dst=str(self.vn1_vm2_fixture.vm_ips[1]))
+            ipv6_dst=str(self.vn1_vm2_fixture.vm_ips[1]),
+            offset = 156)
     # end test_qos_remark_dscp_on_vn_ipv6
 
     @preposttest_wrapper
@@ -206,13 +208,12 @@ class TestQos(QosTestExtendedBase):
             Validate that packets from A to B have DSCP marked to 12
 
         '''
-        fc_ids= self.fc_id_obj.get_free_fc_ids(3)
+        fc_ids= self.fc_id_obj.get_free_fc_ids(2)
         fcs = [{'fc_id': fc_ids[0], 'dscp': 10, 'dot1p': 1, 'exp': 1},
                {'fc_id': fc_ids[1], 'dscp': 11, 'dot1p': 1, 'exp': 1}]
         fc_fixtures = self.setup_fcs(fcs)
         dscp_map1 = {1: fc_ids[0]}
         dscp_map2 = {1: fc_ids[1]}
-        dscp_map3 = {1: fc_ids[2]}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map1)
         vm1_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
         self.setup_qos_config_on_vmi(qos_fixture, vm1_vmi_id)
@@ -234,7 +235,9 @@ class TestQos(QosTestExtendedBase):
         validate_method_args['expected_dot1p'] = 5
         assert self.validate_packet_qos_marking(**validate_method_args)
         # Change FC id
-        fc_fixtures[1].update(fc_id=fc_ids[2])
+        new_fc_id = self.fc_id_obj.get_free_fc_ids(1)
+        dscp_map3 = {1: new_fc_id[0]}
+        fc_fixtures[1].update(fc_id=new_fc_id[0])
         qos_fixture.set_entries(dscp_mapping=dscp_map3)
         assert self.validate_packet_qos_marking(**validate_method_args)
     # end test_qos_config_and_fc_update_for_dscp
@@ -252,13 +255,12 @@ class TestQos(QosTestExtendedBase):
             Validate that packets from A to B have Dot1p marked to 2
 
         '''
-        fc_ids= self.fc_id_obj.get_free_fc_ids(3)
+        fc_ids= self.fc_id_obj.get_free_fc_ids(2)
         fcs = [{'fc_id': fc_ids[0], 'dscp': 10, 'dot1p': 4, 'exp': 1},
                {'fc_id': fc_ids[1], 'dscp': 11, 'dot1p': 6, 'exp': 1}]
         fc_fixtures = self.setup_fcs(fcs)
         dot1p_map1 = {1: fc_ids[0]}
         dot1p_map2 = {1: fc_ids[1]}
-        dot1p_map3 = {1: fc_ids[2]}
         dot1p_map4 = {2: fc_ids[0]}
         qos_fixture = self.setup_qos_config(dot1p_map=dot1p_map1)
         self.setup_qos_config_on_vn(qos_fixture, self.vn1_fixture.uuid)
@@ -283,7 +285,9 @@ class TestQos(QosTestExtendedBase):
         validate_method_args['expected_dot1p'] = 7
         assert self.validate_packet_qos_marking(**validate_method_args)
         # Change FC id
-        fc_fixtures[1].update(fc_id=fc_ids[2])
+        new_fc_id = self.fc_id_obj.get_free_fc_ids(1)
+        dot1p_map3 = {1: new_fc_id[0]}
+        fc_fixtures[1].update(fc_id=new_fc_id[0])
         qos_fixture.set_entries(dot1p_mapping=dot1p_map3)
         assert self.validate_packet_qos_marking(**validate_method_args)
         # Add entry in Dot1P map tablee
@@ -406,12 +410,13 @@ class TestQos(QosTestExtendedBase):
                                         ['username']
         password = self.inputs.host_data[self.vn1_vm1_compute_fixture.ip]\
                                         ['password']
+        compute_index = self.inputs.compute_names.index(self.first_node_name)
         traffic_obj = TrafficAnalyzer(interface,
                                       self.vn1_vm1_compute_fixture,
                                       username,
                                       password,
                                       src_ip=self.inputs.compute_control_ips[
-                                          0],
+                                          compute_index],
                                       dest_port=5269,
                                       protocol='tcp',
                                       logger=self.logger)
@@ -567,7 +572,7 @@ class TestQosPolicy(TestQosPolicyBase):
             10.Validate that packets with dscp 10-19 on fabric from A to B have 
                DSCP marked to 62 and mpls exp marked to 6.
         '''
-        fc_ids= self.fc_id_obj.get_free_fc_ids(3)
+        fc_ids= self.fc_id_obj.get_free_fc_ids(2)
         fcs = [
             {'name': "FC1_Test", 'fc_id': fc_ids[0],
                 'dscp': 62, 'dot1p': 6, 'exp': 6},
@@ -579,9 +584,6 @@ class TestQosPolicy(TestQosPolicyBase):
         dscp_map2 = {0: fc_ids[1], 1: fc_ids[1], 2: fc_ids[1], 3: fc_ids[1],
                     4: fc_ids[1], 5: fc_ids[1], 6: fc_ids[1], 7: fc_ids[1],
                      8: fc_ids[1], 9: fc_ids[1]}
-        dscp_map3 = {0: fc_ids[2], 1: fc_ids[2], 2: fc_ids[2], 3: fc_ids[2],
-                      4: fc_ids[2], 5: fc_ids[2], 6: fc_ids[2], 7: fc_ids[2],
-                    8: fc_ids[2], 9: fc_ids[2]}
         dscp_map4 = {10: fc_ids[0], 11: fc_ids[0], 12: fc_ids[0], 13: fc_ids[0],
                     14: fc_ids[0], 15: fc_ids[0], 16: fc_ids[0], 17: fc_ids[0],
                      18: fc_ids[0], 19: fc_ids[0]}
@@ -609,7 +611,12 @@ class TestQosPolicy(TestQosPolicyBase):
         validate_method_args['expected_dot1p'] = 2
         assert self.validate_packet_qos_marking(**validate_method_args)
         # Change FC id
-        fc_fixtures[1].update(fc_id=fc_ids[2])
+        new_fc_id = self.fc_id_obj.get_free_fc_ids(1)
+        dscp_map3 = {0: new_fc_id[0], 1: new_fc_id[0], 2: new_fc_id[0],
+                    3: new_fc_id[0], 4: new_fc_id[0], 5: new_fc_id[0],
+                    6: new_fc_id[0], 7: new_fc_id[0], 8: new_fc_id[0],
+                    9: new_fc_id[0]}
+        fc_fixtures[1].update(fc_id=new_fc_id[0])
         qos_fixture.set_entries(dscp_mapping=dscp_map3)
         assert self.validate_packet_qos_marking(**validate_method_args)
         # Adding more entries in qos-config
@@ -815,7 +822,9 @@ class TestQosSVC(TestQosSVCBase):
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map)
         self.update_policy_qos_config(self.policy_fixture, qos_fixture)
         # verifying marking on packets from SI to right VN
-        si_vm_node_ip = self.inputs.compute_ips[0]
+        compute_node_index = self.inputs.compute_names.index(
+                                            self.first_node_name)
+        si_vm_node_ip = self.inputs.compute_ips[compute_node_index]
         si_source_compute_fixture = self.useFixture(ComputeNodeFixture(
             self.connections,
             si_vm_node_ip))
