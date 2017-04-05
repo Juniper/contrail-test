@@ -672,6 +672,23 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_forwarding_classes
 
     @preposttest_wrapper
+    def test_verify_config_qos_config(self):
+        '''
+        Description: Test to verify QoS config on UI against QoS config on API
+        Steps:
+            1. On the Contrail UI, go to Config -> Networking -> QoS
+                In case of global config, go to Configure -> Infrastructure -> Global Config -> QoS
+            2. Get all the qos config details from the page
+            3. Go to the API server and fetch all the qos config details
+            4. Verify the WebUI details against the details from the API server
+        Pass criteria:
+            1. Step 4 above should pass
+        '''
+        assert self.webui.verify_qos_config_api_basic_data(), 'QoS config data verification failed'
+        return True
+    # end test_verify_config_qos_config
+
+    @preposttest_wrapper
     def test_verify_config_infra_project_quotas(self):
         '''Test project quotas on config->Networking->Project Quotas page
         '''
