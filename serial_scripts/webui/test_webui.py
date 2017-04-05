@@ -459,6 +459,21 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_infra_virtual_router
 
     @preposttest_wrapper
+    def test_verify_config_infra_service_appliances(self):
+        '''Test to verify Service Appliance under Configure->Infrastructure
+           1. Go to Configure->Infrastructure->Service Appliances.
+           2. Get all the details of Service Appliances
+              from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_svc_appls_api_data(topo.svc_appliances_params), \
+                   'Service Appliances config data verification failed'
+        return True
+    # end test_verify_config_infra_service_appliances
+
+    @preposttest_wrapper
     def test_verify_config_infra_bgp_router(self):
         '''Test to verify virtual router under Configure->Infrastructure->BGP Routers
            1. Go to Configure->Infrastructure->BGP Routers.
