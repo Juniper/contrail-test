@@ -332,16 +332,16 @@ class TestQosPolicyEncap(TestQosPolicyBase):
     @classmethod
     def setUpClass(cls):
         super(TestQosPolicyEncap, cls).setUpClass()
-        #cls.existing_encap = cls.connections.read_vrouter_config_encap()
-        # cls.connections.update_vrouter_config_encap(
-        #    'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
+        cls.existing_encap = cls.connections.read_vrouter_config_encap()
+        cls.connections.update_vrouter_config_encap(
+                                        'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
     # end setUpClass
 
     @classmethod
     def tearDownClass(cls):
-        # cls.connections.update_vrouter_config_encap(
-        #    cls.existing_encap[0], cls.existing_encap[1],
-        #    cls.existing_encap[2])
+        cls.connections.update_vrouter_config_encap(
+            cls.existing_encap[0], cls.existing_encap[1],
+            cls.existing_encap[2])
         super(TestQosPolicyEncap, cls).tearDownClass()
     # end tearDownClass
 
@@ -362,6 +362,7 @@ class TestQosPolicyEncap(TestQosPolicyBase):
                     100, 5: 100, 6: 100, 7: 100, 8: 100, 9: 100}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map)
         self.update_policy_qos_config(self.policy_fixture, qos_fixture)
+        import pdb;pdb.set_trace()
         assert self.validate_packet_qos_marking(
             src_vm_fixture=self.vn1_vm1_fixture,
             dest_vm_fixture=self.vn2_vm1_fixture,
@@ -402,7 +403,7 @@ class TestQosPolicyEncap(TestQosPolicyBase):
             'dscp': None,
             'expected_dscp': None,
             'src_compute_fixture': self.vn1_vm1_compute_fixture,
-            'encap': "MPLSoUDP"}
+            'encap': "MPLSoGRE"}
         for i in range(1, 63):
             validate_method_args['expected_dscp'] = i
             validate_method_args['dscp'] = 63 - i
