@@ -1164,6 +1164,30 @@ class WebuiCommon:
         return rows
     # end check_rows
 
+    def extract_and_convert(self, number, extract=True, convert='decimal'):
+        """
+        Extracts the number when given in the format for example - ef (101110)
+        Converts and returns the new number
+        PARAMETERS :
+            extract    : If the number needs to be extracted. Default is 'True'
+            convert    : Convert the number to decimal or binary as specified.
+                            values - 'decimal' / 'binary'
+                            Default - 'decimal'
+            number     : The number which needs to be (extracted?and) converted
+        """
+        if extract:
+            num = re.search('.*\((\d+)\)', number)
+            number = num.group(1)
+        if convert == 'decimal':
+            new_num = int(number, 2)
+        elif convert == 'binary':
+            new_num = bin(number)[2:]
+        else:
+            new_num = number
+            self.logger.error('Conversion type is not passed correctly')
+        return new_num
+    # end extract_and_convert
+
     def click_icon_caret(self, row_index, obj=None, length=None, indx=0, net=0):
         element0 = ('slick-cell', indx)
         if not net:
