@@ -149,6 +149,10 @@ class WebuiCommon:
         return self._get_list_api('routing-policys')
     # end get_rpol_list_api
 
+    def get_fc_list_api(self):
+        return self._get_list_api('forwarding-classs')
+    # end get_fc_list_api
+
     def get_vm_intf_refs_list_api(self):
         return self._get_list_api('virtual-machine-interfaces')
     # end get_vm_intf_refs_list_api

@@ -656,6 +656,22 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_routing_policies
 
     @preposttest_wrapper
+    def test_verify_config_forwarding_classes(self):
+        '''
+        Description: Test to verify Forwarding Classes on UI against Forwarding Classes on API
+        Steps:
+            1. On the Contrail UI, go to Configure -> Infrastructure -> Global Config -> Forwarding Classes
+            2. Get all the forwarding class config details from the page
+            3. Go to the API server and fetch all the forwarding class config details
+            4. Verify the WebUI details against the details from the API server
+        Pass criteria:
+            1. Step 4 above should pass
+        '''
+        assert self.webui.verify_forwarding_class_api_basic_data(), 'Forwarding Class data verification failed'
+        return True
+    # end test_verify_config_forwarding_classes
+
+    @preposttest_wrapper
     def test_verify_config_infra_project_quotas(self):
         '''Test project quotas on config->Networking->Project Quotas page
         '''
