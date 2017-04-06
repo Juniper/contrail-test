@@ -4087,6 +4087,154 @@ class WebuiTest:
         return result
     # end verify_policy_api_basic_data_in_webui
 
+    def verify_security_group_api_data(self, action='create', expected_result=None):
+        self.logger.info(
+            "Verifying Security Group api server data on \
+            Config->Networking->Security Group page ...")
+        self.logger.debug(self.dash)
+        result = True
+        sg_list_api = self.ui.get_security_group_list_api()
+        for sg in range(len(sg_list_api['security-groups'])):
+            api_project_name = sg_list_api['security-groups'][sg]['fq_name'][1]
+            if api_project_name != self.project_name_input:
+                continue
+            api_fq_name = sg_list_api['security-groups'][sg]['fq_name'][2]
+            self.ui.click_configure_security_groups()
+            rows = self.ui.get_rows()
+            for row in range(len(rows)):
+                dom_arry_basic = []
+                match_flag = 0
+                text = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)[2].text
+                if api_fq_name == text:
+                    self.logger.info(
+                        "Security Group fq_name %s matched in webui..\
+                        Verifying basic view details..." % (api_fq_name))
+                    self.logger.debug(self.dash)
+                    match_index = row
+                    match_flag = 1
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "Security Group fq name exists in apiserver but %s not found in webui..." %
+                    (api_fq_name))
+                self.logger.debug(self.dash)
+            else:
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'security_groups', match_index)[1]
+                for detail in range(len(rows_detail)):
+                    key_value = rows_detail[detail].text.split('\n')
+                    key = str(key_value.pop(0))
+                    if len(key_value) > 1 :
+                        value = key_value
+                    elif len(key_value) ==  1:
+                        value = key_value[0]
+                    else:
+                        value = None
+                    if key == 'Owner Permissions' or key == 'Global Permissions' or key == 'Owner' \
+                       or key == 'Shared List':
+                        continue
+                    key = key.replace(' ', '_')
+                    dom_arry_basic.append({'key': key, 'value': value})
+                sg_api_data = self.ui.get_details(
+                                sg_list_api['security-groups'][sg]['href'])
+                complete_api_data = []
+                sg_auto_flag = False
+                if sg_api_data:
+                    if 'security-group' in sg_api_data:
+                        sg_data = sg_api_data['security-group']
+                        if 'configured_security_group_id' in sg_data:
+                            if sg_data['configured_security_group_id'] != 0:
+                                sg_id = str(sg_data['configured_security_group_id'])
+                            else:
+                                sg_auto_flag = True
+                        else:
+                            sg_auto_flag = True
+                        if sg_auto_flag:
+                            sg_id = 'Auto Configured (' + str(sg_data['security_group_id']) + ')'
+                        self.ui.keyvalue_list(
+                            complete_api_data,
+                            Display_Name=sg_data['display_name'],
+                            Security_Group_ID=sg_id,
+                            UUID=sg_data['uuid'])
+                        if 'access_control_lists' in sg_data:
+                            acl_list = sg_data.get('access_control_lists')
+                            rules_list = []
+                            for acl in range(len(acl_list)):
+                                rule_list = self.ui.get_details(acl_list[acl]['href'])
+                                if rule_list:
+                                    rule_name = rule_list['access-control-list']
+                                    if 'ingress' in rule_name['name']:
+                                        direction = 'ingress'
+                                        address = 'src_address'
+                                    elif 'egress' in rule_name['name']:
+                                        direction = 'egress'
+                                        address = 'dst_address'
+                                    if 'access_control_list_entries' in rule_name:
+                                        acl_rule_list = rule_name['access_control_list_entries'][
+                                                        'acl_rule']
+                                        if acl_rule_list:
+                                            for index in range(len(acl_rule_list)):
+                                                match_condition = acl_rule_list[index]['match_condition']
+                                                ether_type = match_condition['ethertype']
+                                                domain_type = None
+                                                if match_condition[address]['security_group']:
+                                                    domain_name = sg_data['security_group_entries'][
+                                                                  'policy_rule'][index][address + 'es'][0][
+                                                                  'security_group'].split(':')
+                                                    domain_type = 'security group ' + domain_name[-1]
+                                                elif match_condition[address]['subnet']:
+                                                    domain_type = 'network ' + match_condition[address][
+                                                                  'subnet']['ip_prefix'] + "/" + \
+                                                                  str(match_condition[address]['subnet'][
+                                                                  'ip_prefix_len'])
+                                                if 'protocol' in match_condition:
+                                                    protocol_type = 'any'
+                                                    if match_condition['protocol'] == '17':
+                                                        protocol_type = 'udp'
+                                                    elif match_condition['protocol'] == '6':
+                                                        protocol_type = 'tcp'
+                                                    elif match_condition['protocol'] == '1':
+                                                        protocol_type = 'icmp'
+                                                    protocol = 'protocol ' + protocol_type
+                                                if 'dst_port' in match_condition:
+                                                    start_port = match_condition['dst_port']['start_port']
+                                                    end_port = match_condition['dst_port']['end_port']
+                                                    if start_port == 0 and end_port == 65535:
+                                                        port_value = 'ports any'
+                                                    else:
+                                                        port_value = 'ports [' + str(start_port) + ' - ' + \
+                                                                     str(end_port) + ']'
+                                                if not domain_type:
+                                                    continue
+                                                rule = direction + ' ' + ether_type + ' ' + domain_type + ' ' + \
+                                                       protocol + ' ' + port_value
+                                                rules_list.append(rule)
+                            if rules_list:
+                                complete_api_data.append({'key': 'Rules', 'value': rules_list})
+                if action == 'create':
+                    if self.ui.match_ui_kv(complete_api_data, dom_arry_basic):
+                        self.logger.info(
+                            "Security Group config details matched on Config->Networking->Security Group page")
+                    else:
+                        self.logger.error(
+                            "Security Group config details match failed on Config->Networking->Security Group page")
+                        result = result and False
+                else:
+                    if self.ui.match_ui_kv(expected_result, dom_arry_basic, data=
+                           'Expected_key_value', matched_with='WebUI') and self.ui.match_ui_kv(
+                           expected_result, complete_api_data, data='Expected_key_value',
+                           matched_with='API'):
+                        self.logger.info(
+                            "%s of Security Group matched on WebUI/API after editing" % (expected_result))
+                    else:
+                        self.logger.error(
+                            "%s of Security Group match failed on WebUI/API after editing" %
+                            (expected_result))
+                        result = result and False
+                    return result
+        return result
+    # end verify_security_group_api_data
+
     def verify_dns_servers_api_data(self, action='create', expected_result=None):
         self.logger.info(
             "Verifying DNS Servers api server data on Config->DNS->Servers page ...")
