@@ -1686,6 +1686,14 @@ class WebuiCommon:
         return self.check_error_msg("configure routers")
     # end click_configure_routers
 
+    def click_configure_routers_basic(self, row_index):
+        self.click_configure_routers()
+        rows = self.get_rows()
+        rows[row_index].find_elements_by_tag_name(
+            'div')[0].find_element_by_tag_name('i').click()
+        self.wait_till_ajax_done(self.browser)
+    # end click_configure_routers_basic
+
     def click_error(self, name):
         self.logger.error("Some error occured whlie clicking on %s" % (name))
         return False
