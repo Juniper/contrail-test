@@ -121,6 +121,14 @@ class WebuiCommon:
         return self._get_list_api('network-policys')
     # end get_vn_list_api
 
+    def get_dns_servers_list_api(self):
+        return self._get_list_api('virtual-DNSs')
+    # end get_dns_servers_list_api
+
+    def get_dns_records_list_api(self):
+        return self._get_list_api('virtual-DNS-records')
+    # end get_dns_records_list_api
+
     def get_ipam_list_api(self):
         return self._get_list_api('network-ipams')
     # end get_ipam_list_api
@@ -2173,6 +2181,16 @@ class WebuiCommon:
         return self.check_error_msg("configure dns servers")
     # end click_configure_dns_servers
 
+    def click_configure_dns_servers_basic(self, row_index):
+        self.click_configure_dns_servers()
+        rows = self.get_rows()
+        div_browser = self.find_element(
+            'div', 'tag', if_elements=[1], elements=True,
+            browser=rows[row_index])[0]
+        self.click_element('i', 'tag', browser = div_browser)
+        self.wait_till_ajax_done(self.browser)
+    # end click_configure_dns_servers_basic
+
     def click_configure_dns_records(self):
         self.wait_till_ajax_done(self.browser)
         self._click_on_config_dropdown(self.browser, 4)
@@ -2180,6 +2198,17 @@ class WebuiCommon:
         time.sleep(2)
         return self.check_error_msg("configure dns records")
     # end click_configure_dns_records
+
+    def click_configure_dns_records_basic(self, row_index, project):
+        self.click_configure_dns_records()
+        self.select_dns_server(project)
+        rows = self.get_rows()
+        div_browser = self.find_element(
+            'div', 'tag', if_elements=[1], elements=True,
+            browser=rows[row_index])[0]
+        self.click_element('i', 'tag', browser = div_browser)
+        self.wait_till_ajax_done(self.browser)
+    # end click_configure_dns_records_basic
 
     def click_configure_policies(self):
         self.click_element('btn-configure')
@@ -2613,11 +2642,15 @@ class WebuiCommon:
             canvas=False,
             search_ele=None,
             search_by='id',
-            browser=None):
+            browser=None,
+            project=None):
         if not browser:
             browser = self.browser
         click_func = 'self.' + 'click_configure_' + func_suffix + '_' + view
-        eval(click_func)(index)
+        if project:
+            eval(click_func)(index, project)
+        else:
+            eval(click_func)(index)
         self.logger.info(
             "Click and retrieve %s view details in webui of %s " %
                 (view, func_suffix))
