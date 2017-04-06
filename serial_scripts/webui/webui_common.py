@@ -165,6 +165,10 @@ class WebuiCommon:
         return self._get_list_api('bgp-as-a-services')
     # end get_bgpaas_list_api
 
+    def get_pif_list_api(self):
+        return self._get_list_api('physical-interfaces')
+    # end get_pif_list_api
+
     def get_vm_intf_refs_list_api(self):
         return self._get_list_api('virtual-machine-interfaces')
     # end get_vm_intf_refs_list_api
@@ -2144,6 +2148,16 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
         return self.check_error_msg("configure physical device's interfaces")
     # end click_configure_interfaces
+
+    def click_configure_interfaces_basic(self, row_index):
+        self.click_configure_interfaces()
+        rows = self.get_rows()
+        div_browser = self.find_element(
+            'div', 'tag', if_elements=[1], elements=True,
+            browser=rows[row_index])[0]
+        self.click_element('i', 'tag', browser = div_browser)
+        self.wait_till_ajax_done(self.browser)
+    #end click_configure_interfaces_basic
 
     def click_configure_forwarding_class(self):
         return self.click_configure_global_config(tab='fc_global',

@@ -721,6 +721,22 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_services_bgpaas
 
     @preposttest_wrapper
+    def test_verify_config_phy_dev_physical_interfaces(self):
+        '''
+        Description: Test to verify Physical Interface on UI against Physical Interfaces on API
+        Steps:
+            1. On the Contrail UI, go to Configure -> Physical Devices -> Interfaces
+            2. Get all the physical interface config details from the page
+            3. Go to the API server and fetch all the physical interface config details
+            4. Verify the WebUI details against the details from the API server
+        Pass criteria:
+            1. Step 4 above should pass
+        '''
+        assert self.webui.verify_phy_int_api_basic_data(), 'Physical Interface data verification failed'
+        return True
+    # end test_verify_config_phy_dev_physical_interfaces
+
+    @preposttest_wrapper
     def test_verify_config_infra_project_quotas(self):
         '''Test project quotas on config->Networking->Project Quotas page
         '''
