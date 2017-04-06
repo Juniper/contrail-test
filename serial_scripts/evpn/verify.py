@@ -2090,7 +2090,7 @@ class VerifyEvpnCases():
         tap_intf = vn1_vm2_fixture.tap_intf[vn1_fixture.vn_fq_name]['name']
 
         result = self.start_tcpdump_send_verify_traffic(
-            vn_l2_vm1_fixture, fix_intfs_macs=[(vn_l2_vm2_fixture, tap_intf, self.mac2)], filters=filters,
+            vn1_vm1_fixture, fix_intfs_macs=[(vn1_vm2_fixture, tap_intf, self.mac2)], filters=filters,
                 traffic_type='l2', traffic_intf='eth0', wait=20)
 
         self.logger.info('Will restart compute  services now')
@@ -2108,7 +2108,7 @@ class VerifyEvpnCases():
         tap_intf = vn1_vm2_fixture.tap_intf[vn1_fixture.vn_fq_name]['name']
 
         result = self.start_tcpdump_send_verify_traffic(
-            vn_l2_vm1_fixture, fix_intfs_macs=[(vn_l2_vm2_fixture, tap_intf, self.mac2)], filters=filters,
+            vn1_vm1_fixture, fix_intfs_macs=[(vn1_vm2_fixture, tap_intf, self.mac2)], filters=filters,
                 traffic_type='l2', traffic_intf='eth0', wait=20)
 
         self.logger.info('Checking the communication between 2 VM after vrouter restart')
