@@ -3612,13 +3612,12 @@ class WebuiTest:
             "Verifying service template api server data on Config->Services->Service Templates page...")
         self.logger.debug(self.dash)
         result = True
-        service_temp_list_api = self.ui.get_service_template_list_api(
-        )
+        service_temp_list_api = self.ui.get_service_template_list_api()
         for temp in range(len(service_temp_list_api['service-templates']) - 1):
             interface_list = []
             interface_list_grid = []
             api_fq_name = service_temp_list_api[
-                'service-templates'][temp + 1]['fq_name'][1]
+                'service-templates'][temp]['fq_name'][1]
             if api_fq_name == 'analyzer-template':
                 continue
             self.ui.click_configure_service_template()
@@ -3630,7 +3629,6 @@ class WebuiTest:
                 dom_arry_basic = []
                 match_flag = 0
                 j = 0
-                flag1 = False
                 if self.ui.find_element(
                         'div', 'tag', browser=rows[i],
                         elements=True,if_elements=[1])[2].text == api_fq_name:
@@ -3671,10 +3669,8 @@ class WebuiTest:
                         key_arry = 'Interface_Type'
                         value_arry = value_arry.replace('\n', ', ')
                     dom_arry_basic.append({'key': key_arry, 'value': value_arry})
-                    if key_arry == 'Version' and value_arry == '1':
-                        flag1 = True
                 service_temp_api_data = self.ui.get_details(
-                    service_temp_list_api['service-templates'][temp + 1]['href'])
+                    service_temp_list_api['service-templates'][temp]['href'])
                 complete_api_data = []
                 if 'service-template' in service_temp_api_data:
                     api_data_basic = service_temp_api_data.get(
@@ -3698,12 +3694,8 @@ class WebuiTest:
                         {'key': 'Mode_grid_row', 'value': svc_mode_value})
                 if 'service_type' in api_data_basic[
                         'service_template_properties']:
-                    if flag1:
-                        svc_type_value = str(
-                            svc_temp_properties['service_type']).capitalize() + ' / v1'
-                    else:
-                        svc_type_value = str(
-                            svc_temp_properties['service_type']).capitalize()
+                    svc_type_value = str(svc_temp_properties['service_type']).capitalize() + \
+                                        ' / v' + str(svc_temp_properties['version'])
                     complete_api_data.append(
                         {'key': 'Type', 'value': svc_type_value})
                     complete_api_data.append(
@@ -3711,28 +3703,25 @@ class WebuiTest:
                 if 'service_scaling' in svc_temp_properties:
                     if svc_temp_properties['service_scaling']:
                         complete_api_data.append(
-                            {
-                                'key': 'Scaling',
-                                'value': str(
-                                    svc_temp_properties['service_scaling']).replace(
-                                    'True',
-                                    'Enabled')})
+                            {'key': 'Scaling',
+                             'value': 'Enabled'})
+                    elif svc_temp_properties['service_scaling'] is None:
+                        pass
                     else:
                         complete_api_data.append(
-                            {
-                                'key': 'Scaling',
-                                'value': str(
-                                    svc_temp_properties['service_scaling']).replace(
-                                    'False',
-                                    'Disabled')})
+                            {'key': 'Scaling',
+                             'value': 'Disabled'})
                 if 'interface_type' in svc_temp_properties:
-                    len_svc_temp_properties = len(
-                        svc_temp_properties['interface_type'])
-                    for interface in range(len_svc_temp_properties):
-                        svc_shared_ip = svc_temp_properties[
-                            'interface_type'][interface]['shared_ip']
-                        svc_static_route_enable = svc_temp_properties[
-                            'interface_type'][interface]['static_route_enable']
+                    svc_tmp = svc_temp_properties['interface_type']
+                    for interface in range(len(svc_tmp)):
+                        if svc_tmp[interface].get('shared_ip'):
+                            svc_shared_ip = svc_tmp[interface]['shared_ip']
+                        else:
+                            svc_shared_ip = None
+                        if svc_tmp[interface].get('static_route_enable'):
+                            svc_static_route_enable = svc_tmp[interface]['static_route_enable']
+                        else:
+                            svc_static_route_enable = None
                         if svc_shared_ip and svc_static_route_enable:
                             interface_type = svc_temp_properties['interface_type'][interface][
                                 'service_interface_type'].title() + ' (' + 'Shared IP' + ', ' + 'Static Route' + ')'
@@ -3743,8 +3732,7 @@ class WebuiTest:
                             interface_type = svc_temp_properties['interface_type'][interface][
                                 'service_interface_type'].title() + ' (' + 'Shared IP' + ')'
                         else:
-                            interface_type = svc_temp_properties['interface_type'][
-                                interface]['service_interface_type'].title()
+                            interface_type = svc_tmp[interface]['service_interface_type'].title()
                         interface_list.append(interface_type)
                         interface_string = ", ".join(interface_list)
                         interface_type_grid = svc_temp_properties['interface_type'][
@@ -3773,6 +3761,18 @@ class WebuiTest:
                         {'key': 'Flavor', 'value': flavor_value})
                     complete_api_data.append(
                         {'key': 'Image_grid_row', 'value': (image_value) + ' / ' + (flavor_value)})
+                if 'service_virtualization_type' in svc_temp_properties:
+                    virt_type = svc_temp_properties[
+                                'service_virtualization_type'].replace('-', ' ').title()
+                    if virt_type == 'Vrouter Instance':
+                        virt_type = 'vRouter Instance'
+                    complete_api_data.append(
+                        {'key': 'Virtualization Type', 'value': virt_type})
+                if 'service_instance_back_refs' in svc_temp_properties:
+                    api_svc_list = svc_temp_properties['service_instance_back_refs'][0]['to']
+                    api_svc_refs = api_svc_list[1] + ':' + api_svc_list[2]
+                    complete_api_data.append(
+                        {'key': 'Service Instances', 'value': api_svc_refs})
                 if self.ui.match_ui_kv(
                         complete_api_data,
                         dom_arry_basic):
