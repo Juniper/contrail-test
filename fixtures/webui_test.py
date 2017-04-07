@@ -5537,6 +5537,100 @@ class WebuiTest:
         return result
     # end verify_bgpaas_api_basic_data_in_webui
 
+    def verify_phy_int_api_basic_data(self):
+        page = 'Configure -> Physical Devices -> Interfaces'
+        self.logger.info("Verifying physical interface api server data on %s page on UI"
+                            % (page))
+        self.logger.info(self.dash)
+        result = True
+        pif_list_api = self.ui.get_pif_list_api()
+        pif_api_list = pif_list_api['physical-interfaces']
+        for pif in range(len(pif_api_list)):
+            api_fq_name = pif_api_list[pif]['fq_name'][2]
+            pr_name = pif_api_list[pif]['fq_name'][1]
+            self.logger.info(
+                "Physical interface fq_name %s exists in api server.. checking if it exists \
+                    in webui as well" % (api_fq_name))
+            self.ui.click_configure_interfaces()
+            self.ui.select_project(pr_name, proj_type='prouter')
+            self.ui.wait_till_ajax_done(self.browser)
+            rows = self.ui.get_rows()
+            for i in range(len(rows)):
+                match_flag = 0
+                j = 0
+                dom_arry_basic = []
+                row_div_list = self.ui.find_element('div', 'tag',
+                                                    browser=rows[i], elements=True,
+                                                    if_elements=[1])
+                pif_fq_name = row_div_list[2].text
+                if pif_fq_name == api_fq_name:
+                    self.logger.info(
+                        "Physical interface fq_name %s matched in webui.. Verifying basic \
+                            view details..." % (api_fq_name))
+                    self.logger.debug(self.dash)
+                    match_index = i
+                    match_flag = 1
+                    dom_arry_basic.append(
+                        {'key': 'Name_grid_row', 'value': pif_fq_name})
+                    dom_arry_basic.append(
+                        {'key': 'Type_grid_row', 'value': row_div_list[3].text})
+                    dom_arry_basic.append(
+                        {'key': 'Parent_grid_row', 'value': row_div_list[4].text})
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "Physical interface fq_name %s exists in API server, but not found on \
+                        Webui" %(api_fq_name))
+                self.logger.debug(self.dash)
+            else:
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'interfaces', match_index)[1]
+                self.logger.info(
+                    "Verify basic view details for physical interface fq_name %s " %
+                        (api_fq_name))
+                for detail in range(len(rows_detail)):
+                    key_arry = self.ui.find_element(
+                        'key', 'class', browser = rows_detail[detail]).text
+                    value_arry = self.ui.find_element(
+                        'value', 'class', browser = rows_detail[detail]).text
+                    dom_arry_basic.append({'key': key_arry, 'value': value_arry})
+                ## Fetching API data ##
+                pif_api_data = self.ui.get_details(pif_api_list[pif]['href'])
+                complete_api_data = []
+                if 'physical-interface' in pif_api_data:
+                    api_data_basic = pif_api_data.get('physical-interface')
+                if 'fq_name' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'Name_grid_row', 'value': str(api_data_basic['fq_name'][2])})
+                    complete_api_data.append(
+                        {'key': 'Parent_grid_row', 'value': str(api_data_basic['fq_name'][1])})
+                    complete_api_data.append(
+                        {'key': 'Parent', 'value': str(api_data_basic['fq_name'][1])})
+                if 'name' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'Name', 'value': str(api_data_basic['name'])})
+                if 'uuid' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'UUID', 'value': str(api_data_basic['uuid'])})
+                if 'parent_type' in api_data_basic:
+                    if 'physical' in api_data_basic['parent_type']:
+                        ptype = 'Physical'
+                    else:
+                        ptype = '-'
+                    complete_api_data.append(
+                        {'key': 'Type_grid_row', 'value': ptype})
+                if self.ui.match_ui_kv(
+                        complete_api_data,
+                        dom_arry_basic):
+                    self.logger.info(
+                        "Physical interface data matched on %s page on UI" % (page))
+                else:
+                    self.logger.error(
+                        "Physical interface data match failed on %s page on UI" % (page))
+                    result = result and False
+        return result
+    # end verify_phy_int_api_basic_data_in_webui
+
     def verify_vm_ops_data_in_webui(self, fixture):
         self.logger.info(
             "Verifying vn %s opserver data on Monitor->Networking->Instances page" %
