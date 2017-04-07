@@ -592,6 +592,20 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_networking_policies
 
     @preposttest_wrapper
+    def test_verify_config_networking_routers(self):
+        '''Test to verify Routers under Configure->Networking->Routers
+           1. Go to Configure->Networking->Routers
+           2. Get all the details of Routers from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_routers_api_data(), \
+                   'Routers config data verification failed'
+        return True
+    # end test_verify_config_networking_routers
+
+    @preposttest_wrapper
     def test_verify_config_dns_servers(self):
         '''Test to verify DNS Servers under Configure->DNS->Servers
            1. Go to Configure->DNS->Servers
