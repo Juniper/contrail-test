@@ -30,7 +30,8 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     print "Configuring test environment"
     sys.path.insert(0, contrail_fab_path)
     if hasattr(env, 'mytestbed'):
-         testbed = __import__('fabfile.testbeds.%s' % env.mytestbed)
+         tbd = __import__('fabfile.testbeds.%s' % env.mytestbed)
+         testbed=eval('tbd.testbeds.' + getattr(env, 'mytestbed'))
     else:
         from fabfile.testbeds import testbed
     from fabfile.utils.host import get_openstack_internal_vip, \
