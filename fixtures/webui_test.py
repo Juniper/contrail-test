@@ -5263,6 +5263,132 @@ class WebuiTest:
         return result
     # end verify_qos_config_api_basic_data_in_webui
 
+    def verify_svc_health_check_api_basic_data(self):
+        page = 'Configure -> Networking -> Services -> Health Check'
+        self.logger.info("Verifying health check api server data on %s page on UI" % (page))
+        self.logger.info(self.dash)
+        result = True
+        shc_list_api = self.ui.get_shc_list_api()
+        shc_api_list = shc_list_api['service-health-checks']
+        for shc in range(len(shc_api_list)):
+            api_fq_name = shc_api_list[shc]['fq_name'][2]
+            project_name = shc_api_list[shc]['fq_name'][1]
+            if project_name == 'default-project':
+                continue
+            self.logger.info(
+                "Health check fq_name %s exists in api server.. checking if it exists in webui \
+                    as well" % (api_fq_name))
+            self.ui.click_configure_service_health_check()
+            self.ui.select_project(project_name)
+            self.ui.wait_till_ajax_done(self.browser)
+            rows = self.ui.get_rows()
+            for i in range(len(rows)):
+                match_flag = 0
+                j = 0
+                dom_arry_basic = []
+                row_div_list = self.ui.find_element('div', 'tag',
+                                                    browser=rows[i], elements=True,
+                                                    if_elements=[1])
+                shc_fq_name = row_div_list[2].text
+                if shc_fq_name == api_fq_name:
+                    self.logger.info(
+                        "Health check fq_name %s matched in webui.. Verifying basic view details\
+                            ..." % (api_fq_name))
+                    self.logger.debug(self.dash)
+                    match_index = i
+                    match_flag = 1
+                    dom_arry_basic.append(
+                        {'key': 'Name_grid_row', 'value': shc_fq_name})
+                    dom_arry_basic.append(
+                        {'key': 'Monitor_Target_grid_row', 'value': row_div_list[3].text})
+                    dom_arry_basic.append(
+                        {'key': 'Delay_grid_row', 'value': row_div_list[4].text})
+                    dom_arry_basic.append(
+                        {'key': 'Timeout_grid_row', 'value': row_div_list[5].text})
+                    dom_arry_basic.append(
+                        {'key': 'Retries_grid_row', 'value': row_div_list[6].text})
+                    dom_arry_basic.append(
+                        {'key': 'HC_type_grid_row', 'value': row_div_list[7].text})
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "Health check fq_name %s exists in API server, but not found on Webui" %
+                    (api_fq_name))
+                self.logger.debug(self.dash)
+            else:
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'service_health_check', match_index)[1]
+                self.logger.info(
+                    "Verify basic view details for Health check fq_name %s " %
+                        (api_fq_name))
+                for detail in range(len(rows_detail)):
+                    key_arry = self.ui.find_element(
+                        'key', 'class', browser = rows_detail[detail]).text
+                    value_arry = self.ui.find_element(
+                        'value', 'class', browser = rows_detail[detail]).text
+                    dom_arry_basic.append({'key': key_arry, 'value': value_arry})
+                ## Fetching API data ##
+                shc_api_data = self.ui.get_details(shc_api_list[shc]['href'])
+                complete_api_data = []
+                if 'service-health-check' in shc_api_data:
+                    api_data_basic = shc_api_data.get('service-health-check')
+                if 'fq_name' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'Name_grid_row', 'value': str(api_data_basic['fq_name'][2])})
+                if 'name' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'Name', 'value': str(api_data_basic['name'])})
+                if 'uuid' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'UUID', 'value': str(api_data_basic['uuid'])})
+                if 'display_name' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'Display Name', 'value': str(api_data_basic['display_name'])})
+                if 'service_health_check_properties' in api_data_basic:
+                    svc_prop = api_data_basic['service_health_check_properties']
+                    complete_api_data.append(
+                        {'key': 'Protocol', 'value': svc_prop['monitor_type']})
+                    complete_api_data.append(
+                        {'key': 'Monitor Target', 'value': svc_prop['url_path']})
+                    mon_target = str(svc_prop['monitor_type']).lower() + ':' + '//' + \
+                                    svc_prop['url_path']
+                    complete_api_data.append(
+                        {'key': 'Monitor_Target_grid_row', 'value': mon_target})
+                    complete_api_data.append(
+                        {'key': 'Delay (secs)', 'value': str(svc_prop['delay'])})
+                    complete_api_data.append(
+                        {'key': 'Delay_grid_row', 'value': str(svc_prop['delay'])})
+                    complete_api_data.append(
+                        {'key': 'Timeout (secs)', 'value': str(svc_prop['timeout'])})
+                    complete_api_data.append(
+                        {'key': 'Timeout_grid_row', 'value': str(svc_prop['timeout'])})
+                    complete_api_data.append(
+                        {'key': 'Retries', 'value': str(svc_prop['max_retries'])})
+                    complete_api_data.append(
+                        {'key': 'Retries_grid_row', 'value': str(svc_prop['max_retries'])})
+                    complete_api_data.append(
+                        {'key': 'Health Check Type',
+                         'value': str(svc_prop['health_check_type']).title()})
+                    complete_api_data.append(
+                        {'key': 'HC_type_grid_row',
+                         'value': str(svc_prop['health_check_type']).title()})
+                if 'service_instance_refs' in api_data_basic:
+                    api_svc_list = api_data_basic['service_instance_refs'][0]['to']
+                    api_svc_refs = str(api_svc_list[2]) + ' (' + str(api_svc_list[1]) + ')'
+                    complete_api_data.append(
+                        {'key': 'Associated Service Instance(s)', 'value': api_svc_refs})
+                if self.ui.match_ui_kv(
+                        complete_api_data,
+                        dom_arry_basic):
+                    self.logger.info(
+                        "Health check data matched on %s page on UI" % (page))
+                else:
+                    self.logger.error(
+                        "Health check data match failed on %s page on UI" % (page))
+                    result = result and False
+        return result
+    # end verify_svc_health_check_api_basic_data_in_webui
+
     def verify_vm_ops_data_in_webui(self, fixture):
         self.logger.info(
             "Verifying vn %s opserver data on Monitor->Networking->Instances page" %
