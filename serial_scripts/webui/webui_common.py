@@ -165,6 +165,10 @@ class WebuiCommon:
         return self._get_list_api('qos-configs')
     # end get_qos_list_api
 
+    def get_shc_list_api(self):
+        return self._get_list_api('service-health-checks')
+    # end get_shc_list_api
+
     def get_vm_intf_refs_list_api(self):
         return self._get_list_api('virtual-machine-interfaces')
     # end get_vm_intf_refs_list_api
