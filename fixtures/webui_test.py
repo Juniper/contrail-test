@@ -656,6 +656,9 @@ class WebuiTest:
                 result = result and False
             self.ui.send_keys(bgpaas_name, 'display_name', 'name')
             self.ui.send_keys(autonomous_system, 'autonomous_system', 'name')
+            self.ui.click_element('user_created_virtual_machine_interface')
+            self.ui.click_element(['select2-drop', 'li'], ['id', 'tag'])
+            self.ui.wait_till_ajax_done(self.browser)
             self.ui.click_on_accordian('bgpasas_advanced_opts')
             self.ui.wait_till_ajax_done(self.browser)
             self.ui.send_keys(ip_addr, 'bgpaas_ip_address', 'name')
