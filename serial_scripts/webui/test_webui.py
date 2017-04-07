@@ -570,6 +570,20 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_config_networking_ipams
 
     @preposttest_wrapper
+    def test_verify_config_networking_sec_group(self):
+        '''Test to verify Security Groups under Configure->Networking->Security Groups
+           1. Go to Configure->Networking->Security Groups
+           2. Get all the details of security group from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_security_group_api_data(), \
+                   'Security Groups config data verification failed'
+        return True
+    # end test_verify_config_networking_sec_group
+
+    @preposttest_wrapper
     def test_verify_config_networking_policies(self):
         '''Test polcies on config->Networking->Policies page
         '''
