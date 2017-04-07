@@ -17,11 +17,6 @@ class TestBasicLbaas(BaseTestLbaas):
     def tearDownClass(cls):
         super(TestBasicLbaas, cls).tearDownClass()
 
-    def is_test_applicable(self):
-        if not self.connections.orch.is_feature_supported('lbaasv1'):
-            return(False, 'lbaasv1 tests not supported in this environment ')
-        return (True, None)
-
     @test.attr(type=['sanity', 'suite1'])
     @preposttest_wrapper
     def test_lbmethod_round_robin(self):
