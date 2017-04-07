@@ -9974,3 +9974,124 @@ class WebuiTest:
                 result = result and False
         return result
     # end verify_flow_aging_api_data
+
+    def verify_routers_api_data(self, action='create', expected_result=None):
+        self.logger.info(
+            "Verifying Routers api server data on Config->Networking->Routers page ...")
+        self.logger.debug(self.dash)
+        result = True
+        routers_list_api = self.ui.get_routers_list_api()
+        for router in range(len(routers_list_api['logical-routers'])):
+            api_fq_name = routers_list_api['logical-routers'][router]['fq_name'][2]
+            self.ui.click_configure_routers()
+            rows = self.ui.get_rows()
+            for row in range(len(rows)):
+                dom_arry_basic = []
+                match_flag = 0
+                text = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)[2].text
+                if api_fq_name == text:
+                    self.logger.info(
+                        "Router fq_name %s matched in webui..Verifying basic view details..." %
+                        (api_fq_name))
+                    self.logger.debug(self.dash)
+                    match_index = row
+                    match_flag = 1
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "Routers fq name exists in apiserver but %s not found in webui..." %
+                    (api_fq_name))
+                self.logger.debug(self.dash)
+            else:
+                rows_detail = self.ui.click_basic_and_get_row_details(
+                                'routers', match_index)[1]
+                for detail in range(len(rows_detail)):
+                    key_value = rows_detail[detail].text.split('\n')
+                    key = str(key_value.pop(0))
+                    if len(key_value) > 1 :
+                        value = key_value
+                    elif len(key_value) ==  1:
+                        value = key_value[0]
+                    else:
+                        value = None
+                    if key == 'Router Interfaces':
+                        value.pop(0)
+                    if key == 'Owner Permissions' or key == 'Global Permissions' or key == 'Owner' \
+                       or key == 'Shared List':
+                        continue
+                    key = key.replace(' ', '_')
+                    dom_arry_basic.append({'key': key, 'value': value})
+                router_api_data = self.ui.get_details(
+                                routers_list_api['logical-routers'][router]['href'])
+                logical_router_api = router_api_data['logical-router']
+                complete_api_data = []
+                network = ''
+                rtr_int_list = []
+                if logical_router_api:
+                    if 'virtual_network_refs' in logical_router_api:
+                        ext_gate = logical_router_api['virtual_network_refs'][0]['to'][2]
+                        if ext_gate:
+                            complete_api_data.append({'key': 'External_Gateway', 'value': ext_gate})
+                    if 'virtual_machine_interface_refs' in logical_router_api:
+                        vm_intfs_list = logical_router_api['virtual_machine_interface_refs']
+                        if vm_intfs_list:
+                            for vm in range(len(vm_intfs_list)):
+                                vm_detail = self.ui.get_details(vm_intfs_list[vm]['href'])
+                                if vm_detail:
+                                    vm_interface = vm_detail['virtual-machine-interface']
+                                    if vm_interface['routing_instance_refs'][0]['to'][3]:
+                                         network += vm_interface[
+                                                    'routing_instance_refs'][0]['to'][3] + ', '
+                                    if 'instance_ip_back_refs' in vm_interface:
+                                        rtr_intfs = self.ui.get_details(vm_interface[
+                                                    'instance_ip_back_refs'][0]['href'])
+                                        if rtr_intfs:
+                                            rtr_int_list.append(
+                                                vm_intfs_list[vm]['to'][2] + ' ' + \
+                                                rtr_intfs['instance-ip'][
+                                                'virtual_network_refs'][0]['to'][2] + \
+                                                ' ' + rtr_intfs['instance-ip'][
+                                                'instance_ip_address'])
+                    if 'configured_route_target_list' in logical_router_api:
+                        if 'route_target' in logical_router_api['configured_route_target_list']:
+                            route_targets = logical_router_api['configured_route_target_list'][
+                                           'route_target']
+                            route_target_list = []
+                            if route_targets:
+                                for route_target in route_targets:
+                                    route_target_list.append(route_target.lstrip('target:'))
+                                if not route_target_list:
+                                    route_target_list = '-'
+                                complete_api_data.append({'key': 'Route_Target(s)',
+                                                        'value': route_target_list})
+                    self.ui.keyvalue_list(
+                        complete_api_data,
+                        Name=api_fq_name,
+                        UUID=logical_router_api['uuid'],
+                        Connected_Network=network.rstrip(', '),
+                        Router_Interfaces=rtr_int_list)
+                else:
+                    result = result and False
+                if action == 'create':
+                    if self.ui.match_ui_kv(complete_api_data, dom_arry_basic):
+                        self.logger.info(
+                            "Routers config details matched on Config->Networking->Routers page")
+                    else:
+                        self.logger.error(
+                            "Routers config details match failed on Config->Networking->Routers page")
+                        result = result and False
+                else:
+                    if self.ui.match_ui_kv(expected_result, dom_arry_basic, data=
+                           'Expected_key_value', matched_with='WebUI') and self.ui.match_ui_kv(
+                           expected_result, complete_api_data, data='Expected_key_value',
+                           matched_with='API'):
+                        self.logger.info(
+                            "%s of Routers matched on WebUI/API after editing" % (expected_result))
+                    else:
+                        self.logger.error(
+                            "%s of Routers match failed on WebUI/API after editing" %
+                            (expected_result))
+                        result = result and False
+                    return result
+        return result
+    # end verify_routers_api_data
