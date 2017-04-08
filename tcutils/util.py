@@ -1153,3 +1153,14 @@ def is_uuid(value):
 
 def istrue(value):
     return str(value).lower() in ['1', 'true', 'yes', 'y']
+
+def timeit(func):
+    @functools.wraps(func)
+    def newfunc(*args, **kwargs):
+        startTime = time.time()
+        result = func(*args, **kwargs)
+        elapsedTime = time.time() - startTime
+        print('function [{}] finished in {} ms'.format(
+            func.__name__, int(elapsedTime * 1000)))
+        return result
+    return newfunc

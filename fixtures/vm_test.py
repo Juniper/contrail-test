@@ -172,9 +172,13 @@ class VMFixture(fixtures.Fixture):
             self.vn_fq_name = self.vn_fq_names[0]
             self.vm_ip_dict = self.get_vm_ip_dict()
             self.vm_ips = self.get_vm_ips()
-            self.image_id = self.vm_obj.image['id']
-            self.image_name = self.nova_h.get_image_by_id(self.image_id)
-            self.set_image_details(self.vm_obj)
+            try:
+                #Avoid crashing in vcenter scenario where nova not present
+                self.image_id = self.vm_obj.image['id']
+                self.image_name = self.nova_h.get_image_by_id(self.image_id)
+                self.set_image_details(self.vm_obj)
+            except Exception as e:
+                pass 
 
     def setUp(self):
         super(VMFixture, self).setUp()
@@ -1058,6 +1062,20 @@ class VMFixture(fixtures.Fixture):
                     self.logger.debug(
                     "Ping to Metadata IP %s of VM %s failed!" %
                     (self.local_ips[vn_fq_name], self.vm_name))
+                    vn_obj = self.vnc_lib_h.virtual_network_read(fq_name = vn_fq_name.split(":"))
+                    #The below code is just to make sure that 
+                    #vn is assigned a gateway.In some cases(specifically vcenter case),
+                    #it was observed that the gateway was not assigned to the vn 
+                    for ipam_ref in vn_obj.network_ipam_refs:
+                        for ipam_subnet in ipam_ref['attr'].get_ipam_subnets():
+                            gateway = ipam_subnet.get_default_gateway()
+                            allocation_pool = ipam_subnet.get_allocation_pools()
+                            if not gateway:
+                                gateway = 'NOT set'
+                            if not allocation_pool:
+                                allocation_pool = 'NOT set'
+                            self.logger.info("Gateway for vn %s is %s and allocation pool is %s"\
+                                             %(vn_fq_name,gateway,allocation_pool))
                     return False
                 else:
                     self.logger.info(
