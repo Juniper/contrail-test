@@ -60,14 +60,17 @@ class HealthCheckFixture(vnc_api_test.VncLibFixture):
 
     def cleanUp(self):
         super(HealthCheckFixture, self).cleanUp()
+        do_cleanup = True
         if (self.created == False or self.inputs.fixture_cleanup == 'no') and\
            self.inputs.fixture_cleanup != 'force':
             self.logger.info('Skipping deletion of Health Check %s :'
-                              %(self.fq_name))
-        if self.inputs.is_gui_based_config():
-            self.webui.delete_svc_health_check(self)
-        else:
-            self.delete()
+                             % (self.fq_name))
+            do_cleanup = False
+        if do_cleanup:
+            if self.inputs.is_gui_based_config():
+                self.webui.delete_svc_health_check(self)
+            else:
+                self.delete()
 
     def read(self):
         self.logger.debug('Fetching info about Health Check %s'%self.uuid)
