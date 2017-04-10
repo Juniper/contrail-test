@@ -330,7 +330,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
 
         self.logger.info(
             'Testing HTTP...Trying to access www-int.juniper.net')
-        run_cmd = "wget http://www-int.juniper.net"
+        run_cmd = "wget --no-check-certificate https://www-int.juniper.net"
         vm1_fixture.run_cmd_on_vm(cmds=[run_cmd])
         output = vm1_fixture.return_output_values_list[0]
         if 'saved' not in output:
