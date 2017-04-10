@@ -28,6 +28,7 @@ from common import isolated_creds
 from tcutils.wrappers import preposttest_wrapper
 sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
 from tcutils.commands import *
+from tcutils.tcpdump_utils import *
 from testresources import ResourcedTestCase
 import traffic_tests
 from fabric.context_managers import settings
@@ -987,13 +988,13 @@ class FloatingipTestSanity1(base.FloatingIpBaseTest):
         traffic_stats = {}
         self.logger.info(
             "Traffic expected to stop flowing as FIP removed.Disruption expected.")
+
         for proto in traffic_proto_l:
             traffic_stats = traffic_obj[proto].getLiveTrafficStats()
             err_msg = "Traffic NOT stopped after FIP removal "
         #self.assertEqual(traffic_stats['status'], False, err_msg)
         assert(traffic_stats['status'] == False), err_msg
         self.logger.info("-" * 80)
-
         # Verify Flow records here
         inspect_h1 = self.agent_inspect[vn1_vm1_traffic_fixture.vm_node_ip]
         inspect_h2 = self.agent_inspect[fvn1_vm1_traffic_fixture.vm_node_ip]
@@ -1011,7 +1012,6 @@ class FloatingipTestSanity1(base.FloatingIpBaseTest):
             sport=udp_src,
             dport=dpi,
             protocol='17')
-
         if flow_rec1 is not None:
             match = inspect_h1.match_item_in_flowrecord(
                 flow_rec1, 'short_flow', 'yes')
@@ -2605,13 +2605,21 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
         compute_password = self.inputs.host_data[compute_ip]['password']
         session = ssh(compute_ip, compute_user, compute_password)
         vm2_tapintf = self.orch.get_vm_tap_interface(vm2_fixture.tap_intf[vn1_fixture.vn_fq_name])
-        cmd = 'sudo tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log' % (vm2_tapintf,
-                                                                   vm2_tapintf)
-        execute_cmd(session, cmd, self.logger)
+        cmd = 'sudo tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log' % (vm2_tapintf, vm2_tapintf)
+        if not self.inputs.pcap_on_vm:
+           execute_cmd(session, cmd, self.logger)
+        else:
+            filters = 'icmp -vvv -c 2'
+            vm_fix_pcap_pid_files = start_tcpdump_for_vm_intf(None,[vm2_fixture],None,filters,True)
         assert not(vm1_fixture.ping_to_ip(vm3_fixture.vm_ip, count='20'))
         self.logger.info('%%%%% Will check the result of tcpdump %%%%%')
-        output_cmd = 'cat /tmp/%s_out.log' % vm2_tapintf
-        output, err = execute_cmd_out(session, output_cmd, self.logger)
+        if not self.inputs.pcap_on_vm:
+            output_cmd = 'cat /tmp/%s_out.log' % vm2_tapintf
+            output, err = execute_cmd_out(session, output_cmd, self.logger)
+        else:
+            output, pkt_count = stop_tcpdump_for_vm_intf(
+                None, None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
+            output = "".join(output)
         print output
         if vm1_fixture.vm_ip in output:
             self.logger.info(
@@ -2636,14 +2644,25 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
         self.addCleanup(fip_fixture.disassoc_and_delete_fip, fip_id)
         assert fip_fixture.verify_fip(fip_id, vm1_fixture, vn2_fixture)
 
-        execute_cmd(session, cmd, self.logger)
+        if not self.inputs.pcap_on_vm:
+            execute_cmd(session, cmd, self.logger)
+        else: 
+            vm_fix_pcap_pid_files = start_tcpdump_for_vm_intf(None,[vm2_fixture],None,filters,True)
+
         if not (vm1_fixture.ping_with_certainty(vm3_fixture.vm_ip)):
             result = result and False
             self.logger.error(
                 'Longest prefix matched route is not taken floating ip ping is failing')
         self.logger.info('%%%%% Will check the result of tcpdump %%%%%')
-        output_cmd = 'cat /tmp/%s_out.log' % vm2_tapintf
-        output, err = execute_cmd_out(session, output_cmd, self.logger)
+
+        if not self.inputs.pcap_on_vm:
+            output_cmd = 'cat /tmp/%s_out.log' % vm2_tapintf
+            output, err = execute_cmd_out(session, output_cmd, self.logger)
+        else :
+            output, pkt_count = stop_tcpdump_for_vm_intf(
+                None, None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
+            output = "".join(output)
+
         print output
         if vm1_fixture.vm_ip in output:
             self.logger.error(
@@ -2923,14 +2942,22 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
         session = ssh(compute_ip, compute_user, compute_password)
         vm3_tapintf = self.orch.get_vm_tap_interface(vm3_fixture.tap_intf[vn3_fixture.vn_fq_name])
         cmd = 'sudo tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log' % (
-            vm3_tapintf, vm3_tapintf)
-        execute_cmd(session, cmd, self.logger)
+                          vm3_tapintf, vm3_tapintf)
+        if not self.inputs.pcap_on_vm:
+                  execute_cmd(session, cmd, self.logger)
+        else:
+            filters = 'icmp -vvv -c 2'
+            vm3_fix_pcap_pid_files = start_tcpdump_for_vm_intf(None,[vm3_fixture],None,filters,True)
         assert not(vm1_fixture.ping_to_ip(vm2_eth1_ip, count='20'))
         self.logger.info('%%%%% Will check the result of tcpdump %%%%%\n')
-        output_cmd = 'cat /tmp/%s_out.log' % vm3_tapintf
-        output, err = execute_cmd_out(session, output_cmd, self.logger)
+        if not self.inputs.pcap_on_vm:
+            output_cmd = 'cat /tmp/%s_out.log' % vm3_tapintf
+            output, err = execute_cmd_out(session, output_cmd, self.logger)
+        else :
+            output, pkt_count = stop_tcpdump_for_vm_intf(
+                 None, None, None, vm_fix_pcap_pid_files=vm3_fix_pcap_pid_files)
+            output = "".join(output)
         print output
-
         if vm1_fip in output:
             self.logger.info(
                 'Traffic is going to vm333 static ip is configured correctly \n')
@@ -2956,15 +2983,23 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
                 password=password, warn_only=True, abort_on_prompts=False, debug=True):
             status = run('cd /usr/share/contrail-utils/;' + add_static_route_cmd)
             self.logger.debug("%s" % status)
-
-        execute_cmd(session, cmd, self.logger)
+        if not self.inputs.pcap_on_vm:
+            execute_cmd(session, cmd, self.logger)
+        else:
+            vm3_fix_pcap_pid_files = start_tcpdump_for_vm_intf(None,[vm3_fixture],None,filters,True)
         if not (vm1_fixture.ping_with_certainty(vm2_eth1_ip)):
             result = result and False
             self.logger.error(
                 'Longest prefix matched route is not taken ping using native static route is failing \n')
         self.logger.info('%%%%% Will check the result of tcpdump %%%%%')
-        output_cmd = 'cat /tmp/%s_out.log' % vm3_tapintf
-        output, err = execute_cmd_out(session, output_cmd, self.logger)
+        if not self.inputs.pcap_on_vm:
+            output_cmd = 'cat /tmp/%s_out.log' % vm3_tapintf
+            output, err = execute_cmd_out(session, output_cmd, self.logger)
+        else :
+            output, pkt_count = stop_tcpdump_for_vm_intf(
+                 None, None, None, vm_fix_pcap_pid_files=vm3_fix_pcap_pid_files)
+            output = "".join(output)
+
         print output
 
         if vm1_fip in output:
@@ -3161,11 +3196,17 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
         vm1_tapintf_eth1 = self.orch.get_vm_tap_interface(vm1_fixture.tap_intf[vn2_fixture.vn_fq_name])
         vm1_tapintf_eth2 = self.orch.get_vm_tap_interface(vm1_fixture.tap_intf[vn3_fixture.vn_fq_name])
         cmd1 = 'sudo tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log' % (
-            vm1_tapintf_eth1, vm1_tapintf_eth1)
+                                    vm1_tapintf_eth1, vm1_tapintf_eth1)
         cmd2 = 'sudo tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log' % (
-            vm1_tapintf_eth2, vm1_tapintf_eth2)
-        execute_cmd(session, cmd1, self.logger)
-        execute_cmd(session, cmd2, self.logger)
+                                    vm1_tapintf_eth2, vm1_tapintf_eth2)
+        if not self.inputs.pcap_on_vm:
+            execute_cmd(session, cmd1, self.logger)
+            execute_cmd(session, cmd2, self.logger)
+        else:
+            filters = 'icmp -vvv -c 2'
+            vm1_fix_pcap_pid_files_eth1 = start_tcpdump_for_vm_intf(None,[vm1_fixture],None,filters,True,vm_intf='eth1')
+            vm1_fix_pcap_pid_files_eth2 = start_tcpdump_for_vm_intf(None,[vm1_fixture],None,filters,True,vm_intf='eth2')
+
         if not (
             vm2_fixture.ping_with_certainty(
                 vm1_fixture.vm_ip,
@@ -3174,13 +3215,21 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
             self.logger.error("Ping from vm222 to vm111 failed not expected")
 
         self.logger.info('%%%%% Will check the result of tcpdump %%%%%\n')
-        output_cmd1 = 'cat /tmp/%s_out.log' % vm1_tapintf_eth1
-        output_cmd2 = 'cat /tmp/%s_out.log' % vm1_tapintf_eth2
-        output1, err = execute_cmd_out(session, output_cmd1, self.logger)
-        output2, err = execute_cmd_out(session, output_cmd2, self.logger)
+        if not self.inputs.pcap_on_vm:
+            output_cmd1 = 'cat /tmp/%s_out.log' % vm1_tapintf_eth1
+            output_cmd2 = 'cat /tmp/%s_out.log' % vm1_tapintf_eth2
+            output1, err = execute_cmd_out(session, output_cmd1, self.logger)
+            output2, err = execute_cmd_out(session, output_cmd2, self.logger)
+        else:
+            output1, pkt_count = stop_tcpdump_for_vm_intf(
+                 None, None, None, vm_fix_pcap_pid_files=vm1_fix_pcap_pid_files_eth1)
+            output1 = "".join(output1)
+            output2, pkt_count = stop_tcpdump_for_vm_intf(
+                 None, None, None, vm_fix_pcap_pid_files=vm1_fix_pcap_pid_files_eth2)
+            output2 = "".join(output2)
+           
         print output1
         print output2
-
         if vm2_fip1 in output1:
             self.logger.info(
                 'Traffic is going through vm111 eth1 interface as the vn name (vnaaa) is smaller here, longest prefix match is followed \n')
@@ -3301,7 +3350,11 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
         vm1_tapintf = self.orch.get_vm_tap_interface(vm1_fixture.tap_intf[vn1_fixture.vn_fq_name])
         cmd = 'sudo tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log' % (
             vm1_tapintf, vm1_tapintf)
-        execute_cmd(session, cmd, self.logger)
+        if not self.inputs.pcap_on_vm:
+            execute_cmd(session, cmd, self.logger)
+        else:
+            filters = 'icmp -vvv -c 2'
+            vm_fix_pcap_pid_files = start_tcpdump_for_vm_intf(None,[vm1_fixture],None,filters,True) 
         if not (
             vm2_fixture.ping_with_certainty(
                 vm1_fixture.vm_ip,
@@ -3310,15 +3363,19 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
             self.logger.error("Ping from vm222 to vm111 failed not expected")
 
         self.logger.info('%%%%% Will check the result of tcpdump %%%%%\n')
-        output_cmd = 'cat /tmp/%s_out.log' % vm1_tapintf
-        output, err = execute_cmd_out(session, output_cmd, self.logger)
+        if not self.inputs.pcap_on_vm:
+            output_cmd = 'cat /tmp/%s_out.log' % vm1_tapintf
+            output, err = execute_cmd_out(session, output_cmd, self.logger)
+        else:
+            output, pkt_count = stop_tcpdump_for_vm_intf(
+                None, None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
+            output = "".join(output) 
         print output
-
         if vm2_fip1 > vm2_fip2:
             smaller_fip = vm2_fip2
         else:
             smaller_fip = vm2_fip1
-
+        
         if smaller_fip in output:
             self.logger.info(
                 'Traffic is send using smaller fip when 2 fips are allocated from same vn as expected \n')
@@ -3335,8 +3392,10 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
         vm2_fip3 = vm2_fixture.vnc_lib_h.floating_ip_read(
             id=fip_id3).get_floating_ip_address()
         fip_fixture.disassoc_and_delete_fip(fip_id1)
-
-        execute_cmd(session, cmd, self.logger)
+        if not self.inputs.pcap_on_vm:
+            execute_cmd(session, cmd, self.logger)
+        else :
+            vm_fix_pcap_pid_files = start_tcpdump_for_vm_intf(None,[vm1_fixture],None,filters,True) 
         if not (
             vm2_fixture.ping_with_certainty(
                 vm1_fixture.vm_ip,
@@ -3344,8 +3403,15 @@ class FloatingipTestSanity5(base.FloatingIpBaseTest):
             result = result and False
             self.logger.error("Ping from vm222 to vm111 failed not expected")
         self.logger.info('%%%%% Will check the result of tcpdump %%%%%')
-        output_cmd = 'cat /tmp/%s_out.log' % vm1_tapintf
-        output, err = execute_cmd_out(session, output_cmd, self.logger)
+
+        if not self.inputs.pcap_on_vm:
+            output_cmd = 'cat /tmp/%s_out.log' % vm1_tapintf
+            output, err = execute_cmd_out(session, output_cmd, self.logger)
+        else:
+            output, pkt_count = stop_tcpdump_for_vm_intf(
+                None, None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
+            output = "".join(output) 
+
         print output
 
         if vm2_fip2 > vm2_fip3:
