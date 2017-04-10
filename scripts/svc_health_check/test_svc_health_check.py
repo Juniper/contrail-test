@@ -1,9 +1,9 @@
 from tcutils.wrappers import preposttest_wrapper
 from common.servicechain.firewall.verify import VerifySvcFirewall
-from base import BaseHC
+from common.svc_health_check.base import BaseHC
 import test
 import time
-
+from common import isolated_creds
 
 class TestSvcHC(BaseHC, VerifySvcFirewall):
 
