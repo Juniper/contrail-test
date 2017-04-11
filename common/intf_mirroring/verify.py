@@ -28,10 +28,11 @@ class VerifyIntfMirror(VerifySvcMirror):
             if compute_id == 0:
                 compute_nodes.append(host_list[0])
 
-            if compute_id == 1 and no_of_computes > 1:
-                compute_nodes.append(host_list[1])
-            else:
-                compute_nodes.append(host_list[0])
+            if compute_id == 1:
+                if no_of_computes > 1:
+                    compute_nodes.append(host_list[1])
+                else:
+                    compute_nodes.append(host_list[0])
 
             if compute_id == 2:
                 if no_of_computes > 2:
@@ -40,6 +41,7 @@ class VerifyIntfMirror(VerifySvcMirror):
                     compute_nodes.append(host_list[1])
                 else:
                     compute_nodes.append(host_list[0])
+
         self.logger.info("src compute %s -> dst compute %s => analyzer compute %s" %
             (compute_nodes[0], compute_nodes[1], compute_nodes[2]))
         return compute_nodes
