@@ -7382,8 +7382,12 @@ class WebuiTest:
                                     'service_template_properties']
                                 if 'image_name' in svc_prop:
                                     image = svc_prop['image_name']
+                                    if not image:
+                                        image = '-'
                                 if 'flavor' in svc_prop:
                                     flavor = svc_prop['flavor']
+                                    if not flavor:
+                                        flavor = '-'
                                 break
                     self.ui.keyvalue_list(
                         complete_api_data,
@@ -7395,11 +7399,14 @@ class WebuiTest:
                 if api_data_basic.get('service_instance_properties'):
                     serv_inst_list = api_data_basic[
                         'service_instance_properties']
-                    for key in serv_inst_list:
-                        key_list = [
+                    key_list = [
                             'left_virtual_network',
                             'right_virtual_network',
                             'management_virtual_network']
+                    count = 1
+                    if 'scale_out' in serv_inst_list:
+                        count = 2
+                    for key in serv_inst_list:
                         if key == 'scale_out':
                             if serv_inst_list.get('scale_out'):
                                 inst_value = str(
@@ -7408,37 +7415,6 @@ class WebuiTest:
                                     {'key': 'Number of instances', 'value': inst_value})
                                 complete_api_data.append(
                                     {'key': 'no_of_instances_main_row', 'value': inst_value})
-                        elif key == 'interface_list':
-                            inst_net_list1 = serv_inst_list['interface_list']
-                            if len(inst_net_list1) != len(inst_net_list):
-                                for inst_nets1 in range(len(inst_net_list1)):
-                                    for inst_nets in range(len(inst_net_list)):
-                                        if inst_net_list1[inst_nets1].get(
-                                                'virtual_network') != inst_net_list[inst_nets]:
-                                            not_match_count = not_match_count + \
-                                                1
-                                            if not_match_count == len(
-                                                    inst_net_list):
-                                                other_net = inst_net_list1[
-                                                    inst_nets1].get('virtual_network')
-                                                if other_net == '':
-                                                    pass
-                                                elif other_net.split(':')[1] == project:
-                                                    net_list.append(
-                                                        'Other Network : ' +
-                                                        other_net.split(':')[2])
-                                                else:
-                                                    net_list.append(
-                                                        net +
-                                                        ' : ' +
-                                                        other_net.split(':')[2] +
-                                                        '(' +
-                                                        other_net.split(':')[0] +
-                                                        ':' +
-                                                        other_net.split(':')[1] +
-                                                        ')')
-                                        else:
-                                            break
                         elif key in key_list:
                             net = key
                             net_value = serv_inst_list.get(net)
@@ -7449,18 +7425,48 @@ class WebuiTest:
                             elif net_value.split(':')[1] == project:
                                 net_list.append(
                                     net +
-                                    ' : ' +
+                                    ': ' +
                                     net_value.split(':')[2])
                             else:
                                 net_list.append(
                                     net +
-                                    ' : ' +
+                                    ': ' +
                                     net_value.split(':')[2] +
                                     '(' +
                                     net_value.split(':')[0] +
                                     ':' +
                                     net_value.split(':')[1] +
                                     ')')
+                        elif key == 'interface_list':
+                            inst_net_list1 = serv_inst_list['interface_list']
+                            if len(inst_net_list1) > 3:
+                                for inst_nets1 in range(len(inst_net_list1)):
+                                    for inst_nets in range(len(inst_net_list)):
+                                        if inst_net_list1[inst_nets1].get(
+                                                'virtual_network') != inst_net_list[inst_nets]:
+                                            not_match_count += not_match_count
+                                            if not_match_count > len(
+                                                    serv_inst_list)-count:
+                                                other_net = inst_net_list1[
+                                                    inst_nets1].get('virtual_network')
+                                                if other_net == '':
+                                                    pass
+                                                elif other_net.split(':')[1] == project:
+                                                    net_list.append(
+                                                        'Other Network: ' +
+                                                        other_net.split(':')[2])
+                                                else:
+                                                    net_list.append(
+                                                        net +
+                                                        ': ' +
+                                                        other_net.split(':')[2] +
+                                                        '(' +
+                                                        other_net.split(':')[0] +
+                                                        ':' +
+                                                        other_net.split(':')[1] +
+                                                        ')')
+                                        else:
+                                            break
                     if len(net_list) > 2:
                         more_count = len(net_list) - 2
                         net_list_grid_row = [net_list[0],net_list[2]]
