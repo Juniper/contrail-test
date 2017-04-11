@@ -2090,7 +2090,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test6_2_edit_port_vn_port_name
 
     @preposttest_wrapper
-    def test6_3_edit_port_by_add_security_group(self):
+    def test_write_port_with_add_security_group(self):
         ''' Test to edit the existing port by security group
             1. Go to Configure->Networking->Ports. Then select the one of the port
                and click the edit button.
