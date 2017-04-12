@@ -1,20 +1,21 @@
 from tcutils.util import retry
 from tcutils.config import vmware_introspect_utils
+from common import log_orig as contrail_logging
 
 class VMWareVerificationLib:
     '''Clas to hold verification helper functions for vcenter plugin introspect'''
     def __init__(self,inputs):
         self.inputs = inputs
         self.vcntr_introspect = None
-        self.logger = self.inputs.logger
+        self.logger = contrail_logging.getLogger(__name__)
+        self.intfs_dict = {}
 
     def get_introspect(self):
         try:
             for ip in self.inputs.cfgm_ips:
-                vc_inspect = vmware_introspect_utils.\
-							get_vcenter_plugin_introspect_elements(\
-							vmware_introspect_utils.VMWareInspect(ip))
-                if (vc_inspect['master'][0] == 'true'):
+                if  vmware_introspect_utils.\
+			get_vcenter_plugin_introspect_elements(\
+			vmware_introspect_utils.VMWareInspect(ip)):
                     self.vcntr_introspect = vmware_introspect_utils.VMWareInspect(ip)
                     break
         except Exception as e:
@@ -54,6 +55,20 @@ class VMWareVerificationLib:
 		self.logger.info("Vcenter plugin verification:%s deleted in vorouter %s "\
                                %(vm_name,vrouter_ip))
 		return True
+
+    def get_vmi_from_vcenter_introspect(self, vrouter_ip,vm_name, *args):
+       intfs = []
+       if vm_name in self.intfs_dict.keys():
+           return self.intfs_dict[vm_name]
+       self.get_introspect()
+       vrouter_details = vmware_introspect_utils.get_vrouter_details(self.vcntr_introspect, vrouter_ip)
+       for virtual_machine in vrouter_details.virtual_machines:
+           if virtual_machine.name == vm_name:
+               intfs.append(virtual_machine)
+       self.intfs_dict[vm_name] = intfs
+       return intfs
+                
+        
 
 if __name__ == '__main__':
     va =  vmware_introspect_utils.VMWareInspect('10.204.216.14')

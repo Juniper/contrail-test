@@ -2,7 +2,7 @@ import logging as LOG
 
 from tcutils.verification_util import *
 from vnc_api_results import *
-from tcutils.util import retry
+from tcutils.util import retry,istrue
 
 LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
@@ -29,6 +29,10 @@ def get_vcenter_plugin_introspect_elements(vcenterclient):
         if (child.tag == 'master'):
             master = Master(child)
             vcenterplugin['master'] = master.master
+            if not istrue(master.master[0]):
+                return False 
+            else:
+                return True
         elif (child.tag == 'pluginSessions'):
             session = PluginSessions(child)
             vcenterplugin['pluginSessions'] = session.pluginsessions
@@ -42,8 +46,7 @@ def get_vcenter_plugin_introspect_elements(vcenterclient):
             vcntr_info = VCenterServerInfo(child)
             vcenterplugin['VCenterServerInfo'] = vcntr_info.vcenterserverinfo
         else:
-            print 'Invalid element'
-            continue
+            LOG.info( 'Invalid element')
     return vcenterplugin
 
 def get_esxi_to_vrouter_mapping(vcenterclient,query_value):
@@ -60,7 +63,7 @@ def get_esxi_to_vrouter_mapping(vcenterclient,query_value):
 def get_vrouter_details(vcenterclient,query_value):
     try:
     	inspect = vcenterclient.get_vcenter_plugin_vrouter_details(query_value)
-        return VRouterDetails(elem2dict(inspect[0]))
+        return VRouterDetails(inspect[0])
     except Exception as e:
         LOG.exception(e)
         return None
