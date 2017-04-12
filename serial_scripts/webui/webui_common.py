@@ -3317,7 +3317,7 @@ class WebuiCommon:
         edit = self.find_element(toggle_icon, 'xpath', elements=True)
         edit[index-1].click()
         self.wait_till_ajax_done(self.browser)
-        item = self.find_element("//ul[contains(@class,'item-list')]", 'xpath')
+        item = self.find_element('slick-row-detail-container', 'class')
         out_split = re.split("\n",item.text)
         join_res = "-".join(out_split)
         if search_key == 'Display Name':
