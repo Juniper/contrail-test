@@ -1968,9 +1968,20 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
     # end click_configure_link_local_service_basic
 
+    def click_configure_nodes(self, tab='virtual_routers',
+                             msg="configure virtual routers"):
+        if not self.click_configure_elements(0, 'config_infra_nodes',
+                                  msg=msg):
+            return False
+        else:
+            element = tab + '_tab-tab-link'
+            self.click_element(element)
+            self.wait_till_ajax_done(self.browser, wait=3)
+            return self.check_error_msg("Configure " + msg)
+    # end click_configure_nodes
+
     def click_configure_vrouter(self):
-        return self.click_configure_elements(0, 'config_infra_vrouters',
-                                  msg="configure virtual routers")
+        return self.click_configure_nodes()
     # end click_configure_vrouter
 
     def click_configure_vrouter_basic(self, row_index):
