@@ -7354,6 +7354,10 @@ class WebuiTest:
                 if 'display_name' in api_data_basic:
                     complete_api_data.append(
                         {'key': 'Display Name', 'value': api_data_basic['display_name']})
+                if 'port_tuples' in api_data_basic:
+                    complete_api_data.append(
+                        {'key': 'Port Tuples',
+                            'value': api_data_basic['port_tuples'][0]['to'][3]})
                 if api_data_basic.get('service_template_refs'):
                     template_string = api_data_basic[
                         'service_template_refs'][0]['to'][1]
