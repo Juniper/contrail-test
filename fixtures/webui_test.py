@@ -939,8 +939,8 @@ class WebuiTest:
                 fc_browser = self.ui.find_element(
                                 'data-cell-forwarding_class_id',
                                 'class', browser=element_browser)
-                self.ui.click_on_caret_down(browser=fc_browser)
-                self.ui.find_select_from_dropdown(fc_value, browser=fc_browser)
+                self.ui.send_keys(fc_value, 'custom-combobox-input',
+                                    'class', browser=fc_browser)
             if not self.ui.click_on_create(
                     ele_type, func_suffix, save=True):
                 self.ui.click_on_cancel_if_failure('cancelBtn')
