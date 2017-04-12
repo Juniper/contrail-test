@@ -2157,9 +2157,6 @@ class WebuiTestSanity(base.WebuiBaseTest):
                           topo.port_advanced_option['port']},
                           {'key': 'Analyzer_Name', 'value':
                               topo.port_advanced_option['analyzer_name']},
-                          {'key': 'Routing_Instance', 'value': topo.domain + ":" +
-                              self.webui.project_name_input + ":" +
-                              topo.vnet_list[0] + ":" + topo.vnet_list[0]},
                           {'key': 'Juniper_Header', 'value': 'Enabled'},
                           {'key': 'Analyzer_MAC', 'value':
                               topo.port_advanced_option['analyzer_mac']},
@@ -2193,6 +2190,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         self.webui.logger.debug("Step 1 : Edit the port by adding the values \
                                under advanced option")
         port_params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
+        port_params_list.append(topo.vnet_list[0])
         result = self.webui.edit_port('advanced_option', 'Ports',
                      topo.port_list[0], params_list=port_params_list, subnet=False,
                      allowed_address_pair=False, ecmp=False, mirror=True,
@@ -2300,6 +2298,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         port_params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
         port_params_list[8] = topo.invalid_ip_mask
         port_params_list[6] = topo.invalid_mac
+        port_params_list.append(topo.vnet_list[0])
         assert not self.webui.edit_port('advanced_option', 'Ports',
                      topo.port_list[0], params_list=port_params_list, subnet=False,
                      allowed_address_pair=True, ecmp=False, mirror=False,
@@ -2328,6 +2327,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         port_params_list[5] = topo.invalid_ip_mask
         port_params_list[2] = topo.invalid_mac
         port_params_list[10] = topo.invalid_port
+        port_params_list.append(topo.vnet_list[0])
         if not self.webui.edit_port('advanced_option', 'Ports',
                topo.port_list[0], params_list=port_params_list, subnet=False,
                allowed_address_pair=False, ecmp=False, mirror=True,
@@ -2359,6 +2359,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         port_params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
         port_params_list[7] = topo.invalid_ip_mask
         port_params_list[3] = topo.invalid_mac
+        port_params_list.append(topo.vnet_list[0])
         if not self.webui.edit_port('advanced_option', 'Ports',
                      topo.port_list[0], params_list=port_params_list, subnet=False,
                      allowed_address_pair=True, ecmp=False, mirror=True,
