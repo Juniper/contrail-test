@@ -123,12 +123,14 @@ class WebuiEdit:
                     self.ui.send_keys(params_list[5], 'analyzer_ip_address', 'name', clear=True)
                     self.ui.send_keys(params_list[10], 'udp_port', 'name', clear=True)
                     self.ui.send_keys(params_list[1], 'analyzer_name', 'name', clear=True)
-                    self.ui.click_element('s2id_mirrorToRoutingInstance_dropdown')
-                    self.ui.click_element('select2-highlighted', 'class')
                     self.ui.send_keys(params_list[2], 'analyzer_mac_address', 'name', clear=True)
-                    self.ui.click_element('s2id_juniper_header_dropdown')
+                    self.ui.click_element('s2id_user_created_juniper_header_dropdown')
                     if not self.ui.select_from_dropdown(header_mode, grep=False):
                         result = result and False
+                    if header_mode == 'Disabled':
+                        self.ui.click_element('s2id_mirrorToRoutingInstance_dropdown')
+                        if not self.ui.select_from_dropdown(params_list[11], grep=False):
+                            result = result and False
                     self.ui.click_element('s2id_traffic_direction_dropdown')
                     if not self.ui.select_from_dropdown(traffic_direction, grep=False):
                         result = result and False
