@@ -233,6 +233,9 @@ class ContrailReportInit:
                     self.database_ip = host_ip
                     self.database_ips.append(host_ip)
                     self.database_names.append(host['name'])
+        if not self.webui_ips:
+            self.webui_ip = self.cfgm_ip
+            self.webui_ips = self.cfgm_ips
         if json_data.has_key('physical_routers'):
             self.physical_routers_data = json_data['physical_routers']
         if json_data.has_key('vgw'):
@@ -312,7 +315,7 @@ class ContrailReportInit:
         bgp_nodes = [self.get_node_name(x) for x in self.bgp_ips]
         collector_nodes = [self.get_node_name(x) for x in self.collector_ips]
         cfgm_nodes = [self.get_node_name(x) for x in self.cfgm_ips]
-        webui_node = self.get_node_name(self.webui_ip)
+        webui_node = [self.get_node_name(x) for x in self.webui_ips]
         ext_rtr = unicode(self.ext_rtr.strip('[()]').split(',')[0])
         phy_dev = []
         phy_dev = self.physical_routers_data.keys()
