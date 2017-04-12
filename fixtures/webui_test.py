@@ -6218,7 +6218,7 @@ class WebuiTest:
     def create_vm(self, fixture):
         result = True
         flag = False
-        flavor_name = 'm1.small'
+        flavor_name = 'contrail_flavor_tiny'
         if not WebuiTest.os_release:
             WebuiTest.os_release = self.os_release
         try:
@@ -6235,7 +6235,7 @@ class WebuiTest:
                 fixture.project_name,
                 self.browser_openstack, self.os_release)
             self.ui.click_instances(self.browser_openstack)
-            fixture.image_name = 'ubuntu'
+            fixture.image_name = 'cirros'
             fixture.nova_h.get_image(image_name=fixture.image_name)
             time.sleep(2)
             self.ui.click_element(
@@ -6389,12 +6389,12 @@ class WebuiTest:
                                     fixture.vm_name,
                                     self.browser_openstack)
                                 break
-            time.sleep(10)
+            time.sleep(20)
             fixture.vm_obj = fixture.nova_h.get_vm_if_present(
-                fixture.vm_name, fixture.project_fixture.uuid)
+                fixture.vm_name, fixture.project_id)
             fixture.vm_objs = fixture.nova_h.get_vm_list(
                 name_pattern=fixture.vm_name,
-                project_id=fixture.project_fixture.uuid)
+                project_id=fixture.project_id)
             fixture.vm_id = fixture.vm_obj.id
             fixture.verify_on_setup()
         except WebDriverException:
@@ -6480,10 +6480,15 @@ class WebuiTest:
 
     def verify_vm(self, fixture):
         result = True
+        network_name = 'all networks'
         try:
             if not self.ui.click_monitor_instances():
                 result = result and False
+            self.ui.wait_till_ajax_done(self.browser)
             self.ui.select_project(fixture.project_name)
+            self.ui.select_network(network_name)
+            self.browser.refresh()
+            self.ui.wait_till_ajax_done(self.browser)
             rows = self.ui.get_rows()
             ln = len(rows)
             vm_flag = 0
