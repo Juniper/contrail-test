@@ -9822,7 +9822,7 @@ class WebuiTest:
                 dom_arry_basic = []
                 match_flag = 0
                 text = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)[2].text
-                if api_fq_name in text:
+                if api_fq_name == text:
                     self.logger.info(
                         "vrouter fq_name %s matched in webui..Verifying basic view details..." %
                         (api_fq_name))
