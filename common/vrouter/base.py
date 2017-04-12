@@ -308,7 +308,7 @@ class BaseVrouterTest(BaseNeutronTest):
         proto = 'icmp' if (self.inputs.get_af() == 'v4') else 'icmp6'
         errmsg = "Ping to right VM ip %s from left VM failed" % dest_ip
         dest_ip = dest_ip or dest_vm_fix.vm_ip
-
+        vm_fix_pcap_pid_files = {}
         if flow_count:
             #If flow is expected, then flow count should be minimum no. of try_count
             flow_count = try_count
@@ -333,8 +333,12 @@ class BaseVrouterTest(BaseNeutronTest):
             for vm in si_vm_list:
                 filters = '\'(%s and (host %s or host %s))\'' % (
                     proto, sender_vm_fix.vm_ip, dest_ip)
-                session[vm], pcap[vm] = start_tcpdump_for_vm_intf(self, vm,
-                    self.trans_left_vn_fixture.vn_fq_name, filters = filters)
+                if not self.inputs.pcap_on_vm:
+                    session[vm], pcap[vm] = start_tcpdump_for_vm_intf(self, vm,
+                        self.trans_left_vn_fixture.vn_fq_name, filters = filters)
+                else:
+                    vm_fix_pcap_pid_files[vm] = start_tcpdump_for_vm_intf(
+                        None, [vm], None, filters=filters, pcap_on_vm=True)
 
             #Send the traffic
             for i in xrange(try_count):
@@ -342,12 +346,17 @@ class BaseVrouterTest(BaseNeutronTest):
 
             #Verify tcpdump count, all destinations should receive some packets
             for vm in si_vm_list:
-                ret = verify_tcpdump_count(self, session[vm], pcap[vm])
+                if not self.inputs.pcap_on_vm:
+                    ret = verify_tcpdump_count(self, session[vm], pcap[vm])
+                else:
+                    ret = verify_tcpdump_count(self, None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files[vm])
                 if not ret:
                     self.logger.error("Tcpdump verification on VM %s failed" %
                                         vm.vm_ip)
-                    stop_tcpdump_for_vm_intf(self, session[vm], pcap[vm])
-                delete_pcap(session[vm], pcap[vm])
+                    if not self.inputs.pcap_on_vm:
+                        stop_tcpdump_for_vm_intf(self, session[vm], pcap[vm])
+                if not self.inputs.pcap_on_vm:
+                    delete_pcap(session[vm], pcap[vm])
                 result = result and ret
 
             #Verify expected flow count, on all the computes
@@ -437,15 +446,19 @@ class BaseVrouterTest(BaseNeutronTest):
         result = False
         sport = random.randint(12000, 65000)
 
+        vm_fix_pcap_pid_files = {}
         src_compute_fix = self.compute_fixtures_dict[sender_vm_fix.vm_node_ip]
         src_vrf_id = src_compute_fix.get_vrf_id(sender_vm_fix.vn_fq_names[0])
-
         #Start the tcpdump on all the destination VMs
         for vm in dest_vm_fix_list:
             filters = '\'(%s and src host %s and dst host %s and dst port %s)\'' % (
                 proto, sender_vm_fix.vm_ip, dest_ip, int(destport))
-            session[vm], pcap[vm] = start_tcpdump_for_vm_intf(self, vm,
-                                        vm.vn_fq_names[0], filters = filters)
+            if not self.inputs.pcap_on_vm:
+                session[vm], pcap[vm] = start_tcpdump_for_vm_intf(self, vm,
+                                            vm.vn_fq_names[0], filters = filters)
+            else:
+                vm_fix_pcap_pid_files[vm] = start_tcpdump_for_vm_intf(
+                    None, [vm], None, filters=filters, pcap_on_vm=True)
 
         #Send the traffic without any receiver, dest VM will send icmp error
         nc_options = '-4' if (self.inputs.get_af() == 'v4') else '-6'
@@ -456,7 +469,10 @@ class BaseVrouterTest(BaseNeutronTest):
 
         #Verify tcpdump count, any one destination should receive the packet
         for vm in dest_vm_fix_list:
-            ret = verify_tcpdump_count(self, session[vm], pcap[vm])
+            if not self.inputs.pcap_on_vm:
+                ret = verify_tcpdump_count(self, session[vm], pcap[vm])
+            else:
+                ret = verify_tcpdump_count(self, None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files[vm])
             if ret:
                 self.logger.info("Tcpdump verification on VM %s passed" %
                                     vm.vm_ip)
@@ -473,8 +489,9 @@ class BaseVrouterTest(BaseNeutronTest):
 
                 break
         for vm in dest_vm_fix_list:
-            stop_tcpdump_for_vm_intf(self, session[vm], pcap[vm])
-            delete_pcap(session[vm], pcap[vm])
+            if not self.inputs.pcap_on_vm:
+                stop_tcpdump_for_vm_intf(self, session[vm], pcap[vm])
+                delete_pcap(session[vm], pcap[vm])
 
         #Verify expected flow count on sender compute
         self.verify_flow_on_compute(src_compute_fix, sender_vm_fix.vm_ip,
