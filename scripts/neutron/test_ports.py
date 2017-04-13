@@ -23,7 +23,7 @@ from tcutils.util import *
 from netaddr import IPNetwork, IPAddress
 from floating_ip import FloatingIPFixture
 from tcutils import tcpdump_utils
-
+from tcutils.tcpdump_utils import *
 
 class TestPorts(BaseNeutronTest):
 
@@ -1166,13 +1166,25 @@ class TestPorts(BaseNeutronTest):
         self.logger.info('Break VRRP link, by setting mismatching server Id')
         self.service_keepalived(vm2_fixture, 'stop')
         filter_cmd = 'arp host %s and ether src 00:00:5e:00:01:00' % vIP
-        session, pcap = tcpdump_utils.start_tcpdump_for_vm_intf(self.connections, vm2_fixture,
+        if not self.inputs.pcap_on_vm:
+            session, pcap = tcpdump_utils.start_tcpdump_for_vm_intf(self.connections, vm2_fixture,
                                                                 vn1_fixture.vn_fq_name, filter_cmd)
+        else:
+            vm_fix_pcap_pid_files = start_tcpdump_for_vm_intf(None,[vm2_fixture],None,filter_cmd,True)
         self.config_keepalive(vm2_fixture, vIP, '50', '20')
         time.sleep(120)
-        tcpdump_utils.stop_tcpdump_for_vm_intf(self.connections, session, pcap)
-        self.verify_arp_backoff(vIP, tcpdump_utils.read_tcpdump(self.connections, session, pcap))
-        tcpdump_utils.delete_pcap(session, pcap)
+        if not self.inputs.pcap_on_vm:
+            tcpdump_utils.stop_tcpdump_for_vm_intf(self.connections, session, pcap)
+            self.verify_arp_backoff(vIP, tcpdump_utils.read_tcpdump(self.connections, session, pcap))
+            tcpdump_utils.delete_pcap(session, pcap)
+        else:
+            output, pkt_count = stop_tcpdump_for_vm_intf(
+                                    None, None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
+
+            output = "".join(output)
+            output = output.replace("\n","").replace("\r","")
+            output=re.sub('sudo.*Ethernet\)','',output,flags=re.DOTALL)
+            self.verify_arp_backoff(vIP, output)
 
         self.logger.info('Restore VRRP link')
         self.service_keepalived(vm2_fixture, 'stop')
@@ -1181,13 +1193,24 @@ class TestPorts(BaseNeutronTest):
 
         self.logger.info('Break VRRP link, by setting mismatching server Id')
         self.service_keepalived(vm2_fixture, 'stop')
-        session, pcap = tcpdump_utils.start_tcpdump_for_vm_intf(self.connections, vm2_fixture,
+        if not self.inputs.pcap_on_vm:
+            session, pcap = tcpdump_utils.start_tcpdump_for_vm_intf(self.connections, vm2_fixture,
                                                                 vn1_fixture.vn_fq_name, filter_cmd)
+        else:
+            vm_fix_pcap_pid_files = start_tcpdump_for_vm_intf(None,[vm2_fixture],None,filter_cmd,True)
         self.config_keepalive(vm2_fixture, vIP, '50', '20')
         time.sleep(120)
-        tcpdump_utils.stop_tcpdump_for_vm_intf(self.connections, session, pcap)
-        self.verify_arp_backoff(vIP, tcpdump_utils.read_tcpdump(self.connections, session, pcap))
-        tcpdump_utils.delete_pcap(session, pcap)
+        if not self.inputs.pcap_on_vm:
+            tcpdump_utils.stop_tcpdump_for_vm_intf(self.connections, session, pcap)
+            self.verify_arp_backoff(vIP, tcpdump_utils.read_tcpdump(self.connections, session, pcap))
+            tcpdump_utils.delete_pcap(session, pcap)
+        else:
+            output, pkt_count = stop_tcpdump_for_vm_intf(
+                             None, None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
+            output = "".join(output)
+            output = output.replace("\n","").replace("\r","")
+            output=re.sub('sudo.*Ethernet\)','',output,flags=re.DOTALL)
+            self.verify_arp_backoff(vIP, output)
 
         self.logger.info('Restore VRRP link')
         self.service_keepalived(vm2_fixture, 'stop')
