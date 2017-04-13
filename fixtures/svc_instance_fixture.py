@@ -366,7 +366,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         try:
             vm_refs = self.cs_si[
                 'service-instance']['virtual_machine_back_refs']
-            self.svm_ids = [vm_ref['to'][0] for vm_ref in self.vm_refs]
+            self.svm_ids = [vm_ref['to'][0] for vm_ref in vm_refs]
         except KeyError:
             vm_refs = None
 
