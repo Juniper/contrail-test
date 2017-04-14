@@ -268,8 +268,16 @@ class WebuiTest:
                 'PhysicalRouter', 'physical_router',
                 save=True):
                 result = result and False
+            self.ui.click_configure_physical_router()
+            rows = self.ui.get_rows()
+            match_index = 0
+            for row in range(len(rows)):
+                text = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)[2].text
+                if fixture.name == text:
+                    match_index = row
+                    break
             rows_detail = self.ui.click_basic_and_get_row_details(
-                'physical_router', 0)[1]
+                'physical_router', match_index)[1]
             fixture.uuid = self.ui.get_value_of_key(rows_detail, 'UUID')
         except WebDriverException:
             self.logger.error(
@@ -8364,6 +8372,8 @@ class WebuiTest:
                                 juniper_header = 'Enabled'
                             else:
                                 juniper_header = 'Disabled'
+                                complete_api_data.append({'key': 'Routing_Instance',
+                                                        'value': mirror_to['routing_instance']})
                             if mirror_to['nh_mode'] == 'static':
                                 static_header = mirror_to['static_nh_header']
                                 vtep_dest_ip = static_header['vtep_dst_ip_address']
@@ -8383,7 +8393,6 @@ class WebuiTest:
                             Analyzer_IP=mirror_to['analyzer_ip_address'],
                             UDP_Port=str(mirror_to['udp_port']),
                             Analyzer_Name=mirror_to['analyzer_name'],
-                            Routing_Instance=mirror_to['routing_instance'],
                             Juniper_Header=juniper_header,
                             Analyzer_MAC=analyzer_mac,
                             Traffic_Direction=port_mirror['traffic_direction'].title(),
@@ -8677,10 +8686,10 @@ class WebuiTest:
             self.logger.error(
                 "Error while creating bgp router %s" %
                 (fixture.name))
-            self.ui.screenshot("BGP Router creation failed")
+            self.ui.screenshot("BGP_Router_creation_failed")
             result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
             raise
-        self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_bgp_router
 
@@ -8729,8 +8738,8 @@ class WebuiTest:
                 (service_name))
             self.ui.screenshot("LinkLocalService")
             result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
             raise
-        self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_link_local_service
 
@@ -8752,10 +8761,10 @@ class WebuiTest:
         except WebDriverException:
             self.logger.error(
                 "Error while creating virtual router %s" % (fixture.name))
-            self.ui.screenshot("Virtual Router creation failed")
+            self.ui.screenshot("Virtual_Router_creation_failed")
             result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
             raise
-        self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_virtual_router
 
@@ -8792,6 +8801,7 @@ class WebuiTest:
                 "Error while creating service appliance set")
             self.ui.screenshot("ServiceApplianceSet")
             result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
             raise
         self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
@@ -8834,8 +8844,8 @@ class WebuiTest:
                 "Error while creating service appliances")
             self.ui.screenshot("ServiceAppliances")
             result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
             raise
-        self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_service_appliances
 
@@ -8888,8 +8898,8 @@ class WebuiTest:
                 "Error while creating alarms %s " %(fixture.alarm_name))
             self.ui.screenshot("Alarm")
             result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
             raise
-        self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_alarms
 
@@ -8959,7 +8969,7 @@ class WebuiTest:
         except WebDriverException:
             self.logger.error(
                 "Error while creating Log statistics")
-            self.ui.screenshot("Log Stat")
+            self.ui.screenshot("Log_Stat")
             result = result and False
             self.ui.click_on_cancel_if_failure('cancelBtn')
             raise
@@ -8977,19 +8987,19 @@ class WebuiTest:
                 result = result and False
             if option == 'create':
                 if flow_list and params:
-                    for flow in flow_list:
+                    for index, flow in enumerate(flow_list):
                         port = params[flow]['port']
                         timeout = params[flow]['timeout']
                         self.ui.click_element('editable-grid-add-link', 'class')
                         br = self.ui.find_element('data-row', 'class', elements=True)
-                        self.ui.send_keys(flow, 'custom-combobox-input', 'class', browser=br[-1])
+                        self.ui.send_keys(flow, 'custom-combobox-input', 'class', browser=br[index])
                         send_key_values = {
                             'name': {
                                 'port': port,
                                  'timeout_in_seconds': timeout}}
                         if flow == '1 (ICMP)':
                             del send_key_values['name']['port']
-                        if not self.ui.send_keys_values(send_key_values, br=br[-1]):
+                        if not self.ui.send_keys_values(send_key_values, br=br[index]):
                             result = result and False
                 else:
                     result = result and False
@@ -9001,7 +9011,7 @@ class WebuiTest:
         except WebDriverException:
             self.logger.error(
                 "Error while creating Flow aging")
-            self.ui.screenshot("Flow Aging")
+            self.ui.screenshot("Flow_Aging")
             result = result and False
             self.ui.click_on_cancel_if_failure('cancelBtn')
             raise
@@ -9031,10 +9041,10 @@ class WebuiTest:
         except WebDriverException:
             self.logger.error(
                 "Error while creating interface route table %s " %(fixture.name))
-            self.ui.screenshot("Interface Route Table")
+            self.ui.screenshot("Interface_Route_Table")
             result = result and False
+            self.ui.click_on_cancel_if_failure('cancelBtn')
             raise
-        self.ui.click_on_cancel_if_failure('cancelBtn')
         return result
     # end create_intf_route_table
 
