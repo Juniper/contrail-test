@@ -1147,8 +1147,12 @@ class WebuiTest:
                         self.ui.click_element('fa-cog', 'class', browser=net)
                         self.ui.wait_till_ajax_done(self.browser)
                         self.ui.click_element(['tooltip-success', 'i'], ['class', 'tag'])
-                        self.ui.click_element('advanced_options')
-                        self.ui.click_element('s2id_route_table_refs_dropdown')
+                        self.ui.click_on_accordian('advanced_options', accor=False)
+                        self.ui.wait_till_ajax_done(self.browser)
+                        route_dropdown = self.ui.find_element('s2id_route_table_refs_dropdown')
+                        self.browser.execute_script(
+                            "return arguments[0].scrollIntoView();", route_dropdown)
+                        route_dropdown.click()
                         self.ui.wait_till_ajax_done(self.browser)
                         self.ui.select_from_dropdown(nrt_name, grep=True)
                         if not self.ui.click_on_create('Network', 'network', save=True):
