@@ -5,7 +5,7 @@ import testtools
 import unittest
 from vn_test import *
 from tcutils.wrappers import preposttest_wrapper
-from common.static_route_table.base import StaticRouteTableBase 
+from base import StaticRouteTableBase 
 from common import isolated_creds
 import test 
 from common.servicechain.firewall.verify import VerifySvcFirewall
@@ -42,7 +42,14 @@ class TestStaticRouteTables(StaticRouteTableBase, VerifySvcFirewall):
             self.left_vm_fixture, self.right_vm_fixture, 'udp', sport=sport, dport=dport)
 
         self.check_route_in_agent(expected_next_hops = 1)
+        self.add_interface_route_table(self.vn1_v6_fixture, self.vn2_v6_fixture, self.vm1_v6_fixture, v6 = True)
+        self.addCleanup(self.delete_int_v6_route_table)
+        sport = 8001
+        dport = 9001
+        self.verify_traffic(
+            self.left_v6_vm_fixture, self.right_v6_vm_fixture, 'udp', sport=sport, dport=dport)
 
+        self.check_route_in_agent(expected_next_hops = 1, v6 = True)
     #end test_static_table
 
     @preposttest_wrapper
@@ -71,6 +78,18 @@ class TestStaticRouteTables(StaticRouteTableBase, VerifySvcFirewall):
             self.unbind_interface_table(self.vn1_fixture, self.vn2_fixture, self.vm1_fixture)
             self.delete_int_route_table()
 
+            self.add_interface_route_table(self.vn1_v6_fixture, self.vn2_v6_fixture, self.vm1_v6_fixture, v6 = True)
+            sport = 8001
+            dport = 9001
+            self.unbind_interface_table(self.vn1_v6_fixture, self.vn2_v6_fixture, self.vm1_v6_fixture, v6 = True)
+            self.bind_interface_table(self.vn1_v6_fixture, self.vn2_v6_fixture, self.vm1_v6_fixture, v6 = True)
+            self.verify_traffic(
+                self.left_v6_vm_fixture, self.right_v6_vm_fixture, 'udp', sport=sport, dport=dport)
+
+            self.check_route_in_agent(expected_next_hops = 1, v6 = True)
+            self.unbind_interface_table(self.vn1_v6_fixture, self.vn2_v6_fixture, self.vm1_v6_fixture, v6 = True)
+            self.delete_int_v6_route_table()
+
     #end test_add_delete_static_table
 
     @preposttest_wrapper
@@ -97,6 +116,19 @@ class TestStaticRouteTables(StaticRouteTableBase, VerifySvcFirewall):
             self.check_route_in_agent(expected_next_hops = 1)
         self.unbind_interface_table(self.vn1_fixture, self.vn2_fixture, self.vm1_fixture)
         self.delete_int_route_table()
+
+        self.add_interface_route_table(self.vn1_v6_fixture, self.vn2_v6_fixture, self.vm1_v6_fixture, v6 = True)
+        for i in range(1,5):
+            sport = 8001
+            dport = 9001
+            self.unbind_interface_table(self.vn1_v6_fixture, self.vn2_v6_fixture, self.vm1_v6_fixture, v6 = True)
+            self.bind_interface_table(self.vn1_v6_fixture, self.vn2_v6_fixture, self.vm1_v6_fixture, v6 = True)
+            self.verify_traffic(
+                self.left_v6_vm_fixture, self.right_v6_vm_fixture, 'udp', sport=sport, dport=dport)
+
+            self.check_route_in_agent(expected_next_hops = 1, v6 = True)
+        self.unbind_interface_table(self.vn1_v6_fixture, self.vn2_v6_fixture, self.vm1_v6_fixture, v6 = True)
+        self.delete_int_v6_route_table()
 
     #end test_bind_unbind_interface_static_table
 
@@ -125,6 +157,18 @@ class TestStaticRouteTables(StaticRouteTableBase, VerifySvcFirewall):
             self.unbind_network_table(self.vn1_fixture, self.vn2_fixture)
             self.del_nw_route_table()
 
+            self.add_network_table_to_vn(self.vn1_v6_fixture, self.vn2_v6_fixture, v6 = True)
+            sport = 8001
+            dport = 9001
+            self.unbind_network_table(self.vn1_v6_fixture, self.vn2_v6_fixture, v6 = True)
+            self.bind_network_table(self.vn1_v6_fixture, self.vn2_v6_fixture, v6 = True)
+            self.verify_traffic(
+                self.left_v6_vm_fixture, self.right_v6_vm_fixture, 'udp', sport=sport, dport=dport)
+
+            self.check_route_in_agent(expected_next_hops = 1, v6 = True)
+            self.unbind_network_table(self.vn1_v6_fixture, self.vn2_v6_fixture, v6 = True)
+            self.del_nw_v6_route_table()
+
     #end test_add_delete_static_table
 
     @preposttest_wrapper
@@ -152,6 +196,19 @@ class TestStaticRouteTables(StaticRouteTableBase, VerifySvcFirewall):
         self.unbind_network_table(self.vn1_fixture, self.vn2_fixture)
         self.del_nw_route_table()
 
+        self.add_network_table_to_vn(self.vn1_v6_fixture, self.vn2_v6_fixture, v6 = True)
+        for i in range(1,5):
+            sport = 8001
+            dport = 9001
+            self.unbind_network_table(self.vn1_v6_fixture, self.vn2_v6_fixture, v6 = True)
+            self.bind_network_table(self.vn1_v6_fixture, self.vn2_v6_fixture, v6 = True)
+            self.verify_traffic(
+                self.left_v6_vm_fixture, self.right_v6_vm_fixture, 'udp', sport=sport, dport=dport)
+
+            self.check_route_in_agent(expected_next_hops = 1, v6 = True)
+        self.unbind_network_table(self.vn1_v6_fixture, self.vn2_v6_fixture)
+        self.del_nw_v6_route_table()
+
     #end test_bind_unbind_network_static_table
 
     @test.attr(type=['sanity'])
@@ -175,6 +232,15 @@ class TestStaticRouteTables(StaticRouteTableBase, VerifySvcFirewall):
         self.check_route_in_agent(expected_next_hops = 1)
         self.unbind_network_table(self.vn1_fixture, self.vn2_fixture)
 
+        sport = 8001
+        dport = 9001
+        self.add_network_table_to_vn(self.vn1_v6_fixture, self.vn2_v6_fixture, v6 = True)
+        self.addCleanup(self.del_nw_v6_route_table)
+        self.verify_traffic(
+            self.left_v6_vm_fixture, self.right_v6_vm_fixture, 'udp', sport=sport, dport=dport)
+        self.check_route_in_agent(expected_next_hops = 1, v6 = True)
+        self.unbind_network_table(self.vn1_v6_fixture, self.vn2_v6_fixture, v6 = True)
+
     @preposttest_wrapper
     def test_with_neutron_router(self):
         """
@@ -196,6 +262,16 @@ class TestStaticRouteTables(StaticRouteTableBase, VerifySvcFirewall):
         self.verify_traffic(
             self.left_vm_fixture, self.right_vm_fixture, 'udp', sport=sport, dport=dport)
         self.check_route_in_agent(expected_next_hops = 1)
+
+        self.add_network_table_to_vn(self.vn1_v6_fixture, self.vn2_v6_fixture, v6 = True)
+        self.add_interface_route_table(self.vn1_v6_fixture, self.vn2_v6_fixture, self.vm1_v6_fixture, v6 = True)
+        self.neutron_router_test(v6 = True)
+        sport = 8001
+        dport = 9001
+
+        self.verify_traffic(
+            self.left_v6_vm_fixture, self.right_v6_vm_fixture, 'udp', sport=sport, dport=dport)
+        self.check_route_in_agent(expected_next_hops = 1, v6 = True)
 
     # end test_network_table
 
