@@ -8170,7 +8170,7 @@ class WebuiTest:
                 'virtual-machine-interfaces'][port]['fq_name'][2]
             self.ui.click_configure_ports()
             self.ui.select_project(self.project_name_input)
-            rows = self.ui.get_rows()
+            rows = self.ui.get_rows(canvas=True)
             if not api_fq_name in port_name_list:
                 continue
             self.logger.info(
@@ -8587,15 +8587,16 @@ class WebuiTest:
                     subnet = str(subnet[0].values()[0]) + '/' + str(subnet[0].values()[1])
                     complete_api_data.append({'key': 'IP_Fabric_Subnets', 'value':
                                             subnet})
-                if grace_restart['enable']:
-                    bgp_helper = 'Enabled' if grace_restart['bgp_helper_enable'] else \
-                                 'Disabled'
-                    self.ui.keyvalue_list(complete_api_data, Graceful_Restart='Enabled',
-                        BGP_Helper=bgp_helper, Restart_Time=str(grace_restart['restart_time']),
-                        LLGR_Time=str(grace_restart['long_lived_restart_time']),
-                        End_of_RIB=str(grace_restart['end_of_rib_timeout']))
-                else:
-                    complete_api_data.append({'key': 'Graceful_Restart', 'value': 'Disabled'})
+                if grace_restart:
+                    if grace_restart['enable']:
+                        bgp_helper = 'Enabled' if grace_restart['bgp_helper_enable'] else \
+                                     'Disabled'
+                        self.ui.keyvalue_list(complete_api_data, Graceful_Restart='Enabled',
+                            BGP_Helper=bgp_helper, Restart_Time=str(grace_restart['restart_time']),
+                            LLGR_Time=str(grace_restart['long_lived_restart_time']),
+                            End_of_RIB=str(grace_restart['end_of_rib_timeout']))
+                    else:
+                        complete_api_data.append({'key': 'Graceful_Restart', 'value': 'Disabled'})
             else:
                 result = result and False
         else:
@@ -9114,7 +9115,7 @@ class WebuiTest:
                 dom_arry_basic = []
                 match_flag = 0
                 text = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)[2].text
-                if api_fq_name in text:
+                if api_fq_name == text:
                     self.logger.info(
                         "Interface route table fq_name %s matched in webui.. \
                         Verifying basic view details..." % (api_fq_name))
@@ -9409,11 +9410,9 @@ class WebuiTest:
                 self.logger.debug(self.dash)
                 conf_func = 'self.ui.click_configure_alarms_in_' + parent_type
                 eval(conf_func)()
-                if parent_type == 'global':
-                     br = self.ui.find_element('config-alarm-grid')
-                else:
-                    br = self.browser
-                    self.ui.select_project(self.project_name_input)
+                if parent_type == 'project':
+                     self.ui.select_project(self.project_name_input)
+                br = self.ui.find_element('config-alarm-grid')
                 rows = self.ui.get_rows(browser=br)
                 self.logger.info(
                     "Alarm fq_name %s exists in api server..checking if exists in webui as well" %
@@ -9422,7 +9421,7 @@ class WebuiTest:
                     dom_arry_basic = []
                     match_flag = 0
                     text = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)[2].text
-                    if api_fq_name in text:
+                    if api_fq_name == text:
                         self.logger.info(
                             "Alarm fq_name %s matched in webui..Verifying basic view details..." %
                             (api_fq_name))
@@ -9553,17 +9552,14 @@ class WebuiTest:
             api_fq_name = access_list_api['api-access-lists'][acl]['fq_name'][0]
             text_index = 3
             if rbac_type == 'global':
-                count = 2
                 text_index = 2
                 if api_fq_name != 'default-global-system-config':
                     continue
             elif rbac_type == 'project':
-                count = 5
                 if api_fq_name != 'default-domain' or \
                     len(access_list_api['api-access-lists'][acl]['fq_name']) != 3:
                     continue
             else:
-                count = 4
                 if api_fq_name != 'default-domain' or \
                     len(access_list_api['api-access-lists'][acl]['fq_name']) != 2:
                     continue
@@ -9601,8 +9597,9 @@ class WebuiTest:
                             Object_Property=obj_property,
                             API_Access_Rules=acl)
                         eval("self.ui.click_configure_rbac_in_" + rbac_type)()
-                        rows = self.ui.get_rows()
-                        for index, row in enumerate(rows, start=count):
+                        br = self.ui.find_element('rbac-' + rbac_type + '-grid')
+                        rows = self.ui.get_rows(browser=br)
+                        for index, row in enumerate(rows):
                             dom_arry_basic = []
                             match_flag = 0
                             text = self.ui.find_element('div', 'tag', browser=rows[index],
@@ -9622,7 +9619,8 @@ class WebuiTest:
                             self.logger.debug(self.dash)
                         else:
                             rows_detail = self.ui.click_basic_and_get_row_details(
-                                 'rbac_in_' + rbac_type, match_index)[1]
+                                 'rbac_in_' + rbac_type, match_index,
+                                 search_ele='rbac-' + rbac_type + '-grid', browser=br)[1]
                             for detail in range(len(rows_detail)):
                                 key_value = rows_detail[detail].text.split('\n')
                                 key = str(key_value.pop(0))
@@ -9873,8 +9871,11 @@ class WebuiTest:
                 complete_api_data = []
                 if 'virtual-router' in vrouter_api_data:
                     vrouter_data = vrouter_api_data['virtual-router']
-                    if self.inputs.auth_ip == vrouter_data['virtual_router_ip_address']:
-                        continue
+                    if 'virtual_router_ip_address' in vrouter_data:
+                        if self.inputs.auth_ip == vrouter_data['virtual_router_ip_address']:
+                            continue
+                        complete_api_data.append({'key': 'IP_Address',
+                                                'value': vrouter_data['virtual_router_ip_address']})
                     vrouter_type = vrouter_data[
                                    'virtual_router_type'].title().replace('-', ' ')
                     if re.search('Tor', vrouter_type):
@@ -9883,8 +9884,7 @@ class WebuiTest:
                         complete_api_data,
                         Name=vrouter_data.get('name'),
                         UUID=vrouter_data.get('uuid'),
-                        Type=vrouter_type,
-                        IP_Address=vrouter_data['virtual_router_ip_address'])
+                        Type=vrouter_type)
                 else:
                     result = result and False
                 if action == 'create':
@@ -9934,7 +9934,7 @@ class WebuiTest:
                     dom_arry_basic = []
                     match_flag = 0
                     text = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)[2].text
-                    if api_fq_name in text:
+                    if api_fq_name == text:
                         self.logger.info(
                             "Service Appliance fq_name %s matched in webui.. \
                             Verifying basic view details..." % (api_fq_name))
@@ -10048,7 +10048,8 @@ class WebuiTest:
             api_fq_name = bgp_rtr_list_api[
                 'bgp-routers'][router]['fq_name'][4]
             self.ui.click_configure_bgp_router()
-            rows = self.ui.get_rows()
+            br = self.ui.find_element('bgp-grid')
+            rows = self.ui.get_rows(browser=br)
             for row in range(len(rows)):
                 dom_arry_basic = []
                 match_flag = 0
@@ -10068,7 +10069,7 @@ class WebuiTest:
                 self.logger.debug(self.dash)
             else:
                 rows_detail = self.ui.click_basic_and_get_row_details(
-                                'bgp_router', match_index)[1]
+                                'bgp_router', match_index, search_ele='bgp-grid', browser=br)[1]
                 for detail in range(len(rows_detail)):
                     key_value = rows_detail[detail].text.split('\n')
                     key = str(key_value.pop(0))

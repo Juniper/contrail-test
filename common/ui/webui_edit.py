@@ -292,8 +292,8 @@ class WebuiEdit:
             result = self.ui.negative_test_proc('global_bgp_options')
             self.ui.wait_till_ajax_done(self.browser)
         except WebDriverException:
-            self.logger.error("Error while trying to edit %s" % (option))
-            self.ui.screenshot(option)
+            self.logger.error("Error while trying to edit global/bgp option")
+            self.ui.screenshot('global_bgp_option')
             result = result and False
             self.ui.click_on_cancel_if_failure('cancelBtn')
             raise
