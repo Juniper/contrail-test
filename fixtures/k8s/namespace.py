@@ -1,3 +1,4 @@
+import time
 import fixtures
 from kubernetes.client.rest import ApiException
 from kubernetes import client
@@ -63,11 +64,11 @@ class NamespaceFixture(fixtures.Fixture):
     def cleanUp(self):
         super(NamespaceFixture, self).cleanUp()
         self.delete()
-        self.logger.info('Deleted namespace %s' % (self.name))
 
     def _populate_attr(self):
         self.uuid = self.obj.metadata.uid
         self.status = self.obj.status.phase
+        self.labels = self.obj.metadata.labels
 
     def read(self):
         try:
@@ -88,13 +89,30 @@ class NamespaceFixture(fixtures.Fixture):
         body = client.V1Namespace()
         body.metadata = client.V1ObjectMeta(name=self.name)
         self.obj = self.k8s_client.v1_h.create_namespace(body)
-        self._populate_attr() 
+        self._populate_attr()
         self.logger.info('Created namespace %s' % (self.name))
+        #TODO 
+        # Need to remove
+        time.sleep(3)
     # end create
 
     def delete(self):
         if not self.already_exists:
             body = client.V1DeleteOptions()
+            self.logger.info('Deleting namespace %s' % (self.name))
             return self.k8s_client.v1_h.delete_namespace(self.name, body)
+            # TODO
+            # Need to remove sleep once ns deletion check is added in cleanup 
+            time.sleep(3)
     # end delete
 
+    def enable_isolation(self):
+        return self.k8s_client.set_isolation(self.name)
+
+    def disable_isolation(self):
+        return self.k8s_client.set_isolation(self.name, False)
+
+    def set_labels(self, label_dict):
+        self.obj = self.k8s_client.set_namespace_label(self.name, label_dict)
+        self._populate_attr()
+    # end set_labels

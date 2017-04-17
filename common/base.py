@@ -8,7 +8,47 @@ from port_fixture import PortFixture
 from interface_route_table_fixture import InterfaceRouteTableFixture
 from tcutils.util import get_random_name, get_random_cidr
 
-class GenericTestBase(test_v1.BaseTestCase_v1):
+class _GenericTestBaseMethods():
+
+    def sleep(self, value):
+        self.logger.debug('Sleeping for %s seconds..' % (value))
+        time.sleep(value)
+    # end sleep
+
+    def remove_from_cleanups(self, func_call, *args):
+        for cleanup in self._cleanups:
+            if func_call in cleanup and args == cleanup[1]:
+                self._cleanups.remove(cleanup)
+                return True
+        return False
+
+
+    def remove_method_from_cleanups(self, method):
+        for cleanup in self._cleanups:
+            if method == cleanup:
+                self._cleanups.remove(cleanup)
+                break
+   # end remove_method_from_cleanups
+
+    def set_global_asn(self, asn):
+        existing_asn = self.vnc_lib_fixture.get_global_asn()
+        ret = self.vnc_lib_fixture.set_global_asn(asn)
+        self.addCleanup(self.vnc_lib_fixture.set_global_asn, existing_asn)
+        return ret
+    # end set_global_asn
+
+    def perform_cleanup(self, obj):
+        if getattr(obj, 'cleanUp', None):
+            self.remove_from_cleanups(obj.cleanUp)
+            obj.cleanUp()
+    # end perform_cleanup
+
+    def check1(self):
+        pass
+# end _GenericTestBaseMethods
+
+
+class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
 
     @classmethod
     def setUpClass(cls):
@@ -206,20 +246,6 @@ class GenericTestBase(test_v1.BaseTestCase_v1):
             port_rsp = self.update_port(port['id'], port_dict)
         return True
     #end config_aap
-
-    def remove_from_cleanups(self, func_call, *args):
-        for cleanup in self._cleanups:
-            if func_call in cleanup and args == cleanup[1]:
-                self._cleanups.remove(cleanup)
-                return True
-        return False
-
-    def remove_method_from_cleanups(self, method):
-        for cleanup in self._cleanups:
-            if method == cleanup:
-                self._cleanups.remove(cleanup)
-                break
-   # end remove_method_from_cleanups
 
     def allow_all_traffic_between_vns(self, vn1_fixture, vn2_fixture):
         policy_name = get_random_name('policy-allow-all')

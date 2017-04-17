@@ -14,7 +14,8 @@ class PodFixture(fixtures.Fixture):
                  name=None,
                  namespace='default',
                  metadata={},
-                 spec={}):
+                 spec={},
+                 shell=None):
         self.logger = connections.logger or contrail_logging.getLogger(
             __name__)
         self.inputs = connections.inputs
@@ -24,6 +25,8 @@ class PodFixture(fixtures.Fixture):
         self.metadata = metadata
         self.spec = spec
         self.already_exists = None
+        self.shell = shell or '/bin/sh'
+        self._shell_arg = '%s -l -c' % (self.shell)
 
     def setUp(self):
         super(PodFixture, self).setUp()
@@ -32,19 +35,19 @@ class PodFixture(fixtures.Fixture):
     def verify_on_setup(self):
 
         if not self.verify_pod_is_running(self.name, self.namespace):
-            self.logger.error('POD %s is not in running state'
+            self.logger.error('Pod %s is not in running state'
                               % (self.name))
             return False
         if not self.verify_pod_in_contrail_api():
-            self.logger.error('POD %s not seen in Contrail API'
+            self.logger.error('Pod %s not seen in Contrail API'
                               % (self.name))
             return False
         if not self.verify_pod_in_contrail_control():
-            self.logger.error('POD %s not seen in Contrail control'
+            self.logger.error('Pod %s not seen in Contrail control'
                               % (self.name))
             return False
         if not self.verify_pod_in_contrail_agent():
-            self.logger.error('POD %s not seen in Contrail agent' % (
+            self.logger.error('Pod %s not seen in Contrail agent' % (
                 self.name))
             return False
         self.logger.info('Pod %s verification passed' % (self.name))
@@ -58,6 +61,7 @@ class PodFixture(fixtures.Fixture):
     def _populate_attr(self):
         self.uuid = self.obj.metadata.uid
         self.status = self.obj.status.phase
+        self.labels = self.obj.metadata.labels
 
     def read(self):
         try:
@@ -66,7 +70,7 @@ class PodFixture(fixtures.Fixture):
             self.already_exists = True
             return self.obj
         except ApiException as e:
-            self.logger.debug('POD %s not present' % (self.name))
+            self.logger.debug('Pod %s not present' % (self.name))
             return None
     # end read
 
@@ -87,16 +91,21 @@ class PodFixture(fixtures.Fixture):
             resp = self.k8s_client.delete_pod(self.namespace, self.name)
     # end delete
 
+    def set_labels(self, label_dict):
+        return self.k8s_client.set_pod_label(self.namespace, self.name,
+            label_dict)
+    # end set_labels
+
     @retry(delay=5, tries=60)
     def verify_pod_is_running(self, name, namespace):
         result = False
         pod_status = self.k8s_client.read_pod_status(name, namespace)
         if pod_status.status.phase != "Running":
-            self.logger.debug('POD %s not in running state.'
+            self.logger.debug('Pod %s not in running state.'
                                'Currently in %s' % (self.name,
                                                    pod_status.status.phase))
         else:
-            self.logger.info('POD %s is in running state.'
+            self.logger.info('Pod %s is in running state.'
                              'Got IP %s' % (self.name,
                                             pod_status.status.pod_ip))
             self.pod_ip = pod_status.status.pod_ip
@@ -135,16 +144,27 @@ class PodFixture(fixtures.Fixture):
     def run_cmd(self, cmd, **kwargs):
         return self.run_cmd_on_pod(cmd, **kwargs)
 
-    def run_cmd_on_pod(self, cmd, mode='api', shell='/bin/bash -l -c'):
+    def run_cmd_on_pod(self, cmd, mode='api', shell=None):
+        if not shell:
+            shell = self._shell_arg
         if mode == 'api':
             output = self.k8s_client.exec_cmd_on_pod(self.name, cmd,
                 namespace=self.namespace, shell=shell)
         else:
             output = self.run_kubectl_cmd_on_master(self.name, cmd, shell)
+        self.logger.debug('[Pod %s] Cmd: %s, Output: %s' % (self.name,
+            cmd, output))
         return output
     # run_cmd_on_pod
 
-    def ping_to_ip(self, ip, return_output=False, count='5', expectation=True):
+    @retry(delay=1, tries=10)
+    def ping_with_certainty(self, *args, **kwargs):
+        expectation = kwargs.get('expectation', True)
+        (ret_val, output) = self.ping_to_ip(*args, **kwargs)
+        return ret_val
+    # end ping_with_certainty
+
+    def ping_to_ip(self, ip, count='3', expectation=True):
         """Ping from a POD to an IP specified.
 
         This method logs into the POD from kubernets master using kubectl and runs ping test to an IP.
@@ -153,27 +173,22 @@ class PodFixture(fixtures.Fixture):
         cmd = "ping -c %s %s" % (count, ip)
         try:
             output = self.run_cmd_on_pod(cmd)
-            if return_output is True:
-                return output
         except Exception, e:
             self.logger.exception(
-                'Exception occured while trying ping from POD')
-            return False
+                'Exception occured while trying ping from pod')
+            return (False, output)
 
         expected_result = ' 0% packet loss'
-        try:
-            if expected_result not in output:
-                self.logger.warn("Ping to IP %s from POD %s failed" %
-                                 (ip, self.name))
-                if not expectation:
-                    return False
-            else:
-                self.logger.info('Ping to IP %s from POD %s passed' %
-                                 (ip, self.name))
-            return True
-        except Exception as e:
-            self.logger.warn("Got exception in ping_to_ip:%s" % (e))
-            return False
+        result = expectation == (expected_result in output)
+        if not result:
+            self.logger.warn("Ping check to IP %s from pod %s failed. "
+                "Expectation: %s, Got: %s" %(ip, self.name,
+                expectation, result, ))
+            return (False, output)
+        else:
+            self.logger.info('Ping check to IP %s from pod %s with '
+                'expectation %s passed' %(ip, self.name, expectation))
+        return (True, output)
     # end ping_to_ip
 
     def modify_pod_label(self, label_name, label_value):

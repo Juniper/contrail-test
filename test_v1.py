@@ -71,11 +71,6 @@ class BaseTestCase_v1(BaseTestCase):
         super(BaseTestCase_v1, cls).tearDownClass()
     # end tearDownClass
 
-    def sleep(self, value):
-        self.logger.debug('Sleeping for %s seconds..' % (value))
-        time.sleep(value)
-    # end sleep
-
     def if_vcenter_gw_setup_return_gw_orch_class(self):
         if self.inputs.vcenter_gw_setup:
             return self.connections.slave_orch   

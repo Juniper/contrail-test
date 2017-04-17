@@ -67,7 +67,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     auth_protocol = get_authserver_protocol()
     try:
         auth_server_ip = get_authserver_ip()
-    except IndexError, e:
+    except Exception:
         auth_server_ip = None
     auth_server_port = get_authserver_port()
     api_auth_protocol = get_apiserver_protocol()

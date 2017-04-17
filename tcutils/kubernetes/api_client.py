@@ -96,6 +96,130 @@ class Client():
         return self.v1_beta_h.delete_namespaced_ingress(name, namespace, body)
     # end delete_ingress
 
+    def _get_label_selector(self, match_labels={}, match_expressions=[]):
+        # TODO match_expressions
+        return client.UnversionedLabelSelector(match_labels=match_labels)
+
+    def _get_network_policy_peer_list(self, _from):
+        peer_list = []
+        for item in _from:
+            pod_selector = item.get('pod_selector') or {}
+            namespace_selector = item.get('namespace_selector') or {}
+            pod_selector_obj = None
+            namespace_selector_obj = None
+
+            if pod_selector:
+                pod_selector_obj = self._get_label_selector(**pod_selector)
+            if namespace_selector:
+                namespace_selector_obj = self._get_label_selector(
+                    **namespace_selector)
+
+            peer = client.V1beta1NetworkPolicyPeer(
+                namespace_selector=namespace_selector_obj,
+                pod_selector=pod_selector_obj)
+            peer_list.append(peer)
+        return peer_list
+    # end _get_network_policy_peer_list
+
+    def _get_network_policy_port(self, protocol, port):
+        return client.V1beta1NetworkPolicyPort(port=port, protocol=protocol)
+
+    def _get_network_policy_port_list(self, port_list):
+        port_obj_list = []
+        for port_dict in port_list:
+            port_obj = self._get_network_policy_port(**port_dict)
+            port_obj_list.append(port_obj)
+        return port_obj_list
+    # end _get_network_policy_port_list
+
+    def _get_network_policy_spec(self, spec):
+        ''' Return V1beta1NetworkPolicySpec
+        '''
+        ingress_rules = spec.get('ingress', [])
+        ingress_rules_obj = []
+        pod_selector = self._get_label_selector(**spec['pod_selector'])
+        for rule in ingress_rules:
+            _from = self._get_network_policy_peer_list(rule.get('from', []))
+            ports = self._get_network_policy_port_list(rule.get('ports', []))
+            ingress_rules_obj.append(
+                client.V1beta1NetworkPolicyIngressRule(
+                    _from=_from, ports=ports))
+        return client.V1beta1NetworkPolicySpec(ingress=ingress_rules_obj,
+                                               pod_selector=pod_selector)
+    # end _get_network_policy_spec
+
+    def update_network_policy(self,
+                              policy_name,
+                              namespace='default',
+                              metadata={},
+                              spec={}):
+        '''
+        Returns V1beta1NetworkPolicy object
+        '''
+        policy_obj = self.v1_beta_h.read_namespaced_network_policy(
+            policy_name, namespace)
+        metadata_obj = self._get_metadata(metadata)
+
+        spec_obj = self._get_network_policy_spec(spec)
+
+        body = client.V1beta1NetworkPolicy(
+            metadata=metadata_obj,
+            spec=spec_obj)
+        self.logger.info('Updating Network Policy %s' % (policy_name))
+        resp = self.v1_beta_h.patch_namespaced_network_policy(policy_name,
+                                                              namespace, body)
+        return resp
+    # end update_network_policy
+
+    def create_network_policy(self,
+                              namespace='default',
+                              name=None,
+                              metadata={},
+                              spec={}):
+        '''
+        spec = {
+            'ingress' : [ { 'from': [
+                                     { 'namespace_selector' :
+                                         { 'match_labels' : {'project': 'test'} }
+                                     },
+                                     { 'pod_selector':
+                                         { 'match_labels' : {'role': 'db'} }
+                                     }
+                                    ],
+                            'ports': [
+                                      { 'protocol' : 'tcp',
+                                        'port' : 70,
+                                      }
+                                     ]
+                          }
+                      ]
+               }
+
+        Returns V1beta1NetworkPolicy object
+        '''
+        metadata_obj = self._get_metadata(metadata)
+        if name:
+            metadata_obj.name = name
+
+        spec_obj = self._get_network_policy_spec(spec)
+
+        body = client.V1beta1NetworkPolicy(
+            metadata=metadata_obj,
+            spec=spec_obj)
+        self.logger.info('Creating Network Policy %s' % (metadata_obj.name))
+        resp = self.v1_beta_h.create_namespaced_network_policy(namespace, body)
+        return resp
+    # end create_network_policy
+
+    def delete_network_policy(self,
+                              namespace,
+                              name):
+        self.logger.info('Deleting Network Policy : %s' % (name))
+        body = client.V1DeleteOptions()
+        return self.v1_beta_h.delete_namespaced_network_policy(name, namespace,
+                                                               body)
+    # end delete_network_policy
+
     def create_service(self,
                        namespace='default',
                        name=None,
@@ -251,7 +375,32 @@ class Client():
                                                            stdout=stdout,
                                                            tty=tty)
         return output
+    # end exec_cmd_on_pod
 
+    def set_isolation(self, namespace, enable=True):
+        ns_obj = self.v1_h.read_namespace(namespace)
+        if not getattr(ns_obj.metadata, 'annotations', None):
+            ns_obj.metadata.annotations = {}
+        kv = {'net.beta.kubernetes.io/network-policy': '{"ingress": { "isolation": "DefaultDeny" }}'}
+        if enable:
+            ns_obj.metadata.annotations.update(kv)
+        else:
+            ns_obj.metadata.annotations[
+                'net.beta.kubernetes.io/network-policy'] = None
+        self.v1_h.patch_namespace(namespace, ns_obj)
+    # end set_isolation
+
+    def set_pod_label(self, namespace, pod_name, label_dict):
+        metadata = {'labels': label_dict}
+        body = client.V1Pod(metadata=self._get_metadata(metadata))
+        return self.v1_h.patch_namespaced_pod(pod_name, namespace, body)
+    # end set_pod_label
+
+    def set_namespace_label(self, namespace, label_dict):
+        metadata = {'labels': label_dict}
+        body = client.V1Namespace(metadata=self._get_metadata(metadata))
+        return self.v1_h.patch_namespace(namespace, body)
+    # end set_namespace_label
 
 if __name__ == '__main__':
     c1 = Client()
@@ -263,8 +412,25 @@ if __name__ == '__main__':
 
     import pdb
     pdb.set_trace()
-    ing1 = c1.create_ingress(name='test1',
-                             default_backend={'service_name': 'my-nginx',
-                                              'service_port': 80})
+#    ing1 = c1.create_ingress(name='test1',
+#                             default_backend={'service_name': 'my-nginx',
+#                                              'service_port': 80})
+#    import pdb
+#    pdb.set_trace()
+    pol = c1.create_network_policy(
+        name='test4',
+        spec={
+            'pod_selector': {'match_labels': {'role': 'db'}},
+            'ingress': [
+                {
+                    'from': [
+                        {'pod_selector': {'match_labels': {'role': 'frontend'}}
+                         }
+                    ],
+                    'ports': [{'protocol': 'tcp', 'port': '30'}]
+                }
+            ]
+        })
+
     import pdb
     pdb.set_trace()

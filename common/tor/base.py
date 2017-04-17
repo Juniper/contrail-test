@@ -241,13 +241,6 @@ class BaseTorTest(BaseNeutronTest):
             bms_fixture.clear_arp(all_entries=True)
     # end clear_arps
 
-    def set_global_asn(self, asn):
-        existing_asn = self.vnc_lib_fixture.get_global_asn()
-        ret = self.vnc_lib_fixture.set_global_asn(asn)
-        self.addCleanup(self.vnc_lib_fixture.set_global_asn, existing_asn)
-        return ret
-    # end set_global_asn
-
     def add_vmi_to_lif(self, lif_fixture, vmi_uuid):
         lif_fixture.add_virtual_machine_interface(vmi_uuid)
         self.addCleanup(lif_fixture.delete_virtual_machine_interface, vmi_uuid)
