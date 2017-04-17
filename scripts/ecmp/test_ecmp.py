@@ -828,32 +828,6 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
         super(TestMultiInlineSVC, cls).tearDownClass()
     # end tearDownClass
 
-    @test.attr(type=['sanity'])
-    @preposttest_wrapper
-    def test_three_stage_SC(self):
-        """
-        Description: Validate multi-Inline SVC.
-        Test steps:
-                         1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
-                         2.Creating 3 service instances.
-                         3.Creating a service chain by applying the 3 service instances in a policy between t
-                    he VNs.
-                         4.There should be no traffic loss.
-        Pass criteria: Ping between the VMs should be successful.
-        Maintainer : ganeshahv@juniper.net
-        """
-        si_list = [ { 'service_mode' : 'transparent'},
-                    { 'service_mode' : 'in-network'},
-                    { 'service_mode' : 'in-network-nat'} ]
-
-
-        if self.inputs.get_af() == 'v6':
-            si_list = [ { 'service_mode' : 'transparent'},
-                        { 'service_mode' : 'in-network'}]
-        self.verify_multi_inline_svc(si_list=si_list, create_svms=True,
-                                     **self.common_args)
-    # end test_three_stage_SC
-
     @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_three_stage_v2_SC(self):
@@ -901,6 +875,49 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
         self.verify_multi_inline_svc(si_list=si_list, create_svms=True,
                                      **self.common_args)
     # end test_three_stage_SC_with_ECMP
+
+    @preposttest_wrapper
+    def test_multi_inline_SVC_VN_with_external_RT(self):
+        """
+        Description: Validate multi-Inline SVC with ECMP.
+        Bug: 1436642
+        The Right VN and the left VN have external RTs configured.
+        The traffic between left and right VMs should go through the Service Chain.
+        Test steps:
+                         1.Creating vm's - vm1 and vm2 in networks vn1 and vn2. Configure RT on the 2 VNs.
+                         2.Creating a multi-stage service chain with in-network SIs, between the VNs.
+                         3.There should be no traffic loss.
+        Pass criteria: Ping between the VMs should be successful and TCP traffic should reach vm2
+                   from vm1 and vice-versa.
+        Maintainer : ganeshahv@juniper.net
+        """
+        si_list = [{'service_mode': 'in-network', 'max_inst': 1},
+                   {'service_mode': 'in-network',  'max_inst': 1}]
+        if self.inputs.get_af() == 'v6':
+            si_list = [{'service_mode': 'in-network', 'max_inst': 1},
+                       {'service_mode': 'in-network',  'max_inst': 1}]
+        ret_dict = self.verify_multi_inline_svc(si_list=si_list, create_svms=True,
+                                                **self.common_args)
+        si_fixtures = ret_dict['si_fixtures']
+        left_vn_fixture = ret_dict['left_vn_fixture']
+        right_vn_fixture = ret_dict['right_vn_fixture']
+        left_vm_fixture = ret_dict['left_vm_fixture']
+        right_vm_fixture = ret_dict['right_vm_fixture']
+        left_vn_fq_name = left_vn_fixture.vn_fq_name
+        right_vn_fq_name = right_vn_fixture.vn_fq_name
+        self.logger.info('Adding User-defined RT to the end VNs')
+        right_vn_fixture.add_route_target(router_asn=random.randint(
+            1000, 2000), route_target_number=random.randint(9000000, 9500000))
+        left_vn_fixture.add_route_target(router_asn=random.randint(
+            2000, 3000), route_target_number=random.randint(8500000, 9000000))
+        result, msg = self.validate_svc_action(
+            left_vn_fq_name, si_fixtures[0], right_vm_fixture, src='left')
+        result, msg = self.validate_svc_action(
+            right_vn_fq_name, si_fixtures[-1], left_vm_fixture, src='right')
+        assert left_vm_fixture.ping_with_certainty(right_vm_fixture.vm_ip)
+        assert right_vm_fixture.ping_with_certainty(left_vm_fixture.vm_ip)
+
+    # end test_multi_inline_SVC_VN_with_external_RT
 
     @preposttest_wrapper
     def test_three_stage_SC_with_traffic(self):
