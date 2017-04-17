@@ -2012,10 +2012,10 @@ class WebuiTestSanity(base.WebuiBaseTest):
         result = True
         for vn in vn_list:
             self.webui.logger.debug("Step 1 : Create vn %s " %(vn))
-            if self.webui_common.click_on_create('Network', 'networks', topo.vn_disp_name,
+            if self.webui_common.click_on_create('Network', 'networks', vn,
                                                 prj_name=self.webui.project_name_input):
                 self.webui_common.wait_till_ajax_done(self.browser, wait=3)
-                self.webui_common.send_keys(topo.vn_disp_name, 'display_name', 'name')
+                self.webui_common.send_keys(vn, 'display_name', 'name')
                 self.webui_common.click_element('configure-networkbtn1')
                 self.webui_common.wait_till_ajax_done(self.browser)
                 uuid = self.webui_common.get_vn_detail_ui('UUID', vn_name='vn1')

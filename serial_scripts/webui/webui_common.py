@@ -1864,7 +1864,7 @@ class WebuiCommon:
     def click_configure_ports_basic(self, row_index):
         self.click_element('Ports', 'link_text')
         self.check_error_msg("configure ports")
-        rows = self.get_rows()
+        rows = self.get_rows(canvas=True)
         port = self.find_element('div', 'tag', browser=rows[row_index],
             elements=True)[0]
         self.click_element('i', 'tag', browser=port)
@@ -1950,7 +1950,8 @@ class WebuiCommon:
 
     def click_configure_bgp_router_basic(self, row_index):
         self.click_configure_bgp_router()
-        rows = self.get_rows()
+        br = self.find_element('bgp-grid')
+        rows = self.get_rows(browser=br)
         rows[row_index].find_elements_by_tag_name(
             'div')[0].find_element_by_tag_name('i').click()
         self.wait_till_ajax_done(self.browser)
@@ -2090,7 +2091,8 @@ class WebuiCommon:
         self.click_element('RBAC', 'link_text')
         self.check_error_msg("configure rbac " + option)
         self.click_element("rbac_" + option + "_tab-tab-link")
-        rows = self.get_rows()
+        br = self.find_element('rbac-' + option + '-grid')
+        rows = self.get_rows(browser=br)
         rows[row_index].find_elements_by_tag_name(
             'div')[0].find_element_by_tag_name('i').click()
         self.wait_till_ajax_done(self.browser)
@@ -2729,6 +2731,7 @@ class WebuiCommon:
             ind = index
         else:
             ind = index + 1
+        self.wait_till_ajax_done(browser)
         slick_row_detail = self.find_element(
                 'slick-row-detail-container', 'class',
                         browser = rows[ind])
@@ -3520,40 +3523,23 @@ class WebuiCommon:
                 self.click_element('subnets')
                 self.wait_till_ajax_done(self.browser)
                 self.click_element('fa-plus', 'class')
-                data_row = "//tr[contains(@class,'data-row')]"
-                data = self.find_element(data_row, 'xpath', elements=True)
-                data_new = []
-                for item in data:
-                    if item == '':
-                        pass
-                    else:
-                        data_new.append(item)
-                data_len = len(data_new)
-                ipam = self.find_element('s2id_user_created_ipam_fqn_dropdown', elements=True)
-                if data_len> 3 :
-                    index = data_len-3
-                elif data_len>1 or data_len <=3:
-                    index = data_len-1
-                else:
-                    index = 0
-                self.send_keys(subnet, 'user_created_cidr', 'name', clear=True, if_elements=[index])
-                self.send_keys(dfrange, 'allocation_pools', 'name', clear=True, if_elements=[index])
+                self.send_keys(subnet, 'user_created_cidr', 'name', clear=True)
+                self.send_keys(dfrange, 'allocation_pools', 'name', clear=True)
                 self.wait_till_ajax_done(self.browser)
                 if category == 'Subnet':
-                    self.send_keys(dfgate, 'default_gateway', 'name', clear=True, if_elements=[index])
+                    self.send_keys(dfgate, 'default_gateway', 'name', clear=True)
                 elif category == 'Subnet-gate':
-                    self.click_element('user_created_enable_gateway', 'name', elements=True, index=index)
+                    self.click_element('user_created_enable_gateway', 'name')
                 elif category == 'Subnet-dns':
-                    self.click_element('user_created_enable_dns', 'name', elements=True, index=index)
+                    self.click_element('user_created_enable_dns', 'name')
                 elif category == 'Subnet-dhcp':
-                    self.click_element('enable_dhcp', 'name', elements=True, index=index)
+                    self.click_element('enable_dhcp', 'name')
                 self.click_element('configure-networkbtn1')
                 self.wait_till_ajax_done(self.browser)
                 result = self.edit_vn_result
             else:
                 self.logger.error("Clicking the Edit Button is not working")
                 result = False
-
         except WebDriverException:
             self.logger.error("Error while trying to edit %s" % (option))
             self.screenshot(option)
@@ -3648,9 +3634,10 @@ class WebuiCommon:
                 self.click_element(toolbar_xpath, 'xpath')
                 self.send_keys(var_list[3], 'display_name', 'name')
                 self.click_element('subnets')
-                self.click_element("fa-plus", 'class')
-                self.send_keys(var_list[2], 'user_create_cidr', 'name')
                 self.wait_till_ajax_done(self.browser, wait=3)
+                self.click_element("fa-plus", 'class')
+                self.wait_till_ajax_done(self.browser, wait=3)
+                self.send_keys(var_list[2], 'user_created_cidr', 'name')
                 self.click_element("configure-networkbtn1")
             self.edit_vn_result = self.edit_remove_option(option, 'edit',display_name=var_list[3])
             if self.edit_vn_result:
