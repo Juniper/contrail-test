@@ -8231,22 +8231,25 @@ class WebuiTest:
                                 value.pop(0)
                             else:
                                 value = 'Disabled'
-                    if key == 'Mirror to':
+                    if key == 'Mirroring':
                         for text in range(len(value)):
                             if value[text].startswith('Routing Instance'):
                                 mirror_key = 'Routing_Instance'
-                                search_value = re.search('.* \: (.*)\((.*)', value[text])
+                                if re.search('.*\s+.*\s+\-', value[text]):
+                                    continue
+                                search_value = re.search('.*\s+(.*)\((.*)', value[text])
                                 if search_value:
                                     mirror_value = search_value.group(2).strip('\)') + \
                                                    ':' + search_value.group(1).strip()
                                 else:
-                                    route_instance = re.search('.* \: (.*)', value[text]).group(1)
+                                    route_instance = re.search('.*\s+(.*)', value[text]).group(1)
                                     mirror_value = 'default-domain:' + self.project_name_input + ':' + \
                                                     route_instance + ':' + route_instance
+
                             else:
-                                value_multi_string = re.search('(\w+\s+\w+\s+\w+)\s+\: (.*)',
+                                value_multi_string = re.search('(\w+\s+\w+\s+\w+)\s+(.*)',
                                                               value[text])
-                                value_double_string = re.search('(\w+\s+\w+)\s+\: (.*)',
+                                value_double_string = re.search('(\w+\s+\w+)\s+(.*)',
                                                                value[text])
                                 if value_multi_string:
                                     key_value = value_multi_string
