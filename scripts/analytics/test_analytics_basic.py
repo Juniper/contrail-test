@@ -1,10 +1,12 @@
 import os
+import datetime
 import time
 from vn_test import *
 from vm_test import *
 from tcutils.wrappers import preposttest_wrapper
 from analytics import base
 import test
+from tcutils.collector.opserver_util import OpServerUtils
 
 class AnalyticsBasicTestSanity(base.AnalyticsBaseTest):
 
@@ -28,7 +30,7 @@ class AnalyticsBasicTestSanity(base.AnalyticsBaseTest):
         vn_name=get_random_name('vn22')
         vn_subnets=[get_random_cidr()]
         vm1_name=get_random_name('vm_test')
-        start_time=self.analytics_obj.getstarttime(self.inputs.cfgm_ip)
+        start_time=str(OpServerUtils.utc_timestamp_usec())
         vn_fixture= self.useFixture(VNFixture(connections=self.connections,
                                     vn_name=vn_name, subnets=vn_subnets))
         vn_obj= vn_fixture.obj
