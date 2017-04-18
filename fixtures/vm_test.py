@@ -382,11 +382,15 @@ class VMFixture(fixtures.Fixture):
                 return None
         return self.cs_instance_ip_objs
 
-    def get_vm_ip_dict(self):
+    def get_vm_ip_dict(self, include_secondary_ip=False):
         if not getattr(self, 'vm_ip_dict', None):
             self.vm_ip_dict = defaultdict(list)
             iip_objs = self.get_iip_obj_from_api_server(refresh=True)[1]
             for iip_obj in iip_objs:
+                #If include_secondary_ip is False, then skip secondary IPs
+                if (not include_secondary_ip) and (
+                    iip_obj['instance-ip']['instance_ip_secondary'] == True):
+                    continue
                 ip = iip_obj.ip
                 if self.hack_for_v6(ip):
                     continue
@@ -836,7 +840,8 @@ class VMFixture(fixtures.Fixture):
     def vrf_ids(self):
         return self.get_vrf_ids()
 
-    @retry(delay=2, tries=20)
+    #Need to retry many times due to bug 1683478, once bug is fixed we can reduce the no. of retry
+    @retry(delay=3, tries=30)
     def verify_vm_in_agent(self):
         ''' Verifies whether VM has got created properly in agent.
 
@@ -926,6 +931,7 @@ class VMFixture(fixtures.Fixture):
             self.agent_vrf_id[vn_fq_name] = agent_vrf_obj['ucindex']
             self.agent_path[vn_fq_name] = list()
             self.agent_label[vn_fq_name] = list()
+            agent_label = None
             if self.vnc_lib_fixture.get_active_forwarding_mode(vn_fq_name) != 'l2':
                 try:
                     for vm_ip in self.vm_ip_dict[vn_fq_name]:
@@ -933,10 +939,12 @@ class VMFixture(fixtures.Fixture):
                             vrf_id=self.agent_vrf_id[vn_fq_name],
                             ip=vm_ip)
                         if agent_path is None:
+                            self.logger.warn("No route seen for VM IP %s in agent %s"
+                                % (vm_ip, self.vm_node_ip))
                             return False
                         self.agent_path[vn_fq_name].append(agent_path)
                 except Exception as e:
-                    self.logger.exception('Error which getting agent route')
+                    self.logger.exception('Error while getting agent route')
                     return False
                 if not self.agent_path[vn_fq_name]:
                     with self.printlock:
