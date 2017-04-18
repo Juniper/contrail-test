@@ -60,7 +60,7 @@ class BaseTestLbaas(BaseNeutronTest):
             pid = []
             output = out.split('\n')
             for out in output:
-                match = re.search("nobody\s+(\d+)\s+",out)
+                match = re.search("haproxy\s+(\d+)\s+",out)
                 if match:
                     pid.append(match.group(1))
             if not pid:
