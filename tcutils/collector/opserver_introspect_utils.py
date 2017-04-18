@@ -293,8 +293,12 @@ class VerificationOpsSrv (VerificationUtilBase):
                    where_clause='',
                    sort_fields=None, sort=None, limit=None, filter=None, dir=None):
         res = None
-        self._drv._auth()
-        headers = self._drv._headers
+        try:
+            self._drv._auth()
+            headers = self._drv._headers
+        except Exception as e:
+            headers = None #vcenter case where openstack not available
+
         try:
             flows_url = OpServerUtils.opserver_query_url(
                 self._ip, str(self._port))

@@ -62,7 +62,8 @@ class OpServerUtils(object):
     def post_url_http(url, params, token):
         DEFAULT_HEADERS = {'Content-type': 'application/json; charset="UTF-8"','Expect': '202-accepted'}
         headers = DEFAULT_HEADERS.copy()
-        headers['X-AUTH-TOKEN'] = token['X-AUTH-TOKEN']
+        if token:
+            headers['X-AUTH-TOKEN'] = token['X-AUTH-TOKEN']
         try:
             print 'request version : %s'%(pkg_resources.get_distribution("requests").version[0])
             if int(pkg_resources.get_distribution("requests").version[0]) >= 1:
