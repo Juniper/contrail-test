@@ -92,8 +92,9 @@ class PodFixture(fixtures.Fixture):
     # end delete
 
     def set_labels(self, label_dict):
-        return self.k8s_client.set_pod_label(self.namespace, self.name,
+        self.obj = self.k8s_client.set_pod_label(self.namespace, self.name,
             label_dict)
+        self._populate_attr()
     # end set_labels
 
     @retry(delay=5, tries=60)

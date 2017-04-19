@@ -1,4 +1,5 @@
 from kubernetes import client, config
+from kubernetes.client.rest import ApiException
 
 from common import log_orig as contrail_logging
 from tcutils.util import get_random_name
@@ -401,6 +402,14 @@ class Client():
         body = client.V1Namespace(metadata=self._get_metadata(metadata))
         return self.v1_h.patch_namespace(namespace, body)
     # end set_namespace_label
+
+    def is_namespace_present(self, namespace):
+        try:
+            self.v1_h.read_namespace(namespace)
+            return True
+        except ApiException:
+            return False
+    # end is_namespace_present
 
 if __name__ == '__main__':
     c1 = Client()

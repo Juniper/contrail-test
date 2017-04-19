@@ -53,7 +53,7 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
     def setup_http_service(self,
                            name=None,
                            namespace='default',
-                           app=None,
+                           labels=None,
                            metadata=None,
                            spec=None,
                            type=None,
@@ -71,6 +71,7 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
         name = name or get_random_name('nginx-svc')
         metadata.update({'name': name})
         selector_dict = {}
+        labels = labels or {}
         spec.update({
             'ports': [
                 {
@@ -80,8 +81,8 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
                 }
             ]
         })
-        if app:
-            selector_dict = {'selector': {'app': app}}
+        if labels:
+            selector_dict = {'selector': labels}
             spec.update(selector_dict)
         if type:
             type_dict = {'type': type}
@@ -195,11 +196,20 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
             ]
         }
         return self.setup_pod(name=name,
-                              namespace=namespace,
-                              metadata=metadata,
-                              spec=spec,
-                              shell='/bin/bash')
+                             namespace=namespace,
+                             metadata=metadata,
+                             spec=spec,
+                             shell='/bin/bash')
+
     # end setup_nginx_pod
+
+    def verify_nginx_pod(self, pod):
+        result = pod.verify_on_setup()
+        if result:
+            pod.run_cmd('echo %s > /usr/share/nginx/html/index.html' % (
+                pod.name))
+        return result
+    # end verify_nginx_pod
 
     def setup_busybox_pod(self,
                           name=None,
@@ -267,19 +277,23 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
                           test_pod=None,
                           host=None,
                           path='',
-                          port=80):
+                          barred_pods=None):
         '''
         From test_pod , run wget on http://<service_ip>:<port> and check
         if the all the lb_pods respond to atleast one of the requests over
         3*len(lb_pods) attempts
+
+        barred_pods : pods where the http requests should never be seen
         '''
-        for pod in lb_pods:
-            pod.run_cmd('echo %s > /usr/share/nginx/html/index.html' % (
-                pod.name))
+        host_str = ''
+        barred_pods = barred_pods or []
         attempts = len(lb_pods) * 5
         hit = {}
+        hit_me_not = {}
         for x in lb_pods:
             hit[x.name] = 0
+        for x in barred_pods:
+            hit_me_not[x.name] = 0
 
         if host:
             host_str = '--header "Host:%s" ' % (host)
@@ -297,6 +311,15 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
             for pod in lb_pods:
                 if pod.name in output:
                     hit[pod.name] += 1
+
+            for pod in barred_pods:
+                if pod.name in output:
+                    hit_me_not[pod.name] += 1
+            if hit_me_not and 0 not in hit_me_not.values():
+                self.logger.warn('HTTP request seem to have hit an unexpected '
+                    ' pod. Stats : %s' %(hit_me_not))
+                return False
+
             if 0 not in hit.values():
                 self.logger.info('Responses seen from all pods, lb seems fine.'
                                  'Hits : %s' % (hit))
