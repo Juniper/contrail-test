@@ -140,7 +140,7 @@ class TestSubnets(BaseNeutronTest):
         vn1_vm1_name = get_random_name('vn1-vm1')
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
-                                     image_name='cirros-0.3.0-x86_64-uec')
+                                     image_name='cirros')
         assert vm1_fixture.wait_till_vm_is_up()
         output = vm1_fixture.run_cmd_on_vm(['route -n'])
         route_output = output.values()[0]
@@ -214,7 +214,7 @@ class TestSubnets(BaseNeutronTest):
         vn1_vm1_name = get_random_name('vn1-vm1')
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
-                                     image_name='cirros-0.3.0-x86_64-uec')
+                                     image_name='cirros')
         assert vm1_fixture.wait_till_vm_is_up(), 'VM is not up on reboot!'
         assert vm1_fixture.vm_ip == get_an_ip(vn1_subnet_cidr, 3),\
             'IP of VM %s should have been %s. It is %s' % (
@@ -222,7 +222,7 @@ class TestSubnets(BaseNeutronTest):
                 vm1_fixture.vm_ip)
 
         vm2_fixture = self.create_vm(vn1_fixture, get_random_name('vn1-vm1'),
-                                     image_name='cirros-0.3.0-x86_64-uec')
+                                     image_name='cirros')
         assert vm2_fixture.wait_till_vm_is_up(), 'VM is not up on reboot!'
         assert vm2_fixture.vm_ip == get_an_ip(vn1_subnet_cidr, 4),\
             'IP of VM %s should have been %s. It is %s' % (
@@ -230,7 +230,7 @@ class TestSubnets(BaseNeutronTest):
                 vm2_fixture.vm_ip)
 
         vm3_fixture = self.create_vm(vn1_fixture, get_random_name('vn1-vm1'),
-                                     image_name='cirros-0.3.0-x86_64-uec')
+                                     image_name='cirros')
         assert vm3_fixture.wait_till_vm_is_up(), 'VM is not up on reboot!'
         assert vm3_fixture.vm_ip == get_an_ip(vn1_subnet_cidr, 6),\
             'IP of VM %s should have been %s. It is %s' % (
@@ -238,7 +238,7 @@ class TestSubnets(BaseNeutronTest):
                 vm3_fixture.vm_ip)
 
         vm4_fixture = self.create_vm(vn1_fixture, get_random_name('vn1-vm1'),
-                                     image_name='cirros-0.3.0-x86_64-uec')
+                                     image_name='cirros')
         assert vm4_fixture.wait_till_vm_status('ERROR'), 'VM %s should '\
             'have failed since allocation pool is full' % (vm4_fixture.vm_name)
     # end test_allocation_pools
@@ -266,7 +266,7 @@ class TestSubnets(BaseNeutronTest):
         vn1_fixture.update_subnet(vn1_fixture.vn_subnet_objs[0]['id'],
                                   vn1_subnet_dict)
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
-                                     image_name='cirros-0.3.0-x86_64-uec')
+                                     image_name='cirros')
         assert vm1_fixture.wait_till_vm_boots(),\
             'Unable to detect if VM booted up using console log'
 
@@ -312,7 +312,7 @@ class TestSubnets(BaseNeutronTest):
 
         self.logger.info('Create first VM in the VN')
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
-                                     image_name='cirros-0.3.0-x86_64-uec')
+                                     image_name='cirros')
         assert vm1_fixture.wait_till_vm_status('ACTIVE'),\
             'VM %s is not active' % (vm1_fixture.vm_name)
 
@@ -320,7 +320,7 @@ class TestSubnets(BaseNeutronTest):
         port_obj = self.create_port(net_id=vn1_fixture.vn_id,
                     subnet_id=vn1_fixture.vn_subnet_objs[1]['id'])
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
-                                     image_name='cirros-0.3.0-x86_64-uec',
+                                     image_name='cirros',
                                      port_ids=[port_obj['id']])
         assert vm2_fixture.wait_till_vm_status('ACTIVE'),\
             'VM %s is not active' % (vm2_fixture.vm_name)
@@ -328,7 +328,7 @@ class TestSubnets(BaseNeutronTest):
         # Create third VM and check if it gets IP from first subnet
         self.logger.info('Create a third VM in the VN')
         vm3_fixture = self.create_vm(vn1_fixture, vn1_vm3_name,
-                                     image_name='cirros-0.3.0-x86_64-uec')
+                                     image_name='cirros')
         assert vm3_fixture.wait_till_vm_is_up(),\
             'VM %s is not fully up' % (vm3_fixture.vm_name)
         assert IPAddress(vm3_fixture.vm_ip) in IPNetwork(vn1_subnet_list[0]),\
