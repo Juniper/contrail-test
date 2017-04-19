@@ -1340,14 +1340,12 @@ class WebuiTestSanity(base.WebuiBaseTest):
         opt_list = [topo.subnet_edit, topo.mask, topo.subnet_sip, topo.subnet_eip,
                     topo.subnet_dns_ip, topo.subnet_gate_ip, topo.subnet_default_gate_ip]
         result = True
-        if self.webui_common.click_configure_networks():
-            self.webui_common.click_element('fa-plus', 'class')
+        if self.webui_common.click_on_create('Network', 'networks', topo.vn_disp_name,
+                                            prj_name=self.webui.project_name_input):
             self.webui_common.wait_till_ajax_done(self.browser, wait=3)
-            self.webui_common.find_element("//input[contains(@name,'display_name')]", \
-                                            'xpath').send_keys(topo.vn_disp_name)
+            self.webui_common.send_keys(topo.vn_disp_name, 'display_name', 'name')
             self.webui_common.wait_till_ajax_done(self.browser, wait=3)
             self.webui_common.click_element('configure-networkbtn1')
-
             self.webui_common.wait_till_ajax_done(self.browser, wait=5)
             verify_list = ['Subnet', 'Subnet-gate', 'Subnet-dns', 'Subnet-dhcp']
             for subnet_type in verify_list:
@@ -2014,12 +2012,10 @@ class WebuiTestSanity(base.WebuiBaseTest):
         result = True
         for vn in vn_list:
             self.webui.logger.debug("Step 1 : Create vn %s " %(vn))
-            if self.webui_common.click_configure_networks():
-                self.webui_common.click_element('fa-plus', 'class')
+            if self.webui_common.click_on_create('Network', 'networks', topo.vn_disp_name,
+                                                prj_name=self.webui.project_name_input):
                 self.webui_common.wait_till_ajax_done(self.browser, wait=3)
-                self.webui_common.find_element("//input[contains(@name,'display_name')]", \
-                                               'xpath').send_keys(vn)
-                self.webui_common.wait_till_ajax_done(self.browser, wait=3)
+                self.webui_common.send_keys(topo.vn_disp_name, 'display_name', 'name')
                 self.webui_common.click_element('configure-networkbtn1')
                 self.webui_common.wait_till_ajax_done(self.browser)
                 uuid = self.webui_common.get_vn_detail_ui('UUID', vn_name='vn1')
@@ -2199,26 +2195,13 @@ class WebuiTestSanity(base.WebuiBaseTest):
         if result:
             mirror_enabled_already = True
         adv_option_list = [{'key': 'Admin_State', 'value': 'Up'},
-                          {'key': 'Local_Preference', 'value': '100'},
-                          {'key': 'Allowed_address_pairs', 'value':
-                              [topo.port_advanced_option['allowed_address_pair_ip'] + ' ' +
-                              topo.port_advanced_option['allowed_address_pair_mac']]},
-                          {'key': 'Analyzer_IP', 'value':
-                              topo.port_advanced_option['analyzer_ip']},
-                          {'key': 'UDP_Port', 'value':
-                          topo.port_advanced_option['port']},
-                          {'key': 'Analyzer_Name', 'value':
-                              topo.port_advanced_option['analyzer_name']},
                           {'key': 'Routing_Instance', 'value': topo.domain + ":" +
                               self.webui.project_name_input + ":" +
                               topo.vnet_list[0] + ":" + topo.vnet_list[0]},
                           {'key': 'Juniper_Header', 'value': 'Disabled'},
-                          {'key': 'Analyzer_MAC', 'value':
-                              topo.port_advanced_option['analyzer_mac']},
                           {'key': 'Traffic_Direction', 'value': u'Egress'},
                           {'key': 'Nexthop_Mode', 'value': 'Static'},
                           {'key': 'Disable_Policy', 'value': 'True'},
-                          {'key': 'ECMP_Hashing_Fields', 'value': 'destination-ip'},
                           {'key': 'VTEP_Dest_IP', 'value':
                               topo.port_advanced_option['vtep_dst_ip_address']},
                           {'key': 'VTEP_Dest_MAC', 'value':

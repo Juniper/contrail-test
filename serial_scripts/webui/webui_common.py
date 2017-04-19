@@ -921,7 +921,7 @@ class WebuiCommon:
 
     def click_if_element_found(self, objs, element_text, grep=False):
         element_found = False
-        for element_obj in objs:
+        for index, element_obj in enumerate(objs):
             element_obj_text = element_obj.text
             if (grep and element_obj_text.find(element_text) != -
                     1) or (not grep and element_obj_text == element_text):
@@ -929,8 +929,12 @@ class WebuiCommon:
                 element_obj.click()
                 self.wait_till_ajax_done(self.browser, jquery=False, wait=4)
                 break
+            else:
+                if index == len(objs) - 1:
+                    element_obj.click()
         if not element_found:
             self.logger.error(' %s not found' % (element_text))
+            self.click_on_cancel_if_failure('cancelBtn')
             return False
         return True
     # end click_if_element_found
@@ -3532,23 +3536,17 @@ class WebuiCommon:
                     index = data_len-1
                 else:
                     index = 0
-                cidr_option = "//input[contains(@name,'user_created_cidr')]"
-                self.send_keys(subnet, cidr_option, 'xpath', clear=True, if_elements=[index])
-                allocation_pool = "//textarea[contains(@name,'allocation_pools')]"
-                self.send_keys(dfrange, allocation_pool, 'xpath', clear=True, if_elements=[index])
+                self.send_keys(subnet, 'user_created_cidr', 'name', clear=True, if_elements=[index])
+                self.send_keys(dfrange, 'allocation_pools', 'name', clear=True, if_elements=[index])
+                self.wait_till_ajax_done(self.browser)
                 if category == 'Subnet':
-                    default_gateway = "//input[contains(@name,'default_gateway')]"
-                    self.send_keys(dfgate, default_gateway, 'xpath', \
-                                   clear=True, if_elements=[index])
+                    self.send_keys(dfgate, 'default_gateway', 'name', clear=True, if_elements=[index])
                 elif category == 'Subnet-gate':
-                    gateway_option = "//input[contains(@name,'user_created_enable_gateway')]"
-                    self.click_element(gateway_option, 'xpath', elements=True, index=index)
+                    self.click_element('user_created_enable_gateway', 'name', elements=True, index=index)
                 elif category == 'Subnet-dns':
-                    dns_option = "//input[contains(@name,'user_created_enable_dns')]"
-                    self.click_element(dns_option, 'xpath', elements=True, index=index)
+                    self.click_element('user_created_enable_dns', 'name', elements=True, index=index)
                 elif category == 'Subnet-dhcp':
-                    dhcp_option = "//input[contains(@name,'enable_dhcp')]"
-                    self.click_element(dhcp_option, 'xpath', elements=True, index=index)
+                    self.click_element('enable_dhcp', 'name', elements=True, index=index)
                 self.click_element('configure-networkbtn1')
                 self.wait_till_ajax_done(self.browser)
                 result = self.edit_vn_result
@@ -3646,14 +3644,12 @@ class WebuiCommon:
             if not self.click_configure_networks():
                 result = False
             if category == 1:
-                add_icon = "//i[contains(@class,'fa-plus')]"
-                self.click_element(add_icon, 'xpath')
-                disp_name = "//input[contains(@name,'display_name')]"
-                self.send_keys(var_list[3], disp_name, 'xpath')
+                toolbar_xpath = "//a[@class='widget-toolbar-icon' and @title='Create Network']"
+                self.click_element(toolbar_xpath, 'xpath')
+                self.send_keys(var_list[3], 'display_name', 'name')
                 self.click_element('subnets')
                 self.click_element("fa-plus", 'class')
-                cidr = "//input[contains(@name,'user_created_cidr')]"
-                self.send_keys(var_list[2], cidr, 'xpath')
+                self.send_keys(var_list[2], 'user_create_cidr', 'name')
                 self.wait_till_ajax_done(self.browser, wait=3)
                 self.click_element("configure-networkbtn1")
             self.edit_vn_result = self.edit_remove_option(option, 'edit',display_name=var_list[3])
