@@ -36,13 +36,12 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
         cls.logger = cls.connections.logger
         cls.k8s_client = cls.connections.k8s_client
 
-#        cls.public_vn = create_public_vn.PublicVn(connections=cls.connections,
-#                                 public_vn=K8S_PUBLIC_VN_NAME,
-#                                 public_tenant=cls.inputs.admin_tenant,
-#                                 logger=cls.logger,
-#                                 fip_pool_name=K8S_PUBLIC_FIP_POOL_NAME,
-#                                 api_option='contrail',
-#                                 ipam_fq_name=K8S_SERVICE_IPAM)
+        cls.public_vn = create_public_vn.PublicVn(connections=cls.connections,
+                                 public_vn=K8S_PUBLIC_VN_NAME,
+                                 public_tenant=cls.inputs.admin_tenant,
+                                 logger=cls.logger,
+                                 fip_pool_name=K8S_PUBLIC_FIP_POOL_NAME,
+                                 api_option='contrail')
 
     # end setUpClass
 
@@ -57,6 +56,8 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
                            app=None,
                            metadata=None,
                            spec=None,
+                           type=None,
+                           external_ips=None,
                            frontend_port=80,
                            backend_port=80):
         '''
@@ -68,7 +69,7 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
         metadata = metadata or {}
         spec = spec or {}
         name = name or get_random_name('nginx-svc')
-        metadata.update({'name':  name})
+        metadata.update({'name': name})
         selector_dict = {}
         spec.update({
             'ports': [
@@ -82,6 +83,12 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
         if app:
             selector_dict = {'selector': {'app': app}}
             spec.update(selector_dict)
+        if type:
+            type_dict = {'type': type}
+            spec.update(type_dict)
+        if external_ips:
+            external_ips_dict = {'external_i_ps': external_ips}
+            spec.update(external_ips_dict)
 
         return self.useFixture(ServiceFixture(
             connections=self.connections,
@@ -115,7 +122,7 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
 
         '''
         name = name or get_random_name('nginx-ingress')
-        metadata.update({'name':  name})
+        metadata.update({'name': name})
         if default_backend:
             spec.update({'backend': default_backend})
         if rules:
@@ -258,8 +265,8 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
                           lb_pods,
                           service_ip,
                           test_pod=None,
-                          path='',
                           host=None,
+                          path='',
                           port=80):
         '''
         From test_pod , run wget on http://<service_ip>:<port> and check
@@ -276,8 +283,12 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
 
         if host:
             host_str = '--header "Host:%s" ' % (host)
+        else:
+            host_str = ''
+
         cmd = 'wget http://%s:%s/%s %s -O -' % (service_ip, port, path,
                                                 host_str)
+
         for i in range(0, attempts):
             if test_pod:
                 output = test_pod.run_cmd(cmd, shell='/bin/sh -l -c')
@@ -328,7 +339,7 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
         ingress = ingress or {}
         ingress_list = []
         name = name or get_random_name('np-')
-        metadata.update({'name':  name})
+        metadata.update({'name': name})
         selector_dict = {}
         pod_selector_dict = {}
 
@@ -414,7 +425,7 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
         ns_selector = None
         port_list = []
         name = name or get_random_name('np-')
-        metadata.update({'name':  name})
+        metadata.update({'name': name})
         selector_dict = {}
         pod_selector_dict = {}
 

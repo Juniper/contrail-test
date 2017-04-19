@@ -60,7 +60,8 @@ class PublicVn():
                                           project_name=self.public_tenant,
                                           )
             self.project.setUp()
-        self.project.set_sec_group_for_allow_all(\
+        if self.inputs.orchestrator != 'kubernetes':
+            self.project.set_sec_group_for_allow_all(\
                  self.public_tenant, 'default')
 
     # end setUp

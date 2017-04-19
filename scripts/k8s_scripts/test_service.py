@@ -22,14 +22,14 @@ class TestService(BaseK8sTest):
         '''
         app = 'http_test'
         namespace = self.setup_namespace()
-        assert namespace.verify_on_setup()
+        #assert namespace.verify_on_setup()
 
         service = self.setup_http_service(namespace=namespace.name,
                                           app=app)
         pod1 = self.setup_nginx_pod(namespace=namespace.name,
-                                   app=app)
+                                   labels={'app':app})
         pod2 = self.setup_nginx_pod(namespace=namespace.name,
-                                   app=app)
+                                   labels={'app':app})
         pod3 = self.setup_busybox_pod(namespace=namespace.name)
 
         assert pod1.verify_on_setup()
@@ -41,3 +41,34 @@ class TestService(BaseK8sTest):
                                       test_pod=pod3)
     # end test_service_1
 
+    @preposttest_wrapper
+    def test_service_2(self):
+        ''' Create a service type loadbalancer with 2 pods running nginx
+            Create a third busybox pod and validate that webservice is
+            load-balanced
+            Validate that webservice is load-balanced from outside network
+            Please make sure BGP multipath and per packer load balancing
+            is enabled on the MX
+        '''
+        app = 'http_test'
+        namespace = self.setup_namespace()
+        #assert namespace.verify_on_setup()
+
+        service = self.setup_http_service(namespace=namespace.name,
+                                          app=app, type='LoadBalancer')
+        pod1 = self.setup_nginx_pod(namespace=namespace.name,
+                                    labels={'app': app})
+        pod2 = self.setup_nginx_pod(namespace=namespace.name,
+                                    labels={'app': app})
+        pod3 = self.setup_busybox_pod(namespace=namespace.name)
+
+        assert pod1.verify_on_setup()
+        assert pod2.verify_on_setup()
+        assert pod3.verify_on_setup()
+
+        # Now validate load-balancing on the service
+        assert self.validate_nginx_lb([pod1, pod2], service.cluster_ip,
+                                      test_pod=pod3)
+        # Now validate ingress from public network
+        assert self.validate_nginx_lb([pod1, pod2], service.external_ips[0])
+    # end test_service_1

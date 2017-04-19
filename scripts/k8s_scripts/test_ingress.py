@@ -29,11 +29,11 @@ class TestIngress(BaseK8sTest):
 
         service = self.setup_http_service(namespace=namespace.name,
                                           app=app)
-        pod1 = self.setup_nginx_pod(namespace=namespace.name,
-                                    app=app)
+        pod1 = self.setup_nginx_pod(namespace=namespace.name, 
+                                          labels={'app':app})
 
-        pod2 = self.setup_nginx_pod(namespace=namespace.name,
-                                    app=app)
+        pod2 = self.setup_nginx_pod(namespace=namespace.name, 
+                                          labels={'app':app})
 
         ingress = self.setup_simple_nginx_ingress(service.name,
                                                   namespace=namespace.name)
