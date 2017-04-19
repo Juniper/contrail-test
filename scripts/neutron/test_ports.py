@@ -53,7 +53,7 @@ class TestPorts(BaseNeutronTest):
                                      image_name='ubuntu-traffic',
                                      port_ids=[port_obj['id']])
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
-                                     image_name='cirros-0.3.0-x86_64-uec')
+                                     image_name='cirros')
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
         if not vm2_fixture.ping_with_certainty(vm1_fixture.vm_ip):
@@ -119,10 +119,10 @@ class TestPorts(BaseNeutronTest):
         port2_obj = self.create_port(net_id=vn1_fixture.vn_id,
                                      fixed_ips=[{'subnet_id': vn1_subnet2_id}])
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
-                                     image_name='cirros-0.3.0-x86_64-uec',
+                                     image_name='cirros',
                                      port_ids=[port1_obj['id']])
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
-                                     image_name='cirros-0.3.0-x86_64-uec',
+                                     image_name='cirros',
                                      port_ids=[port2_obj['id']])
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
@@ -169,10 +169,10 @@ class TestPorts(BaseNeutronTest):
                                      fixed_ips=[{'subnet_id': vn1_subnet2_id,
                                                  'ip_address': vn1_subnet2_ip}])
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
-                                     image_name='cirros-0.3.0-x86_64-uec',
+                                     image_name='cirros',
                                      port_ids=[port1_obj['id']])
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
-                                     image_name='cirros-0.3.0-x86_64-uec',
+                                     image_name='cirros',
                                      port_ids=[port2_obj['id']])
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
@@ -211,7 +211,7 @@ class TestPorts(BaseNeutronTest):
                                      image_name='ubuntu-traffic',
                                      port_ids=[port1_obj['id']])
         test_vm_fixture = self.create_vm(vn1_fixture, test_vm_name,
-                                         image_name='cirros-0.3.0-x86_64-uec')
+                                         image_name='cirros')
         vm1_fixture.verify_on_setup()
         test_vm_fixture.wait_till_vm_is_up()
         subnet_list = [vn1_subnet1_ip, vn1_subnet2_ip]
@@ -272,10 +272,10 @@ class TestPorts(BaseNeutronTest):
         port2_obj = self.create_port(net_id=vn1_fixture.vn_id,
                                      mac_address=vm2_mac)
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
-                                     image_name='cirros-0.3.0-x86_64-uec',
+                                     image_name='cirros',
                                      port_ids=[port1_obj['id']])
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
-                                     image_name='cirros-0.3.0-x86_64-uec',
+                                     image_name='cirros',
                                      port_ids=[port2_obj['id']])
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
@@ -309,10 +309,10 @@ class TestPorts(BaseNeutronTest):
                                      no_security_group=True)
         port2_obj = self.create_port(net_id=vn1_fixture.vn_id)
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
-                                     image_name='cirros-0.3.0-x86_64-uec',
+                                     image_name='cirros',
                                      port_ids=[port1_obj['id']])
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
-                                     image_name='cirros-0.3.0-x86_64-uec',
+                                     image_name='cirros',
                                      port_ids=[port2_obj['id']])
         assert vm1_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
         assert vm2_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
@@ -345,10 +345,10 @@ class TestPorts(BaseNeutronTest):
                                      security_groups=[sg1['id']])
         port2_obj = self.create_port(net_id=vn1_fixture.vn_id)
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
-                                     image_name='cirros-0.3.0-x86_64-uec',
+                                     image_name='cirros',
                                      port_ids=[port1_obj['id']])
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
-                                     image_name='cirros-0.3.0-x86_64-uec',
+                                     image_name='cirros',
                                      port_ids=[port2_obj['id']])
         assert vm1_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
         assert vm2_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
@@ -465,10 +465,10 @@ class TestPorts(BaseNeutronTest):
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
         port_obj = self.create_port(net_id=vn1_fixture.vn_id)
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
-                                     image_name='cirros-0.3.0-x86_64-uec',
+                                     image_name='cirros',
                                      port_ids=[port_obj['id']])
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
-                                     image_name='cirros-0.3.0-x86_64-uec')
+                                     image_name='cirros')
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
         assert vm2_fixture.ping_with_certainty(vm1_fixture.vm_ip)
@@ -506,10 +506,10 @@ class TestPorts(BaseNeutronTest):
         port1_obj = self.create_port(net_id=vn1_fixture.vn_id)
         port2_obj = self.create_port(net_id=vn1_fixture.vn_id)
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
-                                     image_name='cirros-0.3.0-x86_64-uec',
+                                     image_name='cirros',
                                      port_ids=[port1_obj['id']])
         vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name,
-                                     image_name='cirros-0.3.0-x86_64-uec',
+                                     image_name='cirros',
                                      port_ids=[port2_obj['id']])
         assert vm1_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
         assert vm2_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
@@ -550,7 +550,7 @@ class TestPorts(BaseNeutronTest):
                 port1_obj)
 
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
-                                     image_name='cirros-0.3.0-x86_64-uec',
+                                     image_name='cirros',
                                      port_ids=[port1_obj['id']])
         assert vm1_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
 
