@@ -2465,12 +2465,10 @@ class WebuiTest:
     # end verify_bgp_routers_ops_advance_data_in_webui
 
     def verify_analytics_nodes_ops_advance_data(self):
+        merged_arry1 = []
         self.logger.info(
             "Verifying analytics_nodes(collectors) opserver advance data on Monitor->Infra->Analytics Nodes->Details(advanced view) page......")
         self.logger.debug(self.dash)
-        if not self.ui.click_monitor_analytics_nodes():
-            result = result and False
-        rows = self.ui.get_rows()
         analytics_nodes_list_ops = self.ui.get_collectors_list_ops()
         result = True
         for n in range(len(analytics_nodes_list_ops)):
@@ -2482,6 +2480,7 @@ class WebuiTest:
                 "Clicking on analytics nodes on Monitor->Infra->Analytics Nodes...")
             if not self.ui.click_monitor_analytics_nodes():
                 result = result and False
+            self.ui.wait_till_ajax_done(self.browser, wait=15)
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
@@ -2506,8 +2505,10 @@ class WebuiTest:
                 analytics_nodes_ops_data = self.ui.get_details(
                     analytics_nodes_list_ops[n]['href'])
                 key1, val1, flag = self.ui.get_advanced_view_list(
-                        'CollectorState', 'self_ip_list', 2)
+                        'CollectorState', 'self_ip_list', 0)
+                merged_arry1.append({'key': key1, 'value': val1})
                 self.ui.expand_advance_details()
+                dom_arry_bool = self.ui.get_advanced_view_bool()
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = self.ui.get_advanced_view_str()
                 dom_arry_num = self.ui.get_advanced_view_num()
@@ -2516,9 +2517,7 @@ class WebuiTest:
                     dom_arry_num_new.append(
                         {'key': item['key'].replace('\\', '"').replace(' ', ''), 'value': item['value']})
                 dom_arry_num = dom_arry_num_new
-                merged_arry = dom_arry + dom_arry_str + dom_arry_num
-                if flag:
-                    merged_arry.append({'key': key1, 'value': val1})
+                merged_arry = dom_arry + dom_arry_str + dom_arry_num + merged_arry1 + dom_arry_bool
                 modified_query_perf_info_ops_data = []
                 modified_module_cpu_state_ops_data = []
                 modified_analytics_cpu_state_ops_data = []
