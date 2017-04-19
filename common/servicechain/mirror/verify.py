@@ -49,8 +49,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
         self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
         if ci:
-            svc_img_name = 'cirros-0.3.0-x86_64-uec'
-            image_name = 'cirros-0.3.0-x86_64-uec'
+            svc_img_name = 'cirros'
+            image_name = 'cirros'
         else:
             svc_img_name = "vsrx"
             image_name = 'ubuntu-traffic'

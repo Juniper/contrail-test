@@ -218,7 +218,7 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.vn2_policy_fix = self.attach_policy_to_vn(
             self.policy_fixture, self.vn2_fixture)
         if ci:
-            image_name = 'cirros-0.3.0-x86_64-uec'
+            image_name = 'cirros'
         else:
             image_name = 'ubuntu-traffic'
         self.vm1_fixture = self.config_and_verify_vm(
@@ -295,7 +295,7 @@ class VerifySvcFirewall(VerifySvcMirror):
         self.vn2_policy_fix = self.attach_policy_to_vn(
             self.policy_fixture, self.vn2_fixture)
         if ci:
-            image_name = 'cirros-0.3.0-x86_64-uec'
+            image_name = 'cirros'
         else:
             image_name = 'ubuntu-traffic'
         self.vm1_fixture = self.config_and_verify_vm(
