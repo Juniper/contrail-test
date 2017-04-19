@@ -3004,9 +3004,6 @@ class WebuiTest:
         self.logger.info(
             "Verifying config nodes opserver data on Monitor->Infra->Config Nodes->Details(advance view) page")
         self.logger.debug(self.dash)
-        if not self.ui.click_monitor_config_nodes():
-            result = result and False
-        rows = self.ui.get_rows()
         config_nodes_list_ops = self.ui.get_config_nodes_list_ops()
         result = True
         for n in range(len(config_nodes_list_ops)):
@@ -3016,6 +3013,7 @@ class WebuiTest:
                 (ops_config_node_name))
             if not self.ui.click_monitor_config_nodes():
                 result = result and False
+            self.ui.wait_till_ajax_done(self.browser, wait=15)
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
