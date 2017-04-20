@@ -24,6 +24,7 @@ import random
 from tcutils.collector.opserver_introspect_utils import VerificationOpsSrvIntrospect
 from physical_router_fixture import PhysicalRouterFixture
 from tcutils.contrail_status_check import ContrailStatusChecker
+from tcutils.collector.opserver_util import OpServerUtils
 
 months = {'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun':
           6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12}
@@ -3261,15 +3262,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
     def getstarttime(self, ip=None):
         '''Getting start time from the system when the test is run'''
-        time = self.inputs.run_cmd_on_server(ip, 'date',
-                                             self.inputs.host_data[
-                                                 ip]['username'],
-                                             self.inputs.host_data[ip]['password'])
-        day, month, date, time, timezone, year = time.split()
-        time = time + '.' + '0'
-        # formatting start_time as is needed for post_query
-        start_time = year + ' ' + month.upper() + ' ' + date + ' ' + time
-        return start_time
+        return str(OpServerUtils.utc_timestamp_usec())
 
     def get_time_since_uptime(self, ip=None):
 
