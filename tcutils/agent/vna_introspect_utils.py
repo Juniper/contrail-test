@@ -79,6 +79,19 @@ class AgentInspect (VerificationUtilBase):
         # return VnaVnListResult ({'VNs': l})
         return l
 
+    def get_vna_vm(self, uuid):
+        '''
+            returns None if not found, a dict w/ attrib.
+
+        '''
+        vml = self.dict_get('Snh_VmListReq?uuid=%s' % (uuid))
+        avm = vml.xpath('./VmListResp/vm_list/list/VmSandeshData')
+        if not avm:
+            return None
+        l = elem2dict(avm[0])
+        return l
+    # end get_vna_vm
+
     def get_vna_vn(self, domain='default-domain', project='admin',
                    vn_name='default-virtual-network'):
         '''
@@ -544,7 +557,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
             return value == e[0].text
         return False
 
-    def get_vna_tap_interface_common(self, _type, value):
+    def get_vna_tap_interface_common(self, _type, value, filter_dict=None):
         '''
 
         Returns the tap-interface name for a VM as seen by agent
@@ -556,11 +569,19 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                             vm_id)['virtual-machine-interface']['uuid'])
         '''
         ret_list = []
+        filter_str = ''
+        filter_dict = filter_dict or {}
+        for k,v in filter_dict.iteritems():
+            filter_str = filter_str + '%s:%s' %(k,v)
         p = None
-        vnl = self.dict_get('Snh_PageReq?x=begin:-1,end:-1,table:db.interface.0,')
+        vnl = self.dict_get('Snh_PageReq?x=begin:-1,end:-1,table:db.interface.0'
+            ',%s' %(filter_str))
         intf_list = vnl.xpath('./ItfResp/itf_list/list/ItfSandeshData') or \
                 vnl.xpath('./itf_list/list/ItfSandeshData')
-        avn = filter(lambda x:  self._itf_fltr(x, _type, value), intf_list)
+        if _type:
+            avn = filter(lambda x:  self._itf_fltr(x, _type, value), intf_list)
+        else:
+            avn = intf_list
 #        if 1 == len (avn):
         for intf in avn:
             p = VnaItfResult()
@@ -588,18 +609,24 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         return self.get_vna_tap_interface_common('vm', vm_id)
 
     def get_vna_tap_interface_by_ip(self, ip_addr):
-        return self.get_vna_tap_interface_common('ip', ip_addr)
+        if is_v4(ip_addr):
+            key = 'ipv4_address'
+        elif is_v6(ip_addr):
+            key = 'ipv6_address'
+        filter_dict = {key: ip_addr}
+        return self.get_vna_tap_interface_common('ip', ip_addr,
+                                                 filter_dict=filter_dict)
 
-    def get_vna_interface_by_type(self, type):
+    def get_vna_interface_by_type(self, _type):
         """
         Returns interface name by type specified
         Type can take 'eth'/'vhost'/'pkt'/'vport'
         """
         intf_name = []
-        intf_list = self.get_vna_tap_interface_common('type', type)
-        for intf in intf_list:
-            if intf['type'] == type:
-                intf_name.append(intf['name'])
+        filter_dict = {'type': _type}
+        intf_list = self.get_vna_tap_interface_common('type', _type,
+                                                      filter_dict=filter_dict)
+        intf_name = [x['name'] for x in intf_list]
         return intf_name
 
     def get_vna_tap_interface_by_vmi(self, vmi_id):
@@ -613,7 +640,8 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                 return vna.get_vna_tap_interface (cs.get_cs_vmi_of_vm(
                             vm_id)['virtual-machine-interface']['uuid'])
         '''
-        return self.get_vna_tap_interface_common('vmi', vmi_id)
+        return self.get_vna_tap_interface_common('vmi', vmi_id,
+                                                 filter_dict={'uuid':vmi_id})
     # end get_vna_tap_interface
 
     def get_vna_intf_details(self, tap_intf_name):
@@ -623,6 +651,9 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         '''
         return self.get_vna_tap_interface_common('tap', tap_intf_name)
     # end get_vna_intf_details
+
+    def get_vna_tap_interface(self, filter_dict=None):
+        return self.get_vna_tap_interface_common(None, None, filter_dict)
 
     def get_vna_xmpp_connection_status(self):
         '''
@@ -1215,7 +1246,10 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         return self.get_vrouter_interface_list('name', itf_name)
 
 if __name__ == '__main__':
-    v = AgentInspect('10.204.216.221')
+    v = AgentInspect('10.204.217.198')
+    import pdb; pdb.set_trace()
+    v.get_vna_tap_interface_by_vm('3ce99e5b-2690-11e7-91c4-525400010001')
+    v.get_vna_vm('710df53c-25f8-11e7-91c4-525400010001')
     x = v.get_vrouter_route_table('4')
 
     vvnagnt = AgentInspect('10.204.217.12')
