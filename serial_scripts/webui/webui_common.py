@@ -2665,6 +2665,13 @@ class WebuiCommon:
         return domArry
     # end get_advanced_view_bool
 
+    def get_advanced_view_obj(self):
+        domArry = json.loads(self.browser.execute_script(
+            "var eleList = $('pre').find('span'), dataSet = []; for(i = 0; i < eleList.length-4; i++){if(eleList[i+3].className == 'value'){if(eleList[i + 10].className == 'key' && eleList[i + 11].className == 'value object'){dataSet.push({key : eleList[i + 10].innerHTML, value : eleList[i + 11].innerHTML});}}} return JSON.stringify(dataSet);"))
+        domArry = self.trim_spl_char(domArry)
+        return domArry
+    # end get_advanced_view_obj
+
     def get_basic_view_details(self):
         domArry = json.loads(self.browser.execute_script(
             "var eleList = $('div.widget-main.row-fluid').find('label').find('div'),dataSet = []; for(var i = 0; i < eleList.length; i++){if(eleList[i].className == 'key span5' && eleList[i + 1].className == 'value span7'){dataSet.push({key : eleList[i].innerHTML,value:eleList[i+1].innerHTML.replace(/^\s+|\s+$/g, '')});}} return JSON.stringify(dataSet);"))
