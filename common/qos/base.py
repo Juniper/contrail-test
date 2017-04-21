@@ -135,9 +135,9 @@ class QosTestBase(BaseNeutronTest):
         ipv6_src = kwargs.get('ipv6_src', None)
         ipv6_dst = kwargs.get('ipv6_dst', None)
         src_vm_cidr = src_vm_fixture.vn_objs[0]['network']\
-                        ['contrail:subnet_ipam'][0]['subnet_cidr']
+                        ['subnet_ipam'][0]['subnet_cidr']
         dest_vm_cidr = dest_vm_fixture.vn_objs[0]['network']\
-                        ['contrail:subnet_ipam'][0]['subnet_cidr']
+                        ['subnet_ipam'][0]['subnet_cidr']
         if IPNetwork(src_vm_cidr) == IPNetwork(dest_vm_cidr):
             traffic_between_diff_networks = False
         else:
