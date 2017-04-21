@@ -2203,7 +2203,7 @@ class TestBasicVMVN6(BaseVnVmTest):
         vn_fixture.create_subnet_af(af=self.inputs.get_af(), ipam_fq_name=ipam)
         vnnow_obj = self.connections.orch.get_vn_obj_if_present(vn_name)
         subnet_created = list(map(lambda obj: obj['subnet_cidr'],
-                              vnnow_obj['network']['contrail:subnet_ipam']))
+                              vnnow_obj['network']['subnet_ipam']))
         if set(subnet_created) != set(vn_fixture.get_subnets()):
             self.logger.error('assigned ip block is not allocated to VN')
             result = False

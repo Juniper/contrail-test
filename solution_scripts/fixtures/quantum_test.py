@@ -92,7 +92,7 @@ class QuantumHelper():
         subnet_req['enable_dhcp'] = enable_dhcp
         subnet_req['ip_version'] = '6' if is_v6(subnet['cidr']) else '4'
         subnet_req['cidr'] = unicode(subnet_req['cidr'])
-        subnet_req['contrail:ipam_fq_name'] = ipam_fq_name
+        subnet_req['ipam_fq_name'] = ipam_fq_name
         if disable_gateway:
            subnet_req['gateway_ip'] = None
         try:
@@ -250,7 +250,7 @@ class QuantumHelper():
         return None
 
     def get_fq_name(self, vn_obj):
-        return vn_obj['network']['contrail:fq_name']
+        return vn_obj['network']['fq_name']
 
     def delete_vn(self, vn_id):
         result = True

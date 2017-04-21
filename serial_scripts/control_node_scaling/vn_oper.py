@@ -73,7 +73,7 @@ class VnCfg(object):
     #    net_req = {'name': '%s' %(vn_name)}
     #    net_rsp = self._quantum.create_network({'network': net_req})
     #    net1_id = net_rsp['network']['id']
-    #    net1_fq_name = net_rsp['network']['contrail:fq_name']
+    #    net1_fq_name = net_rsp['network']['fq_name']
     #    net1_fq_name_str = ':'.join(net1_fq_name)
     #    self._create_subnet(unicode(vn_subnet), net1_id)
     # end _create_vn
@@ -109,7 +109,7 @@ class VnCfg(object):
         subnet_req = {'network_id': net_id,
                       'cidr': cidr,
                       'ip_version': 4,
-                      'contrail:ipam_fq_name': ipam_fq_name}
+                      'ipam_fq_name': ipam_fq_name}
         subnet_rsp = self._quantum.create_subnet({'subnet': subnet_req})
         subnet_cidr = subnet_rsp['subnet']['cidr']
         return subnet_rsp['subnet']['id']
