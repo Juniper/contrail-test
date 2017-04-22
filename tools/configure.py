@@ -168,6 +168,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         with settings(host_string = host_string), hide('everything'):
             try:
                 host_name = run("hostname")
+                host_fqname = run("hostname -f")
             except:
                 logger.warn('Unable to login to %s'%host_ip)
                 continue
@@ -180,6 +181,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         host_dict['control-ip']= get_control_host_string(host_string).split('@')[1]
 
         host_dict['name'] = host_name
+        host_dict['fqname'] = host_fqname
         host_dict['username'] = host_string.split('@')[0]
         host_dict['password'] =get_env_passwords(host_string)
         host_dict['roles'] = []
