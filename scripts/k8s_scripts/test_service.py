@@ -133,3 +133,15 @@ class TestService(BaseK8sTest):
     # end test_service_scale_up_down
 
 
+    @preposttest_wrapper
+    def test_kube_dns_lookup(self):
+        namespace = self.setup_namespace()
+        client_pod = self.setup_busybox_pod(namespace=namespace.name)
+        assert client_pod.verify_on_setup()
+        lookup_str = 'nslookup kubernetes.default.svc.cluster.local'
+        output = client_pod.run_cmd(lookup_str)
+        msg = 'DNS resolution failed'
+        assert 'nslookup: can\'t resolve' not in output, msg
+        self.logger.info('DNS resolution check : %s passed. Output: %s' %(
+            lookup_str, output))
+    # end test_kube_dns_lookup

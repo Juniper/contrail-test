@@ -45,7 +45,7 @@ class TestPod(BaseK8sTest):
         pod2 = self.setup_nginx_pod(labels={'app':app})
         assert pod2.verify_on_setup()
         assert pod1.ping_to_ip(pod2.pod_ip)
-        pod1.modify_pod_label(label_name="app", label_value="unhealthy")
+        pod1.set_labels({"app": "unhealthy"})
         assert pod1.ping_to_ip(pod2.pod_ip)
 
-    # end test_service_1
+    # end test_change_pod_label

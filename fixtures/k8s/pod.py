@@ -1,6 +1,7 @@
 import fixtures
 from kubernetes.client.rest import ApiException
 
+from vnc_api.vnc_api import NoIdError
 from common import log_orig as contrail_logging
 from tcutils.util import get_random_name, retry
 
@@ -27,6 +28,15 @@ class PodFixture(fixtures.Fixture):
         self.already_exists = None
         self.shell = shell or '/bin/sh'
         self._shell_arg = '%s -l -c' % (self.shell)
+
+        self.connections = connections
+        self.vnc_lib = connections.get_vnc_lib_h()
+        self.agent_inspect = connections.agent_inspect
+
+        self.api_vm_obj = None
+        self.vmi_objs = []
+        self.tap_intfs = []
+    # end __init__
 
     def setUp(self):
         super(PodFixture, self).setUp()
@@ -86,10 +96,62 @@ class PodFixture(fixtures.Fixture):
         self._populate_attr()
     # end create
 
-    def delete(self):
+    def delete_only(self):
         if not self.already_exists:
             resp = self.k8s_client.delete_pod(self.namespace, self.name)
+            return resp
+    # end delete_only
+
+    def delete(self):
+        if not self.already_exists:
+            resp = self.delete_only()
+
+            assert self.verify_on_cleanup()
     # end delete
+
+    def verify_on_cleanup(self):
+        assert self.verify_pod_not_in_contrail_api(),('Pod %s cleanup checks'
+            ' in contrail-api failed' % (self.name))
+        assert self.verify_pod_not_in_contrail_agent(),('Pod %s cleanup checks'
+            ' in agent failed' % (self.name))
+        return True
+        self.logger.info('Verifications on pod %s cleanup passed')
+    # end verify_on_cleanup
+
+    def verify_pod_not_in_contrail_api(self):
+        # TODO
+        return True
+
+    @retry(delay=5, tries=10)
+    def verify_pod_not_in_contrail_agent(self):
+        inspect_h = self.agent_inspect[self.host_ip]
+
+        # Check that VM object is removed in agent
+        agent_vm = inspect_h.get_vna_vm(self.uuid)
+        if agent_vm:
+            self.logger.warn('Pod uuid %s is still seen in agent %s VM list' %(
+                self.uuid, self.host_ip))
+            return False
+        self.logger.debug('Pod %s is not in agent %s VM list' %(self.uuid,
+            self.host_ip))
+
+        # Check that tap intf is removed in agent
+        for tap_intf in self.tap_intfs:
+            vmi_dict = inspect_h.get_vna_tap_interface_by_vmi(
+                tap_intf['uuid'])
+            if vmi_dict:
+                self.logger.warn('VMI %s of Pod %s is still seen in '
+                    'agent %s' %(tap_intf['uuid'], self.name, self.host_ip))
+                self.logger.debug(vmi_dict)
+                return False
+            self.logger.debug('VMI %s is removed from agent %s' %(
+                tap_intf['uuid'], self.host_ip))
+        # TODO
+        # Will have a common set of methods for validating across vm_test.py 
+        # and pod.py soon
+        self.logger.info('Verified that pod %s is removed in agent' %(self.name))
+        return True
+    # end verify_pod_not_in_contrail_agent
 
     def set_labels(self, label_dict):
         self.obj = self.k8s_client.set_pod_label(self.namespace, self.name,
@@ -114,9 +176,27 @@ class PodFixture(fixtures.Fixture):
             result = True
         return result
 
+    def wait_till_pod_is_up(self):
+        return self.verify_pod_is_running()
+
     @retry(delay=1, tries=10)
     def verify_pod_in_contrail_api(self):
-        # TODO
+        try:
+            self.api_vm_obj = self.vnc_lib.virtual_machine_read(id=self.uuid)
+            api_vmi_refs = self.api_vm_obj.get_virtual_machine_interface_back_refs()
+            self.vmi_objs = []
+            self.vmi_uuids = []
+            for vmi_ref in api_vmi_refs:
+                x = self.vnc_lib.virtual_machine_interface_read(
+                    id=vmi_ref['uuid'])
+                self.vmi_objs.append(x)
+                self.vmi_uuids.append(vmi_ref['uuid'])
+                self.logger.debug('Pod %s has vmi %s' %(self.name, x.uuid))
+        except NoIdError:
+            self.logger.debug('VM uuid %s not in api-server' %(self.uuid))
+            return False
+        self.logger.info('Verified pod %s in contrail-api' %(self.name))
+
         return True
     # end verify_pod_in_contrail_api
 
@@ -126,9 +206,28 @@ class PodFixture(fixtures.Fixture):
         return True
     # verify_pod_in_contrail_control
 
-    @retry(delay=1, tries=10)
+    @retry(delay=2, tries=10)
     def verify_pod_in_contrail_agent(self):
-        # TODO
+        inspect_h = self.agent_inspect[self.host_ip]
+        self.tap_intfs = inspect_h.get_vna_tap_interface_by_vm(vm_id=self.uuid)
+        if not self.tap_intfs:
+            self.logger.warn('No tap intf seen for pod %s in %s' %(self.uuid))
+            return False
+        agent_vmi_ids = [x['uuid'] for x in self.tap_intfs]
+        if set(agent_vmi_ids) != set(self.vmi_uuids):
+            self.logger.warn('Mismatch in agent and config vmis for pod %s'
+                '. Agent : %s, Config: %s' % (self.name, agent_vmi_ids,
+                                              self.vmi_uuids))
+            return False
+
+        for tap_intf in self.tap_intfs:
+            if tap_intf['active'] != 'Active':
+                self.logger.warn('VMI is not active. Details: %s' %(tap_intf))
+                return False
+            self.logger.debug('VMI %s is active in agent %s' %(tap_intf['uuid'],
+                self.host_ip))
+        self.logger.info('Verified Pod %s in agent %s' %(self.name,
+                                                        self.host_ip))
         return True
     # verify_pod_in_contrail_agent
 
