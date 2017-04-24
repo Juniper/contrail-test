@@ -1256,7 +1256,7 @@ class VNFixture(fixtures.Fixture):
         if type(subnet) is str:
             cidr = {'cidr': subnet}
 
-        #ipam_fq_name = quantum_obj['network']['contrail:subnet_ipam'][0]['ipam_fq_name']
+        #ipam_fq_name = quantum_obj['network']['subnet_ipam'][0]['ipam_fq_name']
         ipam_fq_name = None
         net_id = quantum_obj['network']['id']
 
@@ -1403,7 +1403,7 @@ class VNFixture(fixtures.Fixture):
             project_name = self.project_name
             if len(policy_fq_names) != 0:
                 project_name = policy_fq_names[0][1]
-                net_req = {'contrail:policys': policy_fq_names}
+                net_req = {'policys': policy_fq_names}
                 net_rsp = self.quantum_h.update_network(
                     vn_id, {'network': net_req})
                 self.logger.debug(
@@ -1455,7 +1455,7 @@ class VNFixture(fixtures.Fixture):
             # If no policy is passed, unbind all policys
             if len(policy_fq_names) == 0:
                 policys_to_remain = []
-            net_req = {'contrail:policys': policys_to_remain}
+            net_req = {'policys': policys_to_remain}
             net_rsp = self.quantum_h.update_network(
                 vn_id, {'network': net_req})
 
