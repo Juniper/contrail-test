@@ -58,7 +58,7 @@ class QuantumHelper():
         return openstack.OpenstackAuth(**kwargs)
 
     def setUp(self):
-        self.obj = client.Client('2.0', session=self.auth_h.get_session(),
+        self.obj = client.Client('2.0', session=self.auth_h.get_session(scope='project'),
                                  region_name=self.region_name)
     # end setUp
 

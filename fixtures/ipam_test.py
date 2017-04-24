@@ -164,7 +164,7 @@ class IPAMFixture(fixtures.Fixture):
         False If all Subnet prefixes are not found
         """
         self.api_s_vn_obj = self.api_s_inspect.get_cs_ipam(
-            project=self.project_name, ipam=self.name, refresh=True)
+            domain=self.fq_name[0],project=self.fq_name[1], ipam=self.name, refresh=True)
         if not self.api_s_vn_obj:
             self.logger.warn("IPAM %s is not found in API-Server" %
                              (self.name))
@@ -204,7 +204,7 @@ class IPAMFixture(fixtures.Fixture):
         self.ri_name = fqname + ':' + self.name
         for cn in self.inputs.bgp_ips:
             cn_config_vn_obj = self.cn_inspect[cn].get_cn_config_ipam(
-                ipam=self.name, project=self.project_name)
+                ipam=self.name, domain= self.fq_name[0], project=self.fq_name[1])
             if not cn_config_vn_obj:
                 self.logger.warn(
                     'Control-node %s does not have IPAM %s info ' %
@@ -238,7 +238,7 @@ class IPAMFixture(fixtures.Fixture):
                     "Routing instance for IPAM %s is still found in Control-node %s" % (self.name, cn))
                 result = result and False
         # end for
-        if self.cn_inspect[cn].get_cn_config_ipam(ipam=self.name, project=self.project_name):
+        if self.cn_inspect[cn].get_cn_config_ipam(ipam=self.name, domain=self.fq_name[0],project=self.fq_name[1]):
             self.logger.warn("Control-node config DB still has  IPAM %s" %
                              (self.name))
             result = result and False

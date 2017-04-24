@@ -58,6 +58,8 @@ class VncLibFixture(fixtures.Fixture):
                        else kwargs.get('insecure', True)
         self.use_ssl = self.inputs.api_protocol == 'https' if self.inputs \
                        else kwargs.get('use_ssl', False)
+        self.authn_url = self.inputs.authn_url if self.inputs else \
+                         kwargs.get('authn_url', None)
     # end __init__
 
     def setUp(self):
@@ -74,7 +76,6 @@ class VncLibFixture(fixtures.Fixture):
             self.auth_server_ip = self.inputs.auth_ip
             self.auth_client = self.connections.auth
             self.project_id = self.connections.project_id
-            self.auth_url = self.inputs.auth_url
         else:
             self.logger = self.logger or contrail_logging.getLogger(__name__)
             self.vnc_api_h = VncApi(
@@ -85,7 +86,8 @@ class VncLibFixture(fixtures.Fixture):
                               api_server_host=self.cfgm_ip,
                               api_server_port=self.api_server_port,
                               auth_host=self.auth_server_ip,
-                              api_server_use_ssl=self.use_ssl)
+                              api_server_use_ssl=self.use_ssl,
+                              auth_url=self.authn_url)
             if self.orchestrator == 'openstack':
                 self.auth_client = OpenstackAuth(
                                     self.username,

@@ -2113,6 +2113,10 @@ svc_tmpl = {
       u'description': u'Flavor',
       u'type': u'string'
     },
+    u'domain': {
+      u'description': u'domain',
+      u'type': u'string'
+    },
     u'service_scaling': {
       u'description': u'Flag to enable scaling',
       u'type': u'string'
@@ -2149,6 +2153,7 @@ svc_tmpl = {
   u'resources': {
     u'service_template': {
       u'properties': {
+        u'domain': {u'get_param': u'domain'},
         u'flavor': {u'get_param': u'flavor'},
         u'service_scaling': {u'get_param': u'service_scaling'},
         u'image_name': {u'get_param': u'image'},
@@ -2173,6 +2178,9 @@ svc_tmpl_v2 = {
       u'value': {u'get_attr': [u'service_template', u'fq_name']}}
   },
   u'parameters': {
+    u'domain': {
+      u'description': u'domain of service template',
+      u'type': u'string'}, 
     u'flavor': {
       u'description': u'Flavor',
       u'type': u'string'},
@@ -2208,9 +2216,9 @@ svc_tmpl_v2 = {
     u'service_template': {
       u'properties': {
         u'name': {u'get_param': u'name'},
-        u'domain': u'default-domain',
+        u'domain': {u'get_param': u'domain'},
         u'service_template_properties': {
-          u'service_template_properties_version': u'1',
+          u'service_template_properties_version': u'2',
           u'service_template_properties_image_name': {u'get_param': u'image'},
           u'service_template_properties_service_scaling': {u'get_param': u'service_scaling'},
           u'service_template_properties_service_mode': {u'get_param': u'mode'},
@@ -2246,6 +2254,9 @@ svc_tmpl_pt_v2 = {
     u'mode': {
       u'description': u'service mode',
       u'type': u'string'},
+    u'domain': {
+      u'description': u'domain of service template',
+      u'type': u'string'},
     u'name': {
       u'description': u'Name of service template',
       u'type': u'string'},
@@ -2257,7 +2268,7 @@ svc_tmpl_pt_v2 = {
     u'service_template': {
       u'properties': {
         u'name': {u'get_param': u'name'},
-        u'domain': u'default-domain',
+        u'domain': {u'get_param': u'domain'},
         u'service_template_properties': {
           u'service_template_properties_version': u'2',
           u'service_template_properties_service_mode': {u'get_param': u'mode'},
@@ -2845,15 +2856,15 @@ pt_si = {
         u'name': {u'get_param': u'service_instance_name'},
         u'service_instance_properties': {
           u'service_instance_properties_interface_list': [
-		{ u'service_instance_properties_interface_list_virtual_network': {u'get_param': u'mgmt_net_id'}
-		},
-		{ u'service_instance_properties_interface_list_virtual_network': {u'get_param': u'left_net_id'}
-		},
-		{ u'service_instance_properties_interface_list_virtual_network': {u'get_param': u'right_net_id'}
-		},
-							],
-	  u'service_instance_properties_management_virtual_network': {u'get_param': u'mgmt_net_id'},
-	  u'service_instance_properties_left_virtual_network': {u'get_param': u'left_net_id'},
+        { u'service_instance_properties_interface_list_virtual_network': {u'get_param': u'mgmt_net_id'}
+        },
+        { u'service_instance_properties_interface_list_virtual_network': {u'get_param': u'left_net_id'}
+        },
+        { u'service_instance_properties_interface_list_virtual_network': {u'get_param': u'right_net_id'}
+        },
+                            ],
+      u'service_instance_properties_management_virtual_network': {u'get_param': u'mgmt_net_id'},
+      u'service_instance_properties_left_virtual_network': {u'get_param': u'left_net_id'},
           u'service_instance_properties_right_virtual_network': {u'get_param': u'right_net_id'}
         },
         u'service_template_refs': [{u'get_param': u'service_template_fq_name'}]
@@ -2918,7 +2929,7 @@ pt_svm = {
       u'properties': {
         u'virtual_network_refs': [{ u'get_param': u'mgmt_net_id' }],
         u'security_group_refs': [{ u'get_param': u'def_sg_id' }],
-	    u'port_tuple_refs': [{ u'get_resource': u'pt' }],
+        u'port_tuple_refs': [{ u'get_resource': u'pt' }],
         u'virtual_machine_interface_properties': {
           u'virtual_machine_interface_properties_service_interface_type': u'management',
         }
@@ -2985,7 +2996,7 @@ pt_svm = {
         u'flavor': { u'get_param': u'flavor' },
         u'networks':
           [{ u'port': { u'get_resource': u'svm_mgmt_vmi' }},
-	       { u'port': { u'get_resource': u'svm_left_vmi' }},
+           { u'port': { u'get_resource': u'svm_left_vmi' }},
            { u'port': { u'get_resource': u'svm_right_vmi' }},]
       }
     },
@@ -3111,12 +3122,11 @@ intf_rt_table = {
     u'intf_rt_table': {
       u'properties': {
         u'name': {u'get_param': u'intf_rt_table_name'},
-	u'interface_route_table_routes': { u'interface_route_table_routes_route': [{ u'interface_route_table_routes_route_prefix': { u'get_param': u'route_prefix' } }] },
-	u'service_instance_refs': [{ u'get_param': u'si_fqdn' }],
-	u'service_instance_refs_data': [{ u'service_instance_refs_data_interface_type': { u'get_param': u'si_intf_type' } }]
+    u'interface_route_table_routes': { u'interface_route_table_routes_route': [{ u'interface_route_table_routes_route_prefix': { u'get_param': u'route_prefix' } }] },
+    u'service_instance_refs': [{ u'get_param': u'si_fqdn' }],
+    u'service_instance_refs_data': [{ u'service_instance_refs_data_interface_type': { u'get_param': u'si_intf_type' } }]
       },
       u'type': u'OS::ContrailV2::InterfaceRouteTable'
     },
  }
 }
-

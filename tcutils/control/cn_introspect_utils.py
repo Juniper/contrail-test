@@ -86,7 +86,6 @@ class ControlNodeInspect (VerificationUtilBase):
         try:
             p = self.dict_get('Snh_IFMapPeerServerInfoReq?')
             xpath = './IFMapPeerServerInfoResp/%s' % (match)
-            #import pdb;pdb.set_trace()
             d = EtreeToDict(xpath).get_all_entry(p)
         except Exception as e:
             print e

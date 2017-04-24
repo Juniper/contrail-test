@@ -226,6 +226,7 @@ vms = {
 
 svc_tmpl = {
   u'parameters': {
+    u'domain':u'',
     u'name': u'st1',
     u'service_interface_type_list': u'management,left,right',
     u'image': u'',
@@ -240,6 +241,7 @@ svc_tmpl = {
 
 svc_tmpl_v2 = {
   u'parameters': {
+    u'domain':u'',
     u'name': u'',
     u'image': u'', u'flavor': u'',
     u'mode': u'', u'type': u'firewall',
@@ -251,6 +253,7 @@ svc_tmpl_v2 = {
 
 svc_tmpl_pt_v2 = {
   u'parameters': {
+    u'domain':u'',
     u'name': u'',
     u'mode': u'', u'type': u'firewall',
   }

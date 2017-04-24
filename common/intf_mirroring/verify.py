@@ -271,11 +271,11 @@ class VerifyIntfMirror(VerifySvcMirror):
         self.vn3_subnets = [get_random_cidr(af=self.inputs.get_af())]
 
 
-        self.vn1_fq_name = "default-domain:" + self.inputs.project_name + \
+        self.vn1_fq_name = self.connections.domain_name +":"  + self.inputs.project_name + \
             ":" + get_random_name("vn1")
-        self.vn2_fq_name = "default-domain:" + self.inputs.project_name + \
+        self.vn2_fq_name = self.connections.domain_name +":"  + self.inputs.project_name + \
             ":" + get_random_name("vn2")
-        self.vn3_fq_name = "default-domain:" + self.inputs.project_name + \
+        self.vn3_fq_name = self.connections.domain_name +":"  + self.inputs.project_name + \
             ":" + get_random_name("vn3")
 
         self.vn1_name = self.vn1_fq_name.split(':')[2]
@@ -483,7 +483,7 @@ class VerifyIntfMirror(VerifySvcMirror):
         self.dst_vm_name = get_random_name("dst_vm")
         self.analyzer_vm_name = get_random_name("analyzer_vm")
 
-        self.analyzer_fq_name  = "default-domain:" + self.inputs.project_name + \
+        self.analyzer_fq_name  = self.connections.domain_name +":"  + self.inputs.project_name + \
             ":" + self.analyzer_vm_name
         self.routing_instance = self.analyzer_vn_fq_name + ':' + self.analyzer_vn_name
 
