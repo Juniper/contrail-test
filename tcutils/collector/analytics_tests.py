@@ -4278,17 +4278,6 @@ class AnalyticsVerification(fixtures.Fixture):
                         server,node = cfgm)
             assert result   
             result = False    
-            for ip in self.inputs.cfgm_control_ips:
-               if self.contrail_internal_vip:
-                   ip = self.contrail_internal_vip
-               server = "%s:%s"%(ip,port_dict['api'])
-               result = result or self.verify_connection_infos(ops_inspect,\
-                            'DeviceManager',\
-                            server,node = cfgm)
-               if self.contrail_internal_vip:
-                   break
-            assert result   
-            result = False    
             if self.inputs.host_data[self.inputs.cfgm_names[0]]['containers']\
                 ['controller'] == True:
                 for ip in self.inputs.cfgm_control_ips:
@@ -4338,17 +4327,6 @@ class AnalyticsVerification(fixtures.Fixture):
                         server,node = cfgm)
             assert result   
             result = False    
-            for ip in self.inputs.cfgm_control_ips:
-               if self.contrail_internal_vip:
-                   ip = self.contrail_internal_vip
-               server = "%s:%s"%(ip,port_dict['api'])
-               result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-schema',\
-                            server,node = cfgm)
-               if self.contrail_internal_vip:
-                   break
-            assert result   
-            result = False    
             if self.inputs.host_data[self.inputs.cfgm_names[0]]['containers']\
                 ['controller'] == True:
                 for ip in self.inputs.cfgm_control_ips:
@@ -4389,17 +4367,6 @@ class AnalyticsVerification(fixtures.Fixture):
                 result = result or self.verify_connection_infos(ops_inspect,\
                         'contrail-svc-monitor',\
                         server,node = cfgm)
-            assert result   
-            result = False    
-            for ip in self.inputs.cfgm_control_ips:
-               if self.contrail_internal_vip:
-                   ip = self.contrail_internal_vip
-               server = "%s:%s"%(ip,port_dict['api'])
-               result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-svc-monitor',\
-                            server,node = cfgm)
-               if self.contrail_internal_vip:
-                   break
             assert result   
             result = False    
             if self.inputs.host_data[self.inputs.cfgm_names[0]]['containers']\
