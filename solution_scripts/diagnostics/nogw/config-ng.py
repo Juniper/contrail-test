@@ -2447,7 +2447,7 @@ class LogicalRouterConfig(Base):
         quantum_h   = self.connections.get_network_h()
         response    = quantum_h.check_and_create_router(name,tenant_id)
         self.uuid   = response['id']
-        self.fqname = response['contrail:fq_name']
+        self.fqname = response['fq_name']
         if gw:
             self.set_gw(self.uuid, gw)
         for vn_id in vn_ids:
@@ -2698,7 +2698,7 @@ class LogicalRouterConfig(Base):
                 assert False, 'uuid has to be specified'
             quantum_h = self.connections.get_network_h()
             router_obj = quantum_h.show_router(router_id=uuid)
-            self.fqname = router_obj['contrail:fq_name']
+            self.fqname = router_obj['fq_name']
         return self.fqname
 
 

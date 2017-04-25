@@ -75,9 +75,9 @@ class VMFixture(fixtures.Fixture):
         if os.environ.has_key('ci_image'):
             cidrs = []
             for vn_obj in vn_objs:
-                if vn_obj['network'].has_key('contrail:subnet_ipam'):
+                if vn_obj['network'].has_key('subnet_ipam'):
                     cidrs.extend(list(map(lambda obj: obj['subnet_cidr'],
-                                 vn_obj['network']['contrail:subnet_ipam'])))
+                                 vn_obj['network']['subnet_ipam'])))
             if get_af_from_cidrs(cidrs) != 'v4':
                 raise v4OnlyTestException('Disabling v6 tests for CI')
             image_name = os.environ.get('ci_image')
@@ -91,7 +91,7 @@ class VMFixture(fixtures.Fixture):
         self.vm_obj = None
         self.vm_ip = None
         self.vn_names = [self.orch.get_vn_name(x) for x in self.vn_objs]
-        # self.vn_fq_names = [':'.join(x['network']['contrail:fq_name'])
+        # self.vn_fq_names = [':'.join(x['network']['fq_name'])
         #                    for x in self.vn_objs]
         self.vn_fq_names = [':'.join(self.vnc_lib_h.id_to_fq_name(self.orch.get_vn_id(x)))
                             for x in self.vn_objs]

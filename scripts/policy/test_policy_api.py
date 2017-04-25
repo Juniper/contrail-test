@@ -121,7 +121,7 @@ class TestApiPolicyFixture01(BasePolicyTest):
                 vn_in_quantum, "VN is not present on quantum server")
 
         # verify vn_policy data on quantum after association
-        #vn_assoc_policy_quantum = vn_in_quantum['network']['contrail:policys'][0][2]
+        #vn_assoc_policy_quantum = vn_in_quantum['network']['policys'][0][2]
         vn_assoc_policy_quantum = self.get_current_policies_bound(
             self.vnc_lib, vn_id)
         vn_assoc_policy_quantum = str(vn_assoc_policy_quantum[0][2])
