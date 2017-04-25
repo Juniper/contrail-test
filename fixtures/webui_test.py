@@ -1589,9 +1589,6 @@ class WebuiTest:
         self.logger.info(
             "Verifying config node api server basic data on Monitor->Infra->Config Nodes->Details(basic view) page ...")
         self.logger.debug(self.dash)
-        if not self.ui.click_monitor_config_nodes():
-            result = result and False
-        rows = self.ui.get_rows()
         config_nodes_list_ops = self.ui.get_config_nodes_list_ops()
         result = True
         for n in range(len(config_nodes_list_ops)):
@@ -1601,6 +1598,7 @@ class WebuiTest:
                 (ops_config_node_name))
             if not self.ui.click_monitor_config_nodes():
                 result = result and False
+            self.ui.wait_till_ajax_done(self.browser, wait=15)
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
@@ -1654,11 +1652,6 @@ class WebuiTest:
                             process_up_start_time_dict)
                     if item['process_name'] == 'ifmap':
                         ifmap_string = self.ui.get_process_status_string(
-                            item,
-                            process_down_stop_time_dict,
-                            process_up_start_time_dict)
-                    if item['process_name'] == 'contrail-discovery:0':
-                        discovery_string = self.ui.get_process_status_string(
                             item,
                             process_down_stop_time_dict,
                             process_up_start_time_dict)
@@ -1746,9 +1739,7 @@ class WebuiTest:
                             'key': 'Memory', 'value': memory}, {
                             'key': 'Version', 'value': version}, {
                                 'key': 'API Server', 'value': api_string}, {
-                                    'key': 'Discovery', 'value': discovery_string}, {
                                         'key': 'Service Monitor', 'value': monitor_string}, {
-                                            'key': 'Ifmap', 'value': ifmap_string}, {
                                                 'key': 'Schema Transformer', 'value': schema_string}, {
                                                     'key': 'Overall Node Status', 'value': overall_node_status_string}])
                 if self.ui.match_ui_kv(
@@ -7510,25 +7501,28 @@ class WebuiTest:
     def verify_config_nodes_ops_grid_page_data(self, host_name, ops_data):
         webui_data = []
         self.ui.click_monitor_config_nodes()
+        self.ui.wait_till_ajax_done(self.browser, wait=15)
         rows = self.browser.find_element_by_class_name('grid-canvas')
         base_indx = 0
         rows = self.ui.get_rows(rows)
         for hosts in range(len(rows)):
-            if self.ui.get_slick_cell_text(
-                    rows[hosts],
-                    base_indx) == host_name:
-                webui_data.append(
-                    {'key': 'Hostname', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx)})
-                webui_data.append({'key': 'IP Address', 'value': self.ui.get_slick_cell_text(
-                    rows[hosts], base_indx + 1)})
-                webui_data.append(
-                    {'key': 'Version', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 2)})
-                webui_data.append(
-                    {'key': 'Status', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 3)})
-                webui_data.append({'key': 'CPU', 'value': self.ui.get_slick_cell_text(
-                    rows[hosts], base_indx + 4) + ' %'})
-                webui_data.append(
-                    {'key': 'Memory', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 5)})
+            if rows[base_indx]:
+                row_div_list = self.ui.find_element('div', 'tag',
+                                                        browser=rows[base_indx], elements=True,
+                                                        if_elements=[1])
+                if row_div_list[base_indx].text == host_name:
+                    webui_data.append(
+                        {'key': 'Hostname', 'value': row_div_list[base_indx].text})
+                    webui_data.append({'key': 'IP Address',
+                                           'value': row_div_list[base_indx + 1].text})
+                    webui_data.append(
+                        {'key': 'Version', 'value': row_div_list[base_indx + 2].text})
+                    webui_data.append(
+                        {'key': 'Status', 'value': row_div_list[base_indx + 3].text})
+                    webui_data.append({'key': 'CPU',
+                                           'value': (row_div_list[base_indx + 4].text) + ' %'})
+                    webui_data.append(
+                        {'key': 'Memory', 'value': row_div_list[base_indx + 5].text})
                 if self.ui.match_ui_kv(ops_data, webui_data):
                     return True
                 else:
