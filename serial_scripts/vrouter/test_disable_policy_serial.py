@@ -29,10 +29,11 @@ class DisablePolicyEcmpSerial(BaseVrouterTest, ConfigSvcChain, VerifySvcChain):
             2. launch VMs in both VNs and SIs and disable the policy on all the VMIs
                 including SIs
             3. start the traffic from left to right VN
+            4. enable the policy on traffic VMs and verify flow created
         Pass criteria:
             1. traffic should go through fine
-            2. flows should not be created
-            3. load should be distributed among all the SIs
+            2. flows should not be created when policy disabled
+            3. flows should be created when policy enabled
         """
         vn_fixtures = self.create_vns(count=3)
         self.verify_vns(vn_fixtures)
@@ -83,13 +84,15 @@ class DisablePolicyEcmpSerial(BaseVrouterTest, ConfigSvcChain, VerifySvcChain):
         self.disable_policy_for_vms([vm_left, vm_right])
         self.disable_policy_for_vms(si_fixtures[0].svm_list)
 
-        assert self.verify_traffic_load_balance_si(vm_left,
+        assert self.verify_ecmp_routes_si(vm_left, vm_right)
+        assert self.verify_traffic_for_ecmp_si(vm_left,
             si_fixtures[0].svm_list, vm_right)
 
         self.disable_policy_for_vms([vm_left, vm_right], disable=False)
 
-        assert self.verify_traffic_load_balance_si(vm_left,
-            si_fixtures[0].svm_list, vm_right, flow_count=True)
+        assert self.verify_ecmp_routes_si(vm_left, vm_right)
+        assert self.verify_traffic_for_ecmp_si(vm_left,
+            si_fixtures[0].svm_list, vm_right, flow_count=1)
 
 class DisablePolicyEcmpSerialIpv6(DisablePolicyEcmpSerial):
     @classmethod
