@@ -2242,14 +2242,13 @@ class AnalyticsVerification(fixtures.Fixture):
         analytics = self.inputs.collector_ips[0]
         underlay = self.inputs.run_cmd_on_server(analytics, 'contrail-status | grep contrail-snmp-collector',
                                                  container='analytics')
-        cfgm_processes = ['supervisor-config', 'contrail-config-nodemgr',
+        cfgm_processes = ['contrail-config-nodemgr',
             'contrail-device-manager', 'contrail-schema', 'contrail-svc-monitor']
-        db_processes = ['supervisor-database',
-            'contrail-database-nodemgr', 'kafka']
-        analytics_processes = ['contrail-query-engine', 'contrail-collector', 'supervisor-analytics', 'contrail-analytics-nodemgr']
+        db_processes = ['contrail-database-nodemgr', 'kafka']
+        analytics_processes = ['contrail-query-engine', 'contrail-collector', 'contrail-analytics-nodemgr']
         if underlay:
             analytics_processes.extend(['contrail-snmp-collector', 'contrail-topology'])
-        control_processes = ['supervisor-control', 'contrail-control',
+        control_processes = ['contrail-control',
             'contrail-control-nodemgr', 'contrail-dns', 'contrail-named']
         vrouter_processes = ['supervisor-vrouter', 'contrail-vrouter-agent']
         self.new_ip_addr = '10.1.1.1'
@@ -2801,7 +2800,7 @@ class AnalyticsVerification(fixtures.Fixture):
                      verify_alarm_cleared=verify_alarm_cleared, built_in=False, alarm_name=alarm_name)
     # end  verify_configured_alarm
 
-    def _verify_alarms_stop_svc(self, service, service_ip, role, alarm_type, multi_instances=False, soak_timer=15):
+    def _verify_alarms_stop_svc(self, service, service_ip, role, alarm_type, multi_instances=False, soak_timer=15,container='controller'):
         result = True
         self.logger.info("Verify alarms generated after stopping the service %s:" % (service))
         dist = self.inputs.get_os_version(service_ip)
@@ -2819,7 +2818,7 @@ class AnalyticsVerification(fixtures.Fixture):
                                               container='controller')
             else:
                 self.inputs.stop_service(service, host_ips=[service_ip], contrail_service=True,
-                                         container='agent')
+                                         container=container)
             self.logger.info("Process %s stopped" % (service))
             if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances, soak_timer):
                 result = result and False
@@ -2832,7 +2831,7 @@ class AnalyticsVerification(fixtures.Fixture):
                                               container='controller')
             else:
                 self.inputs.start_service(service, host_ips=[service_ip],
-                    contrail_service=True)
+                    contrail_service=True,container=container)
             time.sleep(10)
             if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances,
                     soak_timer=soak_timer, verify_alarm_cleared=True):
@@ -2979,7 +2978,7 @@ class AnalyticsVerification(fixtures.Fixture):
             container = 'controller'
         elif role == 'database-node':
             service_ip = self.inputs.database_ips[0]
-            container = 'controller'
+            container = 'analyticsdb'
         elif role == 'control-node':
             service_ip = self.inputs.bgp_control_ips[0]
             container = 'controller'
@@ -3004,7 +3003,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 'analytics-node': self.inputs.collector_ips[0]}
             container = {
                 'config-node' : 'controller',
-                'database-node' : 'controller',
+                'database-node' : 'analyticsdb',
                 'control-node' : 'controller',
                 'vrouter' : 'agent',
                 'analytics-node' : 'analytics',
@@ -3036,7 +3035,7 @@ class AnalyticsVerification(fixtures.Fixture):
             alarm_type = ['process-status']
 
         if trigger == 'service_stop':
-            if not self._verify_alarms_stop_svc(service, service_ip, role, alarm_type, multi_instances):
+            if not self._verify_alarms_stop_svc(service, service_ip, role, alarm_type, multi_instances,container=container):
                 result = result and False
         elif trigger == 'bgp_peer_mismatch':
             alarm_type = ['bgp-connectivity']
