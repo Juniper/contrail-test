@@ -118,7 +118,7 @@ class TestDetailedPolicy1(BasePolicyTest):
                 matching_rule_action[proto] = topo.rules[
                     policy][i]['simple_action']
             if num_rules == 0:
-                matching_rule_action[test_proto] = 'deny'
+                matching_rule_action[test_proto] = 'pass'
             self.logger.info("matching_rule_action: %s" %
                              matching_rule_action)
             # 4. Test with ping
