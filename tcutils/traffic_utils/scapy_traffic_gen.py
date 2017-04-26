@@ -53,7 +53,7 @@ class ScapyTraffic:
         self.params['TCP'] = kwargs.get('tcp',{})
         self.params['UDP'] = kwargs.get('udp',{})
         self.payload = kwargs.get('payload',
-                        "'ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ'")
+                        "'ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ'")
         self.pid_file = '/tmp/scapy_%s.pid' % (get_random_name())
 
     def scapy_build_stream(self):

@@ -203,7 +203,7 @@ class TrafficAnalyzer:
             self.logger.error("Unable to transfer file to local system")
             return False
         file_name = self.pcap.split('/')[-1]
-        if self.encap_type:
+        if self.encap_type and self.encap_type != "MPLS_any":
             if not self.verify_encap_type(self.encap_type, file_name):
                 return False
         f = open(file_name, 'r')
@@ -263,6 +263,13 @@ class TrafficAnalyzer:
                         elif self.encap_type == "MPLSoGRE":
                             actual_mpls_exp = int(ether.ip.data.\
                                                   encode("hex")[13:14],16) >> 1
+                        elif self.encap_type == "MPLS_any":
+                            try:
+                                actual_mpls_exp = int((ether.ip.data.data)\
+                                                  .encode("hex")[5:6], 16) >> 1
+                            except:
+                                actual_mpls_exp = int(ether.ip.data.\
+                                                   encode("hex")[13:14],16) >> 1
                         elif self.encap_type == "VxLAN":
                             self.logger.error("VxLAN encapslation does "
                                               "not have exp")
