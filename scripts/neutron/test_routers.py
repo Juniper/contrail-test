@@ -234,6 +234,35 @@ class TestRouters(BaseNeutronTest):
             'Gateway IP(%s) is not the same as Router intf IP(%s)' % (
                 vn2_gateway_ip, router_port_ip)
 
+
+    #@test.attr(type=['sanity', 'suite1'])
+    @preposttest_wrapper
+    def test_bug_id_1599672(self):
+        '''Create a VN with router_external: True
+        Delete Subnet
+
+       '''
+        ext_vn_name = "BugVn"
+        ext_subnets = [get_random_cidr()]
+
+        ext_vn_fixture = self.useFixture(
+            VNFixture(
+                project_name=self.inputs.project_name,
+                connections=self.connections,
+                vn_name=ext_vn_name,
+                inputs=self.inputs,
+                subnets=ext_subnets,
+                router_external=True))
+
+        ext_vn_fixture.verify_on_setup()
+        self.quantum_h.create_floatingip(fip_pool_vn_id=ext_vn_fixture.vn_id)
+        sn_info=ext_vn_fixture.get_subnets()
+        sn_id= sn_info[0]['id']
+        assert self.quantum_h.delete_sn(sn_id), 'Delete SN failed, Refer bug 1599672'
+        assert self.quantum_h.delete_vn(ext_vn_fixture.vn_id), 'Delete VN failed, Refer bug 1599672'
+        return True
+
+
 class TestRouterSNAT(BaseNeutronTest):
 
     @classmethod
