@@ -395,10 +395,24 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
     # end do_ping_test
 
     @classmethod
-    def check_vms_booted(cls, vms_list):
+    def check_vms_booted(cls, vms_list, do_assert=True):
+        '''
+        If instances call this method, they may need to set do_assert to False
+        so that the fixture cleanup routines automatically take care of deletion
+        '''
+        failed = False
         for vm_fixture in vms_list:
-            assert vm_fixture.wait_till_vm_is_up(), 'VM %s has not booted' % (
-                vm_fixture.vm_name)
+            if not vm_fixture.wait_till_vm_is_up():
+                msg = 'VM %s has not booted' %(vm_fixture.vm_name)
+                cls.logger.error(msg)
+                failed = True
+                break
+        if failed and do_assert:
+            for vm_fixture in vms_list:
+                vm_fixture.cleanUp()
+            assert False, 'One or more vm-boots failed. Check logs'
+        if failed:
+            return False
     # end check_vms_booted
 
     @classmethod
