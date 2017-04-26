@@ -2157,9 +2157,6 @@ class WebuiTest:
         self.logger.info(
             "Verifying Control Nodes opserver basic data on Monitor->Infra->Control Nodes->Details(basic view) page......")
         self.logger.debug(self.dash)
-        if not self.ui.click_monitor_control_nodes():
-            result = result and False
-        rows = self.ui.get_rows()
         bgp_routers_list_ops = self.ui.get_bgp_routers_list_ops()
         result = True
         for n in range(len(bgp_routers_list_ops)):
@@ -2168,6 +2165,7 @@ class WebuiTest:
                 in webui as well" % (ops_bgp_routers_name))
             if not self.ui.click_monitor_control_nodes():
                 result = result and False
+            self.ui.wait_till_ajax_done(self.browser, wait=15)
             rows = self.ui.get_rows()
             for i in range(len(rows)):
                 match_flag = 0
@@ -2190,7 +2188,6 @@ class WebuiTest:
                 self.ui.click_monitor_control_nodes_basic(
                     match_index)
                 dom_basic_view = self.ui.get_basic_view_infra()
-                # special handling for overall node status value
                 node_status = self.browser.find_element_by_id('allItems').find_element_by_tag_name(
                     'p').get_attribute('innerHTML').replace('\n', '').strip()
                 for i, item in enumerate(dom_basic_view):
@@ -2199,7 +2196,6 @@ class WebuiTest:
                     if item.get('key') == 'CPU Share (%)':
                         dom_basic_view[i]['key'] = 'CPU'
                         dom_basic_view[i]['value'] += ' %'
-                # filter bgp_routers basic view details from opserver data
                 bgp_routers_ops_data = self.ui.get_details(
                     bgp_routers_list_ops[n]['href'])
                 ops_basic_data = []
@@ -2221,8 +2217,10 @@ class WebuiTest:
                 vrouters =  'vRouters: ' + \
                     str(bgp_routers_ops_data.get('BgpRouterState')
                         .get('num_up_xmpp_peer')) + '  Established in Sync'
-                cpu = bgp_routers_ops_data.get('ControlCpuState')
-                memory = bgp_routers_ops_data.get('ControlCpuState')
+                cpu = bgp_routers_ops_data.get('NodeStatus').get(
+                        'process_mem_cpu_usage').get('contrail-control')
+                memory = bgp_routers_ops_data.get('NodeStatus').get(
+                            'process_mem_cpu_usage').get('contrail-control')
                 if not cpu:
                     cpu = '--'
                     memory = '--'
@@ -2240,26 +2238,13 @@ class WebuiTest:
                             'ModuleClientState').get('client_info')
                         if analytics_data['status'] == 'Established':
                             analytics_primary_ip = analytics_data[
-                                'primary'].split(':')[0] + ' (Up)'
+                                'collector_ip'].split(':')[0] + ' (Up)'
                             tx_socket_bytes = analytics_data.get(
                                 'tx_socket_stats').get('bytes')
                             tx_socket_size = self.ui.get_memory_string(
                                 int(tx_socket_bytes))
                             analytics_messages_string = self.ui.get_analytics_msg_count_string(
                                 generators_vrouters_data, tx_socket_size)
-                ifmap_ip = bgp_routers_ops_data.get('BgpRouterState').get(
-                    'ifmap_info').get('url').split(':')[0]
-                ifmap_connection_status = bgp_routers_ops_data.get(
-                    'BgpRouterState').get('ifmap_info').get('connection_status')
-                ifmap_connection_status_change = bgp_routers_ops_data.get(
-                    'BgpRouterState').get('ifmap_info').get('connection_status_change_at')
-                ifmap_connection_string = [
-                    ifmap_ip +
-                    ' (' +
-                    ifmap_connection_status +
-                    ' since ' +
-                    time +
-                    ')' for time in self.ui.get_node_status_string(ifmap_connection_status_change)]
                 process_state_list = bgp_routers_ops_data.get(
                     'NodeStatus').get('process_info')
                 process_down_stop_time_dict = {}
@@ -2328,7 +2313,6 @@ class WebuiTest:
                                 'key': 'Version', 'value': version}, {
                                     'key': 'Analytics Node', 'value': analytics_primary_ip}, {
                                         'key': 'Analytics Messages', 'value': analytics_messages_string}, {
-                                            'key': 'Ifmap Connection', 'value': ifmap_connection_string}, {
                                                 'key': 'Control Node', 'value': control_node_string}, {
                                                     'key': 'Overall Node Status', 'value': overall_node_status_string}])
                 if self.ui.match_ui_kv(
@@ -2354,7 +2338,6 @@ class WebuiTest:
                                 'key': 'Version', 'value': version}, {
                                     'key': 'Status', 'value': overall_node_status_string}, {
                                         'key': 'vRouters', 'value': vrouters.split()[1] + ' Total'}])
-
                 if self.verify_bgp_routers_ops_grid_page_data(
                         host_name,
                         ops_data):
