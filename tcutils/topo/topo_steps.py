@@ -938,8 +938,6 @@ def allocNassocFIP(self, config_topo=None, assoc=True):
                     vm_fixture = config_topo[
                         vm_proj]['vm'][vm_list[index]]
                     self.vn_fixture = config_topo[vn_proj]['vn']
-                    assigned_fip = vm_fixture.chk_vmi_for_fip(
-                        vn_fq_name=self.vn_fixture[vn_name].vn_fq_name)
                     self.logger.info(
                         'Allocating and associating FIP from %s VN pool in project %s to %s VM in project %s' %
                         (vn_name, vn_proj, vm_list[index], vm_proj))
@@ -955,6 +953,8 @@ def allocNassocFIP(self, config_topo=None, assoc=True):
                             self.vm_fixture[self.topo.fvn_vm_map_dict[vn_name][index]].vm_ip,
                             assoc)
                     else:
+                        assigned_fip = vm_fixture.chk_vmi_for_fip(
+                            vn_fq_name=self.vn_fixture[vn_name].vn_fq_name)
                         fip_id = self.fip_fixture_dict[vn_name].create_and_assoc_fip(
                             self.vn_fixture[vn_name].vn_id,
                             vm_fixture.vm_id)
