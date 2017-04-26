@@ -560,6 +560,8 @@ class TestInputs(object):
             self.host_data[host['name']]['host_ip'] = host_ip
             self.host_data[host['name']]['host_data_ip'] = host_data_ip
             self.host_data[host['name']]['host_control_ip'] = host_control_ip
+            if host.get('fqname', None):
+                self.host_data[host['fqname']] = self.host_data[host['name']]
             self._check_containers(host)
             qos_queue_per_host, qos_queue_pg_properties_per_host = \
                                     self._process_qos_data(host_ip)
@@ -838,12 +840,14 @@ class TestInputs(object):
             with settings(host_string='%s@%s' % (username, host),
                           password=password, warn_only=True):
                 hname = run('hostname')
+                hfqname = run('hostname -f')
             hdict = {'ip': host,
                      'data-ip': host,
                      'control-ip': host,
                      'username': username,
                      'password': password,
                      'name': hname,
+                     'fqname': hfqname,
                      'roles': [],
                     }
             if host in cfgm:
