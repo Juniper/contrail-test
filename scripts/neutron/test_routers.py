@@ -255,16 +255,11 @@ class TestRouters(BaseNeutronTest):
                 router_external=True))
 
         ext_vn_fixture.verify_on_setup()
-
-        router_name = get_random_name('router1')
-        router_dict = self.create_router(router_name)
-        router_rsp = self.quantum_h.router_gateway_set(
-                router_dict['id'],
-                ext_vn_fixture.vn_id)
-        #self.add_vn_to_router(router_dict['id'], vn1_fixture)
+        self.quantum_h.create_floatingip(fip_pool_vn_id=ext_vn_fixture.vn_id)        
         sn_info=ext_vn_fixture.get_subnets()
         sn_id= sn_info[0]['id']
         assert self.quantum_h.delete_sn(sn_id), 'Delete SN failed, Refer bug 1599672'
+        assert self.quantum_h.delete_vn(ext_vn_fixture.vn_id), 'Delete VN failed, Refer bug 1599672'
         return True
 
 
