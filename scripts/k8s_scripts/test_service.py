@@ -5,6 +5,7 @@ from k8s.namespace import NamespaceFixture
 from k8s.service import ServiceFixture
 from tcutils.wrappers import preposttest_wrapper
 
+
 class TestService(BaseK8sTest):
 
     @classmethod
@@ -51,19 +52,20 @@ class TestService(BaseK8sTest):
             is enabled on the MX
         '''
         app = 'http_test'
+        labels = {'app': app}
         namespace = self.setup_namespace()
         #assert namespace.verify_on_setup()
 
         service = self.setup_http_service(namespace=namespace.name,
-                                          app=app, type='LoadBalancer')
+                                          labels=labels, type='LoadBalancer')
         pod1 = self.setup_nginx_pod(namespace=namespace.name,
-                                    labels={'app': app})
+                                    labels=labels)
         pod2 = self.setup_nginx_pod(namespace=namespace.name,
-                                    labels={'app': app})
+                                    labels=labels)
         pod3 = self.setup_busybox_pod(namespace=namespace.name)
 
-        assert pod1.verify_on_setup()
-        assert pod2.verify_on_setup()
+        assert self.verify_nginx_pod(pod1)
+        assert self.verify_nginx_pod(pod2)
         assert pod3.verify_on_setup()
 
         # Now validate load-balancing on the service
@@ -96,7 +98,7 @@ class TestService(BaseK8sTest):
         client_pod = self.setup_busybox_pod(namespace=namespace.name)
         service = self.setup_http_service(namespace=namespace.name,
                                           labels=labels)
-        for i in range(0,10):
+        for i in range(0, 10):
             pod = self.setup_nginx_pod(namespace=namespace.name, labels=labels)
             all_pods.append(pod)
         # end for
@@ -108,12 +110,12 @@ class TestService(BaseK8sTest):
         # Now validate load-balancing on the service
         assert self.validate_nginx_lb(all_pods, service.cluster_ip,
                                       test_pod=client_pod)
-        #Setup barred pods
+        # Setup barred pods
         barred_pods = all_pods[-5:]
         for pod in barred_pods:
             pod.set_labels(new_labels)
 
-        remaining_pods = [ x for x in all_pods if x not in barred_pods]
+        remaining_pods = [x for x in all_pods if x not in barred_pods]
         # LB should now happen only among the remaining pods
         msg = 'Service Load-balancing checks failed, check logs'
         assert self.validate_nginx_lb(remaining_pods, service.cluster_ip,
@@ -132,7 +134,6 @@ class TestService(BaseK8sTest):
 
     # end test_service_scale_up_down
 
-
     @preposttest_wrapper
     def test_kube_dns_lookup(self):
         namespace = self.setup_namespace()
@@ -142,6 +143,6 @@ class TestService(BaseK8sTest):
         output = client_pod.run_cmd(lookup_str)
         msg = 'DNS resolution failed'
         assert 'nslookup: can\'t resolve' not in output, msg
-        self.logger.info('DNS resolution check : %s passed. Output: %s' %(
+        self.logger.info('DNS resolution check : %s passed. Output: %s' % (
             lookup_str, output))
     # end test_kube_dns_lookup

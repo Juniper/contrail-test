@@ -7,15 +7,19 @@ from vnc_api.vnc_api import NoIdError
 from common import log_orig as contrail_logging
 from tcutils.util import get_random_name, retry
 
+
 class NamespaceFixture(fixtures.Fixture):
     '''
     '''
-    def __init__(self, connections, name=None):
+
+    def __init__(self, connections, name=None, isolation=False):
         self.connections = connections
-        self.logger = connections.logger or contrail_logging.getLogger(__name__)
+        self.logger = connections.logger or contrail_logging.getLogger(
+            __name__)
         self.name = name or get_random_name('namespace')
         self.k8s_client = connections.k8s_client
         self.vnc_api_h = connections.vnc_lib
+        self.isolation = isolation
 
         self.already_exists = False
 
@@ -25,27 +29,26 @@ class NamespaceFixture(fixtures.Fixture):
 
     def verify_on_setup(self):
         if not self.verify_namespace_is_active():
-            self.logger.error('Namespace %s verification failed' %(
-                               self.name))
+            self.logger.error('Namespace %s verification failed' % (
+                self.name))
             return False
-        #TODO 
+        # TODO
         # Update to work in all namespace modes
         # Until then, skip verifications
         return True
 
         if not self.verify_namespace_in_contrail_api():
-            self.logger.error('Namespace %s not seen in Contrail API' %(
-                               self.name))
+            self.logger.error('Namespace %s not seen in Contrail API' % (
+                self.name))
             return False
         self.logger.info('Namespace %s verification passed' % (self.name))
         return True
-    # end verify_on_setup 
-
+    # end verify_on_setup
 
     @retry(delay=1, tries=10)
     def verify_namespace_is_active(self):
         if self.status != 'Active':
-            self.logger.warn('Namespace %s is not Active yet, It is %s' %(
+            self.logger.warn('Namespace %s is not Active yet, It is %s' % (
                              self.name, self.status))
             return False
         return True
@@ -56,10 +59,10 @@ class NamespaceFixture(fixtures.Fixture):
         try:
             # TODO
             # Check for fq name for now until bug 1665233 is resolved
-            #self.vnc_api_h.project_read(id=self.uuid)
+            # self.vnc_api_h.project_read(id=self.uuid)
             self.vnc_api_h.project_read(fq_name=['default-domain', self.name])
         except NoIdError:
-            self.logger.warn('Namespace %s UUID %s not in contrail-api' %(
+            self.logger.warn('Namespace %s UUID %s not in contrail-api' % (
                              self.name, self.uuid))
             return False
         self.logger.info('Namespace %s is seen in contrail-api' % (self.name))
@@ -93,10 +96,12 @@ class NamespaceFixture(fixtures.Fixture):
             return ns_exists
         body = client.V1Namespace()
         body.metadata = client.V1ObjectMeta(name=self.name)
+        if self.isolation:
+            body.metadata.annotations = {"opencontrail.org/isolation": "true"}
         self.obj = self.k8s_client.v1_h.create_namespace(body)
         self._populate_attr()
         self.logger.info('Created namespace %s' % (self.name))
-        #TODO 
+        # TODO
         # Need to remove
         time.sleep(3)
     # end create
@@ -111,17 +116,17 @@ class NamespaceFixture(fixtures.Fixture):
 
     def verify_on_cleanup(self):
         assert self.verify_ns_is_not_in_k8s(), ('Namespace deletion '
-            'verification in k8s failed')
+                                                'verification in k8s failed')
         return True
     # end verify_on_cleanup
 
     @retry(delay=2, tries=30)
     def verify_ns_is_not_in_k8s(self):
         if self.k8s_client.is_namespace_present(self.name):
-            self.logger.debug('Namespace %s still in k8s' %(self.name))
+            self.logger.debug('Namespace %s still in k8s' % (self.name))
             return False
         else:
-            self.logger.debug('Namespace %s is not in k8s' %(self.name))
+            self.logger.debug('Namespace %s is not in k8s' % (self.name))
             return True
     # end verify_ns_is_not_in_k8s
 

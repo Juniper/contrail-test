@@ -35,13 +35,13 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
         cls.api_s_inspect = cls.connections.api_server_inspect
         cls.logger = cls.connections.logger
         cls.k8s_client = cls.connections.k8s_client
-
+        cls.setup_namespace_isolation = False
         cls.public_vn = create_public_vn.PublicVn(connections=cls.connections,
-                                 public_vn=K8S_PUBLIC_VN_NAME,
-                                 public_tenant=cls.inputs.admin_tenant,
-                                 logger=cls.logger,
-                                 fip_pool_name=K8S_PUBLIC_FIP_POOL_NAME,
-                                 api_option='contrail')
+                                                  public_vn=K8S_PUBLIC_VN_NAME,
+                                                  public_tenant=cls.inputs.admin_tenant,
+                                                  logger=cls.logger,
+                                                  fip_pool_name=K8S_PUBLIC_FIP_POOL_NAME,
+                                                  api_option='contrail')
 
     # end setUpClass
 
@@ -141,7 +141,7 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
                         name=None):
         return self.useFixture(NamespaceFixture(
             connections=self.connections,
-            name=name))
+            name=name, isolation=self.setup_namespace_isolation))
     # end create_namespace
 
     def setup_pod(self,
@@ -196,10 +196,10 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
             ]
         }
         return self.setup_pod(name=name,
-                             namespace=namespace,
-                             metadata=metadata,
-                             spec=spec,
-                             shell='/bin/bash')
+                              namespace=namespace,
+                              metadata=metadata,
+                              spec=spec,
+                              shell='/bin/bash')
 
     # end setup_nginx_pod
 
@@ -277,6 +277,7 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
                           test_pod=None,
                           host=None,
                           path='',
+                          port='80',
                           barred_pods=None):
         '''
         From test_pod , run wget on http://<service_ip>:<port> and check
@@ -317,7 +318,7 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
                     hit_me_not[pod.name] += 1
             if hit_me_not and 0 not in hit_me_not.values():
                 self.logger.warn('HTTP request seem to have hit an unexpected '
-                    ' pod. Stats : %s' %(hit_me_not))
+                                 ' pod. Stats : %s' % (hit_me_not))
                 return False
 
             if 0 not in hit.values():
@@ -510,3 +511,4 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
         namespace_fixture.enable_isolation()
         self.addCleanup(namespace_fixture.disable_isolation)
     # end self.setup_isolation
+
