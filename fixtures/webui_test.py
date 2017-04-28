@@ -8179,7 +8179,7 @@ class WebuiTest:
                 self.logger.debug(self.dash)
             else:
                 rows_detail = self.ui.click_basic_and_get_row_details(
-                                'ports', match_index)[1]
+                                'ports', match_index, canvas=True)[1]
                 for detail in range(len(rows_detail)):
                     key_value = rows_detail[detail].text.split('\n')
                     key = str(key_value.pop(0))

@@ -104,7 +104,7 @@ class WebuiEdit:
                         result = result and False
                     self.ui.send_keys(params_list[9], 'fixedIp', 'name', browser=subnet_grid[1],
                         clear=True)
-                    combobox[0].send_keys('100')
+                    self.ui.send_keys('100', 'local_preference', 'name', clear=True)
                 if allowed_address_pair:
                     add_value[1].click()
                     self.ui.send_keys(params_list[8], 'ipPrefixVal', 'name', clear=True)
@@ -113,7 +113,7 @@ class WebuiEdit:
                     self.ui.click_element('s2id_ecmpHashingIncFields_dropdown')
                     if not self.ui.select_from_dropdown('destination-ip', grep=False):
                         result = result and False
-                combo_state = combobox[1].get_attribute('disabled')
+                combo_state = combobox[0].get_attribute('disabled')
                 if not combo_state:
                     result = result and False
                 if not mirror_enabled_already:
