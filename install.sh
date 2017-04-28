@@ -21,7 +21,7 @@ if [ ${BUILD_PLATFORM} = "16.04" ]; then
     PACKAGES_REQUIRED_RALLY="libssl-dev libffi-dev python-dev libxml2-dev libxslt1-dev libpq-dev libpq5"
     EXTRAS="libc-dev-bin libc6-dev libexpat1-dev libexpat1 libpython2.7-dev python2.7-dev"
 else
-    EXTRAS="http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libexpat1-dev_2.1.0-4ubuntu1.3_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libexpat1_2.1.0-4ubuntu1.3_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libpython2.7-dev_2.7.6-8ubuntu0.2_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/python2.7-dev_2.7.6-8ubuntu0.2_amd64.deb"
+    EXTRAS="http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libexpat1-dev_2.1.0-4ubuntu1.3_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libexpat1_2.1.0-4ubuntu1.3_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libpython2.7-dev_2.7.6-8ubuntu0.2_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/python2.7-dev_2.7.6-8ubuntu0.2_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libxslt1-dev_1.1.28-2ubuntu0.1_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libxslt1.1_1.1.28-2ubuntu0.1_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libxml2-dev_2.9.1+dfsg1-3ubuntu4.9_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libxml2_2.9.1+dfsg1-3ubuntu4.9_amd64.deb"
     PACKAGES_REQUIRED_RALLY="libssl-dev libffi-dev python-dev libxml2-dev libxslt1-dev libpq-dev libpq5=9.3.15-0ubuntu0.14.04"
 fi
 
@@ -375,7 +375,7 @@ RUN apt-get install -y sshpass && \
     sshpass -e scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${sshuser_sub}${server}:${path} /contrail-install-packages.deb && \
     dpkg -i /contrail-install-packages.deb && \
     rm -f /contrail-install-packages.deb && \
-    cd /opt/contrail/contrail_packages/ && ./setup.sh; 
+    cd /opt/contrail/contrail_packages/ && ./setup.sh;
 EOF
             if [[ ${BUILD_PLATFORM} == "16.04" ]]; then
                 cat <<EOF
