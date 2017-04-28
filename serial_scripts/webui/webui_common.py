@@ -3415,10 +3415,10 @@ class WebuiCommon:
         return result
     # edit_remove_option
 
-    def edit_without_change(self, option):
+    def edit_without_change(self, option, display_name=None):
         result = True
         try:
-            self.edit_vn_result = self.edit_remove_option(option, 'edit')
+            self.edit_vn_result = self.edit_remove_option(option, 'edit', display_name)
             if self.edit_vn_result:
                 try:
                     self.logger.info("Click on save button")
@@ -3868,7 +3868,7 @@ class WebuiCommon:
         else:
             index = len(rows)
         rows_detail = self.click_basic_and_get_row_details(
-                         'ports', index-1)[1]
+                         'ports', index-1, canvas=True)[1]
         for detail in range(len(rows_detail)):
             key_arry = self.find_element(
                        'key', 'class', browser = rows_detail[detail]).text
