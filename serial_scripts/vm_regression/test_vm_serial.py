@@ -822,10 +822,10 @@ class TestBasicVMVN0(BaseVnVmTest):
                          count=num_flows,
                          interval=interval,
                          udp=True)
-        self.sleep(flow_cache_timeout*2)
+        time.sleep(flow_cache_timeout*2)
         # No need to stop hping
         hping_h.start(wait=False)
-        self.sleep(5)
+        time.sleep(5)
 
         computes = [comp_node_fixt[vm1_fixture.vm_node_ip],
                     comp_node_fixt[vm2_fixture.vm_node_ip]]
