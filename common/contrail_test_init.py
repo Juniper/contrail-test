@@ -511,6 +511,10 @@ class TestInputs(object):
         self.cfgm_ips = []
         self.cfgm_control_ips = []
         self.cfgm_names = []
+        self.openstack_ip = ''
+        self.openstack_ips = []
+        self.openstack_control_ips = []
+        self.openstack_names = []
         self.collector_ips = []
         self.collector_control_ips = []
         self.collector_names = []
@@ -573,6 +577,10 @@ class TestInputs(object):
             for role in roles:
                 if role['type'] == 'openstack':
                     self.openstack_ip = host_ip
+                    self.openstack_ips.append(host_ip)
+                    self.openstack_control_ips.append(host_control_ip)
+                    self.openstack_control_ip = host_control_ip
+                    self.openstack_names.append(host['name'])
                 if role['type'] == 'cfgm':
                     self.cfgm_ip = host_ip
                     self.cfgm_ips.append(host_ip)
@@ -643,7 +651,7 @@ class TestInputs(object):
 
         # If no explicit amqp servers are configured, it will be cfgm ips
         if not self.config_amqp_ips:
-            self.config_amqp_ips = self.cfgm_control_ips
+            self.config_amqp_ips = self.openstack_control_ips
 
         self.many_computes = (len(self.compute_ips) > 10) or False
 
