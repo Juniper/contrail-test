@@ -273,8 +273,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         st_fix = self.useFixture(SvcTemplateFixture(
             connections=self.connections,
             st_name=st_name, svc_img_name=svc_img_name, service_type=svc_type, version=ver,
-            if_details=if_details, service_mode=svc_mode, svc_scaling=svc_scaling, flavor=flavor,
-            domain_name=self.domain_name))
+            if_details=if_details, service_mode=svc_mode, svc_scaling=svc_scaling, flavor=flavor))
         assert st_fix.verify_on_setup()
         return st_fix
     # end verify_st
@@ -365,7 +364,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
             env['parameters']['left_net_id'] = vn_list[1].vn_fq_name
         si_hs_obj = self.config_heat_obj(stack_name, template, env)
         si_name = env['parameters']['service_instance_name']
-        si_fix = self.verify_si(si_hs_obj.heat_client_obj, stack_name, si_name, st_fix, max_inst, st_fix.service_mode, st_fix.image_name, domain_name=self.domain_name)
+        si_fix = self.verify_si(si_hs_obj.heat_client_obj, stack_name, si_name, st_fix, max_inst, st_fix.service_mode, st_fix.image_name)
         return si_fix, si_hs_obj
     # end config_svc_instance
 
@@ -387,10 +386,10 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         return result
     # end verify_svm_count
 
-    def verify_si(self, stack, stack_name, si_name, st_fix, max_inst, svc_mode, image,domain_name='default-domain'):
+    def verify_si(self, stack, stack_name, si_name, st_fix, max_inst, svc_mode, image):
         svc_inst = self.useFixture(SvcInstanceFixture(
             connections=self.connections,
-            si_name=si_name,domain_name=domain_name,
+            si_name=si_name,
             svc_template=st_fix.st_obj, if_details=st_fix.if_details, max_inst=max_inst))
         assert svc_inst.verify_on_setup()
         if self.pt_based_svc:
