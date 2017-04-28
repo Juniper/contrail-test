@@ -2825,22 +2825,33 @@ class WebuiTest:
         return result
     # end verify_dashboard_details_in_webui
 
-    def verify_vn_ops_basic_data(self):
+    def verify_vn_ops_basic_data(self, option='networks'):
         self.logger.info(
             "Verifying vn opserver data on Monitor->Networking->Networks page(basic view)")
         self.logger.debug(self.dash)
-        error = 0
-        if not self.ui.click_monitor_networks():
-            result = result and False
-        rows = self.ui.get_rows()
+        result = True
+        self.ui.click_configure_networks()
+        self.ui.select_project(self.project_name_input)
+        config_rows = self.ui.get_rows()
+        len_flag = True
         vn_list_ops = self.ui.get_vn_list_ops()
         for k in range(len(vn_list_ops)):
             ops_fq_name = vn_list_ops[k]['name']
-            if not self.ui.click_monitor_networks():
-                result = result and False
+            if option == 'dashboard':
+                click_func = 'networking_dashboard'
+                if not self.ui.click_monitor_networking_dashboard():
+                    result = result and False
+            else:
+                click_func = 'networks'
+                if not self.ui.click_monitor_networks():
+                    result = result and False
             self.ui.select_project(self.project_name_input)
-            rows = self.browser.find_element_by_class_name('grid-canvas')
-            rows = self.ui.get_rows(rows)
+            br = self.ui.select_max_records()
+            rows = self.ui.get_rows(br)
+            if len(rows) != len(config_rows):
+                len_flag = False
+            if not self.project_name_input in ops_fq_name or 'svc-vn' in ops_fq_name:
+                continue
             self.logger.info(
                 "Vn fq_name %s exists in opserver..checking if exists in webui as well" %
                 (ops_fq_name))
@@ -2862,133 +2873,90 @@ class WebuiTest:
                     (ops_fq_name))
                 self.logger.debug(self.dash)
             else:
-                self.ui.click_monitor_networks_basic(match_index)
-                self.logger.info(
-                    "Verify VN basic view details for VN fq_name %s " %
-                    (ops_fq_name))
-                # get vn basic details excluding basic interface details
-                dom_arry_basic = {}
-                item_list = self.ui.find_element(
-                    'item-list',
-                    'class',
-                    elements=True)
-                for item in item_list:
-                    label = self.ui.find_element(
-                        'label',
-                        'tag',
-                        browser=item,
-                        elements=True)
-                    for lbl in label:
-                        key = self.ui.find_element('key', 'class', browser=lbl)
-                        value = self.ui.find_element(
-                            'value',
-                            'class',
-                            browser=lbl)
-                        if key.text not in [
-                                'Total Throughput',
-                                'Total In packets',
-                                'Total Out packets',
-                                'instances',
-                                'interfaces',
-                                'Total ACL Rules']:
-                            dom_arry_basic[key.text] = value.text
-                len_dom_arry_basic = len(dom_arry_basic)
+                rows_detail = self.ui.click_basic_and_get_row_details(click_func, match_index,
+                              search_ele='project-networks', browser=br, click_tab='monitor')[1]
+                dom_arry_basic = []
+                for detail in range(len(rows_detail)):
+                    key_value = rows_detail[detail].text.split('\n')
+                    key = str(key_value.pop(0))
+                    if len(key_value) > 1 :
+                        value = key_value
+                    elif len(key_value) ==  1:
+                        value = key_value[0]
+                    else:
+                        value = None
+                    if key:
+                        if key not in [
+                            'Total Throughput',
+                            'Total In packets',
+                            'Total Out packets'] or value != '-':
+                            dom_arry_basic.append({'key': key, 'value': value})
                 vn_ops_data = self.ui.get_details(
                     vn_list_ops[k]['href'])
                 complete_ops_data = []
-                ops_data_ingress = {'key':
-                                    'Ingress Flow Count', 'value': str(0)}
-                ops_data_egress = {'key':
-                                   'Egress Flow Count', 'value': str(0)}
-                ops_data_acl_rules = {'key':
-                                      'Total ACL Rules', 'value': str(0)}
                 vn_name = ops_fq_name.split(':')[2]
-                ops_data_instances = {'key': 'Instances', 'value': '0'}
-                ops_data_connected_networks = {
-                    'key': 'Connected Networks',
-                    'value': '-'}
-                ops_data_interfaces_count = {
-                    'key': 'Interfaces', 'value': str(0)}
                 if 'UveVirtualNetworkAgent' in vn_ops_data:
-                    # creating a list of basic view items retrieved from
-                    # opserver
                     ops_data_basic = vn_ops_data.get('UveVirtualNetworkAgent')
                     if ops_data_basic.get('ingress_flow_count'):
-                        ops_data_ingress = {
-                            'key': 'Ingress Flow Count',
-                            'value': ops_data_basic.get('ingress_flow_count')}
+                        complete_ops_data.append({'key': 'Ingress Flow Count',
+                            'value': ops_data_basic.get('ingress_flow_count')})
                     if ops_data_basic.get('egress_flow_count'):
-                        ops_data_egress = {
-                            'key': 'Egress Flow Count',
-                            'value': ops_data_basic.get('egress_flow_count')}
+                        complete_ops_data.append({'key': 'Egress Flow Count',
+                            'value': ops_data_basic.get('egress_flow_count')})
                     if ops_data_basic.get('total_acl_rules'):
-                        ops_data_acl_rules = {
-                            'key': 'Total ACL Rules',
-                            'value': ops_data_basic.get('total_acl_rules')}
+                        complete_ops_data.append({'key': 'Total ACL Rules',
+                            'value': str(ops_data_basic.get('total_acl_rules'))})
                     if ops_data_basic.get('interface_list'):
-                        ops_data_interfaces_count = {
-                            'key': 'Interfaces',
-                            'value': len(
-                                ops_data_basic.get('interface_list'))}
+                        complete_ops_data.append({'key': 'Interfaces',
+                            'value': str(len(ops_data_basic.get('interface_list')))})
                     if ops_data_basic.get('vrf_stats_list'):
                         vrf_stats_list = ops_data_basic['vrf_stats_list']
                         vrf_stats_list_new = [vrf['name']
                                               for vrf in vrf_stats_list]
                         vrf_list_joined = ','.join(vrf_stats_list_new)
-                        ops_data_vrf = {'key': 'vrf_stats_list',
-                                        'value': vrf_list_joined}
+                        complete_ops_data.append({'key': 'vrf_stats_list',
+                                        'value': vrf_list_joined})
                     if ops_data_basic.get('acl'):
-                        ops_data_acl = {'key': 'ACL', 'value':
-                                        ops_data_basic.get('acl')}
+                        complete_ops_data.append({'key': 'ACL', 'value':
+                                        ops_data_basic.get('acl')})
                     if ops_data_basic.get('virtualmachine_list'):
-                        ops_data_instances = {
-                            'key': 'Instances',
-                            'value': ', '.join(
-                                ops_data_basic.get('virtualmachine_list'))}
-                complete_ops_data.extend(
-                    [ops_data_connected_networks])
-                if ops_fq_name.find('__link_local__') != -1 or ops_fq_name.find(
-                        'default-virtual-network') != -1 or ops_fq_name.find('ip-fabric') != -1:
-                    for i, item in enumerate(complete_ops_data):
-                        if complete_ops_data[i]['key'] == 'vrf_stats_list':
-                            del complete_ops_data[i]
+                        complete_ops_data.append({'key': 'Instances',
+                            'value': str(len(ops_data_basic.get('virtualmachine_list')))})
                 if 'UveVirtualNetworkConfig' in vn_ops_data:
                     ops_data_basic = vn_ops_data.get('UveVirtualNetworkConfig')
                     if ops_data_basic.get('connected_networks'):
-                        connected_networks = ops_data_basic.get(
-                            'connected_networks')
+                        connected_networks = ops_data_basic.get('connected_networks')
                         networks = ''
                         for index, net in enumerate(connected_networks):
                             if index == 0:
                                 networks = networks + net
                             else:
                                 networks = networks + ',' + net
-                        ops_data_connected_networks['value'] = networks
+                        if re.search(',', networks):
+                            networks = networks.split(',')
+                        complete_ops_data.append({'key': 'Connected_Networks', 'value': networks})
                     if ops_data_basic.get('attached_policies'):
-                        ops_data_policies = ops_data_basic.get(
-                            'attached_policies')
-                        if ops_data_policies:
-                            pol_name_list = [pol['vnp_name']
-                                             for pol in ops_data_policies]
-                            pol_list_joined = ', '.join(pol_name_list)
-                            ops_data_policies = {
-                                'key': 'attached_policies',
-                                'value': pol_list_joined}
-                            # complete_ops_data.extend([ops_data_policies])
-                    self.ui.type_change(complete_ops_data)
-                complete_ops_data.extend([ops_data_connected_networks])
-                dom_list = []
-                self.ui.extract_keyvalue(dom_arry_basic, dom_list)
+                            ops_data_policies = ops_data_basic.get(
+                                'attached_policies')
+                            if ops_data_policies:
+                                pol_name_list = [pol['vnp_name']
+                                                 for pol in ops_data_policies]
+                                pol_list_joined = ', '.join(pol_name_list)
+                                complete_ops_data.append({'key': 'attached_policies',
+                                    'value': pol_list_joined})
                 if self.ui.match_ui_values(
                         complete_ops_data,
-                        dom_list):
+                        dom_arry_basic):
                     self.logger.info(
                         "VN basic view data matched in webui")
                 else:
                     self.logger.error(
                         "VN basic view data match failed in webui")
-                    error = 1
-        return not error
+                    result = result and False
+        if not len_flag:
+            self.logger.error('Not all VNs are listed')
+            result = result and False
+        return result
     # end verify_vn_ops_basic_data_in_webui
 
     def verify_config_nodes_ops_advance_data(self):
