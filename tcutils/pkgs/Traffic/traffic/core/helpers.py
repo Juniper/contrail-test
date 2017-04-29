@@ -6,7 +6,7 @@ from time import sleep
 from fabric.api import run
 from fabric.operations import put
 from fabric.context_managers import settings, hide
-from tcutils.util import run_fab_cmd_on_node
+from tcutils.fabutils import remote_cmd
 
 try:
     # Running from the source repo "test".
@@ -63,35 +63,30 @@ class Helper(object):
 #                  keyfile, self.rhost.user, self.rhost.ip, cmd)
         self.log.debug('On host %s exec: %s'%(self.rhost.ip, cmd))
         with hide('everything'):
-            with settings(
-                host_string='%s@%s' % (self.lhost.user, self.lhost.ip),
-                    password=self.lhost.password, warn_only=True, abort_on_prompts=False):
-                self.log.debug("Executing: %s", cmd)
-                retry = 6
-                while True:
-                    output = ''
-#                    output=run(ssh_cmd)
-                    output = run_fab_cmd_on_node(
-                        host_string='%s@%s' % (self.rhost.user, self.rhost.ip),
-                        password='ubuntu', as_sudo=True, cmd=cmd,
-                        logger=self.log)
-                    if (not output) and retry:
-                        self.log.error(
+            self.log.debug("Executing: %s", cmd)
+            retry = 6
+            while True:
+                host_string = '%s@%s' % (self.rhost.user, self.rhost.ip)
+                output = remote_cmd(host_string=host_string, cmd=cmd,
+                         gateway_password=self.lhost.password, with_sudo=True,
+                         gateway='%s@%s' % (self.lhost.user, self.lhost.ip))
+                if (not output) and retry:
+                    self.log.error(
                             "Scapy issue while sending/receiving packets. Will retry after 5 secs.")
-                        sleep(5)
-                        retry -= 1
-                        continue
-                    if ("Connection timed out" in output or
-                            "Connection refused" in output) and retry:
-                        self.log.debug(
-                            "SSH timeout, sshd might not be up yet. will retry after 5 secs.")
-                        sleep(5)
-                        retry -= 1
-                        continue
-                    elif "Connection timed out" in output:
-                        raise SSHError(output)
-                    else:
-                        break
+                    sleep(5)
+                    retry -= 1
+                    continue
+                if ("Connection timed out" in output or
+                        "Connection refused" in output) and retry:
+                    self.log.debug(
+                        "SSH timeout, sshd might not be up yet. will retry after 5 secs.")
+                    sleep(5)
+                    retry -= 1
+                    continue
+                elif "Connection timed out" in output:
+                    raise SSHError(output)
+                else:
+                    break
         self.log.debug(output)
         return output
 
