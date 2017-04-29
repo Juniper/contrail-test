@@ -239,7 +239,7 @@ class TestLBaaSV2(BaseLBaaSTest):
               fip_net_id=fip_fix.uuid, vip_port=HTTP_PORT, vip_protocol='HTTP',
               hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
 
-        rr_listener.verify_on_setup()
+        assert rr_listener.verify_on_setup()
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
 
@@ -300,7 +300,7 @@ class TestLBaaSV2(BaseLBaaSTest):
               fip_net_id=fip_fix.uuid, vip_port=HTTP_PORT, vip_protocol='HTTP',
               hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
 
-        rr_listener.verify_on_setup()
+        assert rr_listener.verify_on_setup()
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
 
@@ -320,7 +320,7 @@ class TestLBaaSV2(BaseLBaaSTest):
               hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
 
         #si_listener.add_custom_attr('max_conn', 20)
-        si_listener.verify_on_setup()
+        assert si_listener.verify_on_setup()
 
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, si_listener.fip_ip,
             "SOURCE_IP"), "Verify LB Method for SOURCE IP failed"
@@ -373,7 +373,7 @@ class TestLBaaSV2(BaseLBaaSTest):
               fip_net_id=fip_fix.uuid, vip_port=HTTP_PORT, vip_protocol='HTTP',
               hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
 
-        http_listener.verify_on_setup()
+        assert http_listener.verify_on_setup()
 
         tcp_listener = self.create_lbaas(vip_name, vn_vip_fixture.get_uuid(),
               pool_name=pool_name, pool_algorithm=lb_method, pool_protocol='TCP',
@@ -381,7 +381,7 @@ class TestLBaaSV2(BaseLBaaSTest):
               fip_net_id=fip_fix.uuid, vip_port=TCP_PORT, vip_protocol='TCP',
               hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=PING_PROBE)
 
-        tcp_listener.verify_on_setup()
+        assert tcp_listener.verify_on_setup()
 
         https_listener = self.create_lbaas(vip_name, vn_vip_fixture.get_uuid(),
               pool_name=pool_name, pool_algorithm=lb_method, pool_protocol='HTTPS',
@@ -389,7 +389,7 @@ class TestLBaaSV2(BaseLBaaSTest):
               fip_net_id=fip_fix.uuid, vip_port=HTTPS_PORT, vip_protocol='HTTPS',
               hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=PING_PROBE)
 
-        https_listener.verify_on_setup()
+        assert https_listener.verify_on_setup()
 
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, http_listener.fip_ip),\
             "Verify LB failed for ROUND ROBIN"
@@ -463,7 +463,7 @@ class TestLBaaSV2(BaseLBaaSTest):
               fip_net_id=fip_fix.uuid, vip_port=HTTP_PORT, vip_protocol='HTTP',
               hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
 
-        rr_listener.verify_on_setup()
+        assert rr_listener.verify_on_setup()
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
 
@@ -527,7 +527,7 @@ class TestLBaaSV2(BaseLBaaSTest):
               fip_net_id=fip_fix.uuid, vip_port=HTTP_PORT, vip_protocol='HTTP',
               hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
 
-        rr_listener.verify_on_setup()
+        assert rr_listener.verify_on_setup()
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
 
