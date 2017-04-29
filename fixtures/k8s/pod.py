@@ -260,7 +260,7 @@ class PodFixture(fixtures.Fixture):
     @retry(delay=1, tries=10)
     def ping_with_certainty(self, *args, **kwargs):
         expectation = kwargs.get('expectation', True)
-        (ret_val, output) = self.ping_to_ip(*args, **kwargs)
+        ret_val = self.ping_to_ip(*args, **kwargs)
         return ret_val
     # end ping_with_certainty
 
@@ -276,7 +276,7 @@ class PodFixture(fixtures.Fixture):
         except Exception, e:
             self.logger.exception(
                 'Exception occured while trying ping from pod')
-            return (False, output)
+            return False
 
         expected_result = ' 0% packet loss'
         result = expectation == (expected_result in output)
@@ -284,11 +284,11 @@ class PodFixture(fixtures.Fixture):
             self.logger.warn("Ping check to IP %s from pod %s failed. "
                 "Expectation: %s, Got: %s" %(ip, self.name,
                 expectation, result, ))
-            return (False, output)
+            return False
         else:
             self.logger.info('Ping check to IP %s from pod %s with '
                 'expectation %s passed' %(ip, self.name, expectation))
-        return (True, output)
+        return True
     # end ping_to_ip
 
     def modify_pod_label(self, label_name, label_value):
