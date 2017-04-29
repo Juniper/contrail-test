@@ -1,6 +1,7 @@
 from fabric.api import local
 
 import test
+import ipaddress
 from tcutils.util import get_random_name, retry
 from k8s.pod import PodFixture
 from k8s.service import ServiceFixture
@@ -512,3 +513,10 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
         self.addCleanup(namespace_fixture.disable_isolation)
     # end self.setup_isolation
 
+    def get_external_ip_for_k8s_object(self):
+        fip_subnets = [self.inputs.fip_pool]
+        # TODO 
+        # Need to add further logic here to check 
+        # available ip from public subnet list 
+        # Will not be a problem in serial run  
+        return str(list(ipaddress.ip_network(unicode(fip_subnets[0])).hosts())[3])
