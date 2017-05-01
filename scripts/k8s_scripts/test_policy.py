@@ -48,7 +48,7 @@ class TestNetworkPolicy(BaseK8sTest):
             namespace)
 
         url = 'http://%s' % (web_pod.pod_ip)
-        assert self.do_wget(client1_pod, url)
+        assert self.do_wget(url, pod=client1_pod)
 
         self.setup_isolation(namespace)
 
@@ -171,8 +171,8 @@ class TestNetworkPolicy(BaseK8sTest):
 
         s1_url = 'http://%s' % (s1.pod_ip)
         s2_url = 'http://%s' % (s2.pod_ip)
-        assert self.do_wget(c1, s1_url)
-        assert self.do_wget(c2, s1_url)
+        assert self.do_wget(s1_url, pod=c1)
+        assert self.do_wget(s1_url,pod=c2)
 
         self.setup_isolation(ns0)
         assert self.validate_wget(c1, s1_url, expectation=False)

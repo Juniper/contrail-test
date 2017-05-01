@@ -24,24 +24,25 @@ class TestIngress(BaseK8sTest):
             For now, do this test only in default project
         '''
         app = 'http_test'
+        labels = {'app':app}
         namespace = self.setup_namespace(name='default')
         assert namespace.verify_on_setup()
 
         service = self.setup_http_service(namespace=namespace.name,
-                                          app=app)
+                                          labels=labels)
         pod1 = self.setup_nginx_pod(namespace=namespace.name, 
-                                          labels={'app':app})
+                                          labels=labels)
 
         pod2 = self.setup_nginx_pod(namespace=namespace.name, 
-                                          labels={'app':app})
+                                          labels=labels)
 
         ingress = self.setup_simple_nginx_ingress(service.name,
                                                   namespace=namespace.name)
         assert ingress.verify_on_setup()
 
         pod3 = self.setup_busybox_pod(namespace=namespace.name)
-        assert pod1.verify_on_setup()
-        assert pod2.verify_on_setup()
+        self.verify_nginx_pod(pod1)
+        self.verify_nginx_pod(pod2)
         assert pod3.verify_on_setup()
 
         # Now validate ingress from within the cluster network

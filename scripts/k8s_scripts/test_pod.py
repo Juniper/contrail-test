@@ -1,6 +1,4 @@
 from common.k8s.base import BaseK8sTest
-from k8s.namespace import NamespaceFixture
-from k8s.pod import PodFixture
 from tcutils.wrappers import preposttest_wrapper
 
 
@@ -71,7 +69,6 @@ class TestPod(BaseK8sTest):
     # end test_change_pod_label
 
 # Isolated namespace classes follow
-
 
 class TestPodVNIsolated(TestPod):
 
