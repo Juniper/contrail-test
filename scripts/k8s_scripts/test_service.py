@@ -43,7 +43,7 @@ class TestService(BaseK8sTest):
     # end test_service_1
 
     @preposttest_wrapper
-    def test_service_2(self):
+    def test_service_with_type_loadbalancer(self):
         ''' Create a service type loadbalancer with 2 pods running nginx
             Create a third busybox pod and validate that webservice is
             load-balanced
@@ -74,6 +74,76 @@ class TestService(BaseK8sTest):
         # Now validate ingress from public network
         assert self.validate_nginx_lb([pod1, pod2], service.external_ips[0])
     # end test_service_2
+
+    @preposttest_wrapper
+    def test_service_with_external_ip(self):
+        ''' Create a service  with 2 pods running nginx
+            Add annotation external_ip 
+            Create a third busybox pod and validate that webservice is
+            load-balanced
+            Validate that webservice is load-balanced from outside network
+            using external_ip
+            Please make sure BGP multipath and per packer load balancing
+            is enabled on the MX
+        '''
+        app = 'http_test'
+        labels = {'app': app}
+        namespace = self.setup_namespace()
+        #assert namespace.verify_on_setup()
+        # Get a specific IP as external IP from public pool
+        external_ip = self.get_external_ip_for_k8s_object()
+
+        service = self.setup_http_service(namespace=namespace.name,
+                                          labels=labels, external_ips=[external_ip])
+        pod1 = self.setup_nginx_pod(namespace=namespace.name,
+                                    labels=labels)
+        pod2 = self.setup_nginx_pod(namespace=namespace.name,
+                                    labels=labels)
+        pod3 = self.setup_busybox_pod(namespace=namespace.name)
+        
+        assert self.verify_nginx_pod(pod1)
+        assert self.verify_nginx_pod(pod2)
+        assert pod3.verify_on_setup()
+
+        # Now validate load-balancing on the service
+        assert self.validate_nginx_lb([pod1, pod2], service.cluster_ip,
+                                      test_pod=pod3)
+        # Now validate ingress from public network
+        assert self.validate_nginx_lb([pod1, pod2], service.external_ips[0])
+    # end test_service_with_external_ip
+
+    @preposttest_wrapper
+    def test_service_access_from_different_ns(self):
+        ''' Create a service  in one namespace with 2 pods
+            Create a third busybox pod in different namespace
+            Validate busybox pod can access the service in
+            default mode. 
+            When isolation is enabled service should not be
+            accessible from other namespace 
+        '''
+        expectation = True
+        app = 'http_test'
+        labels = {'app': app}
+        namespace = self.setup_namespace()
+
+        service = self.setup_http_service(namespace=namespace.name,
+                                          labels=labels)
+        pod1 = self.setup_nginx_pod(namespace=namespace.name,
+                                    labels=labels)
+        pod2 = self.setup_nginx_pod(namespace=namespace.name,
+                                    labels=labels)
+        namespace1 = self.setup_namespace()
+        pod3 = self.setup_busybox_pod(namespace=namespace1.name)
+
+        assert self.verify_nginx_pod(pod1)
+        assert self.verify_nginx_pod(pod2)
+        assert pod3.verify_on_setup()
+
+        if self.setup_namespace_isolation:
+            expectation = False
+        url = 'http://%s' % (service.cluster_ip)
+        assert self.validate_wget(pod3, url, expectation=expectation)
+    # end test_service_access_from_different
 
     @preposttest_wrapper
     def test_service_scale_up_down(self):
@@ -146,3 +216,14 @@ class TestService(BaseK8sTest):
         self.logger.info('DNS resolution check : %s passed. Output: %s' % (
             lookup_str, output))
     # end test_kube_dns_lookup
+
+
+
+# Isolated namespace classes follow
+
+class TestServiceVNIsolated(TestService):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestService, cls).setUpClass()
+        cls.setup_namespace_isolation = True
