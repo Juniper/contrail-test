@@ -413,6 +413,13 @@ class TestIntfMirror(BaseIntfMirrorTest, VerifyIntfMirror):
         """
         return self.verify_intf_mirroring_src_on_cn2_vn1_dst_on_cn1_vn2_analyzer_on_cn1_vn2(sub_intf=True)
 
+class TestIntfMirrorIPv6(TestIntfMirror):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestIntfMirror, cls).setUpClass()
+        cls.inputs.set_af('dual')
+
 
 if __name__ == '__main__':
     unittest.main()
