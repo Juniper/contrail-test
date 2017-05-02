@@ -14,13 +14,13 @@ BASE_DIR=`dirname $(readlink -f $0)`
 PACKAGES_REQUIRED_UBUNTU="python-pip ant python-novaclient python-neutronclient python-cinderclient \
     python-contrail python-glanceclient python-heatclient python-ceilometerclient python-setuptools contrail-utils \
     patch git ipmitool python-requests"
-PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD="$PACKAGES_REQUIRED_UBUNTU python-dev libxslt1-dev libz-dev libyaml-dev sshpass"
-PACKAGES_REQUIRED_RALLY="libssl-dev libffi-dev python-dev libxml2-dev libxslt1-dev libpq-dev libpq5=9.3.15-0ubuntu0.14.04"
 if [ ${BUILD_PLATFORM} = "16.04" ]; then
+    PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD="$PACKAGES_REQUIRED_UBUNTU python-dev libxslt1-dev=1.1.28-2.1 libz-dev libyaml-dev sshpass"
     PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD="$PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD gcc-5-base=5.4.0-6ubuntu1~16.04.4 libgcc-5-dev=5.4.0-6ubuntu1~16.04.4 libstdc++-5-dev=5.4.0-6ubuntu1~16.04.4 libicu55=55.1-7ubuntu0.1"
-    PACKAGES_REQUIRED_RALLY="libssl-dev libffi-dev python-dev libxml2-dev libxslt1-dev libpq-dev libpq5"
+    PACKAGES_REQUIRED_RALLY="libssl-dev libffi-dev python-dev libxml2-dev libxslt1-dev=1.1.28-2.1 libpq-dev libpq5"
     EXTRAS="libc-dev-bin libc6-dev libexpat1-dev libexpat1 libpython2.7-dev python2.7-dev"
 else
+    PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD="$PACKAGES_REQUIRED_UBUNTU python-dev libxslt1-dev libz-dev libyaml-dev sshpass"
     EXTRAS="http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libexpat1-dev_2.1.0-4ubuntu1.3_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libexpat1_2.1.0-4ubuntu1.3_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libpython2.7-dev_2.7.6-8ubuntu0.2_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/python2.7-dev_2.7.6-8ubuntu0.2_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libxslt1-dev_1.1.28-2ubuntu0.1_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libxslt1.1_1.1.28-2ubuntu0.1_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libxml2-dev_2.9.1+dfsg1-3ubuntu4.9_amd64.deb http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/libxml2_2.9.1+dfsg1-3ubuntu4.9_amd64.deb"
     PACKAGES_REQUIRED_RALLY="libssl-dev libffi-dev python-dev libxml2-dev libxslt1-dev libpq-dev libpq5=9.3.15-0ubuntu0.14.04"
 fi
@@ -356,6 +356,7 @@ EOF
 RUN cd /opt/contrail/contrail_install_repo/ && apt-get install -y $EXTRAS;
 EOF
             else
+                cat <<EOF
 RUN cd /opt/contrail/contrail_install_repo/ && wget $EXTRAS && \
     cd /opt/contrail/contrail_install_repo/ && dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz && apt-get update;
 EOF
