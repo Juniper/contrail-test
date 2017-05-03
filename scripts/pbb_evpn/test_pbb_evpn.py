@@ -268,9 +268,9 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
         # VN parameters
         vn = {'count':4,
               'vn1':{'subnet':'10.10.10.0/24'},
-              'vn2':{'subnet':'1.1.1.0/24', 'asn':64510, 'target':1},
+              'vn2':{'subnet':'1.1.1.0/24', 'asn':64510, 'target':1,'l2cw':True},
               'vn3':{'subnet':'20.20.20.0/24'},
-              'vn4':{'subnet':'2.2.2.0/24', 'asn':64511, 'target':1}
+              'vn4':{'subnet':'2.2.2.0/24', 'asn':64510, 'target':2,'l2cw':True}
               }
 
         # Bridge domain parameters
