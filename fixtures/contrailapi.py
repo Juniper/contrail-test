@@ -1009,7 +1009,7 @@ class ContrailVncApi(object):
                               mac_aging_time=mac_aging_time,
                               isid=isid)
         uuid = self._vnc.bridge_domain_create(bd_obj)
-        self._log.info('Created Bridge Domain%s, UUID: %s' % (
+        self._log.info('Created Bridge Domain %s, UUID: %s' % (
                          self._vnc.id_to_fq_name(uuid), uuid))
         return bd_obj
     # end create_bd
@@ -1023,7 +1023,7 @@ class ContrailVncApi(object):
         mac_move_control = kwargs.get('mac_move_control', None)
         mac_aging_time = kwargs.get('mac_aging_time', None)
         isid = kwargs.get('isid', None)
-        bd_obj = self.vnc_lib.bridge_domain_read(id=uuid)
+        bd_obj = self._vnc.bridge_domain_read(id=uuid)
         if mac_learning_enabled:
             bd_obj.set_mac_learning_enabled(mac_learning_enabled)
         if mac_limit_control:
@@ -1035,9 +1035,9 @@ class ContrailVncApi(object):
         if isid:
             bd_obj.set_isid(isid)
 
-        #[TBD], Need to call update api call?
-        self._log.info('Updated Bridge Domain%s, UUID: %s' % (
-                         self.vnc_lib.id_to_fq_name(uuid), uuid))
+        self._vnc.bridge_domain_update(bd_obj)
+        self._log.info('Updated Bridge Domain %s, UUID: %s' % (
+                         self._vnc.id_to_fq_name(uuid), uuid))
         return uuid
     # end update_bd
 
@@ -1050,7 +1050,7 @@ class ContrailVncApi(object):
             uuid : UUID of BridgeDomain object
         '''
         self._vnc.bridge_domain_delete(id=uuid)
-        self._log.info('Deleted Bridge Domain%s' % (uuid))
+        self._log.info('Deleted Bridge Domain %s' % (uuid))
     # end delete_bd
 
     def read_bd(self, uuid=None):
@@ -1061,7 +1061,7 @@ class ContrailVncApi(object):
             uuid : UUID of BridgeDomain object
         '''
         bd_obj = self._vnc.bridge_domain_read(id=uuid)
-        self._log.info('Bridge Domain%s info' % (uuid,bd_obj))
+        self._log.info('Bridge Domain %s info' % (uuid,bd_obj))
     # end read_bd
 
     def get_bd(self, uuid=None):
@@ -1072,9 +1072,9 @@ class ContrailVncApi(object):
             uuid : UUID of BridgeDomain object
         '''
         bd_obj = self._vnc.bridge_domain_read(id=uuid)
-        self._log.info('Bridge Domain%s info' % (uuid,bd_obj))
+        self._log.info('Bridge Domain %s info' % (uuid,bd_obj))
         bd_obj.dump()
-    # end get_bd 
+    # end get_bd
 
     def add_bd_to_vmi(self, bd_id, vmi_id, vlan_tag):
         '''
@@ -1101,7 +1101,7 @@ class ContrailVncApi(object):
             vmi_id: ID of VMI
             vlan_tag_based_bridge_domain: vlan tag based bridge domain
         '''
-        self._log.info('Enabling vlan tag based bridge domain%s on  VMI%s' % (vlan_tag_based_bridge_domain, vmi_id))
+        self._log.info('Enabling vlan tag based bridge domain %s on  VMI %s' % (vlan_tag_based_bridge_domain, vmi_id))
         vmi = self._vnc.virtual_machine_interface_read(id=vmi_id)
         vmi.set_vlan_tag_based_bridge_domain(vlan_tag_based_bridge_domain)
         self._vnc.virtual_machine_interface_update(vmi)
@@ -1120,7 +1120,7 @@ class ContrailVncApi(object):
             vmi_obj = self._vnc.virtual_machine_interface_read(id=parent_vmi_id)
             vmi_bindings = vmi_obj.get_virtual_machine_interface_bindings()
         if not vmi_bindings:
-            self._log.error('Could not get VMI bindings for VMI%s' % (vmi_id))
+            self._log.error('Could not get VMI bindings for VMI %s' % (vmi_id))
             return False
         kv_list = vmi_bindings.key_value_pair
         for kv in kv_list:
