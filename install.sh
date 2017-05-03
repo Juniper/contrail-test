@@ -16,7 +16,7 @@ PACKAGES_REQUIRED_UBUNTU="python-pip ant python-novaclient python-neutronclient 
     patch git ipmitool python-requests"
 if [ ${BUILD_PLATFORM} = "16.04" ]; then
     PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD="$PACKAGES_REQUIRED_UBUNTU python-dev libxslt1-dev=1.1.28-2.1 libz-dev libyaml-dev sshpass"
-    PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD="$PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD gcc-5-base=5.4.0-6ubuntu1~16.04.4 libgcc-5-dev=5.4.0-6ubuntu1~16.04.4 libstdc++-5-dev=5.4.0-6ubuntu1~16.04.4 libicu55=55.1-7ubuntu0.1"
+    PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD="$PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD gcc-5-base=5.4.0-6ubuntu1~16.04.4 libgcc-5-dev=5.4.0-6ubuntu1~16.04.4 libstdc++-5-dev=5.4.0-6ubuntu1~16.04.4 libicu55=55.1-7ubuntu0.2 libicu-dev=55.1-7ubuntu0.2"
     PACKAGES_REQUIRED_RALLY="libssl-dev libffi-dev python-dev libxml2-dev libxslt1-dev=1.1.28-2.1 libpq-dev libpq5"
     EXTRAS="libc-dev-bin libc6-dev libexpat1-dev libexpat1 libpython2.7-dev python2.7-dev"
 else
