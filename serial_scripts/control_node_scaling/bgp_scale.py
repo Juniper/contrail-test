@@ -25,6 +25,18 @@ from ssh_interactive_commnds import *
 #
 BGP_STRESS = None
 
+def start_ixia_bgp_tests(cfg_name):
+    username = 'root'
+    password = 'contrail123'
+    ixia_ip = '10.87.132.179'
+    ixia_cfg_name = cfg_name+'.ixncfg' 
+    
+    cmd='(nohup python /root/scripts/bgp/bgp.py  /root/scripts/bgp/profiles/%s 2>&1 &); sleep 5' %(ixia_cfg_name)
+    
+    try:
+        output = run_cmd_on_server(cmd, ixia_ip, username, password)
+    except:
+        pass
 
 def log_print(line, fd=''):
 
@@ -177,7 +189,7 @@ def get_total_prefix_expectations(ninstances, import_targets_per_instance, nagen
 # end get_total_prefix_expectations
 
 
-def bgp_scale_mock_agent(cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, rt_ip, rt_ip2, xmpp_src, ri_domain, ri_name, ninstances, import_targets_per_instance, family, nh, test_id, nagents, nroutes, oper, sleep_time, logfile_name_bgp_stress, logfile_name_results, timeout_minutes_poll_prefixes, background, xmpp_prefix, xmpp_prefix_large_option, skip_krt_check, report_stats_during_bgp_scale, report_cpu_only_at_peak_bgp_scale, skip_rtr_check, bgp_env, no_verify_routes, logging, local_ip, rt_per_block_enabled):
+def bgp_scale_mock_agent(cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, rt_ip, rt_ip2, xmpp_src, ri_domain, ri_name, ninstances, import_targets_per_instance, ngws, nasns, bgp_only_scale_flag, rtf_mul, family, nh, test_id, nagents, nroutes, oper, sleep_time, logfile_name_bgp_stress, logfile_name_results, timeout_minutes_poll_prefixes, background, xmpp_prefix, xmpp_prefix_large_option, skip_krt_check, report_stats_during_bgp_scale, report_cpu_only_at_peak_bgp_scale, skip_rtr_check, bgp_env, no_verify_routes, logging, local_ip, rt_per_block_enabled, ixia_cfg=''):
     '''Performs bgp stress test
     '''
 
@@ -296,9 +308,12 @@ def bgp_scale_mock_agent(cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, r
     #
     # Command to instantiate bgp_stress_test
     #
-    bgp_stress_test_command = './bgp_stress_test --no-multicast --xmpp-port=5269 --xmpp-server=%s --xmpp-source=%s --ninstances=%s --instance-name=%s --test-id=%s --nagents=%s --nroutes=%s --xmpp-nexthop=%s %s %s %s %s' % (
-        cn_ip_alternate, xmpp_src, ninstances, instance_name, test_id, nagents, nroutes, nh, xmpp_start_prefix, xmpp_prefix_large, logging, logfile_name)
+    bgp_stress_test_command = './bgp_stress_test --no-inet6 --no-multicast --xmpp-port=5269 --xmpp-server=%s --xmpp-source=%s --ninstances=%s --instance-name=%s --test-id=%s --nagents=%s --nroutes=%s --xmpp-nexthop-vary %s %s %s %s' % (
+        cn_ip_alternate, xmpp_src, ninstances, instance_name, test_id, nagents, nroutes, xmpp_start_prefix, xmpp_prefix_large, logging, logfile_name)
 
+    '''bgp_stress_test_command = './bgp_stress_test --no-inet6 --no-multicast --xmpp-port=5269 --xmpp-server=%s --xmpp-source=%s --ninstances=%s --instance-name=%s --test-id=%s --nagents=%s --nroutes=%s --xmpp-nexthop=%s %s %s %s %s' % (
+        cn_ip_alternate, xmpp_src, ninstances, instance_name, test_id, nagents, nroutes, nh, xmpp_start_prefix, xmpp_prefix_large, logging, logfile_name)
+    '''
     #
     # Get stats before test run
     #
@@ -328,7 +343,7 @@ def bgp_scale_mock_agent(cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, r
         del_start_time = datetime.now()
         get_prefix_install_or_delete_time(
             cn_self, rt_self, cn_ip, rt_ip, ri_domain, instance_name, ninstances,  prefixes_per_instance, vpn_prefixes,
-            op, family, nagents, nroutes, timeout_minutes_poll_prefixes, skip_krt_check, skip_rtr_check, no_verify_routes, xmpp_src, del_start_time, fd, rt_per_block_enabled)
+            op, ngws, family, nagents, nroutes, timeout_minutes_poll_prefixes, skip_krt_check, skip_rtr_check, no_verify_routes, xmpp_src, del_start_time, fd, rt_per_block_enabled)
 
     #
     # Install prefixes
@@ -401,16 +416,31 @@ def bgp_scale_mock_agent(cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, r
             BGP_STRESS = False
             return 0
 
+
         #
         # Get prefix install time (polls introspect)
         #
         get_prefix_install_or_delete_time(
-            cn_self, rt_self, cn_ip, rt_ip, rt_usr, rt_pw, ri_domain, instance_name, ninstances, prefixes_per_instance, vpn_prefixes, op, family,
+            cn_self, rt_self, cn_ip, rt_ip, rt_usr, rt_pw, ri_domain, instance_name, ninstances, prefixes_per_instance, vpn_prefixes, op, ngws, family,
             nagents, nroutes, timeout_minutes_poll_prefixes, skip_krt_check, skip_rtr_check, no_verify_routes, xmpp_src, timestamp_start_prefix_announcement, fd, rt_per_block_enabled)
 
-        #
+
+        # If BGP only test, bring up BGP sessions with external routers.
+        # Start time: time at which CN starts building messages to send.
+        # End time: pendqing Q is zero and 'reach' has hit total_prefixes * ngws
+        # Both start and end time stats are pulled from ribout introspect.
+        # This is done only if this is a BGP-only scale test.
+
+        if bgp_only_scale_flag:
+            # START IXIA
+            log_print("INFO: Starting IXIA", fd)
+            start_ixia_bgp_tests(ixia_cfg)
+            get_l3vpn_prefix_install_or_delete_time(cn_self, nagents, ninstances, prefixes_per_instance, ngws, nasns, rtf_mul, 0, timeout_minutes_poll_prefixes, op, family, fd)
+
+
         # Perform post-install tasks such as stats reporting and sleeping
         #
+
         post_install_tasks(
             cnshell_self, cn_self, rt_self, cn_ip, rt_ip, oper, sleep_time,
             msg, background, report_stats_during_bgp_scale, report_cpu_only_at_peak_bgp_scale, fd)
@@ -437,13 +467,22 @@ def bgp_scale_mock_agent(cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, r
         #
         # Get prefix delete time (polls introspect)
         #
-        get_prefix_install_or_delete_time(
+        if not bgp_only_scale_flag:
+            get_prefix_install_or_delete_time(
             cn_self, rt_self, cn_ip, rt_ip, rt_usr, rt_pw, ri_domain, instance_name, ninstances,  prefixes_per_instance, vpn_prefixes,
-            "del", family, nagents, nroutes, timeout_minutes_poll_prefixes, skip_krt_check, skip_rtr_check, no_verify_routes, xmpp_src, del_start_time, fd, rt_per_block_enabled)
+            "del", ngws, family, nagents, nroutes, timeout_minutes_poll_prefixes, skip_krt_check, skip_rtr_check, no_verify_routes, xmpp_src, del_start_time, fd, rt_per_block_enabled)
+        else:
+            get_l3vpn_prefix_install_or_delete_time(cn_self, nagents, ninstances, prefixes_per_instance, ngws, nasns, rtf_mul, del_start_time, timeout_minutes_poll_prefixes, "del", family, fd)
+
+    if bgp_only_scale_flag:
+        # Stop IXIA
+        log_print("DEBUG: Stopping IXIA", fd)
+        start_ixia_bgp_tests('empty')
 
     #
     # Get stats after test run
     #
+    
     if report_stats_during_bgp_scale:
         report_stats(cn_self, rt_self, cnshell_self, cn_ip, rt_ip,
                      "Stats After Test Run {0}".format(oper), report_cpu_only_at_peak_bgp_scale, fd)
@@ -821,6 +860,7 @@ def get_kernel_routes_light(self):
 
 
 def get_localhost_ip():
+    return '172.16.0.2'
     local_host = socket.gethostname()
     from test_flap_agent_scale import *
     return TestBGPScale.inputs.host_data[local_host]['host_control_ip']
@@ -1106,8 +1146,15 @@ def get_rt_l3vpn_prefixes(self, rtr_ip, rtr_usn, rtr_pwd, instance_name, ninstan
 
 # end get_rt_l3vpn_prefixes
 
+def get_cn_introspect_ribout_elements(self, family, fd):
 
-def get_cn_introspect_elements(self, ninstances, ri_domain, ri_name, family, xmpp_src, oper, nagents, time_chk, fd):
+    family= 'bgp'
+
+    built_messages, pending_updates, reach, unreach = self.get_cn_riboutstats_table(family) 
+
+    return built_messages, pending_updates, reach, unreach
+
+def get_cn_introspect_elements(self, ninstances, ri_domain, ri_name, family, xmpp_src, oper, nagents, time_chk, fd, ngws):
 
     cn_prefixes = 0
     cn_pending_updates = 0
@@ -1119,15 +1166,25 @@ def get_cn_introspect_elements(self, ninstances, ri_domain, ri_name, family, xmp
 
     status = 0
     peer_state = 0
-    for i in range(ninstances):
+    for i in range(ninstances+1):
 
         #
         # Get full instance name
-        #
-        instance_name, full_instance_name = get_instance_name(
-            ninstances, ri_name, i + 1, ri_domain)
+        #BGP_SCALE. If external BGP routers are configured, cycle through the bgp-l3vpn tables.
+        if ngws > 0 and i == ninstances:
+            instance_name, full_instance_name = "default-domain:default-project:ip-fabric:__default__",\
+                                                "default-domain:default-project:ip-fabric:__default__"
+            if family == 'inet.0':
+                family = 'bgp.l3vpn.0'
+            elif family == 'inet6.0':
+                family = 'bgp.l3vpn-inet6.0'
+            elif family == 'evpn':
+                family = 'bgp.evpn.0'
+        else:
+            instance_name, full_instance_name = get_instance_name(
+                ninstances, ri_name, i + 1, ri_domain)
 
-        #
+
         # Get control node active prefiexes for this instance
         #
         #nprefixes = self.get_cn_routing_instance_bgp_active_paths (full_instance_name, family)
@@ -1228,9 +1285,58 @@ def check_done_flags(cn_done, rt_done, skip_rtr_check, skip_krt_check, krt_clear
     return return_val
 
 # end check_done_flags
+def get_l3vpn_prefix_install_or_delete_time(cn_self, nagents, ninstances, prefixes_per_instance, ngws, nasns, rtf_mul, l3vpn_start_time, max_prefix_time, oper, family, fd):
+    total_expected_l3vpn_to_send = (ninstances*prefixes_per_instance*ngws*rtf_mul)/100
+    messages_built = 0
+    pending_updates = 0
+    reach = 0
+    unreach = 0
+    return_val = 0
+    time_between_ribout_poll = 0.5 
+
+    if oper == 'add':
+        while True:
+            peers, pending_updates, reach, unreach = get_cn_introspect_ribout_elements(cn_self, family, fd)
+            if peers > 2:
+                l3vpn_start_time = datetime.now()
+                break
+            time.sleep(time_between_ribout_poll)
+
+    while True:
+        time.sleep(time_between_ribout_poll)
+        peers, pending_updates, reach, unreach = get_cn_introspect_ribout_elements(cn_self, family, fd)
+        if oper == 'add':
+            if not pending_updates and reach >= total_expected_l3vpn_to_send:
+                l3vpn_end_time = datetime.now()
+                l3vpn_delta_time = get_time_diffs_seconds(l3vpn_start_time, l3vpn_end_time, decimal_places=2)
+                break
+        else:
+            if not pending_updates and unreach >= total_expected_l3vpn_to_send:
+                l3vpn_end_time = datetime.now()
+                l3vpn_delta_time = get_time_diffs_seconds(l3vpn_start_time, l3vpn_end_time, decimal_places=2)
+                break
+
+        time_chk, time_now = get_delta_time(l3vpn_start_time, 'minutes')
+        if time_chk >= max_prefix_time:
+            log_print("ERROR: timeout waiting for route install/delete, total expected prefixes to send:{0} cn had:{1} cn_pending_updates:{2} waited {3} min reach_sent: {4} unreach_sent: {5}".format(
+                total_expected_l3vpn_to_send, pending_updates, max_prefix_time, reach, unreach), fd)
+            return_val = 'GetRouteTimeout'
+            break
+
+        msg1 = "INFO: peers:%s pending:%s reach:%s unreach:%s total:%s" % ( peers, pending_updates, reach, unreach, total_expected_l3vpn_to_send)
+        msg_last = "op:%s timeout-in:%s" % (oper, max_prefix_time-time_chk)
+
+        log_print("%s %s" % (msg1, msg_last), fd)
 
 
-def get_prefix_install_or_delete_time(cn_self, rt_self, cn_ip, rt_ip, rt_usr, rt_pw, ri_domain, ri_name, ninstances, prefixes_per_instance, vpn_prefixes, oper, family, nagents, nroutes, timeout_minutes_poll_prefixes, skip_krt_check, skip_rtr_check, no_verify_routes, xmpp_src, start_time, fd, rt_per_block_enabled):
+    if not re.search('timeout', str(return_val), re.IGNORECASE):
+        report_delta_times(oper, total_expected_l3vpn_to_send, l3vpn_delta_time,
+                           0, ninstances, nagents, prefixes_per_instance, 0, fd, ngws, nasns, rtf_mul)
+
+    return return_val
+
+
+def get_prefix_install_or_delete_time(cn_self, rt_self, cn_ip, rt_ip, rt_usr, rt_pw, ri_domain, ri_name, ninstances, prefixes_per_instance, vpn_prefixes, oper, ngws, family, nagents, nroutes, timeout_minutes_poll_prefixes, skip_krt_check, skip_rtr_check, no_verify_routes, xmpp_src, start_time, fd, rt_per_block_enabled):
 
     #
     # Return if no_verify is set
@@ -1246,11 +1352,11 @@ def get_prefix_install_or_delete_time(cn_self, rt_self, cn_ip, rt_ip, rt_usr, rt
 
     #
     # Each instances has the same number of expected prefixes
-    #
+    # BGP_SCALE, Since cyclying thorugh l3vpn prefixes, add those to total expected.
     if rt_per_block_enabled:
         total_expected_prefixes = prefixes_per_instance * ninstances * ninstances
     else:
-        total_expected_prefixes = prefixes_per_instance * ninstances 
+        total_expected_prefixes = prefixes_per_instance * ninstances + vpn_prefixes 
 
     #
     # Loop until it the number of routes has been reached, or timeout if count does not change for <n> times
@@ -1266,7 +1372,7 @@ def get_prefix_install_or_delete_time(cn_self, rt_self, cn_ip, rt_ip, rt_usr, rt
     return_val = 0
     timestamp_done_cn = ''
     timestamp_done_rt = ''
-    sleeptime_between_introspect_polls = 5
+    sleeptime_between_introspect_polls = 2 
 
     #
     # Set expected prefixe count and timeout according to add or delete
@@ -1295,7 +1401,7 @@ def get_prefix_install_or_delete_time(cn_self, rt_self, cn_ip, rt_ip, rt_usr, rt
         #
         if not cn_done:
             cn_prefixes, cn_pending_updates, cn_markers, cn_paths, cn_primary_paths, cn_secondary_paths, cn_infeasible_paths = get_cn_introspect_elements(
-                cn_self, ninstances, ri_domain, ri_name, family, xmpp_src, oper, nagents, time_chk, fd)
+                cn_self, ninstances, ri_domain, ri_name, family, xmpp_src, oper, nagents, time_chk, fd, ngws)
 
         #
         # Iterate through the router instance tables
@@ -1396,6 +1502,9 @@ def get_prefix_install_or_delete_time(cn_self, rt_self, cn_ip, rt_ip, rt_usr, rt
     # Unless it's a timeout, report delta time
     #
     if not re.search('timeout', str(return_val), re.IGNORECASE):
+        ## BGP_SCALE 
+        if ngws > 0:
+            total_expected_prefixes = (total_expected_prefixes/2)*ngws
         report_delta_times(oper, total_expected_prefixes, cn_delta_seconds,
                            rt_delta_seconds, ninstances, nagents, nroutes, skip_rtr_check, fd)
 
@@ -1663,7 +1772,7 @@ def check_if_done_polling_for_prefixes(oper, current_prefixes, expected_prefixes
 # end check_if_done_polling_for_prefixes
 
 
-def report_delta_times(oper, expected_prefixes, cn_delta_seconds, rt_delta_seconds, ninstances, nagents, nroutes, skip_rtr_check, fd):
+def report_delta_times(oper, expected_prefixes, cn_delta_seconds, rt_delta_seconds, ninstances, nagents, nroutes, skip_rtr_check, fd, ngws=0, nasns=1, rtf_mul=100):
 
     #
     # Compute the number of add/delete per second
@@ -1672,24 +1781,24 @@ def report_delta_times(oper, expected_prefixes, cn_delta_seconds, rt_delta_secon
     rt_ips = get_ops_per_second(int(rt_delta_seconds), expected_prefixes)
     tunit = 'seconds'
 
-    msg = get_msg_ninst_x_agents_x_nroutes(ninstances, nagents, nroutes)
-    if skip_rtr_check != 0:
-        log_print(
-            "INFO:    Elapsed time to {0} {1} prefixes on_control_node:{2}{6} prefixes/{6}:{4} {7}".format(oper,
-                                                                                                           expected_prefixes, cn_delta_seconds, rt_delta_seconds, cn_ips, rt_ips, tunit[:1], msg), fd)
+    if not ngws:
+        msg = get_msg_ninst_x_agents_x_nroutes(ninstances, nagents, nroutes)
+        if skip_rtr_check != 0:
+            log_print("INFO:    Elapsed time to {0} {1} prefixes on_control_node:{2}{6} prefixes/{6}:{4} {7}".format(oper, expected_prefixes, cn_delta_seconds, rt_delta_seconds, cn_ips, rt_ips, tunit[:1], msg), fd)
+        else:
+            log_print("INFO:    Elapsed time to {0} {1} prefixes on_control_node:{2}{6}, and on_router:{3}{6} prefixes/{6}: ({4} and {5}) {7}".format(oper, expected_prefixes, cn_delta_seconds, rt_delta_seconds, cn_ips, rt_ips, tunit[:1], msg), fd)
     else:
-        log_print(
-            "INFO:    Elapsed time to {0} {1} prefixes on_control_node:{2}{6}, and on_router:{3}{6} prefixes/{6}: ({4} and {5}) {7}".format(oper,
-                                                                                                                                            expected_prefixes, cn_delta_seconds, rt_delta_seconds, cn_ips, rt_ips, tunit[:1], msg), fd)
-
-    return
+        msg = get_msg_ninst_x_agents_x_nroutes(ninstances, nagents, nroutes, ngws)
+        log_print("INFO:  Elapsed time to {0} {1} prefixes on {2} BGP Routers in {3} ASN(s) with RTF_% {4}: {5}{6} prefixes/{6}:{7} {8}".format(oper, expected_prefixes, ngws, nasns, rtf_mul, cn_delta_seconds, tunit[:1], int(expected_prefixes)//float(cn_delta_seconds), msg), fd)
 
 # end report_delta_times
 
+def get_msg_ninst_x_agents_x_nroutes(ninstances, nagents, nroutes, ngws=0):
 
-def get_msg_ninst_x_agents_x_nroutes(ninstances, nagents, nroutes):
-
-    return "ninst X nagent X nroutes = {0}x{1}x{2}".format(ninstances, nagents, nroutes)
+    if not ngws:
+        return "ninst X nagent X nroutes = {0}x{1}x{2}".format(ninstances, nagents, nroutes)
+    else:
+        return "ninst X nagent X nroutes X nrouters = {0}x{1}x{2}x{3}".format(ninstances, nagents, nroutes, ngws)
 
 # end get_msg_ninst_x_agents_x_nroutes
 

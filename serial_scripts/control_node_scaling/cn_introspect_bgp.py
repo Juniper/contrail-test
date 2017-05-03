@@ -216,6 +216,7 @@ class ControlNodeInspect (VerificationUtilBase):
                     return route['paths']
     # end get_cn_route_table_entry
 
+ 
     def get_cn_bgp_nighbor_state(self, ip_address, encoding=''):
         '''Returns a list of BPG peers for the control node
            format example: http://10.84.7.28:8083/Snh_BgpNeighborReq?domain=&ip_address=10.84.7.250
@@ -335,7 +336,12 @@ class ControlNodeInspect (VerificationUtilBase):
 
         # Search/get element
         # Note: table_list may be a list of dictionaries, or one dictionary
-        status, element_val = self.get_element_from_dict(
+
+        if "__default__" in ri_name:
+            status, element_val = self.get_element_from_dict(
+            "%s" % (family), 'name', table_list, element)
+        else:
+            status, element_val = self.get_element_from_dict(
             "%s.%s" % (ri_name, family), 'name', table_list, element)
 
         if element_val.isdigit():
@@ -344,6 +350,45 @@ class ControlNodeInspect (VerificationUtilBase):
         return (status, element_val)
 
     # end get_cn_routing_instance_table_element
+
+    def get_cn_bgp_neighbor_summary(self, rtr_type=''):
+        path = 'Snh_ShowBgpNeighborSummaryReq?search_string='
+        xpath = '//neighbors'
+        i = 0
+        tbl = self.http_get(path)
+        table_list = EtreeToDict(xpath).get_all_entry(tbl)
+        for k in table_list:
+            for table in table_list[k]:
+                if isinstance(table, dict):
+                    if table['router_type'] == 'router':
+                        i += 1
+
+        return i
+
+    def get_cn_riboutstats_table(self, family):
+
+        pending_updates = 0
+        peers = 0
+        reach = 0
+        unreach = 0
+
+        path = 'Snh_ShowRibOutStatisticsReq?search_string=%s' % family
+        xpath = '//ribouts'
+        tbl = self.http_get(path)
+        table_list = EtreeToDict(xpath).get_all_entry(tbl)
+        for k in table_list:
+            for table in table_list[k]:
+                if isinstance(table, dict):
+                    if 'rtarget' in table['table']:
+                        continue
+                    else:
+                        pending_updates += int(table['pending_updates'])
+                        reach += int(table['reach'])
+                        unreach += int(table['unreach'])
+                        if table['table'] == 'bgp.l3vpn.0':
+                            peers = int(table['peers'])
+        
+        return peers, pending_updates, reach, unreach
 
     def policy_update(self, domain='default-domain', *arg):
         pass

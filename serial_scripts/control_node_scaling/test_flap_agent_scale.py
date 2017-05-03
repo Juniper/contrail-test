@@ -19,6 +19,8 @@ import multiprocessing
 import traceback
 import logging
 import fixtures
+import shutil
+import random
 #
 # Contrail libs
 #
@@ -71,6 +73,17 @@ class FlapAgentScaleInit (object):
             self.inputs = inputs
             self.logger = self.inputs.logger
 
+        # Initialize test server dict. Needed for running bgp_stress_test
+        # insider docker container. Test server will have empty role in
+        # testbed.py
+        self.test_server_dict = {}
+        for k in self.inputs.host_data:
+            if not self.inputs.host_data[k]['roles']:
+                self.test_server_dict['ip'] = self.inputs.host_data[k]['data-ip']
+                self.test_server_dict['nh'] = '172.17.0.1'
+                self.test_server_dict['docker-ip'] = '172.17.0.2'
+                break
+
         #
         # Use for logging where each iteration can be logged
         #
@@ -79,7 +92,8 @@ class FlapAgentScaleInit (object):
         #
         # Get os info (version,
         #
-        self.pid = os.getpid()
+        #self.pid = os.getpid()
+        self.pid = random.randrange(1,999999)
 
         #
         # Create logfile (logdir if needed), append timestamp to arg name
@@ -439,6 +453,25 @@ class FlapAgentScaleInit (object):
         if self.pre_scale_setup:
             self._add_cn_env_vars()
 
+
+        #
+        # Create BGP routers
+        #
+        ngws = int(self._args.ngws)
+        neighbor_count = 0
+
+        if ngws:
+            self.add_or_delete_bgp_routers("add")
+
+        cn_self = get_cn_ispec(self.cn_ips[0])
+        while True:
+            neighbor_count = cn_self.get_cn_bgp_neighbor_summary()
+            if neighbor_count >= ngws:
+                break
+            else:
+                self._log_print("INFO: waiting for BGP routers to get created")                
+                time.sleep(60)
+        
         #
         # Restart Control node, if needed
         #
@@ -458,6 +491,14 @@ class FlapAgentScaleInit (object):
         # Set affinity mask
         #
         self._taskset_affinity_mask()
+
+
+        #
+        # Cleanup Prexisting IXIA configs 
+        #
+        #self._log_print("INFO: Cleanup old IXIA config")
+        #start_ixia_bgp_tests('empty')
+        #time.sleep(120)
 
     # end _setup
 
@@ -539,6 +580,10 @@ class FlapAgentScaleInit (object):
     def _restart_cn(self, why=0, restart_anyway=0):
         '''Stop then start control node
         '''
+
+        username = self._args.ssh_username
+        password = self._args.ssh_password
+
         #
         # Let stressfactr control any restarts
         #
@@ -548,8 +593,8 @@ class FlapAgentScaleInit (object):
         #
         # Skip if no overriding knob to params - used for delete vn bug, will remove soon
         #
-        if not restart_anyway and not int(self._args.restart_cn):
-            return
+        #if not restart_anyway and not int(self._args.restart_cn):
+        #    return
 
         #
         # Restart all control nodes
@@ -561,14 +606,14 @@ class FlapAgentScaleInit (object):
             #
             cn_ssh_fd = self.cn_ssh_fds[i]
             cn_ip = self.cn_ips[i]
-            cn_distro = self.cn_linux_distribution[i]
+            #cn_distro = self.cn_linux_distribution[i]
 
             #
             # Get command to restart the control node - note that fedora uses systemctl at the moment
             #
             cmd = self._args.control_node_restart_cmd
-            if cn_distro == self._args.linux_fedora:
-                cmd = self._args.control_node_restart_fedora_cmd
+            #if cn_distro == self._args.linux_fedora:
+            #    cmd = self._args.control_node_restart_fedora_cmd
 
             #
             # Issue restart
@@ -581,15 +626,18 @@ class FlapAgentScaleInit (object):
                     cn_ip, cmd)
             self._log_print("INFO: restarting control node: %s with cmd: %s" %
                             (cn_ip, cmd))
-            return_val = cn_ssh_fd.execCmd(cmd, cn_ip, username, password)
+            try:
+                return_val = cn_ssh_fd.execCmd(cmd, username, password, cn_ip, cn_ip)
+            except:
+                pass
 
         #
         # Sleep a bit
         #
         sleep_time = int(self._args.sleeptime_after_cn_restart)
         self._log_print(
-            "INFO: sleeping: %ss after restartng all control nodes result: %s" %
-            (sleep_time, return_val))
+            "INFO: sleeping: %ss after restartng all control nodes result" %
+            (sleep_time))
         time.sleep(sleep_time)
 
         return
@@ -670,11 +718,18 @@ class FlapAgentScaleInit (object):
         # Get linux distribution for test server
         #
         #self.linux_distribution = platform.linux_distribution()[0]
-        local_host = socket.gethostname()
-        self.localhost_ip = self.inputs.host_data[
-            local_host]['host_control_ip']
-        self._log_print("INFO: localhost testserver ip: %s" %
-                        self.localhost_ip)
+        #local_host = socket.gethostname()
+
+        self.localhost_ip = self.test_server_dict['docker-ip'] 
+#        self.host_ip = get_os_env('TEST_HOST_IP')
+
+#        local_host = socket.gethostname(self.host_ip)
+
+#        self.localhost_ip = self.inputs.host_data[
+#            local_host]['host_control_ip']
+
+#        self._log_print("INFO: localhost testserver ip: %s" %
+#                        self.localhost_ip)
 
     # end _get_localhost_info
     def _get_prog_fds(self):
@@ -685,6 +740,7 @@ class FlapAgentScaleInit (object):
         username = self._args.ssh_username
         password = self._args.ssh_password
 
+        # Set it in testbed.py. hardcoding for now
         #
         # Get API ssh fd
         #
@@ -705,11 +761,21 @@ class FlapAgentScaleInit (object):
             self.cn_ssh_fds[i].execConnect(cn_ips[i], username, password)
             self.cn_introspect.append(ControlNodeInspect(cn_ips[i]))
 
+
+        cfgm_ips = self.inputs.cfgm_control_ips
+        self.cfgm_ssh_fds = []
+        self.cfgm_ips = []
+
+        for i in range(len(cfgm_ips)):
+            self.cfgm_ssh_fds.append(remoteCmdExecuter())
+            self.cfgm_ssh_fds[i].execConnect(cfgm_ips[i], username, password)
+            self.cfgm_ips.append(re.search('\d+.*\d+', cfgm_ips[i]).group())
+
         #
         # Get test server fds and ips
         #
         #ts_ips = re.split(",", "".join(self._args.test_server_ips.split()))
-        ts_ips = self.inputs.cfgm_control_ips
+        ts_ips = [self.test_server_dict['ip']]
         self.ts_ssh_fds = []
         self.ts_ips = []
 
@@ -778,7 +844,7 @@ class FlapAgentScaleInit (object):
                 if file.startswith(self._args.result_averages_logfilename):
                     try:
                         file_fq_name = os.getcwd() + '/' + logdir + '/' + file
-                        os.remove(file_fq_name)
+                        #os.remove(file_fq_name)
                     except OSError:
                         pass
             try:
@@ -815,7 +881,7 @@ class FlapAgentScaleInit (object):
 
     # end _open_file_for_write
 
-    def check_and_fix_connectivity(self, cn_self, src, dst, xmpp_src_net, test_server_ip, nagents, dev, index):
+    def check_and_fix_connectivity(self, cn_self, src, dst, xmpp_src_net, ts_self, nagents, dev, index):
         '''Make sure control node can ping xmpp_src IP addresses
            If not, "route add" it and try again. Otherwise abort script
         '''
@@ -823,6 +889,8 @@ class FlapAgentScaleInit (object):
         #
         # Return if the skip_check bit is set..
         #
+
+
         if int(self._args.skip_check_and_fix_connectivity):
             return
 
@@ -832,19 +900,30 @@ class FlapAgentScaleInit (object):
         if not self.standalone_mode:
             net = "%s/%s" % (IPNetwork(xmpp_src_net).network,
                              IPNetwork(xmpp_src_net).prefixlen)
-            route_add_cmd = "route add -net {0} gw {1}".format(net,
-                                                               test_server_ip)
+            cn_route_add_cmd = "route add -net {0} gw {1}".format(net,
+                                                               self.test_server_dict['ip'])
+            test_server_route_add_cmd = "route add -net {0} gw {1}".format(net, self.test_server_dict['nh'])
+
+
             try:
                 result = cn_self.execCmd(
-                    route_add_cmd, self._args.ssh_username, self._args.ssh_password, src, test_server_ip)
+                    cn_route_add_cmd, self._args.ssh_username, self._args.ssh_password, src, src)
             except:
                 pass
+
+
+            try:
+                result_1 = ts_self.execCmd(
+                    test_server_route_add_cmd, self._args.ssh_username, self._args.ssh_password, self.test_server_dict['ip'], self.test_server_dict['ip'])
+            except:
+                pass
+
 
         #
         # Check secondaries, configure them if needed
         #
         self.check_and_fix_secondaries(
-            dev, dst, nagents, xmpp_src_net, test_server_ip)
+            dev, dst, nagents, xmpp_src_net)
 
         #
         # Return if the skip_ping bit is set..
@@ -899,7 +978,7 @@ class FlapAgentScaleInit (object):
 
     # end check_and_fix_connectivity
 
-    def check_and_fix_secondaries(self, dev, dst, nagents, xmpp_src_net, test_server):
+    def check_and_fix_secondaries(self, dev, dst, nagents, xmpp_src_net):
 
         if int(self._args.skip_check_and_fix_secondaries):
             return
@@ -991,6 +1070,9 @@ class FlapAgentScaleInit (object):
             cn_ssh_fd = self.cn_ssh_fds[i]
             cn_ip = self.cn_ips[i]
 
+            ts_ssh_fd = self.ts_ssh_fds[0]
+            ts_ip = self.ts_ips[0]
+            
             #
             # Handle all blocks
             #
@@ -1002,7 +1084,7 @@ class FlapAgentScaleInit (object):
                     # Add secondaries to test server running bgp_stress_test and route from contrail-control back to it
                     #
                     self.check_and_fix_connectivity(cn_ssh_fd, cn_ip, self.xmpp_src[kindex], self.xmpp_src_net[
-                        kindex], self.localhost_ip, self.nagents[k], self.dev, kindex)
+                        kindex], ts_ssh_fd, self.nagents[k], self.dev, kindex)
 
                     #
                     # Increment the next xmpp_src index
@@ -1115,7 +1197,7 @@ class FlapAgentScaleInit (object):
     # end start_bgp_scale
 
     def _get_ifdev(self):
-
+        return "eth0"
         #
         # Get interface device name that is suitable for adding secondaries
         #
@@ -1368,6 +1450,24 @@ class FlapAgentScaleInit (object):
         nroutes = self.nroutes[iteration_index]
         import_targets_per_instance = self.import_targets_per_instance[
             iteration_index]
+        try:
+            ngws = int(self._args.ngws)
+        except AttributeError:
+            ngws = 0
+        try:
+            nasns = int(self._args.nasns)
+        except AttributeError:
+            nasns = 1
+        try:
+            bgp_only_scale_flag = int(self._args.bgp_only_scale_flag)
+        except AttributeError:
+            bgp_only_scale_flag = 0
+        try:
+            rtf_mul = int(self._args.rtf_mul)
+        except AttributeError:
+            rtf_mul = 100
+        ixia_cfg = 'bgp_'+str(nasns)+'_'+str(ngws)+'_'+str(rtf_mul)
+
 
         #
         # get xmpp_src addresses
@@ -1425,8 +1525,8 @@ class FlapAgentScaleInit (object):
         if background:
             process = multiprocessing.Process(
                 target=bgp_scale_mock_agent, args=(
-                    cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, rtr_ip, rtr_ip2, xmpp_source, ri_domain_and_proj_name, ri_name, ninstances, import_targets_per_instance, family, nh, test_id, nagents, nroutes, oper, sleeptime, logfile_name_bgp_stress,
-                    logfile_name_results, timeout_minutes_poll_prefixes, background, xmpp_start_prefix, xmpp_start_prefix_large, skip_krt_check, self.report_stats_during_bgp_scale, self.report_cpu_only_at_peak_bgp_scale, skip_rtr_check, self.bgp_env, no_verify_routes, self._args.logging_etc, self.localhost_ip, self.rt_per_block_enabled))
+                    cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, rtr_ip, rtr_ip2, xmpp_source, ri_domain_and_proj_name, ri_name, ninstances, import_targets_per_instance, ngws, nasns, bgp_only_scale_flag, rtf_mul, family, nh, test_id, nagents, nroutes, oper, sleeptime, logfile_name_bgp_stress,
+                    logfile_name_results, timeout_minutes_poll_prefixes, background, xmpp_start_prefix, xmpp_start_prefix_large, skip_krt_check, self.report_stats_during_bgp_scale, self.report_cpu_only_at_peak_bgp_scale, skip_rtr_check, self.bgp_env, no_verify_routes, self._args.logging_etc, self.localhost_ip, self.rt_per_block_enabled, ixia_cfg))
             process.start()
             self.process.append(process)
             self._log_print(
@@ -1439,8 +1539,8 @@ class FlapAgentScaleInit (object):
         #
         else:
             bgp_scale_mock_agent(
-                cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, rtr_ip, rtr_ip2, xmpp_source, ri_domain_and_proj_name, ri_name, ninstances, import_targets_per_instance, family, nh, test_id, nagents, nroutes, oper, sleeptime, logfile_name_bgp_stress, logfile_name_results,
-                timeout_minutes_poll_prefixes, background, xmpp_start_prefix, xmpp_start_prefix_large, skip_krt_check, self.report_stats_during_bgp_scale, self.report_cpu_only_at_peak_bgp_scale, skip_rtr_check, self.bgp_env, no_verify_routes, self._args.logging_etc, self.localhost_ip, self.rt_per_block_enabled)
+                cn_usr, cn_pw, rt_usr, rt_pw, cn_ip, cn_ip_alternate, rtr_ip, rtr_ip2, xmpp_source, ri_domain_and_proj_name, ri_name, ninstances, import_targets_per_instance, ngws, nasns, bgp_only_scale_flag, rtf_mul, family, nh, test_id, nagents, nroutes, oper, sleeptime, logfile_name_bgp_stress, logfile_name_results,
+                timeout_minutes_poll_prefixes, background, xmpp_start_prefix, xmpp_start_prefix_large, skip_krt_check, self.report_stats_during_bgp_scale, self.report_cpu_only_at_peak_bgp_scale, skip_rtr_check, self.bgp_env, no_verify_routes, self._args.logging_etc, self.localhost_ip, self.rt_per_block_enabled, ixia_cfg)
             self._log_print("INFO: started bgp_stress_test.%s" % run_id)
 
     # end run_bgp_scale
@@ -2294,7 +2394,7 @@ class FlapAgentScaleInit (object):
 
         conf_parser.add_argument(
             "-c", "--conf_file", help="Specify config file, e.g., prams.ini", metavar="FILE")
-#
+
         args, remaining_argv = conf_parser.parse_known_args(args_str.split())
 
         defaults = {
@@ -2310,7 +2410,8 @@ class FlapAgentScaleInit (object):
             'vn_name          ': 'demo'
         }
         cwd = os.getcwd()
-        args.conf_file = '%s/serial_scripts/control_node_scaling/bgp_scale_params.ini' % cwd
+        args.conf_file = '%s/serial_scripts/control_node_scaling/params_bgp_scale.ini' % cwd
+        #args.conf_file = '%s/serial_scripts/control_node_scaling/param_files/%s' % (cwd,args_str)
         if args.conf_file:
             config = ConfigParser.SafeConfigParser()
             config.read([args.conf_file])
@@ -2532,6 +2633,14 @@ class FlapAgentScaleInit (object):
             if self.summary_fd:
                 self.summary_fd.close()
 
+        if int(self._args.ngws):
+            self._log_print("INFO: Deleting BGP routers")
+            self.add_or_delete_bgp_routers("del")
+
+
+        if int(self._args.delete_vns_after_run):
+            self.add_or_delete_vns("del")
+
         # if self.fd != None:
         if self.fd:
             self.fd.close()
@@ -2562,6 +2671,56 @@ class FlapAgentScaleInit (object):
         return return_val
 
     # end _get_vn_subnet_addr
+
+
+    def add_or_delete_bgp_routers(self, oper=''):
+
+        try:
+            ngws = int(self._args.ngws)
+        except AttributeError:
+            ngws = 0
+        try:
+            nasns = int(self._args.nasns)
+        except AttributeError:
+            nasns = 1
+
+        rtr_name_prefix = 'ixia'
+        rtr_ip_prefix = '101.1.1.'
+
+        if oper == 'add':
+            if nasns == 1:
+                for i in range(ngws):
+                    cmd = '--api_server_ip {0} --api_server_port 8082 --oper add-bgp-router --rtr_type router --rtr_name {1}\
+                           --rtr_ip {2} --rtr_asn 64512'.format(self.inputs.auth_ip, rtr_name_prefix+str(i), rtr_ip_prefix+str(i+2)) 
+                    self._log_print("INFO: %s" % cmd)
+                    self.vn_cfg._run(cmd)
+            else:
+                k = 2
+                for i in range(nasns):
+                    for j in range(ngws//nasns):
+                        cmd = '--api_server_ip {0} --api_server_port 8082 --oper add-bgp-router --rtr_type router --rtr_name {1}\
+                           --rtr_ip {2} --rtr_asn {3} --rtr_peers {4}'.format(self.inputs.auth_ip, rtr_name_prefix+str(k-1),\
+                                                                              rtr_ip_prefix+str(k),\
+                                                                              i+1, str(self.inputs.host_data[self.inputs.auth_ip]['name']))
+                        self._log_print("INFO: %s" % cmd)
+                        self.vn_cfg._run(cmd)
+                        k += 1
+        elif oper == 'del':
+            if nasns == 1:
+                for i in range(ngws):
+                    cmd = '--api_server_ip {0} --api_server_port 8082 --oper del-bgp-router\
+                           --rtr_name {1}'.format(self.inputs.auth_ip, rtr_name_prefix+str(i))
+                    self._log_print("INFO: %s" % cmd)
+                    self.vn_cfg._run(cmd)
+            else:
+                k = 2
+                for i in range(nasns):
+                    for j in range(ngws//nasns):
+                        cmd = '--api_server_ip {0} --api_server_port 8082 --oper del-bgp-router --rtr_name {1}'.format(self.inputs.auth_ip,\
+                                                                                                                       rtr_name_prefix+str(k-1))
+                        self._log_print("INFO: %s" % cmd)
+                        self.vn_cfg._run(cmd)
+                        k += 1
 
     def add_or_delete_vns(self, oper=''):
 
@@ -2691,9 +2850,15 @@ class FlapAgentScaleInit (object):
                         self.inputs.auth_ip, str(net), vn_name, oper)
                     self._log_print("INFO: %s" % cmd)
                     self.vn_cfg._run(cmd)
+                    #Do per-block RT for XMPP and per-VN RT for BGP scale. 
+                    if oper == 'add':
+                        if self.rt_per_block_enabled:
+                            self.vn_cfg._add_route_target(vn_name,64512,j)
+                        else:
+                            self.vn_cfg._add_route_target(vn_name,64512,i)
                     # Adding route target for each block  
-                    if self.rt_per_block_enabled:
-                        self.vn_cfg._add_route_target(vn_name,64512,j) 
+                    #if self.rt_per_block_enabled:
+                    #    self.vn_cfg._add_route_target(vn_name,64512,1001) 
                     #
                     # Check that vn is deleted before deleting next
                     #
@@ -3243,12 +3408,21 @@ class FlapAgentScaleInit (object):
         #
         # Get averages
         #
-        self._get_average_time_peer_bringup(pid)
-        self._get_average_time_prefix_add(pid, trigger_state)
-        self._get_average_time_prefix_del(pid)
+        try:
+            bgp_only_scale_flag = int(self._args.bgp_only_scale_flag)
+        except AttributeError:
+            bgp_only_scale_flag = 0
+
+        if not bgp_only_scale_flag: 
+            self._get_average_time_peer_bringup(pid)
+            self._get_average_time_prefix_add(pid, trigger_state)
+            self._get_average_time_prefix_del(pid)
+        else:
+            self._get_bgp_peer_info(pid)
+            self._get_average_time_bgp_prefix_add(pid)
+            self._get_average_time_bgp_prefix_del(pid)
 
     # end report_result_averages
-
     def _get_average_time_peer_bringup(self, pid):
         #
         # Post-process log files..
@@ -3426,6 +3600,146 @@ class FlapAgentScaleInit (object):
 
     # end _get_line_with_pattern_match
 
+    def _get_bgp_peer_info(self, pid):
+        self.total_num_prefixes = 0
+        self.num_of_bgp_routers = 0
+        self.num_of_asns        = 0
+        self.rtf_percentage     = 0
+        self.total_time         = 0.0
+        self.num_prefixes_per_sec = 0
+        self.avg_time_per_prefix = 0
+
+        cmd = 'grep Routers %s/%s_%s.log* | grep add' % (self._args.logdir_name, self._args.logfile_name_results, pid)
+        result = self._get_line_with_pattern_match(cmd)
+        if result:
+            # chop newline at the end of the output
+            lines = result.split('\n')[:-1]
+            #
+            # Loop through logs for successful add summary lines
+            #
+            for i in range(len(lines)):
+                result = re.search(
+                    '.* time to add (\d+) prefixes on (\d+) BGP Routers in (\d+) ASN\(s\) with RTF_% (\d+): (\d+\.\d+)s', lines[i])
+                if result != None:
+                    self.total_num_prefixes += int(result.group(1))
+                    self.num_of_bgp_routers += int(result.group(2))
+                    self.num_of_asns        += int(result.group(3))
+                    self.rtf_percentage      = int(result.group(4))
+
+        if int(self.total_num_prefixes) == 0:
+            self._print_summary_and_regular_log(
+                "        No data found for adds")
+        else:
+            self._print_summary_and_regular_log(" ")
+
+            if self.num_of_asns == 1:
+                self._print_summary_and_regular_log(
+                    "        Number of iBGP peers    : %s" % self.num_of_bgp_routers)
+            else:
+                self._print_summary_and_regular_log(
+                    "        Number of eBGP peers    : %s" % self.num_of_bgp_routers)
+                self._print_summary_and_regular_log(
+                    "        Number of eBGP ASNs    : %s" % self.num_of_asns)
+            self._print_summary_and_regular_log(
+                "        RTF Multiplier:     %s" % self.rtf_percentage)
+
+        return
+
+
+    def _get_average_time_bgp_prefix_add(self, pid):
+
+        self.total_num_prefixes = 0
+        self.num_of_bgp_routers = 0
+        self.num_of_asns        = 0
+        self.rtf_percentage     = 0
+        self.total_time         = 0.0
+        self.num_prefixes_per_sec = 0
+        self.avg_time_per_prefix = 0
+
+        cmd = 'grep Routers %s/%s_%s.log* | grep add' % (self._args.logdir_name, self._args.logfile_name_results, pid)
+        result = self._get_line_with_pattern_match(cmd)
+        if result:
+            # chop newline at the end of the output
+            lines = result.split('\n')[:-1]
+            #
+            # Loop through logs for successful add summary lines
+            #
+            for i in range(len(lines)):
+                result = re.search(
+                    '.* time to add (\d+) prefixes on (\d+) BGP Routers in (\d+) ASN\(s\) with RTF_% (\d+): (\d+\.\d+)s', lines[i])
+                if result != None:
+                    self.total_num_prefixes += int(result.group(1))
+                    self.num_of_bgp_routers += int(result.group(2))
+                    self.num_of_asns        += int(result.group(3))
+                    self.rtf_percentage      = int(result.group(4))
+                    self.total_time += float(result.group(5))
+          
+            self.avg_time_per_prefix = (self.total_time*1e6)/self.total_num_prefixes
+            self.num_prefixes_per_sec = self.total_num_prefixes//self.total_time 
+
+        self._print_summary_and_regular_log(" ")
+
+        if int(self.total_num_prefixes) == 0:
+            self._print_summary_and_regular_log(
+                "        No data found for adds")
+
+        else:
+            self._print_summary_and_regular_log(
+                "        Total prefixes sent to BGP peers: %s" % self.total_num_prefixes)
+            self._print_summary_and_regular_log(
+                "        Total aggregate time to send prefixes to BGP peers: %ss" % self.total_time)
+            self._print_summary_and_regular_log(
+                "        Average time per prefix add: %sus" % self.avg_time_per_prefix)
+            self._print_summary_and_regular_log(
+                "        Prefixes added per second: %s" % self.num_prefixes_per_sec)
+        return
+
+    def _get_average_time_bgp_prefix_del(self, pid):
+
+        self.total_num_prefixes = 0
+        self.num_of_bgp_routers = 0
+        self.num_of_asns        = 0
+        self.rtf_percentage     = 0
+        self.total_time         = 0.0
+        self.num_prefixes_per_sec = 0
+        self.avg_time_per_prefix = 0
+
+        cmd = 'grep Routers %s/%s_%s.log* | grep del' % (self._args.logdir_name, self._args.logfile_name_results, pid)
+        result = self._get_line_with_pattern_match(cmd)
+        if result:
+            # chop newline at the end of the output
+            lines = result.split('\n')[:-1]
+            #
+            # Loop through logs for successful add summary lines
+            #
+            for i in range(len(lines)):
+                result = re.search(
+                    '.* time to del (\d+) prefixes on (\d+) BGP Routers in (\d+) ASN\(s\) with RTF_% (\d+): (\d+\.\d+)s', lines[i])
+                if result != None:
+                    self.total_num_prefixes += int(result.group(1))
+                    self.total_time += float(result.group(5))
+
+            self.avg_time_per_prefix = (self.total_time*1e6)/self.total_num_prefixes
+            self.num_prefixes_per_sec = self.total_num_prefixes//self.total_time
+
+        self._print_summary_and_regular_log(" ")
+
+        if int(self.total_num_prefixes) == 0:
+            self._print_summary_and_regular_log(
+                "        No data found for dels")
+
+        else:
+            self._print_summary_and_regular_log(
+                "        Total prefixes withdrawn from BGP peers: %s" % self.total_num_prefixes)
+            self._print_summary_and_regular_log(
+                "        Total aggregate time to withdraw prefixes from BGP peers: %ss" % self.total_time)
+            self._print_summary_and_regular_log(
+                "        Average time per prefix withdrawn: %sus" % self.avg_time_per_prefix)
+            self._print_summary_and_regular_log(
+                "        Prefixes withdrawn per second: %s" % self.num_prefixes_per_sec)
+        return
+
+        
     def _get_average_time_prefix_add(self, pid, trigger_state):
 
         #
@@ -3990,38 +4304,71 @@ class TestBGPScale(BaseBGPScaleTest):
         #
         # Init
         #
-        # self._log_print("INFO:******ABC*********")
-        self.obj = FlapAgentScaleInit(args_str='', inputs=self.inputs)
+        # self._log_print("INFO:%%%%%%ABC%%%%%%%")
+        for i in range(1,15):
+            #copy params to bgp_scale_params.ini
+            cwd = os.getcwd()
+            srcfile = '%s/serial_scripts/control_node_scaling/param_files/params_bgp'%cwd+str(i)+'.ini'
+            dstfile = '%s/serial_scripts/control_node_scaling/params_bgp_scale.ini' % cwd
+            shutil.copy(srcfile, dstfile)
+            self.obj = FlapAgentScaleInit(args_str='', inputs=self.inputs)
 
-        #
-        # Start agents and routes
-        #
-        self.obj.start_bgp_scale()
+            #
+            # Start agents and routes
+            #
+            self.obj.start_bgp_scale()
 
-        #
-        # Cleanup
-        #
-        self.obj.cleanup()
+            #
+            # Cleanup
+            #
+            self.obj.cleanup()
         return True
+
+    def test_xmpp_scale(self):
+        #
+        # Init
+        #
+        # self._log_print("INFO:%%%%%%ABC%%%%%%%")
+        for i in range(1,11):
+            #copy params to bgp_scale_params.ini
+            cwd = os.getcwd()
+            srcfile = '%s/serial_scripts/control_node_scaling/param_files/params_xmpp'%cwd+str(i)+'.ini'
+            dstfile = '%s/serial_scripts/control_node_scaling/params_bgp_scale.ini' % cwd
+            shutil.copy(srcfile, dstfile)
+            self.obj = FlapAgentScaleInit(args_str='', inputs=self.inputs)
+
+            #
+            # Start agents and routes
+            #
+            self.obj.start_bgp_scale()
+
+            #
+            # Cleanup
+            #
+            self.obj.cleanup()
+        return True
+
 
 # end main
 
-# def main(args_str=None):
+#def main(args_str=None):
 #
 #    #
+    #args_str = ' '.join(sys.argv[1:])
+
 # Init
 #    #
-#    self = FlapAgentScaleInit(args_str)
+    #self = FlapAgentScaleInit(args_str=args_str)
 #
 #    #
 # Start agents and routes
 #    #
-#    self.start_bgp_scale()
+    #self.start_bgp_scale()
 #
 #    #
 # Cleanup
 #    #
-#    self.cleanup()
+    #self.cleanup()
 
 # end main
 

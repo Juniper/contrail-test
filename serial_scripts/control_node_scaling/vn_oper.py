@@ -13,17 +13,24 @@ import subprocess
 
 from vnc_api.vnc_api import *
 import cfgm_common.exceptions
+from netaddr import IPNetwork
+
 
 import json
 from pprint import pformat
 from common.openstack_libs import neutron_client as client
 from common.openstack_libs import neutron_http_client as HTTPClient
+from common.openstack_libs import neutron_exception as exceptions
 
+def get_ip(ip_w_pfx):
+    return str(IPNetwork(ip_w_pfx).ip)
 
 class VnCfg(object):
 
     def __init__(self):
         self._quantum = None
+        self.parent_fq_name = ['default-domain', 'default-project',
+                'ip-fabric', '__default__']
         pass
 
     def _run(self, args_str=None, oper=''):
@@ -31,6 +38,11 @@ class VnCfg(object):
         if not args_str:
             args_str = ' '.join(sys.argv[1:])
         self._parse_args(args_str)
+
+        if self._args.oper == 'add-bgp-router' or 'del-bgp-router':
+            proj_name = 'admin'
+        else:
+            proj_name = 'demo'
 
         if self._quantum == None:
             httpclient = HTTPClient(username='admin',
@@ -53,7 +65,7 @@ class VnCfg(object):
                                    api_server_port=self._args.api_server_port,
                                    api_server_url='/',
                                    auth_host=self._args.api_server_ip)
-
+           
             self._proj_obj = self._vnc_lib.project_read(
                 fq_name=['default-domain', 'default-project'])
             self._ipam_obj = self._vnc_lib.network_ipam_read(
@@ -65,35 +77,103 @@ class VnCfg(object):
             self._delete_vn(self._args.vn_name)
         elif self._args.oper == 'add-list':
             self._create_vn_list(self._args.vn_list)
+        elif self._args.oper == 'add-bgp-router':
+            self._create_bgp_router(self._args.rtr_type, self._args.rtr_name, self._args.rtr_ip, self._args.rtr_asn, 
+             [self._args.rtr_peers])
+        elif self._args.oper == 'del-bgp-router':
+            self._delete_bgp_router(self._args.rtr_name)
+
 
     # end __init__
 
-    # def _create_vn(self, vn_name, vn_subnet):
-    #    print "Creating network %s, subnet %s" %(vn_name, vn_subnet)
-    #    net_req = {'name': '%s' %(vn_name)}
-    #    net_rsp = self._quantum.create_network({'network': net_req})
-    #    net1_id = net_rsp['network']['id']
-    #    net1_fq_name = net_rsp['network']['fq_name']
-    #    net1_fq_name_str = ':'.join(net1_fq_name)
-    #    self._create_subnet(unicode(vn_subnet), net1_id)
-    # end _create_vn
+    def _delete_bgp_router(self, router_name):
+        vnc_lib = self._vnc_lib
 
-    # def _delete_vn(self, vn_name):
-    #    print "Deleting network %s" %(vn_name)
+        rt_inst_obj = self._get_rt_inst_obj()
 
-    #    net_id = 0
-    #    net_rsp = self._quantum.list_networks()
-    #    for (x,y) in [(network['name'], network['id']) for network in net_rsp['networks']]:
-    #        if vn_name == x :
-    #            net_id = y
-    #            break
-    #    if net_id:
-    #        net_rsp = self._quantum.delete_network(net_id)
-    #    else:
-    #        print "Error deleting network, may not exist.. %s" %(vn_name)
+        fq_name = rt_inst_obj.get_fq_name() + [router_name]
+        cur_obj = vnc_lib.bgp_router_read(fq_name=fq_name)
 
-    # end _delete_vn
+        vnc_lib.bgp_router_delete(id=cur_obj.uuid)
+        
+    def _create_bgp_router(self, router_type, router_name, router_ip,
+                       router_asn, peer_list = [], address_families=[], md5=None):
+        if not address_families:
+            address_families = ['route-target', 'inet-vpn', 'e-vpn', 'erm-vpn',
+                                'inet6-vpn']
+            if router_type != 'control-node':
+                address_families.remove('erm-vpn')
 
+        if router_type != 'control-node':
+            if 'erm-vpn' in address_families:
+                raise RuntimeError("Only contrail bgp routers can support "
+                                   "family 'erm-vpn'")
+        bgp_addr_fams = AddressFamilies(address_families)
+
+        bgp_sess_attrs = [
+            BgpSessionAttributes(address_families=bgp_addr_fams)]
+        bgp_sessions = [BgpSession(attributes=bgp_sess_attrs)]
+        bgp_peering_attrs = BgpPeeringAttributes(session=bgp_sessions)
+
+        rt_inst_obj = self._get_rt_inst_obj()
+
+        vnc_lib = self._vnc_lib
+
+        if router_type == 'control-node':
+            vendor = 'contrail'
+        elif router_type == 'router':
+            vendor = 'ixia'
+        else:
+            vendor = 'unknown'
+
+        router_params = BgpRouterParams(router_type=router_type,
+            vendor=vendor, autonomous_system=int(router_asn),
+            identifier=get_ip(router_ip),
+            address=get_ip(router_ip),
+            port=179, address_families=bgp_addr_fams)
+
+        bgp_router_obj = BgpRouter(router_name, rt_inst_obj,
+                                   bgp_router_parameters=router_params)
+
+        if peer_list[0]:
+            for item in peer_list:
+                peer_obj = vnc_lib.bgp_router_read(
+                        fq_name = self.parent_fq_name + [item])
+                bgp_router_obj.add_bgp_router(peer_obj, bgp_peering_attrs)
+
+        # Return early with a log if it already exists
+        try:
+            fq_name = bgp_router_obj.get_fq_name()
+            existing_obj = vnc_lib.bgp_router_read(fq_name=fq_name)
+            if md5:
+                bgp_params = existing_obj.get_bgp_router_parameters()
+                # set md5
+                print "Setting md5 on the existing uuid"
+                md5 = {'key_items': [ { 'key': md5 ,"key_id":0 } ], "key_type":"md5"}
+                bgp_params.set_auth_data(md5)
+                existing_obj.set_bgp_router_parameters(bgp_params)
+                vnc_lib.bgp_router_update(existing_obj)
+            print ("BGP Router " + pformat(fq_name) +
+                   " already exists with uuid " + existing_obj.uuid)
+            return
+        except NoIdError:
+            pass
+
+        cur_id = vnc_lib.bgp_router_create(bgp_router_obj)
+
+
+    def _get_rt_inst_obj(self):
+        vnc_lib = self._vnc_lib
+
+        # TODO pick fqname hardcode from common
+        rt_inst_obj = vnc_lib.routing_instance_read(
+            fq_name=['default-domain', 'default-project',
+                     'ip-fabric', '__default__'])
+
+        return rt_inst_obj
+
+
+         
     def _delete_vn(self, vn_name):
         vn_fq_name = VirtualNetwork(vn_name, self._proj_obj).get_fq_name()
         try:
@@ -109,7 +189,7 @@ class VnCfg(object):
         subnet_req = {'network_id': net_id,
                       'cidr': cidr,
                       'ip_version': 4,
-                      'ipam_fq_name': ipam_fq_name}
+                      'contrail:ipam_fq_name': ipam_fq_name}
         subnet_rsp = self._quantum.create_subnet({'subnet': subnet_req})
         subnet_cidr = subnet_rsp['subnet']['cidr']
         return subnet_rsp['subnet']['id']
@@ -224,7 +304,12 @@ class VnCfg(object):
         parser.add_argument("--admin_tenant_name",
                             help="Tenamt name for keystone admin user")
         parser.add_argument("--vn_name", help="Name of the virtunal network")
-        parser.add_argument("--oper", help="Indicates add|del vn")
+        parser.add_argument("--oper", help="Indicates add-vn|del-vn|bgp-rtr-add|bgp-rtr-del")
+        parser.add_argument('--rtr_type', nargs='?', default='', type=str, help='router type')
+        parser.add_argument('--rtr_name', nargs='?', default='', type=str, help='router name')
+        parser.add_argument('--rtr_ip', nargs='?', default='', type=str, help='router ip')
+        parser.add_argument('--rtr_asn', nargs='?', default='64512', type=str, help='router asn')
+        parser.add_argument('--rtr_peers', nargs='?', default='', type=str, help='router peers')
 
         self._args = parser.parse_args(remaining_argv)
 
@@ -234,7 +319,7 @@ class VnCfg(object):
 
 
 def main(args_str=None):
-    VnCfg(args_str)
+    VnCfg()._run(args_str)
 # end main
 
 if __name__ == "__main__":
