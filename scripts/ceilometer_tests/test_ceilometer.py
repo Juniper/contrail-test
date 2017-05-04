@@ -85,6 +85,12 @@ class CeilometerTest(
         Verifying ceilometer sample - ip.floating.transmit.bytes
         Verifying ceilometer sample - ip.floating.receive.bytes"""
 
+        if os.environ.get('MX_GW_TEST', 0) != '1':
+            self.logger.info(
+                "Skipping Test. Env variable MX_GW_TEST is not set. Skipping the test")
+            raise self.skipTest(
+                "Skipping Test. Env variable MX_GW_TEST is not set. Skipping the test")
+
         self.logger.info('Sleeping for 1 mins for sample to be collected...')
         time.sleep(60)
         self.logger.info('Starting verification...')
