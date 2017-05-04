@@ -2,7 +2,6 @@
 Contrail feature specific utility methods
 '''
 
-
 def get_ri_name(vn_fq_name):
     '''
     Return RI name given a VN fq name
@@ -34,3 +33,4 @@ def get_interested_computes(connections, vn_fq_names=[]):
                                  for x in computes ]
     return interested_computes
 # end get_interested_computes
+

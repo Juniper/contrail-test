@@ -851,6 +851,11 @@ class Lock:
     def __del__(self):
         self.handle.close()
 
+    __enter__ = acquire
+
+    def __exit__(self, t, v, tb):
+        self.release()
+
 
 def read_config_option(config, section, option, default_option):
     ''' Read the config file. If the option/section is not present, return the default_option
@@ -1170,3 +1175,7 @@ def timeit(func):
             func.__name__, int(elapsedTime * 1000)))
         return result
     return newfunc
+
+def get_lock(cidr):
+    return Lock('/tmp/cidr_%s.lock' %(cidr.replace('/','_')))
+

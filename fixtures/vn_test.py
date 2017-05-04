@@ -12,7 +12,7 @@ import threading
 import sys
 from quantum_test import NetworkClientException
 from tcutils.test_lib.contrail_utils import get_interested_computes
-from cfgm_common.exceptions import PermissionDenied
+from cfgm_common.exceptions import PermissionDenied, RefsExistError
 try:
     from webui_test import *
 except ImportError:
@@ -1733,6 +1733,20 @@ class VNFixture(fixtures.Fixture):
             self.vn_fq_name, mac_aging_time))
         return mac_aging_time
     # end get_mac_aging_time
+
+    def alloc_ips(self, count=1):
+        try:
+            return self.vnc_lib_h.virtual_network_ip_alloc(self.api_vn_obj,
+                                                           count=count)
+        except RefsExistError,e:
+            self.logger.debug('No IP available to allocate in VN %s' %(
+                self.vn_name))
+            return None
+    # end alloc_ips
+
+    def free_ips(self, ip_list):
+        return self.vnc_lib_h.virtual_network_ip_free(self.api_vn_obj, ip_list)
+
 
 # end VNFixture
 

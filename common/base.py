@@ -43,8 +43,12 @@ class _GenericTestBaseMethods():
             obj.cleanUp()
     # end perform_cleanup
 
-    def check1(self):
-        pass
+    def alloc_ips(self, vn_fixture, count=1):
+        ret_val = vn_fixture.alloc_ips(count=count)
+        self.addCleanup(vn_fixture.free_ips, ret_val)
+        return ret_val
+    # end alloc_ips
+
 # end _GenericTestBaseMethods
 
 
@@ -444,6 +448,4 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         if obj and getattr(obj, 'created', False):
             return obj.cleanUp()
     # end cleanup
-
-
 
