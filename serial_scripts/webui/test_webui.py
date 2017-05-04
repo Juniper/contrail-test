@@ -2059,7 +2059,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         uuid_port = self.webui_common.get_ui_value('Ports', 'UUID', name=topo.port_list[0])
         self.webui.logger.debug("UUID before editing " + str(uuid_port))
         self.webui.logger.debug("Step 2 : Edit the port without changing anything")
-        if not self.webui_common.edit_without_change('Ports'):
+        if not self.webui_common.edit_without_change('Ports', display_name=topo.port_list[0]):
             self.webui.logger.debug('Editing Port failed')
             result = result and False
         self.webui.logger.debug("Step 3 : Verify WebUI and API server after editing")
