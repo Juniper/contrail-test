@@ -104,6 +104,8 @@ class BaseResource(fixtures.Fixture):
         assert self.vm1_fixture.verify_on_setup()
 
         # Adding further projects to floating IP.
+        if not getattr(self.public_vn_obj, 'fip_fixture', None):
+            return
         self.logger.info('Adding project %s to FIP pool %s' %
                          (self.inputs.project_name, fip_pool_name))
         project_obj = self.public_vn_obj.fip_fixture.assoc_project\
