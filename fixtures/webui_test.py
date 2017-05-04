@@ -2591,16 +2591,23 @@ class WebuiTest:
         return result
     # end verify_analytics_nodes_ops_advance_data_in_webui
 
-    def verify_vm_ops_basic_data(self):
+    def verify_vm_ops_basic_data(self, option='instances'):
         network_name = 'all networks'
         self.logger.info(
             "Verifying instances opserver data on Monitor->Networking->Instances summary (basic view) page ..")
         self.logger.debug(self.dash)
-        if not self.ui.click_monitor_instances():
+        if option == 'dashboard':
+            click_func = 'networking_dashboard'
+        else:
+            click_func = 'networks'
+        if not eval('self.ui.click_monitor_' + click_func)('instances'):
             result = result and False
+        self.project_name_input = 'ctest-WebuiTestSanity-40417827'
         self.ui.select_project(self.project_name_input)
-        self.ui.select_network(network_name)
-        rows = self.ui.get_rows()
+        if option != 'dashboard':
+            self.ui.select_network(network_name)
+        br = self.ui.select_max_records('instances')
+        rows = self.ui.get_rows(br)
         vm_list_ops = self.ui.get_vm_list_ops()
         vmi_list_ops = self.ui.get_vmi_list_ops()
         result = True
@@ -2608,11 +2615,22 @@ class WebuiTest:
             ops_uuid = vm_list_ops[k]['name']
             vm_ops_data = self.ui.get_details(
                 vm_list_ops[k]['href'])
-            ops_data = vm_ops_data['UveVirtualMachineAgent']
+            if 'UveVirtualMachineAgent' in vm_ops_data:
+                ops_data = vm_ops_data['UveVirtualMachineAgent']
+            else:
+                continue
             vmname = ops_data['vm_name']
-            if not self.ui.click_monitor_instances():
+            if option == 'dashboard':
+                click_func = 'networking_dashboard'
+            else:
+                click_func = 'networks'
+            if not eval('self.ui.click_monitor_' + click_func)('instances'):
                 result = result and False
-            rows = self.ui.get_rows()
+            self.ui.select_project(self.project_name_input)
+            if option != 'dashboard':
+                self.ui.select_network(network_name)
+            br = self.ui.select_max_records('instances')
+            rows = self.ui.get_rows(br)
             self.logger.info(
                 "Vm uuid %s exists in opserver..checking if exists in webui as well" %
                 (ops_uuid))
@@ -2637,35 +2655,30 @@ class WebuiTest:
                     (vmname))
                 self.logger.debug(self.dash)
             else:
-                self.ui.click_monitor_instances_basic(
-                    match_index,
-                    length=len(vm_list_ops))
+                rows_detail = self.ui.click_basic_and_get_row_details(click_func, match_index,
+                              search_ele='project-instances', browser=br, project='instances',
+                              click_tab='monitor')[1]
                 self.logger.info(
                     "Verify instances basic view details for vm %s " %
                     (vmname))
-                dom_arry_basic = {}
-                ui_list = []
-                item_list = self.ui.find_element(
-                    'item-list',
-                    'class',
-                    elements=True)
-                for index in range(len(item_list)):
-                    intf_dict = {}
-                    label = self.ui.find_element(
-                        'label',
-                        'tag',
-                        browser=item_list[index],
-                        elements=True)
-                    for lbl in label:
-                        key = self.ui.find_element('key', 'class', browser=lbl)
-                        value = self.ui.find_element(
-                            'value',
-                            'class',
-                            browser=lbl)
-                        intf_dict[key.text] = value.text
-                    self.ui.extract_keyvalue(intf_dict, ui_list)
-                    self.ui.type_change(ui_list)
-
+                dom_arry_basic = []
+                for detail in range(len(rows_detail)):
+                    key_value = rows_detail[detail].text.split('\n')
+                    key = str(key_value.pop(0))
+                    if len(key_value) > 1 :
+                        value = key_value
+                    elif len(key_value) ==  1:
+                        value = key_value[0]
+                    else:
+                        value = None
+                    if key in ['Active', 'Health Check Active']:
+                        if key == 'Active':
+                            key = 'Interface Active'
+                        if value == ' true':
+                            value = 'True'
+                        else:
+                            value = 'False'
+                    dom_arry_basic.append({'key': key, 'value': value})
                 intf_dict = {}
                 intf_dict['CPU Utilization (%)'] = vm_ops_data['VirtualMachineStats'][
                     'cpu_stats'][0]['cpu_one_min_avg']
@@ -2675,23 +2688,29 @@ class WebuiTest:
                 intf_dict['Total Memory'] = self.ui.get_memory_string(
                     vm_ops_data['VirtualMachineStats']['cpu_stats'][0]['vm_memory_quota'],
                     'KB')
-
                 vn_names = None
                 ip_addresses = None
                 for k in range(len(vmi_list_ops)):
                     vmi_ops_data = self.ui.get_details(
                         vmi_list_ops[k]['href'])
-                    ops_data_interface_list = vmi_ops_data[
-                        'UveVMInterfaceAgent']
-                    vmname_vmi = ops_data_interface_list['vm_name']
-                    if vmname_vmi == vmname:
-                        vn_name = ops_data_interface_list['virtual_network']
-                        vn_name = vn_name.split(':')
-                        vnname = vn_name[2] + ' (' + vn_name[1] + ')'
-                        vn_names = self.ui.append_to_string(vn_names, vnname, ',')
-                        ip_addr = ops_data_interface_list['ip_address']
-                        ip_addresses = self.ui.append_to_string(ip_addresses, ip_addr, ',')
-
+                    if 'UveVMInterfaceAgent' in vmi_ops_data:
+                        ops_data_interface_list = vmi_ops_data[
+                            'UveVMInterfaceAgent']
+                        vmname_vmi = ops_data_interface_list['vm_name']
+                        if vmname_vmi == vmname:
+                            vn_name = ops_data_interface_list['virtual_network']
+                            vn_name = vn_name.split(':')
+                            vnname = vn_name[2] + ' (' + vn_name[1] + ')'
+                            vn_names = self.ui.append_to_string(vn_names, vnname, ',')
+                            ip_addr = ops_data_interface_list['ip_address']
+                            ip_addresses = self.ui.append_to_string(ip_addresses, ip_addr, ',')
+                            state = ops_data_interface_list['active']
+                            mac_addr = vmi_ops_data['ContrailConfig']['elements'][
+                                       'virtual_machine_interface_mac_addresses']
+                            mac_addr_reg = re.search(('(\w+\:)+\w+'), mac_addr)
+                            mac_addr = mac_addr_reg.group()
+                            health_check = ops_data_interface_list['is_health_check_active']
+                            break
                 ops_list = []
                 intf_dict['UUID'] = ops_data['uuid']
                 intf_dict['Label'] = ops_data['vrouter']
@@ -2699,17 +2718,18 @@ class WebuiTest:
                     vm_ops_data['UveVirtualMachineAgent']['interface_list'])
                 intf_dict['IP Address'] = ip_addresses
                 intf_dict['Virtual Networks'] = vn_names
+                intf_dict['Interface Active'] = state
+                intf_dict['MAC Address'] = mac_addr
+                intf_dict['Health Check Active'] = health_check
                 self.ui.extract_keyvalue(intf_dict, ops_list)
                 self.ui.type_change(ops_list)
                 if self.ui.match_ui_values(
-                        ops_list, ui_list):
+                        ops_list, dom_arry_basic):
                     self.logger.info("VM basic view data matched")
-
                 else:
                     self.logger.error(
                         "VM basic data match failed")
                     result = result and False
-
         return result
     # end verify_vm_ops_basic_data
 
@@ -10008,6 +10028,9 @@ class WebuiTest:
             for row in range(len(rows)):
                 dom_arry_basic = []
                 match_flag = 0
+                if self.ui.find_element('div', 'tag', browser=rows[row], \
+                       elements=True)[2].text == self.inputs.auth_ip:
+                    continue
                 text = self.ui.find_element('div', 'tag', browser=rows[row], elements=True)[5].text
                 if api_fq_name == text:
                     self.logger.info(
