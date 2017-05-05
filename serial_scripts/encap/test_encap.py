@@ -154,13 +154,15 @@ class TestEncapCases(base.BaseEncapTest):
             self.logger.info(
                 "BGP Peer configuraion done and trying to outside the VN cluster")
             self.logger.info("Now trying to ping %s" % (self.inputs.public_host))
-            self.tcpdump_start_on_all_compute()
+            if not self.inputs.pcap_on_vm:
+                self.tcpdump_start_on_all_compute()
             if not vm1_fixture.ping_with_certainty(
                     self.inputs.public_host,
                     count='15'):
                 result = result and False
             comp_vm1_ip = vm1_fixture.vm_node_ip
-            self.tcpdump_analyze_on_compute(comp_vm1_ip, 'GRE')
+            if not self.inputs.pcap_on_vm:
+                self.tcpdump_analyze_on_compute(comp_vm1_ip, 'GRE')
             fip_fixture.disassoc_and_delete_fip(fip_id)
             if not result:
                 self.logger.error(
