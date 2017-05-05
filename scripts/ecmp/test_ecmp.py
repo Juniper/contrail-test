@@ -739,7 +739,12 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
                 svms.remove(None)
             new_count = len(svms)
             errmsg = 'The SVMs count has not decreased'
-            assert new_count < old_count, errmsg
+            res, svms = self.get_svm_count(old_count-1)
+            assert res, errmsg
+            sleep(10)
+            svms = self.get_svms_in_si(
+                self.si_fixtures[0], self.inputs.project_name)
+            svms = filter(None, svms)
             self.logger.info('The Service VMs in the Service Instance %s are %s' % (
                 si_fixture.si_name, svms))
             svm_ids = []
