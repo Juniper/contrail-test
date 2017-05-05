@@ -36,6 +36,8 @@ class VerifySvcChain(ConfigSvcChain):
         5]. The src is required because for Transparent SIs, the left and right VNs 
             are different from those in the Service Chain.
         '''
+        if si.svc_template.get_service_template_properties().service_type == 'analyzer':
+            return True, "Skip this check for Analyser"
         vn1 = self.connections.vnc_lib_fixture.virtual_network_read(
             fq_name=vn_fq_name.split(':'))
         ri_list = []
