@@ -394,6 +394,7 @@ if [[ ! -z $path ]];then
             run_tests $p
             run_tests_serial $p
             python tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
+            parse_results
             generate_html 
             collect_tracebacks
             upload_to_web_server
