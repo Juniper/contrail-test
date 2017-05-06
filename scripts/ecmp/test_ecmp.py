@@ -766,15 +766,13 @@ class TestECMPwithSVMChange(BaseECMPTest, VerifySvcFirewall, ECMPSolnSetup, ECMP
             si_obj.set_service_instance_properties(si_prop)
             self.vnc_lib.service_instance_update(si_obj)
 #            svms[-1].delete()  Instead of deleting the SVMs, we will reduce the max_inst
+            errmsg = 'The SVMs count has not decreased'
+            res, svms = self.get_svm_count(old_count-1)
+            assert res, errmsg
             sleep(10)
             svms = self.get_svms_in_si(
                 self.si_fixtures[0], self.inputs.project_name)
-            svms = sorted(set(svms))
-            if None in svms:
-                svms.remove(None)
-            new_count = len(svms)
-            errmsg = 'The SVMs count has not decreased'
-            assert new_count < old_count, errmsg
+            svms = filter(None, svms)
             self.logger.info('The Service VMs in the Service Instance %s are %s' % (
                 self.si_fixtures[0].si_name, svms))
             svm_ids = []
