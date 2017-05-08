@@ -729,10 +729,10 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
             old_count = len(svms)
             self.logger.info(
                 'Will reduce the SVM count from %s to %s' % (old_count, len(svms) - 1))
-            ret_dict['svm_fixtures'][len(svms) - 1].cleanUp()
-            self.remove_from_cleanups(
-                ret_dict['svm_fixtures'][len(svms) - 1].cleanUp)
-            self.sleep(10)
+            to_be_deleted_svm = ret_dict['svm_fixtures'][len(svms) - 1]
+            to_be_deleted_svm.cleanUp()
+            self.remove_from_cleanups(to_be_deleted_svm.cleanUp)
+            to_be_deleted_svm.verify_cleared_from_setup(verify=True)
             svms = self.get_svms_in_si(si_fixture)
             svms = sorted(set(svms))
             if None in svms:
