@@ -1560,12 +1560,20 @@ class TestBasicVMVN4(BaseVnVmTest):
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
         filters = '\'(arp and src host 0.0.0.0)\''
-        session, pcap = start_tcpdump_for_vm_intf(self, vm2_fixture,
-                                vn_fq_name = vn_fixture.vn_fq_name, filters = filters)
+        if not self.inputs.pcap_on_vm:
+            session, pcap = start_tcpdump_for_vm_intf(self, vm2_fixture,
+                                    vn_fq_name = vn_fixture.vn_fq_name, filters = filters)
+        else:
+            vm_fix_pcap_pid_files = start_tcpdump_for_vm_intf(
+                self, [vm2_fixture], None, filters=filters, pcap_on_vm=True)
         i = 'arping -c 10 %s -S 0.0.0.0 -t ff:ff:ff:ff:ff:ff' % vm2_fixture.vm_ip
         cmd_to_output = [i]
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
-        assert verify_tcpdump_count(self, session, pcap, exp_count=10)
+        if not self.inputs.pcap_on_vm:
+            assert verify_tcpdump_count(self, session, pcap, exp_count=10)
+        else:
+            assert verify_tcpdump_count(
+                self, None, pcap='eth0', exp_count=10, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
         return True
     # end test_gratuitous_arp
 
@@ -2540,14 +2548,23 @@ class TestBasicVMVN9(BaseVnVmTest):
         vm1_tapintf = vm1_fixture.tap_intf[vn1_fixture.vn_fq_name]['name']
         cmd = 'tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log' % (vm1_tapintf,
                                                                    vm1_tapintf)
-        execute_cmd(session, cmd, self.logger)
+        if not self.inputs.pcap_on_vm:
+            execute_cmd(session, cmd, self.logger)
+        else:
+            vm_fix_pcap_pid_files = start_tcpdump_for_vm_intf(
+                self, [vm1_fixture], None, filters='icmp -vvv -c 2', pcap_on_vm=True)
 
         self.logger.info('%%%%%%%%%% Will start a ping from %s to 1.2.3.4 %%%%%%%%%%' %
-                         vm2_fixture.vm_name)
+                             vm2_fixture.vm_name)
         vm2_fixture.ping_with_certainty('1.2.3.4', expectation=False)
         self.logger.info('%%%%%%%%%% Will check the result of tcpdump %%%%%%%%%%')
         output_cmd = 'cat /tmp/%s_out.log' % vm1_tapintf
-        output, err = execute_cmd_out(session, output_cmd, self.logger)
+        if not self.inputs.pcap_on_vm:
+            output, err = execute_cmd_out(session, output_cmd, self.logger)
+        else:
+            output, pkt_count = stop_tcpdump_for_vm_intf(
+                None, None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
+            output = output[0]
         print output
         if '1.2.3.4' in output:
             self.logger.info(
