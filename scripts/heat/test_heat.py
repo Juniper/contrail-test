@@ -78,13 +78,13 @@ try:
             for i, svc in enumerate(left_svcs):
                 si = self.config_svc_instance('sil_%d' % i, svc_tmpls[svc]['tmpl'], vn_list1)
                 left_sis.append(si)
-                if svc == 'in-network' or svc == 'in-network-nat':
+                if svc in ['in-network', 'in-network-nat']:
                     self.add_route_in_svm(si[0], [right_net_fix, 'eth2'])
             right_sis = []
             for i, svc in enumerate(right_svcs):
                 si = self.config_svc_instance('sir_%d' % i, svc_tmpls[svc]['tmpl'], vn_list2)
                 right_sis.append(si)
-                if svc == 'in-network':
+                if svc in ['in-network', 'in-network-nat']:
                     self.add_route_in_svm(si[0], [left_net_fix, 'eth1'])
             left_si_names = [(':').join(si[0].si_fq_name) for si in left_sis]
             right_si_names = [(':').join(si[0].si_fq_name) for si in right_sis]
