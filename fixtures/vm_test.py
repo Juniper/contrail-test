@@ -2649,6 +2649,9 @@ class VMFixture(fixtures.Fixture):
                 vna_tap_id = inspect_h.get_vna_tap_interface_by_vmi(
                     vmi_id=self.cs_vmi_obj[vn_fq_name][
                         'virtual-machine-interface']['uuid'])
+                if not vna_tap_id:
+                    self.logger.warn("Unable to fetch tap interface info")
+                    return False
                 self.tap_intf[vn_fq_name] = vna_tap_id[0]
                 self.tap_intf[vn_fq_name] = inspect_h.get_vna_intf_details(
                     self.tap_intf[vn_fq_name]['name'])[0]
