@@ -1248,34 +1248,28 @@ class WebuiCommon:
                 [element0, element1], ['class', 'tag'], br, if_elements=[0], delay=25)
     # end click_icon_caret
 
-    def click_monitor_instances_basic(self, row_index, length=None):
-        self.click_monitor_instances()
-        self.wait_till_ajax_done(self.browser)
-        self.click_icon_caret(row_index, length=length, net=1)
-    # end click_monitor_instances_basic_in_webui
-
     def select_max_records(self, option='networks'):
-        self.click_element('slick-pager-sizes', 'class')
-        select_result = "//li[contains(@class,'select2-results-dept-0')]"
-        self.click_element(select_result, 'xpath', elements=True, index=3)
         grid_br = self.find_element('project-' + option)
         br = self.find_element('grid-canvas', 'class', browser=grid_br)
+        self.click_element('slick-pager-sizes', 'class', browser=grid_br)
+        select_result = "//li[contains(@class,'select2-results-dept-0')]"
+        self.click_element(select_result, 'xpath', elements=True, index=3)
         self.browser.execute_script("return arguments[0].scrollIntoView();", br)
         return br
     # end select_max_records
 
-    def click_monitor_networking_dashboard_basic(self, row_index):
-        self.click_monitor_networking_dashboard()
-        self.select_max_records()
-        self.click_icon_caret(row_index, net=1)
+    def click_monitor_networking_dashboard_basic(self, row_index, option='networks'):
+        self.click_monitor_networking_dashboard(option)
+        br = self.select_max_records(option)
+        self.click_icon_caret(row_index, net=1, obj=br)
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_networks_dashboard_basic
 
-    def click_monitor_networks_basic(self, row_index):
-        self.click_element('Networks', 'link_text', jquery=False)
+    def click_monitor_networks_basic(self, row_index, option='networks'):
+        self.click_element(option.title(), 'link_text', jquery=False)
         self.wait_till_ajax_done(self.browser, wait=2)
-        self.select_max_records()
-        self.click_icon_caret(row_index, net=1)
+        br = self.select_max_records(option)
+        self.click_icon_caret(row_index, net=1, obj=br)
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_instances_basic_in_webui
 
