@@ -288,7 +288,7 @@ class BaseVrouterTest(BaseNeutronTest):
         pcap = {}
         compute_node_ips = []
         compute_fixtures = []
-        proto = 'icmp'
+        proto = 'icmp' if (self.inputs.get_af() == 'v4') else 'icmp6'
         errmsg = "Ping to right VM ip %s from left VM failed" % dest_ip
         dest_ip = dest_ip or dest_vm_fix.vm_ip
 

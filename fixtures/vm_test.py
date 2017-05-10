@@ -2327,7 +2327,7 @@ class VMFixture(fixtures.Fixture):
 
     @retry(delay=6, tries=10)
     def run_nc_with_retry(self, nc_cmd, retry=False):
-        output = self.run_cmd_on_vm(cmds=[nc_cmd])
+        output = self.run_cmd_on_vm(cmds=[nc_cmd], as_sudo=True)
         if retry and output and output[nc_cmd]:
             if "bind failed: Address already in use" in output[nc_cmd]:
                 return False
