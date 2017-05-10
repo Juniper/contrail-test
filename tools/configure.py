@@ -4,6 +4,7 @@ import sys
 import string
 import json
 import os
+import re
 import platform
 from fabric.api import env, run, local, lcd, get
 from fabric.context_managers import settings, hide
@@ -29,11 +30,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     """
     print "Configuring test environment"
     sys.path.insert(0, contrail_fab_path)
-    if hasattr(env, 'mytestbed'):
-         tbd = __import__('fabfile.testbeds.%s' % env.mytestbed)
-         testbed=eval('tbd.testbeds.' + getattr(env, 'mytestbed'))
-    else:
-        from fabfile.testbeds import testbed
+    from fabfile.config import testbed
     from fabfile.utils.host import get_openstack_internal_vip, \
         get_control_host_string, get_authserver_ip, get_admin_tenant_name, \
         get_authserver_port, get_env_passwords, get_authserver_credentials, \
@@ -645,35 +642,70 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         update_js_config('openstack', '/etc/contrail/config.global.js',
                          'contrail-webui', container=container)
 
+open_delimiters = ['(', '[', '{']
+close_delimiters = [')', ']', '}']
+
+def getindices(string):
+    delimiters = open_delimiters + close_delimiters
+    pattern = '{}'.format('|'.join(map(re.escape, delimiters)))
+    indices = [(it.start(), string[it.start()])
+               for it in re.finditer(pattern, string, re.M|re.S)]
+    return indices
+
+def get_section(string, pattern):
+    block = list()
+    match = re.search(pattern, string, re.M|re.S)
+    if not match:
+        return None, None
+    match_end = match.end()
+    indices = getindices(string)
+    for index in range(len(indices)):
+        delimiter_tuple = indices[index]
+        if delimiter_tuple[0] < match_end:
+            continue
+        if delimiter_tuple[1] in open_delimiters:
+            block.append(delimiter_tuple[0])
+        else:
+            if len(block) == 1:
+                return (match.start(), delimiter_tuple[0]+1)
+            block.pop()
+    return (None, None)
+
 def testbed_format_conversion(path='/opt/contrail/utils'):
     tb_file = path + '/fabfile/testbeds/testbed.py'
     tb_file_tmp = path + '/fabfile/testbeds/testbed_new.py'
 
     #check if file already has both parameter version.
-    fr=open(tb_file)
-    ftxt=fr.read()
-    if (('contrail-controller' in ftxt) and ('cfgm' in ftxt)):
-        fr.close()
+    with open(tb_file) as fd:
+        tb = fd.read()
+    # Trim the comments
+    tb = re.sub('#.*\n', '\n', tb)
+    tb = re.sub('^\s*\n', '', tb, flags=re.M)
+    with open(tb_file+'.cmp', 'w') as fd:
+        fd.write(tb)
+    # Find roledefs section
+    start, end = get_section(tb, 'env.roledefs')
+    if not start:
         return True
-    fr.close()
-
-    fr=open(tb_file)
-    fw=open(tb_file_tmp, 'w')
-
-    for line in fr:
-        if 'contrail-controller' in line:
-            fw.write(line.replace('contrail-controller', 'cfgm'))
-            fw.write(line.replace('contrail-controller', 'control'))
-            fw.write(line.replace('contrail-controller', 'webui'))
-        if 'contrail-analytics\'' in line:
-            fw.write(line.replace('contrail-analytics', 'collector'))
-        if 'contrail-analyticsdb' in line:
-            fw.write(line.replace('contrail-analyticsdb', 'database'))
-        if 'contrail-compute' in line:
-            fw.write(line.replace('contrail-compute', 'compute'))
-        fw.write(line)
-    fr.close()
-    fw.close()
+    block = tb[start:end]
+    # Find contrail-controller section
+    match = re.search('contrail-controller.*?].*?,', block, re.M|re.S)
+    if not match:
+        return True
+    ctrl_start = match.start()
+    ctrl_end = match.end()
+    ctrl_block = block[ctrl_start-1:ctrl_end]
+    # Replace role names
+    ctrl_block = ctrl_block.replace('contrail-controller', 'cfgm') + \
+                 ctrl_block.replace('contrail-controller', 'control') + \
+                 ctrl_block.replace('contrail-controller', 'webui')
+    roledef_block = block[:ctrl_start-1] + ctrl_block + block[ctrl_end:]
+    roledef_block = roledef_block.replace('contrail-analyticsdb', 'database')
+    roledef_block = roledef_block.replace('contrail-analytics', 'collector')
+    roledef_block = roledef_block.replace('contrail-compute', 'compute')
+    new_tb = tb[:start] + roledef_block + tb[end:]
+    with open(tb_file_tmp, 'w') as fd:
+        fd.write(new_tb)
     env.mytestbed = 'testbed_new'
 
 # end testbed_format_conversion
