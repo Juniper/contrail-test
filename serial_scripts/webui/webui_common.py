@@ -1248,34 +1248,28 @@ class WebuiCommon:
                 [element0, element1], ['class', 'tag'], br, if_elements=[0], delay=25)
     # end click_icon_caret
 
-    def click_monitor_instances_basic(self, row_index, length=None):
-        self.click_monitor_instances()
-        self.wait_till_ajax_done(self.browser)
-        self.click_icon_caret(row_index, length=length, net=1)
-    # end click_monitor_instances_basic_in_webui
-
     def select_max_records(self, option='networks'):
-        self.click_element('slick-pager-sizes', 'class')
-        select_result = "//li[contains(@class,'select2-results-dept-0')]"
-        self.click_element(select_result, 'xpath', elements=True, index=3)
         grid_br = self.find_element('project-' + option)
         br = self.find_element('grid-canvas', 'class', browser=grid_br)
+        self.click_element('slick-pager-sizes', 'class', browser=grid_br)
+        select_result = "//li[contains(@class,'select2-results-dept-0')]"
+        self.click_element(select_result, 'xpath', elements=True, index=3)
         self.browser.execute_script("return arguments[0].scrollIntoView();", br)
         return br
     # end select_max_records
 
-    def click_monitor_networking_dashboard_basic(self, row_index):
-        self.click_monitor_networking_dashboard()
-        self.select_max_records()
-        self.click_icon_caret(row_index, net=1)
+    def click_monitor_networking_dashboard_basic(self, row_index, option='networks'):
+        self.click_monitor_networking_dashboard(option)
+        br = self.select_max_records(option)
+        self.click_icon_caret(row_index, net=1, obj=br)
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_networks_dashboard_basic
 
-    def click_monitor_networks_basic(self, row_index):
-        self.click_element('Networks', 'link_text', jquery=False)
+    def click_monitor_networks_basic(self, row_index, option='networks'):
+        self.click_element(option.title(), 'link_text', jquery=False)
         self.wait_till_ajax_done(self.browser, wait=2)
-        self.select_max_records()
-        self.click_icon_caret(row_index, net=1)
+        br = self.select_max_records(option)
+        self.click_icon_caret(row_index, net=1, obj=br)
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_instances_basic_in_webui
 
@@ -1283,7 +1277,7 @@ class WebuiCommon:
         self.click_monitor()
         self.click_element(
             ['mon_infra_vrouter', 'Virtual Routers'], ['id', 'link_text'])
-        time.sleep(1)
+        self.wait_till_ajax_done(self.browser, wait=10)
         return self.check_error_msg("monitor vrouters")
     # end click_monitor_vrouters_in_webui
 
@@ -1291,7 +1285,7 @@ class WebuiCommon:
         self.click_monitor()
         self.click_element('mon_infra_dashboard')
         self.screenshot("dashboard")
-        time.sleep(1)
+        self.wait_till_ajax_done(self.browser, wait=10)
         return self.check_error_msg("monitor dashboard")
     # end click_monitor_dashboard_in_webui
 
@@ -1306,7 +1300,7 @@ class WebuiCommon:
         self.click_monitor()
         self.click_element(
             ['mon_infra_config', 'Config Nodes'], ['id', 'link_text'])
-        time.sleep(1)
+        self.wait_till_ajax_done(self.browser, wait=10)
         return self.check_error_msg("monitor config nodes")
     # end click_monitor_config_nodes_in_webui
 
@@ -1314,7 +1308,7 @@ class WebuiCommon:
         self.click_monitor()
         self.click_element(
             ['mon_infra_control', 'Control Nodes'], ['id', 'link_text'])
-        time.sleep(1)
+        self.wait_till_ajax_done(self.browser, wait=10)
         return self.check_error_msg("monitor control nodes")
     # end click_monitor_control_nodes_in_webui
 
@@ -1322,6 +1316,7 @@ class WebuiCommon:
         self.click_monitor()
         self.click_element(
             ['mon_infra_analytics', 'Analytics Nodes'], ['id', 'link_text'])
+        self.wait_till_ajax_done(self.browser, wait=10)
         return self.check_error_msg("monitor analytics nodes")
     # end click_monitor_analytics_nodes_in_webui
 
@@ -1756,8 +1751,7 @@ class WebuiCommon:
         children = self.find_element(
             ['menu', 'item'], ['id', 'class'], if_elements=[1])
         children[2].find_element_by_tag_name('span').click()
-        self.wait_till_ajax_done(self.browser)
-        time.sleep(5)
+        self.wait_till_ajax_done(self.browser, wait=10)
     # end click_monitor_debug
 
     def click_monitor_packet_capture(self):
@@ -1772,15 +1766,14 @@ class WebuiCommon:
         children = self.find_element(
             ['menu', 'item'], ['id', 'class'], if_elements=[1])
         children[1].find_element_by_tag_name('span').click()
-        time.sleep(5)
-        self.wait_till_ajax_done(self.browser)
+        self.wait_till_ajax_done(self.browser, wait=10)
     # end click_monitor_in_webui
 
     def click_monitor_networks(self, option='networks'):
         self.click_monitor_networking()
         self.click_element(
             ['mon_networking_' + option, option.title()], ['id', 'link_text'])
-        time.sleep(1)
+        self.wait_till_ajax_done(self.browser, wait=10)
         return self.check_error_msg("monitor networks")
     # end click_monitor_networks_in_webui
 
@@ -1788,8 +1781,7 @@ class WebuiCommon:
         self.click_monitor_networking()
         self.click_element(
             ['mon_networking_instances', 'Instances'], ['id', 'link_text'])
-        self.wait_till_ajax_done(self.browser)
-        time.sleep(2)
+        self.wait_till_ajax_done(self.browser, wait=10)
         return self.check_error_msg("monitor_instances")
     # end click_monitor_instances_in_webui
 
@@ -1842,6 +1834,7 @@ class WebuiCommon:
     # end click_monitor_analytics_nodes_advance_in_webui
 
     def click_monitor_common_advance(self, row_index):
+        self.wait_till_ajax_done(self.browser, wait=10)
         self.click_icon_caret(row_index)
         self.click_element(["div[class*='widget-box transparent']", \
             'fa-cog'], ['css', 'class'])
@@ -1850,8 +1843,7 @@ class WebuiCommon:
     # end click_monitor_common_advance_in_webui
 
     def click_monitor_common_basic(self, row_index):
-        self.wait_till_ajax_done(self.browser)
-        time.sleep(3)
+        self.wait_till_ajax_done(self.browser, wait=10)
         self.click_icon_caret(row_index)
         self.click_element(["div[class*='widget-box transparent']", \
             'fa-cog'], ['css', 'class'])
@@ -1862,6 +1854,7 @@ class WebuiCommon:
     def click_monitor_networks_advance(self, row_index):
         self.click_element('Networks', 'link_text')
         self.check_error_msg("monitor networks")
+        self.wait_till_ajax_done(self.browser, wait=10)
         self.click_icon_caret(row_index, net=1)
         rows = self.get_rows()
         self.click_element('fa-code', 'class', browser=rows[row_index + 1])
