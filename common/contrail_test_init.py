@@ -70,6 +70,8 @@ class TestInputs(object):
         self.logger = logger or contrail_logging.getLogger(__name__)
         self.orchestrator = read_config_option(self.config,
                                                'Basic', 'orchestrator', 'openstack')
+        self.slave_orchestrator = read_config_option(self.config,
+                                                     'Basic', 'slave_orchestrator', None)
         self.prov_file = read_config_option(self.config,
                                             'Basic', 'provFile', None)
         self.key = read_config_option(self.config,

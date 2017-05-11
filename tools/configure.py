@@ -118,6 +118,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         'tor':[],
         'sriov':[],
         'dpdk':[],
+        'kubernetes':[],
     }
 
     sample_ini_file = test_dir + '/' + 'sanity_params.ini.sample'
@@ -240,7 +241,11 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     #get dpdk info
     if env.has_key('dpdk'):
         sanity_testbed_dict['dpdk'].append(env.dpdk)
-
+   
+    #get k8s info
+    if env.has_key('kubernetes'):
+        sanity_testbed_dict['kubernetes'].append(env.kubernetes)
+ 
     # Read ToR config
     sanity_tor_dict = {}
     if env.has_key('tor_agent'):
@@ -309,6 +314,10 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     if env.has_key('hosts_ipmi'):
         sanity_testbed_dict['hosts_ipmi'].append(env.hosts_ipmi)
 
+    # Setting slave orch to k8s when key present   
+    if env.has_key('kubernetes'):
+        if  sanity_testbed_dict['kubernetes'][0]['mode'] == 'nested':
+            slave_orch = 'kubernetes'
 
     if not getattr(env, 'test', None):
         env.test={}
@@ -547,6 +556,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
          '__gc_user_name__'        : gc_user_name,
          '__gc_user_pwd__'         : gc_user_pwd,
          '__keystone_password__'   : keystone_password,
+         '__slave_orch__'          : slave_orch,
 
         })
 
@@ -622,12 +632,12 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
 
     # For now, assume first config node is same as kubernetes master node
     # Get kube config file to the testrunner node
-    if orch == 'kubernetes':
+    if orch == 'kubernetes' or slave_orch == 'kubernetes':
         if not os.path.exists(kube_config_file):
             dir_name = os.path.dirname(kube_config_file)
             if not os.path.exists(dir_name):
                 os.makedirs(dir_name)
-            with settings(host_string = env.roledefs['cfgm'][0]):
+            with settings(host_string = env.kubernetes['master']):
                 get(kube_config_file, kube_config_file)
 
 
