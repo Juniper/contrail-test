@@ -44,6 +44,26 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ECMPVerify):
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    def test_svc_in_net_nat_with_static_routes(self):
+        third_vn = self.create_vn(vn_name='third-vn')
+        third_vm = self.create_vm(vn_fixture=third_vn, vm_name='vm-in-third-vn')
+        assert third_vm.wait_till_vm_is_active()
+        routes = list()
+        vm_ips = third_vm.get_vm_ips()
+        for vm_ip in vm_ips:
+            routes.append(str(IPNetwork(vm_ip)))
+        sc_info = self.verify_svc_chain(service_mode='in-network-nat',
+                                        create_svms=True,
+                                        static_route=['left': routes])
+        right_vn_fixture = sc_info.get('right_vn_fixture')
+        left_vm_fixture = sc_info.get('left_vm_fixture')
+        self.allow_all_traffic_between_vns(right_vn_fixture, third_vn)
+        for vm_ip in vm_ips:
+            errmsg = "Ping to third VM %s from Left VM failed" % vm_ip
+            assert left_vm_fixture.ping_with_certainty(vm_ip, count='3'), errmsg
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
     @skip_because(address_family='v6')
     def test_svc_in_network_nat_private_to_public(self):
         if  os.environ.get('MX_GW_TEST', 0) != '1':
