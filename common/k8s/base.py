@@ -263,14 +263,14 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
         if host:
             host_str = '--header "Host:%s" ' % (host)
         cmd = 'wget %s %s -O %s -T %s -t %s' % (link, host_str, output_file,
-                                              timeout, tries)
+                                                timeout, tries)
         if not pod:
             with settings(warn_only=True):
                 output = local(cmd, capture=True)
             pod_str = 'local'
         else:
             output = pod.run_cmd(cmd, shell='/bin/sh -l -c')
-            pod_str = 'Pod %s' %(pod.name)
+            pod_str = 'Pod %s' % (pod.name)
         if '100%' in output:
             self.logger.debug('[Pod %s] Cmd %s passed' % (pod_str, cmd))
             self.logger.debug('[Pod %s] Cmd output: %s' % (pod_str, output))
@@ -312,7 +312,7 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
         for x in barred_pods:
             hit_me_not[x.name] = 0
 
-        link = 'http://%s:%s/%s' %(service_ip, port, path)
+        link = 'http://%s:%s/%s' % (service_ip, port, path)
         for i in range(0, attempts):
             (ret_val, output) = self.do_wget(link, pod=test_pod, host=host,
                                              output_file='-',
@@ -549,7 +549,8 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
         if paused:
             spec.update({'paused': paused})
         if progress_deadline_seconds:
-            spec.update({'progress_deadline_seconds': progress_deadline_seconds})
+            spec.update(
+                {'progress_deadline_seconds': progress_deadline_seconds})
         if replicas:
             spec.update({'replicas': replicas})
         if revision_history_limit:
@@ -572,15 +573,15 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
     # end setup_deployment
 
     def setup_nginx_deployment(self,
-        name=None,
-        namespace='default',
-        replicas=1,
-        pod_labels=None,
-        container_port=80,
-        metadata=None,
-        spec=None,
-        template_metadata=None,
-        template_spec=None):
+                               name=None,
+                               namespace='default',
+                               replicas=1,
+                               pod_labels=None,
+                               container_port=80,
+                               metadata=None,
+                               spec=None,
+                               template_metadata=None,
+                               template_spec=None):
 
         metadata = metadata or {}
         spec = spec or {}

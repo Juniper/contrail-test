@@ -75,12 +75,23 @@ class PodFixture(fixtures.Fixture):
     def _get_uuid(self):
         self.obj = self.k8s_client.read_pod(self.name, self.namespace)
         if not self.obj.metadata.uid:
-            self.logger.debug('Pod %s uuid not yet populated' %(self.name))
+            self.logger.debug('Pod %s uuid not yet populated' % (self.name))
             return (False, None)
         return (True, self.obj.metadata.uid)
     # end _get_uuid
+
+    @retry(delay=3, tries=20)
+    def _get_pod_node_name(self):
+        self.obj = self.k8s_client.read_pod(self.name, self.namespace)
+        if not self.obj.spec.node_name:
+            self.logger.debug('Pod %s uuid not yet populated' % (self.name))
+            return (False, None)
+        return (True, self.obj.spec.node_name)
+    # end _get_pod_node_name
+
     def _populate_attr(self):
         (ret_val, self.uuid) = self._get_uuid()
+        (ret_val, self.nodename) = self._get_pod_node_name()
         self.status = self.obj.status.phase
         self.labels = self.obj.metadata.labels
 
@@ -121,10 +132,10 @@ class PodFixture(fixtures.Fixture):
     # end delete
 
     def verify_on_cleanup(self):
-        assert self.verify_pod_not_in_contrail_api(),('Pod %s cleanup checks'
-            ' in contrail-api failed' % (self.name))
-        assert self.verify_pod_not_in_contrail_agent(),('Pod %s cleanup checks'
-            ' in agent failed' % (self.name))
+        assert self.verify_pod_not_in_contrail_api(), ('Pod %s cleanup checks'
+                                                       ' in contrail-api failed' % (self.name))
+        assert self.verify_pod_not_in_contrail_agent(), ('Pod %s cleanup checks'
+                                                         ' in agent failed' % (self.name))
         return True
         self.logger.info('Verifications on pod %s cleanup passed')
     # end verify_on_cleanup
@@ -137,19 +148,19 @@ class PodFixture(fixtures.Fixture):
     def verify_pod_not_in_contrail_agent(self):
         if not self.host_ip:
             self.logger.debug('Pod %s may not have launched at all..no need to '
-                'check further in agent' % (self.name))
+                              'check further in agent' % (self.name))
             return True
 
-        inspect_h = self.agent_inspect[self.host_ip]
+        inspect_h = self.agent_inspect[self.compute_ip]
 
         # Check that VM object is removed in agent
         agent_vm = inspect_h.get_vna_vm(self.uuid)
         if agent_vm:
-            self.logger.warn('Pod uuid %s is still seen in agent %s VM list' %(
-                self.uuid, self.host_ip))
+            self.logger.warn('Pod uuid %s is still seen in agent %s VM list' % (
+                self.uuid, self.compute_ip))
             return False
-        self.logger.debug('Pod %s is not in agent %s VM list' %(self.uuid,
-            self.host_ip))
+        self.logger.debug('Pod %s is not in agent %s VM list' % (self.uuid,
+                                                                 self.compute_ip))
 
         # Check that tap intf is removed in agent
         for tap_intf in self.tap_intfs:
@@ -157,21 +168,22 @@ class PodFixture(fixtures.Fixture):
                 tap_intf['uuid'])
             if vmi_dict:
                 self.logger.warn('VMI %s of Pod %s is still seen in '
-                    'agent %s' %(tap_intf['uuid'], self.name, self.host_ip))
+                                 'agent %s' % (tap_intf['uuid'], self.name, self.host_ip))
                 self.logger.debug(vmi_dict)
                 return False
-            self.logger.debug('VMI %s is removed from agent %s' %(
+            self.logger.debug('VMI %s is removed from agent %s' % (
                 tap_intf['uuid'], self.host_ip))
         # TODO
-        # Will have a common set of methods for validating across vm_test.py 
+        # Will have a common set of methods for validating across vm_test.py
         # and pod.py soon
-        self.logger.info('Verified that pod %s is removed in agent' %(self.name))
+        self.logger.info(
+            'Verified that pod %s is removed in agent' % (self.name))
         return True
     # end verify_pod_not_in_contrail_agent
 
     def set_labels(self, label_dict):
         self.obj = self.k8s_client.set_pod_label(self.namespace, self.name,
-            label_dict)
+                                                 label_dict)
         self._populate_attr()
     # end set_labels
 
@@ -181,7 +193,7 @@ class PodFixture(fixtures.Fixture):
         pod_status = self.k8s_client.read_pod_status(name, namespace)
         if pod_status.status.phase != "Running":
             self.logger.debug('Pod %s not in running state.'
-                               'Currently in %s' % (self.name,
+                              'Currently in %s' % (self.name,
                                                    pod_status.status.phase))
         else:
             self.logger.info('Pod %s is in running state.'
@@ -207,11 +219,11 @@ class PodFixture(fixtures.Fixture):
                     id=vmi_ref['uuid'])
                 self.vmi_objs.append(x)
                 self.vmi_uuids.append(vmi_ref['uuid'])
-                self.logger.debug('Pod %s has vmi %s' %(self.name, x.uuid))
+                self.logger.debug('Pod %s has vmi %s' % (self.name, x.uuid))
         except NoIdError:
-            self.logger.debug('VM uuid %s not in api-server' %(self.uuid))
+            self.logger.debug('VM uuid %s not in api-server' % (self.uuid))
             return False
-        self.logger.info('Verified pod %s in contrail-api' %(self.name))
+        self.logger.info('Verified pod %s in contrail-api' % (self.name))
 
         return True
     # end verify_pod_in_contrail_api
@@ -224,26 +236,33 @@ class PodFixture(fixtures.Fixture):
 
     @retry(delay=2, tries=10)
     def verify_pod_in_contrail_agent(self):
-        inspect_h = self.agent_inspect[self.host_ip]
+
+        if self.inputs.slave_orchestrator == 'kubernetes':
+            self.compute_ip = self.get_compute_for_pod_in_nested(
+                project_id=self.connections.get_project_id(),
+                vm_name=self.nodename)
+        else:
+            self.compute_ip = self.host_ip
+        inspect_h = self.agent_inspect[self.compute_ip]
         self.tap_intfs = inspect_h.get_vna_tap_interface_by_vm(vm_id=self.uuid)
         if not self.tap_intfs:
-            self.logger.warn('No tap intf seen for pod %s in %s' %(self.uuid))
+            self.logger.warn('No tap intf seen for pod %s in %s' % (self.uuid))
             return False
         agent_vmi_ids = [x['uuid'] for x in self.tap_intfs]
         if set(agent_vmi_ids) != set(self.vmi_uuids):
             self.logger.warn('Mismatch in agent and config vmis for pod %s'
-                '. Agent : %s, Config: %s' % (self.name, agent_vmi_ids,
-                                              self.vmi_uuids))
+                             '. Agent : %s, Config: %s' % (self.name, agent_vmi_ids,
+                                                           self.vmi_uuids))
             return False
 
         for tap_intf in self.tap_intfs:
             if tap_intf['active'] != 'Active':
-                self.logger.warn('VMI is not active. Details: %s' %(tap_intf))
+                self.logger.warn('VMI is not active. Details: %s' % (tap_intf))
                 return False
-            self.logger.debug('VMI %s is active in agent %s' %(tap_intf['uuid'],
-                self.host_ip))
-        self.logger.info('Verified Pod %s in agent %s' %(self.name,
-                                                        self.host_ip))
+            self.logger.debug('VMI %s is active in agent %s' % (tap_intf['uuid'],
+                                                                self.compute_ip))
+        self.logger.info('Verified Pod %s in agent %s' % (self.name,
+                                                          self.compute_ip))
         return True
     # verify_pod_in_contrail_agent
 
@@ -265,11 +284,11 @@ class PodFixture(fixtures.Fixture):
             shell = self._shell_arg
         if mode == 'api':
             output = self.k8s_client.exec_cmd_on_pod(self.name, cmd,
-                namespace=self.namespace, shell=shell)
+                                                     namespace=self.namespace, shell=shell)
         else:
             output = self.run_kubectl_cmd_on_master(self.name, cmd, shell)
         self.logger.debug('[Pod %s] Cmd: %s, Output: %s' % (self.name,
-            cmd, output))
+                                                            cmd, output))
         return output
     # run_cmd_on_pod
 
@@ -298,12 +317,12 @@ class PodFixture(fixtures.Fixture):
         result = expectation == (expected_result in output)
         if not result:
             self.logger.warn("Ping check to IP %s from pod %s failed. "
-                "Expectation: %s, Got: %s" %(ip, self.name,
-                expectation, result, ))
+                             "Expectation: %s, Got: %s" % (ip, self.name,
+                                                           expectation, result, ))
             return False
         else:
             self.logger.info('Ping check to IP %s from pod %s with '
-                'expectation %s passed' %(ip, self.name, expectation))
+                             'expectation %s passed' % (ip, self.name, expectation))
         return True
     # end ping_to_ip
 
@@ -312,7 +331,7 @@ class PodFixture(fixtures.Fixture):
         Modify the label of POD
         '''
         self.logger.debug('Current POD %s labels is/are %s' %
-                         (self.name, self.read().metadata.labels))
+                          (self.name, self.read().metadata.labels))
         kubectl_command = 'kubectl label --overwrite pods %s %s=%s' % (
             self.name, label_name, label_value)
 
@@ -320,7 +339,7 @@ class PodFixture(fixtures.Fixture):
                                                kubectl_command)
 
         self.logger.debug('Modified POD %s labels is/are %s' %
-                         (self.name, self.read().metadata.labels))
+                          (self.name, self.read().metadata.labels))
 
         if label_name in self.read().metadata.labels:
             if self.read().metadata.labels[label_name] != label_value:
@@ -333,3 +352,12 @@ class PodFixture(fixtures.Fixture):
             return False
         return output
     # end modify_pod_label
+
+    def get_compute_for_pod_in_nested(self, project_id, vm_name):
+        returnVal = None
+        if self.inputs.slave_orchestrator == 'kubernetes':
+            self.vm_obj = self.connections.orch.get_vm_if_present(vm_name,
+                                                                  project_id=project_id)
+            returnVal = self.inputs.get_host_ip(
+                self.connections.orch.get_host_of_vm(self.vm_obj))
+        return returnVal
