@@ -1,0 +1,45 @@
+tests:
+  - name: "Symantec"
+    id: 1 #test count
+    procedure: "symantec_func"
+    tenants:
+      - name_prefix: "symantec.Tenant"
+        count: 5 
+        vDNS:
+            name: "symantec.tenantXXX.test_idZZZ"
+            domain_name: "tenantXXX.testZZZ.data.soln.com"
+            dyn_updates: True
+            rec_resolution_order: "round-robin"
+            floating_ip_record: "dashed-ip"
+            ttl: 86400
+            forwarder:
+            external_visible: False
+            reverse_resolution: True
+        IPAM:
+            name: "tenantXXX.test_idZZZ.AAA.ipam"
+            count: 1
+        policies:
+            name: "tenantXXX.test_idZZZ.pol"
+            count: 1
+            rules: 
+                 action: allow
+                 protocol: any
+                 #allow_rules_network: ["VN1 VN4", "VN2 VN3"]
+                 #allow_rules_port:  ["any any", "any 8100"]
+                 allow_rules_network: ["any any"]
+                 allow_rules_port:  ["any any"]
+                 direction:
+                 services_flag:
+        virtual_networks:
+          - name: "tenantXXX.test_idZZZ.Private_VNYYY"
+            count: 1
+            ipv4_cidr: True
+            ipv6_cidr: True
+            subnets:
+              - count: 2
+            adv_options:
+                external_flag: True
+                extend_to_pr_flag: True
+            vm:
+                name: "vm.QQQ"
+                count: 1 #20

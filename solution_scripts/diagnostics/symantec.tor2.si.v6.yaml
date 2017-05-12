@@ -1,0 +1,274 @@
+tests:
+  - name: "Symantec"
+    id: 1 #test count
+    procedure: "symantec_func"
+    traffic_block:
+        duration: "60"
+        sampling_interval: "10"
+        external_server:
+            ip: ""
+            pvn_ext_port_start: "100"
+            snat_ext_port_start: "20099"
+        baremetal_servers: ["10.87.140.129"]
+        client_comm:
+            c_iperf3: ["iperf3", "-P", "1", "-V", "--json", "-b", "20M"]
+            c_httpload_short: ["http_load", "-rate", "10"]
+            c_httpload_lls: ["http_load", "-rate", "10"]
+            c_lbaas: ["http_load", "-rate", "10"]
+            c_udp_ucast: ["iperf3", "-u", "-l", "1300", "-V", "--json", "-P", "2", "-b", "1M"] 
+            c_udp_mcast: ["/usr/local/bin/iperf", "-u", "-T", "32", "-l", "1200", "-c", "224.0.50.50"]
+            c_ping: ["ping", "-c", "3", "-W", "3"]
+            c_ping6: ["ping6", "-c", "3", "-W", "3"]
+        #client_comm:
+        #    c_iperf3: ["iperf3", "-P", "1", "-V", "--json", "-b", "200M"]
+        #    c_httpload_short: ["httpload", "-rate", "90"]
+        #    c_httpload_lls: ["httpload", "-rate", "80"]
+        #    c_lbaas: ["httpload", "-rate", "200"]
+        #    c_udp_ucast: ["iperf3", "-u", "-P", "2", "-V"]
+        #    c_udp_mcast: ["/usr/local/bin/iperf", "-u", "-T", "32", "-l", "1200", "-c", "224.0.50.50"]
+        #    c_ping: ["ping", "-c", "3", "-W", "3"]
+        server_comm:
+            s_iperf3: ["iperf3", "-V", "-s", "-D"]
+            s_udp_ucast: ["iperf3", "-V", "-s", "-D"]
+            s_udp_mcast: ["/usr/local/bin/iperf", "-s", "-D", "-u", "-B", "224.0.50.50"]
+    tenants:
+      - name_prefix: "symantec.Tenant"
+        count: 5 
+        vDNS:
+            name: "symantec.tenantXXX.test_idZZZ"
+            domain_name: "tenantXXX.testZZZ.data.soln.com"
+            dyn_updates: True
+            rec_resolution_order: "round-robin"
+            floating_ip_record: "dashed-ip"
+            ttl: 86400
+            forwarder:
+            external_visible: False
+            reverse_resolution: True
+        IPAM:
+            name: "tenantXXX.test_idZZZ.ipam"
+            count: 1
+        policies:
+            name: "tenantXXX.test_idZZZ.pol"
+            count: 1
+            rules: 
+                 action: allow
+                 protocol: any
+                 #allow_rules_network: ["VN1 VN4", "VN2 VN3"]
+                 #allow_rules_port:  ["any any", "any 8100"]
+                 allow_rules_network: ["any any"]
+                 allow_rules_port:  ["any any"]
+                 direction:
+                 services_flag:
+        port_mirror:
+            analyzer_name: "test_analyzer"
+            analyzer_ip: "172.16.70.9"
+            analyzer_port: "5000"
+            analyzer_public_vn: "tenantXXX.test_idZZZ.Public_FIP_VNYYY"
+            direction: "both"
+        virtual_networks:
+          - name: "tenantXXX.test_idZZZ.Public_FIP_VNYYY"
+            count: 1
+            subnets:
+              - count: 1
+            adv_options:
+                external_flag: True
+                extend_to_pr_flag: True
+            route_targets:
+                count: 1
+                asn: 64512
+                rt_number: 12100
+          - name: "tenantXXX.test_idZZZ.Private_SC_Left_VNYYY"
+            ipv6_cidr: True
+            zone_name: "AZ1"
+            subnets:
+              - count: 1
+            adv_options:
+                external_flag: False
+                extend_to_pr_flag: False
+            vm:
+                name: "vm.QQQ"
+                count: 1 #20
+                attach_port_mirror: False
+          - name: "tenantXXX.test_idZZZ.Private_SC_Right_VNYYY"
+            ipv6_cidr: True
+            zone_name: "AZ1"
+            subnets:
+              - count: 1
+            adv_options:
+                external_flag: False
+                extend_to_pr_flag: False
+            vm:
+                name: "vm.QQQ"
+                count: 1 #20
+                attach_port_mirror: False
+        service_instance:
+          - name: "soln-trans-serial-si-CCC"
+            count: 1
+            num_of_instances: 1 # this is for ECMP of SC
+            HA-mode: "active-active"
+            service_template_name: "ST-transparent"
+            AZ: "nova"
+            host: "csol1-node10"
+            Routing_Policy: <next phase of dev>
+            interfaces:
+                management:
+                    vn_name:  "MGMT"
+                left:
+                    auto_configured: True
+                    vn_name: "tenantXXX.test_idZZZ.Private_SC_Left_VNYYY"
+                right:
+                    auto_configured: True
+                    vn_name: "tenantXXX.test_idZZZ.Private_SC_Right_VNYYY"
+          - name: "soln-trans-parallel-si-CCC"
+            num_of_instances: 1 # this is for ECMP of SC
+            HA-mode: "active-active"
+            service_template_name: "ST-transparent"
+            AZ: "nova"
+            host: "csol1-node10"
+            Routing_Policy: <next phase of dev>
+            interfaces:
+                management:
+                    vn_name:  "MGMT"
+                left:
+                    vn_name: "tenantXXX.test_idZZZ.Private_SC_Left_VNYYY"
+                right:
+                    vn_name: "tenantXXX.test_idZZZ.Private_SC_Right_VNYYY"
+          - name: "soln-in-net-parallel-si-CCC"
+            num_of_instances: 1 # this is for ECMP of SC
+            HA-mode: "active-active"
+            service_template_name: "ST-in-network"
+            AZ: "nova"
+            host: "csol1-node10"
+            Routing_Policy: <next phase of dev>
+            interfaces:
+                management:
+                    vn_name:  "MGMT"
+                left:
+                    vn_name: "tenantXXX.test_idZZZ.Private_SC_Left_VNYYY"
+                right:
+                    vn_name: "tenantXXX.test_idZZZ.Private_SC_Right_VNYYY"
+
+          - name: "soln-in-net-serial-si-CCC"
+            num_of_instances: 1 # this is for ECMP of SC
+            HA-mode: "active-active"
+            service_template_name: "ST-in-network"
+            AZ: "nova"
+            host: "csol1-node10"
+            Routing_Policy: <next phase of dev>
+            interfaces:
+                management:
+                    vn_name:  "MGMT"
+                left:
+                    vn_name: "tenantXXX.test_idZZZ.Private_SC_Left_VNYYY"
+                right:
+                    vn_name: "tenantXXX.test_idZZZ.Private_SC_Right_VNYYY"
+          - name: "soln-trans-si-CCC"
+            count: 2 # number of SIs to launch/tenant.
+            num_of_instances: 2 # this is for ECMP of SC
+            HA-mode: "active-active"
+            service_template_name: "ST-transparent"
+            AZ: "nova"
+            host: "csol1-node10"
+            Routing_Policy: <next phase of dev>
+            interfaces:
+                management:
+                    vn_name:  "MGMT"
+                left:
+                    vn_name: "tenantXXX.test_idZZZ.Private_SC_Left_VNYYY"
+                    count: 3
+                right:
+                    vn_name: "tenantXXX.test_idZZZ.Private_SC_Right_VNYYY"
+                    count: 3
+          - name: "soln-in-net-si-CCC"
+            count: 2 # number of SIs to launch/tenant.
+            num_of_instances: 2 # this is for ECMP of SC
+            HA-mode: "active-active"
+            service_template_name: "ST-in-network"
+            AZ: "nova"
+            host: "csol1-node11"
+            Routing_Policy: <next phase of dev>
+            Route_Aggregate:
+            interfaces:
+                management:
+                    vn_name:  "MGMT"
+                left:
+                    vn_name: "tenantXXX.test_idZZZ.Private_SC_Left_VNYYY"
+                    static_routes:
+                      - route_1:
+                        prefix:
+                        subnet_count:
+                        community: [no-export, no-advertise, no-reoriginate, accept-own, no-export-subconfed]
+                      - route_2:
+                        prefix:
+                        subnet_count:
+                        community: [no-export, no-advertise, no-reoriginate, accept-own, no-export-subconfed]
+                right:
+                    vn_name: "tenantXXX.test_idZZZ.Private_SC_Right_VNYYY"
+                    static_routes:
+                       - route_1:
+                         prefix:
+                         subnet_count:
+                         community: [no-export, no-advertise, no-reoriginate, accept-own, no-export-subconfed]
+                       - route_2:
+                         prefix:
+                         subnet_count:
+                         community: [no-export, no-advertise, no-reoriginate, accept-own, no-export-subconfed]
+          - name: "soln-nat-si-CCC"
+            count: 2 # number of SIs to launch/tenant.
+            num_of_instances: 2 # this is for ECMP of SC
+            HA-mode: "active-active"
+            service_template_name: "ST-in-network-nat"
+            AZ: "nova"
+            host: "csol1-node12"
+            Routing_Policy: <next phase of dev>
+            Route_Aggregate:
+            interfaces:
+                management:
+                    vn_name:  "MGMT"
+                left:
+                    vn_name: "tenantXXX.test_idZZZ.Private_SC_Left_VNYYY"
+                    static_routes:
+                      - route_1:
+                        prefix: 10.1.0.0/16
+                        subnet_count: 4 # create 10.1, 10.2, 10.3, 10.4/16 routes.
+                        community: [no-export, no-advertise, no-reoriginate, accept-own, no-export-subconfed]
+                      - route_2:
+                        prefix:
+                        subnet_count:
+                        community: [no-export, no-advertise, no-reoriginate, accept-own, no-export-subconfed]
+                right:
+                    vn_name: "tenantXXX.test_idZZZ.Private_SC_Right_VNYYY"
+                    static_routes:
+                      - route_1:
+                        prefix:
+                        subnet_count:
+                        community: [no-export, no-advertise, no-reoriginate, accept-own, no-export-subconfed]
+                      - route_2:
+                        prefix:
+                        subnet_count:
+                        community: [no-export, no-advertise, no-reoriginate, accept-own, no-export-subconfed]
+
+
+        parallel_service_chain:
+          - name: "SC-trans-in-net-parallel"
+            count: 1
+            instances:
+               - name: "soln-trans-parallel-si-CCC"
+                 protocol: "tcp"
+               - name: "soln-in-net-parallel-si-CCC"
+                 protocol: "udp"
+        serial_service_chain:
+          - name: "SC-trans-in-net"
+            count: 1
+            instances:
+               - name: "soln-trans-serial-si-CCC"
+               - name: "soln-in-net-serial-si-CCC"
+        routers:
+          - name: "tenantXXX.test_idZZZ.router.YYY"
+            count: 1
+        FIP:
+            floating_ip_pool: "tenantXXX.test_idZZZ.Pool"
+            fip_gw_vn_name: "tenantXXX.test_idZZZ.Public_FIP_VNYYY"
+            alloc_type: "Dynamic"
+            count: 30 # 
+
