@@ -1,1 +1,0 @@
-"""Service chain firewall tests."""
