@@ -304,6 +304,17 @@ class ControlNodeInspect (VerificationUtilBase):
         return list(all_peers)
     # end get_cn_ri_membership
 
+    def get_connected_rabbitmq(self):
+        '''
+        Return the rabbitMQ server to which 
+        '''
+        path = 'Snh_ConfigClientInfoReq?'
+        xpath = './ConfigClientInfoResp/amqp_conn_info/ConfigAmqpConnInfo/url'
+        p = self.dict_get(path)
+        rt = EtreeToDict(xpath).get_all_entry(p)
+        rabbit_mq_node = rt['url'].split("@")[1].split(":")[0]
+        return rabbit_mq_node
+        
 if __name__ == '__main__':
     cn = ControlNodeInspect('10.204.216.58')
     import pdb; pdb.set_trace()
