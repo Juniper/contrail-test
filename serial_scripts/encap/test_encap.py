@@ -704,7 +704,7 @@ class TestEncapCases(base.BaseEncapTest):
             pcap1 = '/tmp/encap-udp.pcap'
             pcap2 = '/tmp/encap-gre.pcap'
             pcap3 = '/tmp/encap-vxlan.pcap'
-            cmd1 = 'tcpdump -ni %s udp port 51234 -w %s -s 0' % (
+            cmd1 = 'tcpdump -ni %s udp port 6635 -w %s -s 0' % (
                 comp_intf, pcap1)
             cmd_udp = "nohup " + cmd1 + " >& /dev/null < /dev/null &"
             cmd2 = 'tcpdump -ni %s proto 47 -w %s -s 0' % (comp_intf, pcap2)
