@@ -285,7 +285,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                               create_svms=True,
                               **self.common_args)
         si_fixture = ret_dict['si_fixture']
-        svm_ids = si_fixtur.svm_ids
+        svm_ids = si_fixture.svm_ids
         self.get_rt_info_tap_intf_list(
             self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture, svm_ids,
             si_fixture)
@@ -459,7 +459,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         si_fixture = ret_dict['si_fixture']
         svm_ids = si_fixture.svm_ids
         self.get_rt_info_tap_intf_list(
-            self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture, svm_ids, si_fixtures)
+            self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture, svm_ids, si_fixture)
         dst_vm_list = [self.right_vm_fixture]
         self.verify_traffic_flow(
             self.left_vm_fixture, dst_vm_list, si_fixture, self.left_vn_fixture)
