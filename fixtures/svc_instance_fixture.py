@@ -383,6 +383,7 @@ class SvcInstanceFixture(fixtures.Fixture):
                     for vm_ref in vm_refs_vmi:
                         vm_refs.append(vm_ref['to'][0])
             self.svm_ids = set(vm_refs)
+        self.logger.debug('The SVMs in the SI are : %s' %self.svm_list)
 
         if not vm_refs:
             errmsg = "SI %s does not have any Service VM" % self.si_name
