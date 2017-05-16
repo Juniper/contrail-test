@@ -118,7 +118,6 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         'tor':[],
         'sriov':[],
         'dpdk':[],
-        'kubernetes':[],
     }
 
     sample_ini_file = test_dir + '/' + 'sanity_params.ini.sample'
@@ -243,8 +242,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         sanity_testbed_dict['dpdk'].append(env.dpdk)
    
     #get k8s info
-    if env.has_key('kubernetes'):
-        sanity_testbed_dict['kubernetes'].append(env.kubernetes)
+    sanity_testbed_dict['kubernetes'] = env.get('kubernetes', {})
  
     # Read ToR config
     sanity_tor_dict = {}
@@ -316,7 +314,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
 
     # Setting slave orch to k8s when key present   
     if env.has_key('kubernetes'):
-        if  sanity_testbed_dict['kubernetes'][0]['mode'] == 'nested':
+        if  sanity_testbed_dict['kubernetes']['mode'] == 'nested':
             slave_orch = 'kubernetes'
 
     if not getattr(env, 'test', None):
