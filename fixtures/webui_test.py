@@ -959,8 +959,9 @@ class WebuiTest:
                 self.logger.info(
                     "Qos %s creation successful" %
                         (fixture.name))
+            br = self.ui.find_element('qos-grid')
             rows_detail = self.ui.click_basic_and_get_row_details(
-                func_suffix, 0)[1]
+                func_suffix, 0, search_ele='qos-grid', browser=br)[1]
             fixture.uuid = self.ui.get_value_of_key(rows_detail, 'UUID')
             fixture.verify_on_setup()
         except WebDriverException:
@@ -1408,7 +1409,7 @@ class WebuiTest:
             if not self.ui.click_monitor_analytics_nodes():
                 result = result and False
             self.ui.wait_till_ajax_done(self.browser, wait=15)
-            rows = self.ui.get_rows()
+            rows = self.ui.get_rows(canvas=True)
             for i in range(len(rows)):
                 match_flag = 0
                 obj_text = self.ui.get_slick_cell_text(rows[i], index=0)
@@ -1599,7 +1600,7 @@ class WebuiTest:
             if not self.ui.click_monitor_config_nodes():
                 result = result and False
             self.ui.wait_till_ajax_done(self.browser, wait=15)
-            rows = self.ui.get_rows()
+            rows = self.ui.get_rows(canvas=True)
             for i in range(len(rows)):
                 match_flag = 0
                 obj_text = self.ui.get_slick_cell_text(rows[i], index=0)
@@ -1795,7 +1796,7 @@ class WebuiTest:
                 (ops_vrouter_name))
             if not self.ui.click_monitor_vrouters():
                 result = result and False
-            rows = self.ui.get_rows()
+            rows = self.ui.get_rows(canvas=True)
             for i in range(len(rows)):
                 match_flag = 0
                 obj_text = self.ui.get_slick_cell_text(rows[i], index=0)
@@ -2060,7 +2061,7 @@ class WebuiTest:
         self.logger.debug(self.dash)
         if not self.ui.click_monitor_vrouters():
             result = result and False
-        rows = self.ui.get_rows()
+        rows = self.ui.get_rows(canvas=True)
         vrouters_list_ops = self.ui.get_vrouters_list_ops()
         result = True
         for n in range(len(vrouters_list_ops)):
@@ -2070,7 +2071,7 @@ class WebuiTest:
                 (ops_vrouter_name))
             if not self.ui.click_monitor_vrouters():
                 result = result and False
-            rows = self.ui.get_rows()
+            rows = self.ui.get_rows(canvas=True)
             for i in range(len(rows)):
                 match_flag = 0
                 obj_text = self.ui.get_slick_cell_text(rows[i], index=0)
@@ -2166,7 +2167,7 @@ class WebuiTest:
             if not self.ui.click_monitor_control_nodes():
                 result = result and False
             self.ui.wait_till_ajax_done(self.browser, wait=15)
-            rows = self.ui.get_rows()
+            rows = self.ui.get_rows(canvas=True)
             for i in range(len(rows)):
                 match_flag = 0
                 obj_text = self.ui.get_slick_cell_text(rows[i], index=0)
@@ -2370,7 +2371,7 @@ class WebuiTest:
                 "Clicking on Monitor->Control Nodes")
             if not self.ui.click_monitor_control_nodes():
                 result = result and False
-            rows = self.ui.get_rows()
+            rows = self.ui.get_rows(canvas=True)
             for i in range(len(rows)):
                 match_flag = 0
                 obj_text = self.ui.get_slick_cell_text(rows[i], index=0)
@@ -2472,7 +2473,7 @@ class WebuiTest:
             if not self.ui.click_monitor_analytics_nodes():
                 result = result and False
             self.ui.wait_till_ajax_done(self.browser, wait=15)
-            rows = self.ui.get_rows()
+            rows = self.ui.get_rows(canvas=True)
             for i in range(len(rows)):
                 match_flag = 0
                 obj_text = self.ui.get_slick_cell_text(rows[i], index=0)
@@ -2602,7 +2603,6 @@ class WebuiTest:
             click_func = 'networks'
         if not eval('self.ui.click_monitor_' + click_func)('instances'):
             result = result and False
-        self.project_name_input = 'ctest-WebuiTestSanity-40417827'
         self.ui.select_project(self.project_name_input)
         if option != 'dashboard':
             self.ui.select_network(network_name)
@@ -2993,7 +2993,7 @@ class WebuiTest:
             if not self.ui.click_monitor_config_nodes():
                 result = result and False
             self.ui.wait_till_ajax_done(self.browser, wait=15)
-            rows = self.ui.get_rows()
+            rows = self.ui.get_rows(canvas=True)
             for i in range(len(rows)):
                 match_flag = 0
                 obj_text = self.ui.get_slick_cell_text(rows[i], index=0)
@@ -3993,6 +3993,8 @@ class WebuiTest:
                                 source_network = api_src_vnet
                             else:
                                 src_vnet_split = api_src_vnet.split(':')
+                                if len(src_vnet_split) < 2:
+                                    continue
                                 if project_name == src_vnet_split[1]:
                                     source_network = src_vnet_split[2]
                                 else:
@@ -6673,7 +6675,7 @@ class WebuiTest:
                 result = result and False
             self.ui.select_project(fixture.project_name)
             self.ui.wait_till_ajax_done(self.browser)
-            rows = self.ui.get_rows()
+            rows = self.ui.get_rows(canvas=True)
             self.logger.info(
                 "Creating floating ip pool %s using contrail-webui" %
                 (pool_name))
@@ -7532,7 +7534,7 @@ class WebuiTest:
     def verify_vrouter_ops_grid_page_data(self, host_name, ops_data):
         webui_data = []
         self.ui.click_monitor_vrouters()
-        rows = self.ui.get_rows()
+        rows = self.ui.get_rows(canvas=True)
         base_indx = 0
         for hosts in range(len(rows)):
             if self.ui.get_slick_cell_text(
@@ -7565,7 +7567,7 @@ class WebuiTest:
     def verify_bgp_routers_ops_grid_page_data(self, host_name, ops_data):
         webui_data = []
         self.ui.click_monitor_control_nodes()
-        rows = self.ui.get_rows()
+        rows = self.ui.get_rows(canvas=True)
         base_indx = 0
         for hosts in range(len(rows)):
             if rows[hosts].text:
@@ -7857,6 +7859,8 @@ class WebuiTest:
             vn_list_ops_config = vn_list_ops.get('ContrailConfig')
             if vn_list_ops_config:
                 vn_list_ops_element = vn_list_ops_config.get('elements')
+                if type(vn_list_ops_element) is list:
+                    vn_list_ops_element = vn_list_ops_element[0][0]
                 if vn_list_ops_element:
                     if option == 'UUID':
                         ops_uuid = vn_list_ops_element.get('uuid')
@@ -7890,6 +7894,8 @@ class WebuiTest:
                              self.logger.error("Policy is not there under contrail config in OPS")
                     elif re.search('Subnet', option):
                         ops_subnet = vn_list_ops_element.get('network_ipam_refs')
+                        if type(ops_subnet) is list:
+                            ops_subnet = ops_subnet[0]
                         ops_sub_out = re.search(var_list[0] + ".*uuid", str(ops_subnet))
                         if ops_sub_out:
                             reg_mask = re.search(var_list[0], ops_sub_out.group())
@@ -10193,7 +10199,7 @@ class WebuiTest:
             api_fq_name = svc_appl_sets_list_api[
                 'service-appliance-sets'][svc_appl]['fq_name'][1]
             self.ui.click_configure_svc_appliance_set()
-            rows = self.ui.get_rows()
+            rows = self.ui.get_rows(canvas=True)
             for row in range(len(rows)):
                 dom_arry_basic = []
                 match_flag = 0
@@ -10213,7 +10219,7 @@ class WebuiTest:
                 self.logger.debug(self.dash)
             else:
                 rows_detail = self.ui.click_basic_and_get_row_details(
-                                'svc_appliance_set', match_index)[1]
+                                'svc_appliance_set', match_index, canvas=True)[1]
                 for detail in range(len(rows_detail)):
                     key_value = rows_detail[detail].text.split('\n')
                     key = str(key_value.pop(0))
