@@ -21,6 +21,7 @@ class IngressFixture(fixtures.Fixture):
                  spec={}):
         self.logger = connections.logger or contrail_logging.getLogger(
             __name__)
+        self.inputs = connections.inputs
         self.name = name or metadata.get('name') or get_random_name('ingress')
         self.namespace = namespace
         self.k8s_client = connections.k8s_client
@@ -59,11 +60,18 @@ class IngressFixture(fixtures.Fixture):
         self.uuid = self.obj.metadata.uid
         self.spec_obj = self.obj.spec
         self.metadata_obj = self.obj.metadata
-        if self.metadata_obj.annotations:
-            self.external_ip = self.metadata_obj.annotations.get('externalIP')
-            self.cluster_ip = self.metadata_obj.annotations.get('clusterIP')
+        if self.obj.status.load_balancer.ingress:
+
+            lb_ips = []
+            # As per software handling all external_ips will be listed first and
+            # Cluster IP will be at the end of list. 
+            for item in  self.obj.status.load_balancer.ingress: 
+                lb_ips.append(item.ip)
+            self.cluster_ip =  lb_ips[-1] 
+            del lb_ips[-1] 
+            self.external_ips = lb_ips
         else:
-            self.external_ip = None
+            self.external_ips = None
             self.cluster_ip = None
     # end _populate_attr
 
@@ -115,12 +123,12 @@ class IngressFixture(fixtures.Fixture):
             self.logger.debug('Cluster IP not yet seen for Ingress '
                               '%s' % (self.name))
             return False
-        if not self.external_ip:
+        if not self.external_ips:
             self.logger.debug('External IP not yet seen for Ingress '
                               '%s' % (self.name))
             return False
-        self.logger.debug('For Ingress %s, Cluster IP: %s, External IP: %s' % (
-                          self.name, self.cluster_ip, self.external_ip))
+        self.logger.debug('For Ingress %s, Cluster IP: %s, External IPs %s' % (
+                          self.name, self.cluster_ip, self.external_ips))
         self.logger.info('Verifications in k8s passed for Ingress %s' % (
                          self.name))
         return True

@@ -50,5 +50,5 @@ class TestIngress(BaseK8sTest):
                                       test_pod=pod3)
 
         # Now validate ingress from public network
-        assert self.validate_nginx_lb([pod1, pod2], ingress.external_ip)
+        assert self.validate_nginx_lb([pod1, pod2], ingress.external_ips[0])
     # end test_service_1

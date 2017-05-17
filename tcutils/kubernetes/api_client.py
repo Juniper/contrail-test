@@ -566,7 +566,19 @@ class Client():
             self.wait_till_pod_cleanup(namespace, name)
             self.v1_beta_h.delete_namespaced_replica_set(name, namespace, body,
                 orphan_dependents=False)
-    # end delete_replica_set
+    # end delete_replica_set 
+
+    def set_service_isolation(self, namespace, enable=True):
+        ns_obj = self.v1_h.read_namespace(namespace)
+        if not getattr(ns_obj.metadata, 'annotations', None):
+            ns_obj.metadata.annotations = {}
+        if enable:
+            kv = {'opencontrail.org/isolation.service': 'true'}
+        else:
+            kv = {'opencontrail.org/isolation.service': 'false'}
+        ns_obj.metadata.annotations.update(kv)
+        self.v1_h.patch_namespace(namespace, ns_obj)
+    # end set_service_isolation
 
 
 if __name__ == '__main__':

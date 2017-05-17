@@ -72,6 +72,12 @@ class TestService(BaseK8sTest):
         # Now validate load-balancing on the service
         assert self.validate_nginx_lb([pod1, pod2], service.cluster_ip,
                                       test_pod=pod3)
+
+        # When Isolation enabled we need to change SG to allow traffic 
+        # from outside. For that we need to disiable service isolation 
+        if self.setup_namespace_isolation:
+            namespace.disable_service_isolation()
+
         # Now validate ingress from public network
         assert self.validate_nginx_lb([pod1, pod2], service.external_ips[0])
     # end test_service_2
@@ -113,6 +119,12 @@ class TestService(BaseK8sTest):
         # Now validate load-balancing on the service
         assert self.validate_nginx_lb([pod1, pod2], service.cluster_ip,
                                       test_pod=pod3)
+
+        # When Isolation enabled we need to change SG to allow traffic
+        # from outside. For that we need to disiable service isolation
+        if self.setup_namespace_isolation:
+            namespace.disable_service_isolation()
+
         # Now validate ingress from public network
         assert self.validate_nginx_lb([pod1, pod2], service.external_ips[0])
     # end test_service_with_external_ip
