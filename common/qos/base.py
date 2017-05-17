@@ -607,11 +607,8 @@ class QosTestBase(BaseNeutronTest):
         This method will populate multi queueing interface, it's speed and 
         number of queue supported
         '''
-        # Searching for fabric interface on which to test queuing
-        cmd = 'cat /etc/contrail/contrail-vrouter-agent.conf \
-               | grep "physical_interface=" | grep -v "vmware"'
-        output = cls.inputs.run_cmd_on_server(node_ip, cmd, container='agent')
-        fabric_interface = output.split('=')[-1]
+        fabric_interface = cls.agent_inspect[node_ip].\
+                           get_vna_interface_by_type("eth")[0]
         # Getting the speed of the interface
         cmd= 'ethtool %s | grep "Speed"' % fabric_interface
         output = cls.inputs.run_cmd_on_server(node_ip, cmd)
@@ -658,9 +655,9 @@ class QosTestBase(BaseNeutronTest):
             if elem[0] == node_ip:
                 map = elem[1]
         for hw_to_logical_value in map:
-            if 'default' in hw_to_logical_value.values()[0]:
-                hw_to_logical_value.values()[0].remove('default')
             for elem in hw_to_logical_value.values()[0]:
+                if elem == 'default':
+                    continue
                 if '-' not in elem:
                     logical_ids.append(int(elem))
                 else:
