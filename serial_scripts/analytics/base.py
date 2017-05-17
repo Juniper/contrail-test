@@ -88,6 +88,14 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
                 result = result and False
         return result
     # end execute_cli_cmd
+    
+    def setup_flow_export_rate(self, value):
+        ''' Set flow export rate and handle the cleanup
+        '''
+        vnc_lib_fixture = self.connections.vnc_lib_fixture
+        vnc_lib_fixture.set_flow_export_rate(value)
+        self.addCleanup(vnc_lib_fixture.set_flow_export_rate,0)
+    # end setup_flow_export_rate
 
 class ResourceFactory:
     factories = {}
