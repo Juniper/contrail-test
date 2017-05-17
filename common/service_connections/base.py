@@ -1,13 +1,12 @@
-import test_v1
 from common.connections import ContrailConnections
 from common import isolated_creds
+from common.base import GenericTestBase
 import testtools
 
-import time 
 import ast
 from tcutils.contrail_status_check import ContrailStatusChecker
 
-class BaseServiceConnectionsTest(test_v1.BaseTestCase_v1):
+class BaseServiceConnectionsTest(GenericTestBase):
 
     @classmethod
     def setUpClass(cls):
@@ -19,6 +18,7 @@ class BaseServiceConnectionsTest(test_v1.BaseTestCase_v1):
         cls.cn_inspect= cls.connections.cn_inspect
         cls.analytics_obj=cls.connections.analytics_obj
         cls.ops_inspect=cls.connections.ops_inspect
+        cls.dns_inspect=cls.connections.dnsagent_inspect
     #end setUpClass
 
     @classmethod
@@ -160,8 +160,7 @@ class BaseServiceConnectionsTest(test_v1.BaseTestCase_v1):
                         server_addr_status.append(connections['status'])
                         server_port.append(connections[
                                             'server_addrs'][0].split(':')[1])
-        elif (service_name == "collector" or service_name == "rabbitmq")\
-            and client_role == "control":
+        elif service_name == "collector" and client_role == "control":
             if client_process != "contrail-dns":
                 control_uve_dict = self.ops_inspect.get_ops_bgprouter(
                                                     client_node_name)
@@ -171,15 +170,6 @@ class BaseServiceConnectionsTest(test_v1.BaseTestCase_v1):
             index = self.find_index(control_uve_dict, client_process)
             connection_info = control_uve_dict['NodeStatus']\
                             ['process_status'][index]['connection_infos']
-            for connections in connection_info:
-                if service_name == "rabbitmq":
-                    if connections['type'] == 'Database' and \
-                        connections['name'] == "RabbitMQ":
-                        server_addr_list.append(connections[
-                                            'server_addrs'][0].split(':')[0])
-                        server_addr_status.append(connections['status'])
-                        server_port.append(connections[
-                                            'server_addrs'][0].split(':')[1])
         elif service_name == "collector" and client_role == "config":
             config_uve_dict = self.ops_inspect.get_ops_config(
                                                     client_node_name)
@@ -199,6 +189,18 @@ class BaseServiceConnectionsTest(test_v1.BaseTestCase_v1):
             index = self.find_index(database_uve_dict, client_process)
             connection_info = database_uve_dict['NodeStatus']\
                             ['process_status'][index]['connection_infos']
+        elif service_name == "rabbitmq" and client_role == "control":
+            connection_info = None
+            if client_process == "contrail-control":
+                rabbitmq_server_address = self.cn_inspect[client_ip].\
+                                        get_connected_rabbitmq()
+            elif client_process == "contrail-dns":
+                rabbitmq_server_address = self.dns_inspect[client_ip].\
+                                        get_connected_rabbitmq()
+            self.logger.info("Client process '%s' running on node '%s' is connected"
+                          " to '%s' server running on IP %s" % (client_process, 
+                            client_node_name, service_name, rabbitmq_server_address))
+            return rabbitmq_server_address
         for connections in connection_info:
             if service_name == "collector":
                 if connections['type'] == 'Collector':
@@ -330,7 +332,7 @@ class BaseServiceConnectionsTest(test_v1.BaseTestCase_v1):
             nodetype = client_process.rstrip("-nodemgr")
             client_process = "contrail-nodemgr --nodetype=%s" % nodetype
         else:
-            client_process = "/usr/bin" + client_process
+            client_process = "/usr/bin/" + client_process
         pid_cmd = 'pgrep -f -o "%s"' % client_process
         pid = int(self.inputs.run_cmd_on_server(client_ip, pid_cmd,
                             self.inputs.host_data[client_ip]['username']\

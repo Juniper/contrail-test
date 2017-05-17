@@ -58,3 +58,14 @@ class DnsAgentInspect (VerificationUtilBase):
         return_data = EtreeToDict(xpath).get_all_entry(rec_data)
         return return_data['records']
     # end of get_dnsa_config
+    
+    def get_connected_rabbitmq(self):
+        '''
+        Return the rabbitMQ server to which 
+        '''
+        path = 'Snh_ConfigClientInfoReq?'
+        xpath = './ConfigClientInfoResp/amqp_conn_info/ConfigAmqpConnInfo/url'
+        p = self.dict_get(path)
+        rt = EtreeToDict(xpath).get_all_entry(p)
+        rabbit_mq_node = rt['url'].split("@")[1].split(":")[0]
+        return rabbit_mq_node
