@@ -60,7 +60,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
            connected to first 2 entries as mentioned in .conf file
         '''
         self.skip_if_setup_incompatible("agent", 1, "control", 3)
-        valid_dns_servers = self.get_all_configured_servers("dns",
+        valid_dns_servers, dns_ports = self.get_all_configured_servers("dns",
                                             "agent", "contrail-vrouter-agent")
         applicable_dns_servers = [valid_dns_servers[0], valid_dns_servers[1]]
         for node in self.inputs.compute_control_ips:
@@ -76,7 +76,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         result = True
         self.add_remove_server("remove", in_use_servers[0], "DNS",
                                 "servers", "agent", "contrail-vrouter-agent")
-        valid_dns_servers = self.get_all_configured_servers("dns",
+        valid_dns_servers, dns_ports = self.get_all_configured_servers("dns",
                                             "agent", "contrail-vrouter-agent")
         applicable_dns_servers = [valid_dns_servers[0], valid_dns_servers[1]]
         for node in self.inputs.compute_control_ips:
@@ -94,7 +94,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         self.add_remove_server("add", in_use_servers[0], "DNS",
                                 "servers", "agent", "contrail-vrouter-agent")
         assert result, "Agent connection to DNS is unexpected"
-        valid_dns_servers = self.get_all_configured_servers("dns",
+        valid_dns_servers, dns_ports = self.get_all_configured_servers("dns",
                                             "agent", "contrail-vrouter-agent")
         applicable_dns_servers = [valid_dns_servers[0], valid_dns_servers[1]]
         for node in self.inputs.compute_control_ips:
@@ -157,21 +157,20 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         '''
         self.skip_if_setup_incompatible("control", 1, "config", 2)
         result = True
-        in_use_servers, status, ports = self.get_all_in_use_servers("rabbitmq" ,
+        in_use_server = self.get_all_in_use_servers("rabbitmq" ,
                                         "control", "contrail-control",
                                         self.inputs.bgp_control_ips[0])
-        self.add_remove_server("remove", in_use_servers[0], "CONFIGDB",
+        self.add_remove_server("remove", in_use_server, "CONFIGDB",
                         "rabbitmq_server_list", "control", "contrail-control")
-        self.addCleanup(self.add_remove_server, "add", in_use_servers[0], "CONFIGDB",
+        self.addCleanup(self.add_remove_server, "add", in_use_server, "CONFIGDB",
                         "rabbitmq_server_list", "control", "contrail-control")
         for node in self.inputs.bgp_control_ips:
-            new_in_use_servers, status, ports = self.get_all_in_use_servers(
+            new_in_use_server = self.get_all_in_use_servers(
                                             "rabbitmq", "control",
                                             "contrail-control", node)
-            if in_use_servers[0] in new_in_use_servers or 'Down' in status:
+            if in_use_server == new_in_use_server:
                 self.logger.error("Connection unexpected. Either the server "
-                                "removed from .conf file is still getting"
-                                " used or the status of connection is down")
+                                "removed from .conf file is still getting used")
                 result = False
             else:
                 self.logger.info("Connections switched to other server after "
@@ -193,21 +192,20 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         '''
         self.skip_if_setup_incompatible("control", 1, "config", 2)
         result = True
-        in_use_servers, status, ports = self.get_all_in_use_servers("rabbitmq" ,
+        in_use_server = self.get_all_in_use_servers("rabbitmq" ,
                                         "control", "contrail-dns",
                                         self.inputs.bgp_control_ips[0])
-        self.add_remove_server("remove", in_use_servers[0], "CONFIGDB",
+        self.add_remove_server("remove", in_use_server, "CONFIGDB",
                         "rabbitmq_server_list", "control", "contrail-dns")
-        self.addCleanup(self.add_remove_server, "add", in_use_servers[0], "CONFIGDB",
+        self.addCleanup(self.add_remove_server, "add", in_use_server, "CONFIGDB",
                         "rabbitmq_server_list", "control", "contrail-dns")
         for node in self.inputs.bgp_control_ips:
-            new_in_use_servers, status, ports = self.get_all_in_use_servers(
+            new_in_use_server = self.get_all_in_use_servers(
                                             "rabbitmq", "control",
                                             "contrail-dns", node)
-            if in_use_servers[0] in new_in_use_servers or 'Down' in status:
+            if in_use_server == new_in_use_server:
                 self.logger.error("Connection unexpected. Either the server "
-                                "removed from .conf file is still getting"
-                                " used or the status of connection is down")
+                                "removed from .conf file is still getting used")
                 result = False
             else:
                 self.logger.info("Connections switched to other server after "
@@ -252,15 +250,20 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
     #end test_add_remove_collector_from_config_nodemgr
     
     @preposttest_wrapper
-    def test_add_remove_redis_from_alarm_gen(self):
+    def test_add_remove_redis_from_alarm_gen_and_analytics_api(self):
         '''
         Verify that on removing the entry from contail-alarm-gen.conf file 
         [REDIS] redis_uve_list section, the connection to that server is lost.
+        Also verify same for contrail-analytics-api
         Steps:
         1. Check the connections of contail-alarm-gen and REDIS.
         2. Remove the entry of in use server from all client .conf files
+           for both contrail-alarm-gen and contrail-analytics-api
         3. Verify that removed server is not connected to any client.
         4. Add the entry back in all client .conf file as part of cleanup
+        
+        Note that RedisUVE list need to be consistent across contrail-analytics-api
+        and contrail-alarm-gen. Thus clubbing the test case for both processes.
         '''
         self.skip_if_setup_incompatible("analytics", 1, "analytics", 2)
         result = True
@@ -269,33 +272,49 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                                         self.inputs.collector_control_ips[0])
         self.add_remove_server("remove", in_use_servers[0], "REDIS",
                         "redis_uve_list", "analytics", "contrail-alarm-gen")
-        for node in self.inputs.cfgm_control_ips:
-            new_in_use_servers, status, ports = self.get_all_in_use_servers(
+        self.add_remove_server("remove", in_use_servers[0], "REDIS",
+                        "redis_uve_list", "analytics", "contrail-analytics-api")
+        # RedisUVE list and collectors list should be same for any process.
+        # Below 2 calls take care of that
+        self.add_remove_server("remove", in_use_servers[0], "DEFAULTS",
+                        "collectors", "analytics", "contrail-alarm-gen")
+        self.add_remove_server("remove", in_use_servers[0], "DEFAULTS",
+                        "collectors", "analytics", "contrail-analytics-api")
+        for node in self.inputs.collector_control_ips:
+            for process in ["contrail-alarm-gen", "contrail-analytics-api"]:
+                new_in_use_servers, status, ports = self.get_all_in_use_servers(
                                             "redis", "analytics",
-                                            "contrail-alarm-gen", node)
-            if in_use_servers[0] in new_in_use_servers or 'Down' in status:
-                self.logger.error("Connection unexpected. Either the server "
+                                            process, node)
+                if in_use_servers[0] in new_in_use_servers or 'Down' in status:
+                    self.logger.error("Connection unexpected. Either the server "
                                 "removed from .conf file is still getting"
                                 " used or the status of connection is down")
-                result = False
-            else:
-                self.logger.info("Connections switched to other server after "
+                    result = False
+                else:
+                    self.logger.info("Connections switched to other server after "
                                  "removal of entry in .conf file")
         self.add_remove_server("add", in_use_servers[0], "REDIS",
                         "redis_uve_list", "analytics", "contrail-alarm-gen")
-        for node in self.inputs.cfgm_control_ips:
-            new_in_use_servers, status, ports = self.get_all_in_use_servers(
+        self.add_remove_server("add", in_use_servers[0], "REDIS",
+                        "redis_uve_list", "analytics", "contrail-analytics-api")
+        self.add_remove_server("add", in_use_servers[0], "DEFAULTS",
+                        "collectors", "analytics", "contrail-alarm-gen")
+        self.add_remove_server("add", in_use_servers[0], "DEFAULTS",
+                        "collectors", "analytics", "contrail-analytics-api")
+        for node in self.inputs.collector_control_ips:
+            for process in ["contrail-alarm-gen", "contrail-analytics-api"]:
+                new_in_use_servers, status, ports = self.get_all_in_use_servers(
                                             "redis", "analytics",
-                                            "contrail-alarm-gen", node)
-            if in_use_servers != new_in_use_servers:
-                self.logger.error("Connection unexpected. The REDIS server"
+                                            process, node)
+                if in_use_servers != new_in_use_servers:
+                    self.logger.error("Connection unexpected. The REDIS server"
                                 "added back is not connected with alarm-gen.")
-                result = False
-            else:
-                self.logger.info("Success! Alarm gen connected to all REDIS"
+                    result = False
+                else:
+                    self.logger.info("Success! Alarm gen connected to all REDIS"
                                  "servers succeffuly")
         assert result, "Unexpected Connection"
-    #end test_add_remove_redis_from_alarm_gen
+    #end test_add_remove_redis_from_alarm_gen_and_analytics_api
     
     @preposttest_wrapper
     def test_collector_alarm_gen_connection_on_collector_restart(self):
@@ -461,20 +480,18 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         4. Start the  RabbitMQ server stopped in step 2.
         '''
         self.skip_if_setup_incompatible("control", 1, "config", 2)
-        in_use_servers, status, ports = self.get_all_in_use_servers("rabbitmq" ,
+        in_use_server = self.get_all_in_use_servers("rabbitmq" ,
                                             "control", "contrail-control",
                                             self.inputs.bgp_control_ips[0])
-        self.inputs.stop_service("rabbitmq-server",[in_use_servers[0]])
+        self.inputs.stop_service("rabbitmq-server",[in_use_server])
         self.addCleanup(self.inputs.start_service,
-                        "rabbitmq-server",[in_use_servers[0]])
+                        "rabbitmq-server",[in_use_server])
         self.addCleanup(self.inputs.confirm_service_active, 
-                        "rabbitmq-server",in_use_servers[0])
-        self.sleep(15)
-        new_in_use_servers, status, ports = self.get_all_in_use_servers("rabbitmq" ,
+                        "rabbitmq-server",in_use_server)
+        new_in_use_server = self.get_all_in_use_servers("rabbitmq" ,
                                             "control", "contrail-control",
                                             self.inputs.bgp_control_ips[0])
-        if in_use_servers[0] not in new_in_use_servers \
-            and all(x == 'Up' for x in status):
+        if in_use_server != new_in_use_server:
             self.logger.info("Connections switched to other RabbitMQ Server")
         else:
             self.logger.error("Connection not switched to new RabbitMQ server")
@@ -493,20 +510,18 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         4. Start the  RabbitMQ server stopped in step 2.
         '''
         self.skip_if_setup_incompatible("control", 1, "config", 2)
-        in_use_servers, status, ports = self.get_all_in_use_servers("rabbitmq" ,
+        in_use_server = self.get_all_in_use_servers("rabbitmq" ,
                                             "control", "contrail-dns",
                                             self.inputs.bgp_control_ips[0])
-        self.inputs.stop_service("rabbitmq-server",[in_use_servers[0]])
+        self.inputs.stop_service("rabbitmq-server",[in_use_server])
         self.addCleanup(self.inputs.start_service,
-                        "rabbitmq-server",[in_use_servers[0]])
+                        "rabbitmq-server",[in_use_server])
         self.addCleanup(self.inputs.confirm_service_active, 
-                        "rabbitmq-server",in_use_servers[0])
-        self.sleep(15)
-        new_in_use_servers, status, ports = self.get_all_in_use_servers("rabbitmq" ,
+                        "rabbitmq-server",in_use_server)
+        new_in_use_server = self.get_all_in_use_servers("rabbitmq" ,
                                             "control", "contrail-dns",
                                             self.inputs.bgp_control_ips[0])
-        if in_use_servers[0] not in new_in_use_servers \
-            and all(x == 'Up' for x in status):
+        if in_use_server != new_in_use_server:
             self.logger.info("Connections switched to other RabbitMQ Server")
         else:
             self.logger.error("Connection not switched to new RabbitMQ server")
