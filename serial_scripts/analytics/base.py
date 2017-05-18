@@ -97,6 +97,15 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
         self.addCleanup(vnc_lib_fixture.set_flow_export_rate,0)
     # end setup_flow_export_rate
 
+    def setup_flow_export_rate(self, value):
+        ''' Set flow export rate and handle the cleanup
+        '''
+        vnc_lib_fixture = self.connections.vnc_lib_fixture
+        current_rate = vnc_lib_fixture.get_flow_export_rate()
+        vnc_lib_fixture.set_flow_export_rate(value)
+        self.addCleanup(vnc_lib_fixture.set_flow_export_rate, current_rate)
+    # end setup_flow_export_rate
+
 class ResourceFactory:
     factories = {}
     def createResource(id):

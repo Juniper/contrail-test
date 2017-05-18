@@ -1095,6 +1095,7 @@ class AnalyticsTestSanityWithResource(
         '''
         self.setup_flow_export_rate(10)
         result = True
+        self.setup_flow_export_rate(10)
         src_vn = self.res.vn1_vm1_fixture.vn_fq_names[0]
         dst_vn = self.res.vn1_vm2_fixture.vn_fq_names[0]
         other_vrouter_ip = self.res.vn1_vm2_fixture.get_compute_host()
