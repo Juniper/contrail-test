@@ -4,18 +4,20 @@ import time
 def start_all_control_services(self):
     """ Start all the control services running in the topology.
     """
-    self.inputs.start_service('supervisor-control', self.inputs.bgp_ips,
+    for ip in self.inputs.bgp_ips:
+        self.inputs.start_service('supervisor-control', [ip],
                               container='controller')
-    time.sleep(5)
+        time.sleep(60)
 # end stop_all_control_services
 
 
 def stop_all_control_services(self):
     """ Stop all the control services running in the topology.
     """
-    self.inputs.stop_service('supervisor-control', self.inputs.bgp_ips,
+    for ip in self.inputs.bgp_ips:
+        self.inputs.stop_service('supervisor-control', [ip],
                              container='controller')
-    time.sleep(5)
+        time.sleep(60)
 # end stop_all_control_services
 
 
@@ -39,19 +41,19 @@ def get_flow_index_list(self, src_vm, dest_vm):
     """ Get all the flow index numbers of the flows created.
     """
     try:
-        cmd = "flow -l | grep '%s' | grep '%s' | grep '^ [0-9]\|^[0-9]' | awk '{print $1}'" % (
-            src_vm.vm_ip, dest_vm.vm_ip)
-        output = self.inputs.run_cmd_on_server(
+        cmd = "flow --match %s,%s | awk '{print $1}' | grep '<=>'  |  head -n 1" % (
+                 src_vm.vm_ip,dest_vm.vm_ip)
+        result = self.inputs.run_cmd_on_server(
             src_vm.vm_node_ip, cmd, self.inputs.host_data[
                 src_vm.vm_node_ip]['username'], self.inputs.host_data[
-                src_vm.vm_node_ip]['password'],
-                container='agent')
-
+                src_vm.vm_node_ip]['password'])
+        result.split('\r\n')
+        output = result.replace('<=>',' ').split(' ')
+        output = filter(None,output) 
     except Exception as e:
         self.logger.exception(
             "Got exception at get_flow_index_list as %s" %
             (e))
-    output = output.split('\r\n')
     return output
 # end get_flow_index_list
 
