@@ -141,8 +141,7 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
             dest_vm)
 
         headless_vr_utils.stop_all_control_services(self)
-        self.addCleanup(self.inputs.start_service, 'supervisor-control', self.inputs.bgp_ips,
-                        container='controller')
+        self.addCleanup(self.inputs.start_service, 'supervisor-control', self.inputs.bgp_ips,container='controller')
 
         headless_vr_utils.check_through_tcpdump(self, dest_vm, src_vm)
 
@@ -151,7 +150,7 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
             src_vm,
             dest_vm)
 
-        if set(flow_index_list) == set(flow_index_list2):
+        if flow_index_list == flow_index_list2:
             self.logger.info("Flow indexes have not changed.")
         else:
             self.logger.error(
@@ -167,7 +166,7 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
             src_vm,
             dest_vm)
 
-        if set(flow_index_list) == set(flow_index_list2):
+        if flow_index_list == flow_index_list2:
             self.logger.info("Flow indexes have not changed.")
         else:
             self.logger.error(
@@ -185,7 +184,7 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
             self,
             src_vm,
             dest_vm)
-        if not flow_index_list[0]:
+        if not len(flow_index_list):
             self.logger.info("No flows are present")
         else:
             self.logger.error("Flows are still present.")
@@ -196,7 +195,6 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
         sender.start()
         self.logger.info("Waiting for 5 sec for traffic to be setup ...")
         time.sleep(5)
-
         # verify_flow_is_recreated
         flow_index_list = headless_vr_utils.get_flow_index_list(
             self,
@@ -220,7 +218,7 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
             src_vm,
             dest_vm)
 
-        if set(flow_index_list) == set(flow_index_list2):
+        if flow_index_list == flow_index_list2:
             self.logger.info("Flow indexes have not changed.")
         else:
             self.logger.error(
@@ -238,7 +236,7 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
             self,
             src_vm,
             dest_vm)
-        if not flow_index_list[0]:
+        if not len(flow_index_list):
             self.logger.info("No flows are present")
         else:
             self.logger.error("Flows are still present.")
@@ -374,8 +372,7 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
             dest_vm)
 
         headless_vr_utils.stop_all_control_services(self)
-        self.addCleanup(self.inputs.start_service, 'supervisor-control', self.inputs.bgp_ips,
-                        container='controller')
+        self.addCleanup(self.inputs.start_service, 'supervisor-control', self.inputs.bgp_ips,container='controller')
         time.sleep(10)
         headless_vr_utils.check_through_tcpdump(self, dest_vm, src_vm)
 
@@ -396,11 +393,10 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
         project1_instance = config_topo['project1']['project']['project1']
         project1_instance.get_project_connections()
         vnet2_instance = config_topo['project1']['vn']['vnet2']
-
         # add VM to existing VN
         VM22_fixture = self.useFixture(
             VMFixture(
-                connections=project1_instance.project_connections,
+                connections=project1_instance.project_connections['juniper'],
                 vn_obj=vnet2_instance.obj,
                 vm_name='VM22',
                 project_name=project1_instance.project_name))
@@ -408,18 +404,18 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
         # create new IPAM
         ipam3_obj = self.useFixture(
             IPAMFixture(
-                connections=project1_instance.project_connections,
+                project_obj=project1_instance,
                 name='ipam3'))
         ipam4_obj = self.useFixture(
             IPAMFixture(
-                connections=project1_instance.project_connections,
+                project_obj=project1_instance,
                 name='ipam4'))
 
         # create new VN
         VN3_fixture = self.useFixture(
             VNFixture(
                 project_name=project1_instance.project_name,
-                connections=project1_instance.project_connections,
+                connections=project1_instance.project_connections['juniper'],
                 vn_name='VN3',
                 inputs=project1_instance.inputs,
                 subnets=['10.3.1.0/24'],
@@ -428,7 +424,7 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
         VN4_fixture = self.useFixture(
             VNFixture(
                 project_name=project1_instance.project_name,
-                connections=project1_instance.project_connections,
+                connections=project1_instance.project_connections['juniper'],
                 vn_name='VN4',
                 inputs=project1_instance.inputs,
                 subnets=['10.4.1.0/24'],
@@ -457,7 +453,7 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
                 policy_name=policy_name,
                 rules_list=rules,
                 inputs=project1_instance.inputs,
-                connections=project1_instance.project_connections,
+                connections=project1_instance.project_connections['juniper'],
                 project_fixture=project1_instance))
 
         # create VN to policy mapping in a dict of policy list.
@@ -478,7 +474,7 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
         # attach policy to VN
         VN3_policy_fixture = self.useFixture(
             VN_Policy_Fixture(
-                connections=project1_instance.project_connections,
+                connections=project1_instance.project_connections['juniper'],
                 vn_name=VN3_fixture.vn_name,
                 policy_obj=policy_obj_dict,
                 vn_obj=vn_obj_dict,
@@ -488,7 +484,7 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
 
         VN4_policy_fixture = self.useFixture(
             VN_Policy_Fixture(
-                connections=project1_instance.project_connections,
+                connections=project1_instance.project_connections['juniper'],
                 vn_name=VN4_fixture.vn_name,
                 policy_obj=policy_obj_dict,
                 vn_obj=vn_obj_dict,
@@ -499,14 +495,14 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
         # add VM to new VN
         VM31_fixture = self.useFixture(
             VMFixture(
-                connections=project1_instance.project_connections,
+                connections=project1_instance.project_connections['juniper'],
                 vn_obj=VN3_fixture.obj,
                 vm_name='VM31',
                 project_name=project1_instance.project_name))
 
         VM41_fixture = self.useFixture(
             VMFixture(
-                connections=project1_instance.project_connections,
+                connections=project1_instance.project_connections['juniper'],
                 vn_obj=VN4_fixture.obj,
                 vm_name='VM41',
                 project_name=project1_instance.project_name))
