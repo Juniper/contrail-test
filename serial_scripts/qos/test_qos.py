@@ -592,27 +592,12 @@ class TestQosSVCSerial(TestQosSVCBase):
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map,
                                             default_fc_id=0)
         # Getting the VMI of Service Instance
-        cs_si = self.si_fixture.api_s_inspect.get_cs_si(
-            project=self.inputs.project_name,
-            si=self.si_fixture.si_name,
-            refresh=True)
-        vm_refs = cs_si['service-instance']['virtual_machine_back_refs']
-        svm_ids = [vm_ref['to'][0] for vm_ref in vm_refs]
-        cs_svm = self.si_fixture.api_s_inspect.get_cs_vm(
-            vm_id=svm_ids[0], refresh=True)
-        cs_svmis = cs_svm[
-            'virtual-machine']['virtual_machine_interface_back_refs']
-        for svmi in cs_svmis:
-            if 'right' in svmi['to'][2]:
-                right_svmi = svmi['uuid']
-                break
-        # Getting the SI node IP to check traffic flow on that node
-        vm_obj = self.connections.orch.get_vm_by_id(svm_ids[0])
-        si_vm_node = self.connections.orch.get_host_of_vm(vm_obj)
-        si_vm_node_ip = self.inputs.get_host_ip(si_vm_node)
+        right_svmi = self.service_vm_fixture.cs_vmi_obj[\
+                                    self.vn2_fixture.vn_fq_name][\
+                                    'virtual-machine-interface']['uuid']
         si_source_compute_fixture = self.useFixture(ComputeNodeFixture(
-                                                    self.connections,
-                                                    si_vm_node_ip))
+                                    self.connections,
+                                    self.service_vm_fixture.vm_node_ip))
         # Applying qos-config on right VMI of service instance
         self.setup_qos_config_on_vmi(qos_fixture, right_svmi)
         i = 0
@@ -629,7 +614,6 @@ class TestQosSVCSerial(TestQosSVCBase):
                     'traffic_duration' : 5}
             assert self.validate_packet_qos_marking(**validate_method_args)
     #end test_qos_queueing_on_vmi_of_si
-
 
 class TestQosQueueQosmap(TestQosQueueProperties):
 
