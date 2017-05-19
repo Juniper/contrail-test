@@ -55,11 +55,13 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
 
         self.already_present = False
         self.physical_port_fixtures = {}
-
-        if self.inputs.verify_thru_gui():
-            connections = kwargs.get('connections', None)
-            self.webui = WebuiTest(connections, self.inputs)
-            self.kwargs = kwargs
+        try:
+            if self.inputs.verify_thru_gui():
+                connections = kwargs.get('connections', None)
+                self.webui = WebuiTest(connections, self.inputs)
+                self.kwargs = kwargs
+        except Exception as e:
+            pass
      # end __init__
 
     def _get_ip_fabric_ri_obj(self):
@@ -79,8 +81,9 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         pr.physical_router_vnc_managed = True
         uc = vnc_api_test.UserCredentials(self.ssh_username, self.ssh_password)
         pr.set_physical_router_user_credentials(uc)
-        if self.inputs.is_gui_based_config():
-            self.webui.create_physical_router(self)
+        if self.inputs:
+            if self.inputs.is_gui_based_config():
+                self.webui.create_physical_router(self)
         else:
             pr_id = self.vnc_api_h.physical_router_create(pr)
         self.logger.info('Created Physical device %s with ID %s' % (

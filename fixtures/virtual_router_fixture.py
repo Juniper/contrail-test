@@ -50,9 +50,14 @@ class VirtualRouterBase(vnc_api_test.VncLibFixture):
 class VirtualRouterFixture(VirtualRouterBase):
     def __init__(self, *args, **kwargs):
         super(VirtualRouterFixture,self).__init__(*args, **kwargs)
-        if self.inputs.verify_thru_gui():
-            self.webui = WebuiTest(self.connections, self.inputs)
-            self.ip = args[2]
+        try:
+            #inputs object not mandatory.Its not passed as part of 
+            #tools/setup_tors.py.Code was getting exception here
+            if self.inputs.verify_thru_gui():
+                self.webui = WebuiTest(self.connections, self.inputs)
+                self.ip = args[2]
+        except Exception as e:
+            pass 
 
     def setUp(self):
         super(VirtualRouterFixture, self).setUp()
@@ -63,11 +68,15 @@ class VirtualRouterFixture(VirtualRouterBase):
             self.logger.info('virtual router %s already present' % (
                 vr_fq_name))
         except vnc_api_test.NoIdError:
-            if self.inputs.is_gui_based_config():
+            if self.inputs and self.inputs.is_gui_based_config():
                 self.vr = self.webui.create_virtual_router(self)
             else:
                 self.vr = self.create_virtual_router()
-        if not self.inputs.is_gui_based_config():
+       
+        try: 
+            if not self.inputs.is_gui_based_config():
+                self.update_virtual_router_type()
+        except Exception as e:
             self.update_virtual_router_type()
 
     def cleanUp(self):

@@ -18,9 +18,12 @@ class VpeRouterFixture(PhysicalDeviceFixture):
 
     def __init__(self, *args, **kwargs):
         super(VpeRouterFixture, self).__init__( *args, **kwargs)
-        if self.inputs.verify_thru_gui():
-            self.webui = WebuiTest(self.connections, self.inputs)
-            self.kwargs = kwargs
+        try:
+            if self.inputs.verify_thru_gui():
+                self.webui = WebuiTest(self.connections, self.inputs)
+                self.kwargs = kwargs
+        except Exception as e:
+            pass
      # end __init__
 
     def setUp(self):
