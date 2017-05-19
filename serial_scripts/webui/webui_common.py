@@ -2719,6 +2719,7 @@ class WebuiCommon:
         key_val_lst1 = self.find_element('pre', 'tag')
         key_val_lst2 = self.find_element(
             'key-value', 'class', elements=True, browser=key_val_lst1)
+        key1=val1=flag=None
         for element in key_val_lst2:
             if name in element.text:
                 keys_arry = self.find_element(
