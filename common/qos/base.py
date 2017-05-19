@@ -21,6 +21,7 @@ from policy_test import PolicyFixture
 from vn_policy_test import VN_Policy_Fixture
 
 from tcutils.contrail_status_check import *
+from vm_test import VMFixture
 
 class QosTestBase(BaseNeutronTest):
 
@@ -640,10 +641,10 @@ class QosTestBase(BaseNeutronTest):
             if elem[0] == node_ip:
                 map = elem[1]
         for hw_to_logical_value in map:
-            hw_queues.append(int(hw_to_logical_value.keys()[0]))
             if 'default' in hw_to_logical_value.values()[0]:
                 default_queue = int(hw_to_logical_value.keys()[0])
             if hw_to_logical_value.values()[0][0] != 'default':
+                hw_queues.append(int(hw_to_logical_value.keys()[0]))
                 logical_id = int(hw_to_logical_value.values()[0][0].split('-')[0])
                 logical_ids.append(logical_id)
         return (hw_queues, logical_ids, default_queue)
@@ -1036,24 +1037,42 @@ class TestQosSVCBase(QosTestExtendedBase):
     @classmethod
     def setUpClass(cls):
         super(TestQosSVCBase, cls).setUpClass()
-        if_details = { 'left': {'shared_ip_enable': False,
-                                'static_route_enable' : False},
-                       'right': {'shared_ip_enable': False,
-                                'static_route_enable' : False}}
+        if_details = { 'left': {},
+                       'right': {}}
         cls.st_fixture= SvcTemplateFixture(connections=cls.connections,
                         st_name="service_template",
-                        svc_img_name='ubuntu-in-net', svc_type='firewall',
-                        if_details=if_details, svc_mode='in-network',
-                        svc_scaling=False, flavor='contrail_flavor_2cpu',
-                        availability_zone_enable = True)
+                        service_type='firewall',
+                        if_details=if_details,
+                        service_mode='in-network')
         cls.st_fixture.setUp()
+        if_details = {
+            'left' : {'vn_name' : cls.vn1_fixture.vn_fq_name},
+            'right': {'vn_name': cls.vn2_fixture.vn_fq_name}
+        }
         cls.si_fixture= SvcInstanceFixture(connections=cls.connections,
-                        si_name="service_instance", svc_template= cls.st_fixture.st_obj,
-                        if_details=if_details, left_vn_name=cls.vn1_fixture.vn_fq_name,
-                        right_vn_name=cls.vn2_fixture.vn_fq_name,
-                        do_verify=True, max_inst=1,
-                        availability_zone = "nova:"+cls.first_node_name)
+                                si_name="service_instance",
+                                svc_template= cls.st_fixture.st_obj,
+                                if_details=if_details,
+                                max_inst=1)
         cls.si_fixture.setUp()
+        vns = [cls.vn1_fixture, cls.vn2_fixture]
+        vn_objs = [vn.obj for vn in vns if vn is not None]
+        cls.service_vm_fixture = VMFixture(
+                project_name=cls.inputs.project_name,
+                connections=cls.connections,
+                vm_name="service_vm",
+                image_name='ubuntu-in-net',
+                flavor='contrail_flavor_2cpu',
+                vn_objs=vn_objs,
+                count=1,
+                node_name = cls.first_node_name,
+                zone="nova")
+        cls.service_vm_fixture.setUp()
+        cls.check_vms_booted([cls.service_vm_fixture])
+        svm_pt_props = {'name' : "port_tuple_qos",
+                        'left' : cls.service_vm_fixture.vmi_ids[cls.vn1_fixture.vn_fq_name],
+                        'right' : cls.service_vm_fixture.vmi_ids[cls.vn2_fixture.vn_fq_name]}
+        cls.si_fixture.add_port_tuple(svm_pt_props)
         cls.si_fixture.verify_on_setup()
         cls.action_list =  [":".join(cls.si_fixture.si_fq_name)]
         rules = [{'direction': '<>',
@@ -1097,6 +1116,7 @@ class TestQosSVCBase(QosTestExtendedBase):
         cls.vn1_policy_fixture.cleanUp()
         cls.vn2_policy_fixture.cleanUp()
         cls.policy_fixture.cleanUp()
+        cls.service_vm_fixture.cleanUp()
         cls.si_fixture.cleanUp()
         cls.st_fixture.cleanUp()
         super(TestQosSVCBase, cls).tearDownClass()
