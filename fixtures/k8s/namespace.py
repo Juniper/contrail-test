@@ -140,3 +140,9 @@ class NamespaceFixture(fixtures.Fixture):
         self.obj = self.k8s_client.set_namespace_label(self.name, label_dict)
         self._populate_attr()
     # end set_labels
+   
+    def enable_service_isolation(self):
+        return self.k8s_client.set_service_isolation(self.name, enable=True)
+
+    def disable_service_isolation(self):
+        return self.k8s_client.set_service_isolation(self.name, enable=False)
