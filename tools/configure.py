@@ -14,6 +14,8 @@ from fabric.contrib.files import exists
 from cfgm_common import utils
 from tcutils.util import istrue
 
+is_container_env = False
+
 def detect_ostype():
     return platform.dist()[0].lower()
 
@@ -649,11 +651,8 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         update_config_option('openstack', '/etc/keystone/keystone.conf',
                              'token', 'expiration',
                              '86400','keystone')
-        container = None
-        if 'contrail-controller' in env.roledefs:
-            container = 'webui'
         update_js_config('openstack', '/etc/contrail/config.global.js',
-                         'contrail-webui', container=container)
+                         'contrail-webui', container=is_container_env)
 
 open_delimiters = ['(', '[', '{']
 close_delimiters = [')', ']', '}']
@@ -700,6 +699,8 @@ def testbed_format_conversion(path='/opt/contrail/utils'):
     start, end = get_section(tb, 'env.roledefs')
     if not start:
         return True
+    global is_container_env
+    is_container_env = True
     block = tb[start:end]
     # Find contrail-controller section
     match = re.search('contrail-controller.*?].*?,', block, re.M|re.S)
