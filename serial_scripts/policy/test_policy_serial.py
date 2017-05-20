@@ -722,6 +722,11 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         Generate traffic streams matching policy rules - udp & icmp for now..
         assert if traffic failure is seen as no disruptive trigger is applied here..
         """
+        #Set the flow export rate to export all the flows to opserver
+        vnc_lib_fixture = self.connections.vnc_lib_fixture
+        current_rate = vnc_lib_fixture.get_flow_export_rate()
+        vnc_lib_fixture.set_flow_export_rate(100)
+        self.addCleanup(vnc_lib_fixture.set_flow_export_rate, current_rate)
         result = True
         msg = []
         #
