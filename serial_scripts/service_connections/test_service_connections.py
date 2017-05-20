@@ -42,73 +42,42 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                                  "removal of entry in .conf file")
         assert result, "Unexpected Connection"
     #end test_add_remove_control_from_agent
-    
+
     @preposttest_wrapper
     def test_add_remove_dns_from_agent(self):
         '''
         Verify that on removing the entry from contail-vrouter-agent.conf
         file DNS servers section, the connection to that server is lost.
         Steps:
-        1. Get list of all valid DNS Servers. 1st 2 should be applicable candidates
-        2. Check the connections of agent to DNS server. The agent should be
-           connected to first 2 entries as mentioned in .conf file.
-        3. Remove the entry of in use server from all client .conf files
-        4. Verify that removed server is not connected to any client.
-           Also verify that agent is connected to next 2 servers in the list
-        5. Add the entry back in all client .conf file as part of cleanup
-        6. Check the connections of agent to DNS server. The agent should be
-           connected to first 2 entries as mentioned in .conf file
+        1. Check the connections of agent to Control node(DNS)
+        2. Remove the entry of in use server from all client .conf files
+        3. Verify that removed server is not connected to any client.
+        4. Add the entry back in all client .conf file as part of cleanup
         '''
         self.skip_if_setup_incompatible("agent", 1, "control", 3)
-        valid_dns_servers, dns_ports = self.get_all_configured_servers("dns",
-                                            "agent", "contrail-vrouter-agent")
-        applicable_dns_servers = [valid_dns_servers[0], valid_dns_servers[1]]
-        for node in self.inputs.compute_control_ips:
-            in_use_servers, status, ports = self.get_all_in_use_servers("dns" ,"agent",
-                                            "contrail-vrouter-agent", node)
-            if set(in_use_servers) == set(applicable_dns_servers):
-                self.logger.info("Agent connected correctly to 1st 2 entries "
-                                 "in .conf file")
-            else:
-                self.logger.error("Agent not connected to 1st 2 entries in "
-                                  ".conf file")
-                assert False, "Agent connection to DNS is unexpected"
         result = True
+        in_use_servers, status, ports = self.get_all_in_use_servers("dns" ,"agent",
+                                            "contrail-vrouter-agent",
+                                            self.inputs.compute_control_ips[0])
         self.add_remove_server("remove", in_use_servers[0], "DNS",
                                 "servers", "agent", "contrail-vrouter-agent")
-        valid_dns_servers, dns_ports = self.get_all_configured_servers("dns",
-                                            "agent", "contrail-vrouter-agent")
-        applicable_dns_servers = [valid_dns_servers[0], valid_dns_servers[1]]
+        self.addCleanup(self.add_remove_server, "add", in_use_servers[0], "DNS",
+                                "servers", "agent", "contrail-vrouter-agent")
         for node in self.inputs.compute_control_ips:
             new_in_use_servers, status, ports = self.get_all_in_use_servers("dns",
                                             "agent", "contrail-vrouter-agent",
                                             node)
-            if set(applicable_dns_servers) != set(new_in_use_servers) or \
-                'Down' in status:
-                self.logger.error("Agent not connected to 1st 2 entries in "
-                            ".conf file or the status of connection is down")
+            if in_use_servers[0] in new_in_use_servers or 'Down' in status:
+                self.logger.error("Connection unexpected. Either the server "
+                                "removed from .conf file is still getting"
+                                " used or the status of connection is down")
                 result = False
             else:
                 self.logger.info("Connections switched to other server after "
                                  "removal of entry in .conf file")
-        self.add_remove_server("add", in_use_servers[0], "DNS",
-                                "servers", "agent", "contrail-vrouter-agent")
-        assert result, "Agent connection to DNS is unexpected"
-        valid_dns_servers, dns_ports = self.get_all_configured_servers("dns",
-                                            "agent", "contrail-vrouter-agent")
-        applicable_dns_servers = [valid_dns_servers[0], valid_dns_servers[1]]
-        for node in self.inputs.compute_control_ips:
-            in_use_servers, status, ports = self.get_all_in_use_servers("dns" ,"agent",
-                                            "contrail-vrouter-agent", node)
-            if set(in_use_servers) == set(applicable_dns_servers):
-                self.logger.info("Agent connected correctly to 1st 2 entries "
-                                 "in .conf file")
-            else:
-                self.logger.error("Agent not connected to 1st 2 entries in "
-                                  ".conf file")
-                assert False, "Agent connection to DNS is unexpected"
+        assert result, "Unexpected Connection"
     #end test_add_remove_dns_from_agent
-    
+
     @preposttest_wrapper
     def test_add_remove_collector_from_agent(self):
         '''
@@ -155,7 +124,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         3. Verify that removed server is not connected to any client.
         4. Add the entry back in all client .conf file as part of cleanup
         '''
-        self.skip_if_setup_incompatible("control", 1, "config", 2)
+        self.skip_if_setup_incompatible("control", 1, "openstack", 2)
         result = True
         in_use_server = self.get_all_in_use_servers("rabbitmq" ,
                                         "control", "contrail-control",
@@ -190,7 +159,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         3. Verify that removed server is not connected to any client.
         4. Add the entry back in all client .conf file as part of cleanup
         '''
-        self.skip_if_setup_incompatible("control", 1, "config", 2)
+        self.skip_if_setup_incompatible("control", 1, "openstack", 2)
         result = True
         in_use_server = self.get_all_in_use_servers("rabbitmq" ,
                                         "control", "contrail-dns",
@@ -479,7 +448,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         3. Check that contrail-control immediately switches to new RabbitMQ server.
         4. Start the  RabbitMQ server stopped in step 2.
         '''
-        self.skip_if_setup_incompatible("control", 1, "config", 2)
+        self.skip_if_setup_incompatible("control", 1, "openstack", 2)
         in_use_server = self.get_all_in_use_servers("rabbitmq" ,
                                             "control", "contrail-control",
                                             self.inputs.bgp_control_ips[0])
@@ -509,7 +478,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         3. Check that contrail-dns immediately switches to new RabbitMQ server.
         4. Start the  RabbitMQ server stopped in step 2.
         '''
-        self.skip_if_setup_incompatible("control", 1, "config", 2)
+        self.skip_if_setup_incompatible("control", 1, "openstack", 2)
         in_use_server = self.get_all_in_use_servers("rabbitmq" ,
                                             "control", "contrail-dns",
                                             self.inputs.bgp_control_ips[0])
