@@ -11,8 +11,9 @@ from common import isolated_creds
 from tcutils.util import get_random_name, copy_file_to_server, fab_put_file_to_vm
 import os
 from tcutils.topo.sdn_topo_setup import *
+from common.servicechain.verify import VerifySvcChain
 
-class BaseSGTest(test_v1.BaseTestCase_v1):
+class BaseSGTest(test_v1.BaseTestCase_v1, VerifySvcChain):
 
     @classmethod
     def setUpClass(cls):

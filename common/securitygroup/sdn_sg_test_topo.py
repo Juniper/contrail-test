@@ -681,14 +681,14 @@ class sdn_topo_mx_with_si():
         self.domain= domain; self.project= project; self.username= username; self.password= password
         ##
         # Define VN's in the project:
-        self.vnet_list=  ['vnet1','public']
+        self.vnet_list=  [get_random_name('vnet1'),get_random_name('public')]
         ##
         # Define network info for each VN:
 	if config_option == 'openstack':
-            self.vn_nets=  {'vnet1': ['9.9.9.0/24'], 'public': public_vn_info['subnet']}
+            self.vn_nets=  {self.vnet_list[0]: ['9.9.9.0/24'], self.vnet_list[1]: public_vn_info['subnet']}
 	else:
              self.vn_nets = {
-            'vnet1': [(NetworkIpam(),
+            self.vnet_list[0]: [(NetworkIpam(),
                        VnSubnetsType([
                         IpamSubnetType(
                          subnet=SubnetType(
@@ -696,7 +696,7 @@ class sdn_topo_mx_with_si():
                                  24))
                                      ])
                       )],
-            'public': [(NetworkIpam(),
+            self.vnet_list[1]: [(NetworkIpam(),
                         VnSubnetsType([
                          IpamSubnetType(
                           subnet=SubnetType(
@@ -707,42 +707,17 @@ class sdn_topo_mx_with_si():
                       )]
                            }
 
-
 	#Define diff. VN params
 	self.vn_params = {self.vnet_list[0]:{'router_asn':public_vn_info['router_asn'],
 					     'rt_number':public_vn_info['rt_number']
 					    }
 			 }
-
-        if_details = {
-            'management' : { 'shared_ip_enable' : False,
-                             'static_route_enable': False },
-            'left' : { 'shared_ip_enable': False,
-                       'static_route_enable' : False},
-            'right' : { 'shared_ip_enable': False,
-                       'static_route_enable' : False}}
-        # define service templates
-        self.st_list = ['st_trans_firewall']
-        self.st_params = {self.st_list[0]: {'svc_img_name': 'tiny_trans_fw', 'svc_type': 'firewall',
-                                            'if_details' : if_details,
-                                            'svc_mode': 'transparent',
-                                            'svc_scaling': False, 'flavor': 'm1.tiny',
-                                            }}
-
-        # define service instance
-        self.si_list = ['si_trans_firewall']
-        self.si_params = {
-            self.si_list[0]: {'if_details' : if_details,
-                              'svc_template': self.st_list[0],
-                              'left_vn': None, 'right_vn': None
-                             }}
-
         #
         # Define network policies
-        self.policy_list=  ['policy0', 'pol-si']
+        self.policy_list=  ['policy0']
         self.vn_policy=  {self.vnet_list[0]: ['policy0'], self.vnet_list[1]: ['policy0']}
 
-        self.vn_of_vm= {'vm1': 'vnet1', 'vm2': 'public'}
+        self.vn_of_vm= {'vm1': self.vnet_list[0], 'vm2': self.vnet_list[1]}
 
         #Define the vm to compute node mapping to pin a vm to a particular
         #compute node or else leave empty.
@@ -753,28 +728,11 @@ class sdn_topo_mx_with_si():
         self.rules= {}
         self.policy_test_order= ['policy0']
 	if config_option == 'openstack':
-            self.rules['pol-si']= [{'direction': '<>', 'protocol': 'any', 'dest_network': self.vnet_list[0],
-				'source_network': self.vnet_list[1], 'dst_ports': 'any',
-				'simple_action': 'pass', 'src_ports': 'any',
-				'action_list': {'simple_action':'pass', 'apply_service': [':'.join([self.domain,
-								      self.project,
-								      self.si_list[0]])
-								 ]}
-				}]
-
             self.rules['policy0']= [{'direction': '<>', 'protocol': 'any', 'dest_network': self.vnet_list[0],
                                 'source_network': self.vnet_list[1], 'dst_ports': 'any',
                                 'simple_action': 'pass', 'src_ports': 'any'
                                 }]
 	else:
-            self.rules['pol-si'] = [
-            PolicyRuleType(direction='<>', protocol='any',
-				dst_addresses=[AddressType(virtual_network=':'.join([self.domain,self.project,self.vnet_list[0]]))],
-				src_addresses=[AddressType(virtual_network=':'.join([self.domain,self.project,self.vnet_list[1]]))],
-				dst_ports=[PortType(-1, -1)], action_list=ActionListType(simple_action='pass',
-				apply_service=[':'.join([self.domain, self.project, self.si_list[0]])]),
-				src_ports=[PortType(-1, -1)])
-            ]
             self.rules['policy0'] = [
             PolicyRuleType(direction='<>', protocol='any',
 				dst_addresses=[AddressType(virtual_network=':'.join([self.domain,self.project,self.vnet_list[0]]))],
@@ -782,7 +740,6 @@ class sdn_topo_mx_with_si():
 				dst_ports=[PortType(-1, -1)], action_list=ActionListType(simple_action='pass'),
 				src_ports=[PortType(-1, -1)])
             ]
-
 
         #Define the security_group and its rules
         # Define security_group name
