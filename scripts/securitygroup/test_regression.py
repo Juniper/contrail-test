@@ -1080,7 +1080,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
             cmds=cmds,
             as_sudo=True,
             as_daemon=True)
-        cmd = 'tcpdump -r %s' % pcap
+        cmd = 'tcpdump -nn -r %s' % pcap
         cmd_check_icmp, err = execute_cmd_out(session, cmd, self.logger)
         cmd_df = re.search('need to frag', cmd_check_icmp)
         self.logger.debug("output for ping cmd: %s" % output[cmd_ping])
@@ -1118,7 +1118,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
             cmds=cmds,
             as_sudo=True,
             as_daemon=True)
-        cmd = 'tcpdump -r %s' % pcap
+        cmd = 'tcpdump -nn -r %s' % pcap
         cmd_check_icmp, err = execute_cmd_out(session, cmd, self.logger)
         self.logger.debug("output for ping cmd: %s" % output[cmd_ping])
         cmd_next_icmp = re.search(
@@ -1202,23 +1202,14 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         if out['result']:
             topo_obj, config_topo = out['data']
 
-        pol_fix = config_topo['policy'][topo_obj.policy_list[0]]
-        if self.option == 'openstack':
-            policy_id = pol_fix.policy_obj['policy']['id']
-            new_policy_entries = config_topo['policy'][
-                topo_obj.policy_list[1]].policy_obj['policy']['entries']
-            data = {'policy': {'entries': new_policy_entries}}
-            pol_fix.update_policy(policy_id, data)
-        else:
-            policy_name = topo_obj.policy_list[0]
-            proj_obj = pol_fix._conn_drv.project_read(
-                ['default-domain', self.project.project_name])
-            new_policy_entries = pol_fix._conn_drv.network_policy_read(
-                ['default-domain', self.project.project_name, topo_obj.policy_list[1]]).network_policy_entries
-            net_policy_obj = NetworkPolicy(
-                policy_name, network_policy_entries=new_policy_entries,
-                parent_obj=proj_obj)
-            pol_fix._conn_drv.network_policy_update(net_policy_obj)
+        svc_chain_info = self.config_svc_chain(
+            service_mode='transparent',
+            service_type='firewall',
+            svc_img_name='tiny_trans_fw',
+            left_vm_fixture=config_topo['vm'][topo_obj.vmc_list[0]],
+            right_vm_fixture=config_topo['vm'][topo_obj.vmc_list[1]])
+        st_fixture = svc_chain_info['st_fixture']
+        si_fixture = svc_chain_info['si_fixture']
 
         src_vm_name = 'vm2'
         src_vm_fix = config_topo['vm'][src_vm_name]
@@ -1232,23 +1223,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         self.logger.info("copying traceroute pkg to the compute node.")
         path = os.getcwd() + '/tcutils/pkgs/' + pkg
-        host_compute = {
-            'username': self.inputs.username,
-            'password': self.inputs.password,
-            'ip': src_vm_fix.vm_node_ip}
-        copy_file_to_server(host_compute, path, '/tmp', pkg)
-
-        self.logger.info("copying traceroute from compute node to VM")
-        with settings(host_string='%s@%s' % (self.inputs.username, src_vm_fix.vm_node_ip),
-                      password=self.inputs.password, warn_only=True, abort_on_prompts=False):
-            path = '/tmp/' + pkg
-            output = fab_put_file_to_vm(
-                host_string='%s@%s' %
-                (src_vm_fix.vm_username,
-                 src_vm_fix.local_ip),
-                password=src_vm_fix.vm_password,
-                src=path,
-                dest='/tmp')
+        src_vm_fix.copy_file_to_vm(path, '/tmp')
 
         self.logger.info("installing traceroute")
         cmd = 'dpkg -i /tmp/' + pkg
@@ -2416,52 +2391,14 @@ class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
         dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
         pkg = 'syn_client.py'
 
-        self.logger.info("copying syn client to the compute node.")
+        self.logger.info("copying syn client to the src VM.")
         path = os.getcwd() + '/tcutils/pkgs/syn_ack_test/' + pkg
-        host_compute = {
-            'username': self.inputs.host_data[
-                src_vm_fix.vm_node_ip]['username'],
-            'password': self.inputs.host_data[
-                src_vm_fix.vm_node_ip]['password'],
-            'ip': src_vm_fix.vm_node_ip}
-        copy_file_to_server(host_compute, path, '/tmp', pkg)
+        src_vm_fix.copy_file_to_vm(path, '/tmp')
 
-        self.logger.info("copying syn client from compute node to VM")
-        with settings(host_string='%s@%s' % (self.inputs.username,
-                                             src_vm_fix.vm_node_ip),
-                      password=self.inputs.password, warn_only=True,
-                      abort_on_prompts=False):
-            path = '/tmp/' + pkg
-            output = fab_put_file_to_vm(
-                host_string='%s@%s' %
-                (src_vm_fix.vm_username,
-                 src_vm_fix.local_ip),
-                password=src_vm_fix.vm_password,
-                src=path,
-                dest='/tmp')
-
+        self.logger.info("copying syn server to the dst VM.")
         pkg = 'syn_server.py'
-        self.logger.info("copying syn server to the compute node.")
         path = os.getcwd() + '/tcutils/pkgs/syn_ack_test/' + pkg
-        host_compute = {
-            'username': self.inputs.username,
-            'password': self.inputs.password,
-            'ip': dst_vm_fix.vm_node_ip}
-        copy_file_to_server(host_compute, path, '/tmp', pkg)
-
-        self.logger.info("copying syn server from compute node to VM")
-        with settings(host_string='%s@%s' % (self.inputs.username,
-                                             dst_vm_fix.vm_node_ip),
-                      password=self.inputs.password, warn_only=True,
-                      abort_on_prompts=False):
-            path = '/tmp/' + pkg
-            output = fab_put_file_to_vm(
-                host_string='%s@%s' %
-                (dst_vm_fix.vm_username,
-                 dst_vm_fix.local_ip),
-                password=dst_vm_fix.vm_password,
-                src=path,
-                dest='/tmp')
+        dst_vm_fix.copy_file_to_vm(path, '/tmp')
 
         cmd1 = 'chmod +x /tmp/syn_server.py;/tmp/syn_server.py %s %s %s \
                     2>/tmp/server.log 1>/tmp/server.log' \
