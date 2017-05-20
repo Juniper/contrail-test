@@ -50,11 +50,10 @@ class TestServiceConnections(BaseServiceConnectionsTest):
         valid_rabbitmq_servers = self.get_all_configured_servers("rabbitmq",
                                                 "control", "contrail-dns")[0]
         for node in self.inputs.bgp_control_ips:
-            rabbitmq_servers, status, ports = self.get_all_in_use_servers("rabbitmq" ,\
+            rabbitmq_server = self.get_all_in_use_servers("rabbitmq" ,\
                                                 "control", "contrail-dns",\
                                                  node)
-            if rabbitmq_servers and set(rabbitmq_servers) <= set(valid_rabbitmq_servers)\
-                and all(x == 'Up' for x in status) and all(y == '5672' for y in ports):
+            if rabbitmq_server and rabbitmq_server in valid_rabbitmq_servers:
                 self.logger.info("contrail-dns running on '%s' connected to"
                                 " correct RabbitMQ server" % node)
             else:
@@ -78,11 +77,10 @@ class TestServiceConnections(BaseServiceConnectionsTest):
         valid_rabbitmq_servers = self.get_all_configured_servers("rabbitmq",
                                             "control", "contrail-control")[0]
         for node in self.inputs.bgp_control_ips:
-            rabbitmq_servers, status, ports = self.get_all_in_use_servers("rabbitmq",
+            rabbitmq_server = self.get_all_in_use_servers("rabbitmq",
                                                 "control", "contrail-control",
                                                  node)
-            if rabbitmq_servers and set(rabbitmq_servers) <= set(valid_rabbitmq_servers)\
-                and all(x == 'Up' for x in status) and all(y == '5672' for y in ports):
+            if rabbitmq_server and rabbitmq_server in valid_rabbitmq_servers:
                 self.logger.info("contrail-control running on '%s' connected to"
                                 " correct RabbitMQ server" % node)
             else:
