@@ -569,6 +569,7 @@ class AnalyticsTestSanityWithResource(
 
          Maintainer: sandipd@juniper.net
         '''
+        self.setup_flow_export_rate(10)
         vn1_name = self.res.vn1_name
         vn1_fq_name = '%s:%s:%s' % (
             self.inputs.project_fq_name[0], self.inputs.project_fq_name[1], self.res.vn1_name)
@@ -1093,6 +1094,7 @@ class AnalyticsTestSanityWithResource(
            3.Verify the cmd is returning non null output
         '''
         result = True
+        self.setup_flow_export_rate(10)
         src_vn = self.res.vn1_vm1_fixture.vn_fq_names[0]
         dst_vn = self.res.vn1_vm2_fixture.vn_fq_names[0]
         other_vrouter_ip = self.res.vn1_vm2_fixture.get_compute_host()
