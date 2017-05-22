@@ -516,7 +516,7 @@ class TestvDNSRestart(BasevDNSTest):
             project_fixture.set_sec_group_for_allow_all(proj, 'default')
             # Ipam creation
             ipam_fixt[proj] = self.useFixture(IPAMFixture(var_obj.ipam_list[proj], vdns_obj= vdns_fixt1[proj].obj,
-                        project_obj=project_fixture, ipamtype=ipam_mgmt_obj[proj]))
+                        connections=project_connections, ipamtype=ipam_mgmt_obj[proj]))
             # VN Creation
             vn_fixt[proj] = self.useFixture(
                 VNFixture(
@@ -656,7 +656,7 @@ class TestvDNSRestart(BasevDNSTest):
             project_fixture.set_sec_group_for_allow_all(proj, 'default')
             # Ipam creation
             ipam_fixt[proj] = self.useFixture(IPAMFixture(var_obj.ipam_list[proj], vdns_obj= vdns_fixt1[proj].obj,
-                        project_obj=project_fixture, ipamtype=ipam_mgmt_obj[proj]))
+                        connections=project_connections, ipamtype=ipam_mgmt_obj[proj]))
             # VN Creation
             vn_fixt[proj] = self.useFixture(
                 VNFixture(
