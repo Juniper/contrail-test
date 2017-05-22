@@ -18,7 +18,7 @@ nose
 tabulate
 fabric==1.11.1
 paramiko==1.17.0
-dpkt
+dpkt==1.8.8
 kubernetes==2.0.0b1
 backports.ssl-match-hostname==3.5.0.1
 ipaddress==1.0.18
