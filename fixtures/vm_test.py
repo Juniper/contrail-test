@@ -1318,7 +1318,7 @@ class VMFixture(fixtures.Fixture):
             inspect_h = self.agent_inspect[k]
             for vn_fq_name in self.vn_fq_names:
                 if vn_fq_name in v:
-                    for vm_ip in self.vm_ip_dict[vn_fq_name]:
+                    for vm_ip in self.get_vm_ip_dict()[vn_fq_name]:
                         if inspect_h.get_vna_active_route(
                                 vrf_id=v[vn_fq_name],
                                 ip=vm_ip) is not None:
