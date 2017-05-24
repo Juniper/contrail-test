@@ -9,48 +9,52 @@ class ECMPTestBase(GenericTestBase):
         super(ECMPTestBase, cls).setUpClass()
         cls.inputs.set_af(cls.get_af())
 
-        # Mgmt VN
-        cls.mgmt_vn_name = get_random_name('mgmt_%s' % (
-                                            cls.inputs.project_name))
-        cls.mgmt_vn_subnets = [get_random_cidr(af=cls.inputs.get_af())]
-        cls.mgmt_vn_fixture = cls.create_only_vn(
-                cls.mgmt_vn_name, cls.mgmt_vn_subnets)
+        try:
+            # Mgmt VN
+            cls.mgmt_vn_name = get_random_name('mgmt_%s' % (
+                                               cls.inputs.project_name))
+            cls.mgmt_vn_subnets = [get_random_cidr(af=cls.inputs.get_af())]
+            cls.mgmt_vn_fixture = cls.create_only_vn(
+                    cls.mgmt_vn_name, cls.mgmt_vn_subnets)
 
-        # Left VN
-        cls.left_vn_name = get_random_name('left_%s' % (
-                                          cls.inputs.project_name))
-        cls.left_vn_subnets = [get_random_cidr(af=cls.inputs.get_af())]
-        cls.left_vn_fixture = cls.create_only_vn(cls.left_vn_name,
-                                                 cls.left_vn_subnets)
+            # Left VN
+            cls.left_vn_name = get_random_name('left_%s' % (
+                                              cls.inputs.project_name))
+            cls.left_vn_subnets = [get_random_cidr(af=cls.inputs.get_af())]
+            cls.left_vn_fixture = cls.create_only_vn(cls.left_vn_name,
+                                                     cls.left_vn_subnets)
 
-        # Right VN
-        cls.right_vn_name = get_random_name('right_%s' % (
-                                             cls.inputs.project_name))
-        cls.right_vn_subnets = [get_random_cidr(af=cls.inputs.get_af())]
-        cls.right_vn_fixture = cls.create_only_vn(cls.right_vn_name,
-                                                  cls.right_vn_subnets)
-        #if cls.inputs.get_af() == 'v6':
-        #    cls.left_vn_subnets += [get_random_cidr()]
-        #    cls.right_vn_subnets += [get_random_cidr()]
+            # Right VN
+            cls.right_vn_name = get_random_name('right_%s' % (
+                                                 cls.inputs.project_name))
+            cls.right_vn_subnets = [get_random_cidr(af=cls.inputs.get_af())]
+            cls.right_vn_fixture = cls.create_only_vn(cls.right_vn_name,
+                                                      cls.right_vn_subnets)
+            #if cls.inputs.get_af() == 'v6':
+            #    cls.left_vn_subnets += [get_random_cidr()]
+            #    cls.right_vn_subnets += [get_random_cidr()]
 
-        ci = os.environ.has_key('ci_image')
-        if ci and cls.inputs.get_af() == 'v4':
-            cls.image_name = 'cirros'
-        else:
-            cls.image_name = 'ubuntu-traffic'
+            ci = os.environ.has_key('ci_image')
+            if ci and cls.inputs.get_af() == 'v4':
+                cls.image_name = 'cirros'
+            else:
+                cls.image_name = 'ubuntu-traffic'
 
-        # End Vms
-        cls.left_vm_name = get_random_name('left_vm_%s' % (
-                                            cls.inputs.project_name))
-        cls.left_vm_fixture = cls.create_only_vm(cls.left_vn_fixture,
-                                                 vm_name=cls.left_vm_name,
-                                                 image_name=cls.image_name)
-        cls.right_vm_name = get_random_name('right_vm_%s' % (
-                                             cls.inputs.project_name))
-        cls.right_vm_fixture = cls.create_only_vm(cls.right_vn_fixture,
-                                                  vm_name=cls.right_vm_name,
-                                                  image_name=cls.image_name)
-        cls.check_vms_booted([cls.left_vm_fixture, cls.right_vm_fixture])
+            # End Vms
+            cls.left_vm_name = get_random_name('left_vm_%s' % (
+                                                cls.inputs.project_name))
+            cls.left_vm_fixture = cls.create_only_vm(cls.left_vn_fixture,
+                                                     vm_name=cls.left_vm_name,
+                                                     image_name=cls.image_name)
+            cls.right_vm_name = get_random_name('right_vm_%s' % (
+                                                 cls.inputs.project_name))
+            cls.right_vm_fixture = cls.create_only_vm(cls.right_vn_fixture,
+                                                      vm_name=cls.right_vm_name,
+                                                      image_name=cls.image_name)
+            cls.check_vms_booted([cls.left_vm_fixture, cls.right_vm_fixture])
+        except:
+            cls.tearDownClass()
+            raise
 
         cls.common_args = { 'mgmt_vn_name' : cls.mgmt_vn_name,
                             'mgmt_vn_subnets' : cls.mgmt_vn_subnets,
@@ -69,12 +73,17 @@ class ECMPTestBase(GenericTestBase):
     # end setUpClass
 
     @classmethod
-    def tearDownClass(cls):
+    def cleanUpObjects(cls):
         cls.safe_cleanup('right_vm_fixture')
         cls.safe_cleanup('left_vm_fixture')
         cls.safe_cleanup('left_vn_fixture')
         cls.safe_cleanup('right_vn_fixture')
         cls.safe_cleanup('mgmt_vn_fixture')
+    # end cleanUpObjects
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.cleanUpObjects()
         super(ECMPTestBase, cls).tearDownClass()
     # end tearDownClass
 

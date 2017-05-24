@@ -16,32 +16,36 @@ class BaseRbac(test_v1.BaseTestCase_v1):
     @classmethod
     def setUpClass(cls):
         super(BaseRbac, cls).setUpClass()
-        if os.getenv('RBAC_USER1') and os.getenv('RBAC_PASS1'):
-            cls.user1 = os.getenv('RBAC_USER1')
-            cls.pass1 = os.getenv('RBAC_PASS1')
-        else:
-            cls.pass1 = cls.user1 = get_random_name(cls.__name__)
-            cls.admin_connections.auth.create_user(cls.user1, cls.pass1)
-        if os.getenv('RBAC_USER2') and os.getenv('RBAC_PASS2'):
-            cls.user2 = os.getenv('RBAC_USER2')
-            cls.pass2 = os.getenv('RBAC_PASS2')
-        else:
-            cls.pass2 = cls.user2 = get_random_name(cls.__name__)
-            cls.admin_connections.auth.create_user(cls.user2, cls.pass2)
-        if os.getenv('RBAC_ROLE1'):
-            cls.role1 = os.getenv('RBAC_ROLE1')
-        else:
-            cls.role1 = get_random_name(cls.__name__)
-            cls.admin_connections.auth.create_role(cls.role1)
-        if os.getenv('RBAC_ROLE2'):
-            cls.role2 = os.getenv('RBAC_ROLE2')
-        else:
-            cls.role2 = get_random_name(cls.__name__)
-            cls.admin_connections.auth.create_role(cls.role2)
-        cls.project_fixture = ProjectFixture(connections=cls.admin_connections,
-                                             project_name=cls.inputs.project_name,
-                                             domain_name=cls.inputs.domain_name)
-        cls.populate_default_rules_in_global_acl()
+        try:
+            if os.getenv('RBAC_USER1') and os.getenv('RBAC_PASS1'):
+                cls.user1 = os.getenv('RBAC_USER1')
+                cls.pass1 = os.getenv('RBAC_PASS1')
+            else:
+                cls.pass1 = cls.user1 = get_random_name(cls.__name__)
+                cls.admin_connections.auth.create_user(cls.user1, cls.pass1)
+            if os.getenv('RBAC_USER2') and os.getenv('RBAC_PASS2'):
+                cls.user2 = os.getenv('RBAC_USER2')
+                cls.pass2 = os.getenv('RBAC_PASS2')
+            else:
+                cls.pass2 = cls.user2 = get_random_name(cls.__name__)
+                cls.admin_connections.auth.create_user(cls.user2, cls.pass2)
+            if os.getenv('RBAC_ROLE1'):
+                cls.role1 = os.getenv('RBAC_ROLE1')
+            else:
+                cls.role1 = get_random_name(cls.__name__)
+                cls.admin_connections.auth.create_role(cls.role1)
+            if os.getenv('RBAC_ROLE2'):
+                cls.role2 = os.getenv('RBAC_ROLE2')
+            else:
+                cls.role2 = get_random_name(cls.__name__)
+                cls.admin_connections.auth.create_role(cls.role2)
+            cls.project_fixture = ProjectFixture(connections=cls.admin_connections,
+                                                 project_name=cls.inputs.project_name,
+                                                 domain_name=cls.inputs.domain_name)
+            cls.populate_default_rules_in_global_acl()
+        except:
+            cls.tearDownClass()
+            raise
 
     def is_test_applicable(self):
         if self.get_aaa_mode() != 'rbac':
@@ -94,6 +98,11 @@ class BaseRbac(test_v1.BaseTestCase_v1):
 
     @classmethod
     def tearDownClass(cls):
+        cls.cleanUpObjects()
+        super(BaseRbac, cls).tearDownClass()
+
+    @classmethod
+    def cleanUpObjects(cls):
         if not os.getenv('RBAC_USER1'):
             cls.admin_connections.auth.delete_user(cls.user1)
         if not os.getenv('RBAC_USER2'):
@@ -102,8 +111,8 @@ class BaseRbac(test_v1.BaseTestCase_v1):
             cls.admin_connections.auth.delete_role(cls.role1)
         if not os.getenv('RBAC_ROLE2'):
             cls.admin_connections.auth.delete_role(cls.role2)
-        cls.global_acl.delete_rules(cls.default_rules)
-        super(BaseRbac, cls).tearDownClass()
+        if getattr(cls, 'global_acl', None):
+            cls.global_acl.delete_rules(cls.default_rules)
 
     def add_user_to_project(self, username, role, project_name=None):
         if not project_name:
