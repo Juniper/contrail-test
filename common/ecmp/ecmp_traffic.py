@@ -210,7 +210,7 @@ class ECMPTraffic(VerifySvcChain):
 
         # end verify_flow_thru_si
 
-    def verify_flow_records(self, src_vm, src_ip=None, dst_ip=None, flow_count=3):
+    def verify_flow_records(self, src_vm, src_ip=None, dst_ip=None, flow_count=3, protocol='17'):
 
         self.logger.info('Checking Flow records')
         vn_fq_name = src_vm.vn_fq_name
@@ -226,7 +226,7 @@ class ECMPTraffic(VerifySvcChain):
             src_port = unicode(8000)
             dest_port =unicode(9000+i)
             flow_rec = inspect_h.get_vna_fetchflowrecord(
-                nh=nh_id, sip=src_ip, dip=dst_ip, sport=src_port, dport=dest_port, protocol='17')
+                nh=nh_id, sip=src_ip, dip=dst_ip, sport=src_port, dport=dest_port, protocol=protocol)
             if flow_rec is None:
                 flow_result = False
         if flow_result:

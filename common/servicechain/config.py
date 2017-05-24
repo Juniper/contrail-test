@@ -18,6 +18,7 @@ from common.connections import ContrailConnections
 from common.policy.config import AttachPolicyFixture
 from tcutils.util import retry
 import random
+import re
 
 SVC_TYPE_PROPS = {
     'firewall': {'in-network-nat': 'tiny_nat_fw',

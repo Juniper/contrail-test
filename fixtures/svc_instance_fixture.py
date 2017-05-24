@@ -726,11 +726,13 @@ class SvcInstanceFixture(fixtures.Fixture):
         ports_list.append(mgmt_vmi_id)
         ports_list.append(left_vmi_id)
         ports_list.append(right_vmi_id)
-        for index in range(0, len(self.if_list)):
+        intf_type = ['management', 'left', 'right']
+        for index in range(0, len(ports_list)):
             port_id = ports_list[index]
             vmi_obj = self.vnc_lib.virtual_machine_interface_read(id=port_id)
-            vmi_props = VirtualMachineInterfacePropertiesType()
-            vmi_props.set_service_interface_type(self.if_list[index][0])
+            vmi_props = vmi_obj.virtual_machine_interface_properties or \
+                            VirtualMachineInterfacePropertiesType()
+            vmi_props.set_service_interface_type(intf_type[index])
             vmi_obj.set_virtual_machine_interface_properties(vmi_props)
             vmi_obj.add_port_tuple(pt_obj)
             self.vnc_lib.virtual_machine_interface_update(vmi_obj)
