@@ -9,6 +9,7 @@ from quantum_test import *
 from vnc_api_test import *
 from nova_test import *
 from vm_test import *
+from tcutils.contrail_status_check import ContrailStatusChecker
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from common.servicechain.firewall.verify import VerifySvcFirewall
@@ -147,11 +148,11 @@ class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         si_fixture = ret_dict['si_fixture']
         svm_ids = si_fixture.svm_ids
         self.get_rt_info_tap_intf_list(
-            self.left_vm_fixture, self.left_vm_fixture, self.right_vm_fixture,
+            self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture,
             svm_ids, si_fixture)
         dst_vm_list = [self.right_vm_fixture]
         self.verify_traffic_flow(self.left_vm_fixture, dst_vm_list,
-            si_fixture, self.left_vm_fixture)
+            si_fixture, self.left_vn_fixture)
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter', [compute_ip],
  										container='agent')
