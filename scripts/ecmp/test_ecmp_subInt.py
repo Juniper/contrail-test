@@ -120,14 +120,14 @@ class TestSubInterfacesECMP(BaseVrouterTest,ConfigSvcChain):
         svc_mode = 'in-network'
         st_fixture = self.useFixture(SvcTemplateFixture(
             connections=self.connections,
-            st_name=st_name, svc_type=svc_type,
+            st_name=st_name, service_type=svc_type,
             if_details=if_details, service_mode=svc_mode, version=st_version))
 
         si_fixture = self.useFixture(SvcInstanceFixture(
                 connections=self.connections,
                 si_name=si_name,
                 svc_template=st_fixture.st_obj, if_details=if_details,
-                mgmt_vn_name=self.mgmt_vn_fixture.vn_fq_name, left_vn_name=self.left_vn_fixture.vn_fq_name, right_vn_name=self.right_vn_fixture.vn_fq_name, do_verify=True, max_inst=max_inst))
+                max_inst=max_inst))
 
         return si_fixture
 
