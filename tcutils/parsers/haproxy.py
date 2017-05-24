@@ -98,7 +98,7 @@ def get_pool_dict(lines):
                 pool_dict['members'].append({'uuid': m.group(1),
                                          'address': m.group(2),
                                          'port': m.group(3),
-                                         'weight': m.group(4)})
+                                         'weight': int(m.group(4))})
     return pool_dict
 
 if __name__ == '__main__':
