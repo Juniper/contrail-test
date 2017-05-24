@@ -14,9 +14,10 @@ LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
 class AgentInspect (VerificationUtilBase):
 
-    def __init__(self, ip, port=8085, logger=LOG):
+    def __init__(self, ip, port=8085, logger=LOG, inputs=None):
         port = int(port)
-        super(AgentInspect, self).__init__(ip, port, XmlDrv, logger=logger)
+        super(AgentInspect, self).__init__(ip, port, XmlDrv, logger=logger,
+            args=inputs)
 
     def get_vna_domain(self, domain='default-domain'):
         pass

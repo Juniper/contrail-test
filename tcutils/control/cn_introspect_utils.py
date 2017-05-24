@@ -11,9 +11,9 @@ LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
 class ControlNodeInspect (VerificationUtilBase):
 
-    def __init__(self, ip, port=8083, logger=LOG):
+    def __init__(self, ip, port=8083, logger=LOG, args=None):
         super(ControlNodeInspect, self).__init__(ip, port, XmlDrv,
-                                                 logger=logger)
+                                                 logger=logger, args=args)
 
     def _join(self, *args):
         """Joins the args with ':'"""
