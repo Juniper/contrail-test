@@ -367,8 +367,10 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         self.logger.info('Sending traffic for 10 seconds')
         self.sleep(10)
 
-        self.verify_flow_records(
-            self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
+        #Verify flow records for each stream
+        for protocol in ['1', '6', '17']:
+          self.verify_flow_records(
+            self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip, flow_count=1, protocol=protocol)
 
         self.stop_traffic(
             sender, receiver, dst_vm_list, stream_list)
@@ -430,8 +432,9 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         sender, receiver = self.start_traffic(self.left_vm_fixture, dst_vm_list, stream_list,
                                self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
         self.sleep(1)
-        self.verify_flow_records(
-            self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip)
+        for dst_ip in [self.right_vm_fixture.vm_ip, dest_vm2.vm_ip, dest_vm3.vm_ip]:
+          self.verify_flow_records(
+            self.left_vm_fixture, self.left_vm_fixture.vm_ip, dst_ip, flow_count=1)
         self.stop_traffic(
             sender, receiver, dst_vm_list, stream_list)
     # end test_ecmp_svc_in_network_with_3_instance_incr_dip
