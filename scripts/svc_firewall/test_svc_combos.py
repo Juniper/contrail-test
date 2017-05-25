@@ -7,7 +7,7 @@ from common.servicechain.firewall.verify import VerifySvcFirewall
 class TestSVCCombos(GenericTestBase, VerifySvcFirewall):
 
     def is_test_applicable(self):
-        if len(self.inputs.compute_nodes) < 3:
+        if len(self.inputs.compute_ips) < 3:
             return (False, 'Need atleast 3 compute nodes')
         return (True, None)
 
