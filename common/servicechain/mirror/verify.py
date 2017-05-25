@@ -295,7 +295,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
 
     @retry(delay=2, tries=6)
-    def verify_port_mirroring(self, src_vm, dst_vm, mirr_vm):
+    def verify_port_mirroring(self, src_vm, dst_vm, mirr_vm, vlan=None):
         result = True
         svm = mirr_vm.vm_obj
         if svm.status == 'ACTIVE':
@@ -303,10 +303,17 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
             host = self.get_svm_compute(svm_name)
             tapintf = self.get_svm_tapintf(svm_name)
         session = ssh(host['host_ip'], host['username'], host['password'])
-        pcap = self.start_tcpdump(session, tapintf)
-        assert src_vm.ping_with_certainty(dst_vm.vm_ip, count=5, size='1400')
+        pcap = self.start_tcpdump(session, tapintf, vlan=vlan)
+        src_ip = src_vm.vm_ip
+        dst_ip = dst_vm.vm_ip
+        if vlan:
+            sub_intf = 'eth0.' + str(vlan)
+            cmds = "/sbin/ifconfig " + sub_intf + " | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'"
+            src_ip = src_vm.run_cmd_on_vm(cmds=[cmds]).values()[0]
+            dst_ip = dst_vm.run_cmd_on_vm(cmds=[cmds]).values()[0]
+        assert src_vm.ping_with_certainty(dst_ip, count=5, size='1400')
         self.logger.info('Ping from %s to %s executed with c=5, expected mirrored packets 5 Ingress,5 Egress count = 10'
-            % (src_vm.vm_ip, dst_vm.vm_ip))
+            % (src_ip, dst_ip))
         exp_count = 10
         filt = '| grep \"length [1-9][4-9][0-9][0-9][0-9]*\"'
         mirror_pkt_count = self.stop_tcpdump(session, pcap, filt)
@@ -850,11 +857,14 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
     def cleanUp(self):
         super(VerifySvcMirror, self).cleanUp()
 
-    def start_tcpdump(self, session, tap_intf):
+    def start_tcpdump(self, session, tap_intf, vlan=None):
         pcap = '/tmp/mirror-%s.pcap' % tap_intf
         cmd = 'rm -f %s' % pcap
         execute_cmd(session, cmd, self.logger)
-        cmd = "tcpdump -ni %s udp port 8099 -w %s" % (tap_intf, pcap)
+        filt_str = ''
+        if not vlan:
+            filt_str = 'udp port 8099'
+        cmd = "tcpdump -ni %s %s -w %s" % (tap_intf, filt_str, pcap)
         self.logger.info("Staring tcpdump to capture the mirrored packets.")
         execute_cmd(session, cmd, self.logger)
         return pcap
@@ -868,7 +878,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
         cmd = 'tcpdump -n -r %s %s ' % (pcap, filt)
         out, err = execute_cmd_out(session, cmd, self.logger)
-        self.logger.debug('Stopped tcpdump, out : %s, err : %s' % (out, err))
+        self.logger.info('Stopped tcpdump, out : \n %s, \n err : %s' % (out, err))
 
         cmd = 'tcpdump -n -r %s %s | wc -l' % (pcap, filt)
         out, err = execute_cmd_out(session, cmd, self.logger)
