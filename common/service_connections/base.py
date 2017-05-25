@@ -394,6 +394,9 @@ class BaseServiceConnectionsTest(GenericTestBase):
         elif server_node_type == "config":
             if min_server_count > len(self.inputs.cfgm_control_ips):
                 result = False
+        elif server_node_type == "openstack":
+            if min_server_count > len(self.inputs.openstack_ips):
+                result = False
         if not result:
             self.logger.debug("Expected number of '%s' servers or '%s' clients "
                               " are not present in the topology" % 
