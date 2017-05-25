@@ -208,8 +208,12 @@ class PbbEvpnTestBase(BaseVrouterTest):
                 vn_subnet = vn[vn_id].get('subnet',None)
                 asn = vn[vn_id].get('asn',None)
                 target= vn[vn_id].get('target',None)
+
+                # Layer2 control word
+                l2cw = vn[vn_id].get('l2cw',True)
                 vn_fixture = self.create_vn(vn_name=vn_id, vn_subnets=[vn_subnet],
                                                  router_asn=asn, rt_number=target)
+                assert vn_fixture.set_layer2_control_word(l2cw)
             else:
                 vn_fixture = self.create_vn(vn_name=vn_id)
             vn_fixtures[vn_id] = vn_fixture
@@ -427,6 +431,7 @@ class PbbEvpnTestBase(BaseVrouterTest):
 
         # PBB E-Tree parameters
         pbb_etree_enable =  pbb_evpn_config.get('pbb_etree',False)
+
 
         # MAC Limit and MAC Move limit objects
         mac_limit_obj = MACLimitControlType(mac_limit=mac_limit,
