@@ -31,6 +31,11 @@ from collections import namedtuple
 import random
 from cfgm_common import utils
 
+ORCH_DEFAULT_DOMAIN = {
+    'openstack' : 'Default',
+    'kubernetes': 'default-domain'
+}
+
 # monkey patch subprocess.check_output cos its not supported in 2.6
 if "check_output" not in dir(subprocess):  # duck punch it in!
     def f(*popenargs, **kwargs):
@@ -115,7 +120,8 @@ class TestInputs(object):
         self.admin_domain = read_config_option(self.config,
             'Basic',
             'adminDomain',
-            os.getenv('OS_DOMAIN_NAME','Default'))
+            os.getenv('OS_DOMAIN_NAME',
+                ORCH_DEFAULT_DOMAIN.get(self.orchestrator)))
 
         self.stack_user = read_config_option(
             self.config,
@@ -533,6 +539,7 @@ class TestInputs(object):
         self.host_ips = []
         self.webui_ips = []
         self.webui_control_ips = []
+        self.kube_manager_ip = None
         self.host_data = {}
         self.tor = {}
         self.tor_hosts_data = {}
@@ -644,6 +651,9 @@ class TestInputs(object):
             self.esxi_vm_ips = json_data['esxi_vms']
         if 'hosts_ipmi' in json_data:
             self.hosts_ipmi = json_data['hosts_ipmi']
+        self.kube_manager_ip = json_data.get('kubernetes', {}).get('master')
+        if self.kube_manager_ip:
+            self.kube_manager_ip = self.kube_manager_ip.split('@')[1]
 
         if not self.auth_ip:
             if self.ha_setup and self.external_vip:

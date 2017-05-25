@@ -1176,6 +1176,6 @@ def timeit(func):
         return result
     return newfunc
 
-def get_lock(cidr):
-    return Lock('/tmp/cidr_%s.lock' %(cidr.replace('/','_')))
+def get_lock(text):
+    return Lock('/tmp/%s.lock' %(text.replace('/','_')))
 
