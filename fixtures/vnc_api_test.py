@@ -106,14 +106,18 @@ class VncLibFixture(fixtures.Fixture):
                                                 self.project_name,
                                                 self.inputs
                                                 )
-            if not self.project_id:
-                self.project_id = self.vnc_api_h.project_read(
-                    fq_name=[self.domain, self.project_name]).uuid
         if self.orch:
             self.vnc_h = self.orch.vnc_h
         else:
             self.vnc_h = ContrailVncApi(self.vnc_api_h, self.logger)
     # end setUp
+
+    def get_project_id(self):
+        if not self.project_id:
+            self.project_id = self.vnc_api_h.project_read(
+                fq_name=[self.domain, self.project_name]).uuid
+        return self.project_id
+        
 
     def cleanUp(self):
         super(VncLibFixture, self).cleanUp()
@@ -200,7 +204,7 @@ class VncLibFixture(fixtures.Fixture):
     def get_project_obj(self):
         if self.connections:
             project_id = self.connections.project_id
-        elif self.project_id:
+        elif self.get_project_id():
             project_id = self.project_id
         else:
             project_id = self.vnc_api_h.project_read(
@@ -216,7 +220,7 @@ class VncLibFixture(fixtures.Fixture):
         vnc_lib = self.vnc_api_h
         # Figure out VN
         vni_list = vnc_lib.virtual_networks_list(
-            parent_id=self.project_id)['virtual-networks']
+            parent_id=self.get_project_id())['virtual-networks']
         for vni_record in vni_list:
             if (vni_record['fq_name'][0] == vn_fq_name.split(":")[0] and
                 vni_record['fq_name'][1] == vn_fq_name.split(":")[1] and
@@ -234,7 +238,7 @@ class VncLibFixture(fixtures.Fixture):
         vnc_lib = self.vnc_api_h
         # Figure out VN
         vni_list = vnc_lib.virtual_networks_list(
-            parent_id=self.project_id)['virtual-networks']
+            parent_id=self.get_project_id())['virtual-networks']
         for vni_record in vni_list:
             if (vni_record['fq_name'][0] == vn_fq_name.split(":")[0] and
                 vni_record['fq_name'][1] == vn_fq_name.split(":")[1] and
@@ -251,7 +255,7 @@ class VncLibFixture(fixtures.Fixture):
         vnc_lib = self.vnc_api_h
         # Figure out VN
         vni_list = self.vnc_api_h.virtual_networks_list(
-            parent_id=self.project_id)['virtual-networks']
+            parent_id=self.get_project_id())['virtual-networks']
         for vni_record in vni_list:
             if (vni_record['fq_name'][0] == vn_fq_name.split(":")[0] and
                 vni_record['fq_name'][1] == vn_fq_name.split(":")[1] and
