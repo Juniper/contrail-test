@@ -2123,33 +2123,6 @@ class VMFixture(fixtures.Fixture):
                                         0], username=self.vm_username, password=self.vm_password, cmd_string=cmd_string, timeout=10, device='junos', hostkey_verify="False")
     # end set_config_via_netconf
 
-    def config_via_netconf(self, cmds=None):
-        '''run cmds on VM
-        '''
-        host = self.inputs.host_data[self.vm_node_ip]
-        output = ''
-        try:
-            self.orch.put_key_file_to_host(self.vm_node_ip)
-            fab_connections.clear()
-            with hide('everything'):
-                with settings(
-                    host_string='%s@%s' % (host['username'], self.vm_node_ip),
-                    password=host['password'],
-                        warn_only=True, abort_on_prompts=False):
-                    self.logger.debug('Running Cmd on %s' %
-                                      self.vm_node_ip)
-                    output = run_netconf_on_node(
-                        host_string='%s@%s' % (
-                            self.vm_username, self.local_ip),
-                        password=self.vm_password,
-                        cmds=cmds)
-            return output
-        except Exception, e:
-            self.logger.exception(
-                'Exception occured while trying ping from VM')
-            return False
-   # end config_via_netconf
-
     def run_cmd_on_vm(self, cmds=[], as_sudo=False, timeout=30,
                       as_daemon=False, raw=False, warn_only=True, pidfile=None):
         '''run cmds on VM
