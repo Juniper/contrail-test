@@ -400,19 +400,17 @@ class TestInputs(object):
         # List of service correspond to each module
         self.compute_services = [
             'contrail-vrouter-agent',
-            'supervisor-vrouter',
             'contrail-vrouter-nodemgr']
-        self.control_services = ['contrail-control', 'supervisor-control',
+        self.control_services = ['contrail-control',
                                  'contrail-control-nodemgr', 'contrail-dns',
                                  'contrail-named']
         self.cfgm_services = [
             'contrail-api',
             'contrail-schema',
-            'supervisor-config',
+            'contrail-svc-monitor',
             'contrail-config-nodemgr',
             'contrail-device-manager']
-        self.webui_services = ['contrail-webui', 'contrail-webui-middleware',
-                               'supervisor-webui']
+        self.webui_services = ['contrail-webui', 'contrail-webui-middleware']
         self.openstack_services = [
             'openstack-cinder-api', 'openstack-cinder-scheduler',
             'openstack-cinder-scheduler', 'openstack-glance-api',
@@ -420,10 +418,11 @@ class TestInputs(object):
             'openstack-nova-api', 'openstack-nova-scheduler',
             'openstack-nova-cert']
         self.collector_services = [
-            'contrail-collector', 'contrail-analytics-api',
+            'contrail-collector', 'contrail-analytics-api', 'contrail-alarm-gen',
             'contrail-query-engine', 'contrail-analytics-nodemgr',
-            'supervisor-analytics',
             'contrail-snmp-collector', 'contrail-topology']
+        self.database_services = [
+            'contrail-database', 'contrail-database-nodemgr', 'kafka']
         self.correct_states = ['active', 'backup']
 
         self.gc_host_mgmt = read_config_option(self.config,
@@ -1042,47 +1041,36 @@ class ContrailTestInit(object):
     def verify_state(self):
         result = True
         for host in self.host_ips:
-            username = self.host_data[host]['username']
-            password = self.host_data[host]['password']
             if host in self.compute_ips:
-                for service in self.compute_services:
-                    result = result and self.verify_service_state(
+                result = result and self.verify_service_state(
                         host,
-                        service,
-                        username,
-                        password)
+                        container='agent',
+                        role='compute')
             if host in self.bgp_ips:
-                for service in self.control_services:
-                    result = result and self.verify_service_state(
+                result = result and self.verify_service_state(
                         host,
-                        service,
-                        username,
-                        password,
-                        container='controller')
+                        container='controller',
+                        role='control')
             if host in self.cfgm_ips:
-                for service in self.cfgm_services:
-                    result = result and self.verify_service_state(
+                result = result and self.verify_service_state(
                         host,
-                        service,
-                        username,
-                        password,
-                        container='controller')
+                        container='controller',
+                        role='config')
             if host in self.collector_ips:
-                for service in self.collector_services:
-                    result = result and self.verify_service_state(
+                result = result and self.verify_service_state(
                         host,
-                        service,
-                        username,
-                        password,
-                        container='analytics')
+                        container='analytics',
+                        role='analytics')
             if host in self.webui_ips:
-                for service in self.webui_services:
-                    result = result and self.verify_service_state(
+                result = result and self.verify_service_state(
                         host,
-                        service,
-                        username,
-                        password,
-                        container='controller')
+                        container='controller',
+                        role='webui')
+            if host in self.database_ips:
+                result = result and self.verify_service_state(
+                        host,
+                        container='analyticsdb',
+                        role='database')
             # Need to enhance verify_service_state to verify openstack services status as well
             # Commenting out openstack service verifcation untill then
             # if host == self.openstack_ip:
@@ -1105,27 +1093,25 @@ class ContrailTestInit(object):
                 return cls
         return None
 
-    def verify_service_state(self, host, service, username, password,
-                             container=None):
-        m = None
-        cls = None
+    def verify_service_state(self, host, service=None, role=None, container=None):
+        services = self.get_contrail_services(service_name=service, role=role)
         try:
             m = self.get_contrail_status(host, container=container)
-            if ((container is not None) and ('supervisor' in service)):
-                return True
-            cls = self.get_service_status(m, service)
-            if (cls.state in self.correct_states):
-                return True
+            for service in services:
+                cls = self.get_service_status(m, service)
+                if (cls.state not in self.correct_states):
+                    self.logger.error("Service %s not in correct state on %s - "
+                                "its in %s state" %(cls.name, host, cls.state))
+                    return False
+                else:
+                    self.logger.debug('Service %s is in %s state on %s'
+                                      %(cls.name, cls.state, host))
         except Exception as e:
+            self.logger.error("Unable to get service status of %s on %s"
+                              %(service, host))
             self.logger.exception("Got exception as %s" % (e))
-            self.logger.exception(
-                "Service %s not in correct state - its in %s state" %
-                (cls.name, cls.state))
             return False
-        self.logger.exception(
-            "Service %s not in correct state - its in %s state" %
-            (cls.name, cls.state))
-        return False
+        return True
 
     # Commenting below 4 lines due to discovery changes in R4.0 - Bug 1658035
     ###def verify_control_connection(self, connections):
@@ -1172,93 +1158,57 @@ class ContrailTestInit(object):
             return False
     # end confirm_service_active
 
-    def restart_service(
-            self,
-            service_name,
-            host_ips=[],
-            contrail_service=True,
-            container=None):
-        result = True
-        if len(host_ips) == 0:
-            host_ips = self.host_ips
-        for host in host_ips:
-            username = self.host_data[host]['username']
-            password = self.host_data[host]['password']
-            self.logger.info('Restarting %s.service in %s' %
-                             (service_name, self.host_data[host]['name']))
-            if contrail_service:
-                issue_cmd = 'service %s restart' % (service_name)
-            else:
-                issue_cmd = 'service %s restart' % (service_name)
-            self.run_cmd_on_server(
-                host, issue_cmd, username, password, pty=False, container=container)
-            assert self.confirm_service_active(service_name, host, container=container), \
-                "Service Restart failed for %s" % (service_name)
+    def get_contrail_services(self, role=None, service_name=None):
+        ''' get contrail services of a role or 
+            if supervisor services return all services of the role
+            Note: role takes precedence over service_name
+        '''
+        service_name = None if role else service_name
+        if role == 'config' or 'supervisor-config' == service_name:
+            return self.cfgm_services
+        if role == 'control' or 'supervisor-control' == service_name:
+            return self.control_services
+        if role == 'compute' or 'supervisor-vrouter' == service_name:
+            return self.compute_services
+        if role == 'webui' or 'supervisor-webui' == service_name:
+            return self.webui_services
+        if role == 'database' or 'supervisor-database' == service_name:
+            return self.database_services
+        if role == 'analytics' or 'supervisor-analytics' == service_name:
+            return self.collector_services
+        return [service_name] if service_name else []
+
+    def _action_on_service(self, service_name, event, host_ips=None, container=None):
+        services = self.get_contrail_services(service_name=service_name)
+        for service in services:
+            for host in host_ips or self.host_ips:
+                username = self.host_data[host]['username']
+                password = self.host_data[host]['password']
+                self.logger.info('%s %s.service on %s' %
+                                 (event, service, self.host_data[host]['name']))
+                issue_cmd = 'service %s %s' % (service, event)
+                self.run_cmd_on_server(
+                    host, issue_cmd, username, password, pty=False, container=container)
+                if event == 'restart':
+                    assert self.confirm_service_active(service_name, host, container=container), \
+                        "Service Restart failed for %s" % (service_name)
+
+    def restart_service(self, service_name, host_ips=None, contrail_service=True,
+                        container=None):
+        self._action_on_service(service_name, 'restart', host_ips, container)
     # end restart_service
 
-    def stop_service(self, service_name, host_ips=[], contrail_service=True,
+    def stop_service(self, service_name, host_ips=None, contrail_service=True,
                      container=None):
-        result = True
-        if len(host_ips) == 0:
-            host_ips = self.host_ips
-        for host in host_ips:
-            username = self.host_data[host]['username']
-            password = self.host_data[host]['password']
-            self.logger.info('Stoping %s.service in %s' %
-                             (service_name, self.host_data[host]['name']))
-            if contrail_service:
-                issue_cmd = 'service %s stop' % (service_name)
-            else:
-                issue_cmd = 'service %s stop' % (service_name)
-            self.run_cmd_on_server(
-                host, issue_cmd, username, password, pty=True,
-                container=container)
+        self._action_on_service(service_name, 'stop', host_ips, container)
     # end stop_service
 
-    def start_service(self, service_name, host_ips=[], contrail_service=True,
+    def start_service(self, service_name, host_ips=None, contrail_service=True,
                       container=None):
-        result = True
-        if len(host_ips) == 0:
-            host_ips = self.host_ips
-        for host in host_ips:
-            username = self.host_data[host]['username']
-            password = self.host_data[host]['password']
-            self.logger.info('Starting %s.service in %s' %
-                             (service_name, self.host_data[host]['name']))
-            if contrail_service:
-                issue_cmd = 'service %s start' % (service_name)
-            else:
-                issue_cmd = 'service %s start' % (service_name)
-            self.run_cmd_on_server(
-                host, issue_cmd, username, password, pty=True,
-                container=container)
+        self._action_on_service(service_name, 'start', host_ips, container)
     # end start_service
 
-    def _compare_service_state(
-        self, host, service, state, state_val, active_str1, active_str1_val,
-            active_str2, active_str2_val):
-        result = False
-        if 'xen' in self.os_type[host] or 'centos' in self.os_type[host]:
-            if active_str2 != active_str2_val:
-                result = False
-                self.logger.warn(
-                    'On host %s,Service %s state is (%s) .. NOT Expected !!' %
-                    (host, service, active_str2))
-        elif 'fc' in self.os_type[host]:
-            if (state,
-                active_str1,
-                active_str2) != (state_val,
-                                 active_str1_val,
-                                 active_str2_val):
-                result = False
-                self.logger.warn(
-                    'On host %s,Service %s states are %s, %s, %s .. NOT Expected !!' %
-                    (host, service, state, active_str1, active_str2))
-        return result
-    # end _compare_service_state
-
-    def get_contrail_status(self, server_ip, username='root',
-                            password='contrail123', container=None):
+    def get_contrail_status(self, server_ip, container=None):
         cache = self.run_cmd_on_server(server_ip, 'contrail-status',
                                        container=container)
         m = dict([(n, tuple(l.split(';')))
@@ -1416,18 +1366,6 @@ class ContrailTestInit(object):
                 self.logger.exception('Fail to unconfigure MX')
                 return output
     # end unconfigure_mx
-
-    def get_openstack_release(self):
-        with settings(
-            host_string='%s@%s' % (
-                self.username, self.cfgm_ips[0]),
-                password=self.password, warn_only=True, abort_on_prompts=False, debug=True):
-            ver = run('contrail-version')
-            pkg = re.search(r'contrail-install-packages(.*)~(\w+)(.*)', ver)
-            os_release = pkg.group(2)
-            self.logger.info("%s" % os_release)
-            return os_release
-    # end get_openstack_release
 
     def copy_file_to_server(self, ip, src, dstdir, dst, force=False,
                             container=None):

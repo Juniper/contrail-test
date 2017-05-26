@@ -165,25 +165,25 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
     # The test is expected to add start_active_vrouter in addCleanup
     def stop_active_vrouter(self):
         active_vr = self.get_active_vrouter()
-        self.inputs.stop_service('supervisor-vrouter', [active_vr],
+        self.inputs.stop_service('contrail-vrouter-agent', [active_vr],
                                  container='agent')
         self._populate_vars()
 
     def start_active_vrouter(self):
         active_vr = self.get_active_vrouter()
-        self.inputs.start_service('supervisor-vrouter', [active_vr],
+        self.inputs.start_service('contrail-vrouter-agent', [active_vr],
                                   container='agent')
 
     # The test is expected to add start_standby_vrouter in addCleanup
     def stop_standby_vrouter(self):
         standby_vr = self.get_standby_vrouter()
-        self.inputs.stop_service('supervisor-vrouter', [standby_vr],
+        self.inputs.stop_service('contrail-vrouter-agent', [standby_vr],
                                  container='agent')
         self._populate_vars()
 
     def start_standby_vrouter(self):
         standby_vr = self.get_standby_vrouter()
-        self.inputs.start_service('supervisor-vrouter', [standby_vr],
+        self.inputs.start_service('contrail-vrouter-agent', [standby_vr],
                                   container='agent')
 
     @retry(tries=12, delay=5)
