@@ -7,6 +7,7 @@ from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import skip_because
 from common.ecmp.ecmp_verify import ECMPVerify
 from common.servicechain.firewall.verify import VerifySvcFirewall
+from common.servicechain.mirror.verify import VerifySvcMirror
 from common.svc_firewall.base import BaseSvc_FwTest
 import test
 from common import isolated_creds
@@ -117,7 +118,7 @@ class TestSvcRegrFeature(BaseSvc_FwTest, VerifySvcFirewall):
         return self.verify_protocol_port_change(ret_dict, mode='in-network')
 
 
-class TestSvcRegrwithMirror(BaseSvc_FwTest, VerifySvcFirewall):
+class TestSvcRegrwithMirror(BaseSvc_FwTest, VerifySvcFirewall, VerifySvcMirror):
 
     @classmethod
     def setUpClass(cls):
