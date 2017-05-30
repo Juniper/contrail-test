@@ -865,7 +865,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         if not vlan:
             filt_str = 'udp port 8099'
         cmd = "tcpdump -ni %s %s -w %s" % (tap_intf, filt_str, pcap)
-        self.logger.info("Staring tcpdump to capture the mirrored packets.")
+        self.logger.info("Starting tcpdump to capture the mirrored packets.")
         execute_cmd(session, cmd, self.logger)
         return pcap
 
