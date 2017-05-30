@@ -7520,9 +7520,9 @@ class WebuiTest:
                     webui_data.append({'key': 'CPU',
                                            'value': (row_div_list[base_indx + 4].text) + ' %'})
                     webui_data.append(
-                        {'key': 'Memory', 'value': row_div_list[base_indx + 5].text})
+                        {'key': 'Memory', 'value': row_div_list[base_indx + 6].text})
                     webui_data.append({'key': 'Generators',
-                                           'value': row_div_list[base_indx + 6].text})
+                                           'value': row_div_list[base_indx + 7].text})
                     if self.ui.match_ui_kv(ops_data, webui_data):
                         return True
                     else:
