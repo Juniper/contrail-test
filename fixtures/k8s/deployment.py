@@ -90,7 +90,7 @@ class DeploymentFixture(fixtures.Fixture):
             return self.k8s_client.delete_deployment(self.namespace, self.name)
     # end delete
 
-    @retry(delay=3, tries=30)
+    @retry(delay=5, tries=40)
     def verify_deployment_in_k8s(self):
         self.read()
         self.logger.debug('Replicas: %s, Available: %s' %(
