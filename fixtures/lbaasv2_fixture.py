@@ -485,7 +485,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
             self.logger.debug('is_instance_launched: si vm_id or vrouter'
                              ' info not available')
             return False
-        cmd_str = 'ip netns list | grep %s:%s | grep -v grep'%(vm_id, self.lb_uuid)
+        cmd_str = 'ip netns list 2>/dev/null | grep %s:%s | grep -v grep'%(vm_id, self.lb_uuid)
         output = self.inputs.run_cmd_on_server(vrouter, cmd_str,
                                                container='agent')
         if not output:
