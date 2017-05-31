@@ -46,7 +46,7 @@ def get_flow_index_list(self, src_vm, dest_vm):
         result = self.inputs.run_cmd_on_server(
             src_vm.vm_node_ip, cmd, self.inputs.host_data[
                 src_vm.vm_node_ip]['username'], self.inputs.host_data[
-                src_vm.vm_node_ip]['password'])
+                src_vm.vm_node_ip]['password'],container='agent')
         result.split('\r\n')
         output = result.replace('<=>',' ').split(' ')
         output = filter(None,output) 
