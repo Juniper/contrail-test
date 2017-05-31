@@ -44,10 +44,13 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
 
         self.bgp_router = None
         self.bgp_router_already_present = False
-        if self.inputs.verify_thru_gui():
-            from webui_test import WebuiTest
-            self.webui = WebuiTest(self.connections, self.inputs)
-            self.kwargs = kwargs
+        try:
+            if self.inputs.verify_thru_gui():
+                from webui_test import WebuiTest
+                self.webui = WebuiTest(self.connections, self.inputs)
+                self.kwargs = kwargs
+        except Exception as e:
+            pass
      # end __init__
 
     def create_bgp_router(self):
@@ -105,8 +108,11 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
                 self.bgp_router = self.webui.create_bgp_router(self)
             else:
                 self.bgp_router = self.create_bgp_router()
-        if not self.inputs.is_gui_based_config():
-            self.add_bgp_router(self.bgp_router)
+        try:
+            if not self.inputs.is_gui_based_config():
+                self.add_bgp_router(self.bgp_router)
+        except Exception as e:
+             pass
         self.router_session = self.get_connection_obj(self.vendor,
             host=self.mgmt_ip,
             username=self.ssh_username,
