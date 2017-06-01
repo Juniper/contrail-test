@@ -2398,12 +2398,13 @@ class WebuiTest:
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = self.ui.get_advanced_view_str()
                 dom_arry_num = self.ui.get_advanced_view_num()
+                dom_arry_bool = self.ui.get_advanced_view_bool()
                 dom_arry_num_new = []
                 for item in dom_arry_num:
                     dom_arry_num_new.append(
                         {'key': item['key'].replace('\\', '"').replace(' ', ''), 'value': item['value']})
                 dom_arry_num = dom_arry_num_new
-                merged_arry = dom_arry + dom_arry_str + dom_arry_num
+                merged_arry = dom_arry + dom_arry_str + dom_arry_num + dom_arry_bool
                 if flag:
                     merged_arry.append({'key': key1, 'value': val1})
                 bgp_routers_ops_data = self.ui.get_details(
