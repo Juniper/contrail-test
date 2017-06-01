@@ -2686,6 +2686,9 @@ class WebuiCommon:
     def get_advanced_view_bool(self):
         domArry = json.loads(self.browser.execute_script(
             "var eleList = $('pre').find('span'), dataSet = []; for(i = 0; i < eleList.length-4; i++){if(eleList[i+3].className == 'value'){if(eleList[i + 16].className == 'key' && eleList[i + 17].className == 'value boolean'){dataSet.push({key : eleList[i + 16].innerHTML, value : eleList[i + 17].innerHTML});}}} return JSON.stringify(dataSet);"))
+        if not domArry:
+            domArry = json.loads(self.browser.execute_script(
+                "var eleList = $('pre').find('span'), dataSet = []; for(i = 0; i < eleList.length-4; i++){if(eleList[i+3].className == 'value'){if(eleList[i + 8].className == 'key' && eleList[i + 9].className == 'value boolean'){dataSet.push({key : eleList[i + 8].innerHTML, value : eleList[i + 9].innerHTML});}}} return JSON.stringify(dataSet);"))
         domArry = self.trim_spl_char(domArry)
         return domArry
     # end get_advanced_view_bool
