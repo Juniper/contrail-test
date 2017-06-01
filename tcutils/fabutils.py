@@ -108,8 +108,8 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
         while tries > 0:
             try:
                 output = _run(cmd, timeout=timeout, pty=not as_daemon, shell=shell)
-            except (CommandTimeout, NetworkError) as e:
-                logger.warn('Unable to run command %s: %s' % (cmd, str(e)))
+            except (CommandTimeout, NetworkError, SystemExit) as e:
+                logger.exception('Unable to run command %s: %s' % (cmd, str(e)))
                 tries -= 1
                 time.sleep(5)
                 continue
