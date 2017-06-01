@@ -512,8 +512,10 @@ class WebuiTest:
                 self.ui.select_from_dropdown(vn_name)
             if fixture.si_v2:
                 self.ui.click_on_accordian('portTuplesCollection', accor=False)
+                self.ui.wait_till_ajax_done(self.browser)
                 br = self.ui.find_element('port-tuples-collection')
                 self.ui.click_element('editable-grid-add-link', 'class', browser=br)
+                self.ui.wait_till_ajax_done(self.browser)
                 self.ui.click_element('fa-caret-right', 'class', browser=br)
                 for index in range(2):
                     int = self.ui.find_element('s2id_interface_dropdown',
@@ -522,6 +524,7 @@ class WebuiTest:
                     int.click()
                     ele_br = self.ui.find_element(['select2-drop', 'li'],
                                                   ['id', 'tag'], if_elements=[1])
+                    self.ui.wait_till_ajax_done(self.browser)
                     self.ui.click_element('div', 'tag', browser=ele_br[0])
             if not self.ui.click_on_create('Service Instance', 'service_instance', save=True):
                 result = result and False
@@ -1206,6 +1209,7 @@ class WebuiTest:
                         self.ui.wait_till_ajax_done(self.browser)
                         self.ui.click_element(['tooltip-success', 'i'], ['class', 'tag'])
                         self.ui.click_on_accordian('rtPolicy', def_type=False)
+                        self.ui.wait_till_ajax_done(self.browser)
                         for index, (intf, pol) in enumerate(int_rp.iteritems()):
                             br = self.ui.find_element('rtPolicys')
                             if attach:
@@ -1225,6 +1229,7 @@ class WebuiTest:
                                                      elements=True)[0].click()
                         if not attach:
                             self.ui.click_on_accordian('rtPolicy', def_type=False)
+                            self.ui.wait_till_ajax_done(self.browser)
                         if not self.ui.click_on_create('Service Instance', 'service_instance',
                                                        save=True):
                             result = result and False
@@ -10199,6 +10204,8 @@ class WebuiTest:
         for svc_appl in range(len(svc_appl_sets_list_api['service-appliance-sets'])):
             api_fq_name = svc_appl_sets_list_api[
                 'service-appliance-sets'][svc_appl]['fq_name'][1]
+            if api_fq_name in ['opencontrail', 'native']:
+                continue
             self.ui.click_configure_svc_appliance_set()
             rows = self.ui.get_rows(canvas=True)
             for row in range(len(rows)):
