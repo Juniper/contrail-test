@@ -118,6 +118,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         'tor':[],
         'sriov':[],
         'dpdk':[],
+        'ns_agilio_vrouter':[],
     }
 
     sample_ini_file = test_dir + '/' + 'sanity_params.ini.sample'
@@ -244,6 +245,10 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     #get k8s info
     sanity_testbed_dict['kubernetes'] = env.get('kubernetes', {})
  
+   #get ns_agilio_vrouter info
+    if env.has_key('ns_agilio_vrouter'):
+        sanity_testbed_dict['ns_agilio_vrouter'].append(env.ns_agilio_vrouter)
+
     # Read ToR config
     sanity_tor_dict = {}
     if env.has_key('tor_agent'):
