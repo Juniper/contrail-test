@@ -76,7 +76,7 @@ PBB_RESOURCES_SINGLE_ISID = {
 
         # Traffic
         'traffic': {
-                   'stream1': {'src':'vm1','dst':'vm2','count':10,
+                   'stream1': {'src':'vm1','dst':'vm2','count':5,
                                 'src_cmac': get_random_mac(),
                                 'dst_cmac': get_random_mac(),
                                 'bd': 'bd1', 'src_vmi': 'vmi3',
@@ -128,12 +128,12 @@ PBB_RESOURCES_TWO_ISID = {
 
         # Traffic
         'traffic': {
-                   'stream1': {'src':'vm1','dst':'vm2','count':10,
+                   'stream1': {'src':'vm1','dst':'vm2','count':5,
                                 'src_cmac': get_random_mac(),
                                 'dst_cmac': get_random_mac(),
                                 'bd': 'bd1', 'src_vmi': 'vmi3',
                                 'dst_vmi': 'vmi4'},
-                   'stream2': {'src':'vm3','dst':'vm4','count':10,
+                   'stream2': {'src':'vm3','dst':'vm4','count':5,
                                 'src_cmac': get_random_mac(),
                                 'dst_cmac': get_random_mac(),
                                 'bd': 'bd2', 'src_vmi': 'vmi7',
@@ -578,7 +578,7 @@ class PbbEvpnTestBase(BaseVrouterTest):
             l2_route_in_agent = self.get_vna_layer2_route(ip, vrf_id, mac=cmac,
                 expectation=expectation)
             if not expectation:
-                result = True if l2_route_in_agent else False 
+                result = True if l2_route_in_agent else False
                 if result:
                     continue
                 else:
@@ -651,7 +651,7 @@ class PbbEvpnTestBase(BaseVrouterTest):
                 self.logger.debug("L2 routes in agent %s not found for vrf id %s" % (
                     compute_ip, vrf_id))
                 return (True, None)
-                
+
     def validate_pbb_l2_route(self, l2_route_in_agent, cmac, bmac, nh_type,
             mpls_label=None, isid=0):
 
