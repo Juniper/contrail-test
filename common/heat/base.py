@@ -102,6 +102,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         if self.inputs.get_af() == 'v6':
             template = self.get_template('vn_dual')
             env['parameters']['subnet2'],env['parameters']['prefix2'] = get_random_cidr(af='v4').split('/')
+        stack_name = get_random_name(stack_name)
         vn_hs_obj = self.config_heat_obj(stack_name, template, env)
         stack = vn_hs_obj.heat_client_obj
         vn_fix = self.verify_vn(stack, env, stack_name)
@@ -142,7 +143,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         return fip_hs_obj
 
     def config_intf_rt_table(self, prefix, si_fqdn, si_intf_type):
-        stack_name = 'intf_rt_table'
+        stack_name = get_random_name('intf_rt_table')
         template = self.get_template('intf_rt_table')
         env = self.get_env('intf_rt_table')
         env['parameters']['intf_rt_table_name'] = get_random_name(
@@ -154,7 +155,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         return intf_rt_table_hs_obj
 
     def config_vm(self, vn):
-        stack_name = 'single_vm'
+        stack_name = get_random_name('single_vm')
         template = self.get_template('single_vm')
         env = self.get_env('single_vm')
         env['parameters']['vm_name'] = get_random_name(
@@ -168,7 +169,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         return vm_hs_obj, vm_fix
 
     def config_vms(self, vn_list):
-        stack_name = 'vms'
+        stack_name = get_random_name('vms')
         template = self.get_template('vms')
         env = self.get_env('vms')
         env['parameters']['right_vm_name'] = get_random_name(env['parameters']['right_vm_name'])
@@ -219,6 +220,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
     def config_svc_template(self, stack_name=None, scaling=False, mode='in-network-nat'):
         ver = 1
         res_name = 'svc_tmpl'
+        stack_name = get_random_name(stack_name)
         if self.pt_based_svc:
             res_name += '_pt'
         if self.heat_api_version == 2:
@@ -290,6 +292,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         env['parameters']['mgmt_net_id'] = vn_list[0].vn_fq_name
         env['parameters'][
             'service_instance_name'] = get_random_name('svc_inst')
+        stack_name = get_random_name(stack_name)
         pt_si_hs_obj = self.config_heat_obj(stack_name, template, env)
         return pt_si_hs_obj
     # end config_pt_si
@@ -362,6 +365,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         else:
             env['parameters']['right_net_id'] = vn_list[2].vn_fq_name
             env['parameters']['left_net_id'] = vn_list[1].vn_fq_name
+        stack_name = get_random_name(stack_name)
         si_hs_obj = self.config_heat_obj(stack_name, template, env)
         si_name = env['parameters']['service_instance_name']
         si_fix = self.verify_si(si_hs_obj.heat_client_obj, stack_name, si_name, st_fix, max_inst, st_fix.service_mode, st_fix.image_name)
@@ -428,6 +432,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
              env['parameters']['src_vn_id'] = vn_list[1].uuid
              env['parameters']['dst_vn_id'] = vn_list[2].uuid
              template['resources']['private_policy']['properties']['entries']['policy_rule'].extend(rules)
+        stack_name = get_random_name(stack_name)
         svc_hs_obj = self.config_heat_obj(stack_name, template, env)
         if self.heat_api_version != 2:
             return
@@ -451,6 +456,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
     # end config_svc_chain
 
     def config_v2_svc_chain(self, stack_name):
+        stack_name = get_random_name(stack_name)
         svc_pt_hs = self.config_heat_obj(stack_name)
         stack = svc_pt_hs.heat_client_obj
         op = stack.stacks.get(stack_name).outputs
