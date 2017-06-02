@@ -735,8 +735,10 @@ class TestBasicVMVN0(BaseVnVmTest):
         max_system_flows = 0
         max_vm_flows = 0.1
         compute_ips = [self.inputs.compute_ips[0], self.inputs.compute_ips[0]]
+        compute_names = [self.inputs.compute_names[0], self.input.compute_names[0]]
         if len(self.inputs.compute_ips) > 1:
             compute_ips[1] = self.inputs.compute_ips[1]
+            compute_names[1] = self.inputs.compute_names[1]
 
         for cmp_node in compute_ips:
             comp_node_fixt[cmp_node] = self.useFixture(ComputeNodeFixture(
@@ -810,10 +812,10 @@ class TestBasicVMVN0(BaseVnVmTest):
         # Launch 2 VM's in the respective VN's.
         vm1_fixture = self.create_vm(vn1_fixture,vm_name=vn1_vm1_name,
                 flavor='contrail_flavor_small', image_name='ubuntu-traffic',
-                node_name=self.inputs.compute_names[0])
+                node_name=compute_names[0])
         vm2_fixture = self.create_vm(vn2_fixture,vm_name=vn2_vm2_name,
                 flavor='contrail_flavor_small', image_name='ubuntu-traffic',
-                node_name=self.inputs.compute_names[1])
+                node_name=compute_names[1])
         assert vm1_fixture.wait_till_vm_is_up(), 'VM1 does not seem to be up'
         assert vm2_fixture.wait_till_vm_is_up(), 'VM2 does not seem to be up'
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip, count=1), \
