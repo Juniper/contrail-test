@@ -1854,11 +1854,11 @@ class WebuiTest:
                     'build_info')).get('build-info')[0].get('build-id')
                 version = self.ui.get_version_string(version)
                 xmpp_messages = vrouters_ops_data.get(
-                    'VrouterStatsAgent').get('xmpp_stats_list')
-                for i, item in enumerate(xmpp_messages):
-                    if item['ip'] == ip_address:
-                        xmpp_in_msgs = item['in_msgs']
-                        xmpp_out_msgs = item['out_msgs']
+                        'VrouterControlStats').get('xmpp_stats')
+                for item in xmpp_messages:
+                    if item == ip_address:
+                        xmpp_in_msgs = xmpp_messages.get(item)['in_msgs']
+                        xmpp_out_msgs = xmpp_messages.get(item)['out_msgs']
                         xmpp_msgs_string = str(xmpp_in_msgs) + \
                             ' In, ' + \
                             str(xmpp_out_msgs) + ' Out'
@@ -1978,7 +1978,7 @@ class WebuiTest:
                     'ModuleClientState').get('client_info')
                 if analytics_data['status'] == 'Established':
                     analytics_primary_ip = analytics_data[
-                        'primary'].split(':')[0] + ' (Up)'
+                            'collector_ip'].split(':')[0] + ' (Up)'
                     tx_socket_bytes = analytics_data.get(
                         'tx_socket_stats').get('bytes')
                     tx_socket_size = self.ui.get_memory_string(
