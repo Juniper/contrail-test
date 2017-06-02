@@ -93,5 +93,8 @@ class TestVrouterDetach(BaseNeutronTest):
         status = ContrailStatusChecker(self.inputs)
         status.wait_till_contrail_cluster_stable()
         assert result,'Vrouter kernel module failed to unload and reload'
+
+        #Get the latest metadata ip of the instance after vrouter reload
+        vm1_fixture.get_local_ip(refresh=True)
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
     #end  test_vrouter_kernal_module_unload_reload
