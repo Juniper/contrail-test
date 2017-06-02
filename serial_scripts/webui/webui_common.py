@@ -2043,7 +2043,8 @@ class WebuiCommon:
             if text not in ['opencontrail', 'native']:
                 rows[row].find_elements_by_tag_name(
                 'div')[0].find_element_by_tag_name('i').click()
-        self.wait_till_ajax_done(self.browser)
+                self.wait_till_ajax_done(self.browser)
+                return row
     # end click_configure_svc_appliance_set_basic
 
     def click_configure_svc_appliances(self):
@@ -2759,7 +2760,7 @@ class WebuiCommon:
         if project:
             eval(click_func)(index, project)
         else:
-            eval(click_func)(index)
+            row_index = eval(click_func)(index)
         self.logger.info(
             "Click and retrieve %s view details in webui of %s " %
                 (view, func_suffix))
@@ -2771,10 +2772,13 @@ class WebuiCommon:
         except StaleElementReferenceException:
             browser = self.find_element(search_ele, search_by)
         rows = self.get_rows(browser, canvas)
-        if not rows[index + 1].text:
-            ind = index
+        if row_index:
+            ind = row_index + 1
         else:
-            ind = index + 1
+            if not rows[index + 1].text:
+                ind = index
+            else:
+                ind = index + 1
         self.wait_till_ajax_done(browser)
         slick_row_detail = self.find_element(
                 'slick-row-detail-container', 'class',
