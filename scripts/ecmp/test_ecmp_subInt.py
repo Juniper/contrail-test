@@ -121,7 +121,7 @@ class TestSubInterfacesECMP(BaseVrouterTest,ConfigSvcChain):
         st_fixture = self.useFixture(SvcTemplateFixture(
             connections=self.connections,
             st_name=st_name, svc_type=svc_type,
-            if_details=if_details, svc_mode=svc_mode, version=st_version))
+            if_details=if_details, service_mode=svc_mode, version=st_version))
 
         si_fixture = self.useFixture(SvcInstanceFixture(
                 connections=self.connections,
