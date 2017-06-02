@@ -29,10 +29,11 @@ class DisablePolicyEcmpSerial(BaseVrouterTest, VerifySvcChain):
             2. launch VMs in both VNs and SIs and disable the policy on all the VMIs
                 including SIs
             3. start the traffic from left to right VN
+            4. enable the policy on traffic VMs and verify flow created
         Pass criteria:
             1. traffic should go through fine
-            2. flows should not be created
-            3. load should be distributed among all the SIs
+            2. flows should not be created when policy disabled
+            3. flows should be created when policy enabled
         """
         vn_fixtures = self.create_vns(count=3)
         self.verify_vns(vn_fixtures)
@@ -59,22 +60,30 @@ class DisablePolicyEcmpSerial(BaseVrouterTest, VerifySvcChain):
             svc_img_name=image,
             left_vm_fixture=vm_left,
             right_vm_fixture=vm_right,
-            max_inst=max_inst)
+            max_inst=max_inst,
+            create_svms=True,
+            hosts=[self.orch.get_hosts()[0]])
         st_fixture = svc_chain_info['st_fixture']
         si_fixture = svc_chain_info['si_fixture']
+        svm_fixtures = svc_chain_info['svm_fixtures']
 
         self.verify_vms([vm_left, vm_right])
         self.verify_vms(si_fixture.svm_list)
         self.disable_policy_for_vms([vm_left, vm_right])
-        self.disable_policy_for_vms(si_fixture.svm_list)
+        self.disable_policy_for_vms(svm_fixtures)
 
-        assert self.verify_traffic_load_balance_si(vm_left,
-            si_fixture.svm_list, vm_right)
+        assert self.verify_ecmp_routes_si(vm_left, vm_right)
+        assert self.verify_traffic_for_ecmp_si(vm_left,
+            svm_fixtures, vm_right,
+            si_left_vn_name=svc_chain_info['si_left_vn_fixture'].vn_fq_name)
 
         self.disable_policy_for_vms([vm_left, vm_right], disable=False)
 
-        assert self.verify_traffic_load_balance_si(vm_left,
-            si_fixture.svm_list, vm_right, flow_count=True)
+        assert self.verify_ecmp_routes_si(vm_left, vm_right)
+        assert self.verify_traffic_for_ecmp_si(vm_left,
+            svm_fixtures, vm_right,
+            si_left_vn_name=svc_chain_info['si_left_vn_fixture'].vn_fq_name,
+            flow_count=1)
 
 class DisablePolicyEcmpSerialIpv6(DisablePolicyEcmpSerial):
     @classmethod
