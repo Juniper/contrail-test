@@ -31,6 +31,10 @@ class TestDropStats(BaseVrouterTest, BaseDropStats):
             2. Verify flow action count gets incremented for the vmi of VM1, get it from introspect
               
         """
+        compute_hosts = self.orch.get_hosts()
+        if len(compute_hosts) < 2:
+            raise self.skipTest("Skipping test case,this test needs atleast 2 compute nodes")
+
         assert self.verify_flow_action_drop_stats()
         return True
     # end test_drop_stats
