@@ -290,21 +290,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     vcenter_servers = env.get('vcenter_servers')
     if vcenter_servers:
         for vcenter in vcenter_servers:
-            host_dict = {}
-            host_dict['server'] = vcenter_servers[vcenter]['server']
-            host_dict['port'] = vcenter_servers[vcenter]['port']
-            host_dict['username'] = vcenter_servers[vcenter]['username']
-            host_dict['password'] = vcenter_servers[vcenter]['password']
-            host_dict['datacenter'] = vcenter_servers[vcenter]['datacenter']
-            host_dict['auth'] = vcenter_servers[vcenter]['auth']
-            host_dict['cluster'] = vcenter_servers[vcenter]['cluster']
-            host_dict['dv_switch'] = vcenter_servers[vcenter]['dv_switch']['dv_switch_name']
-            #Mostly we do not use the below info for vcenter sanity tests.
-            #Its used for vcenter only mode provosioning for contrail-vm
-            #Its not needed for vcenter_gateway mode, hence might not be there in testbed.py
-            if 'dv_port_group' in vcenter_servers[vcenter]:
-                host_dict['dv_port_group'] = vcenter_servers[vcenter]['dv_port_group']['dv_portgroup_name']
-            sanity_testbed_dict['vcenter_servers'].append(host_dict)
+            sanity_testbed_dict['vcenter_servers'].append(vcenter_servers[vcenter])
 
     orch = getattr(env, 'orchestrator', 'openstack')
     #get other orchestrators (vcenter etc) info if any 
@@ -452,8 +438,9 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
 
     if env.has_key('vcenter_servers'):
             if env.vcenter_servers:
-                for k in env.vcenter_servers:
-                    vcenter_dc = env.vcenter_servers[k]['datacenter']
+                for vc in env.vcenter_servers:
+                    for dc in env.vcenter_servers[vc]['datacenters']:    
+                        vcenter_dc = dc
 
     #global controller
     gc_host_mgmt = getattr(testbed, 'gc_host_mgmt', '')

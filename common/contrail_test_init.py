@@ -30,10 +30,13 @@ import subprocess
 from collections import namedtuple
 import random
 from cfgm_common import utils
+import argparse
+
 
 ORCH_DEFAULT_DOMAIN = {
     'openstack' : 'Default',
-    'kubernetes': 'default-domain'
+    'kubernetes': 'default-domain',
+    'vcenter': 'default-domain',
 }
 
 # monkey patch subprocess.check_output cos its not supported in 2.6
@@ -388,8 +391,9 @@ class TestInputs(object):
         try:
             if 'vcenter_servers' in self.prov_data.keys():
                 for server in self.prov_data['vcenter_servers']:
-                    for k in server.keys():
-                        self.dv_switch = server[k]['dv_switch']['dv_switch_name']
+                    for dc in server['datacenters']:
+                        for dv in server['datacenters'][dc]['dv_switches']:
+                            self.dv_switch = dv
             elif 'vcenter' in self.prov_data.keys():
                 self.dv_switch = self.prov_data['vcenter'][0]['dv_switch']['dv_switch_name']
         except Exception as e:
@@ -1454,3 +1458,23 @@ class ContrailTestInit(object):
         copy_file_from_server(host, src_file_path, dest_folder,
             container=container)
     # end copy_file_from_server
+
+def _parse_args( args_str):
+    parser = argparse.ArgumentParser()
+    args, remaining_argv = parser.parse_known_args(args_str.split())
+    parser.add_argument(
+                "--conf_file", nargs='?', default="check_string_for_empty",help="pass sanity_params.ini",required=True)
+    args = parser.parse_args(remaining_argv)
+    return args
+
+
+def main(args_str = None):
+    if not args_str:
+       script_args = ' '.join(sys.argv[1:])
+    script_args = _parse_args(script_args)
+    inputs = ContrailTestInit(ini_file=script_args.conf_file)
+
+if __name__ == '__main__':
+    main()
+
+    
