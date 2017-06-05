@@ -124,36 +124,60 @@ class ContrailStatusChecker():
         # Get nodes from host_ips if not passed from test script
         if not nodes:
             nodes = self.inputs.host_ips
+        if includeservice:
+            nodes = includeservice.keys() # Ignoring the value of variable nodes if user include this variable
         for node in nodes:
             self.inputs.logger.debug(
                 'Executing %s command on node %s to check for contrail-status' % (cmd, node))
             # run command on each node
-            output = self.inputs.run_cmd_on_server(node, cmd)
-            for line in output.split("\n"):
-                status = None
-                service_status = line.split()
-                try:
-                    service = service_status[0]
-                except IndexError:
-                    service = None
-                if len(service_status) == 2:
-                    status = service_status[1].strip()
-                # Variable "status" has the status for corresponding
-                # service
-                if not status:
-                    continue
-                if ((status == "active") or (status == "backup")):
-                    if service in single_active_services.keys():
-                        self.add_node_to_all_active_servers(
+            node_roles = []
+            if includeservice.get(node):
+                services_included = includeservice[node].split(",")
+                for service in services_included:
+                    role = self.get_service_role(service)
+                    if role not in node_roles:
+                        node_roles.append(role)
+            else:
+                if node in self.inputs.bgp_ips:
+                    role = "controller"
+                    node_roles.append(role)
+                if node in self.inputs.collector_ips:
+                    role = "analytics"
+                    node_roles.append(role)
+                if node in self.inputs.database_ips:
+                    role = "analyticsdb"
+                    node_roles.append(role)
+                if node in self.inputs.compute_ips:
+                    role = "compute"
+                    node_roles.append(role)
+
+            for role in node_roles:
+                output = self.inputs.run_cmd_on_server(node, cmd, container = role)
+                for line in output.split("\n"):
+                    status = None
+                    service_status = line.split()
+                    try:
+                        service = service_status[0]
+                    except IndexError:
+                        service = None
+                    if len(service_status) == 2:
+                        status = service_status[1].strip()
+                    # Variable "status" has the status for corresponding
+                    # service
+                    if not status:
+                        continue
+                    if ((status == "active") or (status == "backup")):
+                        if service in single_active_services.keys():
+                            self.add_node_to_all_active_servers(
                             includeservice, node, single_active_services, service, status)
-                # Check for the status being one of the 4 "erroneous"
-                # statuses and update the list
-                if (status in skip_status):
-                    if (includeservice):
-                        self.update_error_if_includeservice_present(
+                    # Check for the status being one of the 4 "erroneous"
+                    #statuses and update the list
+                    if (status in skip_status):
+                        if (includeservice):
+                            self.update_error_if_includeservice_present(
                             node, includeservice, service, errlist, line, output)
-                    else:
-                        self.update_error_if_includeservice_not_present(
+                        else:
+                            self.update_error_if_includeservice_not_present(
                             node, includeservice, service, errlist, line, output)
 
       # check if any of the 3 services in
@@ -301,6 +325,41 @@ class ContrailStatusChecker():
             return True
         else:
             return False
+    
+    def get_service_role(self, service):
+        '''
+        In case user mention "includeservice" to get status of particular 
+        service, this function help get the role for that service
+        eg, for service "contrail-collector", this function will return the
+        role as "analytics" so that, analytics container can be used to 
+        get the status in get_status.
+        '''
+        service_dict = {"controller" : ["contrail-control", 
+                                        "contrail-control-nodemgr",
+                                        "contrail-dns",
+                                        "contrail-named",
+                                        "contrail-api",
+                                        "contrail-config-nodemgr",
+                                        "contrail-device-manager",
+                                        "contrail-schema",
+                                        "contrail-svc-monitor",
+                                        "contrail-webui",
+                                        "contrail-webui-middleware"],
+                        "analytics" : ["contrail-alarm-gen",
+                                       "contrail-analytics-api",
+                                       "contrail-analytics-nodemgr",
+                                       "contrail-collector",
+                                       "contrail-query-engine",
+                                       "contrail-snmp-collector",
+                                       "contrail-topology"],
+                        "analyticsdb" : ["contrail-database",
+                                         "contrail-database-nodemgr",
+                                         "kafka"],
+                        "compute" : ["contrail-vrouter-agent",
+                                     "contrail-vrouter-nodemgr"]}
+        for role in service_dict.keys():
+            if service in service_dict[role]:
+                return role
 
     def main(self):
         (boolval, ret) = self.wait_till_contrail_cluster_stable(delay=10, tries=9) 
