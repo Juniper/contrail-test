@@ -9,6 +9,7 @@ from common.servicechain.verify import VerifySvcChain
 from common.ecmp.ecmp_verify import ECMPVerify
 from common.floatingip.config import CreateAssociateFip
 from random import randint
+from tcutils.tcpdump_utils import *
 
 class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
@@ -293,7 +294,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
                 self.logger.warning('No mirroring action seen')
         return result
 
-
     @retry(delay=2, tries=6)
     def verify_port_mirroring(self, src_vm, dst_vm, mirr_vm, vlan=None):
         result = True
@@ -315,18 +315,24 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         self.logger.info('Ping from %s to %s executed with c=5, expected mirrored packets 5 Ingress,5 Egress count = 10'
             % (src_ip, dst_ip))
         exp_count = 10
-        filt = '| grep \"length [1-9][4-9][0-9][0-9][0-9]*\"'
-        mirror_pkt_count = self.stop_tcpdump(session, pcap, filt)
-        sleep(10)
+        filters = '| grep \"length [1-9][4-9][0-9][0-9][0-9]*\"'
+        if self.inputs.pcap_on_vm:
+            output, mirror_pkt_count = stop_tcpdump_for_vm_intf(
+                None, None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files, filters=filters)
+            mirror_pkt_count = int(mirror_pkt_count[0])
+        else:
+            mirror_pkt_count = self.stop_tcpdump(session, pcap, filters)
         errmsg = "%s ICMP Packets mirrored to the analyzer VM %s,"\
                  "Expected %s packets" % (
                      mirror_pkt_count, svm_name, exp_count)
         if mirror_pkt_count < exp_count:
             self.logger.error(errmsg)
             assert False, errmsg
+
         self.logger.info("%s ICMP packets are mirrored to the analyzer "
                          "service VM '%s'", mirror_pkt_count, svm_name)
         return result
+    # end verify_port_mirroring
 
     def verify_policy_delete_add(self, svc_chain_info):
         left_vn_policy_fix = svc_chain_info['left_vn_policy_fix']
