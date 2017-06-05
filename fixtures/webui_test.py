@@ -6003,7 +6003,7 @@ class WebuiTest:
                 for ipam in ipams:
                     self.ui.click_element([
                         's2id_user_created_network_ipams_dropdown', \
-                            'select2-search-choice-close'], ['id', 'class'])
+                            'select2-search-choice-close'], ['id', 'class'], wait=5)
                 if not self.ui.click_on_create(
                         'DNS Server', 'dns_servers', save=True):
                     result = result and False
