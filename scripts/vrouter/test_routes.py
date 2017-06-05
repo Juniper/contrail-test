@@ -132,6 +132,7 @@ class TestRoutes(BaseVrouterTest):
         self.add_interface_route_table(port3_fixture, intf1_rtb_fixture.obj)
         vm1_fixture.verify_on_setup()
         vm2_fixture.verify_on_setup()
+        vm3_fixture.verify_on_setup()
 
         inspect_h = self.agent_inspect_h[vm1_fixture.vm_node_ip]
         lookup_prefix = '%s/32' % (unknown_ip.split('/')[0])
