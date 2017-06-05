@@ -44,6 +44,19 @@ class BaseVrouterTest(BaseNeutronTest):
         super(BaseVrouterTest, cls).tearDownClass()
     # end tearDownClass
 
+    @retry(delay=2, tries=15)
+    def get_vna_route_with_retry(self, agent_inspect, vrf_id, ip, prefix):
+        '''
+            Get vna route with retry
+        '''
+        route_list = agent_inspect.get_vna_route(vrf_id, ip, prefix)
+
+        if not route_list:
+            self.logger.warn("Route of IP %s not found in agent" % (ip))
+            return (False, None)
+        else:
+            return (True, route_list)
+
     def get_random_ip_from_vn(self, vn_fixture):
         ips = []
         cidrs = vn_fixture.get_cidrs(af=self.inputs.get_af())
@@ -366,8 +379,14 @@ class BaseVrouterTest(BaseNeutronTest):
 
         for vm in vm_fix_list:
             vrf_id = vm.agent_vrf_id[vm.vn_fq_name]
-            route_list = self.agent_inspect[vm.vm_node_ip].get_vna_route(vrf_id,
-                prefix_split[0], prefix_split[1])
+            route_list = self.get_vna_route_with_retry(
+                self.agent_inspect[vm.vm_node_ip], vrf_id,
+                prefix_split[0], prefix_split[1])[1]
+
+            if not route_list:
+                self.logger.error("Route itself could not be found in agent for IP %s, test failed"
+                    % (prefix_split[0]))
+                return False
 
             for route in route_list['routes']:
                 for path in route['path_list']:
