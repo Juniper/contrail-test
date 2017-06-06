@@ -62,9 +62,9 @@ def stop_tcpdump_for_vm_intf(obj, session, pcap, vm_fix_pcap_pid_files=[], filte
 def verify_tcpdump_count(obj, session, pcap, exp_count=None, exact_match=True, mac=None):
 
     if mac:
-        cmd = 'tcpdump -r %s | grep %s | wc -l' % (pcap,mac)
+        cmd = 'tcpdump -r %s ether host %s | grep -c length' % (pcap,mac)
     else:
-        cmd = 'tcpdump -r %s | wc -l' % pcap
+        cmd = 'tcpdump -r %s | grep -c length' % pcap
     out, err = execute_cmd_out(session, cmd, obj.logger)
     count = int(out.strip('\n'))
     result = True
