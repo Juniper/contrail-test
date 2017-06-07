@@ -5,7 +5,7 @@ def start_all_control_services(self):
     """ Start all the control services running in the topology.
     """
     for ip in self.inputs.bgp_ips:
-        self.inputs.start_service('supervisor-control', [ip],
+        self.inputs.start_service('contrail-control', [ip],
                               container='controller')
         time.sleep(60)
 # end stop_all_control_services
@@ -15,7 +15,7 @@ def stop_all_control_services(self):
     """ Stop all the control services running in the topology.
     """
     for ip in self.inputs.bgp_ips:
-        self.inputs.stop_service('supervisor-control', [ip],
+        self.inputs.stop_service('contrail-control', [ip],
                              container='controller')
         time.sleep(60)
 # end stop_all_control_services

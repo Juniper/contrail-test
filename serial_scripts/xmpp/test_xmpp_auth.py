@@ -57,7 +57,7 @@ class TestXmpptests(XmppBase, ConfigPolicy):
                 section='DEFAULT',
                 knob='xmpp_auth_enable',
                 node=node,
-                service='supervisor-control')
+                service='contrail-control')
             assert (self.check_xmpp_status(node)
                     ), "XMPP between nodes not up after deleting xmpp auth"
             assert (self.check_if_xmpp_auth_enabled(node, 'NIL')
@@ -71,7 +71,7 @@ class TestXmpptests(XmppBase, ConfigPolicy):
                 knob='xmpp_auth_enable',
                 value='true',
                 node=node,
-                service='supervisor-control')
+                service='contrail-control')
             assert (self.check_xmpp_status(node)
                     ), "XMPP between nodes not up after adding back xmpp auth"
             assert (self.check_if_xmpp_auth_enabled(node)
@@ -95,7 +95,7 @@ class TestXmpptests(XmppBase, ConfigPolicy):
                 section='DEFAULT',
                 knob='xmpp_auth_enable',
                 node=node,
-                service='supervisor-control')
+                service='contrail-control')
         # adding cleanup before assert
         self.addCleanup(self.enable_auth_on_cluster)
         assert (self.check_xmpp_status(node)
@@ -111,7 +111,7 @@ class TestXmpptests(XmppBase, ConfigPolicy):
                 knob='xmpp_auth_enable',
                 value='true',
                 node=node,
-                service='supervisor-control')
+                service='contrail-control')
         assert (self.check_xmpp_status(node)
                 ), "XMPP between nodes not up after adding back xmpp auth"
         assert (self.check_if_cluster_has_xmpp), "XMPP connections not found"
@@ -135,7 +135,7 @@ class TestXmpptests(XmppBase, ConfigPolicy):
                 section='DEFAULT',
                 knob='xmpp_auth_enable',
                 node=node,
-                service='supervisor-vrouter')
+                service='contrail-vrouter-agent')
         # adding cleanup before assert
         self.addCleanup(self.enable_auth_on_cluster)
         for node in self.inputs.bgp_control_ips:
@@ -152,7 +152,7 @@ class TestXmpptests(XmppBase, ConfigPolicy):
                 knob='xmpp_auth_enable',
                 value='true',
                 node=node,
-                service='supervisor-vrouter')
+                service='contrail-vrouter-agent')
         for node in self.inputs.bgp_control_ips:
             assert (self.check_xmpp_status(node)
                     ), "XMPP between nodes not up after adding back xmpp auth"
@@ -174,8 +174,8 @@ class TestXmpptests(XmppBase, ConfigPolicy):
         self.addCleanup(self.enable_auth_on_cluster)
         for i in range(1, 10):
             for node in self.inputs.compute_ips:
-                self.inputs.restart_service('supervisor-vrouter', [node],
-											container='agent')
+                self.inputs.restart_service('contrail-vrouter-agent', [node],
+                                            container='agent')
                 cluster_status, error_nodes = ContrailStatusChecker(
                 ).wait_till_contrail_cluster_stable(nodes=[node])
                 assert cluster_status, 'Hash of error nodes and services : %s' % (
@@ -186,7 +186,7 @@ class TestXmpptests(XmppBase, ConfigPolicy):
         assert (self.check_if_cluster_has_xmpp), "XMPP connections not found"
         for i in range(1, 10):
             for node in self.inputs.bgp_control_ips:
-                self.inputs.restart_service('supervisor-control', [node],
+                self.inputs.restart_service('contrail-control', [node],
 											container='controller')
                 cluster_status, error_nodes = ContrailStatusChecker(
                 ).wait_till_contrail_cluster_stable(nodes=[node])
