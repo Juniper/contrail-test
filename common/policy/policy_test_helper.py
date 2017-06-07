@@ -297,23 +297,7 @@ def tx_quantum_rules_to_aces(no_of_rules, fq_vn):
             rule['proto_l'] = {'max': str(rule['proto_l']),
                                'min': str(rule['proto_l'])}
 
-    # step 3: if the rules are  unidirectional
-    for rule in user_rules_tx:
-        if rule['direction'] == '>':
-            if (rule['src'] != rule['dst']):
-                uni_rule = copy.deepcopy(rule)
-                # update newly copied rule: swap address and insert 'any' to
-                # protocol and src/dst ports
-                uni_rule['src'], uni_rule['dst'] = uni_rule[
-                    'dst'], uni_rule['src']
-                uni_rule['src_port_l'], uni_rule['dst_port_l'] = {
-                    'max': '65535', 'min': '0'}, {'max': '65535', 'min': '0'}
-                uni_rule['proto_l'] = {'max': '255', 'min': '0'}
-                uni_rule['simple_action'] = 'deny'
-                uni_rule['action_l'] = ['deny']
-                break
-
-    # step 4: expanding rules if bidir rule
+    # step 3: expanding rules if bidir rule
     for rule in user_rules_tx:
         if rule['direction'] == '<>':
             rule['direction'] = '>'
