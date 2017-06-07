@@ -98,13 +98,13 @@ class TestRbac(BaseRbac):
         delete default acl recreation
         steps:
             1. delete default acl
-            2. restart supervisor-config service
+            2. restart contrail-api service
             3. default acl should be recreated on restart
         '''
         self.global_acl.delete()
         # Restart one contrail-api service alone
         self.inputs.restart_service('contrail-api', [self.inputs.cfgm_ip],
-									container='controller')
+                                    container='controller')
         self.populate_default_rules_in_global_acl()
         assert not self.global_acl.created, "Global ACL didnt get auto created upon restart"
 

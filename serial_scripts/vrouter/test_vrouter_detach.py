@@ -58,8 +58,6 @@ class TestVrouterDetach(BaseNeutronTest):
             raise self.skipTest(
                     'Skipping Test. Need multi_interface testbed')
         result = True
-        cmd_vr_stop = 'service supervisor-vrouter stop'
-        cmd_vr_start = 'service supervisor-vrouter start'
         cmd_vr_unload = 'modprobe -r vrouter'
         cmd_vr_reload = 'modprobe -a vrouter'
         vn1_fixture = self.create_vn()
@@ -71,9 +69,9 @@ class TestVrouterDetach(BaseNeutronTest):
         vm2_fixture.wait_till_vm_is_up()
         compute_ip = vm1_fixture.vm_node_ip
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
-        self.inputs.run_cmd_on_server(compute_ip,issue_cmd=cmd_vr_stop,
-                                      container='agent')
-        self.inputs.run_cmd_on_server(compute_ip,issue_cmd=cmd_vr_unload)
+        self.inputs.stop_service('supervisor-vrouter', host_ips=[compute_ip],
+                                 container='agent')
+        self.inputs.run_cmd_on_server(compute_ip, issue_cmd=cmd_vr_unload)
         status = self.inputs.run_cmd_on_server(compute_ip,issue_cmd = 'lsmod | grep vrouter')
         if status:
             result = result and False
@@ -81,15 +79,15 @@ class TestVrouterDetach(BaseNeutronTest):
         else:
             self.logger.info('Vrouter kernel module unloaded successfully')
         self.logger.info('Reloading vrouter kernel module')
-        self.inputs.run_cmd_on_server(compute_ip,issue_cmd=cmd_vr_reload)
+        self.inputs.run_cmd_on_server(compute_ip, issue_cmd=cmd_vr_reload)
         status = self.inputs.run_cmd_on_server(compute_ip,issue_cmd = 'lsmod | grep vrouter')
         if not status:
             result = result and False
             self.logger.error('Vrouter kernel module failed to reload')
         else:
             self.logger.info('Vrouter kernel module reloaded successfully')
-        self.inputs.run_cmd_on_server(compute_ip,issue_cmd=cmd_vr_start,
-                                      container='agent')
+        self.inputs.start_service('supervisor-vrouter', host_ips=[compute_ip],
+                                  container='agent')
         status = ContrailStatusChecker(self.inputs)
         status.wait_till_contrail_cluster_stable()
         assert result,'Vrouter kernel module failed to unload and reload'
