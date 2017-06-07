@@ -6223,7 +6223,7 @@ class WebuiTest:
             self.logger.info(
                 'Creating instance name %s with image name %s using openstack horizon' %
                 (fixture.vm_name, fixture.image_name))
-            if self.os_release == 'mitaka':
+            if self.os_release in ['mitaka', 'newton']:
                 self.ui.send_keys(fixture.vm_name, 'name', 'name',
                                       browser=self.browser_openstack)
                 availability_zone = "//select[@id='availability-zone']/option[text()='nova']"
