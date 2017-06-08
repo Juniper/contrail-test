@@ -196,8 +196,8 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
                             cn_bgp_entry.remove(bgpnodes)
                 cn_bgp_entry = str(cn_bgp_entry)
 
-        cn_bgp_entry = str(cn_bgp_entry)
-        est = re.findall(' \'state\': \'(\w+)\', \'flap_count', cn_bgp_entry)
+        str_bgp_entry = str(cn_bgp_entry)
+        est = re.findall(' \'state\': \'(\w+)\', \'flap_count', str_bgp_entry)
         for ip in est:
             if not ('Established' in ip):
                 result = False
@@ -211,10 +211,10 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
         #as tcp session may take some time to come up, adding some sleep.
         sleep(10)
         for node in self.inputs.bgp_control_ips:
-            cmd = 'netstat -tnp | grep :179 | awk \'{print $6}\''
+            cmd = 'netstat -tnp | grep :179 | awk \"{print $6}\"'
             tcp_status = self.inputs.run_cmd_on_server(node, cmd,
                                                        container='controller')
-            tcp_status=tcp_status.split('\n')
+            tcp_status=tcp_status.split(' ')[-2]
             for status in tcp_status:
                 if not ('ESTABLISHED' in status):
                     result = False
