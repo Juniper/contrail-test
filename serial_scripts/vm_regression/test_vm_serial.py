@@ -319,7 +319,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         vm1_name = get_random_name('vm_mine')
         vn_name = get_random_name('vn222')
         vn_subnets = ['11.1.1.0/24']
-        vn_count_for_test = 32
+        vn_count_for_test = 20
         if (len(self.inputs.compute_ips) == 1):
             vn_count_for_test = 5
         vm_fixture = self.useFixture(
@@ -480,7 +480,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         vm1_name = 'vm_mine'
         vn_name = 'vn222'
         vn_subnets = ['11.1.1.0/24']
-        vn_count_for_test = 32
+        vn_count_for_test = 20
         if (len(self.inputs.compute_ips) == 1):
             vn_count_for_test = 10
         if os.environ.has_key('ci_image'):
@@ -547,21 +547,25 @@ class TestBasicVMVN0(BaseVnVmTest):
         }
 
         for service, role in service_list.iteritems():
-            cmd = "service %s status |  awk '{print $4}' | cut -f 1 -d','" % service
+            cmd = 'service %s status |  awk \"{print $4}\" | cut -f 1 -d\',\'' % service
             self.logger.info("service:%s, role:%s" % (service, role))
             if role == 'cfgm':
+                container = 'controller'
                 login_ip = cfgm_ip
                 login_user = cfgm_user
                 login_pwd = cfgm_pwd
             elif role == 'compute':
+                container = 'compute'
                 login_ip = compute_ip
                 login_user = compute_user
                 login_pwd = compute_pwd
             elif role == 'control':
+                container = 'controller'
                 login_ip = control_ip
                 login_user = control_user
                 login_pwd = control_pwd
             elif role == 'collector':
+                container = 'analytics'
                 login_ip = collector_ip
                 login_user = collector_user
                 login_pwd = collector_pwd
@@ -571,21 +575,29 @@ class TestBasicVMVN0(BaseVnVmTest):
                 assert result, "Invalid role:%s specified for service:%s" % (
                     role, service)
 
-            with settings(host_string='%s@%s' % (login_user, login_ip),
-                          password=login_pwd, warn_only=True, abort_on_prompts=False):
-                pid = run(cmd)
-                self.logger.info("service:%s, pid:%s" % (service, pid))
-                run('kill -3 %s' % pid)
-                sleep(10)
-                if "No such file or directory" in run("ls -lrt /var/crashes/core.*%s*" % (pid)):
-                    self.logger.error(
-                        "core is not generated for service:%s" % service)
-                    err_msg.append("core is not generated for service:%s" %
-                                   service)
-                    result = result and False
-                else:
-                    # remove core after generation
-                    run("rm -f /var/crashes/core.*%s*" % (pid))
+            pid = self.inputs.run_cmd_on_server(login_ip,cmd,login_user,
+                                                   login_pwd,container=container)
+            pid = int(pid.split(' ')[-1])
+            self.logger.info("service:%s, pid:%s" % (service, pid))
+            cmd1 = 'kill -3 %s' % pid
+            output = self.inputs.run_cmd_on_server(login_ip,cmd1,login_user,
+                                                   login_pwd,container=container)
+            cmd_list_cores = "ls -lrt /var/crashes/core.*%s*" % (pid)
+            
+            sleep(10)
+            output =  self.inputs.run_cmd_on_server(login_ip,cmd_list_cores,login_user,
+                                                   login_pwd,container=container)
+            if "No such file or directory" in output:
+                self.logger.error(
+                    "core is not generated for service:%s" % service)
+                err_msg.append("core is not generated for service:%s" %
+                               service)
+                result = result and False
+            else:
+                # remove core after generation
+                cmd_rm_cores = "rm -f /var/crashes/core.*%s*" % (pid)
+                output =  self.inputs.run_cmd_on_server(login_ip,cmd_rm_cores,login_user,
+                                                   login_pwd,container=container)
         assert result, "core generation validation test failed: %s" % err_msg
         return True
     # end test_kill_service_verify_core_generation
@@ -723,8 +735,10 @@ class TestBasicVMVN0(BaseVnVmTest):
         max_system_flows = 0
         max_vm_flows = 0.1
         compute_ips = [self.inputs.compute_ips[0], self.inputs.compute_ips[0]]
+        compute_names = [self.inputs.compute_names[0], self.inputs.compute_names[0]]
         if len(self.inputs.compute_ips) > 1:
             compute_ips[1] = self.inputs.compute_ips[1]
+            compute_names[1] = self.inputs.compute_names[1]
 
         for cmp_node in compute_ips:
             comp_node_fixt[cmp_node] = self.useFixture(ComputeNodeFixture(
@@ -798,10 +812,10 @@ class TestBasicVMVN0(BaseVnVmTest):
         # Launch 2 VM's in the respective VN's.
         vm1_fixture = self.create_vm(vn1_fixture,vm_name=vn1_vm1_name,
                 flavor='contrail_flavor_small', image_name='ubuntu-traffic',
-                node_name=self.inputs.compute_names[0])
+                node_name=compute_names[0])
         vm2_fixture = self.create_vm(vn2_fixture,vm_name=vn2_vm2_name,
                 flavor='contrail_flavor_small', image_name='ubuntu-traffic',
-                node_name=self.inputs.compute_names[1])
+                node_name=compute_names[1])
         assert vm1_fixture.wait_till_vm_is_up(), 'VM1 does not seem to be up'
         assert vm2_fixture.wait_till_vm_is_up(), 'VM2 does not seem to be up'
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip, count=1), \

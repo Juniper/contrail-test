@@ -134,7 +134,7 @@ class XmppBase(test_v1.BaseTestCase_v1, ConfigPolicy):
                 knob='xmpp_auth_enable',
                 value='true',
                 node=node,
-                service='supervisor-control',
+                service='contrail-control',
                 container='controller')
         for node in self.inputs.compute_ips:
             self.update_contrail_conf(
