@@ -88,7 +88,9 @@ class BaseDM(VerifySecGroup):
         self.vn1_net = ['1.1.1.0/24']
         self.vn1_fixture = self.useFixture(VNFixture(
             project_name=self.inputs.project_name, connections=self.connections,
-            vn_name=self.vn1_name, inputs=self.inputs, subnets=self.vn1_net, router_external=True))
+            vn_name=self.vn1_name, inputs=self.inputs, subnets=self.vn1_net))
+            # Bug 1696642 says router external knob will make sure lo0 will not get ip from the VN with router external tag
+            # Removing router external tag.
         #assert self.vn1_fixture.verify_on_setup()
         self.add_RT_basic_traffic()
 
