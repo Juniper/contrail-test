@@ -88,7 +88,9 @@ class BaseDM(VerifySecGroup):
         self.vn1_net = ['1.1.1.0/24']
         self.vn1_fixture = self.useFixture(VNFixture(
             project_name=self.inputs.project_name, connections=self.connections,
-            vn_name=self.vn1_name, inputs=self.inputs, subnets=self.vn1_net, router_external=True))
+            vn_name=self.vn1_name, inputs=self.inputs, subnets=self.vn1_net))
+            # Bug 1696642 says router external knob will make sure lo0 will not get ip from the VN with router external tag
+            # Removing router external tag.
         #assert self.vn1_fixture.verify_on_setup()
         self.add_RT_basic_traffic()
 
@@ -109,7 +111,7 @@ class BaseDM(VerifySecGroup):
         self.vn3_net = ['2.1.1.0/24']
         self.vn3_fixture = self.useFixture(VNFixture(
             project_name=self.inputs.project_name, connections=self.connections,
-            vn_name=self.vn3_name, inputs=self.inputs, subnets=self.vn3_net, router_external=True))
+            vn_name=self.vn3_name, inputs=self.inputs, subnets=self.vn3_net))
         assert self.vn3_fixture.verify_on_setup()
         self.vm3_fixture = self.useFixture(VMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
@@ -363,7 +365,7 @@ class BaseDM(VerifySecGroup):
             vn_scale_net = (str(generator.next())+str('/24')).split()
             vn_scale_fixture = self.useFixture(VNFixture(
                 project_name=self.inputs.project_name, connections=self.connections, option='contrail',
-                vn_name=vn_scale_name, inputs=self.inputs, subnets=vn_scale_net, router_external=True))
+                vn_name=vn_scale_name, inputs=self.inputs, subnets=vn_scale_net))
             #assert vn_scale_fixture.verify_on_setup()
             for dev_fixture in self.phy_router_fixture.values():
                 dev_fixture.add_virtual_network(str(vn_scale_fixture.uuid))
