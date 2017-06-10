@@ -211,7 +211,11 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
         #as tcp session may take some time to come up, adding some sleep.
         sleep(10)
         for node in self.inputs.bgp_control_ips:
-            cmd = 'netstat -tnp | grep :179 | awk \"{print $6}\"'
+            if is_mx_present:
+                cmd = 'netstat -tnp | grep :179 | awk \"{print $6}\"'
+            else:
+                cmd = 'netstat -tnp | grep :179 | grep -v %s | awk \"{print $6}\"' % router_params['mgmt_ip']
+
             tcp_status = self.inputs.run_cmd_on_server(node, cmd,
                                                        container='controller')
             tcp_status=tcp_status.split(' ')[-2]
