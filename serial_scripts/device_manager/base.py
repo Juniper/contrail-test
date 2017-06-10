@@ -63,20 +63,25 @@ class BaseDM(VerifySecGroup):
             if self.inputs.use_devicemanager_for_md5:
                 j = 0
                 self.mx_handle = {}
-                for i in range(len(self.inputs.physical_routers_data.values())):
-                    router_params = self.inputs.physical_routers_data.values()[i]
+                for i in range(len(self.inputs.dm_mx.values())):
+                    router_params = self.inputs.dm_mx.values()[i]
                     if router_params['model'] == 'mx':
                         self.phy_router_fixture[j] = self.useFixture(PhysicalRouterFixture(
-                            router_params['name'], router_params['mgmt_ip'],
+                            router_params['name'], router_params['control_ip'],
                             model=router_params['model'],
                             vendor=router_params['vendor'],
                             asn=router_params['asn'],
                             ssh_username=router_params['ssh_username'],
                             ssh_password=router_params['ssh_password'],
-                            mgmt_ip=router_params['mgmt_ip'],
+                            mgmt_ip=router_params['control_ip'],
                             connections=self.connections))
+                        physical_dev = self.vnc_lib.physical_router_read(id = self.phy_router_fixture[j].phy_device.uuid)
+                        physical_dev.set_physical_router_management_ip(router_params['mgmt_ip'])
+                        physical_dev.set_physical_router_dataplane_ip(router_params['mgmt_ip'])
+                        physical_dev._pending_field_updates
+                        self.vnc_lib.physical_router_update(physical_dev)
                         self.mx_handle[j] = self.phy_router_fixture[j].get_connection_obj('juniper',
-                            host=router_params['mgmt_ip'],
+                            host=router_params['control_ip'],
                             username=router_params['ssh_username'],
                             password=router_params['ssh_password'],
                             logger=[self.logger])
