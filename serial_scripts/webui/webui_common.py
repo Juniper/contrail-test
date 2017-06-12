@@ -1248,6 +1248,12 @@ class WebuiCommon:
                 [element0, element1], ['class', 'tag'], br, if_elements=[0], delay=25)
     # end click_icon_caret
 
+    def click_monitor_instances_basic(self, row_index, length=None):
+        self.click_monitor_instances()
+        self.wait_till_ajax_done(self.browser)
+        self.click_icon_caret(row_index, length=length, net=1)
+    # end click_monitor_instances_basic_in_webui
+
     def select_max_records(self, option='networks'):
         grid_br = self.find_element('project-' + option)
         br = self.find_element('grid-canvas', 'class', browser=grid_br)
@@ -2031,9 +2037,12 @@ class WebuiCommon:
 
     def click_configure_svc_appliance_set_basic(self, row_index):
         self.click_configure_svc_appliance_set()
-        rows = self.get_rows()
-        rows[row_index].find_elements_by_tag_name(
-            'div')[0].find_element_by_tag_name('i').click()
+        rows = self.get_rows(canvas=True)
+        for row in range(len(rows)):
+            text = self.find_element('div', 'tag', browser=rows[row], elements=True)[2].text
+            if text not in ['opencontrail', 'native']:
+                rows[row].find_elements_by_tag_name(
+                'div')[0].find_element_by_tag_name('i').click()
         self.wait_till_ajax_done(self.browser)
     # end click_configure_svc_appliance_set_basic
 
