@@ -633,7 +633,7 @@ EOF
 
         if [[ -n $scp_package ]]; then
             # Disabling xtrace to avoid printing SSHPASS
-            if [[ $(xtrace_status) = "on" ]]; then
+            if xtrace_status; then
                 set +x
                 xtrace=1
             fi
