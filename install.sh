@@ -504,12 +504,11 @@ EOF
             cat <<EOF
 RUN echo 'deb http://dl.google.com/linux/chrome/deb/ stable main' > /etc/apt/sources.list.d/chrome.list; \
     $wget -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -; \
-    $apt_get update; $apt_get install unzip firefox xvfb; \
+    $apt_get update; $apt_get install unzip xvfb; \
     $wget -c http://chromedriver.storage.googleapis.com/2.10/chromedriver_linux64.zip; \
     unzip chromedriver_linux64.zip; cp ./chromedriver /usr/bin/; chmod ugo+rx /usr/bin/chromedriver; \
     $apt_get install libxpm4 libxrender1 libgtk2.0-0 libnss3 libgconf-2-4 google-chrome-stable; \
-    $apt_get remove -y firefox; \
-    $wget https://ftp.mozilla.org/pub/mozilla.org/firefox/releases/31.0/linux-x86_64/en-US/firefox-31.0.tar.bz2 -O /tmp/firefox.tar.bz2; \
+    $wget https://ftp.mozilla.org/pub/firefox/releases/46.0/linux-x86_64/en-US/firefox-46.0.tar.bz2 -O /tmp/firefox.tar.bz2; \
     cd /opt; tar xjf /tmp/firefox.tar.bz2; ln -sf /opt/firefox/firefox /usr/bin/firefox;
 EOF
             ci_dir='/contrail-test-ci'
