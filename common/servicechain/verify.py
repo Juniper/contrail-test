@@ -204,3 +204,16 @@ class VerifySvcChain(ConfigSvcChain):
                 right_vm_fixture.vm_ip, count='3'), errmsg
         return ret_dict
     # end verify_svc_chain
+
+    def tcpdump_on_all_analyzer(self, si_fixture):
+        sessions = {}
+        svms = self.get_svms_in_si(si_fixture)
+        for svm in svms:
+            svm_name = svm.name
+            host = self.get_svm_compute(svm_name)
+            tapintf = self.get_svm_tapintf(svm_name)
+            session = ssh(host['host_ip'], host['username'], host['password'])
+            pcap = self.start_tcpdump(session, tapintf)
+            sessions.update({svm_name: (session, pcap)})
+
+        return sessions

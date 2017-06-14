@@ -150,6 +150,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         """
         ret_dict = self.config_svc_mirroring()
         left_vn_fixture = ret_dict['left_vn_fixture']
+        left_vm_fixture = ret_dict['left_vm_fixture']
         right_vn_fixture = ret_dict['right_vn_fixture']
         right_vm_fixture = ret_dict['right_vm_fixture']
         si_fixture = ret_dict['si_fixture']
@@ -524,6 +525,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         """validate attaching a policy with analyzer and detaching again removes all the routes and does not impact other policies"""
         ret_dict = self.config_svc_mirroring()
         left_vn_fixture = ret_dict['left_vn_fixture']
+        left_vm_fixture = ret_dict['left_vm_fixture']
         right_vn_fixture = ret_dict['right_vn_fixture']
         right_vm_fixture = ret_dict['right_vm_fixture']
         si_fixture = ret_dict['si_fixture']
@@ -709,6 +711,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
     def verify_policy_order_change(self):
         ret_dict = self.config_svc_mirroring(service_mode='in-network')
         left_vn_fixture = ret_dict['left_vn_fixture']
+        left_vm_fixture = ret_dict['left_vm_fixture']
         right_vn_fixture = ret_dict['right_vn_fixture']
         right_vm_fixture = ret_dict['right_vm_fixture']
         si_fixture = ret_dict['si_fixture']
@@ -750,7 +753,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
             policy_name2, rules2)
         vn1_policy_fix = self.attach_policy_to_vn(
             pol_analyzer_fixture, left_vn_fixture)
-        self.vn2_policy_fix = self.attach_policy_to_vn(
+        vn2_policy_fix = self.attach_policy_to_vn(
             pol_analyzer_fixture, right_vn_fixture)
 
         # Verify ICMP traffic b/w VN1 and VN2 and mirror
@@ -894,16 +897,3 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         # Temporary for debugging
 #        execute_cmd(session, cmd, self.logger)
         return count
-
-    def tcpdump_on_all_analyzer(self, si_fixture):
-        sessions = {}
-        svms = self.get_svms_in_si(si_fixture)
-        for svm in svms:
-            svm_name = svm.name
-            host = self.get_svm_compute(svm_name)
-            tapintf = self.get_svm_tapintf(svm_name)
-            session = ssh(host['host_ip'], host['username'], host['password'])
-            pcap = self.start_tcpdump(session, tapintf)
-            sessions.update({svm_name: (session, pcap)})
-
-        return sessions
