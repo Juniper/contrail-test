@@ -197,3 +197,13 @@ gc_host_control_data=$__gc_host_control_data__
 gc_user_name=$__gc_user_name__
 gc_user_pwd=$__gc_user_pwd__
 keystone_password=$__keystone_password__
+
+#Traffice generators data
+[traffic_data]
+ixia_linux_host_ip=$__ixia_linux_host_ip__
+ixia_host_ip=$__ixia_host_ip__
+spirent_linux_host_ip=$__spirent_linux_host_ip__
+ixia_linux_username=$__ixia_linux_username__
+ixia_linux_password=$__ixia_linux_password__
+spirent_linux_username=$__spirent_linux_username__
+spirent_linux_password=$__spirent_linux_password__
