@@ -612,6 +612,7 @@ class WebuiTest:
                         self.ui.wait_till_ajax_done(self.browser)
                         self.ui.click_element(['tooltip-success', 'i'], ['class', 'tag'])
                         self.ui.click_on_accordian('svcHealthChk', def_type=False)
+                        self.ui.wait_till_ajax_done(self.browser)
                         for index, (intf, shc) in enumerate(int_shc.iteritems()):
                             br = self.ui.find_element('svcHealtchChecks')
                             if attach:
@@ -2683,14 +2684,23 @@ class WebuiTest:
                             value = 'True'
                         else:
                             value = 'False'
+                    if key == 'IP Address':
+                        value = re.search('.*((\d+\.)+\d+)', value)
+                        if value:
+                            value = value.group(0)
+                    if key == 'CPU Utilization (%)':
+                        value = str(float(value))
+                    key = key.replace(' ', '_')
+                    if not value:
+                        continue
                     dom_arry_basic.append({'key': key, 'value': value})
                 intf_dict = {}
-                intf_dict['CPU Utilization (%)'] = vm_ops_data['VirtualMachineStats'][
-                    'cpu_stats'][0]['cpu_one_min_avg']
-                intf_dict['Used Memory'] = self.ui.get_memory_string(
+                intf_dict['CPU_Utilization_(%)'] = str(vm_ops_data['VirtualMachineStats'][
+                    'cpu_stats'][0]['cpu_one_min_avg'])
+                intf_dict['Used_Memory'] = self.ui.get_memory_string(
                     vm_ops_data['VirtualMachineStats']['cpu_stats'][0]['rss'],
                     'KB')
-                intf_dict['Total Memory'] = self.ui.get_memory_string(
+                intf_dict['Total_Memory'] = self.ui.get_memory_string(
                     vm_ops_data['VirtualMachineStats']['cpu_stats'][0]['vm_memory_quota'],
                     'KB')
                 vn_names = None
@@ -2718,17 +2728,17 @@ class WebuiTest:
                             break
                 ops_list = []
                 intf_dict['UUID'] = ops_data['uuid']
-                intf_dict['Label'] = ops_data['vrouter']
+                intf_dict['Virtual_Router'] = ops_data['vrouter']
                 intf_dict['Interfaces'] = len(
                     vm_ops_data['UveVirtualMachineAgent']['interface_list'])
-                intf_dict['IP Address'] = ip_addresses
-                intf_dict['Virtual Networks'] = vn_names
-                intf_dict['Interface Active'] = state
-                intf_dict['MAC Address'] = mac_addr
-                intf_dict['Health Check Active'] = health_check
+                intf_dict['IP_Address'] = ip_addresses
+                intf_dict['Virtual_Networks'] = vn_names
+                intf_dict['Interface_Active'] = state
+                intf_dict['MAC_Address'] = mac_addr
+                intf_dict['Health_Check_Active'] = health_check
                 self.ui.extract_keyvalue(intf_dict, ops_list)
                 self.ui.type_change(ops_list)
-                if self.ui.match_ui_values(
+                if self.ui.match_ui_kv(
                         ops_list, dom_arry_basic):
                     self.logger.info("VM basic view data matched")
                 else:
@@ -2969,7 +2979,7 @@ class WebuiTest:
                                 pol_list_joined = ', '.join(pol_name_list)
                                 complete_ops_data.append({'key': 'attached_policies',
                                     'value': pol_list_joined})
-                if self.ui.match_ui_values(
+                if self.ui.match_ui_kv(
                         complete_ops_data,
                         dom_arry_basic):
                     self.logger.info(
@@ -3225,7 +3235,7 @@ class WebuiTest:
                 self.logger.info(
                     "Verify advance view details for uuid %s " % (ops_uuid))
                 plus_objs = self.ui.find_element(
-                    'i.node-2.icon-plus.expander',
+                    'i.node-2.fa-plus.expander',
                     'css',
                     elements=True)
                 self.ui.click(plus_objs)
