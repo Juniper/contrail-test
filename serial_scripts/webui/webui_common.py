@@ -2757,6 +2757,7 @@ class WebuiCommon:
         if not browser:
             browser = self.browser
         click_func = 'self.click_' + click_tab + '_' + func_suffix + '_' + view
+        row_index = None
         if project:
             eval(click_func)(index, project)
         else:

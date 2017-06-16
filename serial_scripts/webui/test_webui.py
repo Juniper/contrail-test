@@ -150,7 +150,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_associate_floating_ips
 
     @preposttest_wrapper
-    def test2_7_create_svc_health_check(self):
+    def test2_2_3_create_svc_health_check(self):
         '''UI Config : Networking -> Services -> Health Check : Test svc health check creation
         '''
         assert self.res.setup_obj.create_svc_health_check(), 'Creation of health check failed'
@@ -344,7 +344,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_attach_route_aggregate_to_si
 
     @preposttest_wrapper
-    def test2_2_3_attach_svc_health_check_to_si(self):
+    def test2_7_attach_svc_health_check_to_si(self):
         '''
         Description: Test to attach a created Service Health Check template to SI on UI
         Steps:
