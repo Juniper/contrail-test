@@ -231,7 +231,7 @@ class NovaHelper():
                                    vcpus=flavor_info['vcpus'],
                                     ram=flavor_info['ram'],
                                     disk=flavor_info['disk'])
-            if bool(self.inputs.dpdk_data):
+            if bool(self.inputs.dpdk_data) or bool(self.inputs.ns_agilio_vrouter_data):
                 try:
                     flavor = self.obj.flavors.find(name=name)
                 except novaException.Forbidden:
