@@ -44,3 +44,31 @@ class TestPodScale(BaseK8sTest):
             assert pod.verify_on_cleanup(), 'Pod verification failed'
 
     # end test_many_pods
+
+    @preposttest_wrapper
+    def test_pod_with_kube_manager_restart(self):
+        '''
+        Test ping between 2 PODs created in 2 different namespace
+        Ping should pass in default mode
+        Ping should fail when namespace isolation enabled
+        Restart contrail-kube-manager
+        Ping between 2 PODs again
+        Ping should pass in default mode
+        Ping should fail when namespace isolation enabled
+        '''
+        expectation = True
+        namespace1 = self.setup_namespace()
+        pod1 = self.setup_nginx_pod(namespace=namespace1.name)
+        assert pod1.verify_on_setup()
+        namespace2 = self.setup_namespace()
+        pod2 = self.setup_nginx_pod(namespace=namespace2.name)
+        assert pod2.verify_on_setup()
+        if self.setup_namespace_isolation:
+            expectation = False
+        assert pod1.ping_to_ip(pod2.pod_ip, expectation=expectation)
+        self.restart_kube_manager()
+        time.sleep(5)
+        assert pod1.verify_on_setup()
+        assert pod2.verify_on_setup()
+        assert pod1.ping_to_ip(pod2.pod_ip, expectation=expectation)
+    # end test_pod_with_kube_manager_restart
