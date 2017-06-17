@@ -15,11 +15,14 @@ class TestIngress(BaseK8sTest):
         super(TestIngress, cls).tearDownClass()
 
     @preposttest_wrapper
-    def test_ingress_1(self):
+    def test_ingress_with_kube_manager_restart(self):
         ''' Create a service with 2 pods running nginx
             Create an ingress out of this service
             From the local node, do a wget on the ingress public ip
             Validate that service and its loadbalancing works
+            Restart kube-manager 
+            Validate that service and its loadbalancing works after
+            restart
 
             For now, do this test only in default project
         '''
@@ -30,10 +33,10 @@ class TestIngress(BaseK8sTest):
 
         service = self.setup_http_service(namespace=namespace.name,
                                           labels=labels)
-        pod1 = self.setup_nginx_pod(namespace=namespace.name, 
+        pod1 = self.setup_nginx_pod(namespace=namespace.name,
                                           labels=labels)
 
-        pod2 = self.setup_nginx_pod(namespace=namespace.name, 
+        pod2 = self.setup_nginx_pod(namespace=namespace.name,
                                           labels=labels)
 
         ingress = self.setup_simple_nginx_ingress(service.name,
@@ -51,13 +54,15 @@ class TestIngress(BaseK8sTest):
 
         # Now validate ingress from public network
         assert self.validate_nginx_lb([pod1, pod2], ingress.external_ips[0])
-    # end test_ingress_1
 
-# Isolated namespace classes follow
+        self.restart_kube_manager()
+        time.sleep(5)
 
-class TestIngressVNIsolated(TestIngress):
+        # Now validate ingress from within the cluster network
+        assert self.validate_nginx_lb([pod1, pod2], ingress.cluster_ip,
+                                      test_pod=pod3)
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestIngress, cls).setUpClass()
-        cls.setup_namespace_isolation = True
+        # Now validate ingress from public network
+        assert self.validate_nginx_lb([pod1, pod2], ingress.external_ips[0])
+    # end test_ingress_with_kube_manager_restart
+

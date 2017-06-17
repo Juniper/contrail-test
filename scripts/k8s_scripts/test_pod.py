@@ -1,5 +1,6 @@
 from common.k8s.base import BaseK8sTest
 from tcutils.wrappers import preposttest_wrapper
+import time
 
 
 class TestPod(BaseK8sTest):
@@ -50,7 +51,7 @@ class TestPod(BaseK8sTest):
         if self.setup_namespace_isolation:
             expectation = False
         assert pod1.ping_to_ip(pod2.pod_ip, expectation=expectation)
-    # end test_add_delete_pod
+    # end test_ping_between_pods_accross_namespace
 
     @preposttest_wrapper
     def test_change_pod_label(self):

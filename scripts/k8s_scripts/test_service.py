@@ -1,10 +1,11 @@
 import random
-
+import time
 from common.k8s.base import BaseK8sTest
 from k8s.namespace import NamespaceFixture
 from k8s.service import ServiceFixture
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import get_lock
+
 
 
 class TestService(BaseK8sTest):
@@ -233,8 +234,6 @@ class TestService(BaseK8sTest):
         self.logger.info('DNS resolution check : %s passed. Output: %s' % (
             lookup_str, output))
     # end test_kube_dns_lookup
-
-
 
 # Isolated namespace classes follow
 
