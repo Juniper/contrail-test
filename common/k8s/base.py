@@ -614,3 +614,12 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods):
                                      metadata=metadata,
                                      spec=spec)
     # end setup_nginx_deployment
+
+    def restart_kube_manager(self):
+
+    
+        self.logger.info('Will restart contrail-kube-manager  services now')
+        self.inputs.restart_service('contrail-kube-manager', 
+                                     [self.inputs.kube_manager_ip], 
+                                     container='contrail-kube-manager')
+    # end restart_kube_manager
