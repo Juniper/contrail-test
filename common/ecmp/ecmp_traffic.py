@@ -15,6 +15,7 @@ from traffic.core.helpers import Sender, Receiver
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from fabric.state import connections as fab_connections
 from common.servicechain.verify import VerifySvcChain
+from tcutils.tcpdump_utils import *
 
 
 class ECMPTraffic(VerifySvcChain):
@@ -114,6 +115,9 @@ class ECMPTraffic(VerifySvcChain):
         flow_pattern = {}
         svms = self.get_svms_in_si(si_fix)
         svms = sorted(set(svms))
+        svm_list = si_fix._svm_list
+        svm_index = 0
+        vm_fix_pcap_pid_files = []
         if None in svms:
             svms.remove(None)
         for svm in svms:
@@ -126,11 +130,17 @@ class ECMPTraffic(VerifySvcChain):
                 else:
                     direction = 'left'
                     tapintf = self.get_bridge_svm_tapintf(svm_name, direction)
-                session = ssh(
-                    host['host_ip'], host['username'], host['password'])
-                cmd = 'tcpdump -nni %s -c 10 > /tmp/%s_out.log' % (
-                    tapintf, tapintf)
-                execute_cmd(session, cmd, self.logger)
+                if self.inputs.pcap_on_vm:
+                    tcpdump_files = start_tcpdump_for_vm_intf(
+                        None, [svm_list[svm_index]], None, filters='', pcap_on_vm=True, vm_intf='eth1', svm=True)
+                    svm_index = svm_index + 1
+                    vm_fix_pcap_pid_files.append(tcpdump_files)
+                else:
+                    session = ssh(
+                        host['host_ip'], host['username'], host['password'])
+                    cmd = 'tcpdump -nni %s -c 10 > /tmp/%s_out.log' % (
+                        tapintf, tapintf)
+                    execute_cmd(session, cmd, self.logger)
             else:
                 self.logger.info('%s is not in ACTIVE state' % svm.name)
         sleep(15)
@@ -140,6 +150,7 @@ class ECMPTraffic(VerifySvcChain):
         svms = sorted(set(svms))
         if None in svms:
             svms.remove(None)
+        svm_index = 0
         for svm in svms:
             self.logger.info('SVM %s is in %s state' % (svm.name, svm.status))
             if svm.status == 'ACTIVE':
@@ -150,11 +161,16 @@ class ECMPTraffic(VerifySvcChain):
                 else:
                     direction = 'left'
                     tapintf = self.get_bridge_svm_tapintf(svm_name, direction)
-                session = ssh(
-                    host['host_ip'], host['username'], host['password'])
-                output_cmd = 'cat /tmp/%s_out.log' % tapintf
-                out, err = execute_cmd_out(session, output_cmd, self.logger)
-
+                if not self.inputs.pcap_on_vm:
+                    session = ssh(
+                        host['host_ip'], host['username'], host['password'])
+                    output_cmd = 'cat /tmp/%s_out.log' % tapintf
+                    out, err = execute_cmd_out(session, output_cmd, self.logger)
+                else:
+                    out, pkt_count = stop_tcpdump_for_vm_intf(
+                        None, None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files[svm_index], svm=True)
+                    svm_index = svm_index + 1
+                    out = out[0]
                 for i in range(0,flow_count):
                     dport = str(9000+i)
                     if dport in out:
