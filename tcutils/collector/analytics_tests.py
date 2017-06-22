@@ -3094,16 +3094,25 @@ class AnalyticsVerification(fixtures.Fixture):
             if (obj1 and isinstance(obj1,list)):
                 for elem in obj1:
                     for el in elem['connection_infos']:
-                        if ((set(el['server_addrs']) == set(server_addrs)) \
+                        check = True
+                        if isinstance(server_addrs, list):
+                            for s_addr in server_addrs:
+                                if not s_addr in el['server_addrs']:
+                                    check = check and False
+                        else:
+                            if not server_addrs in el['server_addrs']:
+                                check = check and False
+                        #if ((set(el['server_addrs']) == set(server_addrs)) \
+                        if ((check or (server_addrs == el['server_addrs']))\
                                     and (el['status'] == status)):
                             self.logger.info("%s:%s module connection to \
                                 %s servers UP"%(node,module,str(server_addrs)))
-                            return True 
+                            return True
                         else:
                             continue
-                    self.logger.error("%s:%s module connection to \
-                        %s servers NOT UP"%(node,module,str(server_addrs)))
-                    return False        
+                self.logger.warn("%s:%s module connection to \
+                    %s servers NOT UP"%(node,module,str(server_addrs)))
+                return False        
 
             elif (obj1 and isinstance(obj1,dict)):
                 for el in obj1['connection_infos']:            
@@ -3113,12 +3122,12 @@ class AnalyticsVerification(fixtures.Fixture):
                                 servers UP"%(module,str(server_addrs)))    
                         return True 
                     else:
-                        self.logger.info("%s module connection to %s \
+                        self.logger.warn("%s module connection to %s \
                                 servers NOT UP"%(module,str(server_addrs)))    
                         return False
         except Exception as e:
             self.logger.exception("Got exception as %s"%(e))
-            
+
     def verify_process_and_connection_infos_agent(self):
 
         port_dict = {'xmpp':'5269',
