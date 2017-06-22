@@ -32,6 +32,17 @@ class TestEvpnCasesMplsoGre(base.BaseEvpnTest, VerifyEvpnCases):
         return self.verify_dns_disabled(encap='gre')
 
     @preposttest_wrapper
+    def test_with_gre_encap_dns_disabled_for_l2_l3_vn(self):
+        ''' 1. Launch a virtual network with dhcp_enable=False and DNS disabled
+            2. Launch 3 vm with management interface and other with above vm.
+            3. Run dhcp server on eth1 in one vm dns server on eth1 in other vm
+            4. From the test_vm query for dns using dig and nslookup
+            Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_dns_disabled(encap='gre', forwarding_mode='l2_l3')
+
+
+    @preposttest_wrapper
     def test_with_gre_encap_l2_multicast_traffic(self):
         '''Test l2 multicast with gre encap
            Maintainer: hkumar@juniper.net
@@ -116,6 +127,17 @@ class TestEvpnCasesMplsoUdp(base.BaseEvpnTest, VerifyEvpnCases):
             Maintainer: hkumar@juniper.net
         '''
         return self.verify_dns_disabled(encap='udp')
+
+    @preposttest_wrapper
+    def test_with_udp_encap_dns_disabled_for_l2_l3_vn(self):
+        ''' 1. Launch a virtual network with dhcp_enable=False and DNS disabled
+            2. Launch 3 vm with management interface and other with above vm.
+            3. Run dhcp server on eth1 in one vm dns server on eth1 in other vm
+            4. From the test_vm query for dns using dig and nslookup
+            Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_dns_disabled(encap='udp', forwarding_mode='l2_l3')
+
 
     @preposttest_wrapper
     def test_with_udp_encap_l2_multicast_traffic(self):
@@ -204,6 +226,16 @@ class TestEvpnCasesVxlan(base.BaseEvpnTest, VerifyEvpnCases):
             Maintainer: hkumar@juniper.net
         '''
         return self.verify_dns_disabled(encap='vxlan')
+
+    @preposttest_wrapper
+    def test_with_vxlan_encap_dns_disabled_for_l2_l3_vn(self):
+        ''' 1. Launch a virtual network with dhcp_enable=False and DNS disabled
+            2. Launch 3 vm with management interface and other with above vm.
+            3. Run dhcp server on eth1 in one vm dns server on eth1 in other vm
+            4. From the test_vm query for dns using dig and nslookup
+            Maintainer: hkumar@juniper.net
+        '''
+        return self.verify_dns_disabled(encap='vxlan', forwarding_mode='l2_l3')
 
     #@preposttest_wrapper
     #def test_with_vxlan_encap_l2l3_ipv6_multicast_traffic(self):

@@ -18,7 +18,7 @@ from string import Template
 
 class VerifyEvpnCases():
 
-    def verify_dns_disabled(self, encap):
+    def verify_dns_disabled(self, encap, forwarding_mode='l2'):
         # Setting up default encapsulation
         self.logger.info('Setting new Encap before continuing')
         if (encap == 'gre'):
@@ -59,7 +59,7 @@ class VerifyEvpnCases():
                     project_name=self.inputs.project_name, connections=self.connections,
                     vn_name=self.vn4_name, option='contrail', inputs=self.inputs,
                     subnets=self.vn4_subnets, dhcp_option_list=dhcp_option_list,
-                    enable_dhcp=False,forwarding_mode='l2'))
+                    enable_dhcp=False,forwarding_mode=forwarding_mode))
         assert vn3_fixture.verify_on_setup()
         assert vn4_fixture.verify_on_setup()
         self.connections.vnc_lib_fixture.set_rpf_mode(vn4_fixture.vn_fq_name, 'disable')
