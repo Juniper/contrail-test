@@ -29,14 +29,14 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ECMPVerify):
         pass
     # end runTest
 
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['ci_sanity', 'sanity', 'vcenter'])
     @preposttest_wrapper
     def test_svc_in_network_datapath(self):
         return self.verify_svc_chain(service_mode='in-network',
                                      create_svms=True)
 
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['ci_sanity', 'sanity'])
     @preposttest_wrapper
     @skip_because(feature='trans_svc')
     def test_svc_v2_transparent_datapath(self):
