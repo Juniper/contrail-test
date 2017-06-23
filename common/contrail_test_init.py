@@ -651,7 +651,8 @@ class TestInputs(object):
             self.physical_routers_data = json_data['physical_routers']
         if 'ns_agilio_vrouter' in json_data:
             self.ns_agilio_vrouter_data = json_data['ns_agilio_vrouter']
-            self.pcap_on_vm = True
+            if self.ns_agilio_vrouter_data:
+                self.pcap_on_vm = True
 
         self._process_tor_data()
         self._process_for_vcenter_gateway()
