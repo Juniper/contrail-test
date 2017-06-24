@@ -162,8 +162,11 @@ class SvcInstanceFixture(fixtures.Fixture):
             name = '%s_%s' % (self.si_name, intf)
             prefix = static_rt_dict[intf]
             if prefix:
+                prefixes = prefix if type(prefix) is list else [prefix]
+                self.logger.debug("Creating interface route table "
+                                  "%s with prefixes %s"%(name, prefixes))
                 intf_rt_table = self._vnc.create_interface_route_table(
-                    name, parent_obj=project, prefixes=[prefix])
+                    name, parent_obj=project, prefixes=prefixes)
                 self.logger.debug("Associating static route table %s to %s" % (
                     intf_rt_table.name, self.si_fq_name))
                 self._vnc.assoc_intf_rt_table_to_si(
@@ -175,6 +178,8 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.logger.debug(
             "Disassociating static route table %s from %s" % (irt_uuid, self.si_fq_name))
         self._vnc.disassoc_intf_rt_table_from_si(self.si_fq_name, irt_uuid)
+        self.logger.debug("Deleting interface route table %s"%irt_uuid)
+        self._vnc.delete_interface_route_table(irt_uuid)
 
     def associate_hc(self, hc_uuid, intf_type):
         self.logger.debug("Associating hc(%s) to si (%s)" %

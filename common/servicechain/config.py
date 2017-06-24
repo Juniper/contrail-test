@@ -16,7 +16,7 @@ from svc_instance_fixture import SvcInstanceFixture
 from svc_template_fixture import SvcTemplateFixture
 from common.connections import ContrailConnections
 from common.policy.config import AttachPolicyFixture
-from tcutils.util import retry
+from tcutils.util import retry, is_v6
 import random
 import re
 
@@ -592,6 +592,16 @@ class ConfigSvcChain(fixtures.Fixture):
             svm_list.append(self.nova_h.get_vm_by_id(svm_id))
         return svm_list
     #end get_svms_in_si
+
+    def add_static_route_in_svm(self, si, vn_fixture, device):
+        for subnet in vn_fixture.vn_subnets:
+            subnet = subnet['cidr']
+            af = ''
+            if is_v6(subnet):
+                af = '-6'
+            for vm in si.svm_list:
+                cmd = 'sudo ip %s route add %s dev %s' % (af, subnet, device)
+                vm.run_cmd_on_vm([cmd])
 
     def config_multi_inline_svc(
             self,
