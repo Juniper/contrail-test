@@ -68,6 +68,19 @@ class TestPod(BaseK8sTest):
 
     # end test_change_pod_label
 
+    @preposttest_wrapper
+    def test_pod_public_reachability_using_snat(self):
+        '''
+        Test pod can reach public network using snat
+        '''
+        namespace1 = self.setup_namespace()
+        pod1 = self.setup_ubuntuapp_pod(namespace=namespace1.name)
+        assert pod1.verify_on_setup()
+        self.configure_snat_for_namespace(namespace=namespace1.name)
+        self.logger.info("Now trying to ping %s" % (self.inputs.public_host))
+        assert pod1.ping_with_certainty(self.inputs.public_host)
+    # end test_pod_public_reachability_using_snat
+
 # Isolated namespace classes follow
 
 class TestPodVNIsolated(TestPod):
