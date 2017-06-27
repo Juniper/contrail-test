@@ -752,4 +752,198 @@ class TestQosQueueQosmap(TestQosQueueProperties):
                                 'strict_queue_id' : 3}
         assert self.validate_queue_performance(**validate_method_args)
     #end test_scheduling_strict_rr_queues
+
+class TestQosControlDscp(QosTestExtendedBase):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestQosControlDscp, cls).setUpClass()
+    # end setUpClass
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestQosControlDscp, cls).tearDownClass()
+    # end tearDownClass
+
+    @preposttest_wrapper
+    def test_xmpp_packet_dscp(self):
+        '''
+
+        '''
+        init_control_dscp, init_dns_dscp, init_analytics_dscp = \
+                                        self.get_control_dscp_values()
+        control_dscp, dns_dscp, analytics_dscp = 10, 20, 30
+        self.set_control_dscp_values(control_dscp, dns_dscp, analytics_dscp)
+        self.addCleanup(self.set_control_dscp_values, init_control_dscp,
+                        init_dns_dscp, init_analytics_dscp)
+        username = self.inputs.host_data[self.vn1_vm1_compute_fixture.ip]\
+                                        ['username']
+        password = self.inputs.host_data[self.vn1_vm1_compute_fixture.ip]\
+                                        ['password']
+        # Verifying traffic from agent to controller
+        agent_interface = self.vn1_vm1_compute_fixture.agent_physical_interface
+        compute_index = self.inputs.compute_names.index(self.first_node_name)
+        src_ip = self.inputs.compute_control_ips[compute_index]
+        dest_ip = self.agent_inspect[self.inputs.compute_ips[compute_index]].\
+                get_vna_xmpp_connection_status()[0]['controller_ip']
+        validate_method_args_1 = {
+            'interface': agent_interface,
+            'compute_node_fixture' : self.vn1_vm1_compute_fixture,
+            'username': username,
+            'password': password,
+            'src_ip': src_ip,
+            'dest_ip': dest_ip,
+            'dest_port': 5269,
+            'logger': self.logger}
+        traffic_obj = TrafficAnalyzer(**validate_method_args_1)
+        session,pcap = traffic_obj.packet_capture_start()
+        sleep(10)
+        traffic_obj.packet_capture_stop()
+        assert traffic_obj.verify_packets("dscp",
+                                          pcap_path_with_file_name = pcap,
+                                          expected_count=1,
+                                          dscp=control_dscp)
+        # Verifying traffic from controller to agent
+        validate_method_args_2 = {
+            'node_ip' : dest_ip,
+            'expected_dscp' : control_dscp,
+            'packet_src_ip': dest_ip,
+            'packet_dst_ip': src_ip,
+            'packet_src_port': 5269}
+        assert self.validate_control_packet_dscp_marking(
+                                    **validate_method_args_2)
+    #end test_xmpp_packet_dscp
+
+    @preposttest_wrapper
+    def test_analytics_packet_dscp(self):
+        '''
+
+        '''
+        init_control_dscp, init_dns_dscp, init_analytics_dscp = \
+                                        self.get_control_dscp_values()
+        control_dscp, dns_dscp, analytics_dscp = 10, 20, 30
+        self.set_control_dscp_values(control_dscp, dns_dscp, analytics_dscp)
+        self.addCleanup(self.set_control_dscp_values, init_control_dscp,
+                        init_dns_dscp, init_analytics_dscp)
+        username = self.inputs.host_data[self.vn1_vm1_compute_fixture.ip]\
+                                        ['username']
+        password = self.inputs.host_data[self.vn1_vm1_compute_fixture.ip]\
+                                        ['password']
+        # Verifying traffic from agent to analytics
+        agent_interface = self.vn1_vm1_compute_fixture.agent_physical_interface
+        compute_index = self.inputs.compute_names.index(self.first_node_name)
+        compute_ip = self.inputs.compute_control_ips[compute_index]
+        # Searching for analytics node(Collector) IP and source port of 
+        # TCP connection of contrail-vrouter-agent with collector 
+        cmd = "pidof contrail-vrouter-agent"
+        pid = self.inputs.run_cmd_on_server(compute_ip, cmd)
+        cmd = "netstat -nap | grep 8086 | grep %s" % pid
+        connection_info = self.inputs.run_cmd_on_server(compute_ip, cmd)
+        analytics_ip = connection_info.split()[4].split(":")[0]
+        compute_port = int(connection_info.split()[3].split(":")[1])
+        validate_method_args_1 = {
+            'interface': agent_interface,
+            'compute_node_fixture' : self.vn1_vm1_compute_fixture,
+            'username': username,
+            'password': password,
+            'src_ip': compute_ip,
+            'dest_ip': analytics_ip,
+            'dest_port': 8086,
+            'src_port': compute_port,
+            'logger': self.logger}
+        traffic_obj = TrafficAnalyzer(**validate_method_args_1)
+        session,pcap = traffic_obj.packet_capture_start()
+        sleep(15)
+        traffic_obj.packet_capture_stop()
+        assert traffic_obj.verify_packets("dscp",
+                                          pcap_path_with_file_name = pcap,
+                                          expected_count=1,
+                                          dscp=analytics_dscp)
+    #end test_analytics_packet_dscp
+
+    @preposttest_wrapper
+    def test_dns_packet_dscp(self):
+        '''
+
+        '''
+        init_control_dscp, init_dns_dscp, init_analytics_dscp = \
+                                        self.get_control_dscp_values()
+        control_dscp, dns_dscp, analytics_dscp = 10, 20, 30
+        self.set_control_dscp_values(control_dscp, dns_dscp, analytics_dscp)
+        self.addCleanup(self.set_control_dscp_values, init_control_dscp,
+                        init_dns_dscp, init_analytics_dscp)
+        username = self.inputs.host_data[self.vn1_vm1_compute_fixture.ip]\
+                                        ['username']
+        password = self.inputs.host_data[self.vn1_vm1_compute_fixture.ip]\
+                                        ['password']
+        # Verifying traffic from agent to Control node
+        compute_index = self.inputs.compute_names.index(self.first_node_name)
+        compute_ip = self.vn1_vm1_fixture.vm_node_ip
+        cmd = 'netstat -ie | grep -B1 %s | grep -o "^\w*"' % compute_ip
+        agent_interface = self.inputs.run_cmd_on_server(compute_ip,cmd)
+        external_dns_servers = self.get_external_dns_servers(compute_ip)
+        cmd = "num=0; while [ ${num} -lt 60 ]; do nslookup google.com; sleep 1; num=$((num+1)); done"
+        self.vn1_vm1_fixture.run_cmd_on_vm([cmd], timeout =5)
+        validate_method_args_1 = {
+            'node_ip' : compute_ip,
+            'expected_dscp' : dns_dscp,
+            'packet_src_ip': compute_ip,
+            'packet_dst_ip': external_dns_servers,
+            'packet_dst_port': 53}
+        assert self.validate_control_packet_dscp_marking(
+                                    **validate_method_args_1)
+    #end test_dns_packet_dscp
     
+    @preposttest_wrapper
+    def test_vhost_marking_over_control_packet_marking(self):
+        """
+        
+        """
+        import pdb;pdb.set_trace()
+        init_control_dscp, init_dns_dscp, init_analytics_dscp = \
+                                        self.get_control_dscp_values()
+        control_dscp, dns_dscp, analytics_dscp = 10, 20, 30
+        self.set_control_dscp_values(control_dscp, dns_dscp, analytics_dscp)
+        self.addCleanup(self.set_control_dscp_values, init_control_dscp,
+                        init_dns_dscp, init_analytics_dscp)
+        username = self.inputs.host_data[self.vn1_vm1_compute_fixture.ip]\
+                                        ['username']
+        password = self.inputs.host_data[self.vn1_vm1_compute_fixture.ip]\
+                                        ['password']
+        # Verifying traffic from agent to controller
+        agent_interface = self.vn1_vm1_compute_fixture.agent_physical_interface
+        compute_index = self.inputs.compute_names.index(self.first_node_name)
+        src_ip = self.inputs.compute_control_ips[compute_index]
+        dest_ip = self.agent_inspect[self.inputs.compute_ips[compute_index]].\
+                get_vna_xmpp_connection_status()[0]['controller_ip']
+        validate_method_args_1 = {
+            'interface': agent_interface,
+            'compute_node_fixture' : self.vn1_vm1_compute_fixture,
+            'username': username,
+            'password': password,
+            'src_ip': src_ip,
+            'dest_ip': dest_ip,
+            'dest_port': 5269,
+            'logger': self.logger}
+        traffic_obj = TrafficAnalyzer(**validate_method_args_1)
+        session,pcap = traffic_obj.packet_capture_start()
+        sleep(10)
+        traffic_obj.packet_capture_stop()
+        assert traffic_obj.verify_packets("dscp",
+                                          pcap_path_with_file_name = pcap,
+                                          expected_count=1,
+                                          dscp=control_dscp)
+        fcs = [{'fc_id': 100, 'dscp': 25, 'dot1p': 6, 'exp': 2}]
+        self.setup_fcs(fcs)
+        dscp_map_vhost = {10: 100}
+        qos_fixture = self.setup_qos_config(dscp_map=dscp_map_vhost,
+                                             qos_config_type='vhost')
+        session,pcap = traffic_obj.packet_capture_start()
+        sleep(10)
+        traffic_obj.packet_capture_stop()
+        assert traffic_obj.verify_packets("dscp",
+                                          pcap_path_with_file_name = pcap,
+                                          expected_count=1,
+                                          dscp=fcs[0]['dscp'])
+    #end test_vhost_marking_over_control_packet_marking
+
