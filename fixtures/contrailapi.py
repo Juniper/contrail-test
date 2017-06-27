@@ -1130,3 +1130,26 @@ class ContrailVncApi(object):
 
     def get_vn_obj_from_id(self, uuid):
         return self._vnc.virtual_network_read(id=uuid)
+
+    def create_router(self, name, project_obj):
+
+        obj = LogicalRouter(name=name, parent_obj=project_obj, display_name=name)
+
+        self._vnc.logical_router_create(obj)
+
+        return obj
+
+    def delete_router(self, router_obj):
+
+        self._vnc.logical_router_delete(id=router_obj.uuid)
+
+    def connect_gateway_with_router(self, router_obj, public_network_obj):
+
+        # Add public network to router as external_gateway
+        router_obj.add_virtual_network(public_network_obj)
+
+        # Update logical router object
+        self._vnc.logical_router_update(router_obj)
+        return router_obj
+
+
