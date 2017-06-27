@@ -125,12 +125,12 @@ class FatFlowSerial(BaseVrouterTest, VerifySvcChain):
         Steps:
             1. launch 2 VN and launch 2 client VMs on same node and server VM from other VN on different node.
             2. on server VM, config Fat flow for tcp port dport 10000.
-            3. add flow aging for tcp port dport as 100 sec.
+            3. add flow aging for tcp port dport, flow_timeout 100 sec.
             4. create service instance, create policy and attach to both the VNs
             5. from both client VM, send TCP traffic to server on port dport twice with diff. src ports
         Pass criteria:
             1. on server compute, Fat flows should be created
-            2. Fat flow should be deleted after 60 sec
+            2. Fat flow should be deleted after flow_timeout
         """
         compute_hosts = self.orch.get_hosts()
         if len(compute_hosts) < 2:
@@ -159,7 +159,10 @@ class FatFlowSerial(BaseVrouterTest, VerifySvcChain):
             right_vn_fixture=vn2_fixture,
             mgmt_vn_fixture=vn_mgmt,
             service_mode=svc_mode,
-            svc_img_name='vsrx')
+            left_vm_fixture=client_fixtures[0],
+            right_vm_fixture=server_fixtures[0],
+            create_svms=True,
+            hosts=[compute_hosts[0]])
         st_fixture = svc_chain_info['st_fixture']
         si_fixture = svc_chain_info['si_fixture']
 
