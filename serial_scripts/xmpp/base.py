@@ -144,7 +144,7 @@ class XmppBase(test_v1.BaseTestCase_v1, ConfigPolicy):
                 knob='xmpp_auth_enable',
                 value='true',
                 node=node,
-                service='supervisor-vrouter',
+                service='contrail-vrouter-agent',
                 container='agent')
 
     def update_contrail_conf(
