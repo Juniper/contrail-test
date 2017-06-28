@@ -289,6 +289,9 @@ class SvcInstanceFixture(fixtures.Fixture):
                 self._svm_list.append(vm)
         return self._svm_list
 
+    def get_svms(self):
+        return self.svm_list
+
     @retry(delay=2, tries=10)
     def verify_si(self):
         """check service instance"""
@@ -397,6 +400,8 @@ class SvcInstanceFixture(fixtures.Fixture):
                 self.logger.warn(errmsg)
                 return (False, errmsg)
 
+        # Populate the SVMs
+        self.get_svms()
         for svm_id in self.svm_ids:
             cs_svm = self.api_s_inspect.get_cs_vm(vm_id=svm_id, refresh=True)
             if not cs_svm:

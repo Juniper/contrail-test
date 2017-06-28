@@ -558,6 +558,7 @@ class PolicyFixture(fixtures.Fixture):
 
     def update_policy_api(self, rules_list):
         curr_policy_obj = self.vnc_lib.network_policy_read(id=self.get_id())
+        self.input_rules_list = rules_list
         ret_val = self._set_policy_api(self.policy_name,
                                     policy_obj=curr_policy_obj,
                                     rules_list=rules_list)
