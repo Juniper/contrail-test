@@ -363,8 +363,9 @@ class VerificationOpsSrv (VerificationUtilBase):
 
 class VerificationOpsSrvIntrospect (VerificationUtilBase):
 
-    def __init__(self, ip, port, logger=LOG):
-        super(VerificationOpsSrvIntrospect, self).__init__(ip, port,drv=XmlDrv, logger=logger)
+    def __init__(self, ip, port, logger=LOG, inputs=None):
+        super(VerificationOpsSrvIntrospect, self).__init__(ip, port,drv=XmlDrv,
+            logger=logger, args=inputs)
 
     def get_collector_connectivity(self):
         connaction_status = dict()

@@ -83,7 +83,7 @@ class JsonDrv (object):
                 self._auth_token = authn_content['access']['token']['id']
                 self._headers = {'X-AUTH-TOKEN': self._auth_token}
                 return
-            elif response.status_code == 201: 
+            elif response.status_code == 201:
                 authn_content = response.headers
                 self._auth_token = authn_content['X-Subject-Token']
                 self._headers = {'X-AUTH-TOKEN': self._auth_token}
@@ -134,18 +134,32 @@ class XmlDrv (object):
                                                       log_to_console=False)
         # Since introspect log is a single file, need locks
         self.lock = threading.Lock()
-        if args:
-            pass
+        self._args = args
+        self.verify = True
+        self.client_cert = None
+        if self._args:
+            self.verify = (not getattr(self._args, 'introspect_insecure', True)) \
+                           and self._args.certbundle
+            self.client_cert = (self._args.introspect_certfile,
+                                self._args.introspect_keyfile)
 
-    def load(self, url):
+    def load(self, url, raw_data=False):
+        self.common_log("Requesting: %s" %(url))
         try:
-            self.common_log("Requesting: %s" %(url))
-            resp = requests.get(url)
-            output = etree.fromstring(resp.text)
+            resp = requests.get(url, cert=self.client_cert,
+                verify=self.verify)
+            output = etree.fromstring(resp.text) if not raw_data else resp.text
             self.log_xml(self.more_logger, output)
             return output
+        except requests.exceptions.SSLError, e:
+            self.log.error("SSL error: %s" % (e))
+            return None
         except requests.ConnectionError, e:
             self.log.error("Socket Connection error: %s", str(e))
+            return None
+        except:
+            self.log.error("Error while getting the url: %s, error: %s" % (
+                url, str(e)))
             return None
 
     def common_log(self, line, mode=LOG.DEBUG):
@@ -156,7 +170,7 @@ class XmlDrv (object):
     def log_xml(self, logger, line, mode=LOG.DEBUG):
         ''' line is of type lxml.etree._Element
         '''
-        logline = etree.tostring(line, pretty_print=True)
+        logline = etree.tostring(line, pretty_print=True) if type(line) is etree._Element else line
         with self.lock:
             logger.log(mode, logline)
 
@@ -185,12 +199,12 @@ class VerificationUtilBase (object):
         else:
             return self._protocol + "://%s:%s/%s" % (self._ip, str(self._port), path)
 
-    def dict_get(self, path='',url=''):
+    def dict_get(self, path='',url='', raw_data=False):
         try:
             if path:
                 return self._drv.load(self._mk_url_str(path))
             if url:
-                return self._drv.load(url)
+                return self._drv.load(url, raw_data=raw_data)
         except urllib2.HTTPError:
             return None
     # end dict_get

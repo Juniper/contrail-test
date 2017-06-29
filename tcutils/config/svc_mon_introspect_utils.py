@@ -8,9 +8,9 @@ LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
 class SvcMonInspect(VerificationUtilBase):
 
-    def __init__(self, ip, logger=LOG, args=None):
+    def __init__(self, ip, logger=LOG, args=None, port=8088):
         super(SvcMonInspect, self).__init__(
-            ip, 8088, XmlDrv, logger=logger, args=args)
+            ip, port, XmlDrv, logger=logger, args=args)
         self._cache = {
             'si': {},
         }
