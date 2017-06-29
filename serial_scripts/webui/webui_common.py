@@ -1862,14 +1862,14 @@ class WebuiCommon:
         self.check_error_msg("monitor networks")
         self.wait_till_ajax_done(self.browser, wait=10)
         self.click_icon_caret(row_index, net=1)
-        rows = self.get_rows()
+        rows = self.get_rows(canvas=True)
         self.click_element('fa-code', 'class', browser=rows[row_index + 1])
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_networks_advance_in_webui
 
     def click_monitor_instances_advance(self, row_index, length=None):
         self.click_monitor_instances_basic(row_index, length)
-        rows = self.get_rows()
+        rows = self.get_rows(canvas=True)
         self.click_element('fa-code', 'class', browser=rows[row_index + 1])
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_instances_advance_in_webui
