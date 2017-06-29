@@ -1375,8 +1375,18 @@ class VMFixture(fixtures.Fixture):
             curr_vrf_id = curr_vrf_ids.get(compute_ip, {}).get(vn_fq_name)
             if vrf_id and not curr_vrf_id:
                 # The vrf is deleted in agent. Check the same in vrouter
+                # if the vrf id not used by some other VN
                 vrouter_route_table = inspect_h.get_vrouter_route_table(
                     vrf_id)
+                curr_vrf_dict = inspect_h.get_vna_vrf_by_id(vrf_id)
+                if vn_fq_name not in curr_vrf_dict.get('name'):
+                    self.logger.debug('VRF %s already used by some other VN %s'
+                        '. Would have to skip vrouter check on %s' % (
+                        vrf_id, curr_vrf_dict.get('name'), compute_ip))
+                    return True
+
+                # VRF id is not re-used, can check if vrf table has
+                # been removed in vrouter
                 if vrouter_route_table:
                     self.logger.warn('Vrouter on Compute node %s still has vrf '
                         ' %s for VN %s. Check introspect logs' %(
