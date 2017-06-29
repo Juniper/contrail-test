@@ -213,6 +213,10 @@ class WebuiCommon:
         return self._get_list_ops('config-nodes')
     # end get_config_nodes_list_ops
 
+    def get_database_nodes_list_ops(self):
+        return self._get_list_ops('database-nodes')
+    # end get_database_nodes_list_ops
+
     def get_modules_list_ops(self):
         return self._get_list_ops('modules')
     # end get_modules_list_ops
@@ -1326,6 +1330,14 @@ class WebuiCommon:
         return self.check_error_msg("monitor analytics nodes")
     # end click_monitor_analytics_nodes_in_webui
 
+    def click_monitor_database_nodes(self):
+        self.click_monitor()
+        self.click_element(
+            ['mon_infra_database', 'Database Nodes'], ['id', 'link_text'])
+        self.wait_till_ajax_done(self.browser, wait=10)
+        return self.check_error_msg("monitor database nodes")
+    # end click_monitor_database_nodes
+
     def get_service_instance_list_api(self):
         url = 'http://' + self.inputs.cfgm_ip + ':8082/service-instances'
         obj = self.jsondrv.load(url)
@@ -1814,6 +1826,12 @@ class WebuiCommon:
         self.check_error_msg("monitor config nodes")
         self.click_monitor_common_basic(row_index)
     # end click_monitor_config_nodes_basic_in_webui
+
+    def click_monitor_database_nodes_basic(self, row_index):
+        self.click_element('Database Nodes', 'link_text')
+        self.check_error_msg("monitor database nodes")
+        self.click_monitor_common_basic(row_index)
+    # end click_monitor_database_nodes_basic
 
     def click_monitor_vrouters_advance(self, row_index):
         self.click_element('Virtual Routers', 'link_text')
