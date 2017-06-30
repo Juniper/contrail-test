@@ -1791,9 +1791,6 @@ class WebuiTest:
         self.logger.info(
             "Verifying opserver basic data on Monitor->Infra->Virtual routers->Details(basic view)...")
         self.logger.debug(self.dash)
-        if not self.ui.click_monitor_vrouters():
-            result = result and False
-        rows = self.ui.get_rows()
         vrouters_list_ops = self.ui.get_vrouters_list_ops()
         for n in range(len(vrouters_list_ops)):
             ops_vrouter_name = vrouters_list_ops[n]['name']
@@ -1802,6 +1799,7 @@ class WebuiTest:
                 (ops_vrouter_name))
             if not self.ui.click_monitor_vrouters():
                 result = result and False
+            self.ui.wait_till_ajax_done(self.browser, wait=15)
             rows = self.ui.get_rows(canvas=True)
             for i in range(len(rows)):
                 match_flag = 0
@@ -7549,34 +7547,37 @@ class WebuiTest:
     def verify_vrouter_ops_grid_page_data(self, host_name, ops_data):
         webui_data = []
         self.ui.click_monitor_vrouters()
+        self.ui.wait_till_ajax_done(self.browser, wait=15)
         rows = self.ui.get_rows(canvas=True)
         base_indx = 0
         for hosts in range(len(rows)):
-            if self.ui.get_slick_cell_text(
-                    rows[hosts],
-                    base_indx) == host_name:
-                webui_data.append(
-                    {'key': 'Hostname', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx)})
-                webui_data.append({'key': 'IP Address', 'value': self.ui.get_slick_cell_text(
-                    rows[hosts], base_indx + 1)})
-                webui_data.append(
-                    {'key': 'Version', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 2)})
-                webui_data.append(
-                    {'key': 'Status', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 3)})
-                webui_data.append({'key': 'CPU', 'value': self.ui.get_slick_cell_text(
-                    rows[hosts], base_indx + 4) + ' %'})
-                webui_data.append(
-                    {'key': 'Memory', 'value': self.ui.get_slick_cell_text(rows[hosts], base_indx + 5)})
-                webui_data.append({'key': 'Networks', 'value': self.ui.get_slick_cell_text(
-                    rows[hosts], base_indx + 6)})
-                webui_data.append({'key': 'Instances', 'value': self.ui.get_slick_cell_text(
-                    rows[hosts], base_indx + 7)})
-                webui_data.append({'key': 'Interfaces', 'value': self.ui.get_slick_cell_text(
-                    rows[hosts], base_indx + 8)})
-                if self.ui.match_ui_kv(ops_data, webui_data):
-                    return True
-                else:
-                    return False
+            if rows[base_indx]:
+                row_div_list = self.ui.find_element('div', 'tag',
+                                        browser=rows[base_indx], elements=True,
+                                        if_elements=[1])
+                if row_div_list[base_indx].text == host_name:
+                    webui_data.append(
+                        {'key': 'Hostname', 'value': row_div_list[base_indx].text})
+                    webui_data.append({'key': 'IP Address',
+                                        'value': row_div_list[base_indx + 1].text})
+                    webui_data.append({'key': 'Version',
+                                        'value': row_div_list[base_indx + 2].text})
+                    webui_data.append({'key': 'Status',
+                                        'value': row_div_list[base_indx + 3].text})
+                    webui_data.append({'key': 'CPU',
+                                        'value': (row_div_list[base_indx + 4].text) + ' %'})
+                    webui_data.append(
+                        {'key': 'Memory', 'value': row_div_list[base_indx + 5].text})
+                    webui_data.append({'key': 'Networks',
+                                        'value': row_div_list[base_indx + 6].text})
+                    webui_data.append({'key': 'Instances',
+                                        'value': row_div_list[base_indx + 7].text})
+                    webui_data.append({'key': 'Interfaces',
+                                        'value': row_div_list[base_indx + 8].text})
+        if self.ui.match_ui_kv(ops_data, webui_data):
+            return True
+        else:
+            return False
     # end verify_vrouter_ops_grid_page_data
 
     def verify_bgp_routers_ops_grid_page_data(self, host_name, ops_data):
