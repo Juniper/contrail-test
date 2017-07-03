@@ -73,7 +73,7 @@ class TestSVCV2MirrorFIP(BaseMirrorTest, VerifySvcMirror):
         """Validate the service chain mirroring with floating IP with 2 analyzer"""
         #TODO 
         # Need to add rule for udp and validate second mirror instance
-        return self.verify_svc_mirroring_with_floating_ip()
+        return self.verify_svc_mirroring_with_floating_ip(max_inst=2)
 
 
 class TestSVCV2MirrorPolicy(BaseMirrorTest, VerifySvcMirror):
