@@ -41,7 +41,7 @@ class ConfigSvcMirror(VerifySvcChain):
                                          service_type=service_type,
                                          left_vn_fixture=vn1_fixture,
                                          right_vn_fixture=vn2_fixture,
-                                         create_svms=create_svms)
+                                         create_svms=create_svms, **kwargs)
         si_fixture = ret_dict['si_fixture']
         policy_fixture = ret_dict['policy_fixture']
         si_fq_name = si_fixture.fq_name_str
