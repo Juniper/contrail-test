@@ -95,7 +95,7 @@ class TestBasicLbaas(BaseTestLbaas):
         #Start SimpleHTTPServer on port 80 on all lb pool servers
         output = ''
         self.start_simpleHTTPserver(lb_pool_servers)
-        sleep(60)
+        self.sleep(5)
 
         #Do wget on the VIP ip from the client, Lets do it 3 times
         lb_response1 = []

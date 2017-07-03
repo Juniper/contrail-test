@@ -196,18 +196,10 @@ class AnalyticsVerification(fixtures.Fixture):
         self.opsobj = self.get_ops_generator_from_ops_introspect(collector, generator, moduleid, node_type, instanceid)
         if not self.opsobj:
             self.logger.error("query returned none")
-            st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
-                                                    node=self.inputs.collector_names[0], \
-                                                    module='Contrail-Analytics-Api', trace_buffer_name='DiscoveryMsg')
-            self.logger.debug("status: %s" % (st))
             return None
         self.conoutput = self.opsobj.get_attr('Client', 'client_info')
         if not self.conoutput:
             self.logger.debug("query returned none")
-            st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
-                                                    node=self.inputs.collector_names[0], \
-                                                    module='Contrail-Analytics-Api', trace_buffer_name='DiscoveryMsg')
-            self.logger.debug("status: %s" % (st))
             return None
         return self.conoutput
 
@@ -399,10 +391,6 @@ class AnalyticsVerification(fixtures.Fixture):
                     break
                 else:
                     result1 = result1 and False
-                    st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
-                                                            node=self.inputs.collector_names[0], \
-                                                            module='Contrail-Analytics-Api', trace_buffer_name='DiscoveryMsg')
-                    self.logger.info("status: %s" % (st))
             result = result and result1
             #Verifying for ServiceMonitor
             expected_cfgm_modules = 'contrail-svc-monitor'
@@ -418,9 +406,6 @@ class AnalyticsVerification(fixtures.Fixture):
                     break
                 else:
                     result1 = result1 and False
-                    st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
-                                                            node=self.inputs.collector_names[0], \
-                                                            module='Contrail-Analytics-Api', trace_buffer_name='DiscoveryMsg')
             result = result and result1
             # Verifying module_id  ApiServer
             expected_apiserver_module = 'Contrail-Api'
@@ -438,9 +423,6 @@ class AnalyticsVerification(fixtures.Fixture):
                         break
                     else:
                         result = result and False
-                        st = self.ops_inspect[self.inputs.collector_ips[0]].send_trace_to_database(
-                                                            node=self.inputs.collector_names[0], \
-                                                            module='Contrail-Analytics-Api', trace_buffer_name='DiscoveryMsg')
                 result = result1 and result
             # Verifying module_id Contrail-Analytics-Api
             expected_opserver_module = 'Contrail-Analytics-Api'
@@ -2850,7 +2832,7 @@ class AnalyticsVerification(fixtures.Fixture):
         if soaking:
             self.logger.info("Soaking enabled..waiting %s secs for soak timer to expire" % (soak_timer))
             time.sleep(soak_timer)
-        MAX_RETRY_COUNT = 200
+        MAX_RETRY_COUNT = 20
         SLEEP_DURATION = .5
         retry = 0
         role_alarms = None
