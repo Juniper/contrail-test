@@ -1,11 +1,11 @@
 import fixtures
-from vnc_api import vnc_api
 import inspect
 from quantum_test import *
 try:
     from webui_test import *
 except ImportError:
     pass
+from vnc_api import vnc_api
 
 class VN_Policy_Fixture(fixtures.Fixture):
 
