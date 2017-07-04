@@ -1066,12 +1066,14 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         cmd_ping = (
             'ping -M want -s 2500 -c 10 %s | grep \"Frag needed and DF set\"' %
             (dst_vm_fix.vm_ip))
-#        cmd_tcpdump = 'tcpdump -vvv -c 5 -ni eth0 -v icmp > /tmp/op1.log'
+
         output = src_vm_fix.run_cmd_on_vm(
             cmds=['''netstat -anr  |grep ^0.0.0.0 | awk '{ print $2 }' '''],
             as_sudo=True)
         gw = output.values()[0].split('\r\n')[-1]
-        filters = 'icmp'
+
+        filters = '\'(icmp and ((src host %s and dst host %s) or (src host %s and dst host %s)))\'' % (
+            gw, src_vm_fix.vm_ip, src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
         session, pcap = start_tcpdump_for_vm_intf(
             self, src_vm_fix, src_vn_fq_name, filters=filters)
         cmds = ['ifconfig eth0 mtu 3000', cmd_ping,
@@ -1080,10 +1082,13 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
             cmds=cmds,
             as_sudo=True,
             as_daemon=True)
+        self.logger.debug("output for ping cmd: %s" % output[cmd_ping])
+        if not verify_tcpdump_count(self, session, pcap):
+            result = False
+
         cmd = 'tcpdump -nn -r %s' % pcap
         cmd_check_icmp, err = execute_cmd_out(session, cmd, self.logger)
         cmd_df = re.search('need to frag', cmd_check_icmp)
-        self.logger.debug("output for ping cmd: %s" % output[cmd_ping])
         cmd_next_icmp = re.search(
             '.+ seq 2, length (\d\d\d\d).*',
             cmd_check_icmp)
@@ -1096,8 +1101,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
                 "Frag needed and DF set" in output[cmd_ping])):
             self.logger.error(
                 "expected ICMP error for type 3 code 4 not found")
-            stop_tcpdump_for_vm_intf(self, session, pcap)
-            return False
+            result = False
         stop_tcpdump_for_vm_intf(self, session, pcap)
         self.logger.info(
             "increasing MTU on src VM and ping6 with bigger size and reverting MTU")
@@ -1109,7 +1113,9 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         gw = gw.split(':')
         gw[-1] = '1'
         gw = ':'.join(gw)
-        filters = 'icmp6'
+        filters = '\'(icmp6 and ((src host %s and dst host %s) or (src host %s and dst host %s)))\'' % (
+            gw, vm1_fixture.vm_ip, vm1_fixture.vm_ip, vm2_fixture.vm_ip)
+
         session, pcap = start_tcpdump_for_vm_intf(
             self, vm1_fixture, src_vn_fq_name, filters=filters)
         cmds = ['ifconfig eth0 mtu 3000', cmd_ping,
@@ -1118,9 +1124,12 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
             cmds=cmds,
             as_sudo=True,
             as_daemon=True)
+        self.logger.debug("output for ping cmd: %s" % output[cmd_ping])
+        if not verify_tcpdump_count(self, session, pcap):
+            result = False
+
         cmd = 'tcpdump -nn -r %s' % pcap
         cmd_check_icmp, err = execute_cmd_out(session, cmd, self.logger)
-        self.logger.debug("output for ping cmd: %s" % output[cmd_ping])
         cmd_next_icmp = re.search(
             '.+ ICMP6, packet too big, mtu (\d\d\d\d).*',
             cmd_check_icmp)
@@ -1131,12 +1140,12 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
                 "Packet too big" in output[cmd_ping])):
             self.logger.error(
                 "expected ICMP6 error for type 2 packet too big message not found")
-            stop_tcpdump_for_vm_intf(self, session, pcap)
-#            output = vm1_fixture.run_cmd_on_vm(cmds='rm /tmp/op.log', as_sudo=True)
-            return False
+            result = False
         stop_tcpdump_for_vm_intf(self, session, pcap)
         self.inputs.set_af(af_old)
-        return True
+
+        assert result
+        return result
         # end test_icmp_error_handling2
 
     @preposttest_wrapper
@@ -2415,8 +2424,6 @@ class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
             as_sudo=True,
             as_daemon=True)
 
-        sleep(1)
-        # verify flow created
         inspect_h1 = self.agent_inspect[src_vm_fix.vm_node_ip]
         flow_rec1 = None
         sport = '8100'
@@ -2424,13 +2431,18 @@ class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
         vn_fq_name = src_vm_fix.vn_fq_name
         flow_timeout = 180
 
-        flow_rec1 = inspect_h1.get_vna_fetchflowrecord(
-            nh=src_vm_fix.tap_intf[vn_fq_name]['flow_key_idx'],
-            sip=src_vm_fix.vm_ip,
-            dip=dst_vm_fix.vm_ip,
-            sport=sport,
-            dport=dport,
-            protocol='6')
+        # verify flow created
+        for i in xrange(0,3):
+            flow_rec1 = inspect_h1.get_vna_fetchflowrecord(
+                nh=src_vm_fix.tap_intf[vn_fq_name]['flow_key_idx'],
+                sip=src_vm_fix.vm_ip,
+                dip=dst_vm_fix.vm_ip,
+                sport=sport,
+                dport=dport,
+                protocol='6')
+            if flow_rec1:
+                break
+            sleep(1)
         assert flow_rec1
         # wait for flow to expire
         sleep(flow_timeout + 2)
