@@ -2932,7 +2932,10 @@ class TestBasicVMVNx(BaseVnVmTest):
             self.logger.debug('Transferring the file from %s to %s using scp' %
                              (vm1_fixture.vm_name, vm2_fixture.vm_name))
             if os.environ.has_key('ci_image') and self.inputs.get_af() == 'v4':
-                file_transfer_result = vm1_fixture.scp_file_transfer_cirros(vm2_fixture, size=size)
+                if is_ip_mine(vm1_fixture.vm_node_ip):
+                    file_transfer_result = vm1_fixture.scp_file_transfer_cirros(vm2_fixture, size=size)
+                else:
+                    self.skipTest('scp_file_transfer_cirros not posible here')
             else:
                 file_transfer_result = vm1_fixture.check_file_transfer(vm2_fixture,
                                                                    size=size)
