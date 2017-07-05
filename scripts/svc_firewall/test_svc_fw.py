@@ -30,7 +30,7 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ECMPVerify):
         pass
     # end runTest
 
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['vcenter'])
     @preposttest_wrapper
     def test_svc_in_network_datapath(self):
         return self.verify_svc_chain(service_mode='in-network',
@@ -67,7 +67,6 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ECMPVerify):
             errmsg = "Ping to third VM %s from Left VM failed" % vm_ip
             assert left_vm_fixture.ping_with_certainty(vm_ip, count='3'), errmsg
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     @skip_because(address_family='v6')
     def test_svc_in_network_nat_private_to_public(self):
@@ -200,21 +199,24 @@ class TestSvcRegrIPv6(TestSvcRegr):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
 
+    @test.attr(type=['vcenter'])
     @preposttest_wrapper
     def test_svc_in_network_datapath(self):
-        return self.verify_svc_chain(service_mode='in-network',
-                                     create_svms=True)
+        super(TestSvcRegr,self).test_svc_in_network_datapath()
 
     @preposttest_wrapper
-    def test_svc_monitor_datapath(self):
-        return self.verify_svc_chain(svc_img_name='tiny_trans_fw',
-                                     create_svms=True)
+    @skip_because(feature='trans_svc')
+    def test_svc_v2_transparent_datapath(self):
+        super(TestSvcRegr,self).test_svc_v2_transparent_datapath()
 
     @preposttest_wrapper
-    def test_svc_transparent_with_3_instance(self):
-        return self.verify_svc_chain(max_inst=3,
-                                     svc_img_name='tiny_trans_fw',
-                                     create_svms=True)
+    def test_svc_in_net_nat_with_static_routes(self):
+        super(TestSvcRegr,self).test_svc_in_net_nat_with_static_routes()
+
+    @preposttest_wrapper
+    @skip_because(address_family='v6')
+    def test_svc_in_network_nat_private_to_public(self):
+        super(TestSvcRegr,self).test_svc_in_network_nat_private_to_public()
 
 class TestSvcRegrFeatureIPv6(TestSvcRegrFeature):
 
