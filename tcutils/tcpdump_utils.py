@@ -10,7 +10,7 @@ def start_tcpdump_for_intf(ip, username, password, interface, filters='-v', logg
         logger = contrail_logging.getLogger(__name__)
     session = ssh(ip, username, password)
     pcap = '/tmp/%s_%s.pcap' % (interface, get_random_name())
-    cmd = 'tcpdump -ni %s -U %s -w %s' % (interface, filters, pcap)
+    cmd = 'tcpdump -nni %s -U %s -w %s' % (interface, filters, pcap)
     execute_cmd(session, cmd, logger)
     return (session, pcap)
 
@@ -112,11 +112,13 @@ def read_tcpdump(obj, session, pcap):
 
 @retry(delay=2, tries=6)
 def verify_tcpdump_count(obj, session, pcap, exp_count=None, mac=None,
-                         exact_match=True, vm_fix_pcap_pid_files=[], svm=False):
+        exact_match=True, vm_fix_pcap_pid_files=[], svm=False, grep_string=None):
+
+    grep_string = grep_string or 'length'
     if mac:
-        cmd = 'tcpdump -r %s ether host %s | grep -c length' % (pcap,mac)
+        cmd = 'tcpdump -nnr %s ether host %s | grep -c %s' % (pcap, mac, grep_string)
     else:
-        cmd = 'tcpdump -r %s | wc -l' % pcap
+        cmd = 'tcpdump -nnr %s | grep -c %s' % (pcap, grep_string)
     if not vm_fix_pcap_pid_files:
         out, err = execute_cmd_out(session, cmd, obj.logger)
         count = int(out.strip('\n'))
