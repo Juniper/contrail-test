@@ -662,7 +662,7 @@ class TestVxlanIDWithRouting(TwoToROneRouterBase):
         vn2_vxlan_id = get_random_vxlan_id()
         vn1_fixture = self.create_vn(disable_dns=True, vxlan_id=vn1_vxlan_id)
         vn2_fixture = self.create_vn(disable_dns=True, vxlan_id=vn2_vxlan_id)
-        self.allow_all_traffic_between_vns(vn1_fixture, vn2_fixture)
+        self.setup_policy_between_vns(vn1_fixture, vn2_fixture)
 
         # BMS VMI
         vn1_vmi_fixture = self.setup_vmi(vn1_fixture.uuid)
@@ -730,7 +730,7 @@ class TestBasicBMSInterVN(TwoToROneRouterBase):
             vn2_vxlan_id = get_random_vxlan_id()
         vn1_fixture = self.create_vn(disable_dns=True, vxlan_id=vn1_vxlan_id)
         vn2_fixture = self.create_vn(disable_dns=True, vxlan_id=vn2_vxlan_id)
-        self.allow_all_traffic_between_vns(vn1_fixture, vn2_fixture)
+        self.setup_policy_between_vns(vn1_fixture, vn2_fixture)
 
         bms1_ip = get_an_ip(vn1_fixture.vn_subnet_objs[0]['cidr'],3)
         bms2_ip = get_an_ip(vn2_fixture.vn_subnet_objs[0]['cidr'],3)
@@ -858,7 +858,7 @@ class TestExtendedBMSInterVN(TwoToROneRouterBase):
         super(TestExtendedBMSInterVN, self).setUp()
         self.vn1_fixture = self.create_vn(disable_dns=True)
         self.vn2_fixture = self.create_vn(disable_dns=True)
-        self.allow_all_traffic_between_vns(self.vn1_fixture, self.vn2_fixture)
+        self.setup_policy_between_vns(self.vn1_fixture, self.vn2_fixture)
 
         # BMS VMI
         self.vn1_vmi_fixture = self.setup_vmi(self.vn1_fixture.uuid)
@@ -967,7 +967,7 @@ class TestBMSWithExternalDHCPServer(TwoToROneRouterBase):
             vn_subnets=['13.1.1.0/24'],
             enable_dhcp=False)
         self.vn2_fixture = self.create_vn(disable_dns=True)
-        self.allow_all_traffic_between_vns(self.vn1_fixture, self.vn2_fixture)
+        self.setup_policy_between_vns(self.vn1_fixture, self.vn2_fixture)
 
         # Extend VNs to router
         self.phy_router_fixture.setup_physical_ports()
@@ -1151,7 +1151,7 @@ class TestTorPolicy(BaseTorTest, BasePolicyTest):
         ]
         vn1_fixture = self.create_vn(disable_dns=True)
         vn2_fixture = self.create_vn(disable_dns=True)
-        self.allow_all_traffic_between_vns(vn1_fixture, vn2_fixture)
+        self.setup_policy_between_vns(vn1_fixture, vn2_fixture)
         assert vn1_fixture.verify_on_setup()
         assert vn2_fixture.verify_on_setup()
 
