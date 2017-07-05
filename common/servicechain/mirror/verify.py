@@ -72,7 +72,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         return
     # end verify_proto_based_mirror
 
-    def verify_svc_mirroring_with_floating_ip(self):
+    def verify_svc_mirroring_with_floating_ip(self, *args, **kwargs):
         """Validate the service mirrroring with flaoting IP
            Test steps:
            1. Create the SI/ST in svc_mode specified.
@@ -86,8 +86,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
            single node : Pkts mirrored to the analyzer should be equal to 'count'
            multinode :Pkts mirrored to the analyzer should be equal to '2xcount'
         """
-
-        ret_dict = self.config_svc_mirroring()
+        ret_dict = self.config_svc_mirroring(*args, **kwargs)
         left_vn_fixture = ret_dict['left_vn_fixture']
         right_vn_fixture = ret_dict['right_vn_fixture']
         left_vm_fixture = ret_dict['left_vm_fixture']
