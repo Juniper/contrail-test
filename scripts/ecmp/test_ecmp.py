@@ -51,7 +51,6 @@ class TestECMPSanity(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
                               **self.common_args)
     # end test_ecmp_svc_v2_transparent_with_3_instance
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance(self):
         """
@@ -962,6 +961,19 @@ class TestECMPSanityIPv6(TestECMPSanity):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
 
+    @preposttest_wrapper
+    def test_ecmp_svc_v2_transparent_with_3_instance(self):
+        super(TestECMPSanity,self).test_ecmp_svc_v2_transparent_with_3_instance()
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_ecmp_svc_in_network_with_3_instance(self):
+        super(TestECMPSanity,self).test_ecmp_svc_in_network_with_3_instance()
+
+    @preposttest_wrapper
+    def test_ecmp_svc_in_network_with_static_route_no_policy(self):
+        super(TestECMPSanity,self).test_ecmp_svc_in_network_with_static_route_no_policy()
+
 class TestECMPFeatureIPv6(TestECMPFeature):
 
     @classmethod
@@ -974,6 +986,10 @@ class TestECMPFeatureIPv6(TestECMPFeature):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
 
+    @test.attr(type=['vcenter'])
+    @preposttest_wrapper
+    def test_ecmp_svc_v2_in_network_nat_with_3_instance(self):
+        super(TestECMPFeature,self).test_ecmp_svc_v2_in_network_nat_with_3_instance()
 
 class TestECMPwithSVMChangeIPv6(TestECMPwithSVMChange):
 
@@ -987,6 +1003,10 @@ class TestECMPwithSVMChangeIPv6(TestECMPwithSVMChange):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
 
+    @preposttest_wrapper
+    def test_ecmp_with_svm_deletion(self):
+        super(TestECMPwithSVMChange,self).test_ecmp_with_svm_deletion()
+
 class TestMultiInlineSVCIPv6(TestMultiInlineSVC):
 
     @classmethod
@@ -998,6 +1018,11 @@ class TestMultiInlineSVCIPv6(TestMultiInlineSVC):
         if not self.connections.orch.is_feature_supported('ipv6'):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
+
+    @test.attr(type=['vcenter'])
+    @preposttest_wrapper
+    def test_three_stage_v2_SC(self):
+        super(TestMultiInlineSVC,self).test_three_stage_v2_SC()
 
 class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
 

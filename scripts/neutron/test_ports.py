@@ -963,7 +963,6 @@ class TestPorts(BaseNeutronTest):
 
     # end test_zombie_tap_interface
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_aap_active_active_mode(self):
         '''
