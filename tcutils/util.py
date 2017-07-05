@@ -3,6 +3,7 @@ import subprocess
 import os
 import re
 import time
+import netifaces
 from collections import defaultdict, MutableMapping
 from netaddr import *
 import pprint
@@ -540,7 +541,10 @@ def get_random_string(size=8, chars=string.digits):
 def get_random_name(prefix=None, constant_prefix='ctest'):
     if not prefix:
         prefix = 'random'
-    return constant_prefix + '-' + prefix + '-' + get_random_string()
+    ret_val = prefix + '-' + get_random_string()
+    if not prefix.startswith(constant_prefix):
+        ret_val = '%s-%s' %(constant_prefix, ret_val)
+    return ret_val
 
 
 def gen_str_with_spl_char(size, char_set=None):
@@ -1178,4 +1182,17 @@ def timeit(func):
 
 def get_lock(text):
     return Lock('/tmp/%s.lock' %(text.replace('/','_')))
+
+def is_ip_mine(ip):
+    ''' Returns true if the ip is local
+    Note that if check is run on a container, the container should be using 
+    host networking
+    '''
+    for iface in netifaces.interfaces():
+        if netifaces.AF_INET in netifaces.ifaddresses(iface):
+            if str(ip) == netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']:
+                return True
+    return False
+
+#end is_ip_mine
 

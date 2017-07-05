@@ -251,9 +251,9 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         return True
     #end config_aap
 
-    def allow_all_traffic_between_vns(self, vn1_fixture, vn2_fixture):
+    def setup_policy_between_vns(self, vn1_fixture, vn2_fixture, rules=[]):
         policy_name = get_random_name('policy-allow-all')
-        rules = [
+        rules = rules or [
             {
                 'direction': '<>', 'simple_action': 'pass',
                 'protocol': 'any',
@@ -275,7 +275,8 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
             [policy_fixture.policy_fq_name], vn2_fixture.vn_id)
         self.addCleanup(vn2_fixture.unbind_policies,
                         vn2_fixture.vn_id, [policy_fixture.policy_fq_name])
-    # end allow_all_traffic_between_vns
+        return policy_fixture
+    # end setup_policy_between_vns
 
     def create_dhcp_server_vm(self,
                               vn1_fixture,

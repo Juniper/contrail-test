@@ -105,10 +105,6 @@ class TestvDNSBasic0(BasevDNSTest):
                 vn_name=vn_fixt.vn_name, project_id=proj_fixt.uuid)
             vm_fixture[vm_name] = self.useFixture(
                 VMFixture(project_name=self.inputs.project_name, connections=self.connections, vn_obj=vn_quantum_obj, vm_name=vm_name))
-            assert vm_fixture[vm_name].verify_vm_launched(), ('VM %s does not'
-                'seem to have launched correctly' % (vm_name))
-            assert vm_fixture[vm_name].verify_on_setup(), ('VM %s verification'
-                'failed' % (vm_name))
             assert vm_fixture[vm_name].wait_till_vm_is_up(), ('VM %s'
                 ' failed to come up' % (vm_name))
             vm_ip = vm_fixture[vm_name].get_vm_ip_from_vm(

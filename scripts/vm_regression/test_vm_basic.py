@@ -75,11 +75,10 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         if os.environ.has_key('ci_image'):
             img_name = os.environ['ci_image']
         else:
-            img_name = 'ubuntu'
+            img_name = 'ubuntu-traffic'
         vn_name = get_random_name('vn2_metadata')
         vm1_name = get_random_name('vm_in_vn2_metadata')
         vn_fixture = self.create_vn(vn_name=vn_name, af='v4')
-        assert vn_fixture.verify_on_setup()
         vm1_fixture = self.create_vm(vn_fixture=vn_fixture, vm_name=vm1_name,
                                      image_name=img_name,
                                      userdata='/tmp/metadata_script.txt')
@@ -200,10 +199,8 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
                 vn_obj=vn1_fixture.obj, vm_name=vn1_vm2_name,port_ids = [ports['subnet2']['id']]))
-        assert vm1_fixture.verify_on_setup()
-        assert vm2_fixture.verify_on_setup()
-        vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
         assert vm2_fixture.ping_to_ip(vm1_fixture.vm_ip)
         # Geting the VM ips
@@ -242,7 +239,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         return True
     #test_ping_within_vn_two_vms_two_different_subnets
 
-    @test.attr(type=['sanity','ci_sanity', 'quick_sanity', 'vcenter', 'suite1'])
+    @test.attr(type=['quick_sanity', 'vcenter', 'suite1'])
     @preposttest_wrapper
     def test_vn_add_delete(self):
         '''
@@ -257,7 +254,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         return True
     #end test_vn_add_delete
 
-    @test.attr(type=['sanity','ci_sanity','vcenter', 'suite1'])
+    @test.attr(type=['vcenter', 'suite1'])
     @preposttest_wrapper
     def test_vm_add_delete(self):
         '''
@@ -290,14 +287,13 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         vn1_vm1_name = get_random_name('vm1')
         vn1_vm2_name = get_random_name('vm2')
         vn1_fixture = self.create_vn(vn_name=vn1_name,orch=self.orchestrator)
-        assert vn1_fixture.verify_on_setup()
         vn1_fixture.read()
         vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm1_name,orch=self.orchestrator)
         vm2_fixture = self.create_vm(vn_ids=[vn1_fixture.uuid], vm_name=vn1_vm2_name)
-        assert vm1_fixture.verify_on_setup()
-        assert vm2_fixture.verify_on_setup()
-        vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture.wait_till_vm_is_up()
+        #assert vm1_fixture.verify_on_setup()
+        #assert vm2_fixture.verify_on_setup()
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
             "Ping from %s to %s failed" % (vn1_vm1_name, vn1_vm2_name)
         assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
@@ -333,8 +329,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                                                 vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name,
                                                 image_name=img_name))
 
-        assert vm1_fixture.verify_on_setup()
-        vm1_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
 
         cfgm_hostname = self.inputs.host_data[self.inputs.cfgm_ip]['name']
         cfgm_control_ip = self.inputs.host_data[cfgm_hostname]['host_control_ip']
