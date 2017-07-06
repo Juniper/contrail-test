@@ -94,7 +94,8 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
     _run = sudo if with_sudo else run
 
     # with hide('everything'), settings(host_string=host_string,
-    with hide('everything'), settings(
+    #with hide('everything'), settings(
+    with settings(
             host_string=host_string,
             gateway=gateway,
             warn_only=warn_only,

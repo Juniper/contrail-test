@@ -531,55 +531,14 @@ def createVMNova(
         retry_factor = "1.0"
     retry_count = math.floor(5 * float(retry_factor))
 
-    # added here 30 seconds sleep
-    #import time; time.sleep(30)
     self.logger.debug(
         "Setup step: Verify VM status and install Traffic package... ")
     for vm in self.topo.vmc_list:
-        if self.skip_verify == 'no':
-            # Include retry to handle time taken by less powerful computes or
-            # if launching more VMs...
-            retry = 0
-            while True:
-                vm_verify_out = self.vm_fixture[vm].verify_on_setup()
-                retry += 1
-                if vm_verify_out or retry > 2:
-                    break
-            if not vm_verify_out:
-                m = "on compute %s - vm %s verify failed after setup" % (
-                    self.vm_fixture[vm].vm_node_ip, self.vm_fixture[vm].vm_name)
-                self.err_msg.append(m)
-                assert vm_verify_out, self.err_msg
-        else:
-            # Even if vm verify is set to skip, run minimum needed
-            # verifications..
-            vm_verify_out = self.vm_fixture[vm].mini_verify_on_setup()
-            if not vm_verify_out:
-                m = "%s - mini_vm_verify in agent after setup failed" % self.vm_fixture[
-                    vm].vm_node_ip
-                self.err_msg.append(m)
-                assert vm_verify_out, self.err_msg
-
-        vm_node_ip = self.inputs.host_data[
-            self.orch.get_host_of_vm(
-                self.vm_fixture[vm].vm_obj)]['host_ip']
+        assert self.vm_fixture[vm].wait_till_vm_is_up(),(
+            'VM Failed to come up')
+        vm_node_ip = self.vm_fixture[vm].vm_node_ip
         self.vn_of_cn[vm_node_ip].append(self.topo.vn_of_vm[vm])
 
-        # In some less powerful computes, VM takes more time to come up.. including retry...
-        # each call to wait_till_vm_is_up inturn includes 20 retries with 5s
-        # sleep.
-        retry = 0
-        while True:
-            out = self.vm_fixture[vm].wait_till_vm_is_up()
-            retry += 1
-            if out or retry > 2:
-                break
-        if not out:
-            self.logger.debug('VM Console log : %s' % (
-                vm_fixture[vm].get_console_output()))
-            assert out, "VM %s failed to come up in node %s" % (vm, vm_node_ip)
-
-        assert self.vm_fixture[vm].wait_for_ssh_on_vm()
     # Add compute's VN list to topology object based on VM creation
     self.topo.__dict__['vn_of_cn'] = self.vn_of_cn
 

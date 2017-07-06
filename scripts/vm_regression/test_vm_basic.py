@@ -333,7 +333,6 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                                                 vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name,
                                                 image_name=img_name))
 
-        time.sleep(30)
         assert vm1_fixture.verify_on_setup()
         vm1_fixture.wait_till_vm_is_up()
 

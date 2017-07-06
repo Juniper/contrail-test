@@ -135,7 +135,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
         except Exception as e:
             print e
         for thread in self.vm_threads:
-            time.sleep(3)
+            time.sleep(1)
             thread.start()
 
         for thread in self.vm_threads:
@@ -210,7 +210,6 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
     def setUp(self):
         super(create_multiple_vn_and_multiple_vm_fixture, self).setUp()
         self.createMultipleVN()
-        time.sleep(5)
         self.createMultipleVM()
         time.sleep(5)
 

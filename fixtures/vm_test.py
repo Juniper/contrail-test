@@ -1718,21 +1718,25 @@ class VMFixture(fixtures.Fixture):
                 for vm_ip in self.vm_ip_dict[vn_fq_name]:
                     try:
                         if is_v6(vm_ip):
-                            op_data = self.analytics_obj.get_vm_attr(
+                            ip_address = self.analytics_obj.get_vm_attr(
                                 ops_intf, 'ip6_address')
                         else:
-                            op_data = self.analytics_obj.get_vm_attr(
+                            ip_address = self.analytics_obj.get_vm_attr(
                                 ops_intf, 'ip_address')
                     except Exception as e:
+                        self.logger.debug('VM %s analytics data does not have IP '
+                            'address details' %(self.vm_name))
                         return False
 
-                    if vm_ip != op_data:
-                        self.logger.warn(
-                            "Opserver doesnt list IP Address %s of vm %s" % (
-                                vm_ip, self.vm_name))
-                        self.vm_in_op_flag = self.vm_in_op_flag and False
-                        result = result and False
-                # end if
+                # end for vm_ip
+                if ip_address not in self.vm_ips:
+                    self.logger.warn(
+                        "Opserver doesnt list IP Address %s of vm %s"
+                        "Expected %s to be among the list %s" %(self.vm_name,
+                            ip_address, self.vm_ips))
+                    self.vm_in_op_flag = self.vm_in_op_flag and False
+                    result = result and False
+            # end for vn_fq_name
                 self.ops_vm_obj = self.ops_inspect[ip].get_ops_vm(self.vm_id)
         # end if
         self.logger.debug("Verifying vm in vn uve")
@@ -1901,7 +1905,6 @@ class VMFixture(fixtures.Fixture):
                 else:
                     self.orch.delete_vm(vm_obj)
                     self.vm_objs.remove(vm_obj)
-            time.sleep(5)
             self.verify_cleared_from_setup(verify=verify)
         else:
             self.logger.info('Skipping the deletion of VM %s' %
