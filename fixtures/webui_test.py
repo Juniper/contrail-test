@@ -3189,7 +3189,7 @@ class WebuiTest:
             result = result and False
         self.ui.select_project(self.project_name_input)
         self.ui.select_network(network_name)
-        rows = self.ui.get_rows()
+        rows = self.ui.get_rows(canvas=True)
         vm_list_ops = self.ui.get_vm_list_ops()
         result = True
         for k in range(len(vm_list_ops)):
@@ -3197,14 +3197,14 @@ class WebuiTest:
             vm_ops_data = self.ui.get_details(vm_list_ops[k]['href'])
             if not self.ui.click_monitor_instances():
                 result = result and False
-            rows = self.ui.get_rows()
+            rows = self.ui.get_rows(canvas=True)
             self.logger.info(
                 "Vm %s exists in opserver..checking if exists in webui as well" %
                 (ops_uuid))
             for i in range(len(rows)):
                 if not self.ui.click_monitor_instances():
                     result = result and False
-                rows = self.ui.get_rows()
+                rows = self.ui.get_rows(canvas=True)
                 self.ui.click_element(
                     ('slick-cell', 0), 'class', rows[i], elements=True)
                 ui_list = []
@@ -5905,7 +5905,6 @@ class WebuiTest:
         self.detach_ipam_from_dns_server()
         self.delete_bgp_aas()
         self.delete_link_local_service()
-        self.delete_svc_appliance_set()
         self.delete_network_route_table()
         self.delete_routing_policy()
         self.delete_route_aggregate()
@@ -5940,6 +5939,7 @@ class WebuiTest:
 
     def delete_svc_appliance(self):
         self.ui.delete_element(element_type='svc_appliance_delete')
+        self.delete_svc_appliance_set()
     # end delete_svc_appliance
 
     def delete_svc_appliance_set(self):
@@ -7514,7 +7514,7 @@ class WebuiTest:
         webui_data = []
         self.ui.click_monitor_analytics_nodes()
         self.ui.wait_till_ajax_done(self.browser, wait=15)
-        rows = self.ui.get_rows()
+        rows = self.ui.get_rows(canvas=True)
         for hosts in range(len(rows)):
             base_indx = 0
             if rows[base_indx]:
