@@ -103,8 +103,8 @@ class ConfigSvcChain(fixtures.Fixture):
                   mgmt_vn_fq_name=None,
                   left_vn_fq_name=None,
                   right_vn_fq_name=None,
-                  port_tuples_props=[],
-                  svm_fixtures=[],
+                  port_tuples_props=None,
+                  svm_fixtures=None,
                   static_route=None,
                   max_inst=1):
         si_name = si_name or get_random_name('si')
@@ -114,7 +114,7 @@ class ConfigSvcChain(fixtures.Fixture):
             'right': {'vn_name': right_vn_fq_name}
         }
         if svm_fixtures:
-            port_tuples_props = []
+            port_tuples_props = port_tuples_props or []
             for svm in svm_fixtures:
                 svm_pt_props = {}
                 if mgmt_vn_fq_name:
@@ -413,7 +413,7 @@ class ConfigSvcChain(fixtures.Fixture):
                         policy_fixture=None,
                         st_fixture=None,
                         si_fixture=None,
-                        port_tuples_props=[],
+                        port_tuples_props=None,
                         static_route=None,
                         svm_fixtures=[],
                         create_svms=False,
@@ -510,6 +510,14 @@ class ConfigSvcChain(fixtures.Fixture):
                 st_version=st_version,
                 service_mode=service_mode,
                 service_type=service_type)
+        # Create SI VMs now
+        if not svm_fixtures and create_svms:
+            svm_fixtures = self.create_service_vms(vns,
+                                                   svc_img_name=svc_img_name,
+                                                   service_mode=service_mode,
+                                                   service_type=service_type,
+                                                   hosts=hosts,
+                                                   max_inst=max_inst)
         if not si_fixture:
             si_name = get_random_name('si')
             si_fixture = self.config_si(si_name,
@@ -521,25 +529,6 @@ class ConfigSvcChain(fixtures.Fixture):
                 static_route=static_route,
                 max_inst=max_inst,
                 svm_fixtures=svm_fixtures)
-        # Create SI VMs now
-        if not svm_fixtures and create_svms:
-            svm_fixtures = self.create_service_vms(vns,
-                                                   svc_img_name=svc_img_name,
-                                                   service_mode=service_mode,
-                                                   service_type=service_type,
-                                                   hosts=hosts,
-                                                   max_inst=max_inst)
-        if svm_fixtures and not port_tuples_props:
-            # Set port tuples now
-            for i in range(max_inst):
-                svm_pt_props = {'name' : get_random_name("port_tuple" + str(i))}
-                if self._get_if_needed(svc_img_name, 'management', mgmt_vn_name):
-                    svm_pt_props['management'] = svm_fixtures[i].vmi_ids[mgmt_vn_fq_name]
-                if self._get_if_needed(svc_img_name, 'left', si_left_vn_name):
-                    svm_pt_props['left'] = svm_fixtures[i].vmi_ids[si_left_vn_fq_name]
-                if self._get_if_needed(svc_img_name, 'right', si_right_vn_name):
-                    svm_pt_props['right'] = svm_fixtures[i].vmi_ids[si_right_vn_fq_name]
-                si_fixture.add_port_tuple(svm_pt_props)
 
         if not policy_fixture:
             policy_name = get_random_name('policy')
