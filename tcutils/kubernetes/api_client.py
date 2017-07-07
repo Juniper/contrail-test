@@ -58,7 +58,9 @@ class Client():
         for rule in rules:
             rule_obj = client.V1beta1IngressRule(
                 host=rule.get('host'),
-                http=self._get_ingress_path(rule.get('http')))
+                http=client.V1beta1HTTPIngressRuleValue(
+                     paths=self._get_ingress_path(rule.get('http'))))
+
             ing_rules.append(rule_obj)
         return ing_rules
     # end _get_ingress_rules
