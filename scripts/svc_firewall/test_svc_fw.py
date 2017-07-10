@@ -178,21 +178,21 @@ class TestSvcRegrIPv6(TestSvcRegr):
     @test.attr(type=['vcenter'])
     @preposttest_wrapper
     def test_svc_in_network_datapath(self):
-        super(TestSvcRegr,self).test_svc_in_network_datapath()
+        super(TestSvcRegrIPv6,self).test_svc_in_network_datapath()
 
     @preposttest_wrapper
     @skip_because(feature='trans_svc')
     def test_svc_v2_transparent_datapath(self):
-        super(TestSvcRegr,self).test_svc_v2_transparent_datapath()
+        super(TestSvcRegrIPv6,self).test_svc_v2_transparent_datapath()
 
     @preposttest_wrapper
     def test_svc_in_net_nat_with_static_routes(self):
-        super(TestSvcRegr,self).test_svc_in_net_nat_with_static_routes()
+        super(TestSvcRegrIPv6,self).test_svc_in_net_nat_with_static_routes()
 
     @preposttest_wrapper
     @skip_because(address_family='v6')
     def test_svc_in_network_nat_private_to_public(self):
-        super(TestSvcRegr,self).test_svc_in_network_nat_private_to_public()
+        super(TestSvcRegrIPv6,self).test_svc_in_network_nat_private_to_public()
 
 class TestSvcRegrFeatureIPv6(TestSvcRegrFeature):
 
