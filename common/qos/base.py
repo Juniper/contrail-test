@@ -102,7 +102,7 @@ class QosTestBase(BaseNeutronTest):
                                     dest_vm_fixture,
                                     traffic_generator = "hping",
                                     dest_ip=None,
-                                    count=10000,
+                                    count=20000,
                                     dscp=None,
                                     dot1p=None,
                                     exp=None,
@@ -203,6 +203,9 @@ class QosTestBase(BaseNeutronTest):
                                     min_length = 100,
                                     max_length = 250)
             else:
+                if "bond" in interface:
+                    interface = self.get_active_bond_intf(src_compute_fixture.ip,
+                                                          interface)
                 init_pkt_count = self.get_queue_count(src_vm_fixture.vm_node_ip,
                                                       interface, queue_id)
         elif traffic_generator == "hping":
@@ -227,6 +230,9 @@ class QosTestBase(BaseNeutronTest):
                                     traffic_between_diff_networks =
                                      traffic_between_diff_networks)
             else:
+                if "bond" in interface:
+                    interface = self.get_active_bond_intf(src_compute_fixture.ip,
+                                                          interface)
                 init_pkt_count = self.get_queue_count(src_vm_fixture.vm_node_ip,
                                                       interface, queue_id)
         sleep(traffic_duration)
@@ -690,19 +696,19 @@ class QosTestBase(BaseNeutronTest):
         This method will populate multi queueing interface, it's speed and 
         number of queue supported
         '''
-        fabric_interface = cls.agent_inspect[node_ip].\
+        cls.fabric_interface = cls.agent_inspect[node_ip].\
                            get_vna_interface_by_type("eth")[0]
         # Getting the speed of the interface
-        cmd= 'ethtool %s | grep "Speed"' % fabric_interface
+        cmd= 'ethtool %s | grep "Speed"' % cls.fabric_interface
         output = cls.inputs.run_cmd_on_server(node_ip, cmd)
-        interface_speed = output.split(' ')[-1]
+        cls.interface_speed = output.split(' ')[-1]
         # Getting the number of Hardware queues
         cmd = 'ls -la /sys/class/net/%s/queues/ | grep "tx" | wc -l'\
-                 % fabric_interface
+                 % cls.fabric_interface
         output = cls.inputs.run_cmd_on_server(node_ip, cmd)
-        queue_count = output.split(' ')[-1]
-        return (fabric_interface, interface_speed, queue_count)
-    
+        cls.queue_count = output.split(' ')[-1]
+        return (cls.fabric_interface, cls.interface_speed, cls.queue_count)
+
     def get_configured_queue_mapping(self, node_ip):
         '''
         This method will populate list of HW queues.
@@ -758,16 +764,18 @@ class QosTestBase(BaseNeutronTest):
         for elem in cls.inputs.qos_queue:
             cls.qos_node_ip = elem[0]
             cls.queue_params = cls.get_qos_queue_params(cls.qos_node_ip)
-            if cls.queue_params[1] == "10000Mb/s":
-                first_node_interface_bw = cls.queue_params[1]
+            first_node_interface_bw = cls.queue_params[1]
+            bw_in_interger= int(first_node_interface_bw.split("Mb/s")[0])
+            # Below statement helps to take care of Bond interfaces having BW more than 10G
+            if bw_in_interger >= 10000:
                 break
-            else:
-                first_node_interface_bw = "1000Mb/s"
         try:
             first_node_name = cls.inputs.host_data[cls.qos_node_ip]['name']
         except:
             first_node_name = cls.inputs.compute_names[0]
-            first_node_interface_bw = "1000Mb/s"
+            cls.queue_params = cls.get_qos_queue_params(
+                                    cls.inputs.compute_ips[0])
+            first_node_interface_bw = cls.queue_params[1]
         for elem in cls.inputs.compute_ips:
             if elem != cls.qos_node_ip and cls.qos_node_ip!= '':
                 second_node_ip = elem
@@ -844,13 +852,22 @@ class QosTestBase(BaseNeutronTest):
     
     @classmethod
     def skip_tc_if_no_10G_interface(cls, interface_speed):
-        if interface_speed != "10000Mb/s":
+        interface_speed = int(interface_speed.split("Mb/s")[0])
+        if interface_speed <= 10000:
             cls.logger.error("Queue interface does not support scheduling"
                               " and bandwidth configurations")
             skip = True
             msg = "DCB not supported on interface"
             raise testtools.TestCase.skipException(msg)
     
+    @classmethod
+    def skip_tc_if_bond_interface(cls, interface_name):
+        if 'bond' in interface_name:
+            cls.logger.error("This test case cannot run if interface is bond")
+            skip = True
+            msg = "Can't run on Fabric interface as Bond"
+            raise testtools.TestCase.skipException(msg)
+
     @classmethod
     def delete_conf_file_qos_config(cls):
         conf_file = '/etc/contrail/contrail-vrouter-agent.conf'
@@ -989,10 +1006,19 @@ class QosTestBase(BaseNeutronTest):
         This function use qosmap tool to configure NIC parameters for
         different priority groups
         '''
-        interface = cls.get_qos_queue_params(cls.qos_node_ip)[0]
-        cmd = "qosmap --set-queue %s --dcbx ieee --bw 0,60,0,40,0,0,0,0 "\
-                "--strict 10101010 --tc 0,1,2,3,4,5,6,7" % interface
-        cls.inputs.run_cmd_on_server(cls.qos_node_ip, cmd)
+        interface = cls.fabric_interface
+        if 'bond' in interface:
+            interface_list = cls.get_active_bond_intf(
+                                        cls.qos_node_ip,
+                                        interface,
+                                        get_all_interfaces = True)
+        else:
+            interface_list = [interface]
+        for intf in interface_list:
+            cmd = "qosmap --set-queue %s --dcbx ieee --bw 0,60,0,40,0,0,0,0 "\
+                "--strict 10101010 --tc 0,1,2,3,4,5,6,7" % intf
+            cls.inputs.run_cmd_on_server(cls.qos_node_ip, cmd,
+                                         container = 'agent')
 
     def setup_control_dscp_values(self, control_dscp, dns_dscp, analytics_dscp):
         '''
@@ -1067,6 +1093,58 @@ class QosTestBase(BaseNeutronTest):
         [nameservers.append(i) for i in output if "nameserver" in i]
         external_dns_ips = [servers.split()[-1] for servers in nameservers]
         return external_dns_ips
+
+    @classmethod
+    def get_active_bond_intf(cls, node_ip, interface_name,
+                             get_all_interfaces = False):
+        '''
+        This function check stats on every interface of Bond and
+        returns the interface having the maximum traffic
+        '''
+        if "bond" not in interface_name:
+            cls.logger.debug("Error!!  Not a bond interface")
+            return
+        # Finding all physical interfaces inside bond interface
+        cmd = "cat /proc/net/bonding/%s | grep 'Slave Interface'" %\
+                                                 interface_name
+        interfaces = cls.inputs.run_cmd_on_server(node_ip, cmd)
+        interfaces = interfaces.split("\r\n")
+        intf_list = []
+        for interface in interfaces:
+            intf = interface.split()[-1]
+            intf_list.append(intf)
+        if get_all_interfaces == True:
+            return intf_list
+        # Finding stats on Bond interfaces
+        init_stats_list = []
+        for intf in intf_list:
+            cmd = "ethtool -S %s | grep tx_packets:" % intf
+            stats = cls.inputs.run_cmd_on_server(node_ip, cmd
+                                                  , container='agent')
+            stats = int(stats.split()[-1])
+            init_stats_list.append(stats)
+        cls.logger.debug("Initial Stats of interface inside a Bond are %s",
+                           init_stats_list)
+        sleep(2)
+        fin_stats_list = []
+        for intf in intf_list:
+            cmd = "ethtool -S %s | grep tx_packets:" % intf
+            stats = cls.inputs.run_cmd_on_server(node_ip, cmd
+                                                  , container='agent')
+            stats = int(stats.split()[-1])
+            fin_stats_list.append(stats)
+        cls.logger.debug("Final Stats of interface inside a Bond are %s",
+                           fin_stats_list)
+        diff_list = [fin_stats_list[i]-init_stats_list[i] \
+                     for i in range(0,len(init_stats_list))]
+        cls.logger.debug("traffic in 2 seconds on interface %s is %s respectively" %
+                           (intf_list, diff_list))
+        highest_count = max(diff_list)
+        index = diff_list.index(highest_count)
+        active_interface = intf_list[index]
+        cls.logger.debug("Active bond interface with most traffic is %s",
+                           active_interface)
+        return active_interface
 
 class QosTestExtendedBase(QosTestBase):
     @classmethod
