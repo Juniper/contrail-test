@@ -28,9 +28,7 @@ def GetHostsPortgroups(hosts):
     print("\tPortgroup collection complete.")
     return hostPgDict
 
-def getvmnics(content,vm):
-
-    hosts = GetVMHosts(content)
+def getvmnics(content,vm,hosts):
     hostPgDict = GetHostsPortgroups(hosts)
     nic = {
           'vlan_id': None,
@@ -105,17 +103,14 @@ class VcenterGatewayOrch(VcenterOrchestrator):
         for vm in vm_objs:
             nics = None
             content = self._si.RetrieveContent()
-            nics = getvmnics(content,vm.vmobj)
+            hosts = [host for cluster in self._dc.hostFolder.childEntity for host in cluster.host]
+            nics = getvmnics(content,vm.vmobj,hosts)
             for nic in nics:    
                 self.plug_api.create_vmi_lif_and_attach_vmi_to_lif\
                       (vn_name=nic['port_group'],mac_address=nic['mac'],vlan=nic['vlan_id'],vm=vm)
             
                  
         for vm in vm_objs:
-            #if self.get_vm_detail(vm):This check delays the test completion
-            #                          by 30 secs.Keping this in commented
-            #                          as without this check the failure is delayed,
-            #                          and we would need it for debugging in case test fails
             try:
                 self.plug_api.create_vmobj_in_api_server(vm)
             except Exception as e:

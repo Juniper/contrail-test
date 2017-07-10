@@ -52,24 +52,15 @@ class NFSDatastore:
         self.path = '/nfs'
         self.server = inputs.cfgm_ip
         self.vcpath = '/vmfs/volumes/nfs-ds/'
+        self.vc = vc
+        self.nas_ds = None
 
         if vc._find_obj(vc._dc, 'ds', {'name':self.name}):
-            nas_ds=vc._find_obj(vc._dc, 'ds', {'name':self.name})
-            if nas_ds.summary.accessible:#In vrouter gateway scenario, we are not provisioning
+            self.nas_ds=vc._find_obj(vc._dc, 'ds', {'name':self.name})
+            if self.nas_ds.summary.accessible:#In vrouter gateway scenario, we are not provisioning
                 return                   #the vcenter server/reimaging the esxi hosts,we are only provisioning 
                                          #the contrail-controllers.Hence, the nfs datastore becomes 
                                          #in-accessiable.We need to create and mount the nfs datastore again. 
-            else:
-                try:
-                    #Delete any existing templates in the nfs-ds
-                    #else datasore delete failes
-                    for vm in nas_ds.vm:
-                        _wait_for_task(vm.UnregisterVM())
-                except Exception as e:
-                    pass
-                hosts = [host for cluster in vc._dc.hostFolder.childEntity for host in cluster.host]
-                for host in hosts:
-                    self._delete_datastore(host,nas_ds)
                 
         username = inputs.host_data[self.server]['username']
         password = inputs.host_data[self.server]['password']
@@ -87,8 +78,14 @@ class NFSDatastore:
         for host in hosts:
             host.configManager.datastoreSystem.CreateNasDatastore(spec)
 
-    def _delete_datastore(self,host,datastore):
-        host.configManager.datastoreSystem.RemoveDatastore(datastore)  
+    def delete_datastore(self):
+        if not self.nas_ds:
+            return
+        for vm in self.nas_ds.vm:
+            vm.UnregisterVM()  
+        hosts = [host for cluster in self.vc._dc.hostFolder.childEntity for host in cluster.host]
+        for host in hosts:
+            host.configManager.datastoreSystem.RemoveDatastore(self.nas_ds)  
                     
 
 class VcenterPvtVlanMgr:
@@ -114,7 +111,7 @@ class VcenterVlanMgr(VcenterPvtVlanMgr):
 
 class VcenterOrchestrator(Orchestrator):
 
-    def __init__(self, inputs, host, port, user, pwd, dc_name, vnc, logger):
+    def __init__(self, inputs, host, port, user, pwd, dc_name, vnc=None, logger=None):
         super(VcenterOrchestrator, self).__init__(inputs, vnc, logger)
         self._inputs = inputs
         self._host = host
@@ -796,12 +793,13 @@ class VcenterVM:
         #on vmware tools.The retry, on the occasion that vm actually not up,
         #to respond to ping,ssh etc is delayed till vm fixture,like nova cases.
         #It improved the timing running a case in vcenter scenario   
-
-        if not self.get_from_plugin_introspect():
+        if self.vcenter.inputs.vcenter_gw_setup:
             for intf in vm.guest.net:
                 self.ips[intf.network] = intf.ipAddress[0]
                 self.macs[intf.network] = intf.macAddress
-        return len(self.ips) == len(self.nets)
+            return len(self.ips) == len(self.nets)
+        else: 
+            return self.get_from_plugin_introspect()
 
     def get_from_plugin_introspect(self,vm=None):
         try:
