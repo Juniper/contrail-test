@@ -329,11 +329,11 @@ try:
 
         @preposttest_wrapper
         def test_heat_stacks_list(self):
-            super(TestHeat, self).test_heat_stacks_list()
+            super(TestHeatIPv6, self).test_heat_stacks_list()
 
         @preposttest_wrapper
         def test_transit_vn_sym_1_innet(self):
-            super(TestHeat, self).test_transit_vn_sym_1_innet()
+            super(TestHeatIPv6, self).test_transit_vn_sym_1_innet()
 
 
     class TestHeatv2(TestHeat):
@@ -346,7 +346,7 @@ try:
 
         @preposttest_wrapper
         def test_heat_stacks_list(self):
-            super(TestHeat, self).test_heat_stacks_list()
+            super(TestHeatv2, self).test_heat_stacks_list()
 
         @test.attr(type=['sanity'])
         @preposttest_wrapper
@@ -451,7 +451,7 @@ try:
 
         @preposttest_wrapper
         def test_transit_vn_sym_1_innet(self):
-            super(TestHeat, self).test_transit_vn_sym_1_innet()
+            super(TestHeatv2, self).test_transit_vn_sym_1_innet()
 
     class TestHeatv2IPv6(TestHeatv2):
 
@@ -467,16 +467,16 @@ try:
 
         @preposttest_wrapper
         def test_heat_stacks_list(self):
-            super(TestHeatv2, self).test_heat_stacks_list()
+            super(TestHeatv2IPv6, self).test_heat_stacks_list()
 
         @preposttest_wrapper
         @skip_because(address_family='v6')
         def test_public_access_thru_svc_w_fip(self):
-            super(TestHeatv2,self).test_public_access_thru_svc_w_fip()
+            super(TestHeatv2IPv6,self).test_public_access_thru_svc_w_fip()
 
         @preposttest_wrapper
         def test_transit_vn_sym_1_innet(self):
-            super(TestHeat, self).test_transit_vn_sym_1_innet()
+            super(TestHeatv2IPv6, self).test_transit_vn_sym_1_innet()
 
 except ImportError:
     print 'Missing Heat Client. Will skip tests'
