@@ -206,10 +206,15 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
 
     # end setup_nginx_pod
 
-    def verify_nginx_pod(self, pod):
+    def verify_nginx_pod(self, pod, path=None):
         result = pod.verify_on_setup()
         if result:
-            pod.run_cmd('echo %s > /usr/share/nginx/html/index.html' % (
+            if path:
+                pod.run_cmd('echo %s > /usr/share/nginx/html/index.html' % (pod.name)) 
+                cmd = "cp /usr/share/nginx/html/index.html /usr/share/nginx/html/%s" %(path)
+                pod.run_cmd(cmd)
+            else:
+                pod.run_cmd('echo %s > /usr/share/nginx/html/index.html' % (
                 pod.name))
         return result
     # end verify_nginx_pod
