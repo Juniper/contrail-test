@@ -26,6 +26,11 @@ def get_address_family():
         address_family = 'v4'
     return address_family
 
+def get_container_name(containers, host, role):
+    if containers and host in containers:
+        return containers[host].get(role)
+    return None
+
 def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contrail-test'):
     """
     Configure test environment by creating sanity_params.ini and sanity_testbed.json files
@@ -128,10 +133,13 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
        contents_sample_ini = fd_sample_ini.read()
     sanity_ini_templ = string.Template(contents_sample_ini)
 
+    if not getattr(env, 'test', None):
+        env.test={}
+
+    containers = env.test.get('containers')
     if env.get('orchestrator', 'openstack') == 'openstack':
         with settings(host_string = env.roledefs['openstack'][0]), hide('everything'):
             openstack_host_name = run("hostname")
-
 
     with settings(host_string = env.roledefs['cfgm'][0]), hide('everything'):
         cfgm_host_name = run("hostname")
@@ -197,25 +205,29 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
 
         if host_string in env.roledefs['openstack']:
             role_dict = {'type': 'openstack', 'params': {'cfgm': cfgm_host_name}}
+            role_dict['container'] = get_container_name(containers, host_string, 'openstack')
             host_dict['roles'].append(role_dict)
 
         if host_string in env.roledefs['cfgm']:
             role_dict = {'type': 'cfgm', 'params': {'collector': host_name, 'cassandra': ' '.join(cassandra_host_names)}}
-
+            role_dict['container'] = get_container_name(containers, host_string, 'controller')
             if env.get('orchestrator', 'openstack') == 'openstack':
                 role_dict['openstack'] = openstack_host_name
             host_dict['roles'].append(role_dict)
 
         if host_string in env.roledefs['control']:
             role_dict = {'type': 'bgp', 'params': {'collector': cfgm_host_name, 'cfgm': cfgm_host_name}}
+            role_dict['container'] = get_container_name(containers, host_string, 'controller')
             host_dict['roles'].append(role_dict)
 
         if 'database' in env.roledefs.keys() and host_string in env.roledefs['database']:
             role_dict = { 'type': 'database', 'params': {'cassandra': ' '.join(cassandra_host_names)} }
+            role_dict['container'] = get_container_name(containers, host_string, 'analyticsdb')
             host_dict['roles'].append(role_dict)
 
         if host_string in env.roledefs['compute']:
             role_dict = {'type': 'compute', 'params': {'collector': cfgm_host_name, 'cfgm': cfgm_host_name}}
+            role_dict['container'] = get_container_name(containers, host_string, 'agent')
             role_dict['params']['bgp'] = []
             if len(env.roledefs['control']) == 1:
                 role_dict['params']['bgp'] = control_host_names
@@ -227,10 +239,12 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
 
         if 'collector' in env.roledefs.keys() and host_string in env.roledefs['collector']:
             role_dict = { 'type': 'collector', 'params': {'cassandra': ' '.join(cassandra_host_names)} }
+            role_dict['container'] = get_container_name(containers, host_string, 'analytics')
             host_dict['roles'].append(role_dict)
 
         if 'webui' in env.roledefs.keys() and host_string in env.roledefs['webui']:
             role_dict = { 'type': 'webui', 'params': {'cfgm': cfgm_host_name} }
+            role_dict['container'] = get_container_name(containers, host_string, 'controller')
             host_dict['roles'].append(role_dict)
 
         sanity_testbed_dict['hosts'].append(host_dict)
@@ -309,9 +323,6 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     if env.has_key('kubernetes'):
         if  sanity_testbed_dict['kubernetes']['mode'] == 'nested':
             slave_orch = 'kubernetes'
-
-    if not getattr(env, 'test', None):
-        env.test={}
 
     # generate json file and copy to cfgm
     sanity_testbed_json = json.dumps(sanity_testbed_dict)
@@ -401,7 +412,6 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
                              os.getenv('CI_FLAVOR') or None)
     kube_config_file = env.test.get('kube_config_file',
                                      '/etc/kubernetes/admin.conf')
-
     use_devicemanager_for_md5 = getattr(testbed, 'use_devicemanager_for_md5', False)
     router_asn = getattr(testbed, 'router_asn', '')
     public_vn_rtgt = getattr(testbed, 'public_vn_rtgt', '')

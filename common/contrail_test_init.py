@@ -515,6 +515,10 @@ class TestInputs(object):
         return self.os_type[host_ip]
     # end get_os_version
 
+    def is_contrail_cloud_container(self, container_name):
+        cc_container_names = ['agent', 'controller', 'analytics', 'analyticsdb']
+        return container_name in cc_container_names
+
     def _check_containers(self, host_dict):
         '''
         Find out which components have containers and set 
@@ -527,10 +531,11 @@ class TestInputs(object):
         if not output:
             return
         attr_list = output.split('\n')
-        attr_list = [x.rstrip('\r') for x in attr_list]
+        attr_list = [x.rstrip('\r') for x in attr_list
+                     if self.is_contrail_cloud_container(x.rstrip('\r'))]
 
         for attr in attr_list:
-            host_dict['containers'][attr] =  True
+            host_dict['containers'][attr] = attr
         return
     # end _check_containers
 
@@ -616,6 +621,8 @@ class TestInputs(object):
                     self.openstack_control_ips.append(host_control_ip)
                     self.openstack_control_ip = host_control_ip
                     self.openstack_names.append(host['name'])
+                    if role['container']:
+                        host['containers']['openstack'] = role['container']
                 if role['type'] == 'cfgm':
                     self.cfgm_ip = host_ip
                     self.cfgm_ips.append(host_ip)
@@ -624,11 +631,15 @@ class TestInputs(object):
                     self.cfgm_names.append(host['name'])
                     self.masterhost = self.cfgm_ip
                     self.hostname = host['name']
+                    if role['container']:
+                        host['containers']['controller'] = role['container']
                 if role['type'] == 'compute':
                     self.compute_ips.append(host_ip)
                     self.compute_names.append(host['name'])
                     self.compute_info[host['name']] = host_ip
                     self.compute_control_ips.append(host_control_ip)
+                    if role['container']:
+                        host['containers']['agent'] = role['container']
                 if role['type'] == 'bgp':
                     self.bgp_ips.append(host_ip)
                     self.bgp_control_ips.append(host_control_ip)
@@ -642,11 +653,15 @@ class TestInputs(object):
                     self.collector_ips.append(host_ip)
                     self.collector_control_ips.append(host_control_ip)
                     self.collector_names.append(host['name'])
+                    if role['container']:
+                        host['containers']['analytics'] = role['container']
                 if role['type'] == 'database':
                     self.database_ip = host_ip
                     self.database_ips.append(host_ip)
                     self.database_names.append(host['name'])
                     self.database_control_ips.append(host_control_ip)
+                    if role['container']:
+                        host['containers']['analyticsdb'] = role['container']
             # end for
         # end for
 
@@ -999,13 +1014,14 @@ class TestInputs(object):
             if not password:
                 password = self.host_data[server_ip]['password']
         if container:
+            cntr = self.host_data[server_ip].get('containers', {}).get(container)
             # If the container does not exist on this host, log it and 
             # run the cmd on the host itself 
             # This helps backward compatibility
-            if not self.host_data[server_ip].get('containers', {}).get(container):
-                container = None
+            if not cntr:
                 self.logger.debug('Container %s not in host %s, running on '
                     ' host itself' % (container, server_ip))
+            container = cntr
         output = run_cmd_on_server(issue_cmd,
                           server_ip,
                           username,
