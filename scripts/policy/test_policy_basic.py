@@ -29,33 +29,7 @@ class TestBasicPolicy(BasePolicyTest):
     def runTest(self):
         pass
 
-    def create_vn(self, vn_name, subnets):
-        return self.useFixture(
-            VNFixture(project_name=self.inputs.project_name,
-                      connections=self.connections,
-                      inputs=self.inputs,
-                      vn_name=vn_name,
-                      subnets=subnets))
-
-    def create_vm(
-            self,
-            vn_fixture,
-            vm_name,
-            node_name=None,
-            flavor='contrail_flavor_small',
-            image_name='ubuntu-traffic'):
-        image_name=os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
-        return self.useFixture(
-            VMFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_obj=vn_fixture.obj,
-                vm_name=vm_name,
-                image_name=image_name,
-                flavor=flavor,
-                node_name=node_name))
-
-    @test.attr(type=['sanity','ci_sanity','quick_sanity', 'suite1', 'vcenter'])
+    @test.attr(type=['suite1', 'vcenter'])
     @preposttest_wrapper
     def test_policy(self):
         """ Configure policies based on topology and run policy related verifications.
@@ -111,7 +85,52 @@ class TestBasicPolicy(BasePolicyTest):
         return True
     # end test_policy
 
-    @test.attr(type=['sanity','ci_sanity','quick_sanity', 'vcenter', 'suite1'])
+    @test.attr(type=['sanity', 'ci_sanity', 'quick_sanity', 'vcenter', 'suite1'])
+    @preposttest_wrapper
+    def test_basic_policy_allow_deny(self):
+        '''
+        Create 2 Vns and allow icmp traffic between them and validate with pings
+        Update the policy to deny the same traffic
+        Check that pings fail
+        '''
+        vn1_fixture = self.create_vn()
+        vn2_fixture = self.create_vn()
+#        vn1_name = get_random_name('vn1')
+#        vn1_subnets = ['192.168.10.0/24']
+        policy_name = get_random_name('policy1')
+        rules = [
+            {
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'icmp',
+                'source_network': vn1_fixture.vn_name,
+                'dest_network': vn2_fixture.vn_name,
+            },
+        ]
+
+        policy_fixture = self.setup_policy_between_vns(vn1_fixture,
+            vn2_fixture, rules)
+        assert vn1_fixture.verify_on_setup()
+        assert vn2_fixture.verify_on_setup()
+
+        vm1_fixture = self.create_vm(vn1_fixture)
+        vm2_fixture = self.create_vm(vn2_fixture)
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip), (
+            'Ping failed between VNs with allow-policy')
+
+        # Deny the same traffic 
+        policy_id = policy_fixture.policy_obj['policy']['id']
+        rules[0]['simple_action'] = 'deny'
+        policy_entries = policy_fixture.policy_obj['policy']['entries']
+        policy_entries['policy_rule'][0]['action_list']['simple_action'] = 'deny'
+        p_rules = {'policy': {'entries':policy_entries}}
+        policy_fixture.update_policy(policy_id, p_rules)
+        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip,
+            expectation=False), ('Ping passed between VNs with deny-policy')
+
+    # end test_basic_policy_allow_deny
+
     @preposttest_wrapper
     def test_policy_to_deny(self):
         ''' Test to validate that with policy having rule to disable icmp within the VN, ping between VMs should fail
@@ -155,8 +174,6 @@ class TestBasicPolicy(BasePolicyTest):
                 'Ping from %s to %s passed,expected it to fail' %
                 (vm1_fixture.vm_name, vm2_fixture.vm_name))
             self.logger.info('Doing verifications on the fixtures now..')
-            assert vm1_fixture.verify_on_setup()
-            assert vm2_fixture.verify_on_setup()
         return True
     # end test_policy_to_deny
 
@@ -175,7 +192,7 @@ class TestBasicPolicyNegative(BasePolicyTest):
     def runTest(self):
         pass
 
-    @test.attr(type=['sanity','ci_sanity', 'suite1', 'vcenter'])
+    @test.attr(type=['suite1', 'vcenter'])
     @preposttest_wrapper
     def test_remove_policy_with_ref(self):
         ''' This tests the following scenarios.
@@ -251,7 +268,7 @@ class TestBasicPolicyModify(BasePolicyTest):
     def runTest(self):
         pass
 
-    @test.attr(type=['sanity', 'ci_sanity', 'suite1', 'vcenter'])
+    @test.attr(type=['suite1', 'vcenter'])
     @preposttest_wrapper
     def test_policy_modify_vn_policy(self):
         """ Configure policies based on topology;
@@ -379,7 +396,7 @@ class TestDetailedPolicy0(BasePolicyTest):
     def setUpClass(cls):
         super(TestDetailedPolicy0, cls).setUpClass()
 
-    @test.attr(type=['sanity', 'ci_sanity', 'vcenter', 'suite1'])
+    @test.attr(type=['vcenter', 'suite1'])
     @preposttest_wrapper
     def test_repeated_policy_modify(self):
         """ Configure policies based on topology; Replace VN's existing policy [same policy name but with different rule set] multiple times and verify.

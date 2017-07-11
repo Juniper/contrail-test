@@ -37,8 +37,7 @@ class AnalyticsBasicTestSanity(base.AnalyticsBaseTest):
         vm1_fixture= self.useFixture(VMFixture(connections=self.connections,
                                      vn_obj=vn_obj, vm_name=vm1_name,
                                      project_name=self.inputs.project_name))
-        #getting vm uuid
-        assert vm1_fixture.verify_on_setup()
+        assert vm1_fixture.wait_till_vm_is_active()
         vm_uuid=vm1_fixture.vm_id
         self.logger.info("Waiting for logs to be updated in the database...")
         time.sleep(20)

@@ -1085,7 +1085,7 @@ class VMFixture(fixtures.Fixture):
                                 gateway = 'NOT set'
                             if not allocation_pool:
                                 allocation_pool = 'NOT set'
-                            self.logger.info("Gateway for vn %s is %s and allocation pool is %s"\
+                            self.logger.debug("Gateway for vn %s is %s and allocation pool is %s"\
                                              %(vn_fq_name,gateway,allocation_pool))
                     return False
                 else:

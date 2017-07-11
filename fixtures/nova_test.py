@@ -20,7 +20,7 @@ import openstack
 #@contrail_fix_ext (ignore_verify=True, ignore_verify_on_setup=True)
 
 
-class NovaHelper():
+class NovaHelper(object):
     '''
        Wrapper around nova client library
        Optional params:
@@ -64,6 +64,10 @@ class NovaHelper():
         self.hypervisor_type = os.environ.get('HYPERVISOR_TYPE') \
                                 if os.environ.has_key('HYPERVISOR_TYPE') \
                                 else None
+        self._nova_services_list = None
+        self.hosts_list = []
+        self._hosts_dict = None
+        self._zones = None
         self._connect_to_openstack()
     # end __init__
 
@@ -97,14 +101,28 @@ class NovaHelper():
             finally:
                 lock.release()
         self.compute_nodes = self.get_compute_host()
-        self.zones = [self.zone] if self.zone else self._list_zones()
-        self.hosts_list = []
-        self.hosts_dict = self._list_hosts()
 
     # end _connect_to_openstack
 
+    @property
+    def zones(self):
+        if not getattr(self, '_zones', None):
+            self._zones = [self.zone] if self.zone else self._list_zones()
+        return self._zones
+    # end zones
+
+    @property
+    def hosts_dict(self):
+        if not getattr(self, '_hosts_dict', None):
+            self._hosts_dict = self._list_hosts()
+        return self._hosts_dict
+    # end hosts_dict
+
     def get_hosts(self, zone=None):
-        if zone and self.hosts_dict.has_key(zone):
+        # Populate hosts_dict
+        self.logger.debug('Hosts: %s' %(self.hosts_dict))
+
+        if zone and self.hosts_dict and self.hosts_dict.has_key(zone):
             return self.hosts_dict[zone][:]
         else:
             return self.hosts_list
@@ -113,7 +131,7 @@ class NovaHelper():
         return self.zones[:]
 
     def _list_hosts(self):
-        nova_computes = self.get_nova_services(binary='nova-compute')
+        nova_computes = self.get_nova_compute_service_list()
         host_dict = dict()
         for compute in nova_computes:
             self.hosts_list.append(compute.host)
@@ -436,6 +454,13 @@ class NovaHelper():
         return True
     # end _create_keypair
 
+    @property
+    def nova_services_list(self):
+        if not getattr(self, '_nova_services_list', None):
+            self._nova_services_list = self.get_nova_services()
+        return self._nova_services_list
+    # end nova_services_list
+
     def get_nova_services(self, **kwargs):
         try:
             nova_services = self.obj.services.list(**kwargs)
@@ -494,6 +519,14 @@ class NovaHelper():
                     service_list.append(service_obj)
         return service_list
 
+    def get_nova_compute_service_list(self):
+        service_list = []
+        for service in self.nova_services_list:
+            if service.binary == 'nova-compute':
+                service_list.append(service)
+        return service_list
+    # end get_nova_compute_service_list
+
     def create_vm(self, project_uuid, image_name, vm_name, vn_ids,
                   node_name=None, sg_ids=None, count=1, userdata=None,
                   flavor=None, port_ids=None, fixed_ips=None, zone=None):
@@ -506,7 +539,7 @@ class NovaHelper():
                 raise RuntimeError("Zone %s doesn't have compute with name %s"
                                         % (zone, node_name))
         elif node_name:
-            nova_services = self.get_nova_services(binary='nova-compute')
+            nova_services = self.get_nova_compute_service_list()
             for compute_svc in nova_services:
                 if compute_svc.host == node_name:
                     zone = True
@@ -753,10 +786,11 @@ class NovaHelper():
                     put('/tmp/id_rsa.pub', '/tmp/id_rsa.pub')
                 run('chmod 600 /tmp/id_rsa')
                 self.tmp_key_file = '/tmp/id_rsa'
+
     @threadsafe_generator
     def get_compute_host(self):
         while True:
-            nova_services = self.get_nova_services(binary='nova-compute')
+            nova_services = self.get_nova_compute_service_list()
             if not nova_services:
                 self.logger.warn('Unable to get the list of compute nodes')
                 yield (None, None)

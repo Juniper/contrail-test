@@ -65,10 +65,8 @@ class trafficTestFixture(fixtures.Fixture):
         else:
             self.traffic_fip = True
         if not self.traffic_fip:
-            self.tx_vm_node_ip = self.inputs.host_data[
-                self.nova_h.get_nova_host_of_vm(self.tx_vm_fixture.vm_obj)]['host_ip']
-            self.rx_vm_node_ip = self.inputs.host_data[
-                self.nova_h.get_nova_host_of_vm(self.rx_vm_fixture.vm_obj)]['host_ip']
+            self.tx_vm_node_ip = self.tx_vm_fixture.vm_node_ip
+            self.rx_vm_node_ip = self.rx_vm_fixture.vm_node_ip
             self.tx_local_host = Host(
                 self.tx_vm_node_ip,
                 self.inputs.host_data[self.tx_vm_node_ip]['username'],
