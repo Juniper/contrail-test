@@ -1833,6 +1833,12 @@ class WebuiCommon:
         self.click_monitor_common_basic(row_index)
     # end click_monitor_database_nodes_basic
 
+    def click_monitor_database_nodes_advance(self, row_index):
+        self.click_element('Database Nodes', 'link_text')
+        self.check_error_msg("monitor database nodes")
+        self.click_monitor_common_advance(row_index)
+    # end click_monitor_database_nodes_advance
+
     def click_monitor_vrouters_advance(self, row_index):
         self.click_element('Virtual Routers', 'link_text')
         self.check_error_msg("monitor vrouters")
