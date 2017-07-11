@@ -465,7 +465,6 @@ class TestBasicVMVN0(BaseVnVmTest):
 
 # end test_process_restart_in_policy_between_vns
     
-    @test.attr(type=['sanity', 'ci_sanity_WIP'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_process_restart_with_multiple_vn_vm(self):
@@ -713,7 +712,6 @@ class TestBasicVMVN0(BaseVnVmTest):
 
     # end test_control_node_switchover
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_max_vm_flows(self):

@@ -3235,7 +3235,6 @@ class TestBasicIPv6VMVN(test_vm_basic.TestBasicVMVN):
     def test_metadata_service(self):
         super(TestBasicIPv6VMVN, self).test_metadata_service()
 
-    @test.attr(type=['sanity','quick_sanity'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_ipam_add_delete(self):
@@ -3248,17 +3247,14 @@ class TestBasicIPv6VMVN(test_vm_basic.TestBasicVMVN):
     def test_ping_within_vn_two_vms_two_different_subnets(self):
         super(TestBasicIPv6VMVN, self).test_ping_within_vn_two_vms_two_different_subnets()
 
-    @test.attr(type=['sanity', 'quick_sanity'])
     @preposttest_wrapper
     def test_vn_add_delete(self):
         super(TestBasicIPv6VMVN, self).test_vn_add_delete()
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_vm_add_delete(self):
         super(TestBasicIPv6VMVN, self).test_vm_add_delete()
 
-    @test.attr(type=['sanity','quick_sanity'])
     @preposttest_wrapper
     def test_ping_within_vn(self):
         super(TestBasicIPv6VMVN, self).test_ping_within_vn()
