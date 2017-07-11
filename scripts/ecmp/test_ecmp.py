@@ -963,16 +963,16 @@ class TestECMPSanityIPv6(TestECMPSanity):
 
     @preposttest_wrapper
     def test_ecmp_svc_v2_transparent_with_3_instance(self):
-        super(TestECMPSanity,self).test_ecmp_svc_v2_transparent_with_3_instance()
+        super(TestECMPSanityIPv6,self).test_ecmp_svc_v2_transparent_with_3_instance()
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance(self):
-        super(TestECMPSanity,self).test_ecmp_svc_in_network_with_3_instance()
+        super(TestECMPSanityIPv6,self).test_ecmp_svc_in_network_with_3_instance()
 
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_static_route_no_policy(self):
-        super(TestECMPSanity,self).test_ecmp_svc_in_network_with_static_route_no_policy()
+        super(TestECMPSanityIPv6,self).test_ecmp_svc_in_network_with_static_route_no_policy()
 
 class TestECMPFeatureIPv6(TestECMPFeature):
 
@@ -1005,7 +1005,7 @@ class TestECMPwithSVMChangeIPv6(TestECMPwithSVMChange):
 
     @preposttest_wrapper
     def test_ecmp_with_svm_deletion(self):
-        super(TestECMPwithSVMChange,self).test_ecmp_with_svm_deletion()
+        super(TestECMPwithSVMChangeIPv6,self).test_ecmp_with_svm_deletion()
 
 class TestMultiInlineSVCIPv6(TestMultiInlineSVC):
 
@@ -1022,7 +1022,7 @@ class TestMultiInlineSVCIPv6(TestMultiInlineSVC):
     @test.attr(type=['vcenter'])
     @preposttest_wrapper
     def test_three_stage_v2_SC(self):
-        super(TestMultiInlineSVC,self).test_three_stage_v2_SC()
+        super(TestMultiInlineSVCIPv6,self).test_three_stage_v2_SC()
 
 class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic, ECMPVerify):
 
