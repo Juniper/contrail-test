@@ -308,7 +308,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         vm1_name = get_random_name('vm_mine')
         vn_name = get_random_name('vn222')
         vn_subnets = ['11.1.1.0/24']
-        vn_count_for_test = 32
+        vn_count_for_test = 20
         if (len(self.inputs.compute_ips) == 1):
             vn_count_for_test = 5
         vm_fixture = self.useFixture(
@@ -464,7 +464,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         vm1_name = 'vm_mine'
         vn_name = 'vn222'
         vn_subnets = ['11.1.1.0/24']
-        vn_count_for_test = 32
+        vn_count_for_test = 20
         if (len(self.inputs.compute_ips) == 1):
             vn_count_for_test = 10
         if os.environ.has_key('ci_image'):
