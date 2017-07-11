@@ -2755,6 +2755,90 @@ class WebuiTest:
         return result
         # end verify_database_nodes_ops_basic_data
 
+    def verify_database_nodes_ops_advance_data(self):
+        self.logger.info(
+            "Verifying database nodes opserver data on Monitor->Infra->Database Nodes->Details(advance view) page")
+        self.logger.debug(self.dash)
+        database_nodes_list_ops = self.ui.get_database_nodes_list_ops()
+        result = True
+        for n in range(len(database_nodes_list_ops)):
+            ops_database_node_name = database_nodes_list_ops[n]['name']
+            self.logger.info(
+                "Database node host name %s exists in opserver..checking if exists in webui as well" %
+                (ops_database_node_name))
+            if not self.ui.click_monitor_database_nodes():
+                result = result and False
+            self.ui.wait_till_ajax_done(self.browser, wait=15)
+            rows = self.ui.get_rows(canvas=True)
+            for i in range(len(rows)):
+                match_flag = 0
+                obj_text = self.ui.get_slick_cell_text(rows[i], index=0)
+                if obj_text == ops_database_node_name:
+                    self.logger.info(
+                        "Database node name %s found in webui..Verifying advance view details..." %
+                        (ops_database_node_name))
+                    match_flag = 1
+                    match_index = i
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "Database node name %s not found in webui" %
+                    (ops_database_node_name))
+                self.logger.debug(self.dash)
+            else:
+                self.logger.info(
+                    "Verify database nodes advance view details in webui for database node name %s " %
+                    (ops_database_node_name))
+                self.ui.click_monitor_database_nodes_advance(
+                    match_index)
+                database_nodes_ops_data = self.ui.get_details(
+                    database_nodes_list_ops[n]['href'])
+                self.ui.expand_advance_details()
+                dom_arry = self.ui.parse_advanced_view()
+                dom_arry_str = self.ui.get_advanced_view_str()
+                dom_arry_num = self.ui.get_advanced_view_num()
+                dom_arry_num_new = []
+                for item in dom_arry_num:
+                    dom_arry_num_new.append(
+                        {'key': item['key'].replace('\\', '"').replace(' ', ''), 'value': item['value']})
+                dom_arry_num = dom_arry_num_new
+                merged_arry = dom_arry + dom_arry_str + dom_arry_num
+                if 'DatabaseUsageInfo' in database_nodes_ops_data:
+                    ops_data = database_nodes_ops_data['DatabaseUsageInfo']
+                    modified_ops_data = []
+                    self.ui.extract_keyvalue(
+                        ops_data, modified_ops_data)
+                if 'CassandraStatusData' in database_nodes_ops_data:
+                    cassandra_state_ops_data = database_nodes_ops_data[
+                        'CassandraStatusData']
+                    modified_cassandra_state_ops_data = []
+                    self.ui.extract_keyvalue(
+                        cassandra_state_ops_data,
+                        modified_cassandra_state_ops_data)
+                complete_ops_data = modified_ops_data + modified_cassandra_state_ops_data
+                for k in range(len(complete_ops_data)):
+                    if isinstance(complete_ops_data[k]['value'], list):
+                        for m in range(len(complete_ops_data[k]['value'])):
+                            complete_ops_data[k]['value'][m] = str(
+                                complete_ops_data[k]['value'][m])
+                    elif isinstance(complete_ops_data[k]['value'], unicode):
+                        complete_ops_data[k]['value'] = str(
+                            complete_ops_data[k]['value'])
+                    else:
+                        complete_ops_data[k]['value'] = str(
+                            complete_ops_data[k]['value'])
+                if self.ui.match_ui_kv(
+                        complete_ops_data,
+                        merged_arry):
+                    self.logger.info(
+                        "Database node advance view data matched in webui")
+                else:
+                    self.logger.error(
+                        "Database node advance view data match failed in webui")
+                    result = result and False
+        return result
+    # end verify_database_nodes_ops_advance_data_in_webui
+
     def verify_vm_ops_basic_data(self, option='instances'):
         network_name = 'all networks'
         self.logger.info(
