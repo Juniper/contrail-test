@@ -358,6 +358,13 @@ sync
 sleep 1
 }
 
+function delete_vcenter_nas_datastore {
+( 
+export PYTHONPATH=$PATH:$PWD:$PWD/fixtures;
+python tools/vcenter/delete_vcenter_datastore.py $TEST_CONFIG_FILE
+)
+}
+
 export PYTHONPATH=$PATH:$PWD/scripts:$PWD/fixtures:$PWD
 apply_patches
 export TEST_DELAY_FACTOR=${TEST_DELAY_FACTOR:-1}
@@ -421,6 +428,10 @@ if [[ -z $path ]] && [[ -z $testrargs ]];then
     run_tests_serial
 fi
 sleep 2
+
+#To delete nfs datastore in case of
+#vrouter gateway sanity
+delete_vcenter_nas_datastore
 
 python tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
 echo "Generated report_details* file: $REPORT_DETAILS_FILE"
