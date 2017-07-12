@@ -10579,3 +10579,91 @@ class WebuiTest:
                     result = result and False
         return result
     # end verify_vmi_ops_basic_data
+
+    def verify_project_api_basic_data(self):
+        self.logger.info("Verifying project data on Monitor->Networking->Projects \
+                        (basic view) page ..")
+        self.logger.debug(self.dash)
+        project_list_api = self.ui.get_project_list_api()
+        project_list = project_list_api.get('projects')
+        result = True
+        for index, project in enumerate(project_list_api['projects']):
+            prj_name = project.get('fq_name')[1]
+            if prj_name in ['default-project', 'services', 'admin']:
+                continue
+            if not eval('self.ui.click_monitor_networks')('projects'):
+                result = result and False
+            br = self.ui.select_max_records(grid_name='projects')
+            rows = self.ui.get_rows(br, canvas=True)
+            self.logger.info(
+                "Project %s exists in opserver..checking if exists in webui as well" %
+                (prj_name))
+            for ind1 in range(len(rows)):
+                match_flag = 0
+                ui_prj_name = self.ui.get_slick_cell_text(rows[ind1])
+                if prj_name in ui_prj_name:
+                    self.logger.info(
+                        "Project name %s matched in webui..Verifying basic view details..." %
+                        (ui_prj_name))
+                    self.logger.debug(self.dash)
+                    match_index = ind1
+                    match_flag = 1
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "Project exists in opserver but %s not found in webui..." %
+                    (ui_prj_name))
+                self.logger.debug(self.dash)
+            else:
+                rows_detail = self.ui.click_basic_and_get_row_details('networks', match_index,
+                              canvas=True, project='projects', click_tab='monitor')[1]
+                self.logger.info(
+                    "Verify interfaces basic view details %s " % (ui_prj_name))
+                dom_arry_basic = []
+                for detail in range(len(rows_detail)):
+                    key_value = rows_detail[detail].text.split('\n')
+                    key = str(key_value.pop(0))
+                    if len(key_value) > 1 :
+                        value = key_value
+                    elif len(key_value) ==  1:
+                        value = key_value[0]
+                    else:
+                        value = None
+                    dom_arry_basic.append({'key': key, 'value': value})
+                api_data_list = []
+                prj_api_data = self.ui.get_details(project['href'])['project']
+                fq_name = prj_api_data['fq_name'][0] + ':' + prj_api_data['fq_name'][1]
+                api_data_list.append({'key': 'Name', 'value': fq_name})
+                if 'virtual_networks' in prj_api_data:
+                    virt_net = prj_api_data['virtual_networks']
+                    virt_net_count = 0
+                    if len(virt_net) > 3:
+                        virt_net_count = len(virt_net) - 3
+                    api_data_list.append({'key':'Virtual Networks', 'value': str(virt_net_count)})
+                vms_data_api = self.ui.get_vm_list_api()
+                if vms_data_api:
+                    vms_data = vms_data_api.get('virtual-machines')
+                    vm_count = 0
+                    for vm in vms_data:
+                        vm_data = self.ui.get_details(vm['href'])
+                        if 'virtual-machine' in vm_data:
+                            if 'virtual_machine_interface_back_refs' in vm_data['virtual-machine']:
+                                project_name = vm_data['virtual-machine'][
+                                               'virtual_machine_interface_back_refs'][0]['to'][1]
+                                if project_name == prj_name:
+                                    vm_count += 1
+                    api_data_list.append({'key': 'Instances', 'value': str(vm_count)})
+                if not eval('self.ui.click_monitor_networking_dashboard')('interfaces'):
+                    result = result and False
+                self.ui.select_project(prj_name)
+                self.ui.wait_till_ajax_done(self.browser)
+                br = self.ui.select_max_records(option='interfaces')
+                rows = self.ui.get_rows(br, canvas=True)
+                api_data_list.append({'key': 'Interfaces', 'value': str(len(rows))})
+                if self.ui.match_ui_kv(api_data_list, dom_arry_basic):
+                    self.logger.info("Project basic view data matched")
+                else:
+                    self.logger.error("Project basic data match failed")
+                    result = result and False
+        return result
+    # end verify_projects_api_basic_data
