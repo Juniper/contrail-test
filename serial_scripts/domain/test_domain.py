@@ -99,7 +99,7 @@ class TestDomain(BaseDomainTest):
         assert ret,'Failed to setup and test common objects'
     # end test_domain_user_group
     
-    @test.attr(type=['sanity'])
+    @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     @skip_because(keystone_version = 'v2.0')
     def test_domain_with_diff_user_groups(self):

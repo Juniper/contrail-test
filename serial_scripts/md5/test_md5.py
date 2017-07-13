@@ -155,7 +155,7 @@ class TestMd5testsOnControl(Md5Base, VerifySecGroup, ConfigPolicy):
         else:
             return
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     def test_create_md5_on_control(self):
         """

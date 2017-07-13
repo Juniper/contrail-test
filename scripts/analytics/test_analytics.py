@@ -31,7 +31,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         pass
     #end runTest
 
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter'])
     @preposttest_wrapper
     def test_contrail_status(self):
         ''' Test to verify that all services are running and active
@@ -272,7 +272,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         return True
     # end test_remove_policy_with_ref
 
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter'])
     @preposttest_wrapper
     def test_verify_process_status_agent(self):
         ''' Test to validate process_status
@@ -280,7 +280,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         self.analytics_obj.verify_process_and_connection_infos_agent()
     
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter'])
     @preposttest_wrapper
     def test_verify_process_status_config(self):
         ''' Test to validate process_status-Config
@@ -288,7 +288,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         self.analytics_obj.verify_process_and_connection_infos_config()
     
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter'])
     @preposttest_wrapper
     def test_verify_process_status_control_node(self):
         ''' Test to validate process_status-Control-Node
@@ -296,7 +296,7 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
         '''
         self.analytics_obj.verify_process_and_connection_infos_control_node()
     
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter'])
     @preposttest_wrapper
     def test_verify_process_status_analytics_node(self):
         ''' Test to validate process_status-Analytics-Node
