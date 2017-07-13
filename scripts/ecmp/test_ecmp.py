@@ -62,7 +62,7 @@ class TestECMPSanity(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
             **self.common_args)
     # end test_ecmp_svc_transparent_with_3_instance
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     def test_ecmp_svc_v2_transparent_with_3_instance(self):
         """
@@ -278,7 +278,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         return True
     # end test_multi_SC_with_ecmp
 
-    @test.attr(type=['sanity', 'vcenter', 'vrouter_gw'])
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter'])
     @preposttest_wrapper
     def test_ecmp_svc_v2_in_network_nat_with_3_instance(self):
         """
