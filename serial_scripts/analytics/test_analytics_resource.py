@@ -554,7 +554,7 @@ class AnalyticsTestSanityWithResource(
                     assert result
         return True
 
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter'])
     @preposttest_wrapper
     def test_verify_flow_tables(self):
         '''

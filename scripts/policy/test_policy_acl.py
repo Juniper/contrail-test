@@ -107,7 +107,7 @@ class TestPolicyAcl(BasePolicyTest):
     
     # end setup_vm
 
-    @attr(type=['sanity', 'vcenter', 'vrouter_gw'])
+    @attr(type=['cb_sanity', 'sanity', 'vcenter', 'vrouter_gw'])
     @tcutils.wrappers.preposttest_wrapper
     def test_policy_inheritance_src_vn_dst_pol(self):
         """Test cases to test policy inheritance"""
@@ -403,7 +403,7 @@ class TestPolicyAcl(BasePolicyTest):
 
     # end test_policy_inheritance_src_any_dst_pol
 
-    @attr(type=['sanity', 'vcenter'])
+    @attr(type=['cb_sanity', 'sanity', 'vcenter'])
     @tcutils.wrappers.preposttest_wrapper
     def test_policy_inheritance_src_pol_dst_any(self):
         """Test cases to test policy inheritance"""
@@ -642,7 +642,7 @@ class TestPolicyAcl(BasePolicyTest):
 
     # end test_policy_cidr_src_policy_dst_cidr
 
-    @attr(type=['sanity', 'vcenter'])
+    @attr(type=['cb_sanity', 'sanity', 'vcenter'])
     @tcutils.wrappers.preposttest_wrapper
     def test_policy_cidr_src_vn_dst_cidr(self):
         """Test cases to test policy CIDR"""
@@ -965,7 +965,7 @@ class TestPolicyAcl(BasePolicyTest):
 
     # end test_policy_cidr_src_duplicate_vn_dst_cidr
 
-    @attr(type=['sanity', 'vcenter'])
+    @attr(type=['cb_sanity', 'sanity', 'vcenter'])
     @tcutils.wrappers.preposttest_wrapper
     def test_policy_cidr_src_cidr_dst_any(self):
         """Test cases to test policy CIDR"""

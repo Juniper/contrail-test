@@ -22,7 +22,7 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
     def is_test_applicable(self):
         return (True, None)
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     def test_fat_flow_intra_vn_inter_node(self):
         """
