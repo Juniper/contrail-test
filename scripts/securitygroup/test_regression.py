@@ -2470,10 +2470,8 @@ class SecurityGroupBasicRegressionTests1_contrail(
         cls.option = 'contrail'
 
     @test.attr(type=['sanity', 'vcenter', 'suite1'])
-    @preposttest_wrapper
-    def test_vm_with_sec_group(self):
-        super(SecurityGroupBasicRegressionTests1_contrail,
-              self).test_vm_with_sec_group()
+    def test_sec_group_basic(self):
+        super(SecurityGroupBasicRegressionTests1_contrail, self).test_sec_group_basic()
 
 
 class SecurityGroupRegressionTests2_contrail(SecurityGroupRegressionTests2):
@@ -2539,12 +2537,12 @@ class SecurityGroupRegressionTests9_contrail(SecurityGroupRegressionTests9):
         super(SecurityGroupRegressionTests9, cls).setUpClass()
         cls.option = 'contrail'
 
-class SecurityGroupRegressionTests1Ipv6(
+class SecurityGroupBasicRegressionTests1Ipv6(
         test_regression_basic.SecurityGroupBasicRegressionTests1):
 
     @classmethod
     def setUpClass(cls):
-        super(SecurityGroupRegressionTests1Ipv6, cls).setUpClass()
+        super(SecurityGroupBasicRegressionTests1Ipv6, cls).setUpClass()
         cls.inputs.set_af(AF_TEST)
 
     def is_test_applicable(self):
@@ -2553,15 +2551,9 @@ class SecurityGroupRegressionTests1Ipv6(
             return(False, 'Skipping IPv6 Test on vcenter setup')
         return (True, None)
 
-    @test.attr(type=['sanity'])
-    @preposttest_wrapper
-    def test_sec_group_add_delete(self):
-        super(SecurityGroupRegressionTests1Ipv6, self).test_sec_group_add_delete()
-
-    @test.attr(type=['sanity'])
-    @preposttest_wrapper
-    def test_vm_with_sec_group(self):
-        super(SecurityGroupRegressionTests1Ipv6, self).test_vm_with_sec_group()
+    @test.attr(type=['sanity', 'vcenter', 'suite1'])
+    def test_sec_group_basic(self):
+        super(SecurityGroupBasicRegressionTests1Ipv6, self).test_sec_group_basic()
 
 class SecurityGroupRegressionTests2Ipv6(SecurityGroupRegressionTests2):
 

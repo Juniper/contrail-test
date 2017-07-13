@@ -3,7 +3,8 @@
 from tcutils.wrappers import preposttest_wrapper
 from common.vrouter.base import BaseVrouterTest
 import test
-from tcutils.util import get_random_cidr, get_random_name, is_v6, skip_because
+from tcutils.util import get_random_cidr, get_random_name, is_v6, skip_because,\
+    get_random_cidrs
 import random
 from security_group import get_secgrp_id_from_name
 from common.servicechain.verify import VerifySvcChain
@@ -22,7 +23,6 @@ class DisablePolicyEcmp(BaseVrouterTest):
         super(DisablePolicyEcmp, cls).tearDownClass()
 
     @skip_because(hypervisor='docker',msg='Bug 1461423:Need privileged access')
-    @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     def test_ecmp_with_static_routes(self):
         """
@@ -48,8 +48,8 @@ class DisablePolicyEcmp(BaseVrouterTest):
         vn_fixtures = self.create_vns(count=1)
         self.verify_vns(vn_fixtures)
         vn1_fixture = vn_fixtures[0]
-        prefix = get_random_cidr(af=self.inputs.get_af())
-        assert prefix, "Unable to get a random CIDR"
+        prefix_list = get_random_cidrs(self.inputs.get_af())
+        assert prefix_list, "Unable to get a random CIDR"
 
         #Launch sender on first node and ECMP dest VMs on another node
         image = 'ubuntu-traffic'
@@ -68,28 +68,33 @@ class DisablePolicyEcmp(BaseVrouterTest):
         vm3_fixture = vm_fixtures[1]
 
         #Add static routes, which will create ECMP routes
-        static_ip = self.add_static_routes_on_vms(prefix,
-                                [vm2_fixture, vm3_fixture])
+        static_ip_dict = {}
+        for prefix in prefix_list:
+            static_ip_dict[prefix] = self.add_static_routes_on_vms(prefix,
+                [vm2_fixture, vm3_fixture])
         #Disable the policy on all the VMIs
         self.disable_policy_for_vms([vm1_fixture])
         self.disable_policy_for_vms(vm_fixtures)
 
-        assert self.verify_ecmp_routes([vm2_fixture,vm3_fixture], prefix)
-        assert self.verify_traffic_for_ecmp(vm1_fixture,
-                            [vm2_fixture,vm3_fixture], static_ip)
+        for prefix in prefix_list:
+            assert self.verify_ecmp_routes([vm2_fixture,vm3_fixture], prefix)
+            assert self.verify_traffic_for_ecmp(vm1_fixture,
+                [vm2_fixture,vm3_fixture], static_ip_dict[prefix])
 
         self.verify_vms([vm4_fixture])
         self.disable_policy_for_vms([vm4_fixture])
 
         #Add new ECMP destination and verify load is distributed to new destinations
-        static_ip = self.add_static_routes_on_vms(prefix,
-                            [vm4_fixture],
-                            ip=static_ip)
+        for prefix in prefix_list:
+            self.add_static_routes_on_vms(prefix,
+                                [vm4_fixture],
+                                ip=static_ip_dict[prefix])
         self.delete_vms([vm2_fixture])
-        assert self.verify_ecmp_routes([vm3_fixture,vm4_fixture], prefix)
-        assert self.verify_traffic_for_ecmp(vm1_fixture,
-                        [vm3_fixture, vm4_fixture],
-                        static_ip)
+        for prefix in prefix_list:
+            assert self.verify_ecmp_routes([vm3_fixture,vm4_fixture], prefix)
+            assert self.verify_traffic_for_ecmp(vm1_fixture,
+                            [vm3_fixture, vm4_fixture],
+                            static_ip_dict[prefix])
 
     @preposttest_wrapper
     def test_ecmp_with_static_routes_intra_node(self):
@@ -707,6 +712,12 @@ class DisablePolicyEcmpIpv6(DisablePolicyEcmp):
         if not self.connections.orch.is_feature_supported('ipv6'):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
+
+    @skip_because(hypervisor='docker',msg='Bug 1461423:Need privileged access')
+    @test.attr(type=['cb_sanity', 'sanity'])
+    def test_ecmp_with_static_routes(self):
+        self.inputs.set_af('dual')
+        super(DisablePolicyEcmpIpv6, self).test_ecmp_with_static_routes()
 
 class DisablePolicyIpv6(DisablePolicy):
     @classmethod
