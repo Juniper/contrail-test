@@ -8,7 +8,7 @@ class ContrailVncApi(object):
 
     def __init__(self, vnc, _log=None):
         self._vnc = vnc
-        self._log = _log or logging.get_log(__name__)
+        self._log = _log or logging.getLogger(__name__)
 
     def __getattr__(self, name):
         # Call self._vnc method if no matching method exists
