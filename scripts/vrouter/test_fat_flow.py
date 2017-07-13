@@ -22,7 +22,6 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
     def is_test_applicable(self):
         return (True, None)
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_fat_flow_intra_vn_inter_node(self):
         """
@@ -57,8 +56,10 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
         fat_flow_config = {'proto':proto,'port':port}
         self.add_fat_flow_to_vmis(server_vmi_id, fat_flow_config)
 
-        self.verify_fat_flow_with_traffic(client_fixtures,server_fixtures[0],
-                                            proto, port)
+        afs = ['v4', 'v6'] if 'dual' in self.inputs.get_af() else [self.inputs.get_af()]
+        for af in afs:
+            self.verify_fat_flow_with_traffic(client_fixtures,server_fixtures[0],
+                                                proto, port, af=af)
 
     @preposttest_wrapper
     def test_fat_flow_intra_vn_intra_node(self):
@@ -449,3 +450,8 @@ class FatFlowIpv6(FatFlow):
     @preposttest_wrapper
     def test_fat_flow_lbaasv2(self):
         raise self.skipTest("Skipping Test. LBaas is NOT supported for IPv6")
+
+    @test.attr(type=['sanity'])
+    def test_fat_flow_intra_vn_inter_node(self):
+        self.inputs.set_af('dual')
+        super(FatFlowIpv6, self).test_fat_flow_intra_vn_inter_node()
