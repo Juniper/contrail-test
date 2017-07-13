@@ -117,7 +117,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         assert result
         return True
 
-    @test.attr(type=['sanity','ci_sanity','quick_sanity','suite1'])
+    @test.attr(type=['suite1'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter', address_family = 'v6')
     def test_ipam_add_delete(self):
@@ -155,15 +155,21 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         hypervisor='docker',msg='Bug 1461423:Need privileged access')
     def test_ping_within_vn_two_vms_two_different_subnets(self):
         '''
-        Description:  Validate Ping between 2 VMs in the same VN, 2 VMs in different VNs.
+        Description:  Validate Ping between 2 VMs in the same VN, 2 VMs in different VN
+        subnets.
         Test steps:
-                1. Create 2 VNs and launch 2 VMs in them.
-                2. Ping between the VMs in the same VN should go thru fine.
-                3. Ping to the subnet broadcast and all-broadcast address.
+                1. Create 1 IPAM's.
+                2. Create 1 VN with 2 subnets and launch 2 VMs in them.
+                3. Ping between the VMs in the same VN should go thru fine.
+                4. Ping to the subnet broadcast and all-broadcast address.
         Pass criteria: VM in the same subnet will respond to both the pings, while the VM in a different VN should respond only to the
                         all-broadcast address.
         Maintainer : ganeshahv@juniper.net
         '''
+        ipam_obj = self.useFixture(
+            IPAMFixture(connections=self.connections, name=get_random_name('ipam1')))
+        assert ipam_obj.verify_on_setup()
+
         vn1_name = get_random_name('vn030')
         vn1_subnets = ['31.1.1.0/29', '31.1.2.0/29']
         subnet1 = '31.1.1.0/29'
@@ -177,7 +183,8 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         vn1_fixture = self.useFixture(
             VNFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
-                vn_name=vn1_name, inputs=self.inputs, subnets=vn1_subnets))
+                vn_name=vn1_name, inputs=self.inputs, subnets=vn1_subnets,
+                ipam_fq_name=ipam_obj.fq_name))
         assert vn1_fixture.verify_on_setup()
 
         subnet_objects = vn1_fixture.get_subnets()
@@ -239,7 +246,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         return True
     #test_ping_within_vn_two_vms_two_different_subnets
 
-    @test.attr(type=['quick_sanity', 'vcenter', 'suite1'])
+    @test.attr(type=['vcenter', 'suite1'])
     @preposttest_wrapper
     def test_vn_add_delete(self):
         '''
@@ -273,7 +280,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         return True
     # end test_vm_add_delete
 
-    @test.attr(type=['sanity','ci_sanity','quick_sanity', 'suite1', 'vcenter','vrouter_gw'])
+    @test.attr(type=['suite1', 'vcenter','vrouter_gw'])
     @preposttest_wrapper
     def test_ping_within_vn(self):
         '''
