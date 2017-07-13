@@ -250,7 +250,7 @@ class TestRouterSNAT(BaseNeutronTest):
             return (False, 'Skipping Test. Env variable MX_GW_TEST is not set')
         return (True, None)
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     def test_basic_snat_behavior(self):
         '''Create an external network, a router

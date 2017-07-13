@@ -35,7 +35,7 @@ try:
         def tearDownClass(cls):
             super(TestHeat, cls).tearDownClass()
 
-        @test.attr(type=['ci_sanity'])
+        @test.attr(type=['ci_sanity', 'cb_sanity'])
         @preposttest_wrapper
         def test_heat_stacks_list(self):
             '''
@@ -327,6 +327,15 @@ try:
                 return(False, 'IPv6 tests not supported in this environment ')
             return (True, None)
 
+        @preposttest_wrapper
+        def test_heat_stacks_list(self):
+            super(TestHeatIPv6, self).test_heat_stacks_list()
+
+        @test.attr(type=['cb_sanity'])
+        @preposttest_wrapper
+        def test_transit_vn_sym_1_innet(self):
+            super(TestHeatIPv6, self).test_transit_vn_sym_1_innet()
+
 
     class TestHeatv2(TestHeat):
 
@@ -337,6 +346,12 @@ try:
             cls.pt_based_svc = True
 
         @test.attr(type=['sanity'])
+        @test.attr(type=['cb_sanity'])
+        @preposttest_wrapper
+        def test_heat_stacks_list(self):
+            super(TestHeatv2, self).test_heat_stacks_list()
+
+        @test.attr(type=['cb_sanity', 'sanity'])
         @preposttest_wrapper
         @skip_because(address_family='v6')
         def test_public_access_thru_svc_w_fip(self):

@@ -222,7 +222,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         assert self.analytics_obj.verify_control_alarms()
         return True
 
-    @test.attr(type=['sanity','vcenter'])
+    @test.attr(type=['cb_sanity', 'sanity','vcenter'])
     @preposttest_wrapper
     def test_vrouter_process_status_alarms(self):
         ''' Test whether process status alarm gets generated/cleared
