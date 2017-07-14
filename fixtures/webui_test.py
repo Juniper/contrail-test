@@ -3180,31 +3180,31 @@ class WebuiTest:
         return result
     # end verify_vn_ops_advance_data_in_webui
 
-    def verify_vm_ops_advance_data(self):
+    def verify_vm_ops_advance_data(self, option='networks'):
         network_name = 'all networks'
         self.logger.info(
             "Verifying instance opsserver advance data on Monitor->Networking->Instances->Instances summary(Advance view) page......")
         self.logger.debug(self.dash)
-        if not self.ui.click_monitor_instances():
-            result = result and False
-        self.ui.select_project(self.project_name_input)
-        self.ui.select_network(network_name)
-        rows = self.ui.get_rows(canvas=True)
         vm_list_ops = self.ui.get_vm_list_ops()
         result = True
         for k in range(len(vm_list_ops)):
             ops_uuid = vm_list_ops[k]['name']
             vm_ops_data = self.ui.get_details(vm_list_ops[k]['href'])
-            if not self.ui.click_monitor_instances():
+            if option == 'dashboard':
+                click_func = 'networking_dashboard'
+            else:
+                click_func = 'networks'
+            if not eval('self.ui.click_monitor_' + click_func)('instances'):
                 result = result and False
-            rows = self.ui.get_rows(canvas=True)
+            self.ui.select_project(self.project_name_input)
+            if option != 'dashboard':
+                self.ui.select_network(network_name)
+            br = self.ui.select_max_records('instances')
+            rows = self.ui.get_rows(br, canvas=True)
             self.logger.info(
                 "Vm %s exists in opserver..checking if exists in webui as well" %
                 (ops_uuid))
             for i in range(len(rows)):
-                if not self.ui.click_monitor_instances():
-                    result = result and False
-                rows = self.ui.get_rows(canvas=True)
                 self.ui.click_element(
                     ('slick-cell', 0), 'class', rows[i], elements=True)
                 ui_list = []
@@ -3219,15 +3219,18 @@ class WebuiTest:
                     match_index = i
                     match_flag = 1
                     break
+                else:
+                    self.ui.click_element(('slick-cell', 0), 'class', rows[i], elements=True)
             if not match_flag:
                 self.logger.error(
                     "VM exists in opserver but uuid %s not found in webui..." %
-                    (ops_vm_name))
+                    (ops_uuid))
                 self.logger.debug(self.dash)
             else:
                 self.ui.click_monitor_instances_advance(
                     match_index,
-                    length=len(vm_list_ops))
+                    length=len(vm_list_ops),
+                    option=option)
                 self.logger.info(
                     "Verify advance view details for uuid %s " % (ops_uuid))
                 plus_objs = self.ui.find_element(
