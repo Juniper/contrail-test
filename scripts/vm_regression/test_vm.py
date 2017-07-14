@@ -3241,7 +3241,7 @@ class TestBasicIPv6VMVN(test_vm_basic.TestBasicVMVN):
     def test_ipam_add_delete(self):
         super(TestBasicIPv6VMVN, self).test_ipam_add_delete()
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6',
         hypervisor='docker',msg='Bug 1461423:Need privileged access')

@@ -32,7 +32,7 @@ class TestECMPSanity(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
         super(TestECMPSanity, cls).tearDownClass()
     # end tearDownClass
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     def test_ecmp_svc_v2_transparent_with_3_instance(self):
         """
@@ -240,7 +240,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             dest_vm_fixture=self.right_vm_fixture, mode='scp', size='202', expectation=False), errmsg2
     # end test_ecmp_in_pol_based_svc_pol_update
 
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter'])
     @preposttest_wrapper
     def test_ecmp_svc_v2_in_network_nat_with_3_instance(self):
         """
@@ -965,7 +965,7 @@ class TestECMPSanityIPv6(TestECMPSanity):
     def test_ecmp_svc_v2_transparent_with_3_instance(self):
         super(TestECMPSanityIPv6,self).test_ecmp_svc_v2_transparent_with_3_instance()
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance(self):
         super(TestECMPSanityIPv6,self).test_ecmp_svc_in_network_with_3_instance()

@@ -33,7 +33,7 @@ class TestPorts(BaseNeutronTest):
     def tearDownClass(cls):
         super(TestPorts, cls).tearDownClass()
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     def test_ports_attach_detach(self):
         '''Validate port attach/detach operations
@@ -1018,7 +1018,7 @@ class TestPorts(BaseNeutronTest):
             cmd], 'Requests not being answered'
     # end test_aap_active_active_mode
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     def test_aap_with_zero_mac(self):
         '''
