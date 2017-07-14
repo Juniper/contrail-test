@@ -526,11 +526,15 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
 
 def get_dashed_uuid(id):
     ''' Return a UUID with dashes '''
+    if not id:
+        return None
     return(str(uuid.UUID(id)))
 
 
 def get_plain_uuid(id):
     ''' Remove the dashes in a uuid '''
+    if not id:
+        return None
     return id.replace('-', '')
 
 

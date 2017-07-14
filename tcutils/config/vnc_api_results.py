@@ -52,6 +52,8 @@ class CsDomainResult (Result):
                    self.xpath('domain', 'projects'))
 
     def project(self, name):
+        if not self.xpath('domain', 'projects'):
+            return list()
         return filter(lambda x: x['to'] == [self.name(), name],
                       self.xpath('domain', 'projects'))
 

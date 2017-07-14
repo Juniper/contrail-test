@@ -28,7 +28,11 @@ class ProjectFixture(fixtures.Fixture):
         self.connections = connections
         self.auth = auth
         self.project_name = project_name or self.inputs.stack_tenant
-        self.domain_name = domain_name or self.connections.domain_name
+        self.orch_domain_name = domain_name or self.inputs.stack_domain
+        if self.orch_domain_name == 'Default':
+            self.domain_name = 'default-domain'
+        else:
+            self.domain_name = self.orch_domain_name
         self.domain_id = self.connections.domain_id or 'default'
         self.uuid = uuid
         self.project_obj = None
@@ -45,12 +49,7 @@ class ProjectFixture(fixtures.Fixture):
         self.verify_is_run = False
         if not self.auth:
             if self.inputs.orchestrator == 'openstack':
-                if self.inputs.domain_isolation:
-                    self.auth=OpenstackAuth(self.username, self.password,
-                           self.project_name, self.inputs,
-                           self.logger,domain_name=self.domain_name)
-                else:
-                    self.auth = OpenstackAuth(self.inputs.admin_username,
+                self.auth = OpenstackAuth(self.inputs.admin_username,
                                     self.inputs.admin_password,
                                     self.inputs.admin_tenant, self.inputs, self.logger,
                                     domain_name=self.inputs.admin_domain)
@@ -67,7 +66,7 @@ class ProjectFixture(fixtures.Fixture):
     def _create_project(self):
         if self.auth:
             self.uuid = self.auth.create_project(self.project_name,
-                                                 self.domain_name)
+                                                 self.orch_domain_name)
             self.project_obj = self.vnc_lib_fixture.project_read(id=self.uuid)
         else:
             # Create it in Contrail-api
@@ -204,7 +203,7 @@ class ProjectFixture(fixtures.Fixture):
                 project_name=self.project_name,
                 username=username,
                 password=password,
-                domain_name=self.domain_name,
+                domain_name=self.orch_domain_name,
                 scope='project')
         return self.project_connections[username]
     # end get_project_connections
@@ -214,7 +213,7 @@ class ProjectFixture(fixtures.Fixture):
         password = password or self.project_user_password or self.inputs.stack_password
         if username not in self.project_inputs:
             self.project_inputs[username] = ContrailTestInit(self.inputs.ini_file,
-                 stack_domain=self.domain_name,
+                 stack_domain=self.orch_domain_name,
                  stack_user=username,
                  stack_password=password,
                  stack_tenant=self.project_name,

@@ -42,16 +42,18 @@ class TestProjectBasic(BaseProjectTest):
             username=self.inputs.admin_username,
             password=self.inputs.admin_password,
             project_name=project_name,
-            connections=self.admin_connections))
+            connections=self.admin_connections,
+            domain_name=self.domain_name))
         user_fixture.add_user_to_tenant(project_name,
             self.inputs.admin_username,
             'admin')
         assert project_fixture_obj.verify_on_setup()
 
         # Check if the default SG is present in it
+        domain_name = self.domain_name or self.connections.domain_name
         try:
             secgroup = self.vnc_lib.security_group_read(
-                fq_name=[u'default-domain', project_name, 'default'])
+                fq_name=[domain_name, project_name, 'default'])
             self.logger.info('Default SG is present in the new project')
         except NoIdError:
             assert False, "Default SG is not created in project %s" % (project_name)

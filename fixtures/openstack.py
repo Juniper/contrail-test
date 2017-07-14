@@ -415,6 +415,10 @@ class OpenstackAuth(OrchestratorAuth):
        except:
            self.logger.info("%s user already present"%(self.user))
 
+   def get_user_id(self, user):
+       user_obj = self.keystone.get_user_dct(user)
+       return user_obj.id if user_obj else None
+
    def create_role(self, role):
        self.keystone.create_role(role)
 

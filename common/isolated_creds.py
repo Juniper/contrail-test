@@ -8,9 +8,6 @@ from test import BaseTestCase
 import time
 from tcutils.util import get_random_name
 
-
-
-
 class IsolatedCreds(fixtures.Fixture):
 
     def __init__(self, inputs, project_name=None, ini_file=None, logger=None,
@@ -213,9 +210,12 @@ class AdminIsolatedCreds(fixtures.Fixture):
                                                        domain_name=domain_name,
                                                        username=self.username, password=self.password)
                 domain.setUp()
-                return domain
             except Exception as e:
                 self.logger.exception("Exception while creating domain")
+                raise
+            if self.inputs.admin_username:
+                self.auth.add_user_to_domain(self.inputs.admin_username, domain=domain_name)
+        return domain
 
     def delete_domain(self, domain_obj):
         if self.inputs.orchestrator  == 'vcenter' or self.inputs.vcenter_gw_setup:
