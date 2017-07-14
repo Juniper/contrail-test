@@ -37,6 +37,13 @@ class TestIntfMirror(BaseIntfMirrorTest, VerifyIntfMirror):
         return self.verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn2_analyzer_on_cn3_vn3()
 
     @preposttest_wrapper
+    def test_intf_nic_mirror(self):
+        """Validate the interface mirroring
+        src vm, dst vm and analyzer vm on different CNs, all in different VNs
+        """
+        return self.verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn2_analyzer_on_cn3_vn3(nic_mirror = True)
+
+    @preposttest_wrapper
     def test_intf_mirror_src_cn1vn1_dst_cn2vn1_analyzer_cn3vn2(self):
         """Validate the interface mirroring
         src vm, dst vm and analyzer vm on different CNs, src and dst in vn1, analyzer in vn2
