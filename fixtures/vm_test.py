@@ -387,9 +387,9 @@ class VMFixture(fixtures.Fixture):
             self.vm_ip_dict = defaultdict(list)
             iip_objs = self.get_iip_obj_from_api_server(refresh=True)[1]
             for iip_obj in iip_objs:
-                #If include_secondary_ip is False, then skip secondary IPs
+                # If include_secondary_ip is False, then skip secondary IPs
                 if (not include_secondary_ip) and (
-                    iip_obj['instance-ip']['instance_ip_secondary'] == True):
+                    iip_obj['instance-ip'].get('instance_ip_secondary')):
                     continue
                 ip = iip_obj.ip
                 if self.hack_for_v6(ip):
