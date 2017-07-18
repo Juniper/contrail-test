@@ -2982,7 +2982,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         assert vn_fixture.verify_on_setup()
         vn_fixture.read()
         img_name=os.environ['ci_image'] if os.environ.has_key('ci_image')\
-                                        else 'ubuntu'
+                                        else 'ubuntu-traffic'
         flavor='m1.tiny' if os.environ.has_key('ci_image')\
                          else 'contrail_flavor_small'
         vm1_fixture = self.create_vm(vn_fixture= vn_fixture, vm_name=vm1_name,
