@@ -387,7 +387,11 @@ class SvcInstanceFixture(fixtures.Fixture):
                 for vmi in pt_vmi_refs:
                     vmi = self.api_s_inspect.get_cs_vmi_by_id(vmi['uuid'])
                     vm_refs_vmi = vmi[
-                        'virtual-machine-interface']['virtual_machine_refs']
+                        'virtual-machine-interface'].get('virtual_machine_refs')
+                    if not vm_refs_vmi:
+                        msg = 'VM refs not seen in VMI %s' %(vmi)
+                        self.logger.warn(msg)
+                        return (False, msg)
                     for vm_ref in vm_refs_vmi:
                         vm_refs.append(vm_ref['to'][0])
             self.svm_ids = set(vm_refs)
