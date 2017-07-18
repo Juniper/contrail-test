@@ -403,7 +403,7 @@ class TestPolicyAcl(BasePolicyTest):
 
     # end test_policy_inheritance_src_any_dst_pol
 
-    @attr(type=['sanity', 'vcenter'])
+    @attr(type=['vcenter'])
     @tcutils.wrappers.preposttest_wrapper
     def test_policy_inheritance_src_pol_dst_any(self):
         """Test cases to test policy inheritance"""
@@ -642,7 +642,7 @@ class TestPolicyAcl(BasePolicyTest):
 
     # end test_policy_cidr_src_policy_dst_cidr
 
-    @attr(type=['sanity', 'vcenter'])
+    @attr(type=['vcenter'])
     @tcutils.wrappers.preposttest_wrapper
     def test_policy_cidr_src_vn_dst_cidr(self):
         """Test cases to test policy CIDR"""
@@ -1435,4 +1435,24 @@ class TestPolicyAclIpv4v6(TestPolicyAcl):
         if not self.connections.orch.is_feature_supported('ipv6'):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
+
+    @attr(type=['vcenter'])
+    @tcutils.wrappers.preposttest_wrapper
+    def test_policy_cidr_src_cidr_dst_any(self):
+        super(TestPolicyAcl, self).test_policy_cidr_src_cidr_dst_any()
+
+    @attr(type=['sanity', 'vcenter'])
+    @tcutils.wrappers.preposttest_wrapper
+    def test_policy_cidr_src_vn_dst_cidr(self):
+        super(TestPolicyAcl, self).test_policy_cidr_src_vn_dst_cidr()
+
+    @attr(type=['vcenter', 'vrouter_gw'])
+    @tcutils.wrappers.preposttest_wrapper
+    def test_policy_inheritance_src_vn_dst_pol(self):
+        super(TestPolicyAcl, self).test_policy_inheritance_src_vn_dst_pol()
+
+    @attr(type=['sanity', 'vcenter'])
+    @tcutils.wrappers.preposttest_wrapper
+    def test_policy_inheritance_src_pol_dst_any(self):
+        super(TestPolicyAcl, self).test_policy_inheritance_src_pol_dst_any()
 
