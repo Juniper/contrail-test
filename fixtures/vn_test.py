@@ -1332,6 +1332,24 @@ class VNFixture(fixtures.Fixture):
         super(VNFixture, self).cleanUp()
         self.delete()
 
+    @retry(delay=5, tries=12)
+    def _delete_vn(self):
+        if (self.option == 'contrail'):
+            try:
+                self.vnc_lib_h.virtual_network_delete(id=self.uuid)
+            except RefsExistError,e:
+                self.logger.debug('RefsExistError %s while deleting VN %s..'
+                    'Will retry' %(e, self.vn_name))
+                return False
+        else:
+            if not self.orchestrator.delete_vn(self.obj):
+                self.logger.warn("Deleting VN %s failed..Will retry" %
+                                 (self.vn_name))
+                return False
+        # endif
+        return True
+    # end _delete_vn
+
     def delete(self, verify=False):
         do_cleanup = True
         if self.inputs.fixture_cleanup == 'force':
@@ -1354,21 +1372,9 @@ class VNFixture(fixtures.Fixture):
                     self.delete_port(port_id=each_port_id)
             if self.inputs.is_gui_based_config():
                 self.webui.delete_vn(self)
-            elif (self.option == 'contrail'):
-                self.logger.debug("Deleting VN %s using Api server" %
-                                 self.vn_name)
-                self.vnc_lib_h.virtual_network_delete(id=self.uuid)
             else:
-                for i in range(12):
-                    if not self.orchestrator.delete_vn(self.obj):
-                        # This might be due to caching issues.
-                        self.logger.warn("%s. Deleting the VN %s failed" %
-                                         (i, self.vn_name))
-                        self.logger.info("%s. Retry deleting the VN %s " %
-                                         (i, self.vn_name))
-                        sleep(5)
-                    else:
-                        break
+                self._delete_vn()
+
             if self.verify_is_run or verify:
                 assert self.verify_vn_not_in_api_server(), ('VN %s is still'
                     ' seen in API Server' % (self.vn_name))
