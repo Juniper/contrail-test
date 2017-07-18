@@ -2583,6 +2583,12 @@ class SecurityGroupBasicRegressionTests1_contrail(
         super(SecurityGroupBasicRegressionTests1_contrail, cls).setUpClass()
         cls.option = 'contrail'
 
+    @test.attr(type=['sanity', 'vcenter', 'suite1'])
+    @preposttest_wrapper
+    def test_vm_with_sec_group(self):
+        super(SecurityGroupBasicRegressionTests1_contrail,
+              self).test_vm_with_sec_group()
+
 
 class SecurityGroupRegressionTests2_contrail(SecurityGroupRegressionTests2):
 
