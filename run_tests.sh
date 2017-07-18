@@ -142,9 +142,9 @@ function run_tests_serial {
       return
   fi
   if [ $debug -eq 1 ]; then
-  #    if [ "$testrargs" = "" ]; then
+      if [ "$testrargs" = "" ]; then
        testrargs="discover $OS_TEST_PATH"
-  #    fi
+      fi
       ${wrapper} python -m subunit.run $testrargs | ${wrapper} subunit2junitxml -f -o $serial_result_xml
       return $?
   fi
@@ -154,6 +154,24 @@ function run_tests_serial {
 function check_test_discovery {
    echo "Checking if test-discovery is fine"
    bash -x tools/check_test_discovery.sh || die "Test discovery failed!"
+}
+
+function run_tagged_tests_in_debug_mode {
+    list_tagged_tests
+    python tools/parse_test_file.py mylist
+    IFS=$'\n' read -d '' -r -a lines < mylist
+    count=1
+    for i in "${lines[@]}"
+      do
+        result_xml='result'$count'.xml'
+        ((count++))
+        ${wrapper} python -m subunit.run $i| ${wrapper} subunit2junitxml -f -o $result_xml
+      done
+}
+
+function list_tagged_tests {
+    testr list-tests | grep $testrargs > mylist
+
 }
 
 function get_result_xml {
@@ -173,8 +191,20 @@ function run_tests {
   if [ $debug -eq 1 ]; then
       if [ "$testrargs" = "" ]; then
            testrargs="discover $OS_TEST_PATH"
+          ${wrapper} python -m subunit.run $testrargs| ${wrapper} subunit2junitxml -f -o $result_xml
+      else
+          #If the command is run_tests.sh -d -T abcxyz, we
+          #need to take only those tests tagged with abcxyz.
+          #We first create a file, mylist,
+          #of tests tagged with abcxyz.The test would look like 
+          #scripts.vm_regression.test_vm_basic.TestBasicVMVN.test_ping_within_vn[abcxyz]
+          #Then parse_test_file.py would remove [abcxyz] from the test string before
+          #passing it to subunit.
+          #We iterate over the list of tests in the file and run one by one
+          #with subunit
+          #function run_tagged_tests_in_debug_mode does all these activities
+          run_tagged_tests_in_debug_mode 
       fi
-      ${wrapper} python -m subunit.run $testrargs| ${wrapper} subunit2junitxml -f -o $result_xml
       return $?
   fi
 
@@ -339,6 +369,13 @@ function parse_results {
     python tools/parse_result.py $result_xml $REPORT_DETAILS_FILE
     python tools/parse_result.py $serial_result_xml $REPORT_DETAILS_FILE
 }
+
+function delete_vcenter_nas_datastore {
+( 
+export PYTHONPATH=$PATH:$PWD:$PWD/fixtures;
+python tools/vcenter/delete_vcenter_datastore.py $TEST_CONFIG_FILE
+)
+}
     
 export PYTHONPATH=$PATH:$PWD/scripts:$PWD/fixtures:$PWD
 apply_patches
@@ -395,6 +432,10 @@ if [[ -z $path ]] && [[ -z $testrargs ]];then
     run_tests_serial
 fi
 sleep 2
+
+#To delete nfs datastore in case of
+#vrouter gateway sanity
+delete_vcenter_nas_datastore
 
 python tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
 echo "Generated report_details* file: $REPORT_DETAILS_FILE"
