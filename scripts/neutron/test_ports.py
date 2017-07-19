@@ -1107,7 +1107,8 @@ class TestPorts(BaseNeutronTest):
         assert port.verify_on_setup(), 'VMI %s verification has failed'%port.uuid
     # end test_ports_bindings
 
-    def test_aap_backoff(self):
+    # Unused test, retained for reference
+    def aap_backoff(self):
         '''
         Verify  VIP reachability over L2 network when AAP MAC is configured with all zeo
             1. Launch 2 vms on same virtual network.
@@ -1195,7 +1196,6 @@ class TestPorts(BaseNeutronTest):
         assert vm_test_fixture.ping_with_certainty(vIP), \
             'Ping to the Virtual IP %s from the test VM  %s, failed' % (vIP,
                                                 vm_test_fixture.vm_ip)
-    # end test_aap_backoff
 
     def verify_arp_backoff (self, vIP, msgs):
         msgs = msgs.split('\n')
