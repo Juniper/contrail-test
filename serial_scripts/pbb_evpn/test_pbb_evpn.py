@@ -3,6 +3,7 @@ from compute_node_test import ComputeNodeFixture
 import test
 
 from common.pbb_evpn.base import *
+from common.pbb_evpn.base import *
 
 from policy_test import PolicyFixture
 from vn_policy_test import VN_Policy_Fixture
@@ -120,7 +121,7 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
                     socket.inet_aton(vmi_ip)
                 except Exception as e:
                     vmi_ip = vmi_fixture.obj['fixed_ips'][1]['ip_address']
-                assert src_vm_fixture.ping_with_certainty(vmi_ip)
+                assert src_vm_fixture.ping_with_certainty(vmi_ip, count=2)
 
         # Send Traffic
         for stream in traffic.values():
@@ -410,7 +411,7 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
                 bd_fixtures[stream['bd']], cmac=stream['src_cmac'],
                 expectation=False)
-    # end test_mac_aging_default 
+    # end test_mac_aging_default
 
     @preposttest_wrapper
     def test_mac_aging_dynamic_update(self):
@@ -460,7 +461,7 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
         mac_aging_time = 5
         bd_fixtures['bd1'].update_bd(mac_aging_time=mac_aging_time)
 
-        #Send reverse traffic and verify mac learning after aging time update 
+        #Send reverse traffic and verify mac learning after aging time update
         for stream in traffic.values():
             interface = vm_fixtures[stream['dst']].get_vm_interface_name() + '.' + \
                 str(vmi[stream['dst_vmi']]['vlan'])
@@ -494,7 +495,7 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
     @preposttest_wrapper
     def test_mac_aging_zero(self):
         '''
-        Test with mac aging timeout 0, C-MAC should not age out 
+        Test with mac aging timeout 0, C-MAC should not age out
         '''
 
         pbb_evpn_config = PBB_EVPN_CONFIG
@@ -536,7 +537,7 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
                 bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
 
-        #Wait for sometime to verify mac not aged out 
+        #Wait for sometime to verify mac not aged out
         self.logger.info("Waiting for %s seconds"
             % (MAC_AGING_DEFAULT))
         sleep(MAC_AGING_DEFAULT)
@@ -768,12 +769,12 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         bd_fixtures['bd1'].update_bd(isid=new_isid)
 
         for stream in traffic.values():
-            #Verify already learnt C-MAC is deleted 
+            #Verify already learnt C-MAC is deleted
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
                 bd_fixtures[stream['bd']], cmac=stream['src_cmac'],
                 expectation=False)
 
-        #Send reverse traffic after ISID change 
+        #Send reverse traffic after ISID change
         for stream in traffic.values():
             interface = vm_fixtures[stream['dst']].get_vm_interface_name() + '.' + \
                 str(vmi[stream['dst_vmi']]['vlan'])
@@ -785,14 +786,14 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
             assert self.verify_mac_learning(vmi_fixtures[stream['dst_vmi']],
                 bd_fixtures[stream['bd']], cmac=stream['dst_cmac'])
 
-    # end test_change_isid_at_bd 
+    # end test_change_isid_at_bd
 
     @preposttest_wrapper
     def test_negative_cases_for_bd(self):
         '''
             Test negative cases for bridge domains:
                 1. Verify VN can have only 1 BD
-                2. Verify bridge domain, along with vlan-tag can be added to VMI  
+                2. Verify bridge domain, along with vlan-tag can be added to VMI
                 3. Verify multiple bridge domains can not be added to single VMI
                     and VMI and BD should be in same VN
         '''
@@ -867,7 +868,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         # VMIs creation
         vmi_fixtures = self.setup_vmis(vn_fixtures, vmi_dict)
 
-        #Verify bridge domain, along with vlan-tag can be added to VMI 
+        #Verify bridge domain, along with vlan-tag can be added to VMI
         vlan_tag = 100
         for bd, vmi_list in bd_vmi_mapping.iteritems():
             bd_fixture = bd_fixtures[bd]
@@ -890,7 +891,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
             bd_fixture.add_bd_to_vmi(vmi_fixture.uuid, vlan_tag, verify=False)
         except Exception, msg:
             assert msg.status_code == 400
-            assert msg.content == vmi_bd_error 
+            assert msg.content == vmi_bd_error
         else:
             self.logger.error("Able to add BD in VMI from different VN, test failed")
             result = False
@@ -899,7 +900,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
     @preposttest_wrapper
     def test_swap_isids_on_bds(self):
         '''
-            Test swapping the ISIDs on 2 bridge domains and verify the functionality 
+            Test swapping the ISIDs on 2 bridge domains and verify the functionality
         '''
         # PBB EVPN parameters
         pbb_evpn_config = PBB_EVPN_CONFIG
@@ -937,7 +938,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         bd_fixtures['bd1'].update_bd(isid=bd['bd2']['isid'])
         bd_fixtures['bd2'].update_bd(isid=bd['bd1']['isid'])
 
-        #Verify C-MACs get deleted 
+        #Verify C-MACs get deleted
         for stream in traffic.values():
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
                 bd_fixtures[stream['bd']], cmac=stream['src_cmac'],
@@ -1022,10 +1023,10 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         #Revert back isid to 0
         bd_fixtures[test_bd].update_bd(isid=0)
 
-        #Verify mac flushed out 
+        #Verify mac flushed out
         for stream in traffic.values():
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
                 bd_fixtures[stream['bd']], cmac=stream['src_cmac'],
                 expectation=False)
 
-    #end test_bd_with_isid_zero 
+    #end test_bd_with_isid_zero
