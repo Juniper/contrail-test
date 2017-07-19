@@ -159,6 +159,41 @@ class PbbEvpnTestBase(BaseVrouterTest):
         cls.vnc_lib_fixture = cls.connections.vnc_lib_fixture
         cls.vnc_h = cls.vnc_lib_fixture.vnc_h
 
+    def config_encap_priority(self, encap='udp'):
+        '''pbb evpn is supported only for MPLSoUDP and MPLSoGRE encap.
+           vxlan is not supported
+           Configuring encap priority and restoring the prev encap priority
+           at cleanup
+        '''
+
+        # Other than MPLSoGRE, MPLSoUDP encapuslations are not supported
+        if encap != 'udp' and encap != 'gre':
+            result = False
+            assert result,'Invalid Encapsulation'
+
+        self.logger.debug("Read the existing encap priority")
+        existing_encap = self.connections.read_vrouter_config_encap()
+
+        if encap == 'gre':
+            config_id = self.connections.update_vrouter_config_encap(
+                'MPLSoGRE', 'MPLSoUDP', 'VXLAN')
+            self.logger.info(
+                'Created.UUID is %s. MPLSoGRE is the highest priority encap' %
+                (config_id))
+            configured_encap_list = [
+                unicode('MPLSoGRE'), unicode('MPLSoUDP'), unicode('VXLAN')]
+        elif encap == 'udp':
+            pbb_encap = self.connections.update_vrouter_config_encap(
+                    'MPLSoUDP', 'MPLSoGRE', 'VXLAN')
+            self.logger.info(
+                'Created.UUID is %s. MPLSoUDP is the highest priority encap' %
+                (pbb_encap))
+            configured_encap_list = [
+                unicode('MPLSoUDP'), unicode('MPLSoGRE'), unicode('VXLAN')]
+        if existing_encap != configured_encap_list :
+            self.addCleanup(self.connections.update_vrouter_config_encap, existing_encap[0], existing_encap[1], existing_encap[2])
+
+
     def update_vms_for_pbb(self, vm_fixtures):
         '''update /etc/hosts with local hostname to avoid DNS resolution
             for cmds with sudo
@@ -439,6 +474,10 @@ class PbbEvpnTestBase(BaseVrouterTest):
         mac_move_limit_obj = MACMoveLimitControlType(mac_move_limit=mac_move_limit,
                                                      mac_move_limit_action=mac_move_limit_action,
                                                      mac_move_time_window=mac_move_time_window)
+
+        # Configuring the encapsulation priority. Supported enacps are:
+        # MPLSoUDP and MPLSoGRE. VXLAN is not supported.
+        self.config_encap_priority('udp')
 
         # VNs creation
         vn_fixtures = self.setup_vns(vn)
