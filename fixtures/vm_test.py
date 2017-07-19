@@ -1742,8 +1742,8 @@ class VMFixture(fixtures.Fixture):
                 if ip_address not in self.vm_ips:
                     self.logger.warn(
                         "Opserver doesnt list IP Address %s of vm %s"
-                        "Expected %s to be among the list %s" %(self.vm_name,
-                            ip_address, self.vm_ips))
+                        "Expected %s to be among the list %s" %(ip_address,
+                            self.vm_name, ip_address, self.vm_ips))
                     self.vm_in_op_flag = self.vm_in_op_flag and False
                     result = result and False
             # end for vn_fq_name

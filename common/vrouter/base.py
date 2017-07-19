@@ -216,7 +216,8 @@ class BaseVrouterTest(BaseNeutronTest):
         IPv6 will work only with ubuntu and ubuntu-traffic images,
             cirros does not support IPv6.
         '''
-        nc_options = '-4' if (self.inputs.get_af() == 'v4') else '-6'
+        af =  get_af_type(ip) if ip else self.inputs.get_af()
+        nc_options = '-4' if (af == 'v4') else '-6'
         nc_options = nc_options + ' -q 2 -w 5'
         if proto == 'udp':
             nc_options = nc_options + ' -u'
@@ -476,13 +477,15 @@ class BaseVrouterTest(BaseNeutronTest):
         result = False
         sport = random.randint(12000, 65000)
 
+        af =  get_af_type(dest_ip)
+        sender_vm_ip = sender_vm_fix.get_vm_ips(af=af)[0]
         vm_fix_pcap_pid_files = {}
         src_compute_fix = self.compute_fixtures_dict[sender_vm_fix.vm_node_ip]
         src_vrf_id = src_compute_fix.get_vrf_id(sender_vm_fix.vn_fq_names[0])
         #Start the tcpdump on all the destination VMs
         for vm in dest_vm_fix_list:
             filters = '\'(%s and src host %s and dst host %s and dst port %s)\'' % (
-                proto, sender_vm_fix.vm_ip, dest_ip, int(destport))
+                proto, sender_vm_ip, dest_ip, int(destport))
             if not self.inputs.pcap_on_vm:
                 session[vm], pcap[vm] = start_tcpdump_for_vm_intf(self, vm,
                                             vm.vn_fq_names[0], filters = filters)
@@ -491,7 +494,7 @@ class BaseVrouterTest(BaseNeutronTest):
                     None, [vm], None, filters=filters, pcap_on_vm=True)
 
         #Send the traffic without any receiver, dest VM will send icmp error
-        nc_options = '-4' if (self.inputs.get_af() == 'v4') else '-6'
+        nc_options = '-4' if (af == 'v4') else '-6'
         nc_options = nc_options + ' -q 2 -u'
         sender_vm_fix.nc_send_file_to_ip('icmp_error', dest_ip,
             local_port=sport, remote_port=destport,
@@ -505,7 +508,7 @@ class BaseVrouterTest(BaseNeutronTest):
                 ret = verify_tcpdump_count(self, None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files[vm])
             if ret:
                 self.logger.info("Tcpdump verification on VM %s passed" %
-                                    vm.vm_ip)
+                                    vm.get_vm_ips(af=af)[0])
                 result = ret
                 #Verify flow on the dest VM compute where traffic is received
                 dst_compute_fix = self.compute_fixtures_dict[vm.vm_node_ip]
@@ -513,7 +516,7 @@ class BaseVrouterTest(BaseNeutronTest):
                 src_vrf = dst_compute_fix.get_vrf_id(sender_vm_fix.vn_fq_names[0])
                 dst_vrf_on_src = src_compute_fix.get_vrf_id(vm.vn_fq_names[0])
                 self.verify_flow_on_compute(dst_compute_fix,
-                    sender_vm_fix.vm_ip,
+                    sender_vm_ip,
                     dest_ip, src_vrf, dst_vrf, sport=sport, dport=destport,
                     proto=proto, ff_exp=flow_count, rf_exp=flow_count)
 
@@ -524,7 +527,7 @@ class BaseVrouterTest(BaseNeutronTest):
                 delete_pcap(session[vm], pcap[vm])
 
         #Verify expected flow count on sender compute
-        self.verify_flow_on_compute(src_compute_fix, sender_vm_fix.vm_ip,
+        self.verify_flow_on_compute(src_compute_fix, sender_vm_ip,
             dest_ip, src_vrf_id, dst_vrf_on_src, sport=sport, dport=destport,
             proto=proto, ff_exp=flow_count, rf_exp=flow_count)
 
@@ -624,10 +627,11 @@ class BaseVrouterTest(BaseNeutronTest):
     def verify_fat_flow(self, sender_vm_fix_list, dst_vm_fix,
                                proto, dest_port,
                                fat_flow_count=1,
-                               unidirectional_traffic=True):
+                               unidirectional_traffic=True, af=None):
         '''
         Verifies FAT flows on all the computes
         '''
+        af = af or self.inputs.get_af()
         dst_compute_fix = self.compute_fixtures_dict[dst_vm_fix.vm_node_ip]
         vrf_id_dst = dst_compute_fix.get_vrf_id(dst_vm_fix.vn_fq_names[0])
         for fix in sender_vm_fix_list:
@@ -635,34 +639,36 @@ class BaseVrouterTest(BaseNeutronTest):
             vrf_id_src = src_compute_fix.get_vrf_id(fix.vn_fq_names[0])
             #For inter-Node traffic
             if (dst_vm_fix.vm_node_ip != fix.vm_node_ip):
-                self.verify_fat_flow_on_compute(dst_compute_fix, fix.vm_ip,
-                            dst_vm_fix.vm_ip, dest_port, proto, vrf_id_dst,
-                            fat_flow_count=fat_flow_count)
+                self.verify_fat_flow_on_compute(dst_compute_fix,
+                    fix.get_vm_ips(af=af)[0], dst_vm_fix.get_vm_ips(af=af)[0],
+                    dest_port, proto, vrf_id_dst, fat_flow_count=fat_flow_count)
 
                 #Source compute should never have Fat flow for inter node traffic
-                self.verify_fat_flow_on_compute(src_compute_fix, fix.vm_ip,
-                            dst_vm_fix.vm_ip, dest_port, proto, vrf_id_src,
-                            fat_flow_count=0)
+                self.verify_fat_flow_on_compute(src_compute_fix,
+                    fix.get_vm_ips(af=af)[0], dst_vm_fix.get_vm_ips(af=af)[0],
+                    dest_port, proto, vrf_id_src, fat_flow_count=0)
             #For intra-Node traffic
             else:
                 if unidirectional_traffic:
                     #Source compute should not have Fat flow for unidirectional traffic
-                    self.verify_fat_flow_on_compute(src_compute_fix, fix.vm_ip,
-                                dst_vm_fix.vm_ip, dest_port, proto, vrf_id_src,
-                                fat_flow_count=0)
+                    self.verify_fat_flow_on_compute(src_compute_fix,
+                        fix.get_vm_ips(af=af)[0],
+                        dst_vm_fix.get_vm_ips(af=af)[0], dest_port, proto,
+                        vrf_id_src, fat_flow_count=0)
 
                 else:
                     #Source compute should have Fat flow for bi-directional traffic
-                    self.verify_fat_flow_on_compute(src_compute_fix, fix.vm_ip,
-                                dst_vm_fix.vm_ip, dest_port, proto, vrf_id_src,
-                                fat_flow_count=fat_flow_count)
+                    self.verify_fat_flow_on_compute(src_compute_fix,
+                        fix.get_vm_ips(af=af)[0],
+                        dst_vm_fix.get_vm_ips(af=af)[0], dest_port, proto,
+                        vrf_id_src, fat_flow_count=fat_flow_count)
 
 
         return True
 
     def verify_fat_flow_with_traffic(self, sender_vm_fix_list, dst_vm_fix,
-                                       proto, dest_port, traffic=True,
-                                       expected_flow_count=1, fat_flow_count=1):
+                           proto, dest_port, traffic=True,
+                           expected_flow_count=1, fat_flow_count=1, af=None):
         '''
         Common method to be used for Fat and non-Fat flow verifications:
             1. Use 2 different source ports from each sender VM to send traffic
@@ -674,6 +680,7 @@ class BaseVrouterTest(BaseNeutronTest):
                 expected_flow_count: expected non-Fat flow count
                 fat_flow_count: expected Fat flow count
         '''
+        af = af or self.inputs.get_af()
         #Use 2 different source ports for each sender VM
         sport_list = [10000, 10001]
         dst_compute_fix = self.compute_fixtures_dict[dst_vm_fix.vm_node_ip]
@@ -682,22 +689,22 @@ class BaseVrouterTest(BaseNeutronTest):
         if traffic:
             for fix in sender_vm_fix_list:
                 for port in sport_list:
-                    assert self.send_nc_traffic(fix, dst_vm_fix, port, dest_port,
-                        proto)
+                    assert self.send_nc_traffic(fix, dst_vm_fix, port,
+                        dest_port, proto, ip=dst_vm_fix.get_vm_ips(af=af)[0])
 
         #Verify the flows on sender computes for each sender/receiver VMs and ports
         for fix in sender_vm_fix_list:
             for port in sport_list:
                 compute_fix = self.compute_fixtures_dict[fix.vm_node_ip]
                 (ff_count, rf_count) = compute_fix.get_flow_count(
-                                            source_ip=fix.vm_ip,
-                                            dest_ip=dst_vm_fix.vm_ip,
-                                            source_port=port,
-                                            dest_port=dest_port,
-                                            proto=proto,
-                                            vrf_id=compute_fix.get_vrf_id(
-                                                      fix.vn_fq_names[0])
-                                            )
+                                    source_ip=fix.get_vm_ips(af=af)[0],
+                                    dest_ip=dst_vm_fix.get_vm_ips(af=af)[0],
+                                    source_port=port,
+                                    dest_port=dest_port,
+                                    proto=proto,
+                                    vrf_id=compute_fix.get_vrf_id(
+                                              fix.vn_fq_names[0])
+                                    )
                 assert ff_count == expected_flow_count, ('Flows count mismatch on '
                     'sender compute, got:%s, expected:%s' % (
                     ff_count, expected_flow_count))
@@ -713,14 +720,14 @@ class BaseVrouterTest(BaseNeutronTest):
                     else:
                         expected_count_dst = expected_flow_count
                     (ff_count, rf_count) = dst_compute_fix.get_flow_count(
-                                                source_ip=fix.vm_ip,
-                                                dest_ip=dst_vm_fix.vm_ip,
-                                                source_port=port,
-                                                dest_port=dest_port,
-                                                proto=proto,
-                                                vrf_id=dst_compute_fix.get_vrf_id(
-                                                          dst_vm_fix.vn_fq_names[0])
-                                                )
+                                    source_ip=fix.get_vm_ips(af=af)[0],
+                                    dest_ip=dst_vm_fix.get_vm_ips(af=af)[0],
+                                    source_port=port,
+                                    dest_port=dest_port,
+                                    proto=proto,
+                                    vrf_id=dst_compute_fix.get_vrf_id(
+                                              dst_vm_fix.vn_fq_names[0])
+                                    )
                     assert ff_count == expected_count_dst, ('Flows count '
                         'mismatch on dest compute, got:%s, expected:%s' % (
                         ff_count, expected_count_dst))
@@ -730,7 +737,7 @@ class BaseVrouterTest(BaseNeutronTest):
 
         #FAT flow verification
         assert self.verify_fat_flow(sender_vm_fix_list, dst_vm_fix,
-                               proto, dest_port, fat_flow_count)
+                               proto, dest_port, fat_flow_count, af=af)
 
         self.logger.info("Fat flow verification passed for "
             "protocol %s and port %s" % (proto, dest_port))
