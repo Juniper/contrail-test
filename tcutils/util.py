@@ -418,8 +418,13 @@ def sshable(host_string, password=None, gateway=None, gateway_password=None,
                 if safe_run('(echo > /dev/tcp/%s/%s)' % (host_string_split[1], host_port), timeout=timeout)[1].succeeded:
                     return True
                 else:
-                    logger.error("Error on ssh to %s" % host_string)
+                    logger.error("Error on ssh to %s, result: %s %s" % (host_string,
+                        result, result.__dict__))
                     return False
+            else:
+                logger.error("Error on ssh to %s, result: %s %s" % (host_string,
+                    result, result.__dict__))
+                return False
         except CommandTimeout, e:
             logger.debug('Could not ssh to %s ' % (host_string))
             return False

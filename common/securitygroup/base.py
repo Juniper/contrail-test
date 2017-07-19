@@ -64,6 +64,9 @@ class BaseSGTest(test_v1.BaseTestCase_v1, VerifySvcChain):
         self.logger.info("Configure security groups required for test.")
         self.config_sec_groups()
 
+        self.logger.debug("Verify the configured VN's.")
+        assert self.multi_vn_fixture.verify_on_setup()
+
         self.multi_vm_fixture = self.useFixture(MultipleVMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
             vm_count_per_vn=3, vn_objs=vns, image_name='ubuntu-traffic',
@@ -155,8 +158,6 @@ class BaseSGTest(test_v1.BaseTestCase_v1, VerifySvcChain):
 
     def verify_sg_test_resources(self):
         """verfiy common resources."""
-        self.logger.debug("Verify the configured VN's.")
-        assert self.multi_vn_fixture.verify_on_setup()
 
         self.logger.debug("Verify the configured VM's.")
         assert self.multi_vm_fixture.verify_on_setup()

@@ -876,6 +876,7 @@ class VMFixture(fixtures.Fixture):
                 vna_tap_id = self.get_tap_intf_of_vmi(
                     self.get_vmi_ids()[vn_fq_name])
             except Exception as e:
+                self.logger.warn("Exception: %s" % (e))
                 vna_tap_id = None
 
             self.tap_intf[vn_fq_name] = vna_tap_id
@@ -899,6 +900,7 @@ class VMFixture(fixtures.Fixture):
                 self.tap_intf[vn_fq_name] = inspect_h.get_vna_intf_details(
                     self.tap_intf[vn_fq_name]['name'])[0]
             except Exception as e:
+                self.logger.warn("Exception: %s" % (e))
                 return False
 
             self.logger.debug("VM %s Tap interface: %s" % (self.vm_name,
@@ -914,6 +916,7 @@ class VMFixture(fixtures.Fixture):
                 agent_vrf_objs = inspect_h.get_vna_vrf_objs(
                     domain, project, vn)
             except Exception as e:
+                self.logger.warn("Exception: %s" % (e))
                 agent_vrf_objs = None
 
             self.logger.debug("Agent VRF Object : %s" % (str(agent_vrf_objs)))
@@ -926,6 +929,9 @@ class VMFixture(fixtures.Fixture):
                     self.agent_vrf_name[vn_fq_name])
             except Exception as e:
                 self.logger.warn("Exception: %s" % (e))
+                vrf_id = inspect_h.get_vna_vrf_id(vn_fq_name)
+                self.logger.debug("VRF id in agent for VN %s is %s" % (
+                    vn_fq_name, vrf_id))
                 return False
 
             self.agent_vrf_id[vn_fq_name] = agent_vrf_obj['ucindex']
@@ -2428,8 +2434,9 @@ class VMFixture(fixtures.Fixture):
                               % self.vm_name)
             return True
         else:
-            self.logger.debug('VM %s is NOT ready for SSH connections'
-                              % self.vm_name)
+            self.vm_obj.get()
+            self.logger.debug('VM %s is NOT ready for SSH connections, VM status: %s'
+                              % (self.vm_name, self.vm_obj.status))
             return False
     # end wait_for_ssh_on_vm
 
