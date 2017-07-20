@@ -22,6 +22,7 @@ class DisablePolicyEcmp(BaseVrouterTest):
     def tearDownClass(cls):
         super(DisablePolicyEcmp, cls).tearDownClass()
 
+    @skip_because(hypervisor='docker',msg='Bug 1461423:Need privileged access')
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ecmp_with_static_routes(self):

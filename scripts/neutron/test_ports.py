@@ -965,6 +965,7 @@ class TestPorts(BaseNeutronTest):
 
     # end test_zombie_tap_interface
 
+    @skip_because(hypervisor='docker',msg='Bug 1461423:Need privileged access')
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_aap_active_active_mode(self):
