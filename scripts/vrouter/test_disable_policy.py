@@ -3,7 +3,7 @@
 from tcutils.wrappers import preposttest_wrapper
 from common.vrouter.base import BaseVrouterTest
 import test
-from tcutils.util import get_random_cidr, get_random_name, is_v6
+from tcutils.util import get_random_cidr, get_random_name, is_v6, skip_because
 import random
 from security_group import get_secgrp_id_from_name
 from common.servicechain.config import ConfigSvcChain
@@ -22,6 +22,7 @@ class DisablePolicyEcmp(BaseVrouterTest):
     def tearDownClass(cls):
         super(DisablePolicyEcmp, cls).tearDownClass()
 
+    @skip_because(hypervisor='docker',msg='Bug 1461423:Need privileged access')
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_ecmp_with_static_routes(self):
