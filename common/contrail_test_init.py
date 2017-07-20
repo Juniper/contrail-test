@@ -94,7 +94,7 @@ class TestInputs(object):
         self.domain_isolation = read_config_option(self.config,
             'Basic',
             'domain_isolation',
-            False)
+            False) if self.keystone_version == 'v3' else False
         self.cloud_admin_domain = read_config_option(self.config,
             'Basic',
             'cloud_admin_domain',
@@ -871,12 +871,10 @@ class TestInputs(object):
             raise Exception('Please specify testbed info in $PARAMS_FILE '
                             'under "Basic" section, keyword "provFile"')
         if self.orchestrator.lower() == 'openstack':
-            domain = self.admin_domain if self.stack_domain == 'default-domain' else \
-                     self.stack_domain
             keystone = KeystoneCommands(username=self.stack_user,
                                         password=self.stack_password,
                                         tenant=self.stack_tenant,
-                                        domain_name=domain,
+                                        domain_name=self.stack_domain,
                                         auth_url=self.auth_url,
                                         region_name=self.region_name,
                                         insecure=self.insecure,
@@ -1054,7 +1052,10 @@ class ContrailTestInit(object):
         self.stack_password = stack_password or self.stack_password
         self.stack_domain = stack_domain or self.stack_domain
         self.stack_tenant = stack_tenant or self.stack_tenant
-        self.project_fq_name = [self.stack_domain, self.stack_tenant]
+        if self.stack_domain == 'Default':
+            self.project_fq_name = ['default-domain', self.stack_tenant]
+        else:
+            self.project_fq_name = [self.stack_domain, self.stack_tenant]
         self.project_name = self.stack_tenant
         self.domain_name = self.stack_domain
         # Possible af values 'v4', 'v6' or 'dual'

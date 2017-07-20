@@ -46,11 +46,12 @@ class DomainFixture(fixtures.Fixture):
         try:
             self.logger.info('Reading existing Domain with UUID %s' % (
                                                         self.uuid))
+            kwargs = dict()
             if self.uuid == 'default':
-                domain_fq_name = 'default-domain'
+                kwargs['fq_name_str'] = 'default-domain'
             else:
-                domain_fq_name = self.domain_fq_name[0]
-            domain_obj = self.vnc_lib_h.domain_read(fq_name_str=domain_fq_name)
+                kwargs['id'] = self.uuid
+            domain_obj = self.vnc_lib_h.domain_read(**kwargs)
         except NoIdError, e:
             self.logger.exception('UUID %s not found, unable to read Domain' % (
                 self.uuid))
@@ -84,7 +85,8 @@ class DomainFixture(fixtures.Fixture):
         self.create()
 
     def create(self):
-        self.uuid = self.uuid or self.auth.get_domain_id(self.domain_name)
+        uuid = self.uuid or self.auth.get_domain_id(self.domain_name)
+        self.uuid = self.uuid if uuid == 'default' else get_dashed_uuid(uuid)
         if self.uuid:
             self.read()
             self.logger.info(

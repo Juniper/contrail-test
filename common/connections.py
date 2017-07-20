@@ -98,7 +98,7 @@ class ContrailConnections():
 
     def get_project_id(self, project_name=None):
         project_name = project_name or self.project_name
-        auth = self.get_auth_h(project_name)
+        auth = self.get_auth_h(project_name=project_name)
         if auth:
             return auth.get_project_id(project_name or self.project_name,
                                        self.domain_id)

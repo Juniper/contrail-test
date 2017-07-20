@@ -9,33 +9,29 @@ class BaseProjectTest(test.BaseTestCase):
         super(BaseProjectTest, cls).setUpClass()
 
         cls.project = None
+        cls.domain_name = None
         cls.admin_inputs = None
         cls.admin_connections = None
         if not cls.inputs.admin_username:
             # It is expected that is_test_applicable will not 
             # let the testcase run if admin_username is not set
             return
+        if 'v3' in cls.inputs.auth_url:
+            #If user wants to run tests in his allocated domain or Default domain
+            if cls.inputs.domain_isolation:
+                cls.domain_name = cls.__name__
         cls.admin_isolated_creds = isolated_creds.AdminIsolatedCreds(
                 cls.inputs,
+                domain_name=cls.inputs.admin_domain,
                 ini_file=cls.ini_file,
                 logger=cls.logger)
         cls.admin_isolated_creds.setUp()
         cls.admin_connections = cls.admin_isolated_creds.get_connections(
             cls.admin_inputs)
-        cls.admin_project = cls.admin_isolated_creds.create_tenant(
-            cls.admin_isolated_creds.project_name)
-        cls.admin_inputs = cls.admin_isolated_creds.get_inputs(
-            cls.admin_project)
-        cls.admin_connections = cls.admin_isolated_creds.get_connections(
-            cls.admin_inputs)
-
-        cls.quantum_h = cls.admin_connections.quantum_h
-        cls.nova_h = cls.admin_connections.nova_h
-        cls.vnc_lib = cls.admin_connections.vnc_lib
-        cls.agent_inspect = cls.admin_connections.agent_inspect
-        cls.cn_inspect = cls.admin_connections.cn_inspect
-        cls.analytics_obj = cls.admin_connections.analytics_obj
+        if cls.inputs.domain_isolation:
+            cls.admin_isolated_creds.create_domain(cls.domain_name)
         cls.connections = cls.admin_connections
+        cls.vnc_lib = cls.admin_connections.vnc_lib
     #end setUpClass
 
     @classmethod
