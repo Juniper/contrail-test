@@ -31,6 +31,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
 
     # UI config tests #
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test1_1_create_svc_templates(self):
         ''' UI Config-> Services-> Service Templates  : Test svc template creation
@@ -39,6 +40,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_svc_template
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test1_9_create_svc_instances(self):
         '''UI Config-> Services-> Service Instances : Test svc instance creation
@@ -47,6 +49,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_svc_instance
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test1_2_create_ipams(self):
         '''UI Config : Networking -> IP Address Management :  Test ipam creation
@@ -55,6 +58,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_svc_instance
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test1_3_create_virtual_networks(self):
         '''UI Config : Networking -> Networks : Test virtual network creation
@@ -63,6 +67,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_virtual_networks
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test1_4_create_ports(self):
         '''UI Config : Networking -> ports : Test port creation
@@ -71,6 +76,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_ports
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test1_5_create_routers(self):
         '''UI Config : Networking -> Routers : Test router creation
@@ -79,6 +85,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_routers
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test1_6_create_policies(self):
         '''UI Config : Networking -> Policies : Test Policy creation
@@ -87,6 +94,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_policies
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test1_7_attach_policy_to_vn(self):
         '''UI Config : Networking -> Networks : Test attach_policy to vn
@@ -95,6 +103,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_attach_policy_to_vn
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test1_8_launch_virtual_instances(self):
         ''' Horizon Config : Test launch_virtual_instance
@@ -103,12 +112,14 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_launch_virtual_instances
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_3_create_security_groups(self):
         assert self.res.setup_obj.create_security_group(), 'Security group creation failed'
         return True
     # end test_create_security_groups
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_1_create_dns_servers(self):
         '''UI Config : DNS -> Servers : Test dns server creation
@@ -117,6 +128,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_dns_servers
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_2_create_dns_records(self):
         '''UI Config : DNS -> Records : Test dns record creation
@@ -125,6 +137,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_dns_records
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_4_create_floating_ips(self):
         '''UI Config : Networking -> Networks : Test Floating IP creation
@@ -133,6 +146,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_floating_ips
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_5_allocate_floating_ips(self):
         '''UI Config : Networking -> Floating IPs : Test allocation of FIPs
@@ -141,6 +155,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_allocate_floating_ips
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_6_associate_floating_ips(self):
         '''UI Config : Networking -> Floating IPs : Test association of FIPs
@@ -149,6 +164,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_associate_floating_ips
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_2_3_create_svc_health_check(self):
         '''UI Config : Networking -> Services -> Health Check : Test svc health check creation
@@ -157,6 +173,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_svc_health_check
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_8_create_bgp_aas(self):
         '''UI Config : Networking -> Services -> BGP as a Service : Test bgpaas creation
@@ -165,6 +182,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_bgp_aas
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_9_create_global_qos_config(self):
         '''
@@ -179,6 +197,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_global_qos_config
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_1_4_create_qos_config(self):
         '''
@@ -194,6 +213,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_qos_config
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_1_1_create_physical_router(self):
         '''
@@ -208,6 +228,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_physical_router
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_1_2_create_physical_interfaces(self):
         '''
@@ -222,6 +243,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_physical_interface
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_1_3_create_forwarding_classes(self):
         '''
@@ -236,6 +258,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_forwarding_classes
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_1_5_attach_qos_config_to_vn(self):
         '''
@@ -252,6 +275,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_attach_qos_config_to_vn
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_1_6_create_network_route_table(self):
         '''
@@ -267,6 +291,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_network_route_table
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_1_7_attach_network_route_table_to_VN(self):
         '''
@@ -283,6 +308,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_attach_network_route_table_to_VN
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_1_8_create_routing_policies(self):
         '''
@@ -297,6 +323,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_routing_policies
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_1_9_create_route_aggregates(self):
         '''
@@ -311,6 +338,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_create_route_aggregates
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_2_1_attach_routing_policy_to_si(self):
         '''
@@ -327,6 +355,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_attach_routing_policy_to_si
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_2_2_attach_route_aggregate_to_si(self):
         '''
@@ -343,6 +372,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_attach_route_aggregate_to_si
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test2_7_attach_svc_health_check_to_si(self):
         '''
@@ -361,6 +391,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
 
     # UI verification tests
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test_verify_config_infra_global_config(self):
         '''Test to verify global config on config->Infrastructure->Global Config
@@ -375,6 +406,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_verify_config_infra_global_config
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test_verify_config_infra_rbac_global(self):
         '''Test to verify RBAC under Configure->Infrastructure->RBAC->Global
@@ -388,6 +420,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_verify_config_infra_rbac_global
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test_verify_config_infra_rbac_domain(self):
         '''Test to verify RBAC under Configure->Infrastructure->RBAC->Domain
@@ -402,6 +435,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_verify_config_infra_rbac_domain
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test_verify_config_infra_rbac_project(self):
         '''Test to verify RBAC under Configure->Infrastructure->RBAC->Project
@@ -663,6 +697,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_verify_config_services_service_instances
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test_verify_config_network_route_table(self):
         '''
@@ -711,6 +746,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_verify_config_routing_policies
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test_verify_config_forwarding_classes(self):
         '''
@@ -727,6 +763,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_verify_config_forwarding_classes
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test_verify_config_qos_config(self):
         '''
@@ -744,6 +781,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_verify_config_qos_config
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test_verify_config_svc_health_check(self):
         '''
@@ -760,6 +798,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_verify_config_svc_health_check
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test_verify_config_services_bgpaas(self):
         '''
@@ -776,6 +815,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_verify_config_services_bgpaas
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test_verify_config_phy_dev_physical_interfaces(self):
         '''
@@ -800,6 +840,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_verify_config_infra_project_quotas
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test_verify_config_alarms_project_and_global(self):
         '''Test to verify alarms under project and Global
@@ -817,6 +858,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_verify_config_alarms_project_and_global
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test_verify_monitor_infra_control_node_basic_details(self):
         '''Test control node basic details on monitor->Infrastruture->Control Nodes->Node Details-> Basic view page
@@ -833,6 +875,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_verify_monitor_infra_control_node_advance_details
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test_verify_monitor_infra_vrouter_basic_details(self):
         '''Test virtual routers basic details on monitor->Infrastruture->Virtual Routers->Node Details-> Basic view page
@@ -849,6 +892,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_verify_monitor_infra_vrouter_advance_details
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test_verify_monitor_infra_analytics_node_basic_details(self):
         '''Test analytics node basic details on monitor->Infrastruture->Analytics Nodes->Node Details-> Basic view page
@@ -865,6 +909,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_verify_monitor_infra_analytics_node_advance_details
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test_verify_monitor_infra_config_node_basic_details(self):
         '''Test config node basic details on monitor->Infrastruture->Config Nodes->Node Details-> Basic view page
@@ -911,6 +956,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_network_advance_details
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test_verify_monitor_infra_dashboard_details(self):
         '''Test dashboard details on monitor->Infra->Dashboard page
@@ -919,6 +965,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_verify_monitor_infra_dashboard_details
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test_verify_monitor_networking_dashboard_instances(self):
         '''Test to verify instances on Monitor Networking dashboard
@@ -933,6 +980,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_verify_monitor_networking_dashboard_instances
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test_verify_monitor_networking_instance_basic_details(self):
         '''Test instance basic details on Monitor->Networking->Instances page
@@ -949,6 +997,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test_instance_advance_details
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test3_1_1_create_bgp_router(self):
         '''UI Config : Infrastructure -> BGP Router : Test BGP Router creation
@@ -961,6 +1010,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test3_1_1_create_bgp_router
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test3_1_2_create_link_local_service(self):
         '''Test to create Link Local service on UI
@@ -974,6 +1024,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test3_1_2_create_link_local_service
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test3_1_3_create_virtual_router(self):
         '''Test to create virtual routers on UI
@@ -987,6 +1038,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test3_1_3_create_virtual_router
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test3_1_4_create_service_appliance_set(self):
         '''Test to create service appliance set on UI
@@ -1000,6 +1052,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test3_1_4_create_service_appliance_set
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test3_1_5_create_service_appliances(self):
         '''Test to create service appliances on UI
@@ -1013,6 +1066,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test3_1_5_create_service_appliances
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test3_1_6_create_alarms_in_project_and_in_global(self):
         '''Test to create alarms in both project wise and global wise on UI
@@ -1027,6 +1081,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test3_1_6_create_alarms_in_project_and_in_global
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test3_1_7_create_rbac(self):
         '''Test to create rbac in both global, domain and project wise on UI
@@ -1043,6 +1098,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test3_1_7_create_rbac
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test3_1_8_create_ovsdb_tor_agent(self):
         '''Test to create ovsdb managed tor agent on UI
@@ -1056,6 +1112,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test3_1_8_create_ovsdb_tor_agent
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test3_1_9_create_netconf_phy_router(self):
         '''Test to create netconf managed physical router on UI
@@ -1070,6 +1127,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test3_1_9_create_netconf_phy_router
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test3_2_1_create_vcpe_router(self):
         '''Test to create vcpe router on UI
@@ -1083,6 +1141,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test3_2_1_create_vcpe_router
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test3_2_2_create_log_statistic(self):
         '''Test to create log statistic on UI
@@ -1096,6 +1155,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test3_2_2_create_log_statistic
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test3_2_3_create_flow_aging(self):
         '''Test to create Flow Aging on UI
@@ -1109,6 +1169,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test3_2_3_create_flow_aging
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test3_2_4_create_interface_route_table(self):
         '''Test to create interface route table on UI
@@ -1122,6 +1183,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return True
     # end test3_2_4_create_interface_route_table
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test3_2_5_attach_intf_route_table_to_port(self):
         '''
@@ -1610,6 +1672,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
                                                   'Editing network with dns is failed'
     # end test3_9_edit_dns_neg
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test4_1_edit_net_fip(self):
         ''' Test to edit the existing network by Floating IP
@@ -1937,6 +2000,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         return result
     # end test4_5_edit_net_imp_route_target_asn_num
 
+    @test.attr(type=['ui_sanity'])
     @preposttest_wrapper
     def test4_6_edit_net_imp_route_target_asn_ip(self):
         ''' Test to edit the existing network by Import Route Target
