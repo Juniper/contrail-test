@@ -46,6 +46,9 @@ class TestPolicyAcl(BasePolicyTest):
                 project_obj=self.project,
                 name='ipam3'))
 
+        for ipam_fixture in [self.ipam1_obj, self.ipam2_obj, self.ipam3_obj]:
+            assert ipam_fixture.verify_on_setup()
+
         # create new VN
         self.VN1_fixture = self.useFixture(
             VNFixture(
@@ -76,6 +79,8 @@ class TestPolicyAcl(BasePolicyTest):
                 subnets=['10.3.1.0/24'],
                 ipam_fq_name=self.ipam3_obj.fq_name))
 
+        for vn_fixture in [self.VN1_fixture, self.VN2_fixture, self.VN3_fixture]:
+            assert vn_fixture.verify_on_setup()
     # end setup_ipam_vn
 
     def setup_vm(self):
@@ -101,6 +106,8 @@ class TestPolicyAcl(BasePolicyTest):
                 vm_name='VM31',
                 project_name=self.project.project_name))
 
+        for vm_fixture in [self.VM11_fixture, self.VM21_fixture, self.VM31_fixture]:
+            assert vm_fixture.verify_on_setup()
         assert self.VM11_fixture.wait_till_vm_is_up()
         assert self.VM21_fixture.wait_till_vm_is_up()
         assert self.VM31_fixture.wait_till_vm_is_up()
@@ -1107,6 +1114,7 @@ class TestPolicyAcl(BasePolicyTest):
                 vn_obj=self.VN1_fixture.obj,
                 vm_name='VM12',
                 project_name=self.project.project_name))
+        assert self.VM12_fixture.verify_on_setup()
         self.VM12_fixture.wait_till_vm_is_up()
 
         #Check initial connectivity without policies in place.
