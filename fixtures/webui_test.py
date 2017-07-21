@@ -10485,3 +10485,97 @@ class WebuiTest:
                     return result
         return result
     # end verify_routers_api_data
+
+    def verify_vmi_ops_basic_data(self, option='interfaces'):
+        network_name = 'all networks'
+        self.logger.info("Verifying interfaces opserver data on Monitor->Networking->Interfaces \
+                        summary(basic view) page ..")
+        self.logger.debug(self.dash)
+        vmi_list_ops = self.ui.get_vmi_list_ops()
+        result = True
+        for ind in range(len(vmi_list_ops)):
+            vmi_name = vmi_list_ops[ind]['name']
+            vmi_ops_data_value = self.ui.get_details(vmi_list_ops[ind]['href'])
+            if option == 'dashboard':
+                click_func = 'networking_dashboard'
+            else:
+                click_func = 'networks'
+            if not eval('self.ui.click_monitor_' + click_func)('interfaces'):
+                result = result and False
+            self.ui.select_project(self.project_name_input)
+            if option != 'dashboard':
+                self.ui.select_network(network_name)
+            br = self.ui.select_max_records('interfaces')
+            rows = self.ui.get_rows(br, canvas=True)
+            self.logger.info(
+                "Vmi uuid %s exists in opserver..checking if exists in webui as well" %
+                (vmi_name))
+            for ind1 in range(len(rows)):
+                match_flag = 0
+                ui_vmi_name = self.ui.get_slick_cell_text(rows[ind1])
+                if ui_vmi_name == vmi_name:
+                    self.logger.info(
+                        "Vmi name %s matched in webui..Verifying basic view details..." %
+                        (ui_vmi_name))
+                    self.logger.debug(self.dash)
+                    match_index = ind1
+                    match_flag = 1
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "Vmi exists in opserver but vm %s not found in webui..." %
+                    (vmi_name))
+                self.logger.debug(self.dash)
+            else:
+                rows_detail = self.ui.click_basic_and_get_row_details(click_func, match_index,
+                              canvas=True, search_ele='project-interfaces', browser=br,
+                              project='interfaces', click_tab='monitor')[1]
+                self.logger.info(
+                    "Verify interfaces basic view details %s " % (ui_vmi_name))
+                dom_arry_basic = []
+                for detail in range(len(rows_detail)):
+                    key_value = rows_detail[detail].text.split('\n')
+                    key = str(key_value.pop(0))
+                    if len(key_value) > 1 :
+                        value = key_value
+                    elif len(key_value) ==  1:
+                        value = key_value[0]
+                    else:
+                        value = None
+                    if key in ['Active', 'Health Check Active']:
+                        value = value.strip()
+                    dom_arry_basic.append({'key': key, 'value': value})
+                ops_data_list = []
+                vmi_ops_data = vmi_ops_data_value['ContrailConfig']
+                fq_name_list = vmi_ops_data['elements']['fq_name'].strip('\[').strip('\]').split(',')
+                name = ''
+                for index, fq_name in enumerate(fq_name_list):
+                    name += fq_name_list[index].strip(" \"")
+                    if index != len(fq_name_list) - 1:
+                        name += ':'
+                ops_data_list.append({'key': 'Name', 'value': name})
+                key_list = ['IP Address', 'MAC Address', 'Gateway', 'Virtual Network',
+                            'Virtual Machine Name', 'Active', 'Health Check Active', 'Floating IPs']
+                value_list = ['ip6_address', 'mac_address', 'gateway', 'virtual_network', 'vm_name',
+                            'active', 'is_health_check_active', 'floating_ips']
+                if 'UveVMInterfaceAgent' in vmi_ops_data_value:
+                    vmi_ops_data = vmi_ops_data_value['UveVMInterfaceAgent']
+                    for index, value in enumerate(value_list):
+                        if value in vmi_ops_data:
+                            if value == 'ip6_address':
+                                if not re.search('(\:\:)', vmi_ops_data[value]):
+                                    value = vmi_ops_data[value]
+                                elif 'ip_address' in vmi_ops_data:
+                                    value = vmi_ops_data['ip_address']
+                            elif value in ['active', 'is_health_check_active']:
+                                value = 'true'
+                            else:
+                                value = vmi_ops_data[value]
+                        ops_data_list.append({'key': key_list[index], 'value': value})
+                if self.ui.match_ui_kv(ops_data_list, dom_arry_basic):
+                    self.logger.info("Interface basic view data matched")
+                else:
+                    self.logger.error("Interface basic data match failed")
+                    result = result and False
+        return result
+    # end verify_vmi_ops_basic_data
