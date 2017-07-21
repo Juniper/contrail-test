@@ -51,6 +51,7 @@ class TestPorts(BaseNeutronTest):
         vn1_vm2_name = get_random_name('vn1-vm2')
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
         port_obj = self.create_port(net_id=vn1_fixture.vn_id)
+        self.sleep(5)
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
                                      image_name='ubuntu-traffic',
                                      port_ids=[port_obj['id']])
