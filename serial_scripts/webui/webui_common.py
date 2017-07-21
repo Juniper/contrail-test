@@ -1261,7 +1261,7 @@ class WebuiCommon:
         select_result = "//li[contains(@class,'select2-results-dept-0')]"
         self.click_element(select_result, 'xpath', elements=True, index=3)
         self.browser.execute_script("return arguments[0].scrollIntoView();", br)
-        return br
+        return grid_br
     # end select_max_records
 
     def click_monitor_networking_dashboard_basic(self, row_index, option='networks'):
