@@ -1301,7 +1301,7 @@ class VMFixture(fixtures.Fixture):
             return False
         return True
 
-    @retry(delay=2, tries=20)
+    @retry(delay=2, tries=30)
     def verify_vm_not_in_agent(self):
         '''Verify that the VM is fully removed in all Agents and vrouters
 
@@ -1939,8 +1939,6 @@ class VMFixture(fixtures.Fixture):
                 'one or more agents' % (self.vm_name))
              assert self.verify_vm_not_in_control_nodes(), ('VM %s is still '
                 'seen in Control nodes' % (self.vm_name))
-             assert self.verify_vm_not_in_nova(), ('VM %s is still seen in '
-                'nova' % (self.vm_name))
 
              assert self.verify_vm_flows_removed(), ('One or more flows of VM'
                 ' %s is still seen in Compute node %s' %(self.vm_name,
@@ -1954,22 +1952,6 @@ class VMFixture(fixtures.Fixture):
              # Trying a workaround for Bug 452
         # end if
         return True
-
-    @retry(delay=2, tries=25)
-    def verify_vm_not_in_nova(self):
-        result = True
-        self.verify_vm_not_in_nova_flag = True
-        # In environments which does not have mysql token file, skip the check
-        if not self.inputs.get_mysql_token():
-            self.logger.debug('Skipping check for VM %s deletion in nova db'
-                              'since mysql_token is not available' % (self.vm_name))
-            return result
-        for vm_obj in self.vm_objs:
-            result = result and self.orch.is_vm_deleted(vm_obj)
-            self.verify_vm_not_in_nova_flag =\
-                self.verify_vm_not_in_nova_flag and result
-        return result
-    # end verify_vm_not_in_nova
 
     def tftp_file_to_vm(self, file, vm_ip):
         '''Do a tftp of the specified file to the specified VM
