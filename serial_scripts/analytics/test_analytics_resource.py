@@ -694,9 +694,6 @@ class AnalyticsTestSanityWithResource(
         # Poll to make usre traffic flows, optional
         # sender.poll()
         # receiver.poll()
-        sender.stop()
-        receiver.stop()
-        print sender.sent, receiver.recv
         for vn in [self.res.vn1_fixture.vn_fq_name,\
                     self.res.vn2_fixture.vn_fq_name]:
                  
@@ -749,6 +746,9 @@ class AnalyticsTestSanityWithResource(
                     self.logger.error("vn_stats   not shown  \
                                 in %s vn uve"%(vn))
                     result = result and False
+        sender.stop()
+        receiver.stop()
+        print sender.sent, receiver.recv
 
         assert "sender.sent == receiver.recv", "UDP traffic to ip:%s failed" % self.res.vn2_vm2_fixture.vm_ip
         # Verifying the vrouter uve for the active flow
