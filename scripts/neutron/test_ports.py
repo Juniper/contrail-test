@@ -220,6 +220,7 @@ class TestPorts(BaseNeutronTest):
                                          image_name='cirros')
         vm1_fixture.verify_on_setup()
         assert test_vm_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
         subnet_list = [vn1_subnet1_ip, vn1_subnet2_ip]
         subnet_list2 = [vn1_subnet1_ip2, vn1_subnet2_ip2]
         assert set(vm1_fixture.vm_ips) == set(
