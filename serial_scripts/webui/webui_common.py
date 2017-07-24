@@ -1312,6 +1312,7 @@ class WebuiCommon:
 
     def click_monitor_networking_dashboard(self, tab='networks'):
         self.click_monitor_networks('dashboard')
+        self.select_project(self.inputs.project_name)
         self.click_element('project-' + tab + '-tab-link')
         self.wait_till_ajax_done(self.browser, wait=2)
         return self.check_error_msg("monitor networking dashboard")
@@ -1915,6 +1916,17 @@ class WebuiCommon:
         self.click_element('fa-code', 'class', browser=rows[row_index + 1])
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_instances_advance_in_webui
+
+    def click_monitor_projects_advance(self, row_index, length=None):
+        if not eval('self.click_monitor_networks')('projects'):
+            result = result and False
+        br = self.select_max_records(grid_name='projects')
+        rows = self.get_rows(canvas=True, browser=br)
+        self.click_element('fa-caret-right', 'class', browser=rows[row_index])
+        self.wait_till_ajax_done(self.browser, wait=15)
+        self.click_element('fa-code', 'class')
+        self.wait_till_ajax_done(self.browser)
+    # end click_monitor_projects_advance
 
     def click_configure_networks_basic(self, row_index):
         self.click_element('Networks', 'link_text')

@@ -1015,6 +1015,20 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_monitor_networking_projects
 
     @preposttest_wrapper
+    def test_verify_monitor_networking_projects_advance_details(self):
+        '''Test to verify networks on Monitor Networking Projects advance details
+           1. Go to Monitor->Networking->Projects
+           2. Get all the advance details of interfaces from both WebUI and API server.
+           3. Verify the WebUI details against API server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_project_api_advance_data(), \
+                   'Projects advance details verification failed on Monitor->Networking->Projects'
+        return True
+    # end test_verify_monitor_networking_projects_advance_details
+
+    @preposttest_wrapper
     def test_verify_monitor_networking_network_basic_details(self):
         '''Test network basic on monitor->Networking->Networks->Network Summary-> basic page
         '''
