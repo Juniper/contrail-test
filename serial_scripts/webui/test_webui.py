@@ -1001,6 +1001,35 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_verify_monitor_networking_dashboard_interfaces
 
     @preposttest_wrapper
+    def test_verify_monitor_networking_interfaces_advance_details(self):
+        '''Test to verify networks on Monitor Networking Interfaces Advance Details
+           1. Go to Monitor->Networking->Interfaces
+           2. Get all the advance details of interfaces from both WebUI and OPS server.
+           3. Verify the WebUI details against OPS server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_vmi_ops_advance_data(), \
+                   'Interface advance details verification failed on Monitor->Networking->Interfaces'
+        return True
+    # end test_verify_monitor_networking_interfaces_advance_details
+
+    @preposttest_wrapper
+    def test_verify_monitor_networking_dashboard_interfaces_advance_details(self):
+        '''Test to verify networks on Monitor Networking Dashboard Interfaces Advance Details
+           1. Go to Monitor->Networking->Dashboard->Interfaces
+           2. Get all the advance details of interfaces from both WebUI and OPS server.
+           3. Verify the WebUI details against OPS server details.
+
+           Pass Criteria: Step 3 should pass
+        '''
+        assert self.webui.verify_vmi_ops_advance_data(option='dashboard'), \
+                   'Interface advance details verification failed on \
+                   Monitor->Networking->Dashboard->Interfaces'
+        return True
+    # end test_verify_monitor_networking_dashboard_interfaces_advance_details
+
+    @preposttest_wrapper
     def test_verify_monitor_networking_projects(self):
         '''Test to verify networks on Monitor Networking Projects
            1. Go to Monitor->Networking->Projects

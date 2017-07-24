@@ -1917,6 +1917,21 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_instances_advance_in_webui
 
+    def click_monitor_interfaces_advance(self, row_index, length=None, option=None):
+        if option == 'dashboard':
+            click_func = 'networking_dashboard'
+        else:
+            click_func = 'networks'
+        if not eval('self.click_monitor_' + click_func)('interfaces'):
+            result = result and False
+        br = self.select_max_records('interfaces')
+        rows = self.get_rows(canvas=True, browser=br)
+        self.click_element('fa-caret-right', 'class', browser=rows[row_index])
+        self.wait_till_ajax_done(self.browser, wait=15)
+        self.click_element('fa-code', 'class')
+        self.wait_till_ajax_done(self.browser)
+    # end click_monitor_interfaces_advance
+
     def click_monitor_projects_advance(self, row_index, length=None):
         if not eval('self.click_monitor_networks')('projects'):
             result = result and False
@@ -3134,7 +3149,11 @@ class WebuiCommon:
             'sigma',
             'samples',
             'inst_id',
-            'chunk_select_time']
+            'chunk_select_time',
+            'inBytes60',
+            'outBytes60',
+            'x',
+            'y']
         key_list = ['exception_packets_dropped', 'l2_mcast_composites']
         index_list = []
         random_keys = ['{"ts":', '2015 ', '2016 ']
