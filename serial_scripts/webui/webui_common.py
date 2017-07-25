@@ -2761,24 +2761,49 @@ class WebuiCommon:
         return domArry
     # end get_basic_view_infra
 
-    def get_advanced_view_list(self, name, key_val, index=3):
+    def get_advanced_view_list(self, name, key_val, index=3, parent=False, parent_click=False):
         key_val_lst1 = self.find_element('pre', 'tag')
         key_val_lst2 = self.find_element(
             'key-value', 'class', elements=True, browser=key_val_lst1)
         key1=val1=flag=None
         for element in key_val_lst2:
-            if name in element.text:
+            if element.text.startswith(name):
                 keys_arry = self.find_element(
                     'key', 'class', elements=True, browser=element)
                 # Find and click are separated here to avoid timeout issues and capture screenshot in case find fails
-                plus_element = self.find_element('fa-plus', 'class', elements=True, browser=element)[index]
-                plus_element.click()
+                parent_elements = []
+                if parent:
+                    parent_elements = self.find_element('fa-plus', 'class', elements=True,
+                                           browser=element)
+                    for parent_element in parent_elements:
+                        if len(parent_elements) > 1:
+                            parent_element.click()
+                            plus_element = self.find_element('fa-plus', 'class', elements=True, browser=parent_element)[0]
+                            self.screenshot('agent')
+                            plus_element.click()
+                        else:
+                            parent_elements[0].click()
+                elif not parent_click:
+                    plus_element = self.find_element('fa-plus', 'class', elements=True, browser=element)[index]
+                keys_arry = self.find_element(
+                            'key', 'class', elements=True, browser=element)
                 vals_arry = self.find_element(
-                    'value', 'class', elements=True, browser=element)
+                            'value', 'class', elements=True, browser=element)
                 for ind, ele in enumerate(keys_arry):
                     if key_val == ele.text:
                         key1 = key_val
-                        val1 = [str(vals_arry[ind].text.strip('[ \n]'))][0].split('\n')
+                        if parent and not parent_click:
+                            try:
+                                self.click_element('fa-plus', 'class', browser=vals_arry[ind + 1])
+                            except:
+                                pass
+                            val1 = [str(vals_arry[ind + 1].text)]
+                        elif parent_click:
+                            vals_arry[ind + 2].click()
+                            val1 = str(vals_arry[ind + 2].text)
+
+                        else:
+                            val1 = [str(vals_arry[ind].text.strip('[ \n]'))][0].split('\n')
                         flag = 1
                         break
                 break
@@ -3121,6 +3146,14 @@ class WebuiCommon:
             'mean',
             'sigma',
             'samples',
+            'mirror_acl',
+            'edge_replication_forwards',
+            'source_replication_forwards',
+            'total_multicast_forwards',
+            'local_vm_l3_forwards',
+            'rule',
+            'count',
+            'l2_receives',
             'inst_id',
             'chunk_select_time']
         key_list = ['exception_packets_dropped', 'l2_mcast_composites']
