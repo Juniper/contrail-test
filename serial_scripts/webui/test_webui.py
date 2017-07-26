@@ -927,6 +927,22 @@ class WebuiTestSanity(base.WebuiBaseTest):
     # end test_config_node_advance_details
 
     @preposttest_wrapper
+    def test_verify_monitor_infra_database_node_basic_details(self):
+        '''
+        Description: Test to verify database node basic detials on UI against details from OPS
+        Steps:
+            1. On the Contrail UI, go to Monitor -> Infrastructure -> Database Nodes -> Node details > Basic view page
+            2. Get all the basic details from the page
+            3. Go to the OPS server and fetch all the required details
+            4. Verify the WebUI details against the details from the OPS server
+        Pass criteria:
+            1. Step 4 above should pass
+        '''
+        assert self.webui.verify_database_nodes_ops_basic_data(), 'Database node basic details verification failed'
+        return True
+    # end test_verify_monitor_infra_database_node_basic_details
+
+    @preposttest_wrapper
     def test_verify_monitor_networking_dashboard_networks(self):
         '''Test to verify networks on Monitor Networking dashboard
            1. Go to Monitor->Networking->Dasboard->Networks
