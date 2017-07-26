@@ -2594,6 +2594,167 @@ class WebuiTest:
         return result
     # end verify_analytics_nodes_ops_advance_data_in_webui
 
+    def verify_database_nodes_ops_basic_data(self):
+        self.logger.info(
+            "Verifying database node basic data on Monitor -> Infra -> Database Nodes -> Basic view page")
+        self.logger.debug(self.dash)
+        database_nodes_list_ops = self.ui.get_database_nodes_list_ops()
+        result = True
+        for n in range(len(database_nodes_list_ops)):
+            ops_database_node_name = database_nodes_list_ops[n]['name']
+            self.logger.info(
+                "Host name %s exists in opserver, checking if it exists on webui as well" %
+                (ops_database_node_name))
+            if not self.ui.click_monitor_database_nodes():
+                result = result and False
+            self.ui.wait_till_ajax_done(self.browser, wait=15)
+            rows = self.ui.get_rows(canvas=True)
+            for i in range(len(rows)):
+                match_flag = 0
+                obj_text = self.ui.get_slick_cell_text(rows[i], index=0)
+                if obj_text == ops_database_node_name:
+                    self.logger.info(
+                        "Database node name %s found on webui" % (ops_database_node_name))
+                    self.logger.debug(self.dash)
+                    match_index = i
+                    match_flag = 1
+                    break
+            if not match_flag:
+                self.logger.error("Database node name %s not found on webui"
+                                    % (ops_database_node_name))
+                self.logger.debug(self.dash)
+            else:
+                self.logger.info("Verify database node basic view details for %s"
+                                    % (ops_database_node_name))
+                database_nodes_ops_data = self.ui.get_details(
+                        database_nodes_list_ops[n]['href'])
+                self.ui.click_monitor_database_nodes_basic(match_index)
+                ops_basic_data = []
+                host_name = database_nodes_list_ops[n]['name']
+                ip_address = database_nodes_ops_data.get(
+                    'ContrailConfig').get('elements').get(
+                        'database_node_ip_address').strip('"')
+                if not ip_address:
+                    ip_address = '--'
+                process_state_list = database_nodes_ops_data.get(
+                    'NodeStatus').get('process_info')
+                process_down_stop_time_dict = {}
+                process_up_start_time_dict = {}
+                for i, item in enumerate(process_state_list):
+                    if item['process_name'] == 'contrail-database-nodemgr':
+                        db_string = self.ui.get_process_status_string(
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
+                    if item['process_name'] == 'kafka':
+                        kafka_string = self.ui.get_process_status_string(
+                            item,
+                            process_down_stop_time_dict,
+                            process_up_start_time_dict)
+                reduced_process_keys_dict = {}
+                for k, v in process_down_stop_time_dict.items():
+                    reduced_process_keys_dict[k] = v
+                if not reduced_process_keys_dict:
+                    recent_time = max(process_up_start_time_dict.values())
+                    overall_node_status_time = self.ui.get_node_status_string(
+                        str(recent_time))
+                    overall_node_status_string = [
+                        'Up since ' +
+                        status for status in overall_node_status_time]
+                else:
+                    overall_node_status_down_time = self.ui.get_node_status_string(
+                        str(max(reduced_process_keys_dict.values())))
+                    process_down_count = len(reduced_process_keys_dict)
+                    overall_node_status_string = str(
+                        process_down_count) + ' Process down'
+                version = database_nodes_ops_data.get('NodeStatus').get('build_info')
+                if not version:
+                    version = '--'
+                else:
+                    version = json.loads(database_nodes_ops_data.get('NodeStatus').get(
+                        'build_info')).get('build-info')[0].get('build-id')
+                    version = self.ui.get_version_string(version)
+                mem_info = database_nodes_ops_data.get(
+                    'DatabaseUsageInfo').get('database_usage')
+                for key, value in mem_info[0].iteritems():
+                    space_val = self.ui.get_memory_string(value, unit='KB')
+                    if key == 'disk_space_available_1k':
+                        avail_space = space_val
+                    if key == 'analytics_db_size_1k':
+                        ana_db_size = space_val
+                    if key == 'disk_space_used_1k':
+                        used_space = space_val
+                percent_space = int(round((database_nodes_ops_data.get('NodeStatus').get(
+                        'disk_usage_info').values()[0].get('percentage_partition_space_used'))))
+                dom_basic_view = self.ui.get_basic_view_infra()
+                node_status = self.browser.find_element_by_id('allItems').find_element_by_tag_name(
+                    'p').get_attribute('innerHTML').replace('\n', '').strip()
+                for i, item in enumerate(dom_basic_view):
+                    if item.get('key') == 'Overall Node Status':
+                        dom_basic_view[i]['value'] = node_status
+                    if item.get('key') == 'Used Space':
+                        dom_var = str(dom_basic_view[i]['value']).split('(')
+                        dom_basic_view[i]['value'] = dom_var[0].strip()
+                        dom_basic_view.append({
+                            'key': 'Percent Space Used',
+                            'value': int(round(float(dom_var[1].split()[0])))})
+                modified_ops_data = []
+                modified_ops_data.extend(
+                    [
+                        {
+                            'key': 'Hostname', 'value': host_name}, {
+                            'key': 'IP Address', 'value': ip_address}, {
+                            'key': 'Version', 'value': version}, {
+                            'key': 'Overall Node Status', 'value': overall_node_status_string}, {
+                            'key': 'Kafka', 'value': kafka_string}, {
+                            'key': 'Analytics DB Size', 'value': ana_db_size}, {
+                            'key': 'Available Space', 'value': avail_space}, {
+                            'key': 'Used Space', 'value': used_space}, {
+                            'key': 'Percent Space Used', 'value': percent_space
+                        }
+                     ]
+                )
+                if self.ui.match_ui_kv(
+                        modified_ops_data,
+                        dom_basic_view):
+                    self.logger.info(
+                        "Database nodes %s basic view details data matched" %
+                        (ops_database_node_name))
+                else:
+                    self.logger.error(
+                        "Database node %s basic view details data match failed" %
+                        (ops_database_node_name))
+                    result = result and False
+                ops_data = []
+                self.logger.info(
+                    "Verifying opserver basic data on Monitor->Infra->Database Nodes main page")
+                ops_data.extend(
+                    [
+                        {
+                            'key': 'Hostname', 'value': host_name}, {
+                            'key': 'IP Address', 'value': ip_address}, {
+                            'key': 'Version', 'value': version}, {
+                            'key': 'Status', 'value': overall_node_status_string}, {
+                            'key': 'Analytics DB Size', 'value': ana_db_size}, {
+                            'key': 'Available Space', 'value': avail_space}, {
+                            'key': 'Used Space', 'value': used_space
+                        }
+                     ]
+                )
+                if self.verify_database_nodes_ops_grid_page_data(
+                        host_name,
+                        ops_data):
+                    self.logger.info(
+                        "Database node %s main page data matched" %
+                        (ops_database_node_name))
+                else:
+                    self.logger.error(
+                        "Database node %s main page data match failed" %
+                        (ops_database_node_name))
+                    result = result and False
+        return result
+        # end verify_database_nodes_ops_basic_data
+
     def verify_vm_ops_basic_data(self, option='instances'):
         network_name = 'all networks'
         self.logger.info(
@@ -7610,6 +7771,40 @@ class WebuiTest:
         else:
             return False
     # end verify_bgp_routers_ops_grid_page_data
+
+    def verify_database_nodes_ops_grid_page_data(self, host_name, ops_data):
+        webui_data = []
+        self.ui.click_monitor_database_nodes()
+        self.ui.wait_till_ajax_done(self.browser, wait=15)
+        rows = self.ui.find_element('grid-canvas', 'class')
+        base_indx = 0
+        rows = self.ui.get_rows(rows)
+        for hosts in range(len(rows)):
+            if rows[base_indx]:
+                row_div_list = self.ui.find_element('div', 'tag',
+                                                        browser=rows[base_indx], elements=True,
+                                                        if_elements=[1])
+                if row_div_list[base_indx].text == host_name:
+                    webui_data.append(
+                        {'key': 'Hostname', 'value': row_div_list[base_indx].text})
+                    webui_data.append({'key': 'IP Address',
+                                           'value': row_div_list[base_indx + 1].text})
+                    webui_data.append(
+                        {'key': 'Version', 'value': row_div_list[base_indx + 2].text})
+                    webui_data.append(
+                        {'key': 'Status', 'value': row_div_list[base_indx + 3].text})
+                    webui_data.append(
+                        {'key': 'Analytics DB Size',
+                                           'value': row_div_list[base_indx + 4].text})
+                    webui_data.append(
+                        {'key': 'Available Space', 'value': row_div_list[base_indx + 5].text})
+                    webui_data.append(
+                        {'key': 'Used Space', 'value': row_div_list[base_indx + 6].text})
+                if self.ui.match_ui_kv(ops_data, webui_data):
+                    return True
+                else:
+                    return False
+    # end verify_database_nodes_ops_grid_page_data
 
     def check_alerts(self):
         self.logger.info("Capturing screenshot for alerts...")
