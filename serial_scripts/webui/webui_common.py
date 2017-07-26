@@ -550,10 +550,11 @@ class WebuiCommon:
         time.sleep(2)
     # end send_keys
 
-    def click_on_caret_down(self, browser=None):
+    def click_on_caret_down(self, browser=None, type='down'):
         if not browser:
             browser = self.browser
-        self.click_element('fa-caret-down', 'class', browser, wait=2)
+        element = 'fa-caret-' + type
+        self.click_element(element, 'class', browser, wait=2)
     # end click_on_caret_down
 
     def click_on_accordian(self, element_id, browser=None,
@@ -1868,6 +1869,12 @@ class WebuiCommon:
         self.click_monitor_common_advance(row_index)
     # end click_monitor_control_nodes_advance_in_webui
 
+    def click_monitor_control_nodes_peers(self, row_index):
+        self.click_icon_caret(row_index)
+        self.click_element('control_node_peers_id-tab-link')
+        self.wait_till_ajax_done(self.browser, wait=3)
+    # end click_monitor_control_nodes_peers
+
     def click_monitor_analytics_nodes_advance(self, row_index):
         self.click_element('Analytics Nodes', 'link_text')
         self.check_error_msg("monitor analytics nodes")
@@ -3122,7 +3129,9 @@ class WebuiCommon:
             'sigma',
             'samples',
             'inst_id',
-            'chunk_select_time']
+            'chunk_select_time',
+            'last_event_at',
+            'last_state_at']
         key_list = ['exception_packets_dropped', 'l2_mcast_composites']
         index_list = []
         random_keys = ['{"ts":', '2015 ', '2016 ']
