@@ -2490,7 +2490,7 @@ class SecurityGroupRegressionTests2_contrail(SecurityGroupRegressionTests2):
 
     @classmethod
     def setUpClass(cls):
-        super(SecurityGroupRegressionTests2, cls).setUpClass()
+        super(SecurityGroupRegressionTests2_contrail, cls).setUpClass()
         cls.option = 'contrail'
 
 
@@ -2498,7 +2498,7 @@ class SecurityGroupRegressionTests3_contrail(SecurityGroupRegressionTests3):
 
     @classmethod
     def setUpClass(cls):
-        super(SecurityGroupRegressionTests3, cls).setUpClass()
+        super(SecurityGroupRegressionTests3_contrail, cls).setUpClass()
         cls.option = 'contrail'
 
 
@@ -2506,7 +2506,7 @@ class SecurityGroupRegressionTests4_contrail(SecurityGroupRegressionTests4):
 
     @classmethod
     def setUpClass(cls):
-        super(SecurityGroupRegressionTests4, cls).setUpClass()
+        super(SecurityGroupRegressionTests4_contrail, cls).setUpClass()
         cls.option = 'contrail'
 
 
@@ -2514,7 +2514,7 @@ class SecurityGroupRegressionTests5_contrail(SecurityGroupRegressionTests5):
 
     @classmethod
     def setUpClass(cls):
-        super(SecurityGroupRegressionTests5, cls).setUpClass()
+        super(SecurityGroupRegressionTests5_contrail, cls).setUpClass()
         cls.option = 'contrail'
 
 
@@ -2522,7 +2522,7 @@ class SecurityGroupRegressionTests6_contrail(SecurityGroupRegressionTests6):
 
     @classmethod
     def setUpClass(cls):
-        super(SecurityGroupRegressionTests6, cls).setUpClass()
+        super(SecurityGroupRegressionTests6_contrail, cls).setUpClass()
         cls.option = 'contrail'
 
 
@@ -2530,7 +2530,7 @@ class SecurityGroupRegressionTests7_contrail(SecurityGroupRegressionTests7):
 
     @classmethod
     def setUpClass(cls):
-        super(SecurityGroupRegressionTests7, cls).setUpClass()
+        super(SecurityGroupRegressionTests7_contrail, cls).setUpClass()
         cls.option = 'contrail'
 
 
@@ -2538,7 +2538,7 @@ class SecurityGroupRegressionTests8_contrail(SecurityGroupRegressionTests8):
 
     @classmethod
     def setUpClass(cls):
-        super(SecurityGroupRegressionTests8, cls).setUpClass()
+        super(SecurityGroupRegressionTests8_contrail, cls).setUpClass()
         cls.option = 'contrail'
 
 
@@ -2546,7 +2546,7 @@ class SecurityGroupRegressionTests9_contrail(SecurityGroupRegressionTests9):
 
     @classmethod
     def setUpClass(cls):
-        super(SecurityGroupRegressionTests9, cls).setUpClass()
+        super(SecurityGroupRegressionTests9_contrail, cls).setUpClass()
         cls.option = 'contrail'
 
 class SecurityGroupBasicRegressionTests1Ipv6(
