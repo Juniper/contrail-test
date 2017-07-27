@@ -495,6 +495,12 @@ class PbbEvpnTestBase(BaseVrouterTest):
         # VMs creation
         vm_fixtures = self.setup_vms(vn_fixtures, vmi_fixtures, vm)
 
+        # Compute nodes, where vms have launched, pbb verification
+        # needs to be checked on these compute nodes
+        pbb_compute_node_ips = []
+        for vm_fixture in vm_fixtures:
+            pbb_compute_node_ips.append(vm_fixtures[vm_fixture]._vm_node_ip)
+
         # PBB EVPN VN configuration
         for vn_fixture in vn_fixtures.values():
             assert vn_fixture.set_pbb_evpn_enable(pbb_evpn_enable=pbb_evpn_enable)
@@ -519,6 +525,7 @@ class PbbEvpnTestBase(BaseVrouterTest):
             'vmi_fixtures':vmi_fixtures,
             'vn_fixtures':vn_fixtures,
             'vm_fixtures':vm_fixtures,
+            'pbb_compute_node_ips':pbb_compute_node_ips,
         }
         return ret_dict
 
@@ -588,8 +595,9 @@ class PbbEvpnTestBase(BaseVrouterTest):
         scapy_obj.start()
         return scapy_obj
 
-    def verify_mac_learning(self, vmi_fixture, bd_fixture, cmac=None,
-            expectation=True):
+    def verify_mac_learning(self, vmi_fixture, bd_fixture,
+                            pbb_compute_node_ips, cmac=None,
+                            expectation=True):
         '''
         Verify if c-mac learned in agents:
             1. in local agent, nh type should be interface
@@ -604,7 +612,7 @@ class PbbEvpnTestBase(BaseVrouterTest):
         mpls_label = self.get_vrf_mpls_label(vrf)
         result = True
 
-        for ip in self.inputs.compute_ips:
+        for ip in pbb_compute_node_ips:
             if ip == vmi_host_ip:
                 nh_type = 'interface' #Local cmac
             else:
