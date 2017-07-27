@@ -1360,11 +1360,11 @@ class WebuiCommon:
         self.click_element('Service Instances', 'link_text')
         self.check_error_msg("configure service instance")
         count = 0
-        rows = self.get_rows()
+        rows = self.get_rows(canvas=True)
         while True:
             if count > 120:
                 self.logger.error('Status is Updating.')
-            rows = self.get_rows()
+            rows = self.get_rows(canvas=True)
             if len(rows) < 1:
                 break
             text = rows[0].find_elements_by_tag_name('div')[4].text
@@ -1375,7 +1375,7 @@ class WebuiCommon:
             else:
                 self.logger.info('Status is %s' % (text))
                 break
-        rows = self.get_rows()
+        rows = self.get_rows(canvas=True)
         rows[row_index].find_elements_by_tag_name(
             'div')[0].find_element_by_tag_name('i').click()
         self.wait_till_ajax_done(self.browser)
@@ -3411,6 +3411,7 @@ class WebuiCommon:
         option  =  'Networks'
         if not self.click_configure_networks():
             self.dis_name = None
+        self.select_project(self.inputs.project_name)
         self.wait_till_ajax_done(self.browser)
         if not index:
             rows = self.get_rows(canvas=True)
@@ -3474,6 +3475,7 @@ class WebuiCommon:
         try:
             self.logger.info("Go to Configure->Networking->%s page" %(option))
             click_option = 'self.click_configure_' + option.lower()
+            self.select_project(self.inputs.project_name)
             if not eval(click_option)():
                 result = result and False
             rows = self.get_rows(canvas=True)
