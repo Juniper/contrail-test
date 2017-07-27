@@ -2,6 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import TimeoutException
 import time
 import random
 import fixtures
@@ -2838,6 +2839,192 @@ class WebuiTest:
                     result = result and False
         return result
     # end verify_database_nodes_ops_advance_data_in_webui
+
+    def verify_control_nodes_ops_peer_data(self):
+        self.logger.info(
+            "Verifying Control Nodes opserver peer data on Monitor->Infra->Control Nodes->Peers...")
+        self.logger.debug(self.dash)
+        bgp_routers_list_ops = self.ui.get_bgp_routers_list_ops()
+        result = True
+        for n in range(len(bgp_routers_list_ops)):
+            ops_bgp_routers_name = bgp_routers_list_ops[n]['name']
+            self.logger.info("Control node host name %s exists in opserver..checking if exists \
+                in webui as well" % (ops_bgp_routers_name))
+            if not self.ui.click_monitor_control_nodes():
+                result = result and False
+            self.ui.wait_till_ajax_done(self.browser, wait=15)
+            rows = self.ui.get_rows(canvas=True)
+            for i in range(len(rows)):
+                match_flag = 0
+                obj_text = self.ui.get_slick_cell_text(rows[i], index=0)
+                if obj_text == ops_bgp_routers_name:
+                    self.logger.info(
+                        "Control node name %s found on webui.." % (ops_bgp_routers_name))
+                    self.logger.debug(self.dash)
+                    match_index = i
+                    match_flag = 1
+                    break
+            if not match_flag:
+                self.logger.error("Control node name %s not found on webui" %
+                                  (ops_bgp_routers_name))
+            else:
+                self.logger.info("Verify peer details of control node name %s " %
+                                 (ops_bgp_routers_name))
+                self.ui.click_monitor_control_nodes_peers(match_index)
+                peer_rows = self.ui.get_rows(canvas=True)
+                xmpp_peer_list_ops = self.ui.get_xmpp_list_ops()
+                bgp_peer_list_ops = self.ui.get_bgp_peers_list_ops()
+                if len(peer_rows) != len(xmpp_peer_list_ops) + len(bgp_peer_list_ops):
+                    self.logger.warning("The number of rows on the Peers page is not consistent with \
+                            the total number of xmpp and bgp peer list on ops")
+                self.logger.info("Validating bgp peers list..")
+                for n in range(len(bgp_peer_list_ops)):
+                    ops_fq_name = bgp_peer_list_ops[n]['name']
+                    for i in range(len(peer_rows)):
+                        match_flag = 0
+                        obj_text = self.ui.get_slick_cell_text(peer_rows[i], index=2)
+                        if obj_text == 'BGP':
+                            caret_ele = ''
+                            try:
+                                caret_ele = self.ui.find_element('fa-caret-right', 'class',
+                                                             browser=peer_rows[i], elements=True)
+                            except TimeoutException:
+                                pass
+                            if caret_ele:
+                                self.ui.click_on_caret_down(browser=peer_rows[i], type='right')
+                            bgp_br = self.ui.find_element('slick-row-detail',
+                                                          'class', elements=True)[i]
+                            key_val = self.ui.find_element('key-value', 'class',
+                                                           browser=bgp_br)
+                            if key_val.text.split()[1] == ops_fq_name:
+                                self.logger.info(
+                                    "Peer fq_name %s matched on webui.. Verifying its details.." %
+                                        (ops_fq_name))
+                                self.logger.debug(self.dash)
+                                match_index = i
+                                match_flag = 1
+                                peer_fq_name = self.ui.get_slick_cell_text(peer_rows[i], 1)
+                                break
+                    if not match_flag:
+                        self.logger.error(
+                            "Peer fq name %s exists in opserver but not found on webui.." %
+                                (ops_fq_name))
+                        self.logger.debug(self.dash)
+                    else:
+                        self.ui.expand_advance_details()
+                        dom_arry = self.ui.parse_advanced_view()
+                        dom_arry_str = self.ui.get_advanced_view_str()
+                        dom_arry_num = self.ui.get_advanced_view_num()
+                        dom_arry_bool = self.ui.get_advanced_view_bool()
+                        dom_arry_num_new = []
+                        for item in dom_arry_num:
+                            dom_arry_num_new.append(
+                                {'key': item['key'].replace('\\', '"').replace(' ', ''), 'value': item['value']})
+                        dom_arry_num = dom_arry_num_new
+                        merged_arry = dom_arry + dom_arry_str + dom_arry_num + dom_arry_bool
+                        bgp_ops_data = self.ui.get_details(bgp_peer_list_ops[n]['href'])
+                        if 'BgpPeerInfoData' in bgp_ops_data:
+                            bgp_info_data = bgp_ops_data['BgpPeerInfoData']
+                            mod_bgp_info_data = []
+                            self.ui.extract_keyvalue(
+                                bgp_info_data, mod_bgp_info_data)
+                        if 'PeerFlapData' in bgp_ops_data:
+                            bgp_flap_data = bgp_ops_data['PeerFlapData']
+                            mod_bgp_flap_data = []
+                            self.ui.extract_keyvalue(
+                                bgp_flap_data, mod_bgp_flap_data)
+                        if 'PeerStatsData' in bgp_ops_data:
+                            bgp_stats_data = bgp_ops_data['PeerStatsData']
+                            mod_bgp_stats_data = []
+                            self.ui.extract_keyvalue(
+                                bgp_stats_data, mod_bgp_stats_data)
+                        complete_ops_data = mod_bgp_info_data + mod_bgp_flap_data + mod_bgp_stats_data
+                        for k in range(len(complete_ops_data)):
+                            if isinstance(complete_ops_data[k]['value'], list):
+                                for m in range(len(complete_ops_data[k]['value'])):
+                                    complete_ops_data[k]['value'][m] = str(
+                                        complete_ops_data[k]['value'][m])
+                            elif isinstance(complete_ops_data[k]['value'], unicode):
+                                complete_ops_data[k]['value'] = str(
+                                    complete_ops_data[k]['value'])
+                            else:
+                                complete_ops_data[k]['value'] = str(
+                                    complete_ops_data[k]['value'])
+                        if self.ui.match_ui_kv(
+                                complete_ops_data,
+                                merged_arry):
+                            self.logger.info(
+                                "Control node bgp peer data matched on webui")
+                        else:
+                            self.logger.error(
+                                "Control node bgp peer data match failed on webui")
+                            result = result and False
+                self.logger.info("Validating xmpp peers list..")
+                for n in range(len(xmpp_peer_list_ops)):
+                    ops_fq_name = xmpp_peer_list_ops[n]['name'].split(':')[1]
+                    for i in range(len(peer_rows)):
+                        match_flag = 0
+                        obj_text = self.ui.get_slick_cell_text(peer_rows[i])
+                        if obj_text == ops_fq_name:
+                            self.logger.info(
+                                "Peer fq_name %s matched on webui.. Verifying its details.." %
+                                    (ops_fq_name))
+                            self.logger.debug(self.dash)
+                            match_index = i
+                            match_flag = 1
+                            peer_fq_name = self.ui.get_slick_cell_text(peer_rows[i], 1)
+                            break
+                    if not match_flag:
+                        self.logger.error(
+                            "Peer fq name exists in opserver but %s not found on webui.." %
+                                (ops_fq_name))
+                        self.logger.debug(self.dash)
+                    else:
+                        self.ui.click_on_caret_down(browser=peer_rows[i], type='right')
+                        self.ui.expand_advance_details()
+                        dom_arry = self.ui.parse_advanced_view()
+                        dom_arry_str = self.ui.get_advanced_view_str()
+                        dom_arry_num = self.ui.get_advanced_view_num()
+                        dom_arry_num_new = []
+                        for item in dom_arry_num:
+                            dom_arry_num_new.append(
+                                {'key': item['key'].replace('\\', '"').replace(' ', ''), 'value': item['value']})
+                        dom_arry_num = dom_arry_num_new
+                        merged_arry = dom_arry + dom_arry_str + dom_arry_num
+                        peer_ops_data = self.ui.get_details(xmpp_peer_list_ops[n]['href'])
+                        if 'PeerStatsData' in peer_ops_data:
+                            peer_stats_data = peer_ops_data['PeerStatsData']
+                            mod_peer_stats_data = []
+                            self.ui.extract_keyvalue(
+                                peer_stats_data, mod_peer_stats_data)
+                        if 'XmppPeerInfoData' in peer_ops_data:
+                            peer_info_data = peer_ops_data['XmppPeerInfoData']
+                            mod_peer_info_data = []
+                            self.ui.extract_keyvalue(
+                                peer_info_data, mod_peer_info_data)
+                        complete_ops_data = mod_peer_stats_data + mod_peer_info_data
+                        for k in range(len(complete_ops_data)):
+                            if isinstance(complete_ops_data[k]['value'], list):
+                                for m in range(len(complete_ops_data[k]['value'])):
+                                    complete_ops_data[k]['value'][m] = str(
+                                        complete_ops_data[k]['value'][m])
+                            elif isinstance(complete_ops_data[k]['value'], unicode):
+                                complete_ops_data[k]['value'] = str(
+                                    complete_ops_data[k]['value'])
+                            else:
+                                complete_ops_data[k]['value'] = str(
+                                    complete_ops_data[k]['value'])
+                        if self.ui.match_ui_kv(
+                                complete_ops_data,
+                                merged_arry):
+                            self.logger.info(
+                                "Control node xmpp peer data matched on webui")
+                        else:
+                            self.logger.error(
+                                "Control node xmpp peer data match failed on webui")
+                            result = result and False
+        return result
+    # end verify_control_nodes_ops_peer_data
 
     def verify_vm_ops_basic_data(self, option='instances'):
         network_name = 'all networks'
