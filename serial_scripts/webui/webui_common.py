@@ -3701,6 +3701,7 @@ class WebuiCommon:
                     minus = self.find_element(minus_icon, 'xpath', elements=True)
                     index = len(minus)
                     minus[index-1].click()
+                self.wait_till_ajax_done(self.browser)
                 self.click_element('configure-networkbtn1')
                 self.wait_till_ajax_done(self.browser)
                 if tc == 'neg':
@@ -3804,6 +3805,7 @@ class WebuiCommon:
                     minus = self.find_element(minus_icon, 'xpath', elements=True)
                     index = len(minus)
                     minus[index-1].click()
+                self.wait_till_ajax_done(self.browser)
                 self.click_element('configure-networkbtn1')
                 self.wait_till_ajax_done(self.browser)
                 if tc == 'neg':
@@ -3853,6 +3855,7 @@ class WebuiCommon:
                     minus = self.find_element('fa-minus', 'class', elements=True)
                     index = len(minus)
                     minus[index-1].click()
+                self.wait_till_ajax_done(self.browser)
                 self.click_element('configure-networkbtn1')
                 self.wait_till_ajax_done(self.browser)
             else:
@@ -3913,6 +3916,7 @@ class WebuiCommon:
                     minus = self.find_element('fa-minus', 'class', elements=True)
                     index = len(minus) - 1
                     minus[index].click()
+                self.wait_till_ajax_done(self.browser)
                 self.click_element('configure-networkbtn1')
                 self.wait_till_ajax_done(self.browser, wait=10)
                 if tc == 'neg':
