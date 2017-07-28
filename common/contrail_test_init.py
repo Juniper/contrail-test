@@ -465,6 +465,27 @@ class TestInputs(object):
         self.keystone_password = read_config_option(self.config,
                                              'global-controller', 'keystone_password', 'None')
 
+	self.ixia_linux_host_ip = read_config_option(self.config, 
+                                             'traffic_data', 'ixia_linux_host_ip', None)
+
+	self.ixia_host_ip = read_config_option(self.config, 
+                                             'traffic_data', 'ixia_host_ip', None)
+
+	self.spirent_linux_host_ip = read_config_option(self.config, 
+                                             'traffic_data', 'spirent_linux_host_ip', None)
+
+	self.ixia_linux_username = read_config_option(self.config,
+	                                     'traffic_data', 'ixia_linux_username', None)
+
+	self.ixia_linux_password = read_config_option(self.config,
+                                             'traffic_data', 'ixia_linux_password', None)
+
+	self.spirent_linux_username = read_config_option(self.config,
+                                             'traffic_data', 'spirent_linux_username', None)
+
+	self.spirent_linux_password = read_config_option(self.config,
+                                             'traffic_data', 'spirent_linux_password', None)
+
 
     def get_os_env(self, var, default=''):
         if var in os.environ:

@@ -31,6 +31,11 @@ def get_container_name(containers, host, role):
         return containers[host].get(role)
     return None
 
+def get_value_of_key(dct, key, default=None):
+    if dct and key:
+        return dct.get(key, default)
+    return default
+
 def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contrail-test'):
     """
     Configure test environment by creating sanity_params.ini and sanity_testbed.json files
@@ -67,7 +72,6 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
             return ""
 
     cfgm_host = env.roledefs['cfgm'][0]
-
     auth_protocol = get_authserver_protocol()
     try:
         auth_server_ip = get_authserver_ip()
@@ -137,6 +141,15 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         env.test={}
 
     containers = env.test.get('containers')
+    traffic_data = env.test.get('traffic_data')
+    ixia_linux_host_ip = get_value_of_key(traffic_data, 'ixia_linux_host_ip')
+    ixia_host_ip = get_value_of_key(traffic_data, 'ixia_host_ip')
+    spirent_linux_host_ip = get_value_of_key(traffic_data, 'spirent_linux_host_ip')
+    ixia_linux_username = get_value_of_key(traffic_data, 'ixia_linux_username')
+    ixia_linux_password = get_value_of_key(traffic_data, 'ixia_linux_password')
+    spirent_linux_username = get_value_of_key(traffic_data, 'spirent_linux_username')
+    spirent_linux_password = get_value_of_key(traffic_data, 'spirent_linux_password')
+
     if env.get('orchestrator', 'openstack') == 'openstack':
         with settings(host_string = env.roledefs['openstack'][0]), hide('everything'):
             openstack_host_name = run("hostname")
@@ -559,6 +572,13 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
          '__gc_user_pwd__'         : gc_user_pwd,
          '__keystone_password__'   : keystone_password,
          '__slave_orch__'          : slave_orch,
+	 '__ixia_linux_host_ip__'  : ixia_linux_host_ip,
+	 '__ixia_host_ip__'        : ixia_host_ip,
+	 '__spirent_linux_host_ip__': spirent_linux_host_ip,
+	 '__ixia_linux_username__' : ixia_linux_username,
+	 '__ixia_linux_password__' : ixia_linux_password,
+	 '__spirent_linux_username__': spirent_linux_username,
+	 '__spirent_linux_password__': spirent_linux_password,
 
         })
 
