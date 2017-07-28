@@ -690,7 +690,6 @@ class AnalyticsTestSanityWithResource(
         self.logger.info("start time= %s" % (start_time))
         receiver.start()
         sender.start()
-        time.sleep(10)
         # Poll to make usre traffic flows, optional
         # sender.poll()
         # receiver.poll()
@@ -746,6 +745,8 @@ class AnalyticsTestSanityWithResource(
                     self.logger.error("vn_stats   not shown  \
                                 in %s vn uve"%(vn))
                     result = result and False
+
+        time.sleep(10)
         sender.stop()
         receiver.stop()
         print sender.sent, receiver.recv
