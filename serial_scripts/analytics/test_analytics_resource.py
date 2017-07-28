@@ -695,6 +695,21 @@ class AnalyticsTestSanityWithResource(
         # receiver.poll()
         for vn in [self.res.vn1_fixture.vn_fq_name,\
                     self.res.vn2_fixture.vn_fq_name]:
+            #Bandwidth usage
+            if not (int(self.analytics_obj.get_bandwidth_usage\
+                    (self.inputs.collector_ips[0], vn, direction = 'out')) > 0):
+                    self.logger.error("Bandwidth not shown  \
+                                in %s vn uve"%(vn))
+                    result = result and False
+
+            if not (int(self.analytics_obj.get_bandwidth_usage\
+                    (self.inputs.collector_ips[0], vn, direction = 'in')) > 0):
+                    self.logger.error("Bandwidth not shown  \
+                                in %s vn uve"%(vn))
+                    result = result and False
+
+        for vn in [self.res.vn1_fixture.vn_fq_name,\
+                    self.res.vn2_fixture.vn_fq_name]:
                  
             #ACL count        
             if not (int(self.analytics_obj.get_acl\
@@ -706,19 +721,6 @@ class AnalyticsTestSanityWithResource(
             if not (int(self.analytics_obj.get_acl\
                     (self.inputs.collector_ips[0], vn, tier = 'Config')) > 0):
                     self.logger.error("Acl counts not received from Config uve \
-                                in %s vn uve"%(vn))
-                    result = result and False
-
-            #Bandwidth usage        
-            if not (int(self.analytics_obj.get_bandwidth_usage\
-                    (self.inputs.collector_ips[0], vn, direction = 'out')) > 0):
-                    self.logger.error("Bandwidth not shown  \
-                                in %s vn uve"%(vn))
-                    result = result and False
-
-            if not (int(self.analytics_obj.get_bandwidth_usage\
-                    (self.inputs.collector_ips[0], vn, direction = 'in')) > 0):
-                    self.logger.error("Bandwidth not shown  \
                                 in %s vn uve"%(vn))
                     result = result and False
 
