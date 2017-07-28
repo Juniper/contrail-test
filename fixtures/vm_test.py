@@ -2074,8 +2074,8 @@ class VMFixture(fixtures.Fixture):
             # Create the file on the remote machine so that put can be done
             absolute_filename = '/var/lib/tftpboot/' + filename
             dest_vm_fixture.run_cmd_on_vm(
-                cmds=['sudo touch %s' % (absolute_filename),
-                      'sudo chmod 777 %s' % (absolute_filename)])
+                cmds=['touch %s' % (absolute_filename),
+                      'chmod 777 %s' % (absolute_filename)], as_sudo=True)
         else:
             self.logger.error('No transfer mode specified!!')
             return False
@@ -2102,8 +2102,9 @@ class VMFixture(fixtures.Fixture):
                     cmds=['rm -f %s' % (absolute_filename)])
                 if mode == 'tftp':
                     dest_vm_fixture.run_cmd_on_vm(
-                        cmds=['sudo touch %s' % (absolute_filename),
-                              'sudo chmod 777 %s' % (absolute_filename)])
+                        cmds=['touch %s' % (absolute_filename),
+                              'chmod 777 %s' % (absolute_filename)],
+                        as_sudo=True)
                 if expectation:
                     return False
         return True
@@ -2339,15 +2340,17 @@ class VMFixture(fixtures.Fixture):
         Creates the file and sends it to ip dest_ip
         '''
         nc_cmd = 'nc ' + nc_options
-        # Create file
-        cmd = 'dd bs=%s count=1 if=/dev/zero of=%s' % (size, filename)
-        self.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
-        host = self.inputs.host_data[self.vm_node_ip]
+        dd_cmd = 'dd bs=%s count=1 if=/dev/zero of=%s' % (size, filename)
+        nc_send_cmd = '%s -p %s %s %s < %s' % (nc_cmd, local_port, dest_ip,
+            remote_port, filename)
 
-        # Transfer the file
-        cmd = '%s -p %s %s %s < %s' % (nc_cmd, local_port, dest_ip, remote_port,
-            filename)
-        self.run_nc_with_retry(nc_cmd=cmd, retry=retry)
+        # Create the file and transfer it
+        cmd = '%s;%s' % (dd_cmd, nc_send_cmd)
+        output = self.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+
+        if retry and output and output[cmd]:
+            if "bind failed: Address already in use" in output[cmd]:
+                self.run_nc_with_retry(nc_cmd=nc_send_cmd, retry=retry)
 
     @retry(delay=3, tries=10)
     def verify_file_size_on_vm(self, filename, size='100', expectation=True):
@@ -2395,9 +2398,9 @@ class VMFixture(fixtures.Fixture):
             #so run without -p option also
             nc_l = ['%s -ll -p %s > %s' % (nc_cmd, listen_port, filename),
                         '%s -ll %s > %s' % (nc_cmd, listen_port, filename)]
-            cmds=[ 'rm -f %s;ls -la' % (filename) ]
+            cmds=[ 'rm -f %s;ls -la;%s' % (filename, nc_l[0]) ]
             dest_vm_fixture.run_cmd_on_vm(cmds=cmds, as_sudo=True, as_daemon=True)
-            dest_vm_fixture.run_cmd_on_vm(cmds=nc_l, as_sudo=True, as_daemon=True)
+            dest_vm_fixture.run_cmd_on_vm(cmds=[nc_l[1]], as_sudo=True, as_daemon=True)
 
         self.nc_send_file_to_ip(filename, dest_vm_ip, size=size,
             local_port=local_port, remote_port=listen_port,
@@ -2783,17 +2786,36 @@ class VMFixture(fixtures.Fixture):
         return name
     # end get_vm_interface_name
 
+    @retry(delay=2, tries=10)
+    def wait_till_interface_created(self, interface, ip=None):
+        '''
+        Wait till interface is found on VM and it has the given ip assigned
+        '''
+        interface_list = self.get_vm_interface_list(ip=ip)
+
+        if interface in interface_list:
+            self.logger.info("Interface %s is found on VM %s" % (interface,
+                self.vm_id))
+            return (True, None)
+        else:
+            self.logger.warn("Interface %s is not found on VM %s" % (interface,
+                self.vm_id))
+            return (False, None)
+
     def get_vm_interface_list(self, ip=None):
         '''if ip is None, returns all interfaces list.
            this method should work on ubuntu as well as redhat and centos'''
 
+        name = []
         cmd = 'ifconfig -a'
         if ip:
             cmd = cmd + '| grep %s -A2 -B4' % (ip)
         cmd = cmd + \
             '| grep -i \'hwaddr\|flags\' | awk \'{print $1}\' | cut -d \':\' -f 1'
-        name = self.run_cmd_on_vm([cmd])[cmd].splitlines()
+        output = self.run_cmd_on_vm([cmd])
 
+        if output and output[cmd]:
+            name = output[cmd].splitlines()
         return name
 
     def arping(self, ip, interface=None):
