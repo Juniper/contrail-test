@@ -282,6 +282,10 @@ class WebuiCommon:
         return self._get_list_api('service-appliance-sets')
     # end get_svc_appl_sets_api
 
+    def get_vm_list_api(self):
+        return self._get_list_api('virtual-machines')
+    # end get_vm_list_api
+
     def log_msg(self, t, msg):
         if t == 'info':
             self.logger.info(msg)
@@ -1259,8 +1263,11 @@ class WebuiCommon:
         self.click_icon_caret(row_index, length=length, net=1)
     # end click_monitor_instances_basic_in_webui
 
-    def select_max_records(self, option='networks'):
-        grid_br = self.find_element('project-' + option)
+    def select_max_records(self, option='networks', grid_name=None):
+        if not grid_name:
+            grid_name = 'project-' + option
+        grid_br = self.find_element(grid_name)
+        self.wait_till_ajax_done(self.browser)
         br = self.find_element('grid-canvas', 'class', browser=grid_br)
         self.click_element('slick-pager-sizes', 'class', browser=grid_br)
         select_result = "//li[contains(@class,'select2-results-dept-0')]"
@@ -1279,7 +1286,11 @@ class WebuiCommon:
     def click_monitor_networks_basic(self, row_index, option='networks'):
         self.click_element(option.title(), 'link_text', jquery=False)
         self.wait_till_ajax_done(self.browser, wait=2)
-        br = self.select_max_records(option)
+        if option == 'projects':
+            grid_name = option
+        else:
+            grid_name = None
+        br = self.select_max_records(option, grid_name)
         self.click_icon_caret(row_index, net=1, obj=br)
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_instances_basic_in_webui
