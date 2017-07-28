@@ -1909,9 +1909,16 @@ class WebuiCommon:
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_networks_advance_in_webui
 
-    def click_monitor_instances_advance(self, row_index, length=None):
-        self.click_monitor_instances_basic(row_index, length)
-        rows = self.get_rows(canvas=True)
+    def click_monitor_instances_advance(self, row_index, length=None, option=None):
+        if option == 'dashboard':
+            self.click_monitor_networking_dashboard('instances')
+            br = self.select_max_records('instances')
+            rows = self.get_rows(canvas=True, browser=br)
+            self.click_element('fa-caret-right', 'class', browser=rows[row_index])
+        else:
+            self.click_monitor_instances_basic(row_index, length)
+            br = self.browser
+        rows = self.get_rows(canvas=True, browser=br)
         self.click_element('fa-code', 'class', browser=rows[row_index + 1])
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_instances_advance_in_webui
@@ -3330,6 +3337,8 @@ class WebuiCommon:
             for lbl in label:
                 key = self.find_element('key', 'class', browser=lbl)
                 value = self.find_element('value', 'class', browser=lbl)
+                if value.text == '':
+                    continue
                 ui_list.append(value.text)
         return ui_list
     # end get_item_list
