@@ -74,10 +74,6 @@ class TestDM(BaseDM, Md5Base, BaseNeutronTest):
         self.does_mx_have_config(cmd)
 
         self.is_dm_going_through()
-        assert self.check_bgp_status(is_mx_present=True)
-        assert self.check_tcp_status()
-
-        self.delete_vn_from_devices
 
         return True
 
