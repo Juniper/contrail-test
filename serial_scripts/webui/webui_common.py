@@ -1475,8 +1475,7 @@ class WebuiCommon:
     # end click_monitor_common_advance_in_webui
 
     def click_monitor_common_basic(self, row_index):
-        self.wait_till_ajax_done(self.browser)
-        time.sleep(3)
+        self.wait_till_ajax_done(self.browser, wait=10)
         self.click_icon_caret(row_index)
         self.click_element(["div[class*='widget-box transparent']", \
             'fa-cog'], ['css', 'class'])
