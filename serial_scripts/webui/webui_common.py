@@ -3400,8 +3400,8 @@ class WebuiCommon:
             except (WebDriverException, TimeoutException):
                 break
     # end expand_advance_details
-    
-    def get_value_of_key(self, rows_detail, exp_key):
+
+    def get_value_of_key(self, rows_detail, exp_key, view='basic'):
         """
             Returns the value of a specific key when a list of row details is passed
             PARAMETERS :
@@ -3409,11 +3409,18 @@ class WebuiCommon:
                 exp_key : Expected key whose value needs to be returned
         """
         value1 = ''
+        flag = True
         for item in rows_detail:
-            key1 = self.find_element('key', 'class', browser=item).text
-            if key1 == exp_key:
-                value1 = self.find_element('value', 'class', browser=item).text
-                break
+            if view == 'advanced':
+                if ':'  in item.text:
+                    flag = True
+                else:
+                    flag = False
+            if flag:
+                key1 = self.find_element('key', 'class', browser=item).text
+                if key1 == exp_key:
+                    value1 = self.find_element('value', 'class', browser=item).text
+                    break
         return value1
     # end get_value_of_key
     
@@ -3747,7 +3754,7 @@ class WebuiCommon:
                     minus_icon = "//i[contains(@class,'fa-minus')]"
                     minus = self.find_element(minus_icon, 'xpath', elements=True)
                     index = len(minus)
-                    minus[index-1].click()
+                    minus[index-3].click()
                 self.wait_till_ajax_done(self.browser)
                 self.click_element('configure-networkbtn1')
                 self.wait_till_ajax_done(self.browser)
@@ -3851,7 +3858,7 @@ class WebuiCommon:
                     minus_icon = "//i[contains(@class,'fa-minus')]"
                     minus = self.find_element(minus_icon, 'xpath', elements=True)
                     index = len(minus)
-                    minus[index-1].click()
+                    minus[index-3].click()
                 self.wait_till_ajax_done(self.browser)
                 self.click_element('configure-networkbtn1')
                 self.wait_till_ajax_done(self.browser)
@@ -3901,7 +3908,7 @@ class WebuiCommon:
                 else:
                     minus = self.find_element('fa-minus', 'class', elements=True)
                     index = len(minus)
-                    minus[index-1].click()
+                    minus[index-3].click()
                 self.wait_till_ajax_done(self.browser)
                 self.click_element('configure-networkbtn1')
                 self.wait_till_ajax_done(self.browser)
@@ -3961,7 +3968,7 @@ class WebuiCommon:
                         imp_route_target = self.find_element('user_created_import_route_targets', \
                                                      elements=True)
                     minus = self.find_element('fa-minus', 'class', elements=True)
-                    index = len(minus) - 1
+                    index = len(minus) - 3 
                     minus[index].click()
                 self.wait_till_ajax_done(self.browser)
                 self.click_element('configure-networkbtn1')

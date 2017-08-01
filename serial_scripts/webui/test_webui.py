@@ -2683,7 +2683,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
            Pass Criteria: Step 2 should pass
         '''
         result = True
-        bgp_params_list  = [topo.asn_num, 'Disabled', topo.bgp_restart_time,
+        bgp_params_list  = [topo.global_asn_num, 'Disabled', topo.bgp_restart_time,
                           topo.bgp_llgr_time, topo.bgp_end_rib, topo.host_prefix]
         if not self.webui.edit_and_verify_global_config('bgp', bgp_params_list, default=False):
             result = result and False
