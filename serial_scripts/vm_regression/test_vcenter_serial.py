@@ -57,11 +57,11 @@ class TestVcenterSerial(BaseVnVmTest):
         for cfgm in self.inputs.cfgm_ips:
             cmd = 'netstat -nalp | grep :443 && service contrail-vcenter-plugin restart'
             plugin_mstr = self.inputs.run_cmd_on_server(cfgm, cmd)
-            status = self.inputs.run_cmd_on_server(cfgm, 'contrail-status | grep vcenter')
+            status = self.inputs.run_cmd_on_server(cfgm, 'service contrail-vcenter-plugin status')
             self.logger.info('Vcenter plugin status on cfgm %s is %s' % (cfgm, status))
             sleep(6)
-            if 'active' not in status.split():
-               self.logger.error('Plugin status is not ACTIVE')
+            if 'running' not in status:
+               self.logger.error('Plugin status is not running')
                return False
             self.logger.info('Vcenter plugin status on cfgm %s is %s' % (cfgm, status))
         assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
@@ -108,7 +108,7 @@ class TestVcenterSerial(BaseVnVmTest):
         self.vm2_compute_vm = self.get_compute_vm(self.vm_host2).split('@')[1]
         self.inputs.run_cmd_on_server(self.vm1_compute_vm, 'reboot')
         self.inputs.run_cmd_on_server(self.vm2_compute_vm, 'reboot')
-        sleep(20)
+        sleep(60)
         for ip in self.inputs.compute_ips:
             status_after = self.inputs.run_cmd_on_server(ip, 'contrail-status').split()
             print status_after

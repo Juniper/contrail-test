@@ -1435,5 +1435,7 @@ class TestPolicyAclIpv4v6(TestPolicyAcl):
             return(False, 'Skipping IPv6 Test on vcenter setup')
         if not self.connections.orch.is_feature_supported('ipv6'):
             return(False, 'IPv6 tests not supported in this environment ')
+        if self.inputs.vcenter_gw_setup:
+            return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
 
