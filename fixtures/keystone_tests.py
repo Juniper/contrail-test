@@ -322,7 +322,7 @@ class KeystoneCommands():
     @property
     def domain_id(self):
         if not getattr(self, '_domain_id', None):
-            self._domain_id = self.session.auth.get_auth_ref(self.session)['domain']['id']
+            self._domain_id = self.session.auth.get_auth_ref(self.session).domain_id
         return self._domain_id
 
     def get_id(self):
