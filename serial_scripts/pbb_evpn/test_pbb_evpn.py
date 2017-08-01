@@ -73,6 +73,7 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
         vmi_fixtures = ret_dict['vmi_fixtures']
         vn_fixtures = ret_dict['vn_fixtures']
         vm_fixtures = ret_dict['vm_fixtures']
+        pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Send Traffic
         for stream in traffic.values():
@@ -84,7 +85,8 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
         for stream in traffic.values():
             src_vmi = vm[stream['src']]['vmi'][0]
             assert self.verify_mac_learning(vmi_fixtures[src_vmi],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['src_cmac'])
     # end test_mac_learning_single_isid
 
 
@@ -111,6 +113,7 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
         vmi_fixtures = ret_dict['vmi_fixtures']
         vn_fixtures = ret_dict['vn_fixtures']
         vm_fixtures = ret_dict['vm_fixtures']
+        pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Pinging all the VMIs
         for src_vm_fixture in vm_fixtures.values():
@@ -132,7 +135,8 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
 
             #Verify mac learned
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['src_cmac'])
 
         #Send reverse traffic to verify if mac learned earlier could be used further
         for stream in traffic.values():
@@ -145,7 +149,8 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
 
             #Verify mac learned
             assert self.verify_mac_learning(vmi_fixtures[stream['dst_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['dst_cmac'])
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['dst_cmac'])
 
     # end test_mac_learning_subIntf_single_isid
 
@@ -208,6 +213,7 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
         vmi_fixtures = ret_dict['vmi_fixtures']
         vn_fixtures = ret_dict['vn_fixtures']
         vm_fixtures = ret_dict['vm_fixtures']
+        pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Send Traffic
         for stream in traffic.values():
@@ -219,7 +225,8 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
         for stream in traffic.values():
             src_vmi = vm[stream['src']]['vmi'][0]
             assert self.verify_mac_learning(vmi_fixtures[src_vmi],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['src_cmac'])
 
     # end test_mac_learning_multi_isid
 
@@ -294,6 +301,7 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
         vmi_fixtures = ret_dict['vmi_fixtures']
         vn_fixtures = ret_dict['vn_fixtures']
         vm_fixtures = ret_dict['vm_fixtures']
+        pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Traffic
         # Pinging all the VMIs as per defined streams in traffic
@@ -312,18 +320,17 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
         #Verify mac learned
         for stream in traffic.values():
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+                bd_fixtures[stream['bd']],  pbb_compute_node_ips,
+                cmac=stream['src_cmac'])
 
         #Verify mac not learned across BDs
         assert self.verify_mac_learning(vmi_fixtures[traffic['stream1']['src_vmi']],
-            bd_fixtures[traffic['stream1']['bd']],
-            cmac=traffic['stream2']['src_cmac'],
-            expectation=False)
+            bd_fixtures[traffic['stream1']['bd']], pbb_compute_node_ips,
+            cmac=traffic['stream2']['src_cmac'], expectation=False)
 
         assert self.verify_mac_learning(vmi_fixtures[traffic['stream2']['src_vmi']],
-            bd_fixtures[traffic['stream2']['bd']],
-            cmac=traffic['stream1']['src_cmac'],
-            expectation=False)
+            bd_fixtures[traffic['stream2']['bd']], pbb_compute_node_ips,
+            cmac=traffic['stream1']['src_cmac'], expectation=False)
 
         #Update aging time of bd1, it should not affect aging time of bd2
         mac_aging_time = 5
@@ -336,14 +343,15 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
 
         #Verify mac aged out for bd1
         assert self.verify_mac_learning(vmi_fixtures[traffic['stream1']['src_vmi']],
-            bd_fixtures[traffic['stream1']['bd']], cmac=traffic['stream1']['src_cmac'],
-            expectation=False)
+            bd_fixtures[traffic['stream1']['bd']], pbb_compute_node_ips,
+            cmac=traffic['stream1']['src_cmac'], expectation=False)
 
         #Verify mac not aged out for bd2
         assert self.verify_mac_learning(vmi_fixtures[traffic['stream2']['src_vmi']],
-            bd_fixtures[traffic['stream2']['bd']], cmac=traffic['stream2']['src_cmac'])
+            bd_fixtures[traffic['stream2']['bd']], pbb_compute_node_ips,
+            cmac=traffic['stream2']['src_cmac'])
 
-    # end test_mac_learning_subIntf_multi_isid
+# end test_mac_learning_subIntf_multi_isid
 
 class TestPbbEvpnMacAging(PbbEvpnTestBase):
 
@@ -378,6 +386,7 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
         vmi_fixtures = ret_dict['vmi_fixtures']
         vn_fixtures = ret_dict['vn_fixtures']
         vm_fixtures = ret_dict['vm_fixtures']
+        pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Pinging all the VMIs
         for src_vm_fixture in vm_fixtures.values():
@@ -399,7 +408,8 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
 
             #Verify mac learned
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['src_cmac'])
 
         #Wait till learnt mac aged out
         self.logger.info("Waiting for %s seconds, till learnt C-MAC ages out.."
@@ -408,8 +418,8 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
         #Verify mac aged out
         for stream in traffic.values():
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'],
-                expectation=False)
+                bd_fixtures[stream['bd']],  pbb_compute_node_ips,
+                cmac=stream['src_cmac'], expectation=False)
     # end test_mac_aging_default
 
     @preposttest_wrapper
@@ -433,6 +443,7 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
         vmi_fixtures = ret_dict['vmi_fixtures']
         vn_fixtures = ret_dict['vn_fixtures']
         vm_fixtures = ret_dict['vm_fixtures']
+        pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Pinging all the VMIs
         for src_vm_fixture in vm_fixtures.values():
@@ -454,7 +465,8 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
 
             #Verify mac learned
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['src_cmac'])
 
         #Update the mac aging time of BD
         mac_aging_time = 5
@@ -471,7 +483,8 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
 
             #Verify mac learned
             assert self.verify_mac_learning(vmi_fixtures[stream['dst_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['dst_cmac'])
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['dst_cmac'])
 
         #Wait till learnt mac aged out
         self.logger.info("Waiting for %s seconds, till learnt C-MAC ages out.."
@@ -482,12 +495,12 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
         for stream in traffic.values():
             #For forward traffic
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'],
-                expectation=False)
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['src_cmac'], expectation=False)
             #For reverse traffic
             assert self.verify_mac_learning(vmi_fixtures[stream['dst_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['dst_cmac'],
-                expectation=False)
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['dst_cmac'], expectation=False)
 
     # end test_mac_aging_dynamic_update
 
@@ -513,6 +526,7 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
         vmi_fixtures = ret_dict['vmi_fixtures']
         vn_fixtures = ret_dict['vn_fixtures']
         vm_fixtures = ret_dict['vm_fixtures']
+        pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Pinging all the VMIs
         for src_vm_fixture in vm_fixtures.values():
@@ -534,7 +548,8 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
 
             #Verify mac learned
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['src_cmac'])
 
         #Wait for sometime to verify mac not aged out
         self.logger.info("Waiting for %s seconds"
@@ -544,7 +559,8 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
         #Verify mac not aged out
         for stream in traffic.values():
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['src_cmac'])
 
 
         #Update the mac aging time of BD, after this mac should age out
@@ -559,8 +575,8 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
         #Verify mac aged out
         for stream in traffic.values():
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'],
-                expectation=False)
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['src_cmac'], expectation=False)
     #end test_mac_aging_zero
 
 class TestPbbEvpnMacMove(PbbEvpnTestBase):
@@ -595,6 +611,7 @@ class TestPbbEvpnMacMove(PbbEvpnTestBase):
         vmi_fixtures = ret_dict['vmi_fixtures']
         vn_fixtures = ret_dict['vn_fixtures']
         vm_fixtures = ret_dict['vm_fixtures']
+        pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Pinging all the VMIs
         for src_vm_fixture in vm_fixtures.values():
@@ -616,7 +633,8 @@ class TestPbbEvpnMacMove(PbbEvpnTestBase):
 
             #Verify mac learned
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['src_cmac'])
 
         #Mac move
         #Send the reverse traffic using earlier learnt C-MAC as src C-MAC from remote VMI,
@@ -631,7 +649,8 @@ class TestPbbEvpnMacMove(PbbEvpnTestBase):
             for i in xrange(0,5):
                 #Verify mac movement
                 result = self.verify_mac_learning(vmi_fixtures[stream['dst_vmi']],
-                    bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+                    bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                    cmac=stream['src_cmac'])
                 #Wait for few seconds before retrying mac move verification, agent introspect may take sometime to update
                 sleep(2)
 
@@ -672,6 +691,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         vmi_fixtures = ret_dict['vmi_fixtures']
         vn_fixtures = ret_dict['vn_fixtures']
         vm_fixtures = ret_dict['vm_fixtures']
+        pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Pinging all the VMIs
         for src_vm_fixture in vm_fixtures.values():
@@ -696,8 +716,8 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
 
             #Verify mac not learned
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'],
-                expectation=False)
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['src_cmac'], expectation=False)
 
         #Enable Mac learning in BD
         bd_fixtures['bd1'].update_bd(mac_learning_enabled=True)
@@ -712,7 +732,8 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
 
             #Verify mac learned
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['src_cmac'])
 
     # end test_mac_learning_disable_at_bd
 
@@ -739,6 +760,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         vmi_fixtures = ret_dict['vmi_fixtures']
         vn_fixtures = ret_dict['vn_fixtures']
         vm_fixtures = ret_dict['vm_fixtures']
+        pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Pinging all the VMIs
         for src_vm_fixture in vm_fixtures.values():
@@ -760,7 +782,8 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
 
             #Verify mac learned
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['src_cmac'])
 
         #Change ISID in BD
         old_isid = bd_fixtures['bd1'].isid
@@ -770,8 +793,8 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         for stream in traffic.values():
             #Verify already learnt C-MAC is deleted
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'],
-                expectation=False)
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['src_cmac'], expectation=False)
 
         #Send reverse traffic after ISID change
         for stream in traffic.values():
@@ -783,7 +806,8 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
 
             #Verify mac learned
             assert self.verify_mac_learning(vmi_fixtures[stream['dst_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['dst_cmac'])
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['dst_cmac'])
 
     # end test_change_isid_at_bd
 
@@ -918,6 +942,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         vmi_fixtures = ret_dict['vmi_fixtures']
         vn_fixtures = ret_dict['vn_fixtures']
         vm_fixtures = ret_dict['vm_fixtures']
+        pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Traffic
         # Pinging all the VMIs as per defined streams in traffic
@@ -940,8 +965,8 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         #Verify C-MACs get deleted
         for stream in traffic.values():
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'],
-                expectation=False)
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['src_cmac'], expectation=False)
 
         # Send Traffic again
         for stream in traffic.values():
@@ -954,7 +979,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         #Verify C-MACs learnt again
         for stream in traffic.values():
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+                bd_fixtures[stream['bd']], pbb_compute_node_ips, cmac=stream['src_cmac'])
 
     #end test_swap_isids_on_bds
 
@@ -984,6 +1009,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         vmi_fixtures = ret_dict['vmi_fixtures']
         vn_fixtures = ret_dict['vn_fixtures']
         vm_fixtures = ret_dict['vm_fixtures']
+        pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Pinging all the VMIs
         for src_vm_fixture in vm_fixtures.values():
@@ -1017,7 +1043,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
 
             #Verify mac learned
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'])
+                bd_fixtures[stream['bd']], pbb_compute_node_ips, cmac=stream['src_cmac'])
 
         #Revert back isid to 0
         bd_fixtures[test_bd].update_bd(isid=0)
@@ -1025,7 +1051,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         #Verify mac flushed out
         for stream in traffic.values():
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
-                bd_fixtures[stream['bd']], cmac=stream['src_cmac'],
-                expectation=False)
+                bd_fixtures[stream['bd']], pbb_compute_node_ips,
+                cmac=stream['src_cmac'], expectation=False)
 
     #end test_bd_with_isid_zero
