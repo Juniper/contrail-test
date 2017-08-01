@@ -29,7 +29,8 @@ class TestBackupRestore(BackupRestoreBaseTest,VerifyFeatureTestCases):
     def runTest(self):
         pass
     #end runTest
-    
+
+    @test.attr(type=['backup']) 
     @preposttest_wrapper
     def test_fiptraffic_before_backup(self):
         ''' Test to create policy, security group  and floating ip rules on common resources and checking if they work fine
@@ -37,6 +38,7 @@ class TestBackupRestore(BackupRestoreBaseTest,VerifyFeatureTestCases):
         return self.verify_config_before_feature_test()
     #end test_fiptraffic_before_backup
 
+    @test.attr(type=['backup'])
     @preposttest_wrapper
     def test_to_backup_restore(self):
         '''Test to backup and restore all the configurations and data'''
@@ -54,28 +56,29 @@ class TestBackupRestore(BackupRestoreBaseTest,VerifyFeatureTestCases):
             reset_cmd = "cd " +fab_path +";fab reset_config "
             
             self.logger.info("Starting backup")
-            status = run(backup_cmd)
+            status = run(backup_cmd,timeout=5000)
             self.logger.debug("LOG for fab backup_data : %s" % status)
             assert not(status.return_code), 'Failed while running  backup_data'
             result = result and not(status.return_code)
             self.logger.info("Backup completed")
             
             self.logger.info("Starting reset config")
-            status = run(reset_cmd)
+            status = run(reset_cmd,timeout=5000)
             self.logger.debug("LOG for fab reset_config : %s" % status)
             assert not(status.return_code), 'Failed while running reset_config'
             result = result and not(status.return_code)
             self.logger.info("Reset configuration completed")
             
             self.logger.info("Starting restore")
-            status = run(restore_cmd)
+            status = run(restore_cmd,timeout=5000)
             self.logger.debug("LOG for fab restore_data: %s" % status)
             assert not(status.return_code), 'Failed while running restore_data'
             result=result and not(status.return_code)
             self.logger.info("Restore of data and configuration completed")  
         return result
     #end test_backup_restore   
-    
+
+    @test.attr(type=['backup'])
     @preposttest_wrapper
     def test_traffic_after_restore(self):
         '''Test to test traffic after restore using previouly defined  policy and floating ip and then adding new policy,fip to new resources also  validate service chaining in network  datapath and security group
