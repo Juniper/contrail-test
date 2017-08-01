@@ -54,21 +54,21 @@ class TestBackupRestore(BackupRestoreBaseTest,VerifyFeatureTestCases):
             reset_cmd = "cd " +fab_path +";fab reset_config "
             
             self.logger.info("Starting backup")
-            status = run(backup_cmd)
+            status = run(backup_cmd,timeout=5000)
             self.logger.debug("LOG for fab backup_data : %s" % status)
             assert not(status.return_code), 'Failed while running  backup_data'
             result = result and not(status.return_code)
             self.logger.info("Backup completed")
             
             self.logger.info("Starting reset config")
-            status = run(reset_cmd)
+            status = run(reset_cmd,timeout=5000)
             self.logger.debug("LOG for fab reset_config : %s" % status)
             assert not(status.return_code), 'Failed while running reset_config'
             result = result and not(status.return_code)
             self.logger.info("Reset configuration completed")
             
             self.logger.info("Starting restore")
-            status = run(restore_cmd)
+            status = run(restore_cmd,timeout=5000)
             self.logger.debug("LOG for fab restore_data: %s" % status)
             assert not(status.return_code), 'Failed while running restore_data'
             result=result and not(status.return_code)
