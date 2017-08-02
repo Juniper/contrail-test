@@ -147,6 +147,7 @@ class VMFixture(fixtures.Fixture):
         self._vrf_ids = {}
         self._interested_computes = []
         self.created = False
+        self.refresh = False
 
     # end __init__
 
@@ -253,10 +254,10 @@ class VMFixture(fixtures.Fixture):
         if vn_fq_name:
             vm_ips = self.get_vm_ip_dict()[vn_fq_name]
         else:
-            if not getattr(self, 'vm_ips', None):
+            if not getattr(self, 'vm_ips', None) or self.refresh:
                 for vm_obj in self.vm_objs:
                     for vn_name in self.vn_names:
-                        for ip in self.orch.get_vm_ip(vm_obj, vn_name):
+                        for ip in self.orch.get_vm_ip(vm_obj, vn_name,refresh=self.refresh):
                             if self.hack_for_v6(ip):
                                 continue
                             self.vm_ips.append(ip)
@@ -383,7 +384,7 @@ class VMFixture(fixtures.Fixture):
         return self.cs_instance_ip_objs
 
     def get_vm_ip_dict(self, include_secondary_ip=False):
-        if not getattr(self, 'vm_ip_dict', None):
+        if not getattr(self, 'vm_ip_dict', None) or self.refresh:
             self.vm_ip_dict = defaultdict(list)
             iip_objs = self.get_iip_obj_from_api_server(refresh=True)[1]
             for iip_obj in iip_objs:
@@ -566,7 +567,7 @@ class VMFixture(fixtures.Fixture):
         return True
     # end verify_vm_in_vrouter
 
-    def verify_on_setup(self, force=False):
+    def verify_on_setup(self, force=False,refresh=False):
         #TO DO: sandipd - Need adjustments in multiple places to make verification success
         # in vcenter gateway setup.Will do gradually.For now made changes just needed to make few functionality
         #test cases pass
@@ -577,6 +578,7 @@ class VMFixture(fixtures.Fixture):
             self.logger.debug('Skipping VM %s verification' % (self.vm_name))
             return True
         result = True
+        self.refresh = refresh
         vm_status = self.orch.wait_till_vm_is_active(self.vm_obj)
         if type(vm_status) is tuple:
             if vm_status[1] in 'ERROR':
@@ -774,7 +776,10 @@ class VMFixture(fixtures.Fixture):
     def get_tap_intf_of_vmi(self, vmi_uuid):
         inspect_h = self.agent_inspect[self.vm_node_ip]
         vna_tap_id = inspect_h.get_vna_tap_interface_by_vmi(vmi_id=vmi_uuid)
-        return vna_tap_id[0]
+        try:
+            return vna_tap_id[0]
+        except Exception as e:
+            self.logger.exception("Caught exception as %s"%(e))
 
     def get_tap_intf_of_vm(self):
         inspect_h = self.agent_inspect[self.vm_node_ip]
@@ -787,7 +792,7 @@ class VMFixture(fixtures.Fixture):
             return vmi_ids[vn_fq_name]
 
     def get_vmi_ids(self, refresh=False):
-        if not getattr(self, 'vmi_ids', None) or refresh:
+        if not getattr(self, 'vmi_ids', None) or refresh or self.refresh:
             self.vmi_ids = dict()
             vmi_objs = self.get_vmi_obj_from_api_server(refresh=refresh)[1]
             for vmi_obj in vmi_objs:
@@ -795,7 +800,7 @@ class VMFixture(fixtures.Fixture):
         return self.vmi_ids
 
     def get_mac_addr_from_config(self):
-        if not getattr(self, 'mac_addr', None):
+        if not getattr(self, 'mac_addr', None) or self.refresh:
             vmi_objs = self.get_vmi_obj_from_api_server()[1]
             for vmi_obj in vmi_objs:
                 self.mac_addr[vmi_obj.vn_fq_name] = vmi_obj.mac_addr
@@ -811,12 +816,15 @@ class VMFixture(fixtures.Fixture):
     def get_local_ips(self, refresh=False):
         if refresh or not getattr(self, 'local_ips', None):
             for (vn_fq_name, vmi) in self.get_vmi_ids().iteritems():
-                self.local_ips[vn_fq_name] = self.get_tap_intf_of_vmi(
-                    vmi)['mdata_ip_addr']
+                try:
+                    self.local_ips[vn_fq_name] = self.get_tap_intf_of_vmi(
+                        vmi)['mdata_ip_addr']
+                except Exception as e:
+                    self.logger.exception(e) 
         return self.local_ips
 
     def get_local_ip(self, refresh=False):
-        if refresh or not getattr(self, '_local_ip', None):
+        if refresh or not getattr(self, '_local_ip', None) or self.refresh:
             local_ips = self.get_local_ips(refresh=refresh)
             for vn_fq_name in self.vn_fq_names:
                 if self.vnc_lib_fixture.get_active_forwarding_mode(vn_fq_name) == 'l2':
@@ -2204,7 +2212,8 @@ class VMFixture(fixtures.Fixture):
         return vm_ip
     # end def
 
-    def wait_till_vm_is_up(self):
+    def wait_till_vm_is_up(self,refresh=False):
+        self.refresh = refresh
         status = self.wait_till_vm_up()
         return_status = None
         if type(status) == tuple:
