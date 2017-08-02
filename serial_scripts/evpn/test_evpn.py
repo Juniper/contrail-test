@@ -194,7 +194,7 @@ class TestEvpnCasesVxlan(base.BaseEvpnTest, VerifyEvpnCases):
     #end runTest
 
     @skip_because(hypervisor='docker',msg='Bug 1461423:Need privileged access')
-    @test.attr(type=['serial', 'sanity' ])
+    @test.attr(type=['cb_sanity', 'serial', 'sanity' ])
     @preposttest_wrapper
     def test_with_vxlan_encap_dns_disabled_for_l2_vn(self):
         ''' 1. Launch a virtual network with dhcp_enable=False and DNS disabled

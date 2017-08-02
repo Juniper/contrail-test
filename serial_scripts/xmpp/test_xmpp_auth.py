@@ -40,7 +40,7 @@ class TestXmpptests(XmppBase, ConfigPolicy):
         else:
             return
 
-    @test.attr(type=['sm_sanity'])
+    @test.attr(type=['cb_sanity', 'sm_sanity'])
     @preposttest_wrapper
     def test_precedence_xmpp_auth(self):
         """
