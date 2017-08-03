@@ -97,6 +97,62 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
         self.addCleanup(vnc_lib_fixture.set_flow_export_rate,0)
     # end setup_flow_export_rate
 
+    def verify_vna_stats(self,stat_type=None):
+        result = True
+        for vn in [self.res.vn1_fixture.vn_fq_name,\
+                    self.res.vn2_fixture.vn_fq_name]:
+            if stat_type == 'bandwidth_usage':
+                #Bandwidth usage
+                if not (int(self.analytics_obj.get_bandwidth_usage\
+                        (self.inputs.collector_ips[0], vn, direction = 'out')) > 0):
+                        self.logger.error("Bandwidth not shown  \
+                                    in %s vn uve"%(vn))
+                        result = result and False
+
+                if not (int(self.analytics_obj.get_bandwidth_usage\
+                        (self.inputs.collector_ips[0], vn, direction = 'in')) > 0):
+                        self.logger.error("Bandwidth not shown  \
+                                    in %s vn uve"%(vn))
+                        result = result and False
+            else:
+                #ACL count
+                if not (int(self.analytics_obj.get_acl\
+                        (self.inputs.collector_ips[0],vn)) > 0):
+                        self.logger.error("Acl counts not received from Agent uve \
+                                    in %s vn uve"%(vn))
+                        result = result and False
+
+                if not (int(self.analytics_obj.get_acl\
+                        (self.inputs.collector_ips[0], vn, tier = 'Config')) > 0):
+                        self.logger.error("Acl counts not received from Config uve \
+                                    in %s vn uve"%(vn))
+                        result = result and False
+                #Flow count
+                if not (int(self.analytics_obj.get_flow\
+                        (self.inputs.collector_ips[0], vn, direction = 'egress')) > 0):
+                        self.logger.error("egress flow  not shown  \
+                                    in %s vn uve"%(vn))
+                        result = result and False
+
+                if not (int(self.analytics_obj.get_flow\
+                        (self.inputs.collector_ips[0], vn, direction = 'ingress')) > 0):
+                        self.logger.error("ingress flow  not shown  \
+                                    in %s vn uve"%(vn))
+                        result = result and False
+
+                #VN stats
+                vns = [self.res.vn1_fixture.vn_fq_name,\
+                        self.res.vn2_fixture.vn_fq_name]
+                vns.remove(vn)
+                other_vn = vns[0]
+                if not (self.analytics_obj.get_vn_stats\
+                        (self.inputs.collector_ips[0], vn, other_vn)):
+                        self.logger.error("vn_stats   not shown  \
+                                    in %s vn uve"%(vn))
+                        result = result and False
+        return result
+    #end verify_vna_stats
+
 class ResourceFactory:
     factories = {}
     def createResource(id):
