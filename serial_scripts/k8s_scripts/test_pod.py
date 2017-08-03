@@ -58,10 +58,10 @@ class TestPodScale(BaseK8sTest):
         '''
         expectation = True
         namespace1 = self.setup_namespace()
-        pod1 = self.setup_nginx_pod(namespace=namespace1.name)
+        pod1 = self.setup_busybox_pod(namespace=namespace1.name)
         assert pod1.verify_on_setup()
         namespace2 = self.setup_namespace()
-        pod2 = self.setup_nginx_pod(namespace=namespace2.name)
+        pod2 = self.setup_busybox_pod(namespace=namespace2.name)
         assert pod2.verify_on_setup()
         if self.setup_namespace_isolation:
             expectation = False

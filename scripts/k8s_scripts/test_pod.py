@@ -26,12 +26,12 @@ class TestPod(BaseK8sTest):
         '''
         Test ping between 2 PODs
         '''
-        pod1 = self.setup_nginx_pod()
+        pod1 = self.setup_busybox_pod()
         assert pod1.verify_on_setup()
-        pod2 = self.setup_nginx_pod()
+        pod2 = self.setup_busybox_pod()
         assert pod2.verify_on_setup()
         assert pod1.ping_to_ip(pod2.pod_ip)
-    # end test_add_delete_pod
+    # end test_ping_between_two_pods
 
     @preposttest_wrapper
     def test_ping_between_pods_accross_namespace(self):
@@ -42,10 +42,10 @@ class TestPod(BaseK8sTest):
         '''
         expectation = True
         namespace1 = self.setup_namespace()
-        pod1 = self.setup_nginx_pod(namespace=namespace1.name)
+        pod1 = self.setup_busybox_pod(namespace=namespace1.name)
         assert pod1.verify_on_setup()
         namespace2 = self.setup_namespace()
-        pod2 = self.setup_nginx_pod(namespace=namespace2.name)
+        pod2 = self.setup_busybox_pod(namespace=namespace2.name)
         assert pod2.verify_on_setup()
         if self.setup_namespace_isolation:
             expectation = False
@@ -58,9 +58,9 @@ class TestPod(BaseK8sTest):
         Change the label of POD
         '''
         app = 'healthy'
-        pod1 = self.setup_nginx_pod(labels={'app': app})
+        pod1 = self.setup_busybox_pod(labels={'app': app})
         assert pod1.verify_on_setup()
-        pod2 = self.setup_nginx_pod(labels={'app': app})
+        pod2 = self.setup_busybox_pod(labels={'app': app})
         assert pod2.verify_on_setup()
         assert pod1.ping_to_ip(pod2.pod_ip)
         pod1.set_labels({"app": "unhealthy"})
