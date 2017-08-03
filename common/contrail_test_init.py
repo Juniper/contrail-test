@@ -537,7 +537,8 @@ class TestInputs(object):
     # end get_os_version
 
     def is_contrail_cloud_container(self, container_name):
-        cc_container_names = ['agent', 'controller', 'analytics', 'analyticsdb']
+        cc_container_names = ['agent', 'controller', 'analytics', 'analyticsdb',
+            'contrail-kube-manager']
         return container_name in cc_container_names
 
     def _check_containers(self, host_dict):

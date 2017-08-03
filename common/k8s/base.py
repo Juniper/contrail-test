@@ -118,14 +118,18 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
     def setup_ingress(self,
                       name=None,
                       namespace='default',
-                      metadata={},
-                      default_backend={},
-                      rules=[],
-                      spec={}):
+                      metadata=None,
+                      default_backend=None,
+                      rules=None,
+                      spec=None):
         '''
         A very basic helper method to create an ingress
 
         '''
+        if metadata is None: metadata = {}
+        if spec is None: spec = {}
+        if default_backend is None: default_backend = {}
+        if rules is None: rules = []
         name = name or get_random_name('nginx-ingress')
         metadata.update({'name': name})
         if default_backend:

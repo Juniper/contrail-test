@@ -14,11 +14,11 @@ class IngressFixture(fixtures.Fixture):
                  connections,
                  name=None,
                  namespace='default',
-                 default_backend={},
-                 rules=[],
-                 tls=[],
-                 metadata={},
-                 spec={}):
+                 default_backend=None,
+                 rules=None,
+                 tls=None,
+                 metadata=None,
+                 spec=None):
         self.logger = connections.logger or contrail_logging.getLogger(
             __name__)
         self.inputs = connections.inputs
@@ -26,11 +26,11 @@ class IngressFixture(fixtures.Fixture):
         self.namespace = namespace
         self.k8s_client = connections.k8s_client
         self.vnc_api_h = connections.vnc_lib
-        self.metadata = metadata
-        self.spec = spec
-        self.rules = []
-        self.tls = tls
-        self.default_backend = default_backend
+        self.metadata = {} if metadata is None else metadata
+        self.spec = {} if spec is None else spec
+        self.rules = [] if rules is None else rules
+        self.tls = [] if tls is None else tls
+        self.default_backend = {} if default_backend is None else default_backend
         self.v1_beta_h = self.k8s_client.v1_beta_h
 
         self.already_exists = None
