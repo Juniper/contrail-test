@@ -2491,13 +2491,16 @@ class WebuiCommon:
         return ui_list
     # end get_item_list
 
-    def expand_advance_details(self, count=20):
+    def expand_advance_details(self, count=40):
         flag = 0
         while flag < count:
             plus_objs = []
             try:
-                plus_objs = self.find_element("i[class*='fa-plus expander']",'css', elements=True,screenshot=False)
+                plus_objs = self.find_element(
+                    "i[class*='fa-plus expander']",'css', elements=True,screenshot=False)
                 flag += 1
+                self.browser.execute_script(
+                        "return arguments[0].scrollIntoView();", plus_objs)
                 self.click(plus_objs)
                 time.sleep(3)
             except (WebDriverException, TimeoutException):
