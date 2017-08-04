@@ -42,8 +42,9 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
         super(TestMd5tests, self).setUp()
         result = self.is_test_applicable()
         if result[0]:
-            self.is_mx_present=True
-            self.config_basic(self.is_mx_present)
+            self.is_mx_present=False
+            self.check_dm = True
+            self.config_basic(self.check_dm)
             uuid = self.vnc_lib.bgp_routers_list()
             self.uuid = str(uuid)
             self.list_uuid = re.findall('u\'uuid\': u\'([a-zA-Z0-9-]+)\'', self.uuid)
@@ -150,7 +151,8 @@ class TestMd5testsOnControl(Md5Base, VerifySecGroup, ConfigPolicy):
         result = self.is_test_applicable()
         if result[0]:
             self.is_mx_present=False
-            self.config_basic(self.is_mx_present)
+            self.check_dm = False
+            self.config_basic(self.check_dm)
             uuid = self.vnc_lib.bgp_routers_list()
             self.uuid = str(uuid)
             self.list_uuid = re.findall('u\'uuid\': u\'([a-zA-Z0-9-]+)\'', self.uuid)
@@ -159,7 +161,7 @@ class TestMd5testsOnControl(Md5Base, VerifySecGroup, ConfigPolicy):
         else:
             return
 
-    @test.attr(type=['cb_sanity', 'sanity'])
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_create_md5_on_control(self):
         """
