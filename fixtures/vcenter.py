@@ -416,7 +416,7 @@ class VcenterOrchestrator(Orchestrator):
         return None
 
     def get_vm_ip(self, vm_obj, vn_name=None, **kwargs):
-        if not getattr(vm_obj,'ips'):
+        if not getattr(vm_obj,'ips') or kwargs.get('refresh',False):
             self.get_vm_detail(vm_obj)
 
         if not len(getattr(vm_obj,'ips')) == len(getattr(vm_obj,'nets')):
