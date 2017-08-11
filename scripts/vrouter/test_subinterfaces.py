@@ -111,11 +111,18 @@ class TestSubInterfaces(BaseVrouterTest):
         vm2_fixture.wait_till_vm_is_up()
         vm3_fixture.wait_till_vm_is_up()
 
+        interface = 'eth0.%s' %(VLAN_ID)
+        #Before adding the route, wait till interface is found on VM
+        assert vm1_fixture.wait_till_interface_created(interface,
+            ip=self.vn1_port1.obj['fixed_ips'][0]['ip_address'])[0]
+        assert vm3_fixture.wait_till_interface_created(interface,
+            ip=self.vn3_port1.obj['fixed_ips'][0]['ip_address'])[0]
+
         # Add route in VMs so that VM chooses sub-interface to ping
         vm1_fixture.add_route_in_vm(self.vn3_fixture.get_cidrs()[0],
-                                    device='eth0.%s' %(VLAN_ID))
+                                    device=interface)
         vm3_fixture.add_route_in_vm(self.vn1_fixture.get_cidrs()[0],
-                                    device='eth0.%s' %(VLAN_ID))
+                                    device=interface)
 
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
         vm3_ip = self.vn3_port1.obj['fixed_ips'][0]['ip_address']

@@ -748,6 +748,7 @@ class TestPorts(BaseNeutronTest):
 
     # end test_aap_with_vrrp_admin_state_toggle
 
+    @skip_because(hypervisor='docker',msg='Uses vsrx image')
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_aap_with_fip(self):
@@ -965,6 +966,7 @@ class TestPorts(BaseNeutronTest):
 
     # end test_zombie_tap_interface
 
+    @skip_because(hypervisor='docker',msg='Bug 1461423:Need privileged access')
     @preposttest_wrapper
     def test_aap_active_active_mode(self):
         '''
