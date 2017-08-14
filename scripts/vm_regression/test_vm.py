@@ -228,7 +228,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         # Delete all vms now
         vmx_fixture.cleanUp(), 'Cleanup failed for atleast one VM, Check logs'
         self.remove_from_cleanups(vmx_fixture)
-        assert vmx_fixture.verify_vm_not_in_nova(), 'Atleast 1 VM not deleted ' \
+        assert vmx_fixture.verify_vm_not_in_orchestrator(), 'Atleast 1 VM not deleted ' \
             ' in Nova, Pls check logs'
         return True
     # end test_bulk_add_delete

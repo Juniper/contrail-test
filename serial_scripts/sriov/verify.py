@@ -210,7 +210,7 @@ class VerifySriovCases():
                 'Delete a VM to freeup one VF on Compute %s' % (compute_1))
         vm_fixture_list[3].cleanUp(), 'Cleanup failed VM, Check logs'
         self.remove_from_cleanups(vm_fixture_list[3])
-        assert vm_fixture_list[3].verify_vm_not_in_nova()
+        assert vm_fixture_list[3].verify_vm_not_in_orchestrator()
 
         self.logger.info(
                 'VM launch should be successful now  on compute %s. Max number of VF utilized' % (compute_1))
