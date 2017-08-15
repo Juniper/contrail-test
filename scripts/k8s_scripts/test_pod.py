@@ -76,7 +76,7 @@ class TestPod(BaseK8sTest):
         namespace1 = self.setup_namespace()
         pod1 = self.setup_ubuntuapp_pod(namespace=namespace1.name)
         assert pod1.verify_on_setup()
-        self.configure_snat_for_namespace(namespace=namespace1.name)
+        self.configure_snat_for_pod(pod=pod1)
         self.logger.info("Now trying to ping %s" % (self.inputs.public_host))
         assert pod1.ping_with_certainty(self.inputs.public_host)
     # end test_pod_public_reachability_using_snat
