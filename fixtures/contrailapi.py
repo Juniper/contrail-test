@@ -1146,7 +1146,7 @@ class ContrailVncApi(object):
     def connect_gateway_with_router(self, router_obj, public_network_obj):
 
         # Add public network to router as external_gateway
-        router_obj.add_virtual_network(public_network_obj)
+        router_obj.add_virtual_network(self.get_vn_obj_from_id(public_network_obj['network']['id']))
 
         # Update logical router object
         self._vnc.logical_router_update(router_obj)
