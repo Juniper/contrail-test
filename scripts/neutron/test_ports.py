@@ -83,6 +83,7 @@ class TestPorts(BaseNeutronTest):
 
         # Now attach the interface again
         port_obj = self.create_port(net_id=vn1_fixture.vn_id)
+        self.sleep(5)
         vm1_fixture.interface_attach(port_id=port_obj['id'])
         time.sleep(5)
         vm1_fixture.vm_obj.get()
