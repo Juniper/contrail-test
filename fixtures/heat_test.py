@@ -1,3 +1,4 @@
+import time
 from tcutils.util import *
 from common import log_orig as contrail_logging
 from common.openstack_libs import heat_client
@@ -90,7 +91,7 @@ class HeatStackFixture(fixtures.Fixture):
     def setUp(self):
         super(HeatStackFixture, self).setUp()
         fields = {}
-        fields = {'stack_name': self.stack_name,
+        fields = {'stack_name': self.stack_name, 'timeout_mins': 5,
                   'template': self.template, 'environment': self.env}
         self.heat_obj = self.useFixture(HeatFixture(connections=self.connections))
         self.heat_client_obj = self.heat_obj.obj
@@ -123,7 +124,7 @@ class HeatStackFixture(fixtures.Fixture):
 
     def update(self, new_parameters):
         fields = {}
-        fields = {'stack_name': self.stack_name,
+        fields = {'stack_name': self.stack_name, 'timeout_mins': 5,
                   'template': self.template, 'environment': {},
                   'parameters': new_parameters}
         self.heat_client_obj = self.heat_obj.obj
@@ -143,7 +144,7 @@ class HeatStackFixture(fixtures.Fixture):
         self.template = template
         self.env = env
         fields = {}
-        fields = {'stack_name': self.stack_name,
+        fields = {'stack_name': self.stack_name, 'timeout_mins': 5,
                   'template': self.template, 'environment': self.env}
         self.heat_client_obj = self.heat_obj.obj
         for i in self.heat_client_obj.stacks.list():
@@ -158,44 +159,46 @@ class HeatStackFixture(fixtures.Fixture):
         assert result, 'Stack %s not seen'%self.stack_name
     #end update
 
-    @retry(delay=5, tries=15)
     def wait_till_stack_updated(self):
-        result = False
-        for stack_obj in self.heat_obj.list_stacks():
-            if stack_obj.stack_name == self.stack_name:
-                if stack_obj.stack_status == 'UPDATE_COMPLETE':
-                    self.logger.info(
-                        'Stack %s updated successfully.' % stack_obj.stack_name)
-                    result = True
-                    break
-                elif stack_obj.stack_status == 'UPDATE_FAILED':
-                    self.logger.info('Stack (%s) update failed.' % stack_obj.stack_name)
-                    result = False
-                    return result
-                else:
-                    self.logger.info('Stack %s is in %s state. Retrying....' % (
+        while True:
+            for stack_obj in self.heat_obj.list_stacks():
+                if stack_obj.stack_name == self.stack_name:
+                    if stack_obj.stack_status == 'UPDATE_COMPLETE':
+                        self.logger.info('Stack %s updated successfully.' % (
+                                            stack_obj.stack_name))
+                        return True
+                    elif stack_obj.stack_status == 'UPDATE_FAILED':
+                        self.logger.info('Stack (%s) update failed.' % (
+                                            stack_obj.stack_name))
+                        raise Exception('%s %s %s' % (stack_obj.stack_name,
+                                        stack_obj.stack_status,
+                                        stack_obj.stack_status_reason))
+                    else:
+                        self.logger.info('Stack %s is in %s state' % (
                         stack_obj.stack_name, stack_obj.stack_status))
-        return result
+                    break
+            time.sleep(6)
     # end wait_till_stack_updated
 
-    @retry(delay=5, tries=15)
     def wait_till_stack_created(self):
-        result = False
-        for stack_obj in self.heat_obj.list_stacks():
-            if stack_obj.stack_name == self.stack_name:
-                if stack_obj.stack_status == 'CREATE_COMPLETE':
-                    self.logger.info(
-                        'Stack %s created successfully.' % stack_obj.stack_name)
-                    result = True
+        while True:
+            for stack_obj in self.heat_obj.list_stacks():
+                if stack_obj.stack_name == self.stack_name:
+                    if stack_obj.stack_status == 'CREATE_COMPLETE':
+                        self.logger.info('Stack %s created successfully.' % (
+                                            stack_obj.stack_name))
+                        return True
+                    elif stack_obj.stack_status == 'CREATE_FAILED':
+                        self.logger.info('Stack %s creation failed.' % (
+                                            stack_obj.stack_name))
+                        raise Exception('%s %s %s' % (stack_obj.stack_name,
+                                    stack_obj.stack_status,
+                                    stack_obj.stack_status_reason))
+                    else:
+                        self.logger.info('Stack %s is in %s state' % (
+                            stack_obj.stack_name, stack_obj.stack_status))
                     break
-                elif stack_obj.stack_status == 'CREATE_FAILED':
-                    self.logger.info('Stack %s creation failed.' % stack_obj.stack_name)
-                    result = False
-                    return result
-                else:
-                    self.logger.info('Stack %s is in %s state. Retrying....' % (
-                        stack_obj.stack_name, stack_obj.stack_status))
-        return result
+            time.sleep(6)
     # end wait_till_stack_created
 
     @retry(delay=5, tries=15)
