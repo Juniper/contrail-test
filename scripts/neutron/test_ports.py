@@ -243,6 +243,7 @@ class TestPorts(BaseNeutronTest):
         port1_obj = self.create_port(net_id=vn1_fixture.vn_id,
                                      fixed_ips=[{'subnet_id': vn1_subnet1_id,
                                                  'ip_address': vn1_subnet1_ip2}, {'subnet_id': vn1_subnet2_id, 'ip_address': vn1_subnet2_ip2}])
+        self.sleep(5)
         vm1_fixture.clear_vmi_info()
         vm1_fixture.interface_attach(port_id=port1_obj['id'])
         assert vm1_fixture.wait_till_vm_is_up()
