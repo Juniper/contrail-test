@@ -18,6 +18,7 @@
 docker=docker
 testbed=/opt/contrail/utils/fabfile/testbeds/testbed.py
 feature=sanity
+test_tags=${TEST_TAGS:-''}
 scenarios=''
 run_path="${HOME}/contrail-test-runs"
 arg_shell=''
