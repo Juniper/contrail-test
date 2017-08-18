@@ -80,9 +80,9 @@ while [ $# -gt 0 ]; do
     -U|--upload) upload=1;;
     -d|--debug) debug=1;;
     -C|--config) config_file=$2; shift;;
-    -s|--sanity) tags+="sanity";;
+    -s|--sanity) tags="sanity";;
     -F|--features) path=$2; shift;;
-    -T|--tags) tags="$tags $2"; shift;;
+    -T|--tags) tags="$2"; shift;;
     -t|--parallel) parallel=1;;
     -l|--logging) logging=1;;
     -L|--logging-config) logging_config=$2; shift;;
