@@ -243,7 +243,7 @@ class VerifyIntfMirror(VerifySvcMirror):
                                        vlan_id=vlan,
                                        api_type='contrail',
                                        mac_address=mac_address)
-        return port
+        return port, parent_port, parent_port_vn_fixture
     # end get_sub_intf_port
 
 
@@ -268,7 +268,7 @@ class VerifyIntfMirror(VerifySvcMirror):
         analyzer_compute = compute_nodes[2]
 
         self.analyzer_port = 8099
-        image_name = 'cirros'
+        image_name = 'cirros' if not sub_intf else 'ubuntu-traffic'
 
         self.vn1_subnets = [get_random_cidr(af=self.inputs.get_af())]
         self.vn2_subnets = [get_random_cidr(af=self.inputs.get_af())]
@@ -414,7 +414,7 @@ class VerifyIntfMirror(VerifySvcMirror):
            vn1_vmi_ref = True
            if sub_intf:
                intf_type = 'src'
-               self.src_port = self.create_sub_intf(self.vn1_fixture.uuid, intf_type)
+               self.src_port, self.src_parent_port, self.src_parent_port_vn_fixture = self.create_sub_intf(self.vn1_fixture.uuid, intf_type)
 
         elif vn_index_list[0] == 1:
            self.src_vn_fixture = self.vn2_fixture
@@ -423,7 +423,7 @@ class VerifyIntfMirror(VerifySvcMirror):
            vn2_vmi_ref = True
            if sub_intf:
                intf_type = 'src'
-               self.src_port = self.create_sub_intf(self.vn2_fixture.uuid, intf_type)
+               self.src_port, self.src_parent_port, self.src_parent_port_vn_fixture = self.create_sub_intf(self.vn2_fixture.uuid, intf_type)
         else:
            self.src_vn_fixture = self.vn3_fixture
            self.src_vn_fq_name = self.vn3_fq_name
@@ -431,7 +431,7 @@ class VerifyIntfMirror(VerifySvcMirror):
            vn3_vmi_ref = True
            if sub_intf:
                intf_type = 'src'
-               self.src_port = self.create_sub_intf(self.vn3_fixture.uuid, intf_type)
+               self.src_port, self.src_parent_port, self.src_parent_port_vn_fixture = self.create_sub_intf(self.vn3_fixture.uuid, intf_type)
 
         if vn_index_list[1] == 0:
            self.dst_vn_fixture = self.vn1_fixture
@@ -440,7 +440,7 @@ class VerifyIntfMirror(VerifySvcMirror):
            vn1_vmi_ref = True
            if sub_intf:
                intf_type = 'dst'
-               self.dst_port = self.create_sub_intf(self.vn1_fixture.uuid, intf_type)
+               self.dst_port, self.dst_parent_port, self.dst_parent_port_vn_fixture = self.create_sub_intf(self.vn1_fixture.uuid, intf_type)
 
         elif vn_index_list[1] == 1:
            self.dst_vn_fixture = self.vn2_fixture
@@ -449,7 +449,7 @@ class VerifyIntfMirror(VerifySvcMirror):
            vn2_vmi_ref = True
            if sub_intf:
                intf_type = 'dst'
-               self.dst_port = self.create_sub_intf(self.vn2_fixture.uuid, intf_type)
+               self.dst_port, self.dst_parent_port, self.dst_parent_port_vn_fixture = self.create_sub_intf(self.vn2_fixture.uuid, intf_type)
         else:
            self.dst_vn_fixture = self.vn3_fixture
            self.dst_vn_fq_name = self.vn3_fq_name
@@ -457,7 +457,7 @@ class VerifyIntfMirror(VerifySvcMirror):
            vn3_vmi_ref = True
            if sub_intf:
                intf_type = 'dst'
-               self.dst_port = self.create_sub_intf(self.vn3_fixture.uuid, intf_type)
+               self.dst_port, self.dst_parent_port, self.dst_parent_port_vn_fixture = self.create_sub_intf(self.vn3_fixture.uuid, intf_type)
 
         if vn_index_list[2] == 0:
            self.analyzer_vn_fixture = self.vn1_fixture
@@ -466,7 +466,7 @@ class VerifyIntfMirror(VerifySvcMirror):
            vn1_vmi_ref = True
            if sub_intf:
                intf_type = 'analyzer'
-               self.analyzer_port = self.create_sub_intf(self.vn1_fixture.uuid, intf_type)
+               self.analyzer_port, self.analyzer_parent_port, self.analyzer_parent_port_vn_fixture = self.create_sub_intf(self.vn1_fixture.uuid, intf_type)
 
         elif vn_index_list[2] == 1:
            self.analyzer_vn_fixture = self.vn2_fixture
@@ -475,7 +475,7 @@ class VerifyIntfMirror(VerifySvcMirror):
            vn2_vmi_ref = True
            if sub_intf:
                intf_type = 'analyzer'
-               self.analyzer_port = self.create_sub_intf(self.vn2_fixture.uuid, intf_type)
+               self.analyzer_port, self.analyzer_parent_port, self.analyzer_parent_port_vn_fixture = self.create_sub_intf(self.vn2_fixture.uuid, intf_type)
         else:
            self.analyzer_vn_fixture = self.vn3_fixture
            self.analyzer_vn_fq_name = self.vn3_fq_name
@@ -483,7 +483,7 @@ class VerifyIntfMirror(VerifySvcMirror):
            vn3_vmi_ref = True
            if sub_intf:
                intf_type = 'analyzer'
-               self.analyzer_port = self.create_sub_intf(self.vn3_fixture.uuid, intf_type)
+               self.analyzer_port, self.analyzer_parent_port, self.analyzer_parent_port_vn_fixture = self.create_sub_intf(self.vn3_fixture.uuid, intf_type)
 
         self.src_vm_name = get_random_name("src_vm")
         self.dst_vm_name = get_random_name("dst_vm")
@@ -533,12 +533,18 @@ class VerifyIntfMirror(VerifySvcMirror):
             result, msg = self.validate_vn(vn_fq_name=self.vn3_fq_name)
             assert result, msg
 
-        self.src_vm_ip = self.src_vm_fixture.get_vm_ips(self.src_vn_fq_name)[0]
-        self.dst_vm_ip = self.dst_vm_fixture.get_vm_ips(self.dst_vn_fq_name)[0]
-        self.analyzer_vm_ip = self.analyzer_vm_fixture.get_vm_ips(self.analyzer_vn_fq_name)[0]
+        if sub_intf:
+            self.src_vm_ip = self.src_port.obj['fixed_ips'][0]['ip_address']
+            self.dst_vm_ip = self.dst_port.obj['fixed_ips'][0]['ip_address']
+            self.analyzer_vm_ip = self.analyzer_port.obj['fixed_ips'][0]['ip_address']
+        else:
+            self.src_vm_ip = self.src_vm_fixture.get_vm_ips(self.src_vn_fq_name)[0]
+            self.dst_vm_ip = self.dst_vm_fixture.get_vm_ips(self.dst_vn_fq_name)[0]
+            self.analyzer_vm_ip = self.analyzer_vm_fixture.get_vm_ips(self.analyzer_vn_fq_name)[0]
 
         self.logger.info("Compute/VM: SRC: %s / %s, -> DST: %s / %s => ANALYZER: %s / %s" %
             (src_compute, self.src_vm_ip, dst_compute, self.dst_vm_ip, analyzer_compute, self.analyzer_vm_ip))
+
 
         src_port = None
 
