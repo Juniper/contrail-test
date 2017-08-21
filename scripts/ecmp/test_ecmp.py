@@ -240,7 +240,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             dest_vm_fixture=self.right_vm_fixture, mode='scp', size='202', expectation=False), errmsg2
     # end test_ecmp_in_pol_based_svc_pol_update
 
-    @test.attr(type=['cb_sanity', 'sanity', 'vcenter'])
+    @test.attr(type=['ci_sanity', 'cb_sanity', 'sanity', 'vcenter'])
     @preposttest_wrapper
     def test_ecmp_svc_v2_in_network_nat_with_3_instance(self):
         """
@@ -256,6 +256,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
          Maintainer : ganeshahv@juniper.net
         """
         self.verify_svc_chain(max_inst=2,
+                              svc_img_name='cirros_nat'
                               service_mode='in-network-nat',
                               create_svms=True,
                               **self.common_args)
