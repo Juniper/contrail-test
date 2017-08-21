@@ -30,10 +30,10 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ECMPVerify):
         pass
     # end runTest
 
-    @test.attr(type=['vcenter'])
+    @test.attr(type=['ci_sanity', 'vcenter'])
     @preposttest_wrapper
     def test_svc_in_network_datapath(self):
-        return self.verify_svc_chain(service_mode='in-network',
+        return self.verify_svc_chain(svc_img_name='cirros_in_net', service_mode='in-network',
                                      create_svms=True)
 
 
