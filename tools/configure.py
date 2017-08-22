@@ -260,6 +260,14 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
             role_dict['container'] = get_container_name(containers, host_string, 'controller')
             host_dict['roles'].append(role_dict)
 
+        # Kube managers
+        if 'contrail-kubernetes' in env.roledefs.keys() and \
+                host_string in env.roledefs['contrail-kubernetes']:
+            role_dict = { 'type': 'contrail-kubernetes', 'params': {} }
+            role_dict['container'] = get_container_name(containers,
+                host_string, 'contrail-kube-manager')
+            host_dict['roles'].append(role_dict)
+
         sanity_testbed_dict['hosts'].append(host_dict)
     if env.has_key('vgw'): sanity_testbed_dict['vgw'].append(env.vgw)
 
@@ -652,7 +660,6 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     with open(vnc_api_ini,'w') as f:
         config.write(f)
 
-    # For now, assume first config node is same as kubernetes master node
     # Get kube config file to the testrunner node
     if orch == 'kubernetes' or slave_orch == 'kubernetes':
         if not os.path.exists(kube_config_file):

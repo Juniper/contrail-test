@@ -590,7 +590,8 @@ class TestInputs(object):
         self.host_ips = []
         self.webui_ips = []
         self.webui_control_ips = []
-        self.kube_manager_ip = None
+        self.kube_manager_ips = []
+        self.kube_manager_control_ips = []
         self.host_data = {}
         self.tor = {}
         self.tor_hosts_data = {}
@@ -684,6 +685,9 @@ class TestInputs(object):
                     self.database_control_ips.append(host_control_ip)
                     if role['container']:
                         host['containers']['analyticsdb'] = role['container']
+                if role['type'] == 'contrail-kubernetes':
+                    self.kube_manager_ips.append(host_ip)
+                    self.kube_manager_control_ips.append(host_control_ip)
             # end for
         # end for
 
@@ -719,9 +723,6 @@ class TestInputs(object):
             self.esxi_vm_ips = json_data['esxi_vms']
         if 'hosts_ipmi' in json_data:
             self.hosts_ipmi = json_data['hosts_ipmi']
-        self.kube_manager_ip = json_data.get('kubernetes', {}).get('master')
-        if self.kube_manager_ip:
-            self.kube_manager_ip = self.kube_manager_ip.split('@')[1]
 
         if not self.auth_ip:
             if self.ha_setup and self.external_vip:
