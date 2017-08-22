@@ -403,6 +403,10 @@ fi
 if [[ ! -z $path ]];then
     for p in $path
         do
+            if [ ! -z "$tags" ];then
+                testrargs+=$tags
+                export TAGS="$tags"
+            fi
             run_tests $p
             run_tests_serial $p
             python tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
