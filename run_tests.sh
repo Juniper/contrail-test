@@ -431,7 +431,10 @@ if [[ ! -z $path ]];then
             if [ $p != 'webui' ]; then
                 export EMAIL_SUBJECT_PREFIX=$p
             fi
-            run_tests $p
+            if [ ! -z "$tags" ];then
+                testrargs+=$tags
+                export TAGS="$tags"
+	    run_tests $p
             run_tests_serial $p
             python tools/report_gen.py $TEST_CONFIG_FILE $REPORT_DETAILS_FILE
             parse_results
