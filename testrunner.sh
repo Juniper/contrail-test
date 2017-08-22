@@ -273,11 +273,11 @@ run_docker_cmd () {
     tempfile=$(mktemp /tmp/contrail_test_XXXXXXXXX)
     name=$(basename $tempfile)
     if [[ -n $background ]]; then
-        echo "$docker run ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg $ct_folder -e FEATURE=$feature -e TEST_TAGS=$test_tags $dont_write_byte_code_arg -e SCENARIOS=$scenarios -d $arg_rm $arg_shell -t $image_name" > $tempfile
+        echo "$docker run --privileged ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg $ct_folder -e FEATURE=$feature -e TEST_TAGS=$test_tags $dont_write_byte_code_arg -e SCENARIOS=$scenarios -d $arg_rm $arg_shell -t $image_name" > $tempfile
         id=. $tempfile
         $docker ps -a --format "ID: {{.ID}}, Name: {{.Names}}" -f id=$id
     else
-        echo "$docker run ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg $ct_folder -e FEATURE=$feature -e TEST_TAGS=$test_tags $dont_write_byte_code_arg -e SCENARIOS=$scenarios $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
+        echo "$docker run --privileged ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg $ct_folder -e FEATURE=$feature -e TEST_TAGS=$test_tags $dont_write_byte_code_arg -e SCENARIOS=$scenarios $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
     fi
     bash $tempfile | tee $run_log; rv=${PIPESTATUS[0]}
     return $rv
