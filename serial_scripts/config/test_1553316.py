@@ -29,8 +29,8 @@ class Test1553316(BaseNeutronTest):
         super(Test1553316, cls).tearDownClass()
 
     def is_test_applicable(self):
-        if not self.inputs.physical_routers_data.values():
-            return (False, 'Physical routers data needs to be set in testbed.py to run this script')
+        if not self.inputs.dm_mx.values():
+           return (False, 'Physical routers data needs to be set in testbed.py to run this script')
         if len(self.inputs.ext_routers) < 1:            
             return (False, 'Atleast 1 mx is needed')
         if not self.inputs.use_devicemanager_for_md5:
@@ -45,16 +45,20 @@ class Test1553316(BaseNeutronTest):
         """
         Description: Verify v6 config is pushed to mx 
         """
-        router_params = self.inputs.physical_routers_data.values()[0]
+        router_params = self.inputs.dm_mx.values()[0]
         self.phy_router_fixture = self.useFixture(PhysicalRouterFixture(
-            router_params['name'], router_params['mgmt_ip'],
-            model=router_params['model'],
-            vendor=router_params['vendor'],
-            asn=router_params['asn'],
-            ssh_username=router_params['ssh_username'],
-            ssh_password=router_params['ssh_password'],
-            mgmt_ip=router_params['mgmt_ip'],
-            connections=self.connections))
+                            router_params['name'], router_params['control_ip'],
+                            model=router_params['model'],
+                            vendor=router_params['vendor'],
+                            asn=router_params['asn'],
+                            ssh_username=router_params['ssh_username'],
+                            ssh_password=router_params['ssh_password'],
+                            mgmt_ip=router_params['control_ip'],
+                            connections=self.connections))
+        physical_dev = self.vnc_lib.physical_router_read(id = self.phy_router_fixture.phy_device.uuid)
+        physical_dev.set_physical_router_management_ip(router_params['mgmt_ip'])
+        physical_dev._pending_field_updates
+        self.vnc_lib.physical_router_update(physical_dev)
 
         vn1_name = "test_vnv6sr"
         vn1_net = ['2001::101:0/120']
@@ -70,8 +74,7 @@ class Test1553316(BaseNeutronTest):
                     username=router_params['ssh_username'], 
                     password=router_params['ssh_password'], 
                     logger=[self.logger])
-                
-        cmd = 'show configuration groups __contrail__ routing-instances _contrail_l3_5_%s' % vn1_name
+        cmd = 'show configuration groups __contrail__ routing-instances _contrail_%s-l3-%s' % (vn1_name, vn1_fixture.vn_network_id)
         cli_output = self.get_output_from_node(mx_handle, cmd)
         assert (not('invalid command' in cli_output)), "Bug 1553316 present. v6 CIDR config not pushed to mx"
 
