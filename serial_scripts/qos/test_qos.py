@@ -269,17 +269,24 @@ class TestQosQueueSerial(QosTestExtendedBase):
             # Getting the count of packets through desired queue before transmitting.
             fc_id = value
             hw_queue = self.get_hw_queue_from_fc_id(fc_id, fcs, logical_ids)
-            init_pkt_count = self.get_queue_count(self.vn1_vm1_fixture.vm_node_ip,
+            if 'bond' in interface:
+                interface_list = self.get_active_bond_intf(
+                                                self.vn1_vm1_compute_fixture.ip,
+                                                interface,
+                                                get_all_interfaces = True)
+            else :
+                interface_list = [interface]
+            for interface in interface_list:
+                init_pkt_count = self.get_queue_count(self.vn1_vm1_fixture.vm_node_ip,
                                               interface, queue_id = hw_queue)
-            
-            self.inputs.run_cmd_on_server(self.vn1_vm1_fixture.vm_node_ip, cmd )
-            final_pkt_count = self.get_queue_count(
+                self.inputs.run_cmd_on_server(self.vn1_vm1_fixture.vm_node_ip, cmd,
+                                          container='agent')
+                final_pkt_count = self.get_queue_count(
                                         self.vn1_vm1_fixture.vm_node_ip,
                                         interface, queue_id = hw_queue)
-            assert self.match_traffic(init_pkt_count,
-                                      final_pkt_count,
-                                      5000)
-
+                if self.match_traffic(init_pkt_count, final_pkt_count, 5000):
+                    return
+            assert False, "Expected packets not recieved from desired queue"
 
 class TestQosEncap(QosTestExtendedBase):
 
@@ -683,6 +690,7 @@ class TestQosQueueQosmap(TestQosQueueProperties):
         BW ratio as 60:40.
         2. Verify that traffic through the queues flow with same ratio.
         '''
+        self.skip_tc_if_bond_interface(self.fabric_interface)
         self.preconfiguration_queueing_test()
         validate_method_args = {'src_vn1_vm1_fixture': self.vn1_vm1_fixture,
                                 'src_vn2_vm1_fixture': self.vn2_vm2_fixture,
@@ -710,6 +718,7 @@ class TestQosQueueQosmap(TestQosQueueProperties):
         2. Verify that traffic through the higher PG ID queue will be through
         without any drops and drops should be observed in other queue
         '''
+        self.skip_tc_if_bond_interface(self.fabric_interface)
         self.preconfiguration_queueing_test()
         validate_method_args = {'src_vn1_vm1_fixture': self.vn1_vm1_fixture,
                                 'src_vn2_vm1_fixture': self.vn2_vm2_fixture,
@@ -737,6 +746,7 @@ class TestQosQueueQosmap(TestQosQueueProperties):
         2. Verify that traffic through the queue with strictness as 1 will be
         through without any drops and drops should be observed in other queue.
         '''
+        self.skip_tc_if_bond_interface(self.fabric_interface)
         self.preconfiguration_queueing_test()
         validate_method_args = {'src_vn1_vm1_fixture': self.vn1_vm1_fixture,
                                 'src_vn2_vm1_fixture': self.vn2_vm2_fixture,
@@ -751,4 +761,44 @@ class TestQosQueueQosmap(TestQosQueueProperties):
                                 'strict_queue_id' : 3}
         assert self.validate_queue_performance(**validate_method_args)
     #end test_scheduling_strict_rr_queues
-    
+
+    @preposttest_wrapper
+    def test_scheduling_configuration_on_bond_intf(self):
+        '''
+        Verify that Bandwidth and strictness can be configured on all
+        the interfaces of a bond.
+        Note that configurations have been done already as part of setUpClass
+        under class TestQosQueueProperties in base.py
+        '''
+        server = self.qos_node_ip
+        if "bond" in self.fabric_interface:
+            interface_list = self.get_active_bond_intf(
+                                        server,
+                                        self.fabric_interface,
+                                        get_all_interfaces = True)
+            for intf in interface_list:
+                # Getting priority group Bandwidth configurations
+                cmd = "qosmap --get-queue %s| grep 'Priority Group Bandwidth:'"\
+                                                                         % intf
+                output = self.inputs.run_cmd_on_server(server , cmd,
+                                                       container = 'agent')
+                output = output.split()[3:11]
+                if output == ['0','60','0','40','0','0','0','0']:
+                    self.logger.debug("Bandwidth configured correctly on physical"
+                                      "interface %s of bond interface" % intf)
+                else:
+                    assert False, "BW values not configured correctly"
+                cmd = "qosmap --get-queue %s| grep 'Strictness:'" % intf
+                output = self.inputs.run_cmd_on_server(server , cmd,
+                                                       container = 'agent')
+                output = output.split()[1:9]
+                if output == ['1','0','1','0','1','0','1','0']:
+                    self.logger.debug("Stritness configured correctly on physical"
+                                      "interface %s of bond interface" % intf)
+                else:
+                    assert False, "Strictness values not configured correctly"
+        else:
+            msg = "Not a bond interface. Test case runs only over bond"
+            raise testtools.TestCase.skipException(msg)
+    # end test_scheduling_configuration_on_bond_intf
+
