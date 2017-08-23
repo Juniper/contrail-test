@@ -44,26 +44,26 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
 
     def config_basic(self, check_dm):
         #mx config using device manager
+        #both dm_mx and use_device_manager knobs are required for DM
+        #this check is present in is_test_applicable
         if check_dm:   
-            if self.inputs.ext_routers:
-                if self.inputs.use_devicemanager_for_md5:
-                    for i in range(len(self.inputs.dm_mx.values())):
-                        router_params = self.inputs.dm_mx.values()[i]
-                        if router_params['model'] == 'mx':
-                            self.phy_router_fixture = self.useFixture(PhysicalRouterFixture(
-                                router_params['name'], router_params['control_ip'],
-                                model=router_params['model'],
-                                vendor=router_params['vendor'],
-                                asn=router_params['asn'],
-                                ssh_username=router_params['ssh_username'],
-                                ssh_password=router_params['ssh_password'],
-                                mgmt_ip=router_params['control_ip'],
-                                connections=self.connections))
-                            physical_dev = self.vnc_lib.physical_router_read(id = self.phy_router_fixture.phy_device.uuid)
-                            physical_dev.set_physical_router_management_ip(router_params['mgmt_ip'])
-                            #physical_dev.set_physical_router_dataplane_ip(router_params['mgmt_ip'])
-                            physical_dev._pending_field_updates
-                            self.vnc_lib.physical_router_update(physical_dev)
+            if self.inputs.use_devicemanager_for_md5:
+                for i in range(len(self.inputs.dm_mx.values())):
+                    router_params = self.inputs.dm_mx.values()[i]
+                    if router_params['model'] == 'mx':
+                        self.phy_router_fixture = self.useFixture(PhysicalRouterFixture(
+                            router_params['name'], router_params['control_ip'],
+                            model=router_params['model'],
+                            vendor=router_params['vendor'],
+                            asn=router_params['asn'],
+                            ssh_username=router_params['ssh_username'],
+                            ssh_password=router_params['ssh_password'],
+                            mgmt_ip=router_params['control_ip'],
+                            connections=self.connections))
+                        physical_dev = self.vnc_lib.physical_router_read(id = self.phy_router_fixture.phy_device.uuid)
+                        physical_dev.set_physical_router_management_ip(router_params['mgmt_ip'])
+                        physical_dev._pending_field_updates
+                        self.vnc_lib.physical_router_update(physical_dev)
         else:
             if self.inputs.ext_routers:
                 for i in range(len(self.inputs.physical_routers_data.values())):
@@ -200,15 +200,6 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
                     for individual_bgp_node in self.inputs.ext_routers:
                         if individual_bgp_node[0] in bgpnode:
                             cn_bgp_entry.remove(bgpnodes)
-        try:
-            if self.check_dm:
-                for bgpnodes in cn_bgp_entry:
-                    bgpnode = str(bgpnodes)
-                    if str(self.phy_router_fixture.name) in bgpnode:
-                        cn_bgp_entry.remove(bgpnodes)
-                cn_bgp_entry = str(cn_bgp_entry)
-        except AttributeError:
-            self.logger.info("Testbed has no DM enabled.")
         str_bgp_entry = str(cn_bgp_entry)
         est = re.findall(' \'state\': \'(\w+)\', \'flap_count', str_bgp_entry)
         for ip in est:
@@ -256,6 +247,7 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
         uuid = self.vnc_lib.bgp_routers_list()
         uuid = str(uuid)
         list_uuid = re.findall('u\'uuid\': u\'([a-zA-Z0-9-]+)\'', uuid)
+        #Same routine is used for DM and non DM testcases. Check if DM knob is enabled.
         if self.check_dm:
             list_uuid.append(self.phy_router_fixture.bgp_router.uuid)
         for node in list_uuid:
@@ -292,14 +284,17 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
         for host in self.list_uuid:
             self.config_per_peer(auth_data=auth_data)
             self.config_md5( host=host, auth_data=auth_data )
-        
-        self.config_md5( host = self.phy_router_fixture.bgp_router.uuid, auth_data=auth_data )
+        #Same routine is used for DM and non DM testcases. Check if DM knob is enabled.
+        if self.check_dm: 
+            self.config_md5( host = self.phy_router_fixture.bgp_router.uuid, auth_data=auth_data )
         sleep(95)
         assert (self.check_bgp_status(self.is_mx_present)), "BGP between nodes should be up before md5"
         for host in self.list_uuid:
             auth_data={'key_items': [ { 'key':"juniper","key_id":0 } ], "key_type":"md5"}
             self.config_md5( host=host, auth_data=auth_data )
-        self.config_md5( host = self.phy_router_fixture.bgp_router.uuid, auth_data=auth_data )    
+        #Same routine is used for DM and non DM testcases. Check if DM knob is enabled.
+        if self.check_dm:
+            self.config_md5( host = self.phy_router_fixture.bgp_router.uuid, auth_data=auth_data )    
         assert (self.check_bgp_status(self.is_mx_present)), "BGP between nodes after basic md5 config not up"
         return True
 

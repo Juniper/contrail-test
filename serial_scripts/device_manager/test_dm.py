@@ -34,8 +34,8 @@ class TestDM(BaseDM, Md5Base, BaseNeutronTest):
         super(TestDM, cls).tearDownClass()
 
     def is_test_applicable(self):
-        if not self.inputs.physical_routers_data.values():
-           return (False, 'Physical routers data needs to be set in testbed.py to run this script')
+        if not self.inputs.dm_mx.values():
+           return (False, 'dm_mx env needs to be set in testbed.py to run this script')
         if len(self.inputs.ext_routers) < 1:
             return (False, 'Atleast 1 mx is needed')
         if not self.inputs.use_devicemanager_for_md5:
@@ -46,6 +46,7 @@ class TestDM(BaseDM, Md5Base, BaseNeutronTest):
         super(TestDM, self).setUp()
         result = self.is_test_applicable()
         if result[0]:
+            self.check_dm = True
             self.config_basic()
             self.vn_index = self.vnc_lib.virtual_network_read(id = self.vn1_fixture.uuid).virtual_network_network_id
             self.v6_index = self.vnc_lib.virtual_network_read(id = self.vn2_fixture.uuid).virtual_network_network_id

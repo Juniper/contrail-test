@@ -32,6 +32,8 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
         super(TestMd5tests, cls).tearDownClass()
 
     def is_test_applicable(self):
+        if not self.inputs.dm_mx.values():
+           return (False, 'Physical routers data needs to be set in testbed.py to run this script')
         if len(self.inputs.ext_routers) < 1:            
             return (False, 'Atleast 1 mx is needed for different md5 keys checking')
         if not self.inputs.use_devicemanager_for_md5:
@@ -53,7 +55,6 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
         else:
             return
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_create_md5(self):
         """
@@ -81,7 +82,6 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
         assert self.different_keys_md5_config()
     #end different_keys_md5
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_check_per_peer(self):
         """
@@ -151,7 +151,7 @@ class TestMd5testsOnControl(Md5Base, VerifySecGroup, ConfigPolicy):
         result = self.is_test_applicable()
         if result[0]:
             self.is_mx_present=False
-            self.check_dm = True
+            self.check_dm = False
             self.config_basic(self.check_dm)
             uuid = self.vnc_lib.bgp_routers_list()
             self.uuid = str(uuid)
