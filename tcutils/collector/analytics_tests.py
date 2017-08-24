@@ -4194,7 +4194,11 @@ class AnalyticsVerification(fixtures.Fixture):
             for k,v in module_connection_dict.items():            
                 result1 = result1 or self.verify_process_status(ops_inspect,\
                                             k)
-            assert result1        
+            assert result1
+        container_based = False
+        cfgm = self.inputs.cfgm_names[0]
+        if self.inputs.host_data[cfgm]['containers']['controller']:
+            container_based = True
         for cfgm in self.inputs.cfgm_names:
             ops_inspect = self.ops_inspect[self.inputs.\
                         collector_ips[0]].get_ops_config(cfgm)
@@ -4214,8 +4218,7 @@ class AnalyticsVerification(fixtures.Fixture):
                             server,node = cfgm)
             assert result   
             result = False
-            if self.inputs.host_data[self.inputs.cfgm_names[0]]['containers']\
-                ['controller'] == True:
+            if container_based:
                 for ip in self.inputs.cfgm_control_ips:
                     server = "%s:%s"%(ip,port_dict['cfgm_cassandra'])
                     result = result or self.verify_connection_infos(ops_inspect,\
@@ -4263,8 +4266,7 @@ class AnalyticsVerification(fixtures.Fixture):
                         server,node = cfgm)
             assert result   
             result = False    
-            if self.inputs.host_data[self.inputs.cfgm_names[0]]['containers']\
-                ['controller'] == True:
+            if container_based:
                 for ip in self.inputs.cfgm_control_ips:
                     server = "%s:%s"%(ip,port_dict['cfgm_cassandra'])
                     result_cassandra = result_cassandra or self.verify_connection_infos(ops_inspect,\
@@ -4312,8 +4314,7 @@ class AnalyticsVerification(fixtures.Fixture):
                         server,node = cfgm)
             assert result   
             result = False    
-            if self.inputs.host_data[self.inputs.cfgm_names[0]]['containers']\
-                ['controller'] == True:
+            if container_based:
                 for ip in self.inputs.cfgm_control_ips:
                     server = "%s:%s"%(ip,port_dict['cfgm_cassandra'])
                     result_cassandra = result_cassandra or self.verify_connection_infos(ops_inspect,\
@@ -4354,8 +4355,7 @@ class AnalyticsVerification(fixtures.Fixture):
                         server,node = cfgm)
             assert result   
             result = False    
-            if self.inputs.host_data[self.inputs.cfgm_names[0]]['containers']\
-                ['controller'] == True:
+            if container_based:
                 for ip in self.inputs.cfgm_control_ips:
                     server = "%s:%s"%(ip,port_dict['cfgm_cassandra'])
                     result_cassandra = result_cassandra or self.verify_connection_infos(ops_inspect,\
@@ -4381,6 +4381,10 @@ class AnalyticsVerification(fixtures.Fixture):
                     }
 
         server_list = []            
+        container_based = False
+        cfgm = self.inputs.cfgm_names[0]
+        if self.inputs.host_data[cfgm]['containers']['controller']:
+            container_based = True
         for bgp in self.inputs.bgp_names:
             ops_inspect = self.ops_inspect[self.inputs.\
                         collector_ips[0]].get_ops_bgprouter(bgp)
@@ -4388,8 +4392,7 @@ class AnalyticsVerification(fixtures.Fixture):
                             'contrail-control')
             result = False
 
-            if self.inputs.host_data[self.inputs.cfgm_names[0]]['containers']\
-                ['controller'] == True:
+            if container_based:
                 for ip in self.inputs.cfgm_control_ips:
                     server = "%s:%s"%(ip,port_dict['cntl_cassandra'])
                     result = result or self.verify_connection_infos(ops_inspect,\
