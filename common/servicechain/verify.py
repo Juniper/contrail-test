@@ -26,7 +26,7 @@ class VerifySvcChain(ConfigSvcChain):
             result = result and si_fix.verify_on_setup()
         return result
 
-    @retry(delay=5, tries=15)
+    @retry(delay=5, tries=25)
     def validate_svc_action(self, vn_fq_name, si, dst_vm, src):
         '''
         1]. Get a list of all RIs associted with the VN.
