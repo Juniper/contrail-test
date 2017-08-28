@@ -34,8 +34,11 @@ class TestDM(BaseDM, Md5Base, BaseNeutronTest):
         super(TestDM, cls).tearDownClass()
 
     def is_test_applicable(self):
-        if not self.inputs.dm_mx.values():
-           return (False, 'dm_mx env needs to be set in testbed.py to run this script')
+        try:
+            if not self.inputs.dm_mx.values():
+                return (False, 'dm_mx env present, but no values in it. Please check.')
+        except AttributeError:
+                return (False, 'dm_mx env needs to be set in testbed.py to run this script')
         if len(self.inputs.ext_routers) < 1:
             return (False, 'Atleast 1 mx is needed')
         if not self.inputs.use_devicemanager_for_md5:
