@@ -1434,7 +1434,7 @@ class TestPolicyAclIpv4v6(TestPolicyAcl):
 
     @classmethod
     def setUpClass(cls):
-        super(TestPolicyAcl, cls).setUpClass()
+        super(TestPolicyAclIpv4v6, cls).setUpClass()
         cls.inputs.set_af(af_test)
 
     def is_test_applicable(self):
@@ -1447,20 +1447,20 @@ class TestPolicyAclIpv4v6(TestPolicyAcl):
     @attr(type=['vcenter'])
     @tcutils.wrappers.preposttest_wrapper
     def test_policy_cidr_src_cidr_dst_any(self):
-        super(TestPolicyAcl, self).test_policy_cidr_src_cidr_dst_any()
+        super(TestPolicyAclIpv4v6, self).test_policy_cidr_src_cidr_dst_any()
 
     @attr(type=['sanity', 'vcenter'])
     @tcutils.wrappers.preposttest_wrapper
     def test_policy_cidr_src_vn_dst_cidr(self):
-        super(TestPolicyAcl, self).test_policy_cidr_src_vn_dst_cidr()
+        super(TestPolicyAclIpv4v6, self).test_policy_cidr_src_vn_dst_cidr()
 
     @attr(type=['vcenter', 'vrouter_gw'])
     @tcutils.wrappers.preposttest_wrapper
     def test_policy_inheritance_src_vn_dst_pol(self):
-        super(TestPolicyAcl, self).test_policy_inheritance_src_vn_dst_pol()
+        super(TestPolicyAclIpv4v6, self).test_policy_inheritance_src_vn_dst_pol()
 
     @attr(type=['sanity', 'vcenter'])
     @tcutils.wrappers.preposttest_wrapper
     def test_policy_inheritance_src_pol_dst_any(self):
-        super(TestPolicyAcl, self).test_policy_inheritance_src_pol_dst_any()
+        super(TestPolicyAclIpv4v6, self).test_policy_inheritance_src_pol_dst_any()
 
