@@ -3,6 +3,7 @@ import re
 from common.servicechain.verify import VerifySvcChain
 from tcutils.util import get_random_cidr
 from tcutils.util import get_random_name
+from tcutils.util import retry
 
 SVC_TYPE_PROPS = {
     'firewall': {'in-network-nat': 'tiny_nat_fw',
@@ -773,15 +774,15 @@ class VerifySvcFirewall(VerifySvcChain):
 
     def verify_ecmp_hash(self, vn_fixture=None, left_vm_fixture=None, right_vm_fixture=None, ecmp_hash='default'):
         """Verify ECMP configuration hash at Agent and control node """
-        # Sleeping for 10 secs for route update to takes place for ecmp_hash
-        # config fileds
-        self.logger.info('Sleeping for 10 seconds for route update to takes place')
-        self.sleep(10)
-        self.verify_ecmp_hash_at_agent(ecmp_hash=ecmp_hash,vn_fixture=vn_fixture,
-                                       left_vm_fixture=left_vm_fixture,
-                                       right_vm_fixture=right_vm_fixture)
+        # Verify configured ecmp_hash fileds at agent
+        result, msg = self.verify_ecmp_hash_at_agent(ecmp_hash=ecmp_hash,
+                                                     vn_fixture=vn_fixture,
+                                                     left_vm_fixture=left_vm_fixture,
+                                                     right_vm_fixture=right_vm_fixture)
+        assert result, msg
     # end verify_ecmp_hash
 
+    @retry(delay=5, tries=10)
     def verify_ecmp_hash_at_agent(self, vn_fixture=None, left_vm_fixture=None, right_vm_fixture=None, ecmp_hash='default'):
         """Verify ECMP configuration hash """
          # Default ECMP hash with 5 tuple
@@ -822,10 +823,12 @@ class VerifySvcFirewall(VerifySvcChain):
         # Compare ECMP hash configured value with value programmed at agent
         if set(ecmp_hash_at_agent) == set(ecmp_hash_config):
             result =True
+            msg = 'ECMP Hash is configured properly at Agent: {%s}' % ecmp_hashing_fileds
             self.logger.info('ECMP Hash is configured properly at Agent: {%s}' % ecmp_hashing_fileds)
         else:
             result = False
-            assert result, 'ECMP Hash is incorrect at Agent. Configured ECMP Hash is: %s, ECMP Hash present at Agent is:%s' % (ecmp_hash_config, ecmp_hash_at_agent)
-        return result
+            msg = 'ECMP Hash is incorrect at Agent. Configured ECMP Hash is: %s, ECMP Hash present at Agent is:%s' % (ecmp_hash_config, ecmp_hash_at_agent)
+            self.logger.info('ECMP Hash is incorrect at Agent. Configured ECMP Hash is: %s, ECMP Hash present at Agent is:%s' % (ecmp_hash_config, ecmp_hash_at_agent))
+        return result, msg
     # end verify_ecmp_hash_at_agent
 
