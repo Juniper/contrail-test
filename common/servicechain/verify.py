@@ -10,6 +10,7 @@ import time
 trafficdir = os.path.join(os.path.dirname(__file__), '../../tcutils/pkgs/Traffic')
 sys.path.append(trafficdir)
 from tcutils.util import retry
+from tcutils.commands import ssh
 from traffic.core.stream import Stream                                                                                                                                                                                                      
 from traffic.core.profile import StandardProfile, ContinuousProfile, ContinuousSportRange
 from traffic.core.helpers import Host, Sender, Receiver
