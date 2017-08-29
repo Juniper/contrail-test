@@ -647,7 +647,7 @@ class TestBasicPolicyModifyIpv4v6(test_policy_basic.TestBasicPolicyModify):
 class TestBasicPolicyConfigIpv4v6(TestBasicPolicyConfig):
     @classmethod
     def setUpClass(cls):
-        super(TestBasicPolicyConfig, cls).setUpClass()
+        super(TestBasicPolicyConfigIpv4v6, cls).setUpClass()
         cls.inputs.set_af(af_test)
 
     def is_test_applicable(self):
@@ -658,7 +658,7 @@ class TestBasicPolicyConfigIpv4v6(TestBasicPolicyConfig):
 class TestBasicPolicyRoutingIpv4v6(TestBasicPolicyRouting):
     @classmethod
     def setUpClass(cls):
-        super(TestBasicPolicyRouting, cls).setUpClass()
+        super(TestBasicPolicyRoutingIpv4v6, cls).setUpClass()
         cls.inputs.set_af(af_test)
 
     def is_test_applicable(self):

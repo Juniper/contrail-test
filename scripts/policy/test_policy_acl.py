@@ -1434,7 +1434,7 @@ class TestPolicyAclIpv4v6(TestPolicyAcl):
 
     @classmethod
     def setUpClass(cls):
-        super(TestPolicyAcl, cls).setUpClass()
+        super(TestPolicyAclIpv4v6, cls).setUpClass()
         cls.inputs.set_af(af_test)
 
     def is_test_applicable(self):
