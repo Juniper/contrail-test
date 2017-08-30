@@ -35,6 +35,7 @@ class TestBasicHeat(BaseHeatTest, ECMPTraffic, ECMPVerify):
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    @skip_because(min_nodes=3)
     def test_svc_creation_with_heat(self):
         '''
         Validate creation of a in-network-nat service chain using heat
@@ -72,6 +73,7 @@ class TestBasicHeatv2(TestBasicHeat):
 
     @test.attr(type=['sanity', 'suite1'])
     @preposttest_wrapper
+    @skip_because(min_nodes=3)
     def test_svc_creation_with_heat(self):
         super(TestBasicHeatv2, self).test_svc_creation_with_heat()
 
@@ -94,5 +96,6 @@ class TestBasicHeatv2IPv6(TestBasicHeatv2):
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    @skip_because(min_nodes=3)
     def test_svc_creation_with_heat(self):
         super(TestBasicHeatv2, self).test_svc_creation_with_heat()

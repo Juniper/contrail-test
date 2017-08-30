@@ -1107,6 +1107,14 @@ def skip_because(*args, **kwargs):
                     msg = "Skipped as testcase is not supported with keystone version 2"
                     raise testtools.TestCase.skipException(msg)
 
+            if "min_nodes" in kwargs:
+                nodes = len(self.connections.orch.get_hosts())
+                mins = kwargs["min_nodes"]
+                if nodes < mins:
+                    msg = ' '.join(("Skipped as test requires at least",
+                            "%d nodes, but only %d found" % (mins, nodes)))
+                    raise testtools.TestCase.skipException(msg)
+
             return f(self, *func_args, **func_kwargs)
         return wrapper
     return decorator
