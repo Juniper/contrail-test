@@ -471,6 +471,7 @@ EOF
             wget $image_url -O $tmp/docker-image.tar.gz
             echo "Loading the image"
             $docker load < $tmp/docker-image.tar.gz; rv=$?
+	    rm -f $tmp/docker-image.tar.gz
         else
             echo "ERROR! $image_url is not accessible."
             exit 1
