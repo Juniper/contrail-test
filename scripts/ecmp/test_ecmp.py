@@ -34,6 +34,7 @@ class TestECMPSanity(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
 
     @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
+    @skip_because(min_nodes=3)
     def test_ecmp_svc_v2_transparent_with_3_instance(self):
         """
            Description: Validate ECMP with version 2 service chaining transparent mode datapath having service instance
@@ -242,6 +243,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
 
     @test.attr(type=['cb_sanity', 'sanity', 'vcenter'])
     @preposttest_wrapper
+    @skip_because(min_nodes=3)
     def test_ecmp_svc_v2_in_network_nat_with_3_instance(self):
         """
          Description: Validate ECMP with v2 service chaining in-network-nat mode datapath having service instance
@@ -697,6 +699,7 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    @skip_because(min_nodes=3)
     def test_ecmp_with_svm_deletion(self):
         """
            Description: Validate ECMP with service chaining transparent mode datapath by removing SVMs
@@ -832,6 +835,7 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
 
     @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
+    @skip_because(min_nodes=3)
     def test_three_stage_v2_SC(self):
         """
         Description: Validate multi-Inline SVC version 2.
@@ -967,6 +971,7 @@ class TestECMPSanityIPv6(TestECMPSanity):
 
     @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
+    @skip_because(min_nodes=3)
     def test_ecmp_svc_in_network_with_3_instance(self):
         super(TestECMPSanityIPv6,self).test_ecmp_svc_in_network_with_3_instance()
 
@@ -1037,6 +1042,7 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
+    @skip_because(min_nodes=3)
     def test_ecmp_hash_src_ip(self):
         """
             Validates ecmp hash when only source ip is configured
