@@ -108,6 +108,7 @@ try:
 
         @test.attr(type=['sanity'])
         @preposttest_wrapper
+        @skip_because(min_nodes=3)
         def test_transit_vn_sym_1_innet(self):
             svcs= ['in-network']
             self.transit_vn_with_left_right_svc(svcs, svcs)
@@ -333,6 +334,7 @@ try:
 
         @test.attr(type=['cb_sanity'])
         @preposttest_wrapper
+        @skip_because(min_nodes=3)
         def test_transit_vn_sym_1_innet(self):
             super(TestHeatIPv6, self).test_transit_vn_sym_1_innet()
 
@@ -352,7 +354,7 @@ try:
 
         @test.attr(type=['cb_sanity', 'sanity'])
         @preposttest_wrapper
-        @skip_because(address_family='v6')
+        @skip_because(address_family='v6', min_nodes=3)
         def test_public_access_thru_svc_w_fip(self):
             '''
             Validate creation of a in-network-nat service chain using heat.

@@ -749,7 +749,7 @@ class TestPorts(BaseNeutronTest):
 
     # end test_aap_with_vrrp_admin_state_toggle
 
-    @skip_because(hypervisor='docker',msg='Uses vsrx image')
+    @skip_because(hypervisor='docker',msg='Uses vsrx image', min_nodes=3)
     @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_aap_with_fip(self):
@@ -1025,6 +1025,7 @@ class TestPorts(BaseNeutronTest):
 
     @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
+    @skip_because(min_nodes=3)
     def test_aap_with_zero_mac(self):
         '''
         Verify  VIP reachability over L2 network when AAP MAC is configured with all zeo
