@@ -21,9 +21,7 @@ class ConfigSvcMirror(VerifySvcChain):
            single node : Pkts mirrored to the analyzer should be equal to 'count'
            multinode :Pkts mirrored to the analyzer should be equal to '2xcount'
         """
-        ci = False
-        if os.environ.get('ci_image'):
-            ci = True
+        ci = self.inputs.is_ci_setup()
         create_svms = kwargs.get('create_svms', True)
         vn1_subnets = [get_random_cidr(af=self.inputs.get_af())]
         vn2_subnets = [get_random_cidr(af=self.inputs.get_af())]

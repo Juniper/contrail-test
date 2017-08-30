@@ -18,7 +18,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         left_vm_fixture = ret_dict['left_vm_fixture']
         right_vm_fixture = ret_dict['right_vm_fixture']
         si_fixture = ret_dict['si_fixture']
-        if os.getenv('ci_image'):
+        if self.inputs.is_ci_setup():
             return self.verify_mirroring(si_fixture, left_vm_fixture,
                                          right_vm_fixture)
         self._verify_proto_based_mirror(si_fixture, left_vm_fixture,
