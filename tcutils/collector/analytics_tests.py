@@ -3196,7 +3196,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
         res = None
 
-        if process == 'contrail-api' and self.inputs.get_build_sku() !='newton':
+        if process == 'contrail-api' and self.inputs.get_build_sku() in ['kilo', 'liberty', 'mitaka']:
             process = '%s:%s' % (process, instanceid)
 
         try:
