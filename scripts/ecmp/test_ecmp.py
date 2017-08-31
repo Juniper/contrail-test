@@ -369,7 +369,8 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         self.sleep(10)
 
         #Verify flow records for each stream
-        for protocol in ['1', '6', '17']:
+        #Need to do ICMP flow verification
+        for protocol in ['6', '17']:
           self.verify_flow_records(
             self.left_vm_fixture, self.left_vm_fixture.vm_ip, self.right_vm_fixture.vm_ip, flow_count=1, protocol=protocol)
 
@@ -994,7 +995,7 @@ class TestECMPFeatureIPv6(TestECMPFeature):
     @test.attr(type=['vcenter'])
     @preposttest_wrapper
     def test_ecmp_svc_v2_in_network_nat_with_3_instance(self):
-        super(TestECMPFeature,self).test_ecmp_svc_v2_in_network_nat_with_3_instance()
+        super(TestECMPFeatureIPv6,self).test_ecmp_svc_v2_in_network_nat_with_3_instance()
 
 class TestECMPwithSVMChangeIPv6(TestECMPwithSVMChange):
 
