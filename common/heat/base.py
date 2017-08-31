@@ -453,8 +453,10 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
     # end config_svc_chain
 
     def config_v2_svc_chain(self, stack_name):
+        template = self.get_template(template_name=stack_name)
+        env = self.get_env(env_name=stack_name)
         stack_name = get_random_name(stack_name)
-        svc_pt_hs = self.config_heat_obj(stack_name)
+        svc_pt_hs = self.config_heat_obj(stack_name, template, env)
         stack = svc_pt_hs.heat_client_obj
         op = stack.stacks.get(stack_name).outputs
         time.sleep(5)
