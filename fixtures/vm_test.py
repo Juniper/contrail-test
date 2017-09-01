@@ -2193,8 +2193,12 @@ class VMFixture(fixtures.Fixture):
     # end def
 
     def wait_till_vm_is_up(self,refresh=False):
+        self.logger.info('Waiting for VM %s to be up..' %(self.vm_name))
         self.refresh = refresh
         status = self.wait_till_vm_up()
+        if not status:
+            self.logger.error('VM %s does not seem to be fully up. Check logs'
+                %(self.vm_name))
         return_status = None
         if type(status) == tuple:
             return_status = status[0]
@@ -2245,16 +2249,16 @@ class VMFixture(fixtures.Fixture):
                     break
                 ssh_wait_result = self.wait_for_ssh_on_vm()
                 if not ssh_wait_result:
-                    self.logger.error('VM %s is NOT ready for SSH connections' % (
+                    self.logger.debug('VM %s is NOT ready for SSH connections' % (
                         self.vm_name))
                 result = result and ssh_wait_result
         if not result:
-            self.logger.error('VM %s does not seem to be fully up' % (
+            self.logger.debug('VM %s does not seem to be fully up' % (
                               self.vm_name))
             self.logger.debug('Console output: %s' % self.get_console_output())
             return result
         return True
-    # end wait_till_vm_is_up
+    # end wait_till_vm_up
 
     def scp_file_transfer_cirros(self, dest_vm_fixture, fip=None, size='100'):
         '''
