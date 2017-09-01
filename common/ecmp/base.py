@@ -34,9 +34,8 @@ class ECMPTestBase(GenericTestBase):
             #    cls.left_vn_subnets += [get_random_cidr()]
             #    cls.right_vn_subnets += [get_random_cidr()]
 
-            ci = os.environ.has_key('ci_image')
-            if ci and cls.inputs.get_af() == 'v4':
-                cls.image_name = 'cirros'
+            if cls.inputs.is_ci_setup() and cls.inputs.get_af() == 'v4':
+                cls.image_name = cls.inputs.get_ci_image()
             else:
                 cls.image_name = 'ubuntu-traffic'
 

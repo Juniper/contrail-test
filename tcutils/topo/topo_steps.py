@@ -466,7 +466,7 @@ def createVMNova(
         VmToNodeMapping=None):
     self.vm_fixture = {}
     host_list = self.connections.orch.get_hosts()
-    vm_image_name = os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
+    vm_image_name = self.inputs.get_ci_image() or 'ubuntu-traffic'
 
     for vm in self.topo.vmc_list:
         sec_gp = []

@@ -82,9 +82,7 @@ class VMFixture(fixtures.Fixture):
         self.port_ids = port_ids
         self.fixed_ips = fixed_ips
         self.subnets = subnets
-        if os.environ.has_key('ci_image'):
-            image_name = os.environ.get('ci_image')
-        self.image_name = image_name
+        self.image_name = self.inputs.get_ci_image(image_name) or image_name
         self.flavor = self.orch.get_default_image_flavor(self.image_name) or flavor
         self.project_name = connections.project_name
         self.project_id = connections.project_id
@@ -95,7 +93,7 @@ class VMFixture(fixtures.Fixture):
         self.vm_ips = list()
         self.vn_objs = list((vn_obj and [vn_obj]) or vn_objs or
                             [self.orch.get_vn_obj_from_id(x) for x in vn_ids])
-        if os.environ.has_key('ci_image'):
+        if self.inputs.is_ci_setup():
             cidrs = []
             for vn_obj in self.vn_objs:
                 if vn_obj['network'].has_key('subnet_ipam'):
@@ -1978,7 +1976,7 @@ class VMFixture(fixtures.Fixture):
                               host['username'], self.vm_node_ip),
                               password=host['password'],
                               warn_only=True, abort_on_prompts=False):
-                    if os.environ.has_key('ci_image'):
+                    if self.inputs.is_ci_setup():
                         i = 'tftp -p -r %s -l %s %s' % (file, file, vm_ip)
                     else:
                         i = 'timeout %d atftp -p -r %s -l %s %s' % (timeout,

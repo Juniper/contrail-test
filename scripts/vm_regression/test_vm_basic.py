@@ -72,10 +72,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             self.logger.exception(
                 "Got exception while creating /tmp/metadata_script.txt as %s" % (e))
 
-        if os.environ.has_key('ci_image'):
-            img_name = os.environ['ci_image']
-        else:
-            img_name = 'ubuntu-traffic'
+        img_name = self.inputs.get_ci_image() or 'ubuntu-traffic'
         vn_name = get_random_name('vn2_metadata')
         vm1_name = get_random_name('vm_in_vn2_metadata')
         vn_fixture = self.create_vn(vn_name=vn_name, af='v4')
@@ -227,7 +224,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         for dst_ip in list_of_ip_to_ping:
             print 'pinging from %s to %s' % (vm1_ip, dst_ip)
 # pinging from Vm1 to subnet broadcast
-            if os.environ.has_key('ci_image'):
+            if self.inputs.is_ci_setup():
                 ping_output = vm1_fixture.ping_to_ip(
                     dst_ip, return_output=True)
             else:
@@ -331,7 +328,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
         #assert vn_fixture.verify_on_setup()
         vn_obj = vn_fixture.obj
-        img_name = os.environ['ci_image'] if os.environ.has_key('ci_image') else 'ubuntu-traffic'
+        img_name = self.inputs.get_ci_image() or 'ubuntu-traffic'
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
                                                 vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name,
                                                 image_name=img_name))

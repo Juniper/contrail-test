@@ -42,6 +42,9 @@ DEFAULT_CERT = '/etc/contrail/ssl/certs/server.pem'
 DEFAULT_PRIV_KEY = '/etc/contrail/ssl/private/server-privkey.pem'
 DEFAULT_CA = '/etc/contrail/ssl/certs/ca-cert.pem'
 
+DEFAULT_CI_IMAGE = 'cirros'
+CI_IMAGES = [DEFAULT_CI_IMAGE]
+
 # monkey patch subprocess.check_output cos its not supported in 2.6
 if "check_output" not in dir(subprocess):  # duck punch it in!
     def f(*popenargs, **kwargs):
@@ -1088,6 +1091,13 @@ class ContrailTestInit(object):
         self.use_admin_auth = False
     # end __init__
 
+    def is_ci_setup(self):
+        if os.environ.has_key('ci_image'):
+            return True
+        else:
+            return False
+    # end is_ci_setup
+
     def set_af(self, af):
         self.address_family = af
 
@@ -1491,6 +1501,23 @@ class ContrailTestInit(object):
         copy_file_from_server(host, src_file_path, dest_folder,
             container=container)
     # end copy_file_from_server
+
+    def get_ci_image(self, image_name='cirros'):
+        '''
+        if ci_image env variable is not defined, returns None
+        If ci_image is defined:
+            if image_name is in CI_IMAGES list
+                Returns image_name
+            else
+                Returns 'cirros' image name
+        '''
+        if not os.environ.has_key('ci_image'):
+            return None
+        if image_name in CI_IMAGES:
+            return image_name
+        else:
+            return DEFAULT_CI_IMAGE
+    # end get_ci_image
 
 def _parse_args( args_str):
     parser = argparse.ArgumentParser()

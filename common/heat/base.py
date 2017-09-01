@@ -176,8 +176,8 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
             env = self.get_env('single_vm')
             env['parameters']['vm_name'] = stack_name
             env['parameters']['net_id'] = vn_fix.vn_id
-            if os.environ.has_key('ci_image'):
-                env['parameters']['image'] = os.environ['ci_image']
+            env['parameters']['image'] = self.inputs.get_ci_image() or \
+                env['parameters']['image']
             if self.inputs.availability_zone:
                 env['parameters']['availability_zone'] = (
                         self.inputs.availability_zone)
