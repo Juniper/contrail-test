@@ -653,11 +653,16 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
                                      spec=spec)
     # end setup_nginx_deployment
 
-    def restart_kube_manager(self):
+    def restart_kube_manager(self, ips=None):
+        '''
+        Restarts kube-managers
+        If no ips is specified, restarts all kube-managers on all nodes
+        '''
+        ips = ips or self.inputs.kube_manager_ips
 
-        self.logger.info('Will restart contrail-kube-manager  services now')
-        self.inputs.restart_service('contrail-kube-manager',
-                                     [self.inputs.kube_manager_ip],
+        self.logger.info('Will restart contrail-kube-manager  services now on'
+            ' %s' %(ips))
+        self.inputs.restart_service('contrail-kube-manager', ips,
                                      container='contrail-kube-manager')
     # end restart_kube_manager
 
