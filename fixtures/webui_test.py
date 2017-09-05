@@ -556,7 +556,7 @@ class WebuiTest:
                 result = result and False
             self.ui.send_keys(fixture.name, 'name', 'name')
             self.ui.click_element([
-                's2id_monitor_type_dropdown', 'select2-choice'], [
+                's2id_user_created_monitor_type_dropdown', 'select2-choice'], [
                     'id', 'class'])
             self.ui.select_from_dropdown(fixture.probe_type)
             url_browser = self.ui.find_element(['url_path', 'input-group-addon'], [
@@ -567,14 +567,14 @@ class WebuiTest:
             self.ui.send_keys(fixture.timeout, 'timeout', 'name', clear=True)
             self.ui.send_keys(fixture.max_retries, 'max_retries', 'name', clear=True)
             self.ui.click_element([
-                's2id_health_check_type_dropdown', 'select2-choice'], [
+                's2id_user_created_health_check_type_dropdown', 'select2-choice'], [
                     'id', 'class'])
             self.ui.select_from_dropdown(fixture.hc_type.title())
             if not self.ui.click_on_create('Health Check Service',
                     'HealthCheckServices', save=True):
                 result = result and False
             rows_detail = self.ui.click_basic_and_get_row_details(
-                'service_health_check', 0)[1]
+                'service_health_check', 0, canvas=True)[1]
             fixture.uuid = self.ui.get_value_of_key(rows_detail, 'UUID')
             self.logger.info("Running verify_on_setup..")
             fixture.verify_on_setup()
@@ -1275,6 +1275,7 @@ class WebuiTest:
                         self.ui.wait_till_ajax_done(self.browser)
                         self.ui.click_element(['tooltip-success', 'i'], ['class', 'tag'])
                         self.ui.click_on_accordian('rtAgg', def_type=False)
+                        self.ui.wait_till_ajax_done(self.browser)
                         for index, (intf, agg) in enumerate(int_ra.iteritems()):
                             br = self.ui.find_element('rtAggregates')
                             if attach:
