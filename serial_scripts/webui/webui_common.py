@@ -1383,7 +1383,7 @@ class WebuiCommon:
 
     def click_configure_service_instance(self):
         self.click_element('btn-configure')
-        self._click_on_config_dropdown(self.browser, 3)
+        self._click_on_config_dropdown(self.browser, 5)
         self.click_element(
             ['config_sc_svcInstances', 'Service Instances'], ['id', 'link_text'])
         time.sleep(2)
@@ -1983,7 +1983,7 @@ class WebuiCommon:
     def click_configure_project_quotas(self):
         self._click_on_config_dropdown(self.browser, index=0)
         self.click_element(
-            ['config_net_quotas', 'Project Quotas'], ['id', 'link_text'])
+            ['config_net_quotas', 'Project Settings'], ['id', 'link_text'])
         self.wait_till_ajax_done(self.browser)
         return self.check_error_msg("configure project quotas")
     # end click_configure_project_quota
@@ -2102,7 +2102,7 @@ class WebuiCommon:
     # end click_configure_svc_appliances
 
     def click_configure_alarms_in_project(self):
-        return self.click_configure_elements(5, 'config_alarm_project',
+        return self.click_configure_elements(7, 'config_alarm_project',
                                              msg="Configure Alarms for Project")
     # end click_configure_alarms_in_project
 
@@ -2185,9 +2185,9 @@ class WebuiCommon:
         return self.click_configure_rbac_basic(row_index, option='project')
     # end click_configure_rbac_in_project_basic
 
-    def _click_on_config_dropdown(self, br, index=2):
-        # index = 3 if svc_instance or svc_template
-        # index = 4 if dns
+    def _click_on_config_dropdown(self, br, index=4):
+        # index = 5 if svc_instance or svc_template
+        # index = 6 if dns
         self.click_element('btn-configure', browser=br)
         children = self.find_element(
             ['menu', 'item'], ['id', 'class'], br, [1])
@@ -2199,14 +2199,14 @@ class WebuiCommon:
     def click_configure_service_template(self):
         self.wait_till_ajax_done(self.browser)
         time.sleep(3)
-        self._click_on_config_dropdown(self.browser, 3)
+        self._click_on_config_dropdown(self.browser, 5)
         self.click_element(['config_service_templates', 'a'], ['id', 'tag'])
         time.sleep(2)
         return self.check_error_msg("configure service template")
     # end click_configure_service_template
     
     def click_configure_service_health_check(self):
-        self._click_on_config_dropdown(self.browser, 3)
+        self._click_on_config_dropdown(self.browser, 5)
         self.click_element(['config_service_healthchk', 'a'], ['id', 'tag'])
         self.wait_till_ajax_done(self.browser)
         return self.check_error_msg("configure service health check")
@@ -2214,7 +2214,7 @@ class WebuiCommon:
 
     def click_configure_service_health_check_basic(self, row_index):
         self.click_configure_service_health_check()
-        rows = self.get_rows()
+        rows = self.get_rows(canvas=True)
         div_browser = self.find_element(
             'div', 'tag', if_elements=[1], elements=True,
             browser=rows[row_index])[0]
@@ -2223,7 +2223,7 @@ class WebuiCommon:
     #end click_configure_service_health_check_basic
 
     def click_configure_bgp_as_a_service(self):
-        self._click_on_config_dropdown(self.browser, 3)
+        self._click_on_config_dropdown(self.browser, 5)
         self.click_element(['config_sc_bgpasaservice', 'a'], ['id', 'tag'])
         self.wait_till_ajax_done(self.browser)
         return self.check_error_msg("configure bgp as a service")
@@ -2241,7 +2241,7 @@ class WebuiCommon:
 
     def click_configure_physical_router(self):
         self.wait_till_ajax_done(self.browser)
-        self._click_on_config_dropdown(self.browser, 1)
+        self._click_on_config_dropdown(self.browser, 3)
         self.click_element(['config_pd_physicalRouters', 'a'], ['id', 'tag'])
         self.wait_till_ajax_done(self.browser)
         return self.check_error_msg("configure physical router")
@@ -2259,7 +2259,7 @@ class WebuiCommon:
 
     def click_configure_interfaces(self):
         self.wait_till_ajax_done(self.browser)
-        self._click_on_config_dropdown(self.browser, 1)
+        self._click_on_config_dropdown(self.browser, 3)
         self.click_element(['config_pd_interfaces', 'a'], ['id', 'tag'])
         self.wait_till_ajax_done(self.browser)
         return self.check_error_msg("configure physical device's interfaces")
@@ -2315,7 +2315,7 @@ class WebuiCommon:
 
     def click_configure_dns_servers(self):
         self.wait_till_ajax_done(self.browser)
-        self._click_on_config_dropdown(self.browser, 4)
+        self._click_on_config_dropdown(self.browser, 6)
         self.click_element(['config_dns_servers', 'a'], ['id', 'tag'])
         time.sleep(2)
         return self.check_error_msg("configure dns servers")
@@ -2333,7 +2333,7 @@ class WebuiCommon:
 
     def click_configure_dns_records(self):
         self.wait_till_ajax_done(self.browser)
-        self._click_on_config_dropdown(self.browser, 4)
+        self._click_on_config_dropdown(self.browser, 6)
         self.click_element(['config_dns_records', 'a'], ['id', 'tag'])
         time.sleep(2)
         return self.check_error_msg("configure dns records")
@@ -2390,7 +2390,7 @@ class WebuiCommon:
 
     def click_configure_route_table(self, tab=False,
                                    msg="Network Route Table"):
-        if not self.click_configure_elements(2, 'config_net_routing',
+        if not self.click_configure_elements(4, 'config_net_routing',
                                              msg=msg):
             return False
         if tab:
@@ -3701,6 +3701,7 @@ class WebuiCommon:
                     minus = self.find_element(minus_icon, 'xpath', elements=True)
                     index = len(minus)
                     minus[index-1].click()
+                    self.wait_till_ajax_done(self.browser)
                 self.click_element('configure-networkbtn1')
                 self.wait_till_ajax_done(self.browser)
                 if tc == 'neg':
@@ -3804,6 +3805,7 @@ class WebuiCommon:
                     minus = self.find_element(minus_icon, 'xpath', elements=True)
                     index = len(minus)
                     minus[index-1].click()
+                self.wait_till_ajax_done(self.browser)
                 self.click_element('configure-networkbtn1')
                 self.wait_till_ajax_done(self.browser)
                 if tc == 'neg':
@@ -3853,6 +3855,7 @@ class WebuiCommon:
                     minus = self.find_element('fa-minus', 'class', elements=True)
                     index = len(minus)
                     minus[index-1].click()
+                self.wait_till_ajax_done(self.browser)
                 self.click_element('configure-networkbtn1')
                 self.wait_till_ajax_done(self.browser)
             else:
@@ -3913,6 +3916,7 @@ class WebuiCommon:
                     minus = self.find_element('fa-minus', 'class', elements=True)
                     index = len(minus) - 1
                     minus[index].click()
+                self.wait_till_ajax_done(self.browser)
                 self.click_element('configure-networkbtn1')
                 self.wait_till_ajax_done(self.browser, wait=10)
                 if tc == 'neg':
