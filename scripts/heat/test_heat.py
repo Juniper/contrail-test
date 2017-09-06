@@ -30,6 +30,8 @@ try:
         @classmethod
         def setUpClass(cls):
             super(TestHeat, cls).setUpClass()
+            cls.heat_api_version = 2
+            cls.pt_based_svc = True
 
         @classmethod
         def tearDownClass(cls):
@@ -219,7 +221,7 @@ try:
         # end test_max_inst_change_in_ecmp_svc
 
         @preposttest_wrapper
-        def test_ecmp_svc_creation_with_heat(self):
+        def old_test_ecmp_svc_creation_with_heat(self):
             '''
             Validate creation of a in-network-nat service chain with 3 Service VMs using heat
             '''
@@ -243,7 +245,7 @@ try:
             dst_vm_list = [vms[1]]
             self.verify_traffic_flow(
                 vms[0], dst_vm_list, svc_instance, left_net_fix)
-        # end test_ecmp_svc_creation_with_heat
+        # end old_test_ecmp_svc_creation_with_heat
 
         def multi_svc_chain(self, policys, svcs):
             '''
@@ -314,43 +316,6 @@ try:
                        {'direction':'<>', 'proto':'tcp', 'svc':'svc2', 'src_ports':[(8001,8001)], 'dst_ports':[(8001,8001)]}]
             return self.multi_svc_chain(policys, svcs)
 
-    # end TestHeat
-
-    class TestHeatIPv6(TestHeat):
-
-        @classmethod
-        def setUpClass(cls):
-            super(TestHeatIPv6, cls).setUpClass()
-            cls.inputs.set_af('v6')
-
-        def is_test_applicable(self):
-            if not self.connections.orch.is_feature_supported('ipv6'):
-                return(False, 'IPv6 tests not supported in this environment ')
-            return (True, None)
-
-        @preposttest_wrapper
-        def test_heat_stacks_list(self):
-            super(TestHeatIPv6, self).test_heat_stacks_list()
-
-        @test.attr(type=['cb_sanity'])
-        @preposttest_wrapper
-        @skip_because(min_nodes=3)
-        def test_transit_vn_sym_1_innet(self):
-            super(TestHeatIPv6, self).test_transit_vn_sym_1_innet()
-
-
-    class TestHeatv2(TestHeat):
-
-        @classmethod
-        def setUpClass(cls):
-            super(TestHeatv2, cls).setUpClass()
-            cls.heat_api_version = 2
-            cls.pt_based_svc = True
-
-        @test.attr(type=['cb_sanity'])
-        @preposttest_wrapper
-        def test_heat_stacks_list(self):
-            super(TestHeatv2, self).test_heat_stacks_list()
 
         @test.attr(type=['cb_sanity', 'sanity'])
         @preposttest_wrapper
@@ -452,35 +417,29 @@ try:
             stack_name = 'src_cidr_svc'
             self.config_v2_svc_chain(stack_name)
         # end test_cidr_based_sc
+    # end TestHeat
 
-        @preposttest_wrapper
-        def test_transit_vn_sym_1_innet(self):
-            super(TestHeatv2, self).test_transit_vn_sym_1_innet()
-
-    class TestHeatv2IPv6(TestHeatv2):
+    class TestHeatIPv6(TestHeat):
 
         @classmethod
         def setUpClass(cls):
-            super(TestHeatv2IPv6, cls).setUpClass()
+            super(TestHeatIPv6, cls).setUpClass()
             cls.inputs.set_af('v6')
 
-    	def is_test_applicable(self):
+        def is_test_applicable(self):
             if not self.connections.orch.is_feature_supported('ipv6'):
                 return(False, 'IPv6 tests not supported in this environment ')
             return (True, None)
 
         @preposttest_wrapper
         def test_heat_stacks_list(self):
-            super(TestHeatv2IPv6, self).test_heat_stacks_list()
+            super(TestHeatIPv6, self).test_heat_stacks_list()
 
+        @test.attr(type=['cb_sanity'])
         @preposttest_wrapper
-        @skip_because(address_family='v6')
-        def test_public_access_thru_svc_w_fip(self):
-            super(TestHeatv2IPv6,self).test_public_access_thru_svc_w_fip()
-
-        @preposttest_wrapper
+        @skip_because(min_nodes=3)
         def test_transit_vn_sym_1_innet(self):
-            super(TestHeatv2IPv6, self).test_transit_vn_sym_1_innet()
+            super(TestHeatIPv6, self).test_transit_vn_sym_1_innet()
 
 except ImportError:
     print 'Missing Heat Client. Will skip tests'
