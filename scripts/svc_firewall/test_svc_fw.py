@@ -62,7 +62,7 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ECMPVerify):
         right_vn_fixture = sc_info['right_vn_fixture']
         left_vm_fixture = sc_info['left_vm_fixture']
         self.add_static_route_in_svm(si_fixture, third_vn, 'eth2')
-        self.allow_all_traffic_between_vns(right_vn_fixture, third_vn)
+        self.setup_policy_between_vns(right_vn_fixture, third_vn)
         for vm_ip in vm_ips:
             errmsg = "Ping to third VM %s from Left VM failed" % vm_ip
             assert left_vm_fixture.ping_with_certainty(vm_ip, count='3'), errmsg
