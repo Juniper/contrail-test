@@ -3316,11 +3316,13 @@ class WebuiCommon:
         return obj_text
     # end get_slick_cell_text
 
-    def click_on_cancel_if_failure(self, element_id):
+    def click_on_cancel_if_failure(self, element_id='cancelBtn'):
         try:
-            element_id = 'cancelBtn'
-            obj = self.find_element(element_id, screenshot=False)
-            obj.click()
+            self.click_element(element_id, screenshot=False)
+            # Trying a second time since 'cancel' needs to be clicked
+            # twice at times to set the cursor on the dialog box
+            if self.find_element(element_id):
+                self.click_element(element_id, screenshot=False)
         except:
             pass
     # end click_on_cancel_if_failure
