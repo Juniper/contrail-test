@@ -675,7 +675,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         update_config_option('openstack', '/etc/keystone/keystone.conf',
                              'token', 'expiration',
                              '86400','keystone')
-        update_js_config('openstack', '/etc/contrail/config.global.js',
+        update_js_config('webui', '/etc/contrail/config.global.js',
                          'contrail-webui', container=is_container_env)
 
 open_delimiters = ['(', '[', '{']
