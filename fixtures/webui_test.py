@@ -6691,6 +6691,13 @@ class WebuiTest:
                     option_list = self.ui.find_element(
                                       'tr', 'tag', browser=option_browser,
                                       elements=True, if_elements=[1])
+                    if self.os_release == 'newton':
+                        volumes = self.ui.find_element('vol-create', elements=True,
+                                      browser=self.browser_openstack)
+                        for volume in volumes:
+                            if volume.text == 'No':
+                                volume.click()
+                                break
                     for opt in option_list:
                         if option_name in opt.text:
                             self.ui.click_element('fa-plus', 'class', browser=opt)
