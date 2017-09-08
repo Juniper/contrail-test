@@ -89,15 +89,17 @@ class BaseDM(VerifySecGroup):
                         j += 1
 
     def create_vn(self):
-        self.vn1_name = "test_vn"
-        self.vn1_net = ['1.1.1.0/24']
+        #Script has run till now with the same name and subnets. Lets change it!
+        self.vn1_name = "test_DM_v4_only"
+        self.vn1_net = ['12.6.2.0/24']
+        #router external tag will cause DM ip allocation problem. Changing it to false
         self.vn1_fixture = self.useFixture(VNFixture(
             project_name=self.inputs.project_name, connections=self.connections,
-            vn_name=self.vn1_name, inputs=self.inputs, subnets=self.vn1_net, router_external=True))
+            vn_name=self.vn1_name, inputs=self.inputs, subnets=self.vn1_net, router_external=False, shared = False))
         #assert self.vn1_fixture.verify_on_setup()
         self.add_RT_basic_traffic()
 
-        self.vn2_name = "test_v6"
+        self.vn2_name = "test_DM_dual_stack"
         self.vn2_net = ['2001::101:0/120']
         self.vn2_fixture = self.useFixture(VNFixture(
             project_name=self.inputs.project_name, connections=self.connections,
