@@ -663,7 +663,8 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
         self.logger.info('Will restart contrail-kube-manager  services now on'
             ' %s' %(ips))
         self.inputs.restart_service('contrail-kube-manager', ips,
-                                     container='contrail-kube-manager')
+                                     container='contrail-kube-manager',
+                                     verify_service=False)
     # end restart_kube_manager
 
     def create_snat_router(self, name):
@@ -718,3 +719,18 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
         # Configure external_gateway
         self.connections.vnc_lib_fixture.vnc_h.connect_gateway_with_router(router_obj,\
                                                   self.public_vn.public_vn_fixture.obj)
+    # end configure_snat_for_pod
+
+    def verify_reachability(self, source_pod, dest_pods):
+        '''
+        Returns (boolean, list of booleans)
+        '''
+        results = []
+        for dest_pod in dest_pods:
+            result = source_pod.ping_with_certainty(dest_pod.pod_ip)
+            results.append(result)
+        final_result = all(results)
+        return (final_result, results)
+    # end verify_reachability
+
+

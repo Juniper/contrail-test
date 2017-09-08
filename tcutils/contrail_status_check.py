@@ -120,7 +120,8 @@ class ContrailStatusChecker():
         skip_status = ['initializing', 'inactive', 'failed', 'timeout']
         single_active_services = {'contrail-schema': None,
                                   'contrail-svc-monitor': None,
-                                  'contrail-device-manager': None}
+                                  'contrail-device-manager': None,
+                                  'contrail-kube-manager' : None}
         # Get nodes from host_ips if not passed from test script
         if not nodes:
             nodes = self.inputs.host_ips
@@ -148,7 +149,10 @@ class ContrailStatusChecker():
                     role = "analyticsdb"
                     node_roles.append(role)
                 if node in self.inputs.compute_ips:
-                    role = "compute"
+                    role = "agent"
+                    node_roles.append(role)
+                if node in self.inputs.kube_manager_ips:
+                    role = "contrail-kube-manager"
                     node_roles.append(role)
 
             for role in node_roles:
@@ -355,6 +359,7 @@ class ContrailStatusChecker():
                         "analyticsdb" : ["contrail-database",
                                          "contrail-database-nodemgr",
                                          "kafka"],
+                        "contrail-kube-manager" : ["contrail-kube-manager"],
                         "compute" : ["contrail-vrouter-agent",
                                      "contrail-vrouter-nodemgr"]}
         for role in service_dict.keys():
