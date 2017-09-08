@@ -17,7 +17,7 @@ class TestBasicLbaas(BaseTestLbaas):
     def tearDownClass(cls):
         super(TestBasicLbaas, cls).tearDownClass()
 
-    @test.attr(type=['sanity', 'suite1'])
+    @test.attr(type=['suite1'])
     @preposttest_wrapper
     def test_lbmethod_round_robin(self):
         '''Creates Lbaas pool with lb-method ROUND ROBIN, 3 members and vip
@@ -128,7 +128,7 @@ class TestBasicLbaas(BaseTestLbaas):
 
     # end test_lbmethod_round_robin
 
-    @test.attr(type=['sanity', 'suite1'])
+    @test.attr(type=['suite1'])
     @preposttest_wrapper
     def test_healthmonitor(self):
         '''Creates Lbaas pool with lb-method ROUND ROBIN, 3 members and vip
