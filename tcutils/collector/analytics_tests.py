@@ -2232,7 +2232,7 @@ class AnalyticsVerification(fixtures.Fixture):
             analytics_processes.extend(['contrail-snmp-collector', 'contrail-topology'])
         control_processes = ['contrail-control',
             'contrail-control-nodemgr', 'contrail-dns', 'contrail-named']
-        if self.inputs.get_build_sku() == 'newton':
+        if self.inputs.get_build_sku() not in ['kilo', 'liberty', 'mitaka']:
             vrouter_processes = ['contrail-vrouter-agent']
         else:
             vrouter_processes = ['supervisor-vrouter', 'contrail-vrouter-agent']
