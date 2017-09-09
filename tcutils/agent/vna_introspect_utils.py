@@ -72,6 +72,8 @@ class AgentInspect (VerificationUtilBase):
 
         '''
         vnl = self.dict_get('Snh_VmListReq?uuid=')
+        if not vnl:
+            return None
         avn = vnl.xpath('./VmListResp/vm_list/list/VmSandeshData/uuid') or \
                 vnl.xpath('./vm_list/list/VmSandeshData/uuid')
         l = []

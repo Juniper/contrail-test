@@ -1320,8 +1320,11 @@ class VMFixture(fixtures.Fixture):
         self.verify_vm_not_in_agent_flag = True
         vrfs = self.get_vrf_ids()
         inspect_h = self.agent_inspect[self.vm_node_ip]
+        vna_vm_list = inspect_h.get_vna_vm_list()
+        if vna_vm_list is None:
+            return False
         # Check if VM is in agent's active VMList:
-        if self.vm_id in inspect_h.get_vna_vm_list():
+        if self.vm_id in vna_vm_list:
             with self.printlock:
                 self.logger.warn("VM %s is still present in agent's active "
                                  "VMList" % (self.vm_name))
