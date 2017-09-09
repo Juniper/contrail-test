@@ -1297,7 +1297,7 @@ class ContrailTestInit(object):
                                  (event, service, self.host_data[host]['name']))
                 issue_cmd = 'service %s %s' % (service, event)
                 self.run_cmd_on_server(
-                    host, issue_cmd, username, password, pty=False, container=container)
+                    host, issue_cmd, username, password, pty=True, container=container)
                 if verify_service and (event == 'restart'):
                     assert self.confirm_service_active(service_name, host, container=container), \
                         "Service Restart failed for %s" % (service_name)

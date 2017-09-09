@@ -5,6 +5,7 @@ from tcutils.control.cn_introspect_utils import *
 from tcutils.agent.vna_introspect_utils import *
 from tcutils.collector.opserver_introspect_utils import *
 from tcutils.collector.analytics_tests import *
+from tcutils.config.kube_manager_introspect_utils import KubeManagerInspect
 from vnc_api.vnc_api import *
 from tcutils.vdns.dns_introspect_utils import DnsAgentInspect
 from tcutils.kubernetes.api_client import Client as Kubernetes_client
@@ -94,6 +95,8 @@ class ContrailConnections():
                                             vnc=self.vnc_lib,
                                             inputs=self.inputs,
                                             logger=self.logger)
+        self._kube_manager_inspect = None
+
     # end __init__
 
     def get_project_id(self, project_name=None):
@@ -218,6 +221,19 @@ class ContrailConnections():
                     break
         return self._svc_mon_inspect
 
+    def get_kube_manager_h(self, refresh=False):
+        if not getattr(self, '_kube_manager_inspect', None) or refresh:
+            for km_ip in self.inputs.kube_manager_ips:
+                #contrail-status would increase run time hence netstat approach
+                cmd = 'netstat -antp | grep :8108 | grep LISTEN'
+                if 'LISTEN' in self.inputs.run_cmd_on_server(km_ip, cmd,
+                                   container='contrail-kube-manager'):
+                    self._kube_manager_inspect = KubeManagerInspect(km_ip,
+                                           logger=self.logger)
+                    break
+        return self._kube_manager_inspect
+    # end get_kube_manager_h
+
     @property
     def api_server_inspect(self):
         if not getattr(self, '_api_server_inspect', None):
@@ -258,6 +274,7 @@ class ContrailConnections():
         self._api_server_inspect = None
         self._ops_inspect = None
         self._analytics_obj = None
+        self._kube_manager_inspect = None
     # end update_inspect_handles
 
     def update_vnc_lib_fixture(self):

@@ -7,6 +7,7 @@ from policy_test import PolicyFixture
 from port_fixture import PortFixture
 from interface_route_table_fixture import InterfaceRouteTableFixture
 from tcutils.util import get_random_name, get_random_cidr
+from tcutils.contrail_status_check import ContrailStatusChecker
 
 class _GenericTestBaseMethods():
 
@@ -21,7 +22,6 @@ class _GenericTestBaseMethods():
                 self._cleanups.remove(cleanup)
                 return True
         return False
-
 
     def remove_method_from_cleanups(self, method):
         for cleanup in self._cleanups:
@@ -48,6 +48,35 @@ class _GenericTestBaseMethods():
         self.addCleanup(vn_fixture.free_ips, ret_val)
         return ret_val
     # end alloc_ips
+
+    def stop_containers(self, node_ip, containers, wait=10):
+        '''
+        containers  : list of container names to be stopped
+        node_ip     : Node on which containers need to be stopped
+        wait        : Seconds to wait for stop before killing it
+        '''
+        for container in containers:
+            self.logger.info('Stopping container %s on %s' %(container, node_ip))
+            self.inputs.run_cmd_on_server(node_ip, 'docker stop %s -t %s' %(
+                container, wait))
+        self.addCleanup(self.start_containers, node_ip, containers)
+    # end stop_containers
+
+    def start_containers(self, node_ip, containers):
+        '''
+        containers: list of container names to be started
+        node_ip: Node on which containers need to be started
+        '''
+        self.remove_from_cleanups(self.start_containers,
+            (self, node_ip, containers))
+        for container in containers:
+            self.logger.info('Starting container %s on %s' %(container, node_ip))
+            self.inputs.run_cmd_on_server(node_ip, 'docker start %s' %(
+                container))
+        self.sleep(60)
+        assert ContrailStatusChecker().wait_till_contrail_cluster_stable(
+            nodes=[node_ip])
+    # end start_containers
 
 # end _GenericTestBaseMethods
 
