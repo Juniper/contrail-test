@@ -48,7 +48,10 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         cls.public_vn_obj.configure_control_nodes()
         cls.domain_name = cls.connections.domain_name
         cls.project_fq_name = [cls.domain_name,cls.inputs.project_name]
-
+        if cls.inputs.get_build_sku() not in ['kilo', 'liberty', 'mitaka', 'newton']:
+            cls.admin_connections.auth.add_user_to_project(user=cls.inputs.stack_user,
+                      project = cls.inputs.project_name,
+                      role='heat_stack_owner')
     # end setUpClass
 
     @classmethod
