@@ -76,7 +76,6 @@ class CeilometerTest(
             assert False 
         return True
 
-    @test.attr(type=['cb_sanity', 'sanity']) 
     @preposttest_wrapper
     def test_sample_floating_ip_transmit_packets(self):
         """

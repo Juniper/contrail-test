@@ -72,7 +72,6 @@ class TestRsyslog(BaseRsyslogTest):
         return result
     # end send_syslog_and_verify_in_db
 
-    @test.attr(type=['cb_sanity', 'sanity','quick_sanity'])
     @preposttest_wrapper
     def test_rsyslog_sanity_if_provisioned(self):
         """Tests rsyslog connection if provisioned."""
