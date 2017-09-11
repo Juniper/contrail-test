@@ -30,6 +30,8 @@ try:
         @classmethod
         def setUpClass(cls):
             super(TestHeat, cls).setUpClass()
+            cls.heat_api_version = 2
+            cls.pt_based_svc = True
 
         @classmethod
         def tearDownClass(cls):
@@ -217,33 +219,6 @@ try:
                 vms[0], dst_vm_list, svc_instance, left_net_fix)
         # end test_max_inst_change_in_ecmp_svc
 
-        @preposttest_wrapper
-        def test_ecmp_svc_creation_with_heat(self):
-            '''
-            Validate creation of a in-network-nat service chain with 3 Service VMs using heat
-            '''
-            vn_list = []
-            mgmt_net_fix, m_hs_obj = self.config_vn(stack_name='mgmt_net')
-            right_net_fix, r_hs_obj = self.config_vn(stack_name='right_net')
-            left_net_fix, l_h_obj = self.config_vn(stack_name='left_net')
-            vn_list = [mgmt_net_fix, left_net_fix, right_net_fix]
-            end_vn_list = [left_net_fix, right_net_fix]
-            vms = []
-            vms = self.config_vms(end_vn_list)
-            svc_template = self.config_svc_template(
-                stack_name='st', scaling=True, mode='in-network-nat')
-            svc_instance, si_hs_obj = self.config_svc_instance(
-                'si', svc_template, vn_list, max_inst=3)
-            si_fq_name = (':').join(svc_instance.si_fq_name)
-            svc_rules = []
-            svc_rules.append(self.config_svc_rule(proto='any', si_fq_names=[si_fq_name], src_vns=[left_net_fix], dst_vns=[right_net_fix]))
-            svc_chain = self.config_svc_chain(svc_rules, vn_list, [l_h_obj, r_hs_obj])
-            assert vms[0].ping_with_certainty(vms[1].vm_ip, expectation=True)
-            dst_vm_list = [vms[1]]
-            self.verify_traffic_flow(
-                vms[0], dst_vm_list, svc_instance, left_net_fix)
-        # end test_ecmp_svc_creation_with_heat
-
         def multi_svc_chain(self, policys, svcs):
             '''
             Validate multi service chain using heat
@@ -312,43 +287,6 @@ try:
             policys = [{'direction':'<>', 'proto':'tcp', 'svc':'svc1', 'src_ports':[(8000,8000)], 'dst_ports':[(8000,8000)]},
                        {'direction':'<>', 'proto':'tcp', 'svc':'svc2', 'src_ports':[(8001,8001)], 'dst_ports':[(8001,8001)]}]
             return self.multi_svc_chain(policys, svcs)
-
-    # end TestHeat
-
-    class TestHeatIPv6(TestHeat):
-
-        @classmethod
-        def setUpClass(cls):
-            super(TestHeatIPv6, cls).setUpClass()
-            cls.inputs.set_af('v6')
-
-        def is_test_applicable(self):
-            if not self.connections.orch.is_feature_supported('ipv6'):
-                return(False, 'IPv6 tests not supported in this environment ')
-            return (True, None)
-
-        @preposttest_wrapper
-        def test_heat_stacks_list(self):
-            super(TestHeatIPv6, self).test_heat_stacks_list()
-
-        @test.attr(type=['cb_sanity'])
-        @preposttest_wrapper
-        def test_transit_vn_sym_1_innet(self):
-            super(TestHeatIPv6, self).test_transit_vn_sym_1_innet()
-
-
-    class TestHeatv2(TestHeat):
-
-        @classmethod
-        def setUpClass(cls):
-            super(TestHeatv2, cls).setUpClass()
-            cls.heat_api_version = 2
-            cls.pt_based_svc = True
-
-        @test.attr(type=['cb_sanity'])
-        @preposttest_wrapper
-        def test_heat_stacks_list(self):
-            super(TestHeatv2, self).test_heat_stacks_list()
 
         @test.attr(type=['cb_sanity', 'sanity'])
         @preposttest_wrapper
@@ -451,15 +389,11 @@ try:
             self.config_v2_svc_chain(stack_name)
         # end test_cidr_based_sc
 
-        @preposttest_wrapper
-        def test_transit_vn_sym_1_innet(self):
-            super(TestHeatv2, self).test_transit_vn_sym_1_innet()
-
-    class TestHeatv2IPv6(TestHeatv2):
+    class TestHeatIPv6(TestHeat):
 
         @classmethod
         def setUpClass(cls):
-            super(TestHeatv2IPv6, cls).setUpClass()
+            super(TestHeatIPv6, cls).setUpClass()
             cls.inputs.set_af('v6')
 
     	def is_test_applicable(self):
@@ -469,16 +403,16 @@ try:
 
         @preposttest_wrapper
         def test_heat_stacks_list(self):
-            super(TestHeatv2IPv6, self).test_heat_stacks_list()
+            super(TestHeatIPv6, self).test_heat_stacks_list()
 
         @preposttest_wrapper
         @skip_because(address_family='v6')
         def test_public_access_thru_svc_w_fip(self):
-            super(TestHeatv2IPv6,self).test_public_access_thru_svc_w_fip()
+            super(TestHeatIPv6,self).test_public_access_thru_svc_w_fip()
 
         @preposttest_wrapper
         def test_transit_vn_sym_1_innet(self):
-            super(TestHeatv2IPv6, self).test_transit_vn_sym_1_innet()
+            super(TestHeatIPv6, self).test_transit_vn_sym_1_innet()
 
 except ImportError:
     print 'Missing Heat Client. Will skip tests'
