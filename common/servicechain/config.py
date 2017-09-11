@@ -461,7 +461,7 @@ class ConfigSvcChain(fixtures.Fixture):
                                                      'right_vn')
 
         # Transparent SVMs should not be part of left and right VNs
-        if service_mode == 'transparent' and service_type == 'firewall':
+        if service_mode == 'transparent':
             (si_left_vn_name,
              si_left_vn_subnets,
              si_left_vn_fixture,
