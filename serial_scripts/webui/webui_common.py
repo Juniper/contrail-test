@@ -2529,7 +2529,7 @@ class WebuiCommon:
                         ['tenant_list', 'a'], ['id', 'tag'], browser, [1])
                     self.click_if_element_found(tenants, project_name)
             else:
-                if os_release in ('liberty', 'mitaka', 'newton'):
+                if os_release in ('liberty', 'mitaka', 'newton', 'ocata'):
                     self.click_element(
                         'fa-caret-down', 'class', browser)
                 else:
