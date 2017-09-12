@@ -605,7 +605,7 @@ class WebuiTest:
             self.ui.select_project(self.project_name_input)
             self.logger.info("%s health check %s using contrail-webui" %
                              (attach_var, int_shc))
-            rows = self.ui.get_rows()
+            rows = self.ui.get_rows(canvas=True)
             for sint in rows:
                 if sint.text:
                     if (self.ui.get_slick_cell_text(sint, 2) == si):
@@ -1203,7 +1203,7 @@ class WebuiTest:
             self.ui.select_project(self.project_name_input)
             self.logger.info("%s routing policy %s using contrail-webui" %
                              (attach_var, int_rp))
-            rows = self.ui.get_rows()
+            rows = self.ui.get_rows(canvas=True)
             for sint in rows:
                 if sint.text:
                     if (self.ui.get_slick_cell_text(sint, 2) == si):
@@ -1267,7 +1267,7 @@ class WebuiTest:
             self.ui.select_project(self.project_name_input)
             self.logger.info("%s route aggregate %s using contrail-webui" %
                              (attach_var, int_ra))
-            rows = self.ui.get_rows()
+            rows = self.ui.get_rows(canvas=True)
             for sint in rows:
                 if sint.text:
                     if (self.ui.get_slick_cell_text(sint, 2) == si):
