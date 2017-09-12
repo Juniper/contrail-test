@@ -7,6 +7,7 @@ import cgitb
 import cStringIO
 from datetime import datetime
 from tcutils.util import v4OnlyTestException
+from tcutils.test_lib.contrail_utils import check_xmpp_is_stable
 
 from cores import *
 
@@ -50,6 +51,9 @@ def preposttest_wrapper(function):
         initial_crashes = get_service_crashes(self.inputs)
         if initial_crashes:
             log.warn("Test is running with crashes: %s", initial_crashes)
+
+        (flap_check_result, initial_xmpp_flaps) = check_xmpp_is_stable(
+                self.inputs, self.connections)
 
         testfail = None
         testskip = None
@@ -137,13 +141,18 @@ def preposttest_wrapper(function):
                 log.error(msg)
                 errmsg.append(msg)
 
+            (flap_check_result, current_xmpp_flags)= check_xmpp_is_stable(
+                self.inputs, self.connections, initial_xmpp_flaps)
+
             test_time = datetime.now().replace(microsecond=0) - start_time
             if cores == {} and crashes == {} and not testfail and \
-			not cleanupfail and result is None:
+		            not cleanupfail and (result is None or result is True) and \
+                    flap_check_result:
                 log.info("END TEST : %s : PASSED[%s]",
                          function.__name__, test_time)
                 log.info('-' * 80)
-            elif cores or crashes or testfail or cleanupfail or result is False:
+            elif cores or crashes or testfail or cleanupfail or \
+                    result is False or not flap_check_result:
                 log.info('')
                 log.info("END TEST : %s : FAILED[%s]",
                          function.__name__, test_time)

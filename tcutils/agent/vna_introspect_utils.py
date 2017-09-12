@@ -667,14 +667,8 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         elem = vnl.getchildren()[0]
         var = elem.xpath('./list/AgentXmppData')
         l = []
-        for x in range(0, len(var)):
-            p = {}
-            p[elem.xpath('./list/AgentXmppData')[x].xpath('./controller_ip')[0]
-              .tag] = elem.xpath('./list/AgentXmppData')[x].xpath('./controller_ip')[0].text
-            p[elem.xpath('./list/AgentXmppData')[x].xpath('./cfg_controller')[0]
-              .tag] = elem.xpath('./list/AgentXmppData')[x].xpath('./cfg_controller')[0].text
-            p[elem.xpath('./list/AgentXmppData')[x].xpath('./state')[0]
-              .tag] = elem.xpath('./list/AgentXmppData')[x].xpath('./state')[0].text
+        for x in var:
+            p = elem2dict(x)
             l.append(p)
         return l
     # end get_vna_xmpp_connection_status
