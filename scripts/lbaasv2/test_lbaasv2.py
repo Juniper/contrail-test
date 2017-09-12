@@ -184,6 +184,9 @@ class TestLBaaSV2(BaseLBaaSTest):
         self.logger.info("Apply security group to allow only TCP to the member VMs and verify the LB works")
         for server in lb_pool_servers:
             server.add_security_group(vip_sg.get_uuid())
+        for server in lb_pool_servers:
+            assert server.verify_security_group(vip_sg.get_uuid())
+        time.sleep(10)
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
 
