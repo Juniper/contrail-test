@@ -3,6 +3,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import WebDriverException
 from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import NoSuchElementException
 import time
 import random
 import fixtures
@@ -728,7 +729,7 @@ class WebuiTest:
                     view='advanced',
                     search_ele='forwarding-class-grid',
                     browser=br)[1]
-            fixture.uuid = self.ui.get_value_of_key(rows_detail, 'uuid')
+            fixture.uuid = self.ui.get_value_of_key(rows_detail, 'uuid', view='advanced')
             self.logger.info("Running verify_on_setup..")
             fixture.verify_on_setup()
         except WebDriverException:
@@ -1835,136 +1836,143 @@ class WebuiTest:
                     if item.get('key') == 'Overall Node Status':
                         dom_basic_view[i]['value'] = node_status
                 # special handling for control nodes
-                control_nodes = self.browser.find_element_by_class_name(
-                    'table-cell').text
+                try:
+                    control_nodes = self.browser.find_element_by_class_name(
+                        'table-cell').text
+                except NoSuchElementException:
+                    pass
                 for i, item in enumerate(dom_basic_view):
                     if item.get('key') == 'Control Nodes':
                         dom_basic_view[i]['value'] = control_nodes
                     if item.get('key') == 'CPU Share (%)':
                         dom_basic_view[i]['key'] = 'CPU'
-                        val = float(dom_basic_view[i]['value'])
-                        dom_basic_view[i]['value'] = unicode('%.2f' % val + ' %')
+                        if not dom_basic_view[i]['value'] == '--':
+                            val = float(dom_basic_view[i]['value'])
+                            dom_basic_view[i]['value'] = unicode('%.2f' % val + ' %')
                 # filter vrouter basic view details from opserver data
                 vrouters_ops_data = self.ui.get_details(
                     vrouters_list_ops[n]['href'])
                 ops_basic_data = []
                 host_name = vrouters_list_ops[n]['name']
-                ip_address = vrouters_ops_data.get(
-                    'VrouterAgent').get('self_ip_list')[0]
-                version = json.loads(vrouters_ops_data.get('VrouterAgent').get(
+                vrouter_agent_ops_data = vrouters_ops_data.get('VrouterAgent')
+                ip_address = ''
+                down_intf = 0
+                if vrouter_agent_ops_data:
+                    ip_address = vrouter_agent_ops_data.get('self_ip_list')[0]
+                    version = json.loads(vrouter_agent_ops_data.get(
                     'build_info')).get('build-info')[0].get('build-id')
-                version = self.ui.get_version_string(version)
-                xmpp_messages = vrouters_ops_data.get(
-                        'VrouterControlStats').get('xmpp_stats')
-                for item in xmpp_messages:
-                    if item == ip_address:
-                        xmpp_in_msgs = xmpp_messages.get(item)['in_msgs']
-                        xmpp_out_msgs = xmpp_messages.get(item)['out_msgs']
-                        xmpp_msgs_string = str(xmpp_in_msgs) + \
-                            ' In, ' + \
-                            str(xmpp_out_msgs) + ' Out'
-                        break
-                total_flows = vrouters_ops_data.get(
-                    'VrouterStatsAgent').get('total_flows')
-                active_flows = vrouters_ops_data.get(
-                    'VrouterStatsAgent').get('flow_rate').get('active_flows')
-                flow_count_string = str(active_flows) + \
-                    ' Active, ' + \
-                    str(total_flows) + ' Total'
-                if vrouters_ops_data.get('VrouterAgent').get(
-                        'connected_networks'):
-                    networks = str(
-                        len(vrouters_ops_data.get('VrouterAgent').get('connected_networks')))
-                else:
-                    networks = '0'
-                interfaces = str(vrouters_ops_data.get('VrouterAgent')
-                                 .get('total_interface_count'))
-                if not interfaces:
-                    interfaces = '0 Total'
-                else:
-                    interfaces = interfaces + ' Total'
-                if vrouters_ops_data.get('VrouterAgent').get(
-                        'virtual_machine_list'):
-                    instances = str(
-                        len(vrouters_ops_data.get('VrouterAgent').get('virtual_machine_list')))
-                else:
-                    instances = '0'
-                vrouter_stats_agent = vrouters_ops_data.get(
-                    'VrouterStatsAgent')
+                    version = self.ui.get_version_string(version)
+                    if vrouter_agent_ops_data.get('connected_networks'):
+                        networks = str(len(vrouter_agent_ops_data.get('connected_networks')))
+                    else:
+                        networks = '0'
+                    interfaces = str(vrouter_agent_ops_data.get('total_interface_count'))
+                    if not interfaces:
+                        interfaces = '0 Total'
+                    else:
+                        interfaces = interfaces + ' Total'
+                    if vrouter_agent_ops_data.get('virtual_machine_list'):
+                        instances = str(
+                            len(vrouter_agent_ops_data.get('virtual_machine_list')))
+                    else:
+                        instances = '0'
+                    down_intf = vrouter_agent_ops_data.get('down_interface_count')
+                    modified_ops_data.extend([{'key': 'IP Address', 'value': ip_address}, {
+                        'key': 'Version', 'value': version}, {
+                        'key': 'Networks', 'value': networks}, {
+                        'key': 'Instances', 'value': instances}, {
+                        'key': 'Interfaces', 'value': interfaces}])
+                    ops_data.extend([{'key': 'IP Address', 'value': ip_address}, {
+                        'key': 'Networks', 'value': networks}, {
+                        'key': 'Instances', 'value': instances}, {
+                        'key': 'Version', 'value': version}, {
+                        'key': 'Interfaces', 'value': interfaces}])
+                if vrouters_ops_data.get('VrouterControlStats'):
+                    xmpp_messages = vrouters_ops_data.get(
+                       'VrouterControlStats').get('xmpp_stats')
+                    for item in xmpp_messages:
+                        if item == ip_address:
+                            xmpp_in_msgs = xmpp_messages.get(item)['in_msgs']
+                            xmpp_out_msgs = xmpp_messages.get(item)['out_msgs']
+                            xmpp_msgs_string = str(xmpp_in_msgs) + \
+                                ' In, ' + str(xmpp_out_msgs) + ' Out'
+                            modified_ops_data.extend([{'key': 'XMPP Messages', 'value': xmpp_msgs_string}])
+                            break
+                vrouter_stats_agent = vrouters_ops_data.get('VrouterStatsAgent')
+                if vrouter_stats_agent:
+                    total_flows = vrouter_stats_agent.get('total_flows')
+                    active_flows = vrouter_stats_agent.get('flow_rate').get('active_flows')
+                    flow_count_string = str(active_flows) + \
+                        ' Active, ' + \
+                        str(total_flows) + ' Total'
+                    modified_ops_data.extend([{'key': 'Flow Count', 'value': flow_count_string}])
+                vrouter_stats_agent = vrouters_ops_data.get('VrouterStatsAgent')
                 if not vrouter_stats_agent:
                     cpu = '--'
                     memory = '--'
                 else:
                     cpu = self.ui.get_cpu_string(vrouter_stats_agent)
                     memory = self.ui.get_memory_string(vrouter_stats_agent)
-                last_log = vrouters_ops_data.get(
-                    'VrouterAgent').get('total_interface_count')
                 modified_ops_data = []
-                process_state_list = vrouters_ops_data.get(
-                    'NodeStatus').get('process_info')
-                process_down_stop_time_dict = {}
-                process_up_start_time_dict = {}
-                exclude_process_list = [
-                    'contrail-config-nodemgr',
-                    'contrail-analytics-nodemgr',
-                    'contrail-control-nodemgr',
-                    'contrail-vrouter-nodemgr',
-                    'openstack-nova-compute',
-                    'contrail-svc-monitor',
-                    'contrail-discovery:0',
-                    'contrail-zookeeper',
-                    'contrail-schema']
-                for i, item in enumerate(process_state_list):
-                    if item['process_name'] == 'contrail-vrouter-agent':
-                        contrail_vrouter_string = self.ui.get_process_status_string(
-                            item,
-                            process_down_stop_time_dict,
-                            process_up_start_time_dict)
-                    if item['process_name'] == 'contrail-vrouter-nodemgr':
-                        contrail_vrouter_nodemgr_string = self.ui.get_process_status_string(
-                            item,
-                            process_down_stop_time_dict,
-                            process_up_start_time_dict)
-                    if item['process_name'] == 'openstack-nova-compute':
-                        openstack_nova_compute_string = self.ui.get_process_status_string(
-                            item,
-                            process_down_stop_time_dict,
-                            process_up_start_time_dict)
-                reduced_process_keys_dict = {}
-                for k, v in process_down_stop_time_dict.items():
-                    if k not in exclude_process_list:
-                        reduced_process_keys_dict[k] = v
-                '''
-                if not reduced_process_keys_dict :
-                    recent_time = max(process_up_start_time_dict.values())
-                    overall_node_status_time = self.ui.get_node_status_string(str(recent_time))
-                    overall_node_status_string  = ['Up since ' + status for status in overall_node_status_time]
-                else:
-                    overall_node_status_down_time = self.ui.get_node_status_string(str(max(reduced_process_keys_dict.values())))
-                    overall_node_status_string  = ['Down since ' + status for status in overall_node_status_down_time]
-                '''
-                if not reduced_process_keys_dict:
-                    for process in exclude_process_list:
-                        process_up_start_time_dict.pop(process, None)
-                    recent_time = max(process_up_start_time_dict.values())
-                    overall_node_status_time = self.ui.get_node_status_string(
-                        str(recent_time))
-                    down_intf = vrouters_ops_data.get(
-                        'VrouterAgent').get('down_interface_count')
-                    if down_intf > 0:
-                        overall_node_status_string = str(
-                            down_intf) + ' Interfaces down'
+                ops_node_status = vrouters_ops_data.get('NodeStatus')
+                if ops_node_status:
+                    process_state_list = ops_node_status.get('process_info')
+                    process_down_stop_time_dict = {}
+                    process_up_start_time_dict = {}
+                    exclude_process_list = [
+                        'contrail-config-nodemgr',
+                        'contrail-analytics-nodemgr',
+                        'contrail-control-nodemgr',
+                        'contrail-vrouter-nodemgr',
+                        'openstack-nova-compute',
+                        'contrail-svc-monitor',
+                        'contrail-discovery:0',
+                        'contrail-zookeeper',
+                        'contrail-schema']
+                    for i, item in enumerate(process_state_list):
+                        if item['process_name'] == 'contrail-vrouter-agent':
+                            contrail_vrouter_string = self.ui.get_process_status_string(
+                                item,
+                                process_down_stop_time_dict,
+                                process_up_start_time_dict)
+                            modified_ops_data.extend([{
+                                'key': 'vRouter Agent', 'value': contrail_vrouter_string}])
+                        if item['process_name'] == 'contrail-vrouter-nodemgr':
+                            contrail_vrouter_nodemgr_string = self.ui.get_process_status_string(
+                                item,
+                                process_down_stop_time_dict,
+                                process_up_start_time_dict)
+                        if item['process_name'] == 'openstack-nova-compute':
+                            openstack_nova_compute_string = self.ui.get_process_status_string(
+                                item,
+                                process_down_stop_time_dict,
+                                process_up_start_time_dict)
+                    reduced_process_keys_dict = {}
+                    for k, v in process_down_stop_time_dict.items():
+                        if k not in exclude_process_list:
+                           reduced_process_keys_dict[k] = v
+                    if not reduced_process_keys_dict:
+                        for process in exclude_process_list:
+                            process_up_start_time_dict.pop(process, None)
+                        recent_time = max(process_up_start_time_dict.values())
+                        overall_node_status_time = self.ui.get_node_status_string(
+                            str(recent_time))
+                        if down_intf > 0:
+                            overall_node_status_string = str(
+                                down_intf) + ' Interfaces down'
+                        else:
+                            overall_node_status_string = [
+                                'Up since ' +
+                                status for status in overall_node_status_time]
                     else:
-                        overall_node_status_string = [
-                            'Up since ' +
-                            status for status in overall_node_status_time]
-                else:
-                    overall_node_status_down_time = self.ui.get_node_status_string(
-                        str(max(reduced_process_keys_dict.values())))
-                    process_down_count = len(reduced_process_keys_dict)
-                    process_down_list = reduced_process_keys_dict.keys()
-                    overall_node_status_string = str(
-                        process_down_count) + ' Process down'
+                        overall_node_status_down_time = self.ui.get_node_status_string(
+                            str(max(reduced_process_keys_dict.values())))
+                        process_down_count = len(reduced_process_keys_dict)
+                        process_down_list = reduced_process_keys_dict.keys()
+                        overall_node_status_string = str(
+                            process_down_count) + ' Process down'
+                        modified_ops_data.extend([{
+                            'key': 'Overall Node Status', 'value': overall_node_status_string}])
                 if down_intf:
                     interfaces+= ', ' + str(down_intf) + ' Down'
                 generator_list = self.ui.get_generators_list_ops()
@@ -1980,48 +1988,42 @@ class WebuiTest:
                 if analytics_data['status'] == 'Established':
                     analytics_primary_ip = analytics_data[
                             'collector_ip'].split(':')[0] + ' (Up)'
-                    tx_socket_bytes = analytics_data.get(
-                        'tx_socket_stats').get('bytes')
-                    tx_socket_size = self.ui.get_memory_string(
-                        int(tx_socket_bytes))
-                    analytics_messages_string = self.ui.get_analytics_msg_count_string(
-                        generators_vrouters_data,
-                        tx_socket_size)
-                control_nodes_list = vrouters_ops_data.get(
-                    'VrouterAgent').get('xmpp_peer_list')
-                control_nodes_string = ''
-                for node in control_nodes_list:
-                    if node['status'] and node['primary']:
-                        control_ip = node['ip']
-                        control_nodes_string = control_ip + '* (Up)'
-                        index = control_nodes_list.index(node)
-                        del control_nodes_list[index]
-                for node in control_nodes_list:
-                    node_ip = node['ip']
-                    if node['status']:
-                        control_nodes_string = control_nodes_string + \
-                            ', ' + node_ip + ' (Up)'
-                    else:
-                        control_nodes_string = control_nodes_string + \
-                            ', ' + node_ip + ' (Down)'
+                    if analytics_data.get('tx_socket_stats'):
+                        tx_socket_bytes = analytics_data.get(
+                            'tx_socket_stats').get('bytes')
+                        tx_socket_size = self.ui.get_memory_string(
+                           int(tx_socket_bytes))
+                        analytics_messages_string = self.ui.get_analytics_msg_count_string(
+                           generators_vrouters_data,
+                            tx_socket_size)
+                        modified_ops_data.extend([{
+                            'key': 'Analytics Messages', 'value': analytics_messages_string}])
+                if vrouter_agent_ops_data:
+                    control_nodes_list = vrouters_ops_data.get(
+                        'VrouterAgent').get('xmpp_peer_list')
+                    control_nodes_string = ''
+                    for node in control_nodes_list:
+                        if node['status'] and node['primary']:
+                            control_ip = node['ip']
+                            control_nodes_string = control_ip + '* (Up)'
+                            index = control_nodes_list.index(node)
+                            del control_nodes_list[index]
+                    for node in control_nodes_list:
+                        node_ip = node['ip']
+                        if node['status']:
+                            control_nodes_string = control_nodes_string + \
+                                ', ' + node_ip + ' (Up)'
+                        else:
+                            control_nodes_string = control_nodes_string + \
+                                ', ' + node_ip + ' (Down)'
+                    modified_ops_data.extend([{'key': 'Control Nodes', 'value': control_nodes_string}])
                 modified_ops_data.extend(
                     [
                         {
-                            'key': 'Flow Count', 'value': flow_count_string}, {
                             'key': 'Hostname', 'value': host_name}, {
-                            'key': 'IP Address', 'value': ip_address}, {
-                            'key': 'Networks', 'value': networks}, {
-                            'key': 'Instances', 'value': instances}, {
                                 'key': 'CPU', 'value': cpu}, {
                                     'key': 'Memory', 'value': memory}, {
-                                        'key': 'Version', 'value': version}, {
-                                            'key': 'vRouter Agent', 'value': contrail_vrouter_string}, {
-                                                'key': 'Overall Node Status', 'value': overall_node_status_string}, {
-                                                    'key': 'Analytics Node', 'value': analytics_primary_ip}, {
-                                                        'key': 'Analytics Messages', 'value': analytics_messages_string}, {
-                                                            'key': 'Control Nodes', 'value': control_nodes_string}, {
-                                                                'key': 'XMPP Messages', 'value': xmpp_msgs_string}, {
-                                                                    'key': 'Interfaces', 'value': interfaces}])
+                                        'key': 'Analytics Node', 'value': analytics_primary_ip}])
                 if self.ui.match_ui_kv(
                         modified_ops_data,
                         dom_basic_view):
@@ -2036,18 +2038,16 @@ class WebuiTest:
                 ops_data = []
                 self.logger.info(
                     "Verifying Vrouter opserver basic data on Monitor->Infra->Virtual Routers main page")
+                if memory == '--':
+                    memory = ''
+                if cpu == '--':
+                    cpu = cpu.strip('-')
                 ops_data.extend(
                     [
                         {
                             'key': 'Hostname', 'value': host_name}, {
-                            'key': 'IP Address', 'value': ip_address}, {
-                            'key': 'Networks', 'value': networks}, {
-                            'key': 'Instances', 'value': instances}, {
                             'key': 'CPU', 'value': cpu}, {
-                                'key': 'Memory', 'value': memory}, {
-                                    'key': 'Version', 'value': version}, {
-                                            'key': 'Interfaces', 'value': interfaces}])
-
+                            'key': 'Memory', 'value': memory}])
                 if self.verify_vrouter_ops_grid_page_data(host_name, ops_data):
                     self.logger.info(
                         "Vrouter %s main page data matched" %
@@ -2362,7 +2362,7 @@ class WebuiTest:
         self.logger.debug(self.dash)
         if not self.ui.click_monitor_control_nodes():
             result = result and False
-        rows = self.ui.get_rows()
+        rows = self.ui.get_rows(canvas=True)
         bgp_routers_list_ops = self.ui.get_bgp_routers_list_ops()
         result = True
         for n in range(len(bgp_routers_list_ops)):
@@ -7690,7 +7690,7 @@ class WebuiTest:
                 self.logger.info(self.dash)
             else:
                 rows_detail = self.ui.click_basic_and_get_row_details(
-                                'service_instance', match_index)[1]
+                                'service_instance', match_index, canvas=True)[1]
                 self.logger.info(
                     "Verify basic view details for fq_name %s" % (api_fq_name))
                 for detail in range(len(rows_detail)):
@@ -7716,58 +7716,43 @@ class WebuiTest:
                             Status=status,
                             Power_State=power,
                             Networkss=network_list)
-                        self.ui.click_monitor_instances()
-                        self.ui.select_network(network_name)
-                        rows = self.ui.get_rows(canvas=True)
-                        vmi_list_ops = self.ui.get_vmi_list_ops()
-                        for insta in range(len(rows)):
-                            if self.ui.get_slick_cell_text(
-                                    rows[insta], 2) == vm_name:
-                                uuid = self.ui.get_slick_cell_text(
-                                        rows[insta], 1)
-                                for vm_inst in range(len(vmi_list_ops)):
-                                    vmi_inst_ops_data = self.ui.get_details(
-                                        vmi_list_ops[vm_inst]['href'])
-                                    ops_data_basic_intf = vmi_inst_ops_data.get(
-                                            'UveVMInterfaceAgent')
-                                    if ops_data_basic_intf[
-                                            'vm_name'] == vm_name:
-                                        vmi_inst_ops_data = self.ui.get_details(
-                                                vmi_list_ops[vm_inst]['href'])
-                                        if 'UveVMInterfaceAgent' in vmi_inst_ops_data:
-                                            ops_data_basic = vmi_inst_ops_data.get(
-                                                    'UveVMInterfaceAgent')
-                                            vm1 = ops_data_basic['vm_name']
-                                            if ops_data_basic.get('active'):
-                                                status1 = 'ACTIVE'
-                                                power1 = 'RUNNING'
-                                                status_main_row = 'Active'
-                                            else:
-                                                status_main_row = 'Inactive'
-                                break
-                        self.ui.keyvalue_list(
-                            complete_api_data1,
-                            Virtual_machine=vm1,
-                            Status=status1,
-                            Power_State=power1)
-                        self.logger.info(
-                            "Matching the instance details of service instance %s " %
-                                (vm1))
-                        if self.ui.match_ui_kv(
-                                complete_api_data1,
-                                dom_arry_basic1):
-                            self.logger.info(
-                                "Service instance %s config details matched on Config->Services->Service Instances page" %
-                                    (vm1))
-                        else:
-                            self.logger.error(
-                                "Service instance %s config details not matched on Config->Services->Service Instances page" %
-                                    (vm1))
                     if '\n' in value_arry:
                         value_arry = str(value_arry).split('\n')
                         dom_arry_basic.append({'key': key_arry, 'value': value_arry})
                     else:
                         dom_arry_basic.append({'key': key_arry, 'value': value_arry})
+                self.ui.click_monitor_instances()
+                self.ui.select_network(network_name)
+                rows = self.ui.get_rows(canvas=True)
+                vmi_list_ops = self.ui.get_vmi_list_ops()
+                for insta in range(len(rows)):
+                    if self.ui.get_slick_cell_text(rows[insta], 2) == vm_name:
+                        uuid = self.ui.get_slick_cell_text(rows[insta], 1)
+                        for vm_inst in range(len(vmi_list_ops)):
+                            vmi_inst_ops_data = self.ui.get_details(vmi_list_ops[vm_inst]['href'])
+                            ops_data_basic_intf = vmi_inst_ops_data.get('UveVMInterfaceAgent')
+                            if 'UveVMInterfaceAgent' in vmi_inst_ops_data:
+                                if ops_data_basic_intf['vm_name'] == vm_name:
+                                    vm1 = ops_data_basic_intf['vm_name']
+                                    if ops_data_basic_intf.get('active'):
+                                        status1 = 'ACTIVE'
+                                        power1 = 'RUNNING'
+                                        status_main_row = 'Active'
+                                    else:
+                                        status_main_row = 'Inactive'
+                                    self.ui.keyvalue_list(complete_api_data1, Virtual_machine=vm1,
+                                        Status=status1, Power_State=power1)
+                                    self.logger.info(
+                                        "Matching the instance details of service instance %s " % (vm1))
+                        break
+                if self.ui.match_ui_kv(complete_api_data1, dom_arry_basic1):
+                    self.logger.info(
+                        "Service instance %s config details matched on Config->Services->Service Instances page" %
+                        (vm_name))
+                else:
+                    self.logger.error(
+                        "Service instance %s config details not matched on Config->Services->Service Instances page" %
+                        (vm_name))
                 service_inst_api_data = self.ui.get_details(
                     service_instance_list_api['service-instances'][instance]['href'])
                 complete_api_data = []
@@ -7812,20 +7797,20 @@ class WebuiTest:
                                     'service_template_properties']
                                 if 'image_name' in svc_prop:
                                     image = svc_prop['image_name']
-                                    if not image:
-                                        image = '-'
+                                    if image:
+                                        complete_api_data.append({'key': 'Image', 'value': image})
                                 if 'flavor' in svc_prop:
                                     flavor = svc_prop['flavor']
-                                    if not flavor:
-                                        flavor = '-'
+                                    if flavor:
+                                        complete_api_data.append({'key': 'Flavor', 'value': flavor})
+                                self.ui.keyvalue_list(
+                                complete_api_data,
+                                Template=template_string + ' ' +
+                                '(' + attached_temp + ', ' + 'version ' + str(version_info) + ')',
+                                Template_main_row=template_string +
+                                ' ' + '(' + attached_temp + ', ' + 'version ' + str(version_info) + ')',
+                                Status_main_row=status_main_row)
                                 break
-                    self.ui.keyvalue_list(
-                        complete_api_data,
-                        Template=template_string + ' ' +
-                        '(' + attached_temp + ', ' + 'version ' + str(version_info) + ')',
-                        Template_main_row=template_string +
-                        ' ' + '(' + attached_temp + ', ' + 'version ' + str(version_info) + ')',
-                        Status_main_row=status_main_row)
                 if api_data_basic.get('service_instance_properties'):
                     serv_inst_list = api_data_basic[
                         'service_instance_properties']
@@ -7907,9 +7892,7 @@ class WebuiTest:
                     self.ui.keyvalue_list(
                         complete_api_data,
                         Networks=net_list,
-                        Networks_main_row=net_list_grid_row,
-                        Image=image,
-                        Flavor=flavor)
+                        Networks_main_row=net_list_grid_row)
                     if self.ui.match_ui_kv(
                             complete_api_data,
                             dom_arry_basic):
@@ -7992,9 +7975,9 @@ class WebuiTest:
         rows = self.ui.get_rows(canvas=True)
         base_indx = 0
         for hosts in range(len(rows)):
-            if rows[base_indx]:
+            if rows[hosts]:
                 row_div_list = self.ui.find_element('div', 'tag',
-                                        browser=rows[base_indx], elements=True,
+                                        browser=rows[hosts], elements=True,
                                         if_elements=[1])
                 if row_div_list[base_indx].text == host_name:
                     webui_data.append(
@@ -9001,6 +8984,7 @@ class WebuiTest:
         self.logger.info("Verifying global config api server data on \
                         Config->Infrastructure->Global Config page ...")
         self.logger.debug(self.dash)
+        ecmp_value = ''
         result = True
         complete_api_data = []
         global_config_forwarding = self.ui.get_global_config_api_href('vrouter')
@@ -9032,7 +9016,6 @@ class WebuiTest:
                 if ecmp_fields:
                     ecmp_keys = ecmp_fields.keys()
                     ecmp_values = ecmp_fields.values()
-                    ecmp_value = ''
                     for ecmp in range(len(ecmp_values)):
                         if ecmp_values[ecmp]:
                             if ecmp_keys[ecmp] == 'hashing_configured':
