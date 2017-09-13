@@ -56,7 +56,7 @@ class TestRbacBasic(BaseRbac):
                      'perms': [{'role': self.role1, 'crud': 'CRUD'}]
                     }]
         domain_rbac = self.create_rbac_acl(rules=st_rules, parent_type='domain')
-        st = self.create_st(connections=user1_conn)
+        st = self.create_st()
         assert st, 'ST creation failed'
         assert not self.read_vn(connections=user2_conn, uuid=vn.uuid)
         assert not self.read_st(connections=user2_conn, uuid=st.uuid)

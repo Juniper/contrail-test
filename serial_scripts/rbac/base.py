@@ -197,17 +197,12 @@ class BaseRbac(test_v1.BaseTestCase_v1):
         connections = connections or self.connections
         st_fixture = self.create_fixture(SvcTemplateFixture,
             connections=connections,
-            inputs=connections.inputs,
-            domain_name=connections.domain_name,
             st_name=get_random_name(connections.project_name),
             svc_img_name='tiny_nat_fw',
-            svc_type='firewall',
-            if_list=[['management', False, False],
-                     ['left', False, False],
-                     ['right', False, False]],
-            svc_mode='in-network-nat',
-            svc_scaling=False,
-            ordered_interfaces=True)
+            service_type='firewall',
+            if_details={'management': {}, 'left': {}, 'right': {}},
+            service_mode='in-network-nat',
+            svc_scaling=False)
         if st_fixture and verify:
             assert st_fixture.verify_on_setup(), 'ST verification failed'
         return st_fixture
