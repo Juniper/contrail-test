@@ -42,7 +42,7 @@ DEFAULT_CERT = '/etc/contrail/ssl/certs/server.pem'
 DEFAULT_PRIV_KEY = '/etc/contrail/ssl/private/server-privkey.pem'
 DEFAULT_CA = '/etc/contrail/ssl/certs/ca-cert.pem'
 
-DEFAULT_CI_IMAGE = 'cirros'
+DEFAULT_CI_IMAGE = os.getenv('DEFAULT_CI_IMAGE', 'cirros')
 DEFAULT_CI_SVC_IMAGE = os.getenv('DEFAULT_CI_SVC_IMAGE', 'cirros_in_net')
 CI_IMAGES = [DEFAULT_CI_IMAGE, DEFAULT_CI_SVC_IMAGE]
 
