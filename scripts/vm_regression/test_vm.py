@@ -2868,6 +2868,12 @@ class TestBasicIPv6VMVN6(TestBasicVMVN6):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
 
+    @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6',
+        hypervisor='docker',msg='Bug 1461423:Need privileged access')
+    def test_ping_on_broadcast_multicast_with_frag(self):
+        super(TestBasicIPv6VMVN6, cls).test_ping_on_broadcast_multicast_with_frag()
+
 class TestBasicIPv6VMVN9(TestBasicVMVN9):
 
     @classmethod
@@ -3221,6 +3227,12 @@ class TestBasicIPv6VMVNx(TestBasicVMVNx):
     def test_vm_file_trf_tftp_tests(self):
         super(TestBasicIPv6VMVNx, self).test_vm_file_trf_tftp_tests()
 
+    @skip_because(address_family = 'v6', hypervisor='docker',
+        msg='Need image with sctp_test util and libsctp.so.1')
+    @preposttest_wrapper
+    def test_sctp_traffic_between_vm(self):
+        super(TestBasicIPv6VMVNx, self).test_sctp_traffic_between_vm()
+
 class TestBasicIPv6VMVN(test_vm_basic.TestBasicVMVN):
     @classmethod
     def setUpClass(cls):
@@ -3242,7 +3254,6 @@ class TestBasicIPv6VMVN(test_vm_basic.TestBasicVMVN):
     def test_ipam_add_delete(self):
         super(TestBasicIPv6VMVN, self).test_ipam_add_delete()
 
-    @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6',
         hypervisor='docker',msg='Bug 1461423:Need privileged access')
