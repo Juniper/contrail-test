@@ -2835,8 +2835,8 @@ class AnalyticsVerification(fixtures.Fixture):
         if soaking:
             self.logger.info("Soaking enabled..waiting %s secs for soak timer to expire" % (soak_timer))
             time.sleep(soak_timer)
-        MAX_RETRY_COUNT = 20
-        SLEEP_DURATION = .5
+        MAX_RETRY_COUNT = 60
+        SLEEP_DURATION = 1
         retry = 0
         role_alarms = None
         all_alarms = None
@@ -2877,8 +2877,8 @@ class AnalyticsVerification(fixtures.Fixture):
                             if not all_alarms:
                                 time.sleep(SLEEP_DURATION)
                                 retry = retry + 1
-                                if retry % 10 == 0:
-                                    self.logger.info("No alarms found...Iteration  %s " %(retry/10))
+                                if retry % 5 == 0:
+                                    self.logger.debug("No alarms found...Iteration  %s " %(retry))
                             if retry > MAX_RETRY_COUNT:
                                 self.logger.error("No alarms have been generated")
                                 return False
@@ -2886,12 +2886,12 @@ class AnalyticsVerification(fixtures.Fixture):
                         if not role_alarms:
                             retry = retry + 1
                             time.sleep(SLEEP_DURATION)
-                            if retry % 10 == 0:
-                                self.logger.info("Iteration  %s " %(retry))
+                            if retry % 5 == 0:
+                                self.logger.debug("Iteration  %s " %(retry))
                         else:
                             time_taken = retry * SLEEP_DURATION
-                            # Display warning if time taken to generate is more than 5 secs
-                            if time_taken > 5:
+                            # Display warning if time taken to generate is more than 30 secs
+                            if time_taken > 30:
                                 self.logger.warn("Time taken %s is > 5 secs" %(time_taken))
                             self.logger.info("Time taken to generate the alarms is %s secs" %(time_taken))
                             dup_alarms = None
