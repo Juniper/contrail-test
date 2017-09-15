@@ -535,9 +535,11 @@ class ConfigSvcChain(fixtures.Fixture):
             si_fq_name_list = [si_fixture.fq_name_str]
 
             if service_type == 'analyzer':
-                action_list = {'mirror_to': {'analyzer_name': si_fq_name_list[0]}}
+                action_list = {'simple_action' : 'pass',
+                        'mirror_to': {'analyzer_name': si_fq_name_list[0]}}
             else:
-                action_list = {'apply_service': si_fq_name_list}
+                action_list = {'simple_action' : 'pass',
+                        'apply_service': si_fq_name_list}
             rules = [
                 {
                     'direction': '<>',

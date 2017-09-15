@@ -159,8 +159,9 @@ class PolicyFixture(fixtures.Fixture):
             for key in rule_dict:
                 new_rule[key] = rule_dict[key]
             # end for
+            action_list_dict = rule_dict.get('action_list', {})
             new_rule['action_list'][
-                'simple_action'] = rule_dict.get('simple_action')
+                'simple_action'] = action_list_dict.get('simple_action', 'pass')
             if 'qos_action' in rule_dict:
                 new_rule['action_list'][
                     'qos_action'] = rule_dict['qos_action']
@@ -366,8 +367,9 @@ class PolicyFixture(fixtures.Fixture):
             for key in rule_dict:
                 new_rule[key] = rule_dict[key]
             # end for
+            action_list_dict = rule_dict.get('action_list', {})
             new_rule['action_list'][
-                'simple_action'] = rule_dict.get('simple_action')
+                'simple_action'] = action_list_dict.get('simple_action', 'pass')
             if 'qos_action' in rule_dict:
                 new_rule['action_list'][
                     'qos_action'] = rule_dict['qos_action']
