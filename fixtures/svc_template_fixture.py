@@ -49,6 +49,7 @@ class SvcTemplateFixture(fixtures.Fixture):
         self.connections = connections
         self.availability_zone_enable = None
         self.flavor = None
+        self.already_present = False
         if version == 1:
             if self.image_name:
                 self.orch.get_image(self.image_name)
@@ -69,6 +70,8 @@ class SvcTemplateFixture(fixtures.Fixture):
 
     def cleanUp(self):
         super(SvcTemplateFixture, self).cleanUp()
+        if self.already_present:
+            return
         if self.inputs.is_gui_based_config():
             self.webui.delete_svc_template(self)
         else:
@@ -81,6 +84,7 @@ class SvcTemplateFixture(fixtures.Fixture):
         try:
             svc_template = self.vnc_lib_h.service_template_read(
                 fq_name=self.st_fq_name)
+            self.already_present = True
             self.logger.debug(
                 "Service template: %s already exists", self.st_fq_name)
         except NoIdError:
