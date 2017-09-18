@@ -137,6 +137,7 @@ function run_tests_serial {
   testr_init
   ${wrapper} find . -type f -name "*.pyc" -delete
   export OS_TEST_PATH=${GIVEN_TEST_PATH:-./serial_scripts/$1}
+  export DO_XMPP_CHECK=0
   if [ ! -d ${OS_TEST_PATH} ] ; then
       echo "Folder ${OS_TEST_PATH} does not exist..no tests discovered"
       return
@@ -187,6 +188,7 @@ function run_tests {
   ${wrapper} find . -type f -name "*.pyc" -delete
   export PYTHONPATH=$PATH:$PWD:$PWD/scripts:$PWD/fixtures
   export OS_TEST_PATH=${GIVEN_TEST_PATH:-./scripts/$1}
+  export DO_XMPP_CHECK=${DO_XMPP_CHECK:-1}
   if [ ! -d ${OS_TEST_PATH} ] ; then
       echo "Folder ${OS_TEST_PATH} does not exist..no tests discovered"
       return
