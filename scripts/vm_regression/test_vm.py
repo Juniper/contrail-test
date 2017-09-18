@@ -2322,7 +2322,7 @@ class TestBasicVMVN6(BaseVnVmTest):
         for dst_ip in list_of_ip_to_ping:
             print 'pinging from %s to %s' % (vm1_ip, dst_ip)
 # pinging from Vm1 to subnet broadcast
-            if os.environ.has_key('ci_image'):
+            if self.inputs.is_ci_setup():
                 ping_output = vm1_fixture.ping_to_ip(
                     dst_ip, return_output=True, count=ping_count,  size='3000')
             else:
@@ -2343,7 +2343,7 @@ class TestBasicVMVN6(BaseVnVmTest):
         for dst_ip in list_of_ip_to_ping:
             print 'pinging from %s to %s' % (vm1_ip, dst_ip)
 # pinging from Vm1 to subnet broadcast
-            if os.environ.has_key('ci_image'):
+            if self.inputs.is_ci_setup():
                 ping_output = vm1_fixture.ping_to_ip(
                     dst_ip, return_output=True, count=ping_count,  size='3000')
             else:
@@ -2909,7 +2909,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         vm1_name = get_random_name('vm1')
         vm2_name = get_random_name('vm2')
         vn_name = get_random_name('vn222')
-        scp_test_file_sizes = ['1303'] if os.environ.has_key('ci_image') else \
+        scp_test_file_sizes = ['1303'] if self.inputs.is_ci_setup() else \
                               ['1000', '1101', '1202', '1303', '1373', '1374',
                                '2210', '2845', '3000', '10000', '10000003']
         file = 'somefile'
@@ -2936,7 +2936,7 @@ class TestBasicVMVNx(BaseVnVmTest):
 
             self.logger.debug('Transferring the file from %s to %s using scp' %
                              (vm1_fixture.vm_name, vm2_fixture.vm_name))
-            if os.environ.has_key('ci_image') and self.inputs.get_af() == 'v4':
+            if self.inputs.is_ci_setup() and self.inputs.get_af() == 'v4':
                 if is_ip_mine(vm1_fixture.vm_node_ip):
                     file_transfer_result = vm1_fixture.scp_file_transfer_cirros(vm2_fixture, size=size)
                 else:
@@ -2973,7 +2973,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         vm2_name = get_random_name('vm2')
         ts = time.time()
         vn_name = '%s_%s'%(inspect.stack()[0][3],str(ts))
-        file_sizes=['1000'] if os.environ.has_key('ci_image') else \
+        file_sizes=['1000'] if self.inputs.is_ci_setup() else \
                             ['1000', '1101', '1202', '1303', '1373', '1374',
                              '2210', '2845', '3000', '10000', '10000003']
         file= 'testfile'
@@ -2988,9 +2988,8 @@ class TestBasicVMVNx(BaseVnVmTest):
         vn_fixture= self.create_vn(vn_name=vn_name,orch=self.orchestrator)
         assert vn_fixture.verify_on_setup()
         vn_fixture.read()
-        img_name=os.environ['ci_image'] if os.environ.has_key('ci_image')\
-                                        else 'ubuntu-traffic'
-        flavor='m1.tiny' if os.environ.has_key('ci_image')\
+        img_name = self.inputs.get_ci_image() or 'ubuntu-traffic'
+        flavor='m1.tiny' if self.inputs.is_ci_setup()\
                          else 'contrail_flavor_small'
         vm1_fixture = self.create_vm(vn_fixture= vn_fixture, vm_name=vm1_name,
                                      image_name=img_name, flavor=flavor,orch=self.orchestrator)
