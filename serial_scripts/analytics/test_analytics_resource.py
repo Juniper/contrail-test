@@ -554,7 +554,7 @@ class AnalyticsTestSanityWithResource(
                     assert result
         return True
 
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['vcenter'])
     @preposttest_wrapper
     def test_verify_flow_tables(self):
         '''
@@ -696,8 +696,9 @@ class AnalyticsTestSanityWithResource(
         # receiver.poll()
         #moving vna stats verification to base to counter timing issue
         #while verifying bandwidth usage
-        result = result and self.verify_vna_stats('bandwidth_usage')
-        result = result and self.verify_vna_stats()
+        #Disabling due to bug 1717709
+        #result = result and self.verify_vna_stats('bandwidth_usage')
+        #result = result and self.verify_vna_stats()
         sender.stop()
         receiver.stop()
         print sender.sent, receiver.recv
