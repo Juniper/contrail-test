@@ -136,7 +136,34 @@ class VcenterOrchestrator(Orchestrator):
         return feature not in unsupported_features
 
     def _connect_to_vcenter(self):
-        self._si = connect.SmartConnect(host=self._host, port=self._port, user=self._user, pwd=self._passwd)
+        try:
+            self._si = connect.SmartConnect(host=self._host, port=self._port, user=self._user, pwd=self._passwd)
+        except Exception as exc:
+            if isinstance(exc, vim.fault.HostConnectFault) and '[SSL: CERTIFICATE_VERIFY_FAILED]' in exc.msg:
+                try:
+                    import ssl
+                    default_context = ssl._create_default_https_context
+                    ssl._create_default_https_context = ssl._create_unverified_context
+                    self._si = SmartConnect(
+                        host=self._host,
+                        port=self._port,
+                        user=self._user,
+                        pwd=self._passwd,
+                        )
+                    ssl._create_default_https_context = default_context
+                except Exception as exc1:
+                    raise Exception(exc1)
+            else:
+                import ssl
+                context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+                context.verify_mode = ssl.CERT_NONE
+                self._si = connect.SmartConnect(
+                       host=self._host, 
+                       port=self._port, 
+                       user=self._user, 
+                       pwd=self._passwd,
+                       sslContext=context)
+
         if not self._si:
             raise Exception("Unable to connect to vcenter: %s:%d %s/%s" % (self._host,
                             self._port, self._user, self._passwd))
