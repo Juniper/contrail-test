@@ -734,6 +734,7 @@ class sdn_webui_config ():
         self.asn_num = "65534"
         self.invalid_asn_num = "65534ab"
         self.target_num = "4294967295"
+        self.global_asn_num = '65532'
         self.invalid_target_num = "4294967295abc"
         self.mask = "24"
         self.subnet_sip = "20.20.20.5"
