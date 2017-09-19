@@ -987,7 +987,7 @@ class LBaasV2Fixture(LBBaseFixture):
             return False
         return True
 
-    @retry(3, 5)
+    @retry(12, 5)
     def verify_haproxy_configs_on_setup(self):
         if not self._verify_haproxy_configs()[0]:
             self.logger.warn("Verify haproxy config file on setup failed")
@@ -995,7 +995,7 @@ class LBaasV2Fixture(LBBaseFixture):
         self.logger.info("Verify haproxy config file on setup passed")
         return True
 
-    @retry(3, 5)
+    @retry(12, 5)
     def verify_haproxy_configs_on_cleanup(self):
         retval = self._verify_haproxy_configs()
         if not self.lb_present:
