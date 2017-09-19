@@ -1055,8 +1055,10 @@ class AnalyticsTestSanityWithResource(
         src_vm_host = self.res.vn1_vm1_fixture.get_host_of_vm()
         dst_vm_host = self.res.vn1_vm2_fixture.get_host_of_vm()
 
-        src_vm_introspect = self.agent_inspect[src_vm_host]
-        dst_vm_introspect = self.agent_inspect[dst_vm_host]
+        src_vm_host_ip = self.res.vn1_vm1_fixture.vm_node_data_ip
+        dst_vm_host_ip = self.res.vn1_vm2_fixture.vm_node_data_ip
+        src_vm_introspect = self.agent_inspect[src_vm_host_ip]
+        dst_vm_introspect = self.agent_inspect[dst_vm_host_ip]
 
         src_vm_ip =  self.res.vn1_vm1_fixture.get_vm_ips()[0]
         dst_vm_ip = self.res.vn1_vm2_fixture.get_vm_ips()[0]
