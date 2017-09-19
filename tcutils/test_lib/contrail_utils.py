@@ -3,6 +3,7 @@ Contrail feature specific utility methods
 '''
 
 import os
+import ast
 
 
 def get_ri_name(vn_fq_name):
@@ -59,7 +60,7 @@ def check_xmpp_is_stable(inputs, connections, orig_flap_dict=None):
     if xmpp_check_env is None:
         do_xmpp_check = False
     else:
-        do_xmpp_check = bool(xmpp_check_env)
+        do_xmpp_check = bool(ast.literal_eval(xmpp_check_env))
 
     if not do_xmpp_check:
         logger.debug('Skipping xmpp flap check')
