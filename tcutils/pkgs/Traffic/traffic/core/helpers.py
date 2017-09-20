@@ -69,7 +69,8 @@ class Helper(object):
                 host_string = '%s@%s' % (self.rhost.user, self.rhost.ip)
                 output = remote_cmd(host_string=host_string, cmd=cmd,
                          gateway_password=self.lhost.password, with_sudo=True,
-                         gateway='%s@%s' % (self.lhost.user, self.lhost.ip), raw=True)
+                         gateway='%s@%s' % (self.lhost.user, self.lhost.ip), raw=True,
+                         logger=self.log)
                 if ("Connection timed out" in output or
                         "Connection refused" in output) and retry:
                     self.log.debug(
