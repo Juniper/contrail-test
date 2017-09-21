@@ -308,11 +308,11 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
             cmds = "/sbin/ifconfig " + sub_intf + " | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'"
             src_ip = src_vm.run_cmd_on_vm(cmds=[cmds]).values()[0]
             dst_ip = dst_vm.run_cmd_on_vm(cmds=[cmds]).values()[0]
-        assert src_vm.ping_with_certainty(dst_ip, count=5, size='1400')
+        assert src_vm.ping_with_certainty(dst_ip, count=5, size='1200')
         self.logger.info('Ping from %s to %s executed with c=5, expected mirrored packets 5 Ingress,5 Egress count = 10'
             % (src_ip, dst_ip))
         exp_count = 10
-        filters = '| grep \"length [1-9][4-9][0-9][0-9][0-9]*\"'
+        filters = '| grep \"length [1-9][2-9][0-9][0-9][0-9]*\"'
         if self.inputs.pcap_on_vm:
             output, mirror_pkt_count = stop_tcpdump_for_vm_intf(
                 None, None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files, filters=filters)
