@@ -676,25 +676,34 @@ class VerifySvcFirewall(VerifySvcChain):
         vn2_fixture = self.config_vn(vn2_name, vn2_subnets)
         vns = [mgmt_vn_fixture, vn1_fixture, vn2_fixture]
 
-        st_fixture = self.config_st(firewall_st_name,
+        def firewall_svc_create(vn_list):
+            st_fixture = self.config_st(firewall_st_name,
                                     service_type='firewall',
                                     service_mode=firewall_svc_mode,
                                     mgmt=getattr(mgmt_vn_fixture, 'vn_fq_name', None),
-                                    left=vn1_fixture.vn_fq_name,
-                                    right=vn2_fixture.vn_fq_name)
-        svm_fixtures = self.create_service_vms(vns,
+                                    left=vn_list[1].vn_fq_name,
+                                    right=vn_list[2].vn_fq_name)
+            svm_fixtures = self.create_service_vms(vn_list,
                                                service_mode=st_fixture.service_mode,
                                                service_type=st_fixture.service_type,
                                                max_inst=max_inst)
-        firewall_si_fixture = self.config_si(firewall_si_prefix,
+            firewall_si_fixture = self.config_si(firewall_si_prefix,
                                     st_fixture,
                                     max_inst=max_inst,
                                     mgmt_vn_fq_name=getattr(mgmt_vn_fixture, 'vn_fq_name', None),
-                                    left_vn_fq_name=vn1_fixture.vn_fq_name,
-                                    right_vn_fq_name=vn2_fixture.vn_fq_name,
+                                    left_vn_fq_name=vn_list[1].vn_fq_name,
+                                    right_vn_fq_name=vn_list[2].vn_fq_name,
                                     svm_fixtures=svm_fixtures)
-        assert firewall_si_fixture.verify_on_setup()
+            assert firewall_si_fixture.verify_on_setup()
+            return firewall_si_fixture
 
+        if firewall_svc_mode == 'transparent':
+            dummy_vn1 = self.config_vn('dummy_vn1', [get_random_cidr(af=self.inputs.get_af())])
+            dummy_vn2 = self.config_vn('dummy_vn2', [get_random_cidr(af=self.inputs.get_af())])
+            dummy_vn_list = [mgmt_vn_fixture, dummy_vn1, dummy_vn2]
+            firewall_si_fixture = firewall_svc_create(dummy_vn_list)
+        else:
+            firewall_si_fixture = firewall_svc_create(vns)
 
         action_list = [firewall_si_fixture.fq_name_str]
 
@@ -754,8 +763,7 @@ class VerifySvcFirewall(VerifySvcChain):
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip), errmsg
 
         # Verify ICMP mirror
-        sessions = self.tcpdump_on_all_analyzer(mirror_si_fixture,
-                                                mirror_si_prefix)
+        sessions = self.tcpdump_on_all_analyzer(mirror_si_fixture)
         errmsg = "Ping to right VM ip %s from left VM failed" % vm2_fixture.vm_ip
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip), errmsg
         for svm_name, (session, pcap) in sessions.items():
