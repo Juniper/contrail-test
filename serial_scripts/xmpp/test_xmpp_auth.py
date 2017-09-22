@@ -40,7 +40,6 @@ class TestXmpptests(XmppBase, ConfigPolicy):
         else:
             return
 
-    @test.attr(type=['cb_sanity', 'sm_sanity'])
     @preposttest_wrapper
     def test_precedence_xmpp_auth(self):
         """
@@ -83,7 +82,6 @@ class TestXmpptests(XmppBase, ConfigPolicy):
 
     # end test_precedence_xmpp_auth
 
-    @test.attr(type=['sm_sanity'])
     @preposttest_wrapper
     def test_undo_xmpp_auth(self):
         """
@@ -124,7 +122,6 @@ class TestXmpptests(XmppBase, ConfigPolicy):
         return True
     # end test_undo_xmpp_auth
 
-    @test.attr(type=['sm_sanity'])
     @preposttest_wrapper
     def test_compute_negative_xmpp_auth(self):
         """
