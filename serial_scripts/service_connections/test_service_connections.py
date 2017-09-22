@@ -183,6 +183,58 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
     #end test_add_remove_rabbitmq_from_dns
     
     @preposttest_wrapper
+    def test_recovery_from_errored_configdb_entry_in_control(self):
+        '''
+        Verify that when an Errored entry in config db list is corrected
+        and SIGHUP is issued, the connection is resumed.
+        This test case is to verify scenario of bug1690715
+        Steps:
+        1. Check the connections of Control to Config DB. 
+        2. Change the entry to an invalid IP and issue SIGHUP.
+        3. Verify that connection is lost 
+        3. Again edit and correct the entry of config DB and issue SIGHUP
+        4. Verify that connection is resumed.
+        '''
+        result = True
+        in_use_servers, status = self.get_all_in_use_servers("configdb" ,
+                                        "control", "contrail-control",
+                                        self.inputs.bgp_control_ips[0])
+        for server in in_use_servers:
+            self.add_remove_server("remove", server, "CONFIGDB",
+                        "config_db_server_list", "control", "contrail-control")
+        self.add_remove_server("add", "254.254.254.254", "CONFIGDB",
+                        "config_db_server_list", "control", "contrail-control",
+                        server_port = 9041)
+        new_in_use_servers, new_status = self.get_all_in_use_servers("configdb" ,
+                                        "control", "contrail-control",
+                                        self.inputs.bgp_control_ips[0])
+        if new_in_use_servers[0] != "254.254.254.254" or new_status == "true":
+            result = False
+            self.logger.error("Config DB connection still UP even if no valid "
+                              "entry mentioned in config db list")
+        else:
+            self.logger.info("As expected, connection to config DB is down as "
+                              "there is no valid entry in config db list")
+        self.add_remove_server("remove", "254.254.254.254", "CONFIGDB",
+                        "config_db_server_list", "control", "contrail-control")
+        for server in in_use_servers:
+            self.add_remove_server("add", server, "CONFIGDB",
+                        "config_db_server_list", "control", "contrail-control",
+                        server_port = 9041)
+        new_in_use_servers, new_status = self.get_all_in_use_servers("configdb" ,
+                                        "control", "contrail-control",
+                                        self.inputs.bgp_control_ips[0])
+        if new_status != "true":
+            result = False
+            self.logger.error("Config DB connection still Down even if valid "
+                              "entries are mentioned in config db list")
+        else:
+            self.logger.info("As expected, connection to config DB is established as"
+                              " valid entries are updated in config db list")
+        assert result, "Unexpected Connection"
+    #end test_recovery_from_errored_configdb_entry_in_control
+    
+    @preposttest_wrapper
     def test_add_remove_collector_from_config_nodemgr(self):
         '''
         Verify that on removing the entry from contail-config-nodemgr.conf file 
@@ -360,7 +412,7 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
             and all(x == 'Up' for x in status):
             self.logger.info("Connections switched to other Controller")
         else:
-            self.logger.error("Connection not switched to new collector")
+            self.logger.error("Connection not switched to new Controller")
             assert False, "Unexpected Connection"
     #end test_control_agent_connection_on_control_restart
     
@@ -496,3 +548,234 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
             self.logger.error("Connection not switched to new RabbitMQ server")
             assert False, "Unexpected Connection"
     #end test_rabbitmq_dns_connection_on_rabbitmq_restart
+    
+    @preposttest_wrapper
+    def test_control_agent_connection_after_active_control_restart_agent_sighup(self):
+        '''
+        This test case verifies the issue captured in bug 1694793.
+        Expectations:
+        1. If an active server goes down/up, then the client which switched connection
+           due to server restart will reallocate resource/load balance after giving a SIGHUP.
+        2. If an server which is not connected to the client goes down, then client should 
+           not reallocate/load balance on SIGHUP. It should retain previous connections. 
+        Steps:
+        1. Check the Controller to which contrail-vrouter-agent is connected to.
+        2. Stop that Controller service
+        3. Check that contrail-vrouter-agent immediately switches to new collector.
+        4. Start the Controller stopped in step 2.
+        5. Issue SIGHUPs on client to verify that the client should lose previous 
+           connection and should take part in re-allocation or load  balancing.
+        6. Stop and start the Controller service to which the client do not connect.
+        7. Issue SIGHUPs on client to verify that the client should not lose the 
+           previous connections as it was not affected due to server restart.
+        '''
+        self.skip_if_setup_incompatible("agent", 1, "control", 3)
+        in_use_servers, status, ports = self.get_all_in_use_servers("xmpp" ,"agent", 
+                                            "contrail-vrouter-agent",
+                                            self.inputs.compute_control_ips[0])
+        new_in_use_servers, status, ports = self.get_connections_after_server_restart(
+                                            "xmpp", "agent", "contrail-control", 
+                                             "contrail-vrouter-agent", in_use_servers[0],
+                                            self.inputs.compute_control_ips[0], "controller")
+        if in_use_servers[0] not in new_in_use_servers \
+            and all(x == 'Up' for x in status):
+            self.logger.info("Connections switched to other Controller")
+        else:
+            self.logger.error("Connection not switched to new Controller")
+            assert False, "Unexpected Connection"
+        servers_in_use, status, ports, connection_updated = \
+                        self.verify_connection_switched_after_sighup("xmpp",
+                                        "agent", "contrail-vrouter-agent",
+                                        self.inputs.compute_control_ips[0],
+                                        "compute", new_in_use_servers)
+        if connection_updated == True:
+            self.logger.info("The client which was affected due to down/up of server "
+                            " has successfully taken part in reallocation/load " 
+                            " balancing after issuing SIGHUP")
+        else:
+            self.logger.error("The client which was affected due to down/up of server "
+                            " has not taken part in reallocation/load balancing after"
+                            " issuing SIGHUP")
+            assert False, "Unexpected Connection"
+        # checking that restarting inactive collector doesnt affect the connections after SIGHUP
+        in_use_servers_new, status, ports = self.get_connections_after_server_restart(
+                                            "xmpp", "agent", "contrail-control", 
+                                            "contrail-vrouter-agent", new_in_use_servers[0],
+                                            self.inputs.compute_control_ips[0], "controller")
+        if servers_in_use == in_use_servers_new \
+            and all(x == 'Up' for x in status):
+            self.logger.info("Connections still same after restart as restarted server"
+                             " was not being used by the client")
+        else:
+            self.logger.error("Connection switched to new Collector. As restarted server"
+                              " was not being used by client, connection should not have"
+                              " been affected")
+            assert False, "Unexpected Connection"
+        servers_in_use, status, ports, connection_updated = \
+                        self.verify_connection_switched_after_sighup(
+                                        "xmpp",
+                                        "agent", "contrail-vrouter-agent",
+                                        self.inputs.compute_control_ips[0],
+                                        "compute", in_use_servers_new)
+        if connection_updated == False:
+            self.logger.info("There is no affect on client which was connected to "
+                            "different servers than the server which went down/up")
+        else:
+            self.logger.error("Even if the client did not had any impact due to down/up "
+                              "of the server, still client participated in re allocation")
+            assert False, "Unexpected Connection"
+    # end test_control_agent_connection_after_active_control_restart_agent_sighup
+
+    @preposttest_wrapper
+    def test_collector_agent_connection_after_collector_restart_and_agent_sighup(self):
+        '''
+        This test case verifies the issue captured in bug 1694793.
+        Expectations:
+        1. If an active server goes down/up, then the client which switched connection
+           due to server restart will reallocate resource/load balance after giving a SIGHUP.
+        2. If an server which is not connected to the client goes down, then client should 
+           not reallocate/load balance on SIGHUP. It should retain previous connections. 
+        Steps:
+        1. Check the Collector to which contrail-vrouter-agent is connected to.
+        2. Stop that Collector service
+        3. Check that contrail-vrouter-agent immediately switches to new collector.
+        4. Start the collector stopped in step 2.
+        5. Issue SIGHUPs on client to verify that the client should lose previous 
+           connection and should take part in re-allocation or load  balancing.
+        6. Stop and start the Collector service to which the client do not connect.
+        7. Issue SIGHUPs on client to verify that the client should not lose the 
+           previous connections as it was not affected due to server restart.
+        '''
+        self.skip_if_setup_incompatible("agent", 1, "collector", 2)
+        in_use_servers, status, ports = self.get_all_in_use_servers("collector" ,"agent", 
+                                            "contrail-vrouter-agent",
+                                            self.inputs.compute_control_ips[0])
+        new_in_use_servers, status, ports = self.get_connections_after_server_restart(
+                                            "collector", "agent", "contrail-collector", 
+                                             "contrail-vrouter-agent", in_use_servers[0],
+                                            self.inputs.compute_control_ips[0], "analytics")
+        if in_use_servers[0] not in new_in_use_servers \
+            and all(x == 'Up' for x in status):
+            self.logger.info("Connections switched to other Collector")
+        else:
+            self.logger.error("Connection not switched to new Collector")
+            assert False, "Unexpected Connection"
+        servers_in_use, status, ports, connection_updated = \
+                        self.verify_connection_switched_after_sighup("collector",
+                                        "agent", "contrail-vrouter-agent",
+                                        self.inputs.compute_control_ips[0],
+                                        "compute", new_in_use_servers)
+        if connection_updated == True:
+            self.logger.info("The client which was affected due to down/up of server "
+                            " has successfully taken part in reallocation/load " 
+                            " balancing after issuing SIGHUP")
+        else:
+            self.logger.error("The client which was affected due to down/up of server "
+                            " has not taken part in reallocation/load balancing after"
+                            " issuing SIGHUP")
+            assert False, "Unexpected Connection"
+        # checking that restarting inactive collector doesnt affect the connections after SIGHUP
+        in_use_servers_new, status, ports = self.get_connections_after_server_restart(
+                                            "collector", "agent", "contrail-collector", 
+                                             "contrail-vrouter-agent", new_in_use_servers[0],
+                                            self.inputs.compute_control_ips[0], "analytics")
+        if servers_in_use == in_use_servers_new \
+            and all(x == 'Up' for x in status):
+            self.logger.info("Connections still same after restart as restarted server"
+                             " was not being used by the client")
+        else:
+            self.logger.error("Connection switched to new Collector. As restarted server"
+                              " was not being used by client, connection should not have"
+                              " been affected")
+            assert False, "Unexpected Connection"
+        servers_in_use, status, ports, connection_updated = \
+                        self.verify_connection_switched_after_sighup(
+                                        "collector",
+                                        "agent", "contrail-vrouter-agent",
+                                        self.inputs.compute_control_ips[0],
+                                        "compute", in_use_servers_new)
+        if connection_updated == False:
+            self.logger.info("There is no affect on client which was connected to "
+                            "different servers than the server which went down/up")
+        else:
+            self.logger.error("Even if the client did not had any impact due to down/up "
+                              "of the server, still client participated in re allocation")
+            assert False, "Unexpected Connection"
+    # end test_collector_agent_connection_after_collector_restart_and_agent_sighup
+
+    @preposttest_wrapper
+    def test_collector_control_connection_after_collector_restart_and_control_sighup(self):
+        '''
+        This test case verifies the issue captured in bug 1694793.
+        Expectations:
+        1. If an active server goes down/up, then the client which switched connection
+           due to server restart will reallocate resource/load balance after giving a SIGHUP.
+        2. If an server which is not connected to the client goes down, then client should 
+           not reallocate/load balance on SIGHUP. It should retain previous connections. 
+        Steps:
+        1. Check the Collector to which contrail-control is connected to.
+        2. Stop that Collector service
+        3. Check that contrail-control immediately switches to new collector.
+        4. Start the collector stopped in step 2.
+        5. Issue SIGHUPs on client to verify that the client should lose previous 
+           connection and should take part in re-allocation or load  balancing.
+        6. Stop and start the Collector service to which the client do not connect.
+        7. Issue SIGHUPs on client to verify that the client should not lose the 
+           previous connections as it was not affected due to server restart.
+        '''
+        self.skip_if_setup_incompatible("control", 1, "collector", 2)
+        in_use_servers, status, ports = self.get_all_in_use_servers("collector" ,"control", 
+                                            "contrail-control",
+                                            self.inputs.bgp_control_ips[0])
+        new_in_use_servers, status, ports = self.get_connections_after_server_restart(
+                                            "collector", "control", "contrail-collector", 
+                                             "contrail-control", in_use_servers[0],
+                                            self.inputs.bgp_control_ips[0], "analytics")
+        if in_use_servers[0] not in new_in_use_servers \
+            and all(x == 'Up' for x in status):
+            self.logger.info("Connections switched to other Collector")
+        else:
+            self.logger.error("Connection not switched to new Collector")
+            assert False, "Unexpected Connection"
+        servers_in_use, status, ports, connection_updated = \
+                        self.verify_connection_switched_after_sighup("collector",
+                                        "control", "contrail-control",
+                                        self.inputs.bgp_control_ips[0],
+                                        "controller", new_in_use_servers)
+        if connection_updated == True:
+            self.logger.info("The client which was affected due to down/up of server "
+                            " has successfully taken part in reallocation/load " 
+                            " balancing after issuing SIGHUP")
+        else:
+            self.logger.error("The client which was affected due to down/up of server "
+                            " has not taken part in reallocation/load balancing after"
+                            " issuing SIGHUP")
+            assert False, "Unexpected Connection"
+        # checking that restarting inactive collector doesnt affect the connections after SIGHUP
+        in_use_servers_new, status, ports = self.get_connections_after_server_restart(
+                                            "collector", "control", "contrail-control", 
+                                             "contrail-control", new_in_use_servers[0],
+                                            self.inputs.bgp_control_ips[0], "analytics")
+        if servers_in_use == in_use_servers_new \
+            and all(x == 'Up' for x in status):
+            self.logger.info("Connections still same after restart as restarted server"
+                             " was not being used by the client")
+        else:
+            self.logger.error("Connection switched to new Collector. As restarted server"
+                              " was not being used by client, connection should not have"
+                              " been affected")
+            assert False, "Unexpected Connection"
+        servers_in_use, status, ports, connection_updated = \
+                        self.verify_connection_switched_after_sighup(
+                                        "collector",
+                                        "control", "contrail-control",
+                                        self.inputs.bgp_control_ips[0],
+                                        "controller", in_use_servers_new)
+        if connection_updated == False:
+            self.logger.info("There is no affect on client which was connected to "
+                            "different servers than the server which went down/up")
+        else:
+            self.logger.error("Even if the client did not had any impact due to down/up "
+                              "of the server, still client participated in re allocation")
+            assert False, "Unexpected Connection"
+    # end test_collector_control_connection_after_collector_restart_and_control_sighup
