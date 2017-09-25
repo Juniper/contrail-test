@@ -184,7 +184,7 @@ class CNFixture(fixtures.Fixture):
                     (self.router_ip))
             else:
                 for entry in cn_bgp_entry:
-                    if entry['state'] != 'Established':
+                    if entry['state'] != 'Established' and entry['router_type'] != 'bgpaas-client':
                         result = result and False
                         self.logger.error('With Peer %s peering is not Established. Current State %s ' % (
                             entry['peer'], entry['state']))
