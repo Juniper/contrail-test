@@ -27,14 +27,14 @@ def get_cores(inputs):
     for host in inputs.host_ips:
         username = inputs.host_data[host]['username']
         password = inputs.host_data[host]['password']
-        core = get_cores_node(host, username, password)
+        core = get_cores_node(host, username, password, logger=inputs.logger)
         if core:
             cores.update({host: core.split()}) 
     # end for
     return cores
         
 
-def get_cores_node(node_ip, user, password):
+def get_cores_node(node_ip, user, password, logger=None):
     """Get the list of cores in one of the nodes in the test setup.
     """
     core = None
@@ -45,9 +45,9 @@ def get_cores_node(node_ip, user, password):
                     warn_only=True, abort_on_prompts=False):
                 if exists(CORE_DIR):
                     with cd(CORE_DIR):
-                        (ret_val, core) = run("ls core.* 2>/dev/null")
-        except Exception:
-            pass
+                        (ret_val, core) = _run("ls core.* 2>/dev/null")
+        except Exception as e:
+            logger.exception(e)
     return core
 
 
