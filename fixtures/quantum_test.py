@@ -3,7 +3,9 @@ from tcutils.util import *
 from common import log_orig as contrail_logging
 from common.openstack_libs import neutron_client as client
 from common.openstack_libs import neutron_http_client as HTTPClient
+from common.openstack_libs import neutron_exception as NeutronExceptions
 from common.openstack_libs import neutron_client_exception as CommonNetworkClientException
+
 from netaddr import IPNetwork
 import openstack
 
@@ -281,6 +283,9 @@ class QuantumHelper():
             net_rsp = self.obj.delete_network(vn_id)
             self.logger.debug('Response for deleting network %s' %
                               (str(net_rsp)))
+        except NeutronExceptions.NetworkInUseClient as e:
+            self.logger.debug('VN %s still in use: %s' %(vn_id, e))
+            result = False
         except CommonNetworkClientException as e:
             self.logger.exception(
                 'Neutron exception while deleting a VN %s' % (vn_id))
