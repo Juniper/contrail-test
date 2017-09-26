@@ -1313,6 +1313,7 @@ class WebuiCommon:
 
     def click_monitor_networking_dashboard(self, tab='networks'):
         self.click_monitor_networks('dashboard')
+        self.select_project(self.inputs.project_name)
         self.click_element('project-' + tab + '-tab-link')
         self.wait_till_ajax_done(self.browser, wait=2)
         return self.check_error_msg("monitor networking dashboard")
@@ -1923,6 +1924,32 @@ class WebuiCommon:
         self.click_element('fa-code', 'class', browser=rows[row_index + 1])
         self.wait_till_ajax_done(self.browser)
     # end click_monitor_instances_advance_in_webui
+
+    def click_monitor_interfaces_advance(self, row_index, length=None, option=None):
+        if option == 'dashboard':
+            click_func = 'networking_dashboard'
+        else:
+            click_func = 'networks'
+        if not eval('self.click_monitor_' + click_func)('interfaces'):
+            result = result and False
+        br = self.select_max_records('interfaces')
+        rows = self.get_rows(canvas=True, browser=br)
+        self.click_element('fa-caret-right', 'class', browser=rows[row_index])
+        self.wait_till_ajax_done(self.browser, wait=15)
+        self.click_element('fa-code', 'class')
+        self.wait_till_ajax_done(self.browser)
+    # end click_monitor_interfaces_advance
+
+    def click_monitor_projects_advance(self, row_index, length=None):
+        if not eval('self.click_monitor_networks')('projects'):
+            result = result and False
+        br = self.select_max_records(grid_name='projects')
+        rows = self.get_rows(canvas=True, browser=br)
+        self.click_element('fa-caret-right', 'class', browser=rows[row_index])
+        self.wait_till_ajax_done(self.browser, wait=15)
+        self.click_element('fa-code', 'class')
+        self.wait_till_ajax_done(self.browser)
+    # end click_monitor_projects_advance
 
     def click_configure_networks_basic(self, row_index):
         self.click_element('Networks', 'link_text')
@@ -2769,24 +2796,49 @@ class WebuiCommon:
         return domArry
     # end get_basic_view_infra
 
-    def get_advanced_view_list(self, name, key_val, index=3):
+    def get_advanced_view_list(self, name, key_val, index=3, parent=False, parent_click=False):
         key_val_lst1 = self.find_element('pre', 'tag')
         key_val_lst2 = self.find_element(
             'key-value', 'class', elements=True, browser=key_val_lst1)
-        key1 = val1 = flag = None
+        key1=val1=flag=None
         for element in key_val_lst2:
-            if name in element.text:
+            if element.text.startswith(name):
                 keys_arry = self.find_element(
                     'key', 'class', elements=True, browser=element)
                 # Find and click are separated here to avoid timeout issues and capture screenshot in case find fails
-                plus_element = self.find_element('fa-plus', 'class', elements=True, browser=element)[index]
-                plus_element.click()
+                parent_elements = []
+                if parent:
+                    parent_elements = self.find_element('fa-plus', 'class', elements=True,
+                                           browser=element)
+                    for parent_element in parent_elements:
+                        if len(parent_elements) > 1:
+                            parent_element.click()
+                            plus_element = self.find_element('fa-plus', 'class', elements=True, browser=parent_element)[0]
+                            self.screenshot('agent')
+                            plus_element.click()
+                        else:
+                            parent_elements[0].click()
+                elif not parent_click:
+                    plus_element = self.find_element('fa-plus', 'class', elements=True, browser=element)[index]
+                keys_arry = self.find_element(
+                            'key', 'class', elements=True, browser=element)
                 vals_arry = self.find_element(
-                    'value', 'class', elements=True, browser=element)
+                            'value', 'class', elements=True, browser=element)
                 for ind, ele in enumerate(keys_arry):
                     if key_val == ele.text:
                         key1 = key_val
-                        val1 = [str(vals_arry[ind].text.strip('[ \n]'))][0].split('\n')
+                        if parent and not parent_click:
+                            try:
+                                self.click_element('fa-plus', 'class', browser=vals_arry[ind + 1])
+                            except:
+                                pass
+                            val1 = [str(vals_arry[ind + 1].text)]
+                        elif parent_click:
+                            vals_arry[ind + 2].click()
+                            val1 = str(vals_arry[ind + 2].text)
+
+                        else:
+                            val1 = [str(vals_arry[ind].text.strip('[ \n]'))][0].split('\n')
                         flag = 1
                         break
                 break
@@ -3128,12 +3180,24 @@ class WebuiCommon:
             'stddev',
             'mean',
             'sigma',
+            'mirror_acl',
+            'edge_replication_forwards',
+            'source_replication_forwards',
+            'total_multicast_forwards',
+            'local_vm_l3_forwards',
+            'rule',
+            'count',
+            'l2_receives',
             'samples',
             'inst_id',
             'chunk_select_time',
             'last_event_at',
             'last_state_at',
-            'proxies']
+            'proxies',
+            'inBytes60',
+            'outBytes60',
+            'x',
+            'y']
         key_list = ['exception_packets_dropped', 'l2_mcast_composites']
         index_list = []
         random_keys = ['{"ts":', '2015 ', '2016 ']
