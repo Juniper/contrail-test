@@ -8,7 +8,7 @@ from time import sleep
 from optparse import OptionParser
 from multiprocessing import Process, Event
 
-from scapy.all import send, sr1, sendpfast
+from scapy.all import send, sr1, sendpfast, conf
 from scapy.packet import Raw
 from scapy.layers.inet import Ether, IP, UDP, TCP, ICMP
 from scapy.layers.inet6 import IPv6, ICMPv6EchoRequest
@@ -168,11 +168,13 @@ class Generator(Process, GeneratorBase):
         log.debug("Sending: %s", `pkt`)
         proto = self.profile.stream.get_l4_proto()
         if proto == "icmp" or proto == "icmpv6":
+            conf.promisc = 1
             p = sr1(pkt, timeout=timeout)
             if p:
                 log.debug("Received: %s", `pkt`)
                 self.recv_count += 1
         else:
+            conf.promisc = 0
             send(pkt)
         self.count += 1
         self.update_result("Sent=%s\nReceived=%s" %
