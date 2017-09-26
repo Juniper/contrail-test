@@ -192,7 +192,7 @@ class WebuiTest:
                     router_name,
                     prj_name=self.project_name_input):
                 result = result and False
-            self.ui.send_keys(router_name, 'name', 'name')
+            self.ui.send_keys(router_name, 'display_name', 'name')
             self.ui.click_on_select2_arrow('s2id_enable_dropdown')
             self.ui.select_from_dropdown(state)
             if gateway:
