@@ -17,6 +17,11 @@ from common.vcenter_libs import vim
 from tcutils.config import vcenter_verification
 from pyVmomi import vim, vmodl
 
+class FabricException(Exception):
+    pass
+
+env.abort_exception = FabricException
+
 def _vim_obj(typestr, **kwargs):
     return _vimtype_dict[typestr](**kwargs)
 
@@ -272,17 +277,33 @@ class VcenterOrchestrator(Orchestrator):
         dst  =  self._nfs_ds.vcpath + image + '/'
         dst_vmdk = dst + image + '.vmdk'
         tmp_vmdk = dst + vmdk
-        with settings(host_string='%s@%s' % (user, host.name), password=pwd,
-                      warn_only = True, shell = '/bin/sh -l -c'):
-            run('mkdir -p %s' % dst)
-            run('wget %s -P %s' % (url_vmx, dst))
-            run('wget %s -P %s' % (url_vmdk, dst))
-            try:
-                run('vmkfstools -i %s -d zeroedthick %s' % (tmp_vmdk, dst_vmdk))
-            except Exception as e:
-                pass
-            run('rm %s' % tmp_vmdk)
-
+        try:
+            with settings(host_string='%s@%s' % (user, host.name), password=pwd,
+                      warn_only = True, shell = '/bin/sh -l -c',abort_exception = FabricException):
+                run('mkdir -p %s' % dst)
+                run('wget %s -P %s' % (url_vmx, dst),timeout=300)
+                run('wget %s -P %s' % (url_vmdk, dst),timeout=300)
+                try:
+                    if 'no' in self._images_info[image].get('shrinked_vmdk','yes'):
+                    #This is not shrinked vmdk which could be expanded with 
+                    #vmkfs tools.So just copy the image and vmdk file poiniting
+                    #to the raw image and return the vmtx path
+                        vmdk_file = self._images_info[image].get('vmdk', None)
+                        url_vmdk_file = url + vmdk_file
+                        run('wget %s -P %s' % (url_vmdk_file, dst))
+                        self._log.info("Unzipping the vmdk file.May take several minutes...")
+                        run('cd %s' % (dst))
+                        image_file = vmdk_file.split('/')[-1]
+                        image_file = dst + '/' + image_file
+                        run('gunzip %s' % (image_file),timeout=1200)
+                        vmx = vmx.split('/')[-1]
+                    else:
+                        run('vmkfstools -i %s -d zeroedthick %s' % (tmp_vmdk, dst_vmdk),timeout=600)
+                        run('rm %s' % tmp_vmdk,timeout=300)
+                except FabricException:
+                    pass
+        except FabricException:
+            pass
         return self._nfs_ds.name, image + '/' + vmx
 
     def _load_and_register_template(self, image):
