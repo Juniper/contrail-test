@@ -48,8 +48,8 @@ class TestVcenterSerial(BaseVnVmTest):
         assert vn1_fixture.verify_on_setup()
         vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm1_name)
         vm2_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm2_name)
-        assert vm1_fixture.wait_till_vm_is_up()
-        assert vm2_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up(refresh=True)
+        assert vm2_fixture.wait_till_vm_is_up(refresh=True)
         assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
             "Ping from %s to %s failed" % (vn1_vm1_name, vn1_vm2_name)
         assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
@@ -57,13 +57,13 @@ class TestVcenterSerial(BaseVnVmTest):
         for cfgm in self.inputs.cfgm_ips:
             cmd = 'netstat -nalp | grep :443 && service contrail-vcenter-plugin restart'
             plugin_mstr = self.inputs.run_cmd_on_server(cfgm, cmd,
-                              container='controller')
-            status = self.inputs.run_cmd_on_server(cfgm, 'contrail-status | grep vcenter',
-                                                   container='controller')
+                              container='contrail-vcenter-plugin')
+            status = self.inputs.run_cmd_on_server(cfgm, 'service contrail-vcenter-plugin status',
+                                                   container='contrail-vcenter-plugin') 
             self.logger.info('Vcenter plugin status on cfgm %s is %s' % (cfgm, status))
             sleep(6)
-            if 'active' not in status.split():
-               self.logger.error('Plugin status is not ACTIVE')
+            if 'running' not in status.split():
+               self.logger.error('Plugin status is not running')
                return False
             self.logger.info('Vcenter plugin status on cfgm %s is %s' % (cfgm, status))
         assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
