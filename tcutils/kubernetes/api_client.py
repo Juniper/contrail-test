@@ -39,7 +39,7 @@ class Client():
 
     def _get_ingress_backend(self, backend_dict={}):
         return client.V1beta1IngressBackend(backend_dict.get('service_name'),
-                                            backend_dict.get('service_port'))
+                backend_dict.get('service_port', 80))
 
     def _get_ingress_path(self, http):
         paths = http.get('paths', [])
@@ -89,7 +89,7 @@ class Client():
 
         spec['rules'] = self._get_ingress_rules(rules or spec.get('rules', []))
 
-        spec['tls'] = tls
+        spec['tls'] = self._get_ingress_tls(tls)
         spec_obj = client.V1beta1IngressSpec(**spec)
         body = client.V1beta1Ingress(
             metadata=metadata_obj,
@@ -98,6 +98,13 @@ class Client():
         resp = self.v1_beta_h.create_namespaced_ingress(namespace, body)
         return resp
     # end create_ingress
+
+    def _get_ingress_tls(self, tls):
+        tls_obj = []
+        for tls_name in tls:
+            tls_obj.append(client.V1beta1IngressTLS(secret_name=tls_name))
+        return tls_obj
+    # end _get_ingress_tls
 
     def delete_ingress(self,
                        namespace,
@@ -412,6 +419,36 @@ class Client():
         self.v1_h.patch_namespace(namespace, ns_obj)
     # end set_isolation
 
+    def _wa_client_bug_18_for_ingress(self, obj):
+        '''
+        Dirty WA https://github.com/kubernetes-incubator/client-python/issues/18
+        '''
+        default_backend = obj.spec.backend
+        if default_backend:
+            default_backend.service_port = int(default_backend.service_port)
+        if obj.spec.rules:
+            for rule in obj.spec.rules:
+                if not rule or not rule.http or rule.http.paths:
+                    continue
+                for path in rule.http.paths:
+                    path.backend.service_port = int(path.backend.service_port)
+        return obj
+    # end _wa_client_bug_18_for_ingress
+
+    def set_ingress_tls(self, name, namespace, tls=None):
+        '''
+        ingress : name of ingress objec
+        if tls is None: it will be disabled
+        '''
+        tls = tls or []
+        ing_obj = self.v1_beta_h.read_namespaced_ingress(name, namespace)
+        ing_obj.spec.tls = self._get_ingress_tls(tls)
+        self._wa_client_bug_18_for_ingress(ing_obj)
+
+        return self.v1_beta_h.patch_namespaced_ingress(ing_obj.metadata.name,
+                namespace, ing_obj)
+    # end set_ingress_tls
+
     def set_pod_label(self, namespace, pod_name, label_dict):
         metadata = {'labels': label_dict}
         body = client.V1Pod(metadata=self._get_metadata(metadata))
@@ -598,6 +635,46 @@ class Client():
         self.v1_h.patch_namespace(namespace, ns_obj)
     # end set_service_isolation
 
+
+    def create_secret(self,
+                       namespace='default',
+                       name=None,
+                       metadata=None,
+                       data=None):
+        '''
+        Returns V1Secret object
+        Ex :
+        metadata = {'name': 'xyz', 'namespace' : 'abc' }
+        "secret": {
+                "data": {
+                    'tls.crt' : <>,
+                    'tls.key' : <>,
+                },
+        '''
+        kind = 'Secret'
+        obj_type = 'kubernetes.io/tls'
+        if metadata is None: metadata = {}
+        if data is None: data = {}
+        metadata_obj = self._get_metadata(metadata)
+        if name:
+            metadata_obj.name = name
+        body = client.V1Secret(
+            metadata=metadata_obj,
+            data=data,
+            kind=kind,
+            type=obj_type)
+        self.logger.info('Creating secret %s' % (metadata_obj.name))
+        resp = self.v1_h.create_namespaced_secret(namespace, body)
+        return resp
+    # end create_secret
+
+    def delete_secret(self,
+                      namespace,
+                      name):
+        self.logger.info('Deleting secret : %s' % (name))
+        body = client.V1DeleteOptions()
+        return self.v1_h.delete_namespaced_secret(name, namespace, body)
+    # end delete_secret
 
 if __name__ == '__main__':
     c1 = Client()

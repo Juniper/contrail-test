@@ -9,11 +9,13 @@ from k8s.pod import PodFixture
 from k8s.service import ServiceFixture
 from k8s.ingress import IngressFixture
 from k8s.namespace import NamespaceFixture
+from k8s.tls_secret import TLSSecretFixture
 from k8s.deployment import DeploymentFixture
 from k8s.network_policy import NetworkPolicyFixture
 from common.connections import ContrailConnections
 from common import create_public_vn
 from common.base import _GenericTestBaseMethods
+
 
 
 K8S_SERVICE_IPAM = ['default-domain', 'default', 'service-ipam']
@@ -107,12 +109,14 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
                                    service_name,
                                    name=None,
                                    namespace='default',
-                                   service_port=80):
+                                   service_port=80,
+                                   **kwargs):
         default_backend = {'service_name': service_name,
                            'service_port': service_port}
         return self.setup_ingress(name=name,
                                   namespace=namespace,
-                                  default_backend=default_backend)
+                                  default_backend=default_backend,
+                                  **kwargs)
     # end setup_simple_nginx_ingress
 
     def setup_ingress(self,
@@ -121,7 +125,8 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
                       metadata=None,
                       default_backend=None,
                       rules=None,
-                      spec=None):
+                      spec=None,
+                      **kwargs):
         '''
         A very basic helper method to create an ingress
 
@@ -130,19 +135,23 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
         if spec is None: spec = {}
         if default_backend is None: default_backend = {}
         if rules is None: rules = []
+        tls = kwargs.get('tls', None)
         name = name or get_random_name('nginx-ingress')
         metadata.update({'name': name})
         if default_backend:
             spec.update({'backend': default_backend})
         if rules:
             spec.update({'rules': rules})
+        if tls:
+            spec.update({'tls': tls})
 
         return self.useFixture(IngressFixture(
             connections=self.connections,
             name=name,
             namespace=namespace,
             metadata=metadata,
-            spec=spec))
+            spec=spec,
+            tls=tls))
     # end setup_ingress
 
     def setup_namespace(self,
@@ -291,17 +300,21 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
     # end validate_wget
 
     def do_wget(self, link, pod=None, output_file='/dev/null', host='',
-                timeout=5, return_output=False, tries=1):
+                timeout=5, return_output=False, tries=1,
+                cert=None):
         '''
         Returns boolean by default
         Returns (boolean, output) if return_output is True
         '''
         host_str = ''
+        cert_str = ''
         output = ''
         if host:
             host_str = '--header "Host:%s" ' % (host)
-        cmd = 'wget %s %s -O %s -T %s -t %s' % (link, host_str, output_file,
-                                                timeout, tries)
+        if 'https' in link and not cert:
+            cert_str = ' --no-check-certificate'
+        cmd = 'wget %s %s -O %s -T %s -t %s %s' % (link, host_str, output_file,
+                                                timeout, tries, cert_str)
         if not pod:
             with settings(warn_only=True):
                 output = local(cmd, capture=True)
@@ -332,7 +345,9 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
                           host=None,
                           path='',
                           port='80',
-                          barred_pods=None):
+                          barred_pods=None,
+                          protocol=None,
+                          cert=None):
         '''
         From test_pod , run wget on http://<service_ip>:<port> and check
         if the all the lb_pods respond to atleast one of the requests over
@@ -341,6 +356,7 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
         barred_pods : pods where the http requests should never be seen
         '''
         host_str = ''
+        protocol = protocol or 'http'
         barred_pods = barred_pods or []
         attempts = len(lb_pods) * 5
         hit = {}
@@ -350,11 +366,12 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
         for x in barred_pods:
             hit_me_not[x.name] = 0
 
-        link = 'http://%s:%s/%s' % (service_ip, port, path)
+        link = '%s://%s:%s/%s' % (protocol, service_ip, port, path)
         for i in range(0, attempts):
             (ret_val, output) = self.do_wget(link, pod=test_pod, host=host,
                                              output_file='-',
-                                             return_output=True)
+                                             return_output=True,
+                                             cert=cert)
             for pod in lb_pods:
                 if pod.name in output:
                     hit[pod.name] += 1
@@ -715,7 +732,7 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
 
         # Connect router with virtual network associated to pod 
         self.connect_vn_with_router(router_obj, pod.vn_names[0])
- 
+
         # Configure external_gateway
         self.connections.vnc_lib_fixture.vnc_h.connect_gateway_with_router(router_obj,\
                                                   self.public_vn.public_vn_fixture.obj)
@@ -733,4 +750,21 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
         return (final_result, results)
     # end verify_reachability
 
+    def setup_tls_secret(self,
+                  name=None,
+                  namespace='default',
+                  metadata=None,
+                  data=None,
+                  **kwargs):
+        name = name or get_random_name('secret')
+        metadata = metadata or {}
+        data = data or {}
+        metadata['name'] = metadata.get('name') or name
+        return self.useFixture(TLSSecretFixture(
+            connections=self.connections,
+            namespace=namespace,
+            metadata=metadata,
+            data=data,
+            **kwargs))
+    # end setup_tls_secret
 
