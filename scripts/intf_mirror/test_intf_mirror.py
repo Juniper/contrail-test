@@ -21,6 +21,19 @@ class TestIntfMirror(BaseIntfMirrorTest, VerifyIntfMirror):
         pass
     # end runTest
 
+    @test.attr(type=['ci_sanity_WIP', 'sanity', 'quick_sanity'])
+    @preposttest_wrapper
+    def test_intf_mirroring_disable_enable_scenarios(self):
+        """Validate the interface mirroring
+        Validate enable/disable combinations on parent/sub interface
+        1) Check pkts get mirrored from both sub intf and parent intf when enabled on both
+        2) Disable on sub intf and check pkts from parent still get mirrored
+        3) Enable on sub intf and verify step 1
+        4) Disable on parent and check pkts from sub intf still get mirrored
+        5) Enable on parent and verify step 1
+        """
+        return self.verify_intf_mirroring_disable_enable_scenarios()
+
     @preposttest_wrapper
     def test_intf_mirror_src_cn1vn1_dst_cn2vn1_analyzer_cn3vn1(self):
         """Validate the interface mirroring
