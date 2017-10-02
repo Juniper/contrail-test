@@ -838,6 +838,13 @@ class VMFixture(fixtures.Fixture):
                         break
         return getattr(self, '_local_ip', '')
 
+    def get_local_ip_vm_intf_name(self, vm_intf_name):
+        for (vn_fq_name, local_ip) in self.get_local_ips().iteritems():
+            mac_addr = self.mac_addr[vn_fq_name]
+            if vm_intf_name == self.get_vm_interface_name(mac_addr):
+                return local_ip
+        return None
+
     def clear_local_ips(self):
         self._local_ip = None
         self.local_ips = {}
