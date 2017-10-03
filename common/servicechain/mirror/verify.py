@@ -888,14 +888,9 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
     def stop_tcpdump(self, session, pcap, filt=''):
         self.logger.debug("Waiting for the tcpdump write to complete.")
         sleep(5)
-        cmd = 'kill $(pidof tcpdump)'
+        cmd = 'kill $(ps -ef|grep tcpdump | grep %s| awk \'{print $2}\')' %pcap
         execute_cmd(session, cmd, self.logger)
         execute_cmd(session, 'sync', self.logger)
-
-        cmd = 'tcpdump -n -r %s %s ' % (pcap, filt)
-        out, err = execute_cmd_out(session, cmd, self.logger)
-        self.logger.info('Stopped tcpdump, out : \n %s, \n err : %s' % (out, err))
-
         cmd = 'tcpdump -n -r %s %s | wc -l' % (pcap, filt)
         out, err = execute_cmd_out(session, cmd, self.logger)
         count = int(out.strip('\n'))
