@@ -65,8 +65,7 @@ class ECMPTraffic(VerifySvcChain):
         profile = {}
         sender = {}
         receiver = {}
-        tx_vm_node_ip = self.inputs.host_data[
-            self.nova_h.get_nova_host_of_vm(src_vm.vm_obj)]['host_ip']
+        tx_vm_node_ip = src_vm.vm_node_ip
         tx_local_host = Host(
             tx_vm_node_ip,
             self.inputs.host_data[tx_vm_node_ip]['username'],
@@ -78,8 +77,7 @@ class ECMPTraffic(VerifySvcChain):
         recv_host = {}
 
         for dst_vm in dst_vm_list:
-            rx_vm_node_ip[dst_vm] = self.inputs.host_data[
-                self.nova_h.get_nova_host_of_vm(dst_vm.vm_obj)]['host_ip']
+            rx_vm_node_ip[dst_vm] = dst_vm.vm_node_ip
             rx_local_host[dst_vm] = Host(
                 rx_vm_node_ip[dst_vm],
                 self.inputs.host_data[rx_vm_node_ip[dst_vm]]['username'],
@@ -115,18 +113,20 @@ class ECMPTraffic(VerifySvcChain):
         flow_pattern = {}
         svms = self.get_svms_in_si(si_fix)
         svms = sorted(set(svms))
-        svm_list = si_fix._svm_list
+        svm_list = si_fix.svm_list
         svm_index = 0
         vm_fix_pcap_pid_files = []
         if None in svms:
             svms.remove(None)
-        for svm in svms:
+        for svm_fixture in svm_list:
+            svm = svm_fixture.vm_obj
             self.logger.info('SVM %s is in %s state' % (svm.name, svm.status))
             if svm.status == 'ACTIVE':
                 svm_name = svm.name
-                host = self.get_svm_compute(svm_name)
+                host_name = self.connections.orch.get_host_of_vm(svm)
+                host = self.inputs.host_data[host_name]
                 if src_vn is not None:
-                    tapintf = self.get_svm_tapintf_of_vn(svm_name, src_vn)
+                    tapintf = svm_fixture.tap_intf[src_vn.vn_fq_name]['name']
                 else:
                     direction = 'left'
                     tapintf = self.get_bridge_svm_tapintf(svm_name, direction)
@@ -151,13 +151,15 @@ class ECMPTraffic(VerifySvcChain):
         if None in svms:
             svms.remove(None)
         svm_index = 0
-        for svm in svms:
+        for svm_fixture in svm_list:
+            svm = svm_fixture.vm_obj
             self.logger.info('SVM %s is in %s state' % (svm.name, svm.status))
             if svm.status == 'ACTIVE':
                 svm_name = svm.name
-                host = self.get_svm_compute(svm_name)
+                host_name = self.connections.orch.get_host_of_vm(svm)
+                host = self.inputs.host_data[host_name]
                 if src_vn is not None:
-                    tapintf = self.get_svm_tapintf_of_vn(svm_name, src_vn)
+                    tapintf = svm_fixture.tap_intf[src_vn.vn_fq_name]['name']
                 else:
                     direction = 'left'
                     tapintf = self.get_bridge_svm_tapintf(svm_name, direction)

@@ -146,6 +146,7 @@ class VMFixture(fixtures.Fixture):
         self._interested_computes = []
         self.created = False
         self.refresh = False
+        self._vmi_ids = {}
 
     # end __init__
 
@@ -790,12 +791,12 @@ class VMFixture(fixtures.Fixture):
             return vmi_ids[vn_fq_name]
 
     def get_vmi_ids(self, refresh=False):
-        if not getattr(self, 'vmi_ids', None) or refresh or self.refresh:
-            self.vmi_ids = dict()
+        if not getattr(self, '_vmi_ids', None) or refresh or self.refresh:
+            self._vmi_ids = dict()
             vmi_objs = self.get_vmi_obj_from_api_server(refresh=refresh)[1]
             for vmi_obj in vmi_objs:
-                self.vmi_ids[vmi_obj.vn_fq_name] = vmi_obj.uuid
-        return self.vmi_ids
+                self._vmi_ids[vmi_obj.vn_fq_name] = vmi_obj.uuid
+        return self._vmi_ids
 
     def get_mac_addr_from_config(self):
         if not getattr(self, 'mac_addr', None) or self.refresh:
@@ -845,6 +846,10 @@ class VMFixture(fixtures.Fixture):
     @property
     def vrf_ids(self):
         return self.get_vrf_ids()
+
+    @property
+    def vmi_ids(self):
+        return self.get_vmi_ids()
 
     #Need to retry many times due to bug 1683478, once bug is fixed we can reduce the no. of retry
     @retry(delay=3, tries=30)
@@ -2685,7 +2690,7 @@ class VMFixture(fixtures.Fixture):
 
     def clear_vmi_info(self):
         self.clear_local_ips()
-        self.vmi_ids = dict()
+        self._vmi_ids = dict()
         self.mac_addr = dict()
         self.agent_label = dict()
         self.cs_vmi_objs = dict()
@@ -3041,6 +3046,9 @@ class VMFixture(fixtures.Fixture):
             vmi_obj.set_virtual_machine_interface_disable_policy(bool(value))
             self.vnc_lib_h.virtual_machine_interface_update(vmi_obj)
     # end set_interface_policy
+
+    def __repr__(self):
+        return '<VMFixture: %s>' % (self.vm_name)
 
 # end VMFixture
 
