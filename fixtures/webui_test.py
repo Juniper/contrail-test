@@ -2219,7 +2219,7 @@ class WebuiTest:
                 if not bgp_peers_count:
                     bgp_peers_count = '0 Total'
                 else:
-                    bpg_peers_count = str(bpg_peers_count) + ' Total'
+                    bgp_peers_count = str(bgp_peers_count) + ' Total'
                 bgp_peers_string = 'BGP Peers: ' + bgp_peers_count
                 vrouters =  'vRouters: ' + \
                     str(bgp_routers_ops_data.get('BgpRouterState')
@@ -3249,15 +3249,16 @@ class WebuiTest:
         for index in range(len(vrouters_list_ops)):
             vrouters_ops_data = self.ui.get_details(
                 vrouters_list_ops[index]['href'])
-            if vrouters_ops_data.get('VrouterAgent').get(
-                    'total_interface_count'):
-                interface_count = interface_count + \
-                    vrouters_ops_data.get('VrouterAgent').get(
-                        'total_interface_count')
-            if vrouters_ops_data.get('VrouterAgent').get('connected_networks'):
-                vrouter_total_vn = vrouter_total_vn + \
-                    (len(vrouters_ops_data.get('VrouterAgent')
-                         .get('connected_networks')))
+            if vrouters_ops_data.get('VrouterAgent'):
+                if vrouters_ops_data.get('VrouterAgent').get(
+                        'total_interface_count'):
+                    interface_count = interface_count + \
+                        vrouters_ops_data.get('VrouterAgent').get(
+                            'total_interface_count')
+                if vrouters_ops_data.get('VrouterAgent').get('connected_networks'):
+                    vrouter_total_vn = vrouter_total_vn + \
+                        (len(vrouters_ops_data.get('VrouterAgent')
+                             .get('connected_networks')))
         lnodes = str(
             int(total_control_nodes) +
             int(total_analytics_nodes) +
@@ -5705,7 +5706,7 @@ class WebuiTest:
             self.ui.click_configure_service_health_check()
             self.ui.select_project(project_name)
             self.ui.wait_till_ajax_done(self.browser)
-            rows = self.ui.get_rows()
+            rows = self.ui.get_rows(canvas=True)
             for i in range(len(rows)):
                 match_flag = 0
                 j = 0
