@@ -90,8 +90,8 @@ class TestVcenter(BaseVnVmTest):
             "Ping from %s to %s is expected to fail" % (vm2_fixture.vm_name, vm1_fixture.vm_name)
         vm1_fixture.orch.add_networks_to_vm(vm1_fixture.vm_obj, [vn1_fixture.obj])
         sleep(2)
-        assert vm1_fixture.wait_till_vm_is_up()
-        assert vm1_fixture.verify_on_setup()
+        assert vm1_fixture.wait_till_vm_is_up(refresh=True)
+        assert vm1_fixture.verify_on_setup(refresh=True)
         assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
             "Ping from %s to %s failed" % (vm1_fixture.vm_name, vm2_fixture.vm_name)
         assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
@@ -126,7 +126,7 @@ class TestVcenter(BaseVnVmTest):
             "Ping from %s to %s is expected to fail" % (vm2_fixture.vm_name, vm1_fixture.vm_name)
         vm1_fixture.orch.change_network_to_vm(vm1_fixture.vm_obj,vn2_fixture.vn_name) 
         vm1_fixture.read()  
-        assert vm1_fixture.verify_on_setup()
+        assert vm1_fixture.verify_on_setupre(refresh=True)
         assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
             "Ping from %s to %s failed" % (vm2_fixture.vm_name, vm1_fixture.vm_name)
         return True
