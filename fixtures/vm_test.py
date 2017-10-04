@@ -2433,9 +2433,13 @@ class VMFixture(fixtures.Fixture):
                               % self.vm_name)
             return True
         else:
-            self.vm_obj.get()
-            self.logger.debug('VM %s is NOT ready for SSH connections, VM status: %s'
+            try:
+                #WA for #1718621
+                self.vm_obj.get()
+                self.logger.debug('VM %s is NOT ready for SSH connections, VM status: %s'
                               % (self.vm_name, self.vm_obj.status))
+            except Exception as e:
+                pass
             return False
     # end wait_for_ssh_on_vm
 
