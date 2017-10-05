@@ -268,7 +268,7 @@ class BaseVrouterTest(BaseNeutronTest):
             vm.add_security_group(secgrp=sg_id)
 
     def create_sg(self, name=None, entries=None):
-        sg_fixture = self.useFixture(SecurityGroupFixture(self.inputs,
+        sg_fixture = self.useFixture(SecurityGroupFixture(
             self.connections, self.inputs.domain_name, self.inputs.project_name,
             secgrp_name=name, secgrp_entries=entries))
 

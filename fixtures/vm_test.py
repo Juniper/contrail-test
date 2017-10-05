@@ -236,6 +236,10 @@ class VMFixture(fixtures.Fixture):
         (self.vm_username, self.vm_password) = self.orch.get_image_account(
             self.image_name)
 
+    @property
+    def uuid(self):
+        return self.get_uuid()
+
     def get_uuid(self):
         return self.vm_id
 

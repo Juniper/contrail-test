@@ -189,9 +189,10 @@ class BaseSGTest(test_v1.BaseTestCase_v1, VerifySvcChain):
 	option = self.option
 	if self.option == 'openstack':
 	    option = 'neutron'
-        secgrp_fixture = self.useFixture(SecurityGroupFixture(self.inputs,
-                                                              self.connections, self.inputs.domain_name, self.inputs.project_name,
-                                                              secgrp_name=name, uuid=secgrpid, secgrp_entries=entries,option=option))
+        secgrp_fixture = self.useFixture(SecurityGroupFixture(
+            self.connections, self.inputs.domain_name,
+            self.inputs.project_name, secgrp_name=name,
+            uuid=secgrpid, secgrp_entries=entries, option=option))
         result, msg = secgrp_fixture.verify_on_setup()
         assert result, msg
         return secgrp_fixture
