@@ -71,7 +71,7 @@ class TestHAService(HABaseTest):
         return self.ha_service_single_failure_test('nova-scheduler', [self.inputs.cfgm_ips[0]],
                                                    container='openstack')
 
-    @test.attr(type=['ha', 'vcenter'])
+    @test.attr(type=['ha'])
     @preposttest_wrapper
     @skip_because(ha_setup = False)
     def test_ha_api_server_single_failure(self):
@@ -83,7 +83,6 @@ class TestHAService(HABaseTest):
         return self.ha_service_single_failure_test('contrail-api', [self.inputs.cfgm_ips[0]],
                                                    container='controller')
 
-    @test.attr(type=['vcenter'])
     @preposttest_wrapper
     @skip_because(ha_setup = False)
     def test_ha_ifmap_single_failure(self):
@@ -129,7 +128,6 @@ class TestHAService(HABaseTest):
         time.sleep(30)
         return ret
 
-    @test.attr(type=['vcenter'])
     @preposttest_wrapper
     @skip_because(ha_setup = False)
     def test_ha_control_single_failure(self):
@@ -164,7 +162,6 @@ class TestHAService(HABaseTest):
         return self.ha_service_single_failure_test('contrail-named', [self.inputs.bgp_ips[0]],
                                                    container='controller')
 
-    @test.attr(type=['vcenter'])
     @preposttest_wrapper
     @skip_because(ha_setup = False)
     def test_ha_rabbitmq_single_failure(self):
