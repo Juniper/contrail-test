@@ -847,7 +847,7 @@ class VNFixture(fixtures.Fixture):
 
    # end verify_vn_policy_in_api_server
 
-    @retry(delay=5, tries=3)
+    @retry(delay=5, tries=10)
     def verify_vn_not_in_api_server(self):
         '''Verify that VN is removed in API Server.
 

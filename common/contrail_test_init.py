@@ -736,7 +736,9 @@ class TestInputs(object):
 
         # If no explicit amqp servers are configured, it will be cfgm ips
         if not self.config_amqp_ips:
-            self.config_amqp_ips = self.openstack_control_ips
+            self.config_amqp_ips = self.openstack_control_ips if \
+                                   self.openstack_control_ips else\
+                                   self.cfgm_control_ips  #vcenter only mode
 
         self.many_computes = (len(self.compute_ips) > 10) or False
 
