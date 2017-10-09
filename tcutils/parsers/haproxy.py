@@ -57,7 +57,7 @@ def parse_haproxy(filename, host, username, password):
     return haproxy_dict
 
 def get_vip_dict(lines):
-    vip_dict = dict()
+    vip_dict = defaultdict(str)
     for line in lines.split('\n'):
         line = line.strip()
         if 'frontend' in line:
