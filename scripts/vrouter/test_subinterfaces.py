@@ -79,10 +79,10 @@ class TestSubInterfaces(BaseVrouterTest):
                                      port_ids=[self.vn2_port2.uuid],
                                      userdata='./scripts/vrouter/user_data1.sh'
                                      )
-        vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
-        vm3_fixture.wait_till_vm_is_up()
+        assert vm3_fixture.wait_till_vm_is_up()
         vm3_ip = self.vn1_port2.obj['fixed_ips'][0]['ip_address']
         assert vm1_fixture.ping_with_certainty(vm3_ip)
     # end test_vlan_interface_1
@@ -107,9 +107,9 @@ class TestSubInterfaces(BaseVrouterTest):
         self.add_vn_to_router(router_dict['id'], self.vn1_fixture)
         self.add_vn_to_router(router_dict['id'], self.vn3_fixture)
 
-        vm1_fixture.wait_till_vm_is_up()
-        vm2_fixture.wait_till_vm_is_up()
-        vm3_fixture.wait_till_vm_is_up()
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
+        assert vm3_fixture.wait_till_vm_is_up()
 
         interface = 'eth0.%s' %(VLAN_ID)
         #Before adding the route, wait till interface is found on VM
