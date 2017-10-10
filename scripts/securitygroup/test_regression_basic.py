@@ -133,6 +133,7 @@ class SecurityGroupBasicRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolic
         #Ping test, should fail
         assert vm1_fixture.ping_with_certainty(ip=vm2_fixture.vm_ip,
             expectation=False)
+        self.logger.info("Ping FAILED as expected")
 
         #TCP test, should pass
         nc_options = '' if self.inputs.get_af() == 'v4' else '-6'
