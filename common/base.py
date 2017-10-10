@@ -4,6 +4,7 @@ from vnc_api.vnc_api import *
 from vn_test import VNFixture
 from vm_test import VMFixture
 from policy_test import PolicyFixture
+from ipam_test import IPAMFixture
 from port_fixture import PortFixture
 from interface_route_table_fixture import InterfaceRouteTableFixture
 from tcutils.util import get_random_name, get_random_cidr
@@ -266,6 +267,11 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         else:
             q_h = self.quantum_h
         q_h.delete_security_group(sg_id)
+
+    def create_ipam(self, name=None, connections=None):
+        connections = connections or self.connections
+        name = name or get_random_name('ipam')
+        return self.useFixture(IPAMFixture(name, connections))
 
     def config_aap(self, port, prefix, prefix_len=32, mac='', aap_mode='active-standby', contrail_api=False):
         self.logger.info('Configuring AAP on port %s' %port['id'])
