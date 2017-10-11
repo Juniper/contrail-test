@@ -703,6 +703,9 @@ class TestInputs(object):
         if 'xmpp_dns_auth_enable' in json_data:
             self.xmpp_dns_auth_enable = json_data['xmpp_dns_auth_enable']
 
+        if 'dm_mx' in json_data:
+            self.dm_mx = json_data['dm_mx']
+
         if 'tor_agent' in json_data:
             self.tor_agent_data = json_data['tor_agent']
         if 'sriov' in json_data:

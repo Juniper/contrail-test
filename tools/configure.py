@@ -300,6 +300,9 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     if env.has_key('xmpp_dns_auth_enable'):
         sanity_testbed_dict['xmpp_dns_auth_enable'] = env.xmpp_dns_auth_enable
 
+    if env.has_key('dm_mx'):
+        sanity_testbed_dict['dm_mx'] = env.dm_mx
+
     # Read any MX config (as physical_router )
     if env.has_key('physical_routers'):
         sanity_testbed_dict['physical_routers'] = env.physical_routers
