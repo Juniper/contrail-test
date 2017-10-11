@@ -3529,25 +3529,28 @@ class WebuiTest:
         return result
     # end verify_config_nodes_ops_advance_data_in_webui
 
-    def verify_vn_ops_advance_data(self):
+    def verify_vn_ops_advance_data(self, option='networks'):
         self.logger.info(
             "Verifying vn opserver advance data on Monitor->Networking->Networks Summary(Advanced view) page .....")
         self.logger.debug(self.dash)
-        if not self.ui.click_monitor_networks():
-            result = result and False
-        self.ui.select_project(self.project_name_input)
-        rows = self.ui.get_rows()
         vn_list_ops = self.ui.get_vn_list_ops()
         result = True
         for n in range(len(vn_list_ops)):
             ops_fqname = vn_list_ops[n]['name']
+            if '__link_local__' in ops_fqname or 'ip-fabric' in ops_fqname or 'svc-vn' in ops_fqname:
+                continue
             self.logger.info(
                 "Vn fq name %s exists in opserver..checking if exists in webui as well" %
                 (ops_fqname))
-            if not self.ui.click_monitor_networks():
+            if option == 'dashboard':
+                click_func = 'networking_dashboard'
+            else:
+                click_func = 'networks'
+            if not eval('self.ui.click_monitor_' + click_func)():
                 result = result and False
-            rows = self.browser.find_element_by_class_name('grid-canvas')
-            rows = self.ui.get_rows(rows)
+            self.ui.select_project(self.project_name_input)
+            br = self.ui.select_max_records()
+            rows = self.ui.get_rows(br, canvas=True)
             for i in range(len(rows)):
                 match_flag = 0
                 obj_text = self.ui.get_slick_cell_text(rows[i])
@@ -3570,16 +3573,31 @@ class WebuiTest:
                 self.ui.click_monitor_networks_advance(match_index)
                 vn_ops_data = self.ui.get_details(
                     vn_list_ops[n]['href'])
+                new_list = []
+                element_list = [[('routing_instance_list', 0), ('connected_networks', 4)],
+                    [('vrf_stats_list', 0), ('virtualmachine_list', 5),
+                                 ('interface_list', 7)]]
+                agent_name_list = [('UveVirtualNetworkConfig', 6), ('UveVirtualNetworkAgent', 7)]
+                for index, elements in enumerate(element_list):
+                    parent_click = False
+                    parent = True
+                    for element in elements:
+                        key1, val1, flag = self.ui.get_advanced_view_list(
+                            agent_name_list[index][0], element[0], element[1], parent=parent, \
+                            parent_click=parent_click)
+                        parent_click = True
+                        parent = False
+                        if flag:
+                            new_list.append({'key' : key1, 'value' : val1})
                 self.ui.expand_advance_details()
                 dom_arry = self.ui.parse_advanced_view()
                 dom_arry_str = self.ui.get_advanced_view_str()
-                merged_arry = dom_arry + dom_arry_str
+                merged_arry = dom_arry + dom_arry_str + new_list
                 if 'UveVirtualNetworkConfig' in vn_ops_data:
                     ops_data = vn_ops_data['UveVirtualNetworkConfig']
                     modified_ops_data = []
                     self.ui.extract_keyvalue(
                         ops_data, modified_ops_data)
-
                 if 'UveVirtualNetworkAgent' in vn_ops_data:
                     ops_data_agent = vn_ops_data['UveVirtualNetworkAgent']
                     if 'udp_sport_bitmap' in ops_data_agent:
@@ -3605,9 +3623,7 @@ class WebuiTest:
                         else:
                             complete_ops_data[k]['value'] = str(
                                 complete_ops_data[k]['value'])
-                    if self.ui.match_ui_kv(
-                            merged_arry,
-                            complete_ops_data):
+                    if self.ui.match_ui_kv(complete_ops_data, merged_arry):
                         self.logger.info(
                             "VN advance view data matched in webui")
                     else:
@@ -10950,6 +10966,94 @@ class WebuiTest:
         return result
     # end verify_routers_api_data
 
+    def verify_project_api_advance_data(self, option='networks'):
+        self.logger.info("Verifying project data on Monitor->Networking->Projects \
+                        (advanced view) page ..")
+        self.logger.debug(self.dash)
+        project_list_api = self.ui.get_project_list_api()
+        project_list = project_list_api.get('projects')
+        result = True
+        for index, project in enumerate(project_list_api['projects']):
+            prj_name = project.get('fq_name')[1]
+            if prj_name in ['default-project', 'services', 'admin']:
+                continue
+            if not eval('self.ui.click_monitor_networks')('projects'):
+                result = result and False
+            br = self.ui.select_max_records(grid_name='projects')
+            rows = self.ui.get_rows(br, canvas=True)
+            self.logger.info(
+                "Project %s exists in Api server..checking if exists in webui as well" %
+                (prj_name))
+            for ind1 in range(len(rows)):
+                match_flag = 0
+                ui_prj_name = self.ui.get_slick_cell_text(rows[ind1])
+                if prj_name in ui_prj_name:
+                    self.logger.info(
+                        "Project name %s matched in webui..Verifying advance view details..." %
+                        (ui_prj_name))
+                    self.logger.debug(self.dash)
+                    match_index = ind1
+                    match_flag = 1
+                    break
+            if not match_flag:
+                self.logger.error(
+                    "Project exists in Api server but %s not found in webui..." %
+                    (ui_prj_name))
+                self.logger.debug(self.dash)
+            else:
+                self.ui.click_monitor_projects_advance(
+                    match_index,
+                    length=len(project_list_api))
+                self.logger.info(
+                    "Verify advance view details for uuid %s " % (ui_prj_name))
+                dom_arry = self.ui.parse_advanced_view()
+                dom_arry_str = []
+                dom_arry_str = self.ui.get_advanced_view_str()
+                dom_arry_num = self.ui.get_advanced_view_num()
+                dom_arry_num_new = []
+                for item in dom_arry_num:
+                    dom_arry_num_new.append(
+                        {'key': item['key'].replace('\\', '"').replace(' ', ''), 'value': item['value']})
+                dom_arry_num = dom_arry_num_new
+                merged_arry = dom_arry + dom_arry_str + dom_arry_num
+                api_data_list = []
+                prj_api_data = self.ui.get_details(project['href'])['project']
+                fq_name = prj_api_data['fq_name'][0] + ':' + prj_api_data['fq_name'][1]
+                api_data_list.append({'key': 'Name', 'value': fq_name})
+                if 'virtual_networks' in prj_api_data:
+                    virt_net = prj_api_data['virtual_networks']
+                    virt_net_count = 0
+                    if len(virt_net) > 3:
+                        virt_net_count = len(virt_net) - 3
+                    api_data_list.append({'key':'vnCnt', 'value': str(virt_net_count)})
+                vms_data_api = self.ui.get_vm_list_api()
+                if vms_data_api:
+                    vms_data = vms_data_api.get('virtual-machines')
+                    vm_count = 0
+                    for vm in vms_data:
+                        vm_data = self.ui.get_details(vm['href'])
+                        if 'virtual-machine' in vm_data:
+                            if 'virtual_machine_interface_back_refs' in vm_data['virtual-machine']:
+                                project_name = vm_data['virtual-machine'][
+                                               'virtual_machine_interface_back_refs'][0]['to'][1]
+                                if project_name == prj_name:
+                                    vm_count += 1
+                    api_data_list.append({'key': 'instCnt', 'value': str(vm_count)})
+                if not eval('self.ui.click_monitor_networking_dashboard')('interfaces'):
+                    result = result and False
+                self.ui.select_project(prj_name)
+                self.ui.wait_till_ajax_done(self.browser)
+                br = self.ui.select_max_records(option='interfaces')
+                rows = self.ui.get_rows(br, canvas=True)
+                api_data_list.append({'key': 'intfCnt', 'value': str(len(rows))})
+                if self.ui.match_ui_kv(api_data_list, merged_arry):
+                    self.logger.info("Project advanced view data matched")
+                else:
+                    self.logger.error("Project advanced data match failed")
+                    result = result and False
+        return result
+    # end verify_project_api_advance_data_in_webui
+
     def verify_vmi_ops_basic_data(self, option='interfaces'):
         network_name = 'all networks'
         self.logger.info("Verifying interfaces opserver data on Monitor->Networking->Interfaces \
@@ -11131,3 +11235,126 @@ class WebuiTest:
                     result = result and False
         return result
     # end verify_projects_api_basic_data
+
+    def verify_vmi_ops_advance_data(self, option='networks'):
+        network_name = 'all networks'
+        self.logger.info(
+            "Verifying interface opsserver advance data on Monitor Networking(Advance view) page......")
+        self.logger.debug(self.dash)
+        vmi_list_ops = self.ui.get_vmi_list_ops()
+        result = True
+        for ind in range(len(vmi_list_ops)):
+            vmi_name = vmi_list_ops[ind]['name']
+            vmi_ops_data_value = self.ui.get_details(vmi_list_ops[ind]['href'])
+            if option == 'dashboard':
+                click_func = 'networking_dashboard'
+            else:
+                click_func = 'networks'
+            if not eval('self.ui.click_monitor_' + click_func)('interfaces'):
+                result = result and False
+            if option != 'dashboard':
+                self.ui.select_project(self.project_name_input)
+                self.ui.select_network(network_name)
+            br = self.ui.select_max_records('interfaces')
+            rows = self.ui.get_rows(br, canvas=True)
+            self.logger.info(
+                "Vmi uuid %s exists in opserver..checking if exists in webui as well" %
+                (vmi_name))
+            for i in range(len(rows)):
+                match_flag = 0
+                self.ui.click_element(
+                    ('slick-cell', 0), 'class', rows[i], elements=True)
+                ui_list = []
+                self.ui.get_item_list(ui_list)
+                match_flag = 0
+                obj_text = ui_list[0]
+                if obj_text == vmi_name:
+                    self.logger.info(
+                        "Vmi  %s matched in webui..Verifying advance view details..." %
+                        (vmi_name))
+                    self.logger.debug(self.dash)
+                    match_index = i
+                    match_flag = 1
+                    break
+                else:
+                    self.ui.click_element(('slick-cell', 0), 'class', rows[i], elements=True)
+            if not match_flag:
+                self.logger.error(
+                    "Vmi exists in opserver but vm %s not found in webui..." %
+                    (vmi_name))
+                self.logger.debug(self.dash)
+            else:
+                self.ui.click_monitor_interfaces_advance(
+                    match_index,
+                    length=len(vmi_list_ops),
+                    option=option)
+                self.logger.info(
+                    "Verify advance view details for uuid %s " % (vmi_name))
+                try:
+                    plus_objs = self.ui.find_element(
+                        'i.node-2.fa-plus.expander',
+                        'css',
+                        elements=True)
+                    self.ui.click(plus_objs)
+                except:
+                    pass
+                dom_arry = self.ui.parse_advanced_view()
+                dom_arry_str = []
+                dom_arry_str = self.ui.get_advanced_view_str()
+                dom_arry_num = self.ui.get_advanced_view_num()
+                dom_arry_num_new = []
+                for item in dom_arry_num:
+                    dom_arry_num_new.append(
+                        {'key': item['key'].replace('\\', '"').replace(' ', ''), 'value': item['value']})
+                dom_arry_num = dom_arry_num_new
+                merged_arry = dom_arry + dom_arry_str + dom_arry_num
+                list_keys = ['in_bw_usage', 'out_bw_usage', 'count_floating_ips', 'throughput']
+                for element in merged_arry:
+                    for key in list_keys:
+                        if element['key'] == key:
+                            index = merged_arry.index(element)
+                            del merged_arry[index]
+                vm_agent_ops_data = []
+                vm_contrail_ops_data = []
+                if vmi_ops_data_value:
+                    if 'UveVMInterfaceAgent' in vmi_ops_data_value:
+                        ops_data = vmi_ops_data_value['UveVMInterfaceAgent']
+                        self.ui.extract_keyvalue(ops_data, vm_agent_ops_data)
+                    if 'ContrailConfig' in vmi_ops_data_value:
+                        vm_contrail_ops_data.append({'key': 'fq_name', 'value': vmi_ops_data_value[
+                            'ContrailConfig']['elements']['fq_name']})
+                    complete_ops_data = vm_agent_ops_data + vm_contrail_ops_data
+                    for t in range(len(complete_ops_data)):
+                        if complete_ops_data[t]['key'] == 'fq_name':
+                            fq_name_list = complete_ops_data[t]['value'].strip('\[').strip('\]').split(',')
+                            name = ''
+                            for index, fq_name in enumerate(fq_name_list):
+                                name += fq_name_list[index].strip(" \"")
+                                if index != len(fq_name_list) - 1:
+                                    name += ':'
+                            complete_ops_data[t]['value'] = name
+                            complete_ops_data[t]['key'] = 'name'
+                        elif isinstance(complete_ops_data[t]['value'], list):
+                            for m in range(len(complete_ops_data[t]['value'])):
+                                complete_ops_data[t]['value'][m] = str(
+                                    complete_ops_data[t]['value'][m])
+                        elif isinstance(complete_ops_data[t]['value'], unicode):
+                            complete_ops_data[t]['value'] = str(
+                                complete_ops_data[t]['value'])
+                        else:
+                            complete_ops_data[t]['value'] = str(
+                                complete_ops_data[t]['value'])
+                    for element in complete_ops_data:
+                        if element['value'] in ['True', 'False']  or \
+                            element['key'] in ['in_bw_usage', 'out_bw_usage', 'metric']:
+                            index = complete_ops_data.index(element)
+                            del complete_ops_data[index]
+                    if self.ui.match_ui_kv(complete_ops_data, merged_arry):
+                        self.logger.info(
+                            "VMi advance view data matched in webui")
+                    else:
+                        self.logger.error(
+                            "VMi advance data match failed in webui")
+                        result = result and False
+        return result
+    # end verify_vmi_ops_advance_data_in_webui
