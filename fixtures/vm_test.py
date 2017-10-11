@@ -149,7 +149,10 @@ class VMFixture(fixtures.Fixture):
 
     # end __init__
 
-    def read(self):
+    def read(self,refresh=False):
+        self.refresh = refresh
+        if refresh:
+            self.vm_ips = list()
         if not self.vm_id:
             self.fq_name = [self.domain_name, self.project_name, self.vm_name]
             self.vm_id = self.vnc_lib_h.fq_name_to_id('virtual-machine', self.fq_name)
