@@ -120,11 +120,15 @@ class TestBasicPolicy(BasePolicyTest):
             'Ping failed between VNs with allow-policy')
 
         # Deny the same traffic 
-        policy_id = policy_fixture.policy_obj['policy']['id']
+        policy_id = policy_fixture.get_id()
         rules[0]['simple_action'] = 'deny'
-        policy_entries = policy_fixture.policy_obj['policy']['entries']
-        policy_entries['policy_rule'][0]['action_list']['simple_action'] = 'deny'
-        p_rules = {'policy': {'entries':policy_entries}}
+        policy_entries = policy_fixture.get_entries()
+        if self.quantum_h:
+            policy_entries['policy_rule'][0]['action_list']['simple_action'] = 'deny'
+            p_rules = {'policy': {'entries':policy_entries}}
+        else:
+            policy_entries.policy_rule[0].action_list.simple_action = 'deny'
+            p_rules = policy_entries
         policy_fixture.update_policy(policy_id, p_rules)
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip,
             expectation=False), ('Ping passed between VNs with deny-policy')

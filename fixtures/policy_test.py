@@ -589,6 +589,13 @@ class PolicyFixture(fixtures.Fixture):
         else:
             return self.policy_obj['policy']['id']
 
+    def get_entries(self):
+        if isinstance(self.policy_obj, NetworkPolicy):
+            return self.policy_obj.network_policy_entries
+        else:
+            return self.policy_obj['policy']['entries']
+    # end get_entries
+
     def _delete_policy(self):
         if self.api_flag:
             self.vnc_lib.network_policy_delete(id=self.policy_obj.uuid)
@@ -608,9 +615,16 @@ class PolicyFixture(fixtures.Fixture):
 
     def update_policy(self, policy_id, policy_data):
         # policy_data format {'policy': {'entries': new_policy_entries}}
-        policy_rsp = self.quantum_h.update_policy(policy_id, policy_data)
+        if isinstance(self.policy_obj, NetworkPolicy):
+            proj = self.vnc_lib.project_read(self.project_fq_name)
+            policy_ob = NetworkPolicy(
+                self.policy_obj.name, network_policy_entries=policy_data,
+                parent_obj=proj)
+            policy_rsp  = self.vnc_lib.network_policy_update(policy_ob)
+        else:
+            policy_rsp = self.quantum_h.update_policy(policy_id, policy_data)
+            self.policy_obj = policy_rsp
         self.logger.debug("Policy Update Response " + str(policy_rsp))
-        self.policy_obj = policy_rsp
         return policy_rsp
     # end update_policy
 
