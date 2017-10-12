@@ -611,6 +611,15 @@ class VcenterOrchestrator(Orchestrator):
         inspect = self.get_vcenter_introspect()
         return inspect.get_vmi_from_vcenter_introspect(vrouter,vm_name)
 
+    def poweroff_vm(self,vm_obj):
+        vm_obj=vm_obj.vcenter._find_obj(vm_obj.vcenter._dc, 'vm', {'name' : vm_obj.name})
+        _wait_for_task(vm_obj.PowerOff())
+    
+    def poweron_vm(self,vm_obj):
+        vm_obj=vm_obj.vcenter._find_obj(vm_obj.vcenter._dc, 'vm', {'name' : vm_obj.name})
+        _wait_for_task(vm_obj.PowerOn())
+        
+
 class Subnets(object):
 
     def __init__(self,subnet):
