@@ -187,6 +187,8 @@ class ContrailReportInit:
         self.host_data = {}
         self.physical_routers_data = {}
         self.vgw_data = {}
+        self.lb_ips = []
+        self.lb_names = []
         for host in json_data['hosts']:
             self.host_names.append(host['name'])
             host_ip = str(IPNetwork(host['ip']).ip)
@@ -237,6 +239,10 @@ class ContrailReportInit:
                     self.database_ip = host_ip
                     self.database_ips.append(host_ip)
                     self.database_names.append(host['name'])
+                if role['type'] == 'lb':
+                    self.lb_ip = host_ip
+                    self.lb_ips.append(host_ip)
+                    self.lb_names.append(host['name'])
         if not self.webui_ips:
             self.webui_ip = self.cfgm_ip
             self.webui_ips = self.cfgm_ips
@@ -327,6 +333,8 @@ class ContrailReportInit:
         if self.orch == 'openstack':
             openstack_nodes = [self.get_node_name(x) for x in self.openstack_ips]
         database_nodes = [self.get_node_name(x) for x in self.database_ips]
+        if self.lb_ips:
+            lb_nodes = [self.get_node_name(x) for x in self.lb_ips]
 
         newline = '<br/>'
         detail = newline
@@ -341,6 +349,8 @@ class ContrailReportInit:
         detail += 'Analytics Nodes : %s %s' % (collector_nodes, newline)
         detail += 'Database Nodes : %s %s' % (database_nodes, newline)
         detail += 'Physical Devices : %s %s' % (phy_dev, newline)
+        if self.lb_ips:
+            detail += 'LB Nodes : %s %s' % (lb_nodes, newline)
         if self.ui_browser:
             detail += 'Browser : %s %s' % (self.ui_browser, newline)
         return detail
