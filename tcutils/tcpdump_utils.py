@@ -1,4 +1,5 @@
 # utils to start and stop tcpdump on VM
+from time import sleep
 from common import log_orig as contrail_logging
 
 from util import retry
@@ -19,6 +20,7 @@ def stop_tcpdump_for_intf(session, pcap, logger=None):
         logger = contrail_logging.getLogger(__name__)
     cmd = 'kill $(ps -ef|grep tcpdump | grep pcap| awk \'{print $2}\')'
     execute_cmd(session, cmd, logger)
+    sleep(2)
     return True
 
 def start_tcpdump_for_vm_intf(obj, vm_fix, vn_fq_name, filters='-v', pcap_on_vm=False, vm_intf='eth0', svm=False):
