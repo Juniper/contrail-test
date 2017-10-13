@@ -692,15 +692,13 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
         self.addCleanup(self.connections.vnc_lib_fixture.vnc_h.delete_router, obj)
         return obj 
 
-    def connect_vn_with_router(self, router_obj, vn_name):
+    def connect_vn_with_router(self, router_obj, vn_fq_name):
 
         # Configure VN name from namespace
-        vn_fq_name= "default-domain" + ":" + \
-                    str(self.connections.vnc_lib_fixture.get_project_obj().name) \
-                    + ":" + vn_name
 
         # Read VN from API
-        vn_obj=self.vnc_lib.virtual_network_read(fq_name_str=vn_fq_name)
+        vn_fq_name_str = ':'.join(vn_fq_name)
+        vn_obj=self.vnc_lib.virtual_network_read(fq_name_str=vn_fq_name_str)
 
         # To associate VN to logical router need to create a dummy port
         vmi_id = str(uuid.uuid4())
@@ -731,8 +729,8 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
         router_obj = self.create_snat_router("snat_router")
 
         # Connect router with virtual network associated to pod 
-        self.connect_vn_with_router(router_obj, pod.vn_names[0])
-
+        self.connect_vn_with_router(router_obj, pod.vn_fq_names[0])
+ 
         # Configure external_gateway
         self.connections.vnc_lib_fixture.vnc_h.connect_gateway_with_router(router_obj,\
                                                   self.public_vn.public_vn_fixture.obj)
