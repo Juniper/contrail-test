@@ -110,6 +110,21 @@ class IngressFixture(fixtures.Fixture):
             return self.k8s_client.delete_ingress(self.namespace, self.name)
     # end delete
 
+    def disable_tls(self):
+        return self.set_tls(tls=None)
+
+    def enable_tls(self, tls=None):
+        '''
+        tls: list of names of tls secrets
+        '''
+        tls = tls or self.tls
+        return self.set_tls(tls=tls)
+    # end enable_tls
+
+    def set_tls(self, tls):
+        self.obj = self.k8s_client.set_ingress_tls(self.name, self.namespace, tls)
+        return self.obj
+
     @retry(delay=1, tries=10)
     def verify_ingress_in_contrail_api(self):
         # TODO
