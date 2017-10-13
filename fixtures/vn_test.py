@@ -372,27 +372,27 @@ class VNFixture(fixtures.Fixture):
                     self.logger.info("Created VN %s, UUID :%s" % (self.vn_name,
                         self.uuid))
                 self.created = True
+                ipam = self.vnc_lib_h.network_ipam_read(
+                fq_name=self.ipam_fq_name)
+                ipam_sn_lst = []
+                # The dhcp_option_list and enable_dhcp flags will be modified for all subnets in an ipam
+                for net in self.vn_subnets:
+                    network, prefix = net['cidr'].split('/')
+                    ipam_sn = IpamSubnetType(
+                        subnet=SubnetType(network, int(prefix)))
+                    if self.dhcp_option_list:
+                       ipam_sn.set_dhcp_option_list(DhcpOptionsListType(params_dict=self.dhcp_option_list))
+                    if not self.enable_dhcp:
+                       ipam_sn.set_enable_dhcp(self.enable_dhcp)
+                    ipam_sn_lst.append(ipam_sn)
+                self.api_vn_obj.add_network_ipam(ipam, VnSubnetsType(ipam_sn_lst))
+                self.vnc_lib_h.virtual_network_update(self.api_vn_obj)
             else:
                 with self.lock:
                     self.logger.debug("VN %s already present" % (self.vn_name))
                 self.uuid = self.get_vn_uid(
                     self.api_vn_obj, project_obj.uuid)
                 self.created = False
-            ipam = self.vnc_lib_h.network_ipam_read(
-                fq_name=self.ipam_fq_name)
-            ipam_sn_lst = []
-            # The dhcp_option_list and enable_dhcp flags will be modified for all subnets in an ipam
-            for net in self.vn_subnets:
-                network, prefix = net['cidr'].split('/')
-                ipam_sn = IpamSubnetType(
-                    subnet=SubnetType(network, int(prefix)))
-                if self.dhcp_option_list:
-                   ipam_sn.set_dhcp_option_list(DhcpOptionsListType(params_dict=self.dhcp_option_list))
-                if not self.enable_dhcp:
-                   ipam_sn.set_enable_dhcp(self.enable_dhcp)
-                ipam_sn_lst.append(ipam_sn)
-            self.api_vn_obj.add_network_ipam(ipam, VnSubnetsType(ipam_sn_lst))
-            self.vnc_lib_h.virtual_network_update(self.api_vn_obj)
             self.vn_fq_name = self.api_vn_obj.get_fq_name_str()
         except PermissionDenied:
             self.logger.info('Permission denied to create VirtualNetwork')
