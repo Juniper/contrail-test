@@ -739,10 +739,11 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
             to_be_deleted_svm.cleanUp()
             self.remove_from_cleanups(to_be_deleted_svm.cleanUp)
             to_be_deleted_svm.verify_cleared_from_setup(verify=True)
+            for svm in svms:
+                if svm.id == to_be_deleted_svm.vm_id:
+                    svms.remove(svm)
             svms = self.get_svms_in_si(si_fixture)
             svms = sorted(set(svms))
-            if None in svms:
-                svms.remove(None)
             new_count = len(svms)
             errmsg = 'The SVMs count has not decreased'
             assert new_count < old_count, errmsg
