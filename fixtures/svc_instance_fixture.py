@@ -75,6 +75,8 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.mgmt_vn_fq_name = if_details.get(
             'management', {}).get('vn_name', None)
         self.intf_rt_table = []
+        # Dict of svms with uuid as key
+        self.svms = {}
     # end __init__
 
     def setUp(self):
@@ -286,12 +288,19 @@ class SvcInstanceFixture(fixtures.Fixture):
         if not vms or len(vms) != len(self.svm_ids):
             # Reduce the svm_list to take care of reduce in ecmp instances
             self._svm_list = [vm for vm in vms if vm.get_uuid() in self.svm_ids]
+            self.svms = {k:v for k,v in self.svms.items() if k in self.svm_ids}
             # Increase the svm_list to take care of increase in ecmp instances
             for vmid in set(self.svm_ids) - set([vm.get_uuid() for vm in self._svm_list]):
                 vm = VMFixture(self.connections, uuid=vmid)
                 vm.setUp()
                 vm.wait_till_vm_is_active()
+                # Populate tap intf details on the VM objects
+                # Faster than calling wait_till_vm_is_up()
+                if not vm.verify_vm_in_agent():
+                    self.logger.error('VM %s not found in vrouter agent' %(
+                        vmid))
                 self._svm_list.append(vm)
+                self.svms[vmid] = vm
         return self._svm_list
 
     def get_svms(self):
@@ -356,34 +365,29 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.logger.debug("SI %s has Port Tuple:  %s", self.si_name, self.pts)
         return True, None
 
-    @retry(delay=5, tries=10)
-    def verify_svm(self):
-        """check Service VM"""
-        # Get the pt_refs in case of v2 and vm_refs in case of v1
-        # From the pt_refs, get the vmi_refs and then get the VMs from vmi_refs
-        # From svm_ids, get the svm_list
-        # Verify the SVMs in the svm_list
+    def get_vm_refs(self):
+        '''
+        Returns a list of VM UUIDs referred by this SI
+        '''
+        vm_refs = None
         self.cs_si = self.api_s_inspect.get_cs_si(
-            domain=self.domain_name, project=self.project.name, si=self.si_name, refresh=True)
+            domain=self.domain_name,
+            project=self.project.name,
+            si=self.si_name,
+            refresh=True)
+
         try:
             self.pt_refs = self.cs_si[
                 'service-instance']['port_tuples']
         except KeyError:
             self.pt_refs = None
 
-        try:
-            vm_refs = self.cs_si[
-                'service-instance']['virtual_machine_back_refs']
-            self.svm_ids = [vm_ref['to'][0] for vm_ref in vm_refs]
-        except KeyError:
-            vm_refs = None
-
         if self.pt_refs:
             vm_refs = []
             for pt in self.pt_refs:
                 cs_pt = self.api_s_inspect.get_cs_pt_by_id(pt['uuid'])
                 pt_vmi_refs = cs_pt[
-                    'port-tuple']['virtual_machine_interface_back_refs']
+                    'port-tuple'].get('virtual_machine_interface_back_refs', [])
                 for vmi in pt_vmi_refs:
                     vmi = self.api_s_inspect.get_cs_vmi_by_id(vmi['uuid'])
                     vm_refs_vmi = vmi[
@@ -391,16 +395,31 @@ class SvcInstanceFixture(fixtures.Fixture):
                     if not vm_refs_vmi:
                         msg = 'VM refs not seen in VMI %s' %(vmi)
                         self.logger.warn(msg)
-                        return (False, msg)
+                        return (None, msg)
                     for vm_ref in vm_refs_vmi:
                         vm_refs.append(vm_ref['to'][0])
-            self.svm_ids = set(vm_refs)
-        self.logger.debug('The SVMs in the SI are : %s' %self.svm_list)
+        else:
+            vm_refs = self.cs_si.get('service-instance', {}).get('virtual_machine_back_refs')
+        return (set(vm_refs), None)
+    # end get_vm_refs
+
+    @retry(delay=5, tries=10)
+    def verify_svm(self, wait_for_vms=True):
+        """check Service VM"""
+        # Get the pt_refs in case of v2 and vm_refs in case of v1
+        # From the pt_refs, get the vmi_refs and then get the VMs from vmi_refs
+        # From svm_ids, get the svm_list
+        # Verify the SVMs in the svm_list
+
+        (vm_refs, msg) = self.get_vm_refs()
 
         if not vm_refs:
             errmsg = "SI %s does not have any Service VM" % self.si_name
             self.logger.warn(errmsg)
             return (False, errmsg)
+
+        self.svm_ids = vm_refs
+        self.logger.debug('The SVMs in the SI are : %s' %self.svm_list)
 
         if self.svc_template.service_template_properties.version == 1:
             if len(vm_refs) != self.max_inst:
@@ -418,9 +437,10 @@ class SvcInstanceFixture(fixtures.Fixture):
                 self.logger.warn(errmsg)
                 return (False, errmsg)
         self.logger.debug("Service VM for SI '%s' is launched", self.si_name)
-        if self.service_mode != 'transparent':
-            for vm in self.svm_list:
-                assert vm.wait_till_vm_is_up(), 'SVM is not up'
+        if wait_for_vms:
+            if self.service_mode != 'transparent':
+                for vm in self.svm_list:
+                    assert vm.wait_till_vm_is_up(), 'SVM is not up'
         self.vm_refs = vm_refs
         return True, None
 
@@ -564,11 +584,11 @@ class SvcInstanceFixture(fixtures.Fixture):
                     return result, msg
         return True, None
 
-    def verify_on_setup(self, report=True):
+    def verify_on_setup(self, report=True, wait_for_vms=True):
         if report:
             self.report(self.verify_si())
             self.report(self.verify_st())
-            self.report(self.verify_svm())
+            self.report(self.verify_svm(wait_for_vms))
             if self.svc_template.service_template_properties.version == 2:
                 self.report(self.verify_pt())
             self.report(self.verify_svm_interface())

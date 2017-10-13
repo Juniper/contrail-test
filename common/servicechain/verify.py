@@ -18,13 +18,13 @@ from common.servicechain.config import ConfigSvcChain
 
 class VerifySvcChain(ConfigSvcChain):
 
-    def verify_si(self, si_fixture):
-        return si_fixture.verify_on_setup()
+    def verify_si(self, si_fixture, wait_for_vms=True):
+        return si_fixture.verify_on_setup(wait_for_vms=wait_for_vms)
 
-    def verify_sis(self, si_fixtures):
+    def verify_sis(self, si_fixtures, wait_for_vms=True):
         result = True
         for si_fix in si_fixtures:
-            result = result and si_fix.verify_on_setup()
+            result = result and si_fix.verify_on_setup(wait_for_vms=wait_for_vms)
         return result
 
     @retry(delay=5, tries=25)
@@ -181,7 +181,10 @@ class VerifySvcChain(ConfigSvcChain):
         si_fixture = ret_dict.get('si_fixture')
 
         assert st_fixture.verify_on_setup(), 'ST Verification failed'
-        assert si_fixture.verify_on_setup(), 'SI Verification failed'
+        # SVM would have been up in config_svc_chain() itself
+        # So no need to wait for vms to be up
+        assert si_fixture.verify_on_setup(wait_for_vms=False), \
+            ('SI Verification failed')
 
         result, msg = self.validate_vn(left_vn_fq_name)
         assert result, msg
@@ -209,10 +212,12 @@ class VerifySvcChain(ConfigSvcChain):
     def tcpdump_on_all_analyzer(self, si_fixture):
         sessions = {}
         svms = self.get_svms_in_si(si_fixture)
-        for svm in svms:
-            svm_name = svm.name
-            host = self.get_svm_compute(svm_name)
-            tapintf = self.get_svm_tapintf(svm_name)
+        svm_fixtures = si_fixture.svm_list
+        for svm in svm_fixtures:
+            svm_name = svm.vm_name
+            host = self.inputs.host_data[svm.vm_node_ip]
+            #tapintf = self.get_svm_tapintf(svm_name)
+            tapintf = svm.tap_intf.values()[0]['name']
             session = ssh(host['host_ip'], host['username'], host['password'])
             pcap = self.start_tcpdump(session, tapintf)
             sessions.update({svm_name: (session, pcap)})

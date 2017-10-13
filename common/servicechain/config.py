@@ -159,15 +159,15 @@ class ConfigSvcChain(fixtures.Fixture):
             self.inputs, self.connections, vn_fix, policy_fix, policy_type))
         return policy_attach_fix
 
-    def config_and_verify_vm(self,
-                             vm_name,
-                             vn_fix=None,
-                             image_name='ubuntu-traffic',
-                             vns=[],
-                             count=1,
-                             flavor='contrail_flavor_small',
-                             zone=None,
-                             node_name=None):
+    def config_vm_only(self,
+                       vm_name,
+                       vn_fix=None,
+                       image_name='ubuntu-traffic',
+                       vns=[],
+                       count=1,
+                       flavor='contrail_flavor_small',
+                       zone=None,
+                       node_name=None):
         if vns:
             vn_objs = [vn.obj for vn in vns if vn is not None]
             vm_fixture = self.config_vm(
@@ -177,8 +177,23 @@ class ConfigSvcChain(fixtures.Fixture):
             vm_fixture = self.config_vm(
                 vm_name, vn_fix=vn_fix, image_name=image_name, count=count,
                 flavor=flavor, zone=zone, node_name=node_name)
-        assert vm_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
         return vm_fixture
+    # end config_vm_only
+
+    def verify_vms(self, vm_fixtures):
+        for vm in vm_fixtures:
+            self.verify_vm(vm)
+    # end verify_vms
+
+    def verify_vm(self, vm_fixture):
+        assert vm_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
+    # end verify_vm
+
+    def config_and_verify_vm(self, *args, **kwargs):
+        vm_fixture = self.config_vm_only(*args, **kwargs)
+        self.verify_vm(vm_fixture)
+        return vm_fixture
+    # end config_and_verify_vm
 
     def config_vm(self,
                   vm_name,
@@ -268,25 +283,14 @@ class ConfigSvcChain(fixtures.Fixture):
         return inspect_h.get_vna_tap_interface_by_vm(vm_id=svm_obj.id)[0]['name']
 
     def get_bridge_svm_tapintf(self, svm_name, direction):
-        self.is_svm_active(svm_name)
-        svm_obj = self.get_svm_obj(svm_name)
-        vm_nodeip = self.inputs.host_data[
-            self.nova_h.get_nova_host_of_vm(svm_obj)]['host_ip']
-        inspect_h = self.agent_inspect[vm_nodeip]
-        self.logger.debug(
-            "svm_obj:'%s' compute_ip:'%s' agent_inspect:'%s'", svm_obj.__dict__,
-            vm_nodeip, inspect_h.get_vna_tap_interface_by_vm(vm_id=svm_obj.id))
-        tap_intf_list = []
+        vrf_name = self.get_svc_bridge_vrf(direction)
+        return self.get_svm_tap_intf_by_vrf(svm_name, vrf_name)
+
+    def get_svc_bridge_vrf(self, direction):
         vn = 'svc-vn-' + direction
         vrf = ':'.join(self.inputs.project_fq_name) + ':' + vn + ':' + vn
-        for entry in inspect_h.get_vna_tap_interface_by_vm(vm_id=svm_obj.id):
-            if entry['vrf_name'] == vrf:
-                self.logger.debug(
-                    'The %s tap-interface of %s is %s' %
-                    (direction, svm_name, entry['name']))
-                return entry['name']
 
-    def get_svm_tapintf_of_vn(self, svm_name, vn):
+    def get_svm_tap_intf_by_vrf(self, svm_name, vrf_name):
         self.is_svm_active(svm_name)
         svm_obj = self.get_svm_obj(svm_name)
         vm_nodeip = self.inputs.host_data[
@@ -297,11 +301,16 @@ class ConfigSvcChain(fixtures.Fixture):
             vm_nodeip, inspect_h.get_vna_tap_interface_by_vm(vm_id=svm_obj.id))
         tap_intf_list = []
         for entry in inspect_h.get_vna_tap_interface_by_vm(vm_id=svm_obj.id):
-            if entry['vrf_name'] == vn.vrf_name:
+            if entry['vrf_name'] == vrf_name:
                 self.logger.debug(
-                    'The tap interface corresponding to %s on %s is %s' %
-                    (vn.vn_name, svm_name, entry['name']))
+                    'The tap interface corresponding to vrf %s on %s is %s' %
+                    (vrf_name, svm_name, entry['name']))
                 return entry['name']
+    # end get_svm_tap_intf_by_vrf
+
+
+    def get_svm_tapintf_of_vn(self, svm_name, vn):
+        return self.get_svm_tap_intf_by_vrf(svm_name, vn_vrf_name)
 
     def get_svm_metadata_ip(self, svm_name):
         tap_intf = self.get_svm_tapintf(svm_name)
@@ -332,7 +341,7 @@ class ConfigSvcChain(fixtures.Fixture):
         svc_img_name = svc_img_name or SVC_TYPE_PROPS[service_type][service_mode]
         for i in range(max_inst):
             svm_name = get_random_name("pt_svm" + str(i))
-            svm_fixture = self.config_and_verify_vm(
+            svm_fixture = self.config_vm_only(
                 svm_name,
                 image_name=svc_img_name,
                 vns=vns,
@@ -341,6 +350,7 @@ class ConfigSvcChain(fixtures.Fixture):
             svm_fixtures.append(svm_fixture)
             if service_type == 'analyzer':
                 svm_fixture.disable_interface_policy()
+        self.verify_vms(svm_fixtures)
         return svm_fixtures
     # end create_service_vms
 
@@ -494,10 +504,16 @@ class ConfigSvcChain(fixtures.Fixture):
         # End VMs
         left_vm_name = left_vm_name or get_random_name('left_vm')
         right_vm_name = right_vm_name or get_random_name('right_vm')
-        left_vm_fixture = left_vm_fixture or self.config_and_verify_vm(
-            left_vm_name, vn_fix=left_vn_fixture, image_name=image_name)
-        right_vm_fixture = right_vm_fixture or self.config_and_verify_vm(
-            right_vm_name, vn_fix=right_vn_fixture, image_name=image_name)
+        created_left_vm = False
+        created_right_vm = False
+        if not left_vm_fixture :
+            left_vm_fixture = self.config_vm_only(
+                left_vm_name, vn_fix=left_vn_fixture, image_name=image_name)
+            created_left_vm = True
+        if not right_vm_fixture:
+            right_vm_fixture = self.config_vm_only(
+                right_vm_name, vn_fix=right_vn_fixture, image_name=image_name)
+            created_right_vm = True
 
         # SI
         if_list = []
@@ -529,6 +545,11 @@ class ConfigSvcChain(fixtures.Fixture):
                 static_route=static_route,
                 max_inst=max_inst,
                 svm_fixtures=svm_fixtures)
+
+        if created_left_vm:
+            self.verify_vm(left_vm_fixture)
+        if created_right_vm:
+            self.verify_vm(right_vm_fixture)
 
         if not policy_fixture:
             policy_name = get_random_name('policy')
@@ -577,7 +598,10 @@ class ConfigSvcChain(fixtures.Fixture):
         return ret_dict
 
     def get_svms_in_si(self, si):
-        svm_ids= si.svm_ids
+        '''
+        Returns a list of VMFixture objects
+        '''
+        (svm_ids, msg) = si.get_vm_refs()
         svm_list= []
         for svm_id in svm_ids:
             svm_list.append(self.nova_h.get_vm_by_id(svm_id))
