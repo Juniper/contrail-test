@@ -39,15 +39,18 @@ class NamespaceFixture(fixtures.Fixture):
             self.logger.error('Namespace %s verification failed' % (
                 self.name))
             return False
-
-        if not self.verify_namespace_in_contrail_api():
-            self.logger.error('Namespace %s not seen in Contrail API' % (
+       
+        if self.inputs.slave_orchestrator == 'kubernetes':
+            self.logger.info('Skipping Namespace API server validation in nested mode')
+        else: 
+            if not self.verify_namespace_in_contrail_api():
+                self.logger.error('Namespace %s not seen in Contrail API' % (
                 self.name))
-            return False
-        self.logger.info('Namespace %s verification passed' % (self.name))
+                return False
+            self.logger.info('Namespace %s verification passed' % (self.name))
         self.verify_is_run = True
         return True
-    # end verify_on_setup
+        # end verify_on_setup
 
     @retry(delay=1, tries=10)
     def verify_namespace_is_active(self):
@@ -158,7 +161,10 @@ class NamespaceFixture(fixtures.Fixture):
             return True
         assert self.verify_ns_is_not_in_k8s(), ('Namespace deletion '
                                                 'verification in k8s failed')
-        assert self.verify_ns_is_not_in_contrail_api(), ('Namespace deletion '
+        if self.inputs.slave_orchestrator == 'kubernetes':
+            self.logger.info('Skipping Namespace API server validation in nested mode')
+        else:
+            assert self.verify_ns_is_not_in_contrail_api(), ('Namespace deletion '
             'verification in contrail-api failed')
         return True
     # end verify_on_cleanup
