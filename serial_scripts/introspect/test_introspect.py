@@ -101,6 +101,7 @@ class IntrospectSslTest(BaseIntrospectSsl):
         self.get_url_and_verify(url, agent_inspect, exp_out=output_http)
     #end test_introspect_cert_without_cn
 
+    @test.attr(type=['cb_sanity'])
     @preposttest_wrapper
     def test_agent_introspect_with_alt_names(self):
         """
