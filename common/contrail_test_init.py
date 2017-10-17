@@ -542,7 +542,7 @@ class TestInputs(object):
 
     def is_contrail_cloud_container(self, container_name):
         cc_container_names = ['agent', 'controller', 'analytics', 'analyticsdb',
-            'contrail-kube-manager']
+            'contrail-kube-manager', 'vcplugin']
         return container_name in cc_container_names
 
     def _check_containers(self, host_dict):
