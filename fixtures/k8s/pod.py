@@ -40,6 +40,10 @@ class PodFixture(fixtures.Fixture):
         self.tap_intfs = []
         self.host_ip = None
         self.compute_ip = None
+        self.vmi_objs = []
+        self.vmi_uuids = []
+        self.vn_names = []
+        self.vn_fq_names = []
     # end __init__
 
     def setUp(self):
@@ -236,15 +240,13 @@ class PodFixture(fixtures.Fixture):
         try:
             self.api_vm_obj = self.vnc_lib.virtual_machine_read(id=self.uuid)
             api_vmi_refs = self.api_vm_obj.get_virtual_machine_interface_back_refs()
-            self.vmi_objs = []
-            self.vmi_uuids = []
-            self.vn_names = []
             for vmi_ref in api_vmi_refs:
                 x = self.vnc_lib.virtual_machine_interface_read(
                     id=vmi_ref['uuid'])
                 self.vmi_objs.append(x)
                 self.vmi_uuids.append(vmi_ref['uuid'])
                 self.vn_names.append(x.routing_instance_refs[0][u'to'][2])
+                self.vn_fq_names.append(x.virtual_network_refs[0][u'to'])
                 self.logger.debug('Pod %s has vmi %s' % (self.name, x.uuid))
         except NoIdError:
             self.logger.debug('VM uuid %s not in api-server' % (self.uuid))
