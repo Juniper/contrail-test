@@ -47,6 +47,12 @@ class VerifyIntfMirror(VerifySvcMirror):
         return compute_nodes
 
 
+    def verify_intf_mirroring_disable_enable_scenarios(self):
+        """Validate the interface mirroring
+        Verify sub/parent interface mirroring various enable/disable combinations
+        """
+        return self.verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn2_analyzer_on_cn3_vn3(sub_intf=True, parent_intf=True)
+
     def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn1_analyzer_on_cn3_vn1(self, sub_intf=False):
         """Validate the interface mirroring
         src vm, dst vm and analyzer vm on different CNs, all in same VN
@@ -54,12 +60,13 @@ class VerifyIntfMirror(VerifySvcMirror):
         compute_nodes  = self.get_compute_nodes(0, 1, 2)
         return self.verify_intf_mirroring(compute_nodes, [0, 0, 0], sub_intf)
 
-    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn2_analyzer_on_cn3_vn3(self, sub_intf=False):
+    def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn2_analyzer_on_cn3_vn3(self, sub_intf=False, parent_intf=False):
         """Validate the interface mirroring
         src vm, dst vm and analyzer vm on different CNs, all in different VNs
         """
+        # When both sub_intf and parent_intf vars are set, verify disable/enable scenarios
         compute_nodes  = self.get_compute_nodes(0, 1, 2)
-        return self.verify_intf_mirroring(compute_nodes, [0, 1, 2], sub_intf)
+        return self.verify_intf_mirroring(compute_nodes, [0, 1, 2], sub_intf, parent_intf)
 
     def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn1_analyzer_on_cn3_vn2(self, sub_intf=False):
         """Validate the interface mirroring
@@ -246,8 +253,40 @@ class VerifyIntfMirror(VerifySvcMirror):
         return port, parent_port, parent_port_vn_fixture
     # end get_sub_intf_port
 
+    def create_policy_rule(self, src_vn, dst_vn):
 
-    def verify_intf_mirroring(self, compute_nodes, vn_index_list, sub_intf=False):
+        rules = [{'direction': '<>',
+            'protocol': 'icmp',
+            'source_network': src_vn,
+            'src_ports': [0, 65535],
+            'dest_network': dst_vn,
+            'dst_ports': [0, 65535],
+            'simple_action': 'pass',
+            'action_list': {'simple_action': 'pass'}
+            },
+            {'direction': '<>',
+            'protocol': 'icmp6',
+            'source_network': src_vn,
+            'src_ports': [0, 65535],
+            'dest_network': dst_vn,
+            'dst_ports': [0, 65535],
+            'simple_action': 'pass',
+            'action_list': {'simple_action': 'pass'}
+            }]
+
+        rules.append({'direction': '<>',
+            'protocol': 'udp',
+            'source_network': src_vn,
+            'src_ports': [0, 65535],
+            'dest_network': dst_vn,
+            'dst_ports': [0, 65535],
+            'simple_action': 'pass',
+            'action_list': {'simple_action': 'pass'}
+            })
+        return rules
+    # end create_policy_rule
+
+    def verify_intf_mirroring(self, compute_nodes, vn_index_list, sub_intf=False, parent_intf=False):
         """Validate the interface mirroring
            Test steps:
            1. Create vn1/vm1_vn1, vn1/vm2_vn1, vn1/mirror_vm_vn1,  vn2/vm2_vn2, vn2/mirror_vm_vn2, vn3/mirror_vm_vn3
@@ -267,258 +306,199 @@ class VerifyIntfMirror(VerifySvcMirror):
         dst_compute = compute_nodes[1]
         analyzer_compute = compute_nodes[2]
 
-        self.analyzer_port = 8099
+        analyzer_port = 8099
         image_name = 'cirros' if not sub_intf else 'ubuntu-traffic'
 
-        self.vn1_subnets = [get_random_cidr(af=self.inputs.get_af())]
-        self.vn2_subnets = [get_random_cidr(af=self.inputs.get_af())]
-        self.vn3_subnets = [get_random_cidr(af=self.inputs.get_af())]
+        vn1_subnets = [get_random_cidr(af=self.inputs.get_af())]
+        vn2_subnets = [get_random_cidr(af=self.inputs.get_af())]
+        vn3_subnets = [get_random_cidr(af=self.inputs.get_af())]
 
 
-        self.vn1_fq_name = self.connections.domain_name +":"  + self.inputs.project_name + \
+        vn1_fq_name = self.connections.domain_name +":"  + self.inputs.project_name + \
             ":" + get_random_name("vn1")
-        self.vn2_fq_name = self.connections.domain_name +":"  + self.inputs.project_name + \
+        vn2_fq_name = self.connections.domain_name +":"  + self.inputs.project_name + \
             ":" + get_random_name("vn2")
-        self.vn3_fq_name = self.connections.domain_name +":"  + self.inputs.project_name + \
+        vn3_fq_name = self.connections.domain_name +":"  + self.inputs.project_name + \
             ":" + get_random_name("vn3")
 
-        self.vn1_name = self.vn1_fq_name.split(':')[2]
-        self.vn2_name = self.vn2_fq_name.split(':')[2]
-        self.vn3_name = self.vn3_fq_name.split(':')[2]
+        vn1_name = vn1_fq_name.split(':')[2]
+        vn2_name = vn2_fq_name.split(':')[2]
+        vn3_name = vn3_fq_name.split(':')[2]
 
-        self.vn1_fixture = self.config_vn(self.vn1_name, self.vn1_subnets)
-        self.vn2_fixture = self.config_vn(self.vn2_name, self.vn2_subnets)
-        self.vn3_fixture = self.config_vn(self.vn3_name, self.vn3_subnets)
+        vn1_fixture = self.config_vn(vn1_name, vn1_subnets)
+        vn2_fixture = self.config_vn(vn2_name, vn2_subnets)
+        vn3_fixture = self.config_vn(vn3_name, vn3_subnets)
 
-        self.policy_name_vn1_vn2 = get_random_name("vn1_vn2_pass")
-        self.policy_name_vn1_vn3 = get_random_name("vn1_vn3_pass")
-        self.policy_name_vn2_vn3 = get_random_name("vn2_vn3_pass")
+        policy_name_vn1_vn2 = get_random_name("vn1_vn2_pass")
+        policy_name_vn1_vn3 = get_random_name("vn1_vn3_pass")
+        policy_name_vn2_vn3 = get_random_name("vn2_vn3_pass")
 
-        self.rules_vn1_vn2 = [{'direction': '<>',
-                       'protocol': 'icmp',
-                       'source_network': self.vn1_name,
-                       'src_ports': [0, 65535],
-                       'dest_network': self.vn2_name,
-                       'dst_ports': [0, 65535],
-                       'simple_action': 'pass',
-                       'action_list': {'simple_action': 'pass'}
-                       },
-                       {'direction': '<>',
-                       'protocol': 'icmp6',
-                       'source_network': self.vn1_name,
-                       'src_ports': [0, 65535],
-                       'dest_network': self.vn2_name,
-                       'dst_ports': [0, 65535],
-                       'simple_action': 'pass',
-                       'action_list': {'simple_action': 'pass'}
-                       }]
+        rules_vn1_vn2 = self.create_policy_rule(vn1_name, vn2_name)
+        rules_vn1_vn3 = self.create_policy_rule(vn1_name, vn3_name)
+        rules_vn2_vn3 = self.create_policy_rule(vn2_name, vn3_name)
 
-        self.rules_vn1_vn3 = [{'direction': '<>',
-                       'protocol': 'icmp',
-                       'source_network': self.vn1_name,
-                       'src_ports': [0, 65535],
-                       'dest_network': self.vn3_name,
-                       'dst_ports': [0, 65535],
-                       'simple_action': 'pass',
-                       'action_list': {'simple_action': 'pass'}
-                       },
-                       {'direction': '<>',
-                       'protocol': 'icmp6',
-                       'source_network': self.vn1_name,
-                       'src_ports': [0, 65535],
-                       'dest_network': self.vn3_name,
-                       'dst_ports': [0, 65535],
-                       'simple_action': 'pass',
-                       'action_list': {'simple_action': 'pass'}
-                       }]
+        policy_fixture_vn1_vn2 = self.config_policy(policy_name_vn1_vn2, rules_vn1_vn2)
+        policy_fixture_vn1_vn3 = self.config_policy(policy_name_vn1_vn3, rules_vn1_vn3)
+        policy_fixture_vn2_vn3 = self.config_policy(policy_name_vn2_vn3, rules_vn2_vn3)
 
-        self.rules_vn2_vn3 = [{'direction': '<>',
-                       'protocol': 'icmp',
-                       'source_network': self.vn2_name,
-                       'src_ports': [0, 65535],
-                       'dest_network': self.vn3_name,
-                       'dst_ports': [0, 65535],
-                       'simple_action': 'pass',
-                       'action_list': {'simple_action': 'pass'}
-                       },
-                       {'direction': '<>',
-                       'protocol': 'icmp6',
-                       'source_network': self.vn2_name,
-                       'src_ports': [0, 65535],
-                       'dest_network': self.vn3_name,
-                       'dst_ports': [0, 65535],
-                       'simple_action': 'pass',
-                       'action_list': {'simple_action': 'pass'}
-                       }]
+        vn1_v2_attach_to_vn1 = self.attach_policy_to_vn(
+            policy_fixture_vn1_vn2, vn1_fixture)
+        vn1_vn2_attach_to_vn2 = self.attach_policy_to_vn(
+            policy_fixture_vn1_vn2, vn2_fixture)
 
-        self.rules_vn1_vn3.append({'direction': '<>',
-                                'protocol': 'udp',
-                                'source_network': self.vn1_name,
-                                'src_ports': [0, 65535],
-                                'dest_network': self.vn3_name,
-                                'dst_ports': [0, 65535],
-                                'simple_action': 'pass',
-                                'action_list': {'simple_action': 'pass'}
-                                }
-                               )
+        vn1_v3_attach_to_vn1 = self.attach_policy_to_vn(
+            policy_fixture_vn1_vn3, vn1_fixture)
+        vn1_v3_attach_to_vn3 = self.attach_policy_to_vn(
+            policy_fixture_vn1_vn3, vn3_fixture)
 
-        self.rules_vn2_vn3.append({'direction': '<>',
-                                'protocol': 'udp',
-                                'source_network': self.vn2_name,
-                                'src_ports': [0, 65535],
-                                'dest_network': self.vn3_name,
-                                'dst_ports': [0, 65535],
-                                'simple_action': 'pass',
-                                'action_list': {'simple_action': 'pass'}
-                                }
-                               )
-
-        self.rules_vn1_vn2.append({'direction': '<>',
-                                'protocol': 'udp',
-                                'source_network': self.vn1_name,
-                                'src_ports': [0, 65535],
-                                'dest_network': self.vn2_name,
-                                'dst_ports': [0, 65535],
-                                'simple_action': 'pass',
-                                'action_list': {'simple_action': 'pass'}
-                                }
-                               )
-
-        self.policy_fixture_vn1_vn2 = self.config_policy(self.policy_name_vn1_vn2, self.rules_vn1_vn2)
-        self.policy_fixture_vn1_vn3 = self.config_policy(self.policy_name_vn1_vn3, self.rules_vn1_vn3)
-        self.policy_fixture_vn2_vn3 = self.config_policy(self.policy_name_vn2_vn3, self.rules_vn2_vn3)
-
-        self.vn1_v2_attach_to_vn1 = self.attach_policy_to_vn(
-            self.policy_fixture_vn1_vn2, self.vn1_fixture)
-        self.vn1_vn2_attach_to_vn2 = self.attach_policy_to_vn(
-            self.policy_fixture_vn1_vn2, self.vn2_fixture)
-
-        self.vn1_v3_attach_to_vn1 = self.attach_policy_to_vn(
-            self.policy_fixture_vn1_vn3, self.vn1_fixture)
-        self.vn1_v3_attach_to_vn3 = self.attach_policy_to_vn(
-            self.policy_fixture_vn1_vn3, self.vn3_fixture)
-
-        self.vn2_v3_attach_to_vn2 = self.attach_policy_to_vn(
-            self.policy_fixture_vn2_vn3, self.vn2_fixture)
-        self.vn2_v3_attach_to_vn3 = self.attach_policy_to_vn(
-            self.policy_fixture_vn2_vn3, self.vn3_fixture)
+        vn2_v3_attach_to_vn2 = self.attach_policy_to_vn(
+            policy_fixture_vn2_vn3, vn2_fixture)
+        vn2_v3_attach_to_vn3 = self.attach_policy_to_vn(
+            policy_fixture_vn2_vn3, vn3_fixture)
 
         vn1_vmi_ref, vn2_vmi_ref, vn3_vmi_ref = None, None, None
 
         self.vlan = 101
 
         if vn_index_list[0] == 0:
-           self.src_vn_fixture = self.vn1_fixture
-           self.src_vn_fq_name = self.vn1_fq_name
-           self.src_vn_name = self.vn1_fq_name.split(':')[2]
+           src_vn_fixture = vn1_fixture
+           src_vn_fq_name = vn1_fq_name
+           src_vn_name = vn1_fq_name.split(':')[2]
            vn1_vmi_ref = True
            if sub_intf:
                intf_type = 'src'
-               self.src_port, self.src_parent_port, self.src_parent_port_vn_fixture = self.create_sub_intf(self.vn1_fixture.uuid, intf_type)
+               src_port, src_parent_port, src_parent_port_vn_fixture = self.create_sub_intf(vn1_fixture.uuid, intf_type)
 
         elif vn_index_list[0] == 1:
-           self.src_vn_fixture = self.vn2_fixture
-           self.src_vn_fq_name = self.vn2_fq_name
-           self.src_vn_name = self.vn2_fq_name.split(':')[2]
+           src_vn_fixture = vn2_fixture
+           src_vn_fq_name = vn2_fq_name
+           src_vn_name = vn2_fq_name.split(':')[2]
            vn2_vmi_ref = True
            if sub_intf:
                intf_type = 'src'
-               self.src_port, self.src_parent_port, self.src_parent_port_vn_fixture = self.create_sub_intf(self.vn2_fixture.uuid, intf_type)
+               src_port, src_parent_port, src_parent_port_vn_fixture = self.create_sub_intf(vn2_fixture.uuid, intf_type)
         else:
-           self.src_vn_fixture = self.vn3_fixture
-           self.src_vn_fq_name = self.vn3_fq_name
-           self.src_vn_name = self.vn3_fq_name.split(':')[2]
+           src_vn_fixture = vn3_fixture
+           src_vn_fq_name = vn3_fq_name
+           src_vn_name = vn3_fq_name.split(':')[2]
            vn3_vmi_ref = True
            if sub_intf:
                intf_type = 'src'
-               self.src_port, self.src_parent_port, self.src_parent_port_vn_fixture = self.create_sub_intf(self.vn3_fixture.uuid, intf_type)
+               src_port, src_parent_port, src_parent_port_vn_fixture = self.create_sub_intf(vn3_fixture.uuid, intf_type)
 
         if vn_index_list[1] == 0:
-           self.dst_vn_fixture = self.vn1_fixture
-           self.dst_vn_fq_name = self.vn1_fq_name
-           self.dst_vn_name = self.vn1_fq_name.split(':')[2]
+           dst_vn_fixture = vn1_fixture
+           dst_vn_fq_name = vn1_fq_name
+           dst_vn_name = vn1_fq_name.split(':')[2]
            vn1_vmi_ref = True
            if sub_intf:
                intf_type = 'dst'
-               self.dst_port, self.dst_parent_port, self.dst_parent_port_vn_fixture = self.create_sub_intf(self.vn1_fixture.uuid, intf_type)
+               dst_port, dst_parent_port, dst_parent_port_vn_fixture = self.create_sub_intf(vn1_fixture.uuid, intf_type)
 
         elif vn_index_list[1] == 1:
-           self.dst_vn_fixture = self.vn2_fixture
-           self.dst_vn_fq_name = self.vn2_fq_name
-           self.dst_vn_name = self.vn2_fq_name.split(':')[2]
+           dst_vn_fixture = vn2_fixture
+           dst_vn_fq_name = vn2_fq_name
+           dst_vn_name = vn2_fq_name.split(':')[2]
            vn2_vmi_ref = True
            if sub_intf:
                intf_type = 'dst'
-               self.dst_port, self.dst_parent_port, self.dst_parent_port_vn_fixture = self.create_sub_intf(self.vn2_fixture.uuid, intf_type)
+               dst_port, dst_parent_port, dst_parent_port_vn_fixture = self.create_sub_intf(vn2_fixture.uuid, intf_type)
         else:
-           self.dst_vn_fixture = self.vn3_fixture
-           self.dst_vn_fq_name = self.vn3_fq_name
-           self.dst_vn_name = self.vn3_fq_name.split(':')[2]
+           dst_vn_fixture = vn3_fixture
+           dst_vn_fq_name = vn3_fq_name
+           dst_vn_name = vn3_fq_name.split(':')[2]
            vn3_vmi_ref = True
            if sub_intf:
                intf_type = 'dst'
-               self.dst_port, self.dst_parent_port, self.dst_parent_port_vn_fixture = self.create_sub_intf(self.vn3_fixture.uuid, intf_type)
+               dst_port, dst_parent_port, dst_parent_port_vn_fixture = self.create_sub_intf(vn3_fixture.uuid, intf_type)
 
         if vn_index_list[2] == 0:
-           self.analyzer_vn_fixture = self.vn1_fixture
-           self.analyzer_vn_fq_name = self.vn1_fq_name
-           self.analyzer_vn_name = self.vn1_fq_name.split(':')[2]
+           analyzer_vn_fixture = vn1_fixture
+           analyzer_vn_fq_name = vn1_fq_name
+           analyzer_vn_name = vn1_fq_name.split(':')[2]
            vn1_vmi_ref = True
            if sub_intf:
                intf_type = 'analyzer'
-               self.analyzer_port, self.analyzer_parent_port, self.analyzer_parent_port_vn_fixture = self.create_sub_intf(self.vn1_fixture.uuid, intf_type)
+               analyzer_port, analyzer_parent_port, analyzer_parent_port_vn_fixture = self.create_sub_intf(vn1_fixture.uuid, intf_type)
 
         elif vn_index_list[2] == 1:
-           self.analyzer_vn_fixture = self.vn2_fixture
-           self.analyzer_vn_fq_name = self.vn2_fq_name
-           self.analyzer_vn_name = self.vn2_fq_name.split(':')[2]
+           analyzer_vn_fixture = vn2_fixture
+           analyzer_vn_fq_name = vn2_fq_name
+           analyzer_vn_name = vn2_fq_name.split(':')[2]
            vn2_vmi_ref = True
            if sub_intf:
                intf_type = 'analyzer'
-               self.analyzer_port, self.analyzer_parent_port, self.analyzer_parent_port_vn_fixture = self.create_sub_intf(self.vn2_fixture.uuid, intf_type)
+               analyzer_port, analyzer_parent_port, analyzer_parent_port_vn_fixture = self.create_sub_intf(vn2_fixture.uuid, intf_type)
         else:
-           self.analyzer_vn_fixture = self.vn3_fixture
-           self.analyzer_vn_fq_name = self.vn3_fq_name
-           self.analyzer_vn_name = self.vn3_fq_name.split(':')[2]
+           analyzer_vn_fixture = vn3_fixture
+           analyzer_vn_fq_name = vn3_fq_name
+           analyzer_vn_name = vn3_fq_name.split(':')[2]
            vn3_vmi_ref = True
            if sub_intf:
                intf_type = 'analyzer'
-               self.analyzer_port, self.analyzer_parent_port, self.analyzer_parent_port_vn_fixture = self.create_sub_intf(self.vn3_fixture.uuid, intf_type)
+               analyzer_port, analyzer_parent_port, analyzer_parent_port_vn_fixture = self.create_sub_intf(vn3_fixture.uuid, intf_type)
 
-        self.src_vm_name = get_random_name("src_vm")
-        self.dst_vm_name = get_random_name("dst_vm")
-        self.analyzer_vm_name = get_random_name("analyzer_vm")
+        if parent_intf:
+            policy_name_src_parent_vn_analyzer_vn = get_random_name("src_parent_to_analyzer_pass")
+            policy_name_dst_parent_vn_analyzer_vn = get_random_name("dst_parent_to_analyzer_pass")
 
-        self.analyzer_fq_name  = self.connections.domain_name +":"  + self.inputs.project_name + \
-            ":" + self.analyzer_vm_name
-        self.routing_instance = self.analyzer_vn_fq_name + ':' + self.analyzer_vn_name
+            src_parent_vn_name = src_parent_port_vn_fixture.vn_name
+            dst_parent_vn_name = dst_parent_port_vn_fixture.vn_name
+
+            rules_src_parent_vn_analyzer_vn = self.create_policy_rule(src_parent_vn_name, analyzer_vn_name)
+            rules_dst_parent_vn_analyzer_vn = self.create_policy_rule(dst_parent_vn_name, analyzer_vn_name)
+
+            policy_fixture_src_parent_vn_analyzer_vn = self.config_policy(
+                policy_name_src_parent_vn_analyzer_vn, rules_src_parent_vn_analyzer_vn)
+            policy_fixture_dst_parent_vn_analyzer_vn = self.config_policy(
+                policy_name_dst_parent_vn_analyzer_vn, rules_dst_parent_vn_analyzer_vn)
+
+            self.attach_policy_to_vn(
+                policy_fixture_src_parent_vn_analyzer_vn, analyzer_vn_fixture)
+
+            self.attach_policy_to_vn(
+                policy_fixture_src_parent_vn_analyzer_vn, src_parent_port_vn_fixture)
+
+            self.attach_policy_to_vn(
+                policy_fixture_dst_parent_vn_analyzer_vn, analyzer_vn_fixture)
+
+            self.attach_policy_to_vn(
+                policy_fixture_dst_parent_vn_analyzer_vn,dst_parent_port_vn_fixture)
+
+        src_vm_name = get_random_name("src_vm")
+        dst_vm_name = get_random_name("dst_vm")
+        analyzer_vm_name = get_random_name("analyzer_vm")
+
+        analyzer_fq_name  = self.connections.domain_name +":"  + self.inputs.project_name + \
+            ":" + analyzer_vm_name
+        routing_instance = analyzer_vn_fq_name + ':' + analyzer_vn_name
 
         src_port_ids, dst_port_ids, analyzer_port_ids = [], [], []
 
-        src_vn_objs = [self.src_vn_fixture.obj]
-        dst_vn_objs = [self.dst_vn_fixture.obj]
-        analyzer_vn_objs = [self.analyzer_vn_fixture.obj]
+        src_vn_objs = [src_vn_fixture.obj]
+        dst_vn_objs = [dst_vn_fixture.obj]
+        analyzer_vn_objs = [analyzer_vn_fixture.obj]
 
         if sub_intf:
-            src_port_ids.append(self.src_parent_port.uuid)
-            dst_port_ids.append(self.dst_parent_port.uuid)
-            analyzer_port_ids.append(self.analyzer_parent_port.uuid)
-            src_vn_objs = [self.src_parent_port_vn_fixture.obj]
-            dst_vn_objs = [self.dst_parent_port_vn_fixture.obj]
-            analyzer_vn_objs = [self.analyzer_parent_port_vn_fixture.obj]
+            src_port_ids.append(src_parent_port.uuid)
+            dst_port_ids.append(dst_parent_port.uuid)
+            analyzer_port_ids.append(analyzer_parent_port.uuid)
+            src_vn_objs = [src_parent_port_vn_fixture.obj]
+            dst_vn_objs = [dst_parent_port_vn_fixture.obj]
+            analyzer_vn_objs = [analyzer_parent_port_vn_fixture.obj]
 
-        self.src_vm_fixture = self.create_vm(vn_objs=src_vn_objs, vm_name=self.src_vm_name,
+        src_vm_fixture = self.create_vm(vn_objs=src_vn_objs, vm_name=src_vm_name,
             image_name=image_name, node_name=src_compute, port_ids=src_port_ids)
 
-        self.dst_vm_fixture = self.create_vm(vn_objs=dst_vn_objs, vm_name=self.dst_vm_name,
+        dst_vm_fixture = self.create_vm(vn_objs=dst_vn_objs, vm_name=dst_vm_name,
             image_name=image_name, node_name=dst_compute, port_ids=dst_port_ids)
 
-        self.analyzer_vm_fixture = self.create_vm(vn_objs=analyzer_vn_objs, vm_name=self.analyzer_vm_name,
+        analyzer_vm_fixture = self.create_vm(vn_objs=analyzer_vn_objs, vm_name=analyzer_vm_name,
             image_name=image_name, node_name=analyzer_compute, port_ids=analyzer_port_ids)
 
-        assert self.src_vm_fixture.verify_on_setup()
-        assert self.dst_vm_fixture.verify_on_setup()
-        assert self.analyzer_vm_fixture.verify_on_setup()
+        assert src_vm_fixture.verify_on_setup()
+        assert dst_vm_fixture.verify_on_setup()
+        assert analyzer_vm_fixture.verify_on_setup()
 
         self.nova_h.wait_till_vm_is_up(self.src_vm_fixture.vm_obj)
         self.nova_h.wait_till_vm_is_up(self.dst_vm_fixture.vm_obj)
@@ -531,50 +511,55 @@ class VerifyIntfMirror(VerifySvcMirror):
             assert result, msg
         if vn3_vmi_ref:
             result, msg = self.validate_vn(vn_fq_name=self.vn3_fq_name)
+
             assert result, msg
 
         if sub_intf:
-            self.src_vm_ip = self.src_port.obj['fixed_ips'][0]['ip_address']
-            self.dst_vm_ip = self.dst_port.obj['fixed_ips'][0]['ip_address']
-            self.analyzer_vm_ip = self.analyzer_port.obj['fixed_ips'][0]['ip_address']
+            src_vm_ip = src_port.obj['fixed_ips'][0]['ip_address']
+            dst_vm_ip = dst_port.obj['fixed_ips'][0]['ip_address']
+            analyzer_vm_ip = analyzer_port.obj['fixed_ips'][0]['ip_address']
         else:
-            self.src_vm_ip = self.src_vm_fixture.get_vm_ips(self.src_vn_fq_name)[0]
-            self.dst_vm_ip = self.dst_vm_fixture.get_vm_ips(self.dst_vn_fq_name)[0]
-            self.analyzer_vm_ip = self.analyzer_vm_fixture.get_vm_ips(self.analyzer_vn_fq_name)[0]
+            src_vm_ip = src_vm_fixture.get_vm_ips(src_vn_fq_name)[0]
+            dst_vm_ip = dst_vm_fixture.get_vm_ips(dst_vn_fq_name)[0]
+            analyzer_vm_ip = analyzer_vm_fixture.get_vm_ips(analyzer_vn_fq_name)[0]
 
         self.logger.info("Compute/VM: SRC: %s / %s, -> DST: %s / %s => ANALYZER: %s / %s" %
-            (src_compute, self.src_vm_ip, dst_compute, self.dst_vm_ip, analyzer_compute, self.analyzer_vm_ip))
+            (src_compute, src_vm_ip, dst_compute, dst_vm_ip, analyzer_compute, analyzer_vm_ip))
+        if parent_intf:
+            parent_src_vm_ip = src_vm_fixture.get_vm_ips()[0]
+            parent_dst_vm_ip = dst_vm_fixture.get_vm_ips()[0]
+            parent_analyzer_vm_ip = analyzer_vm_fixture.get_vm_ips()[0]
 
-
-        src_port = None
+        sport = None
 
         if sub_intf:
             intf_type = 'src'
             cmds = ['sudo vconfig add eth0 101','sudo ifconfig eth0.101 up','sudo udhcpc -i eth0.101']
-            output = self.src_vm_fixture.run_cmd_on_vm(cmds = cmds)
+            output = src_vm_fixture.run_cmd_on_vm(cmds = cmds)
 
             intf_type = 'dst'
             cmds = ['sudo vconfig add eth0 101','sudo ifconfig eth0.101 up','sudo udhcpc -i eth0.101']
-            output = self.dst_vm_fixture.run_cmd_on_vm(cmds = cmds)
+            output = dst_vm_fixture.run_cmd_on_vm(cmds = cmds)
 
             intf_type = 'analyzer'
             cmds = ['sudo vconfig add eth0 101','sudo ifconfig eth0.101 up','sudo udhcpc -i eth0.101']
-            output = self.analyzer_vm_fixture.run_cmd_on_vm(cmds = cmds)
-            src_port = self.src_port.vmi_obj
+            output = analyzer_vm_fixture.run_cmd_on_vm(cmds = cmds)
+            sport = src_port.vmi_obj
 
-        if not self._verify_intf_mirroring(self.src_vm_fixture, self.dst_vm_fixture, self.analyzer_vm_fixture, \
-                self.src_vn_fq_name, self.dst_vn_fq_name, self.analyzer_vn_fq_name,
-                self.analyzer_vm_ip, self.analyzer_fq_name, self.routing_instance, src_port=src_port, sub_intf=sub_intf) :
+        if not self._verify_intf_mirroring(src_vm_fixture, dst_vm_fixture, analyzer_vm_fixture, \
+                src_vn_fq_name, dst_vn_fq_name, analyzer_vn_fq_name,
+                analyzer_vm_ip, analyzer_fq_name, routing_instance, src_port=sport, sub_intf=sub_intf, parent_intf=parent_intf):
             result = result and False
 
         return result
     # end verify_intf_mirroring
 
-    def _verify_intf_mirroring(self, src_vm_fixture, dst_vm_fixture, mirror_vm_fixture, src_vn_fq, dst_vn_fq, mirr_vn_fq,\
-            analyzer_ip_address, analyzer_name, routing_instance, src_port=None, sub_intf=False):
-        result = True
-
+    def config_intf_mirroring(self, src_vm_fixture, analyzer_ip_address, analyzer_name, routing_instance, \
+            src_port=None, sub_intf=False, parent_intf=False):
         vnc = src_vm_fixture.vnc_lib_h
+        vlan = None
+        tap_intf_obj = None
+        parent_tap_intf_obj = None
         vlan = None
         if not sub_intf:
             tap_intf_uuid = src_vm_fixture.get_tap_intf_of_vm()[0]['uuid']
@@ -583,16 +568,94 @@ class VerifyIntfMirror(VerifySvcMirror):
             tap_intf_obj = src_port
             vlan = self.vlan
 
+        if parent_intf:
+            parent_tap_intf_uuid = src_vm_fixture.get_tap_intf_of_vm()[0]['uuid']
+            parent_tap_intf_obj = vnc.virtual_machine_interface_read(id=parent_tap_intf_uuid)
+
         self.enable_intf_mirroring(vnc, tap_intf_obj, analyzer_ip_address, analyzer_name, routing_instance)
+        if parent_intf:
+            self.logger.info("Intf mirroring enabled on both sub intf port and parent port")
+            self.enable_intf_mirroring(vnc, parent_tap_intf_obj, analyzer_ip_address, analyzer_name, routing_instance)
+        return vnc, tap_intf_obj, parent_tap_intf_obj, vlan
+    # end config_intf_mirroring
+
+    def _verify_intf_mirroring(self, src_vm_fixture, dst_vm_fixture, mirror_vm_fixture, src_vn_fq, dst_vn_fq, mirr_vn_fq,\
+            analyzer_ip_address, analyzer_name, routing_instance, src_port=None, sub_intf=False, parent_intf=False):
+        result = True
+        vnc, tap_intf_obj, parent_tap_intf_obj, vlan = self.config_intf_mirroring(
+            src_vm_fixture, analyzer_ip_address, analyzer_name, routing_instance, src_port=src_port, sub_intf=sub_intf, parent_intf=parent_intf)
+
+        if not self.verify_port_mirroring(src_vm_fixture, dst_vm_fixture, mirror_vm_fixture, vlan=vlan, parent=parent_intf):
+            result = result and False
+            if parent:
+                self.logger.error("Traffic mirroring from both the ports expected, failed from one or both")
+            elif vlan:
+                self.logger.error("Traffic mirroring from the sub intf port failed")
+            else:
+                self.logger.error("Intf mirroring not working")
+
+        self.logger.info("Disabling intf mirroring on sub intf port")
+        self.disable_intf_mirroring(vnc, tap_intf_obj)
+
+        if parent_tap_intf_obj:
+            self.logger.info("Disabling intf mirroring on parent intf port")
+            self.disable_intf_mirroring(vnc, parent_tap_intf_obj)
+
+        if parent_intf:
+            if not self.verify_disable_enable_combinations(src_vm_fixture, dst_vm_fixture, mirror_vm_fixture, \
+                    analyzer_ip_address, analyzer_name, routing_instance, src_port=src_port, sub_intf=sub_intf, parent_intf=parent_intf):
+                result = result and False
+
+        return result
+    # end _verify_intf_mirroring
+
+    def verify_disable_enable_combinations(self, src_vm_fixture, dst_vm_fixture, mirror_vm_fixture, \
+            analyzer_ip_address, analyzer_name, routing_instance, src_port=None, sub_intf=False, parent_intf=False):
+        result = True
+        vnc, tap_intf_obj, parent_tap_intf_obj, vlan = self.config_intf_mirroring(
+            src_vm_fixture, analyzer_ip_address, analyzer_name, routing_instance, src_port=src_port, sub_intf=sub_intf, parent_intf=parent_intf)
+
+        # Mirroring disabled on sub intf, but enabled on parent port, expect sub intf traffic to get mirrored via parent port
+        self.disable_intf_mirroring(vnc, tap_intf_obj)
+        if not self.verify_port_mirroring(src_vm_fixture, dst_vm_fixture, mirror_vm_fixture, vlan=vlan):
+            result = result and False
+            self.logger.error("Traffic stopped getting mirrored from parent port after disabling intf mirroring on sub intf port")
+        else:
+            self.logger.info("Traffic is getting mirrored from parent port as expected")
+
+        self.logger.info("Enabling intf mirroring on sub intf, expect pkts to get mirrored from both the ports")
+        self.enable_intf_mirroring(vnc, tap_intf_obj, analyzer_ip_address, analyzer_name, routing_instance)
+
+        if not self.verify_port_mirroring(src_vm_fixture, dst_vm_fixture, mirror_vm_fixture, vlan=vlan, parent=parent_intf):
+            result = result and False
+            self.logger.error("Traffic is not getting mirrored from both parent port and sub intf")
+        else:
+            self.logger.info("Traffic is getting mirrored from both parent port and sub intf as expected")
+        # Disable intf mirroring on parent port
+        self.disable_intf_mirroring(vnc, parent_tap_intf_obj)
 
         if not self.verify_port_mirroring(src_vm_fixture, dst_vm_fixture, mirror_vm_fixture, vlan=vlan):
             result = result and False
-            self.logger.error("Intf not mirrored")
+            self.logger.error("Traffic stopped getting mirrored from sub intf after disabling intf mirroring on parent port")
+        else:
+            self.logger.info("Traffic is getting mirrored from sub intf as expected")
+
+        # enable intf mirroring on parent port
+        self.enable_intf_mirroring(vnc, parent_tap_intf_obj, analyzer_ip_address, analyzer_name, routing_instance)
+
+        self.logger.info("Check traffic is getting mirrored from both the ports")
+
+        if not self.verify_port_mirroring(src_vm_fixture, dst_vm_fixture, mirror_vm_fixture, vlan=vlan, parent=parent_intf):
+            result = result and False
+            self.logger.error("Traffic not is getting mirrored from both the ports")
+        else:
+            self.logger.info("Traffic is getting mirrored from both the ports as expected")
 
         self.disable_intf_mirroring(vnc, tap_intf_obj)
+        self.disable_intf_mirroring(vnc, parent_tap_intf_obj)
 
         return result
-    # end verify_intf_mirroring
+    # end verify_disable_enable_combinations
 
     def enable_intf_mirroring(self, vnc, tap, analyzer_ip_address, analyzer_name, routing_instance,
                              direction='both', udp_port=8099,  encapsulation=None):
