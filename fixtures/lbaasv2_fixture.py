@@ -298,6 +298,9 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         if self.verify_lb_in_control_node() == False:
             self.logger.error('verify_lb_in_control_node failed for LB %s'%self.lb_uuid)
             return False
+        if self.verify_lb_in_op_server() == False:
+            self.logger.error('self.verify_lb_in_op_server failed for LB %s'%self.lb_uuid)
+            return False
         self.logger.info('LoadBalancer(%s): verify_on_setup passed'%self.lb_uuid)
         self.verify_lb_is_run = True
         return True
@@ -317,6 +320,9 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
             return False
         if self.verify_si_deleted() == False:
             self.logger.error('verify_si_delete failed for LB %s'%self.lb_uuid)
+            return False
+        if self.verify_lb_not_in_op_server() == False:
+            self.logger.error('verify_lb_not_in_op_server failed for LB %s'%self.lb_uuid)
             return False
         if self.fip_id:
             if self.verify_fip_not_in_agent() == False:
@@ -339,6 +345,12 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.logger.info('LoadBalancer(%s): verify_lb_in_api_server passed'%self.lb_uuid)
         return True
 
+    def verify_lb_in_op_server(self):
+        if self.verify_loadbalancer_in_op_server() == False:
+            return False
+        self.logger.info('LoadBalancer(%s): verify_lb_in_op_server passed'%self.lb_uuid)
+        return True
+
     def verify_lb_not_in_api_server(self):
         if self.verify_loadbalancer_not_in_api_server() == False:
             return False
@@ -346,6 +358,12 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
             if self.verify_fip_not_in_api_server() == False:
                 return False
         self.logger.info('LoadBalancer(%s): verify_lb_not_in_api_server passed'%self.lb_uuid)
+        return True
+
+    def verify_lb_not_in_op_server(self):
+        if self.verify_loadbalancer_not_in_op_server() == False:
+            return False
+        self.logger.info('LoadBalancer(%s): verify_lb_not_in_op_server passed'%self.lb_uuid)
         return True
 
     @retry(delay=6, tries=10)
@@ -379,6 +397,17 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         return True
 
     @retry(delay=6, tries=10)
+    def verify_loadbalancer_in_op_server(self):
+        self.ops_inspect = self.connections.ops_inspects
+        for ip in self.inputs.collector_ips:
+            self.logger.debug("Verifying in collector %s ..." % (ip))
+            self.ops_lb_obj = self.ops_inspect[ip].get_ops_loadbalancer(self.lb_uuid)
+            if not self.ops_lb_obj:
+                return False
+            else:
+                return True
+
+    @retry(delay=6, tries=10)
     def verify_loadbalancer_not_in_api_server(self):
         self.api_h = self.connections.api_server_inspect
         pool = self.api_h.get_loadbalancer(self.lb_uuid, refresh=True)
@@ -387,6 +416,19 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
             return False
         self.logger.info("LB %s deleted from api server" %self.lb_uuid)
         return True
+
+    @retry(delay=6, tries=10)
+    def verify_loadbalancer_not_in_op_server(self):
+        self.ops_inspect = self.connections.ops_inspects
+        for ip in self.inputs.collector_ips:
+            self.logger.debug("Verifying in collector %s ..." % (ip))
+            self.ops_lb_obj = self.ops_inspect[ip].get_ops_loadbalancer(self.lb_uuid)
+            if self.ops_lb_obj:
+                self.logger.warn("LB %s still found in op server" %self.lb_uuid)
+                return False
+            else:
+                self.logger.info("LB %s deleted from op server" %self.lb_uuid)
+                return True
 
     @retry(delay=6, tries=10)
     def verify_si_launched(self, refresh=False):

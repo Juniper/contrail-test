@@ -96,6 +96,17 @@ class VerificationOpsSrv (VerificationUtilBase):
         finally:
             return res
 
+    def get_ops_loadbalancer(self, lb):
+        res = None
+        try:
+            lb_dict = self.dict_get(
+                'analytics/uves/loadbalancer/' + lb + '?flat')
+            res = OpLBResult(lb_dict)
+        except Exception as e:
+            print e
+        finally:
+            return res
+
     def get_ops_svc_instance(self, project='admin', 
                                 svc_instance=None):
         '''analytics/uves/service-instance/default-domain:\
