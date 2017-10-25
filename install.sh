@@ -65,8 +65,9 @@ if [[ $BUILD_PLATFORM = "16.04" ]]; then
 	gcc-5-base=5.4.0-6ubuntu1~16.04.4
 	libgcc-5-dev=5.4.0-6ubuntu1~16.04.4
 	libstdc++-5-dev=5.4.0-6ubuntu1~16.04.4
-	libicu55=55.1-7ubuntu0.2
-	libicu-dev=55.1-7ubuntu0.2
+	libicu55=55.1-7
+	libicu-dev=55.1-7
+	icu-devtools=55.1-7
     )
     PACKAGES_REQUIRED_RALLY=(
 	libffi-dev
