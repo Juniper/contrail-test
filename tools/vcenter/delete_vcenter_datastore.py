@@ -26,7 +26,7 @@ def get_vcenter_server_details(inputs):
 def main():
     init_obj = ContrailTestInit(sys.argv[1])
     init_obj.read_prov_file()
-    if init_obj.inputs.vcenter_gw_setup:
+    if init_obj.inputs.vcenter_gw_setup or (init_obj.inputs.orchestrator == 'vcenter'):
         vcenter=get_vcenter_server_details(init_obj.inputs)
         vcenter_orch = VcenterOrchestrator(init_obj.inputs, vcenter.server, 
                                            vcenter.port, vcenter.user, 
