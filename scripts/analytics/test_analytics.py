@@ -17,11 +17,12 @@ from multiple_vn_vm_test import *
 from tcutils.wrappers import preposttest_wrapper
 from fabric.api import run, local
 from analytics import base
+from common.base import GenericTestBase
 import fixtures
 
 import test
 
-class AnalyticsTestSanity(base.AnalyticsBaseTest):
+class AnalyticsTestSanity(base.AnalyticsBaseTest, GenericTestBase):
 
     @classmethod
     def setUpClass(cls):
@@ -39,6 +40,14 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         '''
         assert self.inputs.verify_state()
         return True
+
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter'])
+    @preposttest_wrapper
+    def test_contrail_internal_ansible_status(self):
+        ''' Test to verify that internal-ansible ran in each container without any failures 
+
+        '''
+        assert self.verify_contrail_internal_ansible_status()
 
     @test.attr(type=['vcenter'])
     @preposttest_wrapper
