@@ -1,3 +1,4 @@
+import re
 import test_v1
 from netaddr import *
 from vnc_api.vnc_api import *
@@ -484,4 +485,41 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         if obj and getattr(obj, 'created', False):
             return obj.cleanUp()
     # end cleanup
+    
+    def verify_contrail_internal_ansible_status(self):
+        result = True
+        for host_ip in self.inputs.host_ips:
+            containers = self.inputs.host_data[host_ip]['containers'].keys()
+            self.logger.debug('contrail_internal ansible status for containers on host %s'%host_ip)
+            for container in containers:
+                status = self.verify_container_ansible_state(host_ip,container=container)
+                result = result and status
+        if result:
+            self.logger.info('Contrail internal ansible provisioning had gone through fine')
+        return result
+
+    def verify_container_ansible_state(self, host_ip, container=None):
+        in_container=False
+        os_version, os_release, extras = self.inputs.get_linux_distro(host_ip, container)
+        if os_version == 'ubuntu' and os_release == '14.04':
+            #needed to run docker logs from outside container with container name
+            cmd = 'docker logs %s 2>/dev/null | grep unreachable.*failed='%container
+        #for centos reshat and ubuntu 16-04
+        else:
+            in_container = True
+            cmd = 'journalctl -u contrail-ansible | grep unreachable.*failed='
+        if in_container:
+            state = self.inputs.run_cmd_on_server(host_ip,
+                        cmd,container=container)
+        else:
+            state = self.inputs.run_cmd_on_server(host_ip,
+                        cmd)
+        match = None
+        for line in state:
+            match = re.search('unreachable=[^0]|failed=[^0]',line)
+            if match:
+                self.logger.error('Contrail-internal-ansible status shows failed or unreachable for %s %s'%(container,state))
+                return False
+
+        return True
 

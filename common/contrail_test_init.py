@@ -601,6 +601,9 @@ class TestInputs(object):
         self.tor_hosts_data = {}
         self.physical_routers_data = {}
         self.qos_queue = []
+        self.lb_ip = ''
+        self.lb_ips = []
+        self.lb_control_ips = []
         ''' self.qos_queue used for populating HW to Logical map
             format self.qos_queue = [['comput_ip' , [{'hw_q_id':[logical_ids]}, {'hw_q_id':[logical_ids]}]]]
             eg, self.qos_queue= [['10.204.217.128', [{u'3': [u'1', u'6-10', u'12-15']}, {u'11': [u'40-46']}]],
@@ -692,6 +695,12 @@ class TestInputs(object):
                 if role['type'] == 'contrail-kubernetes':
                     self.kube_manager_ips.append(host_ip)
                     self.kube_manager_control_ips.append(host_control_ip)
+                if role['type'] == 'lb':
+                    self.lb_ip = host_ip
+                    self.lb_ips.append(host_ip)
+                    self.lb_control_ips .append(host_control_ip)
+                    if role['container']:
+                        host['containers']['lb'] = role['container']
             # end for
         # end for
 
@@ -1529,6 +1538,17 @@ class ContrailTestInit(object):
         else:
             return DEFAULT_CI_IMAGE
     # end get_ci_image
+
+    def get_linux_distro(self, host_ip, container=None):
+        '''
+        Figure out the os type and release on nodes or container in the cluster
+        '''
+        output = None
+        cmd = 'python -c "from platform import linux_distribution; print linux_distribution()" '
+        output = self.run_cmd_on_server(host_ip,
+                        cmd, container=container)
+        return eval(output)
+    #get_linux_distro
 
 def _parse_args( args_str):
     parser = argparse.ArgumentParser()
