@@ -59,7 +59,7 @@ class TestDM(BaseDM, Md5Base, BaseNeutronTest):
         else:
             return
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_basic_dm(self):
         """

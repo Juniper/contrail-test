@@ -178,7 +178,7 @@ class TestEncapCases(base.BaseEncapTest):
         return True
     # end test_encaps_mx_gateway
 
-    @test.attr(type=[ 'serial', 'sanity' ])
+    @test.attr(type=[ 'serial', 'sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_apply_policy_fip_on_same_vn_gw_mx(self):
         '''A particular VN is configure with policy to talk accross VN's and FIP to access outside'''

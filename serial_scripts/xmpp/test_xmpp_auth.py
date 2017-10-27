@@ -40,7 +40,7 @@ class TestXmpptests(XmppBase, ConfigPolicy):
         else:
             return
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_precedence_xmpp_auth(self):
         """
@@ -83,7 +83,7 @@ class TestXmpptests(XmppBase, ConfigPolicy):
 
     # end test_precedence_xmpp_auth
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_undo_xmpp_auth(self):
         """

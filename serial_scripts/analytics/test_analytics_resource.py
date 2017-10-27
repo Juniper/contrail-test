@@ -1021,7 +1021,7 @@ class AnalyticsTestSanityWithResource(
         return True
 
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_run_contrail_flows_cli_cmds(self):
         '''1. Test to verify  contrail-flows cli cmd with various optional arguments is not broken..
@@ -1242,7 +1242,7 @@ class AnalyticsTestSanityWithResource(
             cmd_args_list.append(cmd)
         return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True)
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_run_contrail_logs_cli_cmd_with_multiple_different_optional_args(self):
         '''1.Test to verify contrail-logs cli cmd with multiple different optional type args is not broken
@@ -1277,7 +1277,7 @@ class AnalyticsTestSanityWithResource(
 
         return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True)
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_run_contrail_stats_cli_cmds(self):
         '''1.Run contrail-stats commands with various options

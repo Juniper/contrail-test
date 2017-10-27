@@ -90,7 +90,7 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
     # end test_mac_learning_single_isid
 
 
-    @test.attr(type=['cb_sanity', 'sanity'])
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_mac_learning_subIntf_single_isid(self):
         '''

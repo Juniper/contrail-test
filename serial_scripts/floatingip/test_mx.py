@@ -44,7 +44,7 @@ class TestSerialSanity_MX(base.FloatingIpBaseTest):
             return (False, 'Skipping Test. Env variable MX_GW_TEST is not set')
         return (True, None)
 
-    @test.attr(type=['mx_test', 'serial', 'sanity', 'vcenter'])
+    @test.attr(type=['mx_test', 'serial', 'sanity', 'vcenter', 'vcenter_compute'])
     @preposttest_wrapper
     def test_change_of_rt_in_vn(self):
         '''

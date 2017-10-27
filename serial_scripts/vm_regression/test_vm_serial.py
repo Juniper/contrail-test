@@ -361,7 +361,7 @@ class TestBasicVMVN0(BaseVnVmTest):
             result=False
         return result
     
-    @test.attr(type=['cb_sanity', 'sanity'])
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter_compute'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_process_restart_in_policy_between_vns(self):
@@ -602,7 +602,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     # end test_kill_service_verify_core_generation
 
 
-    @test.attr(type=['cb_sanity', 'sanity'])
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter_compute'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_control_node_switchover(self):
@@ -854,7 +854,7 @@ class TestBasicVMVN0(BaseVnVmTest):
             self.logger.info('On compute %s, %s..OK' % (compute.ip, msg))
     # end test_max_vm_flows
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_underlay_broadcast_traffic_handling(self):
         ''' Test the underlay brocast traffic handling by vrouter. (Bug-1545229).

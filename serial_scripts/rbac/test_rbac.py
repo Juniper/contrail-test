@@ -25,7 +25,7 @@ class TestRbac(BaseRbac):
         assert self.create_sc(connections=user1_conn), 'SC v1 creation failed'
         assert self.create_sc(connections=user1_conn, st_version=2), 'SC v2 creation failed'
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_perms2_global_share(self):
         '''

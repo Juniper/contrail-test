@@ -144,7 +144,7 @@ class TestPorts(BaseNeutronTest):
                                                 vm2_fixture.vm_ip)
     # end test_ports_specific_subnet
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_ports_specific_subnet_ip(self):
         '''Create ports with specific Subnet and IP
@@ -749,7 +749,7 @@ class TestPorts(BaseNeutronTest):
     # end test_aap_with_vrrp_admin_state_toggle
 
     @skip_because(hypervisor='docker',msg='Uses vsrx image')
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_aap_with_fip(self):
         '''
@@ -1022,7 +1022,7 @@ class TestPorts(BaseNeutronTest):
             cmd], 'Requests not being answered'
     # end test_aap_active_active_mode
 
-    @test.attr(type=['cb_sanity', 'sanity'])
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_aap_with_zero_mac(self):
         '''
@@ -1095,7 +1095,7 @@ class TestPorts(BaseNeutronTest):
                                                 vm_test_fixture.vm_ip)
     # end test_aap_with_zero_mac  
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_ports_bindings(self):
         '''

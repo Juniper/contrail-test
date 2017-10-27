@@ -481,7 +481,7 @@ class TestCRUD(BaseNeutronTest):
         # end for attribute_list
     # end update_port_tests
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_router_crud(self):
         count = 0

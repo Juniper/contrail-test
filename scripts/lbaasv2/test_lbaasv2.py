@@ -78,7 +78,7 @@ class TestLBaaSV2(BaseLBaaSTest):
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip, port=listener_port, https=True),\
             "Verify LB Method failed for ROUND ROBIN"
 
-    @attr(type=['sanity'])
+    @attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_lbaas_client_pool_in_same_net(self):
         '''Create Lbaas pool, member and vip
@@ -125,7 +125,7 @@ class TestLBaaSV2(BaseLBaaSTest):
 
     # end test_lbaas_client_pool_in_same_net
 
-    @attr(type=['sanity'])
+    @attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_lbaas_with_sg_vip(self):
         '''Create LB, LISTENER, POOL and MEMBER
@@ -199,7 +199,7 @@ class TestLBaaSV2(BaseLBaaSTest):
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
 
-    @attr(type=['cb_sanity', 'sanity'])
+    @attr(type=['cb_sanity', 'sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_lbaas_with_different_fip(self):
         '''Create LB, LISTENER, POOL and MEMBER
