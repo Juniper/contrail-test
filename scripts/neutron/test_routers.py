@@ -34,7 +34,7 @@ class TestRouters(BaseNeutronTest):
     def tearDownClass(cls):
         super(TestRouters, cls).tearDownClass()
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_basic_router_behavior(self):
         '''Validate a router is able to route packets between two VNs
@@ -250,7 +250,7 @@ class TestRouterSNAT(BaseNeutronTest):
             return (False, 'Skipping Test. Env variable MX_GW_TEST is not set')
         return (True, None)
 
-    @test.attr(type=['cb_sanity', 'sanity'])
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_basic_snat_behavior(self):
         '''Create an external network, a router

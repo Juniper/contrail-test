@@ -22,7 +22,7 @@ class TestSVCV2Mirror(BaseMirrorTest, VerifySvcMirror):
         pass
     # end runTest
 
-    @test.attr(type=['ci_sanity_WIP', 'sanity', 'quick_sanity'])
+    @test.attr(type=['ci_sanity_WIP', 'sanity', 'quick_sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_svc_v2_mirroring(self):
         """Validate the service chain mirroring"""

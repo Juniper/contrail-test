@@ -28,7 +28,7 @@ class TestIntfMirror(BaseIntfMirrorTest, VerifyIntfMirror):
         """
         return self.verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn1_analyzer_on_cn3_vn1()
 
-    @test.attr(type=['cb_sanity', 'ci_sanity_WIP', 'sanity', 'quick_sanity'])
+    @test.attr(type=['cb_sanity', 'ci_sanity_WIP', 'sanity', 'quick_sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_intf_mirror_src_cn1vn1_dst_cn2vn2_analyzer_cn3vn3(self):
         """Validate the interface mirroring
@@ -73,7 +73,7 @@ class TestIntfMirror(BaseIntfMirrorTest, VerifyIntfMirror):
         """
         return self.verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn1_analyzer_on_cn3_vn1(sub_intf=True)
 
-    @test.attr(type=['cb_sanity', 'ci_sanity_WIP', 'sanity', 'quick_sanity'])
+    @test.attr(type=['cb_sanity', 'ci_sanity_WIP', 'sanity', 'quick_sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_intf_mirror_with_subintf_src_cn1vn1_dst_cn2vn2_analyzer_cn3vn3(self):
         """Validate the interface mirroring

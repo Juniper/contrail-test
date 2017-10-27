@@ -81,7 +81,7 @@ class TestECMPSanity(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
             self.left_vn_fixture)
     # end test_ecmp_svc_in_network_with_3_instance
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_static_route_no_policy(self):
         """
@@ -240,7 +240,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             dest_vm_fixture=self.right_vm_fixture, mode='scp', size='202', expectation=False), errmsg2
     # end test_ecmp_in_pol_based_svc_pol_update
 
-    @test.attr(type=['cb_sanity', 'sanity'])
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_ecmp_svc_v2_in_network_nat_with_3_instance(self):
         """
@@ -696,7 +696,7 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
         super(TestECMPwithSVMChange, cls).tearDownClass()
     # end tearDownClass
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_ecmp_with_svm_deletion(self):
         """
@@ -831,7 +831,7 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
         super(TestMultiInlineSVC, cls).tearDownClass()
     # end tearDownClass
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_three_stage_v2_SC(self):
         """
@@ -1034,7 +1034,7 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         super(TestECMPConfigHashFeature, cls).tearDownClass()
     # end tearDownClass
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_ecmp_hash_src_ip(self):
         """

@@ -26,7 +26,7 @@ class TestQos(QosTestExtendedBase):
         super(TestQos, cls).tearDownClass()
     # end tearDownClass
 
-    @test.attr(type=['cb_sanity', 'sanity'])
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter_compute'])
     @preposttest_wrapper
     @skip_because(hypervisor='docker',msg='Bug 1654955')
     def test_qos_remark_dscp_on_vmi(self):
