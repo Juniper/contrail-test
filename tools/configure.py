@@ -139,7 +139,6 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
 
     if not getattr(env, 'test', None):
         env.test={}
-
     containers = env.test.get('containers')
     traffic_data = env.test.get('traffic_data')
     ixia_linux_host_ip = get_value_of_key(traffic_data, 'ixia_linux_host_ip')
@@ -248,6 +247,11 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
                 for control_node in control_host_names:
                     role_dict['params']['bgp'].append(control_node)
                # role_dict['params']['bgp'].extend(control_host_names[randrange(len(env.roledefs['control']))])
+            host_dict['roles'].append(role_dict)
+
+        if host_string in env.roledefs.get('lb',[]):
+            role_dict = {'type': 'lb', 'params': {'lb': host_name}}
+            role_dict['container'] = get_container_name(containers, host_string, 'lb')
             host_dict['roles'].append(role_dict)
 
         if 'collector' in env.roledefs.keys() and host_string in env.roledefs['collector']:
@@ -744,6 +748,7 @@ def testbed_format_conversion(path='/opt/contrail/utils'):
     roledef_block = roledef_block.replace('contrail-analyticsdb', 'database')
     roledef_block = roledef_block.replace('contrail-analytics', 'collector')
     roledef_block = roledef_block.replace('contrail-compute', 'compute')
+    roledef_block = roledef_block.replace('contrail-lb', 'lb')
     new_tb = tb[:start] + roledef_block + tb[end:]
     with open(tb_file_tmp, 'w') as fd:
         fd.write(new_tb)
