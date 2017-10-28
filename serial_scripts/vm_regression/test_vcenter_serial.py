@@ -11,6 +11,7 @@ from base import *
 from vcenter import *
 import test
 from tcutils.contrail_status_check import ContrailStatusChecker
+import re
 
 class TestVcenterSerial(BaseVnVmTest):
     @classmethod
@@ -63,7 +64,7 @@ class TestVcenterSerial(BaseVnVmTest):
             status = self.inputs.run_cmd_on_server(cfgm, 'service contrail-vcenter-plugin status',
                                                    container='vcplugin',pty=False) 
             self.logger.info('Vcenter plugin status on cfgm %s is %s' % (cfgm, status))
-            if 'running' not in status.stdout:
+            if not re.search('running', status.stdout, re.IGNORECASE):
                self.logger.error('Plugin status is not running in %s'%(cfgm))
                return False
             self.logger.info('Vcenter plugin status on cfgm %s is %s' % (cfgm, status))
