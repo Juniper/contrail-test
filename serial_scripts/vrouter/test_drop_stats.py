@@ -17,7 +17,7 @@ class TestDropStats(BaseVrouterTest, BaseDropStats):
     def tearDownClass(cls):
         super(TestDropStats, cls).tearDownClass()
 
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_flow_action_drop_stats(self):
         """
