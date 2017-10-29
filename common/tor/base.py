@@ -368,7 +368,7 @@ class BaseTorTest(BaseNeutronTest):
         cmd = 'mkdir -p '+bms_fixture.namespace+';'
         cmd = cmd + 'cd '+bms_fixture.namespace + ';'
         cmd = cmd + 'echo '+bms_fixture.namespace+' >& index.html;'
-        cmd = cmd + 'nohup python -m SimpleHTTPServer '+str(listen_port) + ' &'
+        cmd = cmd + 'nohup python -m SimpleHTTPServer '+str(listen_port)+' > nohup.out 2> nohup.err < /dev/null &'
         cmd = '''bash -c "''' + cmd + '"'
-        bms_fixture.run_cmd(cmd)
-    
+        bms_fixture.run_cmd(cmd, pty=False)
+
