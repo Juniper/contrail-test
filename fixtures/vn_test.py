@@ -681,22 +681,21 @@ class VNFixture(fixtures.Fixture):
         self.pol_verification_flag = result
         return result
         try:
-            for ip in self.inputs.collector_ips:
-                self.policy_in_vn_uve = self.analytics_obj.get_vn_uve_attched_policy(
-                    ip, vn_fq_name=self.vn_fq_name)
-                self.logger.debug("Attached policy in vn %s uve %s" %
-                                 (self.vn_name, self.policy_in_vn_uve))
-                policy_list = []
-                for elem in self.policy_objs:
-                    policy = elem['policy']['fq_name']
-                    policy_name = str(policy[0]) + ':' + \
-                        (str(policy[1])) + ':' + (str(policy[2]))
-                    policy_list.append(policy_name)
-                for pol in policy_list:
-                    if pol in self.policy_in_vn_uve:
-                        result = result and True
-                    else:
-                        result = result and False
+            self.policy_in_vn_uve = self.analytics_obj.get_vn_uve_attched_policy(
+                self.inputs.collector_ip, vn_fq_name=self.vn_fq_name)
+            self.logger.debug("Attached policy in vn %s uve %s" %
+                             (self.vn_name, self.policy_in_vn_uve))
+            policy_list = []
+            for elem in self.policy_objs:
+                policy = elem['policy']['fq_name']
+                policy_name = str(policy[0]) + ':' + \
+                    (str(policy[1])) + ':' + (str(policy[2]))
+                policy_list.append(policy_name)
+            for pol in policy_list:
+                if pol in self.policy_in_vn_uve:
+                    result = result and True
+                else:
+                    result = result and False
         except Exception as e:
             self.logger.exception('Got exception as %s' % (e))
             result = result and False
@@ -711,15 +710,14 @@ class VNFixture(fixtures.Fixture):
         # multi-cfgm, skipping this verification
         self.pol_verification_flag = result
         return result
-        for ip in self.inputs.collector_ips:
-            self.policy_in_vn_uve = self.analytics_obj.get_vn_uve_attched_policy(
-                ip, vn_fq_name=self.vn_fq_name)
-            if self.policy_in_vn_uve:
-                self.logger.debug("Attached policy not deleted in vn %s uve" %
-                                 (self.vn_name))
-                result = result and False
-            else:
-                result = result and True
+        self.policy_in_vn_uve = self.analytics_obj.get_vn_uve_attched_policy(
+            self.inputs.collector_ip, vn_fq_name=self.vn_fq_name)
+        if self.policy_in_vn_uve:
+            self.logger.debug("Attached policy not deleted in vn %s uve" %
+                             (self.vn_name))
+            result = result and False
+        else:
+            result = result and True
         return result
 
     def get_policy_attached_to_vn(self):

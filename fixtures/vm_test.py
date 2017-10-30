@@ -147,7 +147,8 @@ class VMFixture(fixtures.Fixture):
         self.created = False
         self.refresh = False
         self._vmi_ids = {}
-
+        self.cfgm_ip = self.inputs.cfgm_ip
+        self.collector_ip = self.inputs.collector_ip
     # end __init__
 
     def read(self,refresh=False):
@@ -341,10 +342,9 @@ class VMFixture(fixtures.Fixture):
         return (ret, self.cs_vm_obj[cfgm_ip])
 
     def get_vm_objs(self):
-        for cfgm_ip in self.inputs.cfgm_ips:
-            vm_obj = self.get_vm_obj_from_api_server(cfgm_ip)[1]
-            if not vm_obj:
-                return None
+        vm_obj = self.get_vm_obj_from_api_server(self.cfgm_ip)[1]
+        if not vm_obj:
+            return None
         return self.cs_vm_obj
 
     @retry(delay=1, tries=5)
@@ -360,10 +360,9 @@ class VMFixture(fixtures.Fixture):
         return (ret, self.cs_vmi_objs[cfgm_ip])
 
     def get_vmi_objs(self, refresh=False):
-        for cfgm_ip in self.inputs.cfgm_ips:
-            vmi_obj = self.get_vmi_obj_from_api_server(cfgm_ip, refresh)[1]
-            if not vmi_obj:
-                return None
+        vmi_obj = self.get_vmi_obj_from_api_server(self.cfgm_ip, refresh)[1]
+        if not vmi_obj:
+            return None
         return self.cs_vmi_objs
 
     @retry(delay=1, tries=5)
@@ -379,10 +378,9 @@ class VMFixture(fixtures.Fixture):
         return (ret, self.cs_instance_ip_objs[cfgm_ip])
 
     def get_iip_objs(self, refresh=False):
-        for cfgm_ip in self.inputs.cfgm_ips:
-            iip_obj = self.get_iip_obj_from_api_server(cfgm_ip, refresh)[1]
-            if not iip_obj:
-                return None
+        iip_obj = self.get_iip_obj_from_api_server(self.cfgm_ip, refresh)[1]
+        if not iip_obj:
+            return None
         return self.cs_instance_ip_objs
 
     def get_vm_ip_dict(self, include_secondary_ip=False):
@@ -708,14 +706,13 @@ class VMFixture(fixtures.Fixture):
         self.get_vmi_objs(refresh=True)
         self.get_iip_objs(refresh=True)
 
-        for cfgm_ip in self.inputs.cfgm_ips:
-            self.logger.debug("Verifying in api server %s" % (cfgm_ip))
-            if not self.cs_instance_ip_objs[cfgm_ip]:
-                with self.printlock:
-                    self.logger.error('Instance IP of VM ID %s not seen in '
-                                      'API Server ' % (self.vm_id))
-                self.vm_in_api_flag = self.vm_in_api_flag and False
-                return False
+        self.logger.debug("Verifying in api server %s" % (self.cfgm_ip))
+        if not self.cs_instance_ip_objs[self.cfgm_ip]:
+            with self.printlock:
+                self.logger.error('Instance IP of VM ID %s not seen in '
+                                  'API Server ' % (self.vm_id))
+            self.vm_in_api_flag = self.vm_in_api_flag and False
+            return False
 
         for ips in self.get_vm_ip_dict().values():
             if len((set(ips).intersection(set(self.vm_ips)))) < 1:
@@ -745,30 +742,28 @@ class VMFixture(fixtures.Fixture):
     def verify_vm_not_in_api_server(self):
 
         self.verify_vm_not_in_api_server_flag = True
-        for ip in self.inputs.cfgm_ips:
-            self.logger.debug("Verifying in api server %s" % (ip))
-            api_inspect = self.api_s_inspects[ip]
-            if api_inspect.get_cs_vm(self.vm_id, refresh=True) is not None:
-                with self.printlock:
-                    self.logger.debug("VM ID %s of VM %s is still found in API Server"
-                                      % (self.vm_id, self.vm_name))
-                self.verify_vm_not_in_api_server_flag = self.verify_vm_not_in_api_server_flag and False
-                return False
-            if api_inspect.get_cs_vr_of_vm(self.vm_id, refresh=True) is not None:
-                with self.printlock:
-                    self.logger.debug('API-Server still seems to have VM reference '
-                                      'for VM %s' % (self.vm_name))
-                self.verify_vm_not_in_api_server_flag = self.verify_vm_not_in_api_server_flag and False
-                return False
-            if api_inspect.get_cs_vmi_of_vm(self.vm_id,
-                                            refresh=True):
-                with self.printlock:
-                    self.logger.debug("API-Server still has VMI info of VM %s"
-                                      % (self.vm_name))
-                self.verify_vm_not_in_api_server_flag = self.verify_vm_not_in_api_server_flag and False
-                return False
-            self.verify_vm_not_in_api_server_flag = self.verify_vm_not_in_api_server_flag and True
-        # end for
+        self.logger.debug("Verifying in api server %s" % (self.cfgm_ip))
+        api_inspect = self.api_s_inspects[self.cfgm_ip]
+        if api_inspect.get_cs_vm(self.vm_id, refresh=True) is not None:
+            with self.printlock:
+                self.logger.debug("VM ID %s of VM %s is still found in API Server"
+                                  % (self.vm_id, self.vm_name))
+            self.verify_vm_not_in_api_server_flag = self.verify_vm_not_in_api_server_flag and False
+            return False
+        if api_inspect.get_cs_vr_of_vm(self.vm_id, refresh=True) is not None:
+            with self.printlock:
+                self.logger.debug('API-Server still seems to have VM reference '
+                                  'for VM %s' % (self.vm_name))
+            self.verify_vm_not_in_api_server_flag = self.verify_vm_not_in_api_server_flag and False
+            return False
+        if api_inspect.get_cs_vmi_of_vm(self.vm_id,
+                                        refresh=True):
+            with self.printlock:
+                self.logger.debug("API-Server still has VMI info of VM %s"
+                                  % (self.vm_name))
+            self.verify_vm_not_in_api_server_flag = self.verify_vm_not_in_api_server_flag and False
+            return False
+        self.verify_vm_not_in_api_server_flag = self.verify_vm_not_in_api_server_flag and True
         with self.printlock:
             self.logger.info(
                 "VM %s is fully removed in API-Server " % (self.vm_name))
@@ -1727,51 +1722,48 @@ class VMFixture(fixtures.Fixture):
         self.logger.debug("Verifying the vm in opserver")
         result = True
         self.vm_in_op_flag = True
-        for ip in self.inputs.collector_ips:
-            self.logger.debug("Verifying in collector %s ..." % (ip))
-            self.ops_vm_obj = self.ops_inspect[ip].get_ops_vm(self.vm_id)
-            ops_intf_list = self.ops_vm_obj.get_attr('Agent', 'interface_list')
-            if not ops_intf_list:
-                self.logger.debug(
-                    'Failed to get VM %s, ID %s info from Opserver' %
-                    (self.vm_name, self.vm_id))
+        self.logger.debug("Verifying in collector %s ..." % (self.collector_ip))
+        self.ops_vm_obj = self.ops_inspect[self.collector_ip].get_ops_vm(self.vm_id)
+        ops_intf_list = self.ops_vm_obj.get_attr('Agent', 'interface_list')
+        if not ops_intf_list:
+            self.logger.debug(
+                'Failed to get VM %s, ID %s info from Opserver' %
+                (self.vm_name, self.vm_id))
+            self.vm_in_op_flag = self.vm_in_op_flag and False
+            return False
+        for vn_fq_name in self.vn_fq_names:
+            vm_in_pkts = None
+            vm_out_pkts = None
+            ops_index = self._get_ops_intf_index(ops_intf_list, vn_fq_name)
+            if ops_index is None:
+                self.logger.warn(
+                    'VN %s is not seen in opserver for VM %s' %
+                    (vn_fq_name, self.vm_id))
                 self.vm_in_op_flag = self.vm_in_op_flag and False
                 return False
-            for vn_fq_name in self.vn_fq_names:
-                vm_in_pkts = None
-                vm_out_pkts = None
-                ops_index = self._get_ops_intf_index(ops_intf_list, vn_fq_name)
-                if ops_index is None:
-                    self.logger.warn(
-                        'VN %s is not seen in opserver for VM %s' %
-                        (vn_fq_name, self.vm_id))
-                    self.vm_in_op_flag = self.vm_in_op_flag and False
+            ops_intf = ops_intf_list[ops_index]
+            for vm_ip in self.vm_ip_dict[vn_fq_name]:
+                try:
+                    if is_v6(vm_ip):
+                        ip_address = self.analytics_obj.get_vm_attr(
+                            ops_intf, 'ip6_address')
+                    else:
+                        ip_address = self.analytics_obj.get_vm_attr(
+                            ops_intf, 'ip_address')
+                except Exception as e:
+                    self.logger.debug('VM %s analytics data does not have IP '
+                        'address details' %(self.vm_name))
                     return False
-                ops_intf = ops_intf_list[ops_index]
-                for vm_ip in self.vm_ip_dict[vn_fq_name]:
-                    try:
-                        if is_v6(vm_ip):
-                            ip_address = self.analytics_obj.get_vm_attr(
-                                ops_intf, 'ip6_address')
-                        else:
-                            ip_address = self.analytics_obj.get_vm_attr(
-                                ops_intf, 'ip_address')
-                    except Exception as e:
-                        self.logger.debug('VM %s analytics data does not have IP '
-                            'address details' %(self.vm_name))
-                        return False
-
-                # end for vm_ip
-                if ip_address not in self.vm_ips:
-                    self.logger.warn(
-                        "Opserver doesnt list IP Address %s of vm %s"
-                        "Expected %s to be among the list %s" %(ip_address,
-                            self.vm_name, ip_address, self.vm_ips))
-                    self.vm_in_op_flag = self.vm_in_op_flag and False
-                    result = result and False
-            # end for vn_fq_name
-                self.ops_vm_obj = self.ops_inspect[ip].get_ops_vm(self.vm_id)
-        # end if
+            # end for vm_ip
+            if ip_address not in self.vm_ips:
+                self.logger.warn(
+                    "Opserver doesnt list IP Address %s of vm %s"
+                    "Expected %s to be among the list %s" %(ip_address,
+                        self.vm_name, ip_address, self.vm_ips))
+                self.vm_in_op_flag = self.vm_in_op_flag and False
+                result = result and False
+        # end for vn_fq_name
+        self.ops_vm_obj = self.ops_inspect[self.collector_ip].get_ops_vm(self.vm_id)
         self.logger.debug("Verifying vm in vn uve")
         for intf in ops_intf_list:
             # the code below fails in ci intermittently, due to intf not having
@@ -1801,12 +1793,12 @@ class VMFixture(fixtures.Fixture):
         # Verifying vm in vrouter-uve
         self.logger.debug("Verifying vm in vrouter uve")
         computes = []
-        for ip in self.inputs.collector_ips:
-            self.logger.debug("Getting info from collector %s.." % (ip))
-            agent_host = self.analytics_obj.get_ops_vm_uve_vm_host(
-                ip, self.vm_id)
-            if agent_host not in computes:
-                computes.append(agent_host)
+        self.logger.debug("Getting info from collector %s.." % (
+            self.collector_ip))
+        agent_host = self.analytics_obj.get_ops_vm_uve_vm_host(
+            self.collector_ip, self.vm_id)
+        if agent_host not in computes:
+            computes.append(agent_host)
         if (len(computes) > 1):
             self.logger.warn(
                 "Collectors doesnt have consistent info for vm uve")
@@ -2646,9 +2638,8 @@ class VMFixture(fixtures.Fixture):
         # Figure out the local metadata IP of the VM reachable from host
         inspect_h = self.agent_inspect[self.vm_node_ip]
 
-        cfgm_ip = self.inputs.cfgm_ips[0]
-        api_inspect = self.api_s_inspects[cfgm_ip]
-        vmi_objs = self.get_vmi_obj_from_api_server(cfgm_ip, refresh=True)[1]
+        api_inspect = self.api_s_inspects[self.cfgm_ip]
+        vmi_objs = self.get_vmi_obj_from_api_server(self.cfgm_ip, refresh=True)[1]
         for vmi_obj in vmi_objs:
             vmi_vn_fq_name = ':'.join(
                 vmi_obj['virtual-machine-interface']['virtual_network_refs'][0]['to'])
