@@ -229,6 +229,16 @@ class VNCApiInspect (VerificationUtilBase):
                 self.update_cache('vn', [domain, project, vn], p)
         return p
 
+    def get_cs_vn_list(self):
+        '''
+        method: list_cs_vn list all virtual networks
+        returns None if not found else list of virtual network dict
+        '''
+        vns = self.dict_get('virtual-networks')
+        vns = vns.get('virtual-networks', [])
+        return [x['uuid'] for x in vns]
+    # end get_cs_vn_list
+
     # TODO
     def get_cs_vn_policys(self, project='admin',  domain='default-domain', vn='default-virtual-network', refresh=False):
         '''
@@ -298,6 +308,11 @@ class VNCApiInspect (VerificationUtilBase):
         '''
 
     # end get_cs_fip_list
+
+    def get_cs_fip_pool_list(self):
+        fip_pools = self.dict_get('floating-ip-pools')
+        fip_pools = fip_pools.get('floating-ip-pools', [])
+        return [x['uuid'] for x in fip_pools]
 
     def get_cs_fip_pool(self, fip_pool_id):
         p = self.dict_get('floating-ip-pool/%s'%fip_pool_id)

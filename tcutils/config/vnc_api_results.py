@@ -445,6 +445,10 @@ class CsVNResult (Result):
     def global_access(self):
         return self.xpath('virtual-network', 'perms2', 'global_access')
 
+    @property
+    def virtual_network_properties(self):
+        return self.xpath('virtual-network', 'virtual_network_properties')
+
 class CsRtResult (Result):
 
     '''

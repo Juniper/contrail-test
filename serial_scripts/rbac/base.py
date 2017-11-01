@@ -2,6 +2,7 @@ from rbac_test import RbacFixture
 from vn_test import VNFixture
 from vm_test import VMFixture
 from port_fixture import PortFixture
+from security_group import SecurityGroupFixture
 from svc_template_fixture import SvcTemplateFixture
 from project_test import ProjectFixture
 from floating_ip import FloatingIPFixture
@@ -9,6 +10,7 @@ from lbaasv2_fixture import LBaasV2Fixture
 from common.servicechain.firewall.verify import VerifySvcFirewall
 from tcutils.util import get_random_name
 from cfgm_common.exceptions import PermissionDenied
+from vnc_api.vnc_api import VirtualNetworkType
 import test_v1
 import os
 
@@ -29,6 +31,12 @@ class BaseRbac(test_v1.BaseTestCase_v1):
             else:
                 cls.pass2 = cls.user2 = get_random_name(cls.__name__)
                 cls.admin_connections.auth.create_user(cls.user2, cls.pass2)
+            if os.getenv('RBAC_USER3') and os.getenv('RBAC_PASS3'):
+                cls.user3 = os.getenv('RBAC_USER3')
+                cls.pass3 = os.getenv('RBAC_PASS3')
+            else:
+                cls.pass3 = cls.user3 = get_random_name(cls.__name__)
+                cls.admin_connections.auth.create_user(cls.user3, cls.pass3)
             if os.getenv('RBAC_ROLE1'):
                 cls.role1 = os.getenv('RBAC_ROLE1')
             else:
@@ -39,6 +47,11 @@ class BaseRbac(test_v1.BaseTestCase_v1):
             else:
                 cls.role2 = get_random_name(cls.__name__)
                 cls.admin_connections.auth.create_role(cls.role2)
+            if os.getenv('RBAC_ROLE3'):
+                cls.role3 = os.getenv('RBAC_ROLE3')
+            else:
+                cls.role3 = get_random_name(cls.__name__)
+                cls.admin_connections.auth.create_role(cls.role3)
             cls.project_fixture = ProjectFixture(connections=cls.admin_connections,
                                                  project_name=cls.inputs.project_name,
                                                  domain_name=cls.inputs.domain_name)
@@ -66,15 +79,7 @@ class BaseRbac(test_v1.BaseTestCase_v1):
                               'rule_field': None,
                               'perms': [{'role': '*', 'crud': 'CRUD'}]
                              },
-                             {'rule_object': 'projects',
-                              'rule_field': None,
-                              'perms': [{'role': '*', 'crud': 'R'}]
-                             },
                              {'rule_object': 'project',
-                              'rule_field': None,
-                              'perms': [{'role': '*', 'crud': 'R'}]
-                             },
-                             {'rule_object': 'domains',
                               'rule_field': None,
                               'perms': [{'role': '*', 'crud': 'R'}]
                              },
@@ -82,7 +87,7 @@ class BaseRbac(test_v1.BaseTestCase_v1):
                               'rule_field': None,
                               'perms': [{'role': '*', 'crud': 'R'}]
                              },
-                             {'rule_object': 'routing-instances',
+                             {'rule_object': 'routing-instance',
                               'rule_field': None,
                               'perms': [{'role': '*', 'crud': 'R'}]
                              },
@@ -107,10 +112,14 @@ class BaseRbac(test_v1.BaseTestCase_v1):
             cls.admin_connections.auth.delete_user(cls.user1)
         if not os.getenv('RBAC_USER2'):
             cls.admin_connections.auth.delete_user(cls.user2)
+        if not os.getenv('RBAC_USER3'):
+            cls.admin_connections.auth.delete_user(cls.user3)
         if not os.getenv('RBAC_ROLE1'):
             cls.admin_connections.auth.delete_role(cls.role1)
         if not os.getenv('RBAC_ROLE2'):
             cls.admin_connections.auth.delete_role(cls.role2)
+        if not os.getenv('RBAC_ROLE3'):
+            cls.admin_connections.auth.delete_role(cls.role3)
         if getattr(cls, 'global_acl', None):
             cls.global_acl.delete_rules(cls.default_rules)
 
@@ -159,6 +168,19 @@ class BaseRbac(test_v1.BaseTestCase_v1):
         project_id = project.uuid
         vnc_h = connections.orch.vnc_h
         vnc_h.set_share_tenants(obj=obj, tenant=project_id, tenant_access=perms)
+
+    def set_owner(self, obj=None, project=None, connections=None):
+        connections = connections or self.connections
+        project_id = project.uuid
+        vnc_h = connections.orch.vnc_h
+        vnc_h.set_owner(obj=obj, tenant=project_id)
+
+    def delete_vn(self, vn_fix, connections=None):
+        connections = connections or self.connections
+        status = connections.orch.delete_vn(vn_fix.obj)
+        if status:
+            self.remove_from_cleanups(vn_fix)
+        return status
 
     def create_vn(self, connections=None, verify=True, option='contrail', **kwargs):
         connections = connections or self.connections
@@ -229,6 +251,30 @@ class BaseRbac(test_v1.BaseTestCase_v1):
             assert lbaas_fixture.verify_on_setup(), 'LB verification failed'
         return lbaas_fixture
 
+    def create_sg(self, connections=None, verify=True, option='orch', **kwargs):
+        connections = connections or self.connections
+        sg = self.create_fixture(SecurityGroupFixture,
+                                 connections=connections,
+                                 option=option, **kwargs)
+        if sg and verify:
+            assert sg.verify_on_setup()
+        rules = [
+                {'direction': '<>',
+                 'protocol': 'tcp',
+                 'src_addresses': [{'security_group': 'local'}],
+                 'src_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_ports': [{'start_port': 0, 'end_port': -1}],
+                 'dst_addresses': [{'security_group': 'local'}],
+                 }]
+        sg.create_sg_rule(sg.uuid, rules)
+        return sg
+
+    def associate_sg(self, sg_fixture, vm_fixture, verify=True):
+        vm_fixture.add_security_group(sg_fixture.uuid)
+        if verify:
+            result, msg = vm_fixture.verify_security_group(sg_fixture.uuid)
+            assert result, msg
+
     def create_fip_pool(self, vn_fixture, connections=None, verify=True):
         connections = connections or self.connections
         fip_pool = self.create_fixture(FloatingIPFixture,
@@ -238,19 +284,33 @@ class BaseRbac(test_v1.BaseTestCase_v1):
             assert fip_pool.verify_on_setup(), 'FIP Pool verification failed'
         return fip_pool
 
-    def create_fip(self, fip_pool, connections=None, vm_fixture=None):
+    def create_fip(self, fip_pool, connections=None, vm_fixture=None,
+                   pub_vn_fixture=None, option='contrail', verify=True):
         connections = connections or self.connections
         vnc_h = connections.orch.vnc_h
         vnc_lib_h = connections.vnc_lib_fixture
-        try:
-            (fip, fip_id) = vnc_h.create_floating_ip(
-                            pool_obj=fip_pool.fip_pool_obj,
-                            project_obj=vnc_lib_h.get_project_obj())
-            self.addCleanup(vnc_h.delete_floating_ip, fip_id)
-        except PermissionDenied:
-            return (None, None)
-        if vm_fixture:
-            vnc_h.assoc_floating_ip(fip_id=fip_id, vm_id=vm_fixture.uuid)
+        if option == 'contrail':
+            try:
+                project_obj = vnc_lib_h.get_project_obj()
+                (fip, fip_id) = vnc_h.create_floating_ip(
+                                pool_obj=fip_pool.fip_pool_obj,
+                                project_obj=project_obj,
+                                owner=project_obj.uuid)
+                self.addCleanup(vnc_h.delete_floating_ip, fip_id)
+                if vm_fixture:
+                    vnc_h.assoc_floating_ip(fip_id=fip_id, vm_id=vm_fixture.uuid)
+            except PermissionDenied:
+                return (None, None)
+        else:
+            try:
+                (fip, fip_id) = fip_pool.create_floatingip(fip_pool.get_vn_id())
+                self.addCleanup(fip_pool.disassoc_and_delete_fip, fip_id)
+                if vm_fixture:
+                    self.assoc_floatingip(fip_id=fip_id, vm_id=vm_fixture.uuid)
+            except PermissionDenied:
+                return (None, None)
+        if verify and vm_fixture and pub_vn_fixture:
+            assert fip_pool.verify_fip(fip_id, vm_fixture, pub_vn_fixture)
         return (fip, fip_id)
 
     def create_fixture(self, fixturecls, **kwargs):
@@ -284,19 +344,6 @@ class BaseRbac(test_v1.BaseTestCase_v1):
             self.logger.info('Permission Denied to read VN %s'%uuid)
         return obj
 
-    def update_vn(self, connections, uuid, prop_kv):
-        vnc_h = connections.orch.vnc_h
-        vn_obj = vnc_h.virtual_network_read(id=uuid)
-        for k,v in prop_kv.iteritems():
-            setattr(vn_obj, k, v)
-        try:
-            vnc_h.virtual_network_update(vn_obj)
-            self.logger.info('Updated VN %s'%uuid)
-            return True
-        except PermissionDenied:
-            self.logger.info('Permission Denied to update VN %s, kv %s'%(uuid, prop_kv))
-        return False
-
     def read_vmi(self, connections, uuid):
         try:
             obj = connections.api_server_inspect.get_cs_vmi_by_id(uuid, refresh=True)
@@ -318,6 +365,52 @@ class BaseRbac(test_v1.BaseTestCase_v1):
         else:
             self.logger.info('Permission Denied to read ST %s'%uuid)
         return obj
+
+    def update_vn(self, connections=None, uuid=None, prop_kv=None, obj=None):
+        vnc_h = connections.orch.vnc_h
+        if not obj:
+            obj = vnc_h.virtual_network_read(id=uuid)
+        for k,v in prop_kv.iteritems():
+            if '.' in k: #SubField Match
+                field = k.split('.')[0]
+                subfield = k.split('.')[1]
+                prop = eval('obj.get_'+field)() or VirtualNetworkType() #ToDo
+                setattr(prop, subfield, v)
+                eval('obj.set_'+field)(prop)
+            else:
+                setattr(obj, k, v)
+        try:
+            vnc_h.virtual_network_update(obj)
+            self.logger.info('Updated VN %s'%uuid)
+            return True
+        except PermissionDenied:
+            self.logger.info('Permission Denied to update VN %s, kv %s'%(uuid, prop_kv))
+        return False
+
+    def list_vn(self, connections=None, option='contrail'):
+        connections = connections or self.connections
+        vn_ids = list()
+        try:
+            if option == 'contrail':
+                vn_ids = connections.api_server_inspect.get_cs_vn_list()
+            else:
+                vns = connections.orch.list_networks()
+                for vn in vns or []:
+                    vn_ids.append(vn['id'])
+            self.logger.info('List VN %s'%vn_ids)
+        except PermissionDenied:
+            self.logger.info('Permission Denied to list VN')
+        return vn_ids
+
+    def list_fip_pool(self, connections=None):
+        connections = connections or self.connections
+        pool_ids = list()
+        try:
+            pool_ids = connections.api_server_inspect.get_cs_fip_pool_list()
+            self.logger.info('List FIP Pool %s'%pool_ids)
+        except PermissionDenied:
+            self.logger.info('Permission Denied to read FIP Pool')
+        return pool_ids
 
     def remove_from_cleanups(self, fixture):
         for cleanup in self._cleanups:

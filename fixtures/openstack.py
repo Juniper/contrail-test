@@ -249,7 +249,7 @@ class OpenstackOrchestrator(Orchestrator):
 
    def _create_rules_in_quantum(self, sg_id, secgrp_rules):
        ret = False
-       for rule in secgrp_rules:
+       for rule in secgrp_rules or []:
            remote_group_id=None;remote_ip_prefix=None
            ethertype = None
            if rule['protocol'] == 'any':

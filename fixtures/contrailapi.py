@@ -32,8 +32,12 @@ class ContrailVncApi(object):
         return fip_obj.get_floating_ip_address()
 
     def create_floating_ip(self, pool_obj, project_obj, **kwargs):
+        owner = kwargs.get('owner')
         fip_obj = FloatingIp(get_random_name('fip'), pool_obj)
         fip_obj.set_project(project_obj)
+        if owner:
+            project_id = owner.replace('-', '')
+            fip_obj.set_perms2(PermType2(owner=project_id, owner_access=7))
         self._vnc.floating_ip_create(fip_obj)
         fip_obj = self._vnc.floating_ip_read(fq_name=fip_obj.fq_name)
         return (fip_obj.get_floating_ip_address(), fip_obj.uuid)
@@ -494,6 +498,13 @@ class ContrailVncApi(object):
         perms2 = self.get_perms2(obj)
         share = ShareType(tenant=tenant, tenant_access=tenant_access)
         perms2.add_share(share)
+        self.set_perms2(perms2, obj)
+
+    def set_owner(self, tenant, obj=None, object_type=None, uuid=None):
+        if not obj:
+            obj = self._get_obj(object_type, uuid)
+        perms2 = self.get_perms2(obj)
+        perms2.set_owner(tenant)
         self.set_perms2(perms2, obj)
 
     def update_virtual_router_type(self,name,vrouter_type):

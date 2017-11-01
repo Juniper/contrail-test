@@ -58,18 +58,19 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
                  'dst_ports': [{'start_port': 0, 'end_port': -1}],
                  'dst_addresses': [{'security_group': 'local'}],
                  }]
-        secgrp_fixture = self.useFixture(SecurityGroupFixture(self.inputs,
-                                                              self.connections, self.inputs.domain_name, self.inputs.project_name,
-                                                              secgrp_name='vip_sg', secgrp_entries=rule,option='neutron'))
+        secgrp_fixture = self.useFixture(SecurityGroupFixture(
+            self.connections, self.inputs.domain_name, self.inputs.project_name,
+            secgrp_name='vip_sg', secgrp_entries=rule,option='neutron'))
         result, msg = secgrp_fixture.verify_on_setup()
         assert result, msg
         return secgrp_fixture
     # end create_sg
 
     def get_default_sg(self):
-        return SecurityGroupFixture(self.inputs,
-                                    self.connections, self.inputs.domain_name, self.inputs.project_name,
-                                    secgrp_name='default',option='neutron')
+        return SecurityGroupFixture(self.connections,
+                                    self.inputs.domain_name,
+                                    self.inputs.project_name,
+                                    secgrp_name='default', option='neutron')
 
     def create_lbaas(self, lb_name, network_id,
                         cleanup=True,

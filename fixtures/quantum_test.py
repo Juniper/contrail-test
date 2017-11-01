@@ -308,10 +308,10 @@ class QuantumHelper():
         return result
     # end delete_quota
 
-    def list_networks(self, args):
+    def list_networks(self, *args, **kwargs):
         try:
-            net_rsp = self.obj.list_networks(args)
-            return net_rsp
+            net_rsp = self.obj.list_networks(*args, **kwargs)
+            return net_rsp['networks']
         except CommonNetworkClientException as e:
             self.logger.debug("Exception while viewing Network list")
             return []

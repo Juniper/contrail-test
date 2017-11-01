@@ -16,7 +16,7 @@ from tcutils.util import get_random_name
 class SecurityGroupFixture(ContrailFixture):
 
     def __init__(
-        self, inputs, connections, domain_name=None, project_name=None, secgrp_name=None,
+        self, connections, domain_name=None, project_name=None, secgrp_name=None,
 	    uuid=None, secgrp_entries=None,option='orch'):
 	#option <'orch' or 'contrail'>
         self.connections = connections
@@ -69,6 +69,10 @@ class SecurityGroupFixture(ContrailFixture):
                                                  parent_fqname=self.project_fq_name,
                                                  sg_entries=self.secgrp_entries,
                                                  option=self.option)
+
+    @property
+    def uuid(self):
+        return self.get_uuid()
 
     def get_uuid(self):
         return self.secgrp_id
