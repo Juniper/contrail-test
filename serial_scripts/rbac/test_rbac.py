@@ -55,8 +55,63 @@ class TestRbac(BaseRbac):
         assert obj.is_shared, 'VN is not marked shared'
         assert obj.global_access() == 7
         assert self.read_vn(connections=u1_p2_conn, uuid=vn.uuid)
+        if self.rbac_for_analytics:
+            assert self.get_vn_from_analytics(u1_p1_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name in self.list_vn_from_analytics(u1_p1_conn)
+            assert self.get_vn_from_analytics(u1_p2_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name in self.list_vn_from_analytics(u1_p2_conn)
         vm = self.create_vm(connections=u1_p2_conn, vn_fixture=vn)
         assert vm, 'VM creation failed on shared VN'
+
+    @preposttest_wrapper
+    def test_perms2_share_basic(self):
+        '''
+        Test perms2 shared property of an object
+        steps:
+            1. Add user1 as role1 in project1 and project2
+            2. Create VN as admin in isloated tenant
+            3. Make the VN sharable with project1 (access: 7)
+            4. List VN with Project1 creds should display VN
+            5. List VN with Project2 creds shouldnt display VN
+            6. Share the VN with Project2 (access: 4)
+            7. user should be able to read VN but
+               not update the VN using Project2 creds
+            8. List VN with both Projects creds should display VN
+        '''
+        project1 = self.create_project()
+        project2 = self.create_project()
+        self.add_user_to_project(self.user1, self.role1, project1.project_name)
+        self.add_user_to_project(self.user1, self.role1, project2.project_name)
+        u1_p1_conn = self.get_connections(self.user1, self.pass1, project1)
+        u1_p2_conn = self.get_connections(self.user1, self.pass1, project2)
+        rules = [{'rule_object': '*',
+                  'rule_field': None,
+                  'perms': [{'role': self.role1, 'crud': 'CRUD'}]
+                }]
+        domain_rbac = self.create_rbac_acl(rules=rules, parent_type='domain')
+        vn = self.create_vn(option='quantum')
+        self.share_obj(obj=vn.api_vn_obj, project=project1)
+        vns = self.list_vn(u1_p1_conn)
+        assert vn.uuid in vns
+        vns = self.list_vn(u1_p2_conn)
+        assert vn.uuid not in vns
+        assert not self.read_vn(connections=u1_p2_conn, uuid=vn.uuid), "Able to read non-shared FIP Pool object"
+        if self.rbac_for_analytics:
+            assert self.get_vn_from_analytics(u1_p1_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name in self.list_vn_from_analytics(u1_p1_conn)
+            assert not self.get_vn_from_analytics(u1_p2_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name not in self.list_vn_from_analytics(u1_p2_conn)
+        self.share_obj(obj=vn.api_vn_obj, project=project2, perms=4)
+        assert self.read_vn(connections=u1_p2_conn, uuid=vn.uuid), "Unable to read non-shared FIP Pool object"
+        vns = self.list_vn(u1_p1_conn)
+        assert vn.uuid in vns
+        vns = self.list_vn(u1_p2_conn)
+        assert vn.uuid in vns
+        if self.rbac_for_analytics:
+            assert self.get_vn_from_analytics(u1_p1_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name in self.list_vn_from_analytics(u1_p1_conn)
+            assert self.get_vn_from_analytics(u1_p2_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name in self.list_vn_from_analytics(u1_p2_conn)
 
     @preposttest_wrapper
     def test_perms2_share(self):
@@ -176,6 +231,19 @@ class TestRbac(BaseRbac):
         assert self.read_vn(connections=user1_conn, uuid=user3_vn.uuid, option='quantum')
         assert self.read_vn(connections=user2_conn, uuid=user3_vn.uuid, option='quantum')
         assert self.read_vn(connections=user3_conn, uuid=user3_vn.uuid, option='quantum')
+        if self.rbac_for_analytics:
+            assert self.get_vn_from_analytics(user1_conn, user2_vn.vn_fq_name)
+            assert self.get_vn_from_analytics(user2_conn, user2_vn.vn_fq_name)
+            assert self.get_vn_from_analytics(user3_conn, user2_vn.vn_fq_name)
+            assert self.get_vn_from_analytics(user1_conn, user3_vn.vn_fq_name)
+            assert self.get_vn_from_analytics(user2_conn, user3_vn.vn_fq_name)
+            assert self.get_vn_from_analytics(user3_conn, user3_vn.vn_fq_name)
+            u1_vn_list = self.list_vn_from_analytics(user1_conn)
+            assert user2_vn.vn_fq_name in u1_vn_list and user3_vn.vn_fq_name in u1_vn_list
+            u2_vn_list = self.list_vn_from_analytics(user2_conn)
+            assert user2_vn.vn_fq_name in u2_vn_list and user3_vn.vn_fq_name in u2_vn_list
+            u3_vn_list = self.list_vn_from_analytics(user3_conn)
+            assert user2_vn.vn_fq_name in u3_vn_list and user3_vn.vn_fq_name in u3_vn_list
         assert self.update_vn(connections=user1_conn, uuid=user2_vn.uuid,
                prop_kv={'virtual_network_properties.allow_transit': True})
         assert self.update_vn(connections=user1_conn, uuid=user3_vn.uuid,
@@ -225,6 +293,11 @@ class TestRbac(BaseRbac):
         self._cleanups.insert(0, (self.global_acl.delete_rules, (), {'rules': rules}))
         assert self.read_vn(connections=user1_conn, uuid=vn.uuid)
         assert not self.read_vn(connections=user2_conn, uuid=vn.uuid)
+        if self.rbac_for_analytics:
+            assert self.get_vn_from_analytics(user1_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name in self.list_vn_from_analytics(user1_conn)
+            assert not self.get_vn_from_analytics(user2_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name not in self.list_vn_from_analytics(user2_conn)
         domain_rules = [{'rule_object': 'virtual-network',
                          'rule_field': None,
                          'perms': [{'role': self.role2, 'crud': 'CRUD'}]
@@ -232,6 +305,11 @@ class TestRbac(BaseRbac):
         domain_rbac = self.create_rbac_acl(rules=domain_rules, parent_type='domain')
         assert self.read_vn(connections=user2_conn, uuid=vn.uuid)
         assert not self.read_vn(connections=user1_conn, uuid=vn.uuid)
+        if self.rbac_for_analytics:
+            assert not self.get_vn_from_analytics(user1_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name not in self.list_vn_from_analytics(user1_conn)
+            assert self.get_vn_from_analytics(user2_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name in self.list_vn_from_analytics(user2_conn)
         proj_rules = [{'rule_object': 'virtual-network',
                        'rule_field': 'flood_unknown_unicast',
                        'perms': [{'role': 'admin', 'crud': 'CRUD'}]
@@ -384,9 +462,17 @@ class RbacMode(BaseRbac):
         vn = self.create_vn(connections=user1_conn, verify=False)
         assert vn, 'VN creation failed'
         assert self.read_vn(connections=user1_conn, uuid=vn.uuid)
+        if self.rbac_for_analytics:
+            assert self.get_vn_from_analytics(user1_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name in self.list_vn_from_analytics(user1_conn)
         self.set_aaa_mode('cloud-admin')
         assert not self.read_vn(connections=user1_conn, uuid=vn.uuid)
         assert self.read_vn(connections=self.connections, uuid=vn.uuid)
+        if self.rbac_for_analytics:
+            assert not self.get_vn_from_analytics(user1_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name not in self.list_vn_from_analytics(user1_conn)
+            assert self.get_vn_from_analytics(self.connections, vn.vn_fq_name)
+            assert vn.vn_fq_name in self.list_vn_from_analytics(self.connections)
         self.set_aaa_mode('rbac')
         rules = [{'rule_object': '*',
                   'rule_field': None,
@@ -395,6 +481,9 @@ class RbacMode(BaseRbac):
         self.global_acl.add_rules(rules=rules)
         self._cleanups.insert(0, (self.global_acl.delete_rules, (), {'rules': rules}))
         assert self.read_vn(connections=user1_conn, uuid=vn.uuid)
+        if self.rbac_for_analytics:
+            assert self.get_vn_from_analytics(user1_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name in self.list_vn_from_analytics(user1_conn)
         return True
 
 class RbacLbassv2(BaseRbac):
@@ -444,6 +533,7 @@ class TestRbac2(BaseRbac):
         '''
         vn = self.create_vn()
         vmi = self.create_vmi(vn_fixture=vn)
+        vmi_fq_name = vmi.vmi_obj.get_fq_name_str()
         self.add_user_to_project(self.user1, self.role1)
         self.add_user_to_project(self.user1, self.role2)
         user1_conn = self.get_connections(self.user1, self.pass1)
@@ -458,8 +548,35 @@ class TestRbac2(BaseRbac):
         domain_rbac = self.create_rbac_acl(rules=vn_rules, parent_type='domain')
         assert self.read_vn(connections=user1_conn, uuid=vn.uuid)
         assert not self.read_vmi(connections=user1_conn, uuid=vmi.uuid)
+        if self.rbac_for_analytics:
+            assert self.get_vn_from_analytics(user1_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name in self.list_vn_from_analytics(user1_conn)
+            assert not self.get_vmi_from_analytics(user1_conn, vmi_fq_name)
         domain_rbac.add_rules(rules=vmi_rules)
         domain_rbac.verify_on_setup()
         assert self.read_vn(connections=user1_conn, uuid=vn.uuid)
         assert self.read_vmi(connections=user1_conn, uuid=vmi.uuid)
+        if self.rbac_for_analytics:
+            assert self.get_vn_from_analytics(user1_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name in self.list_vn_from_analytics(user1_conn)
+            assert self.get_vmi_from_analytics(user1_conn, vmi_fq_name)
 
+class TestAnalyticsRbac(BaseRbac):
+    @preposttest_wrapper
+    def test_analytics_access(self):
+        '''
+        Check if tenant user is able to access global UVEs
+        steps:
+            1. Add user1 as role1 in current project
+            2. User1 shouldnt be able to access analytics-nodes UVEs
+            3. admin user should be able to access analytics-nodes UVEs
+        '''
+        self.add_user_to_project(self.user1, self.role1)
+        user1_conn = self.get_connections(self.user1, self.pass1)
+        rules = [{'rule_object': '*',
+                  'rule_field': None,
+                  'perms': [{'role': self.role1, 'crud': 'CRUD'}]
+                 }]
+        proj_rbac = self.create_rbac_acl(rules=rules)
+        assert self.list_analytics_nodes_from_analytics(self.connections)
+        assert not self.list_analytics_nodes_from_analytics(user1_conn)
