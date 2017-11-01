@@ -44,10 +44,12 @@ class HeatFixture(fixtures.Fixture):
 
     def setUp(self):
         super(HeatFixture, self).setUp()
-        self.heat_url = self.auth.get_endpoint('orchestration')
-        self.auth_token = self.auth.get_token()
+        sess = self.auth.get_auth_h().get_session(scope='project')
+        self.heat_url = sess.get_endpoint(auth=sess.auth,
+                                          service_type='orchestration',
+                                          interface='public')
         kwargs = {
-            'token': self.auth_token,
+            'token': sess.get_token(),
             'ca_file': self.cacert,
             'cert_file': self.certfile,
             'key_file': self.keyfile,
