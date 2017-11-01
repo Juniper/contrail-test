@@ -65,9 +65,15 @@ class TestRbac(BaseRbac):
         steps:
             1. Add user1 as role1 in project1 and project2
             2. Create VN and FIP-Pool as admin in isloated tenant
-            3. Make the FIP Pool sharable with project1
-            4. launch VM on project1 and associate FIP from FIP-Pool
-            5. fip create from associate FIP from FIP-Pool
+            3. Make the FIP Pool sharable with project1 (access: 7)
+            4. List fip-pool with Project1 creds should display FIP-Pool
+            5. List fip-pool with Project2 creds shouldnt display FIP-Pool
+            6. launch VM on project1 and associate FIP from FIP-Pool
+            7. create/associate FIP with Project2 should fail
+            8. Share the FIP pool with Project2 (access: 4)
+            9. user should only be able to read fip-pool but
+               not create/associate fip using Project2 creds
+            10. List fip-pool with both Projects creds should display FIP-Pool
         '''
         project1 = self.create_project()
         project2 = self.create_project()
@@ -83,14 +89,25 @@ class TestRbac(BaseRbac):
         vn = self.create_vn()
         fip_pool = self.create_fip_pool(vn_fixture=vn)
         self.share_obj(obj=fip_pool.fip_pool_obj, project=project1)
+        fip_pools = self.list_fip_pool(u1_p1_conn)
+        assert fip_pool.fip_pool_id in fip_pools
+        fip_pools = self.list_fip_pool(u1_p2_conn)
+        assert fip_pool.fip_pool_id not in fip_pools
         vm1 = self.create_vm(connections=u1_p1_conn, vn_fixture=vn)
         vm2 = self.create_vm(connections=u1_p2_conn, vn_fixture=vn)
-        (fip, fip_id) = self.create_fip(connections=u1_p1_conn, fip_pool=fip_pool, vm_fixture=vm1)
+        (fip, fip_id) = self.create_fip(connections=u1_p1_conn, fip_pool=fip_pool, vm_fixture=vm1, pub_vn_fixture=vn)
         assert fip and fip_id, "FIP creation failed"
-        (fip, fip_id) = self.create_fip(connections=u1_p2_conn, fip_pool=fip_pool, vm_fixture=vm2)
+        (fip, fip_id) = self.create_fip(connections=u1_p2_conn, fip_pool=fip_pool, vm_fixture=vm2, pub_vn_fixture=vn)
         assert not fip or not fip_id, "FIP creation should have failed"
+        assert not self.read_fip_pool(connections=u1_p2_conn, uuid=fip_pool.fip_pool_id), "Able to read non-shared FIP Pool object"
         self.share_obj(obj=fip_pool.fip_pool_obj, project=project2, perms=4)
         assert self.read_fip_pool(connections=u1_p2_conn, uuid=fip_pool.fip_pool_id), "Unable to read shared FIP Pool object"
+        (fip, fip_id) = self.create_fip(connections=u1_p2_conn, fip_pool=fip_pool, vm_fixture=vm2, pub_vn_fixture=vn)
+        assert not fip or not fip_id, "FIP creation should have failed"
+        fip_pools = self.list_fip_pool(u1_p1_conn)
+        assert fip_pool.fip_pool_id in fip_pools
+        fip_pools = self.list_fip_pool(u1_p2_conn)
+        assert fip_pool.fip_pool_id in fip_pools
 
     @preposttest_wrapper
     def test_delete_default_acl(self):
@@ -109,15 +126,91 @@ class TestRbac(BaseRbac):
         assert not self.global_acl.created, "Global ACL didnt get auto created upon restart"
 
     @preposttest_wrapper
+    def test_rules_aggregation(self):
+        '''
+        Validate aggregation of rules against object type
+        steps:
+            1. Add user1 as role1 and user2 as role2 and user3 as role3
+            2. add VN.* R perms for R1 and R2 in global acl
+            3. add VN.* U perms for R1 and C perms for R2 in domain acl
+            4. add VN.* D perms for R2 and CRUD for R3 in project acl
+            5. Validate that user1 can RU the VN object,
+               user2 can CRD the VN object and R3 can CRUD the VN object
+        '''
+        self.add_user_to_project(self.user1, self.role1)
+        self.add_user_to_project(self.user2, self.role2)
+        self.add_user_to_project(self.user3, self.role3)
+        user1_conn = self.get_connections(self.user1, self.pass1)
+        user2_conn = self.get_connections(self.user2, self.pass2)
+        user3_conn = self.get_connections(self.user3, self.pass3)
+        rules = [{'rule_object': 'floating-ip-pool',
+                  'rule_field': None,
+                  'perms': [{'role': '*', 'crud': 'R'}]
+                 }, {'rule_object': 'virtual-network',
+                  'rule_field': None,
+                  'perms': [{'role': self.role1, 'crud': 'R'},
+                            {'role': self.role2, 'crud': 'R'}]
+                 }]
+        self.global_acl.add_rules(rules=rules)
+        self._cleanups.insert(0, (self.global_acl.delete_rules, (), {'rules': rules}))
+        rules = [{'rule_object': 'virtual-network',
+                  'rule_field': None,
+                  'perms': [{'role': self.role1, 'crud': 'U'},
+                            {'role': self.role2, 'crud': 'C'}]
+                 }]
+        domain_rbac = self.create_rbac_acl(rules=rules, parent_type='domain')
+        rules = [{'rule_object': 'virtual-network',
+                  'rule_field': None,
+                  'perms': [{'role': self.role2, 'crud': 'D'},
+                            {'role': self.role3, 'crud': 'CRUD'}]
+                 }]
+        proj_rbac = self.create_rbac_acl(rules=rules)
+        assert not self.create_vn(connections=user1_conn, option='quantum', verify=False)
+        user2_vn = self.create_vn(connections=user2_conn, option='quantum')
+        assert user2_vn, 'User with CRD perms is not able to create vn'
+        user3_vn = self.create_vn(connections=user3_conn, option='quantum')
+        assert user3_vn, 'User with CRUD perms is not able to create vn'
+        assert self.read_vn(connections=user1_conn, uuid=user2_vn.uuid, option='quantum')
+        assert self.read_vn(connections=user2_conn, uuid=user2_vn.uuid, option='quantum')
+        assert self.read_vn(connections=user3_conn, uuid=user2_vn.uuid, option='quantum')
+        assert self.read_vn(connections=user1_conn, uuid=user3_vn.uuid, option='quantum')
+        assert self.read_vn(connections=user2_conn, uuid=user3_vn.uuid, option='quantum')
+        assert self.read_vn(connections=user3_conn, uuid=user3_vn.uuid, option='quantum')
+        assert self.update_vn(connections=user1_conn, uuid=user2_vn.uuid,
+               prop_kv={'virtual_network_properties.allow_transit': True})
+        assert self.update_vn(connections=user1_conn, uuid=user3_vn.uuid,
+                                  prop_kv={'flood_unknown_unicast': True})
+        assert not self.update_vn(connections=user2_conn, uuid=user2_vn.uuid,
+               prop_kv={'virtual_network_properties.allow_transit': False})
+        assert not self.update_vn(connections=user2_conn, uuid=user3_vn.uuid,
+                                  prop_kv={'flood_unknown_unicast': False})
+        assert self.update_vn(connections=user3_conn, uuid=user2_vn.uuid,
+               prop_kv={'virtual_network_properties.allow_transit': False})
+        assert self.update_vn(connections=user3_conn, uuid=user3_vn.uuid,
+                                  prop_kv={'flood_unknown_unicast': False})
+        assert not self.delete_vn(user2_vn, connections=user1_conn)
+
+    @preposttest_wrapper
     def test_rbac_rules_hierarchy(self):
         '''
         Validate rules hierarchy and longest acl rule match
         steps:
-            1. Create global rule '*.* role1:R'
-            2. Create domain rule 'VirtualNetwork.* role2:R'
-            3. Create project rule 'VirtualNetwork.flood_unknown_unicast admin:CRUD'
-            4. Add user1 as role1 and user2 as role2
-            5. ToDo: Not sure about the expected results
+            1. Add user1 as role1 and user2 as role2
+            2. Create VN as admin in isloated tenant
+            3. Create global rule '*.* role1:CRUD'
+            4. user1 should be able to read VN and user2 shouldnt be
+            5. Create domain rule 'VirtualNetwork.* role2:CRUD'
+            6. user1 should not be able to read VN and user2 should be
+            7. Create project rules
+               'VirtualNetwork.flood_unknown_unicast admin:CRUD',
+               'VirtualNetwork.* role1:R',
+               'VirtualNetwork.virtual_network_properties.forwarding_mode role2:CRUD',
+               'VirtualNetwork.port_security_enabled *:CRUD'
+            8. user2 shouldnt be able to update flood unknown unicast field
+               howerver should be able to update port_security_enabled, allow_transit and forwarding mode
+            9. user1 shouldnt be able to update allow_transit subfield
+               howerver should be able to update port_security_enabled
+            9. admin should be able to update all the fileds
         '''
         self.add_user_to_project(self.user1, self.role1)
         self.add_user_to_project(self.user2, self.role2)
@@ -142,13 +235,126 @@ class TestRbac(BaseRbac):
         proj_rules = [{'rule_object': 'virtual-network',
                        'rule_field': 'flood_unknown_unicast',
                        'perms': [{'role': 'admin', 'crud': 'CRUD'}]
+                      },
+                      {'rule_object': 'virtual-network',
+                       'rule_field': '*',
+                       'perms': [{'role': self.role1, 'crud': 'R'}]
+                      },
+                      {'rule_object': 'virtual-network',
+                       'rule_field': 'VirtualNetwork.virtual_network_properties.forwarding_mode',
+                       'perms': [{'role': self.role2, 'crud': 'CRUD'}]
+                      },
+                      {'rule_object': 'virtual-network',
+                       'rule_field': 'port_security_enabled',
+                       'perms': [{'role': '*', 'crud': 'CRUD'}]
                       }]
         project_rbac = self.create_rbac_acl(rules=proj_rules)
+        #WA to create VN properties before hand since an update
+        #of prop for first time creates other subfields too
+        assert self.update_vn(connections=self.connections, uuid=vn.uuid,
+               prop_kv={'virtual_network_properties.allow_transit': True})
         assert not self.update_vn(connections=user2_conn, uuid=vn.uuid,
                                   prop_kv={'flood_unknown_unicast': True})
+        assert self.update_vn(connections=user2_conn, uuid=vn.uuid,
+                              prop_kv={'port_security_enabled': True})
+        assert self.update_vn(connections=user2_conn, uuid=vn.uuid,
+               prop_kv={'virtual_network_properties.forwarding_mode': 'l3'})
+        assert self.update_vn(connections=user2_conn, uuid=vn.uuid,
+               prop_kv={'virtual_network_properties.allow_transit': False})
+        assert not self.update_vn(connections=user1_conn, uuid=vn.uuid,
+               prop_kv={'virtual_network_properties.allow_transit': True})
+        assert self.update_vn(connections=user1_conn, uuid=vn.uuid,
+                              prop_kv={'port_security_enabled': False})
         assert self.update_vn(connections=self.connections, uuid=vn.uuid,
                               prop_kv={'flood_unknown_unicast': True})
+        assert self.update_vn(connections=self.connections, uuid=vn.uuid,
+                              prop_kv={'port_security_enabled': True})
+        assert self.update_vn(connections=self.connections, uuid=vn.uuid,
+               prop_kv={'virtual_network_properties.forwarding_mode': 'l2_l3'})
 
+    def test_subfield_match(self):
+        '''
+        Validate rules hierarchy and longest acl rule match
+        steps:
+            1. Add user1 as role1 and user2 as role2
+            2. Create VN as admin in isloated tenant
+            3. Create project rule 'VirtualNetwork.virtual_network_properties *:CRUD',
+                                   'VirtualNetwork.virtual_network_properties.allow_transit role1:CRUD'
+                                   'VirtualNetwork.virtual_network_properties.forwarding_mode role2:CRUD'
+                                   'VirtualNetwork.virtual_network_properties.rpf admin:CRUD'
+                                   'VirtualNetwork.* *:R'
+            4. user1 should be able to update allow_transit and vxlan_network_identifier
+               but not forwarding_mode and rpf subfields
+            5. user2 should be able to update forwarding_mode and vxlan_network_identifier
+               but not allow_transit and rpf subfields
+            6. admin should be able to update all the fileds
+        '''
+        self.add_user_to_project(self.user1, self.role1)
+        self.add_user_to_project(self.user2, self.role2)
+        user1_conn = self.get_connections(self.user1, self.pass1)
+        user2_conn = self.get_connections(self.user2, self.pass2)
+        vn = self.create_vn()
+        proj_rules = [{'rule_object': 'virtual-network',
+                       'rule_field': '*',
+                       'perms': [{'role': '*', 'crud': 'R'}]
+                      },
+                      {'rule_object': 'virtual-network',
+                       'rule_field': 'virtual_network_properties',
+                       'perms': [{'role': '*', 'crud': 'CRUD'}]
+                      },
+                      {'rule_object': 'virtual-network',
+                       'rule_field': 'virtual_network_properties.allow_transit',
+                       'perms': [{'role': self.role1, 'crud': 'CRUD'}]
+                      },
+                      {'rule_object': 'virtual-network',
+                       'rule_field': 'virtual_network_properties.forwarding_mode',
+                       'perms': [{'role': self.role2, 'crud': 'CRUD'}]
+                      },
+                      {'rule_object': 'virtual-network',
+                       'rule_field': 'virtual_network_properties.rpf',
+                       'perms': [{'role': 'admin', 'crud': 'CRUD'}]
+                      }]
+        project_rbac = self.create_rbac_acl(rules=proj_rules)
+        #WA to create VN properties before hand since an update
+        #of prop for first time creates other subfields too
+        assert self.update_vn(connections=self.connections, uuid=vn.uuid,
+               prop_kv={'virtual_network_properties.rpf': 'enable'})
+        assert self.update_vn(connections=user1_conn, uuid=vn.uuid,
+               prop_kv={'virtual_network_properties.allow_transit': True})
+        assert self.update_vn(connections=user1_conn, uuid=vn.uuid,
+               prop_kv={'virtual_network_properties.vxlan_network_identifier': 1111})
+        assert not self.update_vn(connections=user1_conn, uuid=vn.uuid,
+               prop_kv={'virtual_network_properties.forwarding_mode': 'l3'})
+        assert not self.update_vn(connections=user1_conn, uuid=vn.uuid,
+               prop_kv={'virtual_network_properties.rpf': 'disable'})
+        obj = self.read_vn(connections=user1_conn, uuid=vn.uuid)
+        prop = obj.virtual_network_properties
+        assert prop['allow_transit'] is True and prop['vxlan_network_identifier'] == 1111
+        assert prop['forwarding_mode'] != 'l3' and prop['rpf'] != 'disable'
+        assert not self.update_vn(connections=user2_conn, uuid=vn.uuid,
+               prop_kv={'virtual_network_properties.allow_transit': False})
+        assert self.update_vn(connections=user2_conn, uuid=vn.uuid,
+               prop_kv={'virtual_network_properties.vxlan_network_identifier': 2222})
+        assert self.update_vn(connections=user2_conn, uuid=vn.uuid,
+               prop_kv={'virtual_network_properties.forwarding_mode': 'l3'})
+        assert not self.update_vn(connections=user2_conn, uuid=vn.uuid,
+               prop_kv={'virtual_network_properties.rpf': 'disable'})
+        obj = self.read_vn(connections=user2_conn, uuid=vn.uuid)
+        prop = obj.virtual_network_properties
+        assert prop['allow_transit'] is True and prop['vxlan_network_identifier'] == 2222
+        assert prop['forwarding_mode'] == 'l3' and prop['rpf'] != 'disable'
+        assert self.update_vn(connections=self.connections, uuid=vn.uuid,
+               prop_kv={'virtual_network_properties.allow_transit': False})
+        assert self.update_vn(connections=self.connections, uuid=vn.uuid,
+               prop_kv={'virtual_network_properties.vxlan_network_identifier': 9999})
+        assert self.update_vn(connections=self.connections, uuid=vn.uuid,
+               prop_kv={'virtual_network_properties.forwarding_mode': 'l2_l3'})
+        assert self.update_vn(connections=self.connections, uuid=vn.uuid,
+               prop_kv={'virtual_network_properties.rpf': 'disable'})
+        obj = self.read_vn(uuid=vn.uuid)
+        prop = obj.virtual_network_properties
+        assert prop['allow_transit'] is False and prop['vxlan_network_identifier'] == 9999
+        assert prop['forwarding_mode'] == 'l2_l3' and prop['rpf'] == 'disable'
 
 class RbacMode(BaseRbac):
     @classmethod
