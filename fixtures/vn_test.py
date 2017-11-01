@@ -380,6 +380,10 @@ class VNFixture(fixtures.Fixture):
                     network, prefix = net['cidr'].split('/')
                     ipam_sn = IpamSubnetType(
                         subnet=SubnetType(network, int(prefix)))
+                    pools = []
+                    for pool in net.get('allocation_pools') or []:
+                        pools.append(AllocationPoolType(start=pool['start'], end=pool['end']))
+                    ipam_sn.set_allocation_pools(pools)
                     if self.dhcp_option_list:
                        ipam_sn.set_dhcp_option_list(DhcpOptionsListType(params_dict=self.dhcp_option_list))
                     if not self.enable_dhcp:
@@ -467,11 +471,12 @@ class VNFixture(fixtures.Fixture):
             self.vn_subnet_objs = self.quantum_h.get_subnets_of_vn(self.uuid)
     # end setUp
 
-    def create_subnet(self, vn_subnet, ipam_fq_name):
+    def create_subnet(self, vn_subnet, ipam_fq_name=None):
         if isinstance(self.orchestrator,VcenterOrchestrator) :
             raise Exception('vcenter: subnets not supported')
         self.quantum_h.create_subnet(vn_subnet, self.uuid, ipam_fq_name)
-        self.vn_subnets.append([{'cidr': vn_subnet}])
+        self.vn_subnets.append(vn_subnet)
+        self.vn_subnet_objs = self.get_subnets()
 
     def create_subnet_af(self, af, ipam_fq_name):
         if 'v4' in af or 'dual' in af:
@@ -600,8 +605,9 @@ class VNFixture(fixtures.Fixture):
             self.api_verification_flag = self.api_verification_flag and False
             return False
 
-        subnets = self.api_s_vn_obj[
-            'virtual-network']['network_ipam_refs'][0]['attr']['ipam_subnets']
+        subnets = list()
+        for ipam in self.api_s_vn_obj['virtual-network']['network_ipam_refs']:
+            subnets.extend(ipam['attr']['ipam_subnets'])
         for vn_subnet in self.vn_subnets:
             subnet_found = False
             vn_subnet_cidr = str(IPNetwork(vn_subnet['cidr']).ip)
