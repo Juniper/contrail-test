@@ -2320,7 +2320,7 @@ class VerifyEvpnCases():
             cmd1 = 'tcpdump -ni %s -U udp port 6635 and \'((ether[100:4]==0x5a5a5a5a) or (ether[120:4]==0x42314231))\' -w %s -s 0' % (
                 comp_intf, pcap1)
             cmd_udp = "nohup " + cmd1 + " >& /dev/null < /dev/null &"
-            cmd2 = 'tcpdump -ni %s -U proto 47 and \'((ether[100:4]==0x5a5a5a5a) or (ether[120:4]==0x42314231))\'-w %s -s 0' % (comp_intf, pcap2)
+            cmd2 = 'tcpdump -ni %s -U proto 47 and \'((ether[100:4]==0x5a5a5a5a) or (ether[120:4]==0x42314231))\' -w %s -s 0' % (comp_intf, pcap2)
             cmd_gre = "nohup " + cmd2 + " >& /dev/null < /dev/null &"
             cmd3 = 'tcpdump -ni %s -U dst port 4789 and \'((ether[100:4]==0x5a5a5a5a) or (ether[120:4]==0x42314231))\' -w %s -s 0' % (
                 comp_intf, pcap3)
