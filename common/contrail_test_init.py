@@ -1094,7 +1094,6 @@ class ContrailTestInit(object):
         # address_family = read_config_option(self.config,
         #                      'Basic', 'AddressFamily', 'dual')
         self.address_family = 'v4'
-        self.use_admin_auth = False
     # end __init__
 
     def is_ci_setup(self):
@@ -1270,6 +1269,12 @@ class ContrailTestInit(object):
         else:
             return False
     # end confirm_service_active
+
+    def get_analytics_aaa_mode(self, host=None):
+        host = host or self.collector_ip
+        cmd = 'openstack-config --get /etc/contrail/contrail-analytics-api.conf DEFAULTS aaa_mode'
+        aaa_mode = self.run_cmd_on_server(host, cmd, container='analytics')
+        return aaa_mode or 'cloud-admin'
 
     def get_contrail_services(self, role=None, service_name=None):
         ''' get contrail services of a role or 

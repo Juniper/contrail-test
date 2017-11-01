@@ -56,6 +56,9 @@ class TestRbacBasic(BaseRbac):
         assert st, 'ST creation failed'
         assert not self.read_vn(connections=user2_conn, uuid=vn.uuid)
         assert not self.read_st(connections=user2_conn, uuid=st.uuid)
+        if self.rbac_for_analytics:
+            assert not self.get_vn_from_analytics(user2_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name not in self.list_vn_from_analytics(user2_conn)
         vn2_rules = [{'rule_object': 'virtual-network',
                       'rule_field': None,
                       'perms': [{'role': self.role2, 'crud': 'R'}]
@@ -66,6 +69,9 @@ class TestRbacBasic(BaseRbac):
         assert self.read_vn(connections=user2_conn, uuid=vn.uuid)
         assert not self.create_vn(connections=user2_conn)
         assert not self.read_st(connections=user2_conn, uuid=st.uuid)
+        if self.rbac_for_analytics:
+            assert self.get_vn_from_analytics(user2_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name in self.list_vn_from_analytics(user2_conn)
         st2_rules = [{'rule_object': 'service-template',
                       'rule_field': None,
                       'perms': [{'role': self.role2, 'crud': 'R'}]
@@ -81,18 +87,30 @@ class TestRbacBasic(BaseRbac):
         domain_rbac.verify_on_setup()
         assert not self.read_vn(connections=user2_conn, uuid=vn.uuid)
         assert not self.read_st(connections=user2_conn, uuid=st.uuid)
+        if self.rbac_for_analytics:
+            assert not self.get_vn_from_analytics(user2_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name not in self.list_vn_from_analytics(user2_conn)
         self.global_acl.add_rules(rules=vn2_rules+st2_rules)
         self._cleanups.insert(0, (self.global_acl.delete_rules, (), {'rules': vn2_rules+st2_rules}))
         assert self.read_st(connections=user2_conn, uuid=st.uuid)
         assert self.read_vn(connections=user2_conn, uuid=vn.uuid)
+        if self.rbac_for_analytics:
+            assert self.get_vn_from_analytics(user2_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name in self.list_vn_from_analytics(user2_conn)
         proj_rbac.cleanUp(); self.remove_from_cleanups(proj_rbac)
         domain_rbac.cleanUp(); self.remove_from_cleanups(domain_rbac)
         assert not self.read_vn(connections=user1_conn, uuid=vn.uuid)
         assert not self.read_st(connections=user1_conn, uuid=st.uuid)
+        if self.rbac_for_analytics:
+            assert not self.get_vn_from_analytics(user1_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name not in self.list_vn_from_analytics(user1_conn)
         self.global_acl.add_rules(rules=vn_rules+st_rules)
         self._cleanups.insert(0, (self.global_acl.delete_rules, (), {'rules': vn_rules+st_rules}))
         assert self.read_vn(connections=user1_conn, uuid=vn.uuid)
         assert self.read_st(connections=user1_conn, uuid=st.uuid)
+        if self.rbac_for_analytics:
+            assert self.get_vn_from_analytics(user1_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name in self.list_vn_from_analytics(user1_conn)
         return True
 
     @test.attr(type=['sanity', 'suite1'])
@@ -167,6 +185,9 @@ class TestRbacBasic(BaseRbac):
         (fip, fip_id) = self.create_fip(connections=user1_conn,
                         fip_pool=fip_pool, vm_fixture=vm, pub_vn_fixture=pub_vn)
         assert fip and fip_id, "fip creation failed"
+        if self.rbac_for_analytics:
+            assert self.get_vn_from_analytics(user1_conn, vn.vn_fq_name)
+            assert vn.vn_fq_name in self.list_vn_from_analytics(user1_conn)
         self.associate_sg(sg, vm)
 
     @test.attr(type=['sanity', 'suite1'])
@@ -211,6 +232,16 @@ class TestRbacBasic(BaseRbac):
         assert (vn.uuid in vns) and (not vn2.uuid in vns)
         vns = self.list_vn(connections=u1_p2_conn)
         assert (vn2.uuid in vns) and (not vn.uuid in vns)
+        if self.rbac_for_analytics:
+            assert self.get_vn_from_analytics(u1_p1_conn, vn.vn_fq_name)
+            assert not self.get_vn_from_analytics(u1_p2_conn, vn.vn_fq_name)
+            assert self.get_vn_from_analytics(self.connections, vn.vn_fq_name)
+            vns = self.list_vn_from_analytics(u1_p1_conn)
+            assert vn.vn_fq_name in vns and vn2.vn_fq_name not in vns
+            vns = self.list_vn_from_analytics(u1_p2_conn)
+            assert vn.vn_fq_name not in vns and vn2.vn_fq_name in vns
+            vns = self.list_vn_from_analytics(self.connections)
+            assert vn.vn_fq_name in vns and vn2.vn_fq_name in vns
         self.set_owner(vn.api_vn_obj, project2)
         self._cleanups.append((self.set_owner, (vn.api_vn_obj, project1), {}))
         vns = self.list_vn(connections=u1_p1_conn)
@@ -219,3 +250,13 @@ class TestRbacBasic(BaseRbac):
         assert (vn2.uuid in vns) and (vn.uuid in vns)
         vns = self.list_vn()
         assert (vn2.uuid in vns) and (vn.uuid in vns)
+        if self.rbac_for_analytics:
+            assert not self.get_vn_from_analytics(u1_p1_conn, vn.vn_fq_name)
+            assert self.get_vn_from_analytics(u1_p2_conn, vn.vn_fq_name)
+            assert self.get_vn_from_analytics(self.connections, vn.vn_fq_name)
+            vns = self.list_vn_from_analytics(u1_p1_conn)
+            assert vn.vn_fq_name not in vns and vn2.vn_fq_name not in vns
+            vns = self.list_vn_from_analytics(u1_p2_conn)
+            assert vn.vn_fq_name in vns and vn2.vn_fq_name in vns
+            vns = self.list_vn_from_analytics(self.connections)
+            assert vn.vn_fq_name in vns and vn2.vn_fq_name in vns
