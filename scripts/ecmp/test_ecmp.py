@@ -241,7 +241,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             dest_vm_fixture=self.right_vm_fixture, mode='scp', size='202', expectation=False), errmsg2
     # end test_ecmp_in_pol_based_svc_pol_update
 
-    @test.attr(type=['cb_sanity', 'sanity', 'vcenter'])
+    @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     @skip_because(min_nodes=3)
     def test_ecmp_svc_v2_in_network_nat_with_3_instance(self):
@@ -835,7 +835,7 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
         super(TestMultiInlineSVC, cls).tearDownClass()
     # end tearDownClass
 
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     @skip_because(min_nodes=3)
     def test_three_stage_v2_SC(self):
@@ -993,7 +993,6 @@ class TestECMPFeatureIPv6(TestECMPFeature):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
 
-    @test.attr(type=['vcenter'])
     @preposttest_wrapper
     def test_ecmp_svc_v2_in_network_nat_with_3_instance(self):
         super(TestECMPFeatureIPv6,self).test_ecmp_svc_v2_in_network_nat_with_3_instance()
@@ -1026,7 +1025,6 @@ class TestMultiInlineSVCIPv6(TestMultiInlineSVC):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
 
-    @test.attr(type=['vcenter'])
     @preposttest_wrapper
     def test_three_stage_v2_SC(self):
         super(TestMultiInlineSVCIPv6,self).test_three_stage_v2_SC()
