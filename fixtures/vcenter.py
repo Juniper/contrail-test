@@ -355,8 +355,8 @@ class VcenterOrchestrator(Orchestrator):
             vm = VcenterVM.create_in_vcenter(self, vm_name, tmpl, nets, tgthost)
             objs.append(vm)
             sg_ids = kwargs.get('sg_ids', [])
-            for sg_id in sg_ids:
-                 self.add_security_group(vm_id=vm.id, sg_id=sg_id)
+            if sg_ids:
+                self.set_security_group(vm_id=vm.id, sg_ids=sg_ids)
         return objs
 
     def delete_vm(self, vm, **kwargs):

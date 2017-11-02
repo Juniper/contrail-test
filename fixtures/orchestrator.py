@@ -164,6 +164,9 @@ class Orchestrator:
    def add_security_group(self, vm_id, sg_id, **kwargs):
        return self.vnc_h.add_security_group(vm_id, sg_id, **kwargs)
 
+   def set_security_group(self, vm_id, sg_ids, **kwargs):
+       return self.vnc_h.set_security_group(vm_id, sg_ids, **kwargs)
+
    def remove_security_group(self, vm_id, sg_id, **kwargs):
        return self.vnc_h.remove_security_group(vm_id, sg_id, **kwargs)
 
