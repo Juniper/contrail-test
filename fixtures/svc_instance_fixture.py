@@ -400,6 +400,7 @@ class SvcInstanceFixture(fixtures.Fixture):
                         vm_refs.append(vm_ref['to'][0])
         else:
             vm_refs = self.cs_si.get('service-instance', {}).get('virtual_machine_back_refs')
+            vm_refs = [vm_ref['to'][0] for vm_ref in vm_refs]
         return (set(vm_refs), None)
     # end get_vm_refs
 
