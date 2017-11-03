@@ -1311,8 +1311,9 @@ class AnalyticsVerification(fixtures.Fixture):
         except Exception as e:
             self.logger.exception('Got exception as %s'%(e))
         finally:
-            return res        
-    
+            return res 
+
+    @retry_for_value(delay=2, tries=6) 
     def get_bandwidth_usage(self,collector,vn_fq_name,direction = 'out'):
     
         res = None
