@@ -500,17 +500,17 @@ class VerifyIntfMirror(VerifySvcMirror):
         assert dst_vm_fixture.verify_on_setup()
         assert analyzer_vm_fixture.verify_on_setup()
 
-        self.nova_h.wait_till_vm_is_up(self.src_vm_fixture.vm_obj)
-        self.nova_h.wait_till_vm_is_up(self.dst_vm_fixture.vm_obj)
-        self.nova_h.wait_till_vm_is_up(self.analyzer_vm_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up(src_vm_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up(dst_vm_fixture.vm_obj)
+        self.nova_h.wait_till_vm_is_up(analyzer_vm_fixture.vm_obj)
         if vn1_vmi_ref:
-            result, msg = self.validate_vn(vn_fq_name=self.vn1_fq_name)
+            result, msg = self.validate_vn(vn_fq_name=vn1_fq_name)
             assert result, msg
         if vn2_vmi_ref:
-            result, msg = self.validate_vn(vn_fq_name=self.vn2_fq_name)
+            result, msg = self.validate_vn(vn_fq_name=vn2_fq_name)
             assert result, msg
         if vn3_vmi_ref:
-            result, msg = self.validate_vn(vn_fq_name=self.vn3_fq_name)
+            result, msg = self.validate_vn(vn_fq_name=vn3_fq_name)
 
             assert result, msg
 
