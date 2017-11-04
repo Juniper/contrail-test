@@ -18,14 +18,11 @@ class JsonDrv (object):
     }
     _DEFAULT_AUTHN_URL = "/v2.0/tokens"
 
-    def __init__(self, vub, logger=LOG, args=None, use_admin_auth=False):
+    def __init__(self, vub, logger=LOG, args=None):
         self.log = logger
         self._vub = vub
         self._headers = dict()
-        if args and hasattr(args, 'use_admin_auth'):
-            use_admin_auth = use_admin_auth or args.use_admin_auth
         self._args = args
-        self._use_admin_auth = use_admin_auth
         msg_size = os.getenv('INTROSPECT_LOG_MAX_MSG', '10240')
         self.more_logger = contrail_logging.getLogger('introspect',
                                                       log_to_console=False,
@@ -71,9 +68,9 @@ class JsonDrv (object):
             else:
                 self._authn_body = \
                     '{"auth":{"passwordCredentials":{"username": "%s", "password": "%s"}, "tenantName":"%s"}}' % (
-                        self._args.admin_username if self._use_admin_auth else self._args.stack_user,
-                        self._args.admin_password if self._use_admin_auth else self._args.stack_password,
-                        self._args.admin_tenant if self._use_admin_auth else self._args.project_name)
+                        self._args.stack_user,
+                        self._args.stack_password,
+                        self._args.project_name)
             response = requests.post(url, data=self._authn_body,
                                      headers=self._DEFAULT_HEADERS,
                                      verify=verify)
@@ -92,6 +89,7 @@ class JsonDrv (object):
 
     def load(self, url, retry=True):
         self.common_log("Requesting: %s" %(url))
+        print self._args.stack_user,self._args.stack_password,self._args.project_name,url
         if url.startswith('https:'):
             resp = requests.get(url, headers=self._headers, verify=self.verify)
         else:
@@ -127,7 +125,7 @@ class JsonDrv (object):
 
 class XmlDrv (object):
 
-    def __init__(self, vub, logger=LOG, args=None, use_admin_auth=False):
+    def __init__(self, vub, logger=LOG, args=None):
         self.log = logger
         self._vub = vub
         self.more_logger = contrail_logging.getLogger('introspect',
@@ -177,12 +175,12 @@ class XmlDrv (object):
 
 class VerificationUtilBase (object):
 
-    def __init__(self, ip, port, drv=JsonDrv, logger=LOG, args=None, use_admin_auth=False,
+    def __init__(self, ip, port, drv=JsonDrv, logger=LOG, args=None,
                     protocol='http'):
         self.log = logger
         self._ip = ip
         self._port = port
-        self._drv = drv(self, logger=logger, args=args, use_admin_auth=use_admin_auth)
+        self._drv = drv(self, logger=logger, args=args)
         self._force_refresh = False
         self._protocol = protocol
 

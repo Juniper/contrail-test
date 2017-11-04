@@ -831,8 +831,9 @@ class AnalyticsVerification(fixtures.Fixture):
         '''This function returns entire vn uve.Need this to verify that vn uve does not exists if the vn is deleted'''
         for ip in self.inputs.collector_ips:
             self.opsobj = self.ops_inspect[ip]
-            if self.opsobj.get_ops_vn(vn_fq_name=vn_fq_name):
-                return self.opsobj.get_ops_vn(vn_fq_name=vn_fq_name)
+            ops_vn = self.opsobj.get_ops_vn(vn_fq_name=vn_fq_name)
+            if ops_vn:
+                return ops_vn
         return None
 
     def verify_vn_uve_tiers(self, vn_fq_name=None):

@@ -18,6 +18,9 @@ class BaseRbac(test_v1.BaseTestCase_v1):
     @classmethod
     def setUpClass(cls):
         super(BaseRbac, cls).setUpClass()
+        cls.rbac_for_analytics = False
+        if cls.inputs.get_analytics_aaa_mode() == 'rbac':
+            cls.rbac_for_analytics = True
         try:
             if os.getenv('RBAC_USER1') and os.getenv('RBAC_PASS1'):
                 cls.user1 = os.getenv('RBAC_USER1')
@@ -325,9 +328,9 @@ class BaseRbac(test_v1.BaseTestCase_v1):
         except PermissionDenied:
             obj = None
         if obj:
-            self.logger.info('Read FIP Pool %s'%uuid)
+            self.logger.info('API Server: Read FIP Pool %s'%uuid)
         else:
-            self.logger.info('Permission Denied to read FIP Pool %s'%uuid)
+            self.logger.info('API Server: Permission Denied to read FIP Pool %s'%uuid)
         return obj
 
     def read_vn(self, connections, uuid, option='contrail'):
@@ -339,9 +342,9 @@ class BaseRbac(test_v1.BaseTestCase_v1):
         except PermissionDenied:
             obj = None
         if obj:
-            self.logger.info('Read VN %s'%uuid)
+            self.logger.info('API Server: Read VN %s'%uuid)
         else:
-            self.logger.info('Permission Denied to read VN %s'%uuid)
+            self.logger.info('API Server: Permission Denied to read VN %s'%uuid)
         return obj
 
     def read_vmi(self, connections, uuid):
@@ -350,9 +353,9 @@ class BaseRbac(test_v1.BaseTestCase_v1):
         except PermissionDenied:
             obj = None
         if obj:
-            self.logger.info('Read VMI %s'%uuid)
+            self.logger.info('API Server: Read VMI %s'%uuid)
         else:
-            self.logger.info('Permission Denied to read VMI %s'%uuid)
+            self.logger.info('API Server: Permission Denied to read VMI %s'%uuid)
         return obj
 
     def read_st(self, connections, uuid):
@@ -361,9 +364,9 @@ class BaseRbac(test_v1.BaseTestCase_v1):
         except PermissionDenied:
             obj = None
         if obj:
-            self.logger.info('Read Service-Template %s'%uuid)
+            self.logger.info('API Server: Read Service-Template %s'%uuid)
         else:
-            self.logger.info('Permission Denied to read ST %s'%uuid)
+            self.logger.info('API Server: Permission Denied to read ST %s'%uuid)
         return obj
 
     def update_vn(self, connections=None, uuid=None, prop_kv=None, obj=None):
@@ -397,9 +400,9 @@ class BaseRbac(test_v1.BaseTestCase_v1):
                 vns = connections.orch.list_networks()
                 for vn in vns or []:
                     vn_ids.append(vn['id'])
-            self.logger.info('List VN %s'%vn_ids)
+            self.logger.info('API Server: List VN %s'%vn_ids)
         except PermissionDenied:
-            self.logger.info('Permission Denied to list VN')
+            self.logger.info('API Server: Permission Denied to list VN')
         return vn_ids
 
     def list_fip_pool(self, connections=None):
@@ -407,10 +410,25 @@ class BaseRbac(test_v1.BaseTestCase_v1):
         pool_ids = list()
         try:
             pool_ids = connections.api_server_inspect.get_cs_fip_pool_list()
-            self.logger.info('List FIP Pool %s'%pool_ids)
+            self.logger.info('API Server: List FIP Pool %s'%pool_ids)
         except PermissionDenied:
-            self.logger.info('Permission Denied to read FIP Pool')
+            self.logger.info('API Server: Permission Denied to read FIP Pool')
         return pool_ids
+
+    def list_analytics_nodes_from_analytics(self, connections):
+        return connections.ops_inspect.get_hrefs_to_all_UVEs_of_a_given_UVE_type(
+               uveType='analytics-nodes')
+
+    def list_vn_from_analytics(self, connections):
+        vns = connections.ops_inspect.get_hrefs_to_all_UVEs_of_a_given_UVE_type(
+               uveType='virtual-networks') or []
+        return [vn['name'] for vn in vns]
+
+    def get_vn_from_analytics(self, connections, fq_name_str):
+        return connections.analytics_obj.get_vn_uve(fq_name_str)
+
+    def get_vmi_from_analytics(self, connections, fq_name_str):
+        return connections.ops_inspect.get_ops_vm_intf(fq_name_str)
 
     def remove_from_cleanups(self, fixture):
         for cleanup in self._cleanups:
