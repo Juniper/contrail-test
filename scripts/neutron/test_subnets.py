@@ -356,3 +356,30 @@ class TestSubnets(BaseNeutronTest):
             'name'] == "test_subnet", 'Failed to update subnet name'
 
     # end test_subnet_rename
+
+    @preposttest_wrapper
+    def test_bug_1630829(self):
+        ''' Create an IPAM ipam1 and create a VN with a subnet from ipam1
+            create a VM and then create another subnet on default-network-ipam
+            Use allocation pool while creating subnets
+        '''
+        ipam_fixture = self.create_ipam()
+        cidr1 = get_random_cidr()
+        alloc_pool1 = {'start': get_an_ip(cidr1, 100),
+                       'end': get_an_ip(cidr1, 200)}
+        subnet1 = {'cidr': cidr1, 'allocation_pools': [alloc_pool1]}
+        vn_fixture = self.create_vn(vn_subnets=[subnet1],
+                                    ipam_fq_name=ipam_fixture.fq_name,
+                                    option='contrail')
+        vm1_fixture = self.create_vm(vn_fixture, image_name='cirros')
+        assert vm1_fixture.verify_on_setup()
+        assert vn_fixture.verify_on_setup()
+
+        cidr2 = get_random_cidr()
+        alloc_pool2 = {'start': get_an_ip(cidr2, 100),
+                       'end': get_an_ip(cidr2, 200)}
+        subnet2 = {'cidr': cidr2, 'allocation_pools': [alloc_pool2]}
+        vn_fixture.create_subnet(subnet2)
+
+        assert vn_fixture.verify_on_setup()
+        assert vm1_fixture.verify_on_setup()
