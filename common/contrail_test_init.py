@@ -1127,37 +1127,64 @@ class ContrailTestInit(object):
 
     def verify_state(self):
         result = True
+        failed_services = []
+
         for host in self.host_ips:
+            self.logger.info("Executing 'contrail-status' on host %s\n" %(host))
             if host in self.compute_ips:
-                result = result and self.verify_service_state(
+                res, failed = self.verify_service_state(
                         host,
                         container='agent',
                         role='compute')
+                if failed:
+                    failed_services.extend(failed)
+                    result = result and False
+
             if host in self.bgp_ips:
-                result = result and self.verify_service_state(
+                res, failed = self.verify_service_state(
                         host,
                         container='controller',
                         role='control')
+                if failed:
+                    failed_services.extend(failed)
+                    result = result and False
+
             if host in self.cfgm_ips:
-                result = result and self.verify_service_state(
+                res, failed = self.verify_service_state(
                         host,
                         container='controller',
                         role='config')
+                if failed:
+                    failed_services.extend(failed)
+                    result = result and False
+
             if host in self.collector_ips:
-                result = result and self.verify_service_state(
+                res, failed = self.verify_service_state(
                         host,
                         container='analytics',
                         role='analytics')
+                if failed:
+                    failed_services.extend(failed)
+                    result = result and False
+
             if host in self.webui_ips:
-                result = result and self.verify_service_state(
+                res, failed = self.verify_service_state(
                         host,
                         container='controller',
                         role='webui')
+                if failed:
+                    failed_services.extend(failed)
+                    result = result and False
+
             if host in self.database_ips:
-                result = result and self.verify_service_state(
+                res, failed = self.verify_service_state(
                         host,
                         container='analyticsdb',
                         role='database')
+                if failed:
+                    failed_services.extend(failed)
+                    result = result and False
+            self.logger.info("\n")
             # Need to enhance verify_service_state to verify openstack services status as well
             # Commenting out openstack service verifcation untill then
             # if host == self.openstack_ip:
@@ -1167,6 +1194,8 @@ class ContrailTestInit(object):
             #            service,
             #            username,
             #            password)
+        if failed_services:
+            self.logger.info("Failed services are : \n %s\n" % ('\n '.join(map(str, failed_services))))
         return result
     # end verify_state
 
@@ -1176,11 +1205,13 @@ class ContrailTestInit(object):
             values = values[0].rstrip().split()
             if service in str(values):
                 cls = Service(values[0], values[1])
-                self.logger.info("\n%s:%s" % (cls.name, cls.state))
+                self.logger.info("%s:%s" % (cls.name, cls.state))
                 return cls
         return None
 
     def verify_service_state(self, host, service=None, role=None, container=None):
+        result = True
+        failed_services = []
         services = self.get_contrail_services(service_name=service, role=role)
         try:
             m = self.get_contrail_status(host, container=container)
@@ -1189,7 +1220,9 @@ class ContrailTestInit(object):
                 if (cls.state not in self.correct_states):
                     self.logger.error("Service %s not in correct state on %s - "
                                 "its in %s state" %(cls.name, host, cls.state))
-                    return False
+                    failed = "Host: %s  Container: %s  Role: %s  Service: %s  State: %s" %(host, container, role, cls.name, cls.state)
+                    failed_services.append(failed)
+                    result = result and False
                 else:
                     self.logger.debug('Service %s is in %s state on %s'
                                       %(cls.name, cls.state, host))
@@ -1198,7 +1231,7 @@ class ContrailTestInit(object):
                               %(service, host))
             self.logger.exception("Got exception as %s" % (e))
             return False
-        return True
+        return result, failed_services
 
     # Commenting below 4 lines due to discovery changes in R4.0 - Bug 1658035
     ###def verify_control_connection(self, connections):
