@@ -43,7 +43,7 @@ class TestVrouter(base.BaseVrouterTest):
             assert status[0],'Xconnect mode not enabled'
             self.logger.info('Xconnect mode got enabled')
             self.inputs.start_service(v_agent,[compute_ip], container='agent')
-            result=self.inputs.verify_service_state(compute_ip, service=v_agent, container='agent')
+            result, result1 = self.inputs.verify_service_state(compute_ip, service=v_agent, container='agent')
             assert result,'Contrail-vrouter-agent service is inactive'
             self.logger.info('Verify vrouter Xconnect mode test passed')
     #end test_vrouter_xconnect
