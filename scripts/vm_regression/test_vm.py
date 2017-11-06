@@ -3026,7 +3026,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         return transfer_result
     #end test_vm_file_trf_tftp_tests
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @skip_because(address_family = 'v6', hypervisor='docker',
         msg='Need image with sctp_test util and libsctp.so.1')
     @preposttest_wrapper
@@ -3219,12 +3219,12 @@ class TestBasicIPv6VMVNx(TestBasicVMVNx):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
 
-    @test.attr(type=['sanity', 'quick_sanity'])
+    @test.attr(type=['sanity', 'quick_sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
         super(TestBasicIPv6VMVNx, self).test_vm_file_trf_scp_tests()
 
-    @test.attr(type=['sanity', 'quick_sanity'])
+    @test.attr(type=['sanity', 'quick_sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_vm_file_trf_tftp_tests(self):
         super(TestBasicIPv6VMVNx, self).test_vm_file_trf_tftp_tests()

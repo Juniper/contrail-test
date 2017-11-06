@@ -60,7 +60,7 @@ class TestAlarmConfigCases(BaseAlarmConfigTest, VerifyAlarms):
 
     # end test_alarm_conf_in_project
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_alarm_conf_with_multiple_rules_in_global_config(self):
         '''
@@ -90,7 +90,7 @@ class TestAlarmConfigCases(BaseAlarmConfigTest, VerifyAlarms):
 
     # end test_alarm_conf_with_multiple_rules_in_global_config
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_alarm_conf_with_multiple_rules_in_project(self):
         '''

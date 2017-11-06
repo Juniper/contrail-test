@@ -34,7 +34,7 @@ class TestRoutes(BaseVrouterTest):
         return (True, None)
     # end is_test_applicable
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_rt_table_scenario_1(self):
         '''

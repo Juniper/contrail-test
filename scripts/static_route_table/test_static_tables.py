@@ -154,7 +154,7 @@ class TestStaticRouteTables(StaticRouteTableBase, VerifySvcFirewall):
 
     #end test_bind_unbind_network_static_table
 
-    @test.attr(type=['cb_sanity', 'sanity'])
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_network_route_table(self):
         """
