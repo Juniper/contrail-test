@@ -764,7 +764,6 @@ class AnalyticsTestSanityWithResource(
                     assert result
         return True
 
-    @test.attr(type=['vcenter'])
     @preposttest_wrapper
     def test_verify_flow_tables(self):
         '''
