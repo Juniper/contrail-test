@@ -81,7 +81,12 @@ class OpenstackOrchestrator(Orchestrator):
        return self.nova_h.get_zones()
 
    def create_vm(self, vm_name, image_name, vn_objs, **kwargs):
-       vn_ids = [vn['network']['id'] for vn in vn_objs]
+       vn_ids = []
+       for vn in vn_objs:
+           try:
+               vn_ids.append(vn['network']['id'])
+           except Exception as e:
+               vn_ids.append(vn.uuid) #For the case of VcenterVN obnect in vrouter gw case
        return self.nova_h.create_vm(vm_name=vm_name, image_name=image_name, vn_ids=vn_ids, **kwargs)
 
    def delete_vm(self, vm_obj, **kwargs):
@@ -134,10 +139,18 @@ class OpenstackOrchestrator(Orchestrator):
        return self.quantum_h.delete_vn(vn_obj['network']['id'])
 
    def get_vn_id(self, vn_obj, option='orch', **kwargs):
-       return vn_obj['network']['id']
+        try: 
+           return vn_obj['network']['id']
+        except Exception as e:
+           self.logger.debug("VcenterVN object.Vrouter as gw setup...")
+           return vn_obj.uuid
 
    def get_vn_name(self, vn_obj, option='orch', **kwargs):
-       return vn_obj['network']['name']
+       try:
+           return vn_obj['network']['name']
+       except Exception as e:
+           self.logger.debug("VcenterVN object.Vrouter as gw setup...")
+           return vn_obj.name
 
    def get_vn_obj_if_present(self, vn_name, option='orch', **kwargs):
        return self.quantum_h.get_vn_obj_if_present(vn_name, **kwargs)
