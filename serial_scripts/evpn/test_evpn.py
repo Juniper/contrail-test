@@ -341,7 +341,7 @@ class TestEvpnCasesRestart(base.BaseEvpnTest, VerifyEvpnCases):
         '''
         return self.verify_epvn_with_agent_restart(encap='udp')
 
-    @test.attr(type=[ 'serial', 'sanity' ])
+    @test.attr(type=[ 'serial', 'sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_with_vxlan_encap_agent_restart(self):
         '''

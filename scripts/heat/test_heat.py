@@ -108,7 +108,7 @@ try:
             self.transit_vn_with_left_right_svc(svcs, svcs)
             return True
 
-        @test.attr(type=['sanity'])
+        @test.attr(type=['sanity', 'vcenter_compute'])
         @preposttest_wrapper
         @skip_because(min_nodes=3)
         def test_transit_vn_sym_1_innet(self):
@@ -317,7 +317,7 @@ try:
             return self.multi_svc_chain(policys, svcs)
 
 
-        @test.attr(type=['cb_sanity', 'sanity'])
+        @test.attr(type=['cb_sanity', 'sanity', 'vcenter_compute'])
         @preposttest_wrapper
         @skip_because(address_family='v6', min_nodes=3)
         def test_public_access_thru_svc_w_fip(self):

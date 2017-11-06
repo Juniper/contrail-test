@@ -159,7 +159,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         assert self.analytics_obj.verify_bgp_connectivity_alarm()
         return True
 
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['sanity', 'vcenter', 'vcenter_compute'])
     @preposttest_wrapper
     def test_cfgm_node_process_status_alarms(self):
         ''' Test whether process status alarm gets generated/cleared
@@ -175,7 +175,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         assert self.analytics_obj.verify_cfgm_alarms()
         return True
 
-    @test.attr(type=['sanity','vcenter'])
+    @test.attr(type=['sanity','vcenter', 'vcenter_compute'])
     @preposttest_wrapper
     def test_db_node_process_status_alarms(self):
         ''' Test whether process status alarm gets generated/cleared
@@ -191,7 +191,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         assert self.analytics_obj.verify_db_alarms()
         return True
 
-    @test.attr(type=['sanity','vcenter'])
+    @test.attr(type=['sanity','vcenter', 'vcenter_compute'])
     @preposttest_wrapper
     def test_analytics_node_process_status_alarms(self):
         ''' Test whether process status alarm gets generated/cleared
@@ -206,7 +206,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         assert self.analytics_obj.verify_analytics_alarms()
         return True
 
-    @test.attr(type=['sanity','vcenter'])
+    @test.attr(type=['sanity','vcenter', 'vcenter_compute'])
     @preposttest_wrapper
     def test_control_node_process_status_alarms(self):
         ''' Test whether process status alarm gets generated/cleared
@@ -222,7 +222,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         assert self.analytics_obj.verify_control_alarms()
         return True
 
-    @test.attr(type=['cb_sanity', 'sanity','vcenter'])
+    @test.attr(type=['cb_sanity', 'sanity','vcenter', 'vcenter_compute'])
     def test_vrouter_process_status_alarms(self):
         ''' Test whether process status alarm gets generated/cleared
             after stopping the process
