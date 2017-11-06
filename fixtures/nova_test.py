@@ -535,13 +535,18 @@ class NovaHelper(object):
         elif zone and node_name:
             if zone not in self.zones:
                 raise RuntimeError("Zone %s is not available" % zone)
-            if node_name not in self.hosts_dict[zone]:
+            for host in self.hosts_dict[zone]:
+                if node_name == self.get_host_name(host):
+                   node_name = host
+                   break
+            else:
                 raise RuntimeError("Zone %s doesn't have compute with name %s"
                                         % (zone, node_name))
         elif node_name:
             nova_services = self.get_nova_compute_service_list()
             for compute_svc in nova_services:
-                if compute_svc.host == node_name:
+                if self.get_host_name(compute_svc.host) == node_name:
+                    node_name = compute_svc.host
                     zone = True
                     break
                 elif (compute_svc.host in self.inputs.compute_ips and
@@ -551,7 +556,6 @@ class NovaHelper(object):
             if not zone:
                 raise RuntimeError(
                     "Compute host %s is not listed in nova serivce list" % node_name)
-
             zone = self.get_compute_node_zone(node_name)
         else:
             zone, node_name = self.lb_node_zone(zone)
@@ -691,6 +695,15 @@ class NovaHelper(object):
 
     # end get_vm_list
 
+    def get_host_name(self, host_name):
+        for host in self.inputs.compute_names:
+            if host_name == host:
+                return host_name
+            if host in host_name.split('.'):
+                return host
+        else:
+            return host_name
+
     def get_nova_host_of_vm(self, vm_obj):
         if 'OS-EXT-SRV-ATTR:hypervisor_hostname' not in vm_obj.__dict__:
             vm_obj = self.admin_obj.get_vm_by_id(vm_obj.id)
@@ -701,7 +714,7 @@ class NovaHelper(object):
                     if hypervisor.hypervisor_type == 'QEMU' or \
                         hypervisor.hypervisor_type == 'docker':
                         host_name = vm_obj.__dict__['OS-EXT-SRV-ATTR:host']
-                        return host_name
+                        return self.get_host_name(host_name)
                     if 'VMware' in hypervisor.hypervisor_type:
                         host_name = vcenter_libs.get_contrail_vm_by_vm_uuid(self.inputs,vm_obj.id)
                         return host_name
