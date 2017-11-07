@@ -1869,7 +1869,7 @@ class WebuiTest:
                         networks = str(len(vrouter_agent_ops_data.get('connected_networks')))
                     else:
                         networks = '0'
-                    interfaces = str(vrouter_agent_ops_data.get('total_interface_count'))
+                    interfaces = str(vrouter_agent_ops_data.get('vmi_count').get('active'))
                     if not interfaces:
                         interfaces = '0 Total'
                     else:
@@ -3225,7 +3225,6 @@ class WebuiTest:
             {
                 'key': dashboard_system_details[1].find_element_by_class_name('key').text,
                 'value': dashboard_system_details[1].find_element_by_class_name('value').text})
-        ops_servers = str(len(self.ui.get_config_nodes_list_ops()))
         ops_version = self.ui.get_version()
         self.ui.append_to_list(
             dom_data, [('servers', servers), ('version', version)])
@@ -3246,19 +3245,42 @@ class WebuiTest:
         vrouters_list_ops = self.ui.get_vrouters_list_ops()
         interface_count = 0
         vrouter_total_vn = 0
+        ops_server_list = []
         for index in range(len(vrouters_list_ops)):
             vrouters_ops_data = self.ui.get_details(
                 vrouters_list_ops[index]['href'])
+            if vrouters_ops_data.get('ContrailConfig'):
+                ops_server_list.append(str(vrouters_ops_data.get(
+                    'ContrailConfig').get('elements').get('display_name')))
+                if vrouters_ops_data.get('ContrailConfig').get(
+                    'elements').get('virtual_router_type'):
+                    if vrouters_ops_data.get('ContrailConfig').get('elements').get(
+                        'virtual_router_type') == '"tor-agent"':
+                        ops_server_list.pop()
             if vrouters_ops_data.get('VrouterAgent'):
                 if vrouters_ops_data.get('VrouterAgent').get(
-                        'total_interface_count'):
+                        'vmi_count'):
                     interface_count = interface_count + \
                         vrouters_ops_data.get('VrouterAgent').get(
-                            'total_interface_count')
-                if vrouters_ops_data.get('VrouterAgent').get('connected_networks'):
-                    vrouter_total_vn = vrouter_total_vn + \
-                        (len(vrouters_ops_data.get('VrouterAgent')
-                             .get('connected_networks')))
+                            'vmi_count').get('active')
+        vn_ops_list = self.ui.get_vn_list_ops()
+        for index in range(len(vn_ops_list)):
+            vrouter_vn_ops_data = self.ui.get_details(vn_ops_list[index]['href'])
+            if vrouter_vn_ops_data.get('UveVirtualNetworkAgent'):
+                name = vrouter_vn_ops_data.get('UveVirtualNetworkAgent')[
+                           'vrf_stats_list'][0].get('name')
+                if 'default-project' in name or '__untitled__' in name:
+                    continue
+                vrouter_total_vn += 1
+        nodes_list = ['config_nodes', 'control_nodes', 'database_nodes', 'collectors']
+        for node in nodes_list:
+            node_list_ops = eval('self.ui.get_' + node + '_list_ops')()
+            for index in range(len(node_list_ops)):
+                node_ops_data = self.ui.get_details(node_list_ops[index]['href'])
+                if node_ops_data.get('ContrailConfig'):
+                    ops_server_list.append(str(node_ops_data.get('ContrailConfig').get(
+                        'elements').get('display_name')))
+        ops_servers = set(ops_server_list)
         lnodes = str(
             int(total_control_nodes) +
             int(total_analytics_nodes) +
@@ -3283,7 +3305,7 @@ class WebuiTest:
             {'key': 'virtual_networks', 'value': str(vrouter_total_vn)})
         self.ui.append_to_list(
             ops_dashborad_data, [
-                ('servers', ops_servers), ('version', ops_version)])
+                ('servers', str(len(list(ops_servers)))), ('version', ops_version)])
         result = True
         if self.ui.match_ui_kv(ops_dashborad_data, dom_data):
             self.logger.info("Monitor dashborad details matched")
@@ -5758,7 +5780,7 @@ class WebuiTest:
                 self.logger.debug(self.dash)
             else:
                 rows_detail = self.ui.click_basic_and_get_row_details(
-                                'service_health_check', match_index)[1]
+                                'service_health_check', match_index, elements=True)[1]
                 self.logger.info(
                     "Verify basic view details for Health check fq_name %s " %
                         (api_fq_name))
