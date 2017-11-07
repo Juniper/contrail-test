@@ -10,6 +10,7 @@ from tcutils.util import *
 from base import *
 from vcenter import *
 import test
+from tcutils.contrail_status_check import ContrailStatusChecker
 
 class TestVcenterSerial(BaseVnVmTest):
     @classmethod
@@ -57,13 +58,13 @@ class TestVcenterSerial(BaseVnVmTest):
         for cfgm in self.inputs.cfgm_ips:
             cmd = 'netstat -nalp | grep :443 && service contrail-vcenter-plugin restart'
             plugin_mstr = self.inputs.run_cmd_on_server(cfgm, cmd,
-                              container='contrail-vcenter-plugin')
+                              container='vcplugin')
+            time.sleep(5)
             status = self.inputs.run_cmd_on_server(cfgm, 'service contrail-vcenter-plugin status',
-                                                   container='contrail-vcenter-plugin') 
+                                                   container='vcplugin',pty=False) 
             self.logger.info('Vcenter plugin status on cfgm %s is %s' % (cfgm, status))
-            sleep(6)
-            if 'running' not in status.split():
-               self.logger.error('Plugin status is not running')
+            if 'running' not in status.stdout:
+               self.logger.error('Plugin status is not running in %s'%(cfgm))
                return False
             self.logger.info('Vcenter plugin status on cfgm %s is %s' % (cfgm, status))
         assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
@@ -99,26 +100,13 @@ class TestVcenterSerial(BaseVnVmTest):
         self.vm_host1 = vm1_fixture.vm_obj.host
         self.vm_host2 = vm2_fixture.vm_obj.host
         esxi_hosts = self.inputs.esxi_vm_ips
-        for ip in self.inputs.compute_ips:
-            status_before = self.inputs.run_cmd_on_server(ip, 'contrail-status',
-                                                          container='agent').split()
-            print status_before
-            count = status_before.count('active')
-            self.logger.info('compute VM status before rebooting VM %s is %s' % (ip, status_before))
-            if count is not 3:
-                assert "All the services are not Active on compute VM  %s" % ip
-        self.vm1_compute_vm = self.get_compute_vm(self.vm_host1).split('@')[1]
-        self.vm2_compute_vm = self.get_compute_vm(self.vm_host2).split('@')[1]
-        self.inputs.run_cmd_on_server(self.vm1_compute_vm, 'reboot')
-        self.inputs.run_cmd_on_server(self.vm2_compute_vm, 'reboot')
+        cluster_status, error_nodes = ContrailStatusChecker().wait_till_contrail_cluster_stable()
+        assert cluster_status, 'Cluster is not stable...'
+        for compute_vm in self.inputs.compute_ips:
+            self.inputs.run_cmd_on_server(compute_vm, 'reboot')
         sleep(20)
-        for ip in self.inputs.compute_ips:
-            status_after = self.inputs.run_cmd_on_server(ip, 'contrail-status',
-                                                         container='agent').split()
-            print status_after
-            self.logger.info('compute VM status after rebooting VM %s is %s' % (ip, status_after))
-            if status_before != status_after:
-                assert self.logger.error('One or more contrail services on %s is not in ACTIVE state' % (ip))
+        cluster_status, error_nodes = ContrailStatusChecker().wait_till_contrail_cluster_stable()
+        assert cluster_status, 'Cluster is not stable after reboot...'
 
         vn1_vm1_name = get_random_name('vm1_after_reboot')
         vn1_vm2_name = get_random_name('vm2_after_reboot')
