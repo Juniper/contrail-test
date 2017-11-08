@@ -389,6 +389,7 @@ try:
         # end test_ecmp_v2_creation_with_heat
 
         @preposttest_wrapper
+        @skip_because(address_family='v6')
         def test_pt_multi_inline_v2_svc_creation_with_heat(self):
             '''
             Validate creation of a multi-inline SVC using port-tuple
