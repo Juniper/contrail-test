@@ -1782,7 +1782,7 @@ class WebuiCommon:
         self.click_monitor()
         children = self.find_element(
             ['menu', 'item'], ['id', 'class'], if_elements=[1])
-        children[2].find_element_by_tag_name('span').click()
+        children[3].find_element_by_tag_name('span').click()
         self.wait_till_ajax_done(self.browser, wait=10)
     # end click_monitor_debug
 
@@ -1797,7 +1797,7 @@ class WebuiCommon:
         self.click_monitor()
         children = self.find_element(
             ['menu', 'item'], ['id', 'class'], if_elements=[1])
-        children[1].find_element_by_tag_name('span').click()
+        children[2].find_element_by_tag_name('span').click()
         self.wait_till_ajax_done(self.browser, wait=10)
     # end click_monitor_in_webui
 
