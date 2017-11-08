@@ -221,15 +221,9 @@ class TestBasicPolicyNegative(BasePolicyTest):
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
-        vn1_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_name=vn1_name,
-                inputs=self.inputs,
-                subnets=vn1_subnets,
-                policy_objs=[
-                    policy_fixture.policy_obj]))
+        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+        vn1_fixture.bind_policies(
+            [policy_fixture.policy_fq_name], vn1_fixture.vn_id)
         assert vn1_fixture.verify_on_setup()
         ret = policy_fixture.verify_on_setup()
         if ret['result'] == False:
