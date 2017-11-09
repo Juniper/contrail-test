@@ -58,7 +58,7 @@ class TestBasicRTFilter(BaseRtFilterTest):
         return True
     # end test_vn_rt_entry
 
-    @test.attr(type=['cb_sanity', 'sanity'])
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_user_def_rt_entry(self):
         '''

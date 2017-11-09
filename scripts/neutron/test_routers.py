@@ -34,7 +34,7 @@ class TestRouters(BaseNeutronTest):
     def tearDownClass(cls):
         super(TestRouters, cls).tearDownClass()
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_basic_router_behavior(self):
         '''Validate a router is able to route packets between two VNs

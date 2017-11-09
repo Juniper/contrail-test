@@ -87,7 +87,7 @@ class TestSubInterfaces(BaseVrouterTest):
         assert vm1_fixture.ping_with_certainty(vm3_ip)
     # end test_vlan_interface_1
 
-    @test.attr(type=['cb_sanity', 'sanity'])
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter_compute'])
     @preposttest_wrapper
     def test_vlan_interface_2(self):
         '''
