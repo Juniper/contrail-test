@@ -1,21 +1,14 @@
-import test_v1
 from common import isolated_creds
 from vn_test import *
 from vm_test import *
 import fixtures
+from common.base import GenericTestBase
 
-class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
+class AnalyticsBaseTest(GenericTestBase):
 
     @classmethod
     def setUpClass(cls):
         super(AnalyticsBaseTest, cls).setUpClass()
-        cls.orch = cls.connections.orch
-        cls.quantum_h= cls.connections.quantum_h
-        cls.nova_h = cls.connections.nova_h
-        cls.vnc_lib= cls.connections.vnc_lib
-        cls.agent_inspect= cls.connections.agent_inspect
-        cls.cn_inspect= cls.connections.cn_inspect
-        cls.analytics_obj=cls.connections.analytics_obj
         resource_class = cls.__name__ + 'Resource'
         cls.res = ResourceFactory.createResource(resource_class)
     #end setUpClass
