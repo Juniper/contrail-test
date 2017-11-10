@@ -7303,7 +7303,7 @@ class WebuiTest:
                         ['tooltip-success', 'i'], ['class', 'tag'])
                     self.ui.wait_till_ajax_done(self.browser)
                     self.ui.click_element(
-                        's2id_virtual_machine_interface_refs_dropdown')
+                        's2id_user_created_virtual_machine_interface_refs_dropdown')
                     self.ui.wait_till_ajax_done(self.browser)
                     if self.ui.select_from_dropdown(vm_ip, grep=True):
                         self.ui.click_element('configure-fipbtn1')
