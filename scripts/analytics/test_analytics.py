@@ -46,6 +46,19 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
 
     @test.attr(type=['cb_sanity', 'sanity', 'vcenter'])
     @preposttest_wrapper
+    def test_openstack_status(self):
+        ''' Test to verify that all openstack services are running and active
+
+        '''
+        if not self.inputs.verify_openstack_state():
+            self.logger.error("openstack-status failed")
+            return False
+        else:
+            self.logger.info("openstack-status passed")
+        return True
+
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter'])
+    @preposttest_wrapper
     def test_contrail_internal_ansible_status(self):
         ''' Test to verify that internal-ansible ran in each container without any failures 
 
