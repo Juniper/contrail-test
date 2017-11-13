@@ -76,19 +76,50 @@ def get_vcenter_connection(inputs):
     SI = None
     try:
         SI = connect.SmartConnect(host=inputs.vcenter_server,
-                              user=inputs.vcenter_username,
-                              pwd=inputs.vcenter_password,
-                              port=int(inputs.vcenter_port))
-        atexit.register(connect.Disconnect, SI)
-        content = SI.RetrieveContent()
-        return SI
-    except IOError, ex:
-        pass
+                                  port=int(inputs.vcenter_port),
+                                  user=inputs.vcenter_username,
+                                  pwd=inputs.vcenter_password)
+    except Exception as exc:
+            if ((isinstance(exc, vim.fault.HostConnectFault)) and
+                ('[SSL: CERTIFICATE_VERIFY_FAILED]' in item for item in exc)):
+                    try:
+                        import ssl
+                        default_context = ssl._create_default_https_context
+                        ssl._create_default_https_context = ssl._create_unverified_context
+                        SI = SmartConnect(
+                                host=inputs.vcenter_server,
+                                port=int(inputs.vcenter_port),
+                                user=inputs.vcenter_username,
+                                pwd=inputs.vcenter_password)
+                        ssl._create_default_https_context = default_context
+                    except Exception as exc1:
+                            raise Exception(exc1)
+            else:
+                    import ssl
+                    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+                    context.verify_mode = ssl.CERT_NONE
+                    SI = connect.SmartConnect(
+                                host=inputs.vcenter_server,
+                                port=int(inputs.vcenter_port),
+                                user=inputs.vcenter_username,
+                                pwd=inputs.vcenter_password,
+                                sslContext=context)
+
+    if not SI:
+            raise Exception("Unable to connect to vcenter: %s:%s %s/%s" %
+                           (inputs.vcenter_server,
+                            inputs.vcenter_port,
+                            inputs.vcenter_username,
+                            inputs.vcenter_password))
+    return SI
 
 def get_vm_info_by_uuid(inputs,uuid):
-
     try:
         SI=get_vcenter_connection(inputs)
+        content = SI.RetrieveContent()
+        if not content:
+            raise Exception("Unable to retrieve content from vcenter")
+
         VM = SI.content.searchIndex.FindByUuid(None, uuid,
                                            True,
                                            True)
