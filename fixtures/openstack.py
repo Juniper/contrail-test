@@ -478,6 +478,27 @@ class OpenstackAuth(OrchestratorAuth):
        except Exception as e:
            return False
 
+   def verify_openstack_state(self):
+        result = True
+        failed_services = []
+
+        for host in self.inputs.host_ips:
+            if host in self.inputs.openstack_ips:
+                self.logger.info("Executing 'openstack-status' on host %s\n" %(host))
+                res, failed = self.inputs.verify_service_state(
+                        host,
+                        container=None, openstack=True
+                        )
+                if failed:
+                    failed_services.extend(failed)
+                    result = result and False
+            else:
+                self.logger.info("Openstack not running on host %s\n" %(host))
+            self.logger.info("\n")
+        if failed_services:
+            self.logger.info("Failed services are : \n %s\n" % ('\n '.join(map(str, failed_services))))
+        return result
+
    def get_auth_h(self):
        return self.keystone
  
