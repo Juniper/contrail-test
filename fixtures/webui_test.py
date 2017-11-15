@@ -5780,7 +5780,7 @@ class WebuiTest:
                 self.logger.debug(self.dash)
             else:
                 rows_detail = self.ui.click_basic_and_get_row_details(
-                                'service_health_check', match_index, elements=True)[1]
+                                'service_health_check', match_index, canvas=True)[1]
                 self.logger.info(
                     "Verify basic view details for Health check fq_name %s " %
                         (api_fq_name))
