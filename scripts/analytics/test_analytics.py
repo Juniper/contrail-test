@@ -37,7 +37,11 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         ''' Test to verify that all services are running and active
 
         '''
-        assert self.inputs.verify_state()
+        if not self.inputs.verify_state():
+            self.logger.error("contrail-status failed")
+            return False
+        else:
+            self.logger.info("contrail-status passed")
         return True
 
     @test.attr(type=['cb_sanity', 'sanity', 'vcenter'])
