@@ -1438,6 +1438,8 @@ class TestPolicyAclIpv4v6(TestPolicyAcl):
         cls.inputs.set_af(af_test)
 
     def is_test_applicable(self):
+        if self.inputs.vcenter_gw_setup:
+            return(False, 'Skipping IPv6 Test on vcenter gateway setup')
         if self.inputs.orchestrator == 'vcenter' and not self.orch.is_feature_supported('ipv6'):
             return(False, 'Skipping IPv6 Test on vcenter setup')
         if not self.connections.orch.is_feature_supported('ipv6'):
