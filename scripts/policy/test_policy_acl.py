@@ -1454,7 +1454,7 @@ class TestPolicyAclIpv4v6(TestPolicyAcl):
     def test_policy_cidr_src_vn_dst_cidr(self):
         super(TestPolicyAclIpv4v6, self).test_policy_cidr_src_vn_dst_cidr()
 
-    @attr(type=['vcenter', 'vrouter_gw'])
+    @attr(type=['vcenter'])
     @tcutils.wrappers.preposttest_wrapper
     def test_policy_inheritance_src_vn_dst_pol(self):
         super(TestPolicyAclIpv4v6, self).test_policy_inheritance_src_vn_dst_pol()
