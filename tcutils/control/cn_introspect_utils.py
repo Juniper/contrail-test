@@ -201,7 +201,12 @@ class ControlNodeInspect (VerificationUtilBase):
             pass
         if not table:
             table = 'inet6.0' if is_v6(prefix) else 'inet.0'
-        path = 'Snh_ShowRouteReq?x=%s.%s' % (ri_name, table)
+
+        # In case, ri is default routing instance, path does not contain ri_name
+        if ri_name == "default-domain:default-project:ip-fabric:__default__":
+            path = 'Snh_ShowRouteReq?x=%s' % (table)
+        else:
+            path = 'Snh_ShowRouteReq?x=%s.%s' % (ri_name, table)
         xpath = '/ShowRouteResp/tables/list/ShowRouteTable'
         p = self.dict_get(path)
         rt = EtreeToDict(xpath).get_all_entry(p)
@@ -306,7 +311,7 @@ class ControlNodeInspect (VerificationUtilBase):
 
     def get_connected_rabbitmq(self):
         '''
-        Return the rabbitMQ server to which 
+        Return the rabbitMQ server to which
         '''
         path = 'Snh_ConfigClientInfoReq?'
         xpath = './ConfigClientInfoResp/amqp_conn_info/ConfigAmqpConnInfo/url'
@@ -314,7 +319,7 @@ class ControlNodeInspect (VerificationUtilBase):
         rt = EtreeToDict(xpath).get_all_entry(p)
         rabbit_mq_node = rt['url'].split("@")[1].split(":")[0]
         return rabbit_mq_node
-        
+
 if __name__ == '__main__':
     cn = ControlNodeInspect('10.204.216.58')
     import pdb; pdb.set_trace()

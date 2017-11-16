@@ -154,6 +154,9 @@ fip_pool_name=$__public_vn_name__
 public_virtual_network=$__public_virtual_network__
 public_tenant_name=$__public_tenant_name__
 
+#IP Fabric gateway info, name and IP tuple
+#eg: [('mx1', '1.1.1.1')]
+fabric_gw_info=$__fabric_gw_name_ip_tuple__
 
 [HA]
 # HA config

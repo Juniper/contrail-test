@@ -205,7 +205,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         host_dict['username'] = host_string.split('@')[0]
         host_dict['password'] =get_env_passwords(host_string)
         host_dict['roles'] = []
-        
+
         if env.get('qos', {}):
             if host_string in env.qos.keys():
                 role_dict = env.qos[host_string]
@@ -282,10 +282,10 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     #get dpdk info
     if env.has_key('dpdk'):
         sanity_testbed_dict['dpdk'].append(env.dpdk)
-   
+
     #get k8s info
     sanity_testbed_dict['kubernetes'] = env.get('kubernetes', {})
- 
+
    #get ns_agilio_vrouter info
     if env.has_key('ns_agilio_vrouter'):
         sanity_testbed_dict['ns_agilio_vrouter'].append(env.ns_agilio_vrouter)
@@ -335,8 +335,8 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
             sanity_testbed_dict['vcenter_servers'].append(vcenter_servers[vcenter])
 
     orch = getattr(env, 'orchestrator', 'openstack')
-    #get other orchestrators (vcenter etc) info if any 
-    slave_orch = None  
+    #get other orchestrators (vcenter etc) info if any
+    slave_orch = None
     if env.has_key('other_orchestrators'):
         sanity_testbed_dict['other_orchestrators'] = env.other_orchestrators
         for k,v in env.other_orchestrators.items():
@@ -347,7 +347,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     if env.has_key('hosts_ipmi'):
         sanity_testbed_dict['hosts_ipmi'].append(env.hosts_ipmi)
 
-    # Setting slave orch to k8s when key present   
+    # Setting slave orch to k8s when key present
     if env.has_key('kubernetes'):
         if  sanity_testbed_dict['kubernetes']['mode'] == 'nested':
             slave_orch = 'kubernetes'
@@ -446,6 +446,8 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     public_vn_subnet = getattr(testbed, 'public_vn_subnet', '')
     ext_routers = getattr(testbed, 'ext_routers', '')
     router_info = str(ext_routers)
+    fabric_gw = getattr(testbed, 'fabric_gw', '')
+    fabric_gw_info = str(fabric_gw)
     test_verify_on_setup = getattr(env, 'test_verify_on_setup', True)
     webui = getattr(testbed, 'webui', False)
     horizon = getattr(testbed, 'horizon', False)
@@ -463,7 +465,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     else:
         config_amqp_ips = []
 
-    # If amqp details are in env.cfgm as well, use that 
+    # If amqp details are in env.cfgm as well, use that
     config_amqp_port = env.cfgm.get('amqp_port', '5672')
     config_amqp_ips = env.cfgm.get('amqp_hosts', config_amqp_ips)
 
@@ -477,7 +479,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     if env.has_key('vcenter_servers'):
             if env.vcenter_servers:
                 for vc in env.vcenter_servers:
-                    for dc in env.vcenter_servers[vc]['datacenters']:    
+                    for dc in env.vcenter_servers[vc]['datacenters']:
                         vcenter_dc = dc
 
     #global controller
@@ -534,6 +536,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
          '__public_vn_rtgt__'      : public_vn_rtgt,
          '__router_asn__'          : router_asn,
          '__router_name_ip_tuples__': router_info,
+         '__fabric_gw_name_ip_tuple__': fabric_gw_info,
          '__public_vn_name__'      : fip_pool_name,
          '__public_virtual_network__':public_virtual_network,
          '__public_tenant_name__'  :public_tenant_name,
