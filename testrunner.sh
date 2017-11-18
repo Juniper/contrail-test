@@ -181,6 +181,7 @@ docker_run () {
         -v ${run_path}/${SCRIPT_TIMESTAMP}/reports:${CONTRAIL_TEST_FOLDER}/report \
         -v ${run_path}/${SCRIPT_TIMESTAMP}:/${CONTRAIL_TEST_FOLDER}.save \
         -v /etc/localtime:/etc/localtime:ro \
+        -v /etc/timezone:/etc/timezone:ro \
         -v /etc/hosts:/etc/hosts:ro"
 
     #In case of tempest , mount the tempest directory
