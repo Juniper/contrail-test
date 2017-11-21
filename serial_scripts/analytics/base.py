@@ -2,6 +2,7 @@ import test_v1
 from common import isolated_creds
 from vn_test import *
 from vm_test import *
+from policy_test import *
 import fixtures
 sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
 from traffic.core.stream import Stream
@@ -153,6 +154,306 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
                         result = result and False
         return result
     #end verify_vna_stats
+    
+    def setup_and_create_streams(self, src_vn_fix, dst_vn_fix, src_vm_fix, dst_vm_fix, sport=8000, dport=9000, count=100):
+        
+        src_vm_fix.install_pkg("Traffic")
+        dst_vm_fix.install_pkg("Traffic")
+        src_vm_node_ip = src_vm_fix.vm_node_ip
+        dst_vm_node_ip = dst_vm_fix.vm_node_ip
+        src_local_host = Host(
+            src_vm_node_ip, self.inputs.host_data[
+                src_vm_node_ip]['username'], self.inputs.host_data[
+                dst_vm_node_ip]['password'])
+        dst_local_host = Host(
+            dst_vm_node_ip, self.inputs.host_data[
+                dst_vm_node_ip]['username'], self.inputs.host_data[
+                dst_vm_node_ip]['password'])
+        send_host = Host(src_vm_fix.local_ip,
+                              src_vm_fix.vm_username,
+                              src_vm_fix.vm_password)
+        recv_host = Host(dst_vm_fix.local_ip,
+                              dst_vm_fix.vm_username,
+                              dst_vm_fix.vm_password)
+        
+        # Create traffic stream
+        for i in range(3):
+            
+            sport = sport 
+            dport = dport + i
+            print 'count=%s' % (count)
+            print 'dport=%s' % (dport)
+
+            self.logger.info("Creating streams...")
+            stream = Stream(
+                protocol="ip",
+                proto="udp",
+                src=src_vm_fix.vm_ip,
+                dst=dst_vm_fix.vm_ip,
+                dport=dport,
+                sport=sport)
+
+            profile = StandardProfile(
+                stream=stream,
+                size=100,
+                count=count,
+                listener=dst_vm_fix.vm_ip)
+            sender = Sender(
+                "sendudp",
+                profile,
+                src_local_host,
+                send_host,
+                self.inputs.logger)
+            receiver = Receiver(
+                "recvudp",
+                profile,
+                dst_local_host,
+                recv_host,
+                self.inputs.logger)
+            receiver.start()
+            sender.start()
+            sender.stop()
+            receiver.stop()
+            print sender.sent, receiver.recv
+            time.sleep(1)
+    #end setup_create_streams
+            
+    def creat_bind_policy(self,policy_name, rules, src_vn_fix, dst_vn_fix):
+        #method to avoid redundant code for binding
+        policy_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name,
+                rules_list=rules,
+                inputs=self.inputs,
+                connections=self.connections))
+        src_vn_fix.bind_policies([policy_fixture.policy_fq_name], src_vn_fix.vn_id)
+        self.addCleanup(src_vn_fix.unbind_policies, src_vn_fix.vn_id, [
+                policy_fixture.policy_fq_name])
+        
+        dst_vn_fix.bind_policies([policy_fixture.policy_fq_name], dst_vn_fix.vn_id)
+        self.addCleanup(dst_vn_fix.unbind_policies, dst_vn_fix.vn_id, [
+                policy_fixture.policy_fq_name])
+    #end create and bind policy
+       
+    def verify_session_record_table(self, start_time, src_vn, dst_vn):
+        self.logger.info('Verify session record table')
+        result = True
+        for ip in self.inputs.collector_ips:
+            self.logger.info(
+                    "Verifying SessionRecordTable through opserver %s" %
+                    (ip))
+            
+            #query and verify number of records
+            query = 'vn=' + src_vn + ' AND remote_vn=' + dst_vn + ' AND protocol=17'
+            res = self.analytics_obj.ops_inspect[ip].post_query(
+                'SessionRecordTable',
+                start_time=start_time,
+                end_time='now',
+                select_fields=['forward_flow_uuid',
+                           'reverse_flow_uuid', 'vn', 'remote_vn'],
+                where_clause=query,
+                session_type='client')
+            if len(res) != 3:
+                self.logger.error('Expected Session records 3 got '%len(res))
+                result = result and bool(len(res))
+            self.logger.debug(res)
+            
+            #query with local_ip server_port protocol
+            query = 'local_ip=%s AND server_port=9001 AND protocol=17'%self.res.vn1_vm1_fixture.vm_ip
+            res = self.analytics_obj.ops_inspect[ip].post_query(
+                'SessionRecordTable',
+                start_time=start_time,
+                end_time='now',
+                select_fields=['forward_flow_uuid',
+                           'reverse_flow_uuid', 'vn', 'remote_vn'],
+            where_clause=query,
+            session_type="client")
+            if len(res) != 1:
+               self.logger.error('Expected session records 1 got %s'%len(res))
+               result = result and bool(len(res))
+            self.logger.debug(res)
+            
+            #query with server_port local_ip filter by server_port
+            query = 'vn=' + src_vn + ' AND remote_vn=' + dst_vn + ' AND protocol=17'
+            res = self.analytics_obj.ops_inspect[ip].post_query(
+                'SessionRecordTable',
+                start_time=start_time,
+                end_time='now',
+                select_fields=['forward_flow_uuid',
+                           'reverse_flow_uuid', 'local_ip', 'server_port'],
+            where_clause=query,
+            filter='server_port=9001',
+            session_type="client")
+            if len(res) != 1 :
+               self.logger.error('Expected session records 1 got %s'%len(res))
+               result = result and bool(len(res))
+            self.logger.debug(res)
+            
+            #query with client_port remote_ip filter by client_port 
+            #Total we get three record limit by 2
+            query = 'vn=' + src_vn + ' AND remote_vn=' + dst_vn + ' AND protocol=17'
+            res = self.analytics_obj.ops_inspect[ip].post_query(
+                'SessionRecordTable',
+                start_time=start_time,
+                end_time='now',
+                select_fields=['forward_flow_uuid',
+                           'reverse_flow_uuid', 'remote_ip', 'client_port'],
+            where_clause=query,
+            filter='client_port=8000',
+            limit=2,
+            session_type="client")
+            if len(res) != 2:
+               self.logger.error('Expected session records 2 got %s'%len(res))
+               result = result and bool(len(res))
+            self.logger.debug(res)
+            
+            #query with sort_fields
+            query = 'vn=' + src_vn + ' AND remote_vn=' + dst_vn + ' AND protocol=17'
+            res = self.analytics_obj.ops_inspect[ip].post_query(
+                'SessionRecordTable',
+                start_time=start_time,
+                end_time='now',
+                select_fields=['forward_flow_uuid',
+                           'reverse_flow_uuid', 'local_ip', 'server_port'],
+            where_clause=query,
+            sort_fields=['server_port'], sort=1,
+            session_type="client")
+            if res and res[0]['server_port'] != 9000:
+               self.logger.error('Expected server port 9000 got %s'%res[0]['server_port'])
+               result = result and bool(len(res))
+            self.logger.debug(res)
+             
+        assert result,'Failed to get expected number of Records'
+    #end verify_session_record_table
+    
+    def verify_session_series_table(self, start_time, src_vn, dst_vn):
+        
+        self.logger.info('Verify session series table and aggregation stats')
+        result = True
+        query = 'vn=' + src_vn + ' AND remote_vn=' + dst_vn + ' AND protocol=17'
+        granularity =10
+        vm_node_ip = self.res.vn1_vm1_fixture.vm_node_ip
+        vm_host = self.res.vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
+        ip = self.inputs.collector_ips[0]
+        self.logger.info("Verifying SessionSeriesTable through opserver %s" %(ip))
+        #query client session samples
+        self.logger.info('SessionSeries: [SUM(forward_sampled_bytes), SUM(reverse_sampled_pkts), sample_count]')
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionSeriesTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['SUM(forward_sampled_pkts)', 'SUM(reverse_sampled_bytes)', 'sample_count', 'vrouter'],
+            where_clause=query,
+            filter='vrouter=%s'% vm_host, session_type="client")
+        if len(res) != 1 or res[0]['SUM(forward_sampled_pkts)'] != 300:
+            self.logger.error('Session aggregate stats returned %s not expected'%res[0]['SUM(forward_sampled_pkts)'])
+            result = result and bool(len(res))
+        self.logger.debug(res)
+        
+        #self.logger.info('SessionSeries: [server_port, local_ip,SUM(forward_sampled_bytes), SUM(reverse_sampled_pkts), sample_count]')
+        #have three server ports so three record in output each with sum(forward pkts) 100
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionSeriesTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['server_port','local_ip','SUM(forward_sampled_pkts)', 'SUM(reverse_sampled_bytes)', 'sample_count', 'vrouter_ip'],
+            where_clause=query,
+            session_type="client")
+        status = True
+        for rec in res:
+            if rec['SUM(forward_sampled_pkts)'] != 100:
+                status = result and bool(len(res))
+        if len(res) != 3 and not status:
+            self.logger.error('Session series records returned %s not expected'%len(res))
+            result = result and status
+        self.logger.debug(res)
+        
+        ## all session msgs have same vn-remote_vn hence following query should return 1 record
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionSeriesTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['vn','remote_vn','SUM(forward_sampled_pkts)', 'SUM(reverse_sampled_bytes)', 'sample_count'],
+            where_clause=query,
+            session_type="client")
+        if len(res) != 1 and res[0]['SUM(forward_sampled_pkts)'] !=300 :
+            self.logger.error('Session series records returned %s not expected'%len(res))
+            result = result and bool(len(res))
+        self.logger.debug(res)
+        
+        ## sort results by server_port column
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionSeriesTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['local_ip','server_port','SUM(forward_sampled_bytes)', 'SUM(reverse_sampled_pkts)', 'sample_count'],
+            where_clause=query,
+            sort_fields=['server_port'], sort=1, limit=3,
+            session_type="client")
+        if len(res) !=3 and  res[0]['server_port'] != 9000:
+            self.logger.error('Session series records returned %s not expected'%len(res))
+            result = result and bool(len(res))
+        self.logger.debug(res)
+        
+        #self.logger.info('SessionSeries: [T=<x>, SUM(forward_sampled_bytes), SUM(reverse_sampled_pkts)]')
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionSeriesTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['T=%s' % (granularity), 'SUM(forward_sampled_bytes)',
+                           'SUM(reverse_sampled_pkts)', 'vrouter'],
+            where_clause=query,
+            session_type="client")
+        if not len(res) :
+            self.logger.error('Session series records returned %s not expected'%len(res))
+            result = result and bool(len(res))
+        self.logger.debug(res)
+        
+        #with sampled bytes
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionSeriesTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['T', 'forward_sampled_bytes', 'reverse_sampled_pkts'],
+            where_clause=query + ' AND server_port=9001',
+            session_type="client")
+        if not len(res) :
+            self.logger.error('Session series records returned %s not expected'%len(res))
+            result = result and bool(len(res))
+        self.logger.debug(res)
+        
+        #with logged bytes
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionSeriesTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['T', 'forward_logged_pkts', 'reverse_logged_bytes'],
+            where_clause=query,
+            session_type="client")
+        if not len(res) :
+            self.logger.error('Session series records returned %s not expected'%len(res))
+            result = result and bool(len(res))
+        self.logger.debug(res)
+        
+        #filter by action
+        action = 'drop'
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionSeriesTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['server_port', 'forward_action',
+                                'SUM(forward_sampled_bytes)',
+                                'SUM(reverse_sampled_pkts)'],
+            where_clause=query,
+            session_type="client",
+            filter='forward_action=%s'%action)
+        if not len(res) :
+            self.logger.error('Session series records returned %s not expected'%len(res))
+            result = result and bool(len(res))
+        self.logger.debug(res)
+        
+        assert result,'Failed to get expected number of Records'
+    #end verify_session_series_table
 
 class ResourceFactory:
     factories = {}
@@ -163,34 +464,59 @@ class ResourceFactory:
         return ResourceFactory.factories[id].create()
     createResource = staticmethod(createResource)
 
-class BaseSanityResource(fixtures.Fixture):
+
+class BaseResource(fixtures.Fixture):
    
     __metaclass__ = Singleton
      
     def setUp(self,inputs,connections):
-        super(BaseSanityResource , self).setUp()
+        super(BaseResource , self).setUp()
         self.inputs = inputs
         self.connections = connections
-        self.setup_sanity_common_objects(self.inputs , self.connections)
+        self.setup_common_objects(self.inputs , self.connections)
 
     def cleanUp(self):
-        super(BaseSanityResource, self).cleanUp()
+        super(BaseResource, self).cleanUp() 
 
-    def setup_sanity_common_objects(self, inputs , connections):
-        self.inputs = inputs
+    def setup_common_objects(self, inputs , connections):
+  
+    	self.inputs = inputs
+
+        #self.inputs.set_af('dual')
         self.connections = connections
         self.orch = self.connections.orch
         self.logger = self.inputs.logger
-        self.vn1_name = get_random_name("vn1")
-        (self.vn1_vm1_name, self.vn1_vm2_name) = (get_random_name('vn1_vm1'),
-                get_random_name('vn1_vm2'))
+        #(self.vn1_name, self.vn1_subnets)= ("vn1", ["192.168.1.0/24"])
+        #(self.vn2_name, self.vn2_subnets)= ("vn2", ["192.168.2.0/24"])
+        #(self.fip_vn_name, self.fip_vn_subnets)= ("fip_vn", ['100.1.1.0/24'])
+        (self.vn1_name, self.vn2_name, self.fip_vn_name)= (get_random_name("vn1"), \
+						get_random_name("vn2"),get_random_name("fip_vn"))
+        (self.vn1_vm1_name, self.vn1_vm2_name)=( get_random_name('vn1_vm1'), get_random_name('vn1_vm2'))
+        self.vn2_vm1_name= get_random_name('vn2_vm1')
+        self.vn2_vm2_name= get_random_name('vn2_vm2')
+        self.fvn_vm1_name= get_random_name('fvn_vm1')
 
+        # Configure 3 VNs, one of them being Floating-VN
         self.vn1_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name,
                             connections= self.connections, inputs= self.inputs,
                             vn_name= self.vn1_name))
 
+        self.vn2_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name,
+                            connections= self.connections, inputs= self.inputs,
+                            vn_name= self.vn2_name))
+
+        self.fvn_fixture=self.useFixture( VNFixture(project_name= self.inputs.project_name,
+                            connections= self.connections, inputs= self.inputs,
+                            vn_name= self.fip_vn_name))
+
+        # Making sure VM falls on diffrent compute host
         host_list = self.orch.get_hosts()
         compute_1 = host_list[0]
+        compute_2 = host_list[0]
+        if len(host_list) > 1:
+            compute_1 = host_list[0]
+            compute_2 = host_list[1]
+        # Configure 6 VMs in VN1, 1 VM in VN2, and 1 VM in FVN
         self.vn1_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,
                                 connections= self.connections, vn_obj= self.vn1_fixture.obj,
                                 vm_name= self.vn1_vm1_name,image_name='ubuntu-traffic',
@@ -201,73 +527,32 @@ class BaseSanityResource(fixtures.Fixture):
                                 vm_name= self.vn1_vm2_name , image_name='ubuntu-traffic',
 				flavor='contrail_flavor_medium'))
 
-        self.verify_sanity_common_objects()
-    #end setup_common_objects
-
-    def verify_sanity_common_objects(self):
-        assert self.vn1_fixture.verify_on_setup()
-        assert self.vn1_vm1_fixture.wait_till_vm_is_up()
-        assert self.vn1_vm2_fixture.wait_till_vm_is_up()
-    #end verify_common_objects
-
-
-class BaseResource(BaseSanityResource):
-
-    __metaclass__ = Singleton
-
-    def setUp(self,inputs,connections):
-        super(BaseResource , self).setUp(inputs, connections)
-        self.setup_common_objects(self.inputs , self.connections)
-
-    def cleanUp(self):
-        super(BaseResource, self).cleanUp()
-
-    def setup_common_objects(self, inputs , connections):
-        (self.vn2_name, self.fip_vn_name) = (get_random_name("vn2"), get_random_name("fip_vn"))
-        self.vn2_vm2_name = get_random_name('vn2_vm2')
-        self.fvn_vm1_name = get_random_name('fvn_vm1')
-
-        self.vn2_fixture = self.useFixture(VNFixture(
-            project_name=self.inputs.project_name,
-            connections=self.connections,
-            inputs=self.inputs,
-            vn_name=self.vn2_name))
-
-        self.fvn_fixture = self.useFixture(VNFixture(
-            project_name=self.inputs.project_name,
-            connections=self.connections,
-            inputs=self.inputs,
-            vn_name=self.fip_vn_name))
-
-        # Making sure VM falls on diffrent compute host
-        self.orch = self.connections.orch 
-        host_list = self.orch.get_hosts()
-        compute_2 = host_list[0]
-        if len(host_list) > 1:
-            compute_2 = host_list[1]
-
         self.vn2_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,
                             connections= self.connections, vn_obj= self.vn2_fixture.obj,
-                            vm_name= self.vn2_vm2_name, image_name='ubuntu-traffic',
+                            vm_name= self.vn2_vm2_name, image_name='ubuntu-traffic', flavor='contrail_flavor_medium',
                             node_name=compute_2))
+#
         self.fvn_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,
                                 connections= self.connections, vn_obj= self.fvn_fixture.obj,
                                 vm_name= self.fvn_vm1_name))
+
         self.multi_intf_vm_fixture = self.useFixture(VMFixture(connections=self.connections,
                                      vn_objs=[self.vn1_fixture.obj , self.vn2_fixture.obj],
                                      vm_name='mltf_vm',
                                      project_name=self.inputs.project_name))
-
+    
         self.verify_common_objects()
     #end setup_common_objects
 
     def verify_common_objects(self):
-        super(BaseResource , self).verify_sanity_common_objects()
+        assert self.vn1_fixture.verify_on_setup()
         assert self.vn2_fixture.verify_on_setup()
         assert self.fvn_fixture.verify_on_setup()
-        assert self.fvn_vm1_fixture.wait_till_vm_is_up()
-        assert self.vn2_vm2_fixture.wait_till_vm_is_up()
-        assert self.multi_intf_vm_fixture.wait_till_vm_is_up()
+        assert self.vn1_vm1_fixture.verify_on_setup()
+        assert self.vn1_vm2_fixture.verify_on_setup()
+        assert self.fvn_vm1_fixture.verify_on_setup()
+        assert self.vn2_vm2_fixture.verify_on_setup()
+        assert self.multi_intf_vm_fixture.verify_on_setup()
     #end verify_common_objects
 
     def start_traffic(self):
@@ -328,18 +613,8 @@ class BaseResource(BaseSanityResource):
         self.logger.info("Sent traffic: %s"%(self.sender.sent))
         self.logger.info("Received traffic: %s"%(self.receiver.recv))
 
-class AnalyticsTestSanityWithMinResource(BaseSanityResource):
 
-    def setUp(self,inputs,connections):
-        super(AnalyticsTestSanityWithMinResource , self).setUp(inputs,connections)
-
-    def cleanUp(self):
-        super(AnalyticsTestSanityWithMinResource , self).cleanUp()
-
-    class Factory:
-        def create(self): return AnalyticsTestSanityWithMinResource()
-
-class AnalyticsTestSanityResource(BaseResource): 
+class AnalyticsTestSanityResource (BaseResource): 
 
     def setUp(self,inputs,connections):
         pass
@@ -352,7 +627,7 @@ class AnalyticsTestSanityResource(BaseResource):
     class Factory:
         def create(self): return AnalyticsTestSanityResource()
 
-class AnalyticsTestSanity1Resource(BaseResource):
+class AnalyticsTestSanity1Resource (BaseResource):
 
     def setUp(self,inputs,connections):
         pass
@@ -366,7 +641,7 @@ class AnalyticsTestSanity1Resource(BaseResource):
         def create(self): return AnalyticsTestSanity1Resource()
 
 
-class AnalyticsTestSanity2Resource(BaseResource):
+class AnalyticsTestSanity2Resource (BaseResource):
 
     def setUp(self,inputs,connections):
         pass
@@ -379,7 +654,7 @@ class AnalyticsTestSanity2Resource(BaseResource):
     class Factory:
         def create(self): return AnalyticsTestSanity2Resource()
 
-class AnalyticsTestSanity3Resource(BaseResource):
+class AnalyticsTestSanity3Resource (BaseResource):
 
     def setUp(self,inputs,connections):
         pass
