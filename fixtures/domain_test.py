@@ -93,7 +93,7 @@ class DomainFixture(fixtures.Fixture):
                     'Using existing domain %s(%s)'%(
                     self.domain_fq_name, self.uuid))
         elif self.domain_name == self.inputs.admin_domain:
-             raise Exception('Domain %s found not creating' % (self.domain_name))
+             self.logger.info('Domain %s found not creating' % (self.domain_name))
         else:
             self.logger.info('Domain %s not found, creating it' % (
                 self.domain_name))
