@@ -2,6 +2,7 @@ import test_v1
 from common import isolated_creds
 from vn_test import *
 from vm_test import *
+from policy_test import *
 import fixtures
 sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
 from traffic.core.stream import Stream
@@ -153,6 +154,307 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
                         result = result and False
         return result
     #end verify_vna_stats
+    
+    def setup_and_create_streams(self, src_vn_fix, dst_vn_fix, src_vm_fix, dst_vm_fix, sport=8000, dport=9000, count=100):
+        
+        src_vm_fix.install_pkg("Traffic")
+        dst_vm_fix.install_pkg("Traffic")
+        src_vm_node_ip = src_vm_fix.vm_node_ip
+        dst_vm_node_ip = dst_vm_fix.vm_node_ip
+        src_local_host = Host(
+            src_vm_node_ip, self.inputs.host_data[
+                src_vm_node_ip]['username'], self.inputs.host_data[
+                dst_vm_node_ip]['password'])
+        dst_local_host = Host(
+            dst_vm_node_ip, self.inputs.host_data[
+                dst_vm_node_ip]['username'], self.inputs.host_data[
+                dst_vm_node_ip]['password'])
+        send_host = Host(src_vm_fix.local_ip,
+                              src_vm_fix.vm_username,
+                              src_vm_fix.vm_password)
+        recv_host = Host(dst_vm_fix.local_ip,
+                              dst_vm_fix.vm_username,
+                              dst_vm_fix.vm_password)
+        
+        # Create traffic stream
+        for i in range(3):
+            
+            sport = sport 
+            dport = dport + i
+            print 'count=%s' % (count)
+            print 'dport=%s' % (dport)
+
+            self.logger.info("Creating streams...")
+            stream = Stream(
+                protocol="ip",
+                proto="udp",
+                src=src_vm_fix.vm_ip,
+                dst=dst_vm_fix.vm_ip,
+                dport=dport,
+                sport=sport)
+
+            profile = StandardProfile(
+                stream=stream,
+                size=100,
+                count=count,
+                listener=dst_vm_fix.vm_ip)
+            sender = Sender(
+                "sendudp",
+                profile,
+                src_local_host,
+                send_host,
+                self.inputs.logger)
+            receiver = Receiver(
+                "recvudp",
+                profile,
+                dst_local_host,
+                recv_host,
+                self.inputs.logger)
+            receiver.start()
+            sender.start()
+            sender.stop()
+            receiver.stop()
+            print sender.sent, receiver.recv
+            time.sleep(1)
+    #end setup_create_streams
+            
+    def creat_bind_policy(self,policy_name, rules, src_vn_fix, dst_vn_fix):
+        #method to avoid redundant code for binding
+        policy_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name,
+                rules_list=rules,
+                inputs=self.inputs,
+                connections=self.connections))
+        src_vn_fix.bind_policies([policy_fixture.policy_fq_name], src_vn_fix.vn_id)
+        self.addCleanup(src_vn_fix.unbind_policies, src_vn_fix.vn_id, [
+                policy_fixture.policy_fq_name])
+        
+        dst_vn_fix.bind_policies([policy_fixture.policy_fq_name], dst_vn_fix.vn_id)
+        self.addCleanup(dst_vn_fix.unbind_policies, dst_vn_fix.vn_id, [
+                policy_fixture.policy_fq_name])
+    #end create and bind policy
+       
+    def verify_session_record_table(self, start_time, src_vn, dst_vn):
+        self.logger.info('Verify session record table')
+        result = True
+        for ip in self.inputs.collector_ips:
+            self.logger.info(
+                    "Verifying SessionRecordTable through opserver %s" %
+                    (ip))
+            
+            #query and verify number of records
+            query = 'vn=' + src_vn + ' AND remote_vn=' + dst_vn + ' AND protocol=17'
+            query = 'local_ip=%s AND remote_ip=%s'%(self.res.vn1_vm1_fixture.vm_ip,self.res.vn1_vm2_fixture.vm_ip)
+            res = self.analytics_obj.ops_inspect[ip].post_query(
+                'SessionRecordTable',
+                start_time=start_time,
+                end_time='now',
+                select_fields=['forward_flow_uuid',
+                           'reverse_flow_uuid', 'vn', 'remote_vn'],
+                where_clause=query,
+                session_type='client')
+            if len(res) != 3:
+                self.logger.error('Expected Session records 3 got %s'%len(res))
+                result = result and bool(len(res))
+            self.logger.debug(res)
+            
+            #query with local_ip server_port protocol
+            query = 'local_ip=%s AND server_port=9001 AND protocol=17'%self.res.vn1_vm1_fixture.vm_ip
+            res = self.analytics_obj.ops_inspect[ip].post_query(
+                'SessionRecordTable',
+                start_time=start_time,
+                end_time='now',
+                select_fields=['forward_flow_uuid',
+                           'reverse_flow_uuid', 'vn', 'remote_vn'],
+            where_clause=query,
+            session_type="client")
+            if len(res) != 1:
+               self.logger.error('Expected session records 1 got %s'%len(res))
+               result = result and bool(len(res))
+            self.logger.debug(res)
+            
+            #query with server_port local_ip filter by server_port
+            query = 'vn=' + src_vn + ' AND remote_vn=' + dst_vn + ' AND protocol=17'
+            res = self.analytics_obj.ops_inspect[ip].post_query(
+                'SessionRecordTable',
+                start_time=start_time,
+                end_time='now',
+                select_fields=['forward_flow_uuid',
+                           'reverse_flow_uuid', 'local_ip', 'server_port'],
+            where_clause=query,
+            filter='server_port=9001',
+            session_type="client")
+            if len(res) != 1 :
+               self.logger.error('Expected session records 1 got %s'%len(res))
+               result = result and bool(len(res))
+            self.logger.debug(res)
+            
+            #query with client_port remote_ip filter by client_port 
+            #Total we get three record limit by 2
+            query = 'vn=' + src_vn + ' AND remote_vn=' + dst_vn + ' AND protocol=17'
+            res = self.analytics_obj.ops_inspect[ip].post_query(
+                'SessionRecordTable',
+                start_time=start_time,
+                end_time='now',
+                select_fields=['forward_flow_uuid',
+                           'reverse_flow_uuid', 'remote_ip', 'client_port'],
+            where_clause=query,
+            filter='client_port=8000',
+            limit=2,
+            session_type="client")
+            if len(res) != 2:
+               self.logger.error('Expected session records 2 got %s'%len(res))
+               result = result and bool(len(res))
+            self.logger.debug(res)
+            
+            #query with sort_fields
+            query = 'vn=' + src_vn + ' AND remote_vn=' + dst_vn + ' AND protocol=17'
+            res = self.analytics_obj.ops_inspect[ip].post_query(
+                'SessionRecordTable',
+                start_time=start_time,
+                end_time='now',
+                select_fields=['forward_flow_uuid',
+                           'reverse_flow_uuid', 'local_ip', 'server_port'],
+            where_clause=query,
+            sort_fields=['server_port'], sort=1,
+            session_type="client")
+            if res and res[0]['server_port'] != 9000:
+               self.logger.error('Expected server port 9000 got %s'%res[0]['server_port'])
+               result = result and bool(len(res))
+            self.logger.debug(res)
+             
+        assert result,'Failed to get expected number of Records'
+    #end verify_session_record_table
+    
+    def verify_session_series_table(self, start_time, src_vn, dst_vn):
+        
+        self.logger.info('Verify session series table and aggregation stats')
+        result = True
+        query = 'vn=' + src_vn + ' AND remote_vn=' + dst_vn + ' AND protocol=17'
+        granularity =10
+        vm_node_ip = self.res.vn1_vm1_fixture.vm_node_ip
+        vm_host = self.res.vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
+        ip = self.inputs.collector_ips[0]
+        self.logger.info("Verifying SessionSeriesTable through opserver %s" %(ip))
+        #query client session samples
+        self.logger.info('SessionSeries: [SUM(forward_sampled_bytes), SUM(reverse_sampled_pkts), sample_count]')
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionSeriesTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['SUM(forward_sampled_pkts)', 'SUM(reverse_sampled_bytes)', 'sample_count', 'vrouter'],
+            where_clause=query,
+            filter='vrouter=%s'% vm_host, session_type="client")
+        if len(res) != 1 or res[0]['SUM(forward_sampled_pkts)'] != 300:
+            self.logger.error('Session aggregate stats returned %s not expected'%res[0]['SUM(forward_sampled_pkts)'])
+            result = result and bool(len(res))
+        self.logger.debug(res)
+        
+        #self.logger.info('SessionSeries: [server_port, local_ip,SUM(forward_sampled_bytes), SUM(reverse_sampled_pkts), sample_count]')
+        #have three server ports so three record in output each with sum(forward pkts) 100
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionSeriesTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['server_port','local_ip','SUM(forward_sampled_pkts)', 'SUM(reverse_sampled_bytes)', 'sample_count', 'vrouter_ip'],
+            where_clause=query,
+            session_type="client")
+        status = True
+        for rec in res:
+            if rec['SUM(forward_sampled_pkts)'] != 100:
+                status = result and bool(len(res))
+        if len(res) != 3 and not status:
+            self.logger.error('Session series records returned %s not expected'%len(res))
+            result = result and status
+        self.logger.debug(res)
+        
+        ## all session msgs have same vn-remote_vn hence following query should return 1 record
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionSeriesTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['vn','remote_vn','SUM(forward_sampled_pkts)', 'SUM(reverse_sampled_bytes)', 'sample_count'],
+            where_clause=query,
+            session_type="client")
+        if len(res) != 1 and res[0].get('SUM(forward_sampled_pkts)') !=300 :
+            self.logger.error('Session series records returned %s not expected'%len(res))
+            result = result and bool(len(res))
+        self.logger.debug(res)
+        
+        ## sort results by server_port column
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionSeriesTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['vmi','local_ip','server_port','SUM(forward_sampled_bytes)', 'SUM(reverse_sampled_pkts)', 'sample_count'],
+            where_clause=query,
+            sort_fields=['server_port'], sort=1, limit=3,
+            session_type="client")
+        if len(res) !=3 and  res[0]['server_port'] != 9000:
+            self.logger.error('Session series records with sort fileld returned %s not expected'%len(res))
+            result = result and bool(len(res))
+        self.logger.debug(res)
+        
+        #self.logger.info('SessionSeries: [T=<x>, SUM(forward_sampled_bytes), SUM(reverse_sampled_pkts)]')
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionSeriesTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['T=%s' % (granularity), 'SUM(forward_sampled_bytes)',
+                           'SUM(reverse_sampled_pkts)', 'vrouter'],
+            where_clause=query,
+            session_type="client")
+        if not len(res) :
+            self.logger.error('Session series records with granularity returned %s not expected'%len(res))
+            result = result and bool(len(res))
+        self.logger.debug(res)
+        
+        #with sampled bytes
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionSeriesTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['T', 'forward_sampled_bytes', 'reverse_sampled_pkts'],
+            where_clause=query + ' AND server_port=9001',
+            session_type="client")
+        if not len(res) :
+            self.logger.error('Session series records with specific server_port returned %s not expected'%len(res))
+            result = result and bool(len(res))
+        self.logger.debug(res)
+        
+        #with logged bytes
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionSeriesTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['T', 'forward_logged_pkts', 'reverse_logged_bytes'],
+            where_clause=query,
+            session_type="client")
+        if not len(res) :
+            self.logger.error('Session series records with logged _bytes/pkts returned %s not expected'%len(res))
+            result = result and bool(len(res))
+        self.logger.debug(res)
+        
+        #filter by action
+        action = 'pass'
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionSeriesTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['server_port', 'forward_action',
+                                'SUM(forward_sampled_bytes)',
+                                'SUM(reverse_sampled_pkts)'],
+            where_clause=query,
+            session_type="client",
+            filter='forward_action=%s'%action)
+        if not len(res) :
+            self.logger.error('Session series records with filter_action pass returned %s not expected'%len(res))
+            result = result and bool(len(res))
+        self.logger.debug(res)
+        
+        assert result,'Failed to get expected number of Records'
+    #end verify_session_series_table
 
 class ResourceFactory:
     factories = {}
@@ -194,12 +496,12 @@ class BaseSanityResource(fixtures.Fixture):
         self.vn1_vm1_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,
                                 connections= self.connections, vn_obj= self.vn1_fixture.obj,
                                 vm_name= self.vn1_vm1_name,image_name='ubuntu-traffic',
-				flavor='contrail_flavor_medium', node_name=compute_1))
+                flavor='contrail_flavor_medium', node_name=compute_1))
 
         self.vn1_vm2_fixture=self.useFixture(VMFixture(project_name= self.inputs.project_name,
                                 connections= self.connections, vn_obj= self.vn1_fixture.obj,
                                 vm_name= self.vn1_vm2_name , image_name='ubuntu-traffic',
-				flavor='contrail_flavor_medium'))
+                flavor='contrail_flavor_medium'))
 
         self.verify_sanity_common_objects()
     #end setup_common_objects
@@ -403,5 +705,4 @@ class AnalyticsTestSanityWithResourceResource(BaseResource):
     class Factory:
         def create(self): return AnalyticsTestSanityWithResourceResource()
 #End resource
-
 
