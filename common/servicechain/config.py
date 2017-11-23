@@ -20,6 +20,17 @@ from tcutils.util import retry, is_v6
 import random
 import re
 
+# Default images for vcenter based environments
+VC_SVC_TYPE_PROPS = {
+    'firewall': {'in-network-nat': 'ubuntu-nat-fw',
+                 'in-network': 'ubuntu-in-net',
+                 'transparent': '',
+                 },
+    'analyzer': {'transparent': 'analyzer',
+                 'in-network' : 'analyzer',
+                 }
+}
+
 SVC_TYPE_PROPS = {
     'firewall': {'in-network-nat': 'tiny_nat_fw',
                  'in-network': 'tiny_in_net',
@@ -376,7 +387,10 @@ class ConfigSvcChain(fixtures.Fixture):
         if self.inputs.is_ci_setup() and self.inputs.get_af() == 'v4':
             image_name = self.inputs.get_ci_image()
         else:
-            image_name = image_name or 'ubuntu-traffic'
+	    if self.inputs.vcenter_dc:
+		image_name = 'ubuntu'
+	    else:
+	        image_name = image_name or 'ubuntu-traffic'
         return image_name
     # end _get_end_vm_image
 
@@ -441,7 +455,10 @@ class ConfigSvcChain(fixtures.Fixture):
 
         image_name = self._get_end_vm_image(image_name)
 
-        svc_img_name = svc_img_name or SVC_TYPE_PROPS[service_type][service_mode]
+	if self.inputs.vcenter_dc:
+	    svc_img_name = VC_SVC_TYPE_PROPS[service_type][service_mode]
+	else:
+            svc_img_name = svc_img_name or SVC_TYPE_PROPS[service_type][service_mode]
 
         # Mgmt
         (mgmt_vn_name,
@@ -538,7 +555,7 @@ class ConfigSvcChain(fixtures.Fixture):
             si_name = get_random_name('si')
             si_fixture = self.config_si(si_name,
                 st_fixture,
-                mgmt_vn_fq_name=self._get_if_needed(svc_img_name, 'management', mgmt_vn_fq_name),
+		 mgmt_vn_fq_name=self._get_if_needed(svc_img_name, 'management', mgmt_vn_fq_name),
                 left_vn_fq_name=self._get_if_needed(svc_img_name, 'left', si_left_vn_fq_name),
                 right_vn_fq_name=self._get_if_needed(svc_img_name, 'right', si_right_vn_fq_name),
                 port_tuples_props=port_tuples_props,
