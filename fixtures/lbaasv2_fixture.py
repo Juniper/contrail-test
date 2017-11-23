@@ -791,7 +791,7 @@ class LBaasV2Fixture(LBBaseFixture):
         self.listener_name = obj.get('name', None)
         self.vip_protocol = obj.get('protocol', None)
         self.vip_port = obj.get('protocol_port', None)
-        pools = self.network_h.list_lbaas_pools(listeners=self.listener_uuid)
+        pools = self.network_h.list_lbaas_pools(listener=self.listener_uuid)
         pool_obj = pools[0] if pools else None
         if pool_obj:
             self.pool_uuid = pool_obj['id']
@@ -799,12 +799,13 @@ class LBaasV2Fixture(LBBaseFixture):
             self.lb_method = pool_obj['lb_algorithm']
             self.pool_protocol = pool_obj['protocol']
             self.member_ids = [x['id'] for x in pool_obj.get('members', [])]
-            self.member_ips = [self.network_h.get_lbaas_member(x,
-                               self.pool_uuid)['address']
-                               for x in self.member_ids]
+            members = [self.network_h.get_lbaas_member(x, self.pool_uuid)
+                       for x in self.member_ids]
+            self.member_ips = [member['address'] for member in members]
+            self.member_weight = [member['weight'] for member in members]
             self.hmon_id = pool_obj.get('healthmonitor_id', None)
             if self.hmon_id:
-                hmon_obj = self.network_h.get_health_monitor(self.hmon_id)
+                hmon_obj = self.network_h.get_lbaas_healthmonitor(self.hmon_id)
                 self.hm_delay = hmon_obj['delay']
                 self.hm_probe_type = hmon_obj['type']
                 self.hm_max_retries = hmon_obj['max_retries']

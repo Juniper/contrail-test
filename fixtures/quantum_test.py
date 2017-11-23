@@ -106,7 +106,7 @@ class QuantumHelper():
         except CommonNetworkClientException as e:
             self.logger.exception(
                 'Neutron Exception while creating network %s' % (vn_name))
-            return None
+            raise
 
     def create_subnet(self, subnet, net_id, ipam_fq_name=None, enable_dhcp=True, disable_gateway=False):
         subnet_req = subnet

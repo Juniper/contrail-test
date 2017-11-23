@@ -247,7 +247,7 @@ class ConfigSvcChain(fixtures.Fixture):
         self.remove_from_cleanups(vm_fix.cleanUp)
 
     def get_svm_obj(self, vm_name):
-        for vm_obj in self.nova_h.get_vm_list():
+        for vm_obj in self.orch.get_vm_list():
             if vm_obj.name == vm_name:
                 return vm_obj
         errmsg = "No VM named '%s' found in the compute" % vm_name
@@ -268,14 +268,14 @@ class ConfigSvcChain(fixtures.Fixture):
     def get_svm_compute(self, svm_name):
         svm_obj = self.get_svm_obj(svm_name)
         vm_nodeip = self.inputs.host_data[
-            self.nova_h.get_nova_host_of_vm(svm_obj)]['host_ip']
+            self.orch.get_host_of_vm(svm_obj)]['host_ip']
         return self.inputs.host_data[vm_nodeip]
 
     def get_svm_tapintf(self, svm_name):
         self.is_svm_active(svm_name)
         svm_obj = self.get_svm_obj(svm_name)
         vm_nodeip = self.inputs.host_data[
-            self.nova_h.get_nova_host_of_vm(svm_obj)]['host_ip']
+            self.orch.get_host_of_vm(svm_obj)]['host_ip']
         inspect_h = self.agent_inspect[vm_nodeip]
         self.logger.debug(
             "svm_obj:'%s' compute_ip:'%s' agent_inspect:'%s'", svm_obj.__dict__,
@@ -294,7 +294,7 @@ class ConfigSvcChain(fixtures.Fixture):
         self.is_svm_active(svm_name)
         svm_obj = self.get_svm_obj(svm_name)
         vm_nodeip = self.inputs.host_data[
-            self.nova_h.get_nova_host_of_vm(svm_obj)]['host_ip']
+            self.orch.get_host_of_vm(svm_obj)]['host_ip']
         inspect_h = self.agent_inspect[vm_nodeip]
         self.logger.debug(
             "svm_obj:'%s' compute_ip:'%s' agent_inspect:'%s'", svm_obj.__dict__,
@@ -336,7 +336,7 @@ class ConfigSvcChain(fixtures.Fixture):
     def create_service_vms(self, vns, service_mode='transparent', max_inst=1,
             svc_img_name=None, service_type='firewall',
             hosts=[]):
-        non_docker_zones = [x for x in self.nova_h.zones if x != 'nova/docker']
+        non_docker_zones = [x for x in self.orch.get_zones() if x != 'nova/docker']
         svm_fixtures = []
         svc_img_name = svc_img_name or SVC_TYPE_PROPS[service_type][service_mode]
         for i in range(max_inst):
@@ -604,7 +604,7 @@ class ConfigSvcChain(fixtures.Fixture):
         (svm_ids, msg) = si.get_vm_refs()
         svm_list= []
         for svm_id in svm_ids:
-            svm_list.append(self.nova_h.get_vm_by_id(svm_id))
+            svm_list.append(self.orch.get_vm_by_id(svm_id))
         return svm_list
     #end get_svms_in_si
 

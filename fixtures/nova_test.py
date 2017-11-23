@@ -919,6 +919,8 @@ class NovaHelper(object):
                 raise RuntimeError("Zone %s is not available" % zone)
             if not self.compute_nodes:
                 return (zone, None)
+            if zone not in self.hosts_dict:
+                return (None, None)
             if not len(self.hosts_dict[zone]):
                 raise RuntimeError("Zone %s doesnt have any computes" % zone)
 

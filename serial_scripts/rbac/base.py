@@ -10,6 +10,7 @@ from lbaasv2_fixture import LBaasV2Fixture
 from common.servicechain.firewall.verify import VerifySvcFirewall
 from tcutils.util import get_random_name
 from cfgm_common.exceptions import PermissionDenied
+from common.openstack_libs import neutron_forbidden
 from vnc_api.vnc_api import VirtualNetworkType
 import test_v1
 import os
@@ -238,9 +239,9 @@ class BaseRbac(test_v1.BaseTestCase_v1):
                                   connections=connections,
                                   use_vnc_api=True, **kwargs)
         if svc:
-            assert svc.verify_svc_in_network_datapath(svc_mode='in-network',
-                                                      st_version=st_version,
-                                                      ci=True)
+            assert svc.verify_svc_chain(service_mode='in-network',
+                                        svc_img_name='tiny_in_net',
+                                        create_svms=True)
         return svc
 
     def create_lbaas(self, lb_name, network_id, connections=None, verify=True, **kwargs):
@@ -251,7 +252,13 @@ class BaseRbac(test_v1.BaseTestCase_v1):
                         network_id=network_id,
                         **kwargs)
         if lbaas_fixture and verify:
-            assert lbaas_fixture.verify_on_setup(), 'LB verification failed'
+            assert lbaas_fixture.verify_lb_in_api_server(), 'LB verificaiton failed'
+            lb_fixture = LBaasV2Fixture(connections=self.connections,
+                                        lb_uuid=lbaas_fixture.lb_uuid,
+                                        listener_uuid=lbaas_fixture.listener_uuid)
+            lb_fixture.lb_read()
+            lb_fixture.read()
+            assert lb_fixture.verify_on_setup(), 'LB verification failed'
         return lbaas_fixture
 
     def create_sg(self, connections=None, verify=True, option='orch', **kwargs):
@@ -275,7 +282,7 @@ class BaseRbac(test_v1.BaseTestCase_v1):
     def associate_sg(self, sg_fixture, vm_fixture, verify=True):
         vm_fixture.add_security_group(sg_fixture.uuid)
         if verify:
-            result, msg = vm_fixture.verify_security_group(sg_fixture.uuid)
+            result, msg = vm_fixture.verify_security_group(sg_fixture.secgrp_name)
             assert result, msg
 
     def create_fip_pool(self, vn_fixture, connections=None, verify=True):
@@ -319,7 +326,7 @@ class BaseRbac(test_v1.BaseTestCase_v1):
     def create_fixture(self, fixturecls, **kwargs):
         try:
             return self.useFixture(fixturecls(**kwargs))
-        except PermissionDenied:
+        except (PermissionDenied, neutron_forbidden):
             return None
 
     def read_fip_pool(self, connections, uuid):

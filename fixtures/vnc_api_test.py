@@ -60,10 +60,6 @@ class VncLibFixture(fixtures.Fixture):
                        else kwargs.get('use_ssl', False)
         self.authn_url = self.inputs.authn_url if self.inputs else \
                          kwargs.get('authn_url', None)
-    # end __init__
-
-    def setUp(self):
-        super(VncLibFixture, self).setUp()
         if self.connections:
             self.logger = self.connections.logger
             self.project_name = self.connections.project_name
@@ -76,7 +72,11 @@ class VncLibFixture(fixtures.Fixture):
             self.auth_server_ip = self.inputs.auth_ip
             self.auth_client = self.connections.auth
             self.project_id = self.connections.project_id
-        else:
+    # end __init__
+
+    def setUp(self):
+        super(VncLibFixture, self).setUp()
+        if not self.connections:
             self.logger = self.logger or contrail_logging.getLogger(__name__)
             self.vnc_api_h = VncApi(
                               username=self.username,

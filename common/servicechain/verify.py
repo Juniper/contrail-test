@@ -51,7 +51,7 @@ class VerifySvcChain(ConfigSvcChain):
         for svm in si.svm_list:
             svm_node_ip = self.inputs.host_data[svm.vm_node_ip]['host_ip']
             svm_node_name = self.inputs.host_data[svm.vm_node_ip]['name']
-            inspect_h1 = self.agent_inspect[svm_node_ip]
+            inspect_h1 = self.connections.agent_inspect[svm_node_ip]
             for vrf_list in inspect_h1.get_vna_vrf_list()['VRFs']:
                 if vrf_list['name'] in ri_list:
                     vrf_id = vrf_list['ucindex']

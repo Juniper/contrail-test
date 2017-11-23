@@ -3,12 +3,14 @@ try:
     from neutronclient.neutron import client as neutron_client
     from neutronclient.client import HTTPClient as neutron_http_client
     from neutronclient.common.exceptions import NeutronClientException as neutron_client_exception
+    from neutronclient.common.exceptions import Forbidden as neutron_forbidden
     from neutronclient.common import exceptions as neutron_exception
 except:
     neutron_client = None
     neutron_http_client = None
     neutron_client_exception = None
     neutron_exception = None
+    neutron_forbidden = None
 
 # import handling for keystone 
 try:
