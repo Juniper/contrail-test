@@ -22,8 +22,7 @@ class TestRbac(BaseRbac):
                   'perms': [{'role': self.role1, 'crud': 'CRUD'}]
                  }]
         proj_rbac = self.create_rbac_acl(rules=rules)
-        assert self.create_sc(connections=user1_conn), 'SC v1 creation failed'
-        assert self.create_sc(connections=user1_conn, st_version=2), 'SC v2 creation failed'
+        assert self.create_sc(connections=user1_conn), 'SC creation failed'
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
