@@ -303,6 +303,8 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
         sanity_testbed_dict['xmpp_auth_enable'] = env.xmpp_auth_enable
     if env.has_key('xmpp_dns_auth_enable'):
         sanity_testbed_dict['xmpp_dns_auth_enable'] = env.xmpp_dns_auth_enable
+    if env.has_key('metadata_ssl_enable'):
+        sanity_testbed_dict['metadata_ssl_enable'] = env.metadata_ssl_enable
 
     if env.has_key('dm_mx'):
         sanity_testbed_dict['dm_mx'] = env.dm_mx

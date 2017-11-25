@@ -1115,6 +1115,18 @@ def skip_because(*args, **kwargs):
                             "%d nodes, but only %d found" % (mins, nodes)))
                     raise testtools.TestCase.skipException(msg)
 
+            if "metadata_ssl" in kwargs:
+                check_metadata=0
+                try:
+                    if self.inputs.inputs.metadata_ssl_enable is False:
+                        msg = "Skipped as metadata_ssl_enable is not set to True."
+                        check_metadata=1
+                except Exception, e:
+                    msg = "Skipped as metadata_ssl_enable is not defined in testbed file."
+                    check_metadata=1
+                if check_metadata == 1:
+                    raise testtools.TestCase.skipException(msg)
+
             return f(self, *func_args, **func_kwargs)
         return wrapper
     return decorator

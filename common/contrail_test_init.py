@@ -711,6 +711,8 @@ class TestInputs(object):
             self.xmpp_auth_enable = json_data['xmpp_auth_enable']
         if 'xmpp_dns_auth_enable' in json_data:
             self.xmpp_dns_auth_enable = json_data['xmpp_dns_auth_enable']
+        if 'metadata_ssl_enable' in json_data:
+            self.metadata_ssl_enable = json_data['metadata_ssl_enable']
 
         if 'dm_mx' in json_data:
             self.dm_mx = json_data['dm_mx']
