@@ -21,6 +21,7 @@ from tcutils.tcpdump_utils import start_tcpdump_for_intf,\
 import test
 from tcutils.contrail_status_check import ContrailStatusChecker
 from tcutils.traffic_utils.hping_traffic import Hping3
+import scripts.vm_regression.test_vm_basic as test_vm_basic
 
 class TestBasicVMVN0(BaseVnVmTest):
 
@@ -949,3 +950,567 @@ class TestBasicVMVN0(BaseVnVmTest):
     # end test_underlay_brodcast_traffic_handling 
 
 # end TestBasicVMVN0
+
+class TestMetadataSSL(test_vm_basic.TestBasicVMVN):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestMetadataSSL, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestMetadataSSL, cls).tearDownClass()
+
+    def restore_cert_key_agent(self):
+        cmd='cp /etc/contrail/ssl/certs/server.pem.bkup /etc/contrail/ssl/certs/server.pem;\
+             cp /etc/contrail/ssl/private/server-privkey.pem.bkup /etc/contrail/ssl/private/server-privkey.pem'
+        for compute_node in self.inputs.compute_ips:
+            self.inputs.run_cmd_on_server(compute_node, cmd)
+    # end restore_cert_key_agent
+
+    def restore_cert_key_nova(self):
+        if self.inputs.get_build_sku() in ['mitaka', 'newton']:
+            cmd='cp /etc/nova/ssl/private/novakey.pem.bkup /etc/nova/ssl/private/novakey.pem;\
+                 cp /etc/nova/ssl/certs/nova.pem.bkup /etc/nova/ssl/certs/nova.pem'
+        else:
+            cmd='docker exec -it nova-api cp /etc/nova/ssl/private/novakey.pem.bkup /etc/nova/ssl/private/novakey.pem;\
+                 docker exec -it nova-api cp /etc/nova/ssl/certs/nova.pem.bkup /etc/nova/ssl/certs/nova.pem'
+        for openstack_node in self.inputs.openstack_ips:
+            self.inputs.run_cmd_on_server(openstack_node, cmd)
+    # end restore_cert_key_nova
+
+    def restore_conf(self):
+        if self.inputs.get_build_sku() in ['mitaka', 'newton']:
+            cmd='cp /etc/nova/nova.conf.bkup /etc/nova/nova.conf; service nova-api restart'
+        else:
+            cmd='docker exec -it nova-api cp /etc/nova/nova.conf.bkup /etc/nova/nova.conf;\
+                 docker exec -it nova-api service nova-api restart'
+        for openstack_node in self.inputs.openstack_ips:
+            self.inputs.run_cmd_on_server(openstack_node, cmd)
+
+        cmd='cp /etc/contrail/contrail-vrouter-agent.conf.bkup\
+             /etc/contrail/contrail-vrouter-agent.conf;\
+             service contrail-vrouter-agent restart'
+        for compute_node in self.inputs.compute_ips:
+            self.inputs.run_cmd_on_server(compute_node, cmd)
+    # end restore_conf
+
+    @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter', metadata_ssl = 'False')
+    def test_metadata_ssl_service_without_ca_cert(self):
+        '''
+        Description: Test to validate metadata ssl service on VM creation without ca cert.
+            Maintainer: ritam@juniper.net
+        '''
+
+        #Back up conf files.
+        if self.inputs.get_build_sku() in ['mitaka', 'newton']:
+            cmd='cp /etc/nova/nova.conf /etc/nova/nova.conf.bkup'
+        else:
+            cmd='docker exec -it nova-api cp /etc/nova/nova.conf /etc/nova/nova.conf.bkup'
+        for openstack_node in self.inputs.openstack_ips:
+            self.inputs.run_cmd_on_server(openstack_node, cmd)
+
+        cmd='cp /etc/contrail/contrail-vrouter-agent.conf /etc/contrail/contrail-vrouter-agent.conf.bkup'
+        for compute_node in self.inputs.compute_ips:
+            self.inputs.run_cmd_on_server(compute_node, cmd)
+
+        #Add cleanup routine.
+        self.addCleanup(self.restore_conf)
+
+        #Change config
+        if self.inputs.get_build_sku() in ['mitaka', 'newton']:
+            cmd='openstack-config --del /etc/nova/nova.conf DEFAULT ssl_ca_file;\
+                 openstack-config --del /etc/nova/nova.conf ssl ca_file;\
+                 service nova-api restart'
+        else:
+            cmd='openstack-config --del /etc/kolla/nova-api/nova.conf DEFAULT ssl_ca_file;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf ssl ca_file;\
+                 docker restart nova-api'
+        for openstack_node in self.inputs.openstack_ips:
+            self.inputs.run_cmd_on_server(openstack_node, cmd)
+
+        #Validate metadata ssl service.
+        try:
+            self.test_metadata_service()
+            self.logger.info('Metadata ssl test passed without ca cert.')
+            result=True
+        except Exception as e:
+            self.logger.error('Metadata ssl test failed without ca cert.')
+            result=False
+        return result
+    # end test_metadata_ssl_service_without_ca_cert
+
+    @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter', metadata_ssl = 'False')
+    def test_metadata_failure_with_ssl_disabled_on_nova(self):
+        '''
+        Description: Test to validate metadata ssl service failure on VM creation without
+                     ssl encryption configuration on nova side.
+            Maintainer: ritam@juniper.net
+        '''
+
+        #Back up conf files.
+        if self.inputs.get_build_sku() in ['mitaka', 'newton']:
+            cmd='cp /etc/nova/nova.conf /etc/nova/nova.conf.bkup'
+        else:
+            cmd='docker exec -it nova-api cp /etc/nova/nova.conf /etc/nova/nova.conf.bkup'
+        for openstack_node in self.inputs.openstack_ips:
+            self.inputs.run_cmd_on_server(openstack_node, cmd)
+
+        cmd='cp /etc/contrail/contrail-vrouter-agent.conf /etc/contrail/contrail-vrouter-agent.conf.bkup'
+        for compute_node in self.inputs.compute_ips:
+            self.inputs.run_cmd_on_server(compute_node, cmd)
+
+        #Add cleanup routine.
+        self.addCleanup(self.restore_conf)
+
+        #Change config
+        if self.inputs.get_build_sku() in ['mitaka', 'newton']:
+            cmd='openstack-config --del /etc/nova/nova.conf DEFAULT enabled_ssl_apis;\
+                 openstack-config --del /etc/nova/nova.conf DEFAULT nova_metadata_protocol;\
+                 openstack-config --del /etc/nova/nova.conf DEFAULT nova_metadata_insecure;\
+                 openstack-config --del /etc/nova/nova.conf DEFAULT ssl_cert_file;\
+                 openstack-config --del /etc/nova/nova.conf DEFAULT ssl_key_file;\
+                 openstack-config --del /etc/nova/nova.conf DEFAULT ssl_ca_file;\
+                 openstack-config --del /etc/nova/nova.conf ssl cert_file;\
+                 openstack-config --del /etc/nova/nova.conf ssl key_file;\
+                 openstack-config --del /etc/nova/nova.conf ssl ca_file;\
+                 service nova-api restart'
+        else:
+            cmd='openstack-config --del /etc/kolla/nova-api/nova.conf DEFAULT enabled_ssl_apis;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf DEFAULT nova_metadata_protocol;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf DEFAULT nova_metadata_insecure;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf DEFAULT ssl_cert_file;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf DEFAULT ssl_key_file;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf DEFAULT ssl_ca_file;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf ssl cert_file;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf ssl key_file;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf ssl ca_file;\
+                 docker restart nova-api'
+        for openstack_node in self.inputs.openstack_ips:
+            self.inputs.run_cmd_on_server(openstack_node, cmd)
+
+        #Validate metadata ssl service.
+        try:
+            self.test_metadata_service()
+            self.logger.info('Metadata ssl test passed without any ssl config in nova.')
+            result=False
+        except Exception as e:
+            self.logger.error('Metadata ssl test failed without any ssl config in nova.')
+            result=True
+        return result
+    # end test_metadata_failure_with_ssl_disabled_on_nova
+
+    @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter', metadata_ssl = 'False')
+    def test_metadata_failure_without_cert_key_in_nova(self):
+        '''
+        Description: Test to validate metadata ssl service failure on VM creation without
+                     cert and key file configuration on nova side.
+            Maintainer: ritam@juniper.net
+        '''
+
+        #Back up conf files.
+        if self.inputs.get_build_sku() in ['mitaka', 'newton']:
+            cmd='cp /etc/nova/nova.conf /etc/nova/nova.conf.bkup'
+        else:
+            cmd='docker exec -it nova-api cp /etc/nova/nova.conf /etc/nova/nova.conf.bkup'
+        for openstack_node in self.inputs.openstack_ips:
+            self.inputs.run_cmd_on_server(openstack_node, cmd)
+
+        cmd='cp /etc/contrail/contrail-vrouter-agent.conf /etc/contrail/contrail-vrouter-agent.conf.bkup'
+        for compute_node in self.inputs.compute_ips:
+            self.inputs.run_cmd_on_server(compute_node, cmd)
+
+        #Add cleanup routine.
+        self.addCleanup(self.restore_conf)
+
+        #Change config
+        if self.inputs.get_build_sku() in ['mitaka', 'newton']:
+            cmd='openstack-config --del /etc/nova/nova.conf DEFAULT ssl_cert_file;\
+                 openstack-config --del /etc/nova/nova.conf DEFAULT ssl_key_file;\
+                 openstack-config --del /etc/nova/nova.conf ssl cert_file;\
+                 openstack-config --del /etc/nova/nova.conf ssl key_file;\
+                 service nova-api restart'
+        else:
+            cmd='openstack-config --del /etc/kolla/nova-api/nova.conf DEFAULT ssl_cert_file;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf DEFAULT ssl_key_file;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf ssl cert_file;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf ssl key_file;\
+                 docker restart nova-api'
+        for openstack_node in self.inputs.openstack_ips:
+            self.inputs.run_cmd_on_server(openstack_node, cmd)
+
+        #Validate metadata ssl service.
+        try:
+            self.test_metadata_service()
+            self.logger.info('Metadata ssl test passed with wrong cert file content in nova.')
+            result=False
+        except Exception as e:
+            self.logger.error('Metadata ssl test failed with wrong cert file content in nova.')
+            result=True
+        return result
+    # end test_metadata_failure_without_cert_key_in_nova
+
+    @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter', metadata_ssl = 'False')
+    def test_metadata_failure_with_wrong_cert_in_nova(self):
+        '''
+        Description: Test to validate metadata ssl service failure on VM creation with
+                     wrong cert file contents on nova side.
+            Maintainer: ritam@juniper.net
+        '''
+
+        #Back up cert key files.
+        if self.inputs.get_build_sku() in ['mitaka', 'newton']:
+            cmd='cp /etc/nova/ssl/private/novakey.pem /etc/nova/ssl/private/novakey.pem.bkup;\
+                 cp /etc/nova/ssl/certs/nova.pem /etc/nova/ssl/certs/nova.pem.bkup'
+        else:
+            cmd='docker exec -it nova-api cp /etc/nova/ssl/private/novakey.pem /etc/nova/ssl/private/novakey.pem.bkup;\
+                 docker exec -it nova-api cp /etc/nova/ssl/certs/nova.pem /etc/nova/ssl/certs/nova.pem.bkup'
+        for openstack_node in self.inputs.openstack_ips:
+            self.inputs.run_cmd_on_server(openstack_node, cmd)
+
+        #Add cleanup routine.
+        self.addCleanup(self.restore_cert_key_nova)
+
+        #Change ciert file
+        if self.inputs.get_build_sku() in ['mitaka', 'newton']:
+            cmd="sed -i '8i this ia a garbage value inserted in line 8' /etc/nova/ssl/private/novakey.pem"
+        else:
+            cmd="sed -i '8i this ia a garbage value inserted in line 8' /etc/nova/ssl/private/novakey.pem"
+        for openstack_node in self.inputs.openstack_ips:
+            self.inputs.run_cmd_on_server(openstack_node, cmd)
+
+        #Validate metadata ssl service.
+        try:
+            self.test_metadata_service()
+            self.logger.info('Metadata ssl test passed with wrong key file content in nova.')
+            result=False
+        except Exception as e:
+            self.logger.error('Metadata ssl test failed with wrong key file content in nova.')
+            result=True
+        return result
+    # end test_metadata_failure_with_wrong_cert_in_nova
+
+    @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter', metadata_ssl = 'False')
+    def test_metadata_failure_with_wrong_key_in_nova(self):
+        '''
+        Description: Test to validate metadata ssl service failure on VM creation with
+                     wrong key file contents on nova side.
+            Maintainer: ritam@juniper.net
+        '''
+
+        #Back up cert key files.
+        if self.inputs.get_build_sku() in ['mitaka', 'newton']:
+            cmd='cp /etc/nova/ssl/private/novakey.pem /etc/nova/ssl/private/novakey.pem.bkup;\
+                 cp /etc/nova/ssl/certs/nova.pem /etc/nova/ssl/certs/nova.pem.bkup'
+        else:
+            cmd='docker exec -it nova-api cp /etc/nova/ssl/private/novakey.pem /etc/nova/ssl/private/novakey.pem.bkup;\
+                 docker exec -it nova-api cp /etc/nova/ssl/certs/nova.pem /etc/nova/ssl/certs/nova.pem.bkup'
+        for openstack_node in self.inputs.openstack_ips:
+            self.inputs.run_cmd_on_server(openstack_node, cmd)
+
+        #Add cleanup routine.
+        self.addCleanup(self.restore_cert_key_nova)
+
+        #Change ciert file
+        if self.inputs.get_build_sku() in ['mitaka', 'newton']:
+            cmd="sed -i '8i this ia a garbage value inserted in line 8' /etc/nova/ssl/private/novakey.pem"
+        else:
+            cmd="sed -i '8i this ia a garbage value inserted in line 8' /etc/nova/ssl/private/novakey.pem"
+        for openstack_node in self.inputs.openstack_ips:
+            self.inputs.run_cmd_on_server(openstack_node, cmd)
+
+        #Validate metadata ssl service.
+        try:
+            self.test_metadata_service()
+            self.logger.info('Metadata ssl test passed without any cert key file config in nova.')
+            result=False
+        except Exception as e:
+            self.logger.error('Metadata ssl test failed without any cert key config in nova.')
+            result=True
+        return result
+    # end test_metadata_failure_with_wrong_key_in_nova
+
+    @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter', metadata_ssl = 'False')
+    def test_metadata_with_ssl_disabled(self):
+        '''
+        Description: Test to validate metadata service works with ssl configs
+                     disabled on both nova and agent side.
+            Maintainer: ritam@juniper.net
+        '''
+
+        #Back up conf files.
+        if self.inputs.get_build_sku() in ['mitaka', 'newton']:
+            cmd='cp /etc/nova/nova.conf /etc/nova/nova.conf.bkup'
+        else:
+            cmd='docker exec -it nova-api cp /etc/nova/nova.conf /etc/nova/nova.conf.bkup'
+        for openstack_node in self.inputs.openstack_ips:
+            self.inputs.run_cmd_on_server(openstack_node, cmd)
+
+        cmd='cp /etc/contrail/contrail-vrouter-agent.conf /etc/contrail/contrail-vrouter-agent.conf.bkup'
+        for compute_node in self.inputs.compute_ips:
+            self.inputs.run_cmd_on_server(compute_node, cmd)
+
+        #Add cleanup routine.
+        self.addCleanup(self.restore_conf)
+
+        #Change config
+        cmd='openstack-config --del /etc/contrail/contrail-vrouter-agent.conf METADATA metadata_use_ssl;\
+             openstack-config --del /etc/contrail/contrail-vrouter-agent.conf METADATA metdata_client_cert_type;\
+             openstack-config --del /etc/contrail/contrail-vrouter-agent.conf METADATA metadata_client_cert;\
+             openstack-config --del /etc/contrail/contrail-vrouter-agent.conf METADATA metadata_client_key;\
+             service contrail-vrouter-agent restart'
+        for compute_node in self.inputs.compute_ips:
+            self.inputs.run_cmd_on_server(compute_node, cmd)
+
+        if self.inputs.get_build_sku() in ['mitaka', 'newton']:
+            cmd='openstack-config --del /etc/nova/nova.conf DEFAULT enabled_ssl_apis;\
+                 openstack-config --del /etc/nova/nova.conf DEFAULT nova_metadata_protocol;\
+                 openstack-config --del /etc/nova/nova.conf DEFAULT nova_metadata_insecure;\
+                 openstack-config --del /etc/nova/nova.conf DEFAULT ssl_cert_file;\
+                 openstack-config --del /etc/nova/nova.conf DEFAULT ssl_key_file;\
+                 openstack-config --del /etc/nova/nova.conf DEFAULT ssl_ca_file;\
+                 openstack-config --del /etc/nova/nova.conf ssl cert_file;\
+                 openstack-config --del /etc/nova/nova.conf ssl key_file;\
+                 openstack-config --del /etc/nova/nova.conf ssl ca_file;\
+                 service nova-api restart'
+        else:
+            cmd='openstack-config --del /etc/kolla/nova-api/nova.conf DEFAULT enabled_ssl_apis;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf DEFAULT nova_metadata_protocol;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf DEFAULT nova_metadata_insecure;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf DEFAULT ssl_cert_file;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf DEFAULT ssl_key_file;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf DEFAULT ssl_ca_file;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf ssl cert_file;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf ssl key_file;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf ssl ca_file;\
+                 docker restart nova-api'
+        for openstack_node in self.inputs.openstack_ips:
+            self.inputs.run_cmd_on_server(openstack_node, cmd)
+
+        #Validate metadata ssl service.
+        try:
+            self.test_metadata_service()
+            self.logger.info('Metadata ssl test passed without any ssl encryption.')
+            result=True
+        except Exception as e:
+            self.logger.error('Metadata ssl test failed without any ssl encryption.')
+            result=False
+        return result
+    # end test_metadata_with_ssl_disabled
+
+    @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter', metadata_ssl = 'False')
+    def test_metadata_with_wrong_cert_in_agent(self):
+        '''
+        Description: Test to validate metadata service fails with wrong cert
+                     contents on agent side.
+            Maintainer: ritam@juniper.net
+        '''
+
+        #Back up cert key files.
+        cmd='cp /etc/contrail/ssl/certs/server.pem /etc/contrail/ssl/certs/server.pem.bkup;\
+             cp /etc/contrail/ssl/private/server-privkey.pem /etc/contrail/ssl/private/server-privkey.pem.bkup'
+        for compute_node in self.inputs.compute_ips:
+            self.inputs.run_cmd_on_server(compute_node, cmd)
+
+        #Add cleanup routine.
+        self.addCleanup(self.restore_cert_key_agent)
+
+        #Change config
+        cmd="sed -i '8i this ia a garbage value inserted in line 8' /etc/contrail/ssl/certs/server.pem"
+        for compute_node in self.inputs.compute_ips:
+            self.inputs.run_cmd_on_server(compute_node, cmd)
+
+        #Validate metadata ssl service.
+        try:
+            self.test_metadata_service()
+            self.logger.info('Metadata ssl test passed with wrong cert on agent.')
+            result=False
+        except Exception as e:
+            self.logger.error('Metadata ssl test failed with wrong cert on agent.')
+            result=True
+        return result
+    # end test_metadata_with_wrong_cert_in_agent
+
+    @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter', metadata_ssl = 'False')
+    def test_metadata_with_wrong_key_in_agent(self):
+        '''
+        Description: Test to validate metadata service fails with wrong key
+                     contents on agent side.
+            Maintainer: ritam@juniper.net
+        '''
+
+        #Back up cert key files.
+        cmd='cp /etc/contrail/ssl/certs/server.pem /etc/contrail/ssl/certs/server.pem.bkup;\
+             cp /etc/contrail/ssl/private/server-privkey.pem /etc/contrail/ssl/private/server-privkey.pem.bkup'
+        for compute_node in self.inputs.compute_ips:
+            self.inputs.run_cmd_on_server(compute_node, cmd)
+
+        #Add cleanup routine.
+        self.addCleanup(self.restore_cert_key_agent)
+
+        #Change config
+        cmd="sed -i '8i this ia a garbage value inserted in line 8' /etc/contrail/ssl/private/server-privkey.pem"
+        for compute_node in self.inputs.compute_ips:
+            self.inputs.run_cmd_on_server(compute_node, cmd)
+
+        #Validate metadata ssl service.
+        try:
+            self.test_metadata_service()
+            self.logger.info('Metadata ssl test passed with wrong key on agent.')
+            result=False
+        except Exception as e:
+            self.logger.error('Metadata ssl test failed with wrong key on agent.')
+            result=True
+        return result
+    # end test_metadata_with_wrong_key_in_agent
+
+    @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter', metadata_ssl = 'False')
+    def test_metadata_with_ssl_flag_not_set_in_agent(self):
+        '''
+        Description: Test to validate metadata service fails when metadata_use_ssl flag
+                     is not set on the agent side.
+            Maintainer: ritam@juniper.net
+        '''
+
+        #Back up conf files.
+        if self.inputs.get_build_sku() in ['mitaka', 'newton']:
+            cmd='cp /etc/nova/nova.conf /etc/nova/nova.conf.bkup'
+        else:
+            cmd='docker exec -it nova-api cp /etc/nova/nova.conf /etc/nova/nova.conf.bkup'
+        for openstack_node in self.inputs.openstack_ips:
+            self.inputs.run_cmd_on_server(openstack_node, cmd)
+
+        cmd='cp /etc/contrail/contrail-vrouter-agent.conf /etc/contrail/contrail-vrouter-agent.conf.bkup'
+        for compute_node in self.inputs.compute_ips:
+            self.inputs.run_cmd_on_server(compute_node, cmd)
+
+        #Add cleanup routine.
+        self.addCleanup(self.restore_conf)
+
+        #Change config
+        cmd='openstack-config --del /etc/contrail/contrail-vrouter-agent.conf METADATA metadata_use_ssl;\
+             service contrail-vrouter-agent restart'
+        for compute_node in self.inputs.compute_ips:
+            self.inputs.run_cmd_on_server(compute_node, cmd)
+
+        #Validate metadata ssl service.
+        try:
+            self.test_metadata_service()
+            self.logger.info('Metadata ssl test passed without ssl flag set on agent.')
+            result=False
+        except Exception as e:
+            self.logger.error('Metadata ssl test failed without ssl flag set on agent.')
+            result=True
+        return result
+    # end test_metadata_with_ssl_flag_not_set_in_agent
+
+    @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter', metadata_ssl = 'False')
+    def test_metadata_with_ssl_disabled_only_on_agent(self):
+        '''
+        Description: Test to validate metadata service fails when agent sends insecure
+                     request to ssl encrypted nova/metadata service.
+            Maintainer: ritam@juniper.net
+        '''
+
+        #Back up conf files.
+        if self.inputs.get_build_sku() in ['mitaka', 'newton']:
+            cmd='cp /etc/nova/nova.conf /etc/nova/nova.conf.bkup'
+        else:
+            cmd='docker exec -it nova-api cp /etc/nova/nova.conf /etc/nova/nova.conf.bkup'
+        for openstack_node in self.inputs.openstack_ips:
+            self.inputs.run_cmd_on_server(openstack_node, cmd)
+
+        cmd='cp /etc/contrail/contrail-vrouter-agent.conf /etc/contrail/contrail-vrouter-agent.conf.bkup'
+        for compute_node in self.inputs.compute_ips:
+            self.inputs.run_cmd_on_server(compute_node, cmd)
+
+        #Add cleanup routine.
+        self.addCleanup(self.restore_conf)
+
+        #Change config
+        cmd='openstack-config --del /etc/contrail/contrail-vrouter-agent.conf METADATA metadata_use_ssl;\
+             openstack-config --del /etc/contrail/contrail-vrouter-agent.conf METADATA metdata_client_cert_type;\
+             openstack-config --del /etc/contrail/contrail-vrouter-agent.conf METADATA metadata_client_cert;\
+             openstack-config --del /etc/contrail/contrail-vrouter-agent.conf METADATA metadata_client_key;\
+             service contrail-vrouter-agent restart'
+        for compute_node in self.inputs.compute_ips:
+            self.inputs.run_cmd_on_server(compute_node, cmd)
+
+        #Validate metadata ssl service.
+        try:
+            self.test_metadata_service()
+            self.logger.info('Metadata ssl test passed without any ssl encryption on agent side.')
+            result=False
+        except Exception as e:
+            self.logger.error('Metadata ssl test failed without any ssl encryption on agent side.')
+            result=True
+        return result
+    # end test_metadata_with_ssl_disabled_only_on_agent
+
+    @preposttest_wrapper
+    @skip_because(orchestrator = 'vcenter', metadata_ssl = 'False')
+    def test_metadata_no_ca_cert(self):
+        '''
+        Description: Test to validate metadata service fails when agent sends insecure
+                     request to ssl encrypted nova/metadata service. Here nova uses
+                     cert key files for encryption and no ca-cert.
+            Maintainer: ritam@juniper.net
+        '''
+
+        #Back up conf files.
+        if self.inputs.get_build_sku() in ['mitaka', 'newton']:
+            cmd='cp /etc/nova/nova.conf /etc/nova/nova.conf.bkup'
+        else:
+            cmd='docker exec -it nova-api cp /etc/nova/nova.conf /etc/nova/nova.conf.bkup'
+        for openstack_node in self.inputs.openstack_ips:
+            self.inputs.run_cmd_on_server(openstack_node, cmd)
+
+        cmd='cp /etc/contrail/contrail-vrouter-agent.conf /etc/contrail/contrail-vrouter-agent.conf.bkup'
+        for compute_node in self.inputs.compute_ips:
+            self.inputs.run_cmd_on_server(compute_node, cmd)
+
+        #Add cleanup routine.
+        self.addCleanup(self.restore_conf)
+
+        #Change config
+        cmd='openstack-config --del /etc/contrail/contrail-vrouter-agent.conf METADATA metadata_use_ssl;\
+             openstack-config --del /etc/contrail/contrail-vrouter-agent.conf METADATA metdata_client_cert_type;\
+             openstack-config --del /etc/contrail/contrail-vrouter-agent.conf METADATA metadata_client_cert;\
+             openstack-config --del /etc/contrail/contrail-vrouter-agent.conf METADATA metadata_client_key;\
+             service contrail-vrouter-agent restart'
+        for compute_node in self.inputs.compute_ips:
+            self.inputs.run_cmd_on_server(compute_node, cmd)
+
+        if self.inputs.get_build_sku() in ['mitaka', 'newton']:
+            cmd='openstack-config --del /etc/nova/nova.conf DEFAULT ssl_ca_file;\
+                 openstack-config --del /etc/nova/nova.conf ssl ca_file;\
+                 service nova-api restart'
+        else:
+            cmd='openstack-config --del /etc/kolla/nova-api/nova.conf DEFAULT ssl_ca_file;\
+                 openstack-config --del /etc/kolla/nova-api/nova.conf ssl ca_file;\
+                 docker restart nova-api'
+        for openstack_node in self.inputs.openstack_ips:
+            self.inputs.run_cmd_on_server(openstack_node, cmd)
+
+        #Validate metadata ssl service.
+        try:
+            self.test_metadata_service()
+            self.logger.info('Metadata ssl test passed without any ssl encryption on agent side and no ca-cert on nova.')
+            result=False
+        except Exception as e:
+            self.logger.error('Metadata ssl test failed without any ssl encryption on agent side and no ca-cert on nova.')
+            result=True
+        return result
+    # end test_metadata_no_ca_cert
+
+# end TestMetadataSSL
