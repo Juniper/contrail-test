@@ -9,6 +9,7 @@ class BaseMirrorTest(test_v1.BaseTestCase_v1):
         super(BaseMirrorTest, cls).setUpClass()
         cls.quantum_h= cls.connections.quantum_h
         cls.nova_h = cls.connections.nova_h
+        cls.orch = cls.connections.orch
         cls.vnc_lib= cls.connections.vnc_lib
         cls.agent_inspect= cls.connections.agent_inspect
         cls.cn_inspect= cls.connections.cn_inspect
