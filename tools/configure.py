@@ -237,6 +237,8 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
             role_dict['container'] = get_container_name(containers, host_string, 'analyticsdb')
             host_dict['roles'].append(role_dict)
 
+        if not env.roledefs.get('compute'):
+            env.roledefs['compute'] = []
         if host_string in env.roledefs['compute']:
             role_dict = {'type': 'compute', 'params': {'collector': cfgm_host_name, 'cfgm': cfgm_host_name}}
             role_dict['container'] = get_container_name(containers, host_string, 'agent')
