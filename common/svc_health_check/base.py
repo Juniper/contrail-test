@@ -9,6 +9,7 @@ class BaseHC(test_v1.BaseTestCase_v1):
         super(BaseHC, cls).setUpClass()
         cls.project_name = cls.inputs.project_name
         cls.quantum_h= cls.connections.quantum_h
+        cls.orch = cls.connections.orch
         cls.nova_h = cls.connections.nova_h
         cls.vnc_lib= cls.connections.vnc_lib
         cls.agent_inspect= cls.connections.agent_inspect
