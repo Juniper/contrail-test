@@ -203,7 +203,8 @@ class BaseRbac(test_v1.BaseTestCase_v1):
         connections = connections or self.connections
         vm_fixture = self.create_fixture(VMFixture, connections=connections,
                                          vn_obj=vn_fixture.obj,
-                                         image_name='cirros')
+                                         image_name='cirros',
+                                         admin_connections=self.connections)
         if vm_fixture and verify:
             assert vm_fixture.verify_on_setup(), 'VM verification failed'
         return vm_fixture
@@ -423,19 +424,32 @@ class BaseRbac(test_v1.BaseTestCase_v1):
         return pool_ids
 
     def list_analytics_nodes_from_analytics(self, connections):
-        return connections.ops_inspect.get_hrefs_to_all_UVEs_of_a_given_UVE_type(
+        try:
+            return connections.ops_inspect.get_hrefs_to_all_UVEs_of_a_given_UVE_type(
                uveType='analytics-nodes')
+        except PermissionDenied:
+            self.logger.info('Analytics API Server: Permission Denied to list nodes')
 
     def list_vn_from_analytics(self, connections):
-        vns = connections.ops_inspect.get_hrefs_to_all_UVEs_of_a_given_UVE_type(
+        try:
+            vns = connections.ops_inspect.get_hrefs_to_all_UVEs_of_a_given_UVE_type(
                uveType='virtual-networks') or []
+        except PermissionDenied:
+            self.logger.info('Analytics API Server: Permission Denied to list VNs')
+            return list()
         return [vn['name'] for vn in vns]
 
     def get_vn_from_analytics(self, connections, fq_name_str):
-        return connections.analytics_obj.get_vn_uve(fq_name_str)
+        try:
+            return connections.analytics_obj.get_vn_uve(fq_name_str)
+        except PermissionDenied:
+            self.logger.info('Analytics API Server: Permission Denied to read VN')
 
     def get_vmi_from_analytics(self, connections, fq_name_str):
-        return connections.ops_inspect.get_ops_vm_intf(fq_name_str)
+        try:
+            return connections.ops_inspect.get_ops_vm_intf(fq_name_str)
+        except PermissionDenied:
+            self.logger.info('Analytics API Server: Permission Denied to read VMI')
 
     def remove_from_cleanups(self, fixture):
         for cleanup in self._cleanups:

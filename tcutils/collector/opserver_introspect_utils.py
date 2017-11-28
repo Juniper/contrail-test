@@ -12,7 +12,7 @@ from tcutils.verification_util import *
 from opserver_results import *
 from opserver_util import OpServerUtils
 from tcutils.util import *
-
+from cfgm_common.exceptions import PermissionDenied
 
 class VerificationOpsSrv (VerificationUtilBase):
 
@@ -42,10 +42,11 @@ class VerificationOpsSrv (VerificationUtilBase):
                 ':' + node_type + ':' + moduleid + ':' \
                 + instanceid + '?flat')
             res = OpGeneratorResult(generator_dict)
+        except PermissionDenied:
+            raise
         except Exception as e:
             print e
-        finally:
-            return res
+        return res
 
     def get_ops_vrouter(self, vrouter=None):
         if (vrouter == None):

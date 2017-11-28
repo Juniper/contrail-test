@@ -63,6 +63,7 @@ class VMFixture(fixtures.Fixture):
                  node_name=None, sg_ids=[], count=1, userdata=None,
                  port_ids=[], fixed_ips=[], zone=None, vn_ids=[], uuid=None,*args,**kwargs):
         self.connections = connections
+        self.admin_connections = kwargs.get('admin_connections')
         self.inputs = self.connections.inputs
         self.logger = self.connections.logger
         self.api_s_inspects = self.connections.api_server_inspects
@@ -1811,8 +1812,15 @@ class VMFixture(fixtures.Fixture):
         self.logger.debug("VM uve shows vrouter as %s" % (computes))
 
         for compute in computes:
-            vm_in_vrouter = self.analytics_obj.verify_vm_list_in_vrouter_uve(
-                vm_uuid=self.vm_id, vrouter=compute)
+            try:
+                vm_in_vrouter = self.analytics_obj.verify_vm_list_in_vrouter_uve(
+                    vm_uuid=self.vm_id, vrouter=compute)
+            except PermissionDenied:
+                if not self.admin_connections:
+                    raise
+                admin_analytics_obj = self.admin_connections.analytics_obj
+                vm_in_vrouter = admin_analytics_obj.verify_vm_list_in_vrouter_uve(
+                    vm_uuid=self.vm_id, vrouter=compute)
             if vm_in_vrouter:
                 self.vm_in_op_flag = self.vm_in_op_flag and True
                 self.logger.debug('Validated that VM %s is in Vrouter %s UVE' % (
@@ -1834,11 +1842,21 @@ class VMFixture(fixtures.Fixture):
                               (self.vm_id, self.tap_interface))
             self.logger.debug("Expected VN  of VM uuid %s is %s" %
                               (self.vm_id, intf['vn_name']))
-            is_tap_thr = self.analytics_obj.verify_vm_list_in_vrouter_uve(
-                vm_uuid=self.vm_id,
-                vn_fq_name=intf['vn_name'],
-                vrouter=self.vm_host,
-                tap=self.tap_interface)
+            try:
+                is_tap_thr = self.analytics_obj.verify_vm_list_in_vrouter_uve(
+                    vm_uuid=self.vm_id,
+                    vn_fq_name=intf['vn_name'],
+                    vrouter=self.vm_host,
+                    tap=self.tap_interface)
+            except PermissionDenied:
+                if not self.admin_connections:
+                    raise
+                admin_analytics_obj = self.admin_connections.analytics_obj
+                is_tap_thr = admin_analytics_obj.verify_vm_list_in_vrouter_uve(
+                    vm_uuid=self.vm_id,
+                    vn_fq_name=intf['vn_name'],
+                    vrouter=self.vm_host,
+                    tap=self.tap_interface)
 
             if is_tap_thr:
                 self.vm_in_op_flag = self.vm_in_op_flag and True
@@ -1957,11 +1975,19 @@ class VMFixture(fixtures.Fixture):
                 ' %s is still seen in Compute node %s' %(self.vm_name,
                                                          self.vm_node_ip))
              for vn_fq_name in self.vn_fq_names:
-                  self.analytics_obj.verify_vm_not_in_opserver(
-                        self.vm_id,
-                        self.inputs.host_data[self.vm_node_ip]['name'],
-                        vn_fq_name)
-
+                 try:
+                     self.analytics_obj.verify_vm_not_in_opserver(
+                         self.vm_id,
+                         self.inputs.host_data[self.vm_node_ip]['name'],
+                         vn_fq_name)
+                 except PermissionDenied:
+                     if not self.admin_connections:
+                         raise
+                     admin_analytics_obj = self.admin_connections.analytics_obj
+                     admin_analytics_obj.verify_vm_not_in_opserver(
+                         self.vm_id,
+                         self.inputs.host_data[self.vm_node_ip]['name'],
+                         vn_fq_name)
              # Trying a workaround for Bug 452
         # end if
         return True

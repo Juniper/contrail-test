@@ -8,6 +8,7 @@ import logging as LOG
 from lxml import etree
 from tcutils.util import *
 from common import log_orig as contrail_logging
+from cfgm_common.exceptions import PermissionDenied
 
 LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.INFO)
 
@@ -89,7 +90,6 @@ class JsonDrv (object):
 
     def load(self, url, retry=True):
         self.common_log("Requesting: %s" %(url))
-        print self._args.stack_user,self._args.stack_password,self._args.project_name,url
         if url.startswith('https:'):
             resp = requests.get(url, headers=self._headers, verify=self.verify)
         else:
@@ -98,6 +98,8 @@ class JsonDrv (object):
             if retry:
                 self._auth()
                 return self.load(url, False)
+            else:
+                raise PermissionDenied('Permission Denied')
         if resp.status_code == 200:
             output = json.loads(resp.text)
             with self.lock:
