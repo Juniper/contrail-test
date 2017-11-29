@@ -545,6 +545,12 @@ class TestInputs(object):
             'contrail-kube-manager', 'vcplugin']
         return container_name in cc_container_names
 
+    def _parse_for_k8s_single_yaml_containers(self, containers):
+        valid_containers = [x.rstrip('\r') for x in containers
+                     if "k8s_contrail" in x]
+        if valid_containers:
+            return valid_containers   
+            
     def _check_containers(self, host_dict):
         '''
         Find out which components have containers and set 
@@ -557,9 +563,25 @@ class TestInputs(object):
         if not output:
             return
         attr_list = output.split('\n')
+        
+        k8s_containers = self._parse_for_k8s_single_yaml_containers(attr_list)
+        if k8s_containers:
+            for container in k8s_containers:
+                if "contrail-agent" in container:
+                    host_dict['containers']['agent'] = container
+                if "contrail-controller" in container:
+                    host_dict['containers']['controller'] = container
+                if "contrail-analytics-" in container:
+                    host_dict['containers']['analytics'] = container
+                if "contrail-analyticsdb" in container:
+                    host_dict['containers']['analyticsdb'] = container
+                if "contrail-lb" in container:
+                    host_dict['containers']['lb'] = container
+                if "contrail-kube-manager" in container:
+                    host_dict['containers']['contrail-kube-manager'] = container
+            return
         attr_list = [x.rstrip('\r') for x in attr_list
                      if self.is_contrail_cloud_container(x.rstrip('\r'))]
-
         for attr in attr_list:
             host_dict['containers'][attr] = attr
         return
