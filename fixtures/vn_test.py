@@ -133,6 +133,9 @@ class VNFixture(fixtures.Fixture):
         self.pbb_evpn_enable = kwargs.get('pbb_evpn_enable', None)
         self.pbb_etree_enable = kwargs.get('pbb_etree_enable', None)
         self.layer2_control_word = kwargs.get('layer2_control_word', None)
+        self.address_allocation_mode= kwargs.get('address_allocation_mode', None)
+
+
 
         self.vnc_lib_fixture = connections.vnc_lib_fixture
     # end __init__
@@ -372,24 +375,35 @@ class VNFixture(fixtures.Fixture):
                     self.logger.info("Created VN %s, UUID :%s" % (self.vn_name,
                         self.uuid))
                 self.created = True
-                ipam = self.vnc_lib_h.network_ipam_read(
-                fq_name=self.ipam_fq_name)
-                ipam_sn_lst = []
-                # The dhcp_option_list and enable_dhcp flags will be modified for all subnets in an ipam
-                for net in self.vn_subnets:
-                    network, prefix = net['cidr'].split('/')
-                    ipam_sn = IpamSubnetType(
-                        subnet=SubnetType(network, int(prefix)))
-                    pools = []
-                    for pool in net.get('allocation_pools') or []:
-                        pools.append(AllocationPoolType(start=pool['start'], end=pool['end']))
-                    ipam_sn.set_allocation_pools(pools)
-                    if self.dhcp_option_list:
-                       ipam_sn.set_dhcp_option_list(DhcpOptionsListType(params_dict=self.dhcp_option_list))
-                    if not self.enable_dhcp:
-                       ipam_sn.set_enable_dhcp(self.enable_dhcp)
-                    ipam_sn_lst.append(ipam_sn)
-                self.api_vn_obj.add_network_ipam(ipam, VnSubnetsType(ipam_sn_lst))
+                if self.address_allocation_mode == "flat-subnet-only":
+                    ipam = self.vnc_lib_h.network_ipam_read(
+                        fq_name=self.ipam_fq_name)
+                    self.api_vn_obj.set_address_allocation_mode('flat-subnet-only')
+                    self.api_vn_obj.add_network_ipam(ipam, VnSubnetsType([]))
+
+                    vni_obj_properties = self.api_vn_obj.get_virtual_network_properties(
+                    ) or VirtualNetworkType()
+                    vni_obj_properties.set_forwarding_mode('l3')
+                    self.api_vn_obj.set_virtual_network_properties(vni_obj_properties)
+                else:
+                    ipam = self.vnc_lib_h.network_ipam_read(
+                    fq_name=self.ipam_fq_name)
+                    ipam_sn_lst = []
+                    # The dhcp_option_list and enable_dhcp flags will be modified for all subnets in an ipam
+                    for net in self.vn_subnets:
+                        network, prefix = net['cidr'].split('/')
+                        ipam_sn = IpamSubnetType(
+                            subnet=SubnetType(network, int(prefix)))
+                        pools = []
+                        for pool in net.get('allocation_pools') or []:
+                            pools.append(AllocationPoolType(start=pool['start'], end=pool['end']))
+                        ipam_sn.set_allocation_pools(pools)
+                        if self.dhcp_option_list:
+                            ipam_sn.set_dhcp_option_list(DhcpOptionsListType(params_dict=self.dhcp_option_list))
+                        if not self.enable_dhcp:
+                            ipam_sn.set_enable_dhcp(self.enable_dhcp)
+                        ipam_sn_lst.append(ipam_sn)
+                    self.api_vn_obj.add_network_ipam(ipam, VnSubnetsType(ipam_sn_lst))
                 self.vnc_lib_h.virtual_network_update(self.api_vn_obj)
             else:
                 with self.lock:
@@ -461,6 +475,10 @@ class VNFixture(fixtures.Fixture):
         # Configure vxlan_id
         if self.vxlan_id is not None:
             self.set_vxlan_id()
+
+        # Configure address_allocation_mode
+        if self.address_allocation_mode is not None:
+            self.set_address_allocation_mode()
 
         # Configure ecmp_hash
         if self.ecmp_hash is not None:
@@ -1296,6 +1314,27 @@ class VNFixture(fixtures.Fixture):
         return None
     # end get_vxlan_id
 
+
+    def set_address_allocation_mode(self, address_allocation_mode=None):
+        if not address_allocation_mode:
+            address_allocation_mode = self.address_allocation_mode
+
+        self.logger.debug('Updating Address Allocation Mode of VN %s to %s' % (
+            self.vn_fq_name, address_allocation_mode))
+        vnc_lib = self.vnc_lib_h
+        vn_obj = vnc_lib.virtual_network_read(id=self.uuid)
+        vn_obj.set_address_allocation_mode(address_allocation_mode)
+        vnc_lib.virtual_network_update(vn_obj)
+    # end set_address_allocation_mode
+
+    def get_address_allocation_mode(self):
+        vnc_lib = self.vnc_lib_h
+        vn_obj = vnc_lib.virtual_network_read(id =self.uuid)
+        address_allocation_mode = vn_obj.get_address_allocation_mode()
+        self.logger.debug('Address Allocation Mode of VN %s is %s' % (
+            self.vn_fq_name, address_allocation_mode))
+    # end get_address_allocation_mode
+
     def set_ecmp_hash(self, ecmp_hash=None):
         self.logger.info('Updating ECMP Hash of VN %s to %s' % (
             self.vn_fq_name, ecmp_hash))
@@ -1756,6 +1795,58 @@ class VNFixture(fixtures.Fixture):
 
     def free_ips(self, ip_list):
         return self.vnc_lib_h.virtual_network_ip_free(self.api_vn_obj, ip_list)
+
+    def set_ip_fabric_provider_nw(self, ip_fab_vn_obj=None, verify=True):
+        ''' Configure IP Fabric network as provider network
+        '''
+        self.logger.info('Configuring IP Fabric network %s on VN %s' % (
+            ip_fab_vn_obj.fq_name, self.vn_fq_name))
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        vn_obj.set_virtual_network(ip_fab_vn_obj)
+        self.vnc_lib_h.virtual_network_update(vn_obj)
+
+        if verify:
+            vn_in_api = self.api_s_inspect.get_cs_vn_by_id(vn_id=self.uuid, refresh=True)
+
+        return True
+    # end set_ip_fabric_provider_nw
+
+    def del_ip_fabric_provider_nw(self, ip_fab_vn_obj=None, verify=True):
+        ''' Delete IP Fabric network as provider network
+        '''
+        self.logger.info('Deleting IP Fabric network %s on VN %s' % (
+            ip_fab_vn_obj.fq_name, self.vn_fq_name))
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        vn_obj.del_virtual_network(ip_fab_vn_obj)
+        self.vnc_lib_h.virtual_network_update(vn_obj)
+
+        if verify:
+            vn_in_api = self.api_s_inspect.get_cs_vn_by_id(vn_id=self.uuid, refresh=True)
+
+        return True
+    # end del_ip_fabric_provider_nw
+
+    def is_ip_fabric_provider_nw_present(self):
+        ''' Verify whether IP Fabric network is configured or not
+        '''
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        vn_refs = vn_obj.get_virtual_network_refs()
+        if vn_refs:
+            ip_fab_fq_name = ":".join(vn_refs[0]['to'])
+            ip_fab_vn_fq_name_str = "default-domain:default-project:ip-fabric"
+            if ip_fab_fq_name == ip_fab_vn_fq_name_str:
+                self.logger.debug('IP Fabric provider network is preseent on VN %s' % (
+                    self.vn_fq_name))
+                return True
+            else:
+                self.logger.debug('IP Fabric provider network is NOT preseent on VN %s' % (
+                    self.vn_fq_name))
+                return False
+        else:
+            return False
+
+    # end is_ip_fabric_provider_nw_present
+
 
 
 # end VNFixture

@@ -91,9 +91,9 @@ class TestInputs(object):
                                             'Basic', 'provFile', None)
         self.key = read_config_option(self.config,
                                       'Basic', 'key', 'key1')
-        self.keystone_version = read_config_option(self.config,        
-                                                   'Basic',        
-                                                   'keystone_version',        
+        self.keystone_version = read_config_option(self.config,
+                                                   'Basic',
+                                                   'keystone_version',
                                                    'v2')
         self.domain_isolation = read_config_option(self.config,
             'Basic',
@@ -126,7 +126,7 @@ class TestInputs(object):
             'Basic',
             'adminTenant',
             os.getenv('OS_TENANT_NAME', 'admin'))
-        
+
         self.admin_domain = read_config_option(self.config,
             'Basic',
             'adminDomain',
@@ -237,7 +237,7 @@ class TestInputs(object):
                                                'ui', 'webui', False)
         self.verify_horizon = read_config_option(self.config,
                                                  'ui', 'horizon', False)
-        self.kube_config_file = read_config_option(self.config, 
+        self.kube_config_file = read_config_option(self.config,
                                                    'kubernetes', 'config_file',
                                                    '/etc/kubernetes/admin.conf')
         if not self.ui_browser and (self.verify_webui or self.verify_horizon):
@@ -258,6 +258,14 @@ class TestInputs(object):
             'router_info',
             '[]')
         self.ext_routers = ast.literal_eval(router_info_tuples_string)
+
+        fabric_gw_info_tuples_string = read_config_option(
+            self.config,
+            'router',
+            'fabric_gw_info',
+            '[]')
+        self.fabric_gw_info = ast.literal_eval(fabric_gw_info_tuples_string)
+
         self.fip_pool_name = read_config_option(
             self.config,
             'router',
@@ -469,13 +477,13 @@ class TestInputs(object):
         self.keystone_password = read_config_option(self.config,
                                              'global-controller', 'keystone_password', 'None')
 
-	self.ixia_linux_host_ip = read_config_option(self.config, 
+	self.ixia_linux_host_ip = read_config_option(self.config,
                                              'traffic_data', 'ixia_linux_host_ip', None)
 
-	self.ixia_host_ip = read_config_option(self.config, 
+	self.ixia_host_ip = read_config_option(self.config,
                                              'traffic_data', 'ixia_host_ip', None)
 
-	self.spirent_linux_host_ip = read_config_option(self.config, 
+	self.spirent_linux_host_ip = read_config_option(self.config,
                                              'traffic_data', 'spirent_linux_host_ip', None)
 
 	self.ixia_linux_username = read_config_option(self.config,
@@ -547,7 +555,7 @@ class TestInputs(object):
 
     def _check_containers(self, host_dict):
         '''
-        Find out which components have containers and set 
+        Find out which components have containers and set
         corresponding attributes in host_dict to True if present
         '''
         host_dict['containers'] = {}
@@ -781,14 +789,14 @@ class TestInputs(object):
                     orch['vcenter_server'] = orch_dict['vcenter_server']
                     self.vcenter_present_in_this_setup = True
                 if 'gateway_vrouters' in orch_dict:
-                    orch['gateway_vrouters'] = orch_dict['gateway_vrouters'] 
+                    orch['gateway_vrouters'] = orch_dict['gateway_vrouters']
                     self.vcenter_gw_setup = True
                 if 'controller_refs' in orch_dict:
-                    orch['controller_refs'] = orch_dict['controller_refs'] 
+                    orch['controller_refs'] = orch_dict['controller_refs']
                 self.orchs.append(orch)
-    # end _process_other_orchestrators  
+    # end _process_other_orchestrators
 
-    def get_vcenter_gateway(self): 
+    def get_vcenter_gateway(self):
         for orch in self.orchs:
             if orch['type'] == 'vcenter':
                 return random.choice(orch['gateway_vrouters'])
@@ -799,7 +807,7 @@ class TestInputs(object):
         '''
         qos_queue_per_host = []
         qos_queue_pg_properties_per_host = []
-        try: 
+        try:
             if self.host_data[host_ip]['qos']:
                 hw_to_logical_map_list = []
                 for entry in self.host_data[host_ip]['qos']:
@@ -813,13 +821,13 @@ class TestInputs(object):
                         hw_to_logical_map = {entry["hardware_q_id"] :
                                              ["default"]}
                     else:
-                        hw_to_logical_map = {entry["hardware_q_id"] : 
+                        hw_to_logical_map = {entry["hardware_q_id"] :
                                              entry["logical_queue"]}
                     hw_to_logical_map_list.append(hw_to_logical_map)
                 qos_queue_per_host = [host_ip , hw_to_logical_map_list]
         except KeyError, e:
             pass
-        try: 
+        try:
             if self.host_data[host_ip]['qos_niantic']:
                 pg_properties_list = []
                 for entry in self.host_data[host_ip]['qos_niantic']:
@@ -834,7 +842,7 @@ class TestInputs(object):
         except KeyError, e:
             pass
         return (qos_queue_per_host, qos_queue_pg_properties_per_host)
-        
+
     def _process_tor_data(self):
         for (device_name, device_dict) in self.physical_routers_data.iteritems():
             device_dict['tor_agents'] = []
@@ -1054,8 +1062,8 @@ class TestInputs(object):
                 password = self.host_data[server_ip]['password']
         if container:
             cntr = self.host_data[server_ip].get('containers', {}).get(container)
-            # If the container does not exist on this host, log it and 
-            # run the cmd on the host itself 
+            # If the container does not exist on this host, log it and
+            # run the cmd on the host itself
             # This helps backward compatibility
             if not cntr:
                 self.logger.debug('Container %s not in host %s, running on '
@@ -1286,7 +1294,7 @@ class ContrailTestInit(object):
         return aaa_mode or 'cloud-admin'
 
     def get_contrail_services(self, role=None, service_name=None):
-        ''' get contrail services of a role or 
+        ''' get contrail services of a role or
             if supervisor services return all services of the role
             Note: role takes precedence over service_name
         '''
@@ -1568,4 +1576,4 @@ def main(args_str = None):
 if __name__ == '__main__':
     main()
 
-    
+

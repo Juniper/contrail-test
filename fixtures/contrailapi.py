@@ -82,6 +82,11 @@ class ContrailVncApi(object):
         vmi.set_virtual_machine_interface_allowed_address_pairs(aaps)
         self._vnc.virtual_machine_interface_update(vmi)
 
+    def get_allowed_address_pair(self, vmi_id):
+        vmi = self._vnc.virtual_machine_interface_read(id=vmi_id)
+        return vmi.get_virtual_machine_interface_allowed_address_pairs()
+
+
     def add_security_group(self, vm_id, sg_id, **kwargs):
         sg = self.get_security_group(sg_id)
         vnc_vm = self._vnc.virtual_machine_read(id=vm_id)
@@ -1177,5 +1182,58 @@ class ContrailVncApi(object):
         # Update logical router object
         self._vnc.logical_router_update(router_obj)
         return router_obj
+
+    def provision_fabric_gw(self, name, ip, asn):
+        '''Provision Fabric Gateway.
+           Input is: name and ip of fabric gateway
+
+        '''
+        router_name = name
+        router_ip = ip
+        router_type = 'router'
+        vendor = 'mx'
+        router_asn = asn
+        address_families = ["inet"]
+
+
+        rt_inst_obj = self._vnc.routing_instance_read(
+            fq_name=['default-domain', 'default-project',
+                    'ip-fabric', '__default__'])
+        bgp_router = BgpRouter(router_name, rt_inst_obj)
+        params = BgpRouterParams()
+        params.address = router_ip
+        params.router_type = router_type
+        params.vendor = vendor
+        params.address_families = AddressFamilies(
+            address_families)
+        params.autonomous_system = router_asn
+        params.identifier = router_ip
+        bgp_router.set_bgp_router_parameters(params)
+
+        try:
+            bgp_router_id = self._vnc.bgp_router_create(bgp_router)
+            bgp_router_obj = self._vnc.bgp_router_read(
+                id=bgp_router_id)
+            self._log.info('Created BGP router %s with ID %s' % (
+            bgp_router_obj.fq_name, bgp_router_obj.uuid))
+            return bgp_router_obj
+
+        except RefsExistError:
+            self._log.info("%s BGP router is already present, "\
+                                "continuing the test" %(router_name))
+            bgp_fq_name=['default-domain', 'default-project',
+                            'ip-fabric', '__default__']
+            bgp_fq_name.append(router_name)
+            bgp_router_obj = self._vnc.bgp_router_read(fq_name=
+                                                        bgp_fq_name)
+            return bgp_router_obj
+        except:
+            self._log.error("%s Error in configuring BGP router " %(
+                router_name))
+            return False
+
+
+    # end provision_fabric_gw
+
 
 
