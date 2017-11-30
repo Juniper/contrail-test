@@ -2895,7 +2895,7 @@ class TestBasicVMVNx(BaseVnVmTest):
     def tearDownClass(cls):
         super(TestBasicVMVNx, cls).tearDownClass()
 
-    @test.attr(type=['sanity','quick_sanity','ci_sanity', 'vcenter','vrouter_gw'])
+    @test.attr(type=['sanity','quick_sanity','ci_sanity', 'vcenter','vrouter_gw', 'vcenter_compute'])
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
         '''
@@ -2931,7 +2931,6 @@ class TestBasicVMVNx(BaseVnVmTest):
                                      flavor='contrail_flavor_small')
         assert vm1_fixture.wait_till_vm_is_up()
         assert vm2_fixture.wait_till_vm_is_up()
-
         for size in scp_test_file_sizes:
             self.logger.debug("-" * 80)
             self.logger.debug("FILE SIZE = %sB" % size)
@@ -2959,7 +2958,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         return transfer_result
     # end test_vm_file_trf_scp_tests
 
-    @test.attr(type=['sanity', 'vcenter','vrouter_gw'])
+    @test.attr(type=['sanity', 'vcenter','vrouter_gw', 'vcenter_compute'])
     @preposttest_wrapper
     def test_vm_file_trf_tftp_tests(self):
         '''
@@ -2991,7 +2990,12 @@ class TestBasicVMVNx(BaseVnVmTest):
         vn_fixture= self.create_vn(vn_name=vn_name,orch=self.orchestrator)
         assert vn_fixture.verify_on_setup()
         vn_fixture.read()
-        img_name = self.inputs.get_ci_image() or 'ubuntu-traffic'
+
+	if self.inputs.vcenter_dc:
+	    img_name = 'ubuntu'
+	else:
+            img_name = self.inputs.get_ci_image() or 'ubuntu-traffic'
+
         flavor='m1.tiny' if self.inputs.is_ci_setup()\
                          else 'contrail_flavor_small'
         vm1_fixture = self.create_vm(vn_fixture= vn_fixture, vm_name=vm1_name,
@@ -3071,25 +3075,46 @@ class TestBasicVMVNx(BaseVnVmTest):
 
         assert vn1_fixture.verify_on_setup()
 
-        vn1_vm1_fixture = self.useFixture(
-            VMFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_obj=vn1_fixture.obj,
-                vm_name=vn1_vm1_name,
-                image_name='ubuntu-sctp',
-                node_name=self.compute_1
-            ))
-
-        fvn_vm1_fixture = self.useFixture(
-            VMFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_obj=fvn_fixture.obj,
-                vm_name=fvn_vm1_name,
-                image_name='ubuntu-sctp',
-                node_name=self.compute_2
-            ))
+        if self.inputs.vcenter_dc:
+            vn1_vm1_fixture = self.useFixture(
+                VMFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_obj=vn1_fixture.obj,
+                    vm_name=vn1_vm1_name,
+                    image_name='ubuntu-sctp-vc',
+                    node_name=self.compute_1
+                ))
+    
+            fvn_vm1_fixture = self.useFixture(
+                VMFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_obj=fvn_fixture.obj,
+                    vm_name=fvn_vm1_name,
+                    image_name='ubuntu-sctp-vc',
+                    node_name=self.compute_2
+                ))
+        else:
+            vn1_vm1_fixture = self.useFixture(
+                VMFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_obj=vn1_fixture.obj,
+                    vm_name=vn1_vm1_name,
+                    image_name='ubuntu-sctp',
+                    node_name=self.compute_1
+                ))
+    
+            fvn_vm1_fixture = self.useFixture(
+                VMFixture(
+                    project_name=self.inputs.project_name,
+                    connections=self.connections,
+                    vn_obj=fvn_fixture.obj,
+                    vm_name=fvn_vm1_name,
+                    image_name='ubuntu-sctp',
+                    node_name=self.compute_2
+                ))
 
         vn1_vm1_fixture.wait_till_vm_up()
         fvn_vm1_fixture.wait_till_vm_up()
@@ -3219,12 +3244,12 @@ class TestBasicIPv6VMVNx(TestBasicVMVNx):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
 
-    @test.attr(type=['sanity', 'quick_sanity', 'vcenter_compute'])
+    @test.attr(type=['sanity', 'quick_sanity'])
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
         super(TestBasicIPv6VMVNx, self).test_vm_file_trf_scp_tests()
 
-    @test.attr(type=['sanity', 'quick_sanity', 'vcenter_compute'])
+    @test.attr(type=['sanity', 'quick_sanity'])
     @preposttest_wrapper
     def test_vm_file_trf_tftp_tests(self):
         super(TestBasicIPv6VMVNx, self).test_vm_file_trf_tftp_tests()
