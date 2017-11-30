@@ -2892,7 +2892,7 @@ class TestBasicVMVNx(BaseVnVmTest):
     def tearDownClass(cls):
         super(TestBasicVMVNx, cls).tearDownClass()
 
-    @test.attr(type=['sanity','quick_sanity','ci_sanity', 'vcenter','vrouter_gw'])
+    @test.attr(type=['sanity','quick_sanity','ci_sanity', 'vcenter','vrouter_gw', 'vcenter_compute'])
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
         '''
@@ -2928,7 +2928,6 @@ class TestBasicVMVNx(BaseVnVmTest):
                                      flavor='contrail_flavor_small')
         assert vm1_fixture.wait_till_vm_is_up()
         assert vm2_fixture.wait_till_vm_is_up()
-
         for size in scp_test_file_sizes:
             self.logger.debug("-" * 80)
             self.logger.debug("FILE SIZE = %sB" % size)
@@ -2956,7 +2955,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         return transfer_result
     # end test_vm_file_trf_scp_tests
 
-    @test.attr(type=['sanity', 'vcenter','vrouter_gw'])
+    @test.attr(type=['sanity', 'vcenter','vrouter_gw', 'vcenter_compute'])
     @preposttest_wrapper
     def test_vm_file_trf_tftp_tests(self):
         '''
@@ -2988,7 +2987,9 @@ class TestBasicVMVNx(BaseVnVmTest):
         vn_fixture= self.create_vn(vn_name=vn_name,orch=self.orchestrator)
         assert vn_fixture.verify_on_setup()
         vn_fixture.read()
-        img_name = self.inputs.get_ci_image() or 'ubuntu-traffic'
+
+        img_name = self.inputs.get_ci_image() or 'ubuntu'
+
         flavor='m1.tiny' if self.inputs.is_ci_setup()\
                          else 'contrail_flavor_small'
         vm1_fixture = self.create_vm(vn_fixture= vn_fixture, vm_name=vm1_name,
