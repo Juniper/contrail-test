@@ -2802,6 +2802,9 @@ class AnalyticsVerification(fixtures.Fixture):
         cfgm_ndmgr_ctl_required = False
         cfgm_services = ['contrail-config-nodemgr', 'contrail-device-manager']
         try:
+            if not self.inputs.verify_state():
+                self.logger.error( "All the contrail services are not up")
+                result = result and False
             if service in cfgm_services and dist in ['centos', 'fedora', 'redhat']:
                 supervisorctl_cfg = 'supervisorctl -s unix:///var/run/supervisord_config.sock'
                 issue_stop_cmd = supervisorctl_cfg + ' stop ' + service
@@ -2826,6 +2829,9 @@ class AnalyticsVerification(fixtures.Fixture):
                 self.inputs.start_service(service, host_ips=[service_ip],
                     contrail_service=True,container=container)
             time.sleep(10)
+            if not self.inputs.verify_state():
+                self.logger.error( "All the contrail services are not up")
+                result = result and False
             if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances,
                     soak_timer=soak_timer, verify_alarm_cleared=True):
                 result = result and False
