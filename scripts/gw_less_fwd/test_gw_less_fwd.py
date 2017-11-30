@@ -115,8 +115,10 @@ class TestGWLessFWD(GWLessFWDTestBase):
              }
 
         # Policy parameters. Configuring policy between vn1 and vn2 to allow
-        # the traffic.
-        policy = {'count':1,
+        # the traffic. Also, policy between ip-fabric vn and vn1 needs to be
+        # configured to allow communication between compute node and VMs in vn1.
+        # Similarly for vn2 as well.
+        policy = {'count':3,
                   'p1': {
                       'rules': [
                             {
@@ -128,7 +130,33 @@ class TestGWLessFWD(GWLessFWDTestBase):
                             'dst_ports':'any'
                             },
                         ]
+                    },
+                  'p2': {
+                      'rules': [
+                            {
+                            'direction':'<>',
+                            'protocol':'any',
+                            'source_network': 'default-domain:default-project:ip-fabric',
+                            'dest_network':'vn1',
+                            'src_ports':'any',
+                            'dst_ports':'any'
+                            },
+                        ]
+                    },
+                  'p3': {
+                      'rules': [
+                            {
+                            'direction':'<>',
+                            'protocol':'any',
+                            'source_network': 'default-domain:default-project:ip-fabric',
+                            'dest_network':'vn2',
+                            'src_ports':'any',
+                            'dst_ports':'any'
+                            },
+                        ]
                     }
+
+
                   }
 
        # Setup VNs, VMs as per user configuration
@@ -210,7 +238,11 @@ class TestGWLessFWD(GWLessFWDTestBase):
              }
 
         # Policy parameters
-        policy = {'count':1,
+        # Policy parameters. Configuring policy between vn1 and vn2 to allow
+        # the traffic. Also, policy between ip-fabric vn and vn1 needs to be
+        # configured to allow communication between compute node and VMs in vn1.
+        # Similarly for vn2 as well.
+        policy = {'count':2,
                   'p1': {
                       'rules': [
                             {
@@ -222,7 +254,19 @@ class TestGWLessFWD(GWLessFWDTestBase):
                             'dst_ports':'any'
                             },
                         ]
-                    }
+                    },
+                  'p2': {
+                      'rules': [
+                            {
+                            'direction':'<>',
+                            'protocol':'any',
+                            'source_network': 'default-domain:default-project:ip-fabric',
+                            'dest_network':'vn1',
+                            'src_ports':'any',
+                            'dst_ports':'any'
+                            },
+                        ]
+                    },
                   }
 
         # Setup VNs, VMs as per user configuration
@@ -502,6 +546,74 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
     # end test_gw_less_fwd_fip
 
+    @preposttest_wrapper
+    def test_gw_less_fwd_vhost0_policy(self):
+        '''
+            Test Gateway less forwarding with single VN and IP Fabric provider
+            network when policy is enabled/disabled on vhost0 interface.
+            IP Forwarding functionality should work when both policy is enabled
+            and disabled on vhost0 VMI interfaces.
+            IP Fbaric network is configured as provider network
+            over vn1. Multiple VMs will be launched across compute nodes
+            and ping between VMs should be successful and happen through
+            underlay. Ping between vhosts to VMs should be successful and happen
+            through underlay. Also, ping between VMs to vhosts also should be
+            successful and should go through underlay.
+        '''
+        if (len(self.inputs.compute_ips) < 2):
+             raise self.skipTest(
+                "Skipping Test. At least 2 compute node required to run the test")
+        result = True
+
+
+        # VN parameters. IP Fabric forwarding is enabled on vn1.
+        vn = {'count':1,
+              'vn1':{'subnet':'10.10.10.0/24', 'ip_fabric':True},
+             }
+
+        # VMI parameters
+        vmi = {'count':2,
+               'vmi1':{'vn': 'vn1'},
+               'vmi2':{'vn': 'vn1'},
+              }
+
+        # VM parameters
+        vm = {'count':2, 'launch_mode':'distribute',
+              'vm1':{'vn':['vn1'], 'vmi':['vmi1']},
+              'vm2':{'vn':['vn1'], 'vmi':['vmi2']},
+             }
+
+        # Setup VNs, VMs as per user configuration
+        ret_dict = self.setup_gw_less_fwd(vn=vn, vmi=vmi, vm=vm)
+
+        # Enable policy on vhost0 VMI interfaces
+        value = False
+        self.disable_policy_on_vhost0(value)
+
+        vn_fixtures = ret_dict['vn_fixtures']
+
+        # Verify Gateway less forward functionality. As IP Fabric forwarding
+        # is enabled on vn1, traffic should go through underlay
+        self.verify_gw_less_fwd(ret_dict)
+
+        # Now, remove IP fabric provider network configuration on vn1
+        vn1_fixture = vn_fixtures['vn1']
+        ip_fab_vn_obj = self.get_ip_fab_vn()
+        vn1_fixture.del_ip_fabric_provider_nw(ip_fab_vn_obj)
+
+        time.sleep(2)
+
+        # Verify Gateway less forward functionality. As IP Fabric forwarding
+        # is disabled on vn1, traffic should go through overlay
+        self.verify_gw_less_fwd(ret_dict=ret_dict)
+
+        # Disable back policy on vhost0 VMI interfaces
+        value = True
+        self.disable_policy_on_vhost0(value)
+
+    # end test_gw_less_fwd_vhost0_policy
+
+
 
     @preposttest_wrapper
     def test_gw_less_fwd_flat_subnet_single_vn(self):
@@ -645,8 +757,10 @@ class TestGWLessFWD(GWLessFWDTestBase):
              }
 
         # Policy parameters. Configuring policy between vn1 and vn2 to allow
-        # the traffic.
-        policy = {'count':1,
+        # the traffic. Also, policy between ip-fabric vn and vn1 needs to be
+        # configured to allow communication between compute node and VMs in vn1.
+        # Similarly for vn2 as well.
+        policy = {'count':3,
                   'p1': {
                       'rules': [
                             {
@@ -658,9 +772,32 @@ class TestGWLessFWD(GWLessFWDTestBase):
                             'dst_ports':'any'
                             },
                         ]
+                    },
+                  'p2': {
+                      'rules': [
+                            {
+                            'direction':'<>',
+                            'protocol':'any',
+                            'source_network': 'default-domain:default-project:ip-fabric',
+                            'dest_network':'vn1',
+                            'src_ports':'any',
+                            'dst_ports':'any'
+                            },
+                        ]
+                    },
+                  'p3': {
+                      'rules': [
+                            {
+                            'direction':'<>',
+                            'protocol':'any',
+                            'source_network': 'default-domain:default-project:ip-fabric',
+                            'dest_network':'vn2',
+                            'src_ports':'any',
+                            'dst_ports':'any'
+                            },
+                        ]
                     }
-                  }
-
+                }
 
         # Setup VNs, VMs as per user configuration
         ret_dict = self.setup_gw_less_fwd(vn=vn, vmi=vmi, vm=vm)
@@ -764,8 +901,10 @@ class TestGWLessFWD(GWLessFWDTestBase):
               'vm4':{'vn':['vn2'], 'vmi':['vmi4']},
              }
 
-        # Policy parameters
-        policy = {'count':1,
+        # Policy parameters. Configuring policy between vn1 and vn2 to allow
+        # the traffic. Also, policy between ip-fabric vn and vn1 needs to be
+        # configured to allow communication between compute node and VMs in vn1.
+        policy = {'count':2,
                   'p1': {
                       'rules': [
                             {
@@ -777,7 +916,19 @@ class TestGWLessFWD(GWLessFWDTestBase):
                             'dst_ports':'any'
                             },
                         ]
-                    }
+                    },
+                  'p2': {
+                      'rules': [
+                            {
+                            'direction':'<>',
+                            'protocol':'any',
+                            'source_network': 'default-domain:default-project:ip-fabric',
+                            'dest_network':'vn1',
+                            'src_ports':'any',
+                            'dst_ports':'any'
+                            },
+                        ]
+                    },
                   }
 
         # Setup VNs, VMs as per user configuration
