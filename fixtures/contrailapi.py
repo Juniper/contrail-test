@@ -107,7 +107,7 @@ class ContrailVncApi(object):
         vmis = [self._vnc.virtual_machine_interface_read(id=vmi) for vmi in vmis]
         for vmi in vmis:
             sg_lst = []
-            for sg in sgs: 
+            for sg in sgs:
                 sg_lst.append({'uuid': sg.uuid, 'to':sg.fq_name})
             vmi.set_security_group_list(sg_lst)
             self._vnc.virtual_machine_interface_update(vmi)
@@ -1214,12 +1214,11 @@ class ContrailVncApi(object):
             bgp_router_id = self._vnc.bgp_router_create(bgp_router)
             bgp_router_obj = self._vnc.bgp_router_read(
                 id=bgp_router_id)
-            self._log.info('Created BGP router %s with ID %s' % (
-            bgp_router_obj.fq_name, bgp_router_obj.uuid))
+            self._log.info('Created BGP router: %s' % (router_name))
             return bgp_router_obj
 
         except RefsExistError:
-            self._log.info("%s BGP router is already present, "\
+            self._log.info("BGP router: %s is already present, "\
                                 "continuing the test" %(router_name))
             bgp_fq_name=['default-domain', 'default-project',
                             'ip-fabric', '__default__']
@@ -1228,12 +1227,36 @@ class ContrailVncApi(object):
                                                         bgp_fq_name)
             return bgp_router_obj
         except:
-            self._log.error("%s Error in configuring BGP router " %(
+            self._log.error("Error in configuring BGP router: %s" %(
                 router_name))
             return False
 
 
     # end provision_fabric_gw
+
+    def delete_fabric_gw(self, name):
+        '''Delete Fabric Gateway.
+           Input is: name of fabric gateway
+
+        '''
+        router_name = name
+
+        bgp_fq_name=['default-domain', 'default-project', 'ip-fabric',
+                     '__default__']
+        bgp_fq_name.append(router_name)
+
+        try:
+            self._vnc.bgp_router_delete(fq_name=bgp_fq_name)
+            self._log.info("Deleted BGP router %s successfully" % (router_name))
+            return True
+
+        except:
+            self._log.error("%s Error in Deleting BGP router " %(router_name))
+            return False
+
+
+    # end delete_fabric_gw
+
 
 
 
