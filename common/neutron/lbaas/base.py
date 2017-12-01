@@ -193,7 +193,7 @@ chmod 777 %s'''%(server.vm_ip, webserver_script, webserver_script)
     def start_tcpdump(self, server_ip, tap_intf):
         session = ssh(server_ip,self.inputs.host_data[server_ip]['username'],self.inputs.host_data[server_ip]['password'])
         pcap = '/tmp/%s.pcap' % tap_intf
-        cmd = "tcpdump -nei %s tcp -w %s" % (tap_intf, pcap)
+        cmd = "sudo tcpdump -nei %s tcp -w %s" % (tap_intf, pcap)
         self.logger.info("Staring tcpdump to capture the packets on server %s" % (server_ip))
         execute_cmd(session, cmd, self.logger)
         return pcap, session
@@ -201,12 +201,12 @@ chmod 777 %s'''%(server.vm_ip, webserver_script, webserver_script)
     def stop_tcpdump(self,session, pcap):
         self.logger.info("Waiting for the tcpdump write to complete.")
         sleep(30)
-        cmd = 'kill $(pidof tcpdump)'
+        cmd = 'sudo kill $(pidof tcpdump)'
         execute_cmd(session, cmd, self.logger)
-        cmd = 'tcpdump -r %s | wc -l' % pcap
+        cmd = 'sudo tcpdump -r %s | wc -l' % pcap
         out, err = execute_cmd_out(session, cmd, self.logger)
         count = int(out.strip('\n'))
-        cmd = 'rm -f %s' % pcap
+        cmd = 'sudo rm -f %s' % pcap
         execute_cmd(session, cmd, self.logger)
         return count
 
