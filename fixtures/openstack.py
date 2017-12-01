@@ -2,6 +2,7 @@ import os
 from common import log_orig as contrail_logging
 from orchestrator import Orchestrator, OrchestratorAuth
 import nova_test
+import glance_test
 import quantum_test
 from keystone_tests import KeystoneCommands
 from common.openstack_libs import ks_exceptions
@@ -16,6 +17,7 @@ class OpenstackOrchestrator(Orchestrator):
        self.inputs = inputs
        self.quantum_h = None
        self.nova_h = None
+       self.glance_h = None
        self.vnc_lib = vnclib
        self.region_name = region_name or inputs.region_name if inputs else None
        #for vcenter as compute
@@ -53,8 +55,17 @@ class OpenstackOrchestrator(Orchestrator):
        if not self.nova_h:
           self.nova_h = nova_test.NovaHelper(inputs=self.inputs,
                                    auth_h=self.auth_h,
-                                   region_name=self.region_name)
+                                   region_name=self.region_name,
+                                   glance_h=self.get_image_handler())
        return self.nova_h
+
+   def get_image_handler(self):
+       if not self.glance_h:
+          self.glance_h = glance_test.GlanceHelper(inputs=self.inputs,
+                                   auth_h=self.auth_h,
+                                   region_name=self.region_name)
+          self.glance_h.setUp()
+       return self.glance_h
 
    def get_image_account(self, image_name):
        return self.nova_h.get_image_account(image_name)
