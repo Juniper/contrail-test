@@ -1086,7 +1086,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         if not verify_tcpdump_count(self, session, pcap):
             result = False
 
-        cmd = 'tcpdump -nn -r %s' % pcap
+        cmd = 'sudo tcpdump -nn -r %s' % pcap
         cmd_check_icmp, err = execute_cmd_out(session, cmd, self.logger)
         cmd_df = re.search('need to frag', cmd_check_icmp)
         cmd_next_icmp = re.search(
@@ -1128,7 +1128,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         if not verify_tcpdump_count(self, session, pcap):
             result = False
 
-        cmd = 'tcpdump -nn -r %s' % pcap
+        cmd = 'sudo tcpdump -nn -r %s' % pcap
         cmd_check_icmp, err = execute_cmd_out(session, cmd, self.logger)
         cmd_next_icmp = re.search(
             '.+ ICMP6, packet too big, mtu (\d\d\d\d).*',
