@@ -17,7 +17,7 @@ from fabric.exceptions import NetworkError
 from fabric.contrib.files import exists
 
 from tcutils.util import *
-from tcutils.util import custom_dict, read_config_option, get_build_sku
+from tcutils.util import custom_dict, read_config_option, get_build_sku, retry
 from tcutils.custom_filehandler import *
 from tcutils.config.vnc_introspect_utils import VNCApiInspect
 from tcutils.collector.opserver_introspect_utils import VerificationOpsSrv
@@ -1226,6 +1226,7 @@ class ContrailTestInit(object):
                 return cls
         return None
 
+    @retry(tries=6, delay=5)
     def verify_service_state(self, host, service=None, role=None, container=None):
         result = True
         failed_services = []
@@ -1247,7 +1248,7 @@ class ContrailTestInit(object):
             self.logger.error("Unable to get service status of %s on %s"
                               %(service, host))
             self.logger.exception("Got exception as %s" % (e))
-            return False
+            return False, failed_services
         return result, failed_services
 
     # Commenting below 4 lines due to discovery changes in R4.0 - Bug 1658035
