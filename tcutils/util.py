@@ -555,6 +555,14 @@ def get_random_name(prefix=None, constant_prefix='ctest'):
         ret_val = '%s-%s' %(constant_prefix, ret_val)
     return ret_val
 
+def get_unique_random_name(*args, **kwargs):
+    if 'unique_random_name' not in env.keys():
+        env['unique_random_name'] = list()
+    while True:
+        name = get_random_name(*args, **kwargs)
+        if name not in env.unique_random_name:
+            env.unique_random_name.append(name)
+            return name
 
 def gen_str_with_spl_char(size, char_set=None):
     if char_set:

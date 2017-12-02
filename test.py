@@ -10,7 +10,7 @@ from common.contrail_test_init import ContrailTestInit
 from common import log_orig as contrail_logging
 #from common import config
 import logging as std_logging
-from tcutils.util import get_random_name
+from tcutils.util import get_unique_random_name
 
 def attr(*args, **kwargs):
     """A decorator which applies the  testtools attr decorator
@@ -53,7 +53,7 @@ class TagsHack(object):
                     if tag in attributes:
                         return orig
             # A hack to please testtools to get uniq testcase names
-            return get_random_name()
+            return get_unique_random_name()
 
 class BaseTestCase(TagsHack,
                    testtools.testcase.WithAttributes,
