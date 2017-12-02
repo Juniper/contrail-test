@@ -33,7 +33,7 @@ class ConfigPerformance():
         inspect_h = self.agent_inspect[vm_fixture.vm_node_ip]
         tapintf = inspect_h.get_vna_tap_interface_by_ip(vm_fixture.vm_ip)[0]['name']
         pcap = '/tmp/%s.pcap' % tapintf
-        cmd = "tcpdump -ni %s udp -w %s" % (tapintf, pcap)
+        cmd = "sudo tcpdump -ni %s udp -w %s" % (tapintf, pcap)
         session = ssh(host['host_ip'], host['username'], host['password'])
         self.logger.info("Staring tcpdump to capture the packets.")
         execute_cmd(session, cmd, self.logger)
@@ -43,10 +43,10 @@ class ConfigPerformance():
     def stop_tcp_dump(self, sessions):
         self.logger.info("Waiting for the tcpdump write to complete.")
         sleep(30)
-        cmd = 'kill $(pidof tcpdump)'
+        cmd = 'sudo kill $(pidof tcpdump)'
         execute_cmd(sessions[0], cmd, self.logger)
         execute_cmd(sessions[0], 'sync', self.logger)
-        cmd = 'tcpdump -r %s | wc -l' % sessions[1]
+        cmd = 'sudo tcpdump -r %s | wc -l' % sessions[1]
         out, err = execute_cmd_out(sessions[0], cmd, self.logger)
         count = int(out.strip('\n'))
         #cmd = 'rm -f %s' % sessions[1]
