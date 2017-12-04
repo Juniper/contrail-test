@@ -75,6 +75,7 @@ class TestLBaaSV2(BaseLBaaSTest):
 
         assert rr_listener.verify_on_setup(), "Verify on setup failed after new FIP associated"
         assert client_vm1_fixture.ping_with_certainty(rr_listener.fip_ip)
+        self.sleep(20) #Wait for the member to be declared up (delay*retries)
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip, port=listener_port, https=True),\
             "Verify LB Method failed for ROUND ROBIN"
 
@@ -120,6 +121,7 @@ class TestLBaaSV2(BaseLBaaSTest):
         #Verify all the creations are success
         assert lb.verify_on_setup(), "Verify LB method failed"
 
+        self.sleep(20) #Wait for the member to be declared up (delay*retries)
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, lb.vip_ip),\
             "Verify lb method failed"
 
@@ -170,6 +172,7 @@ class TestLBaaSV2(BaseLBaaSTest):
 
         assert rr_listener.verify_on_setup(), "Verify on setup failed after new FIP associated"
         assert client_vm1_fixture.ping_with_certainty(rr_listener.fip_ip)
+        self.sleep(20) #Wait for the member to be declared up (delay*retries)
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
 
@@ -243,6 +246,7 @@ class TestLBaaSV2(BaseLBaaSTest):
               hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
 
         assert rr_listener.verify_on_setup()
+        self.sleep(20) #Wait for the member to be declared up (delay*retries)
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
 
@@ -304,6 +308,7 @@ class TestLBaaSV2(BaseLBaaSTest):
               hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
 
         assert rr_listener.verify_on_setup()
+        self.sleep(20) #Wait for the member to be declared up (delay*retries)
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
 
@@ -325,11 +330,13 @@ class TestLBaaSV2(BaseLBaaSTest):
         #si_listener.add_custom_attr('max_conn', 20)
         assert si_listener.verify_on_setup()
 
+        self.sleep(20) #Wait for the member to be declared up (delay*retries)
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, si_listener.fip_ip,
             "SOURCE_IP"), "Verify LB Method for SOURCE IP failed"
 
         self.logger.info("Verify Least Connections LB Method, by modifying the lb_algorithm")
         si_listener.network_h.update_lbaas_pool(si_listener.pool_uuid, lb_algorithm='LEAST_CONNECTIONS')
+        assert si_listener.verify_on_setup()
 
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, si_listener.fip_ip,
             "LEAST_CONNECTIONS"), "Verify LB Method failed for LEAST_CONNECTIONS"
@@ -467,6 +474,7 @@ class TestLBaaSV2(BaseLBaaSTest):
               hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
 
         assert rr_listener.verify_on_setup()
+        self.sleep(20) #Wait for the member to be declared up (delay*retries)
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
 
@@ -531,6 +539,7 @@ class TestLBaaSV2(BaseLBaaSTest):
               hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
 
         assert rr_listener.verify_on_setup()
+        self.sleep(20) #Wait for the member to be declared up (delay*retries)
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
 
