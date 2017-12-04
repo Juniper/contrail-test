@@ -59,7 +59,7 @@ class AnalyticsTestSanityWithMin(
 
               cmd4: contrail-flows --vrouter 'vrouter-name' --last 10m'
 
-              cmd5: contrail-flows --vmi-uuid 'vmi-uuid'
+              cmd5: contrail-flows --vmi 'vmi fq_name'
 
            2.Verify the command runs properly
 
@@ -84,6 +84,9 @@ class AnalyticsTestSanityWithMin(
         dst_vm_ip = self.res.vn1_vm2_fixture.get_vm_ips()[0]
         vm_ips = [src_vm_ip, dst_vm_ip]
         vmi_uuid = self.res.vn1_vm1_fixture.get_vmi_ids().values()[0]
+	vmi_objs = self.res.vn1_vm1_fixture.get_vmi_objs()
+        vmi_fq_name_list = vmi_objs[self.inputs.cfgm_ip][0]['virtual-machine-interface']['fq_name']
+        vmi_fq_name = ":".join(vmi_fq_name_list)
 
         timer = 0
         while True:
@@ -130,7 +133,7 @@ class AnalyticsTestSanityWithMin(
             {'destination-vn':dst_vn, 'destination-ip':dip, 'destination-port':dst_port,
             'action':action, 'protocol':protocol, 'no_key':['verbose', 'last 1h']},
             {'vrouter-ip':vrouter_ip, 'other-vrouter-ip':other_vrouter_ip, 'no_key':['start-time now-10m', 'end-time now']},
-            {'vrouter':src_vm_host, 'no_key': ['last 10m']}, {'vmi-uuid':vmi_uuid, 'no_key': ['last 20m']},
+            {'vrouter':src_vm_host, 'no_key': ['last 10m']}, {'vmi':vmi_fq_name, 'no_key': ['last 20m']},
             {'no_key': ['help']}]
 
 
