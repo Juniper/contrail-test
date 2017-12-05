@@ -277,11 +277,11 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
             else:
                tapintf = self.get_bridge_svm_tapintf(svm_name, 'left')
             session = ssh(host['host_ip'], host['username'], host['password'])
-            cmd = 'tcpdump -nni %s -c 5 > /tmp/%s_out.log' % (tapintf, tapintf)
+            cmd = 'sudo tcpdump -nni %s -c 5 > /tmp/%s_out.log' % (tapintf, tapintf)
             execute_cmd(session, cmd, self.logger)
             assert src_vm.ping_with_certainty(dst_vm.vm_ip)
             sleep(10)
-            output_cmd = 'cat /tmp/%s_out.log' % tapintf
+            output_cmd = 'sudo cat /tmp/%s_out.log' % tapintf
             out, err = execute_cmd_out(session, output_cmd, self.logger)
             print out
             if '8099' in out:
@@ -888,7 +888,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         filt_str = ''
         if not vlan:
             filt_str = 'udp port 8099'
-        cmd = "tcpdump -ni %s %s -w %s" % (tap_intf, filt_str, pcap)
+        cmd = "sudo tcpdump -ni %s %s -w %s" % (tap_intf, filt_str, pcap)
         self.logger.info("Starting tcpdump to capture the mirrored packets.")
         execute_cmd(session, cmd, self.logger)
         return pcap
@@ -896,14 +896,14 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
     def stop_tcpdump(self, session, pcap, filt=''):
         self.logger.debug("Waiting for the tcpdump write to complete.")
         sleep(2)
-        cmd = 'kill $(ps -ef|grep tcpdump | grep %s| awk \'{print $2}\')' %pcap
+        cmd = 'sudo kill $(ps -ef|grep tcpdump | grep %s| awk \'{print $2}\')' %pcap
         execute_cmd(session, cmd, self.logger)
         execute_cmd(session, 'sync', self.logger)
         sleep(3)
-        cmd = 'tcpdump -n -r %s %s | wc -l' % (pcap, filt)
+        cmd = 'sudo tcpdump -n -r %s %s | wc -l' % (pcap, filt)
         out, err = execute_cmd_out(session, cmd, self.logger)
         count = int(out.strip('\n'))
-        cmd = 'tcpdump -n -r %s' % pcap
+        cmd = 'sudo tcpdump -n -r %s' % pcap
         #TODO
         # Temporary for debugging
         execute_cmd(session, cmd, self.logger)

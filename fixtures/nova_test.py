@@ -545,7 +545,8 @@ class NovaHelper(object):
         elif node_name:
             nova_services = self.get_nova_compute_service_list()
             for compute_svc in nova_services:
-                if self.get_host_name(compute_svc.host) == node_name:
+                if compute_svc.host == node_name or \
+                   self.get_host_name(compute_svc.host) == node_name:
                     node_name = compute_svc.host
                     zone = True
                     break
@@ -559,7 +560,6 @@ class NovaHelper(object):
             zone = self.get_compute_node_zone(node_name)
         else:
             zone, node_name = self.lb_node_zone(zone)
-
         try:
             f = '/tmp/%s'%image_name
             lock = Lock(f)

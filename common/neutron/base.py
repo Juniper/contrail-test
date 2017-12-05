@@ -401,7 +401,7 @@ class BaseNeutronTest(GenericTestBase):
             vm_tapintf = dst_vm.tap_intf[dst_vm.vn_fq_names[1]]['name']
         else:
             vm_tapintf = dst_vm.tap_intf[dst_vm.vn_fq_name]['name']
-        cmd = 'tcpdump -nni %s -c 2 icmp > /tmp/%s_out.log' % (
+        cmd = 'sudo tcpdump -nni %s -c 2 icmp > /tmp/%s_out.log' % (
             vm_tapintf, vm_tapintf)
         execute_cmd(session, cmd, self.logger)
         assert src_vm.ping_with_certainty(ip)
