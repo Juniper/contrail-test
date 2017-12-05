@@ -6707,7 +6707,7 @@ class WebuiTest:
             self.logger.info(
                 'Creating instance name %s with image name %s using openstack horizon' %
                 (fixture.vm_name, fixture.image_name))
-            if self.os_release in ['mitaka', 'newton']:
+            if self.os_release in ['mitaka', 'newton', 'ocata']:
                 self.ui.send_keys(fixture.vm_name, 'name', 'name',
                                       browser=self.browser_openstack)
                 availability_zone = "//select[@id='availability-zone']/option[text()='nova']"
@@ -6742,7 +6742,10 @@ class WebuiTest:
                                 break
                     for opt in option_list:
                         if option_name in opt.text:
-                            self.ui.click_element('fa-plus', 'class', browser=opt)
+                            if self.os_release == 'ocata':
+                                self.ui.click_element('fa-arrow-up', 'class', browser=opt)
+                            else:
+                                self.ui.click_element('fa-plus', 'class', browser=opt)
                             flag = True
                             break
                     if not flag:
@@ -6805,7 +6808,7 @@ class WebuiTest:
                               (fixture.vm_name))
             self.logger.info('Waiting for VM %s to come into active state' %
                              (fixture.vm_name))
-            time.sleep(10)
+            self.ui.wait_till_ajax_done(self.browser_openstack, wait=15)
             rows_os = self.ui.find_element(
                 ['form', 'tbody', 'tr'], ['tag', 'tag', 'tag'], self.browser_openstack, [2])
             for i in range(len(rows_os)):
