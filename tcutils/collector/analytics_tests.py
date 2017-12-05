@@ -4208,7 +4208,7 @@ class AnalyticsVerification(fixtures.Fixture):
             assert result1
         container_based = False
         cfgm = self.inputs.cfgm_names[0]
-        if self.inputs.host_data[cfgm]['containers']['controller']:
+        if self.inputs.host_data[cfgm]['containers'].get('controller'):
             container_based = True
         for cfgm in self.inputs.cfgm_names:
             ops_inspect = self.ops_inspect[self.inputs.\
@@ -4394,7 +4394,7 @@ class AnalyticsVerification(fixtures.Fixture):
         server_list = []            
         container_based = False
         cfgm = self.inputs.cfgm_names[0]
-        if self.inputs.host_data[cfgm]['containers']['controller']:
+        if self.inputs.host_data[cfgm]['containers'].get('controller'):
             container_based = True
         for bgp in self.inputs.bgp_names:
             ops_inspect = self.ops_inspect[self.inputs.\
