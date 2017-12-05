@@ -2547,7 +2547,7 @@ class TestBasicVMVN9(BaseVnVmTest):
         compute_password = self.inputs.host_data[compute_ip]['password']
         session = ssh(compute_ip, compute_user, compute_password)
         vm1_tapintf = vm1_fixture.tap_intf[vn1_fixture.vn_fq_name]['name']
-        cmd = 'tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log' % (vm1_tapintf,
+        cmd = 'sudo tcpdump -ni %s icmp -vvv -c 2 > /tmp/%s_out.log' % (vm1_tapintf,
                                                                    vm1_tapintf)
         if not self.inputs.pcap_on_vm:
             execute_cmd(session, cmd, self.logger)
@@ -2559,7 +2559,7 @@ class TestBasicVMVN9(BaseVnVmTest):
                              vm2_fixture.vm_name)
         vm2_fixture.ping_with_certainty('1.2.3.4', expectation=False)
         self.logger.info('%%%%%%%%%% Will check the result of tcpdump %%%%%%%%%%')
-        output_cmd = 'cat /tmp/%s_out.log' % vm1_tapintf
+        output_cmd = 'sudo cat /tmp/%s_out.log' % vm1_tapintf
         if not self.inputs.pcap_on_vm:
             output, err = execute_cmd_out(session, output_cmd, self.logger)
         else:

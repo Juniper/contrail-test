@@ -38,7 +38,7 @@ def start_tcpdump_on_vm(obj, vm_fix, vn_fix, filters='-v'):
     session = ssh(compute_ip, compute_user, compute_password)
     vm_tapintf = vm_fix.tap_intf[vn_fix.vn_fq_name]['name']
     pcap = '/tmp/%s.pcap' % vm_tapintf 
-    cmd = 'tcpdump -ni %s %s -w %s' % (vm_tapintf, filters, pcap)
+    cmd = 'sudo tcpdump -ni %s %s -w %s' % (vm_tapintf, filters, pcap)
     execute_cmd(session, cmd, obj.logger)
 
     return (session, pcap)
@@ -46,7 +46,7 @@ def start_tcpdump_on_vm(obj, vm_fix, vn_fix, filters='-v'):
 @retry(delay=2, tries=2)
 def stop_tcpdump_on_vm_verify_cnt(obj, session, pcap, exp_count=None):
 
-    cmd = 'tcpdump -r %s | wc -l' % pcap
+    cmd = 'sudo tcpdump -r %s | wc -l' % pcap
     out, err = execute_cmd_out(session, cmd, obj.logger)
     count = int(out.strip('\n'))
     if exp_count and count != exp_count:
@@ -57,9 +57,9 @@ def stop_tcpdump_on_vm_verify_cnt(obj, session, pcap, exp_count=None):
         return False
 
     obj.logger.info("%s packets are found in tcpdump output", count)
-    cmd = 'rm -f %s' % pcap
+    cmd = 'sudo rm -f %s' % pcap
     execute_cmd(session, cmd, obj.logger)
-    cmd = 'kill $(pidof tcpdump)'
+    cmd = 'sudo kill $(pidof tcpdump)'
     execute_cmd(session, cmd, obj.logger)
     return True 
 
