@@ -37,7 +37,10 @@ class UILogin:
         if not UILogin.os_url:
             url_string = "http://" + self.inputs.openstack_ip
             if self.os_name == 'ubuntu':
-                UILogin.os_url = url_string + "/horizon"
+                if self.inputs.get_build_sku() == 'ocata':
+                    UILogin.os_url = url_string
+                else:
+                    UILogin.os_url = url_string + "/horizon"
             else:
                 UILogin.os_url = url_string + "/dashboard"
             UILogin.webui_url = 'http://' + self.inputs.webui_ip + ':8080'
