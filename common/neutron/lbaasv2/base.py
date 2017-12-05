@@ -102,6 +102,7 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
             self.logger.error("curl request to the VIP failed, with response %s", result)
             return (False, result[-1])
 
+    @retry(tries=3, delay=5)
     def verify_lb_method(self, client_fix, servers_fix, vip_ip, lb_method='ROUND_ROBIN', port=80, https=False):
         '''
         Function to verify the Load balance method, by sending HTTP Traffic
@@ -116,8 +117,12 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
             if result:
                 lb_response1.add(output.strip('\r'))
             else:
-                errmsg = "connection to vip %s failed" % (vip_ip)
-                assert result, errmsg
+                self.logger.debug("connection to vip %s failed" % (vip_ip))
+                return False
+
+        if lb_method == "ROUND_ROBIN" and len(lb_response1) != len(servers_fix):
+            self.logger.debug("In Round Robin, failed to get the response from all the server")
+            return False
 
         # To check lb-method ROUND ROBIN lets do wget again 3 times
         lb_response2 = set([])
@@ -126,22 +131,20 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
             if result:
                 lb_response2.add(output.strip('\r'))
             else:
-                errmsg = "connection to vip %s failed" % (vip_ip)
-                assert result, errmsg
+                self.logger.debug("connection to vip %s failed" % (vip_ip))
+                return False
 
         errmsg = ("lb-method %s doesnt work as expcted, First time requests went to servers %s"
                   " subsequent requests went to servers %s" %(lb_method, lb_response1, lb_response2))
         if not lb_response1 == lb_response2:
             self.logger.error(errmsg)
-            assert False, errmsg
+            return False
         if lb_method == "SOURCE_IP" and len(lb_response1) > 1:
-            assert False, errmsg
-        if lb_method == "ROUND_ROBIN" and len(lb_response1) != len(servers_fix):
-            assert False, "In Round Robin, failed to get the response from all the server"
+            self.logger.error(errmsg)
+            return False
         self.logger.info("lb-method %s works as expected,First time requests went to servers %s"
                          " subsequent requests went to servers %s" % (lb_method, lb_response1, lb_response2))
         return True
-
     #end def verify_lb_method
 
 #end BaseLBaaSTest class
