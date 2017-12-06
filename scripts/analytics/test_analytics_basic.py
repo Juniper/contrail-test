@@ -60,7 +60,7 @@ class AnalyticsBasicTestSanity(base.AnalyticsBaseTest):
             st=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]
                                   ].send_trace_to_database(
                                   node=self.inputs.collector_names[0],
-                                  module='QueryEngine',
+                                  module='contrail-query-engine',
                                   trace_buffer_name='QeTraceBuf')
             self.logger.debug("Status: %s"%(st))
         assert res2, "Verification of %s failed"%msg
@@ -81,7 +81,7 @@ class AnalyticsBasicTestSanity(base.AnalyticsBaseTest):
             st=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]
                                   ].send_trace_to_database(
                                   node=self.inputs.collector_names[0],
-                                  module='QueryEngine',
+                                  module='contrail-query-engine',
                                   trace_buffer_name='QeTraceBuf')
             self.logger.debug("status: %s"%(st))
         assert res1, "Verification of %s failed"%msg
@@ -106,7 +106,7 @@ class AnalyticsBasicTestSanity(base.AnalyticsBaseTest):
             st=self.analytics_obj.ops_inspect[self.inputs.collector_ips[0]
                                   ].send_trace_to_database(
                                   node=self.inputs.collector_names[0],
-                                  module='QueryEngine',
+                                  module='contrail-query-engine',
                                   trace_buffer_name='QeTraceBuf')
             self.logger.debug("Status: %s"%(st))
         assert res1, "Verification of %s failed"%msg
