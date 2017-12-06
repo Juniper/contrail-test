@@ -850,8 +850,9 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
         Pass criteria: Ping between the VMs should be successful.
         Maintainer : ganeshahv@juniper.net
         """
-        if self.inputs.orchestrator == 'vcenter':
-            si_list = [ { 'service_mode' : 'in-network'},
+        if self.inputs.vcenter_dc:
+            si_list = [ { 'service_mode' : 'in-network',
+			  'svc_img_name' : 'in-network'},
                         { 'service_mode' : 'in-network-nat'}]
         else:
             si_list = [ { 'service_mode' : 'transparent'},
