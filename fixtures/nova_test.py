@@ -718,7 +718,7 @@ class NovaHelper(object):
         if not getattr(self, '_admin_obj', None):
             auth_h = openstack.OpenstackAuth(self.admin_username, self.admin_password,
                                              self.admin_tenant, self.inputs, self.logger)
-            self._admin_obj = NovaHelper(inputs=self.inputs, auth_h=auth_h)
+            self._admin_obj = NovaHelper(inputs=self.inputs, glance_h=self.glance_h, auth_h=auth_h)
         return self._admin_obj
 
     @property
