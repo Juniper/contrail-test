@@ -423,6 +423,7 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
     def verify_vm_dns_data(self, vm_dns_exp_data, dns_server_ip):
         result = True
         dns_data_list = []
+        dns_server_ip = self.inputs.host_data[dns_server_ip]['host_ip']
         for bgp_ip in self.inputs.bgp_ips:
             dnsinspect_h = self.dnsagent_inspect[dns_server_ip]
             dns_data_list.append(dnsinspect_h.get_dnsa_config())
