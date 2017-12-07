@@ -14,6 +14,7 @@ import re
 import ast
 from common import vcenter_libs
 import openstack
+import shlex
 
 #from contrail_fixtures import contrail_fix_ext
 
@@ -25,6 +26,7 @@ class NovaHelper(object):
        Wrapper around nova client library
        Optional params:
        :param inputs: ContrailTestInit object which has test env details
+       :param glance_h: Glance image handler object
        :param auth_h: OpenstackAuth object
        :param key: name of nova keypair (prefix)
        :param logger: logger object
@@ -38,8 +40,9 @@ class NovaHelper(object):
        :param cacert: CA certificate file
        :param verify: Enable or Disable ssl cert verification
     '''
-    def __init__(self, inputs, auth_h=None, key='key1', **kwargs):
+    def __init__(self, inputs, glance_h, auth_h=None, key='key1', **kwargs):
         self.inputs = kwargs['inputs'] = inputs
+        self.glance_h = glance_h
         self.username = inputs.stack_user
         self.password = inputs.stack_password
         self.project_name = inputs.project_name
@@ -68,6 +71,8 @@ class NovaHelper(object):
         self.hosts_list = []
         self._hosts_dict = None
         self._zones = None
+        self.images_dir = os.path.realpath(os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), '..', 'images'))
         self._connect_to_openstack()
     # end __init__
 
@@ -190,19 +195,30 @@ class NovaHelper(object):
     # end get_image_by_id
 
     def get_image(self, image_name='ubuntu'):
-        got_image = self.find_image(image_name)
-        if not got_image:
-            self._install_image(image_name=image_name)
+        f = '/tmp/%s'%image_name
+        lock = Lock(f)
+        try:
+            lock.acquire()
             got_image = self.find_image(image_name)
+            if not got_image:
+                self._install_image(image_name=image_name)
+                got_image = self.find_image(image_name)
+        finally:
+            lock.release()
         return got_image
     # end get_image
 
     def get_flavor(self, name):
+        f = '/tmp/%s'%name
+        lock = Lock(f)
         try:
+            lock.acquire()
             flavor = self.obj.flavors.find(name=name)
         except novaException.NotFound:
             self._install_flavor(name=name)
             flavor = self.obj.flavors.find(name=name)
+        finally:
+            lock.release()
         return flavor
     # end get_flavor
 
@@ -260,18 +276,30 @@ class NovaHelper(object):
             raise e
     # end _install_flavor
 
+    def _parse_image_params(self, params):
+        kwargs = dict()
+        key = None
+        for elem in shlex.split(params):
+            if elem.startswith('-'):
+                key = elem.strip('-').replace('-', '_')
+            else:
+                if key == 'property':
+                    kwargs.update(dict([elem.split('=')]))
+                else:
+                    kwargs[key] = elem
+        return kwargs
+
     def _install_image(self, image_name):
         self.logger.debug('Installing image %s'%image_name)
         image_info = self.images_info[image_name]
         webserver = image_info['webserver'] or \
             os.getenv('IMAGE_WEB_SERVER', '10.204.216.50')
         location = image_info['location']
-        params = image_info['params']
+        params = self._parse_image_params(image_info['params'])
         image = image_info['name']
         image_type = image_info['type']
-        contrail_test_path = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
-        if contrail_test_path and os.path.isfile("%s/images/%s" % (contrail_test_path, image)):
-            build_path = "file://%s/images/%s" % (contrail_test_path, image)
+        if os.path.isfile("%s/%s" % (self.images_dir, image)):
+            build_path = "file://%s/%s" % (self.images_dir, image)
         elif re.match(r'^file://', location):
             build_path = '%s/%s' % (location, image)
         else:
@@ -296,10 +324,10 @@ class NovaHelper(object):
         with settings(
             host_string='%s@%s' % (username, self.openstack_ip),
                 password=password, warn_only=True, abort_on_prompts=False):
-            return self.copy_and_glance(build_path, image_name, image, params, image_type)
+            return self.copy_and_glance(build_path, image_name, params)
     # end _install_image
 
-    def download_image(self, image_url):
+    def download_image(self, image_url, folder='/tmp', do_local=False):
         """ Get the image from build path - it download the image  in case of http[s].
         In case of file:// url, copy it to the node.
 
@@ -309,18 +337,20 @@ class NovaHelper(object):
         Returns: Local image filesystem absolute path
 
         """
+        basename = os.path.basename(image_url)
+        filename = '%s/%s'%(folder, basename)
         if re.match(r'^file://', image_url):
             abs_path = re.sub('file://','',image_url)
             if not re.match(r'^/', abs_path):
                 abs_path = '/' + abs_path
             if os.path.exists(abs_path):
-                filename=os.path.basename(abs_path)
-                put(abs_path, '/tmp/%s' % filename)
-                return '/tmp/%s' % filename
+                if do_local:
+                    return abs_path
+                put(abs_path, filename)
+                return filename
         elif re.match(r'^(http|https)://', image_url):
-            filename=os.path.basename(image_url)
-            self.execute_cmd_with_proxy("wget %s -O /tmp/%s" % (image_url, filename))
-            return '/tmp/%s' % filename
+            self.execute_cmd_with_proxy("wget %s -O %s" % (image_url, filename), do_local=do_local)
+            return filename
 
     def load_docker_image_on_host(self, build_path):
         run('pwd')
@@ -352,62 +382,23 @@ class NovaHelper(object):
             self.logger.debug('Unable to fetch flavor of image %s'%image_name)
             return None
 
-    def execute_cmd_with_proxy(self, cmd):
+    def execute_cmd_with_proxy(self, cmd, do_local=False):
         if self.inputs.http_proxy:
             with shell_env(http_proxy=self.inputs.http_proxy):
-                sudo(cmd)
+                local(cmd) if do_local else sudo(cmd)
         else:
-            sudo(cmd)
+            local(cmd) if do_local else sudo(cmd)
 
-    def copy_and_glance(self, build_path, generic_image_name, image_name, params, image_type):
+    def copy_and_glance(self, build_path, generic_image_name, params):
         """copies the image to the host and glances.
            Requires Image path
         """
-        run('pwd')
-        image_abs_path = self.download_image(build_path)
+        image_abs_path = self.download_image(build_path, folder=self.images_dir, do_local=True)
+        image_path_real=image_abs_path.split('.gz')[0]
         if '.gz' in image_abs_path:
-            self.execute_cmd_with_proxy('gunzip -f %s' % image_abs_path)
-            image_path_real=image_abs_path.split('.gz')[0]
-        else:
-            image_path_real=image_abs_path
+            self.execute_cmd_with_proxy('gunzip -f %s' % image_abs_path, do_local=True)
 
-        if self.inputs.get_build_sku()[0] < 'l':
-            public_arg = "--is-public True"
-        else:
-            public_arg = "--visibility public"
-
-        insecure = '--insecure' # Always use insecure till a glance client lib is added
-        if 'v3' in self.auth_url:
-            cmd = '(glance %s --os-username %s --os-password %s \
-                    --os-project-domain-name %s --os-project-name %s \
-                    --os-user-domain-name %s --os-auth-url %s \
-                    --os-region-name %s image-create --name "%s" \
-                    %s %s --file %s)' % (insecure,
-                                     self.admin_username,
-                                     self.admin_password,
-                                     self.admin_domain,
-                                     self.admin_tenant,
-                                     self.admin_domain,
-                                     self.auth_url,
-                                     self.region_name,
-                                     generic_image_name,
-                                     public_arg,
-                                     params, image_path_real)
-        else:
-            cmd = '(glance %s --os-username %s --os-password %s \
-                    --os-tenant-name %s --os-auth-url %s \
-                    --os-region-name %s image-create --name "%s" \
-                    %s %s --file %s)' % (insecure,
-                                         self.admin_username,
-                                         self.admin_password,
-                                         self.admin_tenant,
-                                         self.auth_url,
-                                         self.region_name,
-                                         generic_image_name,
-                                         public_arg,
-                                         params, image_path_real)
-
-        self.execute_cmd_with_proxy(cmd)
+        self.glance_h.create_image(generic_image_name, image_path_real, **params)
         return True
 
     def _create_keypair(self, key_name):
@@ -560,17 +551,12 @@ class NovaHelper(object):
             zone = self.get_compute_node_zone(node_name)
         else:
             zone, node_name = self.lb_node_zone(zone)
-        try:
-            f = '/tmp/%s'%image_name
-            lock = Lock(f)
-            lock.acquire()
-            image_name = self.get_image_name_for_zone(image_name=image_name, zone=zone)
-            image = self.get_image(image_name=image_name)
-            if not flavor:
-                flavor = self.get_default_image_flavor(image_name=image_name)
-            flavor = self.get_flavor(name=flavor)
-        finally:
-            lock.release()
+
+        image_name = self.get_image_name_for_zone(image_name=image_name, zone=zone)
+        image = self.get_image(image_name=image_name)
+        if not flavor:
+            flavor = self.get_default_image_flavor(image_name=image_name)
+        flavor = self.get_flavor(name=flavor)
 
         if userdata:
             with open(userdata) as f:

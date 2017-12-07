@@ -75,6 +75,7 @@ class ContrailConnections():
                                              )
             self.nova_h = self.orch.get_compute_handler()
             self.quantum_h = self.orch.get_network_handler()
+            self.glance_h = self.orch.get_image_handler()
         elif self.inputs.orchestrator == 'vcenter': # vcenter
             self.orch = VcenterOrchestrator(user=self.username,
                                             pwd=self.password,
