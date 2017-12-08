@@ -33,6 +33,25 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                                                         ip_fab_vn_fq_name_str)
         return ip_fab_vn_obj
 
+    def disable_policy_on_vhost0(self, value=True):
+        '''Enable/Disable policy on vhost0 interfaces
+        '''
+        for compute_name in self.inputs.compute_names:
+            vhost0_fq_name_str = "default-global-system-config:"+compute_name+":vhost0"
+            if value:
+                self.logger.info('Disabling Policy on vhost0 VMI: %s' %
+                                 vhost0_fq_name_str)
+            else:
+                self.logger.info('Enabling Policy on vhost0: %s' %
+                                 vhost0_fq_name_str)
+
+            vhost_vmi_obj = self.vnc_h.virtual_machine_interface_read(fq_name_str=
+                                                        vhost0_fq_name_str)
+            vhost_vmi_obj.set_virtual_machine_interface_disable_policy(bool(value))
+            self.vnc_h.virtual_machine_interface_update(vhost_vmi_obj)
+        return True
+
+
     def setup_ipam(self, ipam=None):
         '''Configures flat-subnet ipam with subnet and allocation pools
             Input ipam looks like:
@@ -50,7 +69,6 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                            },
                     }
         '''
-        project = self.project_fixture
 
         ipam_count = ipam.get('count', 0)
         for i in range(0,ipam_count):
@@ -69,7 +87,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
             ipam_alloc_pool_end = ipam_alloc_pool.get('end',None)
 
             # declare ipam
-            ipam = NetworkIpam(ipam_id, project, IpamType(ipam_type),
+            ipam = NetworkIpam(ipam_id, self.project.project_obj, IpamType(ipam_type),
                                         ipam_subnet_method=ipam_sn_method)
             # create ipams
             self.vnc_h.network_ipam_create(ipam)
@@ -92,9 +110,17 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
     def delete_ipam(self, ipam_obj):
         '''Cleanup Ipam
         '''
+        self.logger.info('Deleting Ipam %s' % (ipam_obj.fq_name))
         self.vnc_h.network_ipam_delete(ipam_obj.fq_name)
         self.vnc_h.network_ipam_update(ipam_obj)
 
+    def detach_policy_ip_fabric_vn(self, ip_fab_vn_obj, policy_obj):
+        '''Cleanup Ipam
+        '''
+        self.logger.info('Detaching policy %s on VN: %s' % (
+            policy_obj.get_fq_name_str(), ip_fab_vn_obj.get_fq_name_str()))
+        ip_fab_vn_obj.del_network_policy(policy_obj)
+        self.vnc_h.virtual_network_update(ip_fab_vn_obj)
 
     def setup_vns(self, vn=None):
         '''Setup VN
@@ -259,6 +285,13 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
 
 
         '''
+        # Provision Fabric Gateway
+        name = self.inputs.fabric_gw_info[0][0]
+        ip = self.inputs.fabric_gw_info[0][1]
+        self.vnc_h.provision_fabric_gw(name, ip, self.inputs.router_asn)
+        self.addCleanup(self.vnc_h.delete_fabric_gw, name)
+
+
         # Default security group to allow all traffic
         self.allow_default_sg_to_allow_all_on_project(self.inputs.project_name)
 
@@ -271,12 +304,10 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
         # VMs creation
         vm_fixtures = self.setup_vms(vn_fixtures, vmi_fixtures, vm)
 
-        # Provision Fabric Gateway
-        name = self.inputs.fabric_gw_info[0][0]
-        ip = self.inputs.fabric_gw_info[0][1]
-        self.vnc_h.provision_fabric_gw(name, ip, self.inputs.router_asn)
-
-        self.sleep(10)
+        # Extra sleep for BGP route updates between controller and fabric gw
+        time = 30
+        self.logger.info('Sleeping for %s secs for BGP convergence' %(time))
+        self.sleep(time)
 
         ret_dict = {
             'vmi_fixtures':vmi_fixtures,
@@ -670,7 +701,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                         # Verify tcpdump
                         if result:
                             self.logger.info('Packets are going through underlay'\
-                                             'properly between VM: %s and '\
+                                             ' properly between VM: %s and '\
                                              'Compute Node: %s' %(
                                              src_vm_fixture.vm_ip, compute_ip))
                         else:
@@ -686,7 +717,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                                                                 expectation=False)
                     if result:
                         self.logger.info('Ping from VM: %s to compute node: %s'\
-                                         'is NOT successful as expected'
+                                         ' is NOT successful as expected'
                                          %(src_vm_fixture.vm_ip, compute_ip))
                     else:
                         assert result, 'Ping from VM: %s to compute node: %s '\
@@ -919,7 +950,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                                 {
                                     'direction':'<>',
                                     'protocol':'any',
-                                    'source_network': 'ip-fabric',
+                                    'source_network': 'vn1',
                                     'dest_network':'vn2',
                                     'src_ports':'any',
                                     'dst_ports':'any'
@@ -938,27 +969,33 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                 dest_network = rules[0].get('dest_network',None)
                 policy_fixture = self.config_policy(policy_id, rules)
 
-                if source_network == 'ip-fabric':
+                if source_network == 'default-domain:default-project:ip-fabric':
                     ip_fab_vn_obj = self.get_ip_fab_vn()
                     policy_obj = self.vnc_h.network_policy_read(
                         fq_name=policy_fixture.policy_fq_name)
+                    self.logger.info('Attaching policy %s on VN: %s' % (
+                        policy_obj.name, ip_fab_vn_obj.get_fq_name_str()))
                     ip_fab_vn_obj.add_network_policy(
                         policy_obj,
                         VirtualNetworkPolicyType(sequence=SequenceType(major=0,
                                                                        minor=0)))
                     self.vnc_h.virtual_network_update(ip_fab_vn_obj)
+                    self.addCleanup(self.detach_policy_ip_fabric_vn, ip_fab_vn_obj, policy_obj)
                 else:
                     src_vn_fix = vn_fixtures[source_network]
                     self.attach_policy_to_vn(policy_fixture, src_vn_fix)
-                if dest_network == 'ip-fabric':
+                if dest_network == 'default-domain:default-project:ip-fabric':
                     ip_fab_vn_obj = self.get_ip_fab_vn()
                     policy_obj = self.vnc_h.network_policy_read(
                         fq_name=policy_fixture.policy_fq_name)
+                    self.logger.info('Attaching policy %s on VN: %s' % (
+                        policy_obj.name, ip_fab_vn_obj.get_fq_name_str()))
                     ip_fab_vn_obj.add_network_policy(
                         policy_obj,
                         VirtualNetworkPolicyType(sequence=SequenceType(major=0,
                                                                        minor=0)))
                     self.vnc_h.virtual_network_update(ip_fab_vn_obj)
+                    self.addCleanup(self.detach_policy_ip_fabric_vn, ip_fab_vn_obj, policy_obj)
                 else:
                     dst_vn_fix = vn_fixtures[dest_network]
                     self.attach_policy_to_vn(policy_fixture, dst_vn_fix)

@@ -1799,8 +1799,8 @@ class VNFixture(fixtures.Fixture):
     def set_ip_fabric_provider_nw(self, ip_fab_vn_obj=None, verify=True):
         ''' Configure IP Fabric network as provider network
         '''
-        self.logger.info('Configuring IP Fabric network %s on VN %s' % (
-            ip_fab_vn_obj.fq_name, self.vn_fq_name))
+        self.logger.info('Configuring IP Fabric forwarding on VN: %s' % (
+            self.vn_name))
         vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
         vn_obj.set_virtual_network(ip_fab_vn_obj)
         self.vnc_lib_h.virtual_network_update(vn_obj)
@@ -1814,8 +1814,8 @@ class VNFixture(fixtures.Fixture):
     def del_ip_fabric_provider_nw(self, ip_fab_vn_obj=None, verify=True):
         ''' Delete IP Fabric network as provider network
         '''
-        self.logger.info('Deleting IP Fabric network %s on VN %s' % (
-            ip_fab_vn_obj.fq_name, self.vn_fq_name))
+        self.logger.info('Deleting IP Fabric forwarding on VN: %s' % (
+            self.vn_name))
         vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
         vn_obj.del_virtual_network(ip_fab_vn_obj)
         self.vnc_lib_h.virtual_network_update(vn_obj)
