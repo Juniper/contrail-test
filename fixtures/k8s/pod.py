@@ -157,7 +157,8 @@ class PodFixture(fixtures.Fixture):
                               'check further in agent' % (self.name))
             return True
 
-        inspect_h = self.agent_inspect[self.compute_ip]
+        compute_mgmt_ip = self.inputs.host_data[self.compute_ip]['ip']
+        inspect_h = self.agent_inspect[compute_mgmt_ip]
 
         # Check that VM object is removed in agent
         agent_vm = inspect_h.get_vna_vm(self.uuid)
@@ -275,7 +276,9 @@ class PodFixture(fixtures.Fixture):
     def verify_pod_in_contrail_agent(self):
         self.set_compute_ip()
 
-        inspect_h = self.agent_inspect[self.compute_ip]
+        compute_mgmt_ip = self.inputs.host_data[self.compute_ip]['ip']
+        inspect_h = self.agent_inspect[compute_mgmt_ip]
+
         self.tap_intfs = inspect_h.get_vna_tap_interface_by_vm(vm_id=self.uuid)
         if not self.tap_intfs:
             self.logger.warn('No tap intf seen for pod %s in %s' % (self.uuid))
