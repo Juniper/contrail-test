@@ -7,7 +7,7 @@ from common import isolated_creds
 
 class TestSvcHC(BaseHC, VerifySvcFirewall):
 
-    @test.attr(type=['sanity', 'vcenter_compute'])
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_svc_hc_basic(self):
         ret_dict = self.verify_svc_chain(service_mode='in-network-nat',

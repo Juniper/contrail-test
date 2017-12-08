@@ -108,7 +108,7 @@ try:
             self.transit_vn_with_left_right_svc(svcs, svcs)
             return True
 
-        @test.attr(type=['sanity', 'vcenter_compute'])
+        @test.attr(type=['sanity'])
         @preposttest_wrapper
         @skip_because(min_nodes=3)
         def test_transit_vn_sym_1_innet(self):

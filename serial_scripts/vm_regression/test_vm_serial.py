@@ -362,7 +362,7 @@ class TestBasicVMVN0(BaseVnVmTest):
             result=False
         return result
     
-    @test.attr(type=['cb_sanity', 'sanity', 'vcenter_compute'])
+    @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_process_restart_in_policy_between_vns(self):
@@ -603,7 +603,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     # end test_kill_service_verify_core_generation
 
 
-    @test.attr(type=['cb_sanity', 'sanity', 'vcenter_compute'])
+    @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_control_node_switchover(self):
