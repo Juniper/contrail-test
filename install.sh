@@ -26,18 +26,11 @@ CONTRAIL_TEST_REPO=https://github.com/juniper/contrail-test
 CONTRAIL_TEST_REF=master
 CONTRAIL_FAB_REPO=https://github.com/juniper/contrail-fabric-utils
 CONTRAIL_FAB_REF=master
-CIRROS_IMAGE_URL=${CIRROS_IMAGE_URL:-http://10.84.5.120/cs-shared/images/converts/cirros-0.3.0-x86_64-disk.vmdk.gz}
-SVC_IN_NET_NAT_URL=${SVC_IN_NET_NAT_URL:-http://10.84.5.120/cs-shared/images/tinycore/tinycore-in-network-nat.qcow2.gz}
-SVC_IN_NET_URL=${SVC_IN_NET_URL:-http://10.84.5.120/cs-shared/images/tinycore/tinycore-in-network.qcow2.gz}
 BASE_DIR=$(dirname $(readlink -f $0))
 
 # These packages are always required in order to run on Ubuntu
 PACKAGES_REQUIRED_UBUNTU=(
-    ant
     contrail-utils
-    git
-    ipmitool
-    patch
     python-ceilometerclient
     python-cinderclient
     python-contrail
@@ -45,30 +38,14 @@ PACKAGES_REQUIRED_UBUNTU=(
     python-heatclient
     python-novaclient
     python-neutronclient
-    python-pip
-    python-requests
-    python-setuptools
 )
 # These packages are required in docker container for Ubuntu
 PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD=(
     ${PACKAGES_REQUIRED_UBUNTU[@]}
-    python-dev
-    sshpass
-    libyaml-dev
-    libz-dev
 )
 
 # Now some release-specific tweaks
 if [[ $BUILD_PLATFORM = "16.04" ]]; then
-    PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD+=(libxslt1-dev=1.1.28-2.1)
-    PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD+=(
-	gcc-5-base=5.4.0-6ubuntu1~16.04.4
-	libgcc-5-dev=5.4.0-6ubuntu1~16.04.4
-	libstdc++-5-dev=5.4.0-6ubuntu1~16.04.4
-	libicu55=55.1-7
-	libicu-dev=55.1-7
-	icu-devtools=55.1-7
-    )
     PACKAGES_REQUIRED_RALLY=(
 	libffi-dev
 	libpq-dev
@@ -78,19 +55,10 @@ if [[ $BUILD_PLATFORM = "16.04" ]]; then
 	libxslt1-dev=1.1.28-2.1
 	python-dev
     )
-    EXTRAS=(
-	libc-dev-bin
-	libc6-dev
-	libexpat1-dev
-	libexpat1
-	libpython2.7-dev
-	python2.7-dev
-    )
 else				# BUILD_PLATFORM = "14.04"
-    PACKAGES_REQUIRED_UBUNTU_DOCKER_BUILD+=(libxslt1-dev)
     CS_CACHE=http://10.84.5.120/cs-shared/builder/cache/ubuntu1404/contrail-test/
     EXTRAS=(
-	$CS_CACHE/libexpat1-dev_2.1.0-4ubuntu1.3_amd64.deb
+        $CS_CACHE/libexpat1-dev_2.1.0-4ubuntu1.3_amd64.deb
 	$CS_CACHE/libexpat1_2.1.0-4ubuntu1.3_amd64.deb
 	$CS_CACHE/libpython2.7-dev_2.7.6-8ubuntu0.2_amd64.deb
 	$CS_CACHE/libxml2-dev_2.9.1+dfsg1-3ubuntu4.9_amd64.deb
@@ -407,9 +375,9 @@ EOT
 function make_dockerfile {
     type=$1
     if [[ ${BUILD_PLATFORM} == "16.04" ]]; then
-        base_image=${2:-$registry_server/ubuntu:16.04}
+        base_image=${2:-$registry_server/ct-base-image-ubuntu-16.04.2}
     else
-        base_image=${2:-$registry_server/ubuntu-14.04.2}
+        base_image=${2:-$registry_server/ct-base-image-ubuntu-14.04.2}
     fi
     cat <<EOF
 FROM $base_image
@@ -422,12 +390,6 @@ ARG SSHPASS
 ENV DEBIAN_FRONTEND=noninteractive
 ENV SKU=$openstack_release
 EOF
-    if [[ ${BUILD_PLATFORM} == "16.04" ]]; then
-        cat <<EOF
-RUN $apt_get update; $apt_get install bzip2 wget sudo perl-modules-5.22
-RUN $apt_get install ${EXTRAS[@]}
-EOF
-    fi
     if [[ $type == 'prep' ]]; then
         if [[ $CONTRAIL_INSTALL_PACKAGE_URL =~ ^http[s]*:// ]]; then
             cat <<EOF
@@ -440,11 +402,7 @@ RUN $wget $CONTRAIL_INSTALL_PACKAGE_URL -O /contrail-install-packages.deb && \
     rm -f /contrail-install-packages.deb && \
     cd /opt/contrail/contrail_packages/ && ./setup.sh;
 EOF
-            if [[ ${BUILD_PLATFORM} == "16.04" ]]; then
-                cat <<EOF
-RUN cd /opt/contrail/contrail_install_repo/ && $apt_get install ${EXTRAS[@]};
-EOF
-            else
+            if [[ ${BUILD_PLATFORM} != "16.04" ]]; then
                 cat <<EOF
 RUN cd /opt/contrail/contrail_install_repo/ && $wget ${EXTRAS[@]} && \
     cd /opt/contrail/contrail_install_repo/ && dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz && $apt_get update;
@@ -467,11 +425,7 @@ RUN $apt_get install sshpass && \
     rm -f /contrail-install-packages.deb && \
     cd /opt/contrail/contrail_packages/ && ./setup.sh;
 EOF
-            if [[ ${BUILD_PLATFORM} == "16.04" ]]; then
-                cat <<EOF
-RUN cd /opt/contrail/contrail_install_repo/ && $apt_get install ${EXTRAS[@]};
-EOF
-            else
+            if [[ ${BUILD_PLATFORM} != "16.04" ]]; then
                 cat <<EOF
 RUN cd /opt/contrail/contrail_install_repo/ && $wget ${EXTRAS[@]} && \
     cd /opt/contrail/contrail_install_repo/ && dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz && $apt_get update;
@@ -488,10 +442,6 @@ EOF
         fi
 
         cat <<EOF
-    RUN $wget --spider $CIRROS_IMAGE_URL
-    RUN mkdir -p /images && $wget $CIRROS_IMAGE_URL -O /images/cirros-0.3.0-x86_64-disk.vmdk.gz
-    RUN $wget $SVC_IN_NET_NAT_URL -O /images/tinycore-in-network-nat.qcow2.gz
-    RUN $wget $SVC_IN_NET_URL -O /images/tinycore-in-network.qcow2.gz
 EOF
     #Finished dockerfile for prep image
 
@@ -562,7 +512,6 @@ EOF
         fi
 
         cat <<EOF
-RUN sudo pip install -U pip
 RUN $merge_code $fab_utils_mv cd /contrail-test && pip install -r requirements.txt
 RUN mv /images /contrail-test/images
 COPY \$ENTRY_POINT /entrypoint.sh
@@ -626,9 +575,9 @@ EOF
         image_tag=${1:-$PREP_IMAGE}
         BUILD_DIR=$(mktemp -d)
         if [ ${BUILD_PLATFORM} = "16.04" ]; then
-            make_dockerfile prep "$registry_server/ubuntu:16.04" > $BUILD_DIR/Dockerfile
+            make_dockerfile prep "$registry_server/ct-base-image-ubuntu-16.04.2" > $BUILD_DIR/Dockerfile
         else
-            make_dockerfile prep "$registry_server/ubuntu-14.04.2" > $BUILD_DIR/Dockerfile
+            make_dockerfile prep "$registry_server/ct-base-image-ubuntu-14.04.2" > $BUILD_DIR/Dockerfile
         fi
 
         if [[ -n $scp_package ]]; then
