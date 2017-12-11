@@ -399,6 +399,7 @@ class NovaHelper(object):
             self.execute_cmd_with_proxy('gunzip -f %s' % image_abs_path, do_local=True)
 
         self.glance_h.create_image(generic_image_name, image_path_real, **params)
+        self.execute_cmd_with_proxy('rm -f %s' % image_path_real, do_local=True)
         return True
 
     def _create_keypair(self, key_name):
