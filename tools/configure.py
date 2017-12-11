@@ -12,7 +12,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir))
 from common import log_orig as contrail_logging
 from fabric.contrib.files import exists
 from cfgm_common import utils
-from tcutils.util import istrue
+from tcutils.util import istrue, get_build_sku
 
 is_container_env = False
 
@@ -682,9 +682,10 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
 
     # If webui = True, in testbed, setup webui for sanity
     if webui:
+        sku = get_build_sku(cfgm_host)
         update_config_option('openstack', '/etc/keystone/keystone.conf',
                              'token', 'expiration',
-                             '86400','keystone')
+                             '86400','keystone', sku)
         update_js_config('webui', '/etc/contrail/config.global.js',
                          'contrail-webui', container=is_container_env)
 
