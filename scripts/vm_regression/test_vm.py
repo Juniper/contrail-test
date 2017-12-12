@@ -3092,8 +3092,8 @@ class TestBasicVMVNx(BaseVnVmTest):
                 node_name=self.compute_2
             ))
 
-        vn1_vm1_fixture.wait_till_vm_up()
-        fvn_vm1_fixture.wait_till_vm_up()
+        assert vn1_vm1_fixture.wait_till_vm_up()
+        assert fvn_vm1_fixture.wait_till_vm_up()
         fip_fixture = self.useFixture(
             FloatingIPFixture(
                 project_name=self.inputs.project_name,
