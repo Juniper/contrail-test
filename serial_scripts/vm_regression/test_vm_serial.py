@@ -902,7 +902,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         # Start tcpdump on receiving compute
         inspect_h = self.agent_inspect[self.inputs.compute_ips[1]]
         comp_intf = inspect_h.get_vna_interface_by_type('eth')
-        if len(comp_intf) == 1:
+        if len(comp_intf) >= 1:
             comp_intf = comp_intf[0]
         self.logger.info('Agent interface name: %s' % comp_intf)
         compute_ip = self.inputs.compute_ips[1]
