@@ -67,6 +67,10 @@ class TestPod(BaseK8sTest):
         assert pod1.ping_to_ip(pod2.pod_ip)
 
     # end test_change_pod_label
+    """
+    # Commenting test case till following bug is fixed:
+    # https://bugs.launchpad.net/juniperopenstack/+bug/1735590
+    # Please check the bug status after noticing above comment and uncomment this test case if fix committed
 
     @preposttest_wrapper
     def test_pod_public_reachability_using_snat(self):
@@ -80,6 +84,7 @@ class TestPod(BaseK8sTest):
         self.logger.info("Now trying to ping %s" % (self.inputs.public_host))
         assert pod1.ping_with_certainty(self.inputs.public_host)
     # end test_pod_public_reachability_using_snat
+    """
 
 # Isolated namespace classes follow
 
