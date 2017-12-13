@@ -32,8 +32,12 @@ class TestGWLessFWD(GWLessFWDTestBase):
         if (len(self.inputs.compute_ips) < 2):
              raise self.skipTest(
                 "Skipping Test. At least 2 compute node required to run the test")
-        result = True
 
+        if not self.inputs.fabric_gw_info:
+             raise self.skipTest(
+                "Skipping Test. Fabric gateway is required to run the test")
+
+        result = True
 
         # VN parameters. IP Fabric forwarding is enabled on vn1.
         vn = {'count':1,
@@ -90,6 +94,12 @@ class TestGWLessFWD(GWLessFWDTestBase):
         if (len(self.inputs.compute_ips) < 2):
              raise self.skipTest(
                 "Skipping Test. At least 2 compute node required to run the test")
+
+        if not self.inputs.fabric_gw_info:
+             raise self.skipTest(
+                "Skipping Test. Fabric gateway is required to run the test")
+
+
         result = True
 
         # VN parameters. IP Fabric forwarding is enabled on both vn1 and vn2.
@@ -214,6 +224,12 @@ class TestGWLessFWD(GWLessFWDTestBase):
         if (len(self.inputs.compute_ips) < 2):
              raise self.skipTest(
                 "Skipping Test. At least 2 compute node required to run the test")
+
+        if not self.inputs.fabric_gw_info:
+             raise self.skipTest(
+                "Skipping Test. Fabric gateway is required to run the test")
+
+
         result = True
 
         # VN parameters. IP Fabric forwarding is enabled on vn1 and not on vn2.
@@ -300,6 +316,12 @@ class TestGWLessFWD(GWLessFWDTestBase):
         if (len(self.inputs.compute_ips) < 2):
              raise self.skipTest(
                 "Skipping Test. At least 2 compute node required to run the test")
+
+        if not self.inputs.fabric_gw_info:
+             raise self.skipTest(
+                "Skipping Test. Fabric gateway is required to run the test")
+
+
         result = True
 
         # VN parameters
@@ -394,6 +416,12 @@ class TestGWLessFWD(GWLessFWDTestBase):
         if (len(self.inputs.compute_ips) < 2):
              raise self.skipTest(
                 "Skipping Test. At least 2 compute node required to run the test")
+
+        if not self.inputs.fabric_gw_info:
+             raise self.skipTest(
+                "Skipping Test. Fabric gateway is required to run the test")
+
+
         result = True
 
         # VN parameters. IP Fabric forwarding is enabled on both VNs
@@ -563,6 +591,12 @@ class TestGWLessFWD(GWLessFWDTestBase):
         if (len(self.inputs.compute_ips) < 2):
              raise self.skipTest(
                 "Skipping Test. At least 2 compute node required to run the test")
+
+        if not self.inputs.fabric_gw_info:
+             raise self.skipTest(
+                "Skipping Test. Fabric gateway is required to run the test")
+
+
         result = True
 
 
@@ -628,6 +662,12 @@ class TestGWLessFWD(GWLessFWDTestBase):
         if (len(self.inputs.compute_ips) < 2):
              raise self.skipTest(
                 "Skipping Test. At least 2 compute node required to run the test")
+
+        if not self.inputs.fabric_gw_info:
+             raise self.skipTest(
+                "Skipping Test. Fabric gateway is required to run the test")
+
+
         result = True
 
         # Ipam parameters
@@ -708,6 +748,12 @@ class TestGWLessFWD(GWLessFWDTestBase):
         if (len(self.inputs.compute_ips) < 2):
              raise self.skipTest(
                 "Skipping Test. At least 2 compute node required to run the test")
+
+        if not self.inputs.fabric_gw_info:
+             raise self.skipTest(
+                "Skipping Test. Fabric gateway is required to run the test")
+
+
         result = True
 
         # Ipam parameters
@@ -857,6 +903,12 @@ class TestGWLessFWD(GWLessFWDTestBase):
         if (len(self.inputs.compute_ips) < 2):
              raise self.skipTest(
                 "Skipping Test. At least 2 compute node required to run the test")
+
+        if not self.inputs.fabric_gw_info:
+             raise self.skipTest(
+                "Skipping Test. Fabric gateway is required to run the test")
+
+
         result = True
 
         # Ipam parameters
@@ -963,6 +1015,12 @@ class TestGWLessFWD(GWLessFWDTestBase):
         if (len(self.inputs.compute_ips) < 2):
              raise self.skipTest(
                 "Skipping Test. At least 2 compute node required to run the test")
+
+        if not self.inputs.fabric_gw_info:
+             raise self.skipTest(
+                "Skipping Test. Fabric gateway is required to run the test")
+
+
         result = True
 
         # Ipam parameters
@@ -1080,6 +1138,12 @@ class TestGWLessFWD(GWLessFWDTestBase):
         if (len(self.inputs.compute_ips) < 2):
              raise self.skipTest(
                 "Skipping Test. At least 2 compute node required to run the test")
+
+        if not self.inputs.fabric_gw_info:
+             raise self.skipTest(
+                "Skipping Test. Fabric gateway is required to run the test")
+
+
         result = True
 
         # Ipam parameters
