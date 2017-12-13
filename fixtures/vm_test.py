@@ -1428,6 +1428,7 @@ class VMFixture(fixtures.Fixture):
                         curr_vrf_id, curr_vrf_dict.get('name'), compute_ip))
                     return True
                 prefixes = self.vm_ip_dict[vn_fq_name]
+                discard_nh_ids = inspect_h.get_nh_ids(nh_type='discard')
                 for prefix in prefixes:
                     route_table = inspect_h.get_vrouter_route_table(
                         curr_vrf_id,
@@ -1438,7 +1439,7 @@ class VMFixture(fixtures.Fixture):
                         # If the route exists, it should be a discard route
                         # A change is pending in agent for label to be marked
                         # as 0 always. Until then, check for 1048575 also
-                        if route_table[0]['nh_id'] != '1' or \
+                        if route_table[0]['nh_id'] not in discard_nh_ids or \
                             route_table[0]['label'] not in ['0', '1048575']:
                             self.logger.warn('VM route %s still in vrf %s of '
                             ' VN %s of compute %s' %(prefix, curr_vrf_id,

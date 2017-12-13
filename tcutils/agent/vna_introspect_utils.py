@@ -1243,6 +1243,37 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
     def get_vrouter_interfaces_by_name(self, itf_name):
         return self.get_vrouter_interface_list('name', itf_name)
 
+    def get_nh_list(self, nh_type=None):
+        '''
+            Returns the NH list of the given type
+            If nh_type is None, returns list of all NH
+        '''
+        ret_list = []
+        rsp = self.dict_get('Snh_NhListReq?type=%s' % (nh_type))
+        nh_list = rsp.xpath('./NhListResp/nh_list/list/NhSandeshData') or \
+                rsp.xpath('./nh_list/list/NhSandeshData')
+
+        for nh in nh_list:
+            nh_dict = elem2dict(nh)
+            ret_list.append(nh_dict)
+
+        return ret_list
+
+    def get_nh_ids(self, nh_type=None):
+        '''
+            Returns NH ids of the given type.
+            If nh_type is None, returns all NH ids
+        '''
+        nh_list = self.get_nh_list(nh_type=nh_type)
+        nh_ids = []
+        for nh in nh_list:
+            if (nh_type is not None) and (nh['type'] == nh_type):
+                nh_ids.append(nh['nh_index'])
+            elif nh_type is None:
+                nh_ids.append(nh['nh_index'])
+
+        return nh_ids
+
 if __name__ == '__main__':
     v = AgentInspect('10.204.217.198')
     import pdb; pdb.set_trace()
