@@ -764,16 +764,6 @@ class TestPorts(BaseNeutronTest):
         7. The vIP and FIP should still be accessible via the new VRRP master.
 
         '''
-        if ('MX_GW_TEST' not in os.environ) or (('MX_GW_TEST' in os.environ) and (os.environ.get('MX_GW_TEST') != '1')):
-            self.logger.info(
-                "Skipping Test. Env variable MX_GW_TEST is not set. Skipping the test")
-            raise self.skipTest(
-                "Skipping Test. Env variable MX_GW_TEST is not set. Skipping the test")
-            return True
-
-        public_vn_fixture = self.public_vn_obj.public_vn_fixture
-        public_vn_subnet = self.public_vn_obj.public_vn_fixture.vn_subnets[
-            0]['cidr']
         # Since the ping is across projects, enabling allow_all in the SG
         self.project.set_sec_group_for_allow_all(
             self.inputs.project_name, 'default')
@@ -782,6 +772,8 @@ class TestPorts(BaseNeutronTest):
         vn1_subnets = [get_random_cidr()]
         vn2_name = get_random_name('right-vn')
         vn2_subnets = [get_random_cidr()]
+        vn3_name = get_random_name('mgmt-vn')
+        vn3_subnets = [get_random_cidr()]
 
         vsrx1_name = get_random_name('vsrx1')
         vsrx2_name = get_random_name('vsrx2')
@@ -791,15 +783,16 @@ class TestPorts(BaseNeutronTest):
 
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
         vn2_fixture = self.create_vn(vn2_name, vn2_subnets)
-        vn_objs = [public_vn_fixture.obj, vn1_fixture.obj, vn2_fixture.obj]
+        vn3_fixture = self.create_vn(vn3_name, vn3_subnets)
+        vn_objs = [vn3_fixture.obj, vn1_fixture.obj, vn2_fixture.obj]
 
         lvn_port_obj1 = self.create_port(net_id=vn1_fixture.vn_id)
         rvn_port_obj1 = self.create_port(net_id=vn2_fixture.vn_id)
-        mvn_port_obj1 = self.create_port(net_id=public_vn_fixture.vn_id)
+        mvn_port_obj1 = self.create_port(net_id=vn3_fixture.vn_id)
 
         lvn_port_obj2 = self.create_port(net_id=vn1_fixture.vn_id)
         rvn_port_obj2 = self.create_port(net_id=vn2_fixture.vn_id)
-        mvn_port_obj2 = self.create_port(net_id=public_vn_fixture.vn_id)
+        mvn_port_obj2 = self.create_port(net_id=vn3_fixture.vn_id)
 
         port_ids1 = [
             mvn_port_obj1['id'], lvn_port_obj1['id'], rvn_port_obj1['id']]
@@ -818,7 +811,9 @@ class TestPorts(BaseNeutronTest):
                 port_ids=port_ids2, zone='nova'))
         vm_test_fixture = self.create_vm(vn1_fixture, vm_test_name,
                                          image_name='cirros')
-
+        test_vm = self.create_vm(vn3_fixture, 'test_vm',
+                                 image_name='ubuntu-traffic')
+        assert test_vm.wait_till_vm_is_up()
         self.logger.info('Create a FVN. Create a FIP-Pool and FIP')
         fvn_name = get_random_name('fvn')
         fvn_subnets = [get_random_cidr()]
@@ -854,14 +849,17 @@ class TestPorts(BaseNeutronTest):
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
         self.logger.info('We will configure VRRP on the two vSRX')
-        op1 = self.config_vrrp_on_vsrx(vm1_fixture, vIP, '200')
-        op2 = self.config_vrrp_on_vsrx(vm2_fixture, vIP, '100')
+        op1 = self.config_vrrp_on_vsrx(
+            src_vm=test_vm, dst_vm=vm1_fixture, vip=vIP, priority='200', interface='ge-0/0/1')
+        op2 = self.config_vrrp_on_vsrx(
+            src_vm=test_vm, dst_vm=vm2_fixture, vip=vIP, priority='100', interface='ge-0/0/1')
         time.sleep(10)
         self.logger.info('Will wait for both the vSRXs to come up')
         vm1_fixture.wait_for_ssh_on_vm()
         vm2_fixture.wait_for_ssh_on_vm()
         vm_test_fixture.wait_till_vm_is_up()
-        assert self.vrrp_mas_chk(vm1_fixture, vn1_fixture, vIP, vsrx=True)
+        assert self.vrrp_mas_chk(
+            src_vm=test_vm, dst_vm=vm1_fixture, vn=vn1_fixture, ip=vIP, vsrx=True)
         assert self.verify_vrrp_action(
             vm_test_fixture, vm1_fixture, vIP, vsrx=True)
         assert self.verify_vrrp_action(
@@ -869,12 +867,14 @@ class TestPorts(BaseNeutronTest):
 
         self.logger.info(
             'Will reduce the VRRP priority on %s, causing a VRRP mastership switch' % vm1_fixture.vm_name)
-        op = self.config_vrrp_on_vsrx(vm1_fixture, vIP, '80')
+        op = self.config_vrrp_on_vsrx(
+            src_vm=test_vm, dst_vm=vm1_fixture, vip=vIP, priority='80', interface='ge-0/0/1')
         time.sleep(10)
         self.logger.info('Will wait for both the vSRXs to come up')
         vm1_fixture.wait_for_ssh_on_vm()
         vm2_fixture.wait_for_ssh_on_vm()
-        assert self.vrrp_mas_chk(vm2_fixture, vn1_fixture, vIP, vsrx=True)
+        assert self.vrrp_mas_chk(
+            src_vm=test_vm, dst_vm=vm2_fixture, vn=vn1_fixture, ip=vIP, vsrx=True)
         assert self.verify_vrrp_action(
             vm_test_fixture, vm2_fixture, vIP, vsrx=True)
         assert self.verify_vrrp_action(
