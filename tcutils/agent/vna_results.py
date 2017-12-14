@@ -209,3 +209,58 @@ class VnaHealthCheckResult(Result):
         vmi_info = self.get_vmi_info(vmi_id)
         if vmi_info:
             return vmi_info.get('service_ip')
+
+
+class VnaBGPaaSResult(Result):
+    '''
+        VnaBGPaaSResult to check the BGPaaS object of agent
+    '''
+
+    def properties(self):
+        return self.xpath('BgpAsAServiceSandeshResp', 'bgp_as_a_service_list', 'list', 0)
+
+    @property
+    def vm_bgp_peer_ip(self):
+        prop = self.properties()
+        return prop and prop['vm_bgp_peer_ip']
+
+    @property
+    def vm_nat_source_port(self):
+        prop = self.properties()
+        return prop and prop['vm_nat_source_port']
+
+    @property
+    def is_shared(self):
+        prop = self.properties()
+        return prop and prop['is_shared']
+
+    @property
+    def health_check_configured(self):
+        prop = self.properties()
+        return prop and prop['health_check_configured']
+
+    @property
+    def hc_uuid(self):
+        prop = self.properties()
+        return prop and prop['health_check_uuid']
+
+    @property
+    def hc_delay(self):
+        prop = self.properties()
+        return prop and prop['health_check_delay_usecs']
+
+    @property
+    def hc_timeout(self):
+        prop = self.properties()
+        return prop and prop['health_check_timeout_usecs']
+
+    @property
+    def hc_retries(self):
+        prop = self.properties()
+        return prop and prop['health_check_retries']
+
+    @property
+    def vmi_list(self):
+        prop = self.properties()
+        return prop and prop['vmi_uuid']
+

@@ -21,7 +21,7 @@ from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 import ConfigParser
 from tcutils.contrail_status_check import *
 from contrailapi import ContrailVncApi
-
+from string import Template
 contrail_api_conf = '/etc/contrail/contrail-api.conf'
 
 
@@ -269,12 +269,13 @@ class BaseNeutronTest(GenericTestBase):
         return True
     # end config_aap
 
-    def config_vrrp_on_vsrx(self, vm_fix, vip, priority):
+    def config_vrrp_on_vsrx(self, src_vm=None, dst_vm=None, vip=None, priority='100', interface='ge-0/0/1'):
         cmdList = []
         cmdList.append('deactivate security nat source rule-set TestNat')
         cmdList.append(
             'deactivate interfaces ge-0/0/1 unit 0 family inet filter')
-        cmdList.append('deactivate interfaces ge-0/0/1.0 family inet dhcp')
+        cmdList.append('deactivate interfaces ' +
+                       interface + ' unit 0 family inet dhcp')
         cmdList.append('deactivate security policies')
         cmdList.append(
             'set security forwarding-options family inet6 mode packet-based')
@@ -282,14 +283,56 @@ class BaseNeutronTest(GenericTestBase):
             'set security forwarding-options family mpls mode packet-based')
         cmdList.append(
             'set security forwarding-options family iso mode packet-based')
-        vsrx_vrrp_config = ['set interfaces ge-0/0/1.0 family inet address ' + vm_fix.vm_ips[
-            1] + '/' + '24 vrrp-group 1 priority ' + priority + ' virtual-address ' + vip + ' accept-data']
+        vm_ip = dst_vm.vm_ips[int(interface[-1])]
+        vsrx_vrrp_config = ['set interfaces ' + interface + ' unit 0 family inet address ' + vm_ip
+                            + '/' + '24 vrrp-group 1 priority ' + priority + ' virtual-address ' + vip + ' accept-data']
         cmdList = cmdList + vsrx_vrrp_config
         cmd_string = (';').join(cmdList)
-        result = vm_fix.set_config_via_netconf(
-            cmd_string, timeout=10, device='junos', hostkey_verify="False")
+        result = self.set_config_via_netconf(src_vm, dst_vm,
+                                             cmd_string, timeout=10, device='junos', hostkey_verify="False")
         return result
     # end config_vrrp_on_vsrx
+
+    def set_config_via_netconf(self, src_vm, dst_vm, cmd_string, timeout=10, device='junos', hostkey_verify="False"):
+        python_code = Template('''
+from ncclient import manager
+conn = manager.connect(host='$ip', username='$username', password='$password',timeout=$timeout, device_params=$device_params, hostkey_verify=$hostkey_verify)
+conn.lock()
+send_config = conn.load_configuration(action='set', config=$cmdList)
+check_config = conn.validate()
+compare_config = conn.compare_configuration()
+conn.commit()
+conn.reboot()
+conn.unlock()
+conn.close_session()
+    	''')
+        if hostkey_verify == 'False':
+            hostkey_verify = bool(False)
+        timeout = int(timeout)
+        if device == 'junos':
+            device_params = {'name': 'junos'}
+        cmdList = cmd_string.split(';')
+        python_code = python_code.substitute(ip=str(dst_vm.vm_ip), username=str(dst_vm.vm_username), password=str(
+            dst_vm.vm_password), device_params=device_params, cmdList=cmdList, timeout=timeout, hostkey_verify=hostkey_verify)
+        op = src_vm.run_python_code(python_code)
+    # end set_config_via_netconf
+
+    def get_config_via_netconf(self, src_vm, dst_vm, cmd_string, timeout=10, device='junos', hostkey_verify="False", format='text'):
+        python_code = Template('''
+from ncclient import manager
+conn = manager.connect(host='$ip', username='$username', password='$password',timeout=$timeout, device_params=$device_params, hostkey_verify=$hostkey_verify)
+get_config=conn.command(command='$cmd', format='$format')
+print get_config.tostring
+    	''')
+        if hostkey_verify == 'False':
+            hostkey_verify = bool(False)
+        if device == 'junos':
+            device_params = {'name': 'junos'}
+        cmdList = cmd_string.split(';')
+        python_code = python_code.substitute(ip=str(dst_vm.vm_ip), username=str(dst_vm.vm_username), password=str(
+            dst_vm.vm_password), device_params=device_params, cmd=cmd_string, timeout=timeout, hostkey_verify=hostkey_verify, format=format)
+        op = src_vm.run_python_code(python_code)
+        return op
 
     @retry(delay=5, tries=10)
     def config_vrrp(self, vm_fix, vip, priority):
@@ -315,7 +358,7 @@ class BaseNeutronTest(GenericTestBase):
     # end vrrp_chk
 
     @retry(delay=5, tries=10)
-    def vrrp_mas_chk(self, vm, vn, ip, vsrx=False):
+    def vrrp_mas_chk(self, src_vm=None, dst_vm=None, vn=None, ip=None, vsrx=False):
         self.logger.info(
             'Will verify who the VRRP master is and the corresponding route entries in the Agent')
         if is_v4(ip):
@@ -327,30 +370,30 @@ class BaseNeutronTest(GenericTestBase):
 
         if vsrx:
             vrrp_mas_chk_cmd = 'show vrrp'
-            result = vm.get_config_via_netconf(
-                cmd=vrrp_mas_chk_cmd, timeout=10, device='junos', hostkey_verify="False", format='text')
+            result = self.get_config_via_netconf(
+                src_vm, dst_vm, vrrp_mas_chk_cmd, timeout=10, device='junos', hostkey_verify="False", format='text')
             if result == False:
                 return result
             if 'master' in result:
                 self.logger.info(
-                    '%s is selected as the VRRP Master' % vm.vm_name)
+                    '%s is selected as the VRRP Master' % dst_vm.vm_name)
                 result = True
             else:
                 result = False
                 self.logger.error('VRRP Master not selected')
         else:
-            vm.run_cmd_on_vm(cmds=[vrrp_mas_chk_cmd], as_sudo=True)
-            output = vm.return_output_cmd_dict[vrrp_mas_chk_cmd]
+            dst_vm.run_cmd_on_vm(cmds=[vrrp_mas_chk_cmd], as_sudo=True)
+            output = dst_vm.return_output_cmd_dict[vrrp_mas_chk_cmd]
             result = False
             if ip in output:
                 self.logger.info(
-                    '%s is selected as the VRRP Master' % vm.vm_name)
+                    '%s is selected as the VRRP Master' % dst_vm.vm_name)
                 result = True
             else:
                 result = False
                 self.logger.error('VRRP Master not selected')
-        result = result and self.check_master_in_agent(vm, vn, ip,
-            prefix_len=prefix)
+        result = result and self.check_master_in_agent(dst_vm, vn, ip,
+                                                       prefix_len=prefix)
         return result
     # end vrrp_mas_chk
 

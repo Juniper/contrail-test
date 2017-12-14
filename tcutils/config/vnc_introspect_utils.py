@@ -37,6 +37,7 @@ class VNCApiInspect (VerificationUtilBase):
             'lb_member': {},
             'lb_healthmonitor': {},
             'svc_hc': {},
+            'bgpaas': {},
             'lr': {},
             'table': {},
             'loadbalancer': {},
@@ -788,6 +789,16 @@ class VNCApiInspect (VerificationUtilBase):
             if pp:
                 p = CsTableResult(pp)
                 self.update_cache('table', p.fq_name().split(':'), p)
+        return p
+
+    def get_bgpaas(self, uuid, refresh=False):
+        p = self.try_cache_by_id('bgpaas', uuid, refresh)
+        if not p:
+            # cache miss
+            pp = self.dict_get('bgp-as-a-service/%s' % uuid)
+            if pp:
+                p = CsBGPaaSResult(pp)
+                self.update_cache('bgpaas', p.fq_name().split(':'), p)
         return p
 
     def get_service_health_check(self, uuid, refresh=False):

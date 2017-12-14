@@ -1179,6 +1179,14 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         return nh
     # end get_nh_for_route_in_vrouter
 
+    def get_bgpaas(self, uuid):
+        # 1734647 needs to be addressed
+        bgpaas_obj = self.dict_get(
+            'Snh_BgpAsAServiceSandeshReq?uuid=%s' % uuid)
+        if bgpaas_obj is None:
+            return None
+        return VnaBGPaaSResult(bgpaas_obj)
+
     def get_health_check(self, uuid):
         hc_obj = self.dict_get('Snh_HealthCheckSandeshReq?uuid=%s'%uuid)
         if hc_obj is None:

@@ -869,6 +869,28 @@ class CsVrouter(Result):
     def ip(self):
         return self.xpath('virtual-router', 'virtual_router_ip_address')
 
+
+class CsBGPaaSResult(Result):
+    '''
+        CsBGPaaSResult access bgp_as_a_service dict
+    '''
+
+    def fq_name(self):
+        return ':'.join(self.xpath('bgp-as-a-service', 'fq_name'))
+
+    def uuid(self):
+        return self.xpath('bgp-as-a-service', 'uuid')
+
+    def bgpaas_shared(self):
+        return self.xpath('bgp-as-a-service', 'bgpaas_shared')
+
+    def bgpaas_ip_address(self):
+        return self.xpath('bgp-as-a-service', 'bgpaas_ip_address')
+
+    def autonomous_system(self):
+        return self.xpath('bgp-as-a-service', 'autonomous_system')
+
+
 class CsHealthCheckResult(Result):
     '''
         CsHealthCheckResult access service health check dict

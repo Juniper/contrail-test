@@ -916,6 +916,73 @@ class ContrailVncApi(object):
         return gsc_obj
     # end get_global_config_obj
 
+    def get_bgpaas(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        return self._vnc.bgp_as_a_service_read(**kwargs)
+
+    def create_bgpaas(self, fq_name, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+        '''
+        name = fq_name[-1]
+        kwargs['address_families'] = AddressFamilies(
+            kwargs['address_families'])
+        autonomous_system = kwargs['autonomous_system']
+        bgpaas_ip_address = kwargs['bgpaas_ip_address']
+        bgpaas_shared = kwargs['bgpaas_shared']
+        session_attributes = BgpSessionAttributes(**kwargs)
+        obj = BgpAsAService(name, parent_type='project', fq_name=fq_name, bgpaas_session_attributes=session_attributes,
+                            autonomous_system=autonomous_system, bgpaas_shared=bgpaas_shared, bgpaas_ip_address=bgpaas_ip_address)
+        return self._vnc.bgp_as_a_service_create(obj)
+
+    def update_bgpaas(self, bgpaas_uuid, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+        '''
+        bgpaas_obj = self._vnc.bgp_as_a_service_read(id=bgpaas_uuid)
+        # Todo: Make a list of all parameters.
+        return self._vnc.bgp_as_a_service_update(bgpaas_obj)
+
+    def delete_bgpaas(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        return self._vnc.bgp_as_a_service_delete(**kwargs)
+
+    def attach_vmi_to_bgpaas(self, bgpaas_uuid, vmi_id):
+        self.logger.info('Attaching VMI %s to BGPaaS %s'%(vmi_id, bgpaas_uuid))
+        bgpaas_obj = self._vnc.bgp_as_a_service_read(id=bgpaas_uuid)
+        ref_obj = self._vnc.virtual_machine_interface_read(id=vmi_id)
+        bgpaas_obj.add_virtual_machine_interface(ref_obj)
+        return self._vnc.bgp_as_a_service_update(bgpaas_obj)
+
+    def detach_vmi_from_bgpaas(self, bgpaas_uuid, vmi_id):
+        self.logger.info('Detaching VMI %s from BGPaaS %s'%(vmi_id, bgpaas_uuid))
+        bgpaas_obj = self._vnc.bgp_as_a_service_read(id=bgpaas_uuid)
+        ref_obj = self._vnc.virtual_machine_interface_read(id=vmi_id)
+        bgpaas_obj.del_virtual_machine_interface(ref_obj)
+        return self._vnc.bgp_as_a_service_update(bgpaas_obj)
+
+    def attach_shc_to_bgpaas(self, bgpaas_uuid, shc_id):
+        self.logger.info('Attaching HC %s to BGPaaS %s'%(shc_id, bgpaas_uuid))
+        bgpaas_obj = self._vnc.bgp_as_a_service_read(id=bgpaas_uuid)
+        ref_obj = self._vnc.service_health_check_read(id=shc_id)
+        bgpaas_obj.add_service_health_check(ref_obj)
+        return self._vnc.bgp_as_a_service_update(bgpaas_obj)
+
+    def detach_shc_from_bgpaas(self, bgpaas_uuid, shc_id):
+        self.logger.info('Detaching HC %s from BGPaaS %s'%(shc_id, bgpaas_uuid))
+        bgpaas_obj = self._vnc.bgp_as_a_service_read(id=bgpaas_uuid)
+        ref_obj = self._vnc.service_health_check_read(id=shc_id)
+        bgpaas_obj.del_service_health_check(ref_obj)
+        return self._vnc.bgp_as_a_service_update(bgpaas_obj)
+
     def get_health_check(self, **kwargs):
         '''
             :param fq_name : fqname of the object (list)
