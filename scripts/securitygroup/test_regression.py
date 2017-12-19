@@ -1106,7 +1106,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         if not self.inputs.pcap_on_vm:
             session, pcap = start_tcpdump_for_vm_intf(
                 self, src_vm_fix, src_vn_fq_name, filters=filters)
-            cmd = 'tcpdump -r %s' % pcap
+            cmd = 'sudo tcpdump -r %s' % pcap
         else:
             vm_fix_pcap_pid_files = start_tcpdump_for_vm_intf(
                 self, [src_vm_fix], None, filters=filters, pcap_on_vm=True)
@@ -1155,7 +1155,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         if not self.inputs.pcap_on_vm:
             session, pcap = start_tcpdump_for_vm_intf(
                 self, vm1_fixture, src_vn_fq_name, filters=filters)
-            cmd = 'tcpdump -r %s' % pcap
+            cmd = 'sudo tcpdump -r %s' % pcap
         else:
             vm_fix_pcap_pid_files = start_tcpdump_for_vm_intf(
                 self, [vm1_fixture], None, filters=filters, pcap_on_vm=True)

@@ -8,7 +8,7 @@ class VerifySvcMirror(ConfigSvcChain):
 
     def start_tcpdump(self, session, tap_intf):
         pcap = '/tmp/mirror-%s.pcap' % tap_intf
-        cmd = "tcpdump -ni %s udp port 8099 -w %s" % (tap_intf, pcap)
+        cmd = "sudo tcpdump -ni %s udp port 8099 -w %s" % (tap_intf, pcap)
         self.logger.info("Staring tcpdump to capture the mirrored packets.")
         execute_cmd(session, cmd, self.logger)
         return pcap
@@ -16,12 +16,12 @@ class VerifySvcMirror(ConfigSvcChain):
     def stop_tcpdump(self, session, pcap):
         self.logger.info("Waiting for the tcpdump write to complete.")
         sleep(30)
-        cmd = 'kill $(pidof tcpdump)'
+        cmd = 'sudo kill $(pidof tcpdump)'
         execute_cmd(session, cmd, self.logger)
-        cmd = 'tcpdump -r %s | wc -l' % pcap
+        cmd = 'sudo tcpdump -r %s | wc -l' % pcap
         out, err = execute_cmd_out(session, cmd, self.logger)
         count = int(out.strip('\n'))
-        cmd = 'rm -f %s' % pcap
+        cmd = 'sudo rm -f %s' % pcap
         execute_cmd(session, cmd, self.logger)
         return count
 
