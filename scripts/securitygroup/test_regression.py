@@ -2481,7 +2481,7 @@ class SecurityGroupBasicRegressionTests1_contrail(
         super(SecurityGroupBasicRegressionTests1_contrail, cls).setUpClass()
         cls.option = 'contrail'
 
-    @test.attr(type=['sanity', 'vcenter', 'suite1', 'vcenter_compute'])
+    @test.attr(type=['sanity', 'vcenter', 'suite1'])
     def test_sec_group_basic(self):
         super(SecurityGroupBasicRegressionTests1_contrail, self).test_sec_group_basic()
 
