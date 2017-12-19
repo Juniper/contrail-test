@@ -165,3 +165,11 @@ def search_in_pcap(session, pcap, search_string):
 def delete_pcap(session, pcap):
     execute_cmd_out(session, 'rm -f %s' % (pcap))
 
+@retry(delay=2, tries=15)
+def wait_for_pcap_to_get_create(session, pcap):
+    cmd = 'ls -d /tmp/* | grep -w %s ' % (pcap)
+    out, err = execute_cmd_out(session, cmd)
+    if out:
+        return True
+    else:
+        return False
