@@ -718,6 +718,7 @@ class TestEncapCases(base.BaseEncapTest):
             self.start_tcpdump(session, cmd_udp)
             self.start_tcpdump(session, cmd_gre)
             self.start_tcpdump(session, cmd_vxlan)
+        sleep(30)
 
     # end tcpdump_on_all_compute
 
