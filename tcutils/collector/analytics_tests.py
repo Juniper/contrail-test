@@ -2973,7 +2973,7 @@ class AnalyticsVerification(fixtures.Fixture):
             service_ip = self.inputs.database_ips[0]
             container = 'analyticsdb'
         elif role == 'control-node':
-            service_ip = self.inputs.bgp_control_ips[0]
+            service_ip = self.inputs.bgp_ips[0]
             container = 'controller'
         elif role == 'vrouter':
             service_ip = self.inputs.compute_ips[0]
