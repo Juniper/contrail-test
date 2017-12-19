@@ -378,6 +378,7 @@ class TestEncapCases(base.BaseEncapTest):
                 'Checking connectivity within VNS cluster through Policy')
             self.logger.info('Ping from %s to %s' % (vm1_name, vm2_name))
             self.tcpdump_start_on_all_compute()
+            sleep(30)
             if not vm1_fixture.ping_with_certainty(
                     vm2_fixture.vm_ip,
                     count='15'):
@@ -391,6 +392,7 @@ class TestEncapCases(base.BaseEncapTest):
                 'Checking connectivity outside VNS cluster through FIP')
             self.logger.info("Now trying to ping %s" % (self.inputs.public_host))
             self.tcpdump_start_on_all_compute()
+            sleep(30)
             if not vm1_fixture.ping_with_certainty(
                     self.inputs.public_host,
                     count='15'):
