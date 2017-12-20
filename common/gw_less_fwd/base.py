@@ -137,7 +137,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                           },
                     }
         '''
-        vn_count = vn['count'] if vn else 1
+        vn_count = vn['count'] if vn else 0
         vn_fixtures = {} # Hash to store VN fixtures
         for i in range(0,vn_count):
             vn_id = 'vn'+str(i+1)
@@ -175,7 +175,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                    'vmi2':{'vn': 'vn1'},
                   }
         '''
-        vmi_count = vmi['count'] if vmi else 1
+        vmi_count = vmi['count'] if vmi else 0
         vmi_fixtures = {} # Hash to store VMI fixtures
         for i in range(0,vmi_count):
             vmi_id = 'vmi'+str(i+1)
@@ -209,7 +209,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                 }
             launch_mode can be distribute or non-distribute
         '''
-        vm_count = vm['count'] if vm else 1
+        vm_count = vm['count'] if vm else 0
         launch_mode = vm.get('launch_mode','default')
         vm_fixtures = {} # Hash to store VM fixtures
 
@@ -255,6 +255,22 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
         return vm_fixtures
 
 
+    def provision_underlay_gw(self):
+        '''Setup Fabric Gateway
+
+            Sets up underlay fabric gateway
+        '''
+
+        # Provision Fabric Gateway
+        name = self.inputs.fabric_gw_info[0][0]
+        ip = self.inputs.fabric_gw_info[0][1]
+        self.vnc_h.provision_fabric_gw(name, ip, self.inputs.router_asn)
+        self.addCleanup(self.vnc_h.delete_fabric_gw, name)
+
+        # Default security group to allow all traffic
+        self.allow_default_sg_to_allow_all_on_project(self.inputs.project_name)
+
+
 
     def setup_gw_less_fwd(self, vn=None, vmi=None, vm=None, verify=True):
         '''Setup Gateway Less Forwarding .
@@ -283,17 +299,10 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                     'vm2':{'vn':['vn1'], 'vmi':['vmi2']}, # VM Details
                     }
 
-
         '''
-        # Provision Fabric Gateway
-        name = self.inputs.fabric_gw_info[0][0]
-        ip = self.inputs.fabric_gw_info[0][1]
-        self.vnc_h.provision_fabric_gw(name, ip, self.inputs.router_asn)
-        self.addCleanup(self.vnc_h.delete_fabric_gw, name)
 
-
-        # Default security group to allow all traffic
-        self.allow_default_sg_to_allow_all_on_project(self.inputs.project_name)
+        # Provision underlay gateway
+        self.provision_underlay_gw()
 
         # VNs creation
         vn_fixtures = self.setup_vns(vn)
