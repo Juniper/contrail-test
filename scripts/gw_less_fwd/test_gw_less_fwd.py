@@ -1,6 +1,9 @@
 from tcutils.wrappers import preposttest_wrapper
 from common.gw_less_fwd.base import *
 from contrailapi import ContrailVncApi
+from common.svc_firewall.base import BaseSvc_FwTest
+from common.servicechain.firewall.verify import VerifySvcFirewall
+from common.servicechain.mirror.verify import VerifySvcMirror
 import test
 
 from time import sleep
@@ -36,8 +39,6 @@ class TestGWLessFWD(GWLessFWDTestBase):
         if not self.inputs.fabric_gw_info:
              raise self.skipTest(
                 "Skipping Test. Fabric gateway is required to run the test")
-
-        result = True
 
         # VN parameters. IP Fabric forwarding is enabled on vn1.
         vn = {'count':1,
@@ -99,8 +100,6 @@ class TestGWLessFWD(GWLessFWDTestBase):
              raise self.skipTest(
                 "Skipping Test. Fabric gateway is required to run the test")
 
-
-        result = True
 
         # VN parameters. IP Fabric forwarding is enabled on both vn1 and vn2.
         vn = {'count':2,
@@ -230,8 +229,6 @@ class TestGWLessFWD(GWLessFWDTestBase):
                 "Skipping Test. Fabric gateway is required to run the test")
 
 
-        result = True
-
         # VN parameters. IP Fabric forwarding is enabled on vn1 and not on vn2.
         vn = {'count':2,
               'vn1':{'subnet':'10.10.10.0/24', 'ip_fabric':True},
@@ -321,8 +318,6 @@ class TestGWLessFWD(GWLessFWDTestBase):
              raise self.skipTest(
                 "Skipping Test. Fabric gateway is required to run the test")
 
-
-        result = True
 
         # VN parameters
         vn = {'count':1,
@@ -421,8 +416,6 @@ class TestGWLessFWD(GWLessFWDTestBase):
              raise self.skipTest(
                 "Skipping Test. Fabric gateway is required to run the test")
 
-
-        result = True
 
         # VN parameters. IP Fabric forwarding is enabled on both VNs
         vn = {'count':2,
@@ -597,9 +590,6 @@ class TestGWLessFWD(GWLessFWDTestBase):
                 "Skipping Test. Fabric gateway is required to run the test")
 
 
-        result = True
-
-
         # VN parameters. IP Fabric forwarding is enabled on vn1.
         vn = {'count':1,
               'vn1':{'subnet':'10.10.10.0/24', 'ip_fabric':True},
@@ -666,9 +656,6 @@ class TestGWLessFWD(GWLessFWDTestBase):
         if not self.inputs.fabric_gw_info:
              raise self.skipTest(
                 "Skipping Test. Fabric gateway is required to run the test")
-
-
-        result = True
 
         # Ipam parameters
         ipam = {'count': 1,
@@ -752,9 +739,6 @@ class TestGWLessFWD(GWLessFWDTestBase):
         if not self.inputs.fabric_gw_info:
              raise self.skipTest(
                 "Skipping Test. Fabric gateway is required to run the test")
-
-
-        result = True
 
         # Ipam parameters
         ipam = {'count': 1,
@@ -908,9 +892,6 @@ class TestGWLessFWD(GWLessFWDTestBase):
              raise self.skipTest(
                 "Skipping Test. Fabric gateway is required to run the test")
 
-
-        result = True
-
         # Ipam parameters
         ipam = {'count': 1,
                  'ipam1':{'ipam_type': 'dhcp',
@@ -1019,9 +1000,6 @@ class TestGWLessFWD(GWLessFWDTestBase):
         if not self.inputs.fabric_gw_info:
              raise self.skipTest(
                 "Skipping Test. Fabric gateway is required to run the test")
-
-
-        result = True
 
         # Ipam parameters
         ipam = {'count': 1,
@@ -1142,9 +1120,6 @@ class TestGWLessFWD(GWLessFWDTestBase):
         if not self.inputs.fabric_gw_info:
              raise self.skipTest(
                 "Skipping Test. Fabric gateway is required to run the test")
-
-
-        result = True
 
         # Ipam parameters
         ipam = {'count': 1,
@@ -1321,6 +1296,150 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
 
     # end test_gw_less_fwd_flat_subnet_fip
+
+
+    def test_gw_less_fwd_single_vn_ipv6(self):
+        '''
+        Description:  Validate Ping between 3 VMs in the same VN.
+        Test steps:
+               1. Create a VN and launch 3 VMs in it.
+        Pass criteria: Ping between the VMs should go thru fine.
+        '''
+        self.inputs.set_af('v6')
+
+        # Provision underlay gateway
+        ret_dict = self.provision_underlay_gw()
+
+        vn1_name = get_random_name('vn30')
+        vn1_vm1_name = get_random_name('vm1')
+        vn1_vm2_name = get_random_name('vm2')
+        vn1_vm3_name = get_random_name('vm3')
+        vn1_fixture = self.create_vn(vn_name=vn1_name,orch=self.orchestrator,
+                                     ip_fabric=True)
+        vn1_fixture.read()
+        vm1_fixture = self.create_vm(vn_fixture=vn1_fixture,
+                                     vm_name=vn1_vm1_name,orch=self.orchestrator)
+        vm2_fixture = self.create_vm(vn_ids=[vn1_fixture.uuid],
+                                     vm_name=vn1_vm2_name)
+        vm3_fixture = self.create_vm(vn_ids=[vn1_fixture.uuid],
+                                     vm_name=vn1_vm3_name)
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
+        assert vm3_fixture.wait_till_vm_is_up()
+
+        assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
+            "Ping from %s to %s failed" % (vn1_vm1_name, vn1_vm2_name)
+        assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
+            "Ping from %s to %s failed" % (vn1_vm2_name, vn1_vm1_name)
+        assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm3_fixture),\
+            "Ping from %s to %s failed" % (vn1_vm1_name, vn1_vm3_name)
+        assert vm3_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
+            "Ping from %s to %s failed" % (vn1_vm3_name, vn1_vm1_name)
+
+        return True
+    # end test_gw_less_fwd_single_vn_ipv6
+
+    def test_gw_less_fwd_broadcast_multicast(self):
+        '''
+        Description:  Validate Ping on subnet broadcast,link local multucast,network broadcast.
+        Test steps:
+                1. Send ICMP traffic stream to subnet broadcast, multicast and all-broadcast address,
+                2. Enable response to broadcasts on the destination VMs.
+        Pass criteria: There should be no packet loss and all the three destination VMs should see the ICMP traffic.
+        '''
+
+        # Provision underlay gateway
+        ret_dict = self.provision_underlay_gw()
+
+        result = True
+        ping_count = '2'
+        vn1_subnets = ['30.1.1.0/24']
+        vn1_vm1_name = get_random_name('vn1_vm1')
+        vn1_vm2_name = get_random_name('vn1_vm2')
+        vn1_vm3_name = get_random_name('vn1_vm3')
+        vn1_vm4_name = get_random_name('vn1_vm4')
+        vn1_fixture = self.create_vn(vn_subnets=vn1_subnets, ip_fabric=True)
+        vm1_fixture = self.create_vm(vn1_fixture, vm_name=vn1_vm1_name)
+        vm2_fixture = self.create_vm(vn1_fixture, vm_name=vn1_vm2_name)
+        vm3_fixture = self.create_vm(vn1_fixture, vm_name=vn1_vm3_name)
+        vm4_fixture = self.create_vm(vn1_fixture, vm_name=vn1_vm4_name)
+        assert vm1_fixture.wait_till_vm_is_up()
+        assert vm2_fixture.wait_till_vm_is_up()
+        assert vm3_fixture.wait_till_vm_is_up()
+        assert vm4_fixture.wait_till_vm_is_up()
+        # Geting the VM ips
+        vm1_ip = vm1_fixture.vm_ip
+        vm2_ip = vm2_fixture.vm_ip
+        vm3_ip = vm3_fixture.vm_ip
+        vm4_ip = vm4_fixture.vm_ip
+        ip_list = [vm1_ip, vm2_ip, vm3_ip, vm4_ip]
+        bcast_ip = str(IPNetwork(vn1_subnets[0]).broadcast)
+        list_of_ip_to_ping = [bcast_ip, '224.0.0.1', '255.255.255.255']
+        # passing command to vms so that they respond to subnet broadcast
+        cmd = ['echo 0 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts']
+        vm_fixtures = [vm1_fixture, vm2_fixture, vm3_fixture, vm4_fixture]
+        for vm in vm_fixtures:
+            self.logger.debug('Running cmd for %s' % vm.vm_name)
+            for i in range(3):
+                try:
+                    self.logger.debug("Retry %s" % (i))
+                    ret = vm.run_cmd_on_vm(cmds=cmd, as_sudo=True)
+                    if not ret:
+                        for vn in vm.vn_fq_names:
+                            vm.ping_vm_from_host(vn)
+                        raise Exception
+                except Exception as e:
+                    time.sleep(5)
+                    self.logger.exception("Got exception as %s" % (e))
+                else:
+                    break
+        for dst_ip in list_of_ip_to_ping:
+            self.logger.info('pinging from %s to %s' % (vm1_ip, dst_ip))
+            # pinging from Vm1 to subnet broadcast
+            ping_output = vm1_fixture.ping_to_ip(
+                dst_ip, return_output=True, count=ping_count, other_opt='-b')
+            self.logger.info("ping output : \n %s" % (ping_output))
+            expected_result = ' 0% packet loss'
+            if expected_result not in ping_output:
+                self.logger.error('Expected 0% packet loss!')
+                self.logger.error('Ping result : %s' % (ping_output))
+                result = result and False
+            # getting count of ping response from each vm
+            string_count_dict = {}
+            string_count_dict = get_string_match_count(ip_list, ping_output)
+            self.logger.info("output %s" % (string_count_dict))
+            self.logger.info(
+                "There should be atleast 4 echo reply from each ip")
+            for k in ip_list:
+                if (ping_output.count('DUP') >= 3):
+                    self.logger.info('Seen replies from all vms..')
+                else:
+                    self.logger.info('NOT Seen replies from all vms..')
+                    result = result and False
+
+        if not result:
+            self.logger.error('There were errors. Verifying VM fixtures')
+            assert vm1_fixture.verify_on_setup()
+            assert vm2_fixture.verify_on_setup()
+            assert vm3_fixture.verify_on_setup()
+            assert vm4_fixture.verify_on_setup()
+        return True
+    # end test_gw_less_fwd_broadcast_multicast
+
+class TestGWLessFWDSvcChain(GWLessFWDTestBase, BaseSvc_FwTest, VerifySvcFirewall):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestGWLessFWDSvcChain, cls).setUpClass()
+
+    @preposttest_wrapper
+    def test_ip_fabric_svc_in_network_datapath(self):
+        # Provision underlay gateway
+        ret_dict = self.provision_underlay_gw()
+
+        return self.verify_svc_chain(svc_img_name='cirros_in_net',
+                                     service_mode='in-network', create_svms=True,
+                                     ip_fabric=True)
 
 
 
