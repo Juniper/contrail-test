@@ -3065,7 +3065,6 @@ class VMFixture(fixtures.Fixture):
 
     def __repr__(self):
         return '<VMFixture: %s>' % (self.vm_name)
-
 # end VMFixture
 
 class VMData(object):

@@ -303,7 +303,8 @@ class VerificationOpsSrv (VerificationUtilBase):
     def post_query(self, table, start_time=None, end_time=None,
                    select_fields=None,
                    where_clause='',
-                   sort_fields=None, sort=None, limit=None, filter=None, dir=None):
+                   sort_fields=None, sort=None, limit=None, filter=None, dir=None,
+                   session_type=None):
         res = None
         try:
             self._drv._auth()
@@ -319,7 +320,8 @@ class VerificationOpsSrv (VerificationUtilBase):
                 table, start_time, end_time,
                 select_fields,
                 where_clause,
-                sort_fields, sort, limit, filter, dir)
+                sort_fields, sort, limit, filter, dir,
+                session_type)
 
             print json.dumps(query_dict)
             res = []
