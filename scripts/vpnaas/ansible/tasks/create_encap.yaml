@@ -1,0 +1,7 @@
+---
+  - shell: vif --list | grep {{ interface_name }} | awk {'print $1'} | sed 's/vif0\///'
+    register: interface_id
+  - name: Adding an Encap NextHop
+    shell: nh --create {{ nh }} --type 2 --el2 --oif {{ interface_id.stdout }} --vrf {{ vrf }}
+  - name: Adding a MPLS lable pointing to the Encap NextHop
+    shell: mpls --create {{ mpls_label }} --nh {{ nh }}

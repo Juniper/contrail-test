@@ -1,0 +1,7 @@
+---
+  - include_tasks: tasks/loop_hosts.yaml task=tasks/add_ipsec_conf.yaml
+  - copy:
+      src: ipsec.secrets
+      dest: "{{ swan_path }}/ipsec.secrets"
+    notify:
+      - restart ipsec

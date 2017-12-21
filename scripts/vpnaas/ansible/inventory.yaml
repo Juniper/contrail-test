@@ -1,0 +1,19 @@
+#[vrouters]
+#10.10.3.83
+#[ipsec_mesh]
+#10.10.3.83
+#10.10.3.84
+vrouters:
+  hosts:
+    10.84.24.32:
+      id: 1
+      vm_mac: 00:11:22:33:44:32
+      tunnel_mac: 00:25:90:c9:2b:7e
+      tunnel_ip: 10.255.0.32
+      swan: libreswan
+    10.84.24.33:
+      id: 3
+      vm_mac: 00:11:22:33:44:33
+      tunnel_mac: 00:25:90:c9:29:10
+      tunnel_ip: 10.255.0.33
+      swan: libreswan

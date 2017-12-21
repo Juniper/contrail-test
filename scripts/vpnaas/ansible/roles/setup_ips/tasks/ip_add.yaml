@@ -1,0 +1,3 @@
+---
+  - shell: |
+      ip addr add "{{ ip_addr }}"/16 dev ens3 || /bin/true

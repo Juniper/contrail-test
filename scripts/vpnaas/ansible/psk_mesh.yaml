@@ -1,0 +1,7 @@
+---
+- hosts: ipsec_mesh
+  remote_user: root
+  roles:
+    - strongswan
+    - psk_tunnels
+

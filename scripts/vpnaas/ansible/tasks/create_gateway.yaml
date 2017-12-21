@@ -1,0 +1,15 @@
+---
+  - import_tasks: tasks/create_interface.yaml
+    vars:
+      mac: "{{ tunnel_mac }}"
+      vrf: 0
+      type: gateway
+      transport: virtual
+  - shell: vif --list | grep {{ interface_name }} | awk {'print $1'} | sed 's/vif0\///'
+    register: interface_id
+  - shell: nh --create {{ nh }} --type 1 --oif {{ interface_id.stdout }} --vrf 0
+  - debug:
+      msg: "nh --create {{ nh }} --type 1 --oif {{ interface_id.stdout }} --vrf 0"
+  - shell: rt -c -v 0 -f 0 -p {{ tunnel_ip }} -l 32 -n {{ nh }} -x 0x0f
+  - shell: ip r a {{ tunnel_ip }}/32 dev gw0
+  - import_tasks: tasks/settings.yaml

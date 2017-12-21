@@ -1,0 +1,23 @@
+---
+  - name: Checking if tun0 is already configured
+    shell: ip link show dev tun0
+    register: tun0
+    ignore_errors: yes
+  - shell: "ip link add tun0 type gretap local {{ inventory_hostname }} remote 10.84.24.41"
+    when: tun0.rc != 0
+  - shell: ip link set dev tun0 up
+    when: tun0.rc != 0
+  - name: Adding tun0 to vRouter
+    shell: vif --add tun0 --vrf 1 --type virtual --mac 00:11:22:33:44:55
+    when: tun0.rc != 0
+  - name: Creating an Encap nh for tun0
+    import_tasks: tasks/create_encap.yaml
+    vars:
+      interface_name: tun0
+      vrf: 1
+      nh: 100
+      mpls_label: 32
+  - import_tasks: tasks/settings.yaml
+    vars:
+      interface_name: tun0
+    when: tun0.rc != 0

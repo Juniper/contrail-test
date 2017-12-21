@@ -1,0 +1,23 @@
+---
+  - include_tasks: "{{ task }}"
+    vars:
+      real_host1: "{{ inventory_hostname }}"
+      real_host2: "{{ item }}"
+      host1: "{{ hostvars[inventory_hostname]['tunnel_ip'] }}"
+      host2: "{{ hostvars[item]['tunnel_ip'] }}"
+      host1_mac: "00:00:5e:00:01:00"
+      host2_mac: "{{ tunnel_mac }}"
+      mac: "{{ hostvars[item]['vm_mac'] }}"
+      idx: "{{ hostvars[item]['id'] }}"
+    with_items: "{{ ansible_play_batch[:ansible_play_batch.index(inventory_hostname)] }}"
+  - include_tasks: "{{ task }}"
+    vars:
+      real_host1: "{{ inventory_hostname }}"
+      real_host2: "{{ item }}"
+      host1: "{{ hostvars[inventory_hostname]['tunnel_ip'] }}"
+      host2: "{{ hostvars[item]['tunnel_ip'] }}"
+      host1_mac: "00:00:5e:00:01:00"
+      host2_mac: "{{ tunnel_mac }}"
+      mac: "{{ hostvars[item]['vm_mac'] }}"
+      idx: "{{ hostvars[item]['id'] }}"
+    with_items: "{{ ansible_play_batch[ansible_play_batch.index(inventory_hostname)+1:] }}"

@@ -1,0 +1,3 @@
+---
+  - shell: vif --list | grep {{ interface }} | awk {'print $1'} | sed 's/vif0\///'
+    register: interface_id

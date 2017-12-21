@@ -1,0 +1,15 @@
+---
+  - name: Install utilities
+    copy:
+      src: resources/utils/
+      dest: /usr/bin/
+      mode: 0700
+  - name: Check Linux version
+    shell: uname -r
+    register: uname_output
+  - set_fact:
+      linux_version: "{{ uname_output.stdout }}"
+  - name: Copy vRouter
+    copy:
+      src: resources/vrouter_{{ ansible_distribution }}_{{ ansible_distribution_release }}.ko
+      dest: "/lib/modules/{{ linux_version }}/vrouter.ko"

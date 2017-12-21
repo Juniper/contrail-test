@@ -1,0 +1,8 @@
+---
+  - name: Ensure package bridge-utils is present
+    apt:
+      name: bridge-utils
+      state: present
+    when: ansible_distribution == 'Ubuntu'
+  - name: Setting up tun0
+    import_tasks: tun0.yaml
