@@ -45,24 +45,16 @@ class AnalyticsTestSanityWithMin(
     @preposttest_wrapper
     def test_run_contrail_flows_cli_cmds(self):
         '''1. Test to verify  contrail-flows cli cmd with various optional arguments is not broken..
-
               Run the following commands:
-
               cmd1: contrail-flows --source-vn default-domain:ctest-AnalyticsTestSanityWithResource-70247115:ctest-vn1-92886157
                     --source-ip 107.191.91.3 --source-port 1453 --protocol 1 --direction ingress --tunnel-info
                     --start-time now-30m --end-time now'
-
               cmd2: contrail-flows --destination-vn default-domain:ctest-AnalyticsTestSanityWithResource-70247115:ctest-vn1-92886157
                     --destination-ip 107.191.91.4 --destination-port 0 --action pass --protocol 1 --verbose --last 1h
-
               cmd3: contrail-flows --vrouter-ip 'vrouter-ip' --other-vrouter-ip 'peer-vrouter-ip' --start-time now-10m --end-time now
-
               cmd4: contrail-flows --vrouter 'vrouter-name' --last 10m'
-
               cmd5: contrail-flows --vmi 'vmi fq_name'
-
            2.Verify the command runs properly
-
            3.Verify the cmd is returning non null output
         '''
         result = True
@@ -127,7 +119,7 @@ class AnalyticsTestSanityWithMin(
         src_vn = self.res.vn1_vm1_fixture.vn_fq_names[0]
         src_port = src_flow['src_port']
         sip = src_flow['sip']
-
+        
         cmd_args_list = [ { 'source-vn':src_vn, 'source-ip':sip, 'source-port':src_port,
             'protocol':protocol, 'direction':direction, 'no_key':['start-time now-30m', 'end-time now']},
             {'destination-vn':dst_vn, 'destination-ip':dip, 'destination-port':dst_port,
@@ -1234,7 +1226,7 @@ class AnalyticsTestSanityWithResource(
         return True
 
 
-
+    
     @preposttest_wrapper
     def test_run_contrail_logs_cli_cmd_with_optional_arg_module(self):
 
@@ -1361,4 +1353,277 @@ class AnalyticsTestSanityWithResource(
             cmd_args_list.append(cmd)
         return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True)
 
-#End AnalyticsTestSanityWithResource        
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_verify_session_sampling_teardown(self):
+        '''
+        1.query client session samples
+        2.query server session samples
+        3.query client session to get number of sessions exported
+        4.query session record table for teardown bytes/pkts
+        5.query sample count after teardown on server side
+        '''
+        self.setup_flow_export_rate(100)
+        result = True
+        policy_name = 'policy1'
+        rules = [
+            {
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'icmp',
+                'source_network': 'any',
+                'dest_network': 'any',
+            },
+        ]
+        self.creat_bind_policy(policy_name, rules,self.res.vn1_fixture,self.res.vn2_fixture)
+        assert self.res.vn1_fixture.verify_on_setup()
+        assert self.res.vn2_fixture.verify_on_setup()
+        self.res.verify_common_objects()
+        
+        vm_node_ip = self.res.vn1_vm1_fixture.vm_node_ip
+        vm_host = self.res.vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
+        
+        start_time = self.analytics_obj.getstarttime(vm_node_ip)
+        self.logger.info("start time= %s" % (start_time))
+        
+        assert self.res.vn1_vm1_fixture.ping_with_certainty(dst_vm_fixture=self.res.vn2_vm2_fixture)
+        time.sleep(10)
+        
+        src_vn = self.res.vn1_fixture.vn_fq_name
+        dst_vn = self.res.vn2_fixture.vn_fq_name
+        result = self.verify_session_sampling_teardown(start_time, src_vn, dst_vn)
+        
+        assert result,'Failed to get expected number of samples'
+    #test_verify_session_sampling_teardown
+    
+    @preposttest_wrapper
+    def test_verify_session_table_intra_vn(self):
+        '''Verify session tables ,generated stats within vn
+        '''
+        self.setup_flow_export_rate(100)
+        self.res.verify_common_objects()
+        vm_node_ip = self.res.vn1_vm1_fixture.vm_node_ip
+        vm_host = self.res.vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
+        
+        start_time = self.analytics_obj.getstarttime(vm_node_ip)
+        self.logger.info("start time= %s" % (start_time))
+        assert self.res.vn1_vm1_fixture.ping_with_certainty(dst_vm_fixture=self.res.vn1_vm2_fixture)
+        time.sleep(100)
+        src_vn = self.res.vn1_fixture.vn_fq_name
+        result = self.verify_session_sampling_teardown(start_time, src_vn, src_vn)
+        
+        assert result,'Failed to get expected number of samples'
+    #end test_verify_session_series_table_intra_vn
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_verify_session_series_table_inter_vn(self):
+        '''Verify session series table ,generated stats between different vns
+        1.query client session samples
+        2.query for server ports
+        3.sort results by server_port column
+        4.verify granularity with T=10
+        5.verify sampled bytes
+        6.verify logged bytes
+        7.query and verify filter by action
+        '''
+        self.setup_flow_export_rate(100)
+        result = True
+        policy_name = 'policy1'
+        rules = [
+            {
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'udp',
+                'source_network': 'any',
+                'dest_network': 'any',
+            },
+        ]
+        self.creat_bind_policy(policy_name, rules,self.res.vn1_fixture,self.res.vn2_fixture)
+        assert self.res.vn1_fixture.verify_on_setup()
+        assert self.res.vn2_fixture.verify_on_setup()
+        self.res.verify_common_objects()
+        vm_node_ip = self.res.vn1_vm1_fixture.vm_node_ip
+        vm_host = self.res.vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
+        start_time = self.analytics_obj.getstarttime(vm_node_ip)
+        self.logger.info("start time= %s" % (start_time))
+        self.setup_and_create_streams(self.res.vn1_fixture, self.res.vn2_fixture, 
+                                       self.res.vn1_vm1_fixture, self.res.vn2_vm2_fixture)
+        src_vn = self.res.vn1_fixture.vn_fq_name
+        dst_vn = self.res.vn2_fixture.vn_fq_name
+        
+        self.verify_session_series_table(start_time, src_vn, dst_vn)
+    #test_verify_session_series_table_inter_vn
+
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_verify_session_record_table_inter_vn(self):
+        '''Verify session record table ,generated stats between different vns
+        1.query and verify number of client session records
+        2.query and verify number of server session records
+        3.query with local_ip server_port protocol
+        4.query with server_port local_ip filter by server_port
+        5.query with client_port remote_ip filter by client_port 
+          Total we get three record limit by 2
+        6.query with sort_fields
+        '''
+        self.setup_flow_export_rate(100)
+        result = True
+        policy_name = 'policy1'
+        rules = [
+            {
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'udp',
+                'source_network': 'any',
+                'dest_network': 'any',
+            },
+        ]
+        self.creat_bind_policy(policy_name, rules,self.res.vn1_fixture,self.res.vn2_fixture)
+        assert self.res.vn1_fixture.verify_on_setup()
+        assert self.res.vn2_fixture.verify_on_setup()
+        self.res.verify_common_objects()
+        vm_node_ip = self.res.vn1_vm1_fixture.vm_node_ip
+        start_time = self.analytics_obj.getstarttime(vm_node_ip)
+        self.logger.info("start time= %s" % (start_time))
+        self.setup_and_create_streams(self.res.vn1_fixture, self.res.vn2_fixture, 
+                                       self.res.vn1_vm1_fixture, self.res.vn2_vm2_fixture)
+        time.sleep(100)
+        src_vn = self.res.vn1_fixture.vn_fq_name
+        dst_vn = self.res.vn2_fixture.vn_fq_name
+        self.verify_session_record_table(start_time, src_vn, dst_vn)
+    #test_verify_session_record_table_inter_vn   
+    
+    @preposttest_wrapper
+    def test_verify_session_tables_with_invalid_fields_values(self):
+        '''Veify Session tables with invalid_fields_values
+        1.query with invalid where parameters
+        2.query with session_type server with src_vn and dst_vn refering to client_session
+        3.invalid fields
+        4.dont give uuid still has to display
+        '''
+        self.setup_flow_export_rate(100)
+        result = True
+        policy_name = 'policy1'
+        rules = [
+            {
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'udp',
+                'source_network': 'any',
+                'dest_network': 'any',
+            },
+        ]
+        self.creat_bind_policy(policy_name, rules,self.res.vn1_fixture,self.res.vn2_fixture)
+        assert self.res.vn1_fixture.verify_on_setup()
+        assert self.res.vn2_fixture.verify_on_setup()
+        self.res.verify_common_objects()
+        
+        vm_node_ip = self.res.vn1_vm1_fixture.vm_node_ip
+        vm_host = self.res.vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
+        
+        start_time = self.analytics_obj.getstarttime(vm_node_ip)
+        self.logger.info("start time= %s" % (start_time))
+        self.setup_and_create_streams(self.res.vn1_fixture, self.res.vn2_fixture, 
+                                       self.res.vn1_vm1_fixture, self.res.vn2_vm2_fixture)
+        src_vn = self.res.vn1_fixture.vn_fq_name
+        dst_vn = self.res.vn2_fixture.vn_fq_name
+        
+        ip = self.inputs.collector_ips[0]
+        self.logger.info('Verifying session tables with invalid parameters')
+        #query with invalid where parameters
+        query ='vn=' + src_vn + ' AND remote_vn=' + dst_vn + ' AND protocol=177'
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionSeriesTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['vn','local_ip','remote_vn','remote_ip',
+                'SUM(forward_sampled_pkts)','sample_count'],
+            where_clause=query,
+            session_type='client')
+        if res:
+            self.logger.error('Got result with invalid where parameters')
+            result = result and False
+        self.logger.debug(res)
+        
+        #query with session_type server with src_vn and dst_vn refering to client_session
+        #it should return empty result
+        query = 'vn=' + src_vn + ' AND remote_vn=' + dst_vn + ' AND protocol=17'
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionSeriesTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['vn','local_ip','remote_vn','remote_ip',
+                'SUM(forward_sampled_pkts)','sample_count'],
+            where_clause=query,
+            session_type='server')
+        if res:
+            self.logger.error('Got result with invalid session parameters')
+            result = result and False
+        self.logger.debug(res)
+        
+        #invalid fields
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionRecordTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['forward_flow_uuid',
+                       'reverse_flow_uuid', 'vn', 'remote_vn', 'vrouter', 'vrouter_ip'],
+            where_clause=query,
+            filter='vrouter=vrouter1',
+            session_type='client')
+        if res:
+            self.logger.error('Got result with invalid vrouter filter name ')
+            result = result and False
+        self.logger.debug(res)
+        
+        #dont give uuid still has to display
+        res = self.analytics_obj.ops_inspect[ip].post_query(
+            'SessionRecordTable',
+            start_time=start_time,
+            end_time='now',
+            select_fields=['vn', 'remote_vn', 'vrouter', 'vrouter_ip'],
+            where_clause=query,
+            session_type='client')
+        uuid =  ['forward_flow_uuid', 'reverse_flow_uuid']
+        if res and not set(uuid) < set(res[0].keys()) :
+            self.logger.error('uuid fields were missing in the result')
+            result = result and False
+        self.logger.debug(res)
+        assert result,'Failed to get expected  number of records'
+
+    #end test_verify_session_tables_with_invalid_fields_values
+    
+    @preposttest_wrapper
+    def test_verify_session_table_with_security_tagging(self):
+        ''' Test to validate session tables with security tagging
+        '''
+        self.setup_flow_export_rate(100)
+        policy_name = 'policy1'
+        rules = [
+            {
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'udp',
+                'source_network': 'any',
+                'dest_network': 'any',
+            },
+        ]
+        self.creat_bind_policy(policy_name, rules,self.res.vn1_fixture,self.res.vn2_fixture)
+        assert self.res.vn1_fixture.verify_on_setup()
+        assert self.res.vn2_fixture.verify_on_setup()
+        self.res.verify_common_objects()
+        
+        vm_node_ip = self.res.vn1_vm1_fixture.vm_node_ip
+        vm_host = self.res.vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
+        
+        start_time = self.analytics_obj.getstarttime(vm_node_ip)
+        self.logger.info("start time= %s" % (start_time))
+        
+        self.setup_and_create_streams(self.res.vn1_fixture, self.res.vn2_fixture, 
+                                       self.res.vn1_vm1_fixture, self.res.vn2_vm2_fixture)
+        time.sleep(100)
+        
+        # Verifying session series table
+
+        src_vn = self.res.vn1_fixture.vn_fq_name
+        dst_vn = self.res.vn2_fixture.vn_fq_name
+        ip = self.inputs.collector_ips[0]
+        #Will update once api_calls and fixture support added for tagging
+    #end test_verify_session_table_with_security_tagging         
+            
