@@ -43,13 +43,13 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                 svc_lst.remove(elem)
         # Stopping the control node service
         for elem in svc_lst:
-            ip = elem[0]
+            ip = self.inputs.host_data[elem[0]]['host_ip']
             self.logger.info("Stopping service %s.." % (elem,))
             self.inputs.stop_service('contrail-control', [ip])
         # Setting the sleep time to be hc_miss of discover.conf + 5 secs buffer
         time.sleep(40)        
         for elem in svc_lst:
-            ip = elem[0]
+            ip = self.inputs.host_data[elem[0]]['host_ip']
             if self.ds_obj.get_service_status(self.inputs.cfgm_ip, elem, 'down', 8):
                 self.logger.info("Service %s is down" % (elem,))
                 result = result and True  
@@ -58,11 +58,11 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
                 result = result and False
         # Starting the control node service
         for elem in svc_lst:
-            ip = elem[0]
+            ip = self.inputs.host_data[elem[0]]['host_ip']
             self.logger.info("Starting service %s.." % (elem,))
             self.inputs.start_service('contrail-control', [ip])
         for elem in svc_lst:
-            ip = elem[0]
+            ip = self.inputs.host_data[elem[0]]['host_ip']
             svc_status = self.ds_obj.get_service_status(self.inputs.cfgm_ip, elem, 'up', 6)
             if svc_status:
                 self.logger.info(
