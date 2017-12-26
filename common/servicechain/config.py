@@ -158,10 +158,10 @@ class ConfigSvcChain(fixtures.Fixture):
             api=use_vnc_api))
         return policy_fix
 
-    def config_vn(self, vn_name, vn_net):
+    def config_vn(self, vn_name, vn_net, **kwargs):
         vn_fixture = self.useFixture(VNFixture(
             project_name=self.inputs.project_name, connections=self.connections,
-            vn_name=vn_name, inputs=self.inputs, subnets=vn_net))
+            vn_name=vn_name, inputs=self.inputs, subnets=vn_net, **kwargs))
         assert vn_fixture.verify_on_setup()
         return vn_fixture
 
@@ -370,7 +370,8 @@ class ConfigSvcChain(fixtures.Fixture):
                           vn_name,
                           vn_subnets,
                           vn_fixture,
-                          vn_name_prefix):
+                          vn_name_prefix,
+                          **kwargs):
         if vn_fixture:
             vn_name = vn_fixture.vn_name
             vn_subnets = [x['cidr'] for x in vn_fixture.vn_subnets]
@@ -378,7 +379,7 @@ class ConfigSvcChain(fixtures.Fixture):
             vn_name = vn_name or get_random_name(vn_name_prefix)
             vn_subnets = vn_subnets or \
                                   [get_random_cidr(af=self.inputs.get_af())]
-            vn_fixture = vn_fixture or self.config_vn(vn_name, vn_subnets)
+            vn_fixture = vn_fixture or self.config_vn(vn_name, vn_subnets, **kwargs)
         vn_fq_name = vn_fixture.vn_fq_name
         return (vn_name, vn_subnets, vn_fixture, vn_fq_name)
     # end _get_vn_for_config
@@ -467,7 +468,8 @@ class ConfigSvcChain(fixtures.Fixture):
          mgmt_vn_fq_name) = self._get_vn_for_config(mgmt_vn_name,
                                                     mgmt_vn_subnets,
                                                     mgmt_vn_fixture,
-                                                    'mgmt_vn')
+                                                    'mgmt_vn',
+                                                    **kwargs)
 
         # Left
         (left_vn_name,
@@ -476,7 +478,8 @@ class ConfigSvcChain(fixtures.Fixture):
          left_vn_fq_name) = self._get_vn_for_config(left_vn_name,
                                                     left_vn_subnets,
                                                     left_vn_fixture,
-                                                    'left_vn')
+                                                    'left_vn',
+                                                    **kwargs)
 
         # Right
         (right_vn_name,
@@ -485,7 +488,8 @@ class ConfigSvcChain(fixtures.Fixture):
          right_vn_fq_name) = self._get_vn_for_config(right_vn_name,
                                                      right_vn_subnets,
                                                      right_vn_fixture,
-                                                     'right_vn')
+                                                     'right_vn',
+                                                     **kwargs)
 
         # Transparent SVMs should not be part of left and right VNs
         if service_mode == 'transparent':
@@ -495,14 +499,16 @@ class ConfigSvcChain(fixtures.Fixture):
              si_left_vn_fq_name) = self._get_vn_for_config(trans_left_vn_name,
                                                          trans_left_vn_subnets,
                                                          trans_left_vn_fixture,
-                                                         'trans_left_vn')
+                                                         'trans_left_vn',
+                                                         **kwargs)
             (si_right_vn_name,
              si_tvn_subnets,
              si_right_vn_fixture,
              si_right_vn_fq_name) = self._get_vn_for_config(trans_right_vn_name,
                                                          trans_right_vn_subnets,
                                                          trans_right_vn_fixture,
-                                                         'trans_right_vn')
+                                                         'trans_right_vn',
+                                                         **kwargs)
         else :
             si_left_vn_name = left_vn_name
             si_left_vn_subnets = left_vn_subnets

@@ -134,6 +134,7 @@ class VNFixture(fixtures.Fixture):
         self.pbb_etree_enable = kwargs.get('pbb_etree_enable', None)
         self.layer2_control_word = kwargs.get('layer2_control_word', None)
         self.address_allocation_mode= kwargs.get('address_allocation_mode', None)
+        self.ip_fabric = kwargs.get('ip_fabric', None)
 
 
 
@@ -487,6 +488,14 @@ class VNFixture(fixtures.Fixture):
         # Populate the VN Subnet details
         if isinstance(self.orchestrator,OpenstackOrchestrator):
             self.vn_subnet_objs = self.quantum_h.get_subnets_of_vn(self.uuid)
+
+        # Configure IP Fabric provider network
+        if self.ip_fabric is not None:
+            ip_fab_vn_fq_name_str = "default-domain:default-project:ip-fabric"
+            ip_fab_vn_obj = self.vnc_lib_h.virtual_network_read(fq_name_str=
+                                                        ip_fab_vn_fq_name_str)
+            self.set_ip_fabric_provider_nw(ip_fab_vn_obj)
+
     # end setUp
 
     def create_subnet(self, vn_subnet, ipam_fq_name=None):
