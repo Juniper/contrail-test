@@ -99,9 +99,19 @@ class TestSvcHC(BaseHC, VerifySvcFirewall):
         assert self.validate_svc_action(
             left_vn_fq_name, si_fixture, right_vm_fixture, 'left')[0]
 
-
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_svc_trans_segment_right_hc_fail_svm(self):
+        '''
+         Description: Test to validate segment HC for transparent SI.
+         Test steps:
+                1. Creating transparent segment SI.
+                2. Send traffic and make sure it goes through.
+                3. Bring down the HC. Make sure traffic fails.
+         Pass criteria: The traffic should pass when hc is active. There is also a negative criteria that it should fail when its inactive.
+         Maintainer : skiranh@juniper.net
+        '''
+
         ret_dict = self.verify_svc_chain(service_mode='transparent',
                                          create_svms=True, max_inst=1)
         si_fixture = ret_dict['si_fixture']
