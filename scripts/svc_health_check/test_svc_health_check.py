@@ -99,7 +99,7 @@ class TestSvcHC(BaseHC, VerifySvcFirewall):
         assert self.validate_svc_action(
             left_vn_fq_name, si_fixture, right_vm_fixture, 'left')[0]
 
-
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_svc_trans_segment_right_hc_fail_svm(self):
         ret_dict = self.verify_svc_chain(service_mode='transparent',
