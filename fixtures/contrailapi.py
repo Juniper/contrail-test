@@ -956,28 +956,28 @@ class ContrailVncApi(object):
         return self._vnc.bgp_as_a_service_delete(**kwargs)
 
     def attach_vmi_to_bgpaas(self, bgpaas_uuid, vmi_id):
-        self.logger.info('Attaching VMI %s to BGPaaS %s'%(vmi_id, bgpaas_uuid))
+        self._log.info('Attaching VMI %s to BGPaaS %s'%(vmi_id, bgpaas_uuid))
         bgpaas_obj = self._vnc.bgp_as_a_service_read(id=bgpaas_uuid)
         ref_obj = self._vnc.virtual_machine_interface_read(id=vmi_id)
         bgpaas_obj.add_virtual_machine_interface(ref_obj)
         return self._vnc.bgp_as_a_service_update(bgpaas_obj)
 
     def detach_vmi_from_bgpaas(self, bgpaas_uuid, vmi_id):
-        self.logger.info('Detaching VMI %s from BGPaaS %s'%(vmi_id, bgpaas_uuid))
+        self._log.info('Detaching VMI %s from BGPaaS %s'%(vmi_id, bgpaas_uuid))
         bgpaas_obj = self._vnc.bgp_as_a_service_read(id=bgpaas_uuid)
         ref_obj = self._vnc.virtual_machine_interface_read(id=vmi_id)
         bgpaas_obj.del_virtual_machine_interface(ref_obj)
         return self._vnc.bgp_as_a_service_update(bgpaas_obj)
 
     def attach_shc_to_bgpaas(self, bgpaas_uuid, shc_id):
-        self.logger.info('Attaching HC %s to BGPaaS %s'%(shc_id, bgpaas_uuid))
+        self._log.info('Attaching HC %s to BGPaaS %s'%(shc_id, bgpaas_uuid))
         bgpaas_obj = self._vnc.bgp_as_a_service_read(id=bgpaas_uuid)
         ref_obj = self._vnc.service_health_check_read(id=shc_id)
         bgpaas_obj.add_service_health_check(ref_obj)
         return self._vnc.bgp_as_a_service_update(bgpaas_obj)
 
     def detach_shc_from_bgpaas(self, bgpaas_uuid, shc_id):
-        self.logger.info('Detaching HC %s from BGPaaS %s'%(shc_id, bgpaas_uuid))
+        self._log.info('Detaching HC %s from BGPaaS %s'%(shc_id, bgpaas_uuid))
         bgpaas_obj = self._vnc.bgp_as_a_service_read(id=bgpaas_uuid)
         ref_obj = self._vnc.service_health_check_read(id=shc_id)
         bgpaas_obj.del_service_health_check(ref_obj)
