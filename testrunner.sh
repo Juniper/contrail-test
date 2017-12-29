@@ -81,7 +81,7 @@ nocolor () {
 is_image_available () {
     tag=${1:-$pos_arg}
     repo=${tag%:*}
-    version=${tag#*:}
+    version=${tag##*:}
     $docker images $repo | grep -q $version
 }
 
@@ -293,7 +293,7 @@ check_docker () {
     $docker  -v &> /dev/null ; rv=$?
 
     if [ $rv -ne 0 ]; then
-        red "doker is not installed, please install docker or docker-engine (https://docs.docker.com/engine/installation/)"
+        red "docker is not installed, please install docker or docker-engine (https://docs.docker.com/engine/installation/)"
         exit 3
     fi
 }
@@ -439,6 +439,45 @@ EOF
         $docker ps $arg_list_all -f name=contrail_test_
     fi
     exit 0
+}
+
+pull () {
+
+    usage () {
+        cat <<EOF
+
+Usage: $0 pull RemoteRegistry/image:tag
+download the docker image to local system from remote registry
+
+${GREEN}Possitional Parameters:
+
+  <image>       $NO_COLOR remote image
+                eg: $0 pull myregistry.local:5000/contrail-test-test:4.1.0.0-6
+
+EOF
+    }
+
+    while getopts "h" f; do
+        case "$f" in
+            h) usage; exit;;
+        esac
+    done
+
+    shift $(( OPTIND - 1 ))
+    image=$1
+
+    check_docker
+
+    # Load container image
+    echo "Pulling the image"
+    $docker pull $image; rv=$?
+
+    if [ $rv -eq 0 ]; then
+        echo "Successfully pulled the image $image"
+    else
+        echo "Failed to download the image $image"
+    fi
+    exit $rv
 }
 
 load () {

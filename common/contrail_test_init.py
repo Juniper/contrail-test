@@ -550,48 +550,39 @@ class TestInputs(object):
 
     def is_contrail_cloud_container(self, container_name):
         cc_container_names = ['agent', 'controller', 'analytics', 'analyticsdb',
-            'contrail-kube-manager', 'vcplugin']
+            'contrail-kube-manager', 'vcplugin', 'nova_api']
         return container_name in cc_container_names
 
-    def _parse_for_k8s_single_yaml_containers(self, containers):
-        valid_containers = [x.rstrip('\r') for x in containers
-                     if "k8s_contrail" in x]
-        if valid_containers:
-            return valid_containers   
-            
     def _check_containers(self, host_dict):
         '''
         Find out which components have containers and set
         corresponding attributes in host_dict to True if present
         '''
         host_dict['containers'] = {}
-        cmd = 'docker ps 2>/dev/null |grep contrail | awk \'{print $NF}\''
+        cmd = 'docker ps 2>/dev/null |grep -E "contrail|kolla" | awk \'{print $NF}\''
         output = self.run_cmd_on_server(host_dict['ip'], cmd)
         # If not a docker cluster, return
         if not output:
             return
-        attr_list = output.split('\n')
-        
-        k8s_containers = self._parse_for_k8s_single_yaml_containers(attr_list)
-        if k8s_containers:
-            for container in k8s_containers:
-                if "contrail-agent" in container:
-                    host_dict['containers']['agent'] = container
-                if "contrail-controller" in container:
-                    host_dict['containers']['controller'] = container
-                if "contrail-analytics-" in container:
-                    host_dict['containers']['analytics'] = container
-                if "contrail-analyticsdb" in container:
-                    host_dict['containers']['analyticsdb'] = container
-                if "contrail-lb" in container:
-                    host_dict['containers']['lb'] = container
-                if "contrail-kube-manager" in container:
-                    host_dict['containers']['contrail-kube-manager'] = container
-            return
-        attr_list = [x.rstrip('\r') for x in attr_list
-                     if self.is_contrail_cloud_container(x.rstrip('\r'))]
-        for attr in attr_list:
-            host_dict['containers'][attr] = attr
+        containers = [x.strip('\r') for x in output.split('\n')]
+
+        for container in containers:
+            if "contrail-agent" in container or "vrouter-agent" in container:
+                host_dict['containers']['agent'] = container
+            elif "contrail-controller" in container or "config_api" in container:
+                host_dict['containers']['controller'] = container
+            elif "contrail-analytics" in container or "analytics_api" in container:
+                host_dict['containers']['analytics'] = container
+            elif "contrail-analyticsdb" in container or "analyticsdb_cassandra" in container:
+                host_dict['containers']['analyticsdb'] = container
+            elif "contrail-lb" in container:
+                host_dict['containers']['lb'] = container
+            elif "contrail-kube-manager" in container:
+                host_dict['containers']['contrail-kube-manager'] = container
+            elif "nova_api" in container:
+                host_dict['containers']['openstack'] = container
+            else:
+                host_dict['containers'][container] = container
         return
     # end _check_containers
 
@@ -1070,7 +1061,8 @@ class TestInputs(object):
         if not getattr(self, 'build_sku', None):
             self.build_sku = get_build_sku(self.openstack_ip,
                              self.host_data[self.openstack_ip]['password'],
-                             self.host_data[self.openstack_ip]['username'])
+                             self.host_data[self.openstack_ip]['username'],
+                             container=self.host_data[self.openstack_ip].get('containers', {}).get('openstack'))
         return self.build_sku
 
     def run_cmd_on_server(self, server_ip, issue_cmd, username=None,

@@ -33,7 +33,8 @@ import testtools
 from fabfile import *
 from fabutils import *
 
-sku_dict = {'2014.1': 'icehouse', '2014.2': 'juno', '2015.1': 'kilo', '12.0': 'liberty', '13.0': 'mitaka'}
+sku_dict = {'2014.1': 'icehouse', '2014.2': 'juno', '2015.1': 'kilo', '12.0': 'liberty', '13.0': 'mitaka',
+            '14.0': 'newton', '15.0': 'ocata'}
 
 
 # Code borrowed from http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
@@ -1099,19 +1100,15 @@ def get_build_sku(openstack_node_ip, openstack_node_password='c0ntrail123', user
         host_str='%s@%s' % (user, openstack_node_ip)
         cmd = 'nova-manage version'
         if container:
-            cmd = 'docker exec -it openstack %s /bin/bash -c \'%s\'' % (container, cmd)
-        tries = 10
-        while not build_sku and tries:
-            try:
-                with hide('everything'), settings(host_string=host_str,
-                                                  user=user,
-                                                  password=openstack_node_password):
-                    output = sudo(cmd)
-                    build_sku = sku_dict[re.findall("[0-9]+.[0-9]+",output)[0]]
-            except NetworkError, e:
-                time.sleep(1)
-                pass
-            tries -= 1
+            cmd = 'docker exec -it %s /bin/bash -c \'%s\'' % (container, cmd)
+        try:
+            with hide('everything'), settings(host_string=host_str,
+                                              user=user,
+                                              password=openstack_node_password):
+                output = sudo(cmd)
+                build_sku = sku_dict[re.findall("[0-9]+.[0-9]+",output)[0]]
+        except NetworkError, e:
+            pass
         return build_sku
 
 def is_almost_same(val1, val2, threshold_percent=10, num_type=int):

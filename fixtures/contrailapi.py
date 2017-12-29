@@ -1324,6 +1324,48 @@ class ContrailVncApi(object):
 
     # end delete_fabric_gw
 
+    def read_global_vrouter_config(self):
+        fq_name = [ 'default-global-system-config',
+                    'default-global-vrouter-config']
+        return self._vnc.global_vrouter_config_read(fq_name=fq_name)
 
+    def add_link_local_service(self, name, ip, port, ipfabric_service_port,
+                               ipfabric_service_ip=None,
+                               ipfabric_service_dns_name=None):
+        if type(ipfabric_service_ip) is str:
+            ipfabric_service_ip = [ipfabric_service_ip]
+        linklocal_obj=LinklocalServiceEntryType(
+                 linklocal_service_name=name,
+                 linklocal_service_ip=ip,
+                 linklocal_service_port=int(port),
+                 ip_fabric_DNS_service_name=ipfabric_service_dns_name,
+                 ip_fabric_service_port=int(ipfabric_service_port),
+                 ip_fabric_service_ip=ipfabric_service_ip)
+        gv_obj = self.read_global_vrouter_config()
+        services = gv_obj.get_linklocal_services() or LinklocalServicesTypes()
+        lls_entries = services.get_linklocal_service_entry()
+        for entry in lls_entries:
+            if entry.get_linklocal_service_name() == name:
+                self._log.info("Link local service %s already there"%name)
+                return
+        lls_entries.append(linklocal_obj)
+        services.set_linklocal_service_entry(lls_entries)
+        gv_obj.set_linklocal_services(services)
+        self._vnc.global_vrouter_config_update(gv_obj)
+        self._log.debug("Link local service %s added"%name)
 
-
+    def delete_link_local_service(self, name):
+        gv_obj = self.read_global_vrouter_config()
+        services = gv_obj.get_linklocal_services() or LinklocalServicesTypes()
+        lls_entries = services.get_linklocal_service_entry()
+        for entry in lls_entries:
+            if entry.get_linklocal_service_name() == name:
+                break
+        else:
+            self._log.info("Link local service %s not found"%name)
+            return
+        lls_entries.remove(entry)
+        services.set_linklocal_service_entry(lls_entries)
+        gv_obj.set_linklocal_services(services)
+        self._vnc.global_vrouter_config_update(gv_obj)
+        self._log.debug("Link local service %s removed"%name)

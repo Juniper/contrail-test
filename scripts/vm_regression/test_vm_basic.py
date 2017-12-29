@@ -72,7 +72,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             self.logger.exception(
                 "Got exception while creating /tmp/metadata_script.txt as %s" % (e))
 
-        img_name = self.inputs.get_ci_image() or 'ubuntu-traffic'
+        img_name = self.inputs.get_ci_image() or 'ubuntu'
         vn_name = get_random_name('vn2_metadata')
         vm1_name = get_random_name('vm_in_vn2_metadata')
         vn_fixture = self.create_vn(vn_name=vn_name, af='v4')
@@ -335,12 +335,8 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 vn_name=vn_name, inputs=self.inputs, subnets=vn_subnets))
         #assert vn_fixture.verify_on_setup()
         vn_obj = vn_fixture.obj
-        img_name = self.inputs.get_ci_image() or 'ubuntu-traffic'
-        vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
-                                                vn_obj=vn_obj, vm_name=vm1_name, project_name=self.inputs.project_name,
-                                                image_name=img_name))
-
-        assert vm1_fixture.wait_till_vm_is_up()
+        vm1_fixture = self.create_vm(vn_ids=[vn_fixture.uuid], vm_name=vm1_name)
+        assert vm1_fixture.wait_till_vm_is_active()
 
         cfgm_hostname = self.inputs.host_data[self.inputs.cfgm_ip]['name']
         cfgm_control_ip = self.inputs.host_data[cfgm_hostname]['host_control_ip']
@@ -350,25 +346,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         cfgm_ip = self.inputs.api_server_ip or \
                   self.inputs.contrail_external_vip or self.inputs.cfgm_ip
         cfgm_intro_port = '8084'
-        link_local_args = "--api_server_ip %s --api_server_port %s \
-         --admin_user %s --admin_password %s \
-         --linklocal_service_name cfgmintrospect\
-         --linklocal_service_ip 169.254.1.2\
-         --linklocal_service_port 8084\
-         --ipfabric_dns_service_name %s\
-         --ipfabric_service_port %s\
-         --admin_tenant_name %s\
-         --api_server_use_ssl %s\
-         " % (cfgm_ip, self.inputs.api_server_port,
-              self.inputs.stack_user, self.inputs.stack_password,
-              cfgm_host_new_name, cfgm_intro_port,
-              self.inputs.project_name,
-              self.inputs.api_protocol == 'https')
-        if not self.inputs.devstack:
-            cmd = "python /usr/share/contrail-utils/provision_linklocal.py --oper add %s" % (link_local_args)
-        else:
-            cmd = "python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py  --oper add %s" % (
-                link_local_args)
+        service_name = 'cfgmintrospect'
 
         update_hosts_cmd = 'echo "%s %s" >> /etc/hosts' % (cfgm_control_ip,
             cfgm_host_new_name)
@@ -376,15 +354,20 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                                       update_hosts_cmd,
                                       compute_user,
                                       compute_password)
+        # Remove the hosts entry which was added earlier
+        update_hosts_cmd = "sed -i '$ d' /etc/hosts"
+        self.addCleanup(self.inputs.run_cmd_on_server,
+                        vm1_fixture.vm_node_ip,
+                        update_hosts_cmd,
+                        compute_user,
+                        compute_password)
 
-        args = shlex.split(cmd.encode('UTF-8'))
-        process = Popen(args, stdout=PIPE, stderr=PIPE)
-        (stdout, stderr) = process.communicate()
-        if stderr:
-            self.logger.warn(
-                "Linklocal service could not be created, err : \n %s" % (stderr))
-        else:
-            self.logger.info("%s" % (stdout))
+        self.orch.vnc_h.add_link_local_service(service_name,
+             '169.254.1.2', '8084', cfgm_intro_port,
+             ipfabric_service_dns_name=cfgm_host_new_name)
+        self.addCleanup(self.orch.vnc_h.delete_link_local_service,
+                        service_name)
+        assert vm1_fixture.wait_till_vm_is_up()
         cmd = 'wget http://169.254.1.2:8084'
 
         ret = None
@@ -410,29 +393,6 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             self.logger.error('Generic metadata check failed')
             result = False
 
-        if not self.inputs.devstack:
-            cmd = "python /usr/share/contrail-utils/provision_linklocal.py --oper delete %s" % (link_local_args)
-        else:
-            cmd = "python /opt/stack/contrail/controller/src/config/utils/provision_linklocal.py --oper delete %s" % (
-                link_local_args)
-
-        args = shlex.split(cmd.encode('UTF-8'))
-        self.logger.info('Deleting the link local service')
-        process = Popen(args, stdout=PIPE)
-        stdout, stderr = process.communicate()
-        if stderr:
-            self.logger.warn(
-                "Linklocal service could not be deleted, err : \n %s" % (stderr))
-            result = result and False
-        else:
-            self.logger.info("%s" % (stdout))
-
-        # Remove the hosts entry which was added earlier
-        update_hosts_cmd = "sed -i '$ d' /etc/hosts"
-        self.inputs.run_cmd_on_server(vm1_fixture.vm_node_ip,
-                                      update_hosts_cmd,
-                                      compute_user,
-                                      compute_password)
         assert result, "Generic Link local verification failed"
         return True
     # end test_generic_link_local_service
