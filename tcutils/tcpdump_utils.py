@@ -166,10 +166,12 @@ def delete_pcap(session, pcap):
     execute_cmd_out(session, 'rm -f %s' % (pcap))
 
 @retry(delay=2, tries=15)
-def wait_for_pcap_to_get_create(session, pcap):
+def check_pcap_file_exists(session, pcap, expect=True):
     cmd = 'ls -d /tmp/* | grep -w %s ' % (pcap)
     out, err = execute_cmd_out(session, cmd)
-    if out:
+    out = bool(out)
+    if expect and out or not expect and not out:
         return True
-    else:
-        return False
+    return False
+
+
