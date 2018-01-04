@@ -68,27 +68,26 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
         '''
         Attach VMI to the BGPaaS object
         '''
-	bgpaas_fixture.attach_vmi(vmi)
-	return bgpaas_fixture
+	result = bgpaas_fixture.attach_vmi(vmi)
+	return result
 
-    def detach_vmi_from_bgpaas(self, vm, vn, bgpaas_fixture):
+    def detach_vmi_from_bgpaas(self, vmi, bgpaas_fixture):
         '''
         Detach the VMI from the BGPaaS object
         '''
-	bgpaas_fixture.detach_vmi(vmi)
-        
-	return bgpaas_fixture
+	result = bgpaas_fixture.detach_vmi(vmi)
+	return result
 
     def attach_shc_to_bgpaas(self, shc, bgpaas_fixture):
         '''
         Attach the Health Check to the BGPaaS object
         '''
-	bgpaas_fixture.attach_shc(shc.uuid)
-	return bgpaas_fixture
+	result = bgpaas_fixture.attach_shc(shc.uuid)
+	return result
 
     def detach_shc_from_bgpaas(self, shc, bgpaas_fixture):
         '''
         Detach the Health Check from the BGPaaS object
         '''
-	bgpaas_fixture.detach_shc(shc.uuid)
-	return bgpaas_fixture
+	result = bgpaas_fixture.detach_shc(shc.uuid)
+	return result
