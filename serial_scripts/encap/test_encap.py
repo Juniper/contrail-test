@@ -21,7 +21,7 @@ from floating_ip import *
 from control_node import *
 from policy_test import *
 import test
-from tcutils.tcpdump_utils import wait_for_pcap_to_get_create
+from tcutils.tcpdump_utils import check_pcap_file_exists
 
 class TestEncapCases(base.BaseEncapTest):
 
@@ -682,7 +682,7 @@ class TestEncapCases(base.BaseEncapTest):
         self.logger.info("Starting tcpdump to capture the packets.")
         result = execute_cmd(session, cmd, self.logger)
         if pcap:
-            assert wait_for_pcap_to_get_create(session, pcap),'pcap not got created'
+            assert check_pcap_file_exists(session, pcap),'pcap not got created'
    # end start_tcpdump
 
     def stop_tcpdump(self, session):
