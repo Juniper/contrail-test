@@ -278,7 +278,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         return True
     # end test_multi_SC_with_ecmp
 
-    @test.attr(type=['cb_sanity', 'sanity', 'vcenter'])
+    @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     def test_ecmp_svc_v2_in_network_nat_with_3_instance(self):
         """
@@ -907,7 +907,7 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
         self.verify_multi_inline_svc(si_list=si_list, **self.common_args)
     # end test_three_stage_SC
 
-    @test.attr(type=['sanity', 'vcenter', 'vrouter_gw'])
+    @test.attr(type=['sanity', 'vrouter_gw'])
     @preposttest_wrapper
     def test_three_stage_v2_SC(self):
         """
