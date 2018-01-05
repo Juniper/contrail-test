@@ -1506,7 +1506,7 @@ class VMFixture(fixtures.Fixture):
         peer_list = []
         vn_name = vn_fq_name.split(':')[-1]
         ri_name = vn_fq_name + ':' + vn_name
-        ri = self.vnc_lib_fixture.routing_instance_read(fq_name=[ri_name])
+        ri = self.vnc_lib_fixture.routing_instance_read(fq_name_str=ri_name)
         rt_refs = ri.get_route_target_refs()
         for rt_ref in rt_refs:
             rt_obj = self.vnc_lib_fixture.route_target_read(id=rt_ref['uuid'])
