@@ -103,14 +103,15 @@ class FlowExportRate(ExtendedFlowTestsBase):
                          interval=interval)
         hping_h.start(wait=False)
         self.sleep(65)
-        # Check for contrail stats for last 1 min for both source and 
+        # Check for no. of sessions exported in last 1 min for both source and
         # dest vrouter
-        vrouter1_flows_exported = self.get_flows_exported(
-            self.vn1_vm1_vrouter_fixture.get_agent_generator_name(),
-            last='1m')
-        vrouter2_flows_exported = self.get_flows_exported(
-            self.vn1_vm2_vrouter_fixture.get_agent_generator_name(),
-            last='1m')
+        end_time = self.analytics_obj.getstarttime(self.inputs.collector_ip)
+        start_time = str(int(end_time) - (60*1000000))
+
+        vrouter1_flows_exported = self.get_sessions_exported(
+            self.vn1_vm1_vrouter_fixture.ip, start_time, end_time)
+        vrouter2_flows_exported = self.get_sessions_exported(
+            self.vn1_vm2_vrouter_fixture.ip, start_time, end_time)
         self.sleep(40)
         (stats, hping_log) = hping_h.stop()
         vrouter1_flows_expected = 60*export_rate
