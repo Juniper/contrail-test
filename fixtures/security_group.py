@@ -329,10 +329,28 @@ def get_secgrp_id_from_name(connections,secgrp_fq_name):
         return False
     return secgrp_id
 
-def list_sg_rules(connections,sg_id):
+def list_sg_rules(connections,sg_id, direction=None, eth_type=None, proto=None):
+    '''
+        List SG rules with specific filters.
+        Optional param:
+            direction - can be ingress, egress
+            eth_type - can be IPv4, IPv6
+            proto - in string format: any, tcp, udp etc.
+    '''
     sg_info = show_secgrp(connections,sg_id)
+    rule_list = sg_info['security_group']['security_group_rules']
 
-    return sg_info['security_group']['security_group_rules']
+    if direction is not None:
+        rule_list= list(filter(lambda x: x['direction'] == direction,
+            rule_list))
+    if eth_type is not None:
+        rule_list= list(filter(lambda x: x['ethertype'] == eth_type,
+            rule_list))
+    if proto is not None:
+        rule_list= list(filter(lambda x: x['protocol'] == proto,
+            rule_list))
+
+    return rule_list
 
 def show_secgrp(connections,sg_id):
     sg_info = connections.quantum_h.show_security_group(sg_id)

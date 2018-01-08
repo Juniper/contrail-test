@@ -43,7 +43,8 @@ class VNCApiInspect (VerificationUtilBase):
             'loadbalancer': {},
             'api-access-list': {},
             'alarm':{},
-            'bridge_domain': {}
+            'bridge_domain': {},
+            'slo': {}
         }
 
     def update_cache(self, otype, fq_path, d):
@@ -84,6 +85,25 @@ class VNCApiInspect (VerificationUtilBase):
                 d = CsBridgeDomainResult(dd)
                 self.update_cache('bridge_domain', [bd_name], d)
         return d
+
+    def get_cs_slo(self, slo_uuid=None, slo_name=None):
+        '''
+            method: get_cs_slo finds a SLO by name or uuid
+            returns None if not found else CsSloResult object
+
+        '''
+        slo_result = None
+        if slo_uuid is not None:
+            slo = self.dict_get('security-logging-object/%s' % (slo_uuid))
+        elif slo_name is not None:
+            slos = self.dict_get('security-logging-objects')
+            myslo = filter(lambda x: x['fq_name'][-1] == slo_name,
+                           slos['security-logging-objects'])
+            if myslo:
+                slo = self.dict_get(myslo[-1]['href'])
+        if slo:
+            slo_result = CsSloResult(slo)
+        return slo_result
 
     def get_cs_domain(self, domain='default-domain', refresh=False):
         '''
