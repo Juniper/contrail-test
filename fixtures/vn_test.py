@@ -1867,7 +1867,31 @@ class VNFixture(fixtures.Fixture):
 
     # end is_ip_fabric_provider_nw_present
 
+    def set_slo_list(self, slo_ref_list):
+        '''Set the SLO ref list for VN'''
+        vnc_lib = self.vnc_lib_h
+        vn_obj = vnc_lib.virtual_network_read(
+            fq_name=self.vn_fq_name.split(':'))
+        vn_obj.set_security_logging_object_list(slo_ref_list)
+        vnc_lib.virtual_network_update(vn_obj)
 
+    def get_slo_list(self):
+        '''Get the SLO ref list for VN'''
+        vnc_lib = self.vnc_lib_h
+        vn_obj = vnc_lib.virtual_network_read(
+            fq_name=self.vn_fq_name.split(':'))
+        slo_ref_list = vn_obj.get_security_logging_object_refs()
+        return slo_ref_list
+
+    def add_slo(self, slo_obj):
+        '''Add the SLO to VN'''
+        vnc_lib = self.vnc_lib_h
+        self.logger.info('Adding SLO %s in VN %s' %
+                         (slo_obj.uuid, self.vn_name))
+        vn_obj = vnc_lib.virtual_network_read(
+            fq_name=self.vn_fq_name.split(':'))
+        vn_obj.add_security_logging_object(slo_obj)
+        vnc_lib.virtual_network_update(vn_obj)
 
     def verify_routing_instance_snat(self):
         '''
