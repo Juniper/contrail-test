@@ -342,7 +342,7 @@ class FloatingIPFixture(fixtures.Fixture):
             if cn_routes[0]['next_hop'] != vm_fixture.get_compute_host():
                 self.logger.warn(
                     'Expected next-hop for %s in Control-node %s : %s, Found : %s' %
-                    (fip, cn, vm_node_data_ip, cn_routes[0]['next_hop']))
+                    (fip, cn, vm_fixture.vm_node_data_ip, cn_routes[0]['next_hop']))
                 return False
             if cn_routes[0]['label'] not in agent_label[vm_fixture.vn_fq_name]:
                 self.logger.warn(

@@ -534,6 +534,9 @@ def createVMNova(
     for vm in self.topo.vmc_list:
         assert self.vm_fixture[vm].wait_till_vm_is_up(),(
             'VM Failed to come up')
+        #Even though VM verification is not run, we need to set verify_is_run
+        #to make sure cleanup is verified in VM fixture
+        self.vm_fixture[vm].verify_is_run = True
         vm_node_ip = self.vm_fixture[vm].vm_node_ip
         self.vn_of_cn[vm_node_ip].append(self.topo.vn_of_vm[vm])
 

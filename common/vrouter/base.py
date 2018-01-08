@@ -30,6 +30,7 @@ class BaseVrouterTest(BaseNeutronTest):
         cls.compute_fixtures_dict = {}
         cls.logger = cls.connections.logger
         cls.vnc_h = cls.vnc_lib_fixture.vnc_h
+        cls.ops_inspect = cls.connections.ops_inspects
 
         for ip in cls.compute_ips:
             cls.compute_fixtures_dict[ip] = ComputeNodeFixture(
@@ -177,7 +178,8 @@ class BaseVrouterTest(BaseNeutronTest):
             self.compute_fixtures_dict[vm.vm_node_ip].delete_all_flows()
 
     def send_hping3_traffic(self, sender_vm_fix, dest_ip, srcport, destport,
-                             count=1, interval='u100', *args, **kwargs):
+                            count=1, interval='u100', stop=True, wait=False,
+                            **kwargs):
         '''
         Sends unidirectional traffic from sender_vm_fix to dest_ip using hping3 util,
         where as destination will send icmp error if no process is running on port destport
@@ -188,12 +190,17 @@ class BaseVrouterTest(BaseNeutronTest):
                          baseport=srcport,
                          count=count,
                          interval=interval,
-                         *args, **kwargs)
-        hping_h.start(wait=False)
-        (stats, hping_log) = hping_h.stop()
-        self.logger.debug('Hping3 log : %s' % (hping_log))
-
-        return (stats, hping_log)
+                         **kwargs)
+        hping_h.start(wait=wait)
+        if stop:
+            (stats, hping_log) = hping_h.stop()
+            self.logger.debug('Hping3 log : %s' % (hping_log))
+            return (stats, hping_log)
+        elif wait:
+            stats = hping_h.get_stats()
+            return (stats, None)
+        else:
+            return (hping_h, None)
 
     def send_nc_traffic(self, sender_vm_fix, dest_vm_fix, sport, dport,
             proto, size='100', ip=None, exp=True, receiver=True):
@@ -206,7 +213,7 @@ class BaseVrouterTest(BaseNeutronTest):
         af =  get_af_type(ip) if ip else self.inputs.get_af()
         nc_options = '-4' if (af == 'v4') else '-6'
         nc_options = nc_options + ' -q 2 -w 5'
-        if proto == 'udp':
+        if proto == 'udp' or proto == 17:
             nc_options = nc_options + ' -u'
 
         result = sender_vm_fix.nc_file_transfer(
@@ -899,5 +906,3 @@ class BaseVrouterTest(BaseNeutronTest):
                           compute_fixture.ip, vm_ip))
         return True
     # end is_flow_pointing_to_vm
-
-

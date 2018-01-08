@@ -134,8 +134,8 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
                 self.logger.info(
                     "Verifying flowSeriesTable through opserver %s" % (ip))
                 res1 = self.analytics_obj.ops_inspect[ip].post_query(
-                    'FlowSeriesTable', start_time=self.start_time, end_time='now', select_fields=['sourcevn', 'sourceip', 'destvn', 'destip', 'sum(packets)', 'sport', 'dport', 'T=1'],
-                    where_clause=self.query, sort=2, limit=5, sort_fields=['sum(packets)'])
+                    'FlowSeriesTable', start_time=self.start_time, end_time='now', select_fields=['sourcevn', 'sourceip', 'destvn', 'destip', 'SUM(packets)', 'sport', 'dport', 'T=1'],
+                    where_clause=self.query, sort=2, limit=5, sort_fields=['SUM(packets)'])
                 self.logger.info("result: %s" % (res1))
                 assert res1
                 self.logger.info("Top 5 flows %s" % (res1))
