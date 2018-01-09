@@ -87,14 +87,6 @@ class TestBGPaaS(BaseBGPaaS):
             shc_fixture.verify_in_agent(agent)
             assert bgpaas_fixture.verify_in_control_node(
                 bgpaas_vm1), 'BGPaaS Session not seen in the control-node'
-            interface = bgpaas_vm1.tap_intf[vn_fixture.vn_fq_name]['name']
-            username = self.inputs.host_data[bgpaas_vm1.vm_node_ip]['username']
-            password = self.inputs.host_data[bgpaas_vm1.vm_node_ip]['password']
-            ip = self.inputs.host_data[bgpaas_vm1.vm_node_ip]['host_ip']
-            (session, pcap) = start_tcpdump_for_intf(ip, username, password, interface,
-                                                     filters='-P out')  # to capture packets sent to the BGPaaS client
-            time.sleep(5)
-            stop_tcpdump_for_intf(session, pcap)
-            result = search_in_pcap(session, pcap, '4784')
-            assert result, 'Multihop BFD packets not seen over the BGPaaS interface'
+            assert self.verify_bfd_packets(
+                bgpaas_vm1, vn_fixture), 'Multihop BFD packets not seen over the BGPaaS interface'
         # end test_bgpaas_basic
