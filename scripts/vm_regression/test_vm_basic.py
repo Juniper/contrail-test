@@ -35,7 +35,8 @@ class TestBasicVMVN(BaseVnVmTest):
     #end runTes
 
     @skip_because(orchestrator = 'vcenter', hypervisor='docker',msg='Bug 1455944:VM image with cloud-init package needed')
-    @test.attr(type=['cb_sanity', 'sanity', 'ci_sanity', 'suite1'])
+    # Removing ci_sanity tag till microservice provisioning supports the same
+    @test.attr(type=['cb_sanity', 'sanity', 'suite1'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter')
     def test_metadata_service(self):
