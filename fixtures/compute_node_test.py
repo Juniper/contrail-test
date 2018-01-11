@@ -61,8 +61,8 @@ class ComputeNodeFixture(fixtures.Fixture):
         self.vrouter_conf_file = '/etc/modprobe.d/vrouter.conf'
 
         self.recd_agent_conf_file = self.recd_agent_conf.name
-        self.username = username
-        self.password = password
+        self.username = self.inputs.host_data[self.ip]['username'] or username
+        self.password = self.inputs.host_data[self.ip]['password'] or password
         # set agent params to defaults
         self.default_values = {}
         self.default_values['DEFAULT'] = {
