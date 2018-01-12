@@ -492,6 +492,9 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
             containers = self.inputs.host_data[host_ip]['containers'].keys()
             self.logger.debug('contrail_internal ansible status for containers on host %s'%host_ip)
             for container in containers:
+                #skipping as we don't need to test ansible status in test container
+                if 'contrail_test' in container:
+                    continue
                 status = self.verify_container_ansible_state(host_ip,container=container)
                 result = result and status
         if result:
