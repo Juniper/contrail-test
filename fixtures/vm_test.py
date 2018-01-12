@@ -1084,7 +1084,7 @@ class VMFixture(fixtures.Fixture):
                     warn_only=True, abort_on_prompts=False):
                 #		output = run('ping %s -c 1' % (self.local_ips[vn_fq_name]))
                 #                expected_result = ' 0% packet loss'
-                output = safe_run('ping %s -c 2 -W %s' %
+                output = safe_sudo('ping %s -c 2 -W %s' %
                                   (self.local_ips[vn_fq_name], timeout))
                 failure = ' 100% packet loss'
                 self.logger.debug(output)
