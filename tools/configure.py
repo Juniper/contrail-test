@@ -328,6 +328,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
             if 'contrail_vm' in esxi_hosts[esxi]:
                 host_dict['contrail_vm'] = esxi_hosts[esxi]['contrail_vm']['host']
             host_dict['roles'] = []
+            host_dict['type'] = 'esxi'
             sanity_testbed_dict['hosts'].append(host_dict)
             sanity_testbed_dict['esxi_vms'].append(host_dict)
 

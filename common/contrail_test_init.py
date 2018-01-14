@@ -559,6 +559,8 @@ class TestInputs(object):
         corresponding attributes in host_dict to True if present
         '''
         host_dict['containers'] = {}
+        if  host_dict.get('type',None) == 'esxi':
+            return
         cmd = 'docker ps 2>/dev/null |grep -E "contrail|kolla" | awk \'{print $NF}\''
         output = self.run_cmd_on_server(host_dict['ip'], cmd)
         # If not a docker cluster, return
