@@ -62,7 +62,43 @@ class TestGWLessFWD(GWLessFWDTestBase):
         vn_fixtures = ret_dict['vn_fixtures']
 
         # Verify Gateway less forward functionality. As IP Fabric forwarding
-        # is enabled on vn1, traffic should go through underlay
+        # is enabled on vn1, traffic should go through underlay between VMs
+        # As there is no explicit policy to allow traffic between VN and
+        # "ip-fbric" network, ping from vhost to VM and VM to vhost should fail
+
+        self.logger.info("-- SCENARIO: 1 Verifying gateway less forward "\
+                         "functionality without explicit policy --")
+        self.verify_gw_less_fwd(ret_dict)
+
+        # Policy parameters. Configuring a policy between between ip-fabric vn
+        # and vn1 to allow communication between compute node and VMs in vn1.
+        policy = {'count':1,
+                  'p1': {
+                      'rules': [
+                            {
+                            'direction':'<>',
+                            'protocol':'any',
+                            'source_network': 'default-domain:default-project:ip-fabric',
+                            'dest_network':'vn1',
+                            'src_ports':'any',
+                            'dst_ports':'any'
+                            },
+                        ]
+                    }
+                  }
+
+        # Configure policy as per user configuration
+        policy_fixtures = self.setup_policy(policy=policy,
+                                            vn_fixtures=vn_fixtures)
+        ret_dict['policy_fixtures'] = policy_fixtures
+
+        # Verify Gateway less forward functionality. As IP Fabric forwarding
+        # is enabled on vn1, traffic should go through underlay. Also, as
+        # there is explicit policy to allow traffic between VN and "ip-fabric"
+        # network, ping from vhost to VM and VM to vhost should be successful.
+
+        self.logger.info("-- SCENARIO: 2 Verifying gateway less forward "\
+                         "functionality with explicit policy --")
         self.verify_gw_less_fwd(ret_dict)
 
         # Now, remove IP fabric provider network configuration on vn1
@@ -74,6 +110,9 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # Verify Gateway less forward functionality. As IP Fabric forwarding
         # is disabled on vn1, traffic should go through overlay
+
+        self.logger.info("-- SCENARIO: 3 Verifying gateway less forward "\
+                         "functionality when IP farwarding is disabled--")
         self.verify_gw_less_fwd(ret_dict=ret_dict)
 
     # end test_gw_less_fwd_single_vn_ip_fab
@@ -124,6 +163,20 @@ class TestGWLessFWD(GWLessFWDTestBase):
               'vm4':{'vn':['vn2'], 'vmi':['vmi4']},
              }
 
+        # Setup VNs, VMs as per user configuration
+        ret_dict = self.setup_gw_less_fwd(vn=vn, vmi=vmi, vm=vm)
+
+        vn_fixtures = ret_dict['vn_fixtures']
+
+        # Verify Gateway less forward functionality with out policy
+        # As IP Fabric provider network is configured on vn1 and vn2
+        # and policy is disabled Traffic should go through underlay
+        # between VMs within same VN and traffic should fail across VNs
+
+        self.logger.info("-- SCENARIO: 1 Verifying gateway less forward "\
+                         "functionality without explicit policy --")
+        self.verify_gw_less_fwd(ret_dict = ret_dict)
+
         # Policy parameters. Configuring policy between vn1 and vn2 to allow
         # the traffic. Also, policy between ip-fabric vn and vn1 needs to be
         # configured to allow communication between compute node and VMs in vn1.
@@ -165,22 +218,8 @@ class TestGWLessFWD(GWLessFWDTestBase):
                             },
                         ]
                     }
-
-
                   }
 
-       # Setup VNs, VMs as per user configuration
-        ret_dict = self.setup_gw_less_fwd(vn=vn, vmi=vmi, vm=vm)
-
-        vn_fixtures = ret_dict['vn_fixtures']
-
-        # Verify Gateway less forward functionality with out policy
-        # As IP Fabric provider network is configured on vn1 and vn2
-        # and policy is disabled Traffic should go through underlay
-        # between VMs within same VN and traffic should fail across VNs
-
-        #This step is commented out due to bug: 1716837
-        #self.verify_gw_less_fwd(ret_dict = ret_dict)
 
         # Configure policy as per user configuration
         policy_fixtures = self.setup_policy(policy=policy,
@@ -189,7 +228,8 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # Verify Gateway less forward functionality with policy
         # As IP Fabric provider network is configured on vn1 and vn2
-        # Traffic should go through underlay and traffic across VNs should pass
+        # Traffic should go through underlay and traffic across VNs should pass.
+        # Ping from vhost to VMs and VMs to vhost should also be successful.
         self.verify_gw_less_fwd(ret_dict=ret_dict)
 
         # Now, remove IP fabric provider network configuration on vn1 and vn2
@@ -253,7 +293,11 @@ class TestGWLessFWD(GWLessFWDTestBase):
               'vm4':{'vn':['vn2'], 'vmi':['vmi4']},
              }
 
-        # Policy parameters
+        # Setup VNs, VMs as per user configuration
+        ret_dict = self.setup_gw_less_fwd(vn=vn, vmi=vmi, vm=vm)
+
+        vn_fixtures = ret_dict['vn_fixtures']
+
         # Policy parameters. Configuring policy between vn1 and vn2 to allow
         # the traffic. Also, policy between ip-fabric vn and vn1 needs to be
         # configured to allow communication between compute node and VMs in vn1.
@@ -285,10 +329,6 @@ class TestGWLessFWD(GWLessFWDTestBase):
                     },
                   }
 
-        # Setup VNs, VMs as per user configuration
-        ret_dict = self.setup_gw_less_fwd(vn=vn, vmi=vmi, vm=vm)
-
-        vn_fixtures = ret_dict['vn_fixtures']
 
         # Configure policy between vn1 and vn2
         policy_fixtures = self.setup_policy(policy=policy,
@@ -297,7 +337,8 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # As IP Fabric forwarding is enabled on vn1 and not vn2 and policy is
         # configured to allow traffic between vn1 and vn2. Traffic should go
-        # through overlay between VNs
+        # through overlay between VNs. Also, ping from vhost to VMs and
+        # VMs to vhost should also be successful.
         ret_dict = self.verify_gw_less_fwd(ret_dict=ret_dict)
 
     # end test_gw_less_fwd_ip_fab_vn_and_cust_vn
@@ -334,7 +375,6 @@ class TestGWLessFWD(GWLessFWDTestBase):
                'vmi2':{'vn': 'vn1', 'vip': '10.10.10.100', 'mode': 'active-active'},
                'vmi3':{'vn': 'vn1'},
               }
-
         # VM parameters
         vm = {'count':3, 'launch_mode':'distribute',
               'vm1':{'vn':['vn1'], 'vmi':['vmi1']},
@@ -345,6 +385,32 @@ class TestGWLessFWD(GWLessFWDTestBase):
         # Setup VNs, VMs as per user configuration
         ret_dict = self.setup_gw_less_fwd(vn=vn, vmi=vmi, vm=vm)
 
+        vn_fixtures = ret_dict['vn_fixtures']
+        vm_fixtures = ret_dict['vm_fixtures']
+        vmi_fixtures = ret_dict['vmi_fixtures']
+
+        # Policy parameters. Configuring a policy between between ip-fabric vn
+        # and vn1 to allow communication between compute node and VMs in vn1.
+        policy = {'count':1,
+                  'p1': {
+                      'rules': [
+                            {
+                            'direction':'<>',
+                            'protocol':'any',
+                            'source_network': 'default-domain:default-project:ip-fabric',
+                            'dest_network':'vn1',
+                            'src_ports':'any',
+                            'dst_ports':'any'
+                            },
+                        ]
+                    }
+                  }
+
+        # Configure policy as per user configuration
+        policy_fixtures = self.setup_policy(policy=policy,
+                                            vn_fixtures=vn_fixtures)
+        ret_dict['policy_fixtures'] = policy_fixtures
+
         vIP = "10.10.10.100"
         # Verify AAP route in default routing instance in agent
         self.verify_route_ip_fabric_vn_in_agent(ret_dict=ret_dict, ip=vIP)
@@ -352,11 +418,6 @@ class TestGWLessFWD(GWLessFWDTestBase):
         # Verify AAP route in default routing instance in control node
         self.verify_route_ip_fabric_vn_in_control_node(ret_dict=ret_dict,
                                                        ip=vIP)
-
-        vn_fixtures = ret_dict['vn_fixtures']
-        vm_fixtures = ret_dict['vm_fixtures']
-        vmi_fixtures = ret_dict['vmi_fixtures']
-
         # Configuring AAP on 2 VMs
         vm_list = [vm_fixtures['vm1'], vm_fixtures['vm2']]
         for vm in vm_list:
@@ -448,9 +509,31 @@ class TestGWLessFWD(GWLessFWDTestBase):
         vm_fixtures = ret_dict['vm_fixtures']
         vmi_fixtures = ret_dict['vmi_fixtures']
 
+        # Policy parameters. Configuring a policy between between ip-fabric vn
+        # and vn1 to allow communication between compute node and VMs in vn1.
+        policy = {'count':1,
+                  'p1': {
+                      'rules': [
+                            {
+                            'direction':'<>',
+                            'protocol':'any',
+                            'source_network': 'default-domain:default-project:ip-fabric',
+                            'dest_network':'vn1',
+                            'src_ports':'any',
+                            'dst_ports':'any'
+                            },
+                        ]
+                    }
+                  }
+
+        # Configure policy as per user configuration
+        policy_fixtures = self.setup_policy(policy=policy,
+                                            vn_fixtures=vn_fixtures)
+        ret_dict['policy_fixtures'] = policy_fixtures
+
         # Scenario 1: IP Fabric is enabled on both the VNs (vn1 and vn2)
         # Configuring FIP. FIP pool is created from vn1 and applied on vm2
-        self.logger.info("-- Scenario: 1 --")
+        self.logger.info("-- SCENARIO: 1 --")
         self.logger.info("IP Fabric is enabled on both the VNs (vn1 and vn2)")
         vn_id = vn_fixtures['vn1'].vn_id
         vmi_id = vmi_fixtures['vmi2'].uuid
@@ -620,6 +703,28 @@ class TestGWLessFWD(GWLessFWDTestBase):
         # Setup VNs, VMs as per user configuration
         ret_dict = self.setup_gw_less_fwd(vn=vn, vmi=vmi, vm=vm)
 
+        # Policy parameters. Configuring a policy between between ip-fabric vn
+        # and vn1 to allow communication between compute node and VMs in vn1.
+        policy = {'count':1,
+                  'p1': {
+                      'rules': [
+                            {
+                            'direction':'<>',
+                            'protocol':'any',
+                            'source_network': 'default-domain:default-project:ip-fabric',
+                            'dest_network':'vn1',
+                            'src_ports':'any',
+                            'dst_ports':'any'
+                            },
+                        ]
+                    }
+                  }
+
+        # Configure policy as per user configuration
+        policy_fixtures = self.setup_policy(policy=policy,
+                                            vn_fixtures=vn_fixtures)
+        ret_dict['policy_fixtures'] = policy_fixtures
+
         # Enable policy on vhost0 VMI interfaces
         value = False
         self.disable_policy_on_vhost0(value)
@@ -714,7 +819,43 @@ class TestGWLessFWD(GWLessFWDTestBase):
         vn_fixtures = ret_dict['vn_fixtures']
 
         # Verify Gateway less forward functionality. As IP Fabric forwarding
-        # is enabled on vn1, traffic should go through underlay
+        # is enabled on vn1, traffic should go through underlay between VMs
+        # As there is no explicit policy to allow traffic between VN and
+        # "ip-fbric" network, ping from vhost to VM and VM to vhost should fail
+
+        self.logger.info("-- SCENARIO: 1 Verifying gateway less forward "\
+                         "functionality without explicit policy --")
+        self.verify_gw_less_fwd(ret_dict)
+
+        # Policy parameters. Configuring a policy between between ip-fabric vn
+        # and vn1 to allow communication between compute node and VMs in vn1.
+        policy = {'count':1,
+                  'p1': {
+                      'rules': [
+                            {
+                            'direction':'<>',
+                            'protocol':'any',
+                            'source_network': 'default-domain:default-project:ip-fabric',
+                            'dest_network':'vn1',
+                            'src_ports':'any',
+                            'dst_ports':'any'
+                            },
+                        ]
+                    }
+                  }
+
+        # Configure policy as per user configuration
+        policy_fixtures = self.setup_policy(policy=policy,
+                                            vn_fixtures=vn_fixtures)
+        ret_dict['policy_fixtures'] = policy_fixtures
+
+        # Verify Gateway less forward functionality. As IP Fabric forwarding
+        # is enabled on vn1, traffic should go through underlay. Also, as
+        # there is explicit policy to allow traffic between VN and "ip-fabric"
+        # network, ping from vhost to VM and VM to vhost should be successful.
+
+        self.logger.info("-- SCENARIO: 2 Verifying gateway less forward "\
+                         "functionality with explicit policy --")
         self.verify_gw_less_fwd(ret_dict)
 
         # Now, remove IP fabric provider network configuration on vn1
@@ -726,6 +867,9 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # Verify Gateway less forward functionality. As IP Fabric forwarding
         # is disabled on vn1, traffic should go through overlay
+
+        self.logger.info("-- SCENARIO: 3 Verifying gateway less forward "\
+                         "functionality when IP farwarding is disabled--")
         self.verify_gw_less_fwd(ret_dict = ret_dict)
 
     # end test_gw_less_fwd_flat_subnet_single_vn
@@ -802,6 +946,21 @@ class TestGWLessFWD(GWLessFWDTestBase):
               'vm4':{'vn':['vn2'], 'vmi':['vmi4']},
              }
 
+
+        # Setup VNs, VMs as per user configuration
+        ret_dict = self.setup_gw_less_fwd(vn=vn, vmi=vmi, vm=vm)
+
+        vn_fixtures = ret_dict['vn_fixtures']
+
+        # Verify Gateway less forward functionality with out policy
+        # As IP Fabric provider network is configured on vn1 and vn2
+        # and policy is disabled Traffic should go through underlay
+        # between VMs within same VN and traffic should fail across VNs
+
+        self.logger.info("-- SCENARIO: 1 Verifying gateway less forward "\
+                         "functionality without explicit policy --")
+        self.verify_gw_less_fwd(ret_dict = ret_dict)
+
         # Policy parameters. Configuring policy between vn1 and vn2 to allow
         # the traffic. Also, policy between ip-fabric vn and vn1 needs to be
         # configured to allow communication between compute node and VMs in vn1.
@@ -845,19 +1004,6 @@ class TestGWLessFWD(GWLessFWDTestBase):
                     }
                 }
 
-        # Setup VNs, VMs as per user configuration
-        ret_dict = self.setup_gw_less_fwd(vn=vn, vmi=vmi, vm=vm)
-
-        vn_fixtures = ret_dict['vn_fixtures']
-
-        # Verify Gateway less forward functionality with out policy
-        # As IP Fabric provider network is configured on vn1 and vn2
-        # and policy is disabled Traffic should go through underlay
-        # between VMs within same VN and traffic should fail across VNs
-
-        #This step is commented out due to bug: 1716837
-        #self.verify_gw_less_fwd(ret_dict = ret_dict)
-
         # Configure policy as per user configuration
         policy_fixtures = self.setup_policy(policy=policy,
                                             vn_fixtures=vn_fixtures)
@@ -866,6 +1012,9 @@ class TestGWLessFWD(GWLessFWDTestBase):
         # Verify Gateway less forward functionality with policy
         # As IP Fabric provider network is configured on vn1 and vn2
         # Traffic should go through underlay and traffic across VNs should pass
+
+        self.logger.info("-- SCENARIO: 2 Verifying gateway less forward "\
+                         "functionality with explicit policy --")
         self.verify_gw_less_fwd(ret_dict = ret_dict)
 
         # Now, remove IP fabric provider network configuration on vn1 and vn2
@@ -881,6 +1030,9 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # Since IP fabric provider network configuration on vn1 and vn2
         # is disabled traffic should go through overlay, instead of underlay
+
+        self.logger.info("-- SCENARIO: 3 Verifying gateway less forward "\
+                         "functionality when IP farwarding is disabled--")
         self.verify_gw_less_fwd(ret_dict = ret_dict)
 
     # end test_gw_less_fwd_flat_subnet_multi_vn
@@ -953,6 +1105,11 @@ class TestGWLessFWD(GWLessFWDTestBase):
               'vm4':{'vn':['vn2'], 'vmi':['vmi4']},
              }
 
+        # Setup VNs, VMs as per user configuration
+        ret_dict = self.setup_gw_less_fwd(vn=vn, vmi=vmi, vm=vm)
+
+        vn_fixtures = ret_dict['vn_fixtures']
+
         # Policy parameters. Configuring policy between vn1 and vn2 to allow
         # the traffic. Also, policy between ip-fabric vn and vn1 needs to be
         # configured to allow communication between compute node and VMs in vn1.
@@ -982,11 +1139,6 @@ class TestGWLessFWD(GWLessFWDTestBase):
                         ]
                     },
                   }
-
-        # Setup VNs, VMs as per user configuration
-        ret_dict = self.setup_gw_less_fwd(vn=vn, vmi=vmi, vm=vm)
-
-        vn_fixtures = ret_dict['vn_fixtures']
 
         # Configure policy between vn1 and vn2
         policy_fixtures = self.setup_policy(policy=policy,
@@ -1066,6 +1218,33 @@ class TestGWLessFWD(GWLessFWDTestBase):
         # Setup VNs, VMs as per user configuration
         ret_dict = self.setup_gw_less_fwd(vn=vn, vmi=vmi, vm=vm)
 
+        # Policy parameters. Configuring a policy between between ip-fabric vn
+        # and vn1 to allow communication between compute node and VMs in vn1.
+        policy = {'count':1,
+                  'p1': {
+                      'rules': [
+                            {
+                            'direction':'<>',
+                            'protocol':'any',
+                            'source_network': 'default-domain:default-project:ip-fabric',
+                            'dest_network':'vn1',
+                            'src_ports':'any',
+                            'dst_ports':'any'
+                            },
+                        ]
+                    }
+                  }
+
+        vn_fixtures = ret_dict['vn_fixtures']
+        vm_fixtures = ret_dict['vm_fixtures']
+        vmi_fixtures = ret_dict['vmi_fixtures']
+
+
+        # Configure policy as per user configuration
+        policy_fixtures = self.setup_policy(policy=policy,
+                                            vn_fixtures=vn_fixtures)
+        ret_dict['policy_fixtures'] = policy_fixtures
+
         vIP = "10.204.218.155"
         # Verify AAP route in default routing instance in agent
         self.verify_route_ip_fabric_vn_in_agent(ret_dict=ret_dict, ip=vIP)
@@ -1073,10 +1252,6 @@ class TestGWLessFWD(GWLessFWDTestBase):
         # Verify AAP route in default routing instance in control node
         self.verify_route_ip_fabric_vn_in_control_node(ret_dict=ret_dict,
                                                        ip=vIP)
-
-        vn_fixtures = ret_dict['vn_fixtures']
-        vm_fixtures = ret_dict['vm_fixtures']
-        vmi_fixtures = ret_dict['vmi_fixtures']
 
         # Configuring AAP on 2 VMs
         vm_list = [vm_fixtures['vm1'], vm_fixtures['vm2']]
@@ -1195,9 +1370,31 @@ class TestGWLessFWD(GWLessFWDTestBase):
         vm_fixtures = ret_dict['vm_fixtures']
         vmi_fixtures = ret_dict['vmi_fixtures']
 
+        # Policy parameters. Configuring a policy between between ip-fabric vn
+        # and vn1 to allow communication between compute node and VMs in vn1.
+        policy = {'count':1,
+                  'p1': {
+                      'rules': [
+                            {
+                            'direction':'<>',
+                            'protocol':'any',
+                            'source_network': 'default-domain:default-project:ip-fabric',
+                            'dest_network':'vn1',
+                            'src_ports':'any',
+                            'dst_ports':'any'
+                            },
+                        ]
+                    }
+                  }
+
+        # Configure policy as per user configuration
+        policy_fixtures = self.setup_policy(policy=policy,
+                                            vn_fixtures=vn_fixtures)
+        ret_dict['policy_fixtures'] = policy_fixtures
+
         # Scenario 1: IP Fabric is enabled on both the VNs (vn1 and vn2)
         # Configuring FIP. FIP pool is created from vn1 and applied on vm2
-        self.logger.info("-- Scenario: 1 --")
+        self.logger.info("-- SCENARIO: 1 --")
         self.logger.info("IP Fabric is enabled on both the VNs (vn1 and vn2)")
         vn_id = vn_fixtures['vn1'].vn_id
         vmi_id = vmi_fixtures['vmi2'].uuid
