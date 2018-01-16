@@ -126,7 +126,9 @@ class ECMPTraffic(VerifySvcChain):
                 host_name = self.connections.orch.get_host_of_vm(svm)
                 host = self.inputs.host_data[host_name]
                 if src_vn is not None:
-                    tapintf = svm_fixture.tap_intf[src_vn.vn_fq_name]['name']
+                    #tapintf = svm_fixture.tap_intf[src_vn.vn_fq_name]['name']
+                    tapintf = self.connections.orch.get_vm_tap_interface(\
+                                      svm_fixture.tap_intf[src_vn.vn_fq_name])
                 else:
                     direction = 'left'
                     tapintf = self.get_bridge_svm_tapintf(svm_name, direction)
@@ -159,7 +161,9 @@ class ECMPTraffic(VerifySvcChain):
                 host_name = self.connections.orch.get_host_of_vm(svm)
                 host = self.inputs.host_data[host_name]
                 if src_vn is not None:
-                    tapintf = svm_fixture.tap_intf[src_vn.vn_fq_name]['name']
+                    tapintf = self.connections.orch.get_vm_tap_interface(\
+                                      svm_fixture.tap_intf[src_vn.vn_fq_name])
+                    #tapintf = svm_fixture.tap_intf[src_vn.vn_fq_name]['name']
                 else:
                     direction = 'left'
                     tapintf = self.get_bridge_svm_tapintf(svm_name, direction)

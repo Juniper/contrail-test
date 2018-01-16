@@ -230,7 +230,12 @@ class VcenterOrchestrator(Orchestrator):
         return [host for hosts in self._clusters_hosts.values() for host in hosts]
 
     def get_zones(self):
-        return self._clusters_hosts.keys()
+        zones=[]
+        for k,v in self._clusters_hosts.items():
+            if v:
+                zones.append(k)  
+        return zones
+        #return self._clusters_hosts.keys()
 
     def get_image_account(self, image_name):
         return (self._images_info[image_name]['username'],
@@ -296,11 +301,11 @@ class VcenterOrchestrator(Orchestrator):
                         vmdk_file = self._images_info[image].get('vmdk', None)
                         url_vmdk_file = url + vmdk_file
                         run('wget %s -P %s' % (url_vmdk_file, dst))
-                        self._log.info("Unzipping the vmdk file.May take several minutes...")
-                        run('cd %s' % (dst))
-                        image_file = vmdk_file.split('/')[-1]
-                        image_file = dst + '/' + image_file
-                        run('gunzip %s' % (image_file),timeout=1200)
+                        #self._log.info("Unzipping the vmdk file.May take several minutes...")
+                        #run('cd %s' % (dst))
+                        #image_file = vmdk_file.split('/')[-1]
+                        #image_file = dst + '/' + image_file
+                        #run('gunzip %s' % (image_file),timeout=1200)
                         vmx = vmx.split('/')[-1]
                     else:
                         run('vmkfstools -i %s -d zeroedthick %s' % (tmp_vmdk, dst_vmdk),timeout=600)
@@ -808,6 +813,7 @@ class VcenterVM:
         vm.lifs = []
         vm.ips = {}
         vm.macs = {}
+        vm.status=None
 
         intfs = []
         switch_id = vcenter._vs.uuid
@@ -844,9 +850,10 @@ class VcenterVM:
         self.id = vm.summary.config.instanceUuid
 
         #check if ip already set to this object,if yes,better avoid
-        #the serach in introspect/vcenter vm object
+        #the search in introspect/vcenter vm object
         if getattr(self,'ips'):
             if len(self.ips) == len(self.nets):
+                self.status='ACTIVE'
                 return True 
    
         #search the introspect first,as it is expected to be updated 
@@ -859,6 +866,7 @@ class VcenterVM:
             for intf in vm.guest.net:
                 self.ips[intf.network] = intf.ipAddress[0]
                 self.macs[intf.network] = intf.macAddress
+                self.status='ACTIVE'
             return len(self.ips) == len(self.nets)
         else: 
             return self.get_from_plugin_introspect()
@@ -869,6 +877,7 @@ class VcenterVM:
             for intf in intfs:
                 self.ips[intf.virtual_network] = intf.ip_addr
                 self.macs[intf.virtual_network] = intf.macAddr
+            self.status='ACTIVE'
             return len(self.ips) == len(self.nets)
         except Exception as e:
             return False

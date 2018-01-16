@@ -627,6 +627,7 @@ class TestInputs(object):
         self.lb_ip = ''
         self.lb_ips = []
         self.lb_control_ips = []
+        self.vcenter_compute_ips= []
         ''' self.qos_queue used for populating HW to Logical map
             format self.qos_queue = [['comput_ip' , [{'hw_q_id':[logical_ids]}, {'hw_q_id':[logical_ids]}]]]
             eg, self.qos_queue= [['10.204.217.128', [{u'3': [u'1', u'6-10', u'12-15']}, {u'11': [u'40-46']}]],
@@ -724,6 +725,10 @@ class TestInputs(object):
                     self.lb_control_ips .append(host_control_ip)
                     if role['container']:
                         host['containers']['lb'] = role['container']
+
+                if role['type'] == 'vcenter_compute':
+                    vcenter_compute_ip = host_ip
+                    self.vcenter_compute_ips.append(host_ip)
             # end for
         # end for
 

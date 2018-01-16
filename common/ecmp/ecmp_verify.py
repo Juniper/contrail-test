@@ -43,12 +43,22 @@ class ECMPVerify():
         assert count > 0, 'Some Problem with the setup. Pls chk XMPP connection'
         svm_route_entry = {}
         for svm_id in svm_ids:
-            svc_obj = self.nova_h.get_vm_by_id(svm_id)
-            left_ip[svm_id] = svc_obj.addresses[si_fixture
+            try:
+                svc_obj = self.nova_h.get_vm_by_id(svm_id)
+                left_ip[svm_id] = svc_obj.addresses[si_fixture
                                                 .left_vn_fq_name.split(':')[2]][0]['addr']
-            right_ip[svm_id] = svc_obj.addresses[si_fixture
+                right_ip[svm_id] = svc_obj.addresses[si_fixture
                                                  .right_vn_fq_name.split(':')[2]][0]['addr']
-            self.logger.info('%s has %s as left_ip and %s as right_ip' %
+                self.logger.info('%s has %s as left_ip and %s as right_ip' %
+                             (svc_obj.name, left_ip[svm_id], right_ip[svm_id]))
+            except Exception as e:
+                #For vcenter only setup, nova not present
+                #derive ips from orchestrator get_vm_by_id
+                orch=src_vm.orch
+                svc_obj=orch.get_vm_by_id(svm_id) 
+                left_ip[svm_id]=svc_obj.ips[si_fixture.left_vn_fq_name.split(':')[2]] 
+                right_ip[svm_id]=svc_obj.ips[si_fixture.right_vn_fq_name.split(':')[2]]
+                self.logger.info('%s has %s as left_ip and %s as right_ip' %
                              (svc_obj.name, left_ip[svm_id], right_ip[svm_id]))
             shared_ip= left_ip[svm_id]
         net = '/32'
