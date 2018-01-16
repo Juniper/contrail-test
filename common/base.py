@@ -7,6 +7,8 @@ from vm_test import VMFixture
 from policy_test import PolicyFixture
 from ipam_test import IPAMFixture
 from port_fixture import PortFixture
+from project_test import ProjectFixture
+from security_group import SecurityGroupFixture
 from interface_route_table_fixture import InterfaceRouteTableFixture
 from tcutils.util import get_random_name, get_random_cidr
 from tcutils.contrail_status_check import ContrailStatusChecker
@@ -107,6 +109,25 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         super(GenericTestBase, cls).tearDownClass()
     # end tearDownClass
 
+
+    def get_connections(self, username, password, project_fixture):
+        return project_fixture.get_project_connections(username=username, password=password)
+
+    @classmethod
+    def create_only_project(cls, project_name=None, **kwargs):
+        project_name = project_name or get_random_name('project')
+        connections = kwargs.get('connections') or cls.connections
+        project_fixture = ProjectFixture(connections=connections,
+                          project_name=project_name, **kwargs)
+        project_fixture.setUp()
+        return project_fixture
+
+    def create_project(self, project_name=None, cleanup=True, **kwargs):
+        project_fixture = self.create_only_project(project_name, **kwargs)
+        if cleanup:
+            self.addCleanup(project_fixture.cleanUp)
+        return project_fixture
+
     @classmethod
     def create_only_vn(cls, vn_name=None, vn_subnets=None, vxlan_id=None,
                    enable_dhcp=True, **kwargs):
@@ -114,9 +135,11 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         '''
         if not vn_name:
             vn_name = get_random_name('vn')
-        vn_fixture = VNFixture(project_name=cls.inputs.project_name,
-                      connections=cls.connections,
-                      inputs=cls.inputs,
+        project_name = kwargs.get('project_name') or cls.connections.project_name
+        connections = kwargs.get('connections') or cls.connections
+        vn_fixture = VNFixture(project_name=project_name,
+                      connections=connections,
+                      inputs=connections.inputs,
                       vn_name=vn_name,
                       subnets=vn_subnets,
                       vxlan_id=vxlan_id,
@@ -147,9 +170,11 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         vn_obj = None
         if vn_fixture:
             vn_obj = vn_fixture.obj
+        project_name = kwargs.get('project_name') or cls.connections.project_name
+        connections = kwargs.get('connections') or cls.connections
         vm_obj = VMFixture(
-                    project_name=cls.inputs.project_name,
-                    connections=cls.connections,
+                    project_name=project_name,
+                    connections=connections,
                     vn_obj=vn_obj,
                     vm_name=vm_name,
                     image_name=image_name,
@@ -257,7 +282,7 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
             q_h = self.quantum_h
         obj = q_h.create_security_group(name)
         if obj:
-            self.addCleanup(self.delete_security_group, obj['id'])
+            self.addCleanup(self.delete_security_group, obj['id'], quantum_handle)
         return obj
     # end create_security_group
 
@@ -287,7 +312,9 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         return True
     #end config_aap
 
-    def setup_policy_between_vns(self, vn1_fixture, vn2_fixture, rules=[]):
+    @classmethod
+    def setup_only_policy_between_vns(cls, vn1_fixture, vn2_fixture, rules=[], **kwargs):
+        connections = kwargs.get('connections') or cls.connections
         policy_name = get_random_name('policy-allow-all')
         rules = rules or [
             {
@@ -297,19 +324,27 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
                 'dest_network': vn2_fixture.vn_name,
             },
         ]
-        policy_fixture = self.useFixture(
-            PolicyFixture(
-                policy_name=policy_name, rules_list=rules, inputs=self.inputs,
-                connections=self.connections))
+        policy_fixture = PolicyFixture(
+                policy_name=policy_name, rules_list=rules, inputs=connections.inputs,
+                connections=connections)
+        policy_fixture.setUp()
 
         vn1_fixture.bind_policies(
             [policy_fixture.policy_fq_name], vn1_fixture.vn_id)
-        self.addCleanup(vn1_fixture.unbind_policies,
-                        vn1_fixture.vn_id, [policy_fixture.policy_fq_name])
-
         vn2_fixture.bind_policies(
             [policy_fixture.policy_fq_name], vn2_fixture.vn_id)
-        self.addCleanup(vn2_fixture.unbind_policies,
+        return policy_fixture
+    # end setup_only_policy_between_vns
+
+    def setup_policy_between_vns(self, vn1_fixture, vn2_fixture,
+                                 rules=[], cleanup=True, **kwargs):
+        policy_fixture = self.setup_only_policy_between_vns(vn1_fixture,
+                                            vn2_fixture, rules, **kwargs)
+        if cleanup:
+            self.addCleanup(policy_fixture.cleanUp)
+            self.addCleanup(vn1_fixture.unbind_policies,
+                        vn1_fixture.vn_id, [policy_fixture.policy_fq_name])
+            self.addCleanup(vn2_fixture.unbind_policies,
                         vn2_fixture.vn_id, [policy_fixture.policy_fq_name])
         return policy_fixture
     # end setup_policy_between_vns
@@ -349,7 +384,7 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
     # end create_dhcp_server_vm
 
     @classmethod
-    def setup_only_vmi(cls, vn_id, fixed_ips=[],
+    def setup_only_vmi(cls, vn_id=None, fixed_ips=[],
                   mac_address=None,
                   security_groups=[],
                   extra_dhcp_opts=[],
@@ -358,7 +393,7 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
             mac_address = EUI(mac_address)
             mac_address.dialect = mac_unix
         port_fixture = PortFixture(
-            vn_id,
+            vn_id=vn_id,
             mac_address=mac_address,
             fixed_ips=fixed_ips,
             security_groups=security_groups,
@@ -370,13 +405,13 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         return port_fixture
     # end setup_only_vmi
 
-    def setup_vmi(self, vn_id, fixed_ips=[],
+    def setup_vmi(self, vn_id=None, fixed_ips=[],
                   mac_address=None,
                   security_groups=[],
                   extra_dhcp_opts=[],
                   **kwargs):
         cleanup = kwargs.get('cleanup', True)
-        port_fixture = self.setup_only_vmi(vn_id,fixed_ips=fixed_ips,
+        port_fixture = self.setup_only_vmi(vn_id=vn_id,fixed_ips=fixed_ips,
                                            mac_address=mac_address,
                                            security_groups=security_groups,
                                            extra_dhcp_opts=extra_dhcp_opts,
@@ -435,7 +470,14 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
                           dip, str(expectation)))
     # end do_ping_test
 
-    def create_policy(self, policy_name, rules=[], **kwargs):
+    def apply_policy(self, policy_fixture, vn_fixtures=None):
+        policy_fqname = policy_fixture.policy_fq_name
+        for fixture in vn_fixtures:
+            fixture.bind_policies([policy_fqname])
+            self.addCleanup(fixture.unbind_policies, [policy_fqname])
+
+    def create_policy(self, policy_name=None, rules=[], **kwargs):
+        policy_name = policy_name or get_random_name('policy')
         policy_fixture = self.useFixture(
             PolicyFixture(
                 policy_name=policy_name,
@@ -445,6 +487,66 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
                 **kwargs))
         return policy_fixture
     #end create_policy
+
+    def _get_network_policy_rule(self, direction='<>', protocol='any',
+                         action='pass', src_vn=None, dst_vn=None,
+                         src_ports=(0, 65535), dst_ports=(0, 65535),
+                         src_cidr=None, dst_cidr=None, src_policy=None,
+                         dst_policy=None, action_list=None):
+        rule = {'direction': direction,
+                'protocol': protocol,
+                'source_network': src_vn,
+                'source_policy': src_policy,
+                'source_subnet': src_cidr,
+                'src_ports': src_ports,
+                'dest_network': dst_vn,
+                'dest_policy': dst_policy,
+                'dest_subnet': dst_cidr,
+                'dst_ports': dst_ports,
+                'action_list': action_list or {},
+                'simple_action': action
+               }
+        return rule
+
+    def _get_secgrp_rule(self, direction='ingress', protocol='any',
+                         dst_ports=(0, 65535), src_ports=(0, 65535),
+                         cidr='0.0.0.0/0', dst_sg=None, af='IPv4'):
+        if dst_sg:
+            addr = {'security_group': dst_sg}
+        else:
+            subnet, mask = cidr.split('/')
+            addr = {'subnet': {'ip_prefix': subnet, 'ip_prefix_len': int(mask)}}
+        if direction == 'ingress':
+            src_addr = addr
+            dst_addr = {'security_group': 'local'}
+        else:
+            dst_addr = addr
+            src_addr = {'security_group': 'local'}
+        rule = {'direction': '>',
+                'protocol': protocol,
+                'dst_addresses': [dst_addr],
+                'dst_ports': [{'start_port': dst_ports[0], 'end_port': dst_ports[1]}],
+                'src_ports': [{'start_port': src_ports[0], 'end_port': src_ports[1]}],
+                'src_addresses': [src_addr],
+                'ethertype': af
+               }
+        return rule
+
+    def create_security_group(self, name=None, rules=None, **kwargs):
+        connections = kwargs.get('connections') or self.connections
+        option = kwargs.get('option') or 'neutron'
+        name = name or get_random_name('secgrp')
+        secgrp_fixture = self.useFixture(SecurityGroupFixture(
+            connections, secgrp_name=name,
+            secgrp_entries=rules, option=option))
+        return secgrp_fixture
+    # end create_sg
+
+    def get_default_sg(self, **kwargs):
+        connections = kwargs.get('connections') or self.connections
+        option = kwargs.get('option') or 'neutron'
+        return self.useFixture(SecurityGroupFixture(connections,
+                               secgrp_name='default', option=option))
 
     @classmethod
     def check_vms_booted(cls, vms_list, do_assert=True):
@@ -465,6 +567,7 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
             assert False, 'One or more vm-boots failed. Check logs'
         if failed:
             return False
+        return True
     # end check_vms_booted
 
     @classmethod

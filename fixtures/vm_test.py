@@ -1219,8 +1219,8 @@ class VMFixture(fixtures.Fixture):
                 # if result matches the expectation, continue to next ip
                 continue
             else:
-                return result
-        return result
+                return False
+        return True
 
     def ping_to_ip(self, ip, return_output=False, other_opt='', size='56', count='5', timewait='1'):
         """Ping from a VM to an IP specified.

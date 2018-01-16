@@ -36,7 +36,7 @@ class HealthCheckFixture(vnc_api_test.VncLibFixture):
 
     def __init__(self, **kwargs):
         super(HealthCheckFixture, self).__init__(self, **kwargs)
-        self.name = kwargs.get('name') or get_random_name('HealthCheck')
+        self.name = kwargs.get('name') or get_random_name(self.project_name)
         self.uuid = kwargs.get('uuid', None)
         self.hc_type = kwargs.get('hc_type') or 'link-local'
         self.status = kwargs.get('enabled') or True
