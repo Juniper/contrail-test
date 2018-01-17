@@ -354,14 +354,16 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         self.inputs.run_cmd_on_server(vm1_fixture.vm_node_ip,
                                       update_hosts_cmd,
                                       compute_user,
-                                      compute_password)
+                                      compute_password,
+                                      container='agent')
         # Remove the hosts entry which was added earlier
         update_hosts_cmd = "sed -i '$ d' /etc/hosts"
         self.addCleanup(self.inputs.run_cmd_on_server,
                         vm1_fixture.vm_node_ip,
                         update_hosts_cmd,
                         compute_user,
-                        compute_password)
+                        compute_password,
+                        container='agent')
 
         self.orch.vnc_h.add_link_local_service(service_name,
              '169.254.1.2', '8084', cfgm_intro_port,
