@@ -23,6 +23,26 @@ def stop_tcpdump_for_intf(session, pcap, logger=None):
     sleep(2)
     return True
 
+def start_tcpdump_and_verify_pkts(obj, vm_fix, vn_fq_name, filters='-v', pcap_on_vm=False, vm_intf='eth0', svm=False,
+        run_func=False, check_tcpdump_count=True, exp_count=None, mac=None, exact_match=True, grep_string=None):
+    session=None
+    vm_fix_pcap_pid_files=[]
+    pcap = None
+    tcpdump_files = start_tcpdump_for_vm_intf(obj, vm_fix, vn_fq_name, filters=filters, pcap_on_vm=pcap_on_vm, vm_intf=vm_intf, svm=svm)
+    if pcap_on_vm:
+        vm_fix_pcap_pid_files = tcpdump_files
+    else:
+        session, pcap = tcpdump_files
+    if run_func:
+        # Call the partial function passed as an argument
+        run_func()
+    if not pcap_on_vm:
+        tcpdump_files = stop_tcpdump_for_vm_intf(
+            obj, session=session, pcap=pcap, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files, filters=filters, verify_on_all=verify_on_all, svm=svm)
+    if check_tcpdump_count:
+        return verify_tcpdump_count(obj, session, pcap, exp_count=exp_count, mac=mac,
+            exact_match=exact_match, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files, svm=svm, grep_string=grep_string)
+
 def start_tcpdump_for_vm_intf(obj, vm_fix, vn_fq_name, filters='-v', pcap_on_vm=False, vm_intf='eth0', svm=False):
     if not pcap_on_vm:
         compute_ip = vm_fix.vm_node_ip
