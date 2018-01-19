@@ -146,7 +146,7 @@ class VerifyAlarms():
         ]
         vn_pol_dict['policy_fixture'] = self.useFixture(PolicyFixture(project_fixture=project_fixture,
                                                                       policy_name=policy_name, rules_list=rules, inputs=self.inputs,
-                                                                      connections=self.connections, api='api'))
+                                                                      connections=self.connections,))
         policy_obj = vn_pol_dict['policy_fixture'].policy_obj
         vn_pol_dict['vn_fixture'] = self.useFixture(VNFixture(project_name=project_name,
                                                               project_obj=project_fixture,
@@ -154,6 +154,9 @@ class VerifyAlarms():
                                                               inputs=self.inputs,
                                                               vn_name=vn_name,
                                                               subnets=vn_subnets,
-                                                              option='api',
                                                               policy_objs=[policy_obj]))
+        vn_pol_dict['vn_fixture'].bind_policies([vn_pol_dict['policy_fixture'].policy_fq_name], vn_pol_dict['vn_fixture'].vn_id)
+        self.addCleanup( vn_pol_dict['vn_fixture'].unbind_policies, vn_pol_dict['vn_fixture'].vn_id,
+                        [vn_pol_dict['policy_fixture'].policy_fq_name])
+
         return vn_pol_dict
