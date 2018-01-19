@@ -4,13 +4,13 @@ from kubernetes.client.rest import ApiException
 
 from common import log_orig as contrail_logging
 from tcutils.util import get_random_name, retry
-
+from kubernetes.stream import stream
 
 class Client():
 
     def __init__(self, config_file='/etc/kubernetes/admin.conf', logger=None):
         self.api_client = config.new_client_from_config(config_file)
-        self.api_client.config.assert_hostname = False
+        self.api_client.configuration.assert_hostname = False
         self.v1_h = client.CoreV1Api(self.api_client)
         self.v1_h.read_namespace('default')
         self.v1_beta_h = client.ExtensionsV1beta1Api(self.api_client)
@@ -156,6 +156,7 @@ class Client():
         '''
         ingress_rules = spec.get('ingress', [])
         ingress_rules_obj = []
+        policy_types = spec.get('pilicy_types', [])
         pod_selector = self._get_label_selector(**spec['pod_selector'])
         for rule in ingress_rules:
             _from = self._get_network_policy_peer_list(rule.get('from', []))
@@ -164,7 +165,8 @@ class Client():
                 client.V1beta1NetworkPolicyIngressRule(
                     _from=_from, ports=ports))
         return client.V1beta1NetworkPolicySpec(ingress=ingress_rules_obj,
-                                               pod_selector=pod_selector)
+                                               pod_selector=pod_selector,
+                                               policy_types=policy_types)
     # end _get_network_policy_spec
 
     def update_network_policy(self,
@@ -397,7 +399,7 @@ class Client():
 
         cmd_prefix = shell.split()
         cmd_prefix.append(cmd)
-        output = self.v1_h.connect_get_namespaced_pod_exec(name, namespace,
+        output = stream(self.v1_h.connect_get_namespaced_pod_exec, name, namespace,
                                                            command=cmd_prefix,
                                                            stderr=stderr,
                                                            stdin=stdin,
