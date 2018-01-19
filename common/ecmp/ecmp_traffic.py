@@ -116,6 +116,10 @@ class ECMPTraffic(VerifySvcChain):
         svm_list = si_fix.svm_list
         svm_index = 0
         vm_fix_pcap_pid_files = []
+
+        # Capturing packets based upon source port
+        src_port = "8000"
+        filters = '\'(src port %s)\'' % (src_port)
         if None in svms:
             svms.remove(None)
         for svm_fixture in svm_list:
@@ -134,14 +138,14 @@ class ECMPTraffic(VerifySvcChain):
                     tapintf = self.get_bridge_svm_tapintf(svm_name, direction)
                 if self.inputs.pcap_on_vm:
                     tcpdump_files = start_tcpdump_for_vm_intf(
-                        None, [svm_list[svm_index]], None, filters='', pcap_on_vm=True, vm_intf='eth1', svm=True)
+                        None, [svm_list[svm_index]], None, filters=filters, pcap_on_vm=True, vm_intf='eth1', svm=True)
                     svm_index = svm_index + 1
                     vm_fix_pcap_pid_files.append(tcpdump_files)
                 else:
                     session = ssh(
                         host['host_ip'], host['username'], host['password'])
-                    cmd = 'sudo tcpdump -nni %s -c 10 > /tmp/%s_out.log' % (
-                        tapintf, tapintf)
+                    cmd = 'sudo tcpdump -nni %s %s -c 20 > /tmp/%s_out.log' % (
+                        tapintf, filters, tapintf)
                     execute_cmd(session, cmd, self.logger)
             else:
                 self.logger.info('%s is not in ACTIVE state' % svm.name)
