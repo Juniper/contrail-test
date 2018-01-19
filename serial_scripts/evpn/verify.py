@@ -29,7 +29,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         compute_3 = host_list[0]
@@ -921,7 +921,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         compute_3 = host_list[0]
@@ -1116,7 +1116,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         compute_3 = host_list[0]
@@ -2054,7 +2054,7 @@ class VerifyEvpnCases():
             self.update_encap_priority('vxlan')
 
         result = True
-        host_list = self.connections.nova_h.get_hosts()
+        host_list = self.connections.orch.get_hosts()
         compute_1 = host_list[0]
         compute_2 = host_list[0]
         if len(host_list) > 1:

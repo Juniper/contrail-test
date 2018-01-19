@@ -41,7 +41,7 @@ class AnalyticsTestSanityWithMin(
         super(AnalyticsTestSanityWithMin, cls).tearDownClass()
     # end tearDownClass
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_run_contrail_flows_cli_cmds(self):
         '''1. Test to verify  contrail-flows cli cmd with various optional arguments is not broken..
@@ -131,7 +131,7 @@ class AnalyticsTestSanityWithMin(
 
         return self.test_cmd_output('contrail-flows', cmd_args_list, check_output=True)
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_run_contrail_logs_cli_cmd_with_multiple_different_optional_args(self):
         '''1.Test to verify contrail-logs cli cmd with multiple different optional type args is not broken
@@ -166,7 +166,7 @@ class AnalyticsTestSanityWithMin(
 
         return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True)
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_run_contrail_stats_cli_cmds(self):
         '''1.Run contrail-stats commands with various options
@@ -1414,7 +1414,7 @@ class AnalyticsTestSanityWithResource(
         assert result,'Failed to get expected number of samples'
     #end test_verify_session_series_table_intra_vn
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_verify_session_series_table_inter_vn(self):
         '''Verify session series table ,generated stats between different vns
@@ -1453,7 +1453,7 @@ class AnalyticsTestSanityWithResource(
         self.verify_session_series_table(start_time, src_vn, dst_vn)
     #test_verify_session_series_table_inter_vn
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_verify_session_record_table_inter_vn(self):
         '''Verify session record table ,generated stats between different vns
