@@ -36,15 +36,18 @@ class BaseDropStats(GenericTestBase) :
         result = True
         ping_count = 5
         image_name = 'cirros'
-
         compute_ips = self.inputs.compute_ips
         compute0 = compute_ips[0]
         compute1 = compute0
         compute0_name =  hostname = self.inputs.host_data[compute0]['name']
         compute1 = compute_ips[1]
         compute1_name =  hostname = self.inputs.host_data[compute1]['name']
-
-        vm1_fixture, vm1_ip, vm2_fixture, vm2_ip = self.create_verify_vn_vm(compute0_name, compute1_name, image_name)
+        if self.inputs.orchestrator == 'vcenter':
+            image_name = 'ubuntu'
+            hosts = self.connections.orch.get_hosts()
+            vm1_fixture, vm1_ip, vm2_fixture, vm2_ip = self.create_verify_vn_vm(hosts[0], hosts[1], image_name)
+        else:
+            vm1_fixture, vm1_ip, vm2_fixture, vm2_ip = self.create_verify_vn_vm(compute0_name, compute1_name, image_name)
 
         tap = vm1_fixture.get_tap_intf_of_vm()[0]['name']
         intf_details = self.agent_inspect[compute0].get_vna_intf_details(tap)
