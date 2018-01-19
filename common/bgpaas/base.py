@@ -105,8 +105,7 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
         username = self.inputs.host_data[vm.vm_node_ip]['username']
         password = self.inputs.host_data[vm.vm_node_ip]['password']
         ip = self.inputs.host_data[vm.vm_node_ip]['host_ip']
-        (session, pcap) = start_tcpdump_for_intf(ip, username, password, interface,
-                                                 filters='-P out')  # to capture packets sent to the BGPaaS client
+        (session, pcap) = start_tcpdump_for_intf(ip, username, password, interface)
         time.sleep(5)
         stop_tcpdump_for_intf(session, pcap)
         result = search_in_pcap(session, pcap, '4784')
