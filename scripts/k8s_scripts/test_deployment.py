@@ -1,6 +1,6 @@
 from common.k8s.base import BaseK8sTest
 from tcutils.wrappers import preposttest_wrapper
-
+import time
 
 class TestPodDeployment(BaseK8sTest):
     @preposttest_wrapper
@@ -20,6 +20,8 @@ class TestPodDeployment(BaseK8sTest):
                                             pod_labels=labels)
         assert dep_1.verify_on_setup()
         self.perform_cleanup(dep_1)
+        time.sleep(1) # Creation of another deployment with same name instantly result in creation failure
+                      # Issue observed when Kub version upgraded to 1.9 and Kube python API version upgraded to 4.0
         dep_2 = self.setup_nginx_deployment(name='dep-test',
                                             replicas=3,
                                             pod_labels=labels)
