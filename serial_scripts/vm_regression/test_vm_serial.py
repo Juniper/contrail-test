@@ -855,7 +855,7 @@ class TestBasicVMVN0(BaseVnVmTest):
             self.logger.info('On compute %s, %s..OK' % (compute.ip, msg))
     # end test_max_vm_flows
 
-    @test.attr(type=['sanity', 'vcenter_compute'])
+    @test.attr(type=['sanity', 'vcenter_compute', 'vcenter'])
     @preposttest_wrapper
     def test_underlay_broadcast_traffic_handling(self):
         ''' Test the underlay brocast traffic handling by vrouter. (Bug-1545229).
