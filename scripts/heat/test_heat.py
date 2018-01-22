@@ -374,8 +374,9 @@ try:
                 'pt_svm', si_fqdn, svc_vn_list, intf_rt_table_fqdn)
             svm_right_vmi_id = self.get_stack_output(
                 pt_svm, 'svm_right_vmi_id')
+            public_fip_pool_fqdn = public_vn_fixture.vn_fq_name + ':floating-ip-pool'
             public_vn_fip = self.config_fip(
-                public_vn_fixture.vn_fq_name, svm_right_vmi_id)
+                public_fip_pool_fqdn, svm_right_vmi_id)
             assert end_vm_fix.ping_with_certainty('8.8.8.8', expectation=True)
         # end test_public_access_thru_svc_w_fip
 
