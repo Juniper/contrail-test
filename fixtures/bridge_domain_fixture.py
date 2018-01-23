@@ -289,7 +289,7 @@ class BDFixture(vnc_api_test.VncLibFixture):
             self.logger.error("VMI %s host could not be found from VNC API" % (
                 vmi_uuid))
             return False
-        vmi_host_ip = self.inputs.compute_info[vmi_host]
+        vmi_host_ip = self.inputs.get_host_ip(vmi_host)
 
         bd_in_agent = self.agent_inspect[vmi_host_ip].get_bd(self.bd_uuid)
         if not bd_in_agent:
@@ -359,7 +359,7 @@ class BDFixture(vnc_api_test.VncLibFixture):
                 self.logger.warn("VMI %s host could not be found from VNC API" % (
                     vmi_uuid))
                 return False
-            vmi_host_ip = self.inputs.compute_info[vmi_host]
+            vmi_host_ip = self.inputs.get_host_ip(vmi_host)
             vmis_in_agent = self.agent_inspect[vmi_host_ip].get_vna_tap_interface_by_vmi(vmi_uuid)
 
             if not vmis_in_agent:
