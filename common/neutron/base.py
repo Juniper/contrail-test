@@ -314,6 +314,7 @@ conn.close_session()
         cmdList = cmd_string.split(';')
         python_code = python_code.substitute(ip=str(dst_vm.vm_ip), username=str(dst_vm.vm_username), password=str(
             dst_vm.vm_password), device_params=device_params, cmdList=cmdList, timeout=timeout, hostkey_verify=hostkey_verify)
+        assert dst_vm.wait_for_ssh_on_vm(port='830')
         op = src_vm.run_python_code(python_code)
     # end set_config_via_netconf
 
@@ -331,6 +332,7 @@ print get_config.tostring
         cmdList = cmd_string.split(';')
         python_code = python_code.substitute(ip=str(dst_vm.vm_ip), username=str(dst_vm.vm_username), password=str(
             dst_vm.vm_password), device_params=device_params, cmd=cmd_string, timeout=timeout, hostkey_verify=hostkey_verify, format=format)
+        assert dst_vm.wait_for_ssh_on_vm(port='830')
         op = src_vm.run_python_code(python_code)
         return op
 

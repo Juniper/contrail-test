@@ -2438,11 +2438,12 @@ class VMFixture(fixtures.Fixture):
         return self.orch.get_console_output(self.vm_obj)
 
     @retry(delay=5, tries=10)
-    def wait_for_ssh_on_vm(self):
-        self.logger.debug('Waiting to SSH to VM %s, IP %s' % (self.vm_name,
-                                                              self.vm_ip))
+    def wait_for_ssh_on_vm(self, port='22'):
+        self.logger.debug('Waiting to SSH to VM %s, IP %s, Port %s' % (self.vm_name,
+                                                                       self.vm_ip, port))
         host = self.inputs.host_data[self.vm_node_ip]
         vm_hoststring = '@'.join([self.vm_username, self.local_ip])
+        vm_hoststring+=':'+ port
         if sshable(vm_hoststring, self.vm_password,
                    gateway='%s@%s' % (host['username'], self.vm_node_ip),
                    gateway_password=host['password'],
