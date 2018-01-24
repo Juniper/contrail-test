@@ -280,6 +280,24 @@ class OpVMResult (Result):
         return _OpResultGet(self, typ, attr, match)
 
 
+class OpLBResult (Result):
+
+    '''
+        This class returns a LB UVE object
+    '''
+
+    def get_attr(self, tier, attr, match=None):
+        #import pdb; pdb.set_trace ()
+        if tier == "Config":
+            typ = 'UveLoadbalancerConfig'
+        elif tier == "Stats":
+            typ = 'UveLoadbalancerStats'
+        else:
+            raise Exception("Invalid Arguments - bad tier")
+
+        return _OpResultGet(self, typ, attr, match)
+
+
 class OpHrefResult(Result):
 
     '''Get all hrefs for a uve type
