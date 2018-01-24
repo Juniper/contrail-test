@@ -606,7 +606,7 @@ class PbbEvpnTestBase(BaseVrouterTest):
         cmac = cmac or vmi_fixture.mac_address
         bd_uuid = bd_fixture.bd_uuid
         isid = bd_fixture.isid
-        vmi_host_ip = self.inputs.compute_info[self.vnc_h.get_vmi_host_name(vmi_fixture.uuid)]
+        vmi_host_ip = self.inputs.get_host_ip(self.vnc_h.get_vmi_host_name(vmi_fixture.uuid))
         #Get I-component vrf
         vrf = self.get_i_component_vrf(vmi_fixture, bd_uuid)
         mpls_label = self.get_vrf_mpls_label(vrf)
@@ -658,7 +658,7 @@ class PbbEvpnTestBase(BaseVrouterTest):
             ":" + str(bd_uuid)
 
         compute_ip = compute_ip or \
-            self.inputs.compute_info[self.vnc_h.get_vmi_host_name(vmi_fixture.uuid)]
+            self.inputs.get_host_ip(self.vnc_h.get_vmi_host_name(vmi_fixture.uuid))
         agent_vrf_objs_vn = self.agent_inspect[compute_ip
             ].get_vna_vrf_objs(domain, project, vn)
 
