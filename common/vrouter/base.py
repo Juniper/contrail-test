@@ -128,19 +128,6 @@ class BaseVrouterTest(BaseNeutronTest):
                                 password=self.inputs.stack_password)
                 assert vm_fixture.add_ip_on_vm(ip)
 
-                rt_fq_name = [self.inputs.domain_name,
-                    self.inputs.project_name, route_table_name]
-                self.addCleanup(vm_fixture.vnc_lib_h.interface_route_table_delete,
-                                    fq_name=rt_fq_name)
-                self.addCleanup(vm_fixture.provision_static_route,
-                                    prefix=prefix,
-                                    tenant_name=self.inputs.project_name,
-                                    oper='del',
-                                    virtual_machine_interface_id=vmi_id,
-                                    route_table_name=route_table_name,
-                                    user=self.inputs.stack_user,
-                                    password=self.inputs.stack_password)
-
         return ip
 
     def disable_policy_on_vmis(self, vmi_ids, disable=True):

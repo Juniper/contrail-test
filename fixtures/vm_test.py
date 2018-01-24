@@ -29,7 +29,7 @@ from tcutils.tcpdump_utils import start_tcpdump_for_intf,\
 from tcutils.agent.vrouter_lib import *
 from tcutils.fabutils import *
 from tcutils.test_lib.contrail_utils import get_interested_computes
-
+from interface_route_table_fixture import InterfaceRouteTableFixture
 env.disable_known_hosts = True
 try:
     from webui_test import *
@@ -1927,8 +1927,8 @@ class VMFixture(fixtures.Fixture):
     # end get_vrf_ids
 
     def cleanUp(self):
-        super(VMFixture, self).cleanUp()
         self.delete()
+        super(VMFixture, self).cleanUp()
 
     def delete(self, verify=False):
         do_cleanup = True
@@ -2619,35 +2619,15 @@ class VMFixture(fixtures.Fixture):
             user='admin',
             password='contrail123'):
 
-        if not tenant_name:
-            tenant_name = self.inputs.stack_tenant
-        cmd = "python /usr/share/contrail-utils/provision_static_route.py --prefix %s \
-                --tenant_name %s  \
-                --api_server_ip %s \
-                --api_server_port %s\
-                --oper %s \
-                --virtual_machine_interface_id %s \
-                --user %s\
-                --password %s\
-                --route_table_name %s \
-                --api_server_use_ssl %s" % (prefix,
-                                          tenant_name,
-                                          self.inputs.cfgm_ip,
-                                          self.inputs.api_server_port,
-                                          oper,
-                                          virtual_machine_interface_id,
-                                          user,
-                                          password,
-                                          route_table_name,
-                                          self.inputs.api_protocol == 'https')
-        args = shlex.split(cmd)
-        process = Popen(args, stdout=PIPE)
-        stdout, stderr = process.communicate()
-        if stderr:
-            self.logger.warn("Route could not be created , err : \n %s" %
-                             (stderr))
-        else:
-            self.logger.info("%s" % (stdout))
+        prefixes = [prefix] if prefix else None
+        irt_fixture = self.useFixture(InterfaceRouteTableFixture(
+                                      connections=self.connections,
+                                      prefixes=prefixes))
+        self.vnc_lib_fixture.bind_vmi_to_interface_route_table(virtual_machine_interface_id,
+                                                               irt_fixture.obj)
+        self.addCleanup(self.vnc_lib_fixture.unbind_vmi_from_interface_route_table,
+                        virtual_machine_interface_id, irt_fixture.obj)
+        return irt_fixture
 
     def _gather_details(self):
         self.cs_vmi_obj = {}
