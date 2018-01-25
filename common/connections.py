@@ -8,13 +8,16 @@ from tcutils.collector.analytics_tests import *
 from tcutils.config.kube_manager_introspect_utils import KubeManagerInspect
 from vnc_api.vnc_api import *
 from tcutils.vdns.dns_introspect_utils import DnsAgentInspect
-from tcutils.kubernetes.api_client import Client as Kubernetes_client
 from tcutils.util import custom_dict, get_plain_uuid
 import os
 from openstack import OpenstackAuth, OpenstackOrchestrator
 from vcenter import VcenterAuth, VcenterOrchestrator
 from common.contrail_test_init import ContrailTestInit
 from vcenter_gateway import VcenterGatewayOrch
+try:
+    from tcutils.kubernetes.api_client import Client as Kubernetes_client
+except ImportError:
+    pass
 
 try:
     from webui.ui_login import UILogin
