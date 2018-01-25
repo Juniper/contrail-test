@@ -1,0 +1,441 @@
+from common.k8s.base import BaseK8sTest
+from tcutils.wrappers import preposttest_wrapper
+from time import sleep
+
+class TestNSIsolationSerial(BaseK8sTest):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestNSIsolationSerial, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestNSIsolationSerial, cls).tearDownClass()
+    
+    def setup_common_namespaces_pods(self, prov_service = False, prov_ingress = False):
+        service_ns1, ingress_ns1 = None, None
+        service_ns2, ingress_ns2 = None, None
+        service_ns3, ingress_ns3 = None, None
+        namespace1 = self.setup_namespace(name = "ns1", isolation = True)
+        namespace2 = self.setup_namespace(name = "ns2", isolation = True)
+        namespace3 = self.setup_namespace(name = "ns3")
+        ns_1_label = "namespace1"
+        ns_2_label = "namespace2"
+        ns_3_label = "namespace3"
+        client1_ns1 = self.setup_nginx_pod(namespace="ns1",
+                                             labels={'app': ns_1_label})
+        client2_ns1 = self.setup_nginx_pod(namespace="ns1",
+                                             labels={'app': ns_1_label})
+        client3_ns1 = self.setup_busybox_pod(namespace="ns1")
+        client1_ns2 = self.setup_nginx_pod(namespace="ns2",
+                                             labels={'app': ns_2_label})
+        client2_ns2 = self.setup_nginx_pod(namespace="ns2",
+                                             labels={'app': ns_2_label})
+        client3_ns2 = self.setup_busybox_pod(namespace="ns2")
+        client1_ns3 = self.setup_nginx_pod(namespace="ns3",
+                                             labels={'app': ns_3_label})
+        client2_ns3 = self.setup_nginx_pod(namespace="ns3",
+                                             labels={'app': ns_3_label})
+        client3_ns3 = self.setup_busybox_pod(namespace="ns3")
+        assert self.verify_nginx_pod(client1_ns1)
+        assert self.verify_nginx_pod(client2_ns1)
+        assert client3_ns1.verify_on_setup()
+        assert self.verify_nginx_pod(client1_ns2)
+        assert self.verify_nginx_pod(client2_ns2)
+        assert client3_ns2.verify_on_setup()
+        assert self.verify_nginx_pod(client1_ns3)
+        assert self.verify_nginx_pod(client2_ns3)
+        assert client3_ns3.verify_on_setup()
+        if prov_service == True:
+            service_ns1 = self.setup_http_service(namespace=namespace1.name,
+                                          labels={'app': ns_1_label})
+            service_ns2 = self.setup_http_service(namespace=namespace2.name,
+                                          labels={'app': ns_2_label})
+            service_ns3 = self.setup_http_service(namespace=namespace3.name,
+                                          labels={'app': ns_3_label})
+        if prov_ingress == True:
+            ingress_ns1 = self.setup_simple_nginx_ingress(service_ns1.name,
+                                                  namespace=namespace1.name)
+            ingress_ns3 = self.setup_simple_nginx_ingress(service_ns3.name,
+                                                  namespace=namespace3.name)
+            assert ingress_ns1.verify_on_setup()
+            assert ingress_ns3.verify_on_setup()
+        client1 = [client1_ns1, client2_ns1, client3_ns1, service_ns1,\
+                    namespace1, ingress_ns1]
+        client2 = [client1_ns2, client2_ns2, client3_ns2, service_ns2,\
+                    namespace2]
+        client3 = [client1_ns3, client2_ns3, client3_ns3, service_ns3,\
+                    namespace3, ingress_ns3]
+        return (client1, client2, client3)
+    #end setup_common_namespaces_pods
+
+    @preposttest_wrapper
+    def test_pods_isolation_post_kube_manager_restart(self):
+        """
+        This test case verifies the connectivity between pods of different namespaces with 
+        namespace isolation enabled post restart of contrail-kube-manager
+        Verify:
+        1. Pods in other namespaces in the Kubernetes cluster will NOT be able to reach pods in the isolated namespace.
+        2. Pods created in isolated namespace can reach pods in other namespaces.
+        Restart contrail-kube-manager and verify both the points again
+        """
+        client1, client2, client3 = self.setup_common_namespaces_pods()
+        #Check 1:
+        assert client1[2].ping_to_ip(client2[0].pod_ip, expectation=False)
+        assert client3[2].ping_to_ip(client2[0].pod_ip, expectation=False)
+        #Check 2
+        assert client1[2].ping_to_ip(client3[0].pod_ip)
+        self.restart_kube_manager()
+        self.sleep(5)
+        #Check 1:
+        assert client1[2].ping_to_ip(client2[0].pod_ip, expectation=False)
+        assert client3[2].ping_to_ip(client2[0].pod_ip, expectation=False)
+        #Check 2
+        assert client1[2].ping_to_ip(client3[0].pod_ip)
+    #end test_pods_isolation_post_kube_manager_restart
+
+    @preposttest_wrapper
+    def test_service_isolation_post_kube_manager_restart(self):
+        """
+        This test case verifies the connectivity between pods and service of different namespaces with 
+        namespace isolation enabled post restart of contrail-kube-manager
+        Verify:
+        1. Pods in isolated namespace will be able to reach ALL Services created in any namespace in the kubernetes cluster.
+        2. Pods in isolated namespace can be reached from pods in other namespaces through Kubernetes Service-ip
+        Restart contrail-kube-manager and verify both the points again
+        """
+        client1, client2, client3 = self.setup_common_namespaces_pods(prov_service = True)
+        #Check 1:
+        assert self.validate_nginx_lb([client3[0], client3[1]], client3[3].cluster_ip,
+                                      test_pod=client1[2])
+        client2[4].disable_service_isolation()
+        assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
+                                      test_pod=client1[2])
+        #Check 2:
+        client1[4].disable_service_isolation()
+        assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
+                                      test_pod=client3[2])
+        self.restart_kube_manager()
+        self.sleep(5)
+        #Check 1:
+        assert self.validate_nginx_lb([client3[0], client3[1]], client3[3].cluster_ip,
+                                      test_pod=client1[2])
+        assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
+                                      test_pod=client1[2])
+        #Check 2:
+        assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
+                                      test_pod=client3[2])
+    #end test_service_isolation_post_kube_manager_restart
+    
+    def test_ingress_isolation_post_kube_manager_restart(self):
+        """
+        Test test case verifies ingress operations post restart of contrail-kube-manager
+        Verify:
+        1. This test case verifies the connectivity to ingress existing in isolated namespace
+        2. PIt also verifies connectivity of ingress existing in an non isolated namespace from pod in isolated namespace
+        Restart contrail-kube-manager and verify both the points again
+        """
+        client1, client2, client3 = self.setup_common_namespaces_pods(prov_service = True,
+                                                                      prov_ingress = True)
+        assert self.validate_nginx_lb([client3[0], client3[1]], client3[5].cluster_ip,
+                                      test_pod=client1[2])
+        client1[4].disable_service_isolation()
+        assert self.validate_nginx_lb([client1[0], client1[1]], client1[5].external_ips[0])
+        self.restart_kube_manager()
+        self.sleep(5)
+        assert self.validate_nginx_lb([client3[0], client3[1]], client3[5].cluster_ip,
+                                      test_pod=client1[2])
+        assert self.validate_nginx_lb([client1[0], client1[1]], client1[5].external_ips[0])
+    #end test_ingress_isolation_post_kube_manager_restart
+
+class TestCustomIsolationSerial(BaseK8sTest):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestCustomIsolationSerial, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestCustomIsolationSerial, cls).tearDownClass()
+        
+    def setup_common_namespaces_pods(self, prov_service = False):
+        service_ns1 = None
+        service_ns2 = None
+        vn_for_namespace = self.setup_vn(vn_name = "TestVNNamespace")
+        vn_dict_for_namespace = {"domain": vn_for_namespace.domain_name,
+                   "project" : vn_for_namespace.project_name[0],
+                   "name": vn_for_namespace.vn_name}
+        vn_for_pod = self.setup_vn(vn_name = "TestVNPod")
+        vn_dict_for_pod = {"domain": vn_for_pod.domain_name,
+                   "project" : vn_for_pod.project_name[0],
+                   "name": vn_for_pod.vn_name}
+        namespace1 = self.setup_namespace(name = "ns1")
+        namespace2 = self.setup_namespace(name = "ns2", custom_isolation = True,
+                                           fq_network_name= vn_dict_for_namespace)
+        ns_1_label = "namespace1"
+        ns_2_label = "namespace2"
+        client1_ns1 = self.setup_nginx_pod(namespace="ns1",
+                                             labels={'app': ns_1_label})
+        client2_ns1 = self.setup_nginx_pod(namespace="ns1",
+                                             labels={'app': ns_1_label})
+        client3_ns1 = self.setup_busybox_pod(namespace="ns1")
+        client4_ns1 = self.setup_busybox_pod(namespace="ns1",
+                                             custom_isolation = True,
+                                             fq_network_name= vn_dict_for_pod)
+        client5_ns1 = self.setup_busybox_pod(namespace="ns1",
+                                             custom_isolation = True,
+                                             fq_network_name= vn_dict_for_pod)
+        client1_ns2 = self.setup_nginx_pod(namespace="ns2",
+                                             labels={'app': ns_2_label})
+        client2_ns2 = self.setup_nginx_pod(namespace="ns2",
+                                             labels={'app': ns_2_label})
+        client3_ns2 = self.setup_busybox_pod(namespace="ns2")
+        client4_ns2 = self.setup_busybox_pod(namespace="ns2",
+                                             custom_isolation = True,
+                                             fq_network_name= vn_dict_for_pod)
+        assert self.verify_nginx_pod(client1_ns1)
+        assert self.verify_nginx_pod(client2_ns1)
+        assert client3_ns1.verify_on_setup()
+        assert client4_ns1.verify_on_setup()
+        assert client5_ns1.verify_on_setup()
+        assert self.verify_nginx_pod(client1_ns2)
+        assert self.verify_nginx_pod(client2_ns2)
+        assert client3_ns2.verify_on_setup()
+        assert client4_ns2.verify_on_setup()
+        if prov_service == True:
+            service_ns1 = self.setup_http_service(namespace=namespace1.name,
+                                          labels={'app': ns_1_label})
+            service_ns2 = self.setup_http_service(namespace=namespace2.name,
+                                          labels={'app': ns_2_label})
+        client1 = [client1_ns1, client2_ns1, client3_ns1, service_ns1,\
+                    namespace1, client4_ns1, client5_ns1]
+        client2 = [client1_ns2, client2_ns2, client3_ns2, service_ns2,\
+                    namespace2, client4_ns2]
+        return (client1, client2)
+    #end setup_common_namespaces_pods
+    
+    @preposttest_wrapper
+    def test_pods_custom_isolation_post_kube_manager_restart(self):
+        """
+        Verify that after restart of contrail-kubemanager, pod reachability to 
+        and from custom isolated namespace/pod is not affected
+        Verify following reachability:
+        1. Verify reachability between pods and namespaces
+        2. restart contrail-kube-manager
+        3. Verify reachability between pods and namespaces
+        """
+        client1, client2 = self.setup_common_namespaces_pods()
+        assert client1[5].ping_to_ip(client1[0].pod_ip, expectation=False)
+        assert client1[5].ping_to_ip(client2[0].pod_ip, expectation=False)
+        assert client1[5].ping_to_ip(client1[6].pod_ip)
+        assert client1[5].ping_to_ip(client2[5].pod_ip)
+        assert client2[2].ping_to_ip(client2[0].pod_ip)
+        assert client2[2].ping_to_ip(client2[5].pod_ip, expectation=False)
+        assert client2[5].ping_to_ip(client1[2].pod_ip, expectation=False)
+        assert client2[5].ping_to_ip(client1[5].pod_ip)
+        self.restart_kube_manager()
+        self.sleep(5)
+        assert client1[5].ping_to_ip(client1[0].pod_ip, expectation=False)
+        assert client1[5].ping_to_ip(client2[0].pod_ip, expectation=False)
+        assert client1[5].ping_to_ip(client1[6].pod_ip)
+        assert client1[5].ping_to_ip(client2[5].pod_ip)
+        assert client2[2].ping_to_ip(client2[0].pod_ip)
+        assert client2[2].ping_to_ip(client2[5].pod_ip, expectation=False)
+        assert client2[5].ping_to_ip(client1[2].pod_ip, expectation=False)
+        assert client2[5].ping_to_ip(client1[5].pod_ip)
+    #end test_pods_custom_isolation_post_kube_manager_restart
+    
+    @preposttest_wrapper
+    def test_services_custom_isolation_post_kube_manager_restart(self):
+        """
+        Verify that after restart of contrail-kubemanager, service reachability to 
+        and from custom isolated namespace/pod is not affected
+        Verify following reachability:
+        1. Verify reachability between pods and services
+        2. restart contrail-kube-manager
+        3. Verify reachability between pods and services
+        """
+        client1, client2 = self.setup_common_namespaces_pods(prov_service = True)
+        assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
+                                      test_pod=client2[2])
+        assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
+                                      test_pod=client2[2])
+        # Disable of service isolation required or not ? For now, its working without disabling service isolation
+        #client2[4].disable_service_isolation()
+        assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
+                                      test_pod=client1[2])
+        self.restart_kube_manager()
+        self.sleep(5)
+        assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
+                                      test_pod=client2[2])
+        assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
+                                      test_pod=client2[2])
+        assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
+                                      test_pod=client1[2])
+    #end test_services_custom_isolation_post_kube_manager_restart
+
+class TestProjectIsolationSerial(BaseK8sTest):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestProjectIsolationSerial, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestProjectIsolationSerial, cls).tearDownClass()
+        
+    def setup_common_namespaces_pods(self, prov_service = False,
+                                    prov_ingress = False,
+                                    isolation = False):
+        deleted_project = self.delete_cluster_project()
+        self.addCleanup(self.add_cluster_project,
+                         project_name = deleted_project)
+        service_ns1, ingress_ns1 = None, None
+        service_ns2, ingress_ns2 = None, None
+        namespace1 = self.setup_namespace(name = "ns1")
+        namespace2 = self.setup_namespace(name = "ns2", isolation = isolation)
+        assert namespace1.verify_on_setup()
+        assert namespace1.project_isolation
+        assert namespace2.verify_on_setup()
+        assert namespace2.project_isolation
+        ns_1_label = "namespace1"
+        ns_2_label = "namespace2"
+        client1_ns1 = self.setup_nginx_pod(namespace="ns1",
+                                             labels={'app': ns_1_label})
+        client2_ns1 = self.setup_nginx_pod(namespace="ns1",
+                                             labels={'app': ns_1_label})
+        client3_ns1 = self.setup_busybox_pod(namespace="ns1")
+        client1_ns2 = self.setup_nginx_pod(namespace="ns2",
+                                             labels={'app': ns_2_label})
+        client2_ns2 = self.setup_nginx_pod(namespace="ns2",
+                                             labels={'app': ns_2_label})
+        client3_ns2 = self.setup_busybox_pod(namespace="ns2")
+        assert self.verify_nginx_pod(client1_ns1)
+        assert self.verify_nginx_pod(client2_ns1)
+        assert client3_ns1.verify_on_setup()
+        assert self.verify_nginx_pod(client1_ns2)
+        assert self.verify_nginx_pod(client2_ns2)
+        assert client3_ns2.verify_on_setup()
+        if prov_service == True:
+            service_ns1 = self.setup_http_service(namespace=namespace1.name,
+                                          labels={'app': ns_1_label})
+            type = "LoadBalancer" if prov_ingress == False else None 
+            service_ns2 = self.setup_http_service(namespace=namespace2.name,
+                                          labels={'app': ns_2_label},
+                                          type=type)
+        if prov_ingress == True:
+            ingress_ns1 = self.setup_simple_nginx_ingress(service_ns1.name,
+                                                  namespace=namespace1.name)
+            ingress_ns2 = self.setup_simple_nginx_ingress(service_ns2.name,
+                                                  namespace=namespace2.name)
+            assert ingress_ns1.verify_on_setup()
+            assert ingress_ns2.verify_on_setup()
+        client1 = [client1_ns1, client2_ns1, client3_ns1, service_ns1,\
+                    namespace1, ingress_ns1]
+        client2 = [client1_ns2, client2_ns2, client3_ns2, service_ns2,\
+                    namespace2, ingress_ns2]
+        return (client1, client2)
+    #end setup_common_namespaces_pods
+    
+    @preposttest_wrapper
+    def test_pod_reachability_across_projects(self):
+        """
+        Check reachability of Pods of different namespaces across different projects
+        """
+        client1, client2 = self.setup_common_namespaces_pods()
+        assert client1[2].ping_to_ip(client1[0].pod_ip)
+        assert client1[2].ping_to_ip(client2[0].pod_ip)
+        assert client2[2].ping_to_ip(client1[0].pod_ip)
+    # end  test_pod_reachability_across_ns
+    
+    @preposttest_wrapper
+    def test_service_reachability_across_projects(self):
+        """
+        Check reachability of Service of different namespaces across different projects
+        """
+        client1, client2 = self.setup_common_namespaces_pods(prov_service = True)
+        # Service reachability within namespace/project 
+        assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
+                                      test_pod=client1[2])
+        assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
+                                      test_pod=client2[2])
+        # Service reachability across namespace/project
+        assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
+                                      test_pod=client1[2])
+        assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
+                                      test_pod=client2[2])
+        #External connectivity check
+        assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].external_ips[0])
+    # end  test_service_reachability_across_ns
+    
+    @preposttest_wrapper
+    def test_ingress_reachability_across_projects(self):
+        """
+        Check reachability of Ingress created in project namespace
+        """
+        client1, client2 = self.setup_common_namespaces_pods(prov_service = True,
+                                                             prov_ingress = True)
+        # Ingress reachability within namespace/project 
+        assert self.validate_nginx_lb([client1[0], client1[1]], client1[5].external_ips[0])
+        # Ingress reachability across namespace/project
+        assert self.validate_nginx_lb([client2[0], client2[1]], client2[5].external_ips[0])
+    # end  test_ingress_reachability_across_ns
+
+    @preposttest_wrapper
+    def test_reachability_across_projects_with_isolated_namespace(self):
+        """
+        Check reachability between Pods and services created in isolated namespace.
+        Note that the namespace should have seperate Project.
+        1. Create 2 namespaces. 1 as non isolated and other as isolated.
+        2. Create Pods and service under both the namespaces.
+        3. Verify reachability
+        """
+        client1, client2 = self.setup_common_namespaces_pods(prov_service = True,
+                                                             isolation = True)
+        import pdb;pdb.set_trace()  
+        # Reachability of Pods
+        assert client1[2].ping_to_ip(client1[0].pod_ip)
+        assert client2[2].ping_to_ip(client2[0].pod_ip)
+        assert client2[2].ping_to_ip(client1[0].pod_ip)
+        assert client1[2].ping_to_ip(client2[0].pod_ip, expectation = False)
+        # Reachability of Services   
+        assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
+                                      test_pod=client2[2]) 
+        assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
+                                      test_pod=client2[2])
+        client2[4].disable_service_isolation()
+        assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
+                                      test_pod=client1[2])
+    # end  test_reachability_across_projects_with_isolated_namespace
+    
+    @preposttest_wrapper
+    def test_reachability_across_projects_with_kube_manager_restart(self):
+        """
+        Check reachability between Pods and services after kube manager restart
+        """
+        client1, client2 = self.setup_common_namespaces_pods(prov_service = True)
+        # Reachability of Pods
+        assert client1[2].ping_to_ip(client1[0].pod_ip)
+        assert client1[2].ping_to_ip(client2[0].pod_ip)
+        assert client2[2].ping_to_ip(client1[0].pod_ip)
+        # Reachability of Services   
+        assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
+                                      test_pod=client2[2])
+        assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
+                                      test_pod=client1[2])
+        assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
+                                      test_pod=client2[2])
+        self.restart_kube_manager()
+        self.sleep(5)
+        # Reachability of Pods
+        assert client1[2].ping_to_ip(client1[0].pod_ip)
+        assert client1[2].ping_to_ip(client2[0].pod_ip)
+        assert client2[2].ping_to_ip(client1[0].pod_ip)
+        # Reachability of Services   
+        assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
+                                      test_pod=client2[2])
+        assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
+                                      test_pod=client1[2])
+        assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
+                                      test_pod=client2[2])
+    # end  test_reachability_across_projects_with_kube_manager_restart
