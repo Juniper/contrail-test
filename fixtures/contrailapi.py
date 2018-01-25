@@ -3,6 +3,7 @@ import logging
 
 from tcutils.util import *
 from vnc_api.vnc_api import *
+from loadbalancer_vnc_api import *
 
 class ContrailVncApi(object):
 
@@ -26,6 +27,22 @@ class ContrailVncApi(object):
 
     def delete_project(self, project_name):
         return self._vnc.project_delete(project_name)
+  
+    def read_project_obj(self,project_fq_name=None,project_id=None):
+        if project_fq_name:
+            return self._vnc.project_read(project_fq_name)
+        if project_id:
+            return self._vnc.project_read(id=project_id)
+
+    @property
+    def vnc_project(self):
+         '''This method returns the project object
+            for this vnc_api object
+         '''
+         project = self._vnc._tenant_name
+         fq_name = ['default-domain',project] #This may fail for non-default domain
+                                              #WA for vcenter/vcenter-gw
+         return self.read_project_obj(project_fq_name=fq_name)        
 
     def get_floating_ip(self, fip_id, **kwargs):
         fip_obj = self._vnc.floating_ip_read(id=fip_id)
@@ -33,7 +50,15 @@ class ContrailVncApi(object):
 
     def create_floating_ip(self, pool_obj, project_obj, **kwargs):
         owner = kwargs.get('owner')
-        fip_obj = FloatingIp(get_random_name('fip'), pool_obj)
+ 
+        if not pool_obj:
+            #Create FIP Poola
+            vn_obj = kwargs.get('vn_obj',None)
+            fip_pool_name = 'fip_pool'   
+            pool_obj = FloatingIpPool(fip_pool_name, vn_obj)
+            self._vnc.floating_ip_pool_create(pool_obj)
+
+        fip_obj = FloatingIp(get_random_name('fip'),pool_obj)
         fip_obj.set_project(project_obj)
         if owner:
             project_id = owner.replace('-', '')
@@ -53,9 +78,12 @@ class ContrailVncApi(object):
         self._vnc.floating_ip_update(fip_obj)
         return fip_obj
 
-    def assoc_floating_ip(self, fip_id, vm_id, **kwargs):
+    def assoc_floating_ip(self, fip_id,vm_id,**kwargs):
         fip_obj = self._vnc.floating_ip_read(id=fip_id)
-        vm_obj = self._vnc.virtual_machine_read(id=vm_id)
+        try:
+            vm_obj = self._vnc.virtual_machine_read(id=vm_id)
+        except Exception as e:
+            self._log.debug("Got exception as %s while reading the vm obj"%(e))
         if kwargs.get('vmi_id'):
             vmi = kwargs['vmi_id']
         else:
@@ -1369,3 +1397,258 @@ class ContrailVncApi(object):
         gv_obj.set_linklocal_services(services)
         self._vnc.global_vrouter_config_update(gv_obj)
         self._log.debug("Link local service %s removed"%name)
+
+    #Lbaasv2 functions
+    def get_loadbalancer(self,lb_uuid):
+        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        return self.lb_feature_handles.lb_mgr.read(id=lb_uuid) 
+    #End get_loadbalancer
+
+    def list_floatingips(self, tenant_id=None, port_id=None):
+        if port_id:
+            port_obj = self._vnc.virtual_machine_interface_read(id=port_id)
+            fip_refs = port_obj.get_floating_ip_back_refs()
+            if fip_refs:
+                fip_ids= [ref['uuid'] for ref in fip_refs]
+                if fip_ids:
+                    fip_dict = self._vnc.floating_ips_list(obj_uuids=fip_ids,
+                        fields=['parent_uuid', 'floating_ip_fixed_ip_address'],
+                        detail=False)
+                    fip_list = fip_dict.get('floating-ips')
+                return fip_list
+        return None
+    #End list_floatingips
+
+    def list_loadbalancers(self, **kwargs):
+        lb_name = kwargs.get('name',None)
+        if lb_name:
+            self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+            lb_objects=self.lb_feature_handles.lb_mgr.lb_list() 
+            return lb_objects['loadbalancers']
+    #End list_loadbalancers
+
+    def create_loadbalancer(self, name=None, network_id=None,
+                            subnet_id=None, address=None,project=None):
+        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        #proj_obj = self.read_project_obj(project_fq_name=project) 
+        proj_obj = self.vnc_project 
+        vn_obj = self.get_vn_obj_from_id(network_id)
+        lb_obj=self.lb_feature_handles.lb_mgr.create(name,proj_obj,
+                        		vn_obj,vip_address=address,
+                        		subnet_uuid=subnet_id) 
+        return lb_obj
+    #End create_loadbalancer
+
+    def delete_loadbalancer(self, lb_id):
+        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        self.lb_feature_handles.lb_mgr.delete(lb_id) 
+    #End delete_loadbalancer
+
+    def assoc_floatingip(self, fip_id, port_id):
+        return self.assoc_floating_ip(fip_id, port_id,vmi_id=port_id)
+    #End assoc_floatingip
+
+    def create_floatingip(self, fip_pool_vn_id, 
+                        	project_id=None, port_id=None,
+                          project_fq_name=None):
+        pool_obj= self.get_vn_obj_from_id(fip_pool_vn_id)
+        proj_obj = self.vnc_project 
+        (fip, fip_id) = self.create_floating_ip(None, proj_obj,vn_obj=pool_obj)
+        if port_id:
+            self.assoc_floating_ip(fip_id, port_id,vmi_id=port_id)
+        fip_obj = self._vnc.floating_ip_read(id=fip_id)
+        return fip_obj
+    #End create_floatingip
+
+    def delete_floatingip(self, fip_id):
+        self.delete_floating_ip(fip_id)
+    #End delete_floatingip
+
+    def apply_sg_to_port(self, port_id, sg_list):
+        return self.set_security_group(port_id, sg_list)
+    #End apply_sg_to_port
+
+    def get_listener(self, listener_id, **kwargs):
+        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        return self.lb_feature_handles.ll_mgr.read(id=listener_id) 
+    #End get_listener
+
+    def list_lbaas_pools(self, **kwargs):
+        ll_id = kwargs.get('listener','')
+        parent_obj = self.vnc_project
+        parent_id = parent_obj.uuid
+        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        ll_list = self.lb_feature_handles.lb_pool_mgr.resource_list(tenant_id=parent_id)
+        return ll_list['loadbalancer-pools'] 
+    #End list_lbaas_pools
+
+    def get_lbaas_member(self, member_id, pool_id, **kwargs):
+        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        return self.lb_feature_handles.lb_member_mgr.read(id=member_id) 
+    #End get_lbaas_member
+
+    def get_lbaas_healthmonitor(self, hm_id, **kwargs):
+        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        return self.lb_feature_handles.lb_hm_mgr.read(id=hm_id) 
+    #End get_lbaas_healthmonitor
+
+    def list_listeners(self, **kwargs):
+        parent = kwargs.get('parent_fq_name',None)
+        if parent:
+             parent_obj = self.vnc_project
+             parent_id = parent_obj.id
+        else:
+            parent_id = None
+        lb_listeners = self._vnc.loadbalancer_listeners_list(parent_id=parent_id)
+        return lb_listeners['loadbalancer-listeners']
+    #End list_listeners
+
+    def create_listener(self, lb_id, protocol, port, default_tls_container=None,
+                        name=None, connection_limit=-1,**kwargs):
+        sni_containers=kwargs.get('sni_containers',None)
+        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        lb_obj =self._vnc.loadbalancer_read(id=lb_id)
+        proj_fq_name = kwargs.get('projetc_fq_name',None)
+        proj_obj=self.vnc_project 
+        return self.lb_feature_handles.ll_mgr.create(lb_obj,proj_obj,name=name,
+                        							protocol=protocol,
+                        							protocol_port=port,
+                        							connection_limit=connection_limit,
+                        							default_tls_container=default_tls_container,
+                        							sni_containers=sni_containers
+                        							) 
+    #End create_listener
+
+    def create_lbaas_pool(self, listener_id, protocol, lb_algorithm,
+                          name=None, session_persistence=None,**kwargs):
+        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        ll_obj= self._vnc.loadbalancer_listener_read(id=listener_id) 
+        proj_fq_name = kwargs.get('projetc_fq_name',None)
+        proj_obj=self.vnc_project 
+        return self.lb_feature_handles.lb_pool_mgr.create(ll_obj,proj_obj,
+                        					protocol,name=name,
+                        					session_persistence=session_persistence,
+                        					lb_algorithm=lb_algorithm) 
+    #End create_lbaas_pool
+
+    def delete_lbaas_pool(self, pool_id):
+        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log) 
+        self.lb_feature_handles.lb_pool_mgr.delete(id=pool_id)
+    #End delete_lbaas_pool
+
+    def get_port_ips(self, port_id):
+        vmi_obj=self._vnc.virtual_machine_interfaces_read(id=port_id)
+    #End get_port_ips
+
+    def get_subnet_id_from_network(self,vn_id):
+        vn_obj=self._vnc.virtual_network_read(id=vn_id)
+
+    def create_lbaas_member(self, address, port, pool_id, weight=1,
+                            subnet_id=None, network_id=None):
+        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log) 
+        pool_obj = self._vnc.loadbalancer_pool_read(id=pool_id)
+        if network_id and not subnet_id:
+            subnet_id=get_network_subnet_id(self._vnc,network_id)
+        return self.lb_feature_handles.lb_member_mgr.create(pool_obj, address=address, 
+                        						protocol_port=port,
+                        						weight=weight,
+                        						subnet_id=subnet_id)
+    #End create_lbaas_member
+
+    def list_lbaas_members(self, pool_id, **kwargs):
+        return self._vnc.loadbalancer_members_list(
+                parent_id=pool_id)
+    #End list_lbaas_members
+
+    def delete_lbaas_member(self, member_id, pool_id):
+        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        self.lb_feature_handles.lb_member_mgr.delete(id=member_id) 
+    #End delete_lbaas_member
+
+    def update_lbaas_member(self, member_id, pool_id, port=None,
+                            weight=None, admin_state=None,
+                        	status=None,address=None):
+        '''
+        'admin_state': 'admin_state_up',
+        'status': 'status',
+        'protocol_port': 'protocol_port',
+        'weight': 'weight',
+        'address': 'address',
+        'subnet_id': 'subnet_id',
+        '''
+        
+        
+        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log) 
+        return self.lb_feature_handles.lb_member_mgr.update(member_id, 
+                        							admin_state=admin_state,
+                        							status=status,
+                        							port=port,
+                        							weight=weight,
+                        							address=address)
+    #End update_lbaas_member
+
+    def create_lbaas_healthmonitor(self, pool_id, delay, max_retries,
+                                   probe_type, timeout, http_method=None,
+                                   http_codes=None, http_url=None):
+        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        proj_obj=self.vnc_project 
+        return self.lb_feature_handles.lb_hm_mgr.create(pool_id, delay, max_retries,
+                        						probe_type, timeout,
+                        						http_method=http_method,
+                        						http_codes=http_codes,
+                        						http_url=http_url,
+                        						proj_obj=proj_obj)
+ 
+    #End create_lbaas_healthmonitor
+
+    def delete_lbaas_healthmonitor(self, hm_id):
+        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        return self.lb_feature_handles.lb_hm_mgr.delete(id=hm_id) 
+    #End delete_lbaas_healthmonitor
+
+    def update_lbaas_healthmonitor(self,hm_id, delay=None, max_retries=None,
+                                   timeout=None, http_method=None,
+                                   http_codes=None, http_url=None,
+                        			project_fq_name=None):
+
+        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        proj_obj=self.vnc_project 
+        return self.lb_feature_handles.lb_hm_mgr.update(hm_id=hm_id,proj_obj=proj_obj,
+                        			 delay=delay, 
+                        			 max_retries=max_retries,
+                                     timeout=timeout, http_method=http_method,
+                                     http_codes=http_codes, http_url=http_url)
+    #End update_lbaas_healthmonitor
+
+    def delete_listener(self, listener_id):
+        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        self.lb_feature_handles.ll_mgr.delete(id=listener_id) 
+    #End delete_listener
+    #End Lbaasv2 functions
+
+    def get_vn_of_subnet(self,subnet_id):
+        return get_subnet_network_id(self._vnc,subnet_id)
+
+    def delete_fip_on_vip(self):
+        #This function is needed to meet the expectation
+        #of lbaasV2 fixture.The intent is achieved
+        #in delete of pool.Hence keeping is empty
+        pass
+
+class LBFeatureHandles:
+    __metaclass__ = Singleton
+    
+    def __init__(self,vnc,log):
+        self._vnc=vnc
+        self._log=log
+        self.get_lb_feature_handles()
+    
+    def get_lb_feature_handles(self):
+        self.lb_mgr = ServiceLbManager(self._vnc,self._log)
+        self.ll_mgr = ServiceLbListenerManager(self._vnc,self._log)
+        self.lb_pool_mgr = ServiceLbPoolManager(self._vnc,self._log)
+        self.lb_member_mgr = ServiceLbMemberManager(self._vnc,self._log)
+        self.lb_hm_mgr = ServiceLbHealthMonitorManager(self._vnc,self._log)
+
+#vn.get_floating_ip_pools()
+#floating_ip_pool_delete

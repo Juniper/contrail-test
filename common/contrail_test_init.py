@@ -1066,10 +1066,13 @@ class TestInputs(object):
 
     def get_build_sku(self):
         if not getattr(self, 'build_sku', None):
-            self.build_sku = get_build_sku(self.openstack_ip,
-                             self.host_data[self.openstack_ip]['password'],
-                             self.host_data[self.openstack_ip]['username'],
-                             container=self.host_data[self.openstack_ip].get('containers', {}).get('openstack'))
+            try:
+                self.build_sku = get_build_sku(self.openstack_ip,
+                     self.host_data[self.openstack_ip]['password'],
+                     self.host_data[self.openstack_ip]['username'],
+                     container=self.host_data[self.openstack_ip].get('containers', {}).get('openstack'))
+            except Exception as e:
+                self.build_sku='vcenter'		
         return self.build_sku
 
     def run_cmd_on_server(self, server_ip, issue_cmd, username=None,
