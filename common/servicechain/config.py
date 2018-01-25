@@ -291,7 +291,11 @@ class ConfigSvcChain(fixtures.Fixture):
         self.logger.debug(
             "svm_obj:'%s' compute_ip:'%s' agent_inspect:'%s'", svm_obj.__dict__,
             vm_nodeip, inspect_h.get_vna_tap_interface_by_vm(vm_id=svm_obj.id))
-        return inspect_h.get_vna_tap_interface_by_vm(vm_id=svm_obj.id)[0]['name']
+        tap_intfs = inspect_h.get_vna_tap_interface_by_vm(vm_id=svm_obj.id)
+        for tap_intf in tap_intfs:
+            if 'tap' not in tap_intf['name']:
+                tap_intfs.remove(tap_intf)
+        return tap_intfs[0]['name']
 
     def get_bridge_svm_tapintf(self, svm_name, direction):
         vrf_name = self.get_svc_bridge_vrf(direction)
