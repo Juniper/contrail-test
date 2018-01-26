@@ -562,6 +562,12 @@ class VerifyIntfMirror(VerifySvcMirror):
         tap_intf_obj = None
         parent_tap_intf_obj = None
         vlan = None
+        tap_intf_objs = src_vm_fixture.get_tap_intf_of_vm()
+        for tap_intf_obj in tap_intf_objs:
+            if 'tap' in tap_intf_obj['name']:
+                parent_tap_intf_uuid = tap_intf_obj['uuid']
+            else:
+                sub_intf_tap_intf_uuid = tap_intf_obj['uuid']
         if not sub_intf:
             tap_intf_uuid = src_vm_fixture.get_tap_intf_of_vm()[0]['uuid']
             tap_intf_obj = vnc.virtual_machine_interface_read(id=tap_intf_uuid)
@@ -570,9 +576,7 @@ class VerifyIntfMirror(VerifySvcMirror):
             vlan = self.vlan
 
         if parent_intf:
-            parent_tap_intf_uuid = src_vm_fixture.get_tap_intf_of_vm()[0]['uuid']
             parent_tap_intf_obj = vnc.virtual_machine_interface_read(id=parent_tap_intf_uuid)
-         
         if not nic_mirror:
             self.enable_intf_mirroring(vnc, tap_intf_obj, analyzer_ip_address, analyzer_name, routing_instance)
             if parent_intf:

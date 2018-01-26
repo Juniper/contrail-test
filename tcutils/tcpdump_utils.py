@@ -170,6 +170,9 @@ def check_pcap_file_exists(session, pcap, expect=True):
     cmd = 'ls -d /tmp/* | grep -w %s ' % (pcap)
     out, err = execute_cmd_out(session, cmd)
     out = bool(out)
+    logger = contrail_logging.getLogger(__name__)
+    if expect and not out:
+        logger.warn("Pcap file not created yet..waiting")
     if expect and out or not expect and not out:
         return True
     return False
