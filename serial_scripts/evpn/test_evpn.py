@@ -354,7 +354,18 @@ class TestEvpnCasesRestart(base.BaseEvpnTest, VerifyEvpnCases):
          Pass criteria:  Step 3 and 5 should pass
          Maintainer: chhandak@juniper.net 
         '''
-        return self.verify_epvn_with_agent_restart(encap='vxlan')
+        verdict=self.verify_epvn_with_agent_restart(encap='vxlan')
+        if not verdict:
+            print "collect logs for bug 1737030"
+            for a_node in self.inputs.collector_ips:
+                cmd='wget '+a_node+':8089/Snh_SandeshTraceRequest?x=UveTrace'
+                self.inputs.run_cmd_on_server (a_node,cmd)
+                cmd='wget '+a_node+':5995/Snh_SandeshTraceRequest?x=UVEQTrace'
+                self.inputs.run_cmd_on_server (a_node,cmd)
+                cmd='tar -cvf '+a_node+'contrail_log.tar /var/log/contrail/'
+                self.inputs.run_cmd_on_server (a_node,cmd)
+        return verdict
+ #       return self.verify_epvn_with_agent_restart(encap='vxlan')
 
     @preposttest_wrapper
     def test_with_gre_encap_to_verify_epvn_l2_mode_control_node_switchover(self):
