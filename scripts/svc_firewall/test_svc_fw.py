@@ -21,11 +21,6 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ECMPVerify):
     def setUpClass(cls):
         super(TestSvcRegr, cls).setUpClass()
 
-    def is_test_applicable(self):
-        if not self.connections.orch.is_feature_supported('ipv6'):
-            return(False, 'This IPv6 Test not supported on this orchestrator')
-        return (True, None)
-
     def runTest(self):
         pass
     # end runTest
@@ -199,7 +194,6 @@ class TestSvcRegrIPv6(TestSvcRegr):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
 
-    @test.attr(type=['vcenter'])
     @preposttest_wrapper
     def test_svc_in_network_datapath(self):
         super(TestSvcRegrIPv6,self).test_svc_in_network_datapath()
