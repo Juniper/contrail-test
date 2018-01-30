@@ -82,7 +82,7 @@ class TestECMPSanity(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
             self.left_vn_fixture)
     # end test_ecmp_svc_in_network_with_3_instance
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_static_route_no_policy(self):
         """

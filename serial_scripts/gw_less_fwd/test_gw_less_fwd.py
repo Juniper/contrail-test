@@ -17,7 +17,7 @@ class TestGWLessFWD(GWLessFWDTestBase):
         super(TestGWLessFWD, cls).tearDownClass()
     # end tearDownClass
 
-    @test.attr(type=['cb_sanity', 'sanity'])
+    @test.attr(type=['cb_sanity', 'sanity', 'vcenter'])
     @preposttest_wrapper
     def test_gw_less_fwd_single_vn_ip_fab(self):
         '''
