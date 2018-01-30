@@ -126,6 +126,10 @@ class VncLibFixture(fixtures.Fixture):
         return self.vnc_api_h
     # end get_handle
 
+    def get_contrail_api_handle(self):
+        return self.vnc_h
+        
+
     @property
     def admin_h(self):
         if not getattr(self, '_admin_h', None):

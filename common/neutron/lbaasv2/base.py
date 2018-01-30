@@ -18,9 +18,8 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
     # end tearDownClass
 
     def is_test_applicable(self):
-        if self.inputs.orchestrator.lower() != 'openstack':
-            return (False, 'Skipping Test. Openstack required')
-        if self.inputs.get_build_sku().lower()[0] < 'l':
+        if self.inputs.get_build_sku().lower()[0] < 'l' or \
+                self.inputs.orchestrator.lower() != 'vcenter':
             return (False, 'Skipping Test. LBaasV2 is supported only on liberty and up')
         return (True, None)
 
@@ -83,6 +82,7 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
                 lb_name=lb_name,
                 network_id=network_id,
                 connections=self.connections,
+                orchestrator=self.inputs.orchestrator,
                 **kwargs))
         return lbaas_fixture
     # end create_lbaas method
@@ -113,11 +113,14 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
         result = ''
         output = ''
         for i in range (0,len(servers_fix)):
-            result,output = self.run_curl(client_fix,vip_ip,port,https)
-            if result:
-                lb_response1.add(output.strip('\r'))
-            else:
-                self.logger.debug("connection to vip %s failed" % (vip_ip))
+            try:
+                result,output = self.run_curl(client_fix,vip_ip,port,https)
+                if result:
+                    lb_response1.add(output.strip('\r'))
+                else:
+                    self.logger.debug("connection to vip %s failed" % (vip_ip))
+                    return False
+            except Exception as e:
                 return False
 
         if lb_method == "ROUND_ROBIN" and len(lb_response1) != len(servers_fix):
@@ -127,11 +130,14 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
         # To check lb-method ROUND ROBIN lets do wget again 3 times
         lb_response2 = set([])
         for i in range (0,len(servers_fix)):
-            result,output = self.run_curl(client_fix,vip_ip,port,https)
-            if result:
-                lb_response2.add(output.strip('\r'))
-            else:
-                self.logger.debug("connection to vip %s failed" % (vip_ip))
+            try:
+                result,output = self.run_curl(client_fix,vip_ip,port,https)
+                if result:
+                    lb_response2.add(output.strip('\r'))
+                else:
+                    self.logger.debug("connection to vip %s failed" % (vip_ip))
+                    return False
+            except Exception as e:
                 return False
 
         errmsg = ("lb-method %s doesnt work as expcted, First time requests went to servers %s"

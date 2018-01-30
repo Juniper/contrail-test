@@ -26,7 +26,11 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.vip_ip = kwargs.get('vip_ip', None)
         self.fip_id = kwargs.get('fip_id', None)
         self.fip_net_id = kwargs.get('fip_net_id', None)
-        self.api_type = kwargs.get('api_type', 'neutron')
+        orch = kwargs.get('orchestrator',None)
+        if orch == 'vcenter':
+            self.api_type = 'contrail'
+        else:
+            self.api_type = kwargs.get('api_type', 'neutron')
         self.fip_ip = None
         self.lb_present = False
         self.is_fip_active = False
@@ -48,7 +52,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
 
     def get_network_handle(self):
         if self.api_type == 'contrail':
-            return self.get_handle()
+            return self.get_contrail_api_handle()
         else:
             return self.get_neutron_handle()
 
@@ -67,8 +71,11 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.lb_name = self.obj['name']
         self.vip_ip = self.obj['vip_address']
         self.vip_port_id = self.obj['vip_port_id']
-        self.network_id = self.network_h.get_vn_of_subnet(
+        try:
+            self.network_id = self.network_h.get_vn_of_subnet(
                           self.obj['vip_subnet_id'])
+        except Exception as e:
+            self.network_id = self.network_id
         fip = self.network_h.list_floatingips(port_id=self.vip_port_id)
         if fip:
             self.fip_id = fip[0]['id']
@@ -80,14 +87,19 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
     def lb_create(self):
         if not self.lb_uuid:
             obj = self.network_h.list_loadbalancers(name=self.lb_name)
-            self.lb_uuid = obj[0]['id'] if obj else None
+            try:
+                self.lb_uuid = obj[0]['id'] if obj else None
+            except Exception as e:
+                #Api server object
+                self.lb_uuid = obj[0]['uuid'] if obj else None
+                
         if self.lb_uuid:
             self.lb_present = True
         else:
             obj = self.network_h.create_loadbalancer(
                                        name=self.lb_name,
                                        network_id=self.network_id,
-                                       address=self.vip_ip)
+                                       address=self.vip_ip,project=self.project_name)
             self.lb_uuid = obj['id']
         self.lb_read()
         if (self.fip_id or self.fip_net_id) and not self.fip_ip:
@@ -110,11 +122,20 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
                                  self.vip_port_id)['floatingip']
         elif fip_net_id:
             fip = self.network_h.create_floatingip(fip_net_id,
-                                 port_id=self.vip_port_id)['floatingip']
-        self.fip_ip = fip['floating_ip_address']
-        self.fip_id = fip['id']
-        self.fip_net_id = fip['floating_network_id']
-        self.is_fip_active = True
+                                 port_id=self.vip_port_id,\
+                                 project_fq_name=self.project_name)
+        try:
+            self.fip_ip = fip['floatingip']['floating_ip_address']
+            self.fip_id = fip['floatingip']['id']
+            self.fip_net_id = fip['floatingip']['floating_network_id']
+            self.is_fip_active = True
+        except Exception as e:
+            #Floating ip object from api server
+            self.fip_ip = fip.get_floating_ip_address()
+            self.fip_id = fip.uuid
+            self.fip_net_id = self.vnc_api_h.fq_name_to_id(
+                            'virtual-network', fip.get_fq_name()[:-2])
+            self.is_fip_active = True
         self.logger.info('Assoc VIP %s with FIP %s'%(self.vip_ip, self.fip_ip))
 
     def delete_fip_on_vip(self):
@@ -816,8 +837,8 @@ class LBaasV2Fixture(LBBaseFixture):
             self.delete()
             super(LBaasV2Fixture, self).cleanUp()
 
-    def get_network_handle(self):
-        return self.get_neutron_handle()
+    #def get_network_handle(self):
+    #    return self.get_neutron_handle()
 
     @property
     def network_h(self):
