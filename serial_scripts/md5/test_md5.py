@@ -161,7 +161,7 @@ class TestMd5testsOnControl(Md5Base, VerifySecGroup, ConfigPolicy):
         else:
             return
 
-    @test.attr(type=['sanity', 'vcenter_compute'])
+    @test.attr(type=['sanity', 'vcenter_compute', 'vcenter'])
     @preposttest_wrapper
     def test_create_md5_on_control(self):
         """
@@ -189,7 +189,7 @@ class TestMd5testsOnControl(Md5Base, VerifySecGroup, ConfigPolicy):
         assert self.different_keys_md5_config()
     #end different_keys_md5
 
-    @test.attr(type=['sanity', 'vcenter_compute'])
+    @test.attr(type=['sanity', 'vcenter_compute' 'vcenter'])
     @preposttest_wrapper
     def test_check_per_peer_on_control(self):
         """
