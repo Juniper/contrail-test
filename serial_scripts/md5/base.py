@@ -88,54 +88,56 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
                         cmd.append('set apply-groups md5_tests')
                         mx_handle = NetconfConnection(host = router_params['mgmt_ip'])
                         mx_handle.connect()
-                        cli_output = mx_handle.config(stmts = cmd, timeout = 120) 
+                        cli_output = mx_handle.config(stmts = cmd, timeout = 120)
 
-        vn61_name = "test_vnv6sr"
-        vn61_net = ['2001::101:0/120']
-        #vn1_fixture = self.config_vn(vn1_name, vn1_net)
-        vn61_fixture = self.useFixture(VNFixture(
-            project_name=self.inputs.project_name, connections=self.connections,
-            vn_name=vn61_name, inputs=self.inputs, subnets=vn61_net))
-        vn62_name = "test_vnv6dn"
-        vn62_net = ['2001::201:0/120']
-        #vn2_fixture = self.config_vn(vn2_name, vn2_net)
-        vn62_fixture = self.useFixture(VNFixture(
-            project_name=self.inputs.project_name, connections=self.connections,
-            vn_name=vn62_name, inputs=self.inputs, subnets=vn62_net))
-        vm61_name = 'source_vm'
-        vm62_name = 'dest_vm'
-        #vm1_fixture = self.config_vm(vn1_fixture, vm1_name)
-        #vm2_fixture = self.config_vm(vn2_fixture, vm2_name)
-        vm61_fixture = self.useFixture(VMFixture(
-            project_name=self.inputs.project_name, connections=self.connections,
-            vn_obj=vn61_fixture.obj, vm_name=vm61_name, node_name=None,
-            image_name='cirros', flavor='m1.tiny'))
-
-        vm62_fixture = self.useFixture(VMFixture(
-            project_name=self.inputs.project_name, connections=self.connections,
-            vn_obj=vn62_fixture.obj, vm_name=vm62_name, node_name=None,
-            image_name='cirros', flavor='m1.tiny'))
-        vm61_fixture.wait_till_vm_is_up()
-        vm62_fixture.wait_till_vm_is_up()
-
-        rule = [
-            {
-                'direction': '<>',
-                'protocol': 'any',
-                'source_network': vn61_name,
-                'src_ports': [0, -1],
-                'dest_network': vn62_name,
-                'dst_ports': [0, -1],
-                'simple_action': 'pass',
-            },
-        ]
-        policy_name = 'allow_all'
-        policy_fixture = self.config_policy(policy_name, rule)
-
-        vn61_policy_fix = self.attach_policy_to_vn(
-            policy_fixture, vn61_fixture)
-        vn62_policy_fix = self.attach_policy_to_vn(
-            policy_fixture, vn62_fixture)
+        #ipv6 not supported for vcenter so skipping config
+        if self.inputs.orchestrator != 'vcenter':
+            vn61_name = "test_vnv6sr"
+            vn61_net = ['2001::101:0/120']
+            #vn1_fixture = self.config_vn(vn1_name, vn1_net)
+            vn61_fixture = self.useFixture(VNFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_name=vn61_name, inputs=self.inputs, subnets=vn61_net))
+            vn62_name = "test_vnv6dn"
+            vn62_net = ['2001::201:0/120']
+            #vn2_fixture = self.config_vn(vn2_name, vn2_net)
+            vn62_fixture = self.useFixture(VNFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_name=vn62_name, inputs=self.inputs, subnets=vn62_net))
+            vm61_name = 'source_vm'
+            vm62_name = 'dest_vm'
+            #vm1_fixture = self.config_vm(vn1_fixture, vm1_name)
+            #vm2_fixture = self.config_vm(vn2_fixture, vm2_name)
+            vm61_fixture = self.useFixture(VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_obj=vn61_fixture.obj, vm_name=vm61_name, node_name=None,
+                image_name='cirros', flavor='m1.tiny'))
+    
+            vm62_fixture = self.useFixture(VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_obj=vn62_fixture.obj, vm_name=vm62_name, node_name=None,
+                image_name='cirros', flavor='m1.tiny'))
+            vm61_fixture.wait_till_vm_is_up()
+            vm62_fixture.wait_till_vm_is_up()
+    
+            rule = [
+                {
+                    'direction': '<>',
+                    'protocol': 'any',
+                    'source_network': vn61_name,
+                    'src_ports': [0, -1],
+                    'dest_network': vn62_name,
+                    'dst_ports': [0, -1],
+                    'simple_action': 'pass',
+                },
+            ]
+            policy_name = 'allow_all'
+            policy_fixture = self.config_policy(policy_name, rule)
+    
+            vn61_policy_fix = self.attach_policy_to_vn(
+                policy_fixture, vn61_fixture)
+            vn62_policy_fix = self.attach_policy_to_vn(
+                policy_fixture, vn62_fixture)
 
         vn1 = "vn1"
         vn2 = "vn2"
