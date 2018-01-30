@@ -255,7 +255,7 @@ class ContrailPlugApi(object):
                      extra_dhcp_opts=[],
                      project_obj=None,vm=None):
         self._proj_obj = self._get_project_object()
-        port = PortFixture(vn_id,
+        port = PortFixture(vn_id=vn_id,
                                 api_type='contrail',
                                 mac_address=mac_address,
                                 fixed_ips=fixed_ips,

@@ -22,7 +22,11 @@ class Netcat(BaseTraffic):
             receiver_vm_fix,
             proto,
             sport,
-            dport):
+            dport,
+            sender_vn_fqname=None,
+            receiver_vn_fqname=None,
+            fip=None,
+            af=None):
 
         self.sender_vm_fix = sender_vm_fix
         self.receiver_vm_fix = receiver_vm_fix
@@ -31,9 +35,16 @@ class Netcat(BaseTraffic):
         self.dport = dport
         self.inputs = sender_vm_fix.inputs
         self.logger = self.inputs.logger
+        self.src_ip = sender_vm_fix.get_vm_ips(
+                          vn_fq_name=sender_vn_fqname, af=af)[0]
+        recv_ip = receiver_vm_fix.get_vm_ips(
+                          vn_fq_name=receiver_vn_fqname, af=af)[0]
+        self.dst_ip = self.recv_ip = recv_ip
+        if fip:
+            self.dst_ip = fip
         self.logger.info('Starting netcat session from %s to %s,'
             'Protocol : %s, Source port : %s, Dest port : %s' % (
-            sender_vm_fix.vm_ip, receiver_vm_fix.vm_ip,
+            self.src_ip, self.dst_ip,
             proto, sport, dport))
 
         result, self.receiver_pid = self.start_nc_receiver()
@@ -58,8 +69,8 @@ class Netcat(BaseTraffic):
         self.sent = self.get_sender_packet_count()
         self.recv = self.get_packet_count()
         self.logger.info("Stopped netcat session from %s to %s, "
-            "Sent : %s, Received: %s" % (self.sender_vm_fix.vm_ip,
-            self.receiver_vm_fix.vm_ip, self.sent, self.recv))
+            "Sent : %s, Received: %s" % (self.src_ip,
+            self.dst_ip, self.sent, self.recv))
         return (self.sent, self.recv)
 
     def get_sender_packet_count(self):
@@ -102,10 +113,10 @@ class Netcat(BaseTraffic):
         result = False
         if self.proto == 'udp':
             cmd = 'nc.traditional -l -s %s -p %s -u -vv 2>%s 1>%s' % (
-                self.receiver_vm_fix.vm_ip, self.dport, self.result_file, self.result_file)
+                self.recv_ip, self.dport, self.result_file, self.result_file)
         elif self.proto == 'tcp':
             cmd = 'nc.traditional -l -s %s -p %s -vv 2>%s 1>%s' % (
-                self.receiver_vm_fix.vm_ip, self.dport, self.result_file, self.result_file)
+                self.recv_ip, self.dport, self.result_file, self.result_file)
         output = self.receiver_vm_fix.run_cmd_on_vm(
             cmds=[cmd],
             as_sudo=True,
@@ -145,10 +156,10 @@ class Netcat(BaseTraffic):
 
         if self.proto == 'udp':
             cmd1 = 'echo -e "%s" | nc.traditional %s %s -s %s -p %s -u -vv 2>%s 1>%s' % (
-                data, self.receiver_vm_fix.vm_ip, self.dport, self.sender_vm_fix.vm_ip, self.sport, self.result_file, self.result_file)
+                data, self.dst_ip, self.dport, self.src_ip, self.sport, self.result_file, self.result_file)
         elif self.proto == 'tcp':
             cmd1 = 'echo -e "%s" | nc.traditional %s %s -s %s -p %s -vv 2>%s 1>%s' % (
-                data, self.receiver_vm_fix.vm_ip, self.dport, self.sender_vm_fix.vm_ip, self.sport, self.result_file, self.result_file)
+                data, self.dst_ip, self.dport, self.src_ip, self.sport, self.result_file, self.result_file)
 
         output = self.sender_vm_fix.run_cmd_on_vm(
             cmds=[cmd1],

@@ -1446,7 +1446,8 @@ class VNFixture(fixtures.Fixture):
         return self.vn_obj
     # end get_obj
 
-    def bind_policies(self, policy_fq_names, vn_id):
+    def bind_policies(self, policy_fq_names, vn_id=None):
+        vn_id = vn_id or self.uuid
         if  isinstance(self.orchestrator,VcenterOrchestrator) or self.option == 'contrail':
             self.api_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.uuid)
             self.api_vn_obj.set_network_policy_list([],True)
@@ -1490,7 +1491,8 @@ class VNFixture(fixtures.Fixture):
                 self.policy_objs.append(policy_obj)
     # end update_vn_object
 
-    def unbind_policies(self, vn_id, policy_fq_names=[]):
+    def unbind_policies(self, vn_id=None, policy_fq_names=[]):
+        vn_id = vn_id or self.uuid
         if isinstance(self.orchestrator,VcenterOrchestrator) or self.option == 'contrail':
             if policy_fq_names == []:
                 self.api_vn_obj.set_network_policy_list([],True)

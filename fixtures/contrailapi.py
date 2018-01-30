@@ -482,8 +482,13 @@ class ContrailVncApi(object):
         return self._vnc.api_access_list_read(**kwargs)
 
     def _get_obj(self, object_type, uuid):
-        api = 'self._vnc.'+object_type+'_read'
+        api = ('self._vnc.'+object_type+'_read').replace('-', '_')
         return eval(api)(id=uuid)
+
+    def update_obj(self, obj):
+        object_type = obj.object_type
+        api = 'self._vnc.'+object_type+'_update'
+        eval(api)(obj)
 
     def get_perms2(self, obj):
         '''
@@ -498,9 +503,7 @@ class ContrailVncApi(object):
 
     def set_perms2(self, perms2, obj):
         obj.set_perms2(perms2)
-        object_type = obj.object_type
-        api = 'self._vnc.'+object_type+'_update'
-        eval(api)(obj)
+        self.update_obj(obj)
 
     def set_global_access(self, rwx=7, obj=None, object_type=None, uuid=None):
         if not obj:
@@ -1039,6 +1042,506 @@ class ContrailVncApi(object):
             :param id : uuid of the object
         '''
         return self._vnc.service_health_check_delete(**kwargs)
+
+    def create_tag_type(self, name):
+        ''' Create a Tag Type
+            :param name : name of the tag type
+        '''
+        self._log.debug('Creating tag type %s'%name)
+        obj = TagType(name)
+        return self._vnc.tag_type_create(obj)
+
+    def delete_tag_type(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting tag type %s'%kwargs)
+        return self._vnc.tag_type_delete(**kwargs)
+
+    def read_tag_type(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Reading tag type %s'%kwargs)
+        return self._vnc.tag_type_read(**kwargs)
+
+    def create_application_policy_set(self, fq_name, parent_type, policies=None, **kwargs):
+        ''' Create a firewall policy
+            :param fq_name : name of the APS
+            :param parent_type : parent type ('project' or 'policy-management')
+            :param policies : Ordered list of dict of firewall policies and seq no
+                [{'uuid': uuid, 'seq_no': <int>}]
+        '''
+        obj = ApplicationPolicySet(fq_name[-1], fq_name=fq_name, parent_type=parent_type)
+        for policy in policies or []:
+            policy_obj = self.read_firewall_policy(id=policy['uuid'])
+            seq = FirewallSequence(str(policy['seq_no']))
+            obj.add_firewall_policy(policy_obj, seq)
+        self._log.debug('Creating application policy set %s'%fq_name)
+        return self._vnc.application_policy_set_create(obj)
+
+    def add_firewall_policies(self, uuid, policies):
+        obj = self.read_application_policy_set(id=uuid)
+        for policy in policies or []:
+            seq = FirewallSequence(str(policy['seq_no']))
+            policy_obj = self.read_firewall_policy(id=policy['uuid'])
+            obj.add_firewall_policy(policy_obj, seq)
+            self._log.debug('Adding firewall policy %s to APS %s'%(
+                             policy_obj.name, obj.name))
+        return self._vnc.application_policy_set_update(obj)
+
+    def remove_firewall_policies(self, uuid, policies):
+        obj = self.read_application_policy_set(id=uuid)
+        for policy in policies or []:
+            policy_obj = self.read_firewall_policy(id=policy['uuid'])
+            obj.del_firewall_policy(policy_obj)
+            self._log.debug('Removing firewall policy %s from APS %s'%(
+                             policy_obj.name, obj.name))
+        return self._vnc.application_policy_set_update(obj)
+
+    def delete_application_policy_set(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting application policy set %s'%kwargs)
+        return self._vnc.application_policy_set_delete(**kwargs)
+
+    def read_application_policy_set(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Reading application policy set %s'%kwargs)
+        return self._vnc.application_policy_set_read(**kwargs)
+
+    def create_firewall_policy(self, fq_name, parent_type=None, rules=None, **kwargs):
+        ''' Create a firewall policy
+            :param fq_name : name of the FWP
+            :param parent_type : one of 'project' or 'policy-management'
+            :param rules : Ordered list of dict of firewall rules and seq no
+                [{'uuid': rule_uuid, 'seq_no': <int>}]
+        '''
+        obj = FirewallPolicy(fq_name[-1], fq_name=fq_name, parent_type=parent_type)
+        for rule in rules or []:
+            seq = FirewallSequence(str(rule['seq_no']))
+            rule_obj = self.read_firewall_rule(id=rule['uuid'])
+            obj.add_firewall_rule(rule_obj, seq)
+        self._log.debug('creating firewall policy %s'%fq_name)
+        return self._vnc.firewall_policy_create(obj)
+
+    def add_firewall_rules(self, uuid, rules):
+        obj = self.read_firewall_policy(id=uuid)
+        for rule in rules or []:
+            seq = FirewallSequence(str(rule['seq_no']))
+            rule_obj = self.read_firewall_rule(id=rule['uuid'])
+            self._log.debug('Adding rule %s to policy %s'%(
+                             rule_obj.name, obj.name))
+            obj.add_firewall_rule(rule_obj, seq)
+        return self._vnc.firewall_policy_update(obj)
+
+    def remove_firewall_rules(self, uuid, rules):
+        obj = self.read_firewall_policy(id=uuid)
+        for rule in rules or []:
+            rule_obj = self.read_firewall_rule(id=rule['uuid'])
+            self._log.debug('Removing rule %s from policy %s'%(
+                             rule_obj.name, obj.name))
+            obj.del_firewall_rule(rule_obj)
+        return self._vnc.firewall_policy_update(obj)
+
+    def delete_firewall_policy(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting firewall policy %s'%kwargs)
+        return self._vnc.firewall_policy_delete(**kwargs)
+
+    def read_firewall_policy(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Reading firewall policy %s'%kwargs)
+        return self._vnc.firewall_policy_read(**kwargs)
+
+    def _get_fw_endpoint_obj(self, endpoint):
+        if not endpoint:
+           return None
+        subnet=None
+        if endpoint.get('subnet'):
+            subnet = SubnetType(*endpoint['subnet'].split('/'))
+        vn = endpoint.get('virtual_network')
+        ag = endpoint.get('address_group')
+        tags = endpoint.get('tags', [])
+        any = endpoint.get('any', False)
+        return FirewallRuleEndpointType(subnet=subnet, virtual_network=vn,
+                                        address_group=ag, tags=tags, any=any)
+
+    def update_firewall_rule(self, uuid, action=None, direction=None,
+                             protocol=None, sports=None,
+                             dports=None, log=False, source=None,
+                             destination=None, match=None):
+        ''' Update a firewall policy rule
+            :param uuid : uuid of the policy rule
+            :param action : pass or deny
+            :param direction : <> or < or >
+            :param protocol : protocol to filter (int or one of icmp/tcp/udp/any)
+            :param sports : tuple of start,end port
+            :param dports : tuple of start,end port
+            :param log : to log flow to analytics
+            :param match : list of match tag-types ['deployment', 'site']
+            :param source : dict for endpoint
+            :param destination : dict for endpoint
+            eg: endpoint dict
+                {'subnet': '1.1.1.0/24', 'virtual_network': vn_fq_name, 'any': False,
+                 'address_group': ag_fq_name,
+                 'tags': ['deployment=prod', 'global:site=us'],
+                }
+        '''
+        service=None
+        obj = self.read_firewall_rule(id=uuid)
+        action_list = obj.get_action_list() or ActionListType()
+        if log:
+            action_list.log = log
+        if action:
+            action_list.simple_action = action
+        obj.set_action_list(action_list)
+        if direction:
+            obj.set_direction(direction)
+        if protocol or sports or dports:
+            service = obj.get_service() or FirewallServiceType()
+            if protocol:
+                service.protocol = protocol
+            if sports:
+                service.src_ports = PortType(*sports)
+            if dports:
+                service.dst_ports = PortType(*dports)
+            obj.set_service(service)
+        if match:
+            match = [] if match == 'None' else match
+            obj.set_match_tags(FirewallRuleMatchTagsType(tag_list=match))
+        if source:
+            obj.set_endpoint_1(self._get_fw_endpoint_obj(source))
+        if destination:
+            obj.set_endpoint_2(self._get_fw_endpoint_obj(destination))
+        self._log.debug('Updating firewall rule %s'%obj.name)
+        return self._vnc.firewall_rule_update(obj)
+
+    def create_firewall_rule(self, fq_name, parent_type, action=None,
+                             direction=None, service_groups=None, protocol=None,
+                             sports=None, dports=None, log=False, source=None,
+                             destination=None, match=None, **kwargs):
+        ''' Create a firewall policy rule
+            :param fq_name : name of the policy rule
+            :param parent_type : parent type ('project' or 'policy-management')
+            :param action : pass or deny
+            :param direction : <> or < or >
+            :param service_groups : list of service_group uuids
+            :param protocol : protocol to filter (int or one of icmp/tcp/udp/any)
+            :param sports : tuple of start,end port
+            :param dports : tuple of start,end port
+            :param log : to log flow to analytics
+            :param match : list of match tag-types ['deployment', 'site']
+            :param source : dict for endpoint
+            :param destination : dict for endpoint
+            eg: endpoint dict
+                {'subnet': '1.1.1.0/24', 'virtual_network': vn_fq_name, 'any': False,
+                 'address_group': ag_fq_name,
+                 'tags': ['deployment=prod', 'global:site=us'],
+                }
+        '''
+        service=None
+        if protocol or sports or dports:
+            sports = sports if sports else (0, 65535)
+            dports = dports if dports else (0, 65535)
+            service = FirewallServiceType(protocol=protocol or 'any',
+                                          src_ports=PortType(*sports),
+                                          dst_ports=PortType(*dports))
+        if match:
+            match = [] if match == 'dont' else match
+            match = FirewallRuleMatchTagsType(tag_list=match)
+        obj = FirewallRule(fq_name[-1],
+                           fq_name=fq_name, parent_type=parent_type,
+                           action_list=ActionListType(simple_action=action, log=log),
+                           direction=direction,
+                           service=service,
+                           endpoint_1 = self._get_fw_endpoint_obj(source),
+                           endpoint_2 = self._get_fw_endpoint_obj(destination),
+                           match_tags = match)
+        for uuid in service_groups:
+            obj.add_service_group(self.read_service_group(id=uuid))
+        self._log.debug('Creating firewall rule %s'%fq_name)
+        return self._vnc.firewall_rule_create(obj)
+
+    def add_service_group(self, uuid, service_groups):
+        obj = self.read_firewall_rule(id=uuid)
+        for uuid in service_groups:
+            sg_obj = self.read_service_group(id=uuid)
+            obj.add_service_group(sg_obj)
+            self._log.debug('Add Service Group %s to Rule %s'%(sg_obj.name, obj.name))
+        return self._vnc.firewall_rule_update(obj)
+
+    def remove_service_group(self, uuid, service_groups):
+        obj = self.read_firewall_rule(id=uuid)
+        for uuid in service_groups:
+            sg_obj = self.read_service_group(id=uuid)
+            obj.del_service_group(sg_obj)
+            self._log.debug('Remove Service Group %s from Rule %s'%(sg_obj.name, obj.name))
+        return self._vnc.firewall_rule_update(obj)
+
+    def delete_firewall_rule(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting firewall rule %s'%kwargs)
+        return self._vnc.firewall_rule_delete(**kwargs)
+
+    def read_firewall_rule(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Reading firewall rule %s'%kwargs)
+        return self._vnc.firewall_rule_read(**kwargs)
+
+    def create_service_group(self, fq_name, parent_type, services, **kwargs):
+        ''' Create a service group
+            :param fq_name : name of the SG
+            :param parent_type : parent type ('project' or 'policy-management')
+            :param services : List of services tuple
+                eg: [(<protocol>, (<sp_start, sp_end>), (<dp_start, dp_end>))]
+        '''
+        services_list = list()
+        for service in services or []:
+             sports = PortType(*service[1])
+             dports = PortType(*service[2])
+             services_list.append(FirewallServiceType(protocol=service[0],
+                                  src_ports=sports, dst_ports=dports))
+        services = FirewallServiceGroupType(firewall_service=services_list)
+        obj = ServiceGroup(fq_name[-1], fq_name=fq_name, parent_type=parent_type,
+                           service_group_firewall_service_list=services,
+                           **kwargs)
+        self._log.debug('Creating service group %s'%fq_name)
+        return self._vnc.service_group_create(obj)
+
+    def update_service_group(self, uuid, services, delete=False):
+        ''' Update a service group
+            :param uuid : uuid of the service group
+            :param services : List of services tuple
+                eg: [(<protocol>, (<sp_start, sp_end>), (<dp_start, dp_end>))]
+        '''
+        sg = self.read_service_group(id=uuid)
+        curr_services = list()
+        svcs = sg.get_service_group_firewall_service_list() or FirewallServiceGroupType()
+        for service in svcs.firewall_service or []:
+            sports = (service.src_ports.start_port, service.src_ports.end_port)
+            dports = (service.dst_ports.start_port, service.dst_ports.end_port)
+            curr_services.append((service.protocol, sports, dports))
+        if delete:
+            services = set(curr_services) - set(services)
+        else:
+            services = set(curr_services).union(services)
+        services_list = list()
+        for service in services or []:
+             sports = PortType(*service[1])
+             dports = PortType(*service[2])
+             services_list.append(FirewallServiceType(
+                 protocol=service[0], src_ports=sports, dst_ports=dports))
+        sg.set_service_group_firewall_service_list(FirewallServiceGroupType(services_list))
+        self._log.debug('Updating service group %s'%sg.name)
+        return self._vnc.service_group_update(sg)
+
+    def delete_service_group(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting service group %s'%kwargs)
+        return self._vnc.service_group_delete(**kwargs)
+
+    def read_service_group(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Reading service group %s'%kwargs)
+        return self._vnc.service_group_read(**kwargs)
+
+    def create_address_group(self, fq_name, parent_type, subnets, **kwargs):
+        ''' Create a address group
+            :param fq_name : name of the AG
+            :param parent_type : parent type ('project' or 'policy-management')
+            :param subnets : List of Subnets (in IPAddress/Prefix format)
+        '''
+        subnets = [SubnetType(ip_prefix=subnet.split('/')[0],
+                              ip_prefix_len=int(subnet.split('/')[1]))
+                   for subnet in subnets]
+        obj = AddressGroup(fq_name[-1], fq_name=fq_name, parent_type=parent_type,
+                           address_group_prefix=SubnetListType(subnet=subnets),
+                           **kwargs)
+        self._log.debug('Creating address group %s'%fq_name)
+        return self._vnc.address_group_create(obj)
+
+    def update_address_group(self, uuid, subnets, delete=False):
+        '''
+            :param uuid : uuid of the object
+            :param subnets : List of Subnets (in IPAddress/Prefix format)
+        '''
+        obj = self.read_address_group(id=uuid)
+        prefixes = obj.get_address_group_prefix() or SubnetListType()
+        curr_subnet = ['%s/%s'%(subnet.ip_prefix, subnet.ip_prefix_len)
+                       for subnet in prefixes.subnet or []]
+        if delete:
+            subnets = set(curr_subnet) - set(subnets)
+        else:
+            subnets = set(curr_subnet).union(subnets)
+        to_update_subnets = [SubnetType(ip_prefix=subnet.split('/')[0],
+                              ip_prefix_len=int(subnet.split('/')[1]))
+                            for subnet in subnets]
+        obj.set_address_group_prefix(SubnetListType(subnet=to_update_subnets))
+        self._log.debug('Updating address group %s'%obj.name)
+        return self._vnc.address_group_update(obj)
+
+    def delete_address_group(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting address group %s'%kwargs)
+        return self._vnc.address_group_delete(**kwargs)
+
+    def read_address_group(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Reading address group %s'%kwargs)
+        return self._vnc.address_group_read(**kwargs)
+
+    def create_tag(self, fq_name, tag_type, tag_value, parent_type=None, **kwargs):
+        ''' Create a Tag
+            :param fq_name : fqname of the Tag
+            :param parent_type : parent type ('project' or None for global tag)
+            :param tag_type : tag_type (Application/Tier/Site etal)
+            :param tag_value : string representing the tag
+        '''
+        obj = Tag(fq_name[-1], tag_type_name=tag_type, tag_value=tag_value,
+                  parent_type=parent_type, fq_name=fq_name, **kwargs)
+        self._log.debug('Creating tag %s'%fq_name)
+        return self._vnc.tag_create(obj)
+
+    def delete_tag(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting tag %s'%kwargs)
+        return self._vnc.tag_delete(**kwargs)
+
+    def read_tag(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Reading tag %s'%kwargs)
+        return self._vnc.tag_read(**kwargs)
+
+    def add_tag(self, tag, obj=None, object_type=None, uuid=None):
+        ''' add tag to an object
+            :param tag : uuid of the tag
+            :param obj : object to which tag has to be set (optional)
+            :param object_type : object_type to which tag has to be set (optional)
+            :param uuid : uuid of object to which tag has to be set (optional)
+             either of obj or (object_type and uuid) has to be specified
+        '''
+        tag = self.read_tag(id=tag)
+        if not obj:
+            obj = self._get_obj(object_type, uuid)
+        obj.add_tag(tag)
+        self._log.debug('Adding tag %s to obj %s'%(tag.get_fq_name_str(),
+                                                   obj.get_fq_name_str()))
+        self.update_obj(obj)
+
+    def add_labels(self, tags, is_global=False, obj=None,
+                  object_type=None, uuid=None):
+        ''' add labels to an object
+            :param tags : list of tags
+            :param obj : object to which tag has to be set (optional)
+            :param object_type : object_type to which tag has to be set (optional)
+            :param uuid : uuid of object to which tag has to be set (optional)
+             either of obj or (object_type and uuid) has to be specified
+        '''
+        if not obj:
+            obj = self._get_obj(object_type, uuid)
+        tags_dict = dict()
+        tags_dict['label'] = {'is_global': is_global, 'add_values': tags}
+        self._log.debug('Adding labels %s to obj %s'%(tags,
+                        obj.get_fq_name_str()))
+        return self._vnc.set_tags(obj, tags_dict)
+
+    def delete_labels(self, tags, is_global=False,
+                     obj=None, object_type=None, uuid=None):
+        ''' delete labels from an object
+            :param tags : list of tags
+            :param obj : object to which tag has to be set (optional)
+            :param object_type : object_type to which tag has to be set (optional)
+            :param uuid : uuid of object to which tag has to be set (optional)
+             either of obj or (object_type and uuid) has to be specified
+        '''
+        if not obj:
+            obj = self._get_obj(object_type, uuid)
+        tags_dict = dict()
+        tags_dict['label'] = {'is_global': is_global, 'delete_values': tags}
+        self._log.debug('Deleting labels %s from obj %s'%(tags,
+                        obj.get_fq_name_str()))
+        return self._vnc.set_tags(obj, tags_dict)
+
+    def set_tag(self, tag_type, tag_value, is_global=False,
+                obj=None, object_type=None, uuid=None):
+        ''' set tag to an object
+            :param tag_type : tag_type (Application/Tier/Site etal)
+            :param tag_value : string representing the tag
+            :param obj : object to which tag has to be set (optional)
+            :param object_type : object_type to which tag has to be set (optional)
+            :param uuid : uuid of object to which tag has to be set (optional)
+             either of obj or (object_type and uuid) has to be specified
+        '''
+        if not obj:
+            obj = self._get_obj(object_type, uuid)
+        self._log.debug('Adding %s tag %s:%s to obj %s'%('global' if is_global
+                        else 'local', tag_type, tag_value, obj.name))
+        return self._vnc.set_tag(obj, tag_type, tag_value, is_global)
+
+    def unset_tag(self, tag_type, obj=None, object_type=None, uuid=None):
+        ''' unset tag of an object
+            :param tag_type : tag_type (Application/Tier/Site etal)
+            :param obj : object to which tag has to be set (optional)
+            :param object_type : object_type to which tag has to be set (optional)
+            :param uuid : uuid of object to which tag has to be set (optional)
+             either of obj or (object_type and uuid) has to be specified
+        '''
+        if not obj:
+            obj = self._get_obj(object_type, uuid)
+        self._log.debug('Deleting tag-type %s from obj %s'%(tag_type, obj.name))
+        return self._vnc.unset_tag(obj, tag_type)
 
     def assoc_intf_rt_table_to_si(self, si_fq_name, intf_rt_table_uuid, intf_type):
         '''

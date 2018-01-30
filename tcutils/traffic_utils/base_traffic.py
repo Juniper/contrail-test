@@ -33,4 +33,3 @@ class BaseTraffic():
         elif tool == SCAPY:
             from scapy_traffic import Scapy 
             return Scapy()
- 
