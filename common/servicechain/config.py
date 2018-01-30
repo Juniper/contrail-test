@@ -460,9 +460,12 @@ class ConfigSvcChain(fixtures.Fixture):
 
         image_name = self._get_end_vm_image(image_name)
 
-	if self.inputs.vcenter_compute_ips:
-	    svc_img_name = VC_SVC_TYPE_PROPS[service_type][service_mode]
-	else:
+        if self.inputs.vcenter_compute_ips:
+            svc_img_name = VC_SVC_TYPE_PROPS[service_type][service_mode]
+        elif self.inputs.orchestrator == 'vcenter':#Fixing tinycore image 
+                                                   #for vcenter-only mode
+            svc_img_name = SVC_TYPE_PROPS[service_type][service_mode]
+        else:
             svc_img_name = svc_img_name or SVC_TYPE_PROPS[service_type][service_mode]
 
         # Mgmt
