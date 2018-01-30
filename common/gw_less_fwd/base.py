@@ -248,17 +248,24 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
             # Distribute mode, generate the new random index
             # Non Distribute mode, use previously generated index
             # Default mode, Nova takes care of launching
-            if launch_mode == 'distribute':
+            if self.inputs.orchestrator == 'vcenter':
                 index = i%compute_nodes_len
-                node_name = self.inputs.compute_names[index]
-            elif launch_mode == 'non-distribute':
-                node_name = self.inputs.compute_names[index]
-            elif launch_mode == 'default':
-                node_name=None
-
-            vm_fixture = self.create_vm(vn_objs=vn_fix_obj_list,
+                node_name = compute_nodes[index]
+                vm_fixture = self.create_vm(vn_objs=vn_fix_obj_list,
                                         port_ids=vmi_fix_uuid_list,
-                                        node_name=node_name, image_name='cirros')
+                                        node_name=node_name, image_name='ubuntu')
+            else:
+                if launch_mode == 'distribute':
+                    index = i%compute_nodes_len
+                    node_name = self.inputs.compute_names[index]
+                elif launch_mode == 'non-distribute':
+                    node_name = self.inputs.compute_names[index]
+                elif launch_mode == 'default':
+                    node_name=None
+
+                vm_fixture = self.create_vm(vn_objs=vn_fix_obj_list,
+                                            port_ids=vmi_fix_uuid_list,
+                                            node_name=node_name, image_name='cirros')
             vm_fixtures[vm_id] = vm_fixture
 
         for vm_fixture in vm_fixtures.values():
@@ -593,7 +600,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                         inspect_h = self.agent_inspect[compute_ip]
                         compute_intf = inspect_h.get_vna_interface_by_type('eth')
 
-                        if len(compute_intf) == 1:
+                        if len(compute_intf) >= 1:
                             compute_intf = compute_intf[0]
                         self.logger.debug('Compute interface name: %s' %
                                           compute_intf)
@@ -718,7 +725,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                         inspect_h = self.agent_inspect[compute_ip]
                         compute_intf = inspect_h.get_vna_interface_by_type('eth')
 
-                        if len(compute_intf) == 1:
+                        if len(compute_intf) >= 1:
                             compute_intf = compute_intf[0]
                         self.logger.debug('Compute interface name: %s' %
                                           compute_intf)
@@ -860,7 +867,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                         compute_password = self.inputs.host_data[compute_ip]['password']
                         inspect_h = self.agent_inspect[compute_ip]
                         compute_intf = inspect_h.get_vna_interface_by_type('eth')
-                        if len(compute_intf) == 1:
+                        if len(compute_intf) >= 1:
                             compute_intf = compute_intf[0]
                         self.logger.debug('Compute interface name: %s'
                                           % compute_intf)

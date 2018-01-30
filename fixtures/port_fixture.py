@@ -41,6 +41,8 @@ class PortFixture(vnc_api_test.VncLibFixture):
         self.security_groups = kwargs.get('security_groups', [])
         self.extra_dhcp_opts = kwargs.get('extra_dhcp_opts', [])
         self.api_type = kwargs.get('api_type', 'neutron')
+        if self.inputs.orchestrator == 'vcenter':
+            self.api_type = 'contrail'
         self.project_obj = kwargs.get('project_obj', None)
         self.binding_profile = kwargs.get('binding_profile', None)
         self.vlan_id = kwargs.get('vlan_id', None)
