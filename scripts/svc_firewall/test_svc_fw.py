@@ -199,7 +199,6 @@ class TestSvcRegrIPv6(TestSvcRegr):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
 
-    @test.attr(type=['vcenter'])
     @preposttest_wrapper
     def test_svc_in_network_datapath(self):
         super(TestSvcRegrIPv6,self).test_svc_in_network_datapath()
