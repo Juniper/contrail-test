@@ -2,6 +2,7 @@
 # Orchestrator could be openstack, vcenter
 orchestrator=$__orch__
 slave_orchestrator=$__slave_orch__
+deployer=$__deployer__
 # JSON file describing the test setup(individual hosts roles and credentials)
 provFile=$__testbed_json_file__
 

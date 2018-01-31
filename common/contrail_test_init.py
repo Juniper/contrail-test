@@ -87,6 +87,8 @@ class TestInputs(object):
                                                'Basic', 'orchestrator', 'openstack')
         self.slave_orchestrator = read_config_option(self.config,
                                                      'Basic', 'slave_orchestrator', None)
+        self.deployer = read_config_option(self.config,
+                                               'Basic', 'deployer', 'openstack')
         self.prov_file = read_config_option(self.config,
                                             'Basic', 'provFile', None)
         self.key = read_config_option(self.config,

@@ -142,6 +142,10 @@ class NamespaceFixture(fixtures.Fixture):
         self.obj = self.k8s_client.v1_h.create_namespace(body)
         self._populate_attr()
         self.logger.info('Created namespace %s' % (self.name))
+        if self.inputs.deployer=='openshift':
+            for kube_manager_ip in self.inputs.kube_manager_ips:
+                openshift_command = 'oadm policy add-scc-to-user anyuid -n %s -z default' % (self.name)
+                output = self.inputs.run_cmd_on_server(kube_manager_ip,openshift_command)
         # TODO
         # Need to remove
         time.sleep(3)
