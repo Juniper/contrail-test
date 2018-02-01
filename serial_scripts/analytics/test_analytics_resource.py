@@ -69,14 +69,14 @@ class AnalyticsTestSanityWithMin(
         self.setup_flow_export_rate(10)
         src_vn = self.res.vn1_vm1_fixture.vn_fq_names[0]
         dst_vn = self.res.vn1_vm2_fixture.vn_fq_names[0]
-        other_vrouter_ip = self.res.vn1_vm2_fixture.get_compute_host()
-        vrouter_ip = self.res.vn1_vm1_fixture.get_compute_host()
+        other_vrouter_ip = self.res.vn1_vm2_fixture.vm_node_ip
+        vrouter_ip = self.res.vn1_vm1_fixture.vm_node_ip
 
         src_vm_host = self.res.vn1_vm1_fixture.get_host_of_vm()
         dst_vm_host = self.res.vn1_vm2_fixture.get_host_of_vm()
 
-        src_vm_host_ip = self.res.vn1_vm1_fixture.vm_node_data_ip
-        dst_vm_host_ip = self.res.vn1_vm2_fixture.vm_node_data_ip
+        src_vm_host_ip = self.res.vn1_vm1_fixture.vm_node_ip
+        dst_vm_host_ip = self.res.vn1_vm2_fixture.vm_node_ip
         src_vm_introspect = self.agent_inspect[src_vm_host_ip]
         dst_vm_introspect = self.agent_inspect[dst_vm_host_ip]
 
@@ -134,7 +134,7 @@ class AnalyticsTestSanityWithMin(
             {'no_key': ['help']}]
 
 
-        return self.test_cmd_output('contrail-flows', cmd_args_list, check_output=True)
+        return self.test_cmd_output('sudo contrail-flows', cmd_args_list, check_output=True)
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
