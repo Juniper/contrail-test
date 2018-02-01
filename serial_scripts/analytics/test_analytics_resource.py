@@ -1132,8 +1132,8 @@ class AnalyticsTestSanityWithResource(
         result = True
         src_vn = self.res.vn1_vm1_fixture.vn_fq_names[0]
         dst_vn = self.res.vn1_vm2_fixture.vn_fq_names[0]
-        other_vrouter_ip = self.res.vn1_vm2_fixture.get_compute_host()
-        vrouter_ip = self.res.vn1_vm1_fixture.get_compute_host()
+        other_vrouter_ip = self.res.vn1_vm2_fixture.vm_node_ip
+        vrouter_ip = self.res.vn1_vm1_fixture.vm_node_ip
 
         src_vm_host = self.res.vn1_vm1_fixture.get_host_of_vm()
         dst_vm_host = self.res.vn1_vm2_fixture.get_host_of_vm()
@@ -1194,7 +1194,7 @@ class AnalyticsTestSanityWithResource(
             {'vrouter':src_vm_host, 'no_key': ['last 10m']}, {'vmi-uuid':vmi_uuid, 'no_key': ['last 20m']}]
 
 
-        return self.test_cmd_output('contrail-flows', cmd_args_list, check_output=True)
+        return self.test_cmd_output('sudo contrail-flows', cmd_args_list, check_output=True)
 
     @preposttest_wrapper
     def test_run_contrail_logs_cli_cmd_with_optional_arg_module(self):
