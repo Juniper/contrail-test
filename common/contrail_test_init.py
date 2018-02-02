@@ -452,8 +452,8 @@ class TestInputs(object):
             'openstack-cinder-api', 'openstack-cinder-scheduler',
             'openstack-cinder-scheduler', 'openstack-glance-api',
             'openstack-glance-registry', 'openstack-keystone',
-            'openstack-nova-api', 'openstack-nova-scheduler',
-            'openstack-nova-cert']
+            'openstack-nova-api', 'openstack-nova-scheduler', 'openstack-nova-conductor',
+            'heat-api', 'heat-api-cfn', 'heat-engine', 'rabbitmq-server']
         self.collector_services = [
             'contrail-collector', 'contrail-analytics-api', 'contrail-alarm-gen',
             'contrail-query-engine', 'contrail-analytics-nodemgr',
@@ -1253,12 +1253,17 @@ class ContrailTestInit(object):
         return None
 
     @retry(tries=6, delay=5)
-    def verify_service_state(self, host, service=None, role=None, container=None):
+    def verify_service_state(self, host, service=None, role=None, container=None, openstack=False):
         result = True
         failed_services = []
         services = self.get_contrail_services(service_name=service, role=role)
+        os_services = self.openstack_services
         try:
-            m = self.get_contrail_status(host, container=container)
+            if openstack:
+                m = self.get_openstack_status(host, container=container)
+                services = os_services
+            else:
+                m = self.get_contrail_status(host, container=container)
             for service in services:
                 cls = self.get_service_status(m, service)
                 if (cls.state not in self.correct_states):
@@ -1405,12 +1410,18 @@ class ContrailTestInit(object):
         self._action_on_service(service_name, 'start', host_ips, container)
     # end start_service
 
-    def get_contrail_status(self, server_ip, container=None):
-        cache = self.run_cmd_on_server(server_ip, 'contrail-status',
+    def run_status_cmd(self, server_ip, cmd='contrail-status', container=None):
+        cache = self.run_cmd_on_server(server_ip, cmd,
                                        container=container)
         m = dict([(n, tuple(l.split(';')))
                   for n, l in enumerate(cache.split('\n'))])
         return m
+
+    def get_contrail_status(self, server_ip, container=None):
+        return self.run_status_cmd(server_ip, cmd='contrail-status', container=container)
+
+    def get_openstack_status(self, server_ip, container=None):
+        return self.run_status_cmd(server_ip, cmd='openstack-status', container=container)
 
     def run_provision_control(
             self,
