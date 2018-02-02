@@ -1227,7 +1227,6 @@ class ContrailTestInit(object):
                 if failed:
                     failed_services.extend(failed)
                     result = result and False
-            self.logger.info("\n")
             # Need to enhance verify_service_state to verify openstack services status as well
             # Commenting out openstack service verifcation untill then
             # if host == self.openstack_ip:
@@ -1242,13 +1241,14 @@ class ContrailTestInit(object):
         return result
     # end verify_state
 
-    def get_service_status(self, m, service):
+    def get_service_status(self, m, service, print_output=False):
         Service = namedtuple('Service', 'name state')
         for keys, values in m.items():
             values = values[0].rstrip().split()
             if service in str(values):
                 cls = Service(values[0], values[1])
-                self.logger.info("%s:%s" % (cls.name, cls.state))
+                if print_output:
+                    self.logger.info("%s:%s" % (cls.name, cls.state))
                 return cls
         return None
 
