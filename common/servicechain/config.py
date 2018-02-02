@@ -36,14 +36,14 @@ SVC_TYPE_PROPS = {
                  'in-network': 'tiny_in_net',
                  'transparent': 'tiny_trans_fw',
                  },
-    'analyzer': {'transparent': 'analyzer',
-                 'in-network' : 'analyzer',
+    'analyzer': {'transparent': 'ubuntu',
+                 'in-network' : 'ubuntu',
                  }
 }
 
 # To check what kind of intfs need to be configured for a image
 SVC_IMAGE_PROPS = {
-    'analyzer' : { 'management' : False, 'left' : True, 'right' : False }
+    'ubuntu' : { 'management' : False, 'left' : True, 'right' : False }
 }
 
 class ConfigSvcChain(fixtures.Fixture):

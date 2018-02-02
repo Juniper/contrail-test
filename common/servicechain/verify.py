@@ -222,4 +222,12 @@ class VerifySvcChain(ConfigSvcChain):
             pcap = self.start_tcpdump(session, tapintf)
             sessions.update({svm_name: (session, pcap)})
 
+        if self.inputs.pcap_on_vm:
+            conn_list = []
+            svm_list = si_fixture._svm_list
+            vm_fix_pcap_pid_files = self.start_tcpdump(None, tap_intf='eth0', vm_fixtures=svm_list, pcap_on_vm=True)
+            conn_list.append(vm_fix_pcap_pid_files)
+            conn_list.append(sessions)
+            return conn_list
+
         return sessions

@@ -39,6 +39,10 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
         sessions = self.tcpdump_on_all_analyzer(si_fixture)
 
+        if self.inputs.pcap_on_vm:
+            vm_fix_pcap_pid_files = sessions[0]
+            sessions = sessions[1]
+
         svm = self.get_svms_in_si(si_fixture)
         for svm_name, (session, pcap) in sessions.items():
             if proto == 'icmp':
@@ -63,9 +67,31 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
                 left_vm_fixture.vm_node_ip != right_vm_fixture.vm_node_ip:
                 count = count * 2
             if proto == 'icmp':
-                assert self.verify_icmp_mirror(svm_name, session, pcap, count)
+                if not self.inputs.pcap_on_vm:
+                    assert self.verify_icmp_mirror(svm_name, session, pcap, count)
+                else:
+                    svm_list = si_fixture._svm_list
+                    self.pcap_on_all_vms_and_verify_mirrored_traffic(src_vm_fix=left_vm_fixture,
+                            dst_vm_fix=right_vm_fixture,
+                            svm_fixtures=svm_list,
+                            count=count)
+                    break
+
             elif proto == 'udp':
-                assert self.verify_l4_mirror(svm_name, session, pcap, count, 'udp')
+                if not self.inputs.pcap_on_vm:
+                    assert self.verify_l4_mirror(svm_name, session, pcap, count, 'udp')
+                else:
+                    output, mirror_pkt_count = self.stop_tcpdump(None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files, pcap_on_vm=True)
+                    errmsg = "%s UDP Packets mirrored to the analyzer VM %s,"\
+                         "Expected %s packets" % (
+                             mirror_pkt_count, svm_list, count)
+                    if mirror_pkt_count < count:
+                        self.logger.error(errmsg)
+                        assert False, errmsg
+                    self.logger.info("%s UDP packets are mirrored to the analyzer "
+                                     "service VM '%s', tcpdump on VM", mirror_pkt_count, svm_list)
+                    return True
+
         return
     # end verify_proto_based_mirror
 
@@ -325,7 +351,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         filters = '| grep \"length [1-9][2-9][0-9][0-9][0-9]*\"'
         if self.inputs.pcap_on_vm:
             output, mirror_pkt_count = stop_tcpdump_for_vm_intf(
-                None, None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files, filters=filters)
+                None, None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files, filters=filters, verify_on_all=True)
             mirror_pkt_count = int(mirror_pkt_count[0])
         else:
             mirror_pkt_count = self.stop_tcpdump(session, pcap, filters)
@@ -883,32 +909,82 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
     def cleanUp(self):
         super(VerifySvcMirror, self).cleanUp()
 
-    def start_tcpdump(self, session, tap_intf, vlan=None):
-        pcap = '/tmp/mirror-%s_%s.pcap' % (tap_intf, get_random_name())
-        cmd = 'rm -f %s' % pcap
-        execute_cmd(session, cmd, self.logger)
-        assert check_pcap_file_exists(session, pcap, expect=False),'pcap file still exists'
-        filt_str = 'udp port 8099'
-        if vlan:
-            filt_str = 'greater 1200'
-        cmd = "sudo tcpdump -ni %s -U %s -w %s" % (tap_intf, filt_str, pcap)
-        self.logger.info("Starting tcpdump to capture the mirrored packets.")
-        execute_cmd(session, cmd, self.logger)
-        assert check_pcap_file_exists(session, pcap),'pcap file does not exist'
-        return pcap
+    def start_tcpdump(self, session, tap_intf, vlan=None,  vm_fixtures=[], pcap_on_vm=False):
+        if not pcap_on_vm:
+            pcap = '/tmp/mirror-%s_%s.pcap' % (tap_intf, get_random_name())
+            cmd = 'rm -f %s' % pcap
+            execute_cmd(session, cmd, self.logger)
+            assert check_pcap_file_exists(session, pcap, expect=False),'pcap file still exists'
+            filt_str = 'udp port 8099'
+            if vlan:
+                filt_str = 'greater 1200'
+            cmd = "sudo tcpdump -ni %s -U %s -w %s" % (tap_intf, filt_str, pcap)
+            self.logger.info("Starting tcpdump to capture the mirrored packets.")
+            execute_cmd(session, cmd, self.logger)
+            assert check_pcap_file_exists(session, pcap),'pcap file does not exist'
+            return pcap
+        else:
+            pcap = '/tmp/%s.pcap' % (get_random_name())
+            cmd_to_tcpdump = [ 'tcpdump -ni %s udp port 8099 -w %s 1>/dev/null 2>/dev/null' % (tap_intf, pcap) ]
+            pidfile = pcap + '.pid'
+            vm_fix_pcap_pid_files =[]
+            for vm_fixture in vm_fixtures:
+                vm_fixture.run_cmd_on_vm(cmds=cmd_to_tcpdump, as_daemon=True, pidfile=pidfile, as_sudo=True)
+                vm_fix_pcap_pid_files.append((vm_fixture, pcap, pidfile))
+            return vm_fix_pcap_pid_files
 
-    def stop_tcpdump(self, session, pcap, filt=''):
+    def stop_tcpdump(self, session, pcap, filt='', vm_fix_pcap_pid_files=[], pcap_on_vm=False):
         self.logger.debug("Waiting for the tcpdump write to complete.")
         sleep(2)
-        cmd = 'sudo kill $(ps -ef|grep tcpdump | grep %s| awk \'{print $2}\')' %pcap
-        execute_cmd(session, cmd, self.logger)
-        execute_cmd(session, 'sync', self.logger)
-        sleep(3)
-        cmd = 'sudo tcpdump -n -r %s %s | wc -l' % (pcap, filt)
-        out, err = execute_cmd_out(session, cmd, self.logger)
-        count = int(out.strip('\n'))
-        cmd = 'sudo tcpdump -n -r %s' % pcap
-        #TODO
-        # Temporary for debugging
-        execute_cmd(session, cmd, self.logger)
-        return count
+        if not pcap_on_vm:
+            cmd = 'sudo kill $(ps -ef|grep tcpdump | grep %s| awk \'{print $2}\')' %pcap
+            execute_cmd(session, cmd, self.logger)
+            execute_cmd(session, 'sync', self.logger)
+            sleep(3)
+            cmd = 'sudo tcpdump -n -r %s %s | wc -l' % (pcap, filt)
+            out, err = execute_cmd_out(session, cmd, self.logger)
+            count = int(out.strip('\n'))
+            cmd = 'sudo tcpdump -n -r %s' % pcap
+            #TODO
+            # Temporary for debugging
+            execute_cmd(session, cmd, self.logger)
+            return count
+        else:
+            output = []
+            pkt_count = []
+            for vm_fix, pcap, pidfile in vm_fix_pcap_pid_files:
+                cmd_to_output  = 'tcpdump -nr %s %s' % (pcap, filt)
+                cmd_to_kill = 'cat %s | xargs kill ' % (pidfile)
+                count = cmd_to_output + '| wc -l'
+                vm_fix.run_cmd_on_vm(cmds=[cmd_to_kill], as_sudo=True)
+                sleep(2)
+                vm_fix.run_cmd_on_vm(cmds=[cmd_to_output], as_sudo=True)
+                output.append(vm_fix.return_output_cmd_dict[cmd_to_output])
+                vm_fix.run_cmd_on_vm(cmds=[count], as_sudo=True)
+                pkt_count_list = vm_fix.return_output_cmd_dict[count].split('\n')
+                try:
+                    pkts = pkt_count_list[2]
+                except:
+                    pkts = pkt_count_list[1]
+                pkts = int(pkts)
+                pkt_count.append(pkts)
+                total_pkts = sum(pkt_count)
+            return output, total_pkts
+
+    def pcap_on_all_vms_and_verify_mirrored_traffic(
+        self, src_vm_fix, dst_vm_fix, svm_fixtures, count, filt='', tap='eth0', expectation=True):
+            vm_fix_pcap_pid_files = self.start_tcpdump(None, tap_intf=tap, vm_fixtures= svm_fixtures, pcap_on_vm=True)
+            assert src_vm_fix.ping_with_certainty(
+                dst_vm_fix.vm_ip, expectation=expectation)
+            output, total_pkts = self.stop_tcpdump(
+                None, pcap=tap, filt=filt, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files, pcap_on_vm=True)
+            if count > total_pkts:
+                errmsg = "%s ICMP Packets mirrored to the analyzer VM,"\
+                    "Expected %s packets, tcpdump on VM" % (
+                     total_pkts, count)
+                self.logger.error(errmsg)
+                assert False, errmsg
+            else:
+                self.logger.info("Mirroring verified using tcpdump on the VM, Expected = Mirrored = %s " % (total_pkts))
+            return True
+    # end pcap_on_all_vms_and_verify_mirrored_traffic
