@@ -133,7 +133,7 @@ function send_mail {
 
 function run_tests_serial {
   echo in serial_run_test
-  export PYTHONPATH=$PATH:$PWD:$PWD/serial_scripts:$PWD/fixtures
+  export PYTHONPATH=$PATH:$PWD:$PWD/fixtures:$PWD/serial_scripts
   testr_init
   ${wrapper} find . -type f -name "*.pyc" -delete
   export OS_TEST_PATH=${GIVEN_TEST_PATH:-./serial_scripts/$1}
@@ -186,7 +186,7 @@ function get_result_xml {
 function run_tests {
   testr_init
   ${wrapper} find . -type f -name "*.pyc" -delete
-  export PYTHONPATH=$PATH:$PWD:$PWD/scripts:$PWD/fixtures
+  export PYTHONPATH=$PATH:$PWD:$PWD/fixtures:$PWD/scripts
   export OS_TEST_PATH=${GIVEN_TEST_PATH:-./scripts/$1}
   export DO_XMPP_CHECK=${DO_XMPP_CHECK:-1}
   if [ ! -d ${OS_TEST_PATH} ] ; then
@@ -400,7 +400,7 @@ python tools/vcenter/delete_vcenter_datastore.py $TEST_CONFIG_FILE
 )
 }
 
-export PYTHONPATH=$PATH:$PWD/scripts:$PWD/fixtures:$PWD
+export PYTHONPATH=$PATH:$PWD/fixtures:$PWD/scripts:$PWD
 apply_patches
 export TEST_DELAY_FACTOR=${TEST_DELAY_FACTOR:-1}
 export TEST_RETRY_FACTOR=${TEST_RETRY_FACTOR:-1}
