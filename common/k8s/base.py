@@ -1,5 +1,7 @@
 from fabric.api import local, settings
 
+import time
+import re
 import test
 import ipaddress
 import vnc_api_test
@@ -15,7 +17,7 @@ from k8s.network_policy import NetworkPolicyFixture
 from common.connections import ContrailConnections
 from common import create_public_vn
 from common.base import _GenericTestBaseMethods
-
+from vn_test import VNFixture
 
 
 K8S_SERVICE_IPAM = ['default-domain', 'default', 'service-ipam']
@@ -155,10 +157,18 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
     # end setup_ingress
 
     def setup_namespace(self,
-                        name=None):
+                        name=None,
+                        isolation = None,
+                        custom_isolation = False,
+                        fq_network_name = None):
+        isolation = isolation or self.setup_namespace_isolation
+        if custom_isolation == False:
+            vn_fq_name = None
         return self.useFixture(NamespaceFixture(
             connections=self.connections,
-            name=name, isolation=self.setup_namespace_isolation))
+            name=name, isolation=isolation,
+            custom_isolation = custom_isolation,
+            fq_network_name = fq_network_name))
     # end create_namespace
 
     def setup_pod(self,
@@ -167,6 +177,8 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
                   metadata=None,
                   spec=None,
                   labels=None,
+                  custom_isolation = False,
+                  fq_network_name = {},
                   **kwargs):
         name = name or get_random_name('pod')
         metadata = metadata or {}
@@ -181,6 +193,8 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
             namespace=namespace,
             metadata=metadata,
             spec=spec,
+            custom_isolation = custom_isolation,
+            fq_network_name = fq_network_name,
             **kwargs))
     # end setup_pod
 
@@ -190,7 +204,9 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
                         metadata=None,
                         container_port=80,
                         labels=None,
-                        spec=None):
+                        spec=None,
+                        custom_isolation = False,
+                        fq_network_name = {}):
         '''
         Noticed that nginx continues to listen on port 80 even if target port
         (container_port) is different
@@ -215,7 +231,9 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
                               namespace=namespace,
                               metadata=metadata,
                               spec=spec,
-                              shell='/bin/bash')
+                              shell='/bin/bash',
+                              custom_isolation = custom_isolation,
+                              fq_network_name = fq_network_name)
 
     # end setup_nginx_pod
 
@@ -237,7 +255,9 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
                           namespace='default',
                           metadata=None,
                           spec=None,
-                          labels=None):
+                          labels=None,
+                          custom_isolation = False,
+                          fq_network_name = {}):
         metadata = metadata or {}
         spec = spec or {}
         labels = labels or {}
@@ -256,7 +276,9 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
                               metadata=metadata,
                               spec=spec,
                               labels=labels,
-                              shell='/bin/sh')
+                              shell='/bin/sh',
+                              custom_isolation = custom_isolation,
+                              fq_network_name = fq_network_name)
     # end setup_busybox_pod
 
     def setup_ubuntuapp_pod(self,
@@ -765,4 +787,71 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
             data=data,
             **kwargs))
     # end setup_tls_secret
+    
+    def setup_vn(self, 
+                 project_name = None,
+                 connections = None,
+                 inputs = None,
+                 vn_name = None,
+                 option = "contrail"):
+        project_name = self.inputs.project_name,
+        connections = self.connections
+        inputs = self.inputs
+        vn_name = vn_name or get_random_name('vn_test')
+        return self.useFixture(VNFixture(project_name=project_name,
+                                        connections=connections,
+                                        inputs=inputs, 
+                                        vn_name=vn_name,
+                                        option=option))
 
+    def delete_cluster_project(self):
+        """
+        This method is used to enable the project isolation by deleting the 
+        definition of cluster_project from kubernetes.conf.
+        It also returns the project it is deleting so that the same can be configured
+        as part of cleanup
+        """
+        cmd = 'grep "^[ \t]*cluster_project" /etc/contrail/contrail-kubernetes.conf'
+        cp_line = self.inputs.run_cmd_on_server(self.inputs.kube_manager_ips[0],
+                                                cmd, container='contrail-kube-manager')
+        if 'cluster_project' in cp_line:
+            m = re.match('[ ]*cluster_project.*project(.*)', cp_line)
+            if m:
+                project = m.group(1).strip("'\": ").split(",")[0].strip("'\"")
+                cmd = 'sed -i "/^cluster_project/d" /etc/contrail/contrail-kubernetes.conf'
+                for kube_manager in self.inputs.kube_manager_ips:
+                    self.inputs.run_cmd_on_server(kube_manager, cmd, 
+                                              container='contrail-kube-manager')
+            else:
+                project = None
+                return project
+        else:
+            self.logger.warn("cluster_project not set. Hence skipping delete")
+            return
+        self.restart_kube_manager()
+        time.sleep(10)
+        return project
+    #end delete_cluster_project
+    
+    def add_cluster_project(self, project_name = None):
+        """
+        This method is used to add cluster_project in kubernetes.conf.
+        This will inturn disable project level isolation as well.
+        """
+        if project_name ==None:
+            self.logger.warn("No project to be added as cluster_project")
+            return
+        cmd = 'grep "^[ \t]*cluster_project" /etc/contrail/contrail-kubernetes.conf'
+        cp_line = self.inputs.run_cmd_on_server(self.inputs.kube_manager_ips[0],
+                                                cmd, container='contrail-kube-manager')
+        if 'cluster_project' in cp_line:
+            self.logger.warn("cluster_project already present in kubernetes.conf")
+            return
+        cmd = r'sed  -i "/KUBERNETES/a cluster_project = {\\"project\\": \\"%s\\", \\"domain\\": \\"default-domain\\"}" /etc/contrail/contrail-kubernetes.conf' \
+                % project_name
+        for kube_manager in self.inputs.kube_manager_ips:
+            self.inputs.run_cmd_on_server(kube_manager, cmd, 
+                                          container='contrail-kube-manager')
+        self.restart_kube_manager()
+        time.sleep(10)
+    #end add_cluster_project

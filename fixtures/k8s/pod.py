@@ -18,7 +18,9 @@ class PodFixture(fixtures.Fixture):
                  namespace='default',
                  metadata=None,
                  spec=None,
-                 shell=None):
+                 shell=None,
+                 custom_isolation = False,
+                 fq_network_name = {}):
         self.logger = connections.logger or contrail_logging.getLogger(
             __name__)
         self.inputs = connections.inputs
@@ -30,7 +32,8 @@ class PodFixture(fixtures.Fixture):
         self.already_exists = None
         self.shell = shell or '/bin/sh'
         self._shell_arg = '%s -l -c' % (self.shell)
-
+        self.custom_isolation = custom_isolation
+        self.fq_network_name = fq_network_name
         self.connections = connections
         self.vnc_lib = connections.get_vnc_lib_h()
         self.agent_inspect = connections.agent_inspect
@@ -116,6 +119,9 @@ class PodFixture(fixtures.Fixture):
         pod = self.read()
         if pod:
             return pod
+        if self.custom_isolation and self.fq_network_name != {}:
+            self.metadata["annotations"] = {"opencontrail.org/network": "%s" \
+                                            % self.fq_network_name}
         self.obj = self.k8s_client.create_pod(
             self.namespace,
             self.name,

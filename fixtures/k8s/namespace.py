@@ -13,7 +13,8 @@ class NamespaceFixture(fixtures.Fixture):
     '''
     '''
 
-    def __init__(self, connections, name=None, isolation=False):
+    def __init__(self, connections, name=None, isolation=False, 
+                 custom_isolation = False, fq_network_name = None):
         self.connections = connections
         self.logger = connections.logger or contrail_logging.getLogger(
             __name__)
@@ -21,7 +22,9 @@ class NamespaceFixture(fixtures.Fixture):
         self.k8s_client = connections.k8s_client
         self.vnc_api_h = connections.vnc_lib
         self.isolation = isolation
-
+        self.custom_isolation = custom_isolation
+        self.fq_network_name = fq_network_name
+        
         self.already_exists = False
         self.api_s_obj = None
         self.project_name = None
@@ -91,7 +94,7 @@ class NamespaceFixture(fixtures.Fixture):
             else:
                 return self.name
 
-    @retry(delay=1, tries=10)
+    @retry(delay=2, tries=10)
     def verify_namespace_in_contrail_api(self):
         self.project_name = self.get_project_name_for_namespace()
         self.project_fq_name = '%s:%s' %(self.inputs.admin_domain,
@@ -139,6 +142,8 @@ class NamespaceFixture(fixtures.Fixture):
         body.metadata = client.V1ObjectMeta(name=self.name)
         if self.isolation:
             body.metadata.annotations = {"opencontrail.org/isolation": "true"}
+        if self.custom_isolation:
+            body.metadata.annotations = {"opencontrail.org/network": "%s" % self.fq_network_name}
         self.obj = self.k8s_client.v1_h.create_namespace(body)
         self._populate_attr()
         self.logger.info('Created namespace %s' % (self.name))
