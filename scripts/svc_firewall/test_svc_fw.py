@@ -39,7 +39,7 @@ class TestSvcRegr(BaseSvc_FwTest, VerifySvcFirewall, ECMPVerify):
         return self.verify_svc_chain(service_mode='transparent',
                                                     create_svms=True)
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity','vcenter'])
     @preposttest_wrapper
     def test_svc_in_net_nat_with_static_routes(self):
         third_vn = self.create_vn(vn_name=get_random_name('third-vn'))

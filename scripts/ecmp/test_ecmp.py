@@ -140,11 +140,6 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
     def setUpClass(cls):
         super(TestECMPFeature, cls).setUpClass()
 
-    def is_test_applicable(self):
-        if not self.connections.orch.is_feature_supported('ipv6'):
-            return(False, 'Skipping IPv6 Test on vcenter setup')
-        return (True, None)
-
     @classmethod
     def tearDownClass(cls):
         super(TestECMPFeature, cls).tearDownClass()
@@ -241,7 +236,7 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             dest_vm_fixture=self.right_vm_fixture, mode='scp', size='202', expectation=False), errmsg2
     # end test_ecmp_in_pol_based_svc_pol_update
 
-    @test.attr(type=['cb_sanity', 'sanity'])
+    @test.attr(type=['cb_sanity', 'sanity','vcenter'])
     @preposttest_wrapper
     @skip_because(min_nodes=3)
     def test_ecmp_svc_v2_in_network_nat_with_3_instance(self):
@@ -698,7 +693,7 @@ class TestECMPwithSVMChange(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
         super(TestECMPwithSVMChange, cls).tearDownClass()
     # end tearDownClass
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity','vcenter'])
     @preposttest_wrapper
     @skip_because(min_nodes=3)
     def test_ecmp_with_svm_deletion(self):
@@ -825,17 +820,12 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
     def setUpClass(cls):
         super(TestMultiInlineSVC, cls).setUpClass()
 
-    def is_test_applicable(self):
-        if not self.connections.orch.is_feature_supported('ipv6'):
-            return(False, 'Skipping IPv6 Test on vcenter setup')
-        return (True, None)
-
     @classmethod
     def tearDownClass(cls):
         super(TestMultiInlineSVC, cls).tearDownClass()
     # end tearDownClass
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity','vcenter'])
     @preposttest_wrapper
     @skip_because(min_nodes=3)
     def test_three_stage_v2_SC(self):
@@ -1040,7 +1030,7 @@ class TestECMPConfigHashFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, 
         super(TestECMPConfigHashFeature, cls).tearDownClass()
     # end tearDownClass
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity','vcenter'])
     @preposttest_wrapper
     @skip_because(min_nodes=3)
     def test_ecmp_hash_src_ip(self):

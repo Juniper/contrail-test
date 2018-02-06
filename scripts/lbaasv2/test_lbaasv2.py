@@ -199,7 +199,7 @@ class TestLBaaSV2(BaseLBaaSTest):
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
 
-    @attr(type=['cb_sanity', 'sanity'])
+    @attr(type=['cb_sanity', 'sanity','vcenter'])
     @preposttest_wrapper
     def test_lbaas_with_different_fip(self):
         '''Create LB, LISTENER, POOL and MEMBER
