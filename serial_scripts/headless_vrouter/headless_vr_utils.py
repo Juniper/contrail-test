@@ -6,7 +6,7 @@ def start_all_control_services(self):
     """
     for ip in self.inputs.bgp_ips:
         self.inputs.start_service('contrail-control', [ip],
-                              container='controller')
+                              container='control')
         time.sleep(60)
 # end stop_all_control_services
 
@@ -16,7 +16,7 @@ def stop_all_control_services(self):
     """
     for ip in self.inputs.bgp_ips:
         self.inputs.stop_service('contrail-control', [ip],
-                             container='controller')
+                             container='control')
         time.sleep(60)
 # end stop_all_control_services
 

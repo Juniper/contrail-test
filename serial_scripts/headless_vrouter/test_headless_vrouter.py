@@ -141,7 +141,7 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
             dest_vm)
 
         headless_vr_utils.stop_all_control_services(self)
-        self.addCleanup(self.inputs.start_service, 'contrail-control', self.inputs.bgp_ips,container='controller')
+        self.addCleanup(self.inputs.start_service, 'contrail-control', self.inputs.bgp_ips,container='control')
 
         headless_vr_utils.check_through_tcpdump(self, dest_vm, src_vm)
 
@@ -372,7 +372,7 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
             dest_vm)
 
         headless_vr_utils.stop_all_control_services(self)
-        self.addCleanup(self.inputs.start_service, 'contrail-control', self.inputs.bgp_ips,container='controller')
+        self.addCleanup(self.inputs.start_service, 'contrail-control', self.inputs.bgp_ips,container='control')
         time.sleep(10)
         headless_vr_utils.check_through_tcpdump(self, dest_vm, src_vm)
 

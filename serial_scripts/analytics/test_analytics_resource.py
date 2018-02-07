@@ -1252,9 +1252,9 @@ class AnalyticsTestSanityWithResource(
         cfgm = self.res.inputs.cfgm_ips[0]
 
         self.inputs.restart_service('contrail-topology', [analytics],
-                                    container='analytics')
+                                    container='topology')
         self.inputs.restart_service('contrail-snmp-collector', [analytics],
-                                    container='analytics')
+                                    container='snmp-collector')
         self.inputs.restart_service('contrail-device-manager', [cfgm],
                                     container='controller')
 
@@ -1283,7 +1283,7 @@ class AnalyticsTestSanityWithResource(
 
         control = self.inputs.bgp_control_ips[0]
         self.inputs.restart_service('contrail-dns', [control],
-                                    container='controller')
+                                    container='dns')
 
         failed_cmds = []
         passed_cmds = []

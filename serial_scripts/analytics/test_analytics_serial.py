@@ -266,7 +266,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
                 (self.inputs.bgp_ips[0]))
             self.inputs.stop_service(
                 'contrail-control', [self.inputs.bgp_ips[0]],
-                container='controller')
+                container='control')
             self.logger.info(
                 "Waiting for the logs to be updated in database..")
             time.sleep(20)
@@ -358,7 +358,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
             time.sleep(2)
             self.inputs.start_service(
                 'contrail-control', [self.inputs.bgp_ips[0]],
-                container='controller')
+                container='control')
             self.logger.info(
                 "Waiting for the logs to be updated in database..")
             time.sleep(30)
@@ -458,7 +458,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         finally:
             self.inputs.start_service(
                 'contrail-control', [self.inputs.bgp_ips[0]],
-                container='controller')
+                container='control')
             time.sleep(4)
             result = result and result1 and result2 and result3 and result4\
                 and result5 and result6 and result7 and result8

@@ -171,7 +171,7 @@ class IntrospectSslTest(BaseIntrospectSsl):
         agent_inspect = AgentInspect(host_ip, port, self.logger,
             inputs=self.inputs)
         service = 'contrail-vrouter-agent'
-        container = CONTRAIL_SERVICE_CONTAINER[service]
+        container = self.inputs.get_container_name(host_ip, 'agent')
 
         url_http = 'http://%s:%s' % (host_name, port)
         output_http = self.get_url_and_verify(url_http, agent_inspect)
@@ -234,7 +234,7 @@ class IntrospectSslTest(BaseIntrospectSsl):
         port = self.inputs.agent_port
         host_fqname = self.inputs.host_data[host_ip]['fqname']
         service = 'contrail-vrouter-agent'
-        container = CONTRAIL_SERVICE_CONTAINER[service]
+        container = self.inputs.get_container_name(host_ip, 'agent')
         ssl_enable = 'true'
 
         #Create self signed certs
@@ -372,7 +372,8 @@ class IntrospectSslTest(BaseIntrospectSsl):
             'contrail-control', 'contrail-dns']
         for service in services:
             inspect = self.get_introspect_for_service(service, host_ip)
-            container = CONTRAIL_SERVICE_CONTAINER[service]
+            cntr = CONTRAIL_SERVICE_CONTAINER[service]
+            container = self.inputs.get_container_name(host_ip, cntr)
             port = CONTRAIL_INTROSPECT_PORTS[service]
 
             url_http = 'http://%s:%s' % (host_name, port)
@@ -414,7 +415,7 @@ class IntrospectSslTest(BaseIntrospectSsl):
         host_ip = self.inputs.host_data[host_name]['host_ip']
         host_fqname = self.inputs.host_data[host_ip]['fqname']
         inspect = self.get_introspect_for_service(service, host_ip)
-        container = CONTRAIL_SERVICE_CONTAINER[service]
+        container = self.inputs.get_container_name(host_ip, 'analytics-api')
         port = CONTRAIL_INTROSPECT_PORTS[service]
 
         ssl_enable = 'true'
