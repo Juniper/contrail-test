@@ -77,7 +77,7 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
         result = True
         analytics = self.res.inputs.collector_ips[0]
         output = self.res.inputs.run_cmd_on_server(analytics, cmd,
-                                                   container='analytics')
+                                                   container='analytics-api')
         self.logger.info("Output: %s \n" % output)
         if output.failed:
             self.logger.error('%s command failed..' % cmd)

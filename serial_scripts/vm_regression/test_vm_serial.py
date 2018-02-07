@@ -67,10 +67,10 @@ class TestBasicVMVN0(BaseVnVmTest):
         for entry in controller_list:
             self.logger.info('Stoping the Control service in  %s' % (entry))
             self.inputs.stop_service('contrail-control', [entry],
-                                     container='controller')
+                                     container='control')
             self.addCleanup(self.inputs.start_service,
                             'contrail-control', [entry],
-                            container='controller')
+                            container='control')
         sleep(30)
 
         vn1_vm1_name = get_random_name('vm1')
@@ -135,7 +135,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         for entry in controller_list:
             self.logger.info('Starting the Control service in  %s' % (entry))
             self.inputs.start_service('contrail-control', [entry],
-                                      container='controller')
+                                      container='control')
         sleep(10)
 
         self.logger.info('Checking the VM came up properly or not')
@@ -187,13 +187,11 @@ class TestBasicVMVN0(BaseVnVmTest):
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
         self.logger.info('Will restart the services now')
         for compute_ip in self.inputs.compute_ips:
-            pass
             self.inputs.restart_service('contrail-vrouter-agent',[compute_ip],
-										container='agent')
+                                        container='agent')
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control',[bgp_ip],
-										container='controller')
-            pass
+                                        container='control')
 
         cluster_status, error_nodes = ContrailStatusChecker().wait_till_contrail_cluster_stable()
         assert cluster_status, 'Cluster is not stable after restart'
@@ -342,9 +340,9 @@ class TestBasicVMVN0(BaseVnVmTest):
             if vm_host_ip not in compute_ip:
                 compute_ip.append(vm_host_ip)
         self.inputs.restart_service('openstack-nova-compute', compute_ip,
-									container='openstack')
+                                    container='nova-compute')
         self.inputs.restart_service('openstack-nova-scheduler', compute_ip,
-									container='openstack')
+                                    container='nova-scheduler')
         sleep(30)
         for vmobj in vm_fixture.vm_obj_dict.values():
             assert vmobj.verify_on_setup()
@@ -428,13 +426,13 @@ class TestBasicVMVN0(BaseVnVmTest):
 
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter-agent', [compute_ip],
-										container='agent')
+                                        container='agent')
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control', [bgp_ip],
-										container='controller')
+                                        container='control')
         for cfgm_ip in self.inputs.cfgm_ips:
             self.inputs.restart_service('contrail-api', [cfgm_ip],
-										container='controller')
+                                        container='api-server')
 
         # Wait for cluster to be stable
         cs_obj = ContrailStatusChecker(self.inputs)
@@ -654,7 +652,7 @@ class TestBasicVMVN0(BaseVnVmTest):
                          (active_controller_host_ip))
         self.inputs.stop_service(
             'contrail-control', [active_controller_host_ip],
-            container='controller')
+            container='control')
         sleep(5)
 
         # Check the control node shifted to other control node
@@ -686,7 +684,7 @@ class TestBasicVMVN0(BaseVnVmTest):
                          (active_controller_host_ip))
         self.inputs.start_service(
             'contrail-control', [active_controller_host_ip],
-            container='controller')
+            container='control')
 
         # Check the BGP peering status from the currently active control node
         sleep(5)

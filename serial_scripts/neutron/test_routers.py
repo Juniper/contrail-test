@@ -60,11 +60,11 @@ class TestRouterSNAT(BaseNeutronTest):
 
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter', [compute_ip],
-										container='agent')
+                                        container='agent')
 
         for cfgm_ip in self.inputs.cfgm_ips:
             self.inputs.restart_service('contrail-api', [cfgm_ip],
-										container='controller')
+                                        container='api-server')
 
         time.sleep(30)
         vm2_name = get_random_name('new_private_vm')
@@ -98,14 +98,15 @@ class TestRouterSNAT(BaseNeutronTest):
                 ext_vn_fixture.vn_id)
         self.add_vn_to_router(router_dict['id'], vn1_fixture)
         assert self.verify_snat(vm1_fixture)
-        assert self.verify_snat_with_fip(ext_vn_fixture, vm2_fixture, vm1_fixture, connections= self.connections, inputs = self.inputs)
+        assert self.verify_snat_with_fip(ext_vn_fixture, vm2_fixture,
+                   vm1_fixture, connections=self.connections, inputs=self.inputs)
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter', [compute_ip],
-										container='agent')
+                                        container='agent')
 
         for cfgm_ip in self.inputs.cfgm_ips:
             self.inputs.restart_service('contrail-api', [cfgm_ip],
-										container='controller')
+                                        container='api-server')
 
         time.sleep(30)
 

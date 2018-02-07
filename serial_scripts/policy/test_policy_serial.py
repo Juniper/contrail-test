@@ -512,10 +512,10 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         self.logger.info('Stoping the Control service in  %s' %
                          (active_controller))
         self.inputs.stop_service('contrail-control', [active_controller],
-                                 container='controller')
+                                 container='control')
         self.addCleanup(self.inputs.start_service,
                         'contrail-control', [active_controller],
-                        container='controller')
+                        container='control')
         time.sleep(5)
 
         # Check the control node shifted to other control node
@@ -593,7 +593,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         self.logger.info('Starting the Control service in  %s' %
                          (active_controller))
         self.inputs.start_service('contrail-control', [active_controller],
-                                  container='controller')
+                                  container='control')
 
         time.sleep(10)
         #get the management ip corresponding to new_active_controller
@@ -615,10 +615,10 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         self.logger.info('Stoping the Control service in  %s' %
                          (new_active_controller))
         self.inputs.stop_service('contrail-control', [new_active_controller],
-                                 container='controller')
+                                 container='control')
         self.addCleanup(self.inputs.start_service,
                         'contrail-control', [new_active_controller],
-                        container='controller')
+                        container='control')
         time.sleep(5)
 
         # Check the control node shifted back to previous cont
@@ -672,7 +672,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         self.logger.info('Starting the Control service in  %s' %
                          (new_active_controller))
         self.inputs.start_service('contrail-control', [new_active_controller],
-                                  container='controller')
+                                  container='control')
         if not result:
             self.logger.error('Switchover of control node failed')
             assert result
@@ -2398,29 +2398,6 @@ class TestSerialPolicy(BaseSerialPolicyTest):
                 'Ping from %s to %s failed, expected it to pass' %
                 (vm2_fixture.vm_name, vm1_fixture.vm_name))
             result = False
-
-        service = 'ifmap'
-        self.inputs.restart_service(service, host_ips=self.inputs.cfgm_ips,
-									container='controller')
-
-        status_checker = ContrailStatusChecker(self.inputs)
-        #wait for all the services,as ifmap impacts other services too
-        self.logger.info("Waiting for all the services to be UP on config nodes: %s"
-                             % (self.inputs.cfgm_ips))
-        assert status_checker.wait_till_contrail_cluster_stable(self.inputs.cfgm_ips,
-                   delay=5, tries=20)[0], "All services could not come UP after ifmap restart"
-
-        if not vm1_fixture.ping_to_ip(vm2_fixture.vm_ip):
-            self.logger.error(
-                'Ping from %s to %s failed, expected it to pass' %
-                (vm1_fixture.vm_name, vm2_fixture.vm_name))
-            result = False
-        if not vm2_fixture.ping_to_ip(vm1_fixture.vm_ip):
-            self.logger.error(
-                'Ping from %s to %s failed, expected it to pass' %
-                (vm2_fixture.vm_name, vm1_fixture.vm_name))
-            result = False
-
         return result
 
     # end of class TestSerialPolicy

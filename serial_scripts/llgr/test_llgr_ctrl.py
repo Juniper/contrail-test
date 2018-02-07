@@ -58,7 +58,7 @@ class TestLlgrCtrl(TestLlgrBase):
     @classmethod
     def tearDownClass(cls):
         cls.set_headless_mode(mode='disable')
-        cls.inputs.start_service('contrail-control', [cls.inputs.bgp_ips[1]], container='controller') 
+        cls.inputs.start_service('contrail-control', [cls.inputs.bgp_ips[1]], container='control')
         super(TestLlgrCtrl, cls).tearDownClass()
         return True
     # end cleanUp
@@ -236,14 +236,14 @@ class TestLlgrCtrl(TestLlgrBase):
             self.logger.error("Error in creating VM")
             return False
 
-        self.inputs.stop_service('contrail-control', [self.inputs.bgp_ips[1]], container='controller') 
+        self.inputs.stop_service('contrail-control', [self.inputs.bgp_ips[1]], container='control')
 
         time.sleep(timeout)
 
         assert self.verify_gr_llgr_flags(flags=['Stale'], vn_fix=self.vn_fix, prefix=self.vm2_fixture.vm_ip) 
         assert self.verify_gr_llgr_flags(flags=['Stale'], vn_fix=self.vn_fix, prefix=self.ipv6_addr) 
 
-        self.inputs.start_service('contrail-control', [self.inputs.bgp_ips[1]], container='controller') 
+        self.inputs.start_service('contrail-control', [self.inputs.bgp_ips[1]], container='control')
 
         if not self.verify_ping_stats():
             self.logger.error("Error in ping stats")
@@ -269,14 +269,14 @@ class TestLlgrCtrl(TestLlgrBase):
             self.logger.error("Error in creating VM")
             return False
 
-        self.inputs.stop_service('contrail-control', [self.inputs.bgp_ips[1]], container='controller') 
+        self.inputs.stop_service('contrail-control', [self.inputs.bgp_ips[1]], container='control')
 
         time.sleep(timeout)
  
         assert self.verify_gr_llgr_flags(flags=['Stale','LlgrStale'], vn_fix=self.vn_fix, prefix=self.vm2_fixture.vm_ip) 
         assert self.verify_gr_llgr_flags(flags=['Stale','LlgrStale'], vn_fix=self.vn_fix, prefix=self.ipv6_addr) 
 
-        self.inputs.start_service('contrail-control', [self.inputs.bgp_ips[1]], container='controller') 
+        self.inputs.start_service('contrail-control', [self.inputs.bgp_ips[1]], container='control')
 
         if not self.verify_ping_stats():
             self.logger.error("Error in ping stats")
