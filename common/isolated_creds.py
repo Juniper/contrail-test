@@ -83,7 +83,7 @@ class IsolatedCreds(fixtures.Fixture):
 
     def get_inputs(self, project_fixture):
         project_inputs= ContrailTestInit(self.ini_file,
-                            stack_domain=project_fixture.domain_name,
+                            stack_domain=project_fixture.orch_domain_name,
                             stack_user=project_fixture.project_username,
                             stack_password=project_fixture.project_user_password,
                             stack_tenant=self.project_name,logger = self.logger)
@@ -181,7 +181,6 @@ class AdminIsolatedCreds(fixtures.Fixture):
         ''' Get a Project. Returns instance of ProjectFixture
             Creates the project if not found
         '''
-
         project = None
         try:
             project = project_test.ProjectFixture(
@@ -225,7 +224,7 @@ class AdminIsolatedCreds(fixtures.Fixture):
 
     def get_inputs(self, project_fixture):
         project_inputs= ContrailTestInit(self.ini_file,
-                            stack_domain=project_fixture.domain_name,
+                            stack_domain=project_fixture.orch_domain_name,
                             stack_user=project_fixture.project_username,
                             stack_password=project_fixture.project_user_password,
                             stack_tenant=self.project_name, logger = self.logger)

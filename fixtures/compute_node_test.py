@@ -295,7 +295,7 @@ class ComputeNodeFixture(fixtures.Fixture):
                 'Get count of flows in node %s with action %s' %
                 (self.ip, action))
             cmd = 'flow -l | grep Action | grep %s | wc -l ' % (action)
-            flow_count[action] = self.execute_cmd(cmd, container=None)
+            flow_count[action] = self.execute_cmd(cmd, container='agent')
         now = datetime.now()
         self.logger.info(
             "Flow count @ time %s in node %s is %s" %
@@ -322,8 +322,8 @@ class ComputeNodeFixture(fixtures.Fixture):
             cmd = cmd + '| grep %s' %  filters
 
         now = datetime.now()
-        flow = self.execute_cmd(cmd, container=None)
-        flow_count = self.execute_cmd(cmd + '| wc -l', container=None)
+        flow = self.execute_cmd(cmd, container='agent')
+        flow_count = self.execute_cmd(cmd + '| wc -l', container='agent')
         self.logger.info(
             "Flow count @ time %s in node %s is %s" %
             (now, self.ip, flow_count))
@@ -353,11 +353,11 @@ class ComputeNodeFixture(fixtures.Fixture):
                 src_ip, dst_ip, proto, vrf)
             cmd_3 = 'flow -l |grep %s -A1| grep %s -A1 |grep \"%s (%s\" -A1 |grep Action |grep FlowLim| wc -l' % (
                 src_ip, dst_ip, proto, vrf)
-            flow_count['all'] += int(self.execute_cmd(cmd_1, container=None))
+            flow_count['all'] += int(self.execute_cmd(cmd_1, container='agent'))
             self.logger.debug('Command issued: %s, all flows: %s' %(cmd_1, flow_count['all']))
-            flow_count['allowed'] += int(self.execute_cmd(cmd_2, container=None))
+            flow_count['allowed'] += int(self.execute_cmd(cmd_2, container='agent'))
             self.logger.debug('Command issued: %s, allowed flows: %s' %(cmd_2, flow_count['allowed']))
-            flow_count['dropped_by_limit'] += int(self.execute_cmd(cmd_3, container=None))
+            flow_count['dropped_by_limit'] += int(self.execute_cmd(cmd_3, container='agent'))
             self.logger.debug('Command issued: %s, Limit dropped flows: %s' %(cmd_3, flow_count['dropped_by_limit']))
         self.logger.info(
             "Flow count in node %s is %s" %
@@ -546,6 +546,7 @@ class ComputeNodeFixture(fixtures.Fixture):
         '''Reload vrouter module without restarting the compute node
         '''
         self.logger.info('Reloading vrouter module on %s' % (self.ip))
+        #ToDo msenthil - Need to check how to reload kernel module
         if self.inputs.host_data[self.ip].get('containers', {}).get('agent'):
             stop_cmd = 'docker exec -it agent service supervisor-vrouter stop'
             start_cmd = 'docker exec -it agent service supervisor-vrouter start'

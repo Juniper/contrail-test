@@ -3,6 +3,7 @@ from fabric.api import run
 from fabric.context_managers import settings, hide
 from fabric.contrib.files import exists
 from collections import defaultdict
+from tcutils.util import run_cmd_on_server
 
 '''
    Parses haproxy conf file and produces a dict output of the same
@@ -35,18 +36,16 @@ from collections import defaultdict
       }
 '''
 
-def parse_haproxy(filename, host, username, password):
+def parse_haproxy(filename, host, username, password, container=None, **kwargs):
     haproxy_dict = defaultdict(list)
-    with settings(hide('everything'), host_string='%s@%s' %(username, host),
-                  password=password, warn_only=True, abort_on_prompts=False):
-        if not exists(filename):
-            return None
-        output = run('cat %s'%filename)
+    output = run_cmd_on_server('cat %s'%filename, host, username, password,
+             as_sudo=True, container=container, **kwargs)
     keywords = ['frontend', 'backend', 'global', 'defaults']
     pattern = '(?:^|\n)\s*(?:{})'.format('|'.join(map(re.escape, keywords)))
     iters = re.finditer(pattern, output)
-    indices = [match.start() for match in iters]
-    matches = map(output.__getslice__, indices, indices[1:] + [len(output)])
+    if iters:
+        indices = [match.start() for match in iters]
+        matches = map(output.__getslice__, indices, indices[1:] + [len(output)])
 
     for match in matches:
         match = match.strip()

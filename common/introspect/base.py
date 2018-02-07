@@ -18,7 +18,7 @@ CONTRAIL_CONF_FILES = {
     'contrail-collector': '/etc/contrail/contrail-collector.conf',
     'contrail-query-engine': '/etc/contrail/contrail-query-engine.conf',
     'contrail-snmp-collector': '/etc/contrail/contrail-snmp-collector.conf',
-    'contrail-alarm-gen': '/etc/contrail/contrail-alarm-gen',
+    'contrail-alarm-gen': '/etc/contrail/contrail-alarm-gen.conf',
     'contrail-control': '/etc/contrail/contrail-control.conf',
     'contrail-dns': '/etc/contrail/contrail-dns.conf',
     'contrail-api': '/etc/contrail/contrail-api.conf',
@@ -38,14 +38,14 @@ CONTRAIL_INTROSPECT_PORTS = {
 
 CONTRAIL_SERVICE_CONTAINER = {
     'contrail-vrouter-agent': 'agent',
-    'contrail-analytics-api': 'analytics',
-    'contrail-collector': 'analytics',
-    'contrail-query-engine': 'analytics',
-    'contrail-control': 'controller',
-    'contrail-dns': 'controller',
-    'contrail-schema': 'controller',
-    'contrail-api': 'controller',
-    'contrail-svc-monitor': 'controller'}
+    'contrail-analytics-api': 'analytics-api',
+    'contrail-collector': 'collector',
+    'contrail-query-engine': 'query-engine',
+    'contrail-control': 'control',
+    'contrail-dns': 'dns',
+    'contrail-schema': 'schema',
+    'contrail-api': 'api-server',
+    'contrail-svc-monitor': 'svc-monitor'}
 
 class BaseIntrospectSsl(GenericTestBase):
 
@@ -159,7 +159,7 @@ class BaseIntrospectSsl(GenericTestBase):
     def create_agent_certs_and_update_on_compute(self, host_ip, subject,
             ssl_enable='false', subjectAltName=None, verify_in_cleanup=True):
         service = 'contrail-vrouter-agent'
-        container = CONTRAIL_SERVICE_CONTAINER[service]
+        container = self.inputs.get_container_name(host_ip, 'agent')
         agent_key, agent_csr, agent_cert = self.create_cert(subject=subject,
             subjectAltName=subjectAltName)
 

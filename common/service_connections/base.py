@@ -59,19 +59,19 @@ class BaseServiceConnectionsTest(GenericTestBase):
         cmd = cmd_set + " " + section + " " + option
         if client_role == "agent":
             node_ip = self.inputs.compute_control_ips[0]
-            container = "compute"
+            container = "agent"
         elif client_role == "control":
             node_ip = self.inputs.bgp_control_ips[0]
-            container = "controller"
+            container = "control"
         elif client_role == "config":
             node_ip = self.inputs.cfgm_control_ips[0]
-            container = "controller"
+            container = "api-server"
         elif client_role == "analytics":
             node_ip = self.inputs.collector_control_ips[0]
-            container = "analytics"
+            container = "analytics-api"
         elif client_role == "database":
             node_ip = self.inputs.database_control_ips[0]
-            container = "analyticsdb"
+            container = "analytics-cassandra"
         output = self.inputs.run_cmd_on_server(node_ip, cmd,
                             self.inputs.host_data[node_ip]['username']\
                             , self.inputs.host_data[node_ip]['password'],
@@ -109,7 +109,7 @@ class BaseServiceConnectionsTest(GenericTestBase):
         output = self.inputs.run_cmd_on_server(node_ip, cmd,
                             self.inputs.host_data[node_ip]['username']\
                             , self.inputs.host_data[node_ip]['password'],
-                            container = "controller")
+                            container = "webui")
         output = output.strip().rstrip(";")
         server_list = ast.literal_eval(output)
         self.logger.debug("Following %s servers were configured for WebUI"
@@ -245,37 +245,37 @@ class BaseServiceConnectionsTest(GenericTestBase):
             for ip in self.inputs.compute_ips:
                 server_list = self.get_new_server_list(operation, ip,
                                                        cmd, server_ip, index,
-                                                       container = "compute")
+                                                       container = "agent")
                 self.configure_server_list(ip, client_process,
-                        section, option, server_list, container = "compute")
+                        section, option, server_list, container = "agent")
         elif client_role == "control":
             for ip in self.inputs.bgp_ips:
                 server_list = self.get_new_server_list(operation, ip,
                                                        cmd, server_ip, index,
-                                                       container = "controller")
+                                                       container = "control")
                 self.configure_server_list(ip, client_process,
-                        section, option, server_list, container = "controller")
+                        section, option, server_list, container = "control")
         elif client_role == "config":
             for ip in self.inputs.cfgm_ips:
                 server_list = self.get_new_server_list(operation, ip,
                                                        cmd, server_ip, index,
-                                                       container = "controller")
+                                                       container = "api-server")
                 self.configure_server_list(ip, client_process,
-                        section, option, server_list, container = "controller")
+                        section, option, server_list, container = "api-server")
         elif client_role == "analytics":
             for ip in self.inputs.collector_ips:
                 server_list = self.get_new_server_list(operation, ip,
                                                        cmd, server_ip, index,
-                                                       container = "analytics")
+                                                       container = "analytics-api")
                 self.configure_server_list(ip, client_process,
-                        section, option, server_list, container = "analytics")
+                        section, option, server_list, container = "analytics-api")
         elif client_role == "database":
             for ip in self.inputs.database_ips:
                 server_list = self.get_new_server_list(operation, ip,
                                                        cmd, server_ip, index,
-                                                       container = "analyticsdb")
+                                                       container = "analytics-cassandra")
                 self.configure_server_list(ip, client_process,
-                        section, option, server_list, container = "analyticsdb")
+                        section, option, server_list, container = "analytics-cassandra")
         status_checker = ContrailStatusChecker(self.inputs)
         result = status_checker.wait_till_contrail_cluster_stable()[0]
         if result == False:

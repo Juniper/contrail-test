@@ -210,7 +210,7 @@ class CNFixture(fixtures.Fixture):
                              (service_name, self.inputs.host_data[host]['name']))
             issue_cmd = 'service %s restart' % (service_name)
             self.inputs.run_cmd_on_server(host, issue_cmd, username, password,
-                                          container='controller')
+                                          container='control')
     # end restart_control_node
 
     def stop_control_node(self, host_ips=[]):
@@ -228,7 +228,7 @@ class CNFixture(fixtures.Fixture):
                              (service_name, self.inputs.host_data[host]['name']))
             issue_cmd = 'service %s stop' % (service_name)
             self.inputs.run_cmd_on_server(host, issue_cmd, username, password,
-                                          container='controller')
+                                          container='control')
     # end stop_service
 
     def start_control_node(self, host_ips=[]):
@@ -246,7 +246,7 @@ class CNFixture(fixtures.Fixture):
                              (service_name, self.inputs.host_data[host]['name']))
             issue_cmd = 'service %s start' % (service_name)
             self.inputs.run_cmd_on_server(host, issue_cmd, username, password,
-                                          container='controller')
+                                          container='control')
     # end start_service
 
     def cleanUp(self):
