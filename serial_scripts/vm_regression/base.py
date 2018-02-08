@@ -42,7 +42,8 @@ class BaseVnVmTest(test_v1.BaseTestCase_v1):
     
     def create_vm(self, vn_fixture, vm_name, node_name=None,
                     flavor='contrail_flavor_small',
-                    image_name='ubuntu-traffic'):
+                    image_name='ubuntu-traffic',
+                    *args, **kwargs):
         image_name = self.inputs.get_ci_image() or image_name
         return self.useFixture(
                 VMFixture(
@@ -52,7 +53,8 @@ class BaseVnVmTest(test_v1.BaseTestCase_v1):
                     vm_name=vm_name,
                     image_name=image_name,
                     flavor=flavor,
-                    node_name=node_name))
+                    node_name=node_name,
+                    *args, **kwargs))
 
     def cleanup_test_max_vm_flows_vrouter_config(self,
             compute_ips,
