@@ -1214,15 +1214,15 @@ class VMFixture(fixtures.Fixture):
         result = True
         vm_ips = dst_vm_fixture.get_vm_ips(vn_fq_name=vn_fq_name, af=af)
         for ip in vm_ips:
-            result = self.ping_to_ip(ip=ip, *args, **kwargs)
-            if result == expectation:
+            result = self.ping_to_ip(ip=ip, expectation=expectation, *args, **kwargs)
+            if result == True:
                 # if result matches the expectation, continue to next ip
                 continue
             else:
                 return False
         return True
 
-    def ping_to_ip(self, ip, return_output=False, other_opt='', size='56', count='5', timewait='1'):
+    def ping_to_ip(self, ip, return_output=False, other_opt='', size='56', count='5', timewait='1', expectation=True):
         """Ping from a VM to an IP specified.
 
         This method logs into the VM from the host machine using ssh and runs ping test to an IP.
@@ -1268,11 +1268,17 @@ class VMFixture(fixtures.Fixture):
             if expected_result not in output:
                 self.logger.warn("Ping to IP %s from VM %s failed" %
                                  (ip, self.vm_name))
-                return False
+                if expectation == False:
+                    return True
+                else:
+                    return False
             else:
                 self.logger.info('Ping to IP %s from VM %s passed' %
                                  (ip, self.vm_name))
-            return True
+                if expectation == True:
+                    return True
+                else:
+                    return False
         except Exception as e:
             self.logger.warn("Got exception in ping_to_ip:%s" % (e))
             return False
@@ -1304,8 +1310,8 @@ class VMFixture(fixtures.Fixture):
         else:
             output = self.ping_to_ip(ip=ip, return_output=False,
                                      other_opt=other_opt, size=size,
-                                     count=count)
-        return (output == expectation)
+                                     count=count, expectation=expectation)
+        return output
 
     def verify_vm_not_in_orchestrator(self):
         if not self.orch.is_vm_deleted(self.vm_obj):
