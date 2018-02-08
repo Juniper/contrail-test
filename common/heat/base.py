@@ -459,6 +459,8 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         template = self.get_template(template_name=stack_name)
         env = self.get_env(env_name=stack_name)
         stack_name = get_random_name(stack_name)
+        self.nova_h.get_image(env['parameters']['image'])
+        self.nova_h.get_flavor(env['parameters']['flavor'])
         svc_pt_hs = self.config_heat_obj(stack_name, template, env)
         stack = svc_pt_hs.heat_client_obj
         op = stack.stacks.get(stack_name).outputs
