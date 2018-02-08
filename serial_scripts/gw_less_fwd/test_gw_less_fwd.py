@@ -42,7 +42,7 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # VN parameters. IP Fabric forwarding is enabled on vn1.
         vn = {'count':1,
-              'vn1':{'subnet':'10.10.10.0/24', 'ip_fabric':True},
+              'vn1':{'subnet':get_random_cidr(), 'ip_fabric':True},
              }
 
         # VMI parameters
@@ -142,8 +142,8 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # VN parameters. IP Fabric forwarding is enabled on both vn1 and vn2.
         vn = {'count':2,
-              'vn1':{'subnet':'10.10.10.0/24', 'ip_fabric':True},
-              'vn2':{'subnet':'20.20.20.0/24', 'ip_fabric':True},
+              'vn1':{'subnet':get_random_cidr(), 'ip_fabric':True},
+              'vn2':{'subnet':get_random_cidr(), 'ip_fabric':True},
              }
 
         # VMI parameters. 2 VMIs per VN.
@@ -271,8 +271,8 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # VN parameters. IP Fabric forwarding is enabled on vn1 and not on vn2.
         vn = {'count':2,
-              'vn1':{'subnet':'10.10.10.0/24', 'ip_fabric':True},
-              'vn2':{'subnet':'20.20.20.0/24', 'ip_fabric':False},
+              'vn1':{'subnet':get_random_cidr(), 'ip_fabric':True},
+              'vn2':{'subnet':get_random_cidr(), 'ip_fabric':False},
              }
         # VMI parameters
         vmi = {'count':4,
@@ -362,12 +362,12 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # VN parameters
         vn = {'count':1,
-              'vn1':{'subnet':'10.10.10.0/24', 'ip_fabric':True},
+              'vn1':{'subnet':'100.100.100.0/24', 'ip_fabric':True},
              }
         # VMI parameters
         vmi = {'count':3,
-               'vmi1':{'vn': 'vn1', 'vip': '10.10.10.100', 'mode': 'active-active'},
-               'vmi2':{'vn': 'vn1', 'vip': '10.10.10.100', 'mode': 'active-active'},
+               'vmi1':{'vn': 'vn1', 'vip': '100.100.100.100', 'mode': 'active-active'},
+               'vmi2':{'vn': 'vn1', 'vip': '100.100.100.100', 'mode': 'active-active'},
                'vmi3':{'vn': 'vn1'},
               }
         # VM parameters
@@ -406,7 +406,7 @@ class TestGWLessFWD(GWLessFWDTestBase):
                                             vn_fixtures=vn_fixtures)
         ret_dict['policy_fixtures'] = policy_fixtures
 
-        vIP = "10.10.10.100"
+        vIP = "100.100.100.100"
         # Verify AAP route in default routing instance in agent
         self.verify_route_ip_fabric_vn_in_agent(ret_dict=ret_dict, ip=vIP)
 
@@ -480,8 +480,8 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # VN parameters. IP Fabric forwarding is enabled on both VNs
         vn = {'count':2,
-              'vn1':{'subnet':'10.10.10.0/24', 'ip_fabric':True},
-              'vn2':{'subnet':'20.20.20.0/24', 'ip_fabric':True},
+              'vn1':{'subnet':get_random_cidr(), 'ip_fabric':True},
+              'vn2':{'subnet':get_random_cidr(), 'ip_fabric':True},
              }
         # VMI parameters
         vmi = {'count':2,
@@ -675,7 +675,7 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # VN parameters. IP Fabric forwarding is enabled on vn1.
         vn = {'count':1,
-              'vn1':{'subnet':'10.10.10.0/24', 'ip_fabric':True},
+              'vn1':{'subnet':get_random_cidr(), 'ip_fabric':True},
              }
 
         # VMI parameters
