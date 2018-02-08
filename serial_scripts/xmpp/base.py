@@ -39,8 +39,8 @@ class XmppBase(test_v1.BaseTestCase_v1, ConfigPolicy):
 
     def tearDown(self):
         super(XmppBase, self).tearDown()
-
-    def config_basic(self):
+    
+    def config_basic_ipv6(self):
         vn61_name = "test_vnv6sr"
         vn61_net = ['2001::101:0/120']
         vn61_fixture = self.useFixture(VNFixture(
@@ -84,6 +84,10 @@ class XmppBase(test_v1.BaseTestCase_v1, ConfigPolicy):
         vn62_policy_fix = self.attach_policy_to_vn(
             policy_fixture, vn62_fixture)
 
+    def config_basic(self):
+        image_name = 'cirros'
+        if self.inputs.orchestrator == 'vcenter':
+            image_name = 'ubuntu'
         vn1 = "vn1"
         vn2 = "vn2"
         vn_s = {'vn1': '10.1.1.0/24', 'vn2': ['20.1.1.0/24']}
@@ -110,7 +114,7 @@ class XmppBase(test_v1.BaseTestCase_v1, ConfigPolicy):
 
         self.multi_vm_fixture = self.useFixture(MultipleVMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
-            vm_count_per_vn=1, vn_objs=vns, image_name='cirros',
+            vm_count_per_vn=1, vn_objs=vns, image_name=image_name,
             flavor='m1.tiny'))
         vms = self.multi_vm_fixture.get_all_fixture()
         (self.vm1_name, self.vm1_fix) = vms[0]

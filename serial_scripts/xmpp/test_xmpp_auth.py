@@ -1,4 +1,4 @@
-from tcutils.wrappers import preposttest_wrapper
+tcutils/pkgs/Traffic/traffic/core/helpers.py from tcutils.wrappers import preposttest_wrapper
 from vn_test import MultipleVNFixture
 from vm_test import MultipleVMFixture
 from base import XmppBase
@@ -35,12 +35,15 @@ class TestXmpptests(XmppBase, ConfigPolicy):
     def setUp(self):
         super(TestXmpptests, self).setUp()
         result = self.is_test_applicable()
-        if result[0]:
+        if result[0] and self.inputs.orchestrator == 'vcenter':
+            self.config_basic()
+        elif result[0]:
+            self.config_basic_ipv6()
             self.config_basic()
         else:
             return
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_precedence_xmpp_auth(self):
         """
@@ -83,7 +86,7 @@ class TestXmpptests(XmppBase, ConfigPolicy):
 
     # end test_precedence_xmpp_auth
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_undo_xmpp_auth(self):
         """
