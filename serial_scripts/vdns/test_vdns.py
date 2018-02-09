@@ -166,17 +166,17 @@ class TestvDNSRestart(BasevDNSTest):
         self.logger.info("All configuration complete.")
         # restarting contrail-named on all control nodes
         self.inputs.stop_service('contrail-named', self.inputs.bgp_ips,
-                                 container='controller')
+                                 container='named')
         sleep(10)
         self.inputs.start_service('contrail-named', self.inputs.bgp_ips,
-                                  container='controller')
+                                  container='named')
         for ip in self.inputs.bgp_ips:
             assert self.inputs.confirm_service_active('contrail-named', ip)
         zoneFile = vn_fixt.vn_fq_name.split(':')[0] +'-' + dns_server_name + '.' + domain_name + '.zone.jnl'
         cmd = "ls -al /etc/contrail/dns/%s" % zoneFile
         for node in self.inputs.bgp_ips:
             output = self.inputs.run_cmd_on_server(node,cmd,
-                                                   container='controller')
+                                                   container='dns')
             if "No such file or directory" in output:
                 msg = "Zone file not found for the configured domain on control node %s" % node
                 self.logger.error("Zone file not found for the configured domain on control node %s" % node)
@@ -189,7 +189,7 @@ class TestvDNSRestart(BasevDNSTest):
                     self.logger.debug("Waiting till the record file get updated completely")
                     sleep(10)
                     output = self.inputs.run_cmd_on_server(node,cmd,
-                                                           container='controller')
+                                                           container='dns')
                     outputList = output.split()
                     if outputList[4] == fileSize:
                         self.logger.debug("Size of zone file is constant now. File update completed.")
@@ -198,10 +198,10 @@ class TestvDNSRestart(BasevDNSTest):
             # Command to Sync the jnl file with zone file.
             newcmd = "contrail-rndc -c /etc/contrail/dns/contrail-rndc.conf sync"
             self.inputs.run_cmd_on_server(node,newcmd,
-                                          container='controller')
+                                          container='named')
             readFileCmd = "cat /etc/contrail/dns/%s" % zoneFile.rstrip('.jnl')
             fileContent = self.inputs.run_cmd_on_server(node, readFileCmd,
-                                                        container='controller')
+                                                        container='named')
             lines = fileContent.split('\n')
             count = 0
             for lineNumber in range(0,len(lines)):
@@ -323,10 +323,10 @@ class TestvDNSRestart(BasevDNSTest):
         for nodes in dns_list_all_compute_nodes[0]:
             index = self.inputs.bgp_control_ips.index(nodes)
             self.inputs.stop_service("contrail-named",[self.inputs.bgp_ips[index]],
-                                     container='controller')
+                                     container='named')
             self.addCleanup(self.inputs.start_service,'contrail-named',\
                              [self.inputs.bgp_ips[index]],
-                             container='controller')
+                             container='named')
         verify = "once"
         cmd_for_agent2 = 'nslookup -timeout=1 vm2-agent2' + '| grep ' +\
                        '\'' + vm_fixture['vm2-agent2'].vm_ip + '\''
@@ -575,10 +575,14 @@ class TestvDNSRestart(BasevDNSTest):
             'Restart supervisor-config & supervisor-control and test ping')
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('supervisor-control', [bgp_ip],
-										container='controller')
+                                         container='dns')
+            self.inputs.restart_service('supervisor-control', [bgp_ip],
+                                         container='named')
+            self.inputs.restart_service('supervisor-control', [bgp_ip],
+                                         container='control')
         for cfgm_ip in self.inputs.cfgm_ips:
             self.inputs.restart_service('supervisor-config', [cfgm_ip],
-										container='controller')
+                                         container='api-server')
         status_checker = ContrailStatusChecker(self.inputs)
         self.logger.debug("Waiting for all the services to be UP")
         assert status_checker.wait_till_contrail_cluster_stable()[0],\
@@ -716,10 +720,14 @@ class TestvDNSRestart(BasevDNSTest):
             'Restart supervisor-config & supervisor-control and test ping')
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('supervisor-control', [bgp_ip],
-										container='controller')
+                                        container='control')
+            self.inputs.restart_service('supervisor-control', [bgp_ip],
+                                        container='dns')
+            self.inputs.restart_service('supervisor-control', [bgp_ip],
+                                        container='named')
         for cfgm_ip in self.inputs.cfgm_ips:
             self.inputs.restart_service('supervisor-config', [cfgm_ip],
-										container='controller')
+                                         container='api-server')
         status_checker = ContrailStatusChecker(self.inputs)
         self.logger.debug("Waiting for all the services to be UP")
         assert status_checker.wait_till_contrail_cluster_stable()[0],\

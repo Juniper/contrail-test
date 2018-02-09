@@ -44,14 +44,6 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
             self.logger.info("contrail-status passed")
         return True
 
-    @test.attr(type=['cb_sanity', 'sanity', 'vcenter'])
-    @preposttest_wrapper
-    def test_contrail_internal_ansible_status(self):
-        ''' Test to verify that internal-ansible ran in each container without any failures 
-
-        '''
-        assert self.verify_contrail_internal_ansible_status()
-
     @test.attr(type=['vcenter'])
     @preposttest_wrapper
     def test_contrail_alarms(self):

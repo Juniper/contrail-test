@@ -83,8 +83,8 @@ class TestKubeManagerHA(BaseK8sTest):
 
         '''
         css = ContrailStatusChecker()
-        containers = ['contrail-kube-manager', 'controller',
-                      'analyticsdb', 'analytics']
+        containers = ['contrail-kube-manager', 'api-server', 'schema'
+                      'analyticsdb', 'analytics-api', 'collector']
         km_h = self.connections.get_kube_manager_h()
         node = km_h.ip
         # Setup pods

@@ -356,11 +356,11 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                                         "analytics", "contrail-alarm-gen",
                                         self.inputs.collector_control_ips[0])
         self.inputs.stop_service("contrail-collector",[in_use_servers[0]],
-                                 container = "analytics")
+                                 container = "collector")
         self.addCleanup(self.inputs.start_service, "contrail-collector",
-                        [in_use_servers[0]], container = "analytics")
+                        [in_use_servers[0]], container = "collector")
         self.addCleanup(self.inputs.confirm_service_active, "contrail-collector",
-                        in_use_servers[0], container = "analytics")
+                        in_use_servers[0], container = "collector")
         for i in range(0,11):   # Testing for 50 seconds. 10 Seconds allowance from TTL
             new_in_use_servers, status, ports = self.get_all_in_use_servers(
                                             "collector", "analytics",
@@ -397,11 +397,11 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                                             "contrail-vrouter-agent",
                                             self.inputs.compute_control_ips[0])
         self.inputs.stop_service("contrail-control",[in_use_servers[0]],
-                                 container = "controller")
+                                 container = "control")
         self.addCleanup(self.inputs.start_service, "contrail-control",
-                        [in_use_servers[0]], container = "controller")
+                        [in_use_servers[0]], container = "control")
         self.addCleanup(self.inputs.confirm_service_active, "contrail-control",
-                        in_use_servers[0], container = "controller")
+                        in_use_servers[0], container = "control")
         self.sleep(15) # Agent retries to connect to previous Controller 4 times in an interval of 1,2,4,8 seconds
         new_in_use_servers, status, ports = self.get_all_in_use_servers(
                                             "xmpp" ,"agent", 
@@ -432,13 +432,13 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                                             "contrail-vrouter-agent",
                                             self.inputs.compute_control_ips[0])
         self.inputs.stop_service("contrail-dns",[in_use_servers[0]],
-                                 container = "controller")
+                                 container = "dns")
         self.addCleanup(self.inputs.start_service,
                         "contrail-dns",[in_use_servers[0]],
-                        container = "controller")
+                        container = "dns")
         self.addCleanup(self.inputs.confirm_service_active, 
                         "contrail-dns",in_use_servers[0],
-                        container = "controller")
+                        container = "dns")
         self.sleep(15) # Agent retries to connect to previous DNS Server 4 times in an interval of 1,2,4,8 seconds
         new_in_use_servers, status, ports = self.get_all_in_use_servers(
                                             "dns" ,"agent", 
@@ -469,13 +469,13 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                                             "contrail-vrouter-agent",
                                             self.inputs.compute_control_ips[0])
         self.inputs.stop_service("contrail-collector",[in_use_servers[0]],
-                                 container = "analytics")
+                                 container = "collector")
         self.addCleanup(self.inputs.start_service,
                         "contrail-collector",[in_use_servers[0]],
-                        container = "analytics")
+                        container = "collector")
         self.addCleanup(self.inputs.confirm_service_active, 
                         "contrail-collector",in_use_servers[0],
-                        container = "analytics")
+                        container = "collector")
         self.sleep(15) # Agent retries to connect to previous Collector 4 times in an interval of 1,2,4,8 seconds
         new_in_use_servers, status, ports = self.get_all_in_use_servers(
                                             "collector" ,"agent", 

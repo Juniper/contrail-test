@@ -66,7 +66,7 @@ class TestRsyslog(BaseRsyslogTest):
         output = self.inputs.run_cmd_on_server(server_ip, cmd,
                              self.inputs.host_data[server_ip]['username'],
                              self.inputs.host_data[server_ip]['password'],
-                             container='analytics')
+                             container='analytics-api')
         if log_mesg in output:
             result = True
         return result
@@ -110,7 +110,7 @@ class TestRsyslog(BaseRsyslogTest):
         output = self.inputs.run_cmd_on_server(server_ip, cmd,
                                  self.inputs.host_data[server_ip]['username'],
                                  self.inputs.host_data[server_ip]['password'],
-                                 container='analytics')
+                                 container='collector')
 
         # If syslog_port not configured and not same as
         # rsyslog.conf bail out.

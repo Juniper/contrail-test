@@ -158,7 +158,7 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
         self.logger.info('Will restart compute  services now')
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter', [compute_ip],
-										container='agent')
+                                        container='agent')
         sleep(10)
         assert fvn1_vm1_fixture.verify_on_setup()
         assert fvn2_vm1_fixture.verify_on_setup()
@@ -170,7 +170,7 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
         self.logger.info('Will restart control services now')
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control', [bgp_ip],
-										container='controller')
+                                        container='control')
         sleep(10)
         assert fvn1_vm1_fixture.verify_on_setup()
         assert fvn2_vm1_fixture.verify_on_setup()
@@ -353,7 +353,7 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
         self.logger.info('Stoping the Control service in  %s' %
                          (active_controller))
         self.inputs.stop_service('contrail-control', [active_controller],
-                                 container='controller')
+                                 container='control')
         sleep(5)
 
         # Check the control node shifted to other control node
@@ -482,7 +482,7 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
         self.logger.info('Starting the Control service in  %s' %
                          (active_controller))
         self.inputs.start_service('contrail-control', [active_controller],
-                                  container='controller')
+                                  container='control')
 
         sleep(10)
         # Check the BGP peering status from the currently active control node

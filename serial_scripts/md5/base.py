@@ -236,7 +236,7 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
                 cmd = cmd + 'awk \"{print $6}\"'
 
             tcp_status = self.inputs.run_cmd_on_server(node, cmd,
-                                                       container='controller')
+                                                       container='control')
             tcp_status=tcp_status.split('\n')
             for one_status in tcp_status:
                 one_status=one_status.split(' ')[-2]

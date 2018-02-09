@@ -135,7 +135,7 @@ class XmppBase(test_v1.BaseTestCase_v1, ConfigPolicy):
                 value='true',
                 node=node,
                 service='contrail-control',
-                container='controller')
+                container='control')
         for node in self.inputs.compute_ips:
             self.update_contrail_conf(
                 conf_file='/etc/contrail/contrail-vrouter-agent.conf',
