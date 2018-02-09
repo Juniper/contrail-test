@@ -23,7 +23,7 @@ class FlowTestBase(BaseVrouterTest):
 "SUM(msg_info.messages)" --last %s --where \
 'name=%s' 'msg_info.type=FlowLogDataObject' | tail -1'''  % (last, agent_name)
         output = self.inputs.run_cmd_on_server(self.inputs.collector_ips[0],
-                                               cmd, container='analytics')
+                                               cmd, container='analytics-api')
         digits = re.findall('\d+', output)
         if digits:
             return digits[0]

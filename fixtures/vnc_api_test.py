@@ -136,7 +136,7 @@ class VncLibFixture(fixtures.Fixture):
             self._admin_h = VncLibFixture(username=self.inputs.admin_username,
                                           password=self.inputs.admin_password,
                                           project_name=self.inputs.admin_tenant,
-                                          domain=self.inputs.stack_domain,
+                                          domain=self.inputs.admin_domain,
                                           inputs=self.inputs,
                                           cfgm_ip=self.cfgm_ip,
                                           api_server_port=self.api_server_port,

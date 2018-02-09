@@ -70,7 +70,7 @@ class BaseNeutronTest(GenericTestBase):
                 issue_cmd,
                 self.inputs.host_data[cfgm_ip]['username'],
                 self.inputs.host_data[cfgm_ip]['password'],
-                container='controller')
+                container='api-server')
 
         self.addCleanup(
             self.restore_default_quota_list,
@@ -123,14 +123,14 @@ class BaseNeutronTest(GenericTestBase):
                     issue_cmd,
                     self.inputs.host_data[cfgm_ip]['username'],
                     self.inputs.host_data[cfgm_ip]['password'],
-                    container='controller')
+                    container='api-server')
                 count = count + 1
 
         # Restart contrail-api service on all cfgm nodes
 
         for cfgm_ip in self.inputs.cfgm_ips:
             self.inputs.restart_service('contrail-api', [cfgm_ip],
-										container='controller')
+                                        container='api-server')
 
         cs_obj = ContrailStatusChecker(self.inputs)
         clusterstatus, error_nodes = cs_obj.wait_till_contrail_cluster_stable()
@@ -153,11 +153,11 @@ class BaseNeutronTest(GenericTestBase):
                 issue_cmd,
                 self.inputs.host_data[cfgm_ip]['username'],
                 self.inputs.host_data[cfgm_ip]['password'],
-                container='controller')
+                container='api-server')
 
         for cfgm_ip in self.inputs.cfgm_ips:
             self.inputs.restart_service('contrail-api', [cfgm_ip],
-										container='controller')
+                container='api-server')
 
         cs_obj = ContrailStatusChecker(self.inputs)
         clusterstatus, error_nodes = cs_obj.wait_till_contrail_cluster_stable()

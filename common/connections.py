@@ -219,7 +219,7 @@ class ContrailConnections():
             for cfgm_ip in self.inputs.cfgm_ips:
                 #contrail-status would increase run time hence netstat approach
                 cmd = 'netstat -antp | grep :8088 | grep LISTEN'
-                if 'LISTEN' in self.inputs.run_cmd_on_server(cfgm_ip, cmd, container='controller'):
+                if 'LISTEN' in self.inputs.run_cmd_on_server(cfgm_ip, cmd, container='svc-monitor'):
                     self._svc_mon_inspect = SvcMonInspect(cfgm_ip,
                                            logger=self.logger)
                     break
@@ -286,77 +286,45 @@ class ContrailConnections():
     # end update_vnc_lib_fixture()
 
     def set_vrouter_config_encap(self, encap1=None, encap2=None, encap3=None):
-        self.obj = self.vnc_lib
-
-        try:
-            # Reading Existing config
-            current_config=self.obj.global_vrouter_config_read(
-                                    fq_name=['default-global-system-config',
-                                             'default-global-vrouter-config'])
-            current_linklocal=current_config.get_linklocal_services()
-        except NoIdError as e:
-            self.logger.exception('No config id found. Creating new one')
-            current_linklocal=''
-
-        encap_obj = EncapsulationPrioritiesType(
-            encapsulation=[encap1, encap2, encap3])
-        conf_obj = GlobalVrouterConfig(linklocal_services=current_linklocal,encapsulation_priorities=encap_obj)
-        result = self.obj.global_vrouter_config_create(conf_obj)
-        return result
+        return self.update_vrouter_config_encap(encap1, encap2, encap3, create=True)
     # end set_vrouter_config_encap
 
-    def update_vrouter_config_encap(self, encap1=None, encap2=None, encap3=None):
+    def update_vrouter_config_encap(self, encap1=None, encap2=None, encap3=None, create=False):
         '''Used to change the existing encapsulation priorities to new values'''
-        self.obj = self.vnc_lib
- 
+        if not (encap1 and encap2 and encap3):
+            return self.delete_vrouter_encap()
         try:
             # Reading Existing config
-            current_config=self.obj.global_vrouter_config_read(
+            current_config = self.vnc_lib.global_vrouter_config_read(
                                     fq_name=['default-global-system-config',
                                              'default-global-vrouter-config'])
-            current_linklocal=current_config.get_linklocal_services()
         except NoIdError as e:
             self.logger.exception('No config id found. Creating new one')
-            current_linklocal=''
+            if not create:
+                raise
+            conf_obj = GlobalVrouterConfig()
+            self.vnc_lib.global_vrouter_config_create(conf_obj)
 
         encaps_obj = EncapsulationPrioritiesType(
             encapsulation=[encap1, encap2, encap3])
-        confs_obj = GlobalVrouterConfig(linklocal_services=current_linklocal,
-                                        encapsulation_priorities=encaps_obj)
-        result = self.obj.global_vrouter_config_update(confs_obj)
+        confs_obj = GlobalVrouterConfig(encapsulation_priorities=encaps_obj)
+        result = self.vnc_lib.global_vrouter_config_update(confs_obj)
         return result
     # end update_vrouter_config_encap
 
     def delete_vrouter_encap(self):
-        self.obj = self.vnc_lib
         try:
-            conf_id = self.obj.get_default_global_vrouter_config_id()
-            self.logger.info("Config id found.Deleting it")
-            config_parameters = self.obj.global_vrouter_config_read(id=conf_id)
-            self.inputs.config.obj = config_parameters.get_encapsulation_priorities(
-            )
-            if not self.inputs.config.obj:
-                # temp workaround,delete default-global-vrouter-config.need to
-                # review this testcase
-                self.obj.global_vrouter_config_delete(id=conf_id)
-                errmsg = "No config id found"
-                self.logger.info(errmsg)
-                return (errmsg)
-            try:
-                encaps1 = self.inputs.config.obj.encapsulation[0]
-                encaps2 = self.inputs.config.obj.encapsulation[1]
-                try:
-                    encaps1 = self.inputs.config.obj.encapsulation[0]
-                    encaps2 = self.inputs.config.obj.encapsulation[1]
-                    encaps3 = self.inputs.config.obj.encapsulation[2]
-                    self.obj.global_vrouter_config_delete(id=conf_id)
-                    return (encaps1, encaps2, encaps3)
-                except IndexError:
-                    self.obj.global_vrouter_config_delete(id=conf_id)
-                    return (encaps1, encaps2, None)
-            except IndexError:
-                self.obj.global_vrouter_config_delete(id=conf_id)
-                return (encaps1, None, None)
+            conf_id = self.vnc_lib.get_default_global_vrouter_config_id()
+            obj = self.vnc_lib.global_vrouter_config_read(id=conf_id)
+            encap_obj = obj.get_encapsulation_priorities()
+            if not encap_obj:
+                return ['', '', '']
+            encaps = encap_obj.encapsulation
+            l = len(encaps)
+            encaps.extend([''] * (3 - l))
+            obj.set_encapsulation_priorities(None)
+            self.vnc_lib.global_vrouter_config_update(obj)
+            return encaps
         except NoIdError:
             errmsg = "No config id found"
             self.logger.info(errmsg)
@@ -366,12 +334,13 @@ class ContrailConnections():
     def read_vrouter_config_encap(self):
         result = None
         try:
-            self.obj = self.vnc_lib
-            conf_id = self.obj.get_default_global_vrouter_config_id()
-            config_parameters = self.obj.global_vrouter_config_read(id=conf_id)
-            self.inputs.config.obj = config_parameters.get_encapsulation_priorities(
-            )
-            result = self.inputs.config.obj.encapsulation
+            conf_id = self.vnc_lib.get_default_global_vrouter_config_id()
+            config_parameters = self.vnc_lib.global_vrouter_config_read(id=conf_id)
+            obj = config_parameters.get_encapsulation_priorities()
+            if not obj:
+               return ['', '', '']
+            else:
+               return obj.encapsulation
         except NoIdError:
             errmsg = "No config id found"
             self.logger.info(errmsg)

@@ -226,7 +226,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
     def restart_active_svc_mon(self):
         active_svc = self.get_active_svc()
         self.inputs.restart_service('contrail-svc-monitor', [active_svc],
-									container='controller')
+                                    container='svc-monitor')
         self.get_active_svc(refresh=True)
 
     def get_si(self):
@@ -1084,7 +1084,9 @@ class LBaasV2Fixture(LBBaseFixture):
             if self.get_standby_vrouter() is not None else [self.get_active_vrouter()]:
             username = self.inputs.host_data[host]['username']
             password = self.inputs.host_data[host]['password']
-            haproxy_dict = parse_haproxy(conf_filename, host, username, password)
+            container=self.inputs.get_container_name(host, 'agent')
+            haproxy_dict = parse_haproxy(conf_filename, host, username, password,
+                                         container=container)
             if haproxy_dict == None:
                 return (False, "HAPROXY_NOT_EXIST")
             for frontend in haproxy_dict['frontends'] or []:

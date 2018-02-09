@@ -303,7 +303,7 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
             self.logger.info('Restarting active control node')
             self.inputs.restart_service(
                 'contrail-control', [active_controller],
-				container='controller')
+				container='control')
             sleep(5)
             # Check the control node shifted to other control node
             new_active_controller = vm_fixture[
@@ -317,25 +317,25 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
                 return False
             self.inputs.restart_service(
                 'contrail-control', [new_active_controller],
-				container='controller')
+				container='control')
         if restart_process == 'DnsRestart':
             # restart the dns process in the active control node
             self.logger.info(
                 'Restarting the dns process in the active control node')
             self.inputs.restart_service('contrail-dns', [active_controller],
-										container='controller')
+                                        container='dns')
         if restart_process == 'NamedRestart':
             # restart the named process in the active control node
             self.logger.info(
                 'Restarting the named process in the active control node')
             self.inputs.restart_service('contrail-named', [active_controller],
-										container='controller')
+                                        container='named')
         # restart the agent process in the compute node
         if restart_process == 'AgentRestart':
             self.logger.info('Restarting the agent process on compute nodes')
             for compute_ip in self.inputs.compute_ips:
                 self.inputs.restart_service('contrail-vrouter', [compute_ip],
-											container='agent')
+                                            container='agent')
         if restart_process == 'scp':
             self.logger.debug('scp using name of vm')
             vm_fixture[vm_list[0]].put_pub_key_to_vm()

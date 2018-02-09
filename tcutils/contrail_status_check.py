@@ -112,6 +112,7 @@ class ContrailStatusChecker():
             self.inputs.read_prov_file()
 
     def get_status(self, nodes=[], includeservice={}):
+        #ToDo: msenthil - revisit it once contrail-test is supported in microservices model
         # Command used is contrail-status -x
         cmd = 'contrail-status -x'
         # initialize variables to be used during run

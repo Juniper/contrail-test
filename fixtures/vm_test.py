@@ -1834,7 +1834,7 @@ class VMFixture(fixtures.Fixture):
                 result = result and False
         # Verify tap interface/conected networks in vrouter uve
         self.logger.debug("Verifying vm tap interface/vn in vrouter uve")
-        self.vm_host = self.inputs.host_data[self.vm_node_ip]['name']
+        self.vm_host = self.get_host_of_vm()
         self.tap_interfaces = self.agent_inspect[
             self.vm_node_ip].get_vna_tap_interface_by_vm(vm_id=self.vm_id)
         for intf in self.tap_interfaces:
@@ -1982,7 +1982,7 @@ class VMFixture(fixtures.Fixture):
                  try:
                      self.analytics_obj.verify_vm_not_in_opserver(
                          self.vm_id,
-                         self.inputs.host_data[self.vm_node_ip]['name'],
+                         self.get_host_of_vm(),
                          vn_fq_name)
                  except PermissionDenied:
                      if not self.admin_connections:
@@ -1990,7 +1990,7 @@ class VMFixture(fixtures.Fixture):
                      admin_analytics_obj = self.admin_connections.analytics_obj
                      admin_analytics_obj.verify_vm_not_in_opserver(
                          self.vm_id,
-                         self.inputs.host_data[self.vm_node_ip]['name'],
+                         self.get_host_of_vm(),
                          vn_fq_name)
              # Trying a workaround for Bug 452
         # end if
