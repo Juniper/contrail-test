@@ -33,6 +33,58 @@ class TestIntfMirror(BaseIntfMirrorTest, VerifyIntfMirror):
         5) Enable on parent and verify step 1
         """
         return self.verify_intf_mirroring_disable_enable_scenarios()
+   
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_juniper_header(self):
+        """Validate the interface mirroring
+        Validate enable/disable combinations on parent/sub interface
+        1) Check pkts get mirrored from both sub intf and parent intf when enabled on both
+        2) Disable on sub intf and check pkts from parent still get mirrored
+        3) Enable on sub intf and verify step 1
+        4) Disable on parent and check pkts from sub intf still get mirrored
+        5) Enable on parent and verify step 1
+        """
+        return self.verify_juniper_header_testcase(header = 2)
+
+    @preposttest_wrapper
+    def test_juniper_header_ingress(self, direction = 'ingress'):
+        """Validate the interface mirroring
+        Validate enable/disable combinations on parent/sub interface
+        1) Check pkts get mirrored from both sub intf and parent intf when enabled on both
+        2) Disable on sub intf and check pkts from parent still get mirrored
+        3) Enable on sub intf and verify step 1
+        4) Disable on parent and check pkts from sub intf still get mirrored
+        5) Enable on parent and verify step 1
+        """
+        return self.verify_juniper_header_testcase(header = 2, direction = direction)
+
+    @preposttest_wrapper
+    def test_juniper_header_egress(self, direction = 'egress'):
+        """Validate the interface mirroring
+        Validate enable/disable combinations on parent/sub interface
+        1) Check pkts get mirrored from both sub intf and parent intf when enabled on both
+        2) Disable on sub intf and check pkts from parent still get mirrored
+        3) Enable on sub intf and verify step 1
+        4) Disable on parent and check pkts from sub intf still get mirrored
+        5) Enable on parent and verify step 1
+        """
+        return self.verify_juniper_header_testcase(header = 2, direction = direction)
+
+    @preposttest_wrapper
+    def test_juniper_header_without_header_ingress(self, direction = 'ingress'):
+        """Validate the interface mirroring
+        Ingress is the case supported, because the egress packets will be dropped because of rpf check.
+        So if no header is desired, either disable rpf or use ingress check.
+
+        Validate enable/disable combinations on parent/sub interface
+        1) Check pkts get mirrored from both sub intf and parent intf when enabled on both
+        2) Disable on sub intf and check pkts from parent still get mirrored
+        3) Enable on sub intf and verify step 1
+        4) Disable on parent and check pkts from sub intf still get mirrored
+        5) Enable on parent and verify step 1
+        """
+        return self.verify_juniper_header_testcase(header = 3, direction = direction)
 
     @preposttest_wrapper
     def test_intf_mirror_src_cn1vn1_dst_cn2vn1_analyzer_cn3vn1(self):
