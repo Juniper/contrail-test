@@ -1,0 +1,94 @@
+tests:
+  - name: "Symantec"
+    id: 1 #test count
+    procedure: "symantec_func"
+    traffic_block:
+        duration: "180"
+        sampling_interval: "60"
+        external_server:
+            ip: ""
+            pvn_ext_port_start: "100"
+            snat_ext_port_start: "20099"
+        baremetal_servers: ["10.87.140.121", "10.87.140.120"]
+        client_comm:
+            c_iperf3: ["iperf3", "-P", "1", "-V", "--json", "-b", "10M"]
+            c_httpload_short: ["httpload", "-rate", "1"]
+            c_httpload_lls: ["httpload", "-rate", "1"]
+            c_lbaas: ["httpload", "-rate", "50"]
+            c_udp_ucast: ["iperf3", "-u", "-l", "1300", "-V", "--json", "-P", "20", "-b", "2M"]
+            c_udp_mcast: ["/usr/local/bin/iperf", "-u", "-T", "32", "-l", "1200", "-c", "224.0.50.50"]
+            c_ping: ["ping", "-c", "3", "-W", "3"]
+            c_ping6: ["ping6", "-c", "3", "-W", "3"]
+        server_comm:
+            s_iperf3: ["iperf3", "-s", "-D"]
+            s_udp_ucast: ["iperf3", "-s", "-D"]
+            s_udp_mcast: ["/usr/local/bin/iperf", "-s", "-D", "-u", "-B", "224.0.50.50"]
+    tenants:
+      - name_prefix: "symantecTenant"
+        count: 30 
+        vDNS:
+            name: "symantec.tenantXXX.test_idZZZ"
+            domain_name: "tenantXXX.testZZZ.data.soln.com"
+            dyn_updates: True
+            rec_resolution_order: "round-robin"
+            floating_ip_record: "dashed-ip"
+            ttl: 86400
+            forwarder:
+            external_visible: False
+            reverse_resolution: True
+        IPAM:
+            name: "tenantXXX.test_idZZZ.ipam"
+            count: 1
+        policies:
+            name: "tenantXXX.test_idZZZ.pol"
+            count: 1
+            rules: 
+                 action: allow
+                 protocol: any
+                 #allow_rules_network: ["VN1 VN4", "VN2 VN3"]
+                 #allow_rules_port:  ["any any", "any 8100"]
+                 allow_rules_network: ["any any"]
+                 allow_rules_port:  ["any any"]
+                 direction:
+                 services_flag:
+        virtual_networks:
+          - name: "tenantXXX.test_idZZZ.Private_VSRX_MX_VNYYY"
+            attach_policy: True
+            count: 1
+            ipv4_cidr: "2.3.0.0/16"
+            subnets:
+              - count: 1
+            adv_options:
+                external_flag: False
+                extend_to_pr_flag: True
+                disable_gateway: True
+            bgp_vm:
+                name: "bgp.vm.QQQ"
+                count: 1 #20
+                image: "vSRX"
+                #image: "bird-small"
+                flavor: "m1.medium"
+                #mgmt_network_first: True
+                additional_vn:
+                    - name: "tenantXXX.test_idZZZ.Private_BGP_Addnl_VNYYY"
+                      count: 1
+          - name: "tenantXXX.test_idZZZ.Private_BGP_Addnl_VNYYY"
+            attach_policy: True
+            ipv4_cidr: "1.3.0.0/16"
+            #ipv6_cidr: "fd66::0/96"
+            additional_vn: True
+            subnets:
+              - count: 1
+            adv_options:
+                external_flag: False
+                disable_gateway: False
+                extend_to_pr_flag: False
+            vm:
+                name: "vm.QQQ"
+                image: "bgpass-v6-vm"
+                #flavor: "m1.medium"
+                flavor: "m1.small"
+                count: 1 #20
+        bgpaas:
+           name: "bgpaas.router"
+           asn:  "652"

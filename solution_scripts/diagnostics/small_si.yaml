@@ -1,0 +1,193 @@
+global_config:
+    config:
+        encap_priority: "VxLAN GRE UDP"
+        ip_fab_subnets: "172.16.180.0"
+    #host_aggregates:
+    #  - name: "AG1"
+    #    zone_name: "AZ1"
+    #    hosts:
+    #      - name: "csol1-node10"
+    #      - name: "csol1-node11"
+    #  - name: "AG2"
+    #    zone_name: "AZ2"
+    #    hosts:
+    #      - name: "csol1-node12"
+    pr_mx:
+      - name: "tasman"
+        mgmt_ip: "10.87.140.107"
+        vtep_ip: "172.16.184.200"
+        bgp_gw: "tasman" # not used
+        netconf:
+            uname: "root"
+            password: "Embe1mpls"
+            auto_config: True
+            junos_si: "si-2/0/0"
+        pr_interface:
+            name: "ge-0/1/1"
+            vlan: 2001
+            vn: "MGMT"
+            mac: "52:54:00:12:34:57"
+            ip: "192.168.255.240"
+      - name: "sydney"
+        mgmt_ip: "10.87.140.222"
+        vtep_ip: "172.16.187.200"
+        bgp_gw: "sydney"
+        netconf:
+            uname: "root"
+            password: "Embe1mpls"
+            auto_config: True
+            junos_si: "si-0/0/0"
+    vDNS:
+        name:
+        domain_name: "tenantXXX.testZZZ.mgmt.soln.com"
+        dyn_updates: True
+        rec_resolution_order: "round-robin"
+        floating_ip_record: "dashed-ip"
+        ttl: 2 
+        forwarder:
+        external_visible: False
+        reverse_resolution: True
+    service_template:
+        - name: "ST-transparent"
+          count: 1
+          version: 1
+          service_mode: "transparent"
+          service_type: "firewall"
+          image_name: "soln-trans"
+          interface_list: ["left","right","management"]
+          scaling: True
+          shared_ip: [True, True, False]
+          availability_zone: True
+          instance_flavor: "m1.small"
+        - name: "ST-in-network"
+          count: 1
+          version: 1
+          service_mode: "in-network"
+          service_type: "firewall"
+          image_name: "soln-slave"
+          interface_list: ["left","right","management"]
+          static_routes: [True,False,False]
+          scaling: True
+          shared_ip: [True, True, False]
+          availability_zone: True
+          instance_flavor: "m1.small"
+        - name: "ST-in-network-nat"
+          count: 1
+          version: 1
+          service_mode: "in-network-nat"
+          service_type: "firewall"
+          image_name: "soln-nat"
+          interface_list: ["left","right","management"]
+          static_routes: [False,False,False]
+          scaling: True
+          shared_ip: [True, False, False]
+          availability_zone: False # to debug..fails if True
+          instance_flavor: "m1.small"
+    IPAM:
+        name: "tenantXXX.test_idZZZ.ipam"
+        count: 1
+    virtual_network:
+        name: "MGMT"
+        count: 1 
+        fwd_mode:
+        policies:
+        adv_options:
+            external_flag: False
+        subnets:
+          - count: 1
+            cidr: "192.168.0.0/16"
+            alloc_pool:
+            gw_flag: False
+            dns_flag: False
+    LLS:
+        name: "lls.service.###"
+        count: 10
+        lls_ip: 169.254.169.1 #start address
+        lls_port: 7000 
+        fab_ip: 172.16.180.2 #fab start port  
+        fab_port: 80 #fab start port 
+        fab_dns:  "lls.service.###.soln.com"
+tests:
+  - name: "Symantec"
+    id: 1 #test count
+    procedure: "symantec_func"
+    traffic_block:
+        duration: "1800"
+        sampling_interval: "60"
+        external_server:
+            ip: ""
+            pvn_ext_port_start: "100"
+            snat_ext_port_start: "20099"
+        baremetal_servers: ["10.87.140.121", "10.87.140.120"]
+        client_comm:
+            c_iperf3: ["iperf3", "-P", "1", "-V", "--json", "-b", "2M"]
+            c_httpload_short: ["httpload", "-rate", "2"]
+            c_httpload_lls: ["httpload", "-rate", "1"]
+            c_lbaas: ["httpload", "-rate", "5"]
+            c_udp_ucast: ["iperf3", "-u", "-l", "1300", "-V", "--json", "-P", "2", "-b", "1M"]
+            c_udp_mcast: ["/usr/local/bin/iperf", "-u", "-T", "32", "-l", "1200", "-c", "224.0.50.50"]
+            c_ping: ["ping", "-c", "3", "-W", "3"]
+            c_ping6: ["ping6", "-c", "3", "-W", "3"]
+        server_comm:
+            s_iperf3: ["iperf3", "-s", "-D"]
+            s_udp_ucast: ["iperf3", "-s", "-D"]
+            s_udp_mcast: ["/usr/local/bin/iperf", "-s", "-D", "-u", "-B", "224.0.50.50"]
+    tenants:
+      - name_prefix: "symantec.Tenant"
+        count: 1 
+        vDNS:
+            name: "symantec.tenantXXX.test_idZZZ"
+            domain_name: "tenantXXX.testZZZ.data.soln.com"
+            dyn_updates: True
+            rec_resolution_order: "round-robin"
+            floating_ip_record: "dashed-ip"
+            ttl: 86400
+            forwarder:
+            external_visible: False
+            reverse_resolution: True
+        IPAM:
+            name: "tenantXXX.test_idZZZ.ipam"
+            count: 1
+        policies:
+            name: "tenantXXX.test_idZZZ.pol"
+            count: 1
+            rules: 
+                 action: allow
+                 protocol: any
+                 #allow_rules_network: ["VN1 VN4", "VN2 VN3"]
+                 #allow_rules_port:  ["any any", "any 8100"]
+                 allow_rules_network: ["any any"]
+                 allow_rules_port:  ["any any"]
+                 direction:
+                 services_flag:
+        port_mirror:
+            analyzer_name: "test_analyzer"
+            analyzer_ip: "172.16.180.12"
+            analyzer_port: "5000"
+            routing_instance: "tenantXXX.test_idZZZ.Public_FIP_VNYYY"
+            direction: "both"
+        virtual_networks:
+          - name: "tenantXXX.test_idZZZ.Public_FIP_VNYYY"
+            count: 1
+            subnets:
+              - count: 1
+            adv_options:
+                external_flag: True
+                extend_to_pr_flag: True
+            route_targets:
+                count: 1
+                asn: 64512
+                rt_number: 12100
+          - name: "tenantXXX.test_idZZZ.Private_VNYYY"
+            ipv4_cidr: True
+            ipv6_cidr: True
+            subnets:
+              - count: 1
+            adv_options:
+                external_flag: False
+                extend_to_pr_flag: False
+            vm:
+                name: "vm.QQQ"
+                count: 4 #20
+                attach_port_mirror: True
+

@@ -1,0 +1,263 @@
+global_config:
+    config:
+        encap_priority: "VxLAN GRE UDP"
+        ip_fab_subnets: "172.16.180.0"
+    pr_mx:
+      - name: "tasman"
+        mgmt_ip: "10.87.140.107"
+        vtep_ip: "172.16.184.200"
+        bgp_gw: "tasman" # not used
+        netconf:
+            uname: "root"
+            password: "Embe1mpls"
+            auto_config: True
+            junos_si: "si-2/0/0"
+        pr_interface:
+            name: "ge-0/1/1"
+            vlan: 2001
+            vn: "MGMT"
+            mac: "52:54:00:12:34:57"
+            ip: "192.168.255.240"
+      - name: "sydney"
+        mgmt_ip: "10.87.140.222"
+        vtep_ip: "172.16.187.200"
+        bgp_gw: "sydney"
+        netconf:
+            uname: "root"
+            password: "Embe1mpls"
+            auto_config: True
+            junos_si: "si-0/0/0"
+    pr_qfx:
+      - name: "csol2-tor1"
+        mgmt_ip: "172.16.183.1"
+        vtep_ip: "172.16.183.1"
+        tsn: "csol2-node9"
+        tsn_ip: "172.16.180.9"
+        ta: "csol2-node9-1"
+        bms:
+          - bms_name: "bms-1"
+            tor_interface: "xe-0/0/19:0"
+            physical_server_interface: "eth5"
+            physical_server_mac: "00:e0:ed:20:fa:53"
+            physical_server_mgmt_ip: "10.87.140.121"
+      - name: "csol2-tor2"
+        mgmt_ip: "172.16.185.1"
+        vtep_ip: "172.16.185.1"
+        tsn: "csol2-node9"
+        tsn_ip: "172.16.180.9"
+        ta: "csol2-node9-2"
+        bms:
+          - bms_name: "bms-1"
+            tor_interface: "xe-0/0/4"
+            physical_server_interface: "eth5"
+            physical_server_mac: "00:e0:ed:20:78:47"
+            physical_server_mgmt_ip: "10.87.140.120"
+    vDNS:
+        name:
+        domain_name: "tenantXXX.testZZZ.mgmt.soln.com"
+        dyn_updates: True
+        rec_resolution_order: "round-robin"
+        floating_ip_record: "dashed-ip"
+        ttl: 2 
+        forwarder:
+        external_visible: False
+        reverse_resolution: True
+    IPAM:
+        name: "tenantXXX.test_idZZZ.ipam"
+        count: 1
+    virtual_network:
+        name: "MGMT"
+        count: 1 
+        fwd_mode:
+        policies:
+        adv_options:
+            external_flag: False
+        subnets:
+          - count: 1
+            cidr: "192.168.0.0/16"
+            alloc_pool:
+            gw_flag: False
+            dns_flag: False
+    LLS:
+        name: "lls.service.###"
+        count: 10
+        lls_ip: 169.254.169.1 #start address
+        lls_port: 7000 
+        fab_ip: 172.16.180.12 #fab start port  
+        fab_port: 80 #fab start port 
+        fab_dns:  "lls.service.###.soln.com"
+        
+tests:
+  - name: "Symantec"
+    id: 1 #test count
+    procedure: "symantec_func"
+    traffic_block:
+        duration: "20"
+        sampling_interval: "5"
+        external_server:
+            ip: ""
+            pvn_ext_port_start: "100"
+            snat_ext_port_start: "20099"
+        baremetal_servers: ["10.87.140.121", "10.87.140.120"]
+        client_comm:
+            c_iperf3: ["iperf3", "-P", "1", "-V", "--json", "-b", "100M"]
+            c_httpload_short: ["httpload", "-rate", "3"]
+            c_httpload_lls: ["httpload", "-rate", "3"]
+            c_lbaas: ["httpload", "-rate", "100"]
+            c_udp_ucast: ["iperf3", "-u", "-P", "2", "-V"]
+            c_udp_mcast: ["/usr/local/bin/iperf", "-u", "-T", "32", "-l", "1200", "-c", "224.0.50.50"]
+            c_ping: ["ping", "-c", "3", "-W", "3"]
+            c_ping6: ["ping", "-c", "3", "-W", "3"]
+        server_comm:
+            s_iperf3: ["iperf3", "-s", "-D"]
+            s_udp_mcast: ["/usr/local/bin/iperf", "-s", "-D", "-u", "-B", "224.0.50.50"]
+            s_udp_ucast: ["iperf3", "-s", "-D"]
+    tenants:
+      - name_prefix: "symantec.Tenant"
+        count: 2 
+        vDNS:
+            name: "symantec.tenantXXX.test_idZZZ"
+            domain_name: "tenantXXX.testZZZ.data.soln.com"
+            dyn_updates: True
+            rec_resolution_order: "round-robin"
+            floating_ip_record: "dashed-ip"
+            ttl: 86400
+            forwarder:
+            external_visible: False
+            reverse_resolution: True
+        IPAM:
+            name: "tenantXXX.test_idZZZ.ipam"
+            count: 1
+        policies:
+            name: "tenantXXX.test_idZZZ.pol"
+            count: 1
+            rules: 
+                 action: allow
+                 protocol: any
+                 #allow_rules_network: ["VN1 VN4", "VN2 VN3"]
+                 #allow_rules_port:  ["any any", "any 8100"]
+                 allow_rules_network: ["any any"]
+                 allow_rules_port:  ["any any"]
+                 direction:
+                 services_flag:
+        virtual_networks:
+          - name: "tenantXXX.test_idZZZ.Private_VNYYY"
+            count: 3 
+            attach_policy: True
+            attach_fip: True
+            subnets:
+              - count: 1
+                cidr: "192.170.1.0/24"
+            adv_options:
+                extend_to_pr_flag: True
+            vm:
+                name: "vm.QQQ"
+                attach_fip: True
+                count: 2 
+            bms:
+                name: "bmsRRR"
+                attach_fip: True
+                tor_list: ["csol2-tor1", "csol2-tor2"]
+                vlan_start: 10
+          - name: "tenantXXX.test_idZZZ.Private_SNAT_VNYYY"
+            count: 2 
+            attach_policy: False
+            subnets:
+              - count: 1
+                cidr: "192.169.1.0/24"
+            adv_options:
+                extend_to_pr_flag: True
+            vm:
+                name: "vm.QQQ"
+                count: 2 
+            bms:
+                name: "bmsRRR"
+                tor_list: ["csol2-tor1", "csol2-tor2"]
+                vlan_start: 10
+          - name: "tenantXXX.test_idZZZ.Private_LB_VIP_VNYYY"
+            count: 1
+            attach_fip: True
+            subnets:
+              - count: 1
+                cidr: "192.171.1.0/24"
+            adv_options:
+                extend_to_pr_flag: True
+          - name: "tenantXXX.test_idZZZ.Private_LB_Pool_VNYYY"
+            count: 1
+            subnets:
+              - count: 1
+                cidr: "192.172.1.0/24"
+            adv_options:
+                extend_to_pr_flag: True
+            vm:
+                name: "vm.QQQ"
+                count: 2 #20
+            bms:
+                name: "bmsRRR"
+                tor_list: ["csol2-tor1", "csol2-tor2"]
+                vlan_start: 10
+          - name: "tenantXXX.test_idZZZ.SNAT_GW_VNYYY"
+            count: 1
+            subnets:
+              - count: 1
+                cidr: "192.173.1.0/24"
+            adv_options:
+                external_flag: True
+                extend_to_pr_flag: True
+            vm:
+                name: "vm.QQQ"
+                count: 2 #20
+            bms:
+                name: "bmsRRR"
+                tor_list: ["csol2-tor1", "csol2-tor2"]
+                vlan_start: 10
+            route_targets:
+                count: 1
+                asn: 64512
+                rt_number: 12000
+          - name: "tenantXXX.test_idZZZ.Public_FIP_VNYYY"
+            count: 1
+            subnets:
+              - count: 1
+                cidr: "192.174.1.0/24"
+            adv_options:
+                external_flag: True
+                extend_to_pr_flag: True
+            route_targets:
+                count: 1
+                asn: 64512
+                rt_number: 12100
+            vm:
+                name: "vm.QQQ"
+                count: 5 #20
+            bms:
+                name: "bmsRRR"
+                tor_list: ["csol2-tor1", "csol2-tor2"]
+                vlan_start: 10
+        Lbaas:
+          - pool_name: "tenantXXX.test_idZZZ.lbaas.pool"
+            count: 1
+            method: "ROUND_ROBIN"
+            pool_protocol: "HTTP"
+            pool_members:
+              - count: 3 # not used
+                ip_add: # not used
+                port: 80
+            pool_vip:
+                vip_name: "vip_XXX"
+                port: "8080"
+                protocol: "HTTP"
+            probe:
+                type: "HTTP"
+                delay: 20
+                timeout: 10
+                retries: 3
+
+        routers:
+          - name: "tenantXXX.test_idZZZ.router.YYY"
+            count: 1
+        FIP:
+            floating_ip_pool: "tenantXXX.test_idZZZ.Pool"
+            fip_gw_vn_name: "tenantXXX.test_idZZZ.Public_FIP_VNYYY"
+            alloc_type: "Dynamic"
+            count: 10 # 

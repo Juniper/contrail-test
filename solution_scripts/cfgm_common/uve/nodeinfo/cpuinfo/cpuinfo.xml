@@ -1,0 +1,5 @@
+<?xml-stylesheet type="text/xsl" href="/universal_parse.xsl"?>
+<cpuinfo type="rlist">
+<CpuLoadInfoReq type="sandesh">
+</CpuLoadInfoReq>
+</cpuinfo>

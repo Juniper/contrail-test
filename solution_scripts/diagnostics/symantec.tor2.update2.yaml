@@ -1,0 +1,234 @@
+tests:
+  - name: "Symantec"
+    id: 1 #test count
+    procedure: "symantec_func"
+    traffic_block:
+        duration: "900"
+        sampling_interval: "60"
+        external_server:
+            ip: ""
+            pvn_ext_port_start: "100"
+            snat_ext_port_start: "20099"
+        baremetal_servers: ["10.87.140.129"]
+        client_comm:
+            c_iperf3: ["iperf3", "-P", "1", "-V", "--json", "-b", "500M"]
+            c_httpload_short: ["htt_pload", "-rate", "200"]
+            c_httpload_lls: ["http_load", "-rate", "200"]
+            c_lbaas: ["http_load", "-rate", "200"]
+            c_udp_ucast: ["iperf3", "-u", "-P", "20", "-V", "--json", "-b", "1M"]
+            c_udp_mcast: ["/usr/local/bin/iperf", "-u", "-T", "32", "-l", "1200", "-c", "224.0.50.50"]
+            c_ping: ["ping", "-c", "3", "-W", "3"]
+            c_ping6: ["ping6", "-c", "3", "-W", "3"]
+        #client_comm:
+        #    c_iperf3: ["iperf3", "-P", "1", "-V", "--json", "-b", "200M"]
+        #    c_httpload_short: ["httpload", "-rate", "90"]
+        #    c_httpload_lls: ["httpload", "-rate", "80"]
+        #    c_lbaas: ["httpload", "-rate", "200"]
+        #    c_udp_ucast: ["iperf3", "-u", "-P", "2", "-V"]
+        #    c_udp_mcast: ["/usr/local/bin/iperf", "-u", "-T", "32", "-l", "1200", "-c", "224.0.50.50"]
+        #    c_ping: ["ping", "-c", "3", "-W", "3"]
+        server_comm:
+            s_iperf3: ["iperf3", "-s", "-D"]
+            s_udp_ucast: ["iperf3", "-s", "-D"]
+            s_udp_mcast: ["/usr/local/bin/iperf", "-s", "-D", "-u", "-B", "224.0.50.50"]
+    tenants:
+      - name_prefix: "symantec.Tenant"
+        count: 21 
+        vDNS:
+            name: "symantec.tenantXXX.test_idZZZ"
+            domain_name: "tenantXXX.testZZZ.data.soln.com"
+            dyn_updates: True
+            rec_resolution_order: "round-robin"
+            floating_ip_record: "dashed-ip"
+            ttl: 86400
+            forwarder:
+            external_visible: False
+            reverse_resolution: True
+        IPAM:
+            name: "tenantXXX.test_idZZZ.ipam"
+            count: 1
+        policies:
+            name: "tenantXXX.test_idZZZ.pol"
+            count: 1
+            rules: 
+                 action: allow
+                 protocol: any
+                 #allow_rules_network: ["VN1 VN4", "VN2 VN3"]
+                 #allow_rules_port:  ["any any", "any 8100"]
+                 allow_rules_network: ["any any"]
+                 allow_rules_port:  ["any any"]
+                 direction:
+                 services_flag:
+        port_mirror:
+            analyzer_name: "test_analyzer"
+            analyzer_ip: "172.16.70.9"
+            analyzer_port: "5000"
+            analyzer_public_vn: "tenantXXX.test_idZZZ.Public_FIP_VNYYY"
+            direction: "both"
+        virtual_networks:
+          - name: "tenantXXX.test_idZZZ.Private_VNYYY"
+            count: 1
+            attach_policy: True
+            attach_fip: True
+            subnets:
+              - count: 1
+            adv_options:
+                extend_to_pr_flag: True
+                disable_policy: False
+                attach_port_mirror: False
+                flood_unknown_unicast: False
+                reverse_path_forwarding: False
+                allow_transit: False
+            vm:
+                name: "vm.QQQ"
+                count: 3 
+            bms:
+                name: "bmsRRR"
+                tor_list: ["csol1-tor2"]
+          - name: "tenantXXX.test_idZZZ.Private_SNAT_VNYYY"
+            count: 2
+            attach_policy: False
+            subnets:
+              - count: 1
+            adv_options:
+                extend_to_pr_flag: True
+                disable_policy: False
+                attach_port_mirror: False
+                flood_unknown_unicast: False
+                reverse_path_forwarding: False
+                allow_transit: False
+            vm:
+                name: "vm.QQQ"
+                count: 1 
+            bms:
+                name: "bmsRRR"
+                tor_list: ["csol1-tor2"]
+          - name: "tenantXXX.test_idZZZ.Private_SC_MGMT_VNYYY"
+            count: 1
+            subnets:
+              - count: 1
+            adv_options:
+                external_flag: False
+                extend_to_pr_flag: False
+          - name: "tenantXXX.test_idZZZ.Private_SC_Left_VNYYY"
+            count: 1
+            subnets:
+              - count: 1
+            adv_options:
+                external_flag: False
+                extend_to_pr_flag: False
+                disable_policy: False
+                attach_port_mirror: False
+                flood_unknown_unicast: False
+                reverse_path_forwarding: False
+                allow_transit: False
+          - name: "tenantXXX.test_idZZZ.Private_SC_Right_VNYYY"
+            count: 1
+            subnets:
+              - count: 1
+            adv_options:
+                external_flag: False
+                extend_to_pr_flag: False
+                disable_policy: False
+                attach_port_mirror: False
+                flood_unknown_unicast: False
+                reverse_path_forwarding: False
+                allow_transit: True
+          - name: "tenantXXX.test_idZZZ.Private_LB_VIP_VNYYY"
+            count: 1
+            attach_fip: True
+            subnets:
+              - count: 1
+            adv_options:
+                extend_to_pr_flag: True
+                disable_policy: False
+                attach_port_mirror: False
+                flood_unknown_unicast: False
+                reverse_path_forwarding: False
+                allow_transit: True
+          - name: "tenantXXX.test_idZZZ.Private_LB_Pool_VNYYY"
+            count: 1
+            subnets:
+              - count: 1
+            adv_options:
+                extend_to_pr_flag: True
+                disable_policy: False
+                attach_port_mirror: False
+                flood_unknown_unicast: False
+                reverse_path_forwarding: False
+                allow_transit: False
+            vm:
+                name: "vm.QQQ"
+                count: 3 #20
+            bms:
+                name: "bmsRRR"
+                tor_list: ["csol1-tor2"]
+          - name: "tenantXXX.test_idZZZ.SNAT_GW_VNYYY"
+            count: 1
+            subnets:
+              - count: 1
+            adv_options:
+                external_flag: True
+                extend_to_pr_flag: True
+                disable_policy: False
+                attach_port_mirror: False
+                flood_unknown_unicast: False
+                reverse_path_forwarding: False
+                allow_transit: False
+            vm:
+                name: "vm.QQQ"
+                count: 2 #20
+            bms:
+                name: "bmsRRR"
+                tor_list: ["csol1-tor2"]
+            route_targets:
+                count: 1
+                asn: 64512
+                rt_number: 12000
+          - name: "tenantXXX.test_idZZZ.Public_FIP_VNYYY"
+            count: 1
+            subnets:
+              - count: 1
+            adv_options:
+                external_flag: True
+                extend_to_pr_flag: True
+                disable_policy: False
+                flood_unknown_unicast: False
+                reverse_path_forwarding: False
+                allow_transit: False
+            route_targets:
+                count: 1
+                asn: 64512
+                rt_number: 12100
+            vm:
+                name: "vm.QQQ"
+                count: 3 #20
+            bms:
+                name: "bmsRRR"
+                tor_list: ["csol1-tor2"]
+        routers:
+          - name: "tenantXXX.test_idZZZ.router.YYY"
+            count: 1
+        Lbaas:
+          - pool_name: "tenantXXX.test_idZZZ.lbaas.pool"
+            count: 1
+            method: "ROUND_ROBIN"
+            pool_protocol: "HTTP"
+            pool_members:
+              - count: 4 # not used
+                ip_add: # not used
+                port: 80
+            pool_vip:
+                vip_name: "vip_XXX"
+                port: "8080"
+                protocol: "HTTP"
+            probe:
+                type: "HTTP"
+                delay: 20
+                timeout: 10
+                retries: 3
+        FIP:
+            floating_ip_pool: "tenantXXX.test_idZZZ.Pool"
+            fip_gw_vn_name: "tenantXXX.test_idZZZ.Public_FIP_VNYYY"
+            alloc_type: "Dynamic"
+            count: 30 # 

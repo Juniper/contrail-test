@@ -1,0 +1,133 @@
+global_config:
+    config:
+        encap_priority: "VxLAN GRE UDP"
+        ip_fab_subnets: "172.16.180.0"
+    #flow_aging:
+    #   - protocol: "udp"
+    #     port: 0
+    #     timeout: 1 
+    #   - protocol: "tcp"
+    #     port: 0
+    #     timeout: 60
+    #   - protocol: "icmp"
+    #     port: 0
+    #     timeout: 1 
+    host_aggregates:
+      - name: "AG1"
+        zone_name: "AZ1"
+        hosts:
+          - name: "csol2-node10"
+          - name: "csol2-node11"
+          - name: "csol2-node13"
+          - name: "csol2-node14"
+          - name: "csol2-node15"
+          - name: "csol2-node16"
+      - name: "AG2"
+        zone_name: "AZ2"
+        hosts:
+          - name: "csol1-node12"
+    non_dpdk_config: 
+       - zone_name: "AZ1"
+         flavor: "m1.small"
+    dpdk_config:
+       - zone_name: "AZ2"
+         flavor: "contrail_flavor_2cpu" 
+    pr_mx:
+      - name: "tasman"
+        mgmt_ip: "10.87.140.107"
+        vtep_ip: "172.16.184.200"
+        loopback_ip: "172.16.184.200"
+        bgp_gw: "tasman" # not used
+        netconf:
+            enabled: True
+            uname: "root"
+            password: "Embe1mpls"
+            auto_config: True
+            junos_si: "si-2/0/0"
+        pr_interface:
+            name: "ge-0/1/1"
+            vlan: 2001
+            vn: "MGMT"
+            mac: "52:54:00:12:34:57"
+            ip: "192.168.255.240"
+      - name: "sydney"
+        mgmt_ip: "10.87.140.222"
+        vtep_ip: "172.16.187.200"
+        loopback_ip: "172.16.187.200"
+        bgp_gw: "sydney"
+        netconf:
+            enabled: True
+            uname: "root"
+            password: "Embe1mpls"
+            auto_config: True
+            junos_si: "si-0/0/0"
+    vDNS:
+        name:
+        domain_name: "tenantXXX.testZZZ.mgmt.soln.com"
+        dyn_updates: True
+        rec_resolution_order: "round-robin"
+        floating_ip_record: "dashed-ip"
+        ttl: 2 
+        forwarder:
+        external_visible: False
+        reverse_resolution: True
+    service_template:
+        - name: "ST-transparent"
+          count: 1
+          version: 1
+          service_mode: "transparent"
+          service_type: "firewall"
+          image_name: "soln-trans"
+          interface_list: ["left","right","management"]
+          scaling: True
+          shared_ip: [True, True, False]
+          availability_zone: True
+          instance_flavor: "m1.small"
+        - name: "ST-in-network"
+          count: 1
+          version: 1
+          service_mode: "in-network"
+          service_type: "firewall"
+          image_name: "soln-slave"
+          interface_list: ["left","right","management"]
+          static_routes: [True,False,False]
+          scaling: True
+          shared_ip: [True, True, False]
+          availability_zone: True
+          instance_flavor: "m1.small"
+        - name: "ST-in-network-nat"
+          count: 1
+          version: 1
+          service_mode: "in-network-nat"
+          service_type: "firewall"
+          image_name: "soln-nat"
+          interface_list: ["left","right","management"]
+          static_routes: [False,False,False]
+          scaling: True
+          shared_ip: [True, False, False]
+          availability_zone: False # to debug..fails if True
+          instance_flavor: "m1.small"
+    IPAM:
+        name: "tenantXXX.test_idZZZ.ipam"
+        count: 1
+    virtual_network:
+        name: "MGMT"
+        count: 1 
+        fwd_mode:
+        policies:
+        adv_options:
+            external_flag: False
+        subnets:
+          - count: 1
+            cidr: "192.168.0.0/16"
+            alloc_pool:
+            gw_flag: False
+            dns_flag: False
+    LLS:
+        name: "lls.service.###"
+        count: 10
+        lls_ip: 169.254.169.1 #start address
+        lls_port: 7000 
+        fab_ip: 172.16.180.12 #fab start port  
+        fab_port: 80 #fab start port 
+        fab_dns:  "lls.service.###.soln.com"
