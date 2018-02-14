@@ -99,7 +99,8 @@ class VncLibFixture(fixtures.Fixture):
                                     keyfile=self.keyfile,
                                     cacert=self.cacert,
                                     insecure=self.insecure,
-                                    logger=self.logger)
+                                    logger=self.logger,
+                                    scope='project')
             elif self.orchestrator == 'vcenter':
                 self.auth_client = VcenterAuth(self.username,
                                                 self.password,

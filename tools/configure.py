@@ -366,6 +366,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
             env.test.get('stack_tenant', '')))
     stack_domain = os.getenv('STACK_DOMAIN',
             env.get('stack_domain', env.test.get('stack_domain', '')))
+    use_project_scoped_token = env.test.get('use_project_scoped_token', '')
     if not env.has_key('domain_isolation'):
         env.domain_isolation = False
     if not env.has_key('cloud_admin_domain'):
@@ -497,6 +498,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     sanity_params = sanity_ini_templ.safe_substitute(
         {'__testbed_json_file__'   : 'sanity_testbed.json',
          '__keystone_version__'    : keystone_version,
+         '__use_project_scoped_token__': use_project_scoped_token,
          '__nova_keypair_name__'   : keypair_name,
          '__orch__'                : orch,
          '__admin_user__'          : admin_user,
