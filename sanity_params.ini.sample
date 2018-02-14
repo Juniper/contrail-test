@@ -30,6 +30,7 @@ adminTenant=$__admin_tenant__
 
 #keystone_version
 keystone_version=$__keystone_version__
+use_project_scoped_token=$__use_project_scoped_token__
 
 # Neutron user will have member rights in the dynamically created test tenants
 neutron_username=$__neutron_username__

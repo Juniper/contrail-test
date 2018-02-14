@@ -365,6 +365,7 @@ class OpenstackAuth(OrchestratorAuth):
            self.keystone_keyfile = self.inputs.keystonekeyfile
            self.certbundle = self.inputs.certbundle
            self.insecure = self.inputs.insecure
+           self.scope = 'project' if inputs.use_project_scoped_token else scope
        else:
            self.auth_url = auth_url or os.getenv('OS_AUTH_URL')
            self.region_name = region_name or os.getenv('OS_REGION_NAME')

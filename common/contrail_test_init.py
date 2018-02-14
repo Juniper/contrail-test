@@ -96,6 +96,10 @@ class TestInputs(object):
                                                    'Basic',
                                                    'keystone_version',
                                                    'v2')
+        self.use_project_scoped_token = read_config_option(self.config,
+                                                   'Basic',
+                                                   'use_project_scoped_token',
+                                                   False)
         self.domain_isolation = read_config_option(self.config,
             'Basic',
             'domain_isolation',
