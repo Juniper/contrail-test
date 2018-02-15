@@ -19,6 +19,9 @@ class TestNSIsolation(BaseK8sTest):
         namespace1 = self.setup_namespace(name = "ns1", isolation = True)
         namespace2 = self.setup_namespace(name = "ns2", isolation = True)
         namespace3 = self.setup_namespace(name = "ns3")
+        assert namespace1.verify_on_setup()
+        assert namespace2.verify_on_setup()
+        assert namespace3.verify_on_setup()
         ns_1_label = "namespace1"
         ns_2_label = "namespace2"
         ns_3_label = "namespace3"
@@ -166,8 +169,10 @@ class TestCustomIsolation(BaseK8sTest):
                    "project" : vn_for_pod.project_name[0],
                    "name": vn_for_pod.vn_name}
         namespace1 = self.setup_namespace(name = "ns1")
+        assert namespace1.verify_on_setup()
         namespace2 = self.setup_namespace(name = "ns2", custom_isolation = True,
                                            fq_network_name= vn_dict_for_namespace)
+        assert namespace2.verify_on_setup()
         ns_1_label = "namespace1"
         ns_2_label = "namespace2"
         client1_ns1 = self.setup_nginx_pod(namespace="ns1",
