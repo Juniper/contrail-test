@@ -2,6 +2,8 @@ from common.k8s.base import BaseK8sTest
 from tcutils.wrappers import preposttest_wrapper
 from time import sleep
 
+from tcutils.util import get_random_name
+
 class TestNSIsolationSerial(BaseK8sTest):
 
     @classmethod
@@ -16,27 +18,33 @@ class TestNSIsolationSerial(BaseK8sTest):
         service_ns1, ingress_ns1 = None, None
         service_ns2, ingress_ns2 = None, None
         service_ns3, ingress_ns3 = None, None
-        namespace1 = self.setup_namespace(name = "ns1", isolation = True)
-        namespace2 = self.setup_namespace(name = "ns2", isolation = True)
-        namespace3 = self.setup_namespace(name = "ns3")
+        namespace1_name = get_random_name("ns1")
+        namespace2_name = get_random_name("ns2")
+        namespace3_name = get_random_name("ns3")
+        namespace1 = self.setup_namespace(name = namespace1_name, isolation = True)
+        namespace2 = self.setup_namespace(name = namespace2_name, isolation = True)
+        namespace3 = self.setup_namespace(name = namespace3_name)
+        assert namespace1.verify_on_setup()
+        assert namespace2.verify_on_setup()
+        assert namespace3.verify_on_setup()
         ns_1_label = "namespace1"
         ns_2_label = "namespace2"
         ns_3_label = "namespace3"
-        client1_ns1 = self.setup_nginx_pod(namespace="ns1",
+        client1_ns1 = self.setup_nginx_pod(namespace=namespace1_name,
                                              labels={'app': ns_1_label})
-        client2_ns1 = self.setup_nginx_pod(namespace="ns1",
+        client2_ns1 = self.setup_nginx_pod(namespace=namespace1_name,
                                              labels={'app': ns_1_label})
-        client3_ns1 = self.setup_busybox_pod(namespace="ns1")
-        client1_ns2 = self.setup_nginx_pod(namespace="ns2",
+        client3_ns1 = self.setup_busybox_pod(namespace=namespace1_name)
+        client1_ns2 = self.setup_nginx_pod(namespace=namespace2_name,
                                              labels={'app': ns_2_label})
-        client2_ns2 = self.setup_nginx_pod(namespace="ns2",
+        client2_ns2 = self.setup_nginx_pod(namespace=namespace2_name,
                                              labels={'app': ns_2_label})
-        client3_ns2 = self.setup_busybox_pod(namespace="ns2")
-        client1_ns3 = self.setup_nginx_pod(namespace="ns3",
+        client3_ns2 = self.setup_busybox_pod(namespace=namespace2_name)
+        client1_ns3 = self.setup_nginx_pod(namespace=namespace3_name,
                                              labels={'app': ns_3_label})
-        client2_ns3 = self.setup_nginx_pod(namespace="ns3",
+        client2_ns3 = self.setup_nginx_pod(namespace=namespace3_name,
                                              labels={'app': ns_3_label})
-        client3_ns3 = self.setup_busybox_pod(namespace="ns3")
+        client3_ns3 = self.setup_busybox_pod(namespace=namespace3_name)
         assert self.verify_nginx_pod(client1_ns1)
         assert self.verify_nginx_pod(client2_ns1)
         assert client3_ns1.verify_on_setup()
@@ -169,28 +177,32 @@ class TestCustomIsolationSerial(BaseK8sTest):
         vn_dict_for_pod = {"domain": vn_for_pod.domain_name,
                    "project" : vn_for_pod.project_name[0],
                    "name": vn_for_pod.vn_name}
-        namespace1 = self.setup_namespace(name = "ns1")
-        namespace2 = self.setup_namespace(name = "ns2", custom_isolation = True,
+        namespace1_name = get_random_name("ns1")
+        namespace2_name = get_random_name("ns2")
+        namespace1 = self.setup_namespace(name = namespace1_name)
+        namespace2 = self.setup_namespace(name = namespace2_name, custom_isolation = True,
                                            fq_network_name= vn_dict_for_namespace)
+        assert namespace1.verify_on_setup()
+        assert namespace2.verify_on_setup()
         ns_1_label = "namespace1"
         ns_2_label = "namespace2"
-        client1_ns1 = self.setup_nginx_pod(namespace="ns1",
+        client1_ns1 = self.setup_nginx_pod(namespace=namespace1_name,
                                              labels={'app': ns_1_label})
-        client2_ns1 = self.setup_nginx_pod(namespace="ns1",
+        client2_ns1 = self.setup_nginx_pod(namespace=namespace1_name,
                                              labels={'app': ns_1_label})
-        client3_ns1 = self.setup_busybox_pod(namespace="ns1")
-        client4_ns1 = self.setup_busybox_pod(namespace="ns1",
+        client3_ns1 = self.setup_busybox_pod(namespace=namespace1_name)
+        client4_ns1 = self.setup_busybox_pod(namespace=namespace1_name,
                                              custom_isolation = True,
                                              fq_network_name= vn_dict_for_pod)
-        client5_ns1 = self.setup_busybox_pod(namespace="ns1",
+        client5_ns1 = self.setup_busybox_pod(namespace=namespace1_name,
                                              custom_isolation = True,
                                              fq_network_name= vn_dict_for_pod)
-        client1_ns2 = self.setup_nginx_pod(namespace="ns2",
+        client1_ns2 = self.setup_nginx_pod(namespace=namespace2_name,
                                              labels={'app': ns_2_label})
-        client2_ns2 = self.setup_nginx_pod(namespace="ns2",
+        client2_ns2 = self.setup_nginx_pod(namespace=namespace2_name,
                                              labels={'app': ns_2_label})
-        client3_ns2 = self.setup_busybox_pod(namespace="ns2")
-        client4_ns2 = self.setup_busybox_pod(namespace="ns2",
+        client3_ns2 = self.setup_busybox_pod(namespace=namespace2_name)
+        client4_ns2 = self.setup_busybox_pod(namespace=namespace2_name,
                                              custom_isolation = True,
                                              fq_network_name= vn_dict_for_pod)
         assert self.verify_nginx_pod(client1_ns1)
@@ -292,24 +304,26 @@ class TestProjectIsolationSerial(BaseK8sTest):
                          project_name = deleted_project)
         service_ns1, ingress_ns1 = None, None
         service_ns2, ingress_ns2 = None, None
-        namespace1 = self.setup_namespace(name = "ns1")
-        namespace2 = self.setup_namespace(name = "ns2", isolation = isolation)
+        namespace1_name = get_random_name("ns1")
+        namespace2_name = get_random_name("ns2")
+        namespace1 = self.setup_namespace(name = namespace1_name)
+        namespace2 = self.setup_namespace(name = namespace2_name, isolation = isolation)
         assert namespace1.verify_on_setup()
         assert namespace1.project_isolation
         assert namespace2.verify_on_setup()
         assert namespace2.project_isolation
         ns_1_label = "namespace1"
         ns_2_label = "namespace2"
-        client1_ns1 = self.setup_nginx_pod(namespace="ns1",
+        client1_ns1 = self.setup_nginx_pod(namespace=namespace1_name,
                                              labels={'app': ns_1_label})
-        client2_ns1 = self.setup_nginx_pod(namespace="ns1",
+        client2_ns1 = self.setup_nginx_pod(namespace=namespace1_name,
                                              labels={'app': ns_1_label})
-        client3_ns1 = self.setup_busybox_pod(namespace="ns1")
-        client1_ns2 = self.setup_nginx_pod(namespace="ns2",
+        client3_ns1 = self.setup_busybox_pod(namespace=namespace1_name)
+        client1_ns2 = self.setup_nginx_pod(namespace=namespace2_name,
                                              labels={'app': ns_2_label})
-        client2_ns2 = self.setup_nginx_pod(namespace="ns2",
+        client2_ns2 = self.setup_nginx_pod(namespace=namespace2_name,
                                              labels={'app': ns_2_label})
-        client3_ns2 = self.setup_busybox_pod(namespace="ns2")
+        client3_ns2 = self.setup_busybox_pod(namespace=namespace2_name)
         assert self.verify_nginx_pod(client1_ns1)
         assert self.verify_nginx_pod(client2_ns1)
         assert client3_ns1.verify_on_setup()
