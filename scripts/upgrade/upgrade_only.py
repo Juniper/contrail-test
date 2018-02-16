@@ -49,7 +49,7 @@ class Upgradeonly(testtools.TestCase):
         with settings(
             host_string='%s@%s' % (
                 username, self.inputs.cfgm_ip),
-                password, warn_only=True, abort_on_prompts=False, debug=True):
+                password=password, warn_only=True, abort_on_prompts=False, debug=True):
             status = run("cd /tmp/temp/;ls")
             self.logger.debug("%s" % status)
 
