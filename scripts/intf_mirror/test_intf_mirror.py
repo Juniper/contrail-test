@@ -33,6 +33,43 @@ class TestIntfMirror(BaseIntfMirrorTest, VerifyIntfMirror):
         5) Enable on parent and verify step 1
         """
         return self.verify_intf_mirroring_disable_enable_scenarios()
+   
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_juniper_header(self):
+        """Validate the presence of juniper header 
+        1) Check pkts get mirrored from both sub intf and parent intf when enabled on both
+        2) Verify if the juniper header is correct
+        3) Verify if the inner header is correct
+        """
+        return self.verify_juniper_header_testcase(header = 2)
+
+    @preposttest_wrapper
+    def test_juniper_header_ingress(self, direction = 'ingress'):
+        """Validate the presence of juniper header with ingress 
+        1) Check pkts get mirrored from both sub intf and parent intf when enabled on both
+        2) Verify if the juniper header is correct
+        3) Verify if the inner header is correct
+        """
+        return self.verify_juniper_header_testcase(header = 2, direction = direction)
+
+    @preposttest_wrapper
+    def test_juniper_header_egress(self, direction = 'egress'):
+        """Validate the presence of juniper header with egress 
+        1) Check pkts get mirrored from both sub intf and parent intf when enabled on both
+        2) Verify if the juniper header is correct
+        3) Verify if the inner header is correct
+        """
+        return self.verify_juniper_header_testcase(header = 2, direction = direction)
+
+    @preposttest_wrapper
+    def test_juniper_header_without_header_ingress(self, direction = 'ingress'):
+        """Validate the presence of no juniper header
+        1) Check pkts get mirrored from both sub intf and parent intf when enabled on both
+        2) Verify if the juniper header is absent
+        3) Verify if the inner header is correct 
+        """
+        return self.verify_juniper_header_testcase(header = 3, direction = direction)
 
     @preposttest_wrapper
     def test_intf_mirror_src_cn1vn1_dst_cn2vn1_analyzer_cn3vn1(self):
