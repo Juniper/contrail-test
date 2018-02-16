@@ -212,7 +212,7 @@ class Inputs(object):
     def run_cmd_on_server(self, server_ip, issue_cmd, username=None,
                           password=None, pty=True):
         return run_cmd_on_server(issue_cmd, server_ip, username,
-                                 password
+                                 password,
                                  pty=pty,
                                  as_sudo=True,
                                  logger=self.logger,
