@@ -419,13 +419,17 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
         return True
     # end validate_nginx_lb
 
-    def setup_policy(self,
-                     pod_selector=None,
-                     name=None,
-                     namespace='default',
-                     metadata=None,
-                     spec=None,
-                     ingress=None):
+    def setup_update_policy(self,
+                            pod_selector=None,
+                            name=None,
+                            namespace='default',
+                            metadata=None,
+                            spec=None,
+                            policy_types=None,
+                            ingress=None,
+                            egress=None,
+                            update=False,
+                            np_fixture=None):
         '''
         A helper method to create generic network policy
         Ex :
@@ -441,12 +445,25 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
             ...
             ...
         ]
-
+        egress = [
+            { 'to': 
+                [
+                    {'ip_block': 
+                        {"cidr" : "1.2.3.4/24"},
+                    },
+                ],
+            "ports" : [ 'tcp/80', 'UDP/53' ]
+            },
+            ...
+            ...
+        ]
         '''
         metadata = metadata or {}
         spec = spec or {}
         ingress = ingress or {}
+        egress = egress or {}
         ingress_list = []
+        egress_list = []
         name = name or get_random_name('np-')
         metadata.update({'name': name})
         selector_dict = {}
@@ -459,12 +476,17 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
             ingress_item_dict = {}
             for ingress_item in ingress:
                 from_entries = []
-                for from_item in ingress_item.get('from'):
+                if ingress_item == {}:
+                    ingress_list.append({})
+                    break
+                for from_item in ingress_item.get('from', {}):
                     ingress_pod_dict = {}
                     ingress_ns_dict = {}
+                    ingress_ip_block_dict = {}
                     ingress_pod_selector = None
                     ingress_ns_selector = None
-
+                    ingress_ip_block = None
+                    
                     from_item_dict = from_item.get('pod_selector') or {}
                     for k, v in from_item_dict.iteritems():
                         if not ingress_pod_dict:
@@ -480,8 +502,21 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
                         ingress_ns_dict['match_labels'].update({k: v})
                         ingress_ns_selector = {
                             'namespace_selector': ingress_ns_dict}
+
+                    from_item_dict = from_item.get('ip_block') or {}
+                    for k, v in from_item_dict.iteritems():
+                        if not ingress_ip_block_dict:
+                            ingress_ip_block_dict = {'cidr': ""}
+                        if k == "cidr":
+                            ingress_ip_block_dict.update({k: v})
+                        if k == "_except":
+                            ingress_ip_block_dict.update({k: v})
+                    ingress_ip_block = {
+                            'ip_block': ingress_ip_block_dict}
+                    
                     from_entries.append(ingress_pod_selector or
-                                        ingress_ns_selector)
+                                        ingress_ns_selector or
+                                        ingress_ip_block)
                 # end for from_item
 
                 port_list = []
@@ -489,25 +524,71 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
                     protocol, port = port_str.split('/')
                     port_list.append({'protocol': protocol, 'port': int(port)})
                 # end for port_str
-                ingress_item_dict = {'from': from_entries}
+                if len(from_entries)>0:
+                    ingress_item_dict = {'from': from_entries}
                 if port_list:
                     ingress_item_dict.update({'ports': port_list})
                 ingress_list.append(ingress_item_dict)
 
             # end for ingress_item
         # end if ingress
-        spec['ingress'] = ingress_list
+        if egress is not None:
+            egress_item_dict = {}
+            for egress_item in egress:
+                to_entries = []
+                if egress_item == {}:
+                    egress_list.append({})
+                    break
+                
+                for to_item in egress_item.get('to', {}):
+                    egress_ip_block_dict = {}
+                    egress_ip_block = None
+                    #space
+                    to_item_dict = to_item.get('ip_block') or {}
+                    for k, v in to_item_dict.iteritems():
+                        if not egress_ip_block_dict:
+                            egress_ip_block_dict = {'cidr': ""}
+                        if k == "cidr":
+                            egress_ip_block_dict.update({k: v})
+                    egress_ip_block = {
+                            'ip_block': egress_ip_block_dict}  
+                    to_entries.append(egress_ip_block)
+                # end for from_item
+
+                port_list = []
+                for port_str in egress_item.get('egress_ports', {}):
+                    protocol, port = port_str.split('/')
+                    port_list.append({'protocol': protocol, 'port': int(port)})
+                # end for port_str
+                if len(to_entries) > 0:
+                    egress_item_dict = {'to': to_entries}
+                if port_list:
+                    egress_item_dict.update({'egress_ports': port_list})
+                egress_list.append(egress_item_dict)
+            # end for egress_item
+        # end of egress
+        
+        if policy_types:
+            spec['policy_types'] = policy_types
+        if ingress:
+            spec['ingress'] = ingress_list
+        if egress:
+            spec['egress'] = egress_list
         spec['pod_selector'] = pod_selector_dict
 
-        return self.useFixture(NetworkPolicyFixture(
-            connections=self.connections,
-            name=name,
-            namespace=namespace,
-            metadata=metadata,
-            spec=spec))
+        if update == False:
+            return self.useFixture(NetworkPolicyFixture(
+                connections=self.connections,
+                name=name,
+                namespace=namespace,
+                metadata=metadata,
+                spec=spec))
+        else:
+            return np_fixture.update(metadata=np_fixture.metadata,
+                          spec=spec)
     # end setup_policy
 
-    def setup_simple_policy(self,
+    def setup_update_simple_policy(self,
                             pod_selector=None,
                             name=None,
                             namespace='default',
@@ -515,28 +596,46 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
                             spec=None,
                             ingress_pods=None,
                             ingress_namespaces=None,
-                            ports=None):
+                            ingress_ipblock=None,
+                            egress_ipblock=None,
+                            ingress_all = False,
+                            egress_all = False,
+                            policy_types=None,
+                            ports=None,
+                            egress_ports=None,
+                            update = False,
+                            np_fixture = None):
         '''
         A simple helper method to create a network policy with a single
         ingress entry and a single from condition
         Ex :
         ingress_pod : { 'role': 'frontend'}
         ingress_namespace : { 'project': 'mynamespace'}
+        ingress_ipblock : { "cidr" : "10.204.217.0/24", "_except" : ["10.204.217.4/30"] }
+        egress_ipblock : { "cidr" : "10.204.217.0/24"}
         ports = ['tcp/80']
+        egress_ports = ['tcp/80']
+        policy_types = ["Ingress"] or ["Egress"]
 
         '''
         metadata = metadata or {}
         spec = spec or {}
         ingress_pods = ingress_pods
         ingress_namespaces = ingress_namespaces
+        ingress_ipblock = ingress_ipblock
         ports = ports
+        egress_ports = egress_ports
         ingress_pod_selector = None
         ns_selector = None
+        ingress_ipblock_selector = None
+        egress_ipblock_selector = None
         port_list = []
+        egress_port_list = []
         name = name or get_random_name('np-')
         metadata.update({'name': name})
         selector_dict = {}
         pod_selector_dict = {}
+        policy_types = policy_types
 
         if pod_selector is not None:
             pod_selector_dict = {'match_labels': pod_selector}
@@ -553,44 +652,64 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
                 ingress_ns_dict['match_labels'].update({k: v})
             ns_selector = {'namespace_selector': ingress_ns_dict}
 
+        if ingress_ipblock is not None:
+            ingress_ipblock_selector = {'ip_block': ingress_ipblock}
+
+        if egress_ipblock is not None:
+            egress_ipblock_selector = {'ip_block': egress_ipblock}
+
         if ports is not None:
             for port_str in ports:
                 protocol, port = port_str.split('/')
                 port_list.append({'protocol': protocol, 'port': int(port)})
+                
+        if egress_ports is not None:
+            for port_str in egress_ports:
+                protocol, port = port_str.split('/')
+                egress_port_list.append({'protocol': protocol, 'port': int(port)})
 
-        spec.update({
-            'ingress': [
-                {'from': [ingress_pod_selector or ns_selector],
-                 }
-            ],
-            'pod_selector': pod_selector_dict,
-        })
-        if ports is not None:
+        if ingress_all == True:
+            spec.update({
+                'ingress': [{}]
+                })
+        elif ingress_pod_selector or ns_selector or ingress_ipblock_selector:
+            spec.update({
+                'ingress': [
+                    {'from': [ingress_pod_selector or ns_selector or ingress_ipblock_selector],
+                    }
+                ]
+            })
+        elif egress_all == True:
+            spec.update({
+                'egress': [{}]
+                })
+        elif egress_ipblock_selector:
+            spec.update({
+                'egress': [
+                    {'to': [egress_ipblock_selector],
+                    }
+                ]
+            })
+        #space
+        spec.update({'pod_selector': pod_selector_dict})
+        if ports is not None and (policy_types == ["Ingress"] or policy_types == [] ):
             spec['ingress'][0]['ports'] = port_list
-
-        return self.useFixture(NetworkPolicyFixture(
-            connections=self.connections,
-            name=name,
-            namespace=namespace,
-            metadata=metadata,
-            spec=spec))
+        if egress_ports is not None and policy_types == ["Egress"]:
+            spec['egress'][0]['egress_ports'] = egress_port_list
+        if policy_types:
+            spec["policy_types"] = policy_types
+        #space
+        if update == False:
+            return self.useFixture(NetworkPolicyFixture(
+                connections=self.connections,
+                name=name,
+                namespace=namespace,
+                metadata=metadata,
+                spec=spec))
+        else:
+            return np_fixture.update(metadata=np_fixture.metadata,
+                          spec=spec)
     # end setup_simple_policy
-
-    def update_simple_policy(self,
-                             np_fixture,
-                             pod_selector=None,
-                             namespace='default',
-                             metadata=None,
-                             spec=None,
-                             ingress_pods=None,
-                             ingress_namespaces=None,
-                             ports=None):
-        '''
-        TODO
-        update of a policy does not work as of now
-        https://github.com/kubernetes/kubernetes/issues/35911
-        '''
-        pass
 
     def setup_isolation(self, namespace_fixture):
         namespace_fixture.enable_isolation()
@@ -855,3 +974,4 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
         self.restart_kube_manager()
         time.sleep(10)
     #end add_cluster_project
+
