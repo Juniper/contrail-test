@@ -340,6 +340,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
             sanity_testbed_dict['vcenter_servers'].append(vcenter_servers[vcenter])
 
     orch = getattr(env, 'orchestrator', 'openstack')
+    deployer = getattr(env, 'deployer', 'openstack')
     #get other orchestrators (vcenter etc) info if any
     slave_orch = None
     if env.has_key('other_orchestrators'):
@@ -446,6 +447,8 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
     ci_flavor = os.getenv('CI_FLAVOR', env.test.get('ci_flavor', None))
     kube_config_file = env.test.get('kube_config_file',
                                      '/etc/kubernetes/admin.conf')
+    openshift_src_config_file = env.test.get('openshift_src_config_file',
+                                     '/root/.kube/config')
     use_devicemanager_for_md5 = getattr(testbed, 'use_devicemanager_for_md5', False)
     router_asn = getattr(testbed, 'router_asn', '')
     public_vn_rtgt = getattr(testbed, 'public_vn_rtgt', '')
@@ -501,6 +504,7 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
          '__use_project_scoped_token__': use_project_scoped_token,
          '__nova_keypair_name__'   : keypair_name,
          '__orch__'                : orch,
+         '__deployer__'            : deployer,
          '__admin_user__'          : admin_user,
          '__admin_password__'      : admin_password,
          '__admin_tenant__'        : admin_tenant,
@@ -684,7 +688,10 @@ def configure_test_env(contrail_fab_path='/opt/contrail/utils', test_dir='/contr
             if not os.path.exists(dir_name):
                 os.makedirs(dir_name)
             with settings(host_string = env.kubernetes['master']):
-                get(kube_config_file, kube_config_file)
+                if deployer == 'openshift' :
+                    get(openshift_src_config_file, kube_config_file)
+                else:
+                    get(kube_config_file, kube_config_file)
 
 
     # If webui = True, in testbed, setup webui for sanity
