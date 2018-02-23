@@ -1,0 +1,139 @@
+#!/usr/bin/env python
+"""
+Lists/Executes the tests in the contrail test modules.
+
+Usage:
+    Lists the test features:
+    ------------------------
+    python contrail-test list
+
+    Lists the tests in set of features:
+    -----------------------------------
+    python contrail-test list -f <feature1> <feature2> ....<featureN>
+        Note: <feature1> <feature2> ....<featureN> are the feature
+              listed by the above command
+
+    Lists the tests in a test module:
+    ---------------------------------
+    python contrail-test list -p <path to a test module>
+
+    Run the list of tests:
+    ----------------------
+    python contrail-test run -T <test1> <test2> ....<testN>
+        Note: <test1> <test2> ....<testN> are the tests
+              listed by the avove command.
+"""
+
+import os
+import sys
+import argparse
+
+from fabric.api import lcd, local, settings, hide
+
+FEATURE_ROOTS = ('scripts', 'serial_scripts')
+NON_FEATURE_DIRS = ('serial_scripts', 'ubuntu_repo', 'tcutils')
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    defaults = {
+    }
+    parser.set_defaults(**defaults)
+    parser.add_argument("operation", help="Operation to be performed [list | run]")
+    parser.add_argument("-t", "--testroot", help="contrail-test root directory")
+    parser.add_argument("-p", "--testmodulepath", help="Directory path of the specific test module")
+    parser.add_argument("-f", "--testfeatures", nargs='+', help="List of test features")
+    parser.add_argument("-T", "--tests", nargs='+', help="List of tests to execute")
+
+    return parser.parse_args(sys.argv[1:])
+
+
+class ContrailTest(object):
+    def __init__(self, cmd_args):
+        self.operation = cmd_args.operation
+        self.testmodulepath = cmd_args.testmodulepath
+        self.testfeatures = cmd_args.testfeatures
+        self.tests = cmd_args.tests
+
+        self.cwd = os.getcwd()
+        self.testroot = self.cwd.strip(os.path.basename(self.cwd))
+        self.python_paths = [self.testroot,
+                        '%sfixtures/' % self.testroot,
+                        '%sscripts/' % self.testroot,
+                        '%sserial_scripts/' % self.testroot,
+                        '%stcutils/pkgs/Traffic/' % self.testroot,
+                        '%stcutils/traffic_utils/' % self.testroot]
+        self.discover_args = args = "-t %s " % self.testroot
+
+    def _print(self, output):
+        print "\n".join(output)
+
+    def do(self):
+        """Do tests listing or execution"""
+        if self.operation == 'list':
+            self.list_any()
+        elif self.operation == 'run':
+            self.run_any()
+
+    def list_any(self):
+        """Lists the test features and
+           tests of a test feature or set of test modules."""
+        if self.testmodulepath:
+            self._print(self.list_tests())
+        elif self.testfeatures:
+            self.list_feature_tests()
+        else:
+            self.list_features()
+
+    def list_features(self):
+        """Lists the test features."""
+        features = []
+        for feature_root in FEATURE_ROOTS:
+            feature_list = [elem for elem in os.listdir('%s%s' %
+                            (self.testroot, feature_root))
+                            if os.path.isdir(self.testroot + feature_root +
+                                '/' + elem) and elem not in
+                                NON_FEATURE_DIRS]
+            features += list(set(feature_list) - set(features))
+        self._print(features)
+        return
+
+    def list_feature_tests(self):
+        """Lists the tests of a test feature."""
+        tests = []
+        for test_feature in self.testfeatures:
+            for feature_root in FEATURE_ROOTS:
+                feature_dir = "%s%s/%s" % (self.testroot, feature_root, test_feature)
+                if os.path.isdir(feature_dir):
+                    tests += self.discover(feature_dir)
+        self._print(tests)
+
+    def list_tests(self, sub_mod=None):
+        """Lists the tests of a test module."""
+        # List the tests in a specific test module
+        return self.discover(self.testmodulepath)
+
+    def discover(self, args):
+        """Discovers tests."""
+        args = self.discover_args + args
+        with settings(hide('everything'), warn_only=True):
+            env_vars = "PYTHONPATH=%s" % ":".join(self.python_paths)
+            tests = local("%s python -m testtools.run discover %s --list" %
+                          (env_vars, args), capture=True)
+        return tests.split('\n')
+
+    def run_any(self):
+        """Executes the set of tests."""
+        env_vars = "PYTHONPATH=%s" % ":".join(self.python_paths)
+        with lcd(self.testroot):
+            with settings(warn_only=True):
+                for test in self.tests:
+                    local("%s python -m testtools.run %s" % (env_vars, test))
+
+
+def main():
+   ContrailTest(parse_args()).do()
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+
