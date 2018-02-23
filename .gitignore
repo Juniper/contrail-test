@@ -1,7 +1,5 @@
 *.pyc
 .*sw*
-<<<<<<< HEAD
-=======
 contrail.repo
 Dockerfile.nofromargs
->>>>>>> cci/master
+
