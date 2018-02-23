@@ -21,7 +21,7 @@ Testcases under ``serial_scripts`` can have cluster-wide impact and MUST be run 
 
 ``run_tests.sh`` lets you run these tests as well. Take a look at [ this ](https://github.com/Juniper/contrail-test/wiki/Running-Tests).
 
-### fixtures
+### fixtures 
 
 Contains high level fixtures for creating projects, virtual networks, virtual machines, floating ips, policies, security-groups, service instances, VPCs, VDNS etc. and validate these objects against Contrail components like Contrail API Server, Control nodes, Virtual Routers. 
 The fixtures provide ``verify_on_setup()`` and ``verify_on_cleanup()`` methods to achieve this. They also provide some commonly used methods to work with these objects. 
