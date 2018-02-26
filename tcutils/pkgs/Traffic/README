@@ -1,0 +1,251 @@
+
+Traffic package developed for send/recv packets from a linux host, both from
+physical and virtual host. This is just an wrraper over Scapy a powerful 
+interactive packet manipulation package.
+
+Scapy Documentation: http://www.secdev.org/projects/scapy/doc/
+
+The directory traffic/examples contains sample scripts intended to give an idea
+how traffic pacakage may be used for crafting, sending, receving, capturing
+and parsing packets.
+
+
+NOTE: This package is dependent on scapy, so make sure to install scapy before
+      using this package. Use "ubunut-traffic" as image name when creating VM's
+      using VMFixture(image_name = 'ubuntu-traffic')
+
+How To:
+=========
+1. Build the Traffic package using "python setup.py sdist"
+2. Install the Traffic package in the desired hosts, using "python setup.py install"
+	>>> vm_fixture.install_pkg("Traffic") #Performs the above two steps for the users.
+	
+3. Create traffic stream  using "traffic.core.stream"
+	Refer "Creating traffic streams" section in this README.
+
+4. Create traffic profile with stream using "traffic.core.profile"
+	Refer "Creating traffic profiles" section in this README.
+
+5. Create send helper using traffic.core.helpers.Sender()"
+	Refer "Creating Sender" section in this README.
+
+6. Create receive helper using traffic.core.helpers.Receiver()"
+	Refer "Creating Receiver" section in this README.
+
+7. Start reciever
+8. Start sender
+9. Do your other testing here
+10. Poll reciever (optional: To make sure traffic flows)
+11. Poll sender (optional: To make sure traffic flows)
+12. Stop sender
+13.Stop receiver
+
+For StandardProfile and BurstProfile stop() call is not necessary. We should poll() to make sure
+the expected Number of packets are sent/received.
+or
+Sleep till the required Number of packets is sent/received and then call stop()
+
+Supported streams:
+==================
+1. ICMP
+2. UDP
+3. TCP
+To get the supported header fields that can be crafted use stream.help() as below.
+This follows the scapy convention of naming the various protocol header fields.
+
+>>> from tcutils.pkgs.Traffic.traffic.core import stream
+>>> stream.help()
+ICMPHeader :  ('type', 'code', 'chksum', 'id', 'seq', 'ts_ori', 'ts_rxts_tx', 'gw', 'ptr', 'reserved', 'addr_mask')
+IPHeader :  ('version', 'ihl', 'tos', 'iplen', 'id', 'ipflags', 'frag', 'ttl', 'proto', 'ipchksum', 'src', 'dst', 'options')
+TCPHeader :  ('sport', 'dport', 'seq', 'ack', 'dataofs', 'reserved', 'flags', 'window', 'chksum', 'urgptr')
+TCPHeader :  ('EOL', 'NOP', 'MSS', 'WScale', 'SAckOK', 'SAck', 'Timestamp', 'AltChkSum', 'AltChkSumOpt')
+UDPHeader :  ('sport', 'dport', 'len', 'chksum')
+>>> 
+
+
+Supported Profile types:
+========================
+1. StandardProfile
+	"N" number of packets are sent
+2. ContinuousProfile
+	Packets are sent continuously till the user stop it.
+3. BurstProfile
+	"X" burst count of Packets are bursted/sent at burst interval continuously/"Y" count.
+4. ContinuousSportRange (Supports only UDP currently; will be extended to support TCP)
+        This takes 'startport' and 'endport' args, creates packet with L4 sport from the range
+        startport till endport and sents them continuously(round robin) till the user stop it.
+
+
+Creating traffic stream:
+=======================
+>>> sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
+>>> from traffic.core.stream import Stream
+>>> stream = Stream(protocol="ip", proto="udp", dport="8000", src="10.1.1.100", dst="10.2.2.200")
+
+
+Creating traffic Profile:
+=========================
+>>> sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
+>>> from traffic.core.profile import create, ContinuousProfile, StandardProfile, BurstProfile
+>>> from traffic.core.stream import Stream
+>>> stream = Stream(protocol="ip", proto="udp", dport="8000", src="10.1.1.100", dst="10.2.2.200")
+
+#send packets continuously with payload of size 100 bytes, and to verify the chksum of the packet.
+#look for packets with udp port 8000
+#listen at 10.2.2.200:8000(Gets the ip from the stream above)
+>>> profile = ContinuousProfile(stream=stream, size=100, capfilter="udp port 8000", chksum=True)
+
+#send 100 packets with payload "spamspamspam"
+#look for packets with udp port 8000
+#listen at 10.2.2.200:8000(Gets the ip from the stream above)
+>>> profile = StandardProfile(stream=stream, count=100, payload="spamspamspam", capfilter="udp port 8000")
+
+#send 100 packets at the interval of 60 secs for 10 times.
+#look for packets with udp port 8000
+#listen at 20.2.2.100:8000(Gets the ip from the profile.listener); can be used when sending traffic to (Floating IP)
+>>> profile = BusrtProfile(stream=stream, count=10, burst_count=100, burst_interval=60 listener="20.2.2.100", capfilter="udp port 8000")
+
+#send packets range with 'startport' to 'endport' as L4 sport continuously(round robin) with payload of size 100 bytes
+#look for packets with udp port 8000
+#listen at 10.2.2.200:8000(Gets the ip from the stream above)
+>>> profile = ContinuousSportRange(stream=stream, startport=8001, endport=8200)
+
+Creating Sender:
+=================
+Create a sender, a helper to start/stop the traffic, also holds the total packets sent/received.
+>>> from traffic.core.helpers import Host
+>>> from traffic.core.helpers import Sender
+>>> local_host = Host() #with credentials of the host from where the traffic send/recv is triggerred.
+>>> remote_host = Host() #with credentials of the host from where the actual traffic is sent.
+>>> sender = Sender(name="send-udp", profile=profile, lhost=local_host, rhost=remote_host)
+
+#To start sending packets
+>>> sender.start()
+
+#To poll sender for sent/received packets.
+>>> sender.poll()
+['Sent=1000\n', 'Received=1000']
+
+#To stop sending packets and to populate the packets "sent" and "recv" attribute of "Sender".
+>>> sender.stop()
+['Sent=2000\n', 'Received=2000']
+>>> print sender.sent, sender.recv
+2000, 2000
+
+
+Creating Receiver:
+=================
+Create a Receiver, a helper to start/stop listening for packets, also holds the total packets received.
+>>> from traffic.core.helpers import Host
+>>> from traffic.core.helpers import Receiver
+>>> local_host = Host() #with credentials of the host from where the traffic recv is triggerred.
+>>> remote_host = Host() #with credentials of the host at which the actual traffic is recieved.
+>>> sender = Receiver(name="recv-udp", profile=profile, lhost=local_host, rhost=remote_host)
+
+#To start receiving packets
+>>> receiver.start()
+
+#To poll reciever for received packets.
+>>> receiver.poll()
+['Received=3000', 'Corrupted=0']
+
+#To stop receiving packets and to populate the packets "recv" attribute of "Receiver".
+>>> receiver.stop()
+['Received=4000', 'Corrupted=0']
+>>> print receiver.recv
+4000
+
+
+Example to send icmp traffic:
+================================
+
+#This is required as we pickle the Profile object and send it across network;
+#The oject should be instansiated from traffic.core and not from
+#tcutils.pkgs.Traffic.traffic.core for the uncpickle to work properly. Because
+#in our testing scenario, we install the Traffic package in the VM and import
+#the traffic package from traffic/ and not from tcutils/pkgs/Traffic/traffic.
+sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
+
+from traffic.core.stream import Stream
+from traffic.core.profile import create, ContinuousProfile
+
+
+#Install the Trafic package as below in the host that used for sending
+#receiving traffic.
+vm1_fixture.install_pkg("Traffic")
+vm2_fixture.install_pkg("Traffic")
+
+#Create traffic stream
+stream = Stream(protocol="ip", proto="icmp", src=vm1_fixture.vm_ip,
+                dst=vm2_fixture.vm_ip)
+
+#Create traffic profile
+profile = ContinuousProfile(stream=stream, capfilter="icmp")
+
+#Start receiving/capturing traffic, If ICMP traffic it just captures
+#packet, but in case of UDP/TCP, this creates a listener socket to 
+#receive packets and also capture packets.
+receiver = Receiver("icmp", profile, local_host, recv_host, self.inputs.logger)
+receiver.start()
+
+#Start sending packets., If ICMP it also receive the ICMP reply back
+sender = Sender("icmp", profile, local_host, send_host, self.inputs.logger)
+sender.start()
+
+#Do other testing stuff
+sleep(5)
+
+#Stop sending
+sender.stop()
+
+#Stop  receiving
+receiver.stop()
+
+print sender.sent, receiver.recv
+assert "sender.sent == receiver.recv", "Icmp traffic failed"
+
+Example to send UDP traffic to FIP:
+===================================
+        #Send UDP traffic
+        fvm_fixture.install_pkg("Traffic")
+        vm1_fixture.install_pkg("Traffic")
+        stream = Stream(protocol="ip", proto="udp", src=fvm_fixture.vm_ip,
+                        dst=fip, dport=9000)
+        profile = ContinuousProfile(stream=stream, listener=vm1_fixture.vm_ip, capfilter="udp port 8000")
+        local_host = Host(self.inputs.cfgm_ip, <username>, <password>)
+        send_host = Host(fvm_fixture.local_ip)
+        recv_host = Host(vm1_fixture.local_ip)
+        sender = Sender("sendudp", profile, local_host, send_host, self.inputs.logger)
+        receiver = Receiver("recvudp", profile, local_host, recv_host, self.inputs.logger)
+        receiver.start()
+        sender.start()
+        #Poll to make sure traffic flows, optional
+        sender.poll()
+        receiver.poll()
+        sender.stop()
+        receiver.stop()
+        print sender.sent, receiver.recv
+        assert "sender.sent == receiver.recv", "UDP traffic to fip:%s failed" % fip
+
+Example to send TCP traffic:
+============================
+        #Send TCP traffic
+        fvm_fixture.install_pkg("Traffic")
+        vm1_fixture.install_pkg("Traffic")
+        stream = Stream(protocol="ip", proto="tcp", src=fvm_fixture.vm_ip,
+                        dst=vm1_fixture.vm_ip, dport=9000)
+        profile = ContinuousProfile(stream=stream)
+        local_host = Host(self.inputs.cfgm_ip, <username>, <password>)
+        send_host = Host(fvm_fixture.local_ip)
+        recv_host = Host(vm1_fixture.local_ip)
+        sender = Sender("sendtcp", profile, local_host, send_host, self.inputs.logger)
+        receiver = Receiver("recvtcp", profile, local_host, recv_host, self.inputs.logger)
+        receiver.start()
+        sender.start()
+        #Poll to make sure traffic flows, optional
+        sender.poll()
+        receiver.poll()
+        sender.stop()
+        receiver.stop()
+        print sender.sent, receiver.recv
+        assert "sender.sent == receiver.recv", "TCP traffic to fip:%s failed" % fip
