@@ -1,0 +1,68 @@
+#!/usr/bin/python
+
+"""User interface to send packets.
+"""
+import sys
+from logging import INFO
+
+try:
+    # Running from the source repo "test".
+    from tcutils.pkgs.Traffic.traffic.utils.daemon import Daemon
+    from tcutils.pkgs.Traffic.traffic.utils.logger import get_logger, LOGGER
+    from tcutils.pkgs.Traffic.traffic.core.generator import GenArgParser, PktGenerator
+    from tcutils.pkgs.Traffic.traffic.utils.globalvars import LOG_LEVEL
+except ImportError:
+    # Distributed and installed as package
+    from traffic.utils.daemon import Daemon
+    from traffic.utils.logger import get_logger, LOGGER
+    from traffic.core.generator import GenArgParser, PktGenerator
+    from traffic.utils.globalvars import LOG_LEVEL
+
+LOGGER = "%s.scripts.sendpkts" % LOGGER
+log = get_logger(name=LOGGER, level=LOG_LEVEL)
+
+
+def poll(name):
+        fd = open("/tmp/%s.results" % name, "r")
+        results = fd.readlines()
+        fd.close()
+        return results
+
+
+class PktGenDaemon(Daemon):
+
+    def __init__(self, args, pidfile, stdin, stdout, stderr):
+        super(PktGenDaemon, self).__init__(pidfile, stdin, stdout, stderr)
+        self.args = args
+
+    def run(self):
+        self.gen = PktGenerator(self.args)
+        self.gen.start()
+
+    def stop(self):
+        self._stop()
+        return poll(self.args.name)
+
+
+def main():
+    args = GenArgParser().parse()
+    if args.poll:
+        return poll(args.name)
+
+    pidfile = '/tmp/%s.pid' % args.name
+    if args.stop:
+        prefix = "stop"
+    else:
+        prefix = "start"
+    logfile = '/tmp/%s-sendpkts-%s.log' % (prefix, args.name)
+    open(logfile, 'w+')
+    daemon = PktGenDaemon(args, pidfile, logfile, logfile, logfile)
+    if args.stop:
+        return daemon.stop()
+    else:
+        return daemon.start()
+
+if __name__ == "__main__":
+    results = main()
+    print results
+    sys.exit(0)

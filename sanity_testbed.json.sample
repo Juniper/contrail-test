@@ -1,0 +1,120 @@
+{
+    "hosts": [
+        {
+            "control-ip": "10.204.216.63", 
+            "data-ip": "10.204.216.63", 
+            "ip": "10.204.216.63", 
+            "name": "nodec6", 
+            "password": "c0ntrail123", 
+            "roles": [
+                {
+                    "type": "database"
+                }, 
+                {
+                    "type": "collector"
+                }, 
+                {
+                    "type": "webui"
+                }
+            ], 
+            "username": "root"
+        }, 
+        {
+            "control-ip": "10.204.216.64", 
+            "data-ip": "10.204.216.64", 
+            "ip": "10.204.216.64", 
+            "name": "nodec7", 
+            "password": "c0ntrail123", 
+            "roles": [
+                {
+                    "type": "openstack"
+                }, 
+                {
+                    "type": "cfgm"
+                }, 
+                {
+                    "type": "bgp"
+                }
+            ], 
+            "username": "root"
+        }, 
+        {
+            "control-ip": "10.204.216.65", 
+            "data-ip": "10.204.216.65", 
+            "ip": "10.204.216.65", 
+            "name": "nodec8", 
+            "password": "c0ntrail123", 
+            "roles": [
+                {
+                    "type": "cfgm"
+                }, 
+                {
+                    "type": "bgp"
+                }
+            ], 
+            "username": "root"
+        }, 
+        {
+            "control-ip": "10.204.216.66", 
+            "data-ip": "10.204.216.66", 
+            "ip": "10.204.216.66", 
+            "name": "nodec9", 
+            "password": "c0ntrail123", 
+            "roles": [
+                {
+                    "type": "compute"
+                }
+            ], 
+            "username": "root"
+        }, 
+        {
+            "control-ip": "10.204.216.67", 
+            "data-ip": "10.204.216.67", 
+            "ip": "10.204.216.67", 
+            "name": "nodec10", 
+            "password": "c0ntrail123", 
+            "roles": [
+                {
+                    "type": "compute"
+                }
+            ], 
+            "username": "root"
+        }
+    ], 
+    "vgw": [],
+    "hosts_ipmi": [{"10.204.216.67": "10.204.6.67",
+                    "10.204.216.66": "10.204.6.66"
+                  }],
+    "tor_agent": {"root@node6":[{
+                     "tor_ip":"10.204.217.191",
+                     "tor_id":"1",
+                     "tor_type":"ovs",
+                     "tor_ovs_port":"9998",
+                     "tor_ovs_protocol":"pssl",
+                     "tor_tsn_ip":"192.168.192.2",
+                     "tor_tsn_name":"nodec10",
+                     "tor_name":"bng-contrail-qfx51-10",
+                     "tor_tunnel_ip":"9.0.0.1",
+                     "tor_vendor_name":"Juniper",
+                     "tor_http_server_port": "9010"},
+                 ]},
+    "physical_routers": {"bng-contrail-qfx51-10":{
+                            "vendor": "juniper",
+                            "model" : "mx",
+                            "asn"   : "64512",
+                            "name"  : "bng-contrail-qfx51-10",
+                            "ssh_username" : "root",
+                            "ssh_password" : "password",
+                            "mgmt_ip"  : "10.204.217.191",
+                            "tunnel_ip" : "7.0.0.1",
+                            "ports" : [],
+                            "type"  : "router"},
+                        },
+    "tor_hosts": {"10.204.217.213": [{
+                     "tor_port": "ge-0/0/42",
+                     "host_port" : "em1",
+                     "mgmt_ip" : "10.204.217.153",
+                     "username" : "root",
+                     "password" : "c0ntrail123"},
+                 ]}
+}
