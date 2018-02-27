@@ -351,7 +351,7 @@ class TestPorts(BaseNeutronTest):
         sg1 = self.create_security_group(get_random_name('sg1'))
 
         port1_obj = self.create_port(net_id=vn1_fixture.vn_id,
-                                     security_groups=[sg1['id']])
+                                     security_groups=[sg1.uuid])
         port2_obj = self.create_port(net_id=vn1_fixture.vn_id)
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name,
                                      image_name='cirros',
@@ -524,7 +524,7 @@ class TestPorts(BaseNeutronTest):
         assert vm2_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
 
         # Update the port with custom sg
-        port_dict = {'security_groups': [sg1['id']]}
+        port_dict = {'security_groups': [sg1.uuid]}
         self.quantum_h.update_port(port1_obj['id'], port_dict)
 
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip,
