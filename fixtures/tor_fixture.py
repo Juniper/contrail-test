@@ -3,11 +3,13 @@ from netaddr import *
 import abc
 import time
 import re
+import fixtures
 
 from jnpr.junos.exception import *
 from fabric.operations import get, put, run, local, hide
 from fabric.context_managers import settings
 
+from physical_router_fixture import PhysicalRouterFixture
 import vnc_api_test
 from pif_fixture import PhysicalInterfaceFixture
 import physical_device_fixture
@@ -77,6 +79,7 @@ class ToRFixture(physical_device_fixture.PhysicalDeviceFixture):
         self.controller_ip = kwargs.get('controller_ip', None)
         self.tor_ovs_port = kwargs.get('tor_ovs_port', '6632')
         self.tor_ovs_protocol = kwargs.get('tor_ovs_protocol', 'pssl')
+        self.role = kwargs.get('role', None)
         self.ports = kwargs.get('ports', [])
 
         # Required for SSL connections
@@ -85,7 +88,6 @@ class ToRFixture(physical_device_fixture.PhysicalDeviceFixture):
             '%s/tools/tor/sc-privkey.pem' % (pwd))
         self.cert_privkey_file = kwargs.get('cert_privkey_file',
             '%s/tools/tor/sc-cert.pem' % (pwd))
-
         self.bgp_router = None
         if self.inputs.verify_thru_gui():
             self.webui = WebuiTest(self.connections, self.inputs)
@@ -175,6 +177,10 @@ class QFXFixture(ToRFixture, AbstractToR):
         super(QFXFixture, self).__init__(*args, **kwargs)
         self.bringup = kwargs.get('bringup', False)
         self.model = kwargs.get('model', 'qfx5100')
+        self.bgp_router = kwargs.get('bgp_router', '5b7-qfx2')
+        self.input_data = self.inputs.inputs
+        self.physical_router = self.input_data.physical_routers_data[self.name]
+        self.role = self.physical_router.get('role')
 
     def setUp(self):
         super(QFXFixture, self).setUp()

@@ -1033,6 +1033,12 @@ def skip_because(*args, **kwargs):
                     msg = "Skipped as not supported in non-HA setup"
                     raise testtools.TestCase.skipException(msg)
 
+            if 'ovsdb_setup' in kwargs:
+                if ((not self.inputs.ovsdb_setup) and (kwargs["ovsdb_setup"] == False)):
+                    skip = True
+                    msg = "Skipped as not supported in non-OVSDB setup"
+                    raise testtools.TestCase.skipException(msg)
+            
             if "bug" in kwargs:
                 skip = True
                 if not kwargs['bug'].isdigit():
