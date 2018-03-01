@@ -1,6 +1,7 @@
 from netaddr import *
 
 import vnc_api_test
+import re
 from pif_fixture import PhysicalInterfaceFixture
 from common.device_connection import ConnectionFactory
 try:
@@ -47,6 +48,7 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         self.ssh_username = kwargs.get('ssh_username', 'root')
         self.ssh_password = kwargs.get('ssh_password', 'Embe1mpls')
         self.tunnel_ip = kwargs.get('tunnel_ip', None)
+        self.role = kwargs.get('role', None)
         self.ports = kwargs.get('ports', [])
         self.device_details = {}
 
@@ -79,6 +81,24 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         pr.physical_router_vendor_name = self.vendor
         pr.physical_router_product_name = self.model
         pr.physical_router_vnc_managed = True
+        pr.physical_router_role = self.role 
+        bgprouter_uuid = self.connections.vnc_lib.bgp_routers_list()
+        bgprouter_uuid = str(bgprouter_uuid)
+        list_uuid = re.findall('u\'uuid\': u\'([a-zA-Z0-9-]+)\'', bgprouter_uuid)
+        for node in list_uuid:
+           bgp_router_obj = self.connections.vnc_lib.bgp_router_read(id=node)
+           router_info = bgp_router_obj.get_fq_name()
+           name_pos = len(router_info)-1
+           if str(router_info[name_pos]) == str(self.name):
+              pr.set_bgp_router(bgp_router_obj)
+        vrouter_uuid = self.connections.vnc_lib.virtual_routers_list()
+        vrouter_uuid = str(vrouter_uuid)
+        vrouter_list_uuid = re.findall('u\'uuid\': u\'([a-zA-Z0-9-]+)\'', vrouter_uuid)
+        for node in vrouter_list_uuid:
+           virtual_router_obj = self.connections.vnc_lib.virtual_router_read(id=node)
+           vrouter_type = virtual_router_obj.virtual_router_type
+           if str(vrouter_type) == 'tor-service-node':
+              pr.add_virtual_router(virtual_router_obj)
         uc = vnc_api_test.UserCredentials(self.ssh_username, self.ssh_password)
         pr.set_physical_router_user_credentials(uc)
         try: 

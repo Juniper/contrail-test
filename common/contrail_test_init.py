@@ -307,6 +307,8 @@ class TestInputs(object):
                 'HA',
                 'ipmi_password',
                 'ADMIN')
+        #EVPN option
+        self.ovsdb_setup = read_config_option(self.config, 'tor_agent', 'ovsdb_setup', None)
         # debug option
         self.verify_on_setup = read_config_option(
             self.config,
