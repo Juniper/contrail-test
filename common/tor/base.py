@@ -81,19 +81,32 @@ class BaseTorTest(BaseNeutronTest):
                 count, len(tors_info_list)))  
         for i in range(0, count):
             tor_params = tors_info_list[i]
-            tor_fixture = self.useFixture(ToRFixtureFactory.get_tor(
-                tor_params['name'], 
-                tor_params['mgmt_ip'],
-                vendor=tor_params['vendor'],
-                ssh_username=tor_params['ssh_username'],
-                ssh_password=tor_params['ssh_password'],
-                tunnel_ip=tor_params['tunnel_ip'],
-                ports=tor_params['ports'],
-                tor_ovs_port=tor_params['tor_ovs_port'],
-                tor_ovs_protocol=tor_params['tor_ovs_protocol'],
-                controller_ip=tor_params['controller_ip'],
-                connections=self.connections,
-                logger=self.logger))
+            evpn = (len(tor_params['tor_agents']) == 0)
+            if evpn:
+                tor_fixture = self.useFixture(ToRFixtureFactory.get_tor(
+                    tor_params['name'],
+                    tor_params['mgmt_ip'],
+                    vendor=tor_params['vendor'],
+                    ssh_username=tor_params['ssh_username'],
+                    ssh_password=tor_params['ssh_password'],
+                    tunnel_ip=tor_params['tunnel_ip'],
+                    ports=tor_params['ports'],
+                    connections=self.connections,
+                    logger=self.logger))
+            else:
+                tor_fixture = self.useFixture(ToRFixtureFactory.get_tor(
+                    tor_params['name'],
+                    tor_params['mgmt_ip'],
+                    vendor=tor_params['vendor'],
+                    ssh_username=tor_params['ssh_username'],
+                    ssh_password=tor_params['ssh_password'],
+                    tunnel_ip=tor_params['tunnel_ip'],
+                    ports=tor_params['ports'],
+                    tor_ovs_port=tor_params['tor_ovs_port'],
+                    tor_ovs_protocol=tor_params['tor_ovs_protocol'],
+                    controller_ip=tor_params['controller_ip'],
+                    connections=self.connections,
+                    logger=self.logger))
             tor_objs.append(tor_fixture)
         return tor_objs
     # end setup_tors

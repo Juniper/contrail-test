@@ -38,7 +38,7 @@ class TestTor(BaseTorTest):
         return (True, None)
 
 
-    def one_kvm_one_bms_test(self, tor_id, vlan_id=0):
+    def one_kvm_one_bms_test(self, tor_id=None, vlan_id=0):
         '''Common test code for one kvm and one bms test
         '''
         vn1_fixture = self.create_vn(disable_dns=True)
@@ -47,7 +47,6 @@ class TestTor(BaseTorTest):
         bms_ip = get_an_ip(vn1_fixture.vn_subnet_objs[0]['cidr'],4)
         bms_mac = '00:00:00:00:00:01'
         vm_mac = '00:00:00:00:00:0a'
-        
         # BMS VMI
         vmis=[self.setup_vmi(vn1_fixture.uuid, 
                 mac_address=bms_mac,
@@ -85,7 +84,6 @@ class TestTor(BaseTorTest):
         assert vrouter_mac == vm1_gw_mac, (
             "GW MAC of VM %s not right. Expected : %s, Got : %s" % (
                 vm1_fixture.vm_name, vrouter_mac, vm1_gw_mac))
-
 
     @preposttest_wrapper
     def test_ping_between_kvm_vm_and_untagged_bms(self):
@@ -132,9 +130,9 @@ class TestTor(BaseTorTest):
         self.setup_tor_port(self.tor2_fixture, port_index=0,
                             vlan_id=vlan_id, vmi_objs=[vmis[1]])
         bms1_fixture = self.setup_bms(self.tor1_fixture, port_index=0,
-                                     ns_mac_address=bms1_mac)
+                                     ns_mac_address=bms1_mac, vlan_id=vlan_id)
         bms2_fixture = self.setup_bms(self.tor2_fixture, port_index=0,
-                                     ns_mac_address=bms2_mac)
+                                     ns_mac_address=bms2_mac, vlan_id=vlan_id)
 
         self.do_ping_test(bms1_fixture, bms1_ip, bms2_ip)
 
@@ -265,6 +263,7 @@ class TestTor(BaseTorTest):
                           bms2_fixture.info['inet_addr'])
     # end test_with_multiple_subnets
 
+    @skip_because(ovsdb_setup = False)
     @preposttest_wrapper
     def test_ovsdb_config_on_tor(self):
         ''' Associate VMI to a lif. Check that logical switch is created on ToR
@@ -377,6 +376,7 @@ class TestTor(BaseTorTest):
         assert result, message
     # end test_dhcp_flood_for_unknown_mac
 
+    @skip_because(ovsdb_setup = False)
     @preposttest_wrapper
     def test_arp_proxy_by_vrouter_for_vms(self):
         '''
@@ -410,6 +410,7 @@ class TestTor(BaseTorTest):
             vm1_fixture.vm_ip, bms2_fixture)
         assert not result, message
 
+    @skip_because(ovsdb_setup = False)
     @preposttest_wrapper
     def test_unknown_unicast_forwarding(self):
         '''
@@ -462,6 +463,7 @@ class TestTor(BaseTorTest):
     # end test_unknown_unicast_forwarding
         
 
+    @skip_because(ovsdb_setup = False)
     @preposttest_wrapper
     def test_enable_disable_unknown_unicast_forwarding(self):
         ''' 
@@ -510,6 +512,7 @@ class TestVxlanID(BaseTorTest):
         super(TestVxlanID, self).setUp()
         [self.tor1_fixture] = self.setup_tors(count=1)
 
+    @skip_because(ovsdb_setup = False)
     @preposttest_wrapper
     def test_diff_vns_but_same_vxlan_id(self):
         '''
@@ -554,6 +557,7 @@ class TestVxlanID(BaseTorTest):
         # end for
     # end test_diff_vns_but_same_vxlan_id
                 
+    @skip_because(ovsdb_setup = False)
     @preposttest_wrapper
     def test_check_vxlan_id_reuse(self):
         ''' 
@@ -750,7 +754,7 @@ class TestBasicBMSInterVN(TwoToROneRouterBase):
                                      ns_mac_address=bms1_mac)
         bms2_fixture = self.setup_bms(self.tor2_fixture, port_index=0,
                                      ns_mac_address=bms2_mac)
-
+       
         # Extend VNs to router
         self.phy_router_fixture.setup_physical_ports()
         self.extend_vn_to_physical_router(vn1_fixture, self.phy_router_fixture)
@@ -892,6 +896,7 @@ class TestExtendedBMSInterVN(TwoToROneRouterBase):
                                  self.phy_router_fixture)
     # end do_reachability_checks
 
+    @skip_because(ovsdb_setup = False)
     @preposttest_wrapper
     def test_routing_with_tor_agent_restarts(self):
         ''' 
@@ -910,6 +915,7 @@ class TestExtendedBMSInterVN(TwoToROneRouterBase):
             self.do_reachability_checks()
     # end test_routing_with_tor_agent_restarts
             
+    @skip_because(ovsdb_setup = False)
     @preposttest_wrapper
     def test_routing_with_ovs_restarts(self):
         ''' 
@@ -922,6 +928,7 @@ class TestExtendedBMSInterVN(TwoToROneRouterBase):
         self.do_reachability_checks()
     # end test_routing_with_ovs_restarts
 
+    @skip_because(ovsdb_setup = False)
     @preposttest_wrapper
     def test_routing_after_tsn_failover(self):
         '''
@@ -989,6 +996,7 @@ class TestBMSWithExternalDHCPServer(TwoToROneRouterBase):
     def cleanUp(self):
         super(TestBMSWithExternalDHCPServer, self).cleanUp()
 
+    @skip_because(ovsdb_setup = False)
     @preposttest_wrapper
     def test_dhcp_behavior(self):
         ''' 
@@ -1015,6 +1023,7 @@ class TestBMSWithExternalDHCPServer(TwoToROneRouterBase):
         self.do_ping_test(bms1_fixture, bms1_ip, bms2_ip)
     # end test_dhcp_behavior
 
+    @skip_because(ovsdb_setup = False)
     @preposttest_wrapper
     def test_dhcp_forwarding_with_dhcp_disabled(self):
         '''
