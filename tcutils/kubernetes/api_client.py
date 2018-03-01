@@ -124,9 +124,9 @@ class Client():
         #return client.UnversionedLabelSelector(match_labels=match_labels)
         return client.V1IPBlock(cidr=cidr, _except=_except)
 
-    def _get_network_policy_peer_list(self, _from, to):
+    def _get_network_policy_peer_list(self, rule_list):
         peer_list = []
-        for item in _from:
+        for item in rule_list:
             pod_selector = item.get('pod_selector') or {}
             namespace_selector = item.get('namespace_selector') or {}
             ip_block = item.get('ip_block') or {}
@@ -146,17 +146,6 @@ class Client():
             peer = client.V1beta1NetworkPolicyPeer(
                 namespace_selector=namespace_selector_obj,
                 pod_selector=pod_selector_obj,
-                ip_block=ip_block_obj
-                )
-            peer_list.append(peer)
-        for item in to:
-            ip_block = item.get('ip_block') or {}
-            ip_block_obj = None
-            if ip_block:
-                ip_block_obj = self._get_ip_block_selector(
-                    **ip_block)
-
-            peer = client.V1beta1NetworkPolicyPeer(
                 ip_block=ip_block_obj
                 )
             peer_list.append(peer)
@@ -184,13 +173,13 @@ class Client():
         policy_types = spec.get('policy_types', None)
         pod_selector = self._get_label_selector(**spec['pod_selector'])
         for rule in ingress_rules:
-            _from = self._get_network_policy_peer_list(_from=rule.get('from', []), to=[])
+            _from = self._get_network_policy_peer_list(rule_list=rule.get('from', []))
             ports = self._get_network_policy_port_list(rule.get('ports', []))
             ingress_rules_obj.append(
                 client.V1beta1NetworkPolicyIngressRule(
                     _from=_from, ports=ports))
         for rule in egress_rules:
-            to = self._get_network_policy_peer_list(_from = [], to=rule.get('to', []))
+            to = self._get_network_policy_peer_list(rule_list=rule.get('to', []))
             ports = self._get_network_policy_port_list(rule.get('egress_ports', []))
             egress_rules_obj.append(
                 client.V1beta1NetworkPolicyEgressRule(
