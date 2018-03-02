@@ -18,7 +18,6 @@ logging.getLogger('paramiko.transport').setLevel(logging.WARN)
 
 if __name__ == "__main__":
     init_obj = ContrailTestInit(sys.argv[1])
-    init_obj.read_prov_file()
     for (device, device_dict) in init_obj.physical_routers_data.iteritems():
         if device_dict['type'] == 'tor':
             tor_obj = ToRFixtureFactory.get_tor(

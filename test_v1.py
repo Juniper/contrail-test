@@ -26,14 +26,14 @@ class BaseTestCase_v1(BaseTestCase):
             cls.inputs,
             domain_name=cls.domain_name,
             project_name=project_name,
-            ini_file=cls.ini_file,
+            input_file=cls.input_file,
             logger=cls.logger)
 
         if cls.inputs.tenant_isolation:
             cls.admin_isolated_creds = AdminIsolatedCreds(
                 cls.inputs,
                 domain_name=cls.inputs.admin_domain,
-                ini_file=cls.ini_file,
+                input_file=cls.input_file,
                 logger=cls.logger)
             cls.admin_isolated_creds.setUp()
             if 'v3' in cls.inputs.auth_url:

@@ -26,8 +26,8 @@ except ImportError:
 
 class ContrailConnections():
     def __init__(self, inputs=None, logger=None, project_name=None,
-                 username=None, password=None, domain_name=None, ini_file=None, domain_obj=None,scope='domain'):
-        self.inputs = inputs or ContrailTestInit(ini_file,
+                 username=None, password=None, domain_name=None, input_file=None, domain_obj=None,scope='domain'):
+        self.inputs = inputs or ContrailTestInit(input_file,
                                 stack_tenant=project_name)
         self.project_name = project_name or self.inputs.project_name
         self.domain_name = domain_name or self.inputs.domain_name

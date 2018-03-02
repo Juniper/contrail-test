@@ -69,11 +69,11 @@ class BaseTestCase(TagsHack,
         cls.setUpClassCalled = True
         
         if 'TEST_CONFIG_FILE' in os.environ :
-            cls.ini_file= os.environ.get('TEST_CONFIG_FILE')
+            cls.input_file= os.environ.get('TEST_CONFIG_FILE')
         else:
-            cls.ini_file= 'sanity_params.ini'	
+            cls.input_file= 'sanity_params.ini'
         cls.logger = contrail_logging.getLogger(cls.__name__)
-        cls.inputs = ContrailTestInit(cls.ini_file,logger = cls.logger)
+        cls.inputs = ContrailTestInit(cls.input_file,logger = cls.logger)
 
     @classmethod
     def tearDownClass(cls):

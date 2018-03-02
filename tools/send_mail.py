@@ -7,20 +7,30 @@ import os
 from tcutils.util import read_config_option
 
 def send_mail(config_file, file_to_send, report_details):
-    config = ConfigParser.ConfigParser()
-    config.read(config_file)
-    report_config = ConfigParser.ConfigParser()
-    report_config.read(report_details)
-    distro_sku = report_config.get('Test','Distro_Sku')
-    smtpServer = read_config_option(config, 'Mail', 'server', None)
-    smtpPort = read_config_option(config, 'Mail', 'port', '25')
-    mailSender = read_config_option(config, 'Mail', 'mailSender', 'contrailbuild@juniper.net')
-    mailTo = read_config_option(config, 'Mail', 'mailTo', None)
+    if config_file.endswith('.ini'):
+        config = ConfigParser.ConfigParser()
+        config.read(config_file)
+        smtpServer = read_config_option(config, 'Mail', 'server', None)
+        smtpPort = read_config_option(config, 'Mail', 'port', '25')
+        mailSender = read_config_option(config, 'Mail', 'mailSender', 'contrailbuild@juniper.net')
+        mailTo = read_config_option(config, 'Mail', 'mailTo', None)
+    elif config_file.endswith(('.yml', '.yaml')):
+        with open(config_file, 'r') as fd:
+            config = yaml.load(fd)
+        test_configs = config.get('test_configuration') or {}
+        mailserver_configs = test_configs.get('mail_server') or {}
+        smtpServer = mailserver_configs.get('server')
+        smtpPort = mailserver_configs.get('port') or '25'
+        mailTo = mailserver_configs.get('to')
+        mailSender = mailserver_configs.get('sender') or 'contrailbuild@juniper.net'
 
     if not (smtpServer and mailSender and mailTo):
         print "Not all mail server details are available. Skipping mail send."
         return False
 
+    report_config = ConfigParser.ConfigParser()
+    report_config.read(report_details)
+    distro_sku = report_config.get('Test','Distro_Sku')
     if 'EMAIL_SUBJECT' in os.environ and os.environ['EMAIL_SUBJECT'] != '':
         logScenario = os.environ.get('EMAIL_SUBJECT')
     else:

@@ -10,7 +10,6 @@ logging.getLogger('paramiko.transport').setLevel(logging.WARN)
 
 if __name__ == "__main__":
     init_obj = ContrailTestInit(sys.argv[1])
-    init_obj.read_prov_file()
     ips = set(init_obj.cfgm_ips + init_obj.collector_ips)
     collected = {}
     for host_ip in ips:

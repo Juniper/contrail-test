@@ -1,0 +1,149 @@
+deployment:
+    type:
+        kolla:
+            branch: contrail/ocata
+            registry: docker.io
+        contrail:
+            branch: master
+            registry: docker.io/opencontrailnightly
+    sku: ocata
+    os: centos74
+    version: master-20180131150536
+    orchestrator: openstack #kubernetes/vcenter/openstack
+    slave_orchestrator: kubernetes
+
+network:
+    ntpserver: 10.84.5.100
+
+container_hosts:
+    hosts:
+        10.84.7.199:
+            ansible_user: root
+            ansible_ssh_pass: c0ntrail123
+            network_interface: eth0
+            kolla_external_vip_interface: eth0
+            ipmi: 100.100.100.10
+            ipmi_username:
+            ipmi_password:
+        10.87.118.138:
+            ansible_user: root
+            ansible_ssh_pass: c0ntrail123
+            network_interface: eth0
+            kolla_external_vip_interface: eth0
+
+roles:
+    10.84.7.199:
+        vrouter:
+    10.87.118.138:
+        config_database:
+        config:
+        control:
+        webui:
+        analytics:
+        analytics_database:
+        tsn:
+        esxi:
+        tor-agent:
+        k8smaster:
+        openstack:
+
+contrail_configs:
+    AAA_MODE: rbac
+    CONFIG_API_USE_SSL:
+    INTROSPECT_SSL_ENABLE:
+    XMPP_SSL_ENABLE:
+    METADATA_PROXY_SECRET:
+
+orchestrator_configs:
+    keystone:
+        version:
+        username:
+        password:
+        project:
+        domain:
+        region:
+        ssl:
+            certs:
+
+test_configs:
+    image_web_server:
+    stack_user:
+    stack_password:
+    stack_tenant:
+    stack_domain:
+    use_project_scoped_token: True
+    user_isolation: True
+    tenant_isolation: True
+    domain_isolation: False
+    availability_zone:
+    auth_url:
+    config_api_ip:
+    analytics_api_ip:
+    ci_image_flavor:
+    fixture_cleanup: yes
+    nova_keypair_private_key_filename:
+    nova_keypair_public_key_filename:
+    http_proxy:
+    ui_config:
+    ui_browser:
+    verify_webui:
+    verify_horizon:
+    kube_config_file:
+    use_devicemanager_for_md5:
+    public_tenant_name:
+    public_virtual_network:
+    public_subnet:
+    public_rt:
+    router_asn:
+    fip_pool_name:
+    verify_on_setup:
+    stop_on_fail:
+    public_host:
+    ext_routers:
+        rtr1: 1.1.1.1
+    fabric_gw:
+        sw1: 2.2.2.2
+    ns_agilio_vrouter: True
+    traffic_generator:
+        ixia_linux_host_ip:
+        ixia_host_ip:
+        spirent_linux_host_ip:
+        ixia_linux_username:
+        ixia_linux_password:
+        spirent_linux_username:
+        spirent_linux_password:
+    device_manager:
+        mx1:
+            vendor: juniper
+            model : mx
+            asn   : 64512
+            name  : mx1
+            control_ip : 10.10.10.100
+            ssh_username : root
+            ssh_password : c0ntrail123
+            mgmt_ip  : 10.204.217.190
+    physical_routers:
+        mx1:
+            vendor: juniper
+            model : mx
+            asn   : 64512
+            name  : mx1
+            control_ip : 10.10.10.100
+            ssh_username : root
+            ssh_password : c0ntrail123
+            mgmt_ip  : 10.204.217.190
+            tunnel_ip: 7.7.7.7
+            ports :
+            type  : router
+    web_server:
+        server:
+        username:
+        password:
+        report_path:
+        log_path:
+        web_root:
+    mail_server:
+        server:
+        port:
+        to:
+        sender:

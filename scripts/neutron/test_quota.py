@@ -124,7 +124,7 @@ class TestQuota(BaseNeutronTest):
         isolated_creds = IsolatedCreds(
             self.admin_inputs,
             project_name,
-            ini_file=self.ini_file,
+            input_file=self.input_file,
             logger=self.logger)
         project_obj = self.admin_isolated_creds.create_tenant(isolated_creds.project_name)
         self.admin_isolated_creds.create_and_attach_user_to_tenant(project_obj,
@@ -136,7 +136,7 @@ class TestQuota(BaseNeutronTest):
         isolated_creds1 = IsolatedCreds(
             self.admin_inputs,
             project_name1,
-            ini_file=self.ini_file,
+            input_file=self.input_file,
             logger=self.logger)
         project_obj1 = self.admin_isolated_creds.create_tenant(isolated_creds1.project_name)
         self.admin_isolated_creds.create_and_attach_user_to_tenant(project_obj1,

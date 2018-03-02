@@ -10,7 +10,7 @@ from tcutils.util import get_random_name
 
 class IsolatedCreds(fixtures.Fixture):
 
-    def __init__(self, inputs, project_name=None, ini_file=None, logger=None,
+    def __init__(self, inputs, project_name=None, input_file=None, logger=None,
                  username=None, password=None, domain_name=None):
 
         self.username = None
@@ -32,7 +32,7 @@ class IsolatedCreds(fixtures.Fixture):
             self.username = username or inputs.stack_user
             self.password = password or inputs.stack_password
 
-        self.ini_file = ini_file
+        self.input_file = input_file
         self.logger = logger
         if self.inputs.orchestrator == 'vcenter':
             self.project_name = self.inputs.stack_tenant
@@ -82,7 +82,7 @@ class IsolatedCreds(fixtures.Fixture):
             project_fixture.cleanUp()
 
     def get_inputs(self, project_fixture):
-        project_inputs= ContrailTestInit(self.ini_file,
+        project_inputs= ContrailTestInit(self.input_file,
                             stack_domain=project_fixture.orch_domain_name,
                             stack_user=project_fixture.project_username,
                             stack_password=project_fixture.project_user_password,
@@ -105,7 +105,7 @@ class IsolatedCreds(fixtures.Fixture):
 # end IsolatedCreds
 
 class AdminIsolatedCreds(fixtures.Fixture):
-    def __init__(self, inputs, admin_project_name=None, ini_file=None, logger=None,
+    def __init__(self, inputs, admin_project_name=None, input_file=None, logger=None,
         username=None, password=None, domain_name=None):
         self.inputs = inputs
         if 'v3' in self.inputs.auth_url:
@@ -115,7 +115,7 @@ class AdminIsolatedCreds(fixtures.Fixture):
         self.project_name = admin_project_name or inputs.admin_tenant
         self.username = username or inputs.admin_username
         self.password = password or inputs.admin_password
-        self.ini_file = ini_file
+        self.input_file = input_file
         self.logger = logger
         if self.inputs.orchestrator == 'vcenter':
             self.project_name = self.inputs.stack_tenant
@@ -166,12 +166,6 @@ class AdminIsolatedCreds(fixtures.Fixture):
             if self.inputs.admin_username:
                 self.auth.add_user_to_project(self.inputs.admin_username,
                                               project_name)
-        # Certain deployments uses neutron username/password for contrail too
-        # So the neutron user has to be added to test tenant
-        # for Service Chain v1 to launch VMs
-        if self.inputs.neutron_username:
-            self.auth.add_user_to_project(self.inputs.neutron_username,
-                                          project_name, '_member_')
     # end create_and_attach_user_to_tenant
 
     def use_tenant(self, project_fixture):
@@ -223,7 +217,7 @@ class AdminIsolatedCreds(fixtures.Fixture):
             domain_obj.cleanUp()
 
     def get_inputs(self, project_fixture):
-        project_inputs= ContrailTestInit(self.ini_file,
+        project_inputs= ContrailTestInit(self.input_file,
                             stack_domain=project_fixture.orch_domain_name,
                             stack_user=project_fixture.project_username,
                             stack_password=project_fixture.project_user_password,

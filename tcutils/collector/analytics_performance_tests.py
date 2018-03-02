@@ -29,11 +29,11 @@ class AnalyticsTestPerformance(testtools.TestCase, ConfigSvcChain, VerifySvcChai
 
     def setUp(self):
         super(AnalyticsTestPerformance, self).setUp()
-        if 'PARAMS_FILE' in os.environ:
-            self.ini_file = os.environ.get('PARAMS_FILE')
+        if 'TEST_CONFIG_FILE' in os.environ:
+            self.input_file = os.environ.get('TEST_CONFIG_FILE')
         else:
-            self.ini_file = 'params.ini'
-        self.inputs = self.useFixture(ContrailTestInit(self.ini_file))
+            self.input_file = 'params.ini'
+        self.inputs = self.useFixture(ContrailTestInit(self.input_file))
         self.connections = ContrailConnections(self.inputs)
         self.quantum_h = self.connections.quantum_h
         self.nova_h = self.connections.nova_h

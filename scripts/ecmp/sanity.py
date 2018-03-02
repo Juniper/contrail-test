@@ -58,10 +58,10 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
 
     def setUp(self):
         super(TestECMP, self).setUp()
-        if 'PARAMS_FILE' in os.environ:
-            self.ini_file = os.environ.get('PARAMS_FILE')
+        if 'TEST_CONFIG_FILE' in os.environ:
+            self.input_file = os.environ.get('TEST_CONFIG_FILE')
         else:
-            self.ini_file = 'params.ini'
+            self.input_file = 'params.ini'
 
     def tearDown(self):
         print "Tearing down test"

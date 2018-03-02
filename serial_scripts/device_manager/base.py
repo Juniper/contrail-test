@@ -33,7 +33,7 @@ class BaseDM(VerifySecGroup):
         cls.public_vn_obj = create_public_vn.PublicVn(
             public_creds,
             cls.inputs,
-            ini_file=cls.ini_file,
+            input_file=cls.input_file,
             logger=cls.logger)
         cls.public_vn_obj.configure_control_nodes()
 

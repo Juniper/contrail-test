@@ -12,10 +12,10 @@ class ServerManagerTest(test_v1.BaseTestCase_v1):
     @classmethod
     def setUpClass(self):
         super(ServerManagerTest, self).setUpClass()
-        if 'PARAMS_FILE' in os.environ:
-            self.ini_file = os.environ.get('PARAMS_FILE')
+        if 'TEST_CONFIG_FILE' in os.environ:
+            self.input_file = os.environ.get('TEST_CONFIG_FILE')
         else:
-            self.ini_file = 'sanity_params.ini'
+            self.input_file = 'sanity_params.ini'
 
         if 'TESTBED_FILE' in os.environ:
             self.testbed_py = os.environ.get('TESTBED_FILE')

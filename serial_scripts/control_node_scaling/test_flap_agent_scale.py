@@ -60,11 +60,11 @@ class FlapAgentScaleInit (object):
         self.pre_scale_setup = self._args.run_vn
         if not inputs:
             if 'TEST_CONFIG_FILE' in os.environ:
-                self.ini_file = os.environ.get('TEST_CONFIG_FILE')
+                self.input_file = os.environ.get('TEST_CONFIG_FILE')
             else:
-                self.ini_file = 'sanity_params.ini'
+                self.input_file = 'sanity_params.ini'
             self.inputs = ContrailTestInit(
-                self.ini_file, stack_user=self._args.username,
+                self.input_file, stack_user=self._args.username,
                 stack_password=self._args.password,
                 stack_tenant='default-project')
         else:

@@ -35,11 +35,7 @@ class KeystoneCommands():
         if not version:
             pattern = 'http[s]?://(?P<ip>\S+):(?P<port>\d+)/*(?P<version>\S*)'
             version = re.match(pattern, self.auth_url).group('version')
-        if 'v3' in version and not os.getenv('KSV2_IN_KSV3',False):
-            version = 3
-        else:
-            version = 2
-        return str(version)
+        return '3' if 'v3' in version else '2'
 
     def get_session(self, scope='project'):
         if scope in self.sessions:
