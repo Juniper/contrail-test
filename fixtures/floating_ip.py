@@ -247,7 +247,7 @@ class FloatingIPFixture(fixtures.Fixture):
         fips_dict = self.fip_pool_obj.get_floating_ips()
         return [fip['uuid'] for fip in fips_dict]
 
-    def create_and_assoc_fip(self, fip_pool_vn_id=None, vm_id=None, project=None):
+    def create_and_assoc_fip(self, fip_pool_vn_id=None, vm_id=None, project=None, port_id=None):
         ''' Create and associate a floating IP to a VM with vm_id from VN fip_pool_vn_id
 
         Recommended to call verify_fip() after this method to make sure that the floating IP is correctly installed
@@ -256,7 +256,7 @@ class FloatingIPFixture(fixtures.Fixture):
         try:
             fip_obj = self.create_floatingip(fip_pool_vn_id, project)
             self.logger.debug('Associating FIP %s to %s' %(fip_obj[0], vm_id))
-            self.assoc_floatingip(fip_obj[1], vm_id)
+            self.assoc_floatingip(fip_obj[1], vm_id, port_id)
             return fip_obj[1]
         except:
             self.logger.error('Failed to create or asscociate FIP. Error: %s' %
@@ -548,8 +548,8 @@ class FloatingIPFixture(fixtures.Fixture):
         self.orch.delete_floating_ip(fip_id)
     # end delete_floatingip
 
-    def assoc_floatingip(self, fip_id, vm_id):
-        return self.orch.assoc_floating_ip(fip_id, vm_id)
+    def assoc_floatingip(self, fip_id, vm_id, port_id=None):
+        return self.orch.assoc_floating_ip(fip_id, vm_id, port_id)
     # end assoc_floatingip
 
     def disassoc_floatingip(self, fip_id):
