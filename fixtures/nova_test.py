@@ -59,7 +59,6 @@ class NovaHelper(object):
         self.cfgm_ip = inputs.cfgm_ip
         self.openstack_ip = inputs.openstack_ip
         self.zone = inputs.availability_zone
-        self.endpoint_type = inputs.endpoint_type
         # 1265563 keypair name can only be alphanumeric. Fixed in icehouse
         self.key = 'ctest_' + self.project_name+self.username+key
         self.images_info = parse_cfg_file('configs/images.cfg')
@@ -292,8 +291,7 @@ class NovaHelper(object):
     def _install_image(self, image_name):
         self.logger.debug('Installing image %s'%image_name)
         image_info = self.images_info[image_name]
-        webserver = image_info['webserver'] or \
-            os.getenv('IMAGE_WEB_SERVER', '10.204.216.50')
+        webserver = image_info['webserver'] or self.inputs.image_web_server
         location = image_info['location']
         params = self._parse_image_params(image_info['params'])
         image = image_info['name']
@@ -514,7 +512,8 @@ class NovaHelper(object):
     def get_nova_compute_service_list(self):
         service_list = []
         for service in self.nova_services_list:
-            if service.binary == 'nova-compute':
+            if service.binary == 'nova-compute' and \
+               'ironic' not in service.host:
                 service_list.append(service)
         return service_list
     # end get_nova_compute_service_list

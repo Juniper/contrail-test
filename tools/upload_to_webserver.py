@@ -5,6 +5,7 @@ from fabric.context_managers import settings, hide
 import os
 import ConfigParser
 import subprocess
+import yaml
 from tcutils.util import read_config_option
 import logging
 
@@ -34,20 +35,31 @@ def get_os_env(var, default=''):
 # end get_os_env
 
 def upload_to_webserver(config_file, report_config_file, elem):
-
     jenkins_trigger = get_os_env('JENKINS_TRIGGERED')
-    config = ConfigParser.ConfigParser()
-    config.read(config_file)
-    web_server = read_config_option(config, 'WebServer', 'host', None)
-    web_server_report_path = read_config_option(config, 'WebServer', 
-                                                'reportPath', None)
-    web_server_log_path = read_config_option(config, 'WebServer',
-                                             'logPath', None)
-    web_server_username = read_config_option(config, 'WebServer', 'username', 
-                                             None)
-    web_server_password = read_config_option(config, 'WebServer', 'password',
-                                             None)
-    http_proxy = read_config_option(config, 'proxy', 'proxy_url', None)
+    if config_file.endswith('.ini'):
+        config = ConfigParser.ConfigParser()
+        config.read(config_file)
+        web_server = read_config_option(config, 'WebServer', 'host', None)
+        web_server_report_path = read_config_option(config, 'WebServer',
+                                                    'reportPath', None)
+        web_server_log_path = read_config_option(config, 'WebServer',
+                                                 'logPath', None)
+        web_server_username = read_config_option(config, 'WebServer', 'username',
+                                                 None)
+        web_server_password = read_config_option(config, 'WebServer', 'password',
+                                                 None)
+        http_proxy = read_config_option(config, 'proxy', 'proxy_url', None)
+    elif config_file.endswith(('.yml', '.yaml')):
+        with open(config_file, 'r') as fd:
+            config = yaml.load(fd)
+        test_configs = config.get('test_configuration') or {}
+        webserver_configs = test_configs.get('web_server') or {}
+        web_server = webserver_configs.get('server')
+        web_server_username = webserver_configs.get('username')
+        web_server_password = webserver_configs.get('password')
+        web_server_report_path = webserver_configs.get('report_path')
+        web_server_log_path = webserver_configs.get('log_path')
+        http_proxy = test_configs.get('http_proxy')
 
     if not (web_server and web_server_report_path and web_server_log_path and \
             web_server_username and web_server_password):

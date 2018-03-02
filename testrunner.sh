@@ -16,7 +16,6 @@
 ##
 
 docker=docker
-testbed=/opt/contrail/utils/fabfile/testbeds/testbed.py
 feature=sanity
 test_tags=${TEST_TAGS:-''}
 scenarios=''
@@ -110,6 +109,10 @@ add_contrail_env () {
     EXTRA_RUN_TEST_ARGS=${testcase:-${EXTRA_RUN_TEST_ARGS:-''}}
     arg_env[0]=" -e TEST_RUN_CMD='$TEST_RUN_CMD' -e EXTRA_RUN_TEST_ARGS='$EXTRA_RUN_TEST_ARGS' "
     n=1
+    if [[ $params_file ]] && [[ $params_file == *.yml || $params_file == *.yaml ]]; then
+        arg_env[$n]=" -e TEST_CONFIG_FILE=$CONTRAIL_TEST_FOLDER/contrail_test_input.yaml"
+        n=$(($n+1))
+    fi
     for i in `env | grep '^CT_' | sed 's/ /\|/'`; do
         var=`echo ${i/CT_/} | sed -e 's/|/ /g' -e "s/\(.*\)=\(.*\)/\1='\2'/g"`
         arg_env[$n]=" -e $var "
@@ -212,9 +215,8 @@ docker_run () {
 
     if [[ $testbed ]]; then
         arg_testbed_vol=" -v $testbed:/opt/contrail/utils/fabfile/testbeds/testbed.py:ro "
-    elif [[ $testbed_json && $params_file ]]; then
-        arg_testbed_json_vol=" -v $testbed_json:$CONTRAIL_TEST_FOLDER/sanity_testbed.json:ro "
-        arg_params_vol=" -v $params_file:$CONTRAIL_TEST_FOLDER/sanity_params.ini:ro "
+    elif [[ $params_file ]] && [[ $params_file == *.yml || $params_file == *.yaml ]]; then
+        arg_params_vol=" -v $params_file:$CONTRAIL_TEST_FOLDER/contrail_test_input.yaml:ro"
     fi
 
 
@@ -278,11 +280,11 @@ run_docker_cmd () {
     tempfile=$(mktemp /tmp/contrail_test_XXXXXXXXX)
     name=$(basename $tempfile)
     if [[ -n $background ]]; then
-        echo "$docker run --privileged ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg $ct_folder -e FEATURE=$feature -e TEST_TAGS=$test_tags $dont_write_byte_code_arg -e SCENARIOS=$scenarios -d $arg_rm $arg_shell -t $image_name" > $tempfile
+        echo "$docker run --privileged ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_params_vol --name $name $ci_image_arg $ct_folder -e FEATURE=$feature -e TEST_TAGS=$test_tags $dont_write_byte_code_arg -e SCENARIOS=$scenarios -d $arg_rm $arg_shell -t $image_name" > $tempfile
         id=. $tempfile
         $docker ps -a --format "ID: {{.ID}}, Name: {{.Names}}" -f id=$id
     else
-        echo "$docker run --privileged ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_testbed_json_vol $arg_params_vol --name $name $ci_image_arg $ct_folder -e FEATURE=$feature -e TEST_TAGS=$test_tags $dont_write_byte_code_arg -e SCENARIOS=$scenarios $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
+        echo "$docker run --privileged ${arg_env[*]} $arg_base_vol $local_vol $key_vol $arg_testbed_vol $arg_params_vol --name $name $ci_image_arg $ct_folder -e FEATURE=$feature -e TEST_TAGS=$test_tags $dont_write_byte_code_arg -e SCENARIOS=$scenarios $arg_bg $arg_rm $arg_shell -t $image_name" > $tempfile
     fi
     bash $tempfile | tee $run_log; rv=${PIPESTATUS[0]}
     return $rv
@@ -300,15 +302,22 @@ check_docker () {
 
 prerun () {
     run_path=`readlink -f $run_path`
-    testbed=`readlink -f $testbed`
 
     # Create log directory if not exist
     mkdir -p ${run_path}/${SCRIPT_TIMESTAMP}/{logs,reports}
 
-    # Is testbed file exists
-    if [ ! -f $testbed ]; then
-        red "testbed path ($testbed) doesn't exist"
-        exit 1
+    if [[ $testbed ]]; then
+        testbed=`readlink -f $testbed`
+        if [ ! -f $testbed ]; then
+            red "testbed path ($testbed) doesn't exist"
+            exit 1
+        fi
+    elif [[ $params_file ]] && [[ $params_file == *.yml || $params_file == *.yaml ]]; then
+        params_file=`readlink -f $params_file`
+        if [ ! -f $params_file ]; then
+            red "params_file path ($params_file) doesn't exist"
+            exit 1
+        fi
     fi
 }
 
@@ -333,11 +342,10 @@ $GREEN  -n, --no-color                  $NO_COLOR Disable output coloring
 $GREEN  -z, --tempest_dir TEMPEST DIR           $NO_COLOR Path to the tempest , where it is cloned
 $GREEN  -t, --testbed TESTBED           $NO_COLOR Path to testbed file in the host,
                                             Default: /opt/contrail/utils/fabfile/testbeds/testbed.py
-$GREEN  -j, --testbed-json TESTBED_JSON $NO_COLOR Optional testbed json file.
 $GREEN  -k, --ssh-key FILE_PATH         $NO_COLOR ssh key file path - in case of using key based ssh to cluster nodes.
                                                   Default: $HOME/.ssh/id_rsa
 $GREEN  -K, --ssh-public-key FILE_PATH  $NO_COLOR ssh public key file path. Default: <ssh-key provided>.pub
-$GREEN  -P, --params-file PARAMS_FILE   $NO_COLOR Optional Sanity Params ini file
+$GREEN  -P, --params-file PARAMS_FILE   $NO_COLOR Optional Sanity Params ini file or yml file
 $GREEN  -f, --feature FEATURE           $NO_COLOR Features or Tags to test - valid options are sanity, quick_sanity,
                                             ci_sanity, ci_sanity_WIP, ci_svc_sanity, upgrade, webui_sanity,
                                             ci_webui_sanity, devstack_sanity, upgrade_only. Default: sanity
@@ -345,7 +353,7 @@ $GREEN  -f, --feature FEATURE           $NO_COLOR Features or Tags to test - val
 $GREEN -T, --test-tags TEST_TAGS        $NO_COLOR test tags to run specific tests
 $GREEN -c, --testcase TESTCASE          $NO_COLOR testcase to execute
 $GREEN -m, --mount_local path          $NO_COLOR mount a local folder which has contrail-test and contrail-test-ci
-NOTE: Either testbed.py (-t) or both testbed-json and params-file required
+NOTE: Either testbed.py (-t) or params-file required
 
 ${GREEN}Possitional Parameters:
 
@@ -359,7 +367,6 @@ EOF
         case "$flag" in
             t) testbed=$OPTARG;;
             z) tempest_dir=$OPTARG;;
-            j) testbed_json=$OPTARG;;
             P) params_file=$OPTARG;;
             f) feature=$OPTARG;;
             p) run_path=$OPTARG;;
@@ -551,10 +558,8 @@ $GREEN  -r, --rm	                    $NO_COLOR Remove the container on container
 $GREEN  -b, --background                $NO_COLOR run the container in background
 $GREEN  -n, --no-color                  $NO_COLOR Disable output coloring
 $GREEN  -t, --testbed TESTBED           $NO_COLOR Path to testbed file in the host,
-                                            Default: /opt/contrail/utils/fabfile/testbeds/testbed.py
 $GREEN  -i, --use-ci-image              $NO_COLOR Use ci image, by default it will use the image name "$DEFAULT_CI_IMAGE",
                                                   One may override this by setting the environment variable \$CI_IMAGE
-$GREEN  -j, --testbed-json TESTBED_JSON $NO_COLOR Optional testbed json file.
 $GREEN  -P, --params-file PARAMS_FILE   $NO_COLOR Optional Sanity Params ini file
 $GREEN  -k, --ssh-private-key FILE_PATH $NO_COLOR ssh private key file path - in case of using key based ssh to cluster nodes.
 $GREEN  -f, --feature FEATURE           $NO_COLOR Features or Tags to test - valid options are sanity, quick_sanity,
@@ -562,7 +567,7 @@ $GREEN  -f, --feature FEATURE           $NO_COLOR Features or Tags to test - val
                                             ci_webui_sanity, devstack_sanity, upgrade_only. Default: sanity
                                             NOTE: this is only valid for Full contrail-test suite.
 $GREEN  -T, --test-tags TEST_TAGS           $NO_COLOR test tags to run tests,
-NOTE: Either testbd.py (-t) or both testbed-json and params-file required
+NOTE: Either testbd.py (-t) or params-file required
 
 ${GREEN}Possitional Parameters:
 
@@ -574,7 +579,6 @@ EOF
     while getopts "ibhf:t:p:sk:nrT:P:j:" flag; do
         case "$flag" in
             t) testbed=$OPTARG;;
-            j) testbed_json=$OPTARG;;
             P) params_file=$OPTARG;;
             i) use_ci_image=1;;
             r) rm=1;;
@@ -626,7 +630,6 @@ for arg in "$@"; do
         "--background") set == "$@" "-b";;
         "--no-color") set == "$@" "-n";;
         "--all") set == "$@" "-a" ;;
-        "--testbed-json") set == "$@" "-T" ;;
         "--params-file") set == "$@" "-P" ;;
         "--use-ci-image") set == "$@" "-i" ;;
         *) set -- "$@" "$arg"

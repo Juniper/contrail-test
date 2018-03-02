@@ -47,7 +47,7 @@ no_site_packages=0
 debug=0
 force=0
 wrapper=""
-config_file="sanity_params.ini"
+config_file=""
 update=0
 upload=0
 logging=0
@@ -96,6 +96,10 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+config_file=${config_file:-$TEST_CONFIG_FILE}
+if [[ -n $config_file ]]; then
+    export TEST_CONFIG_FILE=$config_file
+fi
 prepare
 
 if [ $logging -eq 1 ]; then
@@ -387,12 +391,6 @@ function parse_results {
     python tools/parse_result.py $serial_result_xml $REPORT_DETAILS_FILE
 }
     
-function change_testr_permission {
-chmod +x /usr/local/bin/testr
-sync
-sleep 1
-}
-
 function delete_vcenter_nas_datastore {
 ( 
 export PYTHONPATH=$PATH:$PWD:$PWD/fixtures;
@@ -414,15 +412,12 @@ if [ ! -z $ci_image ]; then
     export ci_image
 fi
 
-# Workaround when testr does not have execute permission after install
-change_testr_permission
-
 check_test_discovery
 
 setup_tor_agents
 setup_tors
 
-if [ $JENKINS_TRIGGERED -eq 1 ]; then
+if [[ -n $JENKINS_TRIGGERED && $JENKINS_TRIGGERED -eq 1 ]]; then
     export REPORT_DETAILS_FILE=report_details_${SCRIPT_TS}_$(date +"%Y_%m_%d_%H_%M_%S").ini
     echo $REPORT_DETAILS_FILE
 fi

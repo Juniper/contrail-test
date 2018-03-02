@@ -53,8 +53,8 @@ CONTRAIL_TEST_FOLDER=${contrail_test_folder:-${CONTRAIL_TEST_FOLDER:-'/contrail-
 FEATURE=${feature_input:-${FEATURE:-'sanity'}}
 TEST_TAGS=${test_tags:-$TEST_TAGS}
 
-if [[ ( ! -f ${CONTRAIL_TEST_FOLDER}/sanity_params.ini || ! -f ${CONTRAIL_TEST_FOLDER}/sanity_testbed.json ) && ! -f $TESTBED ]]; then
-    echo "ERROR! Either testbed file or sanity_params.ini or sanity_testbed.json under /contrail-test is required.
+if [[ ! -f ${CONTRAIL_TEST_FOLDER}/contrail_test_input.yaml && ! -f $TESTBED ]]; then
+    echo "ERROR! Either testbed file or yaml file under /contrail-test is required.
           you probably forgot to attach them as volumes"
     exit 100
 fi

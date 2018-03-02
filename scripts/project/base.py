@@ -23,7 +23,7 @@ class BaseProjectTest(test.BaseTestCase):
         cls.admin_isolated_creds = isolated_creds.AdminIsolatedCreds(
                 cls.inputs,
                 domain_name=cls.inputs.admin_domain,
-                ini_file=cls.ini_file,
+                input_file=cls.input_file,
                 logger=cls.logger)
         cls.admin_isolated_creds.setUp()
         cls.admin_connections = cls.admin_isolated_creds.get_connections(

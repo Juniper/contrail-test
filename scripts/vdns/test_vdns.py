@@ -565,7 +565,7 @@ class TestvDNS0(BasevDNSTest):
             user_fixture.add_user_to_tenant(proj, proj_user[proj] , 'admin')
             project_fixture.set_user_creds(proj_user[proj], proj_pass[proj])
             project_inputs = ContrailTestInit(
-                self.ini_file, stack_user=project_fixture.project_username,
+                self.input_file, stack_user=project_fixture.project_username,
                 stack_password=project_fixture.project_user_password,
                 stack_tenant=proj, logger=self.logger)
             project_connections = ContrailConnections(project_inputs, logger= self.logger)

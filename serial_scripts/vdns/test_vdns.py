@@ -504,7 +504,7 @@ class TestvDNSRestart(BasevDNSTest):
             user_fixture.add_user_to_tenant(proj, var_obj.proj_user[proj], 'admin')
             project_fixture.set_user_creds(var_obj.proj_user[proj], var_obj.proj_pass[proj])
             project_inputs = ContrailTestInit(
-                    self.ini_file,
+                    self.input_file,
                     stack_user=project_fixture.project_username,
                     stack_password=project_fixture.project_user_password,
                     stack_tenant=proj,
@@ -648,7 +648,7 @@ class TestvDNSRestart(BasevDNSTest):
             user_fixture.add_user_to_tenant(proj, var_obj.proj_user[proj], 'admin')
             project_fixture.set_user_creds(var_obj.proj_user[proj], var_obj.proj_pass[proj])
             project_inputs = ContrailTestInit(
-                    self.ini_file,
+                    self.input_file,
                     stack_user=project_fixture.project_username,
                     stack_password=project_fixture.project_user_password,
                     stack_tenant=proj,

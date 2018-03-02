@@ -26,7 +26,7 @@ except ImportError:
 class sdnTopoSetupFixture(fixtures.Fixture):
 
     def __init__(self, connections, topo):
-        self.ini_file = os.environ.get('TEST_CONFIG_FILE')
+        self.input_file = os.environ.get('TEST_CONFIG_FILE')
         self.connections = connections
         self.inputs = self.connections.inputs
         self.quantum_h = self.connections.quantum_h

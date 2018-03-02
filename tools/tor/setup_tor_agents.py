@@ -18,7 +18,6 @@ CONTRAIL_CONF_PATH = '/etc/contrail'
 
 if __name__ == "__main__":
     init_obj = ContrailTestInit(sys.argv[1])
-    init_obj.read_prov_file()
     if init_obj.tor_agent_data:
         print 'Configuring any cert files required for tor-agents'
     else:

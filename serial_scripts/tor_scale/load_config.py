@@ -25,7 +25,7 @@ class ConfigScaleSetup(convertor.ReadConfigIni):
     def __init__(self):
 
         convertor.ReadConfigIni.__init__(self)
-        self.ini_file = 'sanity_params.ini'
+        self.input_file = 'sanity_params.ini'
         self.log_name = 'tor-scale.log'
         Logger = logging.ContrailLogger(self.log_name)
         Logger.setUp()
@@ -33,7 +33,7 @@ class ConfigScaleSetup(convertor.ReadConfigIni):
 
     def get_connections_handle(self):
 
-        self.inputs = ContrailTestInit(self.ini_file, logger=self.logger)
+        self.inputs = ContrailTestInit(self.input_file, logger=self.logger)
         self.connections = ContrailConnections(self.inputs, self.logger)
         self.vnc_lib = self.connections.vnc_lib
         self.auth = self.connections.auth

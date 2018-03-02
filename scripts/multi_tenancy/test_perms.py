@@ -458,7 +458,7 @@ class TestMultitenancy(BaseMultitenancyTest):
         self.logger.info("Creating vn in %s as user %s" % (proj_name, user))
         try:
             test_proj_inputs1 = ContrailTestInit(
-                    self.ini_file, stack_user=user, stack_password=password,
+                    self.input_file, stack_user=user, stack_password=password,
                     stack_tenant=project_name , logger = self.logger)
             test_proj_connections1 = ContrailConnections(test_proj_inputs1 , logger = self.logger)
             vn1_fixture = self.useFixture(
@@ -474,7 +474,7 @@ class TestMultitenancy(BaseMultitenancyTest):
         self.logger.info("Creating vn in %s as user %s" % (proj_name, user1))
         try:
             test1_proj_inputs1 = ContrailTestInit(
-                    self.ini_file, stack_user=user1, stack_password=password1,
+                    self.input_file, stack_user=user1, stack_password=password1,
                     stack_tenant=project_name,logger = self.logger)
             test1_proj_connections1 = ContrailConnections(test1_proj_inputs1,logger = self.logger)
             vn2_fixture = self.useFixture(
@@ -724,7 +724,7 @@ class TestMultitenancy(BaseMultitenancyTest):
         self.logger.info("Creating vn in %s as user %s" % (proj_name, user))
         try:
             test_proj_inputs1 = ContrailTestInit(
-                    self.ini_file, stack_user=user, stack_password=password,
+                    self.input_file, stack_user=user, stack_password=password,
                     stack_tenant=project_name , logger = self.logger)
             test_proj_connections1 = ContrailConnections(test_proj_inputs1 , logger = self.logger)
 
@@ -928,7 +928,7 @@ class TestMultitenancy(BaseMultitenancyTest):
         self.logger.info("Creating vn in %s as user %s" % (proj_name, user))
         try:
             test_proj_inputs1 = ContrailTestInit(
-                    self.ini_file, stack_user=user, stack_password=password,
+                    self.input_file, stack_user=user, stack_password=password,
                     stack_tenant=project_name , logger = self.logger)
             test_proj_connections1 = ContrailConnections(test_proj_inputs1 , logger = self.logger)
 

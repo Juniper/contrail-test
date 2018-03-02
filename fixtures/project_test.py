@@ -212,7 +212,7 @@ class ProjectFixture(fixtures.Fixture):
         username = username or self.project_username or self.inputs.stack_user
         password = password or self.project_user_password or self.inputs.stack_password
         if username not in self.project_inputs:
-            self.project_inputs[username] = ContrailTestInit(self.inputs.ini_file,
+            self.project_inputs[username] = ContrailTestInit(self.inputs.input_file,
                  stack_domain=self.orch_domain_name,
                  stack_user=username,
                  stack_password=password,
