@@ -685,7 +685,7 @@ class TestInputs(object):
         self.api_server_ip = contrail_configs.get('CONFIG_API_VIP')
         self.analytics_api_ip = contrail_configs.get('ANALYTICS_API_VIP')
         self.config_amqp_ips = contrail_configs.get('RABBITMQ_NODES')
-        self.config_amqp_port = contrail_configs.get('RABBITMQ_NODE_PORT')
+        self.config_amqp_port = contrail_configs.get('RABBITMQ_NODE_PORT', 5672)
         self.contrail_internal_vip = self.contrail_external_vip = self.api_server_ip
         self.xmpp_auth_enable = contrail_configs.get('XMPP_SSL_ENABLE')
         self.xmpp_dns_auth_enable = contrail_configs.get('XMPP_SSL_ENABLE')
@@ -904,7 +904,7 @@ class TestInputs(object):
         self._action_on_container(host_ips, 'start', container, verify_service=verify_service)
     # end start_service
 
-    def _action_on_container(self, hosts, event, container, verify_service=True):
+    def _action_on_container(self, hosts, event, container, verify_service=True, timeout=60):
         for host in hosts or self.host_ips:
             username = self.host_data[host]['username']
             password = self.host_data[host]['password']
