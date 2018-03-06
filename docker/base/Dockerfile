@@ -1,7 +1,7 @@
 FROM centos:7.4.1708
 
-# Setup Chrome Repo
-COPY google-chrome.repo /etc/yum.repos.d/google-chrome.repo
+# Copy all repo files to container context
+COPY *.repo /etc/yum.repos.d/
 
 RUN yum install -y \
       yum-plugin-priorities \
