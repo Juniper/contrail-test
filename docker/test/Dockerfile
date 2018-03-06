@@ -7,7 +7,7 @@ ARG OPENSTACK_SUBVERSION=3
 
 COPY requirements.txt *.rpm *.repo /
 
-RUN if [ ! -z "$INSTALL_PACKAGE" ]; then yum localinstall /$INSTALL_PACKAGE; \
+RUN if [ ! -z "$INSTALL_PACKAGE" ]; then yum localinstall -y /$INSTALL_PACKAGE; \
     cd /opt/contrail/contrail_packages; ./setup.sh; fi
 RUN if [ -f "/$REPO_FILE" ]; then cp /$REPO_FILE /etc/yum.repos.d/; fi
 RUN yum install -y \

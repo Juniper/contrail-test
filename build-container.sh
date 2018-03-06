@@ -3,7 +3,7 @@
 REPO_TEMPLATE_FILE="docker/test/contrail.repo.template"
 REPO_FILE="docker/test/contrail.repo"
 declare -A SUBVERSIONS=([newton]=5 [ocata]=3 [pike]=1)
-REGISTRY_SERVER="docker.io/opencontrail"
+REGISTRY_SERVER="opencontrail"
 SKU=""
 INSTALL_PKG=""
 CONTRAIL_REPO=""
@@ -22,7 +22,8 @@ download_pkg () {
     local dir=$2
     if [[ $pkg =~ ^http[s]*:// ]]; then
         wget --spider $pkg
-        wget $pkg -O $dir
+        filename="${pkg##*/}"
+        wget $pkg -O $dir/$filename
     elif [[ $pkg =~ ^ssh[s]*:// ]]; then
         server=$(echo $pkg | sed 's=scp://==;s|\/.*||')
         path=$(echo $pkg |sed -r 's#scp://[a-zA-Z0-9_\.\-]+##')
@@ -44,7 +45,7 @@ docker_build () {
   if [[ "$docker_ver" < '17.06' ]] ; then
     cat $dockerfile | sed \
       -e 's/\(^ARG REGISTRY_SERVER=.*\)/#\1/' \
-      -e "s/\$REGISTRY_SERVER/$REGISTRY_SERVER/g" \
+      -e "s|\$REGISTRY_SERVER|${REGISTRY_SERVER}|g" \
       > ${dockerfile}.nofromargs
     dockerfile="${dockerfile}.nofromargs"
   else
