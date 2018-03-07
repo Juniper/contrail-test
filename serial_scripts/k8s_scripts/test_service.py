@@ -5,7 +5,7 @@ from k8s.namespace import NamespaceFixture
 from k8s.service import ServiceFixture
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import get_lock
-
+import test
 
 
 class TestService(BaseK8sTest):
@@ -17,7 +17,8 @@ class TestService(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestService, cls).tearDownClass()
-
+    
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_service_with_kube_manager_restart(self):
         ''' Create a service type loadbalancer with 2 pods running nginx

@@ -1,4 +1,5 @@
 import time
+import test
 from common.k8s.base import BaseK8sTest
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.contrail_status_check import ContrailStatusChecker
@@ -14,6 +15,7 @@ class TestDeployment(BaseK8sTest):
     def tearDownClass(cls):
         super(TestDeployment, cls).tearDownClass()
 
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_deployment_with_kube_manager_restart(self):
         ''' Create a deployment object with 3 pod replicas and Verify http service works across the pod replicas
@@ -63,7 +65,7 @@ class TestDeployment(BaseK8sTest):
         assert self.validate_nginx_lb(s_pod_fixtures, service.cluster_ip,
                                       test_pod=client_pod)
 
-     
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_deployment_with_agent_restart(self):
         ''' Create a deployment object with 3 pod replicas and Verify http service works across the pod replicas
@@ -88,7 +90,6 @@ class TestDeployment(BaseK8sTest):
             s_pod_fixtures.append(s_pod_fixture)
         assert self.validate_nginx_lb(s_pod_fixtures, service.cluster_ip,
                                       test_pod=client_pod)
-        #import pdb;pdb.set_trace()
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter-agent',[compute_ip],
                                          container='agent')
