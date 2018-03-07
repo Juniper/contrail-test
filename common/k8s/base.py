@@ -44,6 +44,7 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
         cls.logger = cls.connections.logger
         cls.k8s_client = cls.connections.k8s_client
         cls.setup_namespace_isolation = False
+        cls.setup_custom_isolation = False
         cls.public_vn = create_public_vn.PublicVn(connections=cls.connections,
                                                   public_vn=K8S_PUBLIC_VN_NAME,
                                                   public_tenant=cls.inputs.admin_tenant,
@@ -369,7 +370,8 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
                           port='80',
                           barred_pods=None,
                           protocol=None,
-                          cert=None):
+                          cert=None,
+                          expectation=True):
         '''
         From test_pod , run wget on http://<service_ip>:<port> and check
         if the all the lb_pods respond to atleast one of the requests over
@@ -414,7 +416,10 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
             msg = ('No http hit seen for one or more pods.'
                    'Pls check. Hits: %s' % (hit))
             self.logger.warn(msg)
-            return False
+            if expectation==False:
+                return True
+            else:
+                return False
         self.logger.info('Nginx lb hits seem to be ok: %s' % (hit))
         return True
     # end validate_nginx_lb
@@ -448,6 +453,8 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
         egress = [
             { 'to': 
                 [
+                    { 'pod_selector': {'role': 'temp' }
+                        },
                     {'ip_block': 
                         {"cidr" : "1.2.3.4/24"},
                     },
@@ -541,19 +548,44 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
                     break
                 
                 for to_item in egress_item.get('to', {}):
+                    egress_pod_dict = {}
+                    egress_ns_dict = {}
                     egress_ip_block_dict = {}
+                    egress_pod_selector = None
+                    egress_ns_selector = None
                     egress_ip_block = None
-                    #space
+                    
+                    to_item_dict = to_item.get('pod_selector') or {}
+                    for k, v in to_item_dict.iteritems():
+                        if not egress_pod_dict:
+                            egress_pod_dict = {'match_labels': {}}
+                        egress_pod_dict['match_labels'].update({k: v})
+                        egress_pod_selector = {
+                            'pod_selector': egress_pod_dict}
+
+                    to_item_dict = to_item.get('namespace_selector') or {}
+                    for k, v in to_item_dict.iteritems():
+                        if not egress_ns_dict:
+                            egress_ns_dict = {'match_labels': {}}
+                        egress_ns_dict['match_labels'].update({k: v})
+                        egress_ns_selector = {
+                            'namespace_selector': egress_ns_dict}
+                        
                     to_item_dict = to_item.get('ip_block') or {}
                     for k, v in to_item_dict.iteritems():
                         if not egress_ip_block_dict:
                             egress_ip_block_dict = {'cidr': ""}
                         if k == "cidr":
                             egress_ip_block_dict.update({k: v})
+                        if k == "_except":
+                            egress_ip_block_dict.update({k: v})
                     egress_ip_block = {
                             'ip_block': egress_ip_block_dict}  
-                    to_entries.append(egress_ip_block)
-                # end for from_item
+                    
+                    to_entries.append(egress_pod_selector or 
+                                      egress_ns_selector or
+                                      egress_ip_block)
+                # end for to_item
 
                 port_list = []
                 for port_str in egress_item.get('egress_ports', {}):
@@ -597,6 +629,8 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
                             ingress_pods=None,
                             ingress_namespaces=None,
                             ingress_ipblock=None,
+                            egress_pods=None,
+                            egress_namespaces=None,
                             egress_ipblock=None,
                             ingress_all = False,
                             egress_all = False,
@@ -612,6 +646,8 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
         ingress_pod : { 'role': 'frontend'}
         ingress_namespace : { 'project': 'mynamespace'}
         ingress_ipblock : { "cidr" : "10.204.217.0/24", "_except" : ["10.204.217.4/30"] }
+        egress_pod : { 'role': 'frontend'}
+        egress_namespace : { 'project': 'mynamespace'}
         egress_ipblock : { "cidr" : "10.204.217.0/24"}
         ports = ['tcp/80']
         egress_ports = ['tcp/80']
@@ -620,17 +656,25 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
         '''
         metadata = metadata or {}
         spec = spec or {}
+        
         ingress_pods = ingress_pods
         ingress_namespaces = ingress_namespaces
         ingress_ipblock = ingress_ipblock
+        egress_pods = egress_pods
+        egress_namespaces = egress_namespaces
+        egress_ipblock = egress_ipblock
         ports = ports
         egress_ports = egress_ports
+        
         ingress_pod_selector = None
-        ns_selector = None
+        ingress_ns_selector = None
         ingress_ipblock_selector = None
+        egress_pod_selector = None
+        egress_ns_selector = None
         egress_ipblock_selector = None
         port_list = []
         egress_port_list = []
+        
         name = name or get_random_name('np-')
         metadata.update({'name': name})
         selector_dict = {}
@@ -650,11 +694,23 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
             ingress_ns_dict = {'match_labels': {}}
             for k, v in ingress_namespaces.iteritems():
                 ingress_ns_dict['match_labels'].update({k: v})
-            ns_selector = {'namespace_selector': ingress_ns_dict}
+            ingress_ns_selector = {'namespace_selector': ingress_ns_dict}
 
         if ingress_ipblock is not None:
             ingress_ipblock_selector = {'ip_block': ingress_ipblock}
+        
+        if egress_pods is not None:
+            egress_pod_dict = {'match_labels': {}}
+            for k, v in egress_pods.iteritems():
+                egress_pod_dict['match_labels'].update({k: v})
+            egress_pod_selector = {'pod_selector': egress_pod_dict}
 
+        if egress_namespaces is not None:
+            egress_ns_dict = {'match_labels': {}}
+            for k, v in egress_namespaces.iteritems():
+                egress_ns_dict['match_labels'].update({k: v})
+            egress_ns_selector = {'namespace_selector': egress_ns_dict}
+            
         if egress_ipblock is not None:
             egress_ipblock_selector = {'ip_block': egress_ipblock}
 
@@ -672,10 +728,10 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
             spec.update({
                 'ingress': [{}]
                 })
-        elif ingress_pod_selector or ns_selector or ingress_ipblock_selector:
+        elif ingress_pod_selector or ingress_ns_selector or ingress_ipblock_selector:
             spec.update({
                 'ingress': [
-                    {'from': [ingress_pod_selector or ns_selector or ingress_ipblock_selector],
+                    {'from': [ingress_pod_selector or ingress_ns_selector or ingress_ipblock_selector],
                     }
                 ]
             })
@@ -683,10 +739,10 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
             spec.update({
                 'egress': [{}]
                 })
-        elif egress_ipblock_selector:
+        elif egress_pod_selector or egress_ns_selector or egress_ipblock_selector:
             spec.update({
                 'egress': [
-                    {'to': [egress_ipblock_selector],
+                    {'to': [egress_pod_selector or egress_ns_selector or egress_ipblock_selector],
                     }
                 ]
             })
