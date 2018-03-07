@@ -832,7 +832,7 @@ class TestInputs(object):
         container = self.host_data[host]['containers'][service]
         cmd = "docker ps -f NAME=%s -f status=running 2>/dev/null"%container
         for i in range(3):
-            output = self.run_cmd_on_server(host, cmd)
+            output = self.run_cmd_on_server(host, cmd, as_sudo=True)
             if not output or 'Up' not in output:
                 self.logger.warn('Container %s is not up on host %s'%(container, host))
                 return False
@@ -848,8 +848,8 @@ class TestInputs(object):
         host_dict['containers'] = {}
         if  host_dict.get('type', None) == 'esxi':
             return
-        cmd = 'docker ps 2>/dev/null | awk \'{print $NF}\''
-        output = self.run_cmd_on_server(host_dict['host_ip'], cmd)
+        cmd = 'docker ps 2>/dev/null | grep -v "/pause" | grep -v "nodemgr" | awk \'{print $NF}\''
+        output = self.run_cmd_on_server(host_dict['host_ip'], cmd, as_sudo=True)
         # If not a docker cluster, return
         if not output:
             return
@@ -869,19 +869,19 @@ class TestInputs(object):
                 host_dict['containers'][container] = container
         if 'nova' in host_dict['containers']:
             host_dict['containers']['openstack'] = host_dict['containers']['nova']
-        if 'controller' in host_dict['containers']:
+        if 'schema' not in host_dict['containers'] and 'controller' in host_dict['containers']:
             host_dict['containers']['api-server'] = host_dict['containers']['controller']
             host_dict['containers']['svc-monitor'] = host_dict['containers']['controller']
             host_dict['containers']['schema'] = host_dict['containers']['controller']
             host_dict['containers']['control'] = host_dict['containers']['controller']
             host_dict['containers']['dns'] = host_dict['containers']['controller']
             host_dict['containers']['named'] = host_dict['containers']['controller']
-        if 'analytics' in host_dict['containers']:
+        if 'alarm-gen' not in host_dict['containers'] and 'analytics' in host_dict['containers']:
             host_dict['containers']['analytics-api'] = host_dict['containers']['analytics']
             host_dict['containers']['alarm-gen'] = host_dict['containers']['analytics']
             host_dict['containers']['collector'] = host_dict['containers']['analytics']
             host_dict['containers']['query-engine'] = host_dict['containers']['analytics']
-        if 'analyticsdb' in host_dict['containers']:
+        if 'analytics-cassandra' not in host_dict['containers'] and 'analyticsdb' in host_dict['containers']:
             host_dict['containers']['analytics-cassandra'] = host_dict['containers']['analyticsdb']
     # end _check_containers
 
@@ -915,7 +915,7 @@ class TestInputs(object):
             issue_cmd = 'docker %s %s -t %s' % (event, cntr, timeout)
             self.logger.info('Running %s on %s' %
                              (issue_cmd, self.host_data[host]['name']))
-            self.run_cmd_on_server(host, issue_cmd, username, password, pty=True)
+            self.run_cmd_on_server(host, issue_cmd, username, password, pty=True, as_sudo=True)
             if verify_service:
                 status = self.is_container_up(host, container)
                 assert status if 'start' in event else not status
