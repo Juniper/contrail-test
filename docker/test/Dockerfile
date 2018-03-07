@@ -1,5 +1,6 @@
 ARG REGISTRY_SERVER=localhost:5000
-FROM $REGISTRY_SERVER/contrail-test-base:latest
+ARG FROM_TAG=latest
+FROM $REGISTRY_SERVER/contrail-test-base:$FROM_TAG
 ARG INSTALL_PACKAGE=""
 ARG REPO_FILE="contrail.repo"
 ARG OPENSTACK_VERSION=ocata
