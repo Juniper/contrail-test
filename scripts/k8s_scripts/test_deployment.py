@@ -1,6 +1,7 @@
 from common.k8s.base import BaseK8sTest
 from tcutils.wrappers import preposttest_wrapper
 import time
+import test
 
 class TestPodDeployment(BaseK8sTest):
     @preposttest_wrapper
@@ -42,7 +43,7 @@ class TestPodDeployment(BaseK8sTest):
             test_pod=client_pod)
     # end test_deployment_1
 
-
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_deployment_replica_updation(self):
         '''

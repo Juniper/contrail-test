@@ -5,7 +5,7 @@ from k8s.namespace import NamespaceFixture
 from k8s.service import ServiceFixture
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import get_lock
-
+import test
 
 
 class TestService(BaseK8sTest):
@@ -44,6 +44,7 @@ class TestService(BaseK8sTest):
                                       test_pod=pod3)
     # end test_service_1
 
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_service_with_type_loadbalancer(self):
         ''' Create a service type loadbalancer with 2 pods running nginx
@@ -205,6 +206,7 @@ class TestServiceExternalIP(BaseK8sTest):
             return(False, 'Needs MX_GW_TEST to be set')
         return (True, None)
 
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_service_with_external_ip(self):
         ''' Create a service  with 2 pods running nginx

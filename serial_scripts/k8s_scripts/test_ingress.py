@@ -1,4 +1,5 @@
 import time
+import test
 from common.k8s.base import BaseK8sTest
 from k8s.ingress import IngressFixture
 from tcutils.wrappers import preposttest_wrapper
@@ -15,6 +16,7 @@ class TestIngress(BaseK8sTest):
     def tearDownClass(cls):
         super(TestIngress, cls).tearDownClass()
 
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_ingress_with_kube_manager_restart(self):
         ''' Create a service with 2 pods running nginx
@@ -67,7 +69,7 @@ class TestIngress(BaseK8sTest):
         assert self.validate_nginx_lb([pod1, pod2], ingress.external_ips[0])
     # end test_ingress_with_kube_manager_restart
 
-
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_ingress_fanout_with_vrouter_agent_restart(self):
         '''Creating a fanout ingress with 2 different host having 2 different path along with a default backend
@@ -163,7 +165,7 @@ class TestIngress(BaseK8sTest):
         assert self.validate_nginx_lb([pod3, pod4], ingress.cluster_ip,
                                       test_pod=pod5, path=path2, host=host2)
 
-
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_ingress_fanout_with_node_reboot(self):
         '''Creating a fanout ingress with 2 different host having 2 different path along with a default backend

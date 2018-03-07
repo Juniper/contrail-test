@@ -8,6 +8,7 @@ from k8s.namespace import NamespaceFixture
 from k8s.pod import PodFixture
 from tcutils.util import get_random_name, get_random_cidr
 import time
+import test
 
 class TestNetworkPolicy(BaseK8sTest):
 
@@ -688,6 +689,7 @@ class TestNetworkPolicy(BaseK8sTest):
         assert self.validate_wget(self.client1_pod_ns2, url)
     #end test_ingress_rules_edit
 
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_multiple_ingress_policies(self):
         """
@@ -791,6 +793,7 @@ class TestNetworkPolicy(BaseK8sTest):
         assert self.client2_pod_ns1.ping_with_certainty(self.client1_pod_ns2.pod_ip)
     #end test_multiple_ingress_policies
 
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_ingress_rules_label_edit(self):
         """
@@ -1413,6 +1416,7 @@ class TestNetworkPolicy(BaseK8sTest):
         assert self.validate_wget(self.client2_pod_ns2, url)
     #end test_egress_rules_edit
 
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_multiple_egress_policies(self):
         """
@@ -1513,6 +1517,7 @@ class TestNetworkPolicy(BaseK8sTest):
         assert self.client1_pod_ns1.ping_with_certainty(self.client2_pod_ns1.pod_ip)
     #end test_multiple_egress_policies
 
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_egress_rules_label_edit(self):
         """
@@ -1754,6 +1759,7 @@ class TestNetworkPolicy(BaseK8sTest):
         assert self.validate_wget(self.client2_pod_ns1, url2, expectation = False)
     #end test_ingress_deny_egress_deny_all
 
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_ingress_egress_on_pod(self):
         """
@@ -1828,6 +1834,7 @@ class TestNetworkPolicy(BaseK8sTest):
         assert self.client3_pod_ns3.ping_with_certainty(self.client2_pod_ns3.pod_ip)
     #end test_ingress_egress_on_pod
 
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_ingress_egress_on_namespace(self):
         """
@@ -2148,6 +2155,7 @@ class TestNetworkPolicyRandom(BaseK8sTest):
     def tearDownClass(cls):
         super(TestNetworkPolicyRandom, cls).tearDownClass()
     
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_k8s_configurations_post_policy_creation(self):
         """
@@ -2262,6 +2270,7 @@ class TestNetworkPolicyRandom(BaseK8sTest):
         assert client1_ns2.ping_with_certainty(client2_ns2.pod_ip)
     #end test_policy_negative
 
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_deployment_replica_updation(self):
         '''
@@ -2360,6 +2369,7 @@ class TestNetworkPolicyRandom(BaseK8sTest):
             assert client1_pod_ns3.ping_with_certainty(ip)
     #end test_deployment_replica_updation
     
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_multiple_pod_selector(self):
         """
@@ -2435,6 +2445,7 @@ class TestNetworkPolicyRandom(BaseK8sTest):
         assert client5_pod_ns1.ping_with_certainty(client4_pod_ns1.pod_ip)
     #end test_multiple_pod_selector
     
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_multiple_values_in_ingress_rule(self):
         """
@@ -2552,7 +2563,7 @@ class TestNetworkPolicyRandom(BaseK8sTest):
                                                    expectation=False) # This will fail because of namespace rule
         assert client2_pod_ns4.ping_with_certainty(client4_pod_ns1.pod_ip)
     #end test_multiple_values_in_ingress_rule
-
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_multiple_values_in_egress_rule(self):
         """
@@ -2782,6 +2793,7 @@ class TestNetworkPolicyServiceIngress(BaseK8sTest):
             cls.ns1.cleanUp()
         super(TestNetworkPolicyServiceIngress, cls).tearDownClass()
         
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_ingress_rule_on_namespace_with_service(self):
         """
@@ -2868,6 +2880,7 @@ class TestNetworkPolicyServiceIngress(BaseK8sTest):
         assert self.validate_wget(self.client2_pod_ns2, url1)
     #end test_ingress_rule_on_namespace_with_service
     
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_egress_rule_on_namespace_with_service(self):
         """
@@ -3333,7 +3346,8 @@ class TestNetworkPolicyServiceIngress(BaseK8sTest):
         assert self.validate_wget(self.client1_pod_ns1, url2, expectation=False)
         assert self.validate_wget(self.client2_pod_ns2, url1, expectation=False)
     #end test_ingress_rule_on_pod_with_k8s_ingress
-    
+   
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_ingress_rule_on_namespace_with_k8s_ingress_fanout(self):
         """
@@ -3348,7 +3362,6 @@ class TestNetworkPolicyServiceIngress(BaseK8sTest):
            from all pods of all namespaces and from outside world.
         """
         # All traffic between everyone should work
-        import pdb;pdb.set_trace()
         app1 = 'http_test1'
         app2 = 'http_test2'
         labels1 = {'appl':app1}

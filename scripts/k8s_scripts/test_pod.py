@@ -1,6 +1,6 @@
 from common.k8s.base import BaseK8sTest
 from tcutils.wrappers import preposttest_wrapper
-
+import test
 
 class TestPod(BaseK8sTest):
 
@@ -33,6 +33,7 @@ class TestPod(BaseK8sTest):
         assert pod1.ping_to_ip(pod2.pod_ip)
     # end test_ping_between_two_pods
 
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_ping_between_pods_accross_namespace(self):
         '''
