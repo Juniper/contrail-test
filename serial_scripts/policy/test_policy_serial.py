@@ -862,10 +862,8 @@ class TestSerialPolicy(BaseSerialPolicyTest):
                     'sourceip',
                     'destvn',
                     'destip',
-                    'sum(packets)',
-                    'flow_count',
-                    'sum(bytes)',
-                    'sum(bytes)'],
+                    'SUM(packets)',
+                    'SUM(bytes)'],
                 where_clause=query[proto])
             msg1 = proto + \
                 " Flow count info is not matching with opserver flow series record"
@@ -874,7 +872,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
             expected_flow_count[proto] = total_streams[proto]
             self.logger.info(flow_series_data[proto])
             self.assertEqual(
-                flow_series_data[proto][0]['flow_count'],
+                len(flow_series_data[proto]),
                 expected_flow_count[proto],
                 msg1)
         # 5. Stop Traffic
@@ -902,11 +900,10 @@ class TestSerialPolicy(BaseSerialPolicyTest):
                     'sourceip',
                     'destvn',
                     'destip',
-                    'sum(packets)',
-                    'flow_count',
-                    'sum(bytes)',
-                    'sum(bytes)'],
+                    'SUM(packets)',
+                    'SUM(bytes)'],
                 where_clause=query[proto])
+
         self.assertEqual(result, True, msg)
         # 6. Match traffic stats against Analytics flow series data
         self.logger.info("-" * 80)
@@ -924,7 +921,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
                 "***Actual Traffic sent by agent %s \n\n stats shown by Analytics flow series%s" %
                 (traffic_stats[proto], flow_series_data[proto]))
             self.assertGreaterEqual(
-                flow_series_data[proto][0]['sum(packets)'],
+                flow_series_data[proto][0]['SUM(packets)'],
                 traffic_stats[proto]['total_pkt_sent'],
                 msg[proto])
 
@@ -947,10 +944,8 @@ class TestSerialPolicy(BaseSerialPolicyTest):
                     'sourceip',
                     'destvn',
                     'destip',
-                    'sum(packets)',
-                    'flow_count',
-                    'sum(bytes)',
-                    'sum(bytes)'],
+                    'SUM(packets)',
+                    'SUM(bytes)'],
                 where_clause=query[proto])
             msg = proto + \
                 " Flow count info is not matching with opserver flow series record after flow age out in kernel"
@@ -966,17 +961,15 @@ class TestSerialPolicy(BaseSerialPolicyTest):
                     'sourceip',
                     'destvn',
                     'destip',
-                    'sum(packets)',
-                    'flow_count',
-                    'sum(bytes)',
-                    'sum(bytes)'],
+                    'SUM(packets)',
+                    'SUM(bytes)'],
                 where_clause=query[proto])
             msg = proto + \
                 " Traffic Stats is not matching with opServer flow series data after flow age out in kernel"
             # Historical data should be present in the Analytics, even if flows
             # age out in kernel
             self.assertGreaterEqual(
-                flow_series_data[proto][0]['sum(packets)'],
+                flow_series_data[proto][0]['SUM(packets)'],
                 traffic_stats[proto]['total_pkt_sent'],
                 msg)
         return result
