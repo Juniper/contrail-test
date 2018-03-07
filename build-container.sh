@@ -50,6 +50,7 @@ docker_build () {
   else
     build_arg_opts+=" --build-arg REGISTRY_SERVER=${REGISTRY_SERVER}"
   fi
+  build_arg_opts+=" --build-arg BASE_TAG=${BASE_TAG}"
   build_arg_opts+=" --build-arg OPENSTACK_VERSION=${OPENSTACK_VERSION}"
   build_arg_opts+=" --build-arg OPENSTACK_SUBVERSION=${OPENSTACK_SUBVERSION}"
   build_arg_opts+=" --build-arg INSTALL_PACKAGE=${INSTALL_PACKAGE}"
@@ -69,6 +70,7 @@ Usage: $0 test [OPTIONS]
 
   -h|--help                     Print help message
   --tag           TAG           Docker container tag, default to sku
+  --base-tag      BASE_TAG      Specify contrail-base-test container tag to use. Defaults to 'latest'.
   --sku           SKU           Openstack version. Defaults to ocata
   --contrail-repo CONTRAIL_REPO Contrail Repository, optional, if unspecified specify --package-url.
   --package-url   INSTALL_PKG   Contrail-install-packages package url (scp:// or http:// or https://)
@@ -90,6 +92,7 @@ EOF
     while [ $# -gt 0 ]; do
         case "$1" in
             -h|--help) usage; exit;;
+            --base-tag) BASE_TAG=$2; shift;;
             --tag) TAG=$2; shift;;
             --sku) SKU=$2; shift;;
             --contrail-repo) CONTRAIL_REPO=$2; shift;;
@@ -115,6 +118,10 @@ EOF
     if [[ -z $TAG ]]; then
         echo "TAG(--tag) is unspecified. using $SKU"; echo
         TAG=$SKU
+    fi
+    if [[ -z $BASE_TAG ]]; then
+        echo "BASE_TAG(--base-tag) is unspecified, using 'latest'."; echo
+        BASE_TAG='latest'
     fi
     if [[ -n $CONTRAIL_REPO ]]; then
         create_repo $REPO_TEMPLATE_FILE $REPO_FILE
@@ -168,7 +175,7 @@ EOF
         docker tag contrail-test-base:$TAG $REGISTRY_SERVER/contrail-test-base:$TAG
         docker push $REGISTRY_SERVER/contrail-test-base:$TAG
     fi
-    echo "Built base container contrail-test-base:latest"
+    echo "Built base container contrail-test-base:$TAG"
 }
 
 usage () {
