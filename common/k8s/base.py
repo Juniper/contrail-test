@@ -887,6 +887,54 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                                      verify_service=False)
     # end restart_kube_manager
 
+    def restart_vrouter_agent(self, ips=None):
+        '''
+        Restarts vrouter agent
+        If no ips is specified, restarts all agents
+        '''
+        ips = ips or self.inputs.compute_ips
+
+        self.logger.info('Will restart contrail-vrouter-agent  services now on'
+            ' %s' %(ips))
+        self.inputs.restart_service('contrail-vrouter-agent', ips,
+                                     container='agent',
+                                     verify_service=True)
+    # end restart_kube_manager
+
+    def restart_pod(self, pod_fixture):
+        '''
+        Restarts a specific container using docker restart
+        '''
+        host = pod_fixture.compute_ip
+        username = self.inputs.host_data[host]['username']
+        password = self.inputs.host_data[host]['password']
+        cmd = "docker ps -f NAME=%s -f status=running 2>/dev/null | grep -v POD | sed -n 2p | awk '{print $1}'" \
+                % (pod_fixture.name + "_" + pod_fixture.namespace)
+        self.logger.info('Running %s on %s' %
+                             (cmd, self.inputs.host_data[host]['name']))
+        container_id = self.inputs.run_cmd_on_server(host, cmd, username, password,
+                                                     as_sudo=True)
+        if not container_id:
+                self.logger.warn('Container cant be found on host')
+                return False
+        issue_cmd = 'docker restart %s -t 60' % (container_id)
+        self.logger.info('Running %s on %s' %
+                             (issue_cmd, self.inputs.host_data[host]['name']))
+        self.inputs.run_cmd_on_server(host, issue_cmd, username, password, pty=True,
+                                      as_sudo=True)
+        verify_command = "docker ps -f NAME=%s -f status=running 2>/dev/null | grep -v POD" \
+                         % (pod_fixture.name + "_" + pod_fixture.namespace)
+        for i in range(3):
+            output = self.inputs.run_cmd_on_server(host, verify_command, username,
+                                                    password, as_sudo=True)
+            if not output or 'Up' not in output:
+                self.logger.warn('Container is not up on host %s'%(host))
+                return False
+            time.sleep(3)
+        time.sleep(60)
+        return True
+    # end restart_pod
+
     def create_snat_router(self, name):
 
         obj =  self.connections.vnc_lib_fixture.vnc_h.create_router(name=name, 
