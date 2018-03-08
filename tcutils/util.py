@@ -797,9 +797,12 @@ def run_cmd_on_server(issue_cmd, server_ip, username,
                 container_args += ' --privileged '
                 container_args += ' -it ' if pty else ''
                 container_args += container
-                updated_cmd = 'docker exec %s %s \'%s\'' % (container_args,
-                                                       shell_prefix,
-                                                       issue_cmd)
+                if shell_prefix:
+                    updated_cmd = 'docker exec %s %s \'%s\'' % (container_args,
+                                                        shell_prefix,
+                                                        issue_cmd)
+                else:
+                    updated_cmd = 'docker exec %s %s' % (container_args,issue_cmd)
             logger.debug('[%s]: Running cmd : %s' % (server_ip, updated_cmd))
             output = _run(updated_cmd, pty=pty)
             logger.debug('Output : %s' % (output))

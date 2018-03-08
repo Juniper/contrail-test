@@ -2,6 +2,7 @@ from common.k8s.base import BaseK8sTest
 from k8s.ingress import IngressFixture
 from tcutils.wrappers import preposttest_wrapper
 import test
+import os
 
 class TestIngress(BaseK8sTest):
 
@@ -12,6 +13,11 @@ class TestIngress(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestIngress, cls).tearDownClass()
+
+    def is_test_applicable(self):
+        if not os.environ.get('MX_GW_TEST') == '1':
+            return(False, 'Needs MX_GW_TEST to be set')
+        return (True, None)
 
     @preposttest_wrapper
     def test_ingress_1(self):

@@ -4,6 +4,7 @@ from common.k8s.base import BaseK8sTest
 from k8s.ingress import IngressFixture
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.contrail_status_check import ContrailStatusChecker
+import os
 
 
 class TestIngress(BaseK8sTest):
@@ -16,6 +17,11 @@ class TestIngress(BaseK8sTest):
     def tearDownClass(cls):
         super(TestIngress, cls).tearDownClass()
 
+    def is_test_applicable(self):
+        if not os.environ.get('MX_GW_TEST') == '1':
+            return(False, 'Needs MX_GW_TEST to be set')
+        return (True, None)
+    
     @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_ingress_with_kube_manager_restart(self):
