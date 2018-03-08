@@ -75,7 +75,15 @@ elif [[ -n $TEST_TAGS ]]; then
 else
     case $FEATURE in
         sanity)
-            $run_tests --sanity --send-mail -U $EXTRA_RUN_TEST_ARGS
+            $run_tests --sanity --send-mail -U -t $EXTRA_RUN_TEST_ARGS
+            rv_run_test=$?
+            ;;
+        k8s_sanity)
+            $run_tests -T k8s_sanity --send-mail -U -t $EXTRA_RUN_TEST_ARGS
+            rv_run_test=$?
+            ;;
+        vcenter)
+            $run_tests -T vcenter --send-mail -U -t $EXTRA_RUN_TEST_ARGS
             rv_run_test=$?
             ;;
         quick_sanity)
