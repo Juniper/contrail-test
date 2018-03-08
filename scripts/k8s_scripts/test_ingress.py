@@ -2,6 +2,7 @@ from common.k8s.base import BaseK8sTest
 from k8s.ingress import IngressFixture
 from tcutils.wrappers import preposttest_wrapper
 import test
+from tcutils.util import skip_because
 
 class TestIngress(BaseK8sTest):
 
@@ -13,6 +14,7 @@ class TestIngress(BaseK8sTest):
     def tearDownClass(cls):
         super(TestIngress, cls).tearDownClass()
 
+    @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_ingress_1(self):
         ''' Create a service with 2 pods running nginx
@@ -52,6 +54,7 @@ class TestIngress(BaseK8sTest):
         assert self.validate_nginx_lb([pod1, pod2], ingress.external_ips[0])
     # end test_service_1
 
+    @skip_because(mx_gw = False)
     @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_ingress_fanout(self):

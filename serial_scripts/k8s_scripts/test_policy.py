@@ -6,6 +6,7 @@ from test import BaseTestCase
 from k8s.namespace import NamespaceFixture
 from k8s.pod import PodFixture
 import test
+import time
 
 class TestNetworkPolicyProjectIsolation(BaseK8sTest):
 
@@ -18,9 +19,7 @@ class TestNetworkPolicyProjectIsolation(BaseK8sTest):
         super(TestNetworkPolicyProjectIsolation, cls).tearDownClass()
         
     def setup_common_namespaces_pods(self):
-        deleted_project = self.delete_cluster_project()
-        self.addCleanup(self.add_cluster_project,
-                         project_name = deleted_project)
+        self.delete_cluster_project()
         namespace1 = self.setup_namespace(name = "ns1")
         namespace2 = self.setup_namespace(name = "ns2")
         namespace1.set_labels({'test_site': "ns1"})
@@ -203,3 +202,479 @@ class TestNetworkPolicyProjectIsolation(BaseK8sTest):
         assert ns2_clients[0].ping_with_certainty(ns1_clients[0].pod_ip)
         assert self.validate_wget(ns2_clients[0], url1)
     #end test_egress_policy_over_project_isolation
+
+class TestNetworkPolicyRestart(BaseK8sTest):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestNetworkPolicyRestart, cls).setUpClass()
+        try:
+            cls.ns1 = NamespaceFixture(connections=cls.connections, name="new-default")
+            cls.ns1.setUp()
+            cls.ns2 = NamespaceFixture(connections=cls.connections, name="non-default")
+            cls.ns2.setUp()
+            cls.ns3 = NamespaceFixture(connections=cls.connections, name="temp-ns")
+            cls.ns3.setUp()
+            #cls.ns1.set_labels({'project': cls.ns1.name})
+            cls.ns1.set_labels({'site': cls.ns1.name})
+            cls.ns2.set_labels({'site': cls.ns2.name})
+            cls.ns3.set_labels({'new_site': cls.ns3.name})
+            web_label_ns1, web_label_ns2 = 'webns1', 'webns2'
+            client1_label_ns1, client1_label_ns2, client1_label_ns3 = 'client1_ns1', 'client1_ns2', 'client1_ns3'
+            client2_label_ns1, client2_label_ns2, client2_label_ns3 = 'client2_ns1', 'client2_ns2', 'client2_ns3'
+            client3_label_ns3 = 'client3_ns3'
+            nginx_spec_1 = {'containers': [{'image': 'nginx',
+                                            'ports': [{'container_port': 80}]}]}
+            nginx_spec_2 = {'containers': [{'image': 'nginx',
+                                            'ports': [{'container_port': 80}]}]}
+            nginx_metadata_ns1 = {'labels': {'app': web_label_ns1}}
+            nginx_metadata_ns2 = {'labels': {'app': web_label_ns2}}
+            cls.web_pod_ns1 = PodFixture(connections=cls.connections,
+                                         namespace=cls.ns1.name,
+                                         metadata=nginx_metadata_ns1,
+                                         spec=nginx_spec_1)
+            cls.web_pod_ns1.setUp()
+            cls.web_pod_ns2 = PodFixture(connections=cls.connections,
+                                         namespace=cls.ns2.name,
+                                         metadata=nginx_metadata_ns2,
+                                         spec=nginx_spec_2)
+            cls.web_pod_ns2.setUp()
+            busybox_spec_1 = {'containers': [{'image': 'busybox','command': ['sleep', '1000000'],
+                                              'image_pull_policy': 'IfNotPresent',}],
+                                        'restart_policy': 'Always'}
+            busybox_spec_2 = dict(busybox_spec_1)
+            busybox_spec_3 = dict(busybox_spec_1)
+            busybox_spec_4 = dict(busybox_spec_1)
+            busybox_spec_5 = dict(busybox_spec_1)
+            busybox_spec_6 = dict(busybox_spec_1)
+            busybox_spec_7 = dict(busybox_spec_1)
+            busybox_metadata_c1_ns1 = {'labels': {'app': client1_label_ns1}}
+            busybox_metadata_c1_ns2 = {'labels': {'app': client1_label_ns2}}
+            busybox_metadata_c1_ns3 = {'labels': {'app': client1_label_ns3}}
+            busybox_metadata_c2_ns1 = {'labels': {'app': client2_label_ns1}}
+            busybox_metadata_c2_ns2 = {'labels': {'app': client2_label_ns2}}
+            busybox_metadata_c2_ns3 = {'labels': {'app': client2_label_ns3}}
+            busybox_metadata_c3_ns3 = {'labels': {'app': client3_label_ns3}}
+            cls.client1_pod_ns1 = PodFixture(connections=cls.connections,
+                                            namespace=cls.ns1.name,
+                                            metadata=busybox_metadata_c1_ns1,
+                                            spec=busybox_spec_1)
+            cls.client1_pod_ns1.setUp()
+            cls.client2_pod_ns1 = PodFixture(connections=cls.connections,
+                                             namespace=cls.ns1.name,
+                                             metadata=busybox_metadata_c2_ns1,
+                                             spec=busybox_spec_2)
+            cls.client2_pod_ns1.setUp()
+            cls.client1_pod_ns2 = PodFixture(connections=cls.connections,
+                                             namespace=cls.ns2.name,
+                                             metadata=busybox_metadata_c1_ns2,
+                                             spec=busybox_spec_3)
+            cls.client1_pod_ns2.setUp()
+            cls.client2_pod_ns2 = PodFixture(connections=cls.connections,
+                                             namespace=cls.ns2.name,
+                                             metadata=busybox_metadata_c2_ns2,
+                                             spec=busybox_spec_4)
+            cls.client2_pod_ns2.setUp()
+            cls.client1_pod_ns3 = PodFixture(connections=cls.connections,
+                                             namespace=cls.ns3.name,
+                                             metadata=busybox_metadata_c1_ns3,
+                                             spec=busybox_spec_5)
+            cls.client1_pod_ns3.setUp()
+            cls.client2_pod_ns3 = PodFixture(connections=cls.connections,
+                                             namespace=cls.ns3.name,
+                                             metadata=busybox_metadata_c2_ns3,
+                                             spec=busybox_spec_6)
+            cls.client2_pod_ns3.setUp()
+            cls.client3_pod_ns3 = PodFixture(connections=cls.connections,
+                                             namespace=cls.ns3.name,
+                                             metadata=busybox_metadata_c3_ns3,
+                                             spec=busybox_spec_7)
+            cls.client3_pod_ns3.setUp()
+            assert cls.ns1.verify_on_setup()
+            assert cls.ns2.verify_on_setup()
+            assert cls.ns3.verify_on_setup()
+            assert cls.web_pod_ns1.verify_on_setup()
+            assert cls.web_pod_ns2.verify_on_setup()
+            assert cls.client1_pod_ns1.verify_on_setup()
+            assert cls.client1_pod_ns2.verify_on_setup()
+            assert cls.client1_pod_ns3.verify_on_setup()
+            assert cls.client2_pod_ns1.verify_on_setup()
+            assert cls.client2_pod_ns2.verify_on_setup()
+            assert cls.client2_pod_ns3.verify_on_setup()
+            assert cls.client3_pod_ns3.verify_on_setup()
+        except:
+            cls.tearDownClass()
+            raise
+
+    @classmethod
+    def tearDownClass(cls):
+        if getattr(cls, 'web_pod_ns1', None):
+            cls.web_pod_ns1.cleanUp()
+        if getattr(cls, 'web_pod_ns2', None):
+            cls.web_pod_ns2.cleanUp()
+        if getattr(cls, 'client1_pod_ns1', None):
+            cls.client1_pod_ns1.cleanUp()
+        if getattr(cls, 'client2_pod_ns1', None):
+            cls.client2_pod_ns1.cleanUp()
+        if getattr(cls, 'client1_pod_ns2', None):
+            cls.client1_pod_ns2.cleanUp()
+        if getattr(cls, 'client2_pod_ns2', None):
+            cls.client2_pod_ns2.cleanUp()
+        if getattr(cls, 'client1_pod_ns3', None):
+            cls.client1_pod_ns3.cleanUp()
+        if getattr(cls, 'client2_pod_ns3', None):
+            cls.client2_pod_ns3.cleanUp()
+        if getattr(cls, 'client3_pod_ns3', None):
+            cls.client3_pod_ns3.cleanUp()
+        if getattr(cls, 'ns1', None):
+            cls.ns1.cleanUp()
+        if getattr(cls, 'ns2', None):
+            cls.ns2.cleanUp()
+        if getattr(cls, 'ns3', None):
+            cls.ns3.cleanUp()
+        super(TestNetworkPolicyRestart, cls).tearDownClass()
+
+    def verify_policy_pre_modification_common(self, pod_list_ns1, pod_list_ns2, pod_list_ns3):
+        '''
+        Common function to verify connectivity immediately post restart.
+        This function is common to all test cases of this class.
+        '''
+        url = 'http://%s' % (pod_list_ns1[2].pod_ip)
+        url2 = 'http://%s' % (pod_list_ns2[2].pod_ip)
+        assert pod_list_ns3[1].ping_with_certainty(pod_list_ns3[0].pod_ip)
+        assert pod_list_ns3[1].ping_with_certainty(pod_list_ns3[2].pod_ip)
+
+        assert pod_list_ns2[0].ping_with_certainty(pod_list_ns3[0].pod_ip)
+        assert pod_list_ns2[1].ping_with_certainty(pod_list_ns3[2].pod_ip)
+        assert pod_list_ns1[0].ping_with_certainty(pod_list_ns3[0].pod_ip)
+        assert pod_list_ns1[0].ping_with_certainty(pod_list_ns3[2].pod_ip)
+        # Verify that other pods which do not match ingress criteria cannot communicate
+        assert pod_list_ns3[2].ping_with_certainty(pod_list_ns3[0].pod_ip,
+                                                        expectation=False)
+        assert pod_list_ns3[0].ping_with_certainty(pod_list_ns3[2].pod_ip,
+                                                        expectation=False)
+        assert pod_list_ns1[1].ping_with_certainty(pod_list_ns3[0].pod_ip,
+                                                        expectation=False)
+        assert pod_list_ns1[1].ping_with_certainty(pod_list_ns3[1].pod_ip,
+                                                        expectation=False)
+        # Verify that all egress rules are operational
+        assert self.validate_wget(pod_list_ns3[0], url)
+        assert self.validate_wget(pod_list_ns3[2], url)
+        assert self.validate_wget(pod_list_ns3[0], url2)
+        assert self.validate_wget(pod_list_ns3[2], url2)
+        assert pod_list_ns3[0].ping_with_certainty(pod_list_ns3[1].pod_ip)
+        assert pod_list_ns3[2].ping_with_certainty(pod_list_ns3[1].pod_ip)
+        assert pod_list_ns3[0].ping_with_certainty(pod_list_ns1[2].pod_ip)
+        assert pod_list_ns3[2].ping_with_certainty(pod_list_ns1[2].pod_ip)
+        assert pod_list_ns3[0].ping_with_certainty(pod_list_ns2[2].pod_ip)
+        assert pod_list_ns3[2].ping_with_certainty(pod_list_ns2[0].pod_ip)
+        # Verify that other pods which do not match egress criteria cannot communicate
+        assert pod_list_ns3[0].ping_with_certainty(pod_list_ns1[0].pod_ip,
+                                                        expectation=False)
+        assert pod_list_ns3[2].ping_with_certainty(pod_list_ns1[1].pod_ip,
+                                                        expectation=False)
+    #end verify_policy_pre_modification_common
+
+    def verify_policy_post_modification_common(self, pod_list_ns1, pod_list_ns2, pod_list_ns3):
+        '''
+        Common function to verify connectivity post policy modification post restart.
+        This function is common to all test cases of this class.
+        '''
+        url = 'http://%s' % (pod_list_ns1[2].pod_ip)
+        url2 = 'http://%s' % (pod_list_ns2[2].pod_ip)
+        # Verify that all ingress rules are operational
+        assert pod_list_ns3[1].ping_with_certainty(pod_list_ns3[0].pod_ip)
+        assert pod_list_ns2[0].ping_with_certainty(pod_list_ns3[0].pod_ip)
+        assert pod_list_ns2[1].ping_with_certainty(pod_list_ns3[0].pod_ip)
+        assert pod_list_ns1[0].ping_with_certainty(pod_list_ns3[0].pod_ip)
+        # Verify that other pods which do not match ingress criteria cannot communicate
+        assert pod_list_ns3[2].ping_with_certainty(pod_list_ns3[0].pod_ip,
+                                                        expectation=False)
+        assert pod_list_ns1[1].ping_with_certainty(pod_list_ns3[0].pod_ip,
+                                                        expectation=False)
+        # Verify that all egress rules are operational
+        assert self.validate_wget(pod_list_ns3[0], url)
+        assert self.validate_wget(pod_list_ns3[0], url2)
+        # Verify that all pods which meeet egress criteria fails if port criteria is not met
+        assert pod_list_ns3[0].ping_with_certainty(pod_list_ns3[1].pod_ip,
+                                                        expectation=False) #podSelector
+        assert pod_list_ns3[0].ping_with_certainty(pod_list_ns2[1].pod_ip,
+                                                        expectation=False) #namespaceSelector
+        assert pod_list_ns3[0].ping_with_certainty(pod_list_ns1[2].pod_ip,
+                                                        expectation=False) #ipblock CIDR
+        assert pod_list_ns3[0].ping_with_certainty(pod_list_ns1[0].pod_ip,
+                                                        expectation=False)
+        #Verfiy that other pods of the namespace 3 are not affected because of rule
+        assert pod_list_ns3[2].ping_with_certainty(pod_list_ns3[1].pod_ip)
+        assert pod_list_ns1[1].ping_with_certainty(pod_list_ns3[1].pod_ip)
+        assert self.validate_wget(pod_list_ns3[2], url2)
+        assert pod_list_ns3[2].ping_with_certainty(pod_list_ns1[2].pod_ip)
+        assert pod_list_ns3[1].ping_with_certainty(pod_list_ns2[2].pod_ip)
+        assert pod_list_ns3[2].ping_with_certainty(pod_list_ns3[1].pod_ip)
+    #end verify_policy_post_modification_common
+
+    def validate_reachability_pre_policy_common(self, pod_list_ns1, pod_list_ns2, pod_list_ns3):
+        """
+        This proc just executes pre execution checks to make sure reachability is correct
+        """
+        url = 'http://%s' % (pod_list_ns1[2].pod_ip)
+        url2 = 'http://%s' % (pod_list_ns2[2].pod_ip)
+        assert self.validate_wget(pod_list_ns2[0], url)
+        assert self.validate_wget(pod_list_ns1[0], url2)
+        assert self.validate_wget(pod_list_ns3[0], url)
+        assert pod_list_ns2[0].ping_with_certainty(pod_list_ns3[0].pod_ip)
+    #end validate_reachability_pre_policy_common
+
+    def create_update_policy_common(self, pod_list_ns1, pod_list_ns2, pod_list_ns3,
+                                     update=False, policy_fixture = None):
+        """
+        This proc is used to create a common policy used across all the test cases of this class
+        """
+        ingress_allow_cidr = pod_list_ns1[0].pod_ip + "/32"
+        ingress_list = [
+            {'from': [
+                {'pod_selector': pod_list_ns3[1].labels},
+                {'namespace_selector': pod_list_ns2[3].labels},
+                {'ip_block': { "cidr" : ingress_allow_cidr}}
+                    ]
+             }
+        ]
+        egress_allow_cidr = pod_list_ns1[2].pod_ip + "/32"
+        egress_list = [
+            {'to': [
+                {'pod_selector': pod_list_ns3[1].labels},
+                {'namespace_selector': pod_list_ns2[3].labels},
+                {'ip_block': { "cidr" : egress_allow_cidr}}
+                ],
+            }
+        ]
+        policy_types = ["Ingress", "Egress"]
+        if update == False:
+            policy1 = self.setup_update_policy(name="ingress-egress-policy-on-ns",
+                                       namespace = pod_list_ns3[3].name,
+                                       policy_types = policy_types,
+                                       ingress= ingress_list,
+                                       egress= egress_list)
+            return policy1
+        else:
+            egress_list[0]['egress_ports'] = [ 'TCP/80' ]
+            self.setup_update_policy(pod_selector = pod_list_ns3[0].labels,
+                                 update = True,
+                                np_fixture = policy_fixture,
+                                egress= egress_list,
+                                policy_types = policy_types,
+                                ingress= ingress_list)
+    #end create_update_policy_common
+
+    @test.attr(type=['k8s_sanity'])
+    @preposttest_wrapper
+    def test_policy_kube_manager_restart(self):
+        """
+        Verify that k8s Network policy and contrail FW policy works fine after
+        contrail-kube-manager restart
+        1. Create policy having both ingress and egress rules.
+        2. Perform a restart for contrail-kube-manager on all kube-manager nodes.
+        3. Verify that all policy rules are followed
+        4. Edit the k8s network policy
+        5. Verify that all policy rules are followed
+        """
+        pod_list_ns1 = [self.client1_pod_ns1, self.client2_pod_ns1, self.web_pod_ns1, self.ns1]
+        pod_list_ns2 = [self.client1_pod_ns2, self.client2_pod_ns2, self.web_pod_ns2, self.ns2]
+        pod_list_ns3 = [self.client1_pod_ns3, self.client2_pod_ns3, self.client3_pod_ns3, self.ns3]
+        # Validate reachability across pods before craeteing network policy
+        self.validate_reachability_pre_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        # Create a network Policy
+        policy1 = self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        # Restart Kube manager
+        self.restart_kube_manager()
+        # Verify that policy works fine after restart
+        self.verify_policy_pre_modification_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        #Updating the policy
+        self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3,
+                                  update=True, policy_fixture=policy1)
+        # Verify that policy works fine after updating
+        self.verify_policy_post_modification_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+    #end test_policy_kube_manager_restart
+
+    @test.attr(type=['k8s_sanity'])
+    @preposttest_wrapper
+    def test_policy_vrouter_agent_restart(self):
+        """
+        Verify that k8s Network policy and contrail FW policy works fine after
+        contrail-vrouter-agent restart
+        1. Create policy having both ingress and egress rules.
+        2. Perform a restart for contrail-vrouter-agent on all agent nodes.
+        3. Verify that all policy rules are followed
+        4. Edit the k8s network policy
+        5. Verify that all policy rules are followed
+        """
+        pod_list_ns1 = [self.client1_pod_ns1, self.client2_pod_ns1, self.web_pod_ns1, self.ns1]
+        pod_list_ns2 = [self.client1_pod_ns2, self.client2_pod_ns2, self.web_pod_ns2, self.ns2]
+        pod_list_ns3 = [self.client1_pod_ns3, self.client2_pod_ns3, self.client3_pod_ns3, self.ns3]
+        # Validate reachability across pods before craeteing network policy
+        self.validate_reachability_pre_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        # Create a network Policy
+        policy1 = self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        # Restart Vrouter agent
+        self.restart_vrouter_agent()
+        # Verify that policy works fine after restart
+        self.verify_policy_pre_modification_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        #Updating the policy
+        self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3,
+                                  update=True, policy_fixture=policy1)
+        # Verify that policy works fine after updating
+        self.verify_policy_post_modification_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+    #end test_policy_kube_manager_restart
+
+    @preposttest_wrapper
+    def test_policy_rule_pod_restart(self):
+        """
+        Verify that k8s Network policy and contrail FW policy works fine after
+        restart of pod used as PodSelector in the policy rule.
+        1. Create policy having both ingress and egress rules.
+        2. Perform a restart for a podused in INgress and Egress rules
+        3. Verify that all policy rules are followed
+        4. Edit the k8s network policy
+        5. Verify that all policy rules are followed
+        """
+        pod_list_ns1 = [self.client1_pod_ns1, self.client2_pod_ns1, self.web_pod_ns1, self.ns1]
+        pod_list_ns2 = [self.client1_pod_ns2, self.client2_pod_ns2, self.web_pod_ns2, self.ns2]
+        pod_list_ns3 = [self.client1_pod_ns3, self.client2_pod_ns3, self.client3_pod_ns3, self.ns3]
+        # Validate reachability across pods before craeteing network policy
+        self.validate_reachability_pre_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        # Create a network Policy
+        policy1 = self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        # Restart POD used as PodSelector in the rule
+        assert self.restart_pod(self.client2_pod_ns3)
+        # Verify that policy works fine after restart
+        self.verify_policy_pre_modification_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        #Updating the policy
+        self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3,
+                                  update=True, policy_fixture=policy1)
+        # Verify that policy works fine after updating
+        self.verify_policy_post_modification_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+    #end test_policy_rule_pod_restart
+
+    @preposttest_wrapper
+    def test_policy_pod_restart(self):
+        """
+        Verify that k8s Network policy and contrail FW policy works fine after
+        restart of pod used as PodSelector in the policy .
+        1. Create policy having both ingress and egress rules.
+        2. Perform a restart for a pod used as PodSelector in the Policy
+        3. Verify that all policy rules are followed
+        4. Edit the k8s network policy
+        5. Verify that all policy rules are followed
+        """
+        pod_list_ns1 = [self.client1_pod_ns1, self.client2_pod_ns1, self.web_pod_ns1, self.ns1]
+        pod_list_ns2 = [self.client1_pod_ns2, self.client2_pod_ns2, self.web_pod_ns2, self.ns2]
+        pod_list_ns3 = [self.client1_pod_ns3, self.client2_pod_ns3, self.client3_pod_ns3, self.ns3]
+        # Validate reachability across pods before craeteing network policy
+        self.validate_reachability_pre_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        # Create a network Policy
+        policy1 = self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        #Updating the policy
+        self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3,
+                                  update=True, policy_fixture=policy1)
+        # Restart POD used as PodSelector in the Policy
+        assert self.restart_pod(self.client1_pod_ns3)
+        # Verify that policy works fine after updating
+        self.verify_policy_post_modification_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+    #end test_policy_pod_restart
+
+    @test.attr(type=['k8s_sanity'])
+    @preposttest_wrapper
+    def test_policy_docker_restart(self):
+        """
+        Verify that k8s Network policy and contrail FW policy works fine after
+        docker engine is restarted on compute node
+        1. Create policy having both ingress and egress rules.
+        2. Perform a restart for docker engine on compute nodes
+        3. Verify that all policy rules are followed
+        4. Edit the k8s network policy
+        5. Verify that all policy rules are followed
+        """
+        pod_list_ns1 = [self.client1_pod_ns1, self.client2_pod_ns1, self.web_pod_ns1, self.ns1]
+        pod_list_ns2 = [self.client1_pod_ns2, self.client2_pod_ns2, self.web_pod_ns2, self.ns2]
+        pod_list_ns3 = [self.client1_pod_ns3, self.client2_pod_ns3, self.client3_pod_ns3, self.ns3]
+        # Validate reachability across pods before craeteing network policy
+        self.validate_reachability_pre_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        # Create a network Policy
+        policy1 = self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        # Restart POD used as PodSelector in the rule
+        self.inputs.restart_service(service_name = "docker",
+                                            host_ips = self.inputs.k8s_slave_ips)
+        time.sleep(60) # Wait timer for all contrail service to come up.
+        # ToDo : Replace this wait with contrail Status check once it is available
+        # Verify that policy works fine after restart
+        self.verify_policy_pre_modification_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        #Updating the policy
+        self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3,
+                                  update=True, policy_fixture=policy1)
+        # Verify that policy works fine after updating
+        self.verify_policy_post_modification_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+    #end test_policy_docker_restart
+
+    @test.attr(type=['k8s_sanity'])
+    @preposttest_wrapper
+    def test_policy_kubelet_restart_on_slave(self):
+        """
+        Verify that k8s Network policy and contrail FW policy works fine after
+        kubelet is restarted on slave nodes
+        1. Create policy having both ingress and egress rules.
+        2. Perform a restart of kubelet on slave nodes.
+        3. Verify that all policy rules are followed
+        4. Edit the k8s network policy
+        5. Verify that all policy rules are followed
+        """
+        pod_list_ns1 = [self.client1_pod_ns1, self.client2_pod_ns1, self.web_pod_ns1, self.ns1]
+        pod_list_ns2 = [self.client1_pod_ns2, self.client2_pod_ns2, self.web_pod_ns2, self.ns2]
+        pod_list_ns3 = [self.client1_pod_ns3, self.client2_pod_ns3, self.client3_pod_ns3, self.ns3]
+        # Validate reachability across pods before craeteing network policy
+        self.validate_reachability_pre_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        # Create a network Policy
+        policy1 = self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        # Restart POD used as PodSelector in the rule
+        self.inputs.restart_service(service_name = "kubelet",
+                                            host_ips = self.inputs.k8s_slave_ips)
+        time.sleep(30) # Wait timer for all kubernetes pods to stablise.
+        # Verify that policy works fine after restart
+        self.verify_policy_pre_modification_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        #Updating the policy
+        self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3,
+                                  update=True, policy_fixture=policy1)
+        # Verify that policy works fine after updating
+        self.verify_policy_post_modification_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+    #end test_policy_kubelet_restart_on_slave
+
+    @test.attr(type=['k8s_sanity'])
+    @preposttest_wrapper
+    def test_policy_kubelet_restart_on_master(self):
+        """
+        Verify that k8s Network policy and contrail FW policy works fine after
+        kubelet is restarted on master nodes
+        1. Create policy having both ingress and egress rules.
+        2. Perform a restart of kubelet on master nodes.
+        3. Verify that all policy rules are followed
+        4. Edit the k8s network policy
+        5. Verify that all policy rules are followed
+        """
+        pod_list_ns1 = [self.client1_pod_ns1, self.client2_pod_ns1, self.web_pod_ns1, self.ns1]
+        pod_list_ns2 = [self.client1_pod_ns2, self.client2_pod_ns2, self.web_pod_ns2, self.ns2]
+        pod_list_ns3 = [self.client1_pod_ns3, self.client2_pod_ns3, self.client3_pod_ns3, self.ns3]
+        # Validate reachability across pods before craeteing network policy
+        self.validate_reachability_pre_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        # Create a network Policy
+        policy1 = self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        # Restart POD used as PodSelector in the rule
+        self.inputs.restart_service(service_name = "kubelet",
+                                            host_ips = [self.inputs.k8s_master_ip])
+        time.sleep(30) # Wait timer for all kubernetes pods to stablise.
+        # Verify that policy works fine after restart
+        self.verify_policy_pre_modification_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        #Updating the policy
+        self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3,
+                                  update=True, policy_fixture=policy1)
+        # Verify that policy works fine after updating
+        self.verify_policy_post_modification_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+    #end test_policy_kubelet_restart_on_master

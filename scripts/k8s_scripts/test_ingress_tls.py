@@ -1,7 +1,7 @@
 from common.k8s.base import BaseK8sTest
 from k8s.ingress import IngressFixture
 from tcutils.wrappers import preposttest_wrapper
-
+from tcutils.util import skip_because
 
 class TestIngressTLS(BaseK8sTest):
 
@@ -12,7 +12,8 @@ class TestIngressTLS(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestIngressTLS, cls).tearDownClass()
-
+    
+    @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_ingress_tls_1(self):
         ''' Create a service with 2 pods running nginx
