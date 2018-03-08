@@ -1,8 +1,8 @@
 from common.k8s.base import BaseK8sTest
 from tcutils.wrappers import preposttest_wrapper
 from time import sleep
-
 from tcutils.util import get_random_name
+from tcutils.contrail_status_check import ContrailStatusChecker
 
 class TestNSIsolationSerial(BaseK8sTest):
 
@@ -80,7 +80,7 @@ class TestNSIsolationSerial(BaseK8sTest):
     @preposttest_wrapper
     def test_pods_isolation_post_kube_manager_restart(self):
         """
-        This test case verifies the connectivity between pods of different namespaces with 
+        This test case verifies the connectivity between pods of different namespaces with
         namespace isolation enabled post restart of contrail-kube-manager
         Verify:
         1. Pods in other namespaces in the Kubernetes cluster will NOT be able to reach pods in the isolated namespace.
@@ -105,7 +105,7 @@ class TestNSIsolationSerial(BaseK8sTest):
     @preposttest_wrapper
     def test_service_isolation_post_kube_manager_restart(self):
         """
-        This test case verifies the connectivity between pods and service of different namespaces with 
+        This test case verifies the connectivity between pods and service of different namespaces with
         namespace isolation enabled post restart of contrail-kube-manager
         Verify:
         1. Pods in isolated namespace will be able to reach ALL Services created in any namespace in the kubernetes cluster.
@@ -155,6 +155,32 @@ class TestNSIsolationSerial(BaseK8sTest):
                                       test_pod=client1[2])
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[5].external_ips[0])
     #end test_ingress_isolation_post_kube_manager_restart
+
+    @preposttest_wrapper
+    def test_ingress_isolation_vrouter_agent_restart(self):
+        """
+        Test test case verifies ingress operations post restart of vrouter-agent
+        Verify:
+        1. This test case verifies the connectivity to ingress existing in isolated namespace
+        2. Also verifies connectivity of ingress existing in an non isolated namespace from pod in isolated namespace
+        Restart vrouter-agent and verify both the points again
+        """
+        client1, client2, client3 = self.setup_common_namespaces_pods(prov_service = True,
+                                                                      prov_ingress = True)
+        assert self.validate_nginx_lb([client3[0], client3[1]], client3[5].cluster_ip,
+                                      test_pod=client1[2])
+        client1[4].disable_service_isolation()
+        assert self.validate_nginx_lb([client1[0], client1[1]], client1[5].external_ips[0])
+        for compute_ip in self.inputs.compute_ips:
+            self.inputs.restart_service('contrail-vrouter-agent',[compute_ip],
+                                         container='agent')
+        cluster_status, error_nodes = ContrailStatusChecker().wait_till_contrail_cluster_stable()
+        assert cluster_status, 'Cluster is not stable after restart'
+        self.sleep(5)
+        assert self.validate_nginx_lb([client3[0], client3[1]], client3[5].cluster_ip,
+                                      test_pod=client1[2])
+        assert self.validate_nginx_lb([client1[0], client1[1]], client1[5].external_ips[0])
+
 
 class TestCustomIsolationSerial(BaseK8sTest):
 
@@ -406,7 +432,6 @@ class TestProjectIsolationSerial(BaseK8sTest):
         """
         client1, client2 = self.setup_common_namespaces_pods(prov_service = True,
                                                              isolation = True)
-        import pdb;pdb.set_trace()  
         # Reachability of Pods
         assert client1[2].ping_to_ip(client1[0].pod_ip)
         assert client2[2].ping_to_ip(client2[0].pod_ip)
