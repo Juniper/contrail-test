@@ -5,11 +5,13 @@ ARG REPO_FILE="contrail.repo"
 ARG OPENSTACK_VERSION=ocata
 ARG OPENSTACK_SUBVERSION=3
 
-COPY requirements.txt *.rpm *.repo /
+COPY requirements.txt *.rpm /
+# in case we don't have any repo files, copy Dockerfile too so it won't fail
+# yum will ignore Dockerfile during the build
+COPY *.repo Dockerfile /etc/yum.repos.d/
 
 RUN if [ ! -z "$INSTALL_PACKAGE" ]; then yum localinstall -y /$INSTALL_PACKAGE; \
     cd /opt/contrail/contrail_packages; ./setup.sh; fi
-RUN if [ -f "/$REPO_FILE" ]; then cp /$REPO_FILE /etc/yum.repos.d/; fi
 RUN yum install -y \
       https://repos.fedorapeople.org/repos/openstack/openstack-$OPENSTACK_VERSION/rdo-release-$OPENSTACK_VERSION-$OPENSTACK_SUBVERSION.noarch.rpm ; \
     yum install -y \
