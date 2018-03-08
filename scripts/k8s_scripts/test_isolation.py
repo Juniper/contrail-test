@@ -1,6 +1,7 @@
 from common.k8s.base import BaseK8sTest
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import get_random_name
+import test
 
 class TestNSIsolation(BaseK8sTest):
 
@@ -101,7 +102,8 @@ class TestNSIsolation(BaseK8sTest):
         assert client3[2].ping_to_ip(client1[0].pod_ip, expectation=False)
         assert client3[2].ping_to_ip(client2[0].pod_ip, expectation=False)
     #end test_pods_isolation_negative
-
+    
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_communication_from_isolated_ns_via_service(self):
         """
@@ -259,6 +261,7 @@ class TestCustomIsolation(BaseK8sTest):
         assert client2[6].ping_to_ip(client1[6].pod_ip)
     #end test_namespace_custom_isolation
     
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_service_custom_isolation(self):
         """
