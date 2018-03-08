@@ -8,6 +8,7 @@ from k8s.pod import PodFixture
 from tcutils.util import get_random_name, get_random_cidr
 import time
 import test
+import os
 
 class TestNetworkPolicy(BaseK8sTest):
 
@@ -137,7 +138,7 @@ class TestNetworkPolicy(BaseK8sTest):
         if getattr(cls, 'ns3', None):
             cls.ns3.cleanUp()
         super(TestNetworkPolicy, cls).tearDownClass()
-        
+
     @preposttest_wrapper
     def test_allow_all_ingress(self):
         """
@@ -2792,6 +2793,10 @@ class TestNetworkPolicyServiceIngress(BaseK8sTest):
             cls.ns1.cleanUp()
         super(TestNetworkPolicyServiceIngress, cls).tearDownClass()
         
+    def skip_test_if_no_mx(self):
+        if not os.environ.get('MX_GW_TEST') == '1':
+            raise self.skipTest("Needs MX_GW_TEST to be set")
+        
     @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_ingress_rule_on_namespace_with_service(self):
@@ -3215,6 +3220,7 @@ class TestNetworkPolicyServiceIngress(BaseK8sTest):
         5. Verify that policy works as expected for any access other than accessing the k8s-Ingress
            k8s-Ingress has to be the exception.
         """
+        self.skip_test_if_no_mx()
         # All traffic between everyone should work
         url1 = 'http://%s' % (self.web1_pod_ns1.pod_ip)
         url2 = 'http://%s' % (self.web2_pod_ns1.pod_ip)
@@ -3297,6 +3303,7 @@ class TestNetworkPolicyServiceIngress(BaseK8sTest):
         5. Verify that policy works as expected for any access other than accessing the k8s-Ingress
            k8s-Ingress has to be the exception.
         """
+        self.skip_test_if_no_mx()
         # All traffic between everyone should work
         url1 = 'http://%s' % (self.web1_pod_ns1.pod_ip)
         url2 = 'http://%s' % (self.web2_pod_ns1.pod_ip)
@@ -3375,6 +3382,7 @@ class TestNetworkPolicyServiceIngress(BaseK8sTest):
         5. Verify that k8s-INgress is not impacted by this rule and is always accessible
            from all pods of all namespaces and from outside world.
         """
+        self.skip_test_if_no_mx()
         # All traffic between everyone should work
         app1 = 'http_test1'
         app2 = 'http_test2'

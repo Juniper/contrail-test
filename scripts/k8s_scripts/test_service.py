@@ -17,6 +17,10 @@ class TestService(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestService, cls).tearDownClass()
+    
+    def skip_test_if_no_mx(self):
+        if not os.environ.get('MX_GW_TEST') == '1':
+            raise self.skipTest("Needs MX_GW_TEST to be set")
 
     @preposttest_wrapper
     def test_service_1(self):
@@ -54,6 +58,7 @@ class TestService(BaseK8sTest):
             Please make sure BGP multipath and per packer load balancing
             is enabled on the MX
         '''
+        self.skip_test_if_no_mx()
         app = 'http_test'
         labels = {'app': app}
         namespace = self.setup_namespace()

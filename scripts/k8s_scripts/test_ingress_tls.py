@@ -1,7 +1,7 @@
 from common.k8s.base import BaseK8sTest
 from k8s.ingress import IngressFixture
 from tcutils.wrappers import preposttest_wrapper
-
+import os
 
 class TestIngressTLS(BaseK8sTest):
 
@@ -13,6 +13,11 @@ class TestIngressTLS(BaseK8sTest):
     def tearDownClass(cls):
         super(TestIngressTLS, cls).tearDownClass()
 
+    def is_test_applicable(self):
+        if not os.environ.get('MX_GW_TEST') == '1':
+            return(False, 'Needs MX_GW_TEST to be set')
+        return (True, None)
+    
     @preposttest_wrapper
     def test_ingress_tls_1(self):
         ''' Create a service with 2 pods running nginx

@@ -2,6 +2,7 @@ from common.k8s.base import BaseK8sTest
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import get_random_name
 import test
+import os
 
 from vn_test import VNFixture
 
@@ -14,7 +15,7 @@ class TestNSIsolation(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestNSIsolation, cls).tearDownClass()
-    
+
     def setup_common_namespaces_pods(self, prov_service = False):
         service_ns1 = None
         service_ns2 = None
@@ -139,6 +140,10 @@ class TestCustomIsolation(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestCustomIsolation, cls).tearDownClass()
+
+    def skip_test_if_no_mx(self):
+        if not os.environ.get('MX_GW_TEST') == '1':
+            raise self.skipTest("Needs MX_GW_TEST to be set")
 
     def setup_common_namespaces_pods(self, prov_service = False, prov_ingress = False):
         service_ns1, ingress_ns1 = None, None
@@ -289,6 +294,7 @@ class TestCustomIsolation(BaseK8sTest):
         """
         Verify that ingress created inside a custom isolated namespace is reachable to public
         """
+        self.skip_test_if_no_mx()
         client1, client2 = self.setup_common_namespaces_pods(prov_service = True,
                                                              prov_ingress = True)
         assert self.validate_nginx_lb([client2[0], client2[1]], client2[5].external_ips[0])

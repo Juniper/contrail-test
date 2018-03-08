@@ -6,7 +6,7 @@ from k8s.service import ServiceFixture
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import get_lock
 import test
-
+import os
 
 class TestService(BaseK8sTest):
 
@@ -17,6 +17,11 @@ class TestService(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestService, cls).tearDownClass()
+    
+    def is_test_applicable(self):
+        if not os.environ.get('MX_GW_TEST') == '1':
+            return(False, 'Needs MX_GW_TEST to be set')
+        return (True, None)
     
     @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
