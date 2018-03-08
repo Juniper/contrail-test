@@ -1083,6 +1083,9 @@ class TestInputs(object):
             self.dpdk_data = json_data['dpdk']
         if 'tor_hosts' in json_data:
             self.tor_hosts_data = json_data['tor_hosts']
+        if 'kubernetes' in json_data:
+            self.k8s_master_ip = json_data['kubernetes']['master'].split("@")[-1]
+            self.k8s_slave_ips = [value.split("@")[-1] for value in json_data['kubernetes']['slaves']]
 
         if 'physical_routers' in json_data:
             self.physical_routers_data = json_data['physical_routers']
@@ -1614,6 +1617,57 @@ class ContrailTestInit(object):
                       container=None):
         self._action_on_service(service_name, 'start', host_ips, container)
     # end start_service
+
+    def restart_process_on_host(self, process_name, ips, wait = 60, verify = True):
+        """
+        This proc restarts docker engine on list of nodes mentioned in ips.
+        NOTE: Based on the process to be restarted, put sufficient wait timr.
+             Eg, if docker engine is restarted, it affects all contrail processes as they
+            all are running in docker containers.
+            Thus, sufficient wait time should be set
+        """
+        for host in ips:
+            username = self.host_data[host]['username']
+            password = self.host_data[host]['password']
+            cmd = "systemctl restart %s" % process_name
+            self.logger.info('Running "%s" on %s' %
+                             (cmd, self.host_data[host]['name']))
+            output = self.run_cmd_on_server(host, cmd, username,
+                                                    password, as_sudo=True)
+            if output != '':
+                self.logger.error("'%s' restart failed with following logs: %s"
+                                  % process_name, output)
+                return False
+        #Verifying the status of docker engine after restart
+        if verify==True:
+            self.confirm_process_active_on_host(process_name, ips)
+        time.sleep(wait)
+        return True
+    #end restart_docker_engine
+
+    @retry(tries=5, delay=5)
+    def confirm_process_active_on_host(self, process_name, ips):
+        """
+        Verify that process is in "active" state or not
+        """
+        for host in ips:
+            username = self.host_data[host]['username']
+            password = self.host_data[host]['password']
+            cmd = "systemctl status  %s | grep Active| awk '{print $2}'" \
+                    % process_name
+            self.logger.info('Running "%s" on %s' %
+                             (cmd, self.host_data[host]['name']))
+            output = self.run_cmd_on_server(host, cmd, username,
+                                                    password, as_sudo=True)
+            if output == "active":
+                self.logger.info("Process '%s' is active after restart"
+                                 % process_name)
+            else:
+                self.logger.warn("Process '%s' fails to come up after restart."
+                                  "Error print is as follows: %s" % output)
+                return False
+        return True
+    #end confirm_process_active_on_host
 
     def run_status_cmd(self, server_ip, cmd='contrail-status', container=None):
         cache = self.run_cmd_on_server(server_ip, cmd,
