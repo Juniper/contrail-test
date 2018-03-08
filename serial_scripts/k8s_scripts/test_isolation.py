@@ -4,6 +4,7 @@ from time import sleep
 from tcutils.util import get_random_name
 from tcutils.contrail_status_check import ContrailStatusChecker
 import test
+from tcutils.util import skip_because
 
 class TestNSIsolationSerial(BaseK8sTest):
 
@@ -14,7 +15,7 @@ class TestNSIsolationSerial(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestNSIsolationSerial, cls).tearDownClass()
-    
+        
     def setup_common_namespaces_pods(self, prov_service = False, prov_ingress = False):
         service_ns1, ingress_ns1 = None, None
         service_ns2, ingress_ns2 = None, None
@@ -94,14 +95,14 @@ class TestNSIsolationSerial(BaseK8sTest):
         assert client1[2].ping_to_ip(client2[0].pod_ip, expectation=False)
         assert client3[2].ping_to_ip(client2[0].pod_ip, expectation=False)
         #Check 2
-        assert client1[2].ping_to_ip(client3[0].pod_ip)
+        assert client1[2].ping_to_ip(client3[0].pod_ip, expectation=False)
         self.restart_kube_manager()
         self.sleep(5)
         #Check 1:
         assert client1[2].ping_to_ip(client2[0].pod_ip, expectation=False)
         assert client3[2].ping_to_ip(client2[0].pod_ip, expectation=False)
         #Check 2
-        assert client1[2].ping_to_ip(client3[0].pod_ip)
+        assert client1[2].ping_to_ip(client3[0].pod_ip, expectation=False)
     #end test_pods_isolation_post_kube_manager_restart
 
     @test.attr(type=['k8s_sanity'])
@@ -111,82 +112,72 @@ class TestNSIsolationSerial(BaseK8sTest):
         This test case verifies the connectivity between pods and service of different namespaces with
         namespace isolation enabled post restart of contrail-kube-manager
         Verify:
-        1. Pods in isolated namespace will be able to reach ALL Services created in any namespace in the kubernetes cluster.
-        2. Pods in isolated namespace can be reached from pods in other namespaces through Kubernetes Service-ip
+        1. Pods in isolated namespace will be able to reach ALL Services created in default namespace in the kubernetes cluster.
+        2. Pods in isolated namespace cannot be reached from pods in other namespaces through Kubernetes Service-ip
         Restart contrail-kube-manager and verify both the points again
         """
         client1, client2, client3 = self.setup_common_namespaces_pods(prov_service = True)
         #Check 1:
         assert self.validate_nginx_lb([client3[0], client3[1]], client3[3].cluster_ip,
                                       test_pod=client1[2])
-        client2[4].disable_service_isolation()
         assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
-                                      test_pod=client1[2])
+                                      test_pod=client1[2], expectation=False)
         #Check 2:
-        client1[4].disable_service_isolation()
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
-                                      test_pod=client3[2])
+                                      test_pod=client3[2], expectation=False)
         self.restart_kube_manager()
         self.sleep(5)
         #Check 1:
         assert self.validate_nginx_lb([client3[0], client3[1]], client3[3].cluster_ip,
                                       test_pod=client1[2])
         assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
-                                      test_pod=client1[2])
+                                      test_pod=client1[2], expectation=False)
         #Check 2:
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
-                                      test_pod=client3[2])
-    #end test_service_isolation_post_kube_manager_restart
-    
+                                      test_pod=client3[2], expectation=False)
+    #end test_service_isolation_post_kube_manager_restart    
+
     @test.attr(type=['k8s_sanity'])
+    @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_ingress_isolation_post_kube_manager_restart(self):
         """
         Test test case verifies ingress operations post restart of contrail-kube-manager
         Verify:
-        1. This test case verifies the connectivity to ingress existing in isolated namespace
-        2. PIt also verifies connectivity of ingress existing in an non isolated namespace from pod in isolated namespace
+        1. Verify that k8s INgress existing in isolated namespace is accessible from external world
+        2. Verify that k8s INgress existing in non isolated namespace is accessible from external world
         Restart contrail-kube-manager and verify both the points again
         """
         client1, client2, client3 = self.setup_common_namespaces_pods(prov_service = True,
                                                                       prov_ingress = True)
-        assert self.validate_nginx_lb([client3[0], client3[1]], client3[5].cluster_ip,
-                                      test_pod=client1[2])
-        client1[4].disable_service_isolation()
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[5].external_ips[0])
+        assert self.validate_nginx_lb([client3[0], client3[1]], client3[5].external_ips[0])
         self.restart_kube_manager()
         self.sleep(5)
-        assert self.validate_nginx_lb([client3[0], client3[1]], client3[5].cluster_ip,
-                                      test_pod=client1[2])
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[5].external_ips[0])
+        assert self.validate_nginx_lb([client3[0], client3[1]], client3[5].external_ips[0])
     #end test_ingress_isolation_post_kube_manager_restart
 
     @test.attr(type=['k8s_sanity'])
+    @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_ingress_isolation_vrouter_agent_restart(self):
         """
         Test test case verifies ingress operations post restart of vrouter-agent
         Verify:
-        1. This test case verifies the connectivity to ingress existing in isolated namespace
-        2. Also verifies connectivity of ingress existing in an non isolated namespace from pod in isolated namespace
+        1. Verify that k8s INgress existing in isolated namespace is accessible from external world
+        2. Verify that k8s INgress existing in non isolated namespace is accessible from external world
         Restart vrouter-agent and verify both the points again
         """
         client1, client2, client3 = self.setup_common_namespaces_pods(prov_service = True,
                                                                       prov_ingress = True)
-        assert self.validate_nginx_lb([client3[0], client3[1]], client3[5].cluster_ip,
-                                      test_pod=client1[2])
-        client1[4].disable_service_isolation()
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[5].external_ips[0])
-        for compute_ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter-agent',[compute_ip],
-                                         container='agent')
-        cluster_status, error_nodes = ContrailStatusChecker().wait_till_contrail_cluster_stable()
-        assert cluster_status, 'Cluster is not stable after restart'
+        assert self.validate_nginx_lb([client3[0], client3[1]], client3[5].external_ips[0])
+        self.restart_vrouter_agent()
         self.sleep(5)
-        assert self.validate_nginx_lb([client3[0], client3[1]], client3[5].cluster_ip,
-                                      test_pod=client1[2])
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[5].external_ips[0])
-
+        assert self.validate_nginx_lb([client3[0], client3[1]], client3[5].external_ips[0])
+    #end test_ingress_isolation_vrouter_agent_restart
 
 class TestCustomIsolationSerial(BaseK8sTest):
 
@@ -254,7 +245,7 @@ class TestCustomIsolationSerial(BaseK8sTest):
         client1 = [client1_ns1, client2_ns1, client3_ns1, service_ns1,\
                     namespace1, client4_ns1, client5_ns1]
         client2 = [client1_ns2, client2_ns2, client3_ns2, service_ns2,\
-                    namespace2, client4_ns2]
+                    namespace2, client4_ns2, vn_for_namespace]
         return (client1, client2)
     #end setup_common_namespaces_pods
     
@@ -302,12 +293,24 @@ class TestCustomIsolationSerial(BaseK8sTest):
         3. Verify reachability between pods and services
         """
         client1, client2 = self.setup_common_namespaces_pods(prov_service = True)
+        policy_name='allow-btw-custom-ns-and-service'
+        k8s_default_service_vn_name = "k8s-default-service-network"
+        k8s_default_service_vn_fq_name = self.inputs.project_fq_name + \
+                                            [k8s_default_service_vn_name]
+        k8s_default_service_vn_obj = self.vnc_lib.virtual_network_read(
+                                    fq_name = k8s_default_service_vn_fq_name)
+        k8s_service_vn_fixt = VNFixture(connections = self.connections,
+                                       vn_name = k8s_default_service_vn_name,
+                                       option="contrail",
+                                       uuid = k8s_default_service_vn_obj.uuid)
+        k8s_service_vn_fixt.setUp()
+        vn_service_policy = self.setup_policy_between_vns(client2[6],
+                                                          k8s_service_vn_fixt,
+                                                          api="contrail")
         assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
                                       test_pod=client2[2])
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
                                       test_pod=client2[2])
-        # Disable of service isolation required or not ? For now, its working without disabling service isolation
-        #client2[4].disable_service_isolation()
         assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
                                       test_pod=client1[2])
         self.restart_kube_manager()
@@ -329,7 +332,7 @@ class TestProjectIsolationSerial(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestProjectIsolationSerial, cls).tearDownClass()
-        
+
     def setup_common_namespaces_pods(self, prov_service = False,
                                     prov_ingress = False,
                                     isolation = False):
@@ -396,6 +399,7 @@ class TestProjectIsolationSerial(BaseK8sTest):
         assert client2[2].ping_to_ip(client1[0].pod_ip)
     # end  test_pod_reachability_across_ns
     
+    @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_service_reachability_across_projects(self):
         """
@@ -416,6 +420,7 @@ class TestProjectIsolationSerial(BaseK8sTest):
         assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].external_ips[0])
     # end  test_service_reachability_across_ns
     
+    @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_ingress_reachability_across_projects(self):
         """
@@ -444,16 +449,15 @@ class TestProjectIsolationSerial(BaseK8sTest):
         # Reachability of Pods
         assert client1[2].ping_to_ip(client1[0].pod_ip)
         assert client2[2].ping_to_ip(client2[0].pod_ip)
-        assert client2[2].ping_to_ip(client1[0].pod_ip)
+        assert client2[2].ping_to_ip(client1[0].pod_ip, expectation = False)
         assert client1[2].ping_to_ip(client2[0].pod_ip, expectation = False)
         # Reachability of Services   
         assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
                                       test_pod=client2[2]) 
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
                                       test_pod=client2[2])
-        client2[4].disable_service_isolation()
         assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
-                                      test_pod=client1[2])
+                                      test_pod=client1[2], expectation = False)
     # end  test_reachability_across_projects_with_isolated_namespace
     
     @test.attr(type=['k8s_sanity'])

@@ -2421,7 +2421,7 @@ class AnalyticsVerification(fixtures.Fixture):
                     tor_agents.append(tor_data)
                 break
         for tagent in tor_agents:
-            self.inputs.stop_service(tagent['service'], host_ips=[tagent['tor_ip']], contrail_service=True,
+            self.inputs.stop_service(tagent['service'], host_ips=[tagent['tor_ip']],
                                      container='agent')
         try:
             if not self._verify_alarms_by_type(None, service_ip, role, alarm_type, multi_instances=False,
@@ -2431,7 +2431,7 @@ class AnalyticsVerification(fixtures.Fixture):
             self.logger.exception('Exception occured while verifying alarms %s' % (alarm_type))
         finally:
             for tagent in tor_agents:
-                self.inputs.start_service(tagent['service'], host_ips=[tagent['tor_ip']], contrail_service=True,
+                self.inputs.start_service(tagent['service'], host_ips=[tagent['tor_ip'],
                                           container='agent')
             time.sleep(15)
             if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances,
@@ -2813,7 +2813,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 self.inputs.run_cmd_on_server(service_ip, issue_stop_cmd, username, password, pty=True,
                                               container='controller')
             else:
-                self.inputs.stop_service(service, host_ips=[service_ip], contrail_service=True,
+                self.inputs.stop_service(service, host_ips=[service_ip],
                                          container=container)
             self.logger.info("Process %s stopped" % (service))
             if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances, soak_timer):
@@ -2827,7 +2827,7 @@ class AnalyticsVerification(fixtures.Fixture):
                                               container='controller')
             else:
                 self.inputs.start_service(service, host_ips=[service_ip],
-                    contrail_service=True,container=container)
+                    container=container)
             time.sleep(10)
             if not self.inputs.verify_state():
                 self.logger.error( "All the contrail services are not up")

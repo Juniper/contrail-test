@@ -8,6 +8,7 @@ from k8s.pod import PodFixture
 from tcutils.util import get_random_name, get_random_cidr
 import time
 import test
+from tcutils.util import skip_because
 
 class TestNetworkPolicy(BaseK8sTest):
 
@@ -137,7 +138,7 @@ class TestNetworkPolicy(BaseK8sTest):
         if getattr(cls, 'ns3', None):
             cls.ns3.cleanUp()
         super(TestNetworkPolicy, cls).tearDownClass()
-        
+
     @preposttest_wrapper
     def test_allow_all_ingress(self):
         """
@@ -3198,6 +3199,7 @@ class TestNetworkPolicyServiceIngress(BaseK8sTest):
         assert self.validate_wget(self.client2_pod_ns2, url1)
     #end test_egress_rule_on_pod_with_service
 
+    @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_ingress_rule_on_namespace_with_k8s_ingress(self):
         """
@@ -3280,6 +3282,7 @@ class TestNetworkPolicyServiceIngress(BaseK8sTest):
         assert self.validate_wget(self.client2_pod_ns2, url1, expectation=False)
     #end test_ingress_rule_on_namespace_with_k8s_ingress
     
+    @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_ingress_rule_on_pod_with_k8s_ingress(self):
         """
@@ -3362,6 +3365,7 @@ class TestNetworkPolicyServiceIngress(BaseK8sTest):
     #end test_ingress_rule_on_pod_with_k8s_ingress
    
     @test.attr(type=['k8s_sanity'])
+    @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_ingress_rule_on_namespace_with_k8s_ingress_fanout(self):
         """

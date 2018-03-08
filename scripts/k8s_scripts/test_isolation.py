@@ -2,6 +2,7 @@ from common.k8s.base import BaseK8sTest
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import get_random_name
 import test
+from tcutils.util import skip_because
 
 from vn_test import VNFixture
 
@@ -14,7 +15,7 @@ class TestNSIsolation(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestNSIsolation, cls).tearDownClass()
-    
+
     def setup_common_namespaces_pods(self, prov_service = False):
         service_ns1 = None
         service_ns2 = None
@@ -283,7 +284,8 @@ class TestCustomIsolation(BaseK8sTest):
         assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
                                       test_pod=client1[2])
     #end test_service_custom_isolation
-
+    
+    @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_ingress_custom_isolation(self):
         """

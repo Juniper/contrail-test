@@ -558,6 +558,8 @@ class TestInputs(object):
         self.webui_control_ips = []
         self.kube_manager_ips = []
         self.kube_manager_control_ips = []
+        self.k8s_master_ip = ""
+        self.k8s_slave_ips = []
         self.host_data = {}
         self.tor = {}
         self.tor_hosts_data = {}
@@ -639,9 +641,13 @@ class TestInputs(object):
                 self.database_ips.append(host_data['host_ip'])
                 self.database_names.append(hostname)
                 self.database_control_ips.append(host_control_ip)
-            if 'k8s_master' in roles:
+            if 'kubemanager' in roles:
                 self.kube_manager_ips.append(host_data['host_ip'])
                 self.kube_manager_control_ips.append(host_control_ip)
+            if 'k8s_master' in roles:
+                self.k8s_master_ip = host_data['host_ip'] #K8s Currently only supports 1 master
+            if 'k8s_node' in roles:
+                self.k8s_slave_ips.append(host_data['host_ip'])
         # end for
 
     def get_roles(self, host):
@@ -1033,6 +1039,8 @@ class TestInputs(object):
         self.webui_control_ips = []
         self.kube_manager_ips = []
         self.kube_manager_control_ips = []
+        self.k8s_master_ip = ""
+        self.k8s_slave_ips = []
         self.host_data = {}
         self.tor = {}
         self.tor_hosts_data = {}
@@ -1157,6 +1165,9 @@ class TestInputs(object):
             self.dpdk_data = json_data['dpdk']
         if 'tor_hosts' in json_data:
             self.tor_hosts_data = json_data['tor_hosts']
+        if 'kubernetes' in json_data:
+            self.k8s_master_ip = json_data['kubernetes']['master'].split("@")[-1]
+            self.k8s_slave_ips = [value.split("@")[-1] for value in json_data['kubernetes']['slaves']]
 
         if 'physical_routers' in json_data:
             self.physical_routers_data = json_data['physical_routers']
@@ -1348,7 +1359,7 @@ class TestInputs(object):
 
     def run_cmd_on_server(self, server_ip, issue_cmd, username=None,
                           password=None, pty=True, as_sudo=True,
-                          container=None, detach=None):
+                          container=None, detach=None, shell_prefix='/bin/bash -c '):
         '''
         container : name or id of the container
         '''
@@ -1374,7 +1385,8 @@ class TestInputs(object):
                           as_sudo=as_sudo,
                           logger=self.logger,
                           container=container,
-                          detach=detach)
+                          detach=detach,
+                          shell_prefix=shell_prefix)
         return output
     # end run_cmd_on_server
 
@@ -1496,30 +1508,38 @@ class ContrailTestInit(object):
         '''
         raise Exception('contrail-status not supported')
         #ToDo - msenthil - need to revisit once contrail-status command is available
-        if not self.introspect_insecure:
-            if certs_dict:
-                key = certs_dict['key']
-                cert = certs_dict['cert']
-                ca = certs_dict['ca']
+        if container:
+            if not self.introspect_insecure:
+                if certs_dict:
+                    key = certs_dict['key']
+                    cert = certs_dict['cert']
+                    ca = certs_dict['ca']
+                else:
+                    key = self.introspect_keyfile
+                    cert = self.introspect_certfile
+                    ca = self.introspect_cafile
+                ssl_args = ' -k %s -c %s -a %s' % (key, cert, ca)
             else:
-                key = self.introspect_keyfile
-                cert = self.introspect_certfile
-                ca = self.introspect_cafile
-            ssl_args = ' -k %s -c %s -a %s' % (key, cert, ca)
+                ssl_args = None
+        
+            status = " active"
+            cmd = 'contrail-status'
+            if ssl_args:
+                cmd = cmd + ssl_args
+            cmd = '%s | grep %s' % (cmd, service_name)
         else:
-            ssl_args = None
-
-        status = " active"
-        cmd = 'contrail-status'
-        if ssl_args:
-            cmd = cmd + ssl_args
-        cmd = '%s | grep %s' % (cmd, service_name)
-
+            cmd = "systemctl status  %s | grep Active| awk '{print $2}'" \
+                    % service_name
+        self.logger.debug('Running command "%s" on host "%s" and container "%s" '
+                         'for service "%s"' %
+                         (cmd, self.host_data[host]['name'], container, service_name))
         output = self.run_cmd_on_server(
             host, cmd, self.host_data[host]['username'],
             self.host_data[host]['password'],
             container=container)
-        if output and (service_name in output) and (status in output):
+        if container and output and (service_name in output) and (status in output):
+            return True
+        elif not container and output=="active":
             return True
         else:
             return False
@@ -1554,7 +1574,7 @@ class ContrailTestInit(object):
     def _action_on_service(self, service_name, event, host_ips=None, container=None,
             verify_service=True):
         services = self.get_contrail_services(service_name=service_name)
-        if self.is_microservices_env:
+        if self.is_microservices_env and container:
             return self._action_on_container(host_ips, event, container, services=services,
                                              verify_service=verify_service)
         _container = container
@@ -1565,7 +1585,7 @@ class ContrailTestInit(object):
                 issue_cmd = 'service %s %s' % (service, event)
                 self.logger.info('%s %s.service on %s - %s %s' %
                                  (event, service, self.host_data[host]['name'],
-                                  issue_cmd, 'on '+container if container else ''))
+                                  issue_cmd, 'on '+container if container else 'host'))
                 self.run_cmd_on_server(
                     host, issue_cmd, username, password, pty=True, container=container)
                 if verify_service and (event == 'restart'):
@@ -1573,18 +1593,18 @@ class ContrailTestInit(object):
                                host, container=container), \
                                "Service Restart failed for %s" % (service_name)
 
-    def restart_service(self, service_name, host_ips=None, contrail_service=True,
+    def restart_service(self, service_name, host_ips=None,
                         container=None, verify_service=True):
         self._action_on_service(service_name, 'restart', host_ips, container,
             verify_service=verify_service)
     # end restart_service
 
-    def stop_service(self, service_name, host_ips=None, contrail_service=True,
+    def stop_service(self, service_name, host_ips=None,
                      container=None):
         self._action_on_service(service_name, 'stop', host_ips, container)
     # end stop_service
 
-    def start_service(self, service_name, host_ips=None, contrail_service=True,
+    def start_service(self, service_name, host_ips=None,
                       container=None):
         self._action_on_service(service_name, 'start', host_ips, container)
     # end start_service
