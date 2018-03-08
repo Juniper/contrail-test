@@ -2664,8 +2664,6 @@ class VMFixture(fixtures.Fixture):
                     self.logger.warn("Unable to fetch tap interface info")
                     return False
                 self.tap_intf[vn_fq_name] = vna_tap_id[0]
-                self.tap_intf[vn_fq_name] = inspect_h.get_vna_intf_details(
-                    self.tap_intf[vn_fq_name]['name'])[0]
                 if 'Active' not in self.tap_intf[vn_fq_name]['active']:
                     self.logger.warn('VMI %s status is not active, it is %s' % (
                         self.tap_intf[vn_fq_name]['name'],
