@@ -24,7 +24,7 @@ class VdnsFixture(fixtures.Fixture):
         self.dns_data = dns_data
         self.uuid = uuid
         self.parent_type = 'domain'
-        self.fq_name = [self.inputs.domain_name, self.vdns_name]
+        self.fq_name = [self.connections.domain_name, self.vdns_name]
         self.verify_is_run = False
         self.obj = None
         self.already_present = True

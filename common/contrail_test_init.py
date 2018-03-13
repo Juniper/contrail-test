@@ -1367,6 +1367,7 @@ class ContrailTestInit(object):
 
     def verify_state(self):
         #ToDo: msenthil - Revisit once contrail-status is implemented for microservices
+        raise Exception('contrail-status not supported')
         result = True
         failed_services = []
 
@@ -1521,6 +1522,7 @@ class ContrailTestInit(object):
         which can be passed as certs_dict.
         certs_dict = {'key':value, 'cert':value, 'ca':value}
         '''
+        raise Exception('contrail-status not supported')
         #ToDo - msenthil - need to revisit once contrail-status command is available
         if not self.introspect_insecure:
             if certs_dict:
@@ -1616,6 +1618,7 @@ class ContrailTestInit(object):
     # end start_service
 
     def run_status_cmd(self, server_ip, cmd='contrail-status', container=None):
+        raise Exception('contrail-status not supported')
         cache = self.run_cmd_on_server(server_ip, cmd,
                                        container=container)
         m = dict([(n, tuple(l.split(';')))

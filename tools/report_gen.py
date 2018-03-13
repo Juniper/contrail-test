@@ -6,7 +6,7 @@ import ConfigParser
 import datetime
 import logging
 
-from fabric.api import env, run, cd
+from fabric.api import env, run, cd, local
 from fabric.operations import get, put
 from fabric.contrib.files import exists
 from fabric.context_managers import settings, hide
@@ -171,25 +171,14 @@ class ContrailReportInit(TestInputs):
     def get_build_id(self):
         if self.build_id:
             return self.build_id
-        build_id = None
-        cmd = 'contrail-version | grep contrail-config | head -1 '
-        alt_cmd = 'contrail-version | grep contrail-nodemgr | head -1 '
-        tries = 50
-        while not build_id and tries:
-            try:
-                build_id = self.run_cmd_on_server(self.cfgm_ips[0], cmd, container='api-server')
-                if not build_id:
-                    build_id = self.run_cmd_on_server(
-                        self.cfgm_ips[0], alt_cmd, container='api-server')
-            except NetworkError, e:
-                time.sleep(1)
-                pass
-            tries -= 1
-        build_id = build_id.split()[1]
+        cmd = "rpm -q --queryformat '%{VERSION}-' contrail-test; rpm -q --queryformat '%{RELEASE}' contrail-test | awk -F'.' '{print $1}'"
+        build_id = self.get_os_env("BUILD_ID")
+        if not build_id:
+            build_id = local(cmd, capture=True)
         build_sku = self.get_os_env("SKU")
-        if build_sku is None:
+        if not build_sku:
             container = self.host_data[self.openstack_ips[0]].get(
-                            'containers', {}).get('openstack')
+                            'containers', {}).get('nova')
             build_sku=get_build_sku(self.openstack_ips[0],self.host_data[self.openstack_ip]['password'],
                                     container=container)
         if (build_id.count('.') > 3):

@@ -223,14 +223,14 @@ class TestQuotaUpdate(BaseNeutronTest):
         response_dict['subnet'] = subnet_rsp
         secgrp_obj = self.create_security_group(
             get_random_name('sec_grp'),
-            connections.quantum_h)
+            connections=connections)
         response_dict['secgrp'] = secgrp_obj
         router_obj = self.create_router(
             get_random_name('router'),
             connections.project_id)
         response_dict['router'] = router_obj
         sg_rule_obj = connections.quantum_h.create_security_group_rule(
-            sg_obj['id'],
+            sg_obj.uuid,
             protocol='tcp')
         response_dict['sg_rule'] = sg_rule_obj
         port_obj = connections.quantum_h.create_port(
@@ -311,7 +311,7 @@ class TestQuotaUpdate(BaseNeutronTest):
         for i in range(count):
             secgrp_obj = self.create_security_group(
                 get_random_name('sec_grp'),
-                connections.quantum_h)
+                connections=connections)
             secgrp_objs.append(secgrp_obj)
         return secgrp_objs
 
@@ -323,7 +323,7 @@ class TestQuotaUpdate(BaseNeutronTest):
             for i in range(count):
                 port = port_range_min + i
                 sg_rule_obj = connections.quantum_h.create_security_group_rule(
-                    sg_obj['id'],
+                    sg_obj.uuid,
                     protocol=proto,
                     port_range_min=port,
                     port_range_max=port)

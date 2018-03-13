@@ -32,7 +32,7 @@ class TestSecurityGroup(BaseNeutronTest):
         sg1 = self.create_security_group(get_random_name('sg1'))
         sg_dict = {'name': "test_sec_grp"}
         sg_rsp = self.quantum_h.update_security_group(
-            sg1['id'],
+            sg1.uuid,
             sg_dict)
         assert sg_rsp['security_group'][
             'name'] == "test_sec_grp", 'Failed to update security group name'
