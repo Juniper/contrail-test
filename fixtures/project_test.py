@@ -184,7 +184,7 @@ class ProjectFixture(fixtures.Fixture):
                 self.project_name, vmis))
             return False
         sgs = vnc_project_obj.get_security_groups()
-        if len(sgs) > 1:
+        if sgs and len(sgs) > 1:
             self.logger.warn('Project %s still has SGs %s before deletion' %(
                 self.project_name, sgs))
             return False

@@ -18,8 +18,8 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
     # end tearDownClass
 
     def is_test_applicable(self):
-        if self.inputs.get_build_sku().lower()[0] < 'l' or \
-                self.inputs.orchestrator.lower() != 'vcenter':
+        if self.inputs.orchestrator.lower() == 'openstack' and \
+           self.inputs.get_build_sku().lower()[0] < 'l':
             return (False, 'Skipping Test. LBaasV2 is supported only on liberty and up')
         return (True, None)
 

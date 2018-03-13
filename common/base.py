@@ -272,26 +272,6 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
             router_id,
             vn_fixture.vn_subnet_objs[0]['id'])
 
-    def create_security_group(self, name, quantum_handle=None):
-        q_h = None
-        if quantum_handle:
-            q_h = quantum_handle
-        else:
-            q_h = self.quantum_h
-        obj = q_h.create_security_group(name)
-        if obj:
-            self.addCleanup(self.delete_security_group, obj['id'], quantum_handle)
-        return obj
-    # end create_security_group
-
-    def delete_security_group(self, sg_id, quantum_handle=None):
-        q_h = None
-        if quantum_handle:
-            q_h = quantum_handle
-        else:
-            q_h = self.quantum_h
-        q_h.delete_security_group(sg_id)
-
     def create_ipam(self, name=None, connections=None):
         connections = connections or self.connections
         name = name or get_random_name('ipam')

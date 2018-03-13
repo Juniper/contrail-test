@@ -50,6 +50,7 @@ class PolicyFixture(fixtures.Fixture):
         self.input_rules_list = rules_list
         self.rules_list = policy_test_utils.update_rules_with_icmpv6(self.inputs.get_af(),
                                                 rules_list)
+        self.api_flag = True
 
     # end __init__
 
@@ -600,8 +601,7 @@ class PolicyFixture(fixtures.Fixture):
         if self.api_flag:
             self.vnc_lib.network_policy_delete(id=self.policy_obj.uuid)
             self.logger.info("Deleted policy %s" % (self.policy_name))
-            return
-        if self.inputs.is_gui_based_config():
+        elif self.inputs.is_gui_based_config():
             self.webui.delete_policy(self)
             self.logger.info("Deleted policy %s" % (self.policy_name))
         elif self.quantum_h.get_policy_if_present(

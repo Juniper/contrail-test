@@ -317,7 +317,7 @@ class QuantumHelper():
             return []
     # end list_networks
 
-    def create_floatingip(self, fip_pool_vn_id, project_id=None, port_id=None):
+    def create_floatingip(self, fip_pool_vn_id, project_id=None, port_id=None, **kwargs):
         if not project_id:
             project_id = self.project_id
         fip_req = {'floatingip': {'floating_network_id': fip_pool_vn_id,
@@ -443,6 +443,12 @@ class QuantumHelper():
         policy_list = None
         try:
             policy_list = self.obj.list_policys(tenant_id=self.project_id)
+        except AttributeError:
+          try:
+            policy_list = self.obj.list_policies(tenant_id=self.project_id)
+          except CommonNetworkClientException as e:
+            self.logger.error(
+                "Neutron Exception while listing policies" + str(e))
         except CommonNetworkClientException as e:
             self.logger.error(
                 "Neutron Exception while listing policies" + str(e))
@@ -912,7 +918,7 @@ class QuantumHelper():
     # end show_lb_member
 
     def create_loadbalancer(self, name=None, network_id=None,
-                            subnet_id=None, address=None):
+                            subnet_id=None, address=None, **kwargs):
         if network_id and not subnet_id:
             subnet_id = self.get_subnet_ids(network_id)[0]
         lb_dict = {'name': name, 'vip_subnet_id': subnet_id,

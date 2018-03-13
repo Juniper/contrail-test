@@ -28,13 +28,11 @@ class TestCRUD(BaseNeutronTest):
         self.proj_neutron_h = self.quantum_h.obj
 
         self.create_security_group(get_random_name('admin-sg1'),
-                                   self.neutron_test_h)
+                                   connections=self.admin_connections)
         self.create_security_group(get_random_name('admin-sg2'),
-                                   self.neutron_test_h)
-        self.create_security_group(get_random_name('proj-sg1'),
-                                   self.proj_neutron_test_h)
-        self.create_security_group(get_random_name('proj-sg2'),
-                                   self.proj_neutron_test_h)
+                                   connections=self.admin_connections)
+        self.create_security_group(get_random_name('proj-sg1'))
+        self.create_security_group(get_random_name('proj-sg2'))
         self.ks_project_id = self.project.uuid
         self.log = self.logger
         self.newline = '=' * 80 + '\n'

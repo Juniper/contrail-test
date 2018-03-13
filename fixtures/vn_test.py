@@ -1488,7 +1488,8 @@ class VNFixture(fixtures.Fixture):
         if not self.policy_objs:
             for policy_fq_name in self.get_current_policies_bound():
                 policy_obj = self.orchestrator.get_policy(policy_fq_name)
-                self.policy_objs.append(policy_obj)
+                pobjs = self.convert_policy_objs_vnc_to_neutron([policy_obj])
+                self.policy_objs.extend(pobjs)
     # end update_vn_object
 
     def unbind_policies(self, vn_id=None, policy_fq_names=[]):

@@ -172,10 +172,8 @@ class OpenstackOrchestrator(Orchestrator):
    def get_vn_list(self, **kwargs):
        return super(OpenstackOrchestrator, self).get_vn_list(**kwargs)
 
-   def get_policy(self, fq_name, option='orch', **kwargs):
-       if option == 'contrail':
-           return super(OpenstackOrchestrator, self).get_policy(fq_name=fq_name, **kwargs)
-       return self.quantum_h.get_policy_if_present(fq_name[1], fq_name[2])
+   def get_policy(self, fq_name, **kwargs):
+       return super(OpenstackOrchestrator, self).get_policy(fq_name=fq_name, **kwargs)
 
    def get_floating_ip(self, fip_id, option='orch', **kwargs):
        if option == 'contrail':
