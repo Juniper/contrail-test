@@ -3,6 +3,8 @@ from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import get_random_name
 import test
 
+from vn_test import VNFixture
+
 class TestNSIsolation(BaseK8sTest):
 
     @classmethod
@@ -13,10 +15,10 @@ class TestNSIsolation(BaseK8sTest):
     def tearDownClass(cls):
         super(TestNSIsolation, cls).tearDownClass()
     
-    def setup_common_namespaces_pods(self, prov_service = False, prov_ingress = False):
-        service_ns1, ingress_ns1 = None, None
-        service_ns2, ingress_ns2 = None, None
-        service_ns3, ingress_ns3 = None, None
+    def setup_common_namespaces_pods(self, prov_service = False):
+        service_ns1 = None
+        service_ns2 = None
+        service_ns3 = None
         namespace1_name = get_random_name("ns1")
         namespace2_name = get_random_name("ns2")
         namespace3_name = get_random_name("ns3")
@@ -60,30 +62,23 @@ class TestNSIsolation(BaseK8sTest):
                                           labels={'app': ns_2_label})
             service_ns3 = self.setup_http_service(namespace=namespace3.name,
                                           labels={'app': ns_3_label})
-        if prov_ingress == True:
-            ingress_ns1 = self.setup_simple_nginx_ingress(service_ns1.name,
-                                                  namespace=namespace1.name)
-            ingress_ns3 = self.setup_simple_nginx_ingress(service_ns3.name,
-                                                  namespace=namespace3.name)
-            assert ingress_ns1.verify_on_setup()
-            assert ingress_ns3.verify_on_setup()
         client1 = [client1_ns1, client2_ns1, client3_ns1, service_ns1,\
-                    namespace1, ingress_ns1]
+                    namespace1]
         client2 = [client1_ns2, client2_ns2, client3_ns2, service_ns2,\
                     namespace2]
         client3 = [client1_ns3, client2_ns3, client3_ns3, service_ns3,\
-                    namespace3, ingress_ns3]
+                    namespace3]
         return (client1, client2, client3)
     #end setup_common_namespaces_pods
 
     @preposttest_wrapper
     def test_pods_isolation(self):
         """
-        Pods created in isolated namespace can reach pods in other namespaces.
+        Pods created in isolated namespace cannot reach pods in default namespaces.
         """
         client1, client2, client3 = self.setup_common_namespaces_pods()
-        assert client1[2].ping_to_ip(client3[0].pod_ip)
-        assert client2[2].ping_to_ip(client3[0].pod_ip)
+        assert client1[2].ping_to_ip(client3[0].pod_ip, expectation=False)
+        assert client2[2].ping_to_ip(client3[0].pod_ip, expectation=False)
     #end test_pods_isolation
 
     @preposttest_wrapper
@@ -107,50 +102,33 @@ class TestNSIsolation(BaseK8sTest):
     @preposttest_wrapper
     def test_communication_from_isolated_ns_via_service(self):
         """
-        Pods in isolated namespace will be able to reach ALL Services created in any namespace in the kubernetes cluster.
+        Pods in isolated namespace will be able to reach services created in default namespace
+         but not service created in any other isolated namespace.
         Verify following as part of this test case:
-        1. Pods in isolated namespace should reach pods of non isolated namespace using service.
-        2. Pods in isolated namespace should reach pods of other isolated namespace using service.
+        1. Pods in isolated namespace should be able to reach service in default namespace.
+        2. Pods in isolated namespace should not reach service of any other isolated namespace but should
         """
         client1, client2, client3 = self.setup_common_namespaces_pods(prov_service = True)
         #Check 1:
+        #Reaching from isolated to non isolated
         assert self.validate_nginx_lb([client3[0], client3[1]], client3[3].cluster_ip,
                                       test_pod=client1[2])
-        #Disabling Service Isolation on the isolated namespace
-        client2[4].disable_service_isolation()
         #Check 2:
+        #Reaching from isolated to isolated:
         assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
-                                      test_pod=client1[2])
+                                      test_pod=client1[2], expectation=False)
     #end test_communication_from_isolated_ns_via_service
 
     @preposttest_wrapper
     def test_communication_from_non_isolated_to_service_in_isolated(self):
         """
-        Pods in isolated namespace can be reached from pods in other namespaces through Kubernetes Service-ip
+        Pods in isolated namespace cannot be reached from pods in other namespaces through Kubernetes Service-ip
         """
         client1, client2, client3 = self.setup_common_namespaces_pods(prov_service = True)
         client1[4].disable_service_isolation()
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
-                                      test_pod=client3[2])
+                                      test_pod=client3[2], expectation=False)
     #end test_communication_from_non_isolated_to_service_in_isolated
-
-    @preposttest_wrapper
-    def test_ingress_isolation(self):
-        """
-        Verify following as part of this test case:
-        1. Pods in isolated namespace should reach pods of non isolated namespace using ingress.
-        2. Ingress inside isolated namespace should be reachable from public network
-        """
-        client1, client2, client3 = self.setup_common_namespaces_pods(prov_service = True,
-                                                                      prov_ingress = True)
-        #Check 1:
-        assert self.validate_nginx_lb([client3[0], client3[1]], client3[5].cluster_ip,
-                                      test_pod=client1[2])
-        #Disabling Service Isolation on the isolated namespace
-        client1[4].disable_service_isolation()
-        #Check 2:
-        assert self.validate_nginx_lb([client1[0], client1[1]], client1[5].external_ips[0])
-    #end test_ingress_isolation
 
 class TestCustomIsolation(BaseK8sTest):
 
@@ -222,7 +200,7 @@ class TestCustomIsolation(BaseK8sTest):
         client1 = [client1_ns1, client2_ns1, client3_ns1, service_ns1,\
                     namespace1, ingress_ns1, client4_ns1, client5_ns1]
         client2 = [client1_ns2, client2_ns2, client3_ns2, service_ns2,\
-                    namespace2, ingress_ns2, client4_ns2]
+                    namespace2, ingress_ns2, client4_ns2, vn_for_namespace]
         return (client1, client2)
     #end setup_common_namespaces_pods
         
@@ -267,15 +245,36 @@ class TestCustomIsolation(BaseK8sTest):
         """
         Verify reachability of a Service in and out of custom isolated namespace
         Verify following reachability:
-        1. Pod inside custom isolated namespace should be able to reach service within same namespace
-        2. Pod inside custom isolated namespace should be able to reach service outside this namespace
-        3. Pods inside non islatednamespace should be able to reach service inside custom isolated namespace.
+        1. Pod inside custom isolated namespace should not be able to reach service within same namespace
+           or any service outside the namespace.
+        2. After creating a  contrail network policy between Custom VN and service VN< pod inside custom 
+            isolated namespace should be able to reach service within and outside this namespace
+        3. Pods inside non islated namespace should be able to reach service inside custom isolated namespace.
         """
         client1, client2 = self.setup_common_namespaces_pods(prov_service = True)
         #check 1
         assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
-                                      test_pod=client2[2])
+                                      test_pod=client2[2], expectation = False)
+        assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
+                                      test_pod=client2[2],  expectation = False)
         #check 2
+        #Creating the policy between custom VN ans default service VN
+        policy_name='allow-btw-custom-ns-and-service'
+        k8s_default_service_vn_name = "k8s-default-service-network"
+        k8s_default_service_vn_fq_name = self.inputs.project_fq_name + \
+                                            [k8s_default_service_vn_name]
+        k8s_default_service_vn_obj = self.vnc_lib.virtual_network_read(
+                                    fq_name = k8s_default_service_vn_fq_name)
+        k8s_service_vn_fixt = VNFixture(connections = self.connections,
+                                       vn_name = k8s_default_service_vn_name,
+                                       option="contrail",
+                                       uuid = k8s_default_service_vn_obj.uuid)
+        k8s_service_vn_fixt.setUp()
+        vn_service_policy = self.setup_policy_between_vns(client2[7],
+                                                          k8s_service_vn_fixt,
+                                                          api="contrail")
+        assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
+                                      test_pod=client2[2])
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
                                       test_pod=client2[2])
         #check 3

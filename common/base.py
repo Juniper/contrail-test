@@ -293,6 +293,7 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
     @classmethod
     def setup_only_policy_between_vns(cls, vn1_fixture, vn2_fixture, rules=[], **kwargs):
         connections = kwargs.get('connections') or cls.connections
+        api = kwargs.get('api') or None
         policy_name = get_random_name('policy-allow-all')
         rules = rules or [
             {
@@ -304,13 +305,13 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         ]
         policy_fixture = PolicyFixture(
                 policy_name=policy_name, rules_list=rules, inputs=connections.inputs,
-                connections=connections)
+                connections=connectionsi, api=api)
         policy_fixture.setUp()
 
         vn1_fixture.bind_policies(
-            [policy_fixture.policy_fq_name], vn1_fixture.vn_id)
+            [policy_fixture.policy_fq_name], vn1_fixture.vn_id, reset=False)
         vn2_fixture.bind_policies(
-            [policy_fixture.policy_fq_name], vn2_fixture.vn_id)
+            [policy_fixture.policy_fq_name], vn2_fixture.vn_id, reset=False)
         return policy_fixture
     # end setup_only_policy_between_vns
 
