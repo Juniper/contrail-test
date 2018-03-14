@@ -18,7 +18,7 @@ RUN yum install -y \
     yum install -y \
       python-ceilometerclient python-cinderclient python-barbicanclient \
       python-glanceclient python-heatclient python-novaclient \
-      python-selenium python-kubernetes python-contrail contrail-test contrail-fabric-utils && \
+      python-selenium python-contrail contrail-test contrail-fabric-utils && \
     yum --setopt=obsoletes=0 install -y python-neutronclient && \
     yum clean all -y && rm -rf /var/cache/yum
 
