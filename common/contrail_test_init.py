@@ -606,7 +606,8 @@ class TestInputs(object):
             if 'config' in roles:
                 self.cfgm_ip = host_data['host_control_ip']
                 #self.cfgm_ip = host_data['host_ip']
-                self.cfgm_ips.append(host_data['host_ip'])
+                self.cfgm_ips.append(host_data['host_control_ip'])
+                #self.cfgm_ips.append(host_data['host_ip'])
                 self.cfgm_control_ips.append(host_control_ip)
                 self.cfgm_control_ip = host_control_ip
                 self.cfgm_names.append(hostname)
