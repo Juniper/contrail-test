@@ -86,7 +86,7 @@ Usage: $0 test [OPTIONS]
   --post          POST          Upload the test container to the registy-server, if specified
 EOF
     }
-    if ! options=$(getopt -o h -l help,tag:,sku:,contrail-repo:,package-url:,registry-server:,post -- "$@"); then
+    if ! options=$(getopt -o h -l help,base-tag:,tag:,sku:,contrail-repo:,package-url:,registry-server:,post -- "$@"); then
         usage
         exit 1
     fi
