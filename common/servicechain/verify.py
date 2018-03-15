@@ -28,7 +28,113 @@ class VerifySvcChain(ConfigSvcChain):
         return result
 
     @retry(delay=5, tries=25)
-    def validate_svc_action(self, vn_fq_name, si, dst_vm, src):
+    def validate_route_deletion(self, vn_fq_name, si, dst_vm, src, intf_type='left', protocol=None, left_ri_ecmp=False):
+        '''
+        1]. Get a list of all RIs associted with the VN.
+        2]. On the compute node housing the SI, get all the VRFs.
+        3]. See if any one of the RIs match the VRF on the node.
+        4]. Get the paths in that VRF and the next-hop to the destination.
+        5]. The src is required because for Transparent SIs, the left and right VNs
+            are different from those in the Service Chain.
+        '''
+        vn1 = self.connections.vnc_lib_fixture.virtual_network_read(
+            fq_name=vn_fq_name.split(':'))
+        ri_list = []
+        itf_list = []
+        itf_nh = None
+        for ris in vn1.get_routing_instances():
+            ri_fqn = (":").join(ris['to'])
+            ri_list.append(ri_fqn)
+        # Don't check route deletion in right vm's ri if intf_type is set to 'right'
+        if intf_type == 'right':
+            right_ri = '%s:%s' % (vn_fq_name, vn_fq_name.split(':')[2])
+            ri_list.remove(right_ri)
+        for svm in si.svm_list:
+            svm_node_ip = self.inputs.host_data[svm.vm_node_ip]['host_ip']
+            svm_node_name = self.inputs.host_data[svm.vm_node_ip]['name']
+            inspect_h1 = self.connections.agent_inspect[svm_node_ip]
+            for vrf_list in inspect_h1.get_vna_vrf_list()['VRFs']:
+                if vrf_list['name'] in ri_list:
+                    vrf_id = vrf_list['ucindex']
+                    break
+            errmsg = "RI not created for the SVC"
+            if not vrf_id:
+                self.logger.warn(errmsg)
+                return False, errmsg
+            net = '32'
+            if self.inputs.get_af() == 'v6':
+                net = '128'
+
+            active_controller = None
+            inspect_h1 = self.agent_inspect[svm_node_ip]
+            agent_xmpp_status = inspect_h1.get_vna_xmpp_connection_status()
+            for entry in agent_xmpp_status:
+                if entry['cfg_controller'] == 'Yes':
+                    active_controller = entry['controller_ip']
+                    new_controller = self.inputs.host_data[
+                        active_controller]['host_ip']
+                    self.logger.info('Active control node is %s' % new_controller)
+            ri_0 = ri_list[0]
+            left_ri = False
+            ri_list_new = []
+            if left_ri_ecmp:  #This flag to check if more than 1 svc chains exist
+                # Routes should be present in svc chain 1, removed from svc chain 0
+                ri_list = ri_list[0:3]  # Routes removed from svc chain 0
+                ri_list_new = ri_list[3::]  # Routes should be present in svc chain 1
+            for ri in ri_list:
+                if 'left' in ri:
+                    left_ri = '%s:%s' % (vn_fq_name, vn_fq_name.split(':')[2])
+                dst_vm_ip = True
+                count = 0
+                while dst_vm_ip:
+                    dst_vm_ip = self.cn_inspect[new_controller].get_cn_route_table_entry(
+                            ri_name=ri, prefix=dst_vm.vm_ip + '/' + net, protocol=protocol)
+                    self.sleep(4)
+                    count = count + 1
+                    if count > 20:
+                        break
+                    if ri == left_ri and left_ri_ecmp: # left vn's ri to have more than 1 routes to dest
+                        if len(dst_vm_ip) == left_ri_ecmp - 1:
+                            self.logger.info('Multi Svc chains, 1 route deleted via svc0, Route %s exists via svc1 is %s routes %s' % (
+                                dst_vm.vm_ip, left_ri_ecmp-1, dst_vm_ip))
+                            dst_vm_ip = False
+                    import pprint; pprint.pprint(dst_vm_ip); print "Route is \n\n"
+                result = True
+                if dst_vm_ip:
+                    self.logger.error(
+                        'Route to %s found in the Active Control-Node %s ri %s \n' %
+                        (dst_vm.vm_ip, new_controller, ri))
+                    result = False
+                    assert result, 'Route to %s still found in the Active Control-Node ri %s %s \n' %(dst_vm.vm_ip, new_controller, ri)
+                else:
+                    self.logger.info('Route to %s not found in the Active Control-Node ri %s %s' %(dst_vm.vm_ip, new_controller, ri))
+            if ri_list_new:
+                for ri in ri_list_new:
+                    dst_vm_ip = self.cn_inspect[new_controller].get_cn_route_table_entry(
+                            ri_name=ri, prefix=dst_vm.vm_ip + '/' + net)
+                    if dst_vm_ip:
+                        self.logger.info(
+                            'SVC 1 Route to %s found in the Active Control-Node %s ri %s' %
+                            (dst_vm.vm_ip, new_controller, ri))
+                    else:
+                        result = False
+                        assert result, 'Svc 1 Route to %s not found in the Active Control-Node ri %s %s' %(dst_vm.vm_ip, new_controller, ri)
+
+            paths = inspect_h1.get_vna_active_route(
+                vrf_id=vrf_id, ip=dst_vm.vm_ip, prefix=net)
+            errmsg = "Route to %s seen in %s" % (dst_vm.vm_ip, vn_fq_name)
+            if paths:
+                if protocol == 'ServiceChain':
+                    self.logger.info("Path present in the agent %s" % (paths))
+                else:
+                    self.logger.warn(errmsg)
+                    return False, errmsg
+            else:
+                self.logger.info("Route deletion from %s verified" % (ri_list))
+        return True, "Route deletion verified"
+
+    @retry(delay=5, tries=25)
+    def validate_svc_action(self, vn_fq_name, si, dst_vm, src, check_si_as_nh=True, check_rt_in_control=False, protocol=None, left_ri_ecmp=False):
         '''
         1]. Get a list of all RIs associted with the VN.
         2]. On the compute node housing the SI, get all the VRFs.
@@ -63,6 +169,38 @@ class VerifySvcChain(ConfigSvcChain):
             net = '32'
             if self.inputs.get_af() == 'v6':
                 net = '128'
+            if check_rt_in_control:
+                active_controller = None
+                inspect_h1 = self.agent_inspect[svm_node_ip]
+                agent_xmpp_status = inspect_h1.get_vna_xmpp_connection_status()
+                for entry in agent_xmpp_status:
+                    if entry['cfg_controller'] == 'Yes':
+                        active_controller = entry['controller_ip']
+                        new_controller = self.inputs.host_data[
+                            active_controller]['host_ip']
+                        self.logger.info('Active control node is %s' % new_controller)
+                ri_0 = ri_list[0]
+                left_ri = False
+                if 'left' in ri_list:
+                    left_ri = '%s:%s' % (vn_fq_name, vn_fq_name.split(':')[2])
+
+                for ri in ri_list:
+                    dst_vm_ip = self.cn_inspect[new_controller].get_cn_route_table_entry(
+                            ri_name=ri, prefix=dst_vm.vm_ip + '/' + net)
+                    if ri == left_ri and left_ri_ecmp:
+                        if left_ri_ecmp != len(dst_cm_ip):
+                            self.logger.error('Number of routes exepcted %s' % len(left_ri_ecmp))
+                            assert False
+                        self.logger.info('Number of routes found %s, routes are %s' % len(left_ri_ecmp, dst_vm_ip))
+                    result = True
+                    if dst_vm_ip:
+                        self.logger.info(
+                            'Route to %s found in the Active Control-Node %s ri %s' %
+                            (dst_vm.vm_ip, new_controller, ri))
+                    else:
+                        result = False
+                        assert result, 'Route to %s not found in the Active Control-Node ri %s %s' %(dst_vm.vm_ip, new_controller, ri)
+
             paths = inspect_h1.get_vna_active_route(
                 vrf_id=vrf_id, ip=dst_vm.vm_ip, prefix=net)
             errmsg = "Route to %s not seen in %s" % (dst_vm.vm_ip, vn_fq_name)
@@ -85,11 +223,15 @@ class VerifySvcChain(ConfigSvcChain):
             elif src == 'right':
                 si_vn = si.right_vn_fq_name
             svm_vmi_id = svm.get_vmi_ids()[si_vn]
-            if svm.get_tap_intf_of_vmi(svm_vmi_id)['name'] != itf_nh and svm.get_tap_intf_of_vmi(svm_vmi_id)['name'] not in itf_list:
-                self.logger.warn(errmsg)
-                return False, errmsg
-            self.logger.info('Route to %s seen in VRF:%s on %s, and SI %s is seen as the NH' % (
-                dst_vm.vm_ip, vrf_id, svm_node_name, si.si_name))
+            if check_si_as_nh:
+                if svm.get_tap_intf_of_vmi(svm_vmi_id)['name'] != itf_nh and svm.get_tap_intf_of_vmi(svm_vmi_id)['name'] not in itf_list:
+                    self.logger.warn(errmsg)
+                    return False, errmsg
+                self.logger.info('Route to %s seen in VRF:%s on %s, and SI %s is seen as the NH' % (
+                    dst_vm.vm_ip, vrf_id, svm_node_name, si.si_name))
+            else:
+                self.logger.info('Route to %s seen in VRF:%s on %s, SI as the NH check not required' % (
+                    dst_vm.vm_ip, vrf_id, svm_node_name))
         return True, "Route-leak and NH change verified"
     # end validate_svc_action
 
