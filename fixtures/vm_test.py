@@ -2170,7 +2170,7 @@ class VMFixture(fixtures.Fixture):
     # end get_rsa_to_vm
 
     def run_cmd_on_vm(self, cmds=[], as_sudo=False, timeout=30,
-                      as_daemon=False, raw=False, warn_only=True, pidfile=None):
+                      as_daemon=False, raw=False, warn_only=True, pidfile=None, local_ip=None):
         '''run cmds on VM
 
         '''
@@ -2181,9 +2181,10 @@ class VMFixture(fixtures.Fixture):
         output = ''
         try:
             fab_connections.clear()
-
+            if not local_ip:
+                local_ip = self.local_ip
             vm_host_string = '%s@%s' % (
-                self.vm_username, self.local_ip)
+                self.vm_username, local_ip)
             for cmd in cmdList:
                 output = remote_cmd(
                     vm_host_string, cmd, gateway_password=host['password'],
