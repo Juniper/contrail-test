@@ -3,6 +3,8 @@ FROM centos:7.4.1708
 # Setup Chrome Repo
 COPY google-chrome.repo /etc/yum.repos.d/google-chrome.repo
 
+# prepare custom mirrors
+COPY *.repo Dockerfile /etc/yum.repos.d/
 RUN yum install -y \
       yum-plugin-priorities \
       https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
@@ -28,5 +30,10 @@ RUN wget -c http://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64
 # pip install python packages
 COPY requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
+
+# cleanup custom mirrors, use centos:latest to avoid hardcoding version
+# using `FROM centos:7.4.1708 as centos-base` and `--from=centos-base`
+# doesn't seem to work
+COPY --from=centos /etc/yum.repos.d /etc/yum.repos.d
 
 COPY entrypoint.sh /
