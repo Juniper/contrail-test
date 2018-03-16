@@ -6,7 +6,7 @@ from tcutils.util import get_random_name, retry
 
 result_file = '/tmp/iper3'
 
-class Iperf3:
+class Iperf3(object):
     ''' Helper to generate iperf3 traffic
 
         Mandatory args:
