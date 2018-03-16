@@ -635,10 +635,31 @@ class TestInputs(object):
                 self.database_ips.append(host_data['host_ip'])
                 self.database_names.append(hostname)
                 self.database_control_ips.append(host_control_ip)
-            if 'k8smaster' in roles:
+            if 'k8s_master' in roles:
                 self.kube_manager_ips.append(host_data['host_ip'])
                 self.kube_manager_control_ips.append(host_control_ip)
         # end for
+
+    def get_roles(self, host):
+        roles = list()
+        host_ip = self.get_host_ip(host)
+        host_data_ip = self.get_host_data_ip(host)
+        if host_ip in self.cfgm_ips or host_data_ip in self.cfgm_ips:
+            roles.append('config')
+            roles.append('config-database')
+        if host_ip in self.compute_ips or host_data_ip in self.compute_control_ips:
+            roles.append('vrouter')
+        if host_ip in self.bgp_ips or host_data_ip in self.bgp_control_ips:
+            roles.append('control')
+        if host_ip in self.collector_ips or host_data_ip in self.collector_control_ips:
+            roles.append('analytics')
+        if host_ip in self.database_ips or host_data_ip in self.database_control_ips:
+            roles.append('analytics-database')
+        if host_ip in self.webui_ips or host_data_ip in self.webui_control_ips:
+            roles.append('webui')
+        if host_ip in self.kube_manager_ips or host_data_ip in self.kube_manager_control_ips:
+            roles.append('kubernetes')
+        return roles
 
     def _gen_auth_url(self):
         if self.keystone_version == 'v3':
@@ -841,6 +862,12 @@ class TestInputs(object):
         self.logger.debug('Container %s is up on host %s'%(container, host))
         return True
 
+    def get_active_containers(self, host):
+        cmd = "docker ps -f status=running --format {{.Names}} 2>/dev/null"
+        output = self.run_cmd_on_server(host, cmd, as_sudo=True)
+        containers = [x.strip('\r') for x in output.split('\n')]
+        return containers
+
     def _check_containers(self, host_dict):
         '''
         Find out which components have containers and set
@@ -849,7 +876,7 @@ class TestInputs(object):
         host_dict['containers'] = {}
         if  host_dict.get('type', None) == 'esxi':
             return
-        cmd = 'docker ps 2>/dev/null | grep -v "/pause" | grep -v "nodemgr" | awk \'{print $NF}\''
+        cmd = 'docker ps 2>/dev/null | grep -v "/pause" | awk \'{print $NF}\''
         output = self.run_cmd_on_server(host_dict['host_ip'], cmd, as_sudo=True)
         # If not a docker cluster, return
         if not output:
