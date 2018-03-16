@@ -1698,7 +1698,7 @@ class VMFixture(fixtures.Fixture):
                 ri_name = vn_fq_name + ':' + vn_fq_name.split(':')[-1]
                 for cn in self.get_ctrl_nodes_in_rt_group(vn_fq_name):
                     # Check for VM route in each control-node
-                    for vm_ip in self.vm_ip_dict[vn_fq_name]:
+                    for vm_ip in self.get_vm_ip_dict()[vn_fq_name]:
                         cn_routes = self.cn_inspect[cn].get_cn_route_table_entry(
                             ri_name=ri_name, prefix=vm_ip)
                         if cn_routes is not None:
@@ -2170,7 +2170,7 @@ class VMFixture(fixtures.Fixture):
     # end get_rsa_to_vm
 
     def run_cmd_on_vm(self, cmds=[], as_sudo=False, timeout=30,
-                      as_daemon=False, raw=False, warn_only=True, pidfile=None):
+                      as_daemon=False, raw=False, warn_only=True, pidfile=None, local_ip=None):
         '''run cmds on VM
 
         '''
@@ -2181,9 +2181,10 @@ class VMFixture(fixtures.Fixture):
         output = ''
         try:
             fab_connections.clear()
-
+            if not local_ip:
+                local_ip = self.local_ip
             vm_host_string = '%s@%s' % (
-                self.vm_username, self.local_ip)
+                self.vm_username, local_ip)
             for cmd in cmdList:
                 output = remote_cmd(
                     vm_host_string, cmd, gateway_password=host['password'],
@@ -2664,8 +2665,6 @@ class VMFixture(fixtures.Fixture):
                     self.logger.warn("Unable to fetch tap interface info")
                     return False
                 self.tap_intf[vn_fq_name] = vna_tap_id[0]
-                self.tap_intf[vn_fq_name] = inspect_h.get_vna_intf_details(
-                    self.tap_intf[vn_fq_name]['name'])[0]
                 if 'Active' not in self.tap_intf[vn_fq_name]['active']:
                     self.logger.warn('VMI %s status is not active, it is %s' % (
                         self.tap_intf[vn_fq_name]['name'],
@@ -3052,6 +3051,18 @@ class VMFixture(fixtures.Fixture):
             vmi_obj.set_virtual_machine_interface_disable_policy(bool(value))
             self.vnc_lib_h.virtual_machine_interface_update(vmi_obj)
     # end set_interface_policy
+
+    def verify_fabric_ip_as_floating_ip(self, vn_fq_name):
+        '''
+            Function to verify the fabric IP associated to the VMI of the VM , with SNAT enabled
+        '''
+        self.refresh_agent_vmi_objects()
+        for fip in self.tap_intf[vn_fq_name]['fip_list']:
+            if fip['ip_addr'] == self.vm_node_ip:
+                return True
+        self.logger.error("With SNAT enabled for the VN %s,\
+            fabric ip is not assigned as FIP ip to the VMI", vn_fq_name)
+        return False
 
     def __repr__(self):
         return '<VMFixture: %s>' % (self.vm_name)
