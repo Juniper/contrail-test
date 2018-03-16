@@ -17,12 +17,6 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
         super(BaseLBaaSTest, cls).tearDownClass()
     # end tearDownClass
 
-    def is_test_applicable(self):
-        if self.inputs.orchestrator.lower() == 'openstack' and \
-           self.inputs.get_build_sku().lower()[0] < 'l':
-            return (False, 'Skipping Test. LBaasV2 is supported only on liberty and up')
-        return (True, None)
-
     def create_vn_and_its_vms(self, no_of_vm=1):
         '''
         Functions to create a VN and multiple VMs for this VN
