@@ -236,18 +236,16 @@ class ComputeNodeFixture(fixtures.Fixture):
 
     @retry(delay=5, tries=15)
     def wait_for_vrouter_agent_state(self, state='active'):
-        cmd = "contrail-status | grep 'contrail-vrouter-agent'"
-        service_status = self.execute_cmd(cmd)
-        if state in service_status:
-            self.logger.info(
-                'contrail-vrouter-agent is in %s state' % state)
-            return True
+        if state == 'active':
+            status, err = self.inputs.verify_service_state(self.ip, service='agent')
         else:
-            self.logger.info(
-                '%s' % service_status)
-            self.logger.info(
-                'Waiting contrail-vrouter-agent to come up to %s state' % state)
+            status, err = self.inputs.verify_service_down(self.ip, service='agent')
+        if not status:
+            self.logger.info('agent is not in expected state: %s' % err)
             return False
+        self.logger.info(
+            'contrail-vrouter-agent is in %s state' % state)
+        return True
     #end wait_for_vrouter_agent_state
 
     def sup_vrouter_process_restart(self):
@@ -494,7 +492,8 @@ class ComputeNodeFixture(fixtures.Fixture):
         proto=None,
         vrf_id=None,
         refresh=True,
-        show_evicted=True):
+        show_evicted=True,
+        all_flows=False):
         '''
         Returns tuple of forward and reverse flow instances of FlowEntry class
         Returns (None, None) if not found
@@ -522,6 +521,8 @@ class ComputeNodeFixture(fixtures.Fixture):
         if vrf_id:
             reqd_entries['vrf_id'] = vrf_id
 
+        if all_flows:
+            all_flow_list = []
         for flow_entry_item in flow_table.items:
             if reqd_entries.viewitems() <= flow_entry_item.viewitems():
                 forward_flow = FlowEntry(flow_entry_item)
@@ -530,12 +531,19 @@ class ComputeNodeFixture(fixtures.Fixture):
                         in flow_table.items 
                         if x['index']==forward_flow.r_flow_index][0]
                     reverse_flow = FlowEntry(reverse_flow_item)
-                break
-        self.logger.debug('Forward flow: %s' % (forward_flow.dump() \
-            if forward_flow else None))
-        self.logger.debug('Reverse flow: %s' % (reverse_flow.dump() \
-            if reverse_flow else None))
-        return (forward_flow, reverse_flow)
+                    if all_flows:
+                        all_flow_list.append((forward_flow, reverse_flow))
+                        continue
+                    else:
+                        self.logger.debug('Forward flow: %s' % (forward_flow.dump() \
+                            if forward_flow else None))
+                        self.logger.debug('Reverse flow: %s' % (reverse_flow.dump() \
+                            if reverse_flow else None))
+                        return (forward_flow, reverse_flow)
+        if all_flows:
+            self.logger.debug('Returns multiple flows, %s, matching flow data as\
+                           list of tuples', all_flow_list)
+            return all_flow_list
     # end get_flow_entry
 
     def delete_all_flows(self):

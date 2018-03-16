@@ -9,8 +9,9 @@ from ipam_test import IPAMFixture
 from port_fixture import PortFixture
 from project_test import ProjectFixture
 from security_group import SecurityGroupFixture
+from floating_ip import FloatingIPFixture
 from interface_route_table_fixture import InterfaceRouteTableFixture
-from tcutils.util import get_random_name, get_random_cidr
+from tcutils.util import get_random_name, get_random_cidr, is_v6
 from tcutils.contrail_status_check import ContrailStatusChecker
 
 class _GenericTestBaseMethods():
@@ -77,7 +78,7 @@ class _GenericTestBaseMethods():
             self.inputs.start_container(node_ip, container)
         self.sleep(60)
         assert ContrailStatusChecker().wait_till_contrail_cluster_stable(
-            nodes=[node_ip])
+            nodes=[node_ip])[0]
     # end start_containers
 
 # end _GenericTestBaseMethods
@@ -272,26 +273,6 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
             router_id,
             vn_fixture.vn_subnet_objs[0]['id'])
 
-    def create_security_group(self, name, quantum_handle=None):
-        q_h = None
-        if quantum_handle:
-            q_h = quantum_handle
-        else:
-            q_h = self.quantum_h
-        obj = q_h.create_security_group(name)
-        if obj:
-            self.addCleanup(self.delete_security_group, obj['id'], quantum_handle)
-        return obj
-    # end create_security_group
-
-    def delete_security_group(self, sg_id, quantum_handle=None):
-        q_h = None
-        if quantum_handle:
-            q_h = quantum_handle
-        else:
-            q_h = self.quantum_h
-        q_h.delete_security_group(sg_id)
-
     def create_ipam(self, name=None, connections=None):
         connections = connections or self.connections
         name = name or get_random_name('ipam')
@@ -302,7 +283,7 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         if is_v6(prefix):
             prefix_len = 128
         if contrail_api:
-            self.vnc_h.add_allowed_pair(port['id'], prefix, prefix_len, mac, aap_mode)
+            self.vnc_h.add_allowed_address_pair(port['id'], prefix, prefix_len, mac, aap_mode)
         else:
             port_dict = {'allowed_address_pairs': [
                 {"ip_address": prefix + '/' + str(prefix_len) , "mac_address": mac}]}
@@ -310,9 +291,28 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         return True
     #end config_aap
 
+    def create_floatingip_pool(self, floating_vn, name=None):
+        fip_pool_name = name if name else get_random_name('fip')
+        fip_fixture = self.useFixture(
+            FloatingIPFixture(
+                project_name=self.inputs.project_name,
+                inputs=self.inputs,
+                connections=self.connections,
+                pool_name=fip_pool_name,
+                vn_id=floating_vn.vn_id))
+        assert fip_fixture.verify_on_setup()
+        return fip_fixture
+
+    def create_interface_route_table(self, prefixes):
+        intf_route_table_obj = self.vnc_h.create_route_table(
+            prefixes = prefixes,
+            parent_obj=self.project.project_obj)
+        return intf_route_table_obj
+
     @classmethod
     def setup_only_policy_between_vns(cls, vn1_fixture, vn2_fixture, rules=[], **kwargs):
         connections = kwargs.get('connections') or cls.connections
+        api = kwargs.get('api') or None
         policy_name = get_random_name('policy-allow-all')
         rules = rules or [
             {
@@ -324,13 +324,13 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         ]
         policy_fixture = PolicyFixture(
                 policy_name=policy_name, rules_list=rules, inputs=connections.inputs,
-                connections=connections)
+                connections=connections, api=api)
         policy_fixture.setUp()
 
         vn1_fixture.bind_policies(
-            [policy_fixture.policy_fq_name], vn1_fixture.vn_id)
+            [policy_fixture.policy_fq_name], vn1_fixture.vn_id, reset=False)
         vn2_fixture.bind_policies(
-            [policy_fixture.policy_fq_name], vn2_fixture.vn_id)
+            [policy_fixture.policy_fq_name], vn2_fixture.vn_id, reset=False)
         return policy_fixture
     # end setup_only_policy_between_vns
 
