@@ -1858,6 +1858,17 @@ class VNFixture(fixtures.Fixture):
 
     # end is_ip_fabric_provider_nw_present
 
+    def verify_routing_instance_snat(self):
+        '''
+            Verify the routing instance fabric SNAT flag is same as its virtual network flag
+        '''
+        for ri in self.api_s_inspect.get_cs_routing_instances(
+            vn_id=self.uuid)['routing_instances']:
+            ri_obj = self.orchestrator.vnc_h.routing_instance_read(id=ri['routing-instance']['uuid'])
+            if ri_obj.routing_instance_fabric_snat != self.orchestrator.vnc_h.get_fabric_snat(self.uuid):
+                self.logger.error("Fabric SNAT has not been set in the routing instance ")
+                return False
+        return True
 
 
 # end VNFixture
