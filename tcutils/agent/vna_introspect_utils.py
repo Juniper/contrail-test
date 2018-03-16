@@ -613,7 +613,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                         for ee in fip:
                             pp[ee.tag] = ee.text
                         p[e.tag].append(pp)
-                if e.tag == 'bridge_domain_list':
+                elif e.tag == 'bridge_domain_list':
                     p[e.tag] = []
                     for bd in e.xpath('./list/VmIntfBridgeDomainUuid'):
                         pp = {}
@@ -1297,6 +1297,28 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                 nh_ids.append(nh['nh_index'])
 
         return nh_ids
+
+    def get_vna_snat_port_config(self):
+        '''
+            Retruns SNAT port response from agent
+        '''
+        rsp = self.dict_get('Snh_SNatPortConfigRequest?')
+        port_config_lists = rsp.xpath('./SNatPortResponse/port_config_list/list/PortConfigData') or \
+                rsp.xpath('./port_config_list/list/PortConfigData')
+        port_pool = {}
+        for port_config in port_config_lists:
+            for elem in port_config.getchildren():
+                if elem.tag == 'protocol':
+                    protocol = elem.text
+                    port_pool[protocol] = {}
+                elif elem.tag == 'port_range' and elem.xpath('./list/PortConfigRange'):
+                    port_pool[protocol]['port_start'] = elem.xpath('./list/PortConfigRange/port_start')[0].text
+                    port_pool[protocol]['port_end'] = elem.xpath('./list/PortConfigRange/port_end')[0].text
+                elif elem.tag == 'bound_port_list':
+                    port_pool[protocol]['bound_port_list'] = []
+                    for bound_port in elem.xpath('./list/element'):
+                        port_pool[protocol]['bound_port_list'].append(bound_port.text)
+        return port_pool
 
 if __name__ == '__main__':
     v = AgentInspect('10.204.217.198')
