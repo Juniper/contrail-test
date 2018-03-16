@@ -9,8 +9,9 @@ from ipam_test import IPAMFixture
 from port_fixture import PortFixture
 from project_test import ProjectFixture
 from security_group import SecurityGroupFixture
+from floating_ip import FloatingIPFixture
 from interface_route_table_fixture import InterfaceRouteTableFixture
-from tcutils.util import get_random_name, get_random_cidr
+from tcutils.util import get_random_name, get_random_cidr, is_v6
 from tcutils.contrail_status_check import ContrailStatusChecker
 
 class _GenericTestBaseMethods():
@@ -302,13 +303,31 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         if is_v6(prefix):
             prefix_len = 128
         if contrail_api:
-            self.vnc_h.add_allowed_pair(port['id'], prefix, prefix_len, mac, aap_mode)
+            self.vnc_h.add_allowed_address_pair(port['id'], prefix, prefix_len, mac, aap_mode)
         else:
             port_dict = {'allowed_address_pairs': [
                 {"ip_address": prefix + '/' + str(prefix_len) , "mac_address": mac}]}
             port_rsp = self.update_port(port['id'], port_dict)
         return True
     #end config_aap
+
+    def create_floatingip_pool(self, floating_vn, name=None):
+        fip_pool_name = name if name else get_random_name('fip')
+        fip_fixture = self.useFixture(
+            FloatingIPFixture(
+                project_name=self.inputs.project_name,
+                inputs=self.inputs,
+                connections=self.connections,
+                pool_name=fip_pool_name,
+                vn_id=floating_vn.vn_id))
+        assert fip_fixture.verify_on_setup()
+        return fip_fixture
+
+    def create_interface_route_table(self, prefixes):
+        intf_route_table_obj = self.vnc_h.create_route_table(
+            prefixes = prefixes,
+            parent_obj=self.project.project_obj)
+        return intf_route_table_obj
 
     @classmethod
     def setup_only_policy_between_vns(cls, vn1_fixture, vn2_fixture, rules=[], **kwargs):

@@ -2138,6 +2138,51 @@ class ContrailVncApi(object):
         #in delete of pool.Hence keeping is empty
         pass
 
+    def port_translation_pool(self, protocol, port_count, start_port=0, end_port=0):
+        port_range = PortType(start_port = start_port, end_port = end_port)
+        pp = PortTranslationPool(protocol = protocol, port_count = str(port_count), port_range = port_range)
+        return pp
+
+    def get_port_translation_pools(self):
+        gv_obj = self.read_global_vrouter_config()
+        return gv_obj.get_port_translation_pools()
+    #end get_port_translation_pool_global_config
+
+    def set_port_translation_pool(self, pp=None):
+        pp = pp or []
+        gv_obj = self.read_global_vrouter_config()
+        ppp = PortTranslationPools()
+        ppp.set_port_translation_pool(pp)
+        gv_obj.set_port_translation_pools(ppp)
+        self._vnc.global_vrouter_config_update(gv_obj)
+        return True
+    #end set_port_translation_pool
+
+    def delete_port_translation_pool(self, pp):
+        gv_obj = self.read_global_vrouter_config()
+        port_tr_pools = gv_obj.get_port_translation_pools()
+        port_tr_pools.delete_port_translation_pool(pp)
+        gv_obj.set_port_translation_pools(port_tr_pools)
+        self._vnc.global_vrouter_config_update(gv_obj)
+        return port_tr_pools
+
+    def insert_port_translation_pool(self, pp, index=-1):
+        gv_obj = self.read_global_vrouter_config()
+        port_tr_pools = gv_obj.get_port_translation_pools()
+        port_tr_pools.insert_port_translation_pool(index, pp)
+        gv_obj.set_port_translation_pools(port_tr_pools)
+        self._vnc.global_vrouter_config_update(gv_obj)
+        return port_tr_pools
+
+    def get_fabric_snat(self, vn_id):
+        vn_obj = self._vnc.virtual_network_read(id=vn_id)
+        return vn_obj.get_fabric_snat()
+
+    def set_fabric_snat(self, vn_id, enable=True):
+        vn_obj = self._vnc.virtual_network_read(id=vn_id)
+        vn_obj.set_fabric_snat(enable)
+        self._vnc.virtual_network_update(vn_obj)
+
 class LBFeatureHandles:
     __metaclass__ = Singleton
     
