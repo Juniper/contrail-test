@@ -77,7 +77,7 @@ class _GenericTestBaseMethods():
             self.inputs.start_container(node_ip, container)
         self.sleep(60)
         assert ContrailStatusChecker().wait_till_contrail_cluster_stable(
-            nodes=[node_ip])
+            nodes=[node_ip])[0]
     # end start_containers
 
 # end _GenericTestBaseMethods
