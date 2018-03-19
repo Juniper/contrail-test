@@ -236,19 +236,16 @@ class ComputeNodeFixture(fixtures.Fixture):
 
     @retry(delay=5, tries=15)
     def wait_for_vrouter_agent_state(self, state='active'):
-        cmd = "contrail-status | grep 'contrail-vrouter-agent'"
-        raise Exception('contrail-status not supported')
-        service_status = self.execute_cmd(cmd)
-        if state in service_status:
-            self.logger.info(
-                'contrail-vrouter-agent is in %s state' % state)
-            return True
+        if state == 'active':
+            status, err = self.inputs.verify_service_state(self.ip, service='agent')
         else:
-            self.logger.info(
-                '%s' % service_status)
-            self.logger.info(
-                'Waiting contrail-vrouter-agent to come up to %s state' % state)
+            status, err = self.inputs.verify_service_down(self.ip, service='agent')
+        if not status:
+            self.logger.info('agent is not in expected state: %s' % err)
             return False
+        self.logger.info(
+            'contrail-vrouter-agent is in %s state' % state)
+        return True
     #end wait_for_vrouter_agent_state
 
     def sup_vrouter_process_restart(self):
