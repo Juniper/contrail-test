@@ -47,7 +47,8 @@ class AttachPolicyFixture(fixtures.Fixture):
         else:
             policy_name = policy['policy']['name']
         if policy_name not in policy_name_objs.keys():
-            self.vn_fixture.policy_objs.append(policy)
+            pobjs = self.vn_fixture.convert_policy_objs_vnc_to_neutron(policy)
+            self.vn_fixture.policy_objs.extend(policy)
 
     def cleanUp(self):
         self.logger.info("Dettaching policy %s from vn %s",

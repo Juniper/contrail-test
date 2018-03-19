@@ -1,4 +1,4 @@
-from common.k8s.base import BaseK8sTest, _GenericTestBaseMethods
+from common.k8s.base import BaseK8sTest
 from k8s.network_policy import NetworkPolicyFixture
 from tcutils.wrappers import preposttest_wrapper
 from test import BaseTestCase

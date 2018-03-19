@@ -171,7 +171,7 @@ class TestvDNSRestart(BasevDNSTest):
         self.inputs.start_service('contrail-named', self.inputs.bgp_ips,
                                   container='named')
         for ip in self.inputs.bgp_ips:
-            assert self.inputs.confirm_service_active('contrail-named', ip)
+            assert self.inputs.verify_service_state(service='named', host=ip)[0]
         zoneFile = vn_fixt.vn_fq_name.split(':')[0] +'-' + dns_server_name + '.' + domain_name + '.zone.jnl'
         cmd = "ls -al /etc/contrail/dns/%s" % zoneFile
         for node in self.inputs.bgp_ips:

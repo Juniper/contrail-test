@@ -21,11 +21,12 @@ from tcutils.util import custom_dict, read_config_option, get_build_sku, retry
 from tcutils.custom_filehandler import *
 from tcutils.config.vnc_introspect_utils import VNCApiInspect
 from tcutils.collector.opserver_introspect_utils import VerificationOpsSrv
+from tcutils.contrail_status_check import ContrailStatusChecker
 from keystone_tests import KeystoneCommands
 from tempfile import NamedTemporaryFile
 import re
 from common import log_orig as contrail_logging
-from common.services_map import SERVICES_MAP
+from common.contrail_services import CONTRAIL_SERVICES_CONTAINER_MAP
 
 import subprocess
 from collections import namedtuple
@@ -883,7 +884,7 @@ class TestInputs(object):
             return
         containers = [x.strip('\r') for x in output.split('\n')]
 
-        for service, names in SERVICES_MAP.iteritems():
+        for service, names in CONTRAIL_SERVICES_CONTAINER_MAP.iteritems():
             for name in names:
                 container = next((container for container in containers if name in container), None)
                 if container:
@@ -1394,126 +1395,20 @@ class ContrailTestInit(object):
         return False
 
     def verify_state(self):
-        #ToDo: msenthil - Revisit once contrail-status is implemented for microservices
-        raise Exception('contrail-status not supported')
-        result = True
-        failed_services = []
-
-        for host in self.host_ips:
-            self.logger.info("Executing 'contrail-status' on host %s\n" %(host))
-            if host in self.compute_ips:
-                res, failed = self.verify_service_state(
-                        host,
-                        container='agent',
-                        role='compute')
-                if failed:
-                    failed_services.extend(failed)
-                    result = result and False
-
-            if host in self.bgp_ips:
-                res, failed = self.verify_service_state(
-                        host,
-                        container='controller',
-                        role='control')
-                if failed:
-                    failed_services.extend(failed)
-                    result = result and False
-
-            if host in self.cfgm_ips:
-                res, failed = self.verify_service_state(
-                        host,
-                        container='controller',
-                        role='config')
-                if failed:
-                    failed_services.extend(failed)
-                    result = result and False
-
-            if host in self.collector_ips:
-                res, failed = self.verify_service_state(
-                        host,
-                        container='analytics',
-                        role='analytics')
-                if failed:
-                    failed_services.extend(failed)
-                    result = result and False
-
-            if host in self.webui_ips:
-                res, failed = self.verify_service_state(
-                        host,
-                        container='controller',
-                        role='webui')
-                if failed:
-                    failed_services.extend(failed)
-                    result = result and False
-
-            if host in self.database_ips:
-                res, failed = self.verify_service_state(
-                        host,
-                        container='analyticsdb',
-                        role='database')
-                if failed:
-                    failed_services.extend(failed)
-                    result = result and False
-            # Need to enhance verify_service_state to verify openstack services status as well
-            # Commenting out openstack service verifcation untill then
-            # if host == self.openstack_ip:
-            #    for service in self.openstack_services:
-            #        result = result and self.verify_service_state(
-            #            host,
-            #            service,
-            #            username,
-            #            password)
+        result, failed_services = ContrailStatusChecker(self
+            ).wait_till_contrail_cluster_stable(tries=1)
         if failed_services:
-            self.logger.info("Failed services are : \n %s\n" % ('\n '.join(map(str, failed_services))))
+            self.logger.info("Failed services are : %s" % (failed_services))
         return result
     # end verify_state
 
-    def get_service_status(self, m, service, print_output=False):
-        Service = namedtuple('Service', 'name state')
-        for keys, values in m.items():
-            values = values[0].rstrip().split()
-            if service in str(values):
-                cls = Service(values[0], values[1])
-                if print_output:
-                    self.logger.info("%s:%s" % (cls.name, cls.state))
-                return cls
-        return None
+    def verify_service_state(self, host, service=None, role=None):
+        return ContrailStatusChecker(self).wait_till_contrail_cluster_stable(
+            host, role, service, tries=6, delay=5)
 
-    @retry(tries=6, delay=5)
-    def verify_service_state(self, host, service=None, role=None, container=None, openstack=False):
-        result = True
-        failed_services = []
-        services = self.get_contrail_services(service_name=service, role=role)
-        os_services = self.openstack_services
-        try:
-            if openstack:
-                m = self.get_openstack_status(host, container=container)
-                services = os_services
-            else:
-                m = self.get_contrail_status(host, container=container)
-            for service in services:
-                cls = self.get_service_status(m, service)
-                if (cls.state not in self.correct_states):
-                    self.logger.error("Service %s not in correct state on %s - "
-                                "its in %s state" %(cls.name, host, cls.state))
-                    failed = "Host: %s  Container: %s  Role: %s  Service: %s  State: %s" %(host, container, role, cls.name, cls.state)
-                    failed_services.append(failed)
-                    result = result and False
-                else:
-                    self.logger.debug('Service %s is in %s state on %s'
-                                      %(cls.name, cls.state, host))
-        except Exception as e:
-            self.logger.error("Unable to get service status of %s on %s"
-                              %(service, host))
-            self.logger.exception("Got exception as %s" % (e))
-            return False, failed_services
-        return result, failed_services
-
-    # Commenting below 4 lines due to discovery changes in R4.0 - Bug 1658035
-    ###def verify_control_connection(self, connections):
-    ###    discovery = connections.ds_verification_obj
-    ###    return discovery._verify_bgp_connection()
-    ### end verify_control_connection
+    def verify_service_down(self, host, service=None, role=None):
+        return ContrailStatusChecker(self).wait_till_service_down(
+            host, role, service, tries=6, delay=5)
 
     def build_compute_to_control_xmpp_connection_dict(self, connections):
         agent_to_control_dct = {}
@@ -1644,20 +1539,6 @@ class ContrailTestInit(object):
                       container=None):
         self._action_on_service(service_name, 'start', host_ips, container)
     # end start_service
-
-    def run_status_cmd(self, server_ip, cmd='contrail-status', container=None):
-        raise Exception('contrail-status not supported')
-        cache = self.run_cmd_on_server(server_ip, cmd,
-                                       container=container)
-        m = dict([(n, tuple(l.split(';')))
-                  for n, l in enumerate(cache.split('\n'))])
-        return m
-
-    def get_contrail_status(self, server_ip, container=None):
-        return self.run_status_cmd(server_ip, cmd='contrail-status', container=container)
-
-    def get_openstack_status(self, server_ip, container=None):
-        return self.run_status_cmd(server_ip, cmd='openstack-status', container=container)
 
     def run_provision_control(
             self,

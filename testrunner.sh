@@ -156,15 +156,9 @@ EOF
 docker_run () {
     if [[ -e $mount_local ]]; then
         mount_local=`readlink -f $mount_local`
-        if [[ -d $mount_local/contrail-test && -d $mount_local/contrail-test-ci ]]; then
+        if [[ -d $mount_local/contrail-test ]]; then
             temp_dir=`mktemp -d`
-            rsync -a -f"+ */" -f"- *" $mount_local/contrail-test-ci/* $temp_dir
             rsync -a -f"+ */" -f"- *" $mount_local/contrail-test/* $temp_dir
-            for i in `find $mount_local/contrail-test-ci/ -not \( -path $mount_local/contrail-test-ci/.git\* -prune \) -type f -print`; do
-                d=`echo $i | sed "s#$mount_local/contrail-test-ci/##"`
-                s=`echo $i | sed "s#$mount_local#/combined/#"`
-                ln -s $s $temp_dir/$d
-            done
             for i in `find $mount_local/contrail-test/ -not \( -path $mount_local/contrail-test/.git\* -prune \) -type f -print`; do
                 d=`echo $i | sed "s#$mount_local/contrail-test/##"`
                 s=`echo $i | sed "s#$mount_local#/combined/#"`
@@ -174,7 +168,7 @@ docker_run () {
             local_vol=" -v $mount_local:/combined -v $temp_dir:${CONTRAIL_TEST_FOLDER} "
             dont_write_byte_code_arg=" -e PYTHONDONTWRITEBYTECODE=1 "
         else
-            echo "ERROR: Mount local directory ($mount_local) should have contrail-test and contrail-test-ci cloned"
+            echo "ERROR: Mount local directory ($mount_local) should have contrail-test "
             exit 1
         fi
     fi
@@ -246,7 +240,7 @@ docker_run () {
     select_image $image_name
 
     # Set ci_image in case of ci
-    if [[ $image_name =~ contrail-test-ci || $use_ci_image ]]; then
+    if [[ $use_ci_image ]]; then
         ci_image_arg=" -e CI_IMAGE=$CI_IMAGE_ORIG -e ci_image=$CI_IMAGE_ORIG"
     fi
 
@@ -352,7 +346,7 @@ $GREEN  -f, --feature FEATURE           $NO_COLOR Features or Tags to test - val
                                             NOTE: this is only valid for Full contrail-test suite.
 $GREEN -T, --test-tags TEST_TAGS        $NO_COLOR test tags to run specific tests
 $GREEN -c, --testcase TESTCASE          $NO_COLOR testcase to execute
-$GREEN -m, --mount_local path          $NO_COLOR mount a local folder which has contrail-test and contrail-test-ci
+$GREEN -m, --mount_local path          $NO_COLOR mount a local folder which has contrail-test
 NOTE: Either testbed.py (-t) or params-file required
 
 ${GREEN}Possitional Parameters:
