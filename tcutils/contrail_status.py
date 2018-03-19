@@ -17,61 +17,8 @@ except:
 warnings.filterwarnings('ignore', ".*SNIMissingWarning.*")
 warnings.filterwarnings('ignore', ".*InsecurePlatformWarning.*")
 warnings.filterwarnings('ignore', ".*SubjectAltNameWarning.*")
-
-# Inputs yaml file/ContrailTestInit, node, service, role
-CONTRAIL_SERVICES = {'vrouter' : ['vrouter-nodemgr', 'agent'],
-                     'control' : ['control-nodemgr',
-                                  'control',
-                                  'named',
-                                  'dns'],
-                     'config' : ['config-nodemgr',
-                                 'api-server',
-                                 'schema',
-                                 'svc-monitor',
-                                 'device-manager'],
-                     'config-database' : ['config-cassandra',
-                                          'configdb-nodemgr',
-                                          'config-zookeeper',
-                                          'config-rabbitmq'],
-                     'analytics' : ['analytics-nodemgr',
-                                    'analytics-api',
-                                    'collector',
-                                    'query-engine',
-                                    'alarm-gen',
-                                    'snmp-collector',
-                                    'topology'],
-                     'analytics-database' : ['analytics-cassandra',
-                                             'analyticsdb-nodemgr',
-                                             'analytics-zookeeper',
-                                             'analytics-kafka'],
-                     'webui' : ['webui', 'webui-middleware', 'redis'],
-                     'kubernetes' : ['contrail-kube-manager'],
-                    }
-BackupImplementedServices = ["schema",
-                             "svc-monitor",
-                             "device-manager",
-                             "contrail-kube-manager"]
-ServiceHttpPortMap = {
-    "agent" : 8085,
-    "control" : 8083,
-    "collector" : 8089,
-    "query-engine" : 8091,
-    "analytics-api" : 8090,
-    "dns" : 8092,
-    "api-server" : 8084,
-    "schema" : 8087,
-    "svc-monitor" : 8088,
-    "device-manager" : 8096,
-    "analytics-nodemgr" : 8104,
-    "vrouter-nodemgr" : 8102,
-    "control-nodemgr" : 8101,
-    "analyticsdb-nodemgr" : 8103,
-    "configdb-nodemgr" : 8100,
-    "alarm-gen" : 5995,
-    "snmp-collector" : 5920,
-    "topology" : 5921,
-    "contrail-kube-manager" : 8108,
-}
+from common.contrail_services import BackupImplementedServices, \
+    ServiceHttpPortMap, CONTRAIL_PODS_SERVICES_MAP
 
 class IntrospectUtil(object):
     def __init__(self, ip, port, debug, timeout, keyfile, certfile, cacert):
@@ -261,48 +208,62 @@ def get_svc_uve_info(host, svc_name, debug, detail, timeout, keyfile, certfile, 
             svc_status = 'timeout'
     else:
         svc_status = 'initializing'
-    if svc_uve_description is not None and svc_uve_description is not '':
-        svc_status = svc_status + ' (' + svc_uve_description + ')'
-    return svc_status
+#    if svc_uve_description is not None and svc_uve_description is not '':
+#        svc_status = svc_status + ' (' + svc_uve_description + ')'
+    return svc_status, svc_uve_description
 # end get_svc_uve_info
 
 def get_container_status(container, containers):
     found = container in containers
     return 'active' if found else 'inactive'
 
-def contrail_status(inputs, host=None, role=None, service=None,
+def contrail_status(inputs=None, host=None, role=None, service=None,
                     debug=False, detail=False, timeout=30,
                     keyfile=None, certfile=None, cacert=None):
     status_dict = dict()
-    nodes = [host] if host else inputs.host_ips
-    for node in nodes:
+    if not inputs:
+        params = os.environ.get('TEST_CONFIG_FILE') or\
+            '/contrail-test/contrail_test_input.yaml'
+        inputs = ContrailTestInit(params)
+    certfile = certfile or inputs.introspect_certfile
+    keyfile = keyfile or inputs.introspect_keyfile
+    cacert = cacert or inputs.introspect_cafile
+
+    if host:
+        host = [host] if isinstance(host, str) else host
+    if role:
+        role = [role] if isinstance(role, str) else role
+    if service:
+        service = [service] if isinstance(service, str) else service
+
+    for node in host or inputs.host_ips:
         containers = inputs.get_active_containers(node)
         print node
         status_dict[node] = dict()
         if service:
-            status = get_container_status(inputs.get_container_name(node,
-                                          service), containers)
-            if status == 'active':
-                status = get_svc_uve_info(node, svc, debug, detail,
-                         timeout, keyfile, certfile, cacert)
-            status_dict[node][service] = status
-            print '    %s:%s'(service, status)
+            for svc in service:
+                status = get_container_status(
+                    inputs.get_container_name(node, svc), containers)
+                if status == 'active':
+                    status, desc = get_svc_uve_info(node, svc, debug, detail,
+                                   timeout, keyfile, certfile, cacert)
+                status_dict[node][svc] = {'status': status, 'description': desc}
+                print '    %s:%s%s'(svc, status, ' (%s)'%desc if desc else '')
         else:
-            roles = [role] if role else inputs.get_roles(node)
-            for r in roles:
+            for r in role or inputs.get_roles(node):
                 print '  '+r
                 if r not in CONTRAIL_SERVICES:
                     print 'role '+r+' is not yet supported'
                     continue
                 status_dict[node] = dict()
-                for svc in CONTRAIL_SERVICES[r]:
+                for svc in service or CONTRAIL_SERVICES[r]:
                     status = get_container_status(
                         inputs.get_container_name(node, svc), containers)
                     if status == 'active':
-                        status = get_svc_uve_info(node, svc,
+                        status, desc = get_svc_uve_info(node, svc,
                             debug, detail, timeout, keyfile, certfile, cacert)
-                    status_dict[node][svc] = status
-                    print '    %s:%s'%(svc, status)
+                    status_dict[node][svc] = {'status': status, 'description': desc}
+                    print '    %s:%s%s'%(svc, status, ' (%s)'%desc if desc else '')
     return status_dict
 
 def main():

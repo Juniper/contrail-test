@@ -24,16 +24,12 @@ class TestVrouter(base.BaseVrouterTest):
            4)Verify Xconnect mode
            5)start vrouter-agent'''
         v_agent= 'contrail-vrouter-agent'
-        v_agent_status =" contrail-status|grep contrail-vrouter-agent | awk 'FNR == 1 {print $2 }' "
         verify_Xconnect ="vif --list | grep Flags:X"
         compute_ip=self.inputs.compute_ips[0]
         compute_user = self.inputs.host_data[compute_ip]['username']
         compute_password = self.inputs.host_data[compute_ip]['password']
         self.inputs.stop_service(v_agent,[compute_ip], container='agent')
-        self.logger.info('SSH to compute node to verify xconnect mode')
-        session = ssh(compute_ip, compute_user, compute_password)
-        status=execute_cmd_out(session,v_agent_status,self.logger)
-        status=status[0].strip('\n')
+        self.inputs.verify_service_down(compute_ip, service='agent')
         if not 'inactive' in status:
             assert False,'Contrail-vrouter-agent failed to stop'
         else:
@@ -43,11 +39,10 @@ class TestVrouter(base.BaseVrouterTest):
             assert status[0],'Xconnect mode not enabled'
             self.logger.info('Xconnect mode got enabled')
             self.inputs.start_service(v_agent,[compute_ip], container='agent')
-            result, result1 = self.inputs.verify_service_state(compute_ip, service=v_agent, container='agent')
+            result, result1 = self.inputs.verify_service_state(compute_ip, service='agent')
             assert result,'Contrail-vrouter-agent service is inactive'
             self.logger.info('Verify vrouter Xconnect mode test passed')
     #end test_vrouter_xconnect
 
     def test_vrouter_module_unload_reload(self):
         pass
-    
