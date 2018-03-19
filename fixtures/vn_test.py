@@ -1446,12 +1446,13 @@ class VNFixture(fixtures.Fixture):
         return self.vn_obj
     # end get_obj
 
-    def bind_policies(self, policy_fq_names, vn_id=None):
+    def bind_policies(self, policy_fq_names, vn_id=None, reset=True):
         vn_id = vn_id or self.uuid
         if  isinstance(self.orchestrator,VcenterOrchestrator) or self.option == 'contrail':
             self.api_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.uuid)
-            self.api_vn_obj.set_network_policy_list([],True)
-            self.vnc_lib_h.virtual_network_update(self.api_vn_obj)
+            if reset:
+                self.api_vn_obj.set_network_policy_list([],True)
+                self.vnc_lib_h.virtual_network_update(self.api_vn_obj)
             for seq, policy in enumerate(policy_fq_names):
                 policy_obj = self.vnc_lib_h.network_policy_read(fq_name=policy)
                 self.api_vn_obj.add_network_policy(policy_obj,
@@ -1485,7 +1486,7 @@ class VNFixture(fixtures.Fixture):
         if isinstance(self.orchestrator,OpenstackOrchestrator) :
             self.obj = self.quantum_h.get_vn_obj_from_id(self.uuid)
         self.policy_objs = []
-        if not self.policy_objs:
+        if not self.policy_objs and self.orchestrator:
             for policy_fq_name in self.get_current_policies_bound():
                 policy_obj = self.orchestrator.get_policy(policy_fq_name)
                 pobjs = self.convert_policy_objs_vnc_to_neutron([policy_obj])

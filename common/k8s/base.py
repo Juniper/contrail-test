@@ -16,16 +16,15 @@ from k8s.deployment import DeploymentFixture
 from k8s.network_policy import NetworkPolicyFixture
 from common.connections import ContrailConnections
 from common import create_public_vn
-from common.base import _GenericTestBaseMethods
+from common.base import GenericTestBase
 from vn_test import VNFixture
-
 
 K8S_SERVICE_IPAM = ['default-domain', 'default', 'service-ipam']
 K8S_PUBLIC_VN_NAME = '__public__'
 K8S_PUBLIC_FIP_POOL_NAME = '__fip_pool_public__'
 
 
-class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLibFixture):
+class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
 
     @classmethod
     def setUpClass(cls):
@@ -408,20 +407,27 @@ class BaseK8sTest(test.BaseTestCase, _GenericTestBaseMethods, vnc_api_test.VncLi
                                  ' pod. Stats : %s' % (hit_me_not))
                 return False
 
-            if 0 not in hit.values():
+            if 0 not in hit.values() and expectation==True:
                 self.logger.info('Responses seen from all pods, lb seems fine.'
                                  'Hits : %s' % (hit))
                 return True
         if 0 in hit.values():
-            msg = ('No http hit seen for one or more pods.'
-                   'Pls check. Hits: %s' % (hit))
-            self.logger.warn(msg)
             if expectation==False:
+                self.logger.info('As expected, responses not seen from pods'
+                                 'Hits : %s' % (hit))
                 return True
             else:
+                self.logger.warn('No http hit seen for one or more pods.'
+                   'Pls check. Hits: %s' % (hit))
                 return False
-        self.logger.info('Nginx lb hits seem to be ok: %s' % (hit))
-        return True
+        else:
+            if expectation==False:
+                self.logger.warn('Pods responding even if expectation was False'
+                                 'Hits : %s' % (hit))
+                return False
+            else:
+                self.logger.info('Nginx lb hits seem to be ok: %s' % (hit))
+                return True
     # end validate_nginx_lb
 
     def setup_update_policy(self,
