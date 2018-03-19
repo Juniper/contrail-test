@@ -44,7 +44,7 @@ roles:
         tsn:
         esxi:
         tor-agent:
-        k8smaster:
+        k8s_master:
         openstack:
 
 contrail_configs:
