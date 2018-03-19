@@ -236,13 +236,10 @@ class TestBasicPolicyNegative(BasePolicyTest):
         # try to remove policy which  was referenced with VN.
         policy_removal = True
         pol_id = None
-        if self.quantum_h:
-            policy_removal = self.quantum_h.delete_policy(policy_fixture.get_id())
-        else:
-            try:
-                self.vnc_lib.network_policy_delete(id=policy_fixture.get_id())
-            except Exception as e:
-                policy_removal = False
+        try:
+            self.vnc_lib.network_policy_delete(id=policy_fixture.get_id())
+        except Exception as e:
+            policy_removal = False
         self.assertFalse(
             policy_removal,
             'Policy removal succeed as not expected since policy is referenced with VN')

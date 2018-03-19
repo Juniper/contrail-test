@@ -77,7 +77,7 @@ class _GenericTestBaseMethods():
             self.inputs.start_container(node_ip, container)
         self.sleep(60)
         assert ContrailStatusChecker().wait_till_contrail_cluster_stable(
-            nodes=[node_ip])
+            nodes=[node_ip])[0]
     # end start_containers
 
 # end _GenericTestBaseMethods
@@ -305,7 +305,7 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         ]
         policy_fixture = PolicyFixture(
                 policy_name=policy_name, rules_list=rules, inputs=connections.inputs,
-                connections=connectionsi, api=api)
+                connections=connections, api=api)
         policy_fixture.setUp()
 
         vn1_fixture.bind_policies(
