@@ -689,6 +689,7 @@ class TestInputs(object):
         with open(self.input_file, 'r') as fd:
             self.config = yaml.load(fd)
         deployment_configs = self.config.get('deployment', {})
+        self.deployer = deployment_configs.get('deployer', 'contrail-ansible-deployer')
         self.contrail_configs = contrail_configs = \
             self.config.get('contrail_configuration') or {}
         self.orchestrator_configs = orchestrator_configs = \
@@ -731,8 +732,11 @@ class TestInputs(object):
             self.authn_url = '/v3/auth/tokens'
         else:
             self.authn_url = '/v2.0/tokens'
+        if self.orchestrator == 'kubernetes':
+            self.admin_tenant = 'default'
         self.internal_vip = orchestrator_configs.get('internal_vip')
         self.external_vip = orchestrator_configs.get('external_vip') or self.internal_vip
+        # test specific configs
         self.auth_url = test_configs.get('auth_url') or os.getenv('OS_AUTH_URL',
                                                      self._gen_auth_url())
         self.stack_user = test_configs.get('stack_user') or self.admin_username
@@ -748,7 +752,6 @@ class TestInputs(object):
         self.key_filename = test_configs.get('nova_keypair_private_key_filename')
         self.pubkey_filename = test_configs.get('nova_keypair_public_key_filename')
 
-        # test specific configs
         self.fixture_cleanup = test_configs.get('fixture_cleanup', 'yes')
         self.http_proxy = test_configs.get('http_proxy')
         self.ui_config = test_configs.get('ui_config')
@@ -791,6 +794,8 @@ class TestInputs(object):
                                    self.cfgm_control_ips  #vcenter only mode
         self.many_computes = (len(self.compute_ips) > 10) or False
         self._set_auth_vars()
+        if self.orchestrator == 'kubernetes':
+            self.tenant_isolation = False
 #        self.endpoint_type = test_configs.get('endpoint_type')
 #        self.cloud_admin_domain = test_configs.get('cloud_admin_domain', 'Default')
         self.image_web_server = test_configs.get('image_web_server') or \
@@ -1363,6 +1368,10 @@ class ContrailTestInit(object):
         # address_family = read_config_option(self.config,
         #                      'Basic', 'AddressFamily', 'dual')
         self.address_family = 'v4'
+        if self.orchestrator == 'kubernetes' or self.slave_orchestrator == 'kubernetes':
+            if not os.path.exists(self.kube_config_file):
+                self.copy_file_from_server(self.kube_manager_ips[0],
+                    self.kube_config_file, self.kube_config_file)
     # end __init__
 
     def is_ci_setup(self):
