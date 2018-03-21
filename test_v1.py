@@ -11,8 +11,6 @@ class BaseTestCase_v1(BaseTestCase):
         cls.domain_name = None        
         cls.domain_obj = None
         super(BaseTestCase_v1, cls).setUpClass()
-        if cls.inputs.orchestrator=="kubernetes":
-            cls.inputs.tenant_isolation = False
         if 'v3' in cls.inputs.auth_url:
             if cls.inputs.domain_isolation:
                 cls.domain_name = cls.__name__
