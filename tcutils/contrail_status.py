@@ -268,6 +268,7 @@ def contrail_status(inputs=None, host=None, role=None, service=None,
     return status_dict
 
 def main():
+    from common import contrail_test_init
     inputs = contrail_test_init.ContrailTestInit(sys.argv[1])
     host = sys.argv[2] if len(sys.argv) > 2 else None
     role = sys.argv[3] if len(sys.argv) > 3 else None
