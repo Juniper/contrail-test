@@ -51,19 +51,19 @@ class BaseSriovTest(test.BaseTestCase):
         return sriov_host_name_list
 
     def get_sriov_physnets(self,compute_name):
-        host_key=self.inputs.host_data[compute_name]['username'] + '@' + self.inputs.host_data[compute_name]['ip'] 
+        host_key=self.inputs.host_data[compute_name]['username'] + '@' + self.inputs.host_data[compute_name]['host_ip'] 
         physnets_list={}
         physnets_list=self.inputs.sriov_data[0][host_key][0]['physnets']
         return physnets_list
     
     def get_sriov_vf_number(self,compute_name):
-        host_key=self.inputs.host_data[compute_name]['username'] + '@' + self.inputs.host_data[compute_name]['ip']
+        host_key=self.inputs.host_data[compute_name]['username'] + '@' + self.inputs.host_data[compute_name]['host_ip']
         vf_number=None
         vf_number=self.inputs.sriov_data[0][host_key][0]['VF']
         return vf_number
  
     def get_sriov_pf(self,compute_name):
-        host_key=self.inputs.host_data[compute_name]['username'] + '@' + self.inputs.host_data[compute_name]['ip']
+        host_key=self.inputs.host_data[compute_name]['username'] + '@' + self.inputs.host_data[compute_name]['host_ip']
         pf_intf=None
         pf_intf=self.inputs.sriov_data[0][host_key][0]['interface']
         return pf_intf
