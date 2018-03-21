@@ -319,10 +319,10 @@ class VerifySvcFirewall(VerifySvcChain):
         nc_options=''
         if self.inputs.get_af() == 'v6':
             nc_options='-6'
+        errmsg2 = "TCP traffic failed"
         if si_list1:
             # Remove routes from svc chain 0, but still present in Svc chain 1
             # Expect traffic to flow via Svc chain 1 when svc chain 0 is down
-            errmsg2 = "TCP traffic failed"
             local_port = randint(10000, 50000)
             remote_port = local_port + 1;  local_port = remote_port + 1
             assert left_vm_fixture.nc_file_transfer(right_vm_fixture, nc_options=nc_options, local_port=local_port, remote_port=remote_port), errmsg2
