@@ -289,7 +289,7 @@ class BaseTorTest(BaseNeutronTest):
     # end validate_bms_gw_mac
 
     def get_mgmt_ip_of_node(self, ip):
-        return self.inputs.host_data[ip]['ip']
+        return self.inputs.host_data[ip]['host_ip']
 
     def validate_arp_forwarding(self, source_fixture,
             ip, dest_fixture, source_interface=None):

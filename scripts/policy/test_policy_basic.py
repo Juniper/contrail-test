@@ -13,6 +13,7 @@ import sdn_basic_topology
 import os
 import sdn_single_vm_multiple_policy_topology
 import sdn_single_vm_policy_topology
+from vnc_api.vnc_api import *
 
 af_test = 'dual'
 
@@ -123,12 +124,12 @@ class TestBasicPolicy(BasePolicyTest):
         policy_id = policy_fixture.get_id()
         rules[0]['simple_action'] = 'deny'
         policy_entries = policy_fixture.get_entries()
-        if self.quantum_h:
-            policy_entries['policy_rule'][0]['action_list']['simple_action'] = 'deny'
-            p_rules = {'policy': {'entries':policy_entries}}
-        else:
+        if type(policy_entries) is PolicyEntriesType:
             policy_entries.policy_rule[0].action_list.simple_action = 'deny'
             p_rules = policy_entries
+        else:
+            policy_entries['policy_rule'][0]['action_list']['simple_action'] = 'deny'
+            p_rules = {'policy': {'entries':policy_entries}}
         policy_fixture.update_policy(policy_id, p_rules)
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip,
             expectation=False), ('Ping passed between VNs with deny-policy')
