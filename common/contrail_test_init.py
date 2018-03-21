@@ -217,6 +217,9 @@ class TestInputs(object):
             os.getenv('OS_DOMAIN_NAME',
                 ORCH_DEFAULT_DOMAIN.get(self.orchestrator)))
 
+        if self.orchestrator == 'kubernetes':
+            self.admin_tenant = 'default'
+            self.tenant_isolation = False
         self.stack_user = read_config_option(
             self.config,
             'Basic',
@@ -689,6 +692,7 @@ class TestInputs(object):
         with open(self.input_file, 'r') as fd:
             self.config = yaml.load(fd)
         deployment_configs = self.config.get('deployment', {})
+        self.deployer = deployment_configs.get('deployer', 'contrail-ansible-deployer')
         self.contrail_configs = contrail_configs = \
             self.config.get('contrail_configuration') or {}
         self.orchestrator_configs = orchestrator_configs = \
@@ -731,8 +735,11 @@ class TestInputs(object):
             self.authn_url = '/v3/auth/tokens'
         else:
             self.authn_url = '/v2.0/tokens'
+        if self.orchestrator == 'kubernetes':
+            self.admin_tenant = 'default'
         self.internal_vip = orchestrator_configs.get('internal_vip')
         self.external_vip = orchestrator_configs.get('external_vip') or self.internal_vip
+        # test specific configs
         self.auth_url = test_configs.get('auth_url') or os.getenv('OS_AUTH_URL',
                                                      self._gen_auth_url())
         self.stack_user = test_configs.get('stack_user') or self.admin_username
@@ -748,7 +755,6 @@ class TestInputs(object):
         self.key_filename = test_configs.get('nova_keypair_private_key_filename')
         self.pubkey_filename = test_configs.get('nova_keypair_public_key_filename')
 
-        # test specific configs
         self.fixture_cleanup = test_configs.get('fixture_cleanup', 'yes')
         self.http_proxy = test_configs.get('http_proxy')
         self.ui_config = test_configs.get('ui_config')
@@ -791,6 +797,8 @@ class TestInputs(object):
                                    self.cfgm_control_ips  #vcenter only mode
         self.many_computes = (len(self.compute_ips) > 10) or False
         self._set_auth_vars()
+        if self.orchestrator == 'kubernetes':
+            self.tenant_isolation = False
 #        self.endpoint_type = test_configs.get('endpoint_type')
 #        self.cloud_admin_domain = test_configs.get('cloud_admin_domain', 'Default')
         self.image_web_server = test_configs.get('image_web_server') or \
@@ -933,21 +941,58 @@ class TestInputs(object):
         self._action_on_container(host_ips, 'start', container, verify_service=verify_service)
     # end start_service
 
-    def _action_on_container(self, hosts, event, container, verify_service=True, timeout=60):
+    # A very ugly hack until we modify all the tests to use microservice env
+    def get_container_for_service(self, service):
+        dct = {'contrail-api': 'api-server',
+               'contrail-schema': 'schema',
+               'contrail-svc-monitor': 'svc-monitor',
+               'contrail-config-nodemgr': 'config-nodemgr',
+               'contrail-device-manager': 'device-manager',
+               'contrail-webui': 'webui',
+               'contrail-webui-middleware': 'webui-middleware',
+               'contrail-collector': 'collector',
+               'contrail-alarm-gen': 'alarm-gen',
+               'contrail-analytics-api': 'analytics-api',
+               'contrail-query-engine': 'query-engine',
+               'contrail-analytics-nodemgr': 'analytics-nodemgr',
+               'contrail-snmp-collector': 'snmp-collector',
+               'contrail-topology': 'topology',
+               'contrail-database': 'analytics-cassandra',
+               'contrail-database-nodemgr': 'analyticsdb-nodemgr',
+               'kafka': 'analytics-kafka',
+               'contrail-vrouter-agent': 'agent',
+               'contrail-vrouter-nodemgr': 'vrouter-nodemgr',
+               'contrail-control': 'control',
+               'contrail-control-nodemgr': 'control-nodemgr',
+               'contrail-dns': 'dns',
+               'contrail-named': 'named',
+              }
+        return dct.get(service)
+
+    def _action_on_container(self, hosts, event, container, services=None, verify_service=True, timeout=60):
+        containers = set()
+        for service in services or []:
+            cntr = self.get_container_for_service(service)
+            if cntr:
+                containers.add(cntr)
+        if containers and container not in ['analytics', 'analyticsdb', 'controller']:
+            containers.add(container)
         for host in hosts or self.host_ips:
             username = self.host_data[host]['username']
             password = self.host_data[host]['password']
-            cntr = self.get_container_name(host, container)
-            if not cntr:
-                self.logger.info('Unable to find %s container on %s'%(container, host))
-                continue
-            issue_cmd = 'docker %s %s -t %s' % (event, cntr, timeout)
-            self.logger.info('Running %s on %s' %
-                             (issue_cmd, self.host_data[host]['name']))
-            self.run_cmd_on_server(host, issue_cmd, username, password, pty=True, as_sudo=True)
-            if verify_service:
-                status = self.is_container_up(host, container)
-                assert status if 'start' in event else not status
+            for container in containers:
+                cntr = self.get_container_name(host, container)
+                if not cntr:
+                    self.logger.info('Unable to find %s container on %s'%(container, host))
+                    continue
+                timeout = '' if event == 'start' else '-t 60'
+                issue_cmd = 'docker %s %s %s' % (event, cntr, timeout)
+                self.logger.info('Running %s on %s' %
+                                 (issue_cmd, self.host_data[host]['name']))
+                self.run_cmd_on_server(host, issue_cmd, username, password, pty=True, as_sudo=True)
+                if verify_service:
+                    status = self.is_container_up(host, container)
+                    assert status if 'start' in event else not status
 
     def get_container_name(self, host, service):
         '''
@@ -1363,6 +1408,10 @@ class ContrailTestInit(object):
         # address_family = read_config_option(self.config,
         #                      'Basic', 'AddressFamily', 'dual')
         self.address_family = 'v4'
+        if self.orchestrator == 'kubernetes' or self.slave_orchestrator == 'kubernetes':
+            if not os.path.exists(self.kube_config_file):
+                self.copy_file_from_server(self.kube_manager_ips[0],
+                    self.kube_config_file, self.kube_config_file)
     # end __init__
 
     def is_ci_setup(self):
@@ -1397,7 +1446,7 @@ class ContrailTestInit(object):
     def verify_state(self):
         result, failed_services = ContrailStatusChecker(self
             ).wait_till_contrail_cluster_stable(tries=1)
-        if failed_services:
+        if not result and failed_services:
             self.logger.info("Failed services are : %s" % (failed_services))
         return result
     # end verify_state
@@ -1506,7 +1555,7 @@ class ContrailTestInit(object):
             verify_service=True):
         services = self.get_contrail_services(service_name=service_name)
         if self.is_microservices_env:
-            return self._action_on_container(host_ips, event, container,
+            return self._action_on_container(host_ips, event, container, services=services,
                                              verify_service=verify_service)
         _container = container
         for service in services:

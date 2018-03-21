@@ -20,7 +20,7 @@ from fabric.operations import get, put
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 import ConfigParser
 from tcutils.contrail_status_check import *
-from tcutils.util import is_v6
+from tcutils.util import is_v6, is_v4
 from contrailapi import ContrailVncApi
 from string import Template
 contrail_api_conf = '/etc/contrail/contrail-api.conf'
