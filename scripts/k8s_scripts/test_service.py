@@ -1,4 +1,4 @@
-import os
+from tcutils.util import skip_because
 import random
 from common.k8s.base import BaseK8sTest
 from k8s.namespace import NamespaceFixture
@@ -45,6 +45,7 @@ class TestService(BaseK8sTest):
     # end test_service_1
 
     @test.attr(type=['k8s_sanity'])
+    @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_service_with_type_loadbalancer(self):
         ''' Create a service type loadbalancer with 2 pods running nginx
@@ -82,7 +83,7 @@ class TestService(BaseK8sTest):
 
         # Now validate ingress from public network
         assert self.validate_nginx_lb([pod1, pod2], service.external_ips[0])
-    # end test_service_2
+    # end test_service_with_type_loadbalancer
 
 
     @preposttest_wrapper
@@ -201,12 +202,8 @@ class TestServiceExternalIP(BaseK8sTest):
     def tearDownClass(cls):
         super(TestServiceExternalIP, cls).tearDownClass()
 
-    def is_test_applicable(self):
-        if not os.environ.get('MX_GW_TEST') == '1':
-            return(False, 'Needs MX_GW_TEST to be set')
-        return (True, None)
-
     @test.attr(type=['k8s_sanity'])
+    @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_service_with_external_ip(self):
         ''' Create a service  with 2 pods running nginx

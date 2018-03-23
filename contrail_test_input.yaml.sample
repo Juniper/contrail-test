@@ -34,6 +34,7 @@ container_hosts:
 roles:
     10.84.7.199:
         vrouter:
+        k8s_node:
     10.87.118.138:
         config_database:
         config:
@@ -45,6 +46,7 @@ roles:
         esxi:
         tor-agent:
         k8s_master:
+        kubemanager:
         openstack:
 
 contrail_configs:

@@ -169,9 +169,16 @@ class VNFixture(fixtures.Fixture):
             self.fq_name = self.api_vn_obj.get_fq_name()
             ipam = self.api_vn_obj.get_network_ipam_refs()
             if ipam:
-                subnets = [x.subnet.ip_prefix+'/'+\
+                ipam_obj = self.vnc_lib_h.network_ipam_read(id = ipam[0]['uuid'])
+                if ipam_obj.get_ipam_subnet_method() == 'flat-subnet': # Fix for 1756033
+                    network_ipam = ipam_obj.get_ipam_subnets() 
+                    subnets = [x.subnet.ip_prefix+'/'+\
                            str(x.subnet.ip_prefix_len)
-                           for x in ipam[0]['attr'].ipam_subnets]
+                           for x in network_ipam.subnets]
+                else:
+                    subnets = [x.subnet.ip_prefix+'/'+\
+                            str(x.subnet.ip_prefix_len)
+                            for x in ipam[0]['attr'].ipam_subnets]
                 self.vn_subnets = subnets
                 self._parse_subnets()
             else:

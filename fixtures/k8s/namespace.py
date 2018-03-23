@@ -199,7 +199,7 @@ class NamespaceFixture(fixtures.Fixture):
             self.logger.warn('Project %s for Namespace %s is still seen in'
                 ' contrail-api' % (self.project_fq_name, self.name))
             return False
-        except NoIdError:
+        except NoIdError as error:
             self.logger.info('Project %s for Namespace %s UUID %s is deleted '
                 'from contrail-api' % (self.project_fq_name, self.name,
                                        self.uuid))

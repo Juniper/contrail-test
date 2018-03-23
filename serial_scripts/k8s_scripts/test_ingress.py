@@ -4,6 +4,7 @@ from common.k8s.base import BaseK8sTest
 from k8s.ingress import IngressFixture
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.contrail_status_check import ContrailStatusChecker
+from tcutils.util import skip_because
 
 
 class TestIngress(BaseK8sTest):
@@ -15,8 +16,9 @@ class TestIngress(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestIngress, cls).tearDownClass()
-
+    
     @test.attr(type=['k8s_sanity'])
+    @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_ingress_with_kube_manager_restart(self):
         ''' Create a service with 2 pods running nginx
@@ -70,6 +72,7 @@ class TestIngress(BaseK8sTest):
     # end test_ingress_with_kube_manager_restart
 
     @test.attr(type=['k8s_sanity'])
+    @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_ingress_fanout_with_vrouter_agent_restart(self):
         '''Creating a fanout ingress with 2 different host having 2 different path along with a default backend
@@ -166,6 +169,7 @@ class TestIngress(BaseK8sTest):
                                       test_pod=pod5, path=path2, host=host2)
 
     @test.attr(type=['k8s_sanity'])
+    @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_ingress_fanout_with_node_reboot(self):
         '''Creating a fanout ingress with 2 different host having 2 different path along with a default backend
