@@ -1698,7 +1698,7 @@ class VMFixture(fixtures.Fixture):
                 ri_name = vn_fq_name + ':' + vn_fq_name.split(':')[-1]
                 for cn in self.get_ctrl_nodes_in_rt_group(vn_fq_name):
                     # Check for VM route in each control-node
-                    for vm_ip in self.vm_ip_dict[vn_fq_name]:
+                    for vm_ip in self.get_vm_ip_dict()[vn_fq_name]:
                         cn_routes = self.cn_inspect[cn].get_cn_route_table_entry(
                             ri_name=ri_name, prefix=vm_ip)
                         if cn_routes is not None:
