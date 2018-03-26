@@ -275,6 +275,9 @@ class WebuiCommon:
         elif element_type == 'IPAM':
             element = 'Create ' + element_type
             element_new = element_type
+        elif element_type == 'Floating IP Pools':
+            element = 'Add ' + element_type
+            element_new = func_suffix
         else:
             element = 'Create ' + element_type
             element_new = func_suffix
@@ -1330,6 +1333,13 @@ class WebuiCommon:
         time.sleep(1)
         return self.check_error_msg("configure networks")
     # end click_configure_networks_in_webui
+
+    def click_configure_Floating_IP_Pool(self):
+        self._click_on_config_dropdown(self.browser)
+        self.click_element(['config_networking_fippool', 'a'], ['id', 'tag'])
+        self.wait_till_ajax_done(self.browser)
+        return self.check_error_msg("configure fip pool")
+    # end click_configure_Floating_IP_Pool
 
     def __wait_for_networking_items(self, a):
         if len(
