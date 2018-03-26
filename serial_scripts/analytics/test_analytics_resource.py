@@ -61,8 +61,8 @@ class AnalyticsTestSanityWithMin(
         self.setup_flow_export_rate(10)
         src_vn = self.res.vn1_vm1_fixture.vn_fq_names[0]
         dst_vn = self.res.vn1_vm2_fixture.vn_fq_names[0]
-        other_vrouter_ip = self.res.vn1_vm2_fixture.vm_node_ip
-        vrouter_ip = self.res.vn1_vm1_fixture.vm_node_ip
+        other_vrouter_ip = self.res.vn1_vm2_fixture.get_compute_host()
+        vrouter_ip = self.res.vn1_vm1_fixture.get_compute_host()
 
         src_vm_host = self.res.vn1_vm1_fixture.get_host_of_vm()
         dst_vm_host = self.res.vn1_vm2_fixture.get_host_of_vm()
