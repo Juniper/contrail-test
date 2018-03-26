@@ -191,7 +191,7 @@ class ControlNodeInspect (VerificationUtilBase):
                 result= False
         return result
 
-    def get_cn_route_table_entry(self, prefix, ri_name, table=None):
+    def get_cn_route_table_entry(self, prefix, ri_name, table=None, protocol=None):
         '''Returns the route dictionary for requested prefix and routing instance.
         '''
         try:
@@ -213,12 +213,20 @@ class ControlNodeInspect (VerificationUtilBase):
         if type(rt) == type(dict()):
             for route in rt['routes']:
                 if route['prefix'] == prefix:
-                    return route['paths']
+                    if protocol:
+                        if route['paths']['protocol'] == protocol:
+                            return route['paths']
+                    else:
+                        return route['paths']
         else:
             for entry in rt:
                 for route in entry['routes']:
                     if route['prefix'] == prefix:
-                        return route['paths']
+                        if protocol:
+                            if route['paths']['protocol'] == protocol:
+                                return route['paths']
+                        else:
+                            return route['paths']
 
     def get_cn_bgp_neigh_entry(self, encoding='All'):
         '''Returns the route dictionary for requested prefix and routing instance.
