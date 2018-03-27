@@ -61,7 +61,6 @@ class TestIngress(BaseK8sTest):
         assert self.validate_nginx_lb([pod1, pod2], ingress.external_ips[0])
 
         self.restart_kube_manager()
-        time.sleep(5)
 
         # Now validate ingress from within the cluster network
         assert self.validate_nginx_lb([pod1, pod2], ingress.cluster_ip,
@@ -254,11 +253,7 @@ class TestIngress(BaseK8sTest):
         # Now validate ingress from public network
         assert self.validate_nginx_lb([pod1, pod2], ingress.external_ips[0], path=path1, host=host1)
         assert self.validate_nginx_lb([pod3, pod4], ingress.external_ips[0], path=path2, host=host2)
-        for compute_ip in self.inputs.compute_ips:
-            self.inputs.reboot(compute_ip)
-        self.sleep(10)
-        cluster_status, error_nodes = ContrailStatusChecker().wait_till_contrail_cluster_stable()
-        assert cluster_status, 'Cluster is not stable after restart'
+        self.restart_vrouter_agent()
         assert self.validate_nginx_lb([pod1, pod2], ingress.cluster_ip,
                                       test_pod=pod5, path=path1, host=host1)
         assert self.validate_nginx_lb([pod3, pod4], ingress.cluster_ip,

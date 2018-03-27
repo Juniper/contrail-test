@@ -1576,8 +1576,11 @@ class ContrailTestInit(object):
             verify_service=True):
         services = self.get_contrail_services(service_name=service_name)
         if self.is_microservices_env and container:
-            return self._action_on_container(host_ips, event, container, services=services,
+            self._action_on_container(host_ips, event, container, services=services,
                                              verify_service=verify_service)
+            if verify_service and (event == 'restart'):
+                assert self.verify_service_state(host_ips, container)[0]
+                return
         _container = container
         for service in services:
             for host in host_ips or self.host_ips:
