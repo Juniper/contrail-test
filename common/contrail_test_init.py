@@ -865,18 +865,6 @@ class TestInputs(object):
         return self.os_type[host_ip]
     # end get_os_version
 
-    def is_container_up(self, host, service):
-        container = self.host_data[host]['containers'][service]
-        cmd = "docker ps -f NAME=%s -f status=running 2>/dev/null"%container
-        for i in range(3):
-            output = self.run_cmd_on_server(host, cmd, as_sudo=True)
-            if not output or 'Up' not in output:
-                self.logger.warn('Container %s is not up on host %s'%(container, host))
-                return False
-            time.sleep(3)
-        self.logger.debug('Container %s is up on host %s'%(container, host))
-        return True
-
     def get_active_containers(self, host):
         cmd = "docker ps -f status=running --format {{.Names}} 2>/dev/null"
         output = self.run_cmd_on_server(host, cmd, as_sudo=True)
@@ -927,87 +915,6 @@ class TestInputs(object):
         if 'analytics-cassandra' not in host_dict['containers'] and 'analyticsdb' in host_dict['containers']:
             host_dict['containers']['analytics-cassandra'] = host_dict['containers']['analyticsdb']
     # end _check_containers
-
-    @property
-    def is_microservices_env(self):
-        if 'schema' in self.host_data[self.cfgm_ip]['containers'] and \
-            'schema' in self.host_data[self.cfgm_ip]['containers']['schema']:
-            return True
-        return False
-
-    def restart_container(self, host_ips=None, container=None, verify_service=True):
-        self._action_on_container(host_ips, 'restart', container, verify_service=verify_service)
-    # end restart_service
-
-    def stop_container(self, host_ips=None, container=None, verify_service=True):
-        self._action_on_container(host_ips, 'stop', container, verify_service=verify_service)
-    # end stop_service
-
-    def start_container(self, host_ips=None, container=None, verify_service=True):
-        self._action_on_container(host_ips, 'start', container, verify_service=verify_service)
-    # end start_service
-
-    # A very ugly hack until we modify all the tests to use microservice env
-    def get_container_for_service(self, service):
-        dct = {'contrail-api': 'api-server',
-               'contrail-schema': 'schema',
-               'contrail-svc-monitor': 'svc-monitor',
-               'contrail-config-nodemgr': 'config-nodemgr',
-               'contrail-device-manager': 'device-manager',
-               'contrail-webui': 'webui',
-               'contrail-webui-middleware': 'webui-middleware',
-               'contrail-collector': 'collector',
-               'contrail-alarm-gen': 'alarm-gen',
-               'contrail-analytics-api': 'analytics-api',
-               'contrail-query-engine': 'query-engine',
-               'contrail-analytics-nodemgr': 'analytics-nodemgr',
-               'contrail-snmp-collector': 'snmp-collector',
-               'contrail-topology': 'topology',
-               'contrail-database': 'analytics-cassandra',
-               'contrail-database-nodemgr': 'analyticsdb-nodemgr',
-               'kafka': 'analytics-kafka',
-               'contrail-vrouter-agent': 'agent',
-               'contrail-vrouter-nodemgr': 'vrouter-nodemgr',
-               'contrail-control': 'control',
-               'contrail-control-nodemgr': 'control-nodemgr',
-               'contrail-dns': 'dns',
-               'contrail-named': 'named',
-               'contrail-kube-manager': 'contrail-kube-manager',
-              }
-        return dct.get(service)
-
-    def _action_on_container(self, hosts, event, container, services=None, verify_service=True, timeout=60):
-        containers = set()
-        for service in services or []:
-            cntr = self.get_container_for_service(service)
-            if cntr:
-                containers.add(cntr)
-        if containers and container not in ['analytics', 'analyticsdb', 'controller']:
-            containers.add(container)
-        for host in hosts or self.host_ips:
-            username = self.host_data[host]['username']
-            password = self.host_data[host]['password']
-            for container in containers:
-                cntr = self.get_container_name(host, container)
-                if not cntr:
-                    self.logger.info('Unable to find %s container on %s'%(container, host))
-                    continue
-                timeout = '' if event == 'start' else '-t 60'
-                issue_cmd = 'docker %s %s %s' % (event, cntr, timeout)
-                self.logger.info('Running %s on %s' %
-                                 (issue_cmd, self.host_data[host]['name']))
-                self.run_cmd_on_server(host, issue_cmd, username, password, pty=True, as_sudo=True)
-                if verify_service:
-                    status = self.is_container_up(host, container)
-                    assert status if 'start' in event else not status
-
-    def get_container_name(self, host, service):
-        '''
-           Provided the contrail service and hostname/hostip return container name
-           host - hostname or hostip
-           service - contrail service (eg: agent)
-        '''
-        return self.host_data[host].get('containers', {}).get(service)
 
     def read_prov_file(self):
         prov_file = open(self.prov_file, 'r')
@@ -1166,7 +1073,7 @@ class TestInputs(object):
             self.dpdk_data = json_data['dpdk']
         if 'tor_hosts' in json_data:
             self.tor_hosts_data = json_data['tor_hosts']
-        if 'kubernetes' in json_data:
+        if 'kubernetes' in json_data and json_data['kubernetes'] != {}:
             self.k8s_master_ip = json_data['kubernetes']['master'].split("@")[-1]
             self.k8s_slave_ips = [value.split("@")[-1] for value in json_data['kubernetes']['slaves']]
 
@@ -1552,6 +1459,102 @@ class ContrailTestInit(object):
         aaa_mode = self.run_cmd_on_server(host, cmd, container='analytics-api')
         return aaa_mode or 'cloud-admin'
 
+    # A very ugly hack until we modify all the tests to use microservice env
+    def get_container_for_service(self, service):
+        dct = {'contrail-api': 'api-server',
+               'contrail-schema': 'schema',
+               'contrail-svc-monitor': 'svc-monitor',
+               'contrail-config-nodemgr': 'config-nodemgr',
+               'contrail-device-manager': 'device-manager',
+               'contrail-webui': 'webui',
+               'contrail-webui-middleware': 'webui-middleware',
+               'contrail-collector': 'collector',
+               'contrail-alarm-gen': 'alarm-gen',
+               'contrail-analytics-api': 'analytics-api',
+               'contrail-query-engine': 'query-engine',
+               'contrail-analytics-nodemgr': 'analytics-nodemgr',
+               'contrail-snmp-collector': 'snmp-collector',
+               'contrail-topology': 'topology',
+               'contrail-database': 'analytics-cassandra',
+               'contrail-database-nodemgr': 'analyticsdb-nodemgr',
+               'kafka': 'analytics-kafka',
+               'contrail-vrouter-agent': 'agent',
+               'contrail-vrouter-nodemgr': 'vrouter-nodemgr',
+               'contrail-control': 'control',
+               'contrail-control-nodemgr': 'control-nodemgr',
+               'contrail-dns': 'dns',
+               'contrail-named': 'named',
+               'contrail-kube-manager': 'contrail-kube-manager',
+              }
+        return dct.get(service)
+    
+    def get_container_name(self, host, service):
+        '''
+           Provided the contrail service and hostname/hostip return container name
+           host - hostname or hostip
+           service - contrail service (eg: agent)
+        '''
+        return self.host_data[host].get('containers', {}).get(service)
+
+    def is_container_up(self, host, service):
+        container = self.host_data[host]['containers'][service]
+        cmd = "docker ps -f NAME=%s -f status=running 2>/dev/null"%container
+        for i in range(3):
+            output = self.run_cmd_on_server(host, cmd, as_sudo=True)
+            if not output or 'Up' not in output:
+                self.logger.warn('Container %s is not up on host %s'%(container, host))
+                return False
+            time.sleep(3)
+        self.logger.debug('Container %s is up on host %s'%(container, host))
+        return True
+
+    @property
+    def is_microservices_env(self):
+        if 'schema' in self.host_data[self.cfgm_ip]['containers'] and \
+            'schema' in self.host_data[self.cfgm_ip]['containers']['schema']:
+            return True
+        return False
+
+    def _action_on_container(self, hosts, event, container, services=None, verify_service=True, timeout=60):
+        containers = set()
+        for service in services or []:
+            cntr = self.get_container_for_service(service)
+            if cntr:
+                containers.add(cntr)
+        if containers and container not in ['analytics', 'analyticsdb', 'controller']:
+            containers.add(container)
+        for host in hosts or self.host_ips:
+            username = self.host_data[host]['username']
+            password = self.host_data[host]['password']
+            for container in containers:
+                cntr = self.get_container_name(host, container)
+                if not cntr:
+                    self.logger.info('Unable to find %s container on %s'%(container, host))
+                    continue
+                timeout = '' if event == 'start' else '-t 60'
+                issue_cmd = 'docker %s %s %s' % (event, cntr, timeout)
+                self.logger.info('Running %s on %s' %
+                                 (issue_cmd, self.host_data[host]['name']))
+                self.run_cmd_on_server(host, issue_cmd, username, password, pty=True, as_sudo=True)
+                if verify_service:
+                    container_status = self.is_container_up(host, container)
+                    assert container_status if 'start' in event else not container_status
+                    service_status = self.verify_service_state(host, container)[0]
+                    assert service_status if 'start' in event else not service_status
+    #end _action_on_container
+
+    def restart_container(self, host_ips=None, container=None, verify_service=True):
+        self._action_on_container(host_ips, 'restart', container, verify_service=verify_service)
+    # end restart_service
+
+    def stop_container(self, host_ips=None, container=None, verify_service=True):
+        self._action_on_container(host_ips, 'stop', container, verify_service=verify_service)
+    # end stop_service
+
+    def start_container(self, host_ips=None, container=None, verify_service=True):
+        self._action_on_container(host_ips, 'start', container, verify_service=verify_service)
+    # end start_service
+
     def get_contrail_services(self, role=None, service_name=None):
         ''' get contrail services of a role or
             if supervisor services return all services of the role
@@ -1593,6 +1596,7 @@ class ContrailTestInit(object):
                     assert self.confirm_service_active(service_name,
                                host, container=container), \
                                "Service Restart failed for %s" % (service_name)
+    #end _action_on_service
 
     def restart_service(self, service_name, host_ips=None,
                         container=None, verify_service=True):

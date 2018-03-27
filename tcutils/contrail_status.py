@@ -249,7 +249,7 @@ def contrail_status(inputs=None, host=None, role=None, service=None,
                     status, desc = get_svc_uve_info(node, svc, debug, detail,
                                    timeout, keyfile, certfile, cacert)
                 status_dict[node][svc] = {'status': status, 'description': desc}
-                print '    %s:%s%s'(svc, status, ' (%s)'%desc if desc else '')
+                print '    %s:%s%s'%(svc, status, ' (%s)'%desc if desc else '')
         else:
             for r in role or inputs.get_roles(node):
                 print '  '+r
