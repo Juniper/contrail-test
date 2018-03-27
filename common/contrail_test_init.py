@@ -1166,7 +1166,7 @@ class TestInputs(object):
             self.dpdk_data = json_data['dpdk']
         if 'tor_hosts' in json_data:
             self.tor_hosts_data = json_data['tor_hosts']
-        if 'kubernetes' in json_data:
+        if 'kubernetes' in json_data and json_data['kubernetes'] != {}:
             self.k8s_master_ip = json_data['kubernetes']['master'].split("@")[-1]
             self.k8s_slave_ips = [value.split("@")[-1] for value in json_data['kubernetes']['slaves']]
 
@@ -1576,8 +1576,11 @@ class ContrailTestInit(object):
             verify_service=True):
         services = self.get_contrail_services(service_name=service_name)
         if self.is_microservices_env and container:
-            return self._action_on_container(host_ips, event, container, services=services,
+            self._action_on_container(host_ips, event, container, services=services,
                                              verify_service=verify_service)
+            if verify_service and (event == 'restart'):
+                assert self.verify_service_state(host_ips, container)[0]
+                return
         _container = container
         for service in services:
             for host in host_ips or self.host_ips:

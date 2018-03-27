@@ -42,7 +42,6 @@ class TestDeployment(BaseK8sTest):
         assert self.validate_nginx_lb(s_pod_fixtures, service.cluster_ip,
                                       test_pod=client_pod)
         self.restart_kube_manager()
-        self.sleep(5)
         assert self.validate_nginx_lb(s_pod_fixtures, service.cluster_ip,
                                       test_pod=client_pod)
         self.perform_cleanup(dep)
@@ -90,13 +89,7 @@ class TestDeployment(BaseK8sTest):
             s_pod_fixtures.append(s_pod_fixture)
         assert self.validate_nginx_lb(s_pod_fixtures, service.cluster_ip,
                                       test_pod=client_pod)
-        for compute_ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter-agent',[compute_ip],
-                                         container='agent')
-
-        cluster_status, error_nodes = ContrailStatusChecker().wait_till_contrail_cluster_stable()  
-        assert cluster_status, 'Cluster is not stable after restart'
-        self.sleep(5)
+        self.restart_vrouter_agent()
         assert self.validate_nginx_lb(s_pod_fixtures, service.cluster_ip,
                                       test_pod=client_pod)
         self.perform_cleanup(dep)
