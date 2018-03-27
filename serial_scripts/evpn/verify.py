@@ -1050,7 +1050,9 @@ class VerifyEvpnCases():
             dest_vm_ip = match.group(1)
         valid_ip = re.search('13.1.1.(.*)', output)
         assert valid_ip, 'failed to get ip from 13.1.1.0 subnet as configured in dhcp vm'
-        vn_l2_vm1_fixture.put_pub_key_to_vm()
+        #Put private key on source VM
+        vn_l2_vm1_fixture.get_rsa_to_vm()
+        #Put public key on destination VM
         vn_l2_vm2_fixture.put_pub_key_to_vm()
         file_sizes = ['1000', '1101', '1202', '1303', '1373',
                       '1374', '2210', '2845', '3000', '10000', '2000000']
