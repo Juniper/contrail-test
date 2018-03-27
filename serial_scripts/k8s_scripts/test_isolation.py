@@ -97,7 +97,6 @@ class TestNSIsolationSerial(BaseK8sTest):
         #Check 2
         assert client1[2].ping_to_ip(client3[0].pod_ip, expectation=False)
         self.restart_kube_manager()
-        self.sleep(5)
         #Check 1:
         assert client1[2].ping_to_ip(client2[0].pod_ip, expectation=False)
         assert client3[2].ping_to_ip(client2[0].pod_ip, expectation=False)
@@ -126,7 +125,6 @@ class TestNSIsolationSerial(BaseK8sTest):
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
                                       test_pod=client3[2], expectation=False)
         self.restart_kube_manager()
-        self.sleep(5)
         #Check 1:
         assert self.validate_nginx_lb([client3[0], client3[1]], client3[3].cluster_ip,
                                       test_pod=client1[2])
@@ -153,7 +151,6 @@ class TestNSIsolationSerial(BaseK8sTest):
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[5].external_ips[0])
         assert self.validate_nginx_lb([client3[0], client3[1]], client3[5].external_ips[0])
         self.restart_kube_manager()
-        self.sleep(5)
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[5].external_ips[0])
         assert self.validate_nginx_lb([client3[0], client3[1]], client3[5].external_ips[0])
     #end test_ingress_isolation_post_kube_manager_restart
@@ -174,7 +171,6 @@ class TestNSIsolationSerial(BaseK8sTest):
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[5].external_ips[0])
         assert self.validate_nginx_lb([client3[0], client3[1]], client3[5].external_ips[0])
         self.restart_vrouter_agent()
-        self.sleep(5)
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[5].external_ips[0])
         assert self.validate_nginx_lb([client3[0], client3[1]], client3[5].external_ips[0])
     #end test_ingress_isolation_vrouter_agent_restart
@@ -270,7 +266,6 @@ class TestCustomIsolationSerial(BaseK8sTest):
         assert client2[5].ping_to_ip(client1[2].pod_ip, expectation=False)
         assert client2[5].ping_to_ip(client1[5].pod_ip)
         self.restart_kube_manager()
-        self.sleep(5)
         assert client1[5].ping_to_ip(client1[0].pod_ip, expectation=False)
         assert client1[5].ping_to_ip(client2[0].pod_ip, expectation=False)
         assert client1[5].ping_to_ip(client1[6].pod_ip)
@@ -314,7 +309,6 @@ class TestCustomIsolationSerial(BaseK8sTest):
         assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
                                       test_pod=client1[2])
         self.restart_kube_manager()
-        self.sleep(5)
         assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
                                       test_pod=client2[2])
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
@@ -477,7 +471,6 @@ class TestProjectIsolationSerial(BaseK8sTest):
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
                                       test_pod=client2[2])
         self.restart_kube_manager()
-        self.sleep(5)
         # Reachability of Pods
         assert client1[2].ping_to_ip(client1[0].pod_ip)
         assert client1[2].ping_to_ip(client2[0].pod_ip)
