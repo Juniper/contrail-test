@@ -67,7 +67,6 @@ class TestPodScale(BaseK8sTest):
             expectation = False
         assert pod1.ping_to_ip(pod2.pod_ip, expectation=expectation)
         self.restart_kube_manager()
-        self.sleep(5)
         assert pod1.verify_on_setup()
         assert pod2.verify_on_setup()
         assert pod1.ping_to_ip(pod2.pod_ip, expectation=expectation)

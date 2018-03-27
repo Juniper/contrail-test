@@ -60,7 +60,6 @@ class TestService(BaseK8sTest):
         assert self.validate_nginx_lb([pod1, pod2], service.external_ips[0])
 
         self.restart_kube_manager()
-        time.sleep(5)
  
         # Now validate load-balancing on the service
         assert self.validate_nginx_lb([pod1, pod2], service.cluster_ip,
