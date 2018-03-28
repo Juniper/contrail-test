@@ -210,7 +210,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
 
         return vmi_fixtures
 
-    def setup_vms(self, vn_fixtures, vmi_fixtures, vm=None):
+    def setup_vms(self, vn_fixtures, vmi_fixtures, vm=None, **kwargs):
         '''Setup VMs
         Input vm format:
             vm = {'count':2, 'launch_mode':'distribute',
@@ -222,6 +222,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
             launch_mode can be distribute or non-distribute
         '''
         vm_count = vm['count'] if vm else 0
+        image_name = kwargs.get('image_name','cirros')
         launch_mode = vm.get('launch_mode','default')
         vm_fixtures = {} # Hash to store VM fixtures
 
@@ -265,7 +266,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
 
                 vm_fixture = self.create_vm(vn_objs=vn_fix_obj_list,
                                             port_ids=vmi_fix_uuid_list,
-                                            node_name=node_name, image_name='cirros')
+                                            node_name=node_name, image_name=image_name)
             vm_fixtures[vm_id] = vm_fixture
 
         for vm_fixture in vm_fixtures.values():
@@ -283,8 +284,9 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
         # Provision Fabric Gateway
         name = self.inputs.fabric_gw_info[0][0]
         ip = self.inputs.fabric_gw_info[0][1]
-        self.vnc_h.provision_fabric_gw(name, ip, self.inputs.router_asn)
-        self.addCleanup(self.vnc_h.delete_fabric_gw, name)
+        af = ["inet"]
+        self.vnc_h.provision_bgp_router(name, ip, self.inputs.router_asn, af)
+        self.addCleanup(self.vnc_h.delete_bgp_router, name)
 
         # Default security group to allow all traffic
         self.allow_default_sg_to_allow_all_on_project(self.inputs.project_name)
