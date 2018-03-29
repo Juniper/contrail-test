@@ -63,9 +63,11 @@ class WebuiTest:
                     for index, subnet in enumerate(fixture.vn_subnets):
                         self.ui.click_element('editable-grid-add-link', 'class')
                         self.ui.wait_till_ajax_done(self.browser)
-                        self.ui.find_element(
+                        ipam = self.ui.find_element(
                             's2id_user_created_ipam_fqn_dropdown', 'id', \
-                                elements=True)[index].click()
+                                elements=True)[index]
+                        self.browser.execute_script("return arguments[0].scrollIntoView();", ipam)
+                        ipam.click()
                         ipam_list = self.ui.find_element(
                             ['select2-drop', 'li'], ['id', 'tag'], if_elements=[1])
                         for ipam in ipam_list:
@@ -7170,35 +7172,33 @@ class WebuiTest:
     def create_floatingip_pool(self, fixture, pool_name, vn_name):
         result = True
         try:
-            if not self.ui.click_configure_networks():
+            if not self.ui.click_configure_Floating_IP_Pool():
                 result = result and False
             self.ui.select_project(fixture.project_name)
             self.ui.wait_till_ajax_done(self.browser)
-            rows = self.ui.get_rows(canvas=True)
             self.logger.info(
                 "Creating floating ip pool %s using contrail-webui" %
                 (pool_name))
-            for net in rows:
-                if (self.ui.get_slick_cell_text(net, 2) == fixture.vn_name):
-                    self.ui.click_fip_vn(browser=net)
-                    self.ui.wait_till_ajax_done(self.browser)
-                    self.ui.click_element([
-                        'floating_ip_pools', 'editable-grid-add-link'], [
-                            'id', 'class'])
-                    self.ui.wait_till_ajax_done(self.browser)
-                    self.ui.send_keys(fixture.pool_name, 'name', 'name')
-                    proj_name = ['default-domain:' + fixture.project_name]
-                    self.ui.click_select_multiple('s2id_projects_dropdown', proj_name)
-                    if not self.ui.click_on_create('Network', 'network', save=True):
-                        self.ui.click_on_cancel_if_failure('cancelBtn')
-                        self.logger.error("Fip %s Error while creating floating ip pool " %
-                              (fixture.pool_name))
-                        result = result and False
-                    else:
-                        self.logger.info(
-                            "Fip pool %s created using contrail-webui" %
-                            (fixture.pool_name))
-                    break
+            if not self.ui.click_on_create('Floating IP Pools',
+                'Floating_IP_Pool', fixture.pool_name, prj_name=fixture.project_name):
+                result = result and False
+            self.ui.click_element('s2id_virtualNetworkName_dropdown')
+            self.ui.select_from_dropdown(fixture.vn_name)
+            self.ui.wait_till_ajax_done(self.browser)
+            self.ui.send_keys(fixture.pool_name, 'pool_name', 'name')
+            self.ui.click_element('permission_tab-tab-link')
+            self.ui.click_element('fa-plus', 'class')
+            proj_name = fixture.project_name + " (" + self.connections.project_id + ")"
+            self.ui.send_keys(proj_name, "//input[@placeholder='Enter or Select Project']",
+                    'xpath')
+            if not self.ui.click_on_create('Floating_IP_Pool', 'Floating_IP_Pool', save=True):
+                self.ui.click_on_cancel_if_failure('cancelBtn')
+                self.logger.error("Fip %s Error while creating floating ip pool " %
+                    (fixture.pool_name))
+                result = result and False
+            else:
+                self.logger.info(
+                    "Fip pool %s created using contrail-webui" % (fixture.pool_name))
         except WebDriverException:
             self.logger.error("Fip %s Error while creating floating ip pool" %
                               (fixture.pool_name))
