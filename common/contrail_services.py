@@ -41,7 +41,7 @@ CONTRAIL_SERVICES_CONTAINER_MAP = {
     'control-nodemgr': ['control_nodemgr', 'control-nodemgr'],
     'analyticsdb-nodemgr': ['analyticsdatabase_nodemgr',
                             'analyticsdatabase-nodemgr'],
-    'contrail-kube-manager': ['contrail-kube-manager'],
+    'contrail-kube-manager': ['contrail-kube-manager', 'kubemanager'],
 }
 
 CONTRAIL_PODS_SERVICES_MAP = {
