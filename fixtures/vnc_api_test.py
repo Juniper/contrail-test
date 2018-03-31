@@ -43,10 +43,10 @@ class VncLibFixture(fixtures.Fixture):
         self.neutron_handle = None
         self.cfgm_ip = kwargs.get('cfgm_ip',self.inputs.cfgm_ip \
                           if self.inputs else '127.0.0.1')
-            
-        
         self.auth_server_ip = self.inputs.auth_ip if self.inputs else \
                         kwargs.get('auth_server_ip', '127.0.0.1')
+        self.auth_port = self.inputs.auth_port if self.inputs else \
+                        kwargs.get('auth_port', '5000')
         self.auth_url = self.inputs.auth_url if self.inputs else \
                         os.getenv('OS_AUTH_URL') or \
                         'http://%s:5000/v2.0'%self.auth_server_ip
@@ -86,6 +86,7 @@ class VncLibFixture(fixtures.Fixture):
                               api_server_host=self.cfgm_ip,
                               api_server_port=self.api_server_port,
                               auth_host=self.auth_server_ip,
+                              auth_port=self.auth_port,
                               api_server_use_ssl=self.use_ssl,
                               auth_url=self.authn_url)
             if self.orchestrator == 'openstack':
