@@ -1372,13 +1372,29 @@ class ContrailTestInit(object):
     # end verify_state
 
     def verify_service_state(self, host, service=None, role=None):
+        if service:
+            if not self.get_container_for_service(service):
+                return self.verify_non_contrail_service_state(host, service)
         return ContrailStatusChecker(self).wait_till_contrail_cluster_stable(
             host, role, service, tries=6, delay=5)
-
+    #end verify_service_state
+    
     def verify_service_down(self, host, service=None, role=None):
         return ContrailStatusChecker(self).wait_till_service_down(
             host, role, service, tries=6, delay=5)
 
+    @retry(delay=5, tries=10)
+    def verify_non_contrail_service_state(self, host, service):
+        cmd = "systemctl status  %s | grep Active| awk '{print $2}'" \
+                    % service
+        self.logger.debug('Running command "%s" on host "%s" for service "%s"' %
+                         (cmd, host, service))
+        output = self.run_cmd_on_server(
+                host, cmd, self.host_data[host]['username'],
+                self.host_data[host]['password'])
+        return True if output=="active" else False
+    #end verify_non_contrail_service_state
+     
     def build_compute_to_control_xmpp_connection_dict(self, connections):
         agent_to_control_dct = {}
         for ip in self.compute_ips:
@@ -1593,8 +1609,7 @@ class ContrailTestInit(object):
                 self.run_cmd_on_server(
                     host, issue_cmd, username, password, pty=True, container=container)
                 if verify_service and (event == 'restart'):
-                    assert self.confirm_service_active(service_name,
-                               host, container=container), \
+                    assert self.verify_service_state(host, service=service_name) ,\
                                "Service Restart failed for %s" % (service_name)
     #end _action_on_service
 
