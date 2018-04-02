@@ -82,7 +82,7 @@ class TestKubeManagerHA(BaseK8sTest):
         should get their IPs
 
         '''
-        css = ContrailStatusChecker()
+        css = ContrailStatusChecker(self.inputs)
         containers = ['contrail-kube-manager', 'api-server', 'schema'
                       'analyticsdb', 'analytics-api', 'collector']
         km_h = self.connections.get_kube_manager_h()
@@ -117,7 +117,7 @@ class TestKubeManagerHA(BaseK8sTest):
         Restart the active km again, check one of the others becomes active
         Create another pod D. Check D can reach A, B, C
         '''
-        css = ContrailStatusChecker()
+        css = ContrailStatusChecker(self.inputs)
         pod1 = self.setup_busybox_pod()
         assert pod1.wait_till_pod_is_up()
 
