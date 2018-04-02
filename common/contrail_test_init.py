@@ -1434,13 +1434,72 @@ class ContrailTestInit(object):
     # end verify_state
 
     def verify_service_state(self, host, service=None, role=None):
+        '''
+        Based on name of service, it decides whether its a service name like
+        "contrail-vrouter-agent", container name like "agent" or a non contrail service
+        like docker.
+        '''
+        if service:
+            services = [service] if isinstance(service, str) else service
+            contrail_svc = []
+            non_contrail_svc = []
+            for s in services:
+                svc_container = self.get_container_for_service(s)
+                if svc_container:
+                    contrail_svc.append(svc_container)
+                elif self.get_container_for_service(container=s):
+                    contrail_svc.append(s)
+                else:
+                    non_contrail_svc.append(s)
+        if non_contrail_svc != []:
+                return self.verify_non_contrail_service_state(host,
+                                                              non_contrail_svc)
         return ContrailStatusChecker(self).wait_till_contrail_cluster_stable(
-            host, role, service, tries=6, delay=5)
-
+            host, role, contrail_svc, tries=6, delay=5)
+    #end verify_service_state
+    
     def verify_service_down(self, host, service=None, role=None):
         return ContrailStatusChecker(self).wait_till_service_down(
             host, role, service, tries=6, delay=5)
-
+        
+    def verify_non_contrail_service_state(self, host, service,
+                                           delay =5, tries =10):
+        for i in range(0, tries):
+            status_dict = self.non_contrail_service_status(host, service)
+            failed_services = defaultdict(dict)
+            for node in status_dict:
+                for svc in status_dict[node]:
+                    if status_dict[node][svc] != "active":
+                        failed_services[node][svc]=status_dict[node][svc]
+            if failed_services:
+                self.logger.debug('Not all services up. '
+                   'Sleeping for %s seconds. iteration: %s' %(delay, i))
+                time.sleep(delay)
+                continue
+            else:
+                return (True, status_dict)
+        self.logger.error(
+            'Not all services up , Gave up!')
+        return (False, failed_services)
+                    
+    def non_contrail_service_status(self, host, service):
+        hosts = [host] if (isinstance(host, str) or isinstance(host, unicode)) else host
+        services = [service] if isinstance(service, str) else service
+        status_dict = dict()
+        for node in hosts:
+            status_dict[node] = dict() 
+            for svc in services:
+                cmd = "systemctl status  %s | grep Active| awk '{print $2}'" \
+                    % svc
+                self.logger.debug('Running command "%s" on host "%s" for service "%s"' %
+                     (cmd, node, svc))
+                output = self.run_cmd_on_server(
+                    node, cmd, self.host_data[node]['username'],
+                    self.host_data[node]['password'])
+                status_dict[node][svc] = output
+        return status_dict
+    #end non_contrail_service_status
+     
     def build_compute_to_control_xmpp_connection_dict(self, connections):
         agent_to_control_dct = {}
         for ip in self.compute_ips:
@@ -1522,7 +1581,11 @@ class ContrailTestInit(object):
         return aaa_mode or 'cloud-admin'
 
     # A very ugly hack until we modify all the tests to use microservice env
-    def get_container_for_service(self, service):
+    def get_container_for_service(self, service = None, container = None):
+        """
+        To get container from service, use argument "service"
+        To get service from container, use argument "container
+        """
         dct = {'contrail-api': 'api-server',
                'contrail-schema': 'schema',
                'contrail-svc-monitor': 'svc-monitor',
@@ -1548,8 +1611,14 @@ class ContrailTestInit(object):
                'contrail-named': 'named',
                'contrail-kube-manager': 'contrail-kube-manager',
               }
-        return dct.get(service)
-    
+        if service:
+            return dct.get(service)
+        elif container:
+            try:
+                return dct.keys()[dct.values().index(container)]
+            except ValueError:
+                return
+
     def get_container_name(self, host, service):
         '''
            Provided the contrail service and hostname/hostip return container name
@@ -1655,8 +1724,7 @@ class ContrailTestInit(object):
                 self.run_cmd_on_server(
                     host, issue_cmd, username, password, pty=True, container=container)
                 if verify_service and (event == 'restart'):
-                    assert self.confirm_service_active(service_name,
-                               host, container=container), \
+                    assert self.verify_service_state(host, service=service_name)[0] ,\
                                "Service Restart failed for %s" % (service_name)
     #end _action_on_service
 
