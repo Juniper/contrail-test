@@ -33,8 +33,8 @@ import testtools
 from fabfile import *
 from fabutils import *
 
-sku_dict = {'2014.1': 'icehouse', '2014.2': 'juno', '2015.1': 'kilo', '12.0': 'liberty', '13.0': 'mitaka',
-            '14.0': 'newton', '15.0': 'ocata'}
+sku_dict = {'2014.1': 'icehouse', '2014.2': 'juno', '2015.1': 'kilo', '12': 'liberty', '13': 'mitaka',
+            '14': 'newton', '15': 'ocata'}
 
 
 # Code borrowed from http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
@@ -1115,7 +1115,7 @@ def get_build_sku(openstack_node_ip, openstack_node_password='c0ntrail123', user
                                               user=user,
                                               password=openstack_node_password):
                 output = sudo(cmd)
-                build_sku = sku_dict[re.findall("[0-9]+.[0-9]+",output)[0]]
+                build_sku = sku_dict[re.findall("[0-9]+",output)[0]]
         except NetworkError, e:
             pass
         return build_sku
