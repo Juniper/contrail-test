@@ -530,6 +530,14 @@ class TestInputs(object):
         cidr = self.run_cmd_on_server(host, cmd, **kwargs)
         return str(IPNetwork(cidr).ip)
 
+    def is_port_open(self, ip, port):
+        with settings(warn_only=True):
+          with hide('everything'):
+            output = local("curl %s:%s"%(ip, port), capture=True)
+            if output and output.succeeded:
+                return True
+        return False
+
     def parse_topo(self):
         self.host_names = []
         self.cfgm_ip = ''
@@ -610,10 +618,14 @@ class TestInputs(object):
                 self.openstack_control_ip = host_control_ip
                 self.openstack_names.append(hostname)
             if 'config' in roles:
-                self.cfgm_ip = host_data['host_control_ip']
-                #self.cfgm_ip = host_data['host_ip']
-                self.cfgm_ips.append(host_data['host_control_ip'])
-                #self.cfgm_ips.append(host_data['host_ip'])
+                if self.is_port_open(host_data['host_ip'], 8082):
+                    self.cfgm_ip = host_data['host_ip']
+                    self.cfgm_ips.append(host_data['host_ip'])
+                elif self.is_port_open(host_data['host_control_ip'], 8082):
+                    self.cfgm_ip = host_data['host_control_ip']
+                    self.cfgm_ips.append(host_data['host_control_ip'])
+                else:
+                    raise Exception('Unable to connect to config api service')
                 self.cfgm_control_ips.append(host_control_ip)
                 self.cfgm_control_ip = host_control_ip
                 self.cfgm_names.append(hostname)
