@@ -210,12 +210,15 @@ class ControlNodeInspect (VerificationUtilBase):
         xpath = '/ShowRouteResp/tables/list/ShowRouteTable'
         p = self.dict_get(path)
         rt = EtreeToDict(xpath).get_all_entry(p)
+        routes = []
         if type(rt) == type(dict()):
             for route in rt['routes']:
                 if route['prefix'] == prefix:
                     if protocol:
-                        if route['paths']['protocol'] == protocol:
-                            return route['paths']
+                        for route_path in route['paths']:
+                            if route_path['protocol'] == protocol:
+                                routes.append(route_path)
+                            return routes
                     else:
                         return route['paths']
         else:
@@ -223,8 +226,10 @@ class ControlNodeInspect (VerificationUtilBase):
                 for route in entry['routes']:
                     if route['prefix'] == prefix:
                         if protocol:
-                            if route['paths']['protocol'] == protocol:
-                                return route['paths']
+                            for route_path in route['paths']:
+                                if route_path['protocol'] == protocol:
+                                    routes.append(route_path)
+                                return routes
                         else:
                             return route['paths']
 
