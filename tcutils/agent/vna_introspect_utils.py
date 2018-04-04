@@ -479,7 +479,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                 routes.update({'routes': [route]})
                 return routes
     # end get_vna_route
-    
+
     def get_vna_dns_server(self):
         path = 'Snh_DnsInfo?'
         xpath = 'DnsStats/dns_resolver'
@@ -488,7 +488,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
             EtreeToDict('./%s' % (xpath)).get_all_entry(p)
         dnsIps = dnsList['dns_resolver']
         return dnsIps
-    # end get_vna_dns_server 
+    # end get_vna_dns_server
 
     def get_vna_dns_query_to_named(self):
         path = 'Snh_SandeshTraceRequest?x=DnsBind'
@@ -518,6 +518,22 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                 routes.update({'routes': [route]})
                 return routes
     # end get_vna_layer2_route
+
+    def get_vna_mcast_route(self, vrf_id='', grp_ip=None, src_ip=None):
+        '''
+        Get Multicast route table details
+        '''
+        routes = {'grp_ip': grp_ip, 'src_ip': src_ip}
+        path = 'Snh_Inet4McRouteReq?vrf_id=%s&stale=&src_ip=%s&grp_ip=%s' % (str(vrf_id), str(src_ip), str(grp_ip))
+        xpath = 'route_list/list/RouteMcSandeshData'
+        ptmp = self.dict_get(path)
+        routelist = EtreeToDict('./Inet4McRouteResp/%s' %(xpath)).get_all_entry(ptmp) or \
+            EtreeToDict('./%s' % (xpath)).get_all_entry(ptmp)
+        return routelist
+
+
+    # end get_vna_mcast_route
+
 
     def get_vna_route_in_mclist_by_key(self, vrf_id, key, ip, prefix):
         route_list = self.get_vna_active_route(

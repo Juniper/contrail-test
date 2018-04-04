@@ -176,6 +176,22 @@ class ControlNodeInspect (VerificationUtilBase):
         rt = EtreeToDict(xpath).get_all_entry(p)
         return rt['routes']
 
+    def get_cn_mvpn_table(self, ri_name=None, table=None):
+        '''Returns the dictionary of the mvpn routing instance.
+        '''
+        if not table:
+            table = 'mvpn.0'
+
+        if not ri_name:
+            path = 'Snh_ShowRouteReq?x=bgp.mvpn.0'
+        else:
+            path = 'Snh_ShowRouteReq?x=%s.%s' % (ri_name, table)
+        xpath = '/ShowRouteResp/tables/list/ShowRouteTable'
+        p = self.dict_get(path)
+        rt = EtreeToDict(xpath).get_all_entry(p)
+        return rt['routes']
+
+
     def get_cn_vpn_table(self, prefix):
         result= True
         path = 'Snh_ShowRouteReq?x=bgp.l3vpn-inet6.0' if is_v6(prefix) \
