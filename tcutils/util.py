@@ -1189,3 +1189,19 @@ def is_ip_mine(ip):
 
 #end is_ip_mine
 
+def is_port_open(ip, port):
+    with settings(warn_only=True):
+      with hide('everything'):
+        output = local("curl %s:%s"%(ip, port), capture=True)
+        if output and output.succeeded:
+            return True
+    return False
+#end is_port_open
+
+def get_ips_of_host(host, nic=None, **kwargs):
+    dev = 'dev %s '%nic if nic else ''
+    cmd = "ip addr show %s| grep 'inet .*/.* brd ' | awk '{print $2}'"%dev
+    output = run_cmd_on_server(cmd, host, **kwargs)
+    cidrs = output.split('\n') if output else []
+    return [str(IPNetwork(cidr).ip) for cidr in cidrs]
+#end get_ips_of_host
