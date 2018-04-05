@@ -1,62 +1,83 @@
 deployment:
-    type:
-        kolla:
-            branch: contrail/ocata
-            registry: docker.io
-        contrail:
-            branch: master
-            registry: docker.io/opencontrailnightly
     sku: ocata
     os: centos74
-    version: master-20180131150536
-    orchestrator: openstack #kubernetes/vcenter/openstack
-    slave_orchestrator: kubernetes
+    version: master-1
+    orchestrator: openstack # kubernetes/vcenter/openstack
+    slave_orchestrator: # kubernetes
 
-network:
+provider_config:
+  bms:
+    ssh_pwd: password
+    ssh_user: root
     ntpserver: 10.84.5.100
+    domainsuffix: local
 
-container_hosts:
-    hosts:
-        10.84.7.199:
-            ansible_user: root
-            ansible_ssh_pass: c0ntrail123
-            network_interface: eth0
-            kolla_external_vip_interface: eth0
-            ipmi: 100.100.100.10
-            ipmi_username:
-            ipmi_password:
-        10.87.118.138:
-            ansible_user: root
-            ansible_ssh_pass: c0ntrail123
-            network_interface: eth0
-            kolla_external_vip_interface: eth0
+instances:
+  bms1:
+    provider: bms
+    ip: 10.0.0.4
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      openstack:
+          network_interface: eth1
 
-roles:
-    10.84.7.199:
-        vrouter:
-        k8s_node:
-    10.87.118.138:
-        config_database:
-        config:
-        control:
-        webui:
-        analytics:
-        analytics_database:
-        tsn:
-        esxi:
-        tor-agent:
-        k8s_master:
-        kubemanager:
-        openstack:
+  bms2:
+    provider: bms
+    ip: 10.0.0.5
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      openstack:
+          network_interface: eth1
 
-contrail_configs:
+  bms3:
+    provider: bms
+    ip: 10.0.0.6
+    roles:
+      config_database:
+      config:
+      control:
+      analytics_database:
+      analytics:
+      webui:
+      openstack:
+          network_interface: eth1
+
+  bms4:
+    provider: bms
+    ip: 10.0.0.7
+    roles:
+      vrouter:
+          PHYSICAL_INTERFACE: eth1
+      openstack_compute:
+          network_interface: eth1
+
+  bms5:
+    provider: bms
+    ip: 10.0.0.10
+    roles:
+      vrouter:
+          PHYSICAL_INTERFACE: eth1
+      openstack_compute:
+          network_interface: eth1
+
+contrail_configuration:
     AAA_MODE: rbac
     CONFIG_API_USE_SSL:
     INTROSPECT_SSL_ENABLE:
     XMPP_SSL_ENABLE:
     METADATA_PROXY_SECRET:
 
-orchestrator_configs:
+orchestrator_configuration:
     keystone:
         version:
         username:
@@ -67,7 +88,8 @@ orchestrator_configs:
         ssl:
             certs:
 
-test_configs:
+# Optional test specific configurations
+test_configuration:
     image_web_server:
     stack_user:
     stack_password:
