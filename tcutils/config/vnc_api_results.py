@@ -959,3 +959,11 @@ class CsBridgeDomainResult(Result):
 
     def name(self):
         return self.xpath('bridge_domain', 'name')
+
+class CsSloResult(Result):
+
+    def fq_name(self):
+        return ':'.join(self.xpath('slo', 'fq_name'))
+
+    def name(self):
+        return self.xpath('slo', 'name')

@@ -4009,10 +4009,10 @@ class AnalyticsVerification(fixtures.Fixture):
                     end_time='now', 
                     select_fields=['sourcevn', \
                     'sourceip', 'destvn', \
-                    'destip', 'sum(packets)', \
+                    'destip', 'SUM(packets)', \
                     'sport', 'dport', 'T=1'],
                     where_clause=query, sort=2, 
-                    limit=5, sort_fields=['sum(packets)'])
+                    limit=5, sort_fields=['SUM(packets)'])
                 assert res1
                 self.logger.info("Top 5 flows %s" % (res1))
             except Exception as e:
