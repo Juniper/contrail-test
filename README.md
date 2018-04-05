@@ -36,51 +36,63 @@ Examples include:
 ### scripts, serial_scripts
 
 Test scripts at a per-feature level. Sub-folders are created for the features. 
-The test scripts can be run on any of the config nodes in the Contrail cluster.  
 
-## Initialization
-Install git on the node
-```
-    $> apt-get install git 
-or ::
-    $> yum install git
-```
-Checkout the corresponding branch that the cluster is running ("master","R1.05", "R1.04" etc.)
-```
-    $> git clone git@github.com:Juniper/contrail-test.git
-    $> cd contrail-test
-    $> git checkout R1.05
-```
-Populate the path of this test repo in ``env.test_repo_dir`` in testbed.py (typically /opt/contrail/utils/fabfile/testbeds/testbed.py).
-Refer to ``sanity_params.ini.sample`` for more options.
-Populate the path to the images in ``configs/images.cfg``.
+## Test container
 
-##Running Tests
-Run the 'run_sanity' task in fab:
+The scripts can be executed from a containerized environment.
+As part of the contrail software the test containers are also being built and posted @ https://hub.docker.com/r/opencontrailnightly/contrail-test-test/
+
+### Build test container
+Test container is split into base and test containers where in base has sku and
+orchestrator independent packages like testr, chrome, wget, git etal and
+test container has orchestrator and sku specific packages on top of base.
+
+One can also custom build base and test containers
+#### To build base test container
 ```
-    $> cd /opt/contrail/utils
-    $> # Run Sanity test
-    $> fab run_sanity
-    $> # Run CI Sanity
-    $> fab run_sanity:ci_sanity
+    $> ./build-container.sh base -h
+       Build base container
 
+       Usage: ./build-container.sh base
+         -h|--help                     Print help message
+         --registry-server REGISTRY_SERVER Docker registry hosting the base test container, specify if the image needs to be pushed
+         --tag             TAG           Docker container tag, default to sku
+    $> ./build-container.sh base --registry-server opencontrailnightly/ --tag ocata-bld-1
 ```
-Run ``fab run_sanity:help`` to view help on running individual tests and other regressions.
-
-The run_sanity task installs the python modules required for running tests, autogenerates sanity_params.ini and sanity_testbed.json and sources them for the tests. 
-``sanity_testbed.json`` contains the Contrail cluster topology information.
-
-To setup fab and learn about testbed.py, please refer to [Contrail Documentation ] (https://www.juniper.net/techpubs/en_US/contrail1.0/topics/task/installation/testbed-file-vnc.html).
-
-The log files and any html report of the entire run will be created in contrail-test/logs folder.
-
-You can find more detailed information of the [WIKI page] (https://github.com/Juniper/contrail-test/wiki/Running-Tests).
-
-### Usage:
+#### To build test container
 ```
-  fab run_sanity
-  fab run_sanity:ci_sanity
+    $> ./build-container.sh test -h
+       Build test container
+
+       Usage: ./build-container.sh test [OPTIONS]
+
+         -h|--help                     Print help message
+         --tag           TAG           Docker container tag, default to sku
+         --base-tag      BASE_TAG      Specify contrail-base-test container tag to use. Defaults to 'latest'.
+         --sku           SKU           Openstack version. Defaults to ocata
+         --contrail-repo CONTRAIL_REPO Contrail Repository, optional, if unspecified specify --package-url.
+         --package-url   INSTALL_PKG   Contrail-install-packages package url (scp:// or http:// or https://)
+                                       Optional, if unspecified specify --package-url
+                                       Local repo will be setup based on install package.
+                                       In case of scp, specify the below env variables
+                                       SSHUSER - user name to be used during scp, Default: current user
+                                       SSHPASS - user password to be used during scp
+         --registry-server REGISTRY_SERVER Docker registry hosting the base test container, Defaults to docker.io/opencontrail
+         --post          POST          Upload the test container to the registy-server, if specified
+    $> ./build-container.sh test --tag ocata-bld-1 --base-tag ocata-bld-1 --sku ocata --package-url http://path/to/contrail-install-packages.rpm --contrail-repo http://path/to/contrail/repo/bld-1 --registry-server opencontrailnightly
 ```
+
+## Running Tests
+* Create a test input file as per https://github.com/Juniper/contrail-test/blob/master/contrail_test_input.yaml.sample
+* Download testrunner.sh script to the host where the test container will run
+* Pull the test container image from dockerhub
+* Execute the testrunner.sh script
+```
+    $> wget https://github.com/Juniper/contrail-test/raw/master/testrunner.sh
+    $> docker pull opencontrailnightly/contrail-test-test:ocata-bld-1
+    $> ./testrunner.sh run -P /path/to/contrail_test_input.yaml contrail-test-test:ocata-bld-1
+```
+You can find more detailed information about running tests @ (https://github.com/Juniper/contrail-test/wiki/Running-Tests).
 
 ### Filing Bugs
 Use launchpad [http://bugs.launchpad.net/juniperopenstack](http://bugs.launchpad.net/juniperopenstack) to describe new bugs.
