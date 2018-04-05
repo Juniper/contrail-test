@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-#set -x
 
 source tools/common.sh
 
@@ -447,9 +446,11 @@ if [[ ! -z $path ]];then
     exit $retval
 fi
 
-if [ ! -z "$tags" ];then
+if [ -z $testrargs ]; then
+  if [ ! -z "$tags" ];then
     testrargs+=$tags
     export TAGS="$tags"
+  fi
 fi
 
 if [[ ! -z $testrargs ]];then
