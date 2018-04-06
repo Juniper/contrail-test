@@ -775,14 +775,21 @@ def run_once(f):
 
 def run_cmd_on_server(issue_cmd, server_ip, username,
                       password, pty=True, as_sudo=False,
+                      as_daemon=False,
                       logger=None,
                       container=None,
                       detach=None,
+                      pidfile=None,
                       shell_prefix='/bin/bash -c '
                       ):
     '''
     container : name or id of the container to run the cmd( str)
     '''
+    if as_daemon:
+        issue_cmd = 'nohup ' + issue_cmd + ' & '
+        if pidfile:
+            issue_cmd = '%s echo $! > %s' % (issue_cmd, pidfile)
+
     logger = logger or contrail_logging.getLogger(__name__)
     updated_cmd = issue_cmd
     with hide('everything'):

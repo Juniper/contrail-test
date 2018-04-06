@@ -2665,8 +2665,6 @@ class VMFixture(fixtures.Fixture):
                     self.logger.warn("Unable to fetch tap interface info")
                     return False
                 self.tap_intf[vn_fq_name] = vna_tap_id[0]
-                self.tap_intf[vn_fq_name] = inspect_h.get_vna_intf_details(
-                    self.tap_intf[vn_fq_name]['name'])[0]
                 if 'Active' not in self.tap_intf[vn_fq_name]['active']:
                     self.logger.warn('VMI %s status is not active, it is %s' % (
                         self.tap_intf[vn_fq_name]['name'],
@@ -3053,6 +3051,18 @@ class VMFixture(fixtures.Fixture):
             vmi_obj.set_virtual_machine_interface_disable_policy(bool(value))
             self.vnc_lib_h.virtual_machine_interface_update(vmi_obj)
     # end set_interface_policy
+
+    def verify_fabric_ip_as_floating_ip(self, vn_fq_name):
+        '''
+            Function to verify the fabric IP associated to the VMI of the VM , with SNAT enabled
+        '''
+        self.refresh_agent_vmi_objects()
+        for fip in self.tap_intf[vn_fq_name]['fip_list']:
+            if fip['ip_addr'] == self.vm_node_ip:
+                return True
+        self.logger.error("With SNAT enabled for the VN %s,\
+            fabric ip is not assigned as FIP ip to the VMI", vn_fq_name)
+        return False
 
     def __repr__(self):
         return '<VMFixture: %s>' % (self.vm_name)
