@@ -14,7 +14,7 @@ class NamespaceFixture(fixtures.Fixture):
     '''
 
     def __init__(self, connections, name=None, isolation=False, 
-                 custom_isolation = False, fq_network_name = None):
+                 custom_isolation = False, ip_fabric_snat=False, ip_fabric_forwarding=False, fq_network_name = None):
         self.connections = connections
         self.logger = connections.logger or contrail_logging.getLogger(
             __name__)
@@ -22,6 +22,8 @@ class NamespaceFixture(fixtures.Fixture):
         self.k8s_client = connections.k8s_client
         self.vnc_api_h = connections.vnc_lib
         self.isolation = isolation
+	self.ip_fabric_snat = ip_fabric_snat
+        self.ip_fabric_forwarding = ip_fabric_forwarding
         self.custom_isolation = custom_isolation
         self.fq_network_name = fq_network_name
         
@@ -141,7 +143,11 @@ class NamespaceFixture(fixtures.Fixture):
         body = client.V1Namespace()
         body.metadata = client.V1ObjectMeta(name=self.name)
         if self.isolation:
-            body.metadata.annotations = {"opencontrail.org/isolation": "true"}
+            body.metadata.annotations = {"opencontrail.org/isolation" : "true"}
+        if self.ip_fabric_forwarding:
+            body.metadata.annotations["opencontrail.org/ip_fabric_forwarding"] = "true"
+        if self.ip_fabric_snat:
+            body.metadata.annotations["opencontrail.org/ip_fabric_snat"] = "true"
         if self.custom_isolation:
             body.metadata.annotations = {"opencontrail.org/network": "%s" % self.fq_network_name}
         self.obj = self.k8s_client.v1_h.create_namespace(body)
@@ -164,13 +170,14 @@ class NamespaceFixture(fixtures.Fixture):
             assert self.verify_on_cleanup()
     # end delete
 
+    @retry(delay=2, tries=30)
     def verify_on_cleanup(self):
         if not self.verify_is_run:
             self.logger.debug('No need to do namespace deletion check')
             return True
         assert self.verify_ns_is_not_in_k8s(), ('Namespace deletion '
                                                 'verification in k8s failed')
-        if self.inputs.slave_orchestrator == 'kubernetes':
+	if self.inputs.slave_orchestrator == 'kubernetes':
             self.logger.info('Skipping Namespace API server validation in nested mode')
         else:
             assert self.verify_ns_is_not_in_contrail_api(), ('Namespace deletion '

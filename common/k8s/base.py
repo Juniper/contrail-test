@@ -22,6 +22,7 @@ from vn_test import VNFixture
 K8S_SERVICE_IPAM = ['default-domain', 'default', 'service-ipam']
 K8S_PUBLIC_VN_NAME = '__public__'
 K8S_PUBLIC_FIP_POOL_NAME = '__fip_pool_public__'
+google_dns_ip = "8.8.8.8"
 
 
 class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
@@ -159,6 +160,8 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
     def setup_namespace(self,
                         name=None,
                         isolation = None,
+                        ip_fabric_snat = None,
+                        ip_fabric_forwarding = None,
                         custom_isolation = False,
                         fq_network_name = None):
         isolation = isolation or self.setup_namespace_isolation
@@ -167,6 +170,8 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         return self.useFixture(NamespaceFixture(
             connections=self.connections,
             name=name, isolation=isolation,
+             ip_fabric_snat=ip_fabric_snat,
+             ip_fabric_forwarding=ip_fabric_forwarding,
             custom_isolation = custom_isolation,
             fq_network_name = fq_network_name))
     # end create_namespace
