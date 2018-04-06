@@ -159,6 +159,8 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
     def setup_namespace(self,
                         name=None,
                         isolation = None,
+                        ip_fabric_snat = None,
+                        ip_fabric_forwarding = None,
                         custom_isolation = False,
                         fq_network_name = None):
         isolation = isolation or self.setup_namespace_isolation
@@ -167,6 +169,8 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         return self.useFixture(NamespaceFixture(
             connections=self.connections,
             name=name, isolation=isolation,
+             ip_fabric_snat=ip_fabric_snat,
+             ip_fabric_forwarding=ip_fabric_forwarding,
             custom_isolation = custom_isolation,
             fq_network_name = fq_network_name))
     # end create_namespace
