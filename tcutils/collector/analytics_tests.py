@@ -4171,7 +4171,7 @@ class AnalyticsVerification(fixtures.Fixture):
     def verify_process_and_connection_infos_config(self):
 
         port_dict = {'zookeeper':'2181',
-                     'rmq' :'5672',
+                     'rmq' :'5673',
                      'collector':'8086',
                      'cassandra':'9160',
                      'cfgm_cassandra': '9161',
@@ -4212,7 +4212,7 @@ class AnalyticsVerification(fixtures.Fixture):
             assert result1
         container_based = False
         cfgm = self.inputs.cfgm_names[0]
-        if self.inputs.host_data[cfgm]['containers'].get('controller'):
+        if self.inputs.host_data[cfgm]['containers'].get('config-cassandra'):
             container_based = True
         for cfgm in self.inputs.cfgm_names:
             ops_inspect = self.ops_inspect[self.inputs.\
@@ -4374,14 +4374,14 @@ class AnalyticsVerification(fixtures.Fixture):
         port_dict = {
                      'cassandra': '9042',
                      'cntl_cassandra': '9041',
-                     'rabbitmq': '5672',
+                     'rabbitmq': '5673',
                      'collector':'8086'
                     }
 
         server_list = []            
         container_based = False
         cfgm = self.inputs.cfgm_names[0]
-        if self.inputs.host_data[cfgm]['containers'].get('controller'):
+        if self.inputs.host_data[cfgm]['containers'].get('analytics-cassandra'):
             container_based = True
         for bgp in self.inputs.bgp_names:
             ops_inspect = self.ops_inspect[self.inputs.\
