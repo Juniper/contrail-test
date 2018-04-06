@@ -415,18 +415,26 @@ class Client():
 
     def exec_cmd_on_pod(self, name, cmd, namespace='default', stderr=True,
                         stdin=True, stdout=True, tty=True,
-                        shell='/bin/bash -l -c'):
-
+                        shell='/bin/bash -l -c', container=None):
         cmd_prefix = shell.split()
         cmd_prefix.append(cmd)
-        output = stream(self.v1_h.connect_get_namespaced_pod_exec, name, namespace,
+        if container:
+            output = stream(self.v1_h.connect_get_namespaced_pod_exec, name, namespace,
+                                                           command=cmd_prefix,
+                                                           container=container,
+                                                           stderr=stderr,
+                                                           stdin=stdin,
+                                                           stdout=stdout,
+                                                           tty=tty)
+        else:
+            output = stream(self.v1_h.connect_get_namespaced_pod_exec, name, namespace,
                                                            command=cmd_prefix,
                                                            stderr=stderr,
                                                            stdin=stdin,
                                                            stdout=stdout,
                                                            tty=tty)
         return output
-    # end exec_cmd_on_pod
+        # end exec_cmd_on_pod
 
     def set_isolation(self, namespace, enable=True):
         ns_obj = self.v1_h.read_namespace(namespace)
