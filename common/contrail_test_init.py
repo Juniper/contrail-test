@@ -524,11 +524,66 @@ class TestInputs(object):
             self.auth_port = match.group(3)
     # end _set_auth_vars
 
-    def get_ip_of_nic(self, host, nic, **kwargs):
-        #Pattern match borrowed from contrail-container-builder for consistency
-        cmd = "ip addr show dev %s | grep 'inet .*/.* brd ' | awk '{print $2}'"%nic
-        cidr = self.run_cmd_on_server(host, cmd, **kwargs)
-        return str(IPNetwork(cidr).ip)
+    def get_ctrl_data_ip(self, host):
+        net_list = self.contrail_configs.get('CONTROL_DATA_NET_LIST')
+        if not net_list:
+            return
+        if self.host_data[host]['control_data_ip']:
+            return self.host_data[host]['control_data_ip']
+        ips = self.get_ips_of_host(host)
+        for net in net_list.split(","):
+            for ip in ips:
+                if IPAddress(ip) in IPNetwork(net):
+                    self.host_data[host]['control_data_ip'] = ip
+                    return ip
+    #end get_ctrl_data_listen_ip
+
+    def get_ips_of_host(self, host, nic=None):
+        if self.host_data.get('ips') and not nic:
+            return self.host_data['ips']
+        username = self.host_data[host]['username']
+        password = self.host_data[host]['password']
+        ips = get_ips_of_host(host, nic=nic,
+                          username=username,
+                          password=password,
+                          as_sudo=True,
+                          logger=self.logger)
+        if not nic:
+            self.host_data['ips'] = ips
+        return ips
+
+    def _get_ip_for_service(self, host, service):
+        host_dict = self.host_data[host]
+        if service.lower() == 'vrouter':
+            return self.get_ips_of_host(host, 'vhost0')[0]
+        elif service.lower() == 'openstack':
+            nic = host_dict['roles']['openstack'].get('network_interface') \
+                  if host_dict['roles']['openstack'] else \
+                  self.orchestrator_configs.get('network_interface')
+            if not nic:
+                return host
+            ips = self.get_ips_of_host(host, nic)
+            if not ips and 'vrouter' in host_dict['roles']:
+                ips = self.get_ips_of_host(host, 'vhost0')
+            if ips:
+                return ips[0]
+            return host
+        else:
+            service_nodes = service.upper()+'_NODES' if service else ''
+            if not self.contrail_configs.get(service_nodes):
+                service_nodes = 'CONTROLLER_NODES'
+            if self.contrail_configs.get(service_nodes):
+                cfg_ips = set(self.contrail_configs[service_nodes].split(','))
+		ips = set(self.get_ips_of_host(host))
+                if ips.intersection(cfg_ips):
+                    return list(ips.intersection(cfg_ips))[0]
+        return host
+
+    def get_service_ip(self, host, service='CONTROLLER'):
+        ip = self.get_ctrl_data_ip(host)
+        if not ip:
+           ip = self._get_ip_for_service(host, service)
+        return ip
 
     def parse_topo(self):
         self.host_names = []
@@ -578,25 +633,22 @@ class TestInputs(object):
             roles = values.get('roles') or {}
             host_data = dict()
             host_data['host_ip'] = values['ip']
+            host_data['roles'] = roles
             host_data['username'] = username
             host_data['password'] = password
             self.host_data[host_data['host_ip']] = host_data
             hostname = self.run_cmd_on_server(host_data['host_ip'], 'hostname')
             host_fqname = self.run_cmd_on_server(host_data['host_ip'], 'hostname -f')
-            interface = self.contrail_configs.get('PHYSICAL_INTERFACE')
-            host_data_ip = host_control_ip = host_data['host_ip']
-            if interface:
-                interface = 'vhost0' if 'vrouter' in roles else interface
-                host_data_ip = host_control_ip = self.get_ip_of_nic(host_data['host_ip'], interface)
             self.host_names.append(hostname)
             self.host_ips.append(host_data['host_ip'])
             host_data['name'] = hostname
             host_data['fqname'] = host_fqname
-            host_data['data-ip'] = host_data['host_data_ip'] = host_data_ip
-            host_data['control-ip'] = host_data['host_control_ip'] = host_control_ip
-            self.host_data[host_fqname] = self.host_data[hostname] = \
-                self.host_data[host_data_ip] = self.host_data[host_control_ip] = host_data
+            self.host_data[host_fqname] = self.host_data[hostname] = host_data
             self._check_containers(host_data)
+            host_data_ip = host_control_ip = host_data['host_ip']
+            control_data_ip = self.get_ctrl_data_ip(host_data['host_ip'])
+            if control_data_ip:
+                host_data_ip = host_control_ip = control_data_ip
             qos_queue_per_host, qos_queue_pg_properties_per_host = \
                                     self._process_qos_data(host_data['host_ip'])
             if qos_queue_per_host:
@@ -606,48 +658,58 @@ class TestInputs(object):
             if 'openstack' in roles:
                 self.openstack_ip = host_data['host_ip']
                 self.openstack_ips.append(host_data['host_ip'])
-                self.openstack_control_ips.append(host_control_ip)
-                self.openstack_control_ip = host_control_ip
+                service_ip = self.get_service_ip(host_data['host_ip'], 'openstack')
+                self.openstack_control_ips.append(service_ip)
+                self.openstack_control_ip = service_ip
                 self.openstack_names.append(hostname)
             if 'config' in roles:
-                self.cfgm_ip = host_data['host_control_ip']
-                #self.cfgm_ip = host_data['host_ip']
-                self.cfgm_ips.append(host_data['host_control_ip'])
-                #self.cfgm_ips.append(host_data['host_ip'])
-                self.cfgm_control_ips.append(host_control_ip)
-                self.cfgm_control_ip = host_control_ip
+                service_ip = self.get_service_ip(host_data['host_ip'], 'config')
+                self.cfgm_ip = service_ip
+                self.cfgm_ips.append(service_ip)
+                self.cfgm_control_ips.append(service_ip)
+                self.cfgm_control_ip = service_ip
                 self.cfgm_names.append(hostname)
                 self.hostname = hostname
             if 'vrouter' in roles:
+                data_ip = self.get_service_ip(host_data['host_ip'], 'vrouter')
                 self.compute_ips.append(host_data['host_ip'])
                 self.compute_names.append(hostname)
                 self.compute_info[hostname] = host_data['host_ip']
-                self.compute_control_ips.append(host_control_ip)
+                self.compute_control_ips.append(data_ip)
+                host_data_ip = host_control_ip = data_ip
             if 'control' in roles:
+                service_ip = self.get_service_ip(host_data['host_ip'], 'control')
                 self.bgp_ips.append(host_data['host_ip'])
-                self.bgp_control_ips.append(host_control_ip)
+                self.bgp_control_ips.append(service_ip)
                 self.bgp_names.append(hostname)
             if 'webui' in roles:
+                service_ip = self.get_service_ip(host_data['host_ip'], 'webui')
                 self.webui_ip = host_data['host_ip']
                 self.webui_ips.append(host_data['host_ip'])
-                self.webui_control_ips.append(host_control_ip)
+                self.webui_control_ips.append(service_ip)
             if 'analytics' in roles:
+                service_ip = self.get_service_ip(host_data['host_ip'], 'analytics')
                 self.collector_ip = host_data['host_ip']
                 self.collector_ips.append(host_data['host_ip'])
-                self.collector_control_ips.append(host_control_ip)
+                self.collector_control_ips.append(service_ip)
                 self.collector_names.append(hostname)
             if 'analytics_database' in roles:
+                service_ip = self.get_service_ip(host_data['host_ip'], 'analytics_database')
                 self.database_ip = host_data['host_ip']
                 self.database_ips.append(host_data['host_ip'])
                 self.database_names.append(hostname)
-                self.database_control_ips.append(host_control_ip)
+                self.database_control_ips.append(service_ip)
             if 'kubemanager' in roles:
+                service_ip = self.get_service_ip(host_data['host_ip'], 'kubemanager')
                 self.kube_manager_ips.append(host_data['host_ip'])
-                self.kube_manager_control_ips.append(host_control_ip)
+                self.kube_manager_control_ips.append(service_ip)
             if 'k8s_master' in roles:
                 self.k8s_master_ip = host_data['host_ip'] #K8s Currently only supports 1 master
             if 'k8s_node' in roles:
                 self.k8s_slave_ips.append(host_data['host_ip'])
+            host_data['data-ip'] = host_data['host_data_ip'] = host_data_ip
+            host_data['control-ip'] = host_data['host_control_ip'] = host_control_ip
+            self.host_data[host_data_ip] = self.host_data[host_control_ip] = host_data
         # end for
 
     def get_roles(self, host):
