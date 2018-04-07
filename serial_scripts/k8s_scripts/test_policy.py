@@ -19,15 +19,19 @@ class TestNetworkPolicyProjectIsolation(BaseK8sTest):
         super(TestNetworkPolicyProjectIsolation, cls).tearDownClass()
         
     def setup_common_namespaces_pods(self):
-        self.delete_cluster_project()
+        operation = self.modify_cluster_project()
         namespace1 = self.setup_namespace(name = "ns1")
         namespace2 = self.setup_namespace(name = "ns2")
         namespace1.set_labels({'test_site': "ns1"})
         namespace2.set_labels({'test_site': "ns2"})
         assert namespace1.verify_on_setup()
-        assert namespace1.project_isolation
         assert namespace2.verify_on_setup()
-        assert namespace2.project_isolation
+        if operation=="reset":
+            assert namespace1.project_isolation
+            assert namespace2.project_isolation
+        else:
+            assert (namespace1.project_isolation == False)
+            assert (namespace2.project_isolation == False)
         client1_ns1 = self.setup_busybox_pod(namespace="ns1",
                                              labels={'app': "c1_ns1"})
         client2_ns1 = self.setup_busybox_pod(namespace="ns1",
