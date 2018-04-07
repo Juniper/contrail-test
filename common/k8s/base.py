@@ -1032,58 +1032,60 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                                         vn_name=vn_name,
                                         option=option))
 
-    def delete_cluster_project(self):
+    def modify_cluster_project(self, project_name = None):
         """
-        This method is used to enable the project isolation by deleting the 
-        definition of cluster_project from kubernetes.conf.
-        It also returns the project it is deleting so that the same can be configured
-        as part of cleanup
+        In case project isolation is disabled, it enables it.
+        In case project isolation is enabled, it disables it.
         """
-        cmd = 'grep "^[ \t]*cluster_project" /entrypoint.sh'
+        cmd = 'grep "^[ \t]*cluster_project" /etc/contrail/contrail-kubernetes.conf'
         cp_line = self.inputs.run_cmd_on_server(self.inputs.kube_manager_ips[0],
                                                 cmd, container='contrail-kube-manager')
-        if 'cluster_project' in cp_line:
+        if cp_line:
             m = re.match('[ ]*cluster_project.*project(.*)', cp_line)
             if m:
+                self.logger.debug("Cluster_project is set in this sanity run. "
+                            "Resetting it for few tests to validate project isolation")
                 project = m.group(1).strip("'\": }").split(",")[0].strip("'\"")
                 cmd = 'sed -i "/^cluster_project/d" /entrypoint.sh'
-                for kube_manager in self.inputs.kube_manager_ips:
-                    self.inputs.run_cmd_on_server(kube_manager, cmd, 
-                                              container='contrail-kube-manager')
+                operation = "reset"
             else:
-                project = None
-                return project
-        else:
-            self.logger.warn("cluster_project not set. Hence skipping delete")
-            return
-        self.addCleanup(self.add_cluster_project,
-                         project_name = project)
-        self.restart_kube_manager()
-    #end delete_cluster_project
-    
-    def add_cluster_project(self, project_name = None):
-        """
-        This method is used to add cluster_project in kubernetes.conf.
-        This will inturn disable project level isolation as well.
-        """
-        if project_name ==None:
-            self.logger.warn("No project to be added as cluster_project")
-            return
-        cmd = 'grep "^[ \t]*cluster_project" /entrypoint.sh'
-        cp_line = self.inputs.run_cmd_on_server(self.inputs.kube_manager_ips[0],
-                                                cmd, container='contrail-kube-manager')
-        if 'cluster_project' in cp_line:
-            self.logger.warn("cluster_project already present in kubernetes.conf")
-            return
-        #cmd = r'sed  -i "/KUBERNETES/a cluster_project = {\\"project\\": \\"%s\\", \\"domain\\": \\"default-domain\\"}" /etc/contrail/contrail-kubernetes.conf' \
-        #        % project_name
-        cmd = r'crudini --set /entrypoint.sh KUBERNETES cluster_project \\${KUBERNETES_CLUSTER_PROJECT:-\\"{\'domain\':\'default-domain\'\,\'project\':\'%s\'}\\"}'\
-              % project_name
-         
+                no_match = True
+        elif not cp_line or no_match:
+            self.logger.debug("Cluster_project not set in this sanity run. "
+                        "Setting it to default project for few tests")
+            cmd = r'crudini --set /entrypoint.sh KUBERNETES cluster_project \\${KUBERNETES_CLUSTER_PROJECT:-\\"{\'domain\':\'default-domain\'\,\'project\':\'default\'}\\"}'
+            operation = "set"
+            project = "default" 
         for kube_manager in self.inputs.kube_manager_ips:
             self.inputs.run_cmd_on_server(kube_manager, cmd, 
                                           container='contrail-kube-manager',
                                           shell_prefix = None)
         self.restart_kube_manager()
-    #end add_cluster_project
-
+        self.addCleanup(self.revert_cluster_project,
+                         project_name = project,
+                         operation = operation)
+        return operation
+    #end modify_cluster_project
+    
+    def revert_cluster_project(self, project_name = None, operation = None):
+        """
+        This method reverts the value of cluster_project after performing few 
+        sanity tests.
+        """
+        if operation =="set":
+            self.logger.debug("Cluster_project need to be reverted to Null value"
+                            "It was set to default project for few cases")
+            cmd = r'crudini --set /entrypoint.sh KUBERNETES cluster_project \\${KUBERNETES_CLUSTER_PROJECT:-\\"{}\\"}'
+        else:
+            self.logger.debug("Cluster_project need to be reverted to a valid value"
+                            "It was set to Null for few cases")
+            cmd = r'crudini --set /entrypoint.sh KUBERNETES cluster_project \\${KUBERNETES_CLUSTER_PROJECT:-\\"{\'domain\':\'default-domain\'\,\'project\':\'%s\'}\\"}'\
+              % project_name
+        for kube_manager in self.inputs.kube_manager_ips:
+            self.inputs.run_cmd_on_server(kube_manager, cmd, 
+                                          container='contrail-kube-manager',
+                                          shell_prefix = None)
+        self.restart_kube_manager()
+        #cmd = r'sed  -i "/KUBERNETES/a cluster_project = {\\"project\\": \\"%s\\", \\"domain\\": \\"default-domain\\"}" /etc/contrail/contrail-kubernetes.conf' \
+        #        % project_name
+    #end revert_cluster_project
