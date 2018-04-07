@@ -332,7 +332,7 @@ class TestProjectIsolationSerial(BaseK8sTest):
     def setup_common_namespaces_pods(self, prov_service = False,
                                     prov_ingress = False,
                                     isolation = False):
-        self.delete_cluster_project()
+        operation = self.modify_cluster_project()
         service_ns1, ingress_ns1 = None, None
         service_ns2, ingress_ns2 = None, None
         namespace1_name = get_random_name("ns1")
@@ -340,9 +340,13 @@ class TestProjectIsolationSerial(BaseK8sTest):
         namespace1 = self.setup_namespace(name = namespace1_name)
         namespace2 = self.setup_namespace(name = namespace2_name, isolation = isolation)
         assert namespace1.verify_on_setup()
-        assert namespace1.project_isolation
         assert namespace2.verify_on_setup()
-        assert namespace2.project_isolation
+        if operation=="reset":
+            assert namespace1.project_isolation
+            assert namespace2.project_isolation
+        else:
+            assert (namespace1.project_isolation == False)
+            assert (namespace2.project_isolation == False)
         ns_1_label = "namespace1"
         ns_2_label = "namespace2"
         client1_ns1 = self.setup_nginx_pod(namespace=namespace1_name,
