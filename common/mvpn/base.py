@@ -29,6 +29,16 @@ class MVPNTestBase(BaseVrouterTest):
         cls.vnc_lib_fixture = cls.connections.vnc_lib_fixture
         cls.vnc_h = cls.vnc_lib_fixture.vnc_h
 
+    def skip_tc_if_no_fabric_gw_config(self):
+        if (len(self.inputs.compute_ips) < 2):
+             raise self.skipTest(
+                "Skipping Test. At least 2 compute node required to run the test")
+
+        if not self.inputs.fabric_gw_info:
+             raise self.skipTest(
+                "Skipping Test. Fabric gateway is required to run the test")
+
+
     def provision_gw_less_fwd_mcast_src(self):
         '''
             Provision gateway less forwading for multicast source.
@@ -965,6 +975,9 @@ class MVPNTestSingleVNSingleComputeBase(MVPNTestBase, IGMPTestBase, GWLessFWDTes
             part of different computes
         '''
 
+        # Validate whether test is applible or not
+        self.skip_tc_if_no_fabric_gw_config()
+
         # Gateway less forward provision for multicast source simulation
         self.provision_gw_less_fwd_mcast_src()
 
@@ -1017,6 +1030,9 @@ class MVPNTestSingleVNMultiComputeBase(MVPNTestBase, IGMPTestBase, GWLessFWDTest
             receivers are part of a single VN. But, source and receivers are
             part of different computes
         '''
+
+        # Validate whether test is applible or not
+        self.skip_tc_if_no_fabric_gw_config()
 
         # Gateway less forward provision for multicast source simulation
         self.provision_gw_less_fwd_mcast_src()
@@ -1071,8 +1087,10 @@ class MVPNTestMultiVNSingleComputeBase(MVPNTestBase, IGMPTestBase, GWLessFWDTest
             part of same compute
         '''
 
+        # Validate whether test is applible or not
+        self.skip_tc_if_no_fabric_gw_config()
+
         # Gateway less forward provision for multicast source simulation
-        ip = self.inputs.ext_routers[0][1]
         self.provision_gw_less_fwd_mcast_src()
 
         # VN parameters
@@ -1150,8 +1168,10 @@ class MVPNTestMultiVNMultiComputeBase(MVPNTestBase, IGMPTestBase, GWLessFWDTestB
             receivers are part of a multiple VNs. But, source and receivers are
             part of multiple computes
         '''
+        # Validate whether test is applible or not
+        self.skip_tc_if_no_fabric_gw_config()
+
         # Gateway less forward provision for multicast source simulation
-        ip = self.inputs.ext_routers[0][1]
         self.provision_gw_less_fwd_mcast_src()
 
         # VN parameters
