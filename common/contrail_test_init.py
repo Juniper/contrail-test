@@ -528,7 +528,7 @@ class TestInputs(object):
         net_list = self.contrail_configs.get('CONTROL_DATA_NET_LIST')
         if not net_list:
             return
-        if self.host_data[host]['control_data_ip']:
+        if self.host_data[host].get('control_data_ip'):
             return self.host_data[host]['control_data_ip']
         ips = self.get_ips_of_host(host)
         for net in net_list.split(","):
