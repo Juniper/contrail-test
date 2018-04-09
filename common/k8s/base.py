@@ -1050,7 +1050,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                 operation = "reset"
             else:
                 no_match = True
-        elif not cp_line or no_match:
+        if not cp_line or no_match:
             self.logger.debug("Cluster_project not set in this sanity run. "
                         "Setting it to default project for few tests")
             cmd = r'crudini --set /entrypoint.sh KUBERNETES cluster_project \\${KUBERNETES_CLUSTER_PROJECT:-\\"{\'domain\':\'default-domain\'\,\'project\':\'default\'}\\"}'
