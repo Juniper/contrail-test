@@ -6,6 +6,8 @@ from tcutils.contrail_status_check import ContrailStatusChecker
 import test
 from tcutils.util import skip_because
 
+from vn_test import VNFixture
+
 class TestNSIsolationSerial(BaseK8sTest):
 
     @classmethod
