@@ -59,6 +59,7 @@ $GREEN  run 	$NO_COLOR Run contrail-test container
 $GREEN  rebuild $NO_COLOR Rebuild the container provided
 $GREEN  list    $NO_COLOR List contrail-test containers
 $GREEN  load 	$NO_COLOR Load the container image from the filepath provided (tar, tar.gz, tar.bz2)
+$GREEN  pull 	$NO_COLOR pull the test container image from the repository
 
 ${GREEN}Run $0 <Subcommand> -h|--help to get subcommand specific help $NO_COLOR
 EOF
@@ -375,7 +376,7 @@ EOF
             n) clear_colors ;;
             T) test_tags=$OPTARG;;
             m) mount_local=$OPTARG;;
-            c) testcase=$OPTARG;;
+            c) testcase="-- $OPTARG";;
         esac
     done
 
@@ -591,20 +592,17 @@ EOF
     pos_arg=$1
 
     container_name=`get_container_name`
+    cntr_name=${container_name,,}
     if is_container_available; then
         green "rebuilding container - $pos_arg"
         green "This process will create an image with the container $pos_arg"
-        green "Creating the image img_${container_name}"
-        $docker commit $pos_arg img_${container_name}
-        image_name="img_${container_name}"
+        green "Creating the image img_${cntr_name}"
+        $docker commit $pos_arg img_${cntr_name}
+        image_name="img_${cntr_name}"
     else
         red "Provided container ($pos_arg) is not available"
         exit 6
     fi
-    check_docker
-    prerun
-    docker_run; rv=$?
-    exit $rv
 }
 
 

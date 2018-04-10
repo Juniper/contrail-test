@@ -201,7 +201,7 @@ if [[ -n $SSHUSER ]]; then
    sshuser_sub="${SSHUSER}@"
 fi
 subcommand=$1; shift;
-if [[ $subcommand == '-h' || $subcommand == '' ]]; then
+if [[ $subcommand == '-h' || $subcommand == '' || $subcommand == '--help' ]]; then
     usage
     exit
 elif [[ $subcommand == 'test' ]]; then
