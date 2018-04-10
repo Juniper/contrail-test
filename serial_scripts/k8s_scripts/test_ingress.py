@@ -73,6 +73,102 @@ class TestIngress(BaseK8sTest):
     @test.attr(type=['k8s_sanity'])
     @skip_because(mx_gw = False)
     @preposttest_wrapper
+    def test_ingress_with_kube_apiserver_restart(self):
+        ''' 
+        Verifies that Kube APIs are correctly recieved and processed by Kube 
+        API server post kube-apiserver restart.
+        Steps:
+        1. Before creating any k8s object, restart the Kube API service
+        2. Create a service with 2 pods running nginx
+           Create an ingress out of this service
+        3. From the local node, do a wget on the ingress public ip
+            Validate that service and its loadbalancing works
+        '''
+        self.inputs.restart_service("kube-apiserver",
+                                    [self.inputs.k8s_master_ip],
+                                    container = "kube-apiserver",
+                                    verify_service = False)
+        time.sleep(20) # Kube-apiserver being non contrail service, skipping the verification and putting a sleep
+        app = 'http_test'
+        labels = {'app':app}
+        namespace = self.setup_namespace(name='default')
+        assert namespace.verify_on_setup()
+
+        service = self.setup_http_service(namespace=namespace.name,
+                                          labels=labels)
+        pod1 = self.setup_nginx_pod(namespace=namespace.name,
+                                          labels=labels)
+
+        pod2 = self.setup_nginx_pod(namespace=namespace.name,
+                                          labels=labels)
+
+        ingress = self.setup_simple_nginx_ingress(service.name,
+                                                  namespace=namespace.name)
+        assert ingress.verify_on_setup()
+
+        pod3 = self.setup_busybox_pod(namespace=namespace.name)
+        self.verify_nginx_pod(pod1)
+        self.verify_nginx_pod(pod2)
+        assert pod3.verify_on_setup()
+
+        # Now validate ingress from within the cluster network
+        assert self.validate_nginx_lb([pod1, pod2], ingress.cluster_ip,
+                                      test_pod=pod3)
+
+        # Now validate ingress from public network
+        assert self.validate_nginx_lb([pod1, pod2], ingress.external_ips[0])
+    # end test_ingress_with_kube_apiserver_restart
+
+    @test.attr(type=['k8s_sanity'])
+    @skip_because(mx_gw = False)
+    @preposttest_wrapper
+    def test_ingress_with_contrail_apiserver_restart(self):
+        ''' 
+        Verifies that Kube APIs are correctly recieved and processed by Contrail 
+        API server post contrail-api restart.
+        Steps:
+        1. Before creating any k8s object, restart the contrail API server
+        2. Create a service with 2 pods running nginx
+           Create an ingress out of this service
+        3. From the local node, do a wget on the ingress public ip
+            Validate that service and its loadbalancing works
+        '''
+        self.inputs.restart_service("contrail-api",
+                                    self.inputs.cfgm_ips,
+                                    container = "api-server")
+        app = 'http_test'
+        labels = {'app':app}
+        namespace = self.setup_namespace(name='default')
+        assert namespace.verify_on_setup()
+
+        service = self.setup_http_service(namespace=namespace.name,
+                                          labels=labels)
+        pod1 = self.setup_nginx_pod(namespace=namespace.name,
+                                          labels=labels)
+
+        pod2 = self.setup_nginx_pod(namespace=namespace.name,
+                                          labels=labels)
+
+        ingress = self.setup_simple_nginx_ingress(service.name,
+                                                  namespace=namespace.name)
+        assert ingress.verify_on_setup()
+
+        pod3 = self.setup_busybox_pod(namespace=namespace.name)
+        self.verify_nginx_pod(pod1)
+        self.verify_nginx_pod(pod2)
+        assert pod3.verify_on_setup()
+
+        # Now validate ingress from within the cluster network
+        assert self.validate_nginx_lb([pod1, pod2], ingress.cluster_ip,
+                                      test_pod=pod3)
+
+        # Now validate ingress from public network
+        assert self.validate_nginx_lb([pod1, pod2], ingress.external_ips[0])
+    # end test_ingress_with_contrail_apiserver_restart
+
+    @test.attr(type=['k8s_sanity'])
+    @skip_because(mx_gw = False)
+    @preposttest_wrapper
     def test_ingress_fanout_with_vrouter_agent_restart(self):
         '''Creating a fanout ingress with 2 different host having 2 different path along with a default backend
            This host are supported by repective service.  Service has required backend pod with required path
