@@ -34,7 +34,7 @@ CONTRAIL_SERVICES_CONTAINER_MAP = {
     'keystone': ['keystone-api', 'keystone'],
     'neutron': ['neutron', 'neutron-server'],
     'mysql': ['mariadb'],
-    'redis': ['webui_redis', 'webui-redis'],
+    'redis': ['webui_redis', 'webui-redis','redis'],
     'vrouter-nodemgr': ['vrouter_nodemgr', 'vrouter-nodemgr'],
     'config-nodemgr': ['config_nodemgr', 'config-nodemgr'],
     'analytics-nodemgr': ['analytics_nodemgr', 'analytics-nodemgr'],
