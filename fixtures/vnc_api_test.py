@@ -191,8 +191,8 @@ class VncLibFixture(fixtures.Fixture):
                              os.getenv('VCENTER_DC', None)
                 return VcenterOrchestrator(user=self.username,
                     pwd=self.password,
-                    host=self.auth_server_ip,
-                    port=self.inputs.auth_port if self.inputs else '443',
+                    host=self.inputs.vcenter_server,
+                    port=self.inputs.vcenter_port,
                     dc_name=vcenter_dc,
                     vnc=self.vnc_api_h,
                     inputs=self.inputs,

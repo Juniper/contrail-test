@@ -80,10 +80,10 @@ class ContrailConnections():
             self.quantum_h = self.orch.get_network_handler()
             self.glance_h = self.orch.get_image_handler()
         elif self.inputs.orchestrator == 'vcenter': # vcenter
-            self.orch = VcenterOrchestrator(user=self.username,
-                                            pwd=self.password,
-                                            host=self.inputs.auth_ip,
-                                            port=self.inputs.auth_port,
+            self.orch = VcenterOrchestrator(user=self.inputs.vcenter_username,
+                                            pwd= self.inputs.vcenter_password,
+                                            host=self.inputs.vcenter_server,
+                                            port=self.inputs.vcenter_port,
                                             dc_name=self.inputs.vcenter_dc,
                                             vnc=self.vnc_lib,
                                             inputs=self.inputs,
