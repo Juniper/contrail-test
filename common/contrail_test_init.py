@@ -839,6 +839,22 @@ class TestInputs(object):
         self.public_tenant = test_configs.get('public_tenant_name')
         self.mx_rt = test_configs.get('public_rt')
         self.router_asn = test_configs.get('router_asn') or '64512'
+
+        self.physical_routers_data = {}
+        for router, router_values  in (test_configs.get('physical_routers') or {}).iteritems():
+            device_dict = {}
+            device_dict['name'] = router
+            device_dict['type'] = router_values['type']
+            device_dict['mgmt_ip'] = router_values['mgmt_ip']
+            device_dict['model'] = router_values['model']
+            device_dict['vendor'] = router_values['vendor']
+            device_dict['asn'] = router_values['asn']
+            device_dict['ssh_username'] = router_values['ssh_username']
+            device_dict['ssh_password'] = router_values['ssh_password']
+            device_dict['tunnel_ip'] = router_values['tunnel_ip']
+            device_dict['ports'] = router_values['ports']
+            self.physical_routers_data[router] = device_dict
+
         self.kube_config_file = test_configs.get('kube_config_file') or '/etc/kubernetes/admin.conf'
         self.ext_routers = []
         for rtr_name, address in test_configs.get('ext_routers', {}).iteritems():
