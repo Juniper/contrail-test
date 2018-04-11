@@ -299,7 +299,7 @@ class TestInputs(object):
         if self.config_amqp_ips:
             self.config_amqp_ips = self.config_amqp_ips.split(',')
         self.config_amqp_port = read_config_option(self.config,
-                                            'services', 'config_amqp_port', '5672')
+                                            'services', 'config_amqp_port', '5673')
         self.fixture_cleanup = read_config_option(
             self.config,
             'Basic',
@@ -780,7 +780,7 @@ class TestInputs(object):
         self.api_server_ip = contrail_configs.get('CONFIG_API_VIP')
         self.analytics_api_ip = contrail_configs.get('ANALYTICS_API_VIP')
         self.config_amqp_ips = contrail_configs.get('RABBITMQ_NODES')
-        self.config_amqp_port = contrail_configs.get('RABBITMQ_NODE_PORT', 5672)
+        self.config_amqp_port = contrail_configs.get('RABBITMQ_NODE_PORT', 5673)
         self.contrail_internal_vip = self.contrail_external_vip = self.api_server_ip
         self.xmpp_auth_enable = contrail_configs.get('XMPP_SSL_ENABLE')
         self.xmpp_dns_auth_enable = contrail_configs.get('XMPP_SSL_ENABLE')
