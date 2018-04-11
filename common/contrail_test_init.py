@@ -889,6 +889,17 @@ class TestInputs(object):
         self.mailTo = mailserver_configs.get('to')
         self.mailSender = mailserver_configs.get('sender') or 'contrailbuild@juniper.net'
 
+        #vcenter parsing
+        if self.orchestrator == 'vcenter':
+            _parse_vcenter = VcenterParmParse(inputs=self,conf_file='vcenter_vars.yml')
+            self.vcenter_dc = _parse_vcenter.vcenter_dc
+            self.vcenter_server = _parse_vcenter.vcenter_server
+            self.vcenter_port = _parse_vcenter.vcenter_port
+            self.vcenter_username = _parse_vcenter.vcenter_username
+            self.vcenter_password = _parse_vcenter.vcenter_password
+            self.dv_switch = _parse_vcenter.dv_switch
+            _parse_vcenter.add_esxi_info_to_host_data()
+
     def get_os_env(self, var, default=''):
         if var in os.environ:
             return os.environ.get(var)
@@ -1958,6 +1969,55 @@ def _parse_args( args_str):
     args = parser.parse_args(remaining_argv)
     return args
 
+class VcenterParmParse(object):
+    def __init__(self,inputs=None,conf_file=None):
+        with open(conf_file, 'r') as fd:
+            self.config = yaml.load(fd)
+        self.inputs = inputs
+
+    def _parse(self,server):
+        for vc_server in self.config['vcenter_servers']:
+             if server in vc_server:
+                 return vc_server[server]
+
+    def _parse_esxi_info(self):
+        for esxi in self.config['esxihosts']:
+            dct =dict()
+            dct[esxi['name']] = esxi
+            self.inputs.host_data.update(dct)
+
+    def add_esxi_info_to_host_data(self):
+        self._parse_esxi_info()
+     
+
+    @property
+    def vcenter_dc(self,server='server1'):
+        vc_server_dict = self._parse(server)
+        return vc_server_dict['datacentername']
+    
+    @property
+    def vcenter_server(self,server='server1'):
+        vc_server_dict = self._parse(server)
+        return vc_server_dict['hostname']
+
+    @property
+    def vcenter_port(self,server='server1'):
+        return '443'
+    
+    @property
+    def vcenter_username(self,server='server1'):
+        vc_server_dict = self._parse(server)
+        return vc_server_dict['username']
+    
+    @property
+    def vcenter_password(self,server='server1'):
+        vc_server_dict = self._parse(server)
+        return vc_server_dict['password']
+    
+    @property
+    def dv_switch(self,server='server1'):
+        vc_server_dict = self._parse(server)
+        return vc_server_dict['dv_switch']['dv_switch_name']
 
 def main(args_str = None):
     if not args_str:
