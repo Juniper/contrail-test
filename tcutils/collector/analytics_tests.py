@@ -4171,7 +4171,7 @@ class AnalyticsVerification(fixtures.Fixture):
     def verify_process_and_connection_infos_config(self):
 
         port_dict = {'zookeeper':'2181',
-                     'rmq' :'5673',
+                     'rmq' :self.inputs.config_amqp_port,
                      'collector':'8086',
                      'cassandra':'9160',
                      'cfgm_cassandra': '9161',
@@ -4374,7 +4374,7 @@ class AnalyticsVerification(fixtures.Fixture):
         port_dict = {
                      'cassandra': '9042',
                      'cntl_cassandra': '9041',
-                     'rabbitmq': '5673',
+                     'rabbitmq': self.inputs.config_amqp_port,
                      'collector':'8086'
                     }
 
