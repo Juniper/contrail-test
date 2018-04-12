@@ -1455,7 +1455,7 @@ class ContrailTestInit(object):
                 return self.verify_non_contrail_service_state(host,
                                                               non_contrail_svc)
         return ContrailStatusChecker(self).wait_till_contrail_cluster_stable(
-            host, role, contrail_svc, tries=6, delay=5)
+            host, role, contrail_svc, tries=15, delay=5)
     #end verify_service_state
     
     def verify_service_down(self, host, service=None, role=None):
