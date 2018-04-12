@@ -837,14 +837,11 @@ class TestInputs(object):
         self.fip_pool = test_configs.get('public_subnet')
         self.fip_pool_name = test_configs.get('fip_pool_name')
         self.public_tenant = test_configs.get('public_tenant_name')
-        self.mx_rt = test_configs.get('public_rt')
-        self.router_asn = test_configs.get('router_asn') or '64512'
-
         #physical_router needs the following configuration
         #    name,type,mgmt_ip,model,vendor,asn,ssh_username,ssh_password,tunnel_ip,ports
-
         self.physical_routers_data = test_configs.get('physical_routers',{})
-
+        self.mx_rt = str(test_configs.get('public_rt') or '')
+        self.router_asn = str(test_configs.get('router_asn') or '64512')
         self.kube_config_file = test_configs.get('kube_config_file') or '/etc/kubernetes/admin.conf'
         self.ext_routers = []
         for rtr_name, address in test_configs.get('ext_routers', {}).iteritems():
