@@ -539,8 +539,8 @@ class TestInputs(object):
     #end get_ctrl_data_listen_ip
 
     def get_ips_of_host(self, host, nic=None):
-        if self.host_data.get('ips') and not nic:
-            return self.host_data['ips']
+        if self.host_data[host].get('ips') and not nic:
+            return self.host_data[host]['ips']
         username = self.host_data[host]['username']
         password = self.host_data[host]['password']
         ips = get_ips_of_host(host, nic=nic,
@@ -549,7 +549,7 @@ class TestInputs(object):
                           as_sudo=True,
                           logger=self.logger)
         if not nic:
-            self.host_data['ips'] = ips
+            self.host_data[host]['ips'] = ips
         return ips
 
     def _get_ip_for_service(self, host, service):
