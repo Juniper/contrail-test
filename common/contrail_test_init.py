@@ -1610,6 +1610,7 @@ class ContrailTestInit(object):
                'contrail-dns': 'dns',
                'contrail-named': 'named',
                'contrail-kube-manager': 'contrail-kube-manager',
+               'kube-apiserver': 'kube-apiserver',
               }
         if service:
             return dct.get(service)
