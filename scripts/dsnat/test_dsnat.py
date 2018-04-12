@@ -42,7 +42,7 @@ class TestDSNAT(BaseDSNAT):
 
         self.logger.info("disable fabric SNAT, and verify the ping to the external IP and inter VN")
         self.vnc_h.set_fabric_snat(vn_fixture.uuid, False)
-        assert self.verify_routing_instance_snat(vn_fixture)
+        assert vn_fixture.verify_routing_instance_snat()
         assert not test_vm1.verify_fabric_ip_as_floating_ip(vn_fixture.vn_fq_name), (
             'FIP list of VMI expected to be empty')
 

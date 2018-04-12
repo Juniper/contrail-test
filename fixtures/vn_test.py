@@ -1893,6 +1893,7 @@ class VNFixture(fixtures.Fixture):
         vn_obj.add_security_logging_object(slo_obj)
         vnc_lib.virtual_network_update(vn_obj)
 
+    @retry(delay=3, tries=5)
     def verify_routing_instance_snat(self):
         '''
             Verify the routing instance fabric SNAT flag is same as its virtual network flag
