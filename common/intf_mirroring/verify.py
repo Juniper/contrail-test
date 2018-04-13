@@ -1,13 +1,14 @@
 import os
+import re
 from time import sleep
 from tcutils.util import get_random_cidr
 from tcutils.util import get_random_name
 from tcutils.util import retry
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
-
+from tcutils.tcpdump_utils import *
 from common.servicechain.mirror.verify import VerifySvcMirror
 from random import randint
-
+from vnc_api.gen.resource_xsd import StaticMirrorNhType
 from vnc_api.gen.resource_xsd import MirrorActionType
 from vnc_api.gen.resource_xsd import InterfaceMirrorType
 from vnc_api.gen.resource_xsd import VirtualMachineInterfacePropertiesType
@@ -59,6 +60,15 @@ class VerifyIntfMirror(VerifySvcMirror):
         """
         compute_nodes  = self.get_compute_nodes(0, 1, 2)
         return self.verify_intf_mirroring(compute_nodes, [0, 0, 0], sub_intf)
+
+    # common testcase to verify juniper header
+    def verify_juniper_header_testcase(self, sub_intf=False, parent_intf=False, nic_mirror=False, header = 1, nh_mode = 'dynamic', direction = 'both'):
+        """Validate the interface mirroring
+        src vm, dst vm and analyzer vm on different CNs, all in different VNs, verify header details
+        """
+        # When both sub_intf and parent_intf vars are set, verify disable/enable scenarios
+        compute_nodes  = self.get_compute_nodes(0, 1, 2)
+        return self.verify_intf_mirroring(compute_nodes, [0, 1, 2], sub_intf, parent_intf, nic_mirror, header = header, nh_mode = nh_mode, direction = direction)
 
     def verify_intf_mirroring_src_on_cn1_vn1_dst_on_cn2_vn2_analyzer_on_cn3_vn3(self, sub_intf=False, parent_intf=False, nic_mirror=False):
         """Validate the interface mirroring
@@ -286,7 +296,7 @@ class VerifyIntfMirror(VerifySvcMirror):
         return rules
     # end create_policy_rule
 
-    def verify_intf_mirroring(self, compute_nodes, vn_index_list, sub_intf=False, parent_intf=False, nic_mirror=False):
+    def verify_intf_mirroring(self, compute_nodes, vn_index_list, sub_intf=False, parent_intf=False, nic_mirror=False, header = 1, nh_mode = 'dynamic', direction = 'both'):
         """Validate the interface mirroring
            Test steps:
            1. Create vn1/vm1_vn1, vn1/vm2_vn1, vn1/mirror_vm_vn1,  vn2/vm2_vn2, vn2/mirror_vm_vn2, vn3/mirror_vm_vn3
@@ -307,7 +317,10 @@ class VerifyIntfMirror(VerifySvcMirror):
         analyzer_compute = compute_nodes[2]
 
         analyzer_port = 8099
-        image_name = 'cirros' if not sub_intf else 'ubuntu'
+        if header == 2 or header == 3:
+            image_name = 'ubuntu'
+        else:
+            image_name = 'cirros' if not sub_intf else 'ubuntu' 
 
         vn1_subnets = [get_random_cidr(af=self.inputs.get_af())]
         vn2_subnets = [get_random_cidr(af=self.inputs.get_af())]
@@ -325,9 +338,9 @@ class VerifyIntfMirror(VerifySvcMirror):
         vn2_name = vn2_fq_name.split(':')[2]
         vn3_name = vn3_fq_name.split(':')[2]
 
-        vn1_fixture = self.config_vn(vn1_name, vn1_subnets)
-        vn2_fixture = self.config_vn(vn2_name, vn2_subnets)
-        vn3_fixture = self.config_vn(vn3_name, vn3_subnets)
+        self.vn1_fixture = self.config_vn(vn1_name, vn1_subnets)
+        self.vn2_fixture = self.config_vn(vn2_name, vn2_subnets)
+        self.vn3_fixture = self.config_vn(vn3_name, vn3_subnets)
 
         policy_name_vn1_vn2 = get_random_name("vn1_vn2_pass")
         policy_name_vn1_vn3 = get_random_name("vn1_vn3_pass")
@@ -342,101 +355,101 @@ class VerifyIntfMirror(VerifySvcMirror):
         policy_fixture_vn2_vn3 = self.config_policy(policy_name_vn2_vn3, rules_vn2_vn3)
 
         vn1_v2_attach_to_vn1 = self.attach_policy_to_vn(
-            policy_fixture_vn1_vn2, vn1_fixture)
+            policy_fixture_vn1_vn2, self.vn1_fixture)
         vn1_vn2_attach_to_vn2 = self.attach_policy_to_vn(
-            policy_fixture_vn1_vn2, vn2_fixture)
+            policy_fixture_vn1_vn2, self.vn2_fixture)
 
         vn1_v3_attach_to_vn1 = self.attach_policy_to_vn(
-            policy_fixture_vn1_vn3, vn1_fixture)
+            policy_fixture_vn1_vn3, self.vn1_fixture)
         vn1_v3_attach_to_vn3 = self.attach_policy_to_vn(
-            policy_fixture_vn1_vn3, vn3_fixture)
+            policy_fixture_vn1_vn3, self.vn3_fixture)
 
         vn2_v3_attach_to_vn2 = self.attach_policy_to_vn(
-            policy_fixture_vn2_vn3, vn2_fixture)
+            policy_fixture_vn2_vn3, self.vn2_fixture)
         vn2_v3_attach_to_vn3 = self.attach_policy_to_vn(
-            policy_fixture_vn2_vn3, vn3_fixture)
+            policy_fixture_vn2_vn3, self.vn3_fixture)
 
         vn1_vmi_ref, vn2_vmi_ref, vn3_vmi_ref = None, None, None
 
         self.vlan = 101
 
         if vn_index_list[0] == 0:
-           src_vn_fixture = vn1_fixture
+           src_vn_fixture = self.vn1_fixture
            src_vn_fq_name = vn1_fq_name
            src_vn_name = vn1_fq_name.split(':')[2]
            vn1_vmi_ref = True
            if sub_intf:
                intf_type = 'src'
-               src_port, src_parent_port, src_parent_port_vn_fixture = self.create_sub_intf(vn1_fixture.uuid, intf_type)
+               src_port, src_parent_port, src_parent_port_vn_fixture = self.create_sub_intf(self.vn1_fixture.uuid, intf_type)
 
         elif vn_index_list[0] == 1:
-           src_vn_fixture = vn2_fixture
+           src_vn_fixture = self.vn2_fixture
            src_vn_fq_name = vn2_fq_name
            src_vn_name = vn2_fq_name.split(':')[2]
            vn2_vmi_ref = True
            if sub_intf:
                intf_type = 'src'
-               src_port, src_parent_port, src_parent_port_vn_fixture = self.create_sub_intf(vn2_fixture.uuid, intf_type)
+               src_port, src_parent_port, src_parent_port_vn_fixture = self.create_sub_intf(self.vn2_fixture.uuid, intf_type)
         else:
-           src_vn_fixture = vn3_fixture
+           src_vn_fixture = self.vn3_fixture
            src_vn_fq_name = vn3_fq_name
            src_vn_name = vn3_fq_name.split(':')[2]
            vn3_vmi_ref = True
            if sub_intf:
                intf_type = 'src'
-               src_port, src_parent_port, src_parent_port_vn_fixture = self.create_sub_intf(vn3_fixture.uuid, intf_type)
+               src_port, src_parent_port, src_parent_port_vn_fixture = self.create_sub_intf(self.vn3_fixture.uuid, intf_type)
 
         if vn_index_list[1] == 0:
-           dst_vn_fixture = vn1_fixture
+           dst_vn_fixture = self.vn1_fixture
            dst_vn_fq_name = vn1_fq_name
            dst_vn_name = vn1_fq_name.split(':')[2]
            vn1_vmi_ref = True
            if sub_intf:
                intf_type = 'dst'
-               dst_port, dst_parent_port, dst_parent_port_vn_fixture = self.create_sub_intf(vn1_fixture.uuid, intf_type)
+               dst_port, dst_parent_port, dst_parent_port_vn_fixture = self.create_sub_intf(self.vn1_fixture.uuid, intf_type)
 
         elif vn_index_list[1] == 1:
-           dst_vn_fixture = vn2_fixture
+           dst_vn_fixture = self.vn2_fixture
            dst_vn_fq_name = vn2_fq_name
            dst_vn_name = vn2_fq_name.split(':')[2]
            vn2_vmi_ref = True
            if sub_intf:
                intf_type = 'dst'
-               dst_port, dst_parent_port, dst_parent_port_vn_fixture = self.create_sub_intf(vn2_fixture.uuid, intf_type)
+               dst_port, dst_parent_port, dst_parent_port_vn_fixture = self.create_sub_intf(self.vn2_fixture.uuid, intf_type)
         else:
-           dst_vn_fixture = vn3_fixture
+           dst_vn_fixture = self.vn3_fixture
            dst_vn_fq_name = vn3_fq_name
            dst_vn_name = vn3_fq_name.split(':')[2]
            vn3_vmi_ref = True
            if sub_intf:
                intf_type = 'dst'
-               dst_port, dst_parent_port, dst_parent_port_vn_fixture = self.create_sub_intf(vn3_fixture.uuid, intf_type)
+               dst_port, dst_parent_port, dst_parent_port_vn_fixture = self.create_sub_intf(self.vn3_fixture.uuid, intf_type)
 
         if vn_index_list[2] == 0:
-           analyzer_vn_fixture = vn1_fixture
+           analyzer_vn_fixture = self.vn1_fixture
            analyzer_vn_fq_name = vn1_fq_name
            analyzer_vn_name = vn1_fq_name.split(':')[2]
            vn1_vmi_ref = True
            if sub_intf:
                intf_type = 'analyzer'
-               analyzer_port, analyzer_parent_port, analyzer_parent_port_vn_fixture = self.create_sub_intf(vn1_fixture.uuid, intf_type)
+               analyzer_port, analyzer_parent_port, analyzer_parent_port_vn_fixture = self.create_sub_intf(self.vn1_fixture.uuid, intf_type)
 
         elif vn_index_list[2] == 1:
-           analyzer_vn_fixture = vn2_fixture
+           analyzer_vn_fixture = self.vn2_fixture
            analyzer_vn_fq_name = vn2_fq_name
            analyzer_vn_name = vn2_fq_name.split(':')[2]
            vn2_vmi_ref = True
            if sub_intf:
                intf_type = 'analyzer'
-               analyzer_port, analyzer_parent_port, analyzer_parent_port_vn_fixture = self.create_sub_intf(vn2_fixture.uuid, intf_type)
+               analyzer_port, analyzer_parent_port, analyzer_parent_port_vn_fixture = self.create_sub_intf(self.vn2_fixture.uuid, intf_type)
         else:
-           analyzer_vn_fixture = vn3_fixture
+           analyzer_vn_fixture = self.vn3_fixture
            analyzer_vn_fq_name = vn3_fq_name
            analyzer_vn_name = vn3_fq_name.split(':')[2]
            vn3_vmi_ref = True
            if sub_intf:
                intf_type = 'analyzer'
-               analyzer_port, analyzer_parent_port, analyzer_parent_port_vn_fixture = self.create_sub_intf(vn3_fixture.uuid, intf_type)
+               analyzer_port, analyzer_parent_port, analyzer_parent_port_vn_fixture = self.create_sub_intf(self.vn3_fixture.uuid, intf_type)
 
         if parent_intf:
             policy_name_src_parent_vn_analyzer_vn = get_random_name("src_parent_to_analyzer_pass")
@@ -548,14 +561,37 @@ class VerifyIntfMirror(VerifySvcMirror):
 
         if not self._verify_intf_mirroring(src_vm_fixture, dst_vm_fixture, analyzer_vm_fixture, \
                 src_vn_fq_name, dst_vn_fq_name, analyzer_vn_fq_name,
-                analyzer_vm_ip, analyzer_fq_name, routing_instance, src_port=sport, sub_intf=sub_intf, parent_intf=parent_intf, nic_mirror=nic_mirror):
+                analyzer_vm_ip, analyzer_fq_name, routing_instance, src_port=sport, sub_intf=sub_intf, parent_intf=parent_intf, nic_mirror=nic_mirror, header = header, nh_mode = nh_mode, direction = direction):
             result = result and False
 
         return result
     # end verify_intf_mirroring
 
+    #when no header is specified, this routine has to be called to add "mirroring" to vn properties
+    def add_vn_mirror_properties(self):
+        vn_properties = {"allow_transit": False, "mirror_destination": True, "rpf": "enable"}
+        vn_fix_update = self.vnc_lib.virtual_network_read(id = self.vn1_fixture.uuid)
+        vn_fix_update.set_virtual_network_properties(vn_properties)
+        self.vnc_lib.virtual_network_update(vn_fix_update)
+
+        vn_fix_update = self.vnc_lib.virtual_network_read(id = self.vn2_fixture.uuid)
+        vn_fix_update.set_virtual_network_properties(vn_properties)
+        self.vnc_lib.virtual_network_update(vn_fix_update)
+
+        vn_fix_update = self.vnc_lib.virtual_network_read(id = self.vn3_fixture.uuid)
+        vn_fix_update.set_virtual_network_properties(vn_properties)
+        self.vnc_lib.virtual_network_update(vn_fix_update)
+
     def config_intf_mirroring(self, src_vm_fixture, analyzer_ip_address, analyzer_name, routing_instance, \
-            src_port=None, sub_intf=False, parent_intf=False, nic_mirror=False):
+            src_port=None, sub_intf=False, parent_intf=False, nic_mirror=False, header = 1, nh_mode = 'dynamic', direction = 'both', analyzer_mac_address = '', mirror_vm_fixture = None):
+
+        #Short desc of what the header values are:
+        #header 1 is the default value, which is header enabled. All present testcases will have this as default, should not affect legacy cases
+        #header 2 is for dynamic mirroring, with juniper header, and directionality of traffic and want the header verification to be done
+        #header 3 would mean header disabled. In this case, routes have to be imported from other VN vrf, so a change vn properties is needed
+        if header == 3:
+            self.add_vn_mirror_properties()
+            analyzer_mac_address = mirror_vm_fixture.mac_addr[self.vn3_fixture.vn_fq_name]
 
         vnc = src_vm_fixture.vnc_lib_h
         vlan = None
@@ -577,15 +613,19 @@ class VerifyIntfMirror(VerifySvcMirror):
 
         if parent_intf:
             parent_tap_intf_obj = vnc.virtual_machine_interface_read(id=parent_tap_intf_uuid)
+        if header == 1 or header == 2:
+            header_value = True
+        else:
+            header_value = False
         if not nic_mirror:
-            self.enable_intf_mirroring(vnc, tap_intf_obj, analyzer_ip_address, analyzer_name, routing_instance)
+            self.enable_intf_mirroring(vnc, tap_intf_obj, analyzer_ip_address, analyzer_name, routing_instance, header = header_value, nh_mode = nh_mode, direction = direction, analyzer_mac_address = analyzer_mac_address)
             if parent_intf:
                 self.logger.info("Intf mirroring enabled on both sub intf port and parent port")
-                self.enable_intf_mirroring(vnc, parent_tap_intf_obj, analyzer_ip_address, analyzer_name, routing_instance)
+                self.enable_intf_mirroring(vnc, parent_tap_intf_obj, analyzer_ip_address, analyzer_name, routing_instance, header = header_value, nh_mode = nh_mode, direction = direction, analyzer_mac_address = analyzer_mac_address)
             return vnc, tap_intf_obj, parent_tap_intf_obj, vlan
         else:
             self.enable_intf_mirroring(vnc, tap_intf_obj, analyzer_ip_address=None, analyzer_name=analyzer_name, \
-                routing_instance=None, udp_port=None, nic_assisted_mirroring=True, nic_assisted_mirroring_vlan=100)
+                routing_instance=None, udp_port=None, nic_assisted_mirroring=True, nic_assisted_mirroring_vlan=100, header = header_value, nh_mode = nh_mode, direction = direction, analyzer_mac_address = analyzer_mac_address)
             if src_vm_fixture.vm_obj.status == 'ACTIVE':
                 host = self.get_svm_compute(src_vm_fixture.vm_obj.name)
             session = ssh(host['host_ip'], host['username'], host['password'])
@@ -601,11 +641,70 @@ class VerifyIntfMirror(VerifySvcMirror):
                 self.logger.info("Nic mirroring works correctly")
     # end config_intf_mirroring
 
+    #routine to verify inner header by checking the source and dst ip based in direction mirrored
+    def verify_inner_header(self, vm_fix_pcap_pid_files, src_vm_ip, dst_vm_ip, direction = 'both'):
+        cmds = 'tshark -r %s -n -d udp.port==8099,juniper' % vm_fix_pcap_pid_files[0][1]
+        outer_header = vm_fix_pcap_pid_files[0][0].run_cmd_on_vm(cmds = [cmds])
+        if direction == 'both':
+            regex = re.compile('%s.*%s *ICMP *\d* *Echo *\(ping\) *request' % (src_vm_ip, dst_vm_ip))
+            is_header_correct = re.search(regex, str(outer_header))
+            if not is_header_correct.group(0):
+                self.logger.error("With birectional mirroring, src to dst mirrored packets seem to be absent")
+                return False
+            regex = re.compile('%s.*%s *ICMP *\d* *Echo *\(ping\) *reply' % (dst_vm_ip, src_vm_ip))
+            is_header_correct = re.search(regex, str(outer_header))
+            if not is_header_correct.group(0):
+                self.logger.error("With birectional mirroring, dst to src mirrored packets seem to be absent")
+                return False
+        if direction == 'ingress':
+            regex = re.compile('%s.*%s *ICMP *\d* *Echo *\(ping\) *request' % (src_vm_ip, dst_vm_ip))
+            is_header_correct = re.search(regex, str(outer_header))
+            if not is_header_correct.group(0):
+                self.logger.error("With ingress mirroring, src to dst mirrored packets seem to be absent")
+                return False
+            regex = re.compile('%s.*%s *ICMP *\d* *Echo *\(ping\) *reply' % (dst_vm_ip, src_vm_ip))
+            is_header_correct = re.search(regex, str(outer_header))
+            if is_header_correct:
+                self.logger.error("With ingress mirroring, dst to src mirrored packets seem to be present")
+                return False
+        if direction == 'egress':
+            regex = re.compile('%s.*%s *ICMP *\d* *Echo *\(ping\) *reply' % (dst_vm_ip, src_vm_ip))
+            is_header_correct = re.search(regex, str(outer_header))
+            if not is_header_correct.group(0):
+                self.logger.error("With egress mirroring, src to dst mirrored packets seem to be present")
+                return False
+            regex = re.compile('%s.*%s *ICMP *\d* *Echo *\(ping\) *request' % (src_vm_ip, dst_vm_ip))
+            is_header_correct = re.search(regex, str(outer_header))
+            if is_header_correct:
+                self.logger.error("With egress mirroring, dst to src mirrored packets seem to be absent")
+                return False
+        self.logger.info("The directionality configured and mirrored packets actually captured seem to match")
+        return True
+
+    #routine to verify juniper header, called if header is enabled
+    def verify_juniper_header(self, vm_fix_pcap_pid_files, src_vn_fq):
+        cmds = 'tshark -r %s -n -d udp.port==8099,juniper -Tfields -e juniper.vn.src -e juniper.vn.dst' % vm_fix_pcap_pid_files[0][1]
+        juniper_header = vm_fix_pcap_pid_files[0][0].run_cmd_on_vm(cmds = [cmds])
+        regex = re.compile('%s' % src_vn_fq)
+        is_header_correct = re.search(regex, str(juniper_header))
+        if not is_header_correct.group(0):
+            return False
+        return True
+
+    def verify_header_details(self, src_vm_fixture, mirror_vm_fixture, src_vm_ip, dst_vm_ip, mirror_vm_ip, src_vn_fq, direction = 'both', header = 1):
+
+        vm_fix_pcap_pid_files = start_tcpdump_for_vm_intf(None, [mirror_vm_fixture], None, pcap_on_vm=True)
+        src_vm_fixture.run_cmd_on_vm(["ping %s -c 5" % dst_vm_ip])
+        stop_tcpdump_for_vm_intf(None, None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
+        assert self.verify_inner_header(vm_fix_pcap_pid_files, src_vm_ip, dst_vm_ip, direction = direction)
+        if header == 2:
+            assert self.verify_juniper_header(vm_fix_pcap_pid_files, src_vn_fq)
+
     def _verify_intf_mirroring(self, src_vm_fixture, dst_vm_fixture, mirror_vm_fixture, src_vn_fq, dst_vn_fq, mirr_vn_fq,\
-            analyzer_ip_address, analyzer_name, routing_instance, src_port=None, sub_intf=False, parent_intf=False, nic_mirror=False):
+            analyzer_ip_address, analyzer_name, routing_instance, src_port=None, sub_intf=False, parent_intf=False, nic_mirror=False, header = 1, nh_mode = 'dynamic', direction = 'both'):
         result = True
         vnc, tap_intf_obj, parent_tap_intf_obj, vlan = self.config_intf_mirroring(
-            src_vm_fixture, analyzer_ip_address, analyzer_name, routing_instance, src_port=src_port, sub_intf=sub_intf, parent_intf=parent_intf, nic_mirror=nic_mirror)
+            src_vm_fixture, analyzer_ip_address, analyzer_name, routing_instance, src_port=src_port, sub_intf=sub_intf, parent_intf=parent_intf, nic_mirror=nic_mirror, header = header, nh_mode = nh_mode, direction = direction, mirror_vm_fixture = mirror_vm_fixture)
 
         if not self.verify_port_mirroring(src_vm_fixture, dst_vm_fixture, mirror_vm_fixture, vlan=vlan, parent=parent_intf):
             result = result and False
@@ -615,6 +714,8 @@ class VerifyIntfMirror(VerifySvcMirror):
                 self.logger.error("Traffic mirroring from the sub intf port failed")
             else:
                 self.logger.error("Intf mirroring not working")
+        if (header == 2 or header == 3):
+            self.verify_header_details(src_vm_fixture, mirror_vm_fixture, src_vm_fixture.vm_ip, dst_vm_fixture.vm_ip, mirror_vm_fixture.vm_ip, src_vn_fq, direction = direction, header = header)
 
         self.logger.info("Disabling intf mirroring on sub intf port")
         self.disable_intf_mirroring(vnc, tap_intf_obj)
@@ -687,8 +788,16 @@ class VerifyIntfMirror(VerifySvcMirror):
             prop_obj = VirtualMachineInterfacePropertiesType()
         interface_mirror = prop_obj.get_interface_mirror()
         if not interface_mirror:
-            mirror_to = MirrorActionType(analyzer_name=analyzer_name, encapsulation=None, 
-                analyzer_ip_address=analyzer_ip_address, routing_instance=routing_instance, udp_port=udp_port, nic_assisted_mirroring = nic_assisted_mirroring, nic_assisted_mirroring_vlan = nic_assisted_mirroring_vlan)
+            #if the mode is static, the mirroring config changes, so the call to MirrorActionType changes
+            if nh_mode == 'static':
+                hosted_node = str(tap.get_virtual_machine_interface_bindings().get_key_value_pair()[0].value)
+                hosted_node_ip = self.inputs.inputs.host_data[hosted_node]['data-ip']
+                vn_uuid = tap.get_virtual_network_refs()[0]['uuid']
+                vni = vnc.virtual_network_read(id = vn_uuid).virtual_network_network_id
+                staticmirror_nh = StaticMirrorNhType(vtep_dst_ip_address = hosted_node_ip, vni = vni)
+                mirror_to = MirrorActionType(analyzer_name=analyzer_name, encapsulation=None,analyzer_ip_address=analyzer_ip_address, juniper_header = header, nh_mode = nh_mode, static_nh_header = staticmirror_nh, routing_instance=routing_instance,udp_port=udp_port, analyzer_mac_address = analyzer_mac_address)
+            else:
+                mirror_to = MirrorActionType(analyzer_name=analyzer_name, encapsulation=None, analyzer_ip_address=analyzer_ip_address, juniper_header = header, routing_instance=routing_instance, udp_port=udp_port, nic_assisted_mirroring = nic_assisted_mirroring, nic_assisted_mirroring_vlan = nic_assisted_mirroring_vlan, analyzer_mac_address = analyzer_mac_address)
             interface_mirror = InterfaceMirrorType(direction, mirror_to)
             prop_obj.set_interface_mirror(interface_mirror)
             tap.set_virtual_machine_interface_properties(prop_obj)
