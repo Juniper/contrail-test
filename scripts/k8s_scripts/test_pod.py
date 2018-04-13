@@ -12,6 +12,7 @@ class TestPod(BaseK8sTest):
     def tearDownClass(cls):
         super(TestPod, cls).tearDownClass()
 
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_add_delete_pod(self):
         '''
@@ -21,6 +22,7 @@ class TestPod(BaseK8sTest):
         assert pod.verify_on_setup()
     # end test_add_delete_pod
 
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_ping_between_two_pods(self):
         '''
@@ -33,7 +35,7 @@ class TestPod(BaseK8sTest):
         assert pod1.ping_to_ip(pod2.pod_ip)
     # end test_ping_between_two_pods
 
-    @test.attr(type=['k8s_sanity'])
+    @test.attr(type=['k8s_sanity','openshift_1'])
     @preposttest_wrapper
     def test_ping_between_pods_accross_namespace(self):
         '''
@@ -53,6 +55,7 @@ class TestPod(BaseK8sTest):
         assert pod1.ping_to_ip(pod2.pod_ip, expectation=expectation)
     # end test_ping_between_pods_accross_namespace
 
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_change_pod_label(self):
         '''

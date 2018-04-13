@@ -72,6 +72,7 @@ class TestNSIsolation(BaseK8sTest):
         return (client1, client2, client3)
     #end setup_common_namespaces_pods
 
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_pods_isolation(self):
         """
@@ -82,6 +83,7 @@ class TestNSIsolation(BaseK8sTest):
         assert client2[2].ping_to_ip(client3[0].pod_ip, expectation=False)
     #end test_pods_isolation
 
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_pods_isolation_negative(self):
         """
@@ -99,7 +101,7 @@ class TestNSIsolation(BaseK8sTest):
         assert client3[2].ping_to_ip(client2[0].pod_ip, expectation=False)
     #end test_pods_isolation_negative
     
-    @test.attr(type=['k8s_sanity'])
+    @test.attr(type=['k8s_sanity','openshift_1'])
     @preposttest_wrapper
     def test_communication_from_isolated_ns_via_service(self):
         """
@@ -120,6 +122,7 @@ class TestNSIsolation(BaseK8sTest):
                                       test_pod=client1[2], expectation=False)
     #end test_communication_from_isolated_ns_via_service
 
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_communication_from_non_isolated_to_service_in_isolated(self):
         """
@@ -204,7 +207,8 @@ class TestCustomIsolation(BaseK8sTest):
                     namespace2, ingress_ns2, client4_ns2, vn_for_namespace]
         return (client1, client2)
     #end setup_common_namespaces_pods
-        
+
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_pod_custom_isolation(self):
         """
@@ -222,7 +226,8 @@ class TestCustomIsolation(BaseK8sTest):
         assert client1[6].ping_to_ip(client1[7].pod_ip)
         assert client1[6].ping_to_ip(client2[6].pod_ip)
     #end test_pod_custom_isolation
-    
+
+    @test.attr(type=['openshift_1'])    
     @preposttest_wrapper
     def test_namespace_custom_isolation(self):
         """
@@ -240,7 +245,7 @@ class TestCustomIsolation(BaseK8sTest):
         assert client2[6].ping_to_ip(client1[6].pod_ip)
     #end test_namespace_custom_isolation
     
-    @test.attr(type=['k8s_sanity'])
+    @test.attr(type=['k8s_sanity','openshift_1'])
     @preposttest_wrapper
     def test_service_custom_isolation(self):
         """
