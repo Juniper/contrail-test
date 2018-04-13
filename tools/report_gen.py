@@ -221,21 +221,9 @@ class ContrailReportInit(TestInputs):
         """
         core = ''
         cmd = 'ls %s/core.* 2>/dev/null' % (CORE_DIR)
-        containers = self.host_data[node_ip].get('containers', {}).keys()
-
-        for container in containers:
-            #skip contrail-test container
-            if container.find ('contrail_test') == -1:
-                output = run_cmd_on_server(cmd, node_ip, user, password,
-                            container=container)
-                output1 = output.replace('%s/' %(CORE_DIR), '')
-                core = '%s %s' %(core, output1)
-        #check for vrouter cores on the host machine on single node
-        #or check for other cores on non-container hosts.
-        if node_ip in self.compute_ips or not containers:
-            output = run_cmd_on_server(cmd, node_ip, user, password)
-            output1 = output.replace('%s/' %(CORE_DIR), '')
-            core = '%s %s' %(core, output1)
+        output = run_cmd_on_server(cmd, node_ip, user, password)
+        output1 = output.replace('%s/' %(CORE_DIR), '')
+        core = '%s %s' %(core, output1)
         return core
 
 # end
