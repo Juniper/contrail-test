@@ -421,6 +421,7 @@ class ConfigSvcChain(fixtures.Fixture):
                         service_type='firewall',
                         max_inst=1,
                         proto='any',
+                        svc_chain_type = 'parallel',
                         src_ports =[0, 65535],
                         dst_ports =[0, 65535],
                         svc_img_name=None,
@@ -564,17 +565,34 @@ class ConfigSvcChain(fixtures.Fixture):
                                                    service_type=service_type,
                                                    hosts=hosts,
                                                    max_inst=max_inst)
+            if svc_chain_type == 'serial':
+                svm_fixtures2 = self.create_service_vms(vns,
+                                                       svc_img_name=svc_img_name,
+                                                       service_mode=service_mode,
+                                                       service_type=service_type,
+                                                       hosts=hosts,
+                                                       max_inst=max_inst)
         if not si_fixture:
             si_name = get_random_name('si')
             si_fixture = self.config_si(si_name,
                 st_fixture,
-		 mgmt_vn_fq_name=self._get_if_needed(svc_img_name, 'management', mgmt_vn_fq_name),
+		mgmt_vn_fq_name=self._get_if_needed(svc_img_name, 'management', mgmt_vn_fq_name),
                 left_vn_fq_name=self._get_if_needed(svc_img_name, 'left', si_left_vn_fq_name),
                 right_vn_fq_name=self._get_if_needed(svc_img_name, 'right', si_right_vn_fq_name),
                 port_tuples_props=port_tuples_props,
                 static_route=static_route,
                 max_inst=max_inst,
                 svm_fixtures=svm_fixtures)
+            if svc_chain_type == 'serial':
+                si_fixture2 = self.config_si(get_random_name('si'),
+                    st_fixture,
+                    mgmt_vn_fq_name=self._get_if_needed(svc_img_name, 'management', mgmt_vn_fq_name),
+                    left_vn_fq_name=self._get_if_needed(svc_img_name, 'left', si_left_vn_fq_name),
+                    right_vn_fq_name=self._get_if_needed(svc_img_name, 'right', si_right_vn_fq_name),
+                    port_tuples_props=port_tuples_props,
+                    static_route=static_route,
+                    max_inst=max_inst,
+                    svm_fixtures=svm_fixtures2)
 
         if created_left_vm:
             self.verify_vm(left_vm_fixture)
@@ -583,7 +601,10 @@ class ConfigSvcChain(fixtures.Fixture):
 
         if not policy_fixture:
             policy_name = get_random_name('policy')
-            si_fq_name_list = [si_fixture.fq_name_str]
+            if svc_chain_type == 'serial':
+                si_fq_name_list = [si_fixture.fq_name_str, si_fixture2.fq_name_str]
+            else:
+                si_fq_name_list = [si_fixture.fq_name_str]
 
             if service_type == 'analyzer':
                 action_list = {'simple_action' : 'pass',
@@ -625,6 +646,10 @@ class ConfigSvcChain(fixtures.Fixture):
             'si_left_vn_fixture' : si_left_vn_fixture,
             'si_right_vn_fixture' : si_right_vn_fixture,
         }
+        if svc_chain_type == 'serial':
+            assert si_fixture2.verify_on_setup(wait_for_vms=False), \
+                ('SI Verification failed')
+            ret_dict.update({'si_fixture2': si_fixture2})
         return ret_dict
 
     def get_svms_in_si(self, si):
