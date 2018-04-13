@@ -1,4 +1,4 @@
-
+import test
 from common.k8s.base import BaseK8sTest
 from k8s.namespace import NamespaceFixture
 from tcutils.util import get_random_name
@@ -14,6 +14,7 @@ class TestNamespace(BaseK8sTest):
     def tearDownClass(cls):
         super(TestNamespace, cls).tearDownClass()
 
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_namespace_1(self):
         ''' Create and delete a namespace 
@@ -23,6 +24,7 @@ class TestNamespace(BaseK8sTest):
 
     # end test_namespace_1
 
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_many_add_delete_ns(self):
         '''

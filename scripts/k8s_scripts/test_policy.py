@@ -139,6 +139,7 @@ class TestNetworkPolicy(BaseK8sTest):
             cls.ns3.cleanUp()
         super(TestNetworkPolicy, cls).tearDownClass()
 
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_allow_all_ingress(self):
         """
@@ -160,7 +161,8 @@ class TestNetworkPolicy(BaseK8sTest):
         assert self.client1_pod_ns2.ping_with_certainty(self.client1_pod_ns1.pod_ip)
         assert self.client1_pod_ns1.ping_with_certainty(self.client1_pod_ns2.pod_ip)
     #end test_allow_all_ingress
-    
+   
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_deny_all_ingress(self):
         """
@@ -188,6 +190,7 @@ class TestNetworkPolicy(BaseK8sTest):
         assert self.client2_pod_ns2.ping_with_certainty(self.client1_pod_ns2.pod_ip)
     #end test_deny_all_ingress
 
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_ingress_podselector_for_pod(self):
         """
@@ -217,6 +220,7 @@ class TestNetworkPolicy(BaseK8sTest):
         assert self.client1_pod_ns2.ping_with_certainty(self.client1_pod_ns1.pod_ip)
     #end test_ingress_podselector_for_pod
 
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_ingress_namespaceselector_for_pod(self):
         """
@@ -285,6 +289,7 @@ class TestNetworkPolicy(BaseK8sTest):
                                                         expectation=False)
     #end test_ingress_ipblock_for_pod
 
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_ingress_port_for_pod(self):
         """
@@ -321,6 +326,7 @@ class TestNetworkPolicy(BaseK8sTest):
         assert self.validate_wget(self.client2_pod_ns1, url2)
     #end test_ingress_port_for_pod
 
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_ingress_podselector_for_namespace(self):
         """
@@ -357,6 +363,7 @@ class TestNetworkPolicy(BaseK8sTest):
         assert self.client2_pod_ns1.ping_with_certainty(self.client2_pod_ns2.pod_ip)
     #end test_ingress_podselector_for_namespace
 
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_ingress_podselector_for_namespace_negative(self):
         """
@@ -392,6 +399,7 @@ class TestNetworkPolicy(BaseK8sTest):
         assert self.validate_wget(self.client2_pod_ns2, url, expectation=False)
     #end test_ingress_podselector_for_namespace_negative
 
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_ingress_namespaceselector_for_namespace(self):
         """
@@ -465,6 +473,7 @@ class TestNetworkPolicy(BaseK8sTest):
         assert self.client2_pod_ns1.ping_with_certainty(self.client1_pod_ns2.pod_ip)
     #end test_ingress_ipblock_for_namespace
 
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_ingress_port_for_namespace(self):
         """
@@ -1594,6 +1603,7 @@ class TestNetworkPolicy(BaseK8sTest):
         assert self.client2_pod_ns2.ping_with_certainty(self.client1_pod_ns1.pod_ip)
     #end test_egress_rules_label_edit
 
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_ingress_allow_egress_allow_all(self):
         """
@@ -2228,7 +2238,8 @@ class TestNetworkPolicyRandom(BaseK8sTest):
         assert client4_ns1.ping_with_certainty(client1_ns1.pod_ip,
                                                     expectation=False)
     #end test_k8s_configurations_post_policy_creation
-    
+   
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_policy_negative(self):
         """

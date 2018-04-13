@@ -1,6 +1,7 @@
 from common.k8s.base import BaseK8sTest
 from k8s.pod import PodFixture
 from tcutils.wrappers import preposttest_wrapper
+import test
 
 class TestPodScale(BaseK8sTest):
 
@@ -12,6 +13,7 @@ class TestPodScale(BaseK8sTest):
     def tearDownClass(cls):
         super(TestPodScale, cls).tearDownClass()
 
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_many_pods(self):
         '''
@@ -45,6 +47,7 @@ class TestPodScale(BaseK8sTest):
 
     # end test_many_pods
 
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_pod_with_kube_manager_restart(self):
         '''

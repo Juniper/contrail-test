@@ -81,7 +81,7 @@ class TestNSIsolationSerial(BaseK8sTest):
         return (client1, client2, client3)
     #end setup_common_namespaces_pods
 
-    @test.attr(type=['k8s_sanity'])
+    @test.attr(type=['k8s_sanity','openshift_1'])
     @preposttest_wrapper
     def test_pods_isolation_post_kube_manager_restart(self):
         """
@@ -106,7 +106,7 @@ class TestNSIsolationSerial(BaseK8sTest):
         assert client1[2].ping_to_ip(client3[0].pod_ip, expectation=False)
     #end test_pods_isolation_post_kube_manager_restart
 
-    @test.attr(type=['k8s_sanity'])
+    @test.attr(type=['k8s_sanity','openshift_1'])
     @preposttest_wrapper
     def test_service_isolation_post_kube_manager_restart(self):
         """
@@ -247,7 +247,7 @@ class TestCustomIsolationSerial(BaseK8sTest):
         return (client1, client2)
     #end setup_common_namespaces_pods
     
-    @test.attr(type=['k8s_sanity'])
+    @test.attr(type=['k8s_sanity','openshift_1'])
     @preposttest_wrapper
     def test_pods_custom_isolation_post_kube_manager_restart(self):
         """
@@ -278,7 +278,7 @@ class TestCustomIsolationSerial(BaseK8sTest):
         assert client2[5].ping_to_ip(client1[5].pod_ip)
     #end test_pods_custom_isolation_post_kube_manager_restart
     
-    @test.attr(type=['k8s_sanity'])
+    @test.attr(type=['k8s_sanity','openshift_1'])
     @preposttest_wrapper
     def test_services_custom_isolation_post_kube_manager_restart(self):
         """
@@ -385,7 +385,8 @@ class TestProjectIsolationSerial(BaseK8sTest):
                     namespace2, ingress_ns2]
         return (client1, client2)
     #end setup_common_namespaces_pods
-    
+   
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_pod_reachability_across_projects(self):
         """
@@ -432,7 +433,7 @@ class TestProjectIsolationSerial(BaseK8sTest):
         assert self.validate_nginx_lb([client2[0], client2[1]], client2[5].external_ips[0])
     # end  test_ingress_reachability_across_ns
 
-    @test.attr(type=['k8s_sanity'])
+    @test.attr(type=['k8s_sanity','openshift_1'])
     @preposttest_wrapper
     def test_reachability_across_projects_with_isolated_namespace(self):
         """
