@@ -174,7 +174,7 @@ def verify_tcpdump_count(obj, session, pcap, exp_count=None, mac=None,
     return result
 
 def search_in_pcap(session, pcap, search_string):
-    cmd = 'sudo tcpdump -v -r %s | grep "%s"' % (pcap, search_string)
+    cmd = 'sudo tcpdump -v -nn -r %s | grep "%s"' % (pcap, search_string)
     out, err = execute_cmd_out(session, cmd)
     if search_string in out:
         return True
