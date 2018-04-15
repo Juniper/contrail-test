@@ -268,7 +268,10 @@ class AnalyticsVerification(fixtures.Fixture):
         '''
         connobj = self.get_connection_dict(
             collector, gen, module, node_type, instance)
-        return connobj['collector_name']
+        if connobj and connobj.has_key("collector_name"):
+            return connobj['collector_name']
+        else:
+            return None
 
     def get_all_generator_links(self, module=None):
         '''Get all links for a particular generator'''
@@ -585,6 +588,9 @@ class AnalyticsVerification(fixtures.Fixture):
             return False
         collector = self.get_collector_of_gen(
             self.inputs.collector_ips[0], vrouter, 'contrail-vrouter-agent', 'Compute')
+        if not collector:
+            self.logger.warn("Could not get collector name")
+            return False
         collector_ip=self.inputs.get_host_ip(name=collector)
         self.vrouter_ops_obj = self.ops_inspect[
             collector_ip].get_ops_vrouter(vrouter=vrouter)
