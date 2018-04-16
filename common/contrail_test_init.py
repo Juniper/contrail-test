@@ -1430,7 +1430,7 @@ class ContrailTestInit(object):
 
     def verify_state(self):
         result, failed_services = ContrailStatusChecker(self
-            ).wait_till_contrail_cluster_stable(tries=1)
+            ).wait_till_contrail_cluster_stable(tries=15)
         if not result and failed_services:
             self.logger.info("Failed services are : %s" % (failed_services))
         return result
