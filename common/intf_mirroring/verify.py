@@ -748,7 +748,7 @@ class VerifyIntfMirror(VerifySvcMirror):
             self.logger.info("Traffic is getting mirrored from parent port as expected")
 
         self.logger.info("Enabling intf mirroring on sub intf, expect pkts to get mirrored from both the ports")
-        self.enable_intf_mirroring(vnc, tap_intf_obj, analyzer_ip_address, analyzer_name, routing_instance)
+        self.enable_intf_mirroring(vnc, tap_intf_obj, analyzer_ip_address, analyzer_name, routing_instance, header = True)
 
         if not self.verify_port_mirroring(src_vm_fixture, dst_vm_fixture, mirror_vm_fixture, vlan=vlan, parent=parent_intf):
             result = result and False
@@ -765,7 +765,7 @@ class VerifyIntfMirror(VerifySvcMirror):
             self.logger.info("Traffic is getting mirrored from sub intf as expected")
 
         # enable intf mirroring on parent port
-        self.enable_intf_mirroring(vnc, parent_tap_intf_obj, analyzer_ip_address, analyzer_name, routing_instance)
+        self.enable_intf_mirroring(vnc, parent_tap_intf_obj, analyzer_ip_address, analyzer_name, routing_instance, header = True)
 
         self.logger.info("Check traffic is getting mirrored from both the ports")
 
@@ -783,7 +783,7 @@ class VerifyIntfMirror(VerifySvcMirror):
 
     def enable_intf_mirroring(self, vnc, tap, analyzer_ip_address, analyzer_name, routing_instance,
                              direction='both', udp_port=8099,  encapsulation=None, \
-                             nic_assisted_mirroring = None, nic_assisted_mirroring_vlan = None):
+                             nic_assisted_mirroring = None, nic_assisted_mirroring_vlan = None, header = False, nh_mode = 'dynamic', analyzer_mac_address = ''):
         prop_obj = tap.get_virtual_machine_interface_properties()
         if not prop_obj:
             prop_obj = VirtualMachineInterfacePropertiesType()
