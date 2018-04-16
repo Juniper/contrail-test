@@ -321,6 +321,7 @@ class SecurityGroupFixture(ContrailFixture):
 
 def get_secgrp_id_from_name(connections,secgrp_fq_name):
     fq_name_list = secgrp_fq_name.split(':')
+    fq_name_list[0] = 'default-domain' if fq_name_list[0] == 'Default' else fq_name_list[0]
     try:
         secgroup = connections.vnc_lib.security_group_read(
             fq_name=fq_name_list)
