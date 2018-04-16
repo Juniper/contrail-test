@@ -544,7 +544,7 @@ class DisablePolicy(BaseVrouterTest, VerifySvcChain):
 
         default_sg_id = get_secgrp_id_from_name(
                                 self.connections,
-                                ':'.join([self.inputs.domain_name,
+                                ':'.join([self.connections.domain_name,
                                         self.inputs.project_name,
                                         'default']))
         rule = [{'direction': '<>',
