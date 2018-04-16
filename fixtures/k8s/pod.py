@@ -59,6 +59,7 @@ class PodFixture(fixtures.Fixture):
             self.logger.error('Pod %s is not in running state'
                               % (self.name))
             return False
+        return True
         if not self.verify_pod_in_contrail_api():
             self.logger.error('Pod %s not seen in Contrail API'
                               % (self.name))
@@ -307,13 +308,11 @@ class PodFixture(fixtures.Fixture):
         return True
     # verify_pod_in_contrail_agent
 
-    def run_kubectl_cmd_on_master(self, pod_name, cmd, shell='/bin/bash -l -c', container=None):
-        if container:
-            kubectl_command = 'kubectl exec %s -c %s --namespace=%s -i -t -- %s "%s"' % (
-                                             pod_name, container, self.namespace, shell, cmd)
-        else:
-            kubectl_command = 'kubectl exec %s --namespace=%s -i -t -- %s "%s"' % (
-                               pod_name, self.namespace, shell, cmd)
+    def run_kubectl_cmd_on_master(self, pod_name, cmd, shell='/bin/bash -l -c', 
+                                 container=None):
+        cntr = '-c %s' %container if container else ''
+        kubectl_command = 'kubectl exec %s -c %s --namespace=%s -i -t -- %s "%s"' % (
+                                             pod_name, cntr, self.namespace, shell, cmd)
 
         # TODO Currently using  config node IP as Kubernetes master
         # This need to be changed
@@ -328,20 +327,13 @@ class PodFixture(fixtures.Fixture):
         if not shell:
             shell = self._shell_arg
         if mode == 'api':
-            if container:
-                output = self.k8s_client.exec_cmd_on_pod(self.name, cmd,
+            output = self.k8s_client.exec_cmd_on_pod(self.name, cmd,
                                                          container=container,
                                                          namespace=self.namespace, 
                                                          shell=shell)
-            else:
-                output = self.k8s_client.exec_cmd_on_pod(self.name, cmd,
-                                                         namespace=self.namespace, 
-                                                         shell=shell)
         else:
-            if container:
-                output = self.run_kubectl_cmd_on_master(self.name, cmd, shell, container=container)
-            else:
-                output = self.run_kubectl_cmd_on_master(self.name, cmd, shell)
+            output = self.run_kubectl_cmd_on_master(self.name, cmd, shell, 
+                                                    container=container)
         self.logger.debug('[Pod %s] Cmd: %s, Output: %s' % (self.name,
                                                             cmd, output))
         return output
@@ -356,20 +348,13 @@ class PodFixture(fixtures.Fixture):
 
     def ping_to_ip(self, ip, count='3', expectation=True ,jumboframe=None, container=None):
         """Ping from a POD to an IP specified.
-
         This method logs into the POD from kubernets master using kubectl and runs ping test to an IP.
         """
         output = ''
-        if jumboframe: 
-            cmd = "ping -c %s -s %s %s" % (count, jumboframe, ip)
-        else:
-            cmd = "ping -c %s %s" % (count, ip)
+        pkt_size = '-s %s' %jumboframe if jumboframe else '' 
+        cmd = "ping -c %s %s %s" % (count, pkt_size, ip)
         try:
-            if container:
-                self.logger.info('container valu :%s' %(container))
-                output = self.run_cmd_on_pod(cmd, container=container)
-            else:
-               output = self.run_cmd_on_pod(cmd)
+            output = self.run_cmd_on_pod(cmd, container=container)
         except Exception, e:
             self.logger.exception(
                 'Exception occured while trying ping from pod')

@@ -714,8 +714,6 @@ if __name__ == '__main__':
                               pod.status.phase,
                               pod.status.pod_ip))
 
-    import pdb
-    pdb.set_trace()
     dep = c1.create_deployment(
         metadata={'name': 'test-deployment'},
         spec={
@@ -733,14 +731,11 @@ if __name__ == '__main__':
                 }
             }
         })
-    import pdb; pdb.set_trace()
 
 
 #    ing1 = c1.create_ingress(name='test1',
 #                             default_backend={'service_name': 'my-nginx',
 #                                              'service_port': 80})
-#    import pdb
-#    pdb.set_trace()
 #    pol = c1.create_network_policy(
 #        name='test4',
 #        spec={
@@ -756,5 +751,3 @@ if __name__ == '__main__':
 #            ]
 #        })
 
-    import pdb
-    pdb.set_trace()
