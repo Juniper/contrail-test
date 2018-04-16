@@ -244,7 +244,7 @@ class BaseVrouterTest(BaseNeutronTest):
     def remove_sg_from_vms(self, vm_fix_list, sg_id=None):
         default_sg_id = get_secgrp_id_from_name(
                                 self.connections,
-                                ':'.join([self.inputs.domain_name,
+                                ':'.join([self.connections.domain_name,
                                         self.inputs.project_name,
                                         'default']))
         sg_id = sg_id or default_sg_id
@@ -254,7 +254,7 @@ class BaseVrouterTest(BaseNeutronTest):
     def add_sg_to_vms(self, vm_fix_list, sg_id=None):
         default_sg_id = get_secgrp_id_from_name(
                                 self.connections,
-                                ':'.join([self.inputs.domain_name,
+                                ':'.join([self.connections.domain_name,
                                         self.inputs.project_name,
                                         'default']))
         sg_id = sg_id or default_sg_id
