@@ -727,7 +727,7 @@ class TestPorts(BaseNeutronTest):
         self.config_vrrp(vm1_fixture, vIP, '20')
         self.config_vrrp(vm2_fixture, vIP, '10')
         time.sleep(10)
-        assert self.vrrp_mas_chk(vm1_fixture, vn1_fixture, vIP)
+        assert self.vrrp_mas_chk(vm_test_fixture, vm1_fixture, vn1_fixture, vIP)
         assert self.verify_vrrp_action(vm_test_fixture, vm1_fixture, vIP)
 
         self.logger.info('We will induce a mastership switch')
@@ -736,7 +736,7 @@ class TestPorts(BaseNeutronTest):
         time.sleep(10)
         self.logger.info(
             '%s should become the new VRRP master' % vm2_fixture.vm_name)
-        assert self.vrrp_mas_chk(vm2_fixture, vn1_fixture, vIP)
+        assert self.vrrp_mas_chk(vm_test_fixture, vm2_fixture, vn1_fixture, vIP)
         assert self.verify_vrrp_action(vm_test_fixture, vm2_fixture, vIP)
 
         self.logger.info('We will bring up the interface')
@@ -745,7 +745,7 @@ class TestPorts(BaseNeutronTest):
         time.sleep(10)
         self.logger.info(
             '%s should become the VRRP master again' % vm1_fixture.vm_name)
-        assert self.vrrp_mas_chk(vm1_fixture, vn1_fixture, vIP)
+        assert self.vrrp_mas_chk(vm_test_fixture, vm1_fixture, vn1_fixture, vIP)
         assert self.verify_vrrp_action(vm_test_fixture, vm1_fixture, vIP)
 
     # end test_aap_with_vrrp_admin_state_toggle
@@ -919,7 +919,7 @@ class TestPorts(BaseNeutronTest):
             self.config_aap(port, vIP, mac=port['mac_address'])
         self.config_vrrp(vm1_fixture, vIP, '20')
         self.config_vrrp(vm2_fixture, vIP, '10')
-        assert self.vrrp_mas_chk(vm1_fixture, vn1_fixture, vIP)
+        assert self.vrrp_mas_chk(vm_test_fixture, vm1_fixture, vn1_fixture, vIP)
         assert self.verify_vrrp_action(vm_test_fixture, vm1_fixture, vIP)
 
         self.logger.info(
@@ -935,7 +935,7 @@ class TestPorts(BaseNeutronTest):
         time.sleep(30)
         self.config_vrrp(vm1_fixture, vIP, '10')
         self.config_vrrp(vm2_fixture, vIP, '20')
-        assert self.vrrp_mas_chk(vm2_fixture, vn1_fixture, vIP)
+        assert self.vrrp_mas_chk(vm_test_fixture, vm2_fixture, vn1_fixture, vIP)
         assert self.verify_vrrp_action(vm_test_fixture, vm2_fixture, vIP)
 
     # end test_aap_with_vrrp_priority_change
