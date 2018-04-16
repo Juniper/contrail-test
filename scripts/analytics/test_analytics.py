@@ -37,7 +37,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         ''' Test to verify that all services are running and active
 
         '''
-        if not self.inputs.verify_state():
+        if not self.verify_contrail_status():
             self.logger.error("contrail-status failed")
             return False
         else:

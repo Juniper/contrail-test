@@ -13,6 +13,7 @@ from floating_ip import FloatingIPFixture
 from interface_route_table_fixture import InterfaceRouteTableFixture
 from tcutils.util import get_random_name, get_random_cidr, is_v6
 from tcutils.contrail_status_check import ContrailStatusChecker
+from tcutils.util import retry
 
 class _GenericTestBaseMethods():
 
@@ -160,6 +161,11 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
 
         return vn_fixture
     # end create_vn
+
+    @retry(delay=10, tries=15)
+    def verify_contrail_status(self):
+        return self.inputs.verify_state()
+    # end verify_contrail_status
 
     @classmethod
     def create_only_vm(cls, vn_fixture=None, vm_name=None, node_name=None,
