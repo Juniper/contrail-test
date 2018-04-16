@@ -176,7 +176,7 @@ class NamespaceFixture(fixtures.Fixture):
             return True
         assert self.verify_ns_is_not_in_k8s(), ('Namespace deletion '
                                                 'verification in k8s failed')
-	if self.inputs.slave_orchestrator == 'kubernetes':
+        if self.inputs.slave_orchestrator == 'kubernetes':
             self.logger.info('Skipping Namespace API server validation in nested mode')
         else:
             assert self.verify_ns_is_not_in_contrail_api(), ('Namespace deletion '

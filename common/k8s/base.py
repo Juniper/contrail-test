@@ -22,7 +22,6 @@ from vn_test import VNFixture
 K8S_SERVICE_IPAM = ['default-domain', 'default', 'service-ipam']
 K8S_PUBLIC_VN_NAME = '__public__'
 K8S_PUBLIC_FIP_POOL_NAME = '__fip_pool_public__'
-google_dns_ip = "8.8.8.8"
 
 
 class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
