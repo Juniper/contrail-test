@@ -797,7 +797,8 @@ class VerifyIntfMirror(VerifySvcMirror):
                 staticmirror_nh = StaticMirrorNhType(vtep_dst_ip_address = hosted_node_ip, vni = vni)
                 mirror_to = MirrorActionType(analyzer_name=analyzer_name, encapsulation=None,analyzer_ip_address=analyzer_ip_address, juniper_header = header, nh_mode = nh_mode, static_nh_header = staticmirror_nh, routing_instance=routing_instance,udp_port=udp_port, analyzer_mac_address = analyzer_mac_address)
             else:
-                mirror_to = MirrorActionType(analyzer_name=analyzer_name, encapsulation=None, analyzer_ip_address=analyzer_ip_address, juniper_header = header, routing_instance=routing_instance, udp_port=udp_port, nic_assisted_mirroring = nic_assisted_mirroring, nic_assisted_mirroring_vlan = nic_assisted_mirroring_vlan, analyzer_mac_address = analyzer_mac_address)
+                mirror_to = MirrorActionType(analyzer_name=analyzer_name, encapsulation=None,
+                    analyzer_ip_address=analyzer_ip_address, routing_instance=routing_instance, udp_port=udp_port, nic_assisted_mirroring = nic_assisted_mirroring, nic_assisted_mirroring_vlan = nic_assisted_mirroring_vlan)
             interface_mirror = InterfaceMirrorType(direction, mirror_to)
             prop_obj.set_interface_mirror(interface_mirror)
             tap.set_virtual_machine_interface_properties(prop_obj)
