@@ -61,7 +61,7 @@ class TestDSNAT(BaseDSNAT):
         traffic['port'] = 5201
         self.iperf = None
 
-        assert self.verify_flow_with_port(vm1_fixture, vm2_fixture.vm_node_ip, port_range, **traffic)
+        assert self.verify_flow_with_port(vm1_fixture, vm2_fixture, port_range, **traffic)
 
 
     @skip_because(min_nodes=2)
@@ -110,7 +110,7 @@ class TestDSNAT(BaseDSNAT):
         traffic['port'] = 6201
         self.iperf = None
 
-        assert self.verify_flow_with_port(vm1_fixture, vm2_fixture.vm_node_ip, port_range, **traffic)
+        assert self.verify_flow_with_port(vm1_fixture, vm2_fixture, port_range, **traffic)
 
     @preposttest_wrapper
     def test_dsnat_with_vhost_policy(self):
@@ -196,8 +196,8 @@ class TestDSNAT(BaseDSNAT):
         self.iperf = None
         ## Repeat UDP traffic multiple times, to exhaust the pool and verify the flow
         for i in range(len(port_range)):
-            self.run_iperf_between_vm_host(vm1_fixture, vm2_fixture.vm_node_ip, **traffic)
-        nat_port_used = self.get_nat_port_used_for_flow(vm1_fixture.vm_node_ip, '17', traffic['port'])
+            self.run_iperf_between_vm_host(vm1_fixture, vm2_fixture.vm_node_ip, vm2_fixture.vm_node_data_ip, **traffic)
+        nat_port_used = self.get_nat_port_used_for_flow(vm1_fixture, '17', traffic['port'])
         if len(nat_port_used) > len(port_range) or set(nat_port_used) != set(port_range):
             assert False, ('NAT port allocated, %s, more than the configured'  %nat_port_used)
 
@@ -207,7 +207,7 @@ class TestDSNAT(BaseDSNAT):
              port_count=str(port_count)))
 
         assert self.vnc_h.set_port_translation_pool(pp)
-        nat_port_used = self.get_nat_port_used_for_flow(vm1_fixture.vm_node_ip, '17', traffic['port'])
+        nat_port_used = self.get_nat_port_used_for_flow(vm1_fixture, '17', traffic['port'])
         if len(nat_port_used) != port_count:
             assert False, ('After reducing port range, expected flows to be\
                 reduced to port count, %d, but actual flows are %d' %(port_count, len(nat_port_used)))
@@ -219,14 +219,14 @@ class TestDSNAT(BaseDSNAT):
         assert self.vnc_h.set_port_translation_pool(pp)
 
         self.logger.info("Increase port range, shouldn't affect the existing flows")
-        nat_port_used = self.get_nat_port_used_for_flow(vm1_fixture.vm_node_ip, '17', traffic['port'])
+        nat_port_used = self.get_nat_port_used_for_flow(vm1_fixture, '17', traffic['port'])
         if len(nat_port_used) != port_count/5:
             assert False, ('After increasing port range, expected flows to be\
                 same as , %d, but actual flows are %d' %(port_count/5, len(nat_port_used)))
         ## Repeat UDP traffic multiple times, to exhaust the pool and verify the flow
         for i in range(port_count):
-            self.run_iperf_between_vm_host(vm1_fixture, vm2_fixture.vm_node_ip, **traffic)
-        nat_port_used = self.get_nat_port_used_for_flow(vm1_fixture.vm_node_ip, '17', traffic['port'])
+            self.run_iperf_between_vm_host(vm1_fixture, vm2_fixture.vm_node_ip, vm2_fixture.vm_node_data_ip, **traffic)
+        nat_port_used = self.get_nat_port_used_for_flow(vm1_fixture, '17', traffic['port'])
         if len(nat_port_used) != port_count:
             assert False, ('After increasing port range, expected flows to be\
                 same as , %d, but actual flows are %d' %(port_count, len(nat_port_used)))
@@ -287,8 +287,8 @@ class TestDSNAT(BaseDSNAT):
         self.iperf = None
 
         for i in range(len(port_range1)):
-            self.run_iperf_between_vm_host(vm1_fixture, vm2_fixture.vm_node_ip, **traffic)
-        nat_port_used = self.get_nat_port_used_for_flow(vm1_fixture.vm_node_ip, '17', traffic['port'])
+            self.run_iperf_between_vm_host(vm1_fixture, vm2_fixture.vm_node_ip, vm2_fixture.vm_node_data_ip, **traffic)
+        nat_port_used = self.get_nat_port_used_for_flow(vm1_fixture, '17', traffic['port'])
         if len(nat_port_used) > len(port_range1) or set(nat_port_used) != set(port_range1):
             assert False, ('NAT port allocated, %s, more than the configured'  %nat_port_used)
 
@@ -300,15 +300,15 @@ class TestDSNAT(BaseDSNAT):
         assert self.vnc_h.set_port_translation_pool(pp)
         assert self.verify_port_allocation_in_agent(pp)
 
-        nat_port_used = self.get_nat_port_used_for_flow(vm1_fixture.vm_node_ip, '17', traffic['port'])
+        nat_port_used = self.get_nat_port_used_for_flow(vm1_fixture, '17', traffic['port'])
         if len(nat_port_used) > len(port_range1) or set(nat_port_used) != set(port_range1):
             assert False, ('NAT port allocated, %s, more than the configured'  %nat_port_used)
         else:
             self.logger.info("PAT used the configure port translation pool, %s" %nat_port_used)
 
         for i in range(len(port_range2)):
-            self.run_iperf_between_vm_host(vm1_fixture, vm2_fixture.vm_node_ip, **traffic)
-        nat_port_used = self.get_nat_port_used_for_flow(vm1_fixture.vm_node_ip, '17', traffic['port'])
+            self.run_iperf_between_vm_host(vm1_fixture, vm2_fixture.vm_node_ip, vm2_fixture.vm_node_data_ip, **traffic)
+        nat_port_used = self.get_nat_port_used_for_flow(vm1_fixture, '17', traffic['port'])
         if len(nat_port_used) > len(port_range1)+len(port_range2) or\
             set(nat_port_used) != set(port_range1).union(set(port_range2)):
             assert False, ('NAT port allocated, %s, more than the configured'  %nat_port_used)

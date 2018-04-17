@@ -3058,7 +3058,7 @@ class VMFixture(fixtures.Fixture):
         '''
         self.refresh_agent_vmi_objects()
         for fip in self.tap_intf[vn_fq_name]['fip_list']:
-            if fip['ip_addr'] == self.vm_node_ip:
+            if fip['ip_addr'] == self.vm_node_data_ip:
                 return True
         self.logger.error("With SNAT enabled for the VN %s,\
             fabric ip is not assigned as FIP ip to the VMI", vn_fq_name)

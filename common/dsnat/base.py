@@ -17,10 +17,10 @@ class IperfToHost(Iperf3):
     '''
        Methods to run the iperf tests between the VM and the server
     '''
-    def __init__(self, client_vm_fixture, server_vm_fixture, *args, **kwargs):
+    def __init__(self, client_vm_fixture, server_vm_fixture, server_data_ip, *args, **kwargs):
         super(IperfToHost, self).__init__(client_vm_fixture,
             server_vm_fixture, *args, **kwargs)
-        self.server_vm_fixture.vm_ip = self.server_vm_fixture.ip
+        self.server_vm_fixture.vm_ip = server_data_ip
         self.server_vm_fixture.run_cmd_on_vm = self.run_cmds_on_server
 
     def run_cmds_on_server(self, cmds=[], as_sudo=False, timeout=30, pty=None,
@@ -167,7 +167,7 @@ class BaseDSNAT(BaseNeutronTest, ConfigPolicy):
         policy_fix = self.config_policy(policy_name, rules)
         return self.attach_policy_to_vn(policy_fix, vn_fixture)
 
-    def run_iperf_between_vm_host(self, vm_fixture, server_ip, **kwargs):
+    def run_iperf_between_vm_host(self, vm_fixture, server_ip, server_data_ip, **kwargs):
         params = OrderedDict()
         params["port"] = kwargs.get('port', 4203)
         params["udp"] = kwargs.get('udp', True)
@@ -179,16 +179,16 @@ class BaseDSNAT(BaseNeutronTest, ConfigPolicy):
         server_fixture = self.useFixture(ComputeNodeFixture(
                 self.connections, server_ip))
         if not self.iperf:
-            self.iperf = IperfToHost(vm_fixture, server_fixture, **params)
+            self.iperf = IperfToHost(vm_fixture, server_fixture, server_data_ip, **params)
             self.addCleanup(self.iperf.stop_iperf_on_server)
         self.iperf.stop_iperf_on_server()
         self.iperf.start(wait=False)
         time.sleep(3)
 
-    def get_nat_port_used_for_flow(self, compute_node_ip, proto, port, container='agent'):
+    def get_nat_port_used_for_flow(self, vm_fix, proto, port, container='agent'):
         server_fixture = self.useFixture(ComputeNodeFixture(
-                self.connections, compute_node_ip))
-        flow_entry = server_fixture.get_flow_entry(dest_ip=compute_node_ip,
+                self.connections, vm_fix.vm_node_ip))
+        flow_entry = server_fixture.get_flow_entry(dest_ip=vm_fix.vm_node_data_ip,
             proto=proto, source_port = port,all_flows=True)
         nat_port = []
         for flow in flow_entry:
@@ -196,13 +196,15 @@ class BaseDSNAT(BaseNeutronTest, ConfigPolicy):
         return nat_port
 
     @retry(delay=5, tries=5)
-    def verify_flow_with_port(self, client_vm_fix, server_ip, port_range, **traffic):
-        self.run_iperf_between_vm_host(client_vm_fix, server_ip, **traffic)
+    def verify_flow_with_port(self, client_vm_fix, dst_vm_fix, port_range, **traffic):
+        server_ip = dst_vm_fix.vm_node_ip
+        server_data_ip = dst_vm_fix.vm_node_data_ip
+        self.run_iperf_between_vm_host(client_vm_fix, server_ip, server_data_ip, **traffic)
         if traffic['udp']:
             proto = '17'
         else:
             proto = '6'
-        nat_port_used = self.get_nat_port_used_for_flow(client_vm_fix.vm_node_ip, proto, traffic['port'])
+        nat_port_used = self.get_nat_port_used_for_flow(client_vm_fix, proto, traffic['port'])
         self.iperf.stop_iperf_on_server()
         self.logger.info("Nat port being used for the flow is %s" %nat_port_used)
         if not nat_port_used or not [port for port in nat_port_used if port in port_range]:
