@@ -865,10 +865,10 @@ class TestInputs(object):
             self.dm_mx = test_configs['device_manager']
         if 'ns_agilio_vrouter' in test_configs:
             self.pcap_on_vm = True
+
+        # If no explicit amqp servers are configured, it will be cfgm ips
         if not self.config_amqp_ips:
-            self.config_amqp_ips = self.openstack_control_ips if \
-                                   self.openstack_control_ips else\
-                                   self.cfgm_control_ips  #vcenter only mode
+            self.config_amqp_ips = self.cfgm_ips
         self.many_computes = (len(self.compute_ips) > 10) or False
         self._set_auth_vars()
         if self.orchestrator == 'kubernetes':
@@ -1169,9 +1169,7 @@ class TestInputs(object):
 
         # If no explicit amqp servers are configured, it will be cfgm ips
         if not self.config_amqp_ips:
-            self.config_amqp_ips = self.openstack_control_ips if \
-                                   self.openstack_control_ips else\
-                                   self.cfgm_control_ips  #vcenter only mode
+            self.config_amqp_ips = self.cfgm_ips
 
         self.many_computes = (len(self.compute_ips) > 10) or False
 
