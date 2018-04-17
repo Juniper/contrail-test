@@ -289,11 +289,11 @@ class BaseNeutronTest(GenericTestBase):
                             + '/' + '24 vrrp-group 1 priority ' + priority + ' virtual-address ' + vip + ' accept-data']
         cmdList = cmdList + vsrx_vrrp_config
         cmd_string = (';').join(cmdList)
-        result = self.set_config_via_netconf(src_vm, dst_vm,
-                                             cmd_string, timeout=10, device='junos', hostkey_verify="False")
-        return result
+        assert self.set_config_via_netconf(src_vm, dst_vm,
+                                             cmd_string, timeout=10, device='junos', hostkey_verify="False"), 'Could not configure VRRP thru Netconf'
     # end config_vrrp_on_vsrx
 
+    @retry(delay=5, tries=20)
     def set_config_via_netconf(self, src_vm, dst_vm, cmd_string, timeout=10, device='junos', hostkey_verify="False"):
         python_code = Template('''
 from ncclient import manager
@@ -317,6 +317,10 @@ conn.close_session()
             dst_vm.vm_password), device_params=device_params, cmdList=cmdList, timeout=timeout, hostkey_verify=hostkey_verify)
         assert dst_vm.wait_for_ssh_on_vm(port='830')
         op = src_vm.run_python_code(python_code)
+	if op != None:
+	    return False
+	else:
+	    return True
     # end set_config_via_netconf
 
     def get_config_via_netconf(self, src_vm, dst_vm, cmd_string, timeout=10, device='junos', hostkey_verify="False", format='text'):
@@ -360,7 +364,7 @@ print get_config.tostring
         return result
     # end vrrp_chk
 
-    @retry(delay=5, tries=10)
+    @retry(delay=5, tries=20)
     def vrrp_mas_chk(self, src_vm=None, dst_vm=None, vn=None, ip=None, vsrx=False):
         self.logger.info(
             'Will verify who the VRRP master is and the corresponding route entries in the Agent')
