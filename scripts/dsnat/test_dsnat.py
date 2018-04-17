@@ -42,7 +42,7 @@ class TestDSNAT(BaseDSNAT):
 
         self.logger.info("disable fabric SNAT, and verify the ping to the external IP and inter VN")
         self.vnc_h.set_fabric_snat(vn_fixture.uuid, False)
-        assert self.verify_routing_instance_snat(vn_fixture)
+        assert vn_fixture.verify_routing_instance_snat()
         assert not test_vm1.verify_fabric_ip_as_floating_ip(vn_fixture.vn_fq_name), (
             'FIP list of VMI expected to be empty')
 
@@ -84,7 +84,7 @@ class TestDSNAT(BaseDSNAT):
             assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip, size='2000'), (
                 'Ping failed between VNs')
 
-            assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_node_ip, size='2000'), (
+            assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_node_data_ip, size='2000'), (
                 'Ping failed to fabric IP, VM2 node ip')
 
 
@@ -306,13 +306,13 @@ class TestDSNAT(BaseDSNAT):
         policy_fix.policy_name = policy_fix.name
 
         self.attach_policy_to_vn(policy_fix, fabric_vn)
-        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_node_ip), (
+        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_node_data_ip), (
             'Ping to external IP failed with allow-any-policy')
 
         #set VN forwarding mode as l3 and verify
         self.set_vn_forwarding_mode(vn1_fixture, forwarding_mode='l3')
 
-        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_node_ip), (
+        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_node_data_ip), (
             'Ping to fabric IP failed with allow-any-policy')
 
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip), (
