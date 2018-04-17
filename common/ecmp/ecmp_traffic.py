@@ -236,7 +236,7 @@ class ECMPTraffic(VerifySvcChain):
 
         # end verify_flow_thru_si
 
-    def verify_flow_records(self, src_vm, src_ip=None, dst_ip=None, flow_count=3, protocol='17'):
+    def verify_flow_records(self, src_vm, src_ip=None, dst_ip=None, flow_count=3, protocol='17', stream_list=None):
 
         self.logger.info('Checking Flow records')
         vn_fq_name = src_vm.vn_fq_name
@@ -247,14 +247,27 @@ class ECMPTraffic(VerifySvcChain):
         self.logger.debug('Flow Index of the src_vm is %s' % nh_id)
         inspect_h = self.agent_inspect[src_vm.vm_node_ip]
 
+        proto_map = {'udp': '17', 'tcp': '6', 'icmp': '1'}
         flow_result = True
-        for i in range(0,flow_count):
-            src_port = unicode(8000)
-            dest_port =unicode(9000+i)
-            flow_rec = inspect_h.get_vna_fetchflowrecord(
-                nh=nh_id, sip=src_ip, dip=dst_ip, sport=src_port, dport=dest_port, protocol=protocol)
-            if flow_rec is None:
-                flow_result = False
+        if stream_list:
+            for stream in stream_list:
+                src_ip = stream.l3.src
+                dst_ip = stream.l3.dst
+                src_port = unicode(stream.l4.sport)
+                dest_port = unicode(stream.l4.dport)
+                protocol = proto_map[stream.l3.proto]
+                flow_rec = inspect_h.get_vna_fetchflowrecord(
+                    nh=nh_id, sip=src_ip, dip=dst_ip, sport=src_port, dport=dest_port, protocol=protocol)
+                if flow_rec is None:
+                    flow_result = False
+        else:
+            for i in range(0,flow_count):
+                src_port = unicode(8000)
+                dest_port =unicode(9000+i)
+                flow_rec = inspect_h.get_vna_fetchflowrecord(
+                    nh=nh_id, sip=src_ip, dip=dst_ip, sport=src_port, dport=dest_port, protocol=protocol)
+                if flow_rec is None:
+                    flow_result = False
         if flow_result:
             self.logger.info('Flow between %s and %s seen' % (dst_ip, src_ip))
         else:
