@@ -7,11 +7,23 @@ import time
 class TestSNAT(BaseK8sTest):
     @classmethod
     def setUpClass(cls):
-        super(TestSNAT, cls).setUpClass()
+        try:
+            super(TestSNAT, cls).setUpClass()
+            cls.setup_fabric_gw()
+        except:
+            cls.tearDownClass()
+            raise
 
     @classmethod
     def tearDownClass(cls):
+        cls.cleanup_fabric_gw()
         super(TestSNAT, cls).tearDownClass()
+    def is_test_applicable(self):
+        '''verify the fabroic gateway info
+        '''
+        if not self.inputs.fabric_gw_info:
+            return (False , "Fabric gateway is needed for the test run)
+        return (True , None)
 
     def setup_namespaces_pods_for_snat_test(self, isolation=False ,ip_fabric_snat=False):
         """ common routine to create the namesapces and the pods  by enabling snat
@@ -20,8 +32,10 @@ class TestSNAT(BaseK8sTest):
         """
         namespace1_name = get_random_name("ns1")
         namespace2_name = get_random_name("ns2")
-        namespace1 = self.setup_namespace(name = namespace1_name, isolation = isolation,ip_fabric_snat=ip_fabric_snat)
-        namespace2 = self.setup_namespace(name = namespace2_name, isolation = isolation,ip_fabric_snat=ip_fabric_snat)
+        namespace1 = self.setup_namespace(name = namespace1_name, isolation = isolation,
+                                          ip_fabric_snat=ip_fabric_snat)
+        namespace2 = self.setup_namespace(name = namespace2_name, isolation = isolation,
+                                          ip_fabric_snat=ip_fabric_snat)
         #verifying namespaces have been created
         assert namespace1.verify_on_setup()
         assert namespace2.verify_on_setup()
@@ -78,20 +92,20 @@ class TestSNAT(BaseK8sTest):
            6.ping from ns1:pod1 to dafeult:pod1 should FAIL
         """
         client1, client2, client3 = self.setup_namespaces_pods_for_snat_test(isolation=True,
-                                                                            ip_fabric_snat=True) 
+                                                                            ip_fabric_snat=True)
         assert client1[0].ping_to_ip(self.inputs.public_host)
         assert client1[1].ping_to_ip(self.inputs.public_host,container="c1")
         assert client1[1].ping_to_ip(self.inputs.public_host,container="c2")
         assert client2[0].ping_to_ip(self.inputs.public_host)
         assert client1[0].ping_to_ip(client1[2].pod_ip)
-        #assert client1[0].ping_to_ip(client2[0].pod_ip, expectation=False)
-        #assert client1[0].ping_to_ip(client3[0].pod_ip, expectation=False)
-    #end test_pod_publicreachability_with_snat_enabled 
+        assert client1[0].ping_to_ip(client2[0].pod_ip, expectation=False)
+        assert client1[0].ping_to_ip(client3[0].pod_ip, expectation=False)
+    #end test_pod_publicreachability_with_snat_enabled
 
     @preposttest_wrapper
     def test_snat_forwarding_disabled_by_default(self):
         """
-        IP Fabric Forwaring is disabled by default 
+        IP Fabric Forwaring is disabled by default
            1.create an isolated namespace with out ip snat forwarding enabled and verify
            2.create a pod in the namespace created in step 1 and verify
            3.public reachability should fail
@@ -109,12 +123,12 @@ class TestSNAT(BaseK8sTest):
         self.perform_cleanup(namespace1)
         #recreate the same namespace with ip fabric snat enabled this time
         time.sleep(5)
-        namespace1 = self.setup_namespace(name=namespace1_name, isolation=True, 
+        namespace1 = self.setup_namespace(name=namespace1_name, isolation=True,
                                                               ip_fabric_snat=True)
         pod1_in_ns1 = self.setup_ubuntuapp_pod(namespace=namespace1_name)
         assert pod1_in_ns1.verify_on_setup()
         assert pod1_in_ns1.ping_to_ip(self.inputs.public_host)
-    #end test_snat_forwarding_disabled_by_default 
+    #end test_snat_forwarding_disabled_by_default
     
     @preposttest_wrapper
     def test_ping_with_jumbo_frame(self):
@@ -127,16 +141,17 @@ class TestSNAT(BaseK8sTest):
             5.ping from ns1:pod1 to ns2:pod1 should FAIL with jumbo frame
             6.ping from ns1:pod1 to dafeult:pod1 should FAIL with jumbo frame
         """
-        jumbo_frame_size="8192"
-        client1, client2, client3 = self.setup_namespaces_pods_for_snat_test(isolation=True, ip_fabric_snat=True) 
-                                                            
-        #TODO ping with jumbo frames fails to the outside of juniper network 
-        #assert client1[0].ping_to_ip(self.inputs.public_host, jumboframe=jumbo_frame_size)
+        jumbo_frame_size="4000"
+        client1, client2, client3 = self.setup_namespaces_pods_for_snat_test(isolation=True,
+                                                                             ip_fabric_snat=True)
+        #TODO ping with jumbo frames fails to the outside of juniper network
+        assert client1[0].ping_to_ip(self.inputs.inputs.cfgm_ip, jumboframe=jumbo_frame_size)
         assert client1[0].ping_to_ip(client2[0].pod_ip, jumboframe=jumbo_frame_size,
                                      expectation=False,)
         #assert client1[1].ping_to_ip(client1[0],jumboframe=jumbo_frame_size, container="c1")
-        #assert client1[1].ping_to_ip(self.inputs.public_host,jumboframe=jumbo_frame_size, container="c2")
-        assert client1[0].ping_to_ip(client3[0].pod_ip, jumboframe=jumbo_frame_size, 
+        assert client1[1].ping_to_ip(self.inputs.inputs.cfgm_ip,jumboframe=jumbo_frame_size,
+                                     container="c2")
+        assert client1[0].ping_to_ip(client3[0].pod_ip, jumboframe=jumbo_frame_size,
                                      expectation=False)
     #end test_ping_with_jumbo_frame
 
@@ -150,7 +165,7 @@ class TestSNAT(BaseK8sTest):
             4.delete the namespace and pod
             5.recreate the same namespce names with ip snat enabled
             6.create the pod
-            7.verify the pubilc reahcbility 
+            7.verify the pubilc reahcbility
         """
         namespace1_name = "test"
         namespace1 = self.setup_namespace(name=namespace1_name, isolation=True, ip_fabric_snat=True)
@@ -170,10 +185,10 @@ class TestSNAT(BaseK8sTest):
     @preposttest_wrapper
     def test_deployment_with_replica_update_for_snat(self):
         '''
-        Verifies snat forwarding is enabled though deployment object 
+        Verifies snat forwarding is enabled though deployment object
             1.Create a deployment with n replicas with snat enabled
             2.verify the replicas able to reach the public network
-            3.update the pod  replicas 
+            3.update the pod  replicas
             4.should be able to reach pubic network from each pod
         '''
         labels = {'app': 'test'}
@@ -208,7 +223,6 @@ class TestSNAT(BaseK8sTest):
         })
         dep_1 =  self.setup_deployment(name=name, namespace=namespace1_name,
                                      metadata=metadata, spec=spec)
-          
         assert dep_1.verify_on_setup()
         s_pod_fixtures = []
         server_pods = dep_1.get_pods_list()
