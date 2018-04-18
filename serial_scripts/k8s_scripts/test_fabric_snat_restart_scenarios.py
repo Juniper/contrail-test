@@ -13,11 +13,26 @@ class TestFabricSNATRestarts(BaseK8sTest):
 
     @classmethod
     def setUpClass(cls):
-        super(TestFabricSNATRestarts, cls).setUpClass()
+        try:
+            super(TestFabricSNATRestarts, cls).setUpClass()
+            cls.setup_fabric_gw()
+        except:
+            cls.tearDownClass()
+            raise
 
     @classmethod
     def tearDownClass(cls):
+        cls.cleanup_fabric_gw()
         super(TestFabricSNATRestarts, cls).tearDownClass()
+
+    def is_test_applicable(self):
+        '''verify the fabroic gateway session is established with controller
+        '''
+        status = self.verify_fabric_gw_status(self.inputs.fabric_gw_info[0][1])
+        if not status:
+            return (False, 'BGP peering not established with fabric gateway')
+        return (True, None)
+
     
     def setup_common_namespaces_pods(self, isolation=False, ip_fabric_snat=False, ip_fabric_forwarding=False):
         """ common routine to create the namesapces and the pods  by enabling the fabric snat and fabric forwarding
@@ -87,7 +102,6 @@ class TestFabricSNATRestarts(BaseK8sTest):
         assert client1[0].ping_to_ip(client3[0].pod_ip)
         assert client1[0].ping_to_ip(client4[0].pod_ip)
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_snat_with_kube_manager_restart(self):
         """
@@ -105,7 +119,6 @@ class TestFabricSNATRestarts(BaseK8sTest):
         
     #end test_snat_with_kube_manager_restart 
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_snat_with_vrouter_agent_restart(self):
         """
@@ -156,7 +169,6 @@ class TestFabricSNATRestarts(BaseK8sTest):
         self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4)
     #end test_snat_with_docker_restart
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_snat_with_kubelet_restart_on_slave(self):
         """
@@ -174,7 +186,6 @@ class TestFabricSNATRestarts(BaseK8sTest):
         self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4)
     #end test_snat_with_kubelet_restart_on_slave
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_snat_with_kubelet_restart_on_master(self):
         """

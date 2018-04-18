@@ -1,5 +1,4 @@
 from fabric.api import local, settings
-
 import time
 import re
 import test
@@ -7,6 +6,8 @@ import ipaddress
 import vnc_api_test
 import uuid
 from tcutils.util import get_random_name, retry
+from tcutils.verification_util import * 
+from lxml import etree
 from k8s.pod import PodFixture
 from k8s.service import ServiceFixture
 from k8s.ingress import IngressFixture
@@ -36,6 +37,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                                               logger=cls.logger)
         cls.vnc_lib_fixture = cls.connections.vnc_lib_fixture
         cls.vnc_lib = cls.connections.vnc_lib
+        cls.vnc_h = cls.vnc_lib_fixture.vnc_h
         cls.agent_inspect = cls.connections.agent_inspect
         cls.cn_inspect = cls.connections.cn_inspect
         cls.analytics_obj = cls.connections.analytics_obj
@@ -169,8 +171,8 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         return self.useFixture(NamespaceFixture(
             connections=self.connections,
             name=name, isolation=isolation,
-             ip_fabric_snat=ip_fabric_snat,
-             ip_fabric_forwarding=ip_fabric_forwarding,
+            ip_fabric_snat=ip_fabric_snat,
+            ip_fabric_forwarding=ip_fabric_forwarding,
             custom_isolation = custom_isolation,
             fq_network_name = fq_network_name))
     # end create_namespace
@@ -1093,3 +1095,58 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         #cmd = r'sed  -i "/KUBERNETES/a cluster_project = {\\"project\\": \\"%s\\", \\"domain\\": \\"default-domain\\"}" /etc/contrail/contrail-kubernetes.conf' \
         #        % project_name
     #end revert_cluster_project
+    @classmethod
+    def setup_fabric_gw(cls):
+        ''' Configures  underlay  Gateway
+        '''
+        if len(cls.inputs.fabric_gw_info[0]) != 2:
+           assert " Fabric Gateway details either not specified or incorrectly mentioned,Check yaml"
+        cls.name = cls.inputs.fabric_gw_info[0][0]
+        cls.ip = cls.inputs.fabric_gw_info[0][1]
+        cls.af = ["inet"]
+        assert cls.vnc_h.provision_bgp_router(cls.name, cls.ip, cls.inputs.router_asn, cls.af)
+    #end setup_fabric_gw
+
+    @classmethod
+    def cleanup_fabric_gw(cls):
+        ''' cleanup  underlay  Gateway
+        '''
+        if not cls.inputs.fabric_gw_info:
+           return
+        cls.name = cls.inputs.fabric_gw_info[0][0]
+        cls.vnc_h.delete_bgp_router(cls.name)
+    #end fabric_fabric_gw
+
+    def get_fabric_gw_status(self, ip_address):
+       '''Get the list of BPG peers for the control node
+       '''
+       path = 'Snh_BgpNeighborReq?domain=&ip_address=%s' % ip_address
+       xpath = '/BgpNeighborListResp/neighbors/list/BgpNeighborResp'
+       tbl = self.get_response(self.inputs.inputs.cfgm_ip, path)
+       table_list = EtreeToDict(xpath).get_all_entry(tbl)
+       return_val = 'PeerNotFound'
+       for index in range(len(table_list)):
+           if re.search(ip_address, table_list[index]['peer_address'], re.IGNORECASE):
+               return_val = table_list[index]['state']
+       return return_val
+
+    def get_response(self, ip, path):
+       response = None
+       while True:
+          response = VerificationUtilBase(ip, 8083, XmlDrv).dict_get(path) 
+          if response != None:
+             break
+          print "Retry http get for %s after a second" % (path)
+          time.sleep(1)
+       return response
+
+    @retry(tries=10, delay=5)
+    def verify_fabric_gw_status(self,fabric_gw_ip):
+       '''Verifies the bgp session between the controller and the fabric gateway
+       '''
+       self.logger.info('Checking for the BGP status with fabric gateway')
+       status = self.get_fabric_gw_status(fabric_gw_ip)
+       if status != 'Established':
+          return False
+       self.logger.info('BGP peering established with fabric gateway')
+       return True
