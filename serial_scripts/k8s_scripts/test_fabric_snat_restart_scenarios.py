@@ -13,10 +13,16 @@ class TestFabricSNATRestarts(BaseK8sTest):
 
     @classmethod
     def setUpClass(cls):
-        super(TestFabricSNATRestarts, cls).setUpClass()
+        try:
+            super(TestFabricSNATRestarts, cls).setUpClass()
+            cls.setup_fabric_gw()
+        except:
+            cls.tearDownClass()
+            raise
 
     @classmethod
     def tearDownClass(cls):
+        cls.cleanup_fabric_gw()
         super(TestFabricSNATRestarts, cls).tearDownClass()
     
     def setup_common_namespaces_pods(self, isolation=False, ip_fabric_snat=False, ip_fabric_forwarding=False):
@@ -138,7 +144,6 @@ class TestFabricSNATRestarts(BaseK8sTest):
         self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4)
     #end test_snat_pod_restart
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_snat_with_docker_restart(self):
         """

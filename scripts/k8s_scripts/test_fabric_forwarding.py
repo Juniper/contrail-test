@@ -1,17 +1,23 @@
 from common.k8s.base import BaseK8sTest
+from tcutils.verification_util import *
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import get_random_name
 import test
 import time
 
 class TestFabricFWD(BaseK8sTest):
-
     @classmethod
     def setUpClass(cls):
-        super(TestFabricFWD, cls).setUpClass()
+        try:
+            super(TestFabricFWD, cls).setUpClass()
+            cls.setup_fabric_gw()
+        except:
+            cls.tearDownClass()
+            raise
 
     @classmethod
     def tearDownClass(cls):
+        cls.cleanup_fabric_gw()
         super(TestFabricFWD, cls).tearDownClass()
 
     def setup_namespaces_pods_for_fabric_test(self, isolation=False,ip_fabric_forwarding=False):
@@ -26,8 +32,8 @@ class TestFabricFWD(BaseK8sTest):
         namespace2 = self.setup_namespace(name = namespace2_name, isolation = isolation,
                                           ip_fabric_forwarding = ip_fabric_forwarding)
         #verifying namespaces have been created
-        #assert namespace1.verify_on_setup()
-        #assert namespace2.verify_on_setup()
+        assert namespace1.verify_on_setup()
+        assert namespace2.verify_on_setup()
         label = "fabric"
         #create a pod in default namespaces
         pod1_in_default_ns = self.setup_ubuntuapp_pod()
@@ -81,9 +87,8 @@ class TestFabricFWD(BaseK8sTest):
            6.ping from ns1:pod1 to dafeult:pod1 should FAIL
         """
         client1, client2, client3 = self.setup_namespaces_pods_for_fabric_test(isolation=True, 
-                                                              ip_fabric_forwarding=True)
-        #TODO:figure out a way to run the command from a specific container"
-        #assert client1[0].ping_to_ip(self.inputs.public_host)
+                                                                    ip_fabric_forwarding=True)
+        assert client1[0].ping_to_ip(self.inputs.public_host)
         assert client1[1].ping_to_ip(self.inputs.public_host,container="c1")
         assert client1[1].ping_to_ip(self.inputs.public_host,container="c2")
         assert client2[0].ping_to_ip(self.inputs.public_host)
