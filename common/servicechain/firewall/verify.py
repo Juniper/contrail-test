@@ -285,29 +285,31 @@ class VerifySvcFirewall(VerifySvcChain):
         svm_cmd_down = 'sudo ifconfig ' + svm_intf + ' down'
         local_ip = self.get_mgmt_local_ip(si_fixture, svm_index=0)
         si_fixture.svm_list[0].run_cmd_on_vm(cmds=[svm_cmd_down], as_sudo=True, local_ip=local_ip)
+        delay = ((hc_fixture.delay + hc_fixture.timeout)
+                 * hc_fixture.max_retries) + 1
+        self.logger.info('Will sleep for %ss for HC to kick in' % delay)
+        self.sleep(delay)
         if len(si_fixture.svm_list) > 1:
             errmsg1 = "Ping to Right VM %s from Left VM still passing" % right_vm_fixture.vm_ip
             # routes should still be present
             for si_fix in si_fixtures:
                 for vn_fq_name in [ left_vn_fq_name, right_vn_fq_name]:
                     check_si_as_nh=False
-                    if si_fixtures.index(si_fix) == 0 and vn_fq_name == left_vn_fq_name:
-                        check_si_as_nh=True
                     result, msg = self.validate_svc_action(
                         vn_fq_name, si_fix, right_vm_fixture, src='left', check_si_as_nh=check_si_as_nh, check_rt_in_control=True)
                     assert result, msg
-            assert left_vm_fixture.ping_with_certainty(
-                right_vm_fixture.vm_ip, count='3'), errmsg
+            result = True
+            for i in range(0, 5):
+                ping_test = left_vm_fixture.ping_with_certainty(
+                    right_vm_fixture.vm_ip, count='3'), errmsg
+                result = result and ping_test
+            assert result
             for index, si_svm in enumerate(si_fixture.svm_list):
                 if index != 0:
                     local_ip = self.get_mgmt_local_ip(si_fixture, svm_index=index)
                     si_fixture.svm_list[index].run_cmd_on_vm(cmds=[svm_cmd_down], as_sudo=True, local_ip=local_ip)
             assert left_vm_fixture.ping_with_certainty(
                 right_vm_fixture.vm_ip, count='3', expectation=False), errmsg1
-        delay = ((hc_fixture.delay + hc_fixture.timeout)
-                 * hc_fixture.max_retries) + 1
-        self.logger.info('Will sleep for %ss for HC to kick in' % delay)
-        self.sleep(delay)
         left_ri_ecmp = False
         if si_list1:
             left_ri_ecmp = 2
