@@ -198,9 +198,8 @@ class VerifySvcChain(ConfigSvcChain):
                             'Route to %s found in the Active Control-Node %s ri %s' %
                             (dst_vm.vm_ip, new_controller, ri))
                     else:
-                        result = False
-                        assert result, 'Route to %s not found in the Active Control-Node ri %s %s' %(dst_vm.vm_ip, new_controller, ri)
-
+                        self.logger.error('Route to %s not found in the Active Control-Node ri %s %s' %(dst_vm.vm_ip, new_controller, ri))
+                        return False
             paths = inspect_h1.get_vna_active_route(
                 vrf_id=vrf_id, ip=dst_vm.vm_ip, prefix=net)
             errmsg = "Route to %s not seen in %s" % (dst_vm.vm_ip, vn_fq_name)
