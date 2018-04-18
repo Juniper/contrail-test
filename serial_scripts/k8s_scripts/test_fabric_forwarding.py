@@ -3,18 +3,23 @@ from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import get_random_name
 import time
 import test
-
 class TestFabricFWDRestarts(BaseK8sTest):
 
     @classmethod
     def setUpClass(cls):
-        super(TestFabricFWDRestarts, cls).setUpClass()
+        try:
+            super(TestFabricFWDRestarts, cls).setUpClass()
+            cls.setup_fabric_gw()
+        except:
+            cls.tearDownClass()
+            raise
 
     @classmethod
     def tearDownClass(cls):
+        cls.cleanup_fabric_gw()
         super(TestFabricFWDRestarts, cls).tearDownClass()
     
-    def setup_namespaces_pods_for_fabric_restart_for_fabric_restart(self, isolation=False,ip_fabric_forwarding=False):
+    def setup_namespaces_pods_for_fabric_restart(self, isolation=False,ip_fabric_forwarding=False):
         """ common routine to create the namesapces and the pods  by enabling the fabric forwarding
             1.create 2 namespaces (ns1,ns2:enable fabric forwarding)
             2.create pods in each namespace and verify(ns1:pod1,pod2, ns2:pod1, ns3:pod1 ,default:pod1)

@@ -7,10 +7,16 @@ import time
 class TestSNAT(BaseK8sTest):
     @classmethod
     def setUpClass(cls):
-        super(TestSNAT, cls).setUpClass()
+        try:
+            super(TestSNAT, cls).setUpClass()
+            cls.setup_fabric_gw()
+        except:
+            cls.tearDownClass()
+            raise
 
     @classmethod
     def tearDownClass(cls):
+        cls.cleanup_fabric_gw()
         super(TestSNAT, cls).tearDownClass()
 
     def setup_namespaces_pods_for_snat_test(self, isolation=False ,ip_fabric_snat=False):
@@ -84,8 +90,8 @@ class TestSNAT(BaseK8sTest):
         assert client1[1].ping_to_ip(self.inputs.public_host,container="c2")
         assert client2[0].ping_to_ip(self.inputs.public_host)
         assert client1[0].ping_to_ip(client1[2].pod_ip)
-        #assert client1[0].ping_to_ip(client2[0].pod_ip, expectation=False)
-        #assert client1[0].ping_to_ip(client3[0].pod_ip, expectation=False)
+        assert client1[0].ping_to_ip(client2[0].pod_ip, expectation=False)
+        assert client1[0].ping_to_ip(client3[0].pod_ip, expectation=False)
     #end test_pod_publicreachability_with_snat_enabled 
 
     @preposttest_wrapper
