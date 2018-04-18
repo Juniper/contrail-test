@@ -13,29 +13,45 @@ class TestFabricSNATRestarts(BaseK8sTest):
 
     @classmethod
     def setUpClass(cls):
-        super(TestFabricSNATRestarts, cls).setUpClass()
+        try:
+            super(TestFabricSNATRestarts, cls).setUpClass()
+            cls.setup_fabric_gw()
+        except:
+            cls.tearDownClass()
+            raise
 
     @classmethod
     def tearDownClass(cls):
+        cls.cleanup_fabric_gw()
         super(TestFabricSNATRestarts, cls).tearDownClass()
+
+    def is_test_applicable(self):
+        '''verify the fabroic gateway  info
+        '''
+        if not self.inputs.fabric_gw_info:
+            return (False , "Fabric gateway is needed for the test run")
+        return (True , None)
+
     
-    def setup_common_namespaces_pods(self, isolation=False, ip_fabric_snat=False, ip_fabric_forwarding=False):
-        """ common routine to create the namesapces and the pods  by enabling the fabric snat and fabric forwarding
+    def setup_common_namespaces_pods(self, isolation=False, ip_fabric_snat=False,
+                                     ip_fabric_forwarding=False):
+        """ common routine to create the namesapces and the pods  by enabling the fabric snat 
+            and fabric forwarding
             1.create 3 namespaces (ns1:enable snat,ns2:enable fabric forwarding and snat,ns3:enable snat)
             2.create pods in each namespace and verify(ns1:pod1,pod2, ns2:pod1, ns3:pod1 ,default:pod1)
         """
         namespace1_name = get_random_name("ns1")
         namespace2_name = get_random_name("ns2")
         namespace3_name = get_random_name("ns3")
-        namespace1 = self.setup_namespace(name = namespace1_name, isolation = isolation, 
+        namespace1 = self.setup_namespace(name = namespace1_name, isolation = isolation,
                                                  ip_fabric_snat = ip_fabric_snat,
                                                  ip_fabric_forwarding = False)
-        namespace2 = self.setup_namespace(name = namespace2_name, isolation = isolation, 
-                                                 ip_fabric_snat = ip_fabric_snat, 
+        namespace2 = self.setup_namespace(name = namespace2_name, isolation = isolation,
+                                                 ip_fabric_snat = ip_fabric_snat,
                                                  ip_fabric_forwarding = ip_fabric_forwarding)
-        namespace3 = self.setup_namespace(name = namespace3_name, isolation = isolation, 
-                                                 ip_fabric_snat = ip_fabric_snat, 
-                                                 ip_fabric_forwarding = False) 
+        namespace3 = self.setup_namespace(name = namespace3_name, isolation = isolation,
+                                                 ip_fabric_snat = ip_fabric_snat,
+                                                 ip_fabric_forwarding = False)
         assert namespace1.verify_on_setup()
         assert namespace2.verify_on_setup()
         assert namespace3.verify_on_setup()
@@ -68,7 +84,8 @@ class TestFabricSNATRestarts(BaseK8sTest):
         return (client1, client2, client3, client4)
     #end setup_common_namespaces_pods
 
-    def verify_ping_between_pods_across_namespaces_and_public_network(self, client1, client2, client3, client4):
+    def verify_ping_between_pods_across_namespaces_and_public_network(self, client1, client2,
+                                                                      client3, client4):
         """
            1.verifies the ping between pods in the snat enabled nnamespace
            2.verifies the ping between pods across the snat enabled nnamespaces
@@ -78,16 +95,14 @@ class TestFabricSNATRestarts(BaseK8sTest):
         """
         assert client1[0].ping_to_ip(self.inputs.public_host)
         assert client1[1].ping_to_ip(self.inputs.public_host)
-        assert client2[0].ping_to_ip(self.inputs.public_host)#ip fabric forwaring takes precedence and reach public network
-        #verifying the pods rechability with in the snat enabled namespace
+        assert client2[0].ping_to_ip(self.inputs.public_host)#ip fabric forwaring takes precedence
         assert client1[0].ping_to_ip(client1[1].pod_ip)
         #verifying pods in isolated/default namespaces shoud not reach each other when snat is enabled
         #TODO :Need to enable these checks after snat is fixed
-        assert client1[0].ping_to_ip(client2[0].pod_ip)
-        assert client1[0].ping_to_ip(client3[0].pod_ip)
-        assert client1[0].ping_to_ip(client4[0].pod_ip)
+        assert client1[0].ping_to_ip(client2[0].pod_ip, expectation=False)
+        assert client1[0].ping_to_ip(client3[0].pod_ip, expectation=False)
+        assert client1[0].ping_to_ip(client4[0].pod_ip, expectation=False)
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_snat_with_kube_manager_restart(self):
         """
@@ -98,14 +113,15 @@ class TestFabricSNATRestarts(BaseK8sTest):
         client1, client2, client3, client4 = self.setup_common_namespaces_pods(isolation=True,
                                                                               ip_fabric_snat=True,
                                                                               ip_fabric_forwarding=True)
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4) 
-        #perform the kube manager restart  
+        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2,
+                                                                           client3, client4)
+        #perform the kube manager restart
         self.restart_kube_manager()
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4) 
+        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2,
+                                                                           client3, client4)
         
-    #end test_snat_with_kube_manager_restart 
+    #end test_snat_with_kube_manager_restart
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_snat_with_vrouter_agent_restart(self):
         """
@@ -116,11 +132,13 @@ class TestFabricSNATRestarts(BaseK8sTest):
         client1, client2, client3, client4 = self.setup_common_namespaces_pods(isolation=True,
                                                                               ip_fabric_snat=True,
                                                                               ip_fabric_forwarding=True)
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4)
-        #perform the kube manager restart 
+        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2,
+                                                                           client3, client4)
+        #perform the kube manager restart
         self.restart_vrouter_agent()
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4)
-    #end test_snat_with_vrouter_agent_restart 
+        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2,
+                                                                           client3, client4)
+    #end test_snat_with_vrouter_agent_restart
 
     @preposttest_wrapper
     def test_snat_pod_restart(self):
@@ -135,7 +153,8 @@ class TestFabricSNATRestarts(BaseK8sTest):
         self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4)
         assert self.restart_pod(client1[0])
         assert self.restart_pod(client2[0])
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4)
+        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2,
+                                                                           client3, client4)
     #end test_snat_pod_restart
 
     @test.attr(type=['k8s_sanity'])
@@ -149,14 +168,15 @@ class TestFabricSNATRestarts(BaseK8sTest):
         client1, client2, client3, client4 = self.setup_common_namespaces_pods(isolation=True,
                                                                               ip_fabric_snat=True,
                                                                               ip_fabric_forwarding=True)
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4)
+        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2,
+                                                                           client3, client4)
         self.inputs.restart_service(service_name = "docker",
                                             host_ips = self.inputs.k8s_slave_ips)
         time.sleep(60) # Wait timer for all contrail service to come up.
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4)
+        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2,
+                                                                           client3, client4)
     #end test_snat_with_docker_restart
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_snat_with_kubelet_restart_on_slave(self):
         """
@@ -167,14 +187,15 @@ class TestFabricSNATRestarts(BaseK8sTest):
         client1, client2, client3, client4 = self.setup_common_namespaces_pods(isolation=True,
                                                                                ip_fabric_snat=True,
                                                                                ip_fabric_forwarding=True)
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4)
+        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2,
+                                                                           client3, client4)
         self.inputs.restart_service(service_name = "kubelet",
                                             host_ips = self.inputs.k8s_slave_ips)
         time.sleep(30) # Wait timer for all kubernetes pods to stablise.
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4)
+        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2,
+                                                                           client3, client4)
     #end test_snat_with_kubelet_restart_on_slave
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_snat_with_kubelet_restart_on_master(self):
         """
@@ -185,11 +206,13 @@ class TestFabricSNATRestarts(BaseK8sTest):
         client1, client2, client3, client4 = self.setup_common_namespaces_pods(isolation=True,
                                                                               ip_fabric_snat=True,
                                                                               ip_fabric_forwarding=True)
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4)
+        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2,
+                                                                           client3, client4)
         self.inputs.restart_service(service_name = "kubelet",
                                             host_ips = [self.inputs.k8s_master_ip])
         time.sleep(30) # Wait timer for all kubernetes pods to stablise.
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4)
+        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2,
+                                                                           client3, client4)
     #end test_snat_with_kubelet_restart_on_master
 
     @preposttest_wrapper
@@ -202,11 +225,13 @@ class TestFabricSNATRestarts(BaseK8sTest):
         client1, client2, client3, client4 = self.setup_common_namespaces_pods(isolation=True,
                                                                               ip_fabric_snat=True,
                                                                               ip_fabric_forwarding=True)
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4)
+        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2,
+                                                                           client3, client4)
         self.inputs.restart_service(service_name = "docker",
                                             host_ips = [self.inputs.k8s_master_ip])
         time.sleep(60) # Wait timer for all contrail service to come up.
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4)
+        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2,
+                                                                           client3, client4)
     #end test_snat_with_docker_restart
 
 
@@ -220,9 +245,11 @@ class TestFabricSNATRestarts(BaseK8sTest):
         client1, client2, client3, client4 = self.setup_common_namespaces_pods(isolation=True,
                                                                               ip_fabric_snat=True,
                                                                               ip_fabric_forwarding=True)
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4)
+        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2,
+                                                                           client3, client4)
         self.inputs.reboot(self.inputs.k8s_master_ip)
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4)
+        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2,
+                                                                           client3, client4)
     #end test_snat_with_master_reboot
 
     @preposttest_wrapper
@@ -235,9 +262,11 @@ class TestFabricSNATRestarts(BaseK8sTest):
         client1, client2, client3, client4 = self.setup_common_namespaces_pods(isolation=True,
                                                                               ip_fabric_snat=True,
                                                                               ip_fabric_forwarding=True)
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4)
+        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2,
+                                                                           client3, client4)
         self.inputs.reboot(self.inputs.k8s_master_ip)
         for node in self.inputs.k8s_slave_ips:
              self.inputs.reboot(node)
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3, client4)
+        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2,
+                                                                           client3, client4)
     #end test_snat_with_nodes_reboot
