@@ -1,5 +1,4 @@
 from fabric.api import local, settings
-
 import time
 import re
 import test
@@ -7,6 +6,8 @@ import ipaddress
 import vnc_api_test
 import uuid
 from tcutils.util import get_random_name, retry
+from tcutils.verification_util import *
+from lxml import etree
 from k8s.pod import PodFixture
 from k8s.service import ServiceFixture
 from k8s.ingress import IngressFixture
@@ -36,6 +37,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                                               logger=cls.logger)
         cls.vnc_lib_fixture = cls.connections.vnc_lib_fixture
         cls.vnc_lib = cls.connections.vnc_lib
+        cls.vnc_h = cls.vnc_lib_fixture.vnc_h
         cls.agent_inspect = cls.connections.agent_inspect
         cls.cn_inspect = cls.connections.cn_inspect
         cls.analytics_obj = cls.connections.analytics_obj
@@ -169,8 +171,8 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         return self.useFixture(NamespaceFixture(
             connections=self.connections,
             name=name, isolation=isolation,
-             ip_fabric_snat=ip_fabric_snat,
-             ip_fabric_forwarding=ip_fabric_forwarding,
+            ip_fabric_snat=ip_fabric_snat,
+            ip_fabric_forwarding=ip_fabric_forwarding,
             custom_isolation = custom_isolation,
             fq_network_name = fq_network_name))
     # end create_namespace
@@ -556,7 +558,6 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                 if egress_item == {}:
                     egress_list.append({})
                     break
-                
                 for to_item in egress_item.get('to', {}):
                     egress_pod_dict = {}
                     egress_ns_dict = {}
@@ -564,7 +565,6 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                     egress_pod_selector = None
                     egress_ns_selector = None
                     egress_ip_block = None
-                    
                     to_item_dict = to_item.get('pod_selector') or {}
                     for k, v in to_item_dict.iteritems():
                         if not egress_pod_dict:
@@ -1086,10 +1086,36 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             cmd = r'crudini --set /entrypoint.sh KUBERNETES cluster_project \\${KUBERNETES_CLUSTER_PROJECT:-\\"{\'domain\':\'default-domain\'\,\'project\':\'%s\'}\\"}'\
               % project_name
         for kube_manager in self.inputs.kube_manager_ips:
-            self.inputs.run_cmd_on_server(kube_manager, cmd, 
+            self.inputs.run_cmd_on_server(kube_manager, cmd,
                                           container='contrail-kube-manager',
                                           shell_prefix = None)
         self.restart_kube_manager()
         #cmd = r'sed  -i "/KUBERNETES/a cluster_project = {\\"project\\": \\"%s\\", \\"domain\\": \\"default-domain\\"}" /etc/contrail/contrail-kubernetes.conf' \
         #        % project_name
     #end revert_cluster_project
+    @classmethod
+    def setup_fabric_gw(cls):
+        ''' Configures  underlay  Gateway
+        '''
+        if not cls.inputs.fabric_gw_info:
+            return
+        if len(cls.inputs.fabric_gw_info[0]) != 2:
+            assert False, "Fabric Gateway details are incorrectly mentioned, Check yaml"
+        cls.name = cls.inputs.fabric_gw_info[0][0]
+        cls.ip = cls.inputs.fabric_gw_info[0][1]
+        cls.af = ["inet"]
+        assert cls.vnc_h.provision_bgp_router(cls.name, cls.ip, cls.inputs.router_asn, cls.af)
+        time.sleep(40)
+    #end setup_fabric_gw
+
+    @classmethod
+    def cleanup_fabric_gw(cls):
+        ''' cleanup  underlay  Gateway
+        '''
+        if not cls.inputs.fabric_gw_info:
+           return
+        cls.name = cls.inputs.fabric_gw_info[0][0]
+        cls.vnc_h.delete_bgp_router(cls.name)
+    #end fabric_fabric_gw
+
+
