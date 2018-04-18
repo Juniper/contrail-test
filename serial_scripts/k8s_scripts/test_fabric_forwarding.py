@@ -3,15 +3,20 @@ from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import get_random_name
 import time
 import test
-
 class TestFabricFWDRestarts(BaseK8sTest):
 
     @classmethod
     def setUpClass(cls):
-        super(TestFabricFWDRestarts, cls).setUpClass()
+        try:
+            super(TestFabricFWDRestarts, cls).setUpClass()
+            cls.setup_fabric_gw()
+        except:
+            cls.tearDownClass()
+            raise
 
     @classmethod
     def tearDownClass(cls):
+        cls.cleanup_fabric_gw()
         super(TestFabricFWDRestarts, cls).tearDownClass()
     
     def setup_namespaces_pods_for_fabric_restart(self, isolation=False,ip_fabric_forwarding=False):

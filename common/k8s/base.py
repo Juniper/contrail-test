@@ -36,6 +36,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                                               logger=cls.logger)
         cls.vnc_lib_fixture = cls.connections.vnc_lib_fixture
         cls.vnc_lib = cls.connections.vnc_lib
+        cls.vnc_h = cls.vnc_lib_fixture.vnc_h
         cls.agent_inspect = cls.connections.agent_inspect
         cls.cn_inspect = cls.connections.cn_inspect
         cls.analytics_obj = cls.connections.analytics_obj
@@ -1093,3 +1094,29 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         #cmd = r'sed  -i "/KUBERNETES/a cluster_project = {\\"project\\": \\"%s\\", \\"domain\\": \\"default-domain\\"}" /etc/contrail/contrail-kubernetes.conf' \
         #        % project_name
     #end revert_cluster_project
+
+    @classmethod
+    def setup_fabric_gw(cls):
+        ''' Configures  underlay  Gateway
+        '''
+        if not len(cls.inputs.fabric_gw_info[0]) != 2:
+           assert " Fabric Gateway details either not specified or incorrectly mentioned,Check yaml"
+        cls.name = cls.inputs.fabric_gw_info[0][0]
+        cls.ip = cls.inputs.fabric_gw_info[0][1]
+        cls.af = ["inet"]
+        assert cls.vnc_h.provision_bgp_router(cls.name, cls.ip, cls.inputs.router_asn, cls.af)
+        time.sleep(60)#this is temporary hook ..will address this 
+                      #as part of is_test_applible routine soon.
+    #end setup_fabric_gw
+
+    @classmethod
+    def cleanup_fabric_gw(cls):
+        ''' cleanup  underlay  Gateway
+        '''
+        if not cls.inputs.fabric_gw_info:
+           return
+        cls.name = cls.inputs.fabric_gw_info[0][0]
+        cls.vnc_h.delete_bgp_router(cls.name)
+    #end fabric_fabric_gw
+
+
