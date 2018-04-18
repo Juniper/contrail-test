@@ -1459,7 +1459,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         dst_vn_fix = config_topo['vn'][topo_obj.vn_of_vm[dst_vm_name]]
         default_secgrp_id = get_secgrp_id_from_name(
             self.connections,
-            ':'.join([self.inputs.domain_name,
+            ':'.join([self.connections.domain_name,
                       self.inputs.project_name,
                       'default']))
 
@@ -1481,7 +1481,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         sg_name = topo_obj.sg_list[0]
         secgrp_id = get_secgrp_id_from_name(
             self.connections,
-            ':'.join([self.inputs.domain_name,
+            ':'.join([self.connections.domain_name,
                       self.inputs.project_name,
                       sg_name]))
 
@@ -1564,7 +1564,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         sg_name = topo_obj.sg_list[0]
         secgrp_id = get_secgrp_id_from_name(
             self.connections,
-            ':'.join([self.inputs.domain_name,
+            ':'.join([self.connections.domain_name,
                       self.inputs.project_name,
                       sg_name]))
 
@@ -1580,7 +1580,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         sg_name = topo_obj.sg_list[1]
         secgrp_id = get_secgrp_id_from_name(
             self.connections,
-            ':'.join([self.inputs.domain_name,
+            ':'.join([self.connections.domain_name,
                       self.inputs.project_name,
                       sg_name]))
 
@@ -1598,7 +1598,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
             sg_name = topo_obj.sg_list[0]
             secgrp_id = get_secgrp_id_from_name(
                 self.connections,
-                ':'.join([self.inputs.domain_name,
+                ':'.join([self.connections.domain_name,
                           self.inputs.project_name,
                           sg_name]))
 
@@ -1676,7 +1676,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         secgrp_id = get_secgrp_id_from_name(
             self.connections,
-            ':'.join([self.inputs.domain_name,
+            ':'.join([self.connections.domain_name,
                       self.inputs.project_name,
                       src_sg_name]))
         # start traffic
@@ -1718,7 +1718,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         if src_vm_fix.vm_node_ip != dst_vm_fix.vm_node_ip:
             secgrp_id = get_secgrp_id_from_name(
                 self.connections,
-                ':'.join([self.inputs.domain_name,
+                ':'.join([self.connections.domain_name,
                           self.inputs.project_name,
                           dst_sg_name]))
 
@@ -1808,7 +1808,7 @@ class SecurityGroupRegressionTests8(BaseSGTest, VerifySecGroup, ConfigPolicy):
         for sg_name in sg_list:
             secgrp_id = get_secgrp_id_from_name(
                 self.connections,
-                ':'.join([self.inputs.domain_name,
+                ':'.join([self.connections.domain_name,
                           self.inputs.project_name,
                           sg_name]))
 
@@ -1952,7 +1952,7 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         sg_name = 'default'
         secgrp_id = get_secgrp_id_from_name(
             self.connections,
-            ':'.join([self.inputs.domain_name,
+            ':'.join([self.connections.domain_name,
                       self.inputs.project_name,
                       sg_name]))
 
@@ -2012,13 +2012,13 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         sg_name = topo_obj.sg_list[0]
         secgrp_id = get_secgrp_id_from_name(
             self.connections,
-            ':'.join([self.inputs.domain_name,
+            ':'.join([self.connections.domain_name,
                       self.inputs.project_name,
                       sg_name]))
 
         default_sg_id = get_secgrp_id_from_name(
             self.connections,
-            ':'.join([self.inputs.domain_name,
+            ':'.join([self.connections.domain_name,
                       self.inputs.project_name,
                       'default']))
 
@@ -2098,13 +2098,13 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         sg_name = topo_obj.sg_list[0]
         secgrp_id = get_secgrp_id_from_name(
             self.connections,
-            ':'.join([self.inputs.domain_name,
+            ':'.join([self.connections.domain_name,
                       self.inputs.project_name,
                       sg_name]))
 
         default_sg_id = get_secgrp_id_from_name(
             self.connections,
-            ':'.join([self.inputs.domain_name,
+            ':'.join([self.connections.domain_name,
                       self.inputs.project_name,
                       'default']))
 
@@ -2185,13 +2185,13 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
         sg_name = topo_obj.sg_list[0]
         secgrp_id = get_secgrp_id_from_name(
             self.connections,
-            ':'.join([self.inputs.domain_name,
+            ':'.join([self.connections.domain_name,
                       self.inputs.project_name,
                       sg_name]))
 
         default_sg_id = get_secgrp_id_from_name(
             self.connections,
-            ':'.join([self.inputs.domain_name,
+            ':'.join([self.connections.domain_name,
                       self.inputs.project_name,
                       'default']))
 
@@ -2270,13 +2270,13 @@ class SecurityGroupRegressionTests9(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         secgrp_id = get_secgrp_id_from_name(
             self.connections,
-            ':'.join([self.inputs.domain_name,
+            ':'.join([self.connections.domain_name,
                       self.inputs.project_name,
                       sg_name]))
 
         default_sg_id = get_secgrp_id_from_name(
             self.connections,
-            ':'.join([self.inputs.domain_name,
+            ':'.join([self.connections.domain_name,
                       self.inputs.project_name,
                       'default']))
 

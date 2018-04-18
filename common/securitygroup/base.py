@@ -88,9 +88,9 @@ class BaseSGTest(test_v1.BaseTestCase_v1, VerifySvcChain):
         self.vm5_fix.add_security_group(secgrp=self.sg1_name)
 
         self.logger.info("Remove the default sec group form the VM's")
-	default_secgrp_id = get_secgrp_id_from_name(
+        default_secgrp_id = get_secgrp_id_from_name(
                         	self.connections,
-                        	':'.join([self.inputs.domain_name,
+                                ':'.join([self.connections.domain_name,
                                     self.inputs.project_name,
                                     'default']))
         self.vm1_fix.remove_security_group(secgrp=default_secgrp_id)
