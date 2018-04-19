@@ -67,9 +67,8 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
                         str(bgp_ip),
                         'set policy-options policy-statement export-to-bgp term allow_local then accept', 'set policy-options policy-statement export-to-bgp term deny_all then reject'	))
         cmd_string = (';').join(cmdList)
-        result = self.set_config_via_netconf(src_vm, dst_vm,
-                                             cmd_string, timeout=10, device='junos', hostkey_verify="False")
-        return result
+        assert self.set_config_via_netconf(src_vm, dst_vm,
+                                             cmd_string, timeout=10, device='junos', hostkey_verify="False"), 'Could not configure BGP thru Netconf'
 
     def attach_vmi_to_bgpaas(self, vmi, bgpaas_fixture):
         '''
