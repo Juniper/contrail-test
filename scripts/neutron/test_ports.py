@@ -849,9 +849,9 @@ class TestPorts(BaseNeutronTest):
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
         self.logger.info('We will configure VRRP on the two vSRX')
-        op1 = self.config_vrrp_on_vsrx(
+        self.config_vrrp_on_vsrx(
             src_vm=test_vm, dst_vm=vm1_fixture, vip=vIP, priority='200', interface='ge-0/0/1')
-        op2 = self.config_vrrp_on_vsrx(
+        self.config_vrrp_on_vsrx(
             src_vm=test_vm, dst_vm=vm2_fixture, vip=vIP, priority='100', interface='ge-0/0/1')
         time.sleep(10)
         self.logger.info('Will wait for both the vSRXs to come up')
@@ -867,7 +867,7 @@ class TestPorts(BaseNeutronTest):
 
         self.logger.info(
             'Will reduce the VRRP priority on %s, causing a VRRP mastership switch' % vm1_fixture.vm_name)
-        op = self.config_vrrp_on_vsrx(
+        self.config_vrrp_on_vsrx(
             src_vm=test_vm, dst_vm=vm1_fixture, vip=vIP, priority='80', interface='ge-0/0/1')
         time.sleep(10)
         self.logger.info('Will wait for both the vSRXs to come up')
