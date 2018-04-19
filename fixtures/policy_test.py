@@ -349,6 +349,13 @@ class PolicyFixture(fixtures.Fixture):
         '''
         np_rules = []
         for rule_dict in rules_list:
+            source_vn = None
+            dest_vn = None
+            source_policy = None
+            dest_policy = None
+            source_subnet_dict = None
+            dest_subnet_dict = None
+
             new_rule = {
                 'direction': '<>',
                 'simple_action': 'pass',
