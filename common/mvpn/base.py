@@ -16,8 +16,9 @@ MVPN_CONFIG = {
 
 # Multicast source is behind MX. Multicast source details
 MX_CONFIG = {
+    'name': 'umesh',
     'lo0': '1.1.1.1',                   # MX Loopback interface IP
-    'mcast_subnet': get_random_cidr()   # Multicast source address behind MX
+    'mcast_subnet': '30.30.30.0/24'   # Multicast source address behind MX
 }
 
 
@@ -137,8 +138,30 @@ class MVPNTestBase(BaseVrouterTest):
         cli_output = mx_handle.config(stmts = cmd, timeout = 120)
         mx_handle.disconnect()
         assert (not('failed' in cli_output)), "Not able to push config to mx"
+        self.addCleanup(self.cleanup_mx, mx_ip)
 
     # end configure_mx
+
+    def cleanup_mx(self, mx_ip):
+        '''
+            Cleanup MX BGP peer for MVPN functionality.
+        '''
+
+        # Initializing list of command need to be configured in MX
+        cmd = []
+
+        # MX configuration
+        cmd.append('delete groups mvpn')
+        cmd.append('delete apply-groups mvpn')
+
+        mx_handle = NetconfConnection(host = mx_ip)
+        mx_handle.connect()
+        cli_output = mx_handle.config(stmts = cmd, timeout = 120)
+        mx_handle.disconnect()
+        assert (not('failed' in cli_output)), "Not able to push config to mx"
+
+    # end cleanup_mx
+
 
 
     def setup_vns(self, vn=None):
@@ -182,6 +205,10 @@ class MVPNTestBase(BaseVrouterTest):
                 if ip_fabric:
                     ip_fab_vn_obj = self.get_ip_fab_vn()
                     assert vn_fixture.set_ip_fabric_provider_nw(ip_fab_vn_obj)
+
+                igmp = vn[vn_id].get('igmp',False)
+                if igmp:
+                    vn_fixture.set_igmp_config(igmp_enable=igmp)
             else:
                 vn_fixture = self.create_vn(vn_name=vn_id)
             vn_fixtures[vn_id] = vn_fixture
@@ -223,11 +250,11 @@ class MVPNTestBase(BaseVrouterTest):
         mvpn_enable = mvpn_config.get('mvpn_enable', True)
 
         # Configuring mvpn at global level
-        name = self.inputs.ext_routers[0][0]
-        ip = self.inputs.ext_routers[0][1]
+        name = MX_CONFIG.get('name', 'umesh')
+        ip = MX_CONFIG.get('lo0', '1.1.1.1')
         asn = self.inputs.router_asn
-        af = ["inet-mvpn", "inet-vpn", "e-vpn", "inet6-vpn"]
-        self.vnc_h.provision_bgp_router(name, ip, asn, af)
+        af = ["route-target", "inet-mvpn", "inet-vpn", "e-vpn", "inet6-vpn"]
+        self.vnc_h.add_bgp_router('router', name, ip, asn, af)
         self.addCleanup(self.vnc_h.delete_bgp_router, name)
 
         # MX configuration
@@ -241,7 +268,7 @@ class MVPNTestBase(BaseVrouterTest):
 
         # VMs creation
         vm_fixtures = self.setup_vms(vn_fixtures, vmi_fixtures, vm,
-                                     image_name='ubuntu-traffic')
+                                     image_name='ubuntu-mcast')
 
         ret_dict = {
             'vmi_fixtures':vmi_fixtures,
@@ -978,12 +1005,17 @@ class MVPNTestSingleVNSingleComputeBase(MVPNTestBase, IGMPTestBase, GWLessFWDTes
         # Validate whether test is applible or not
         self.skip_tc_if_no_fabric_gw_config()
 
+        # Configure MVPN at control node. Right now, there is no VNC API. Need
+        # to update entrypoint.sh file and restart control docker
+        for node_ip in self.inputs.cfgm_ips:
+            self.add_knob_to_container(node_ip, 'control_control_1', 'DEFAULT', 'mvpn_ipv4_enable=1')
+
         # Gateway less forward provision for multicast source simulation
         self.provision_gw_less_fwd_mcast_src()
 
         # VN parameters
         vn = {'count':2,
-            'vn1':{'subnet':get_random_cidr(), 'asn':64510, 'target':1},
+            'vn1':{'subnet':get_random_cidr(), 'asn':64510, 'target':1, 'igmp':True},
             'vn2':{
                     'address_allocation_mode':'flat-subnet-only',
                     'ip_fabric':True, 'ipam_fq_name': self.ipam_obj.fq_name,
@@ -1034,12 +1066,17 @@ class MVPNTestSingleVNMultiComputeBase(MVPNTestBase, IGMPTestBase, GWLessFWDTest
         # Validate whether test is applible or not
         self.skip_tc_if_no_fabric_gw_config()
 
+        # Configure MVPN at control node. Right now, there is no VNC API. Need
+        # to update entrypoint.sh file and restart control docker
+        for node_ip in self.inputs.cfgm_ips:
+            self.add_knob_to_container(node_ip, 'control_control_1', 'DEFAULT', 'mvpn_ipv4_enable=1')
+
         # Gateway less forward provision for multicast source simulation
         self.provision_gw_less_fwd_mcast_src()
 
         # VN parameters
         vn = {'count':2,
-            'vn1':{'subnet':get_random_cidr(), 'asn':64510, 'target':1},
+            'vn1':{'subnet':get_random_cidr(), 'asn':64510, 'target':1 ,'igmp':True},
             'vn2':{
                     'address_allocation_mode':'flat-subnet-only',
                     'ip_fabric':True, 'ipam_fq_name': self.ipam_obj.fq_name,
@@ -1090,13 +1127,18 @@ class MVPNTestMultiVNSingleComputeBase(MVPNTestBase, IGMPTestBase, GWLessFWDTest
         # Validate whether test is applible or not
         self.skip_tc_if_no_fabric_gw_config()
 
+        # Configure MVPN at control node. Right now, there is no VNC API. Need
+        # to update entrypoint.sh file and restart control docker
+        for node_ip in self.inputs.cfgm_ips:
+            self.add_knob_to_container(node_ip, 'control_control_1', 'DEFAULT', 'mvpn_ipv4_enable=1')
+
         # Gateway less forward provision for multicast source simulation
         self.provision_gw_less_fwd_mcast_src()
 
         # VN parameters
         vn = {'count':3,
-            'vn1':{'subnet':get_random_cidr(), 'asn':64510, 'target':1},
-            'vn2':{'subnet':get_random_cidr(), 'asn':64520, 'target':1},
+            'vn1':{'subnet':get_random_cidr(), 'asn':64510, 'target':1, 'igmp':True},
+            'vn2':{'subnet':get_random_cidr(), 'asn':64520, 'target':1, 'igmp':True},
             'vn3':{
                     'address_allocation_mode':'flat-subnet-only',
                     'ip_fabric':True, 'ipam_fq_name': self.ipam_obj.fq_name,
@@ -1171,13 +1213,18 @@ class MVPNTestMultiVNMultiComputeBase(MVPNTestBase, IGMPTestBase, GWLessFWDTestB
         # Validate whether test is applible or not
         self.skip_tc_if_no_fabric_gw_config()
 
+        # Configure MVPN at control node. Right now, there is no VNC API. Need
+        # to update entrypoint.sh file and restart control docker
+        for node_ip in self.inputs.cfgm_ips:
+            self.add_knob_to_container(node_ip, 'control_control_1', 'DEFAULT', 'mvpn_ipv4_enable=1')
+
         # Gateway less forward provision for multicast source simulation
         self.provision_gw_less_fwd_mcast_src()
 
         # VN parameters
         vn = {'count':3,
-            'vn1':{'subnet':get_random_cidr(), 'asn':64510, 'target':1},
-            'vn2':{'subnet':get_random_cidr(), 'asn':64520, 'target':1},
+            'vn1':{'subnet':get_random_cidr(), 'asn':64510, 'target':1, 'igmp':True},
+            'vn2':{'subnet':get_random_cidr(), 'asn':64520, 'target':1, 'igmp':True},
             'vn3':{
                     'address_allocation_mode':'flat-subnet-only',
                     'ip_fabric':True, 'ipam_fq_name': self.ipam_obj.fq_name,
