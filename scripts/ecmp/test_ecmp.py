@@ -890,6 +890,37 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
 
     @preposttest_wrapper
     @skip_because(min_nodes=2)
+    def test_svc_fate_sharing_in_net_si_segment_hc(self):
+        """
+        Description: Validate fate sharing in a multi inline service chain with 2 SIs, 1 SVM each and segment based hc.
+        Test steps:
+                         1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                         2.Creating 2 inline service instances.
+                         3.Creating a service chain by applying the 2 service instances transparent and in-net in a policy between t
+                    he VNs.
+                         4.Associate an Segment based HC instance with right intf of one of the SVMs
+                         5.Bring down the intf in the step 4
+                         6.Verify that all the re-origined routes(ServiceChain) are deleted from all the RIs of all the SIs
+                         7.Verify the step 6 in both control node and agent
+                         8.Bring up the intf in the step 5
+                         8.Verify that the routes should be re-originated again, and the traffic also starts flowing
+
+        Pass criteria: Ping/Route deletion/Route addition should be successful.
+        Maintainer : ankitja@juniper.net
+        """
+        if self.inputs.orchestrator == 'vcenter':
+            si_list = [ { 'service_mode' : 'in-network'},
+                        { 'service_mode' : 'in-network'}]
+        else:
+            si_list = [ { 'service_mode' : 'in-network'},
+                        { 'service_mode' : 'in-network'} ]
+
+        self.verify_multi_inline_svc_with_fate_share(si_list=si_list, create_svms=True, hc={'si_index':0, 'si_intf_type':'right', 'hc_type':'segment'},
+                                     **self.common_args)
+    # end test_svc_fate_sharing_in_net_si_segment_hc
+
+    @preposttest_wrapper
+    @skip_because(min_nodes=2)
     def test_svc_fate_sharing_basic_with_transparent_in_net_nat(self):
         """
         Description: Validate fate sharing in a multi inline service chain with 2 SIs, 1 SVM each  with in-network-nat.
@@ -1039,7 +1070,7 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
 
     @preposttest_wrapper
     @skip_because(min_nodes=2)
-    def test_svc_fate_sharing_basic_with_multiple_svm_instances(self):
+    def itest_svc_fate_sharing_basic_with_multiple_svm_instances(self):
         """
         Description: Validate fate sharing in a multi inline service chain with 2 SIs, 2 SVMs each.
         Test steps:
@@ -1066,9 +1097,77 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
             si_list = [ { 'service_mode' : 'in-network', 'max_inst':2},
                         { 'service_mode' : 'in-network', 'max_inst':2} ]
 
+        # Disabling as hc type : link-local  is not supported with multiple svm instances
+ 
         self.verify_multi_inline_svc_with_fate_share(si_list=si_list, create_svms=True, hc={'si_index':0, 'si_intf_type':'right'},
                                      **self.common_args)
     # end test_svc_fate_sharing_basic_with_multiple_svm_instances
+
+    @preposttest_wrapper
+    @skip_because(min_nodes=2)
+    def test_svc_fate_sharing_transparent_si_segment_hc_with_multiple_svm_instances(self):
+        """
+        Description: Validate fate sharing in a multi inline service chain with 2 SIs, 2 SVMs each.
+        Test steps:
+                         1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                         2.Creating 2 inline service instances with 2 SVMs each.
+                         3.Creating a service chain by applying the 2 service instances in a policy between t
+                    he VNs.
+                         4.Associate an HC instance with right intf of one of the SVMs
+                         5.Bring down the intf in the step 4
+                         6.Verify that all the re-origined routes(ServiceChain) are not deleted from any the RIs of all the SIs
+                         7.Verify the step 6 in both control node and agent
+                         8.Verify that the traffic is still flowing through the svc as just one svm is down
+                         9.Bring up the intf in the step 5; Expect the HC to come up
+                         10.Verify that there should not be any impact, and the traffic continues to flow
+
+        Pass criteria: Ping/Route deletion/Route addition should be successful.
+        Maintainer : ankitja@juniper.net
+        """
+
+        if self.inputs.orchestrator == 'vcenter':
+            si_list = [ { 'service_mode' : 'transparent', 'max_inst':2},
+                        { 'service_mode' : 'in-network', 'max_inst':2}]
+        else:
+            si_list = [ { 'service_mode' : 'transparent', 'max_inst':2},
+                        { 'service_mode' : 'in-network', 'max_inst':2} ]
+
+        self.verify_multi_inline_svc_with_fate_share(si_list=si_list, create_svms=True, hc={'si_index':0, 'si_intf_type':'right', 'hc_type':'segment'},
+                                     **self.common_args)
+    # end test_svc_fate_sharing_segment_based_with_multiple_svm_instances
+
+    @preposttest_wrapper
+    @skip_because(min_nodes=2)
+    def test_svc_fate_sharing_in_net_si_segment_hc_with_multiple_svm_instances(self):
+        """
+        Description: Validate fate sharing in a multi inline service chain with 2 SIs, 2 SVMs each.
+        Test steps:
+                         1.Creating vm's - vm1 and vm2 in networks vn1 and vn2.
+                         2.Creating 2 inline service instances with 2 SVMs each.
+                         3.Creating a service chain by applying the 2 service instances in a policy between t
+                    he VNs.
+                         4.Associate an HC instance with right intf of one of the SVMs
+                         5.Bring down the intf in the step 4
+                         6.Verify that all the re-origined routes(ServiceChain) are not deleted from any the RIs of all the SIs
+                         7.Verify the step 6 in both control node and agent
+                         8.Verify that the traffic is still flowing through the svc as just one svm is down
+                         9.Bring up the intf in the step 5; Expect the HC to come up
+                         10.Verify that there should not be any impact, and the traffic continues to flow
+
+        Pass criteria: Ping/Route deletion/Route addition should be successful.
+        Maintainer : ankitja@juniper.net
+        """
+
+        if self.inputs.orchestrator == 'vcenter':
+            si_list = [ { 'service_mode' : 'in-network', 'max_inst':2},
+                        { 'service_mode' : 'in-network', 'max_inst':2}]
+        else:
+            si_list = [ { 'service_mode' : 'in-network', 'max_inst':2},
+                        { 'service_mode' : 'in-network', 'max_inst':2} ]
+
+        self.verify_multi_inline_svc_with_fate_share(si_list=si_list, create_svms=True, hc={'si_index':0, 'si_intf_type':'right', 'hc_type':'segment'},
+                                     **self.common_args)
+    # end test_svc_fate_sharing_segment_based_with_multiple_svm_instances
 
     @preposttest_wrapper
     @skip_because(min_nodes=3)
@@ -1100,7 +1199,7 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
             si_list = [ { 'service_mode' : 'in-network', 'max_inst':3},
                         { 'service_mode' : 'in-network', 'max_inst':3} ]
 
-        self.verify_multi_inline_svc_with_fate_share(si_list=si_list, create_svms=True, hc={'si_index':0, 'si_intf_type':'right'},
+        self.verify_multi_inline_svc_with_fate_share(si_list=si_list, create_svms=True, hc={'si_index':0, 'si_intf_type':'right', 'hc_type':'segment'},
                                      **self.common_args)
 
     # end test_svc_fate_sharing_basic_with_3_svm_instances
@@ -1306,6 +1405,9 @@ class TestMultiInlineSVCIPv6(TestMultiInlineSVC):
     def test_svc_fate_sharing_basic_with_transparent(self):
         super(TestMultiInlineSVCIPv6,self).test_svc_fate_sharing_basic_with_transparent()
 
+    @preposttest_wrapper
+    def test_svc_fate_sharing_in_net_si_segment_hc(self):
+        super(TestMultiInlineSVCIPv6,self).test_svc_fate_sharing_in_net_si_segment_hc()
 
     @preposttest_wrapper
     def test_svc_fate_sharing_basic_with_transparent_in_net_nat(self):
@@ -1318,7 +1420,7 @@ class TestMultiInlineSVCIPv6(TestMultiInlineSVC):
 
     @preposttest_wrapper
     @skip_because(min_nodes=2)
-    def test_svc_fate_sharing_basic_with_multiple_svm_instances(self):
+    def itest_svc_fate_sharing_basic_with_multiple_svm_instances(self):
         super(TestMultiInlineSVCIPv6,self).test_svc_fate_sharing_basic_with_multiple_svm_instances()
 
     @preposttest_wrapper
@@ -1336,6 +1438,17 @@ class TestMultiInlineSVCIPv6(TestMultiInlineSVC):
     @skip_because(min_nodes=2)
     def test_svc_fate_sharing_in_2_multi_inline_svc_chains_transparent_in_net_transparent(self):
         super(TestMultiInlineSVCIPv6,self).test_svc_fate_sharing_in_2_multi_inline_svc_chains_transparent_in_net_transparent()
+
+
+    @preposttest_wrapper
+    @skip_because(min_nodes=2)
+    def test_svc_fate_sharing_transparent_si_segment_hc_with_multiple_svm_instances(self):
+        super(TestMultiInlineSVCIPv6,self).test_svc_fate_sharing_transparent_si_segment_hc_with_multiple_svm_instances()
+
+    @preposttest_wrapper
+    @skip_because(min_nodes=2)
+    def test_svc_fate_sharing_in_net_si_segment_hc_with_multiple_svm_instances(self):
+        super(TestMultiInlineSVCIPv6,self).test_svc_fate_sharing_in_net_si_segment_hc_with_multiple_svm_instances()
 
 
     @preposttest_wrapper
