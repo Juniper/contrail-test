@@ -119,7 +119,7 @@ class VncLibFixture(fixtures.Fixture):
             self.project_id = self.vnc_api_h.project_read(
                 fq_name=[self.domain, self.project_name]).uuid
         return self.project_id
-        
+
 
     def cleanUp(self):
         super(VncLibFixture, self).cleanUp()
@@ -130,7 +130,7 @@ class VncLibFixture(fixtures.Fixture):
 
     def get_contrail_api_handle(self):
         return self.vnc_h
-        
+
 
     @property
     def admin_h(self):
@@ -402,5 +402,19 @@ class VncLibFixture(fixtures.Fixture):
         gsc_obj.set_mac_aging_time(mac_aging_time)
         self.vnc_api_h.global_system_config_update(gsc_obj)
     # end set_global_mac_aging_time
+
+    def get_global_igmp_config(self):
+        gsc_id = self.vnc_api_h.get_default_global_system_config_id()
+        gsc_obj = self.vnc_api_h.global_system_config_read(id=gsc_id)
+        return gsc_obj.get_igmp_enable()
+    # end get_global_igmp_enable
+
+    def set_global_igmp_config(self, igmp_enable=True):
+        gsc_id = self.vnc_api_h.get_default_global_system_config_id()
+        gsc_obj = self.vnc_api_h.global_system_config_read(id=gsc_id)
+        gsc_obj.set_igmp_config(igmp_enable)
+        self.vnc_api_h.global_system_config_update(gsc_obj)
+    # end set_global_igmp_enable
+
 
 # end VncLibFixture

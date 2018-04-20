@@ -1790,9 +1790,7 @@ class ContrailVncApi(object):
         router_type = 'router'
         vendor = 'mx'
         router_asn = asn
-        #address_families = ["inet"]
         address_families = af
-
 
         rt_inst_obj = self._vnc.routing_instance_read(
             fq_name=['default-domain', 'default-project',
@@ -1831,6 +1829,101 @@ class ContrailVncApi(object):
 
 
     # end provision_bgp_router
+
+    def add_bgp_router(self, router_type, router_name, router_ip,
+                       router_asn, address_families=[], md5=None,
+                       local_asn=None, port=179, sub_cluster_name=None):
+        if not address_families:
+            address_families = ['route-target', 'inet-vpn', 'e-vpn', 'erm-vpn',
+                                'inet6-vpn']
+            if router_type != 'control-node':
+                address_families.remove('erm-vpn')
+
+        if router_type != 'control-node':
+            if 'erm-vpn' in address_families:
+                raise RuntimeError("Only contrail bgp routers can support "
+                                   "family 'erm-vpn'")
+
+        bgp_addr_fams = AddressFamilies(address_families)
+
+        bgp_sess_attrs = [
+            BgpSessionAttributes(address_families=bgp_addr_fams)]
+        bgp_sessions = [BgpSession(attributes=bgp_sess_attrs)]
+        bgp_peering_attrs = BgpPeeringAttributes(session=bgp_sessions)
+
+        rt_inst_obj = self._vnc.routing_instance_read(
+            fq_name=['default-domain', 'default-project',
+                    'ip-fabric', '__default__'])
+        if router_type == 'control-node':
+            vendor = 'contrail'
+        elif router_type == 'router':
+            vendor = 'mx'
+        else:
+            vendor = 'unknown'
+
+        router_params = BgpRouterParams(router_type=router_type,
+            vendor=vendor, autonomous_system=int(router_asn),
+            identifier=self.get_ip(router_ip),
+            address=self.get_ip(router_ip),
+            port=port, address_families=bgp_addr_fams)
+
+        bgp_router_obj = BgpRouter(router_name, rt_inst_obj,
+                                   bgp_router_parameters=router_params)
+        bgp_router_fq_name = bgp_router_obj.get_fq_name()
+        try:
+            # full-mesh with existing bgp routers
+            if not sub_cluster_name:
+                fq_name = rt_inst_obj.get_fq_name()
+                bgp_other_objs = self._vnc.bgp_routers_list(
+                                                      parent_fq_name=fq_name,
+                                                      detail=True)
+                bgp_router_names = [bgp_obj.fq_name
+                   for bgp_obj in bgp_other_objs
+                           if bgp_obj.get_sub_cluster_refs() == None]
+                bgp_router_obj.set_bgp_router_list(bgp_router_names,
+                                      [bgp_peering_attrs]*len(bgp_router_names))
+            else:
+                sub_cluster_obj = SubCluster(sub_cluster_name)
+                try:
+                    sub_cluster_obj = self._vnc.sub_cluster_read(
+                    fq_name=sub_cluster_obj.get_fq_name())
+                except NoIdError:
+                    raise RuntimeError("Sub cluster to be provisioned first")
+                bgp_router_obj.add_sub_cluster(sub_cluster_obj)
+                refs = sub_cluster_obj.get_bgp_router_back_refs()
+                if refs:
+                    bgp_router_names = [ref['to']
+                          for ref in refs if ref['uuid'] != bgp_router_obj.uuid]
+                    bgp_router_obj.set_bgp_router_list(bgp_router_names,
+                                     [bgp_peering_attrs]*len(bgp_router_names))
+            self._vnc.bgp_router_create(bgp_router_obj)
+        except RefsExistError as e:
+            print ("BGP Router " + pformat(bgp_router_fq_name) +
+                   " already exists " + str(e))
+        if md5 or local_asn:
+            cur_obj = self._vnc.bgp_router_read(fq_name=bgp_router_fq_name)
+        changed = False
+        if md5:
+            changed = True
+            md5 = {'key_items': [ { 'key': md5 ,"key_id":0 } ], "key_type":"md5"}
+            rparams = cur_obj.bgp_router_parameters
+            rparams.set_auth_data(md5)
+            cur_obj.set_bgp_router_parameters(rparams)
+
+        if local_asn:
+            changed = True
+            local_asn = int(local_asn)
+            if local_asn <= 0 or local_asn > 65535:
+                raise argparse.ArgumentTypeError("local_asn %s must be in range (1..65535)" % local_asn)
+            rparams = cur_obj.bgp_router_parameters
+            rparams.set_local_autonomous_system(local_asn)
+            cur_obj.set_bgp_router_parameters(rparams)
+
+        if changed:
+            self._vnc.bgp_router_update(cur_obj)
+
+    # end add_bgp_router
+
 
     def delete_bgp_router(self, name):
         '''Delete Fabric Gateway.
@@ -2183,6 +2276,9 @@ class ContrailVncApi(object):
         vn_obj = self._vnc.virtual_network_read(id=vn_id)
         vn_obj.set_fabric_snat(enable)
         self._vnc.virtual_network_update(vn_obj)
+
+    def get_ip(self, ip_w_pfx):
+        return str(IPNetwork(ip_w_pfx).ip)
 
 class LBFeatureHandles:
     __metaclass__ = Singleton
