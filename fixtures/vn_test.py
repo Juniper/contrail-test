@@ -171,7 +171,7 @@ class VNFixture(fixtures.Fixture):
             if ipam:
                 ipam_obj = self.vnc_lib_h.network_ipam_read(id = ipam[0]['uuid'])
                 if ipam_obj.get_ipam_subnet_method() == 'flat-subnet': # Fix for 1756033
-                    network_ipam = ipam_obj.get_ipam_subnets() 
+                    network_ipam = ipam_obj.get_ipam_subnets()
                     subnets = [x.subnet.ip_prefix+'/'+\
                            str(x.subnet.ip_prefix_len)
                            for x in network_ipam.subnets]
@@ -1739,6 +1739,28 @@ class VNFixture(fixtures.Fixture):
         return True
     # end set_mac_aging_time
 
+    def set_igmp_config(self, igmp_enable=True, verify=True):
+        ''' Configure IGMP on virtual network
+        '''
+        self.logger.debug('Updating IGMP on VN %s to %s' % (
+            self.vn_fq_name, igmp_enable))
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        vn_obj.set_igmp_config(igmp_enable)
+        self.vnc_lib_h.virtual_network_update(vn_obj)
+
+        if verify:
+            vn_in_api = self.api_s_inspect.get_cs_vn_by_id(vn_id=self.uuid, refresh=True)
+            if vn_in_api['virtual-network']['igmp_enable'] != igmp_enable:
+                self.logger.error("IGMP in API is not what"
+                    " was set, actual: %s, expected: %s" % (
+                    vn_in_api['virtual-network']['igmp_enable'],
+                    igmp_enable))
+                return False
+
+        return True
+    # end set_igmp_config
+
+
     def get_pbb_evpn_enable(self):
         ''' Get PBB EVPN on virtual network '''
         vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
@@ -1802,6 +1824,16 @@ class VNFixture(fixtures.Fixture):
             self.vn_fq_name, mac_aging_time))
         return mac_aging_time
     # end get_mac_aging_time
+
+    def get_igmp_enable(self):
+        ''' Get IGMP on virtual network '''
+        vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
+        igmp_enable = vn_obj.get_igmp_enable()
+        self.vnc_lib_h.virtual_network_update(vn_obj)
+        self.logger.debug('IGMP on VN %s is %s' % (
+            self.vn_fq_name, igmp_enable))
+        return igmp_enable
+    # end get_igmp_enable
 
     def alloc_ips(self, count=1):
         try:

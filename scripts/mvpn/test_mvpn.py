@@ -63,7 +63,7 @@ class TestMVPNSingleVNSingleCompute(MVPNTestSingleVNSingleComputeBase):
         igmp = {'type': 0x22,                   # IGMPv3 Report
                 'numgrp': 1,                    # Number of group records
                 'record1': {
-                    'rtype': 2,                 # Record type. EXCLUDE
+                    'rtype': 6,                 # Record type.BLOCK OLD SOURCES
                     'maddr': '239.1.1.1',       # Multicast group address
                     'srcaddrs': ['30.30.30.1']  # List of multicast source addresses
                 },
@@ -133,7 +133,7 @@ class TestMVPNSingleVNMultiCompute(MVPNTestSingleVNMultiComputeBase):
         igmp = {'type': 0x22,                   # IGMPv3 Report
                 'numgrp': 1,                    # Number of group records
                 'record1': {
-                    'rtype': 2,                 # Record type. EXCLUDE
+                    'rtype': 6,                 # Record type.BLOCK OLD SOURCES
                     'maddr': '239.1.1.1',       # Multicast group address
                     'srcaddrs': ['30.30.30.1']  # List of multicast source addresses
                 },
@@ -203,7 +203,7 @@ class TestMVPNMultiVNSingleCompute(MVPNTestMultiVNSingleComputeBase):
         igmp = {'type': 0x22,                   # IGMPv3 Report
                 'numgrp': 1,                    # Number of group records
                 'record1': {
-                    'rtype': 2,                 # Record type. EXCLUDE
+                    'rtype': 6,                 # Record type.BLOCK OLD SOURCES
                     'maddr': '239.1.1.1',       # Multicast group address
                     'srcaddrs': ['30.30.30.1']  # List of multicast source addresses
                 },
@@ -273,7 +273,7 @@ class TestMVPNMultiVNMultiCompute(MVPNTestMultiVNMultiComputeBase):
         igmp = {'type': 0x22,                   # IGMPv3 Report
                 'numgrp': 1,                    # Number of group records
                 'record1': {
-                    'rtype': 2,                 # Record type. EXCLUDE
+                    'rtype': 6,                 # Record type.BLOCK OLD SOURCES
                     'maddr': '239.1.1.1',       # Multicast group address
                     'srcaddrs': ['30.30.30.1']  # List of multicast source addresses
                 },

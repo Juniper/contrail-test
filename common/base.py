@@ -81,6 +81,41 @@ class _GenericTestBaseMethods():
             nodes=[node_ip])[0]
     # end start_containers
 
+    def add_knob_to_container(self, node_ip, container_name, level='DEAFULT', knob=None):
+        ''' Add a configuration knob to container at specified level
+            Args:
+                node_ip         : Node on which containers need to be stopped
+                container_name  : Name of the container
+                level           : Hierarchy level where knob needs to be added
+                knob            : Knob which needs to be added
+            E.g: add_knob_to_container('10.204.217.127', 'control_control_1',
+            'DEFAULT', 'mvpn_ipv4_enable=1')
+        '''
+
+        issue_cmd = 'docker cp %s:/entrypoint.sh .' % (container_name)
+        username = self.inputs.host_data[node_ip]['username']
+        password = self.inputs.host_data[node_ip]['password']
+
+        self.logger.info('Running %s on %s' % (issue_cmd, node_ip))
+        self.inputs.run_cmd_on_server(node_ip, issue_cmd, username, password, pty=True,
+                                    as_sudo=True)
+
+        issue_cmd = 'grep -q -F \''+knob+'\' entrypoint.sh ||' + \
+            'sed -i  \'/\['+level+'\]/a '+knob+'\' entrypoint.sh'
+        self.logger.info('Running %s on %s' % (issue_cmd, node_ip))
+        self.inputs.run_cmd_on_server(node_ip, issue_cmd, username, password, pty=True,
+                                    as_sudo=True)
+
+        issue_cmd = 'docker cp entrypoint.sh %s:/entrypoint.sh' % (container_name)
+        self.logger.info('Running %s on %s' % (issue_cmd, node_ip))
+        self.inputs.run_cmd_on_server(node_ip, issue_cmd, username, password, pty=True,
+                                    as_sudo=True)
+
+        issue_cmd = 'docker restart %s -t 60' % (container_name)
+        self.logger.info('Running %s on %s' % (issue_cmd, node_ip))
+        self.inputs.run_cmd_on_server(node_ip, issue_cmd, username, password, pty=True,
+                                    as_sudo=True)
+
 # end _GenericTestBaseMethods
 
 
