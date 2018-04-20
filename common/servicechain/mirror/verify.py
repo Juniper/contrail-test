@@ -317,7 +317,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
                 self.logger.warning('No mirroring action seen')
         return result
 
-    @retry(delay=2, tries=6)
     def verify_port_mirroring(self, src_vm, dst_vm, mirr_vm, vlan=None, parent=False):
         result = True
         svm = mirr_vm.vm_obj
@@ -345,7 +344,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
             dst_ip = dst_vm.run_cmd_on_vm(cmds=[cmds]).values()[0]
         assert src_vm.ping_with_certainty(dst_ip, count=5, size='1200')
         #lets wait 10 sec for tcpdump to capture all the packets
-        sleep(10)
+        sleep(20)
         self.logger.info('Ping from %s to %s executed with c=5, expected mirrored packets 5 Ingress,5 Egress count = 10'
             % (src_ip, dst_ip))
         filters = '| grep \"length [1-9][2-9][0-9][0-9][0-9]*\"'
@@ -360,7 +359,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
                      mirror_pkt_count, svm_name, exp_count)
         if mirror_pkt_count < exp_count:
             self.logger.error(errmsg)
-            assert False, errmsg
+            return False
 
         self.logger.info("%s ICMP packets are mirrored to the analyzer "
                          "service VM '%s'", mirror_pkt_count, svm_name)
