@@ -3,16 +3,28 @@ from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import get_random_name
 import time
 import test
-
 class TestFabricFWDRestarts(BaseK8sTest):
 
     @classmethod
     def setUpClass(cls):
-        super(TestFabricFWDRestarts, cls).setUpClass()
+        try:
+            super(TestFabricFWDRestarts, cls).setUpClass()
+            cls.setup_fabric_gw()
+        except:
+            cls.tearDownClass()
+            raise
 
     @classmethod
     def tearDownClass(cls):
+        cls.cleanup_fabric_gw()
         super(TestFabricFWDRestarts, cls).tearDownClass()
+
+    def is_test_applicable(self):
+        '''verify the fabroic gateway info
+        '''
+        if not self.inputs.fabric_gw_info:
+            return (False , "Fabric gateway is needed for the test run)
+        return (True , None)
     
     def setup_namespaces_pods_for_fabric_restart(self, isolation=False,ip_fabric_forwarding=False):
         """ common routine to create the namesapces and the pods  by enabling the fabric forwarding
@@ -65,7 +77,6 @@ class TestFabricFWDRestarts(BaseK8sTest):
         assert client1[0].ping_to_ip(client2[0].pod_ip, expectation=False)
         assert client1[0].ping_to_ip(client3[0].pod_ip, expectation=False)
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_fabric_fwd_with_kube_manager_restart(self):
         """
@@ -81,7 +92,6 @@ class TestFabricFWDRestarts(BaseK8sTest):
         self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3)
     #end test_fabric_fwd_with_kube_manager_restart
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_fabric_fwd_with_vrouter_agent_restart(self):
         """
@@ -97,7 +107,6 @@ class TestFabricFWDRestarts(BaseK8sTest):
         self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3)
     #end  test_fabric_fwd_with_vrouter_agent_restart
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_fabric_fwd_pod_restart(self):
         """
@@ -129,7 +138,6 @@ class TestFabricFWDRestarts(BaseK8sTest):
         self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3)
     #end test_fabric_fwd_with_docker_restart_on_slave
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_fabric_fwd_with_kubelet_restart_on_slave(self):
         """
@@ -161,7 +169,6 @@ class TestFabricFWDRestarts(BaseK8sTest):
         self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3)
     #end test_fabric_fwd_with_nodes_reboot
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_fabric_fwd__with_kubelet_restart_on_master(self):
         """
