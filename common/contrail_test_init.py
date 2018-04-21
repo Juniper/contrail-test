@@ -1396,7 +1396,7 @@ class ContrailTestInit(object):
         self.address_family = 'v4'
         if self.orchestrator == 'kubernetes' or self.slave_orchestrator == 'kubernetes':
             if not os.path.exists(self.kube_config_file):
-                self.copy_file_from_server(self.kube_manager_ips[0],
+                self.copy_file_from_server(self.k8s_master_ip,
                     self.kube_config_file, self.kube_config_file)
     # end __init__
 
