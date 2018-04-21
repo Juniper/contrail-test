@@ -23,7 +23,7 @@ class TestFabricFWDRestarts(BaseK8sTest):
         '''verify the fabroic gateway info
         '''
         if not self.inputs.fabric_gw_info:
-            return (False , "Fabric gateway is needed for the test run)
+            return (False , "Fabric gateway is needed for the test run")
         return (True , None)
     
     def setup_namespaces_pods_for_fabric_restart(self, isolation=False,ip_fabric_forwarding=False):

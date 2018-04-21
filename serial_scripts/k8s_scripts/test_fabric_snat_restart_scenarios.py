@@ -29,7 +29,7 @@ class TestFabricSNATRestarts(BaseK8sTest):
         '''verify the fabroic gateway  info
         '''
         if not self.inputs.fabric_gw_info:
-            return (False , "Fabric gateway is needed for the test run)
+            return (False , "Fabric gateway is needed for the test run")
         return (True , None)
 
     
