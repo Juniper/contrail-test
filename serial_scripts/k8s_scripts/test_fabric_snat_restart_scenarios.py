@@ -98,10 +98,9 @@ class TestFabricSNATRestarts(BaseK8sTest):
         assert client2[0].ping_to_ip(self.inputs.public_host)#ip fabric forwaring takes precedence
         assert client1[0].ping_to_ip(client1[1].pod_ip)
         #verifying pods in isolated/default namespaces shoud not reach each other when snat is enabled
-        #TODO :Need to enable these checks after snat is fixed
-        assert client1[0].ping_to_ip(client2[0].pod_ip)
-        assert client1[0].ping_to_ip(client3[0].pod_ip)
-        assert client1[0].ping_to_ip(client4[0].pod_ip)
+        assert client1[0].ping_to_ip(client2[0].pod_ip, expectation=False)
+        assert client1[0].ping_to_ip(client3[0].pod_ip, expectation=False)
+        assert client1[0].ping_to_ip(client4[0].pod_ip, expectation=False)
 
     @preposttest_wrapper
     def test_snat_with_kube_manager_restart(self):
