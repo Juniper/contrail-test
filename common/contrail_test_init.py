@@ -740,6 +740,7 @@ class TestInputs(object):
             auth_url = 'http://%s:5000/v2.0'%(self.external_vip or self.openstack_ip)
         return auth_url
 
+
     def parse_yml_file(self):
         self.key = 'key1'
         self.use_project_scoped_token = True
@@ -769,7 +770,6 @@ class TestInputs(object):
         self.orchestrator = deployment_configs.get('orchestrator') or 'openstack'
         self.slave_orchestrator = deployment_configs.get('slave_orchestrator')
         self.parse_topo()
-
         # contrail related configs
         self.api_protocol = 'https' if contrail_configs.get('CONFIG_API_USE_SSL') else 'http'
         self.api_server_port = contrail_configs.get('CONFIG_API_PORT') or '8082'
@@ -846,6 +846,7 @@ class TestInputs(object):
         self.physical_routers_data = test_configs.get('physical_routers',{})
 
         self.kube_config_file = test_configs.get('kube_config_file') or '/etc/kubernetes/admin.conf'
+        self.openshift_config_file = test_configs.get('openshift_config_file') or '/root/.kube/config'
         self.ext_routers = []
         for rtr_name, address in test_configs.get('ext_routers', {}).iteritems():
             self.ext_routers.append((rtr_name, address))
@@ -1396,8 +1397,12 @@ class ContrailTestInit(object):
         self.address_family = 'v4'
         if self.orchestrator == 'kubernetes' or self.slave_orchestrator == 'kubernetes':
             if not os.path.exists(self.kube_config_file):
-                self.copy_file_from_server(self.k8s_master_ip,
-                    self.kube_config_file, self.kube_config_file)
+                if self.deployer == 'openshift' :
+                    self.copy_file_from_server(self.k8s_master_ip,
+                        self.openshift_config_file, self.kube_config_file)
+                else:
+                    self.copy_file_from_server(self.k8s_master_ip,
+                        self.kube_config_file, self.kube_config_file)
     # end __init__
 
     def is_ci_setup(self):
