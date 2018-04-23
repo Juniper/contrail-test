@@ -1021,7 +1021,7 @@ class FloatingipTestSanity1(base.FloatingIpBaseTest):
                     (flow_rec1))
                 result = result and False
             match = inspect_h1.match_item_in_flowrecord(
-                flow_rec1, 'dst_vn', '__UNKNOWN__')
+                flow_rec1, 'dst_vn_match', '__UNKNOWN__')
             if match is False:
                 self.logger.error(
                     'Test Failed. After removal of FIP destination VN should be unkwown. Flow details %s' %
@@ -1065,7 +1065,7 @@ class FloatingipTestSanity1(base.FloatingIpBaseTest):
                     (flow_rec3))
                 result = result and False
             match = inspect_h1.match_item_in_flowrecord(
-                flow_rec3, 'src_vn', '__UNKNOWN__')
+                flow_rec3, 'src_vn_match', '__UNKNOWN__')
             if match is False:
                 self.logger.error(
                     'Test Failed. After removal of FIP destination VN should be unkwown. Flow details %s' %
