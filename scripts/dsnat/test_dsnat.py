@@ -76,7 +76,7 @@ class TestDSNAT(BaseDSNAT):
         assert vm1_fixture.verify_fabric_ip_as_floating_ip(vn1_fixture.vn_fq_name)
         assert vm2_fixture.verify_fabric_ip_as_floating_ip(vn1_fixture.vn_fq_name)
 
-        forwarding_modes = ['l2', 'l2_l3']
+        forwarding_modes = ['l3', 'l2_l3']
         for mode in forwarding_modes:
             #set VN forwarding mode  and verify
             self.set_vn_forwarding_mode(vn1_fixture, forwarding_mode=mode)
@@ -84,8 +84,8 @@ class TestDSNAT(BaseDSNAT):
             assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip, size='2000'), (
                 'Ping failed between VNs')
 
-            assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_node_data_ip, size='2000'), (
-                'Ping failed to fabric IP, VM2 node ip')
+            assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_node_data_ip), (
+                'Ping failed to fabric IP, cfgm node ip')
 
 
     @skip_because(min_nodes=2)
@@ -243,6 +243,15 @@ class TestDSNAT(BaseDSNAT):
                   'src_ports':'any',
                   'dst_ports':'any'
               },
+              {
+                  'direction':'<>',
+                  'action_list': {'simple_action': 'deny'},
+                  'protocol':'icmp',
+                  'source_network':vn1_fixture.vn_name,
+                  'dest_network':fabric_vn.vn_fq_name,
+                  'src_ports':'any',
+                  'dst_ports':'any'
+              },
         ]
         vn_policy_fix = self.create_policy_attach_to_vn(vn1_fixture, rules)
         vn1_fixture.update_vn_object()
@@ -254,6 +263,7 @@ class TestDSNAT(BaseDSNAT):
         self.attach_policy_to_vn(policy_fix, fabric_vn)
         assert vm1_fixture.ping_with_certainty(self.inputs.cfgm_ip, expectation=False), (
             'Ping passed to external IP with allow-tcp-policy')
+
 
     @skip_because(min_nodes=2)
     @attr(type=['sanity'])
@@ -305,14 +315,15 @@ class TestDSNAT(BaseDSNAT):
         policy_fix.policy_fq_name = policy_fix.fq_name
         policy_fix.policy_name = policy_fix.name
 
+        cfgm_ip = self.inputs.inputs.get_host_data_ip(self.inputs.cfgm_names[0])
         self.attach_policy_to_vn(policy_fix, fabric_vn)
-        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_node_data_ip), (
+        assert vm1_fixture.ping_with_certainty(cfgm_ip), (
             'Ping to external IP failed with allow-any-policy')
 
         #set VN forwarding mode as l3 and verify
         self.set_vn_forwarding_mode(vn1_fixture, forwarding_mode='l3')
 
-        assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_node_data_ip), (
+        assert vm1_fixture.ping_with_certainty(cfgm_ip), (
             'Ping to fabric IP failed with allow-any-policy')
 
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip), (
@@ -409,6 +420,7 @@ class TestDSNAT(BaseDSNAT):
         self.logger.info("Launch a VM on the test virtual network")
         test_vm1 = self.create_vm(tvn_fix, tvn_name,
                                  image_name='ubuntu')
+        assert fvn_vm1.wait_till_vm_is_up()
         assert test_vm1.wait_till_vm_is_up()
 
         self.logger.info("Associate a FIP to the test VM VMI")
