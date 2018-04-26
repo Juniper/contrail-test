@@ -7,6 +7,7 @@ import time
 from tcutils.util import *
 from tcutils.tcpdump_utils import *
 from common import isolated_creds
+from test import attr
 
 class TestDSNAT(BaseDSNAT):
 
@@ -64,6 +65,7 @@ class TestDSNAT(BaseDSNAT):
         assert self.verify_flow_with_port(vm1_fixture, vm2_fixture, port_range, **traffic)
 
 
+    @attr(type=['sanity'])
     @skip_because(min_nodes=2)
     @preposttest_wrapper
     def test_dsnat_tcp_basic(self):
