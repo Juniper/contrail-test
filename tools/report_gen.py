@@ -177,8 +177,11 @@ class ContrailReportInit(TestInputs):
             build_id = local(cmd, capture=True)
         build_sku = self.get_os_env("SKU")
         if not build_sku and self.orchestrator == 'openstack':
-            container = self.host_data[self.openstack_ips[0]].get(
-                            'containers', {}).get('nova')
+            containers = self.host_data[self.openstack_ips[0]]['containers']
+            for key in containers.keys():
+                if 'nova' in key:
+                    container = containers[key]
+                    break
             build_sku=get_build_sku(self.openstack_ips[0],self.host_data[self.openstack_ip]['password'],
                                     container=container)
         if (build_id.count('.') > 3):
