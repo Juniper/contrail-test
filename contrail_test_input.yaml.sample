@@ -4,6 +4,7 @@ deployment:
     version: master-1
     orchestrator: openstack # kubernetes/vcenter/openstack
     slave_orchestrator: # kubernetes
+    deployer: contrail-ansible-deployer #openshift/helm
 
 provider_config:
   bms:
@@ -87,6 +88,8 @@ orchestrator_configuration:
         region:
         ssl:
             certs:
+    internal_vip:
+    external_vip:
 
 # Optional test specific configurations
 test_configuration:
@@ -159,6 +162,8 @@ test_configuration:
             tunnel_ip: 7.7.7.7
             ports :
             type  : router
+            role  : leaf
+            dm_managed: True
     web_server:
         server:
         username:

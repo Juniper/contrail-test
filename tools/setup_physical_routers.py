@@ -5,7 +5,6 @@ import ConfigParser
 import ast
 import logging
 
-from tor_fixture import ToRFixtureFactory
 from physical_router_fixture import PhysicalRouterFixture
 from common.contrail_test_init import ContrailTestInit
 from physical_device_fixture import PhysicalDeviceFixture
@@ -19,35 +18,27 @@ logging.getLogger('paramiko.transport').setLevel(logging.WARN)
 if __name__ == "__main__":
     init_obj = ContrailTestInit(sys.argv[1])
     for (device, device_dict) in init_obj.physical_routers_data.iteritems():
-        if device_dict['type'] == 'tor':
-            tor_obj = ToRFixtureFactory.get_tor(
+        if device_dict['type'] in ['router', 'tor']:
+            phy_router_obj = PhysicalRouterFixture(
                 device_dict['name'],
                 device_dict['mgmt_ip'],
-                vendor=device_dict['vendor'],
-                ssh_username=device_dict['ssh_username'],
-                ssh_password=device_dict['ssh_password'],
-                tunnel_ip=device_dict['tunnel_ip'],
-                ports=device_dict['ports'],
-                tor_ovs_port=device_dict['tor_ovs_port'],
-                tor_ovs_protocol=device_dict['tor_ovs_protocol'],
-                controller_ip=device_dict['controller_ip'],
-                cfgm_ip=init_obj.cfgm_ip,
-                auth_server_ip=init_obj.auth_ip,
-                bringup=True)
-            tor_obj.setUp()
-        if device_dict['type'] == 'router':
-            phy_router_obj = PhysicalRouterFixture(
-                device_dict['name'], device_dict['mgmt_ip'],
-                model=device_dict['model'],
-                vendor=device_dict['vendor'],
                 asn=device_dict['asn'],
-                ssh_username=device_dict['ssh_username'],
-                ssh_password=device_dict['ssh_password'],
-                mgmt_ip=device_dict['mgmt_ip'],
-                tunnel_ip=device_dict['tunnel_ip'],
-                ports=device_dict['ports'],
+                model=device_dict.get('model', 'mx'),
+                vendor=device_dict.get('vendor', 'juniper'),
+                ssh_username=device_dict.get('ssh_username'),
+                ssh_password=device_dict.get('ssh_password'),
+                tunnel_ip=device_dict.get('tunnel_ip'),
+                ports=device_dict.get('ports'),
+                dm_managed=device_dict.get('dm_managed', True),
+                tsn=device_dict.get('tsn'),
+                role=device_dict.get('role'),
                 cfgm_ip=init_obj.cfgm_ip,
                 auth_server_ip=init_obj.auth_ip,
+                inputs=init_obj,
+                username=init_obj.admin_username,
+                password=init_obj.admin_password,
+                project_name=init_obj.admin_tenant,
+                domain=init_obj.admin_domain
                 )
             phy_router_obj.setUp()
         if device_dict['type'] == 'vcenter_gateway':
@@ -74,6 +65,3 @@ if __name__ == "__main__":
                    ifup_cmd = 'ifconfig %s up'%port
                    init_obj.run_cmd_on_server(device_dict['mgmt_ip'],ifup_cmd )
     # end for
-
-
-    
