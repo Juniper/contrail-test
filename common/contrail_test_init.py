@@ -8,6 +8,7 @@ import getpass
 import ConfigParser
 import ast
 from netaddr import *
+from itertools import ifilterfalse
 
 import fixtures
 from fabric.api import env, run, local, sudo
@@ -955,13 +956,28 @@ class TestInputs(object):
             return
         containers = [x.strip('\r') for x in output.split('\n')]
 
+        tmp_containers = ifilterfalse(lambda x: 'nodemgr' in x, containers)
+        nodemgr_cntrs = set(containers) - set(tmp_containers)
+        containers = set(containers) - set(nodemgr_cntrs)
         for service, names in CONTRAIL_SERVICES_CONTAINER_MAP.iteritems():
+            if 'nodemgr' in service:
+                continue
             for name in names:
-                container = next((container for container in containers if name in container), None)
+                container = next((container for container in containers
+                                  if name in container), None)
                 if container:
                     host_dict['containers'][service] = container
                     containers.remove(container)
                     break
+
+        for service, names in CONTRAIL_SERVICES_CONTAINER_MAP.iteritems():
+            if 'nodemgr' in service:
+                for name in names:
+                    container = next((container for container in nodemgr_cntrs
+                                      if name in container), None)
+                    if container:
+                        host_dict['containers'][service] = container
+                        break
 
         # Added for backward compatibility can be removed when we dont have fat containers
         for container in containers:

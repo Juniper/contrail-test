@@ -1,9 +1,9 @@
 CONTRAIL_SERVICES_CONTAINER_MAP = {
     'api-server': ['config_api', 'contrail-config-api'],
     'schema': ['config_schema', 'contrail-schema-transformer'],
-    'svc-monitor': ['config_svcmonitor', 'contrail-svc-monitor'],
+    'svc-monitor': ['config_svcmonitor', 'contrail-svcmonitor'],
     'device-manager': ['config_devicemgr', 'contrail-devicemgr'],
-    'control': ['control_control', 'contrail-control'],
+    'control': ['control_control', 'k8s_contrail-control'],
     'dns': ['control_dns', 'contrail-dns'],
     'named': ['control_named', 'contrail-named'],
     'analytics-api': ['analytics_api', 'contrail-analytics-api'],
