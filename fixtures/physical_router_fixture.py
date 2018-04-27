@@ -44,6 +44,7 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
 
         self.bgp_router = None
         self.bgp_router_already_present = False
+        self.dm_managed = kwargs.get('dm_managed', False)
         try:
             if self.inputs.verify_thru_gui():
                 from webui_test import WebuiTest

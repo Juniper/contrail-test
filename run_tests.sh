@@ -338,18 +338,10 @@ function apply_junitxml_patch {
     fi
 }
 
-function setup_tors {
+function setup_physical_routers {
 ( 
 export PYTHONPATH=$PATH:$PWD:$PWD/fixtures;
-source /etc/contrail/openstackrc
-python tools/tor/setup_tors.py $TEST_CONFIG_FILE
-)
-}
-
-function setup_tor_agents {
-( 
-export PYTHONPATH=$PWD:$PWD/fixtures;
-python tools/tor/setup_tor_agents.py $TEST_CONFIG_FILE
+python tools/setup_physical_routers.py $TEST_CONFIG_FILE
 )
 }
 
@@ -413,8 +405,7 @@ fi
 
 check_test_discovery
 
-setup_tor_agents
-setup_tors
+setup_physical_routers
 
 if [[ -n $JENKINS_TRIGGERED && $JENKINS_TRIGGERED -eq 1 ]]; then
     export REPORT_DETAILS_FILE=report_details_${SCRIPT_TS}_$(date +"%Y_%m_%d_%H_%M_%S").ini
