@@ -1150,7 +1150,6 @@ class TestInputs(object):
             if self.ns_agilio_vrouter_data:
                 self.pcap_on_vm = True
 
-        self._process_tor_data()
         self._process_for_vcenter_gateway()
         self._process_other_orchestrators(json_data)
 
@@ -1251,29 +1250,6 @@ class TestInputs(object):
         except KeyError, e:
             pass
         return (qos_queue_per_host, qos_queue_pg_properties_per_host)
-
-    def _process_tor_data(self):
-        for (device_name, device_dict) in self.physical_routers_data.iteritems():
-            device_dict['tor_agents'] = []
-            device_dict['tor_agent_dicts'] = []
-            device_dict['tor_tsn_ips'] = []
-            for (host_str, ta_list) in self.tor_agent_data.iteritems():
-                for ta in ta_list:
-                    if ta['tor_name'] == device_dict['name']:
-                        ta['tor_agent_host_string'] = host_str
-                        device_dict['tor_ovs_port'] = ta['tor_ovs_port']
-                        device_dict['tor_ovs_protocol'] = ta[
-                            'tor_ovs_protocol']
-                        device_dict['tor_agents'].append('%s:%s' % (host_str,
-                                                                    ta['tor_id']))
-                        device_dict['tor_agent_dicts'].append(ta)
-                        device_dict['tor_tsn_ips'].append(ta['tor_tsn_ip'])
-                        if self.ha_setup == True:
-                            device_dict['controller_ip'] = self.contrail_external_vip
-                        else:
-                            device_dict['controller_ip'] = ta['tor_tsn_ip']
-
-    # end _process_tor_data
 
     def get_host_ip(self, name):
         try:
