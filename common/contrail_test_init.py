@@ -626,6 +626,7 @@ class TestInputs(object):
         self.esxi_vm_ips = {}
         self.vgw_data = {}
         self.hypervisors = {}
+        self.is_dpdk_cluster = False
         provider_configs = (self.config.get('provider_config') or {}).get('bms') or {}
         username = provider_configs.get('ssh_user') or 'root'
         password = provider_configs.get('ssh_pwd') or 'c0ntrail123'
@@ -676,6 +677,10 @@ class TestInputs(object):
                 self.compute_names.append(hostname)
                 self.compute_info[hostname] = host_data['host_ip']
                 self.compute_control_ips.append(data_ip)
+                if roles['vrouter']:
+                    if roles['vrouter'].get('AGENT_MODE') == 'dpdk':
+                        host_data['is_dpdk'] = True
+                        self.is_dpdk_cluster = True
                 host_data_ip = host_control_ip = data_ip
             if 'control' in roles:
                 service_ip = self.get_service_ip(host_data['host_ip'], 'control')
