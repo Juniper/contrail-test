@@ -7,25 +7,16 @@ class TestFabricFWDRestarts(BaseK8sTest):
 
     @classmethod
     def setUpClass(cls):
-        try:
-            super(TestFabricFWDRestarts, cls).setUpClass()
-            cls.setup_fabric_gw()
-        except:
-            cls.tearDownClass()
-            raise
+        super(TestFabricFWDRestarts, cls).setUpClass()
+        if cls.inputs.cfgm_control_ip:
+            cls.ip_to_ping = cls.inputs.cfgm_control_ip
+        else:
+            cls.ip_to_ping = cls.inputs.cfgm_ip
 
     @classmethod
     def tearDownClass(cls):
-        cls.cleanup_fabric_gw()
         super(TestFabricFWDRestarts, cls).tearDownClass()
 
-    def is_test_applicable(self):
-        '''verify the fabroic gateway info
-        '''
-        if not self.inputs.fabric_gw_info:
-            return (False , "Fabric gateway is needed for the test run")
-        return (True , None)
-    
     def setup_namespaces_pods_for_fabric_restart(self, isolation=False,ip_fabric_forwarding=False):
         """ common routine to create the namesapces and the pods  by enabling the fabric forwarding
             1.create 2 namespaces (ns1,ns2:enable fabric forwarding)
@@ -68,9 +59,9 @@ class TestFabricFWDRestarts(BaseK8sTest):
            5.verifies the public reachability from the pods in fabric forwarding enabled namespace
         """
         #verifying the rechability with public netork and across namespaces
-        assert client1[0].ping_to_ip(self.inputs.public_host)
-        assert client1[1].ping_to_ip(self.inputs.public_host)
-        assert client2[0].ping_to_ip(self.inputs.public_host)
+        assert client1[0].ping_to_ip(self.ip_to_ping)
+        assert client1[1].ping_to_ip(self.ip_to_ping)
+        assert client2[0].ping_to_ip(self.ip_to_ping)
         assert client1[0].ping_to_ip(client1[1].pod_ip)
         #verifying pods in isolated/default namespaces shoud not reach each other
         #when fabric forwarding is enabled
