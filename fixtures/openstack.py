@@ -465,7 +465,7 @@ class OpenstackAuth(OrchestratorAuth):
 
    def remove_user_from_project(self, user, role, project):
        try:
-           self.keystone.remove_user_role(user, role, project)
+           self.keystone.remove_user_from_tenant(project, user, role)
        except Exception as e:
            self.logger.exception("%s user already removed from project"%(user))
 

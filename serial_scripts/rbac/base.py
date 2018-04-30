@@ -153,10 +153,10 @@ class BaseRbac(test_v1.BaseTestCase_v1):
         parent_type = parent_type or 'project'
         if not parent_fqname:
             if parent_type == 'project':
-                parent_fqname = '%s:%s'%(self.inputs.domain_name,
-                                         self.inputs.project_name)
+                parent_fqname = '%s:%s'%(connections.domain_name,
+                                         connections.project_name)
             elif parent_type == 'domain':
-                parent_fqname = self.inputs.domain_name
+                parent_fqname = connections.domain_name
             else:
                 parent_fqname = 'default-global-system-config'
         rbac_fixture = self.create_fixture(RbacFixture, connections=connections,

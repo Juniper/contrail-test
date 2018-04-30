@@ -46,8 +46,10 @@ except:
 
 try:
     from glanceclient import Client as glance_client
+    from glanceclient import exc as glance_exception
 except:
     glance_client = None
+    glance_exception = None
 
 try:
     from heatclient import client as heat_client
