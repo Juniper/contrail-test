@@ -1,6 +1,7 @@
 import os
 from common.openstack_libs import nova_client as mynovaclient
 from common.openstack_libs import nova_exception as novaException
+from common.openstack_libs import glance_exception as glanceException
 from fabric.context_managers import settings, hide, cd, shell_env
 from fabric.api import run, local, env
 from fabric.operations import get, put
@@ -15,6 +16,7 @@ import ast
 from common import vcenter_libs
 import openstack
 import shlex
+import glance_test
 
 #from contrail_fixtures import contrail_fix_ext
 
@@ -396,7 +398,10 @@ class NovaHelper(object):
         if '.gz' in image_abs_path:
             self.execute_cmd_with_proxy('gunzip -f %s' % image_abs_path, do_local=True)
 
-        self.glance_h.create_image(generic_image_name, image_path_real, **params)
+        try:
+            self.glance_h.create_image(generic_image_name, image_path_real, **params)
+        except glanceException.Forbidden:
+            self.admin_obj.glance_h.create_image(generic_image_name, image_path_real, **params)
         self.execute_cmd_with_proxy('rm -f %s' % image_path_real, do_local=True)
         return True
 
@@ -718,7 +723,9 @@ class NovaHelper(object):
         if not getattr(self, '_admin_obj', None):
             auth_h = openstack.OpenstackAuth(self.admin_username, self.admin_password,
                                              self.admin_tenant, self.inputs, self.logger)
-            self._admin_obj = NovaHelper(inputs=self.inputs, glance_h=self.glance_h, auth_h=auth_h)
+            glance_h = glance_test.GlanceHelper(auth_h=auth_h, inputs=self.inputs)
+            glance_h.setUp()
+            self._admin_obj = NovaHelper(inputs=self.inputs, glance_h=glance_h, auth_h=auth_h)
         return self._admin_obj
 
     @property

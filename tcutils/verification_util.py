@@ -61,11 +61,11 @@ class JsonDrv (object):
                 self._authn_body = \
                 '{"auth": {"identity": {"methods": ["password"],"password": {"user": {"domain": {"name": "%s"},"name": "%s","password": "%s"}}},\
                     "scope": {"project": {"domain": {"name": "%s"},"name": "%s"}}}}' %(
-                                          self._args.admin_domain,
-                                          self._args.admin_username,
-                                          self._args.admin_password,
-                                          self._args.admin_domain,
-                                          self._args.admin_username)
+                                          self._args.domain_name,
+                                          self._args.stack_user,
+                                          self._args.stack_password,
+                                          self._args.domain_name,
+                                          self._args.project_name)
             else:
                 self._authn_body = \
                     '{"auth":{"passwordCredentials":{"username": "%s", "password": "%s"}, "tenantName":"%s"}}' % (
