@@ -13,24 +13,15 @@ class TestFabricSNATRestarts(BaseK8sTest):
 
     @classmethod
     def setUpClass(cls):
-        try:
-            super(TestFabricSNATRestarts, cls).setUpClass()
-            cls.setup_fabric_gw()
-        except:
-            cls.tearDownClass()
-            raise
+        super(TestFabricSNATRestarts, cls).setUpClass()
+        if cls.inputs.cfgm_control_ip:
+            cls.ip_to_ping = cls.inputs.cfgm_control_ip
+        else:
+            cls.ip_to_ping = cls.inputs.cfgm_ip
 
     @classmethod
     def tearDownClass(cls):
-        cls.cleanup_fabric_gw()
         super(TestFabricSNATRestarts, cls).tearDownClass()
-
-    def is_test_applicable(self):
-        '''verify the fabroic gateway  info
-        '''
-        if not self.inputs.fabric_gw_info:
-            return (False , "Fabric gateway is needed for the test run")
-        return (True , None)
 
     
     def setup_common_namespaces_pods(self, isolation=False, ip_fabric_snat=False,
@@ -93,9 +84,9 @@ class TestFabricSNATRestarts(BaseK8sTest):
            4.verifies the ping between pods acoss snat ennabled and default namespaces
            5.verifies the public reachability from the pods in snat enabled namespace
         """
-        assert client1[0].ping_to_ip(self.inputs.public_host)
-        assert client1[1].ping_to_ip(self.inputs.public_host)
-        assert client2[0].ping_to_ip(self.inputs.public_host)#ip fabric forwaring takes precedence
+        assert client1[0].ping_to_ip(self.ip_to_ping)
+        assert client1[1].ping_to_ip(self.ip_to_ping)
+        #assert client2[0].ping_to_ip(self.ip_to_ping)#ip fabric forwaring takes precedence
         assert client1[0].ping_to_ip(client1[1].pod_ip)
         #verifying pods in isolated/default namespaces shoud not reach each other when snat is enabled
         assert client1[0].ping_to_ip(client2[0].pod_ip, expectation=False)
