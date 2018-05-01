@@ -264,7 +264,7 @@ class NovaHelper(object):
                                    vcpus=flavor_info['vcpus'],
                                     ram=flavor_info['ram'],
                                     disk=flavor_info['disk'])
-            if bool(self.inputs.dpdk_data) or bool(self.inputs.ns_agilio_vrouter_data):
+            if self.inputs.is_dpdk_cluster or bool(self.inputs.ns_agilio_vrouter_data):
                 try:
                     flavor = self.obj.flavors.find(name=name)
                 except novaException.Forbidden:
@@ -932,13 +932,4 @@ class NovaHelper(object):
             (node_name, zone)  = next(self.compute_nodes)
 
         return (zone, node_name)
-    def is_dpdk_compute (self, node_name):
-        result=False
-        if bool(self.inputs.dpdk_data):
-           for key in self.inputs.dpdk_data[0].keys():
-               if self.inputs.host_data[node_name]['host_ip'] == key.split('@')[1]:
-                   result= True
-    
-        return result  
-
 # end NovaHelper
