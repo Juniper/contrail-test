@@ -356,19 +356,19 @@ class VerifyIntfMirror(VerifySvcMirror):
         policy_fixture_vn2_vn3 = self.config_policy(policy_name_vn2_vn3, rules_vn2_vn3)
 
         vn1_v2_attach_to_vn1 = self.attach_policy_to_vn(
-            policy_fixture_vn1_vn2, vn1_fixture)
+            policy_fixture_vn1_vn2, self.vn1_fixture)
         vn1_vn2_attach_to_vn2 = self.attach_policy_to_vn(
-            policy_fixture_vn1_vn2, vn2_fixture)
+            policy_fixture_vn1_vn2, self.vn2_fixture)
 
         vn1_v3_attach_to_vn1 = self.attach_policy_to_vn(
-            policy_fixture_vn1_vn3, vn1_fixture)
+            policy_fixture_vn1_vn3, self.vn1_fixture)
         vn1_v3_attach_to_vn3 = self.attach_policy_to_vn(
-            policy_fixture_vn1_vn3, vn3_fixture)
+            policy_fixture_vn1_vn3, self.vn3_fixture)
 
         vn2_v3_attach_to_vn2 = self.attach_policy_to_vn(
-            policy_fixture_vn2_vn3, vn2_fixture)
+            policy_fixture_vn2_vn3, self.vn2_fixture)
         vn2_v3_attach_to_vn3 = self.attach_policy_to_vn(
-            policy_fixture_vn2_vn3, vn3_fixture)
+            policy_fixture_vn2_vn3, self.vn3_fixture)
 
         vn1_vmi_ref, vn2_vmi_ref, vn3_vmi_ref = None, None, None
 
