@@ -142,6 +142,8 @@ class NamespaceFixture(fixtures.Fixture):
             return ns_exists
         body = client.V1Namespace()
         body.metadata = client.V1ObjectMeta(name=self.name)
+        # initialize to allow different combinations
+        body.metadata.annotations = {}
         if self.isolation:
             body.metadata.annotations = {"opencontrail.org/isolation" : "true"}
         if self.ip_fabric_forwarding:
