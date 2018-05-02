@@ -207,7 +207,7 @@ class KeystoneCommands():
         role = self.get_role_dct(role)
         tenant = self.get_tenant_dct(tenant)
         if self.version == '3':
-            self.keystone.roles.revoke(role, user=None, group=group, project=tenant)
+            self.keystone.roles.revoke(role, user=user, project=tenant)
         else:
             self.keystone.tenants.remove_user(tenant, user, role)
     
@@ -272,6 +272,7 @@ class KeystoneCommands():
 
     def create_user(self, user, password, email='', tenant_name=None,
                     enabled=True, domain_name=None):
+        domain_name = domain_name or self.domain_name
         if self.version == '3':
             project_id=self.get_tenant_dct(tenant_name).id
             domain_id=self.find_domain(domain_name).id
