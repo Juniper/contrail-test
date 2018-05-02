@@ -81,7 +81,7 @@ class TestNSIsolationSerial(BaseK8sTest):
         return (client1, client2, client3)
     #end setup_common_namespaces_pods
 
-    @test.attr(type=['k8s_sanity','openshift_1'])
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_pods_isolation_post_kube_manager_restart(self):
         """
@@ -137,7 +137,6 @@ class TestNSIsolationSerial(BaseK8sTest):
                                       test_pod=client3[2], expectation=False)
     #end test_service_isolation_post_kube_manager_restart    
 
-    @test.attr(type=['k8s_sanity'])
     @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_ingress_isolation_post_kube_manager_restart(self):
@@ -157,7 +156,6 @@ class TestNSIsolationSerial(BaseK8sTest):
         assert self.validate_nginx_lb([client3[0], client3[1]], client3[5].external_ips[0])
     #end test_ingress_isolation_post_kube_manager_restart
 
-    @test.attr(type=['k8s_sanity'])
     @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_ingress_isolation_vrouter_agent_restart(self):
@@ -433,7 +431,7 @@ class TestProjectIsolationSerial(BaseK8sTest):
         assert self.validate_nginx_lb([client2[0], client2[1]], client2[5].external_ips[0])
     # end  test_ingress_reachability_across_ns
 
-    @test.attr(type=['k8s_sanity','openshift_1'])
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_reachability_across_projects_with_isolated_namespace(self):
         """

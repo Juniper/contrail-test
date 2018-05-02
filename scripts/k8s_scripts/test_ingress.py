@@ -55,7 +55,6 @@ class TestIngress(BaseK8sTest):
     # end test_service_1
 
     @skip_because(mx_gw = False)
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_ingress_fanout(self):
         '''
