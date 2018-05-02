@@ -32,7 +32,9 @@ class VncLibFixture(fixtures.Fixture):
         self.password = os.getenv('OS_PASSWORD') or \
                         kwargs.get('password', 'contrail123')
         self.project_name = kwargs.get('project_name', 'admin')
-        self.domain = kwargs.get('domain', 'default-domain')
+        self.orch_domain = self.domain = kwargs.get('domain', 'Default')
+        if self.domain == 'Default':
+            self.domain = 'default-domain'
         self.api_server_port = kwargs.get('api_server_port', '8082')
         self.logger = kwargs.get('logger', None)
         self.connections = kwargs.get('connections', None)
@@ -82,7 +84,7 @@ class VncLibFixture(fixtures.Fixture):
                               username=self.username,
                               password=self.password,
                               tenant_name=self.project_name,
-                              domain_name=self.domain,
+                              domain_name=self.orch_domain,
                               api_server_host=self.cfgm_ip,
                               api_server_port=self.api_server_port,
                               auth_host=self.auth_server_ip,
@@ -94,7 +96,7 @@ class VncLibFixture(fixtures.Fixture):
                                     self.username,
                                     self.password,
                                     self.project_name,
-                                    domain_name=self.domain,
+                                    domain_name=self.orch_domain,
                                     auth_url=self.auth_url,
                                     certfile=self.certfile,
                                     keyfile=self.keyfile,
