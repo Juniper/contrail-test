@@ -851,6 +851,9 @@ class TestInputs(object):
 
         self.physical_routers_data = test_configs.get('physical_routers',{})
 
+        #BMS information connected to TOR's
+        self.tor_hosts_data = test_configs.get('tor_hosts',{})
+
         self.kube_config_file = test_configs.get('kube_config_file') or '/etc/kubernetes/admin.conf'
         self.openshift_config_file = test_configs.get('openshift_config_file') or '/root/.kube/config'
         self.ext_routers = []
