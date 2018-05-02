@@ -35,7 +35,7 @@ class TestPod(BaseK8sTest):
         assert pod1.ping_to_ip(pod2.pod_ip)
     # end test_ping_between_two_pods
 
-    @test.attr(type=['k8s_sanity','openshift_1'])
+    @test.attr(type=['openshift_1', 'ci_k8s_sanity'])
     @preposttest_wrapper
     def test_ping_between_pods_accross_namespace(self):
         '''

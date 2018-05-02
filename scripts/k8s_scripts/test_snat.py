@@ -79,7 +79,6 @@ class TestSNAT(BaseK8sTest):
         return (client1, client2, client3)
     #end setup_namespaces_pods_for_snat_test
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_pod_publicreachability_with_snat_enabled(self):
         """
