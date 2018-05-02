@@ -55,7 +55,6 @@ class TestNetworkPolicyProjectIsolation(BaseK8sTest):
         return (client1, client2)
     #end setup_common_namespaces_pods
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_ingress_policy_over_project_isolation(self):
         """
@@ -129,7 +128,6 @@ class TestNetworkPolicyProjectIsolation(BaseK8sTest):
         assert self.validate_wget(ns2_clients[0], url1)
     #end test_ingress_policy_over_project_isolation
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_egress_policy_over_project_isolation(self):
         """
