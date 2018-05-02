@@ -338,7 +338,7 @@ class PodFixture(fixtures.Fixture):
         return output
     # run_cmd_on_pod
 
-    @retry(delay=1, tries=10)
+    @retry(delay=3, tries=10)
     def ping_with_certainty(self, *args, **kwargs):
         expectation = kwargs.get('expectation', True)
         ret_val = self.ping_to_ip(*args, **kwargs)
