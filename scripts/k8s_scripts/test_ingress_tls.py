@@ -12,7 +12,8 @@ class TestIngressTLS(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestIngressTLS, cls).tearDownClass()
-    
+
+    @test.attr(type=['k8s_sanity']) 
     @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_ingress_tls_1(self):
