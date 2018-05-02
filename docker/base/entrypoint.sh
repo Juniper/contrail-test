@@ -86,6 +86,10 @@ else
             $run_tests -T openshift_1 --send-mail -U -t $EXTRA_RUN_TEST_ARGS
             rv_run_test=$?
             ;;
+        ci_k8s_sanity)
+            $run_tests -T ci_k8s_sanity --send-mail -U -t $EXTRA_RUN_TEST_ARGS
+            rv_run_test=$?
+            ;;
         vcenter)
             $run_tests -T vcenter --send-mail -U -t $EXTRA_RUN_TEST_ARGS
             rv_run_test=$?

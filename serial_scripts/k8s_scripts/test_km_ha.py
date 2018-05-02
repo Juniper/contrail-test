@@ -106,6 +106,7 @@ class TestKubeManagerHA(BaseK8sTest):
 
     # end test_single_node_failover
 
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_km_active_backup(self):
         '''

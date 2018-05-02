@@ -102,6 +102,7 @@ class TestFabricSNATRestarts(BaseK8sTest):
         assert client1[0].ping_to_ip(client3[0].pod_ip, expectation=False)
         assert client1[0].ping_to_ip(client4[0].pod_ip, expectation=False)
 
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_snat_with_kube_manager_restart(self):
         """
@@ -121,6 +122,7 @@ class TestFabricSNATRestarts(BaseK8sTest):
         
     #end test_snat_with_kube_manager_restart
 
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_snat_with_vrouter_agent_restart(self):
         """
@@ -214,6 +216,7 @@ class TestFabricSNATRestarts(BaseK8sTest):
                                                                            client3, client4)
     #end test_snat_with_kubelet_restart_on_master
 
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_snat_with_docker_restart_on_master(self):
         """
