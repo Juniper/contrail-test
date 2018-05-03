@@ -9,21 +9,13 @@ class TestSNAT(BaseK8sTest):
     def setUpClass(cls):
         try:
             super(TestSNAT, cls).setUpClass()
-            cls.setup_fabric_gw()
         except:
             cls.tearDownClass()
             raise
 
     @classmethod
     def tearDownClass(cls):
-        cls.cleanup_fabric_gw()
         super(TestSNAT, cls).tearDownClass()
-    def is_test_applicable(self):
-        '''verify the fabroic gateway info
-        '''
-        if not self.inputs.fabric_gw_info:
-            return (False , "Fabric gateway is needed for the test run")
-        return (True , None)
 
     def setup_namespaces_pods_for_snat_test(self, isolation=False ,ip_fabric_snat=False):
         """ common routine to create the namesapces and the pods  by enabling snat
@@ -79,7 +71,7 @@ class TestSNAT(BaseK8sTest):
         return (client1, client2, client3)
     #end setup_namespaces_pods_for_snat_test
 
-    @test.attr(type=['k8s_sanity'])
+    @test.attr(type=['k8s_sanity','openshift_1'])
     @preposttest_wrapper
     def test_pod_publicreachability_with_snat_enabled(self):
         """
@@ -90,7 +82,11 @@ class TestSNAT(BaseK8sTest):
            4.ping from ns1:pod2:c1 and ns1:pod2:c2 to the public dns should PASS
            5.ping from ns1:pod1 to ns2:pod1 should FAIL
            6.ping from ns1:pod1 to dafeult:pod1 should FAIL
+           7.ping public_hostname DNS verification both from default and user-defined namespace
+	   8.Repeat the reachability checks on non-Isolated Pods with pass/fail expecations accordingly set
         """
+
+        ## Verify with Isolated pods
         client1, client2, client3 = self.setup_namespaces_pods_for_snat_test(isolation=True,
                                                                             ip_fabric_snat=True)
         assert client1[0].ping_to_ip(self.inputs.public_host)
@@ -100,6 +96,21 @@ class TestSNAT(BaseK8sTest):
         assert client1[0].ping_to_ip(client1[2].pod_ip)
         assert client1[0].ping_to_ip(client2[0].pod_ip, expectation=False)
         assert client1[0].ping_to_ip(client3[0].pod_ip, expectation=False)
+        assert client1[0].ping_to_ip(self.inputs.public_hostname)
+        assert client3[0].ping_to_ip(self.inputs.public_hostname)
+
+        ## Verify with non-Isolated pods
+        client1, client2, client3 = self.setup_namespaces_pods_for_snat_test(isolation=False, ip_fabric_snat=True)
+        assert client1[0].ping_to_ip(self.inputs.public_host)
+        assert client1[1].ping_to_ip(self.inputs.public_host,container="c1")
+        assert client1[1].ping_to_ip(self.inputs.public_host,container="c2")
+        assert client2[0].ping_to_ip(self.inputs.public_host)
+        assert client1[0].ping_to_ip(client1[2].pod_ip)
+        assert client1[0].ping_to_ip(client2[0].pod_ip)
+        assert client1[0].ping_to_ip(client3[0].pod_ip)
+        assert client1[0].ping_to_ip(self.inputs.public_hostname)
+        assert client3[0].ping_to_ip(self.inputs.public_hostname)
+
     #end test_pod_publicreachability_with_snat_enabled
 
     @preposttest_wrapper
