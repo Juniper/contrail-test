@@ -48,6 +48,8 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         self.ssh_password = kwargs.get('ssh_password', 'Embe1mpls')
         self.tunnel_ip = kwargs.get('tunnel_ip', None)
         self.ports = kwargs.get('ports', [])
+        self.role = kwargs.get('role')
+        self.dm_managed = False
         self.device_details = {}
 
         self.phy_device = None
@@ -55,6 +57,7 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
 
         self.already_present = False
         self.physical_port_fixtures = {}
+        self.tsn = kwargs.get('tsn')
         try:
             if self.inputs.verify_thru_gui():
                 connections = kwargs.get('connections', None)
@@ -73,6 +76,10 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
     # end _get_ip_fabric_ri_obj
 
     def create_physical_device(self):
+        def add_tsn():
+            fq_name = ['default-global-system-config', self.tsn]
+            vr_obj = self.vnc_api_h.virtual_router_read(fq_name=fq_name)
+            pr.add_virtual_router(vr_obj)
         pr = vnc_api_test.PhysicalRouter(self.name)
         pr.physical_router_management_ip = self.mgmt_ip
         pr.physical_router_dataplane_ip = self.tunnel_ip
@@ -81,12 +88,12 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         pr.physical_router_vnc_managed = True
         uc = vnc_api_test.UserCredentials(self.ssh_username, self.ssh_password)
         pr.set_physical_router_user_credentials(uc)
-        try: 
-            if self.inputs.is_gui_based_config():
-                self.webui.create_physical_router(self)
-            else:
-                pr_id = self.vnc_api_h.physical_router_create(pr)
-        except Exception as e:
+        if self.tsn:
+            add_tsn()
+        pr.physical_router_role = self.role #One of leaf/spine or None
+        if self.inputs.is_gui_based_config():
+            self.webui.create_physical_router(self)
+        else:
             pr_id = self.vnc_api_h.physical_router_create(pr)
         self.logger.info('Created Physical device %s with ID %s' % (
             pr.fq_name, pr.uuid))
@@ -99,6 +106,8 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
 
     def setUp(self):
         super(PhysicalDeviceFixture, self).setUp()
+        if not self.dm_managed:
+            return
         pr_fq_name = ['default-global-system-config', self.name]
         try:
             self.phy_device = self.vnc_api_h.physical_router_read(
@@ -132,7 +141,7 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
             do_cleanup = False
             self.logger.info('Skipping deletion of device %s' % (
                 self.phy_device.fq_name))
-        if do_cleanup:
+        if self.dm_managed and do_cleanup:
             if self.inputs.is_gui_based_config():
                 self.webui.delete_physical_router(self)
             else:
@@ -191,7 +200,3 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
 
     
 # end PhysicalDeviceFixture
-
-if __name__ == "__main__":
-    import pdb
-    pdb.set_trace()
