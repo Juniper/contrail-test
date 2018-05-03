@@ -710,7 +710,12 @@ class TestInputs(object):
                 self.kube_manager_ips.append(host_data['host_ip'])
                 self.kube_manager_control_ips.append(service_ip)
             if 'k8s_master' in roles:
-                self.k8s_master_ip = host_data['host_ip'] #K8s Currently only supports 1 master
+                with hide('everything'):
+                    with settings(
+                        host_string='%s@%s' % (username, host_data['host_ip']),
+                        password=password, warn_only=True, abort_on_prompts=False):
+                        if exists('/etc/kubernetes/admin.conf'):
+                            self.k8s_master_ip = host_data['host_ip'] #K8s Currently only supports 1 master
             if 'k8s_node' in roles:
                 self.k8s_slave_ips.append(host_data['host_ip'])
             host_data['data-ip'] = host_data['host_data_ip'] = host_data_ip
