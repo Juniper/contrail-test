@@ -4,6 +4,9 @@ from common.openstack_libs import ceilo_client as client
 
 VERSION = 2
 
+# License: Apache-2.0
+# (c) Copyright 2012, OpenStack Foundation.
+# https://docs.openstack.org/horizon/9.1.1/_modules/openstack_dashboard/api/ceilometer.html
 def make_query(user_id=None, tenant_id=None, resource_id=None,
                user_ids=None, tenant_ids=None, resource_ids=None):
     """Returns query built from given parameters.
