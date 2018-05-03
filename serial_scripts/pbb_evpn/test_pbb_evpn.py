@@ -25,6 +25,7 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
         super(TestPbbEvpnMacLearning, cls).tearDownClass()
     # end tearDownClass
 
+    @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     def test_mac_learning_single_isid(self):
         '''
@@ -90,7 +91,6 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
     # end test_mac_learning_single_isid
 
 
-    @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     def test_mac_learning_subIntf_single_isid(self):
         '''
@@ -114,6 +114,11 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
         vn_fixtures = ret_dict['vn_fixtures']
         vm_fixtures = ret_dict['vm_fixtures']
         pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
+
+        # Before pinging, wait till interface is found on VM
+        interface = 'eth0.%s' %(VLAN_ID1)
+        for src_vm_fixture in vm_fixtures.values():
+            assert src_vm_fixture.wait_till_interface_created(interface)
 
         # Pinging all the VMIs
         for src_vm_fixture in vm_fixtures.values():
