@@ -1745,7 +1745,7 @@ class VNFixture(fixtures.Fixture):
         self.logger.debug('Updating IGMP on VN %s to %s' % (
             self.vn_fq_name, igmp_enable))
         vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)
-        vn_obj.set_igmp_config(igmp_enable)
+        vn_obj.set_igmp_enable(igmp_enable)
         self.vnc_lib_h.virtual_network_update(vn_obj)
 
         if verify:

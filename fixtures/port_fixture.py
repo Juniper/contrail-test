@@ -223,7 +223,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
 
     def set_igmp_config(self, value):
         vmi_obj = self.vnc_h.virtual_machine_interface_read(self.uuid)
-        vmi_obj.set_igmp_config(bool(value))
+        vmi_obj.set_igmp_enable(bool(value))
         self.vnc_h.virtual_machine_interface_update(vmi_obj)
 
     def get_igmp_enable(self, value):

@@ -414,7 +414,7 @@ class VncLibFixture(fixtures.Fixture):
     def set_global_igmp_config(self, igmp_enable=True):
         gsc_id = self.vnc_api_h.get_default_global_system_config_id()
         gsc_obj = self.vnc_api_h.global_system_config_read(id=gsc_id)
-        gsc_obj.set_igmp_config(igmp_enable)
+        gsc_obj.set_igmp_enable(igmp_enable)
         self.vnc_api_h.global_system_config_update(gsc_obj)
     # end set_global_igmp_enable
 
