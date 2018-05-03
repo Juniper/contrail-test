@@ -102,6 +102,47 @@ class TestSNAT(BaseK8sTest):
         assert client1[0].ping_to_ip(client3[0].pod_ip, expectation=False)
     #end test_pod_publicreachability_with_snat_enabled
 
+    @test.attr(type=['openshift_1'])
+    @preposttest_wrapper
+    def test_pod_external_reachability_with_snat_enabled(self):
+        """
+        Verify the pods reachability to public network when ip snat forwarding is enables
+           1.create 2 isolated namespaces with snat forwarding enabled
+           2.create pods in thos namespaces(ns1:pod1,pod2(c1,c2), ns2:pod1 ,default:pod1)
+           3.ping ns1:pod1 to public host dns should PASS
+           4.ping from ns1:pod2:c1 and ns1:pod2:c2 to the public dns should PASS
+           5.ping from ns1:pod1 to ns2:pod1 should FAIL
+           6.ping from ns1:pod1 to dafeult:pod1 should FAIL
+           7.ping public_hostname DNS verification both from default and user-defined namespace
+           8.Repeat the reachability checks on non-Isolated Pods with pass/fail expecations accordingly set
+        """
+
+        ## Verify with Isolated pods
+        client1, client2, client3 = self.setup_namespaces_pods_for_snat_test(isolation=True, ip_fabric_snat=True)
+        assert client1[0].ping_to_ip(self.inputs.public_host)
+        assert client1[1].ping_to_ip(self.inputs.public_host,container="c1")
+        assert client1[1].ping_to_ip(self.inputs.public_host,container="c2")
+        assert client2[0].ping_to_ip(self.inputs.public_host)
+        assert client1[0].ping_to_ip(client1[2].pod_ip)
+        assert client1[0].ping_to_ip(client2[0].pod_ip, expectation=False)
+        assert client1[0].ping_to_ip(client3[0].pod_ip, expectation=False)
+        assert client1[0].ping_to_ip(self.inputs.public_hostname)
+        assert client3[0].ping_to_ip(self.inputs.public_hostname)
+
+        ## Verify with non-Isolated pods
+        client1, client2, client3 = self.setup_namespaces_pods_for_snat_test(isolation=False, ip_fabric_snat=True)
+        assert client1[0].ping_to_ip(self.inputs.public_host)
+        assert client1[1].ping_to_ip(self.inputs.public_host,container="c1")
+        assert client1[1].ping_to_ip(self.inputs.public_host,container="c2")
+        assert client2[0].ping_to_ip(self.inputs.public_host)
+        assert client1[0].ping_to_ip(client1[2].pod_ip)
+        assert client1[0].ping_to_ip(client2[0].pod_ip)
+        assert client1[0].ping_to_ip(client3[0].pod_ip)
+        assert client1[0].ping_to_ip(self.inputs.public_hostname)
+        assert client3[0].ping_to_ip(self.inputs.public_hostname)
+
+    #end test_pod_publicreachability_with_snat_enabled
+
     @preposttest_wrapper
     def test_snat_forwarding_disabled_by_default(self):
         """
