@@ -12,6 +12,9 @@ from common import log_orig as contrail_logging
 import logging as std_logging
 from tcutils.util import get_unique_random_name
 
+# License: Apache-2.0
+# Copyright 2012 OpenStack Foundation
+# https://github.com/openstack/tempest/blob/master/tempest/test.py
 def attr(*args, **kwargs):
     """A decorator which applies the  testtools attr decorator
 
@@ -77,10 +80,17 @@ class BaseTestCase(TagsHack,
 
     @classmethod
     def tearDownClass(cls):
+        # License: Apache-2.0
+        # Copyright 2012 OpenStack Foundation
+        # https://github.com/openstack/tempest/blob/master/tempest/test.py
+
         #cls.logger.cleanUp()
         if hasattr(super(BaseTestCase, cls), 'tearDownClass'):
             super(BaseTestCase, cls).tearDownClass()
 
+    # License: Apache-2.0
+    # Copyright 2012 OpenStack Foundation
+    # https://github.com/openstack/tempest/blob/master/tempest/test.py
     def setUp(self):
         super(BaseTestCase, self).setUp()
         if not self.setUpClassCalled:
@@ -127,6 +137,9 @@ class BaseTestCase(TagsHack,
         return (True, None)
 
 
+# License: Apache-2.0
+# Copyright 2012 OpenStack Foundation
+# https://github.com/openstack/tempest/blob/master/tempest/test.py
 def call_until_true(func, duration, sleep_for):
     """
     Call the given function until it returns True (and return True) or
