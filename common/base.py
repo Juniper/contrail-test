@@ -81,7 +81,7 @@ class _GenericTestBaseMethods():
             nodes=[node_ip])[0]
     # end start_containers
 
-    def add_knob_to_container(self, node_ip, container_name, level='DEAFULT', knob=None):
+    def add_knob_to_container(self, node_ip, container_name, level='DEFAULT', knob=None):
         ''' Add a configuration knob to container at specified level
             Args:
                 node_ip         : Node on which containers need to be stopped
@@ -100,6 +100,11 @@ class _GenericTestBaseMethods():
         self.inputs.run_cmd_on_server(node_ip, issue_cmd, username, password, pty=True,
                                     as_sudo=True)
 
+        just_knob = knob[:knob.find('=')] 
+        issue_cmd = 'sed -i -e \'s/'+just_knob+'/#'+just_knob+'/g\' entrypoint.sh' 
+        self.logger.info('Running %s on %s' % (issue_cmd, node_ip))
+        self.inputs.run_cmd_on_server(node_ip, issue_cmd, username, password, pty=True,
+                                    as_sudo=True)
         issue_cmd = 'grep -q -F \''+knob+'\' entrypoint.sh ||' + \
             'sed -i  \'/\['+level+'\]/a '+knob+'\' entrypoint.sh'
         self.logger.info('Running %s on %s' % (issue_cmd, node_ip))
