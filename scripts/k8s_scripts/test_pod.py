@@ -32,7 +32,7 @@ class TestPod(BaseK8sTest):
         assert pod1.verify_on_setup()
         pod2 = self.setup_busybox_pod()
         assert pod2.verify_on_setup()
-        assert pod1.ping_to_ip(pod2.pod_ip)
+        assert pod1.ping_with_certainty(pod2.pod_ip)
     # end test_ping_between_two_pods
 
     @test.attr(type=['k8s_sanity','openshift_1'])
