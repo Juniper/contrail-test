@@ -3,3 +3,4 @@ pyvirtualdisplay
 junos-eznc==1.2.2
 pyvmomi==6.5.0.2017.5.post1
 dpkt==1.8.8
+selenium==2.53.6
