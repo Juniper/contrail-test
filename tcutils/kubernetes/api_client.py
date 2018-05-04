@@ -14,6 +14,7 @@ class Client():
         self.v1_h = client.CoreV1Api(self.api_client)
         self.v1_h.read_namespace('default')
         self.v1_beta_h = client.ExtensionsV1beta1Api(self.api_client)
+        self.v1_networking = client.NetworkingV1Api(self.api_client)
         self.apps_v1_beta1_h = client.AppsV1beta1Api(self.api_client)
 
         self.logger = logger or contrail_logging.getLogger(__name__)
@@ -142,7 +143,7 @@ class Client():
                 ip_block_obj = self._get_ip_block_selector(
                     **ip_block)
 
-            peer = client.V1beta1NetworkPolicyPeer(
+            peer = client.V1NetworkPolicyPeer(
                 namespace_selector=namespace_selector_obj,
                 pod_selector=pod_selector_obj,
                 ip_block=ip_block_obj
@@ -152,7 +153,7 @@ class Client():
     # end _get_network_policy_peer_list
 
     def _get_network_policy_port(self, protocol, port):
-        return client.V1beta1NetworkPolicyPort(port=port, protocol=protocol)
+        return client.V1NetworkPolicyPort(port=port, protocol=protocol)
 
     def _get_network_policy_port_list(self, port_list):
         port_obj_list = []
@@ -163,7 +164,7 @@ class Client():
     # end _get_network_policy_port_list
 
     def _get_network_policy_spec(self, spec):
-        ''' Return V1beta1NetworkPolicySpec
+        ''' Return V1NetworkPolicySpec
         '''
         ingress_rules = spec.get('ingress', [])
         ingress_rules_obj = []
@@ -175,15 +176,15 @@ class Client():
             _from = self._get_network_policy_peer_list(rule_list=rule.get('from', []))
             ports = self._get_network_policy_port_list(rule.get('ports', []))
             ingress_rules_obj.append(
-                client.V1beta1NetworkPolicyIngressRule(
+                client.V1NetworkPolicyIngressRule(
                     _from=_from, ports=ports))
         for rule in egress_rules:
             to = self._get_network_policy_peer_list(rule_list=rule.get('to', []))
             ports = self._get_network_policy_port_list(rule.get('egress_ports', []))
             egress_rules_obj.append(
-                client.V1beta1NetworkPolicyEgressRule(
+                client.V1NetworkPolicyEgressRule(
                     to=to, ports=ports))
-        return client.V1beta1NetworkPolicySpec(ingress=ingress_rules_obj,
+        return client.V1NetworkPolicySpec(ingress=ingress_rules_obj,
                                                egress=egress_rules_obj,
                                                pod_selector=pod_selector,
                                                policy_types=policy_types)
@@ -195,21 +196,21 @@ class Client():
                               metadata=None,
                               spec=None):
         '''
-        Returns V1beta1NetworkPolicy object
+        Returns V1NetworkPolicy object
         '''
         if metadata is None: metadata = {}
         if spec is None: spec = {}
-        policy_obj = self.v1_beta_h.read_namespaced_network_policy(
+        policy_obj = self.v1_networking.read_namespaced_network_policy(
             policy_name, namespace)
         metadata_obj = self._get_metadata(metadata)
 
         spec_obj = self._get_network_policy_spec(spec)
 
-        body = client.V1beta1NetworkPolicy(
+        body = client.V1NetworkPolicy(
             metadata=metadata_obj,
             spec=spec_obj)
         self.logger.info('Updating Network Policy %s' % (policy_name))
-        resp = self.v1_beta_h.patch_namespaced_network_policy(policy_name,
+        resp = self.v1_networking.patch_namespaced_network_policy(policy_name,
                                                               namespace, body)
         return resp
     # end update_network_policy
@@ -238,7 +239,7 @@ class Client():
                       ]
                }
 
-        Returns V1beta1NetworkPolicy object
+        Returns V1NetworkPolicy object
         '''
         if metadata is None: metadata = {}
         if spec is None: spec = {}
@@ -247,11 +248,11 @@ class Client():
             metadata_obj.name = name
         spec_obj = self._get_network_policy_spec(spec)
 
-        body = client.V1beta1NetworkPolicy(
+        body = client.V1NetworkPolicy(
             metadata=metadata_obj,
             spec=spec_obj)
         self.logger.info('Creating Network Policy %s' % (metadata_obj.name))
-        resp = self.v1_beta_h.create_namespaced_network_policy(namespace, body)
+        resp = self.v1_networking.create_namespaced_network_policy(namespace, body)
         return resp
     # end create_network_policy
 
@@ -260,7 +261,7 @@ class Client():
                               name):
         self.logger.info('Deleting Network Policy : %s' % (name))
         body = client.V1DeleteOptions()
-        return self.v1_beta_h.delete_namespaced_network_policy(name, namespace,
+        return self.v1_networking.delete_namespaced_network_policy(name, namespace,
                                                                body)
     # end delete_network_policy
 

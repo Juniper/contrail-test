@@ -24,7 +24,7 @@ class NetworkPolicyFixture(fixtures.Fixture):
         self.vnc_api_h = connections.vnc_lib
         self.metadata = {} if metadata is None else metadata
         self.spec = {} if spec is None else spec
-        self.v1_beta_h = self.k8s_client.v1_beta_h
+        self.v1_networking = self.k8s_client.v1_networking
 
         self.already_exists = None
 
@@ -48,7 +48,7 @@ class NetworkPolicyFixture(fixtures.Fixture):
 
     def read(self):
         try:
-            self.obj = self.v1_beta_h.read_namespaced_network_policy(
+            self.obj = self.v1_networking.read_namespaced_network_policy(
                 self.name, self.namespace)
             self._populate_attr()
             if self.already_exists is None:
