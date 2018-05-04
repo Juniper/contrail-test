@@ -256,7 +256,8 @@ class TestIngress(BaseK8sTest):
         for compute_ip in self.inputs.compute_ips:
             self.inputs.restart_service('contrail-vrouter-agent',[compute_ip],
                                          container='agent')
-        cluster_status, error_nodes = ContrailStatusChecker(self.inputs).wait_till_contrail_cluster_stable()
+        cluster_status, error_nodes = ContrailStatusChecker(self.inputs).wait_till_contrail_cluster_stable(
+                                                            nodes=self.inputs.compute_ips, roles="vrouter")
         assert cluster_status, 'Cluster is not stable after restart'
         assert self.validate_nginx_lb([pod1, pod2], ingress.cluster_ip,
                                       test_pod=pod5, path=path1, host=host1)
