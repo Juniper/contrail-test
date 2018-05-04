@@ -77,10 +77,13 @@ class NFSDatastore:
         with settings(host_string=username+'@'+self.server, password=password,
                       warn_only = True, shell = '/bin/sh -l -c'):
             sudo('mkdir /nfs')
-            sudo('apt-get -y install nfs-kernel-server')
+            #sudo('apt-get -y install nfs-kernel-server')
+            sudo('yum -y install nfs-utils')
             sudo("sed -i '/nfs /d' /etc/exports")
             sudo('echo "/nfs    *(rw,sync,no_root_squash)" >> /etc/exports')
-            sudo('service nfs-kernel-server restart')
+            #sudo('service nfs-kernel-server restart')
+            sudo('systemctl enable nfs-server.service')
+            sudo('systemctl start nfs-server.service')
 
         hosts = [host for cluster in vc._dc.hostFolder.childEntity for host in cluster.host]
         spec = _vim_obj('host.NasSpec', remoteHost=self.server, remotePath=self.path,
