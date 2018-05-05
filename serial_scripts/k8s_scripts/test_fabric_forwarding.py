@@ -121,7 +121,6 @@ class TestFabricFWDRestarts(BaseK8sTest):
         self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3)
     #end test_fabric_fwd_pod_restart
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_fabric_fwd_with_docker_restart_on_slave(self):
         """

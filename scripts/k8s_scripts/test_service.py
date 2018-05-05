@@ -45,7 +45,6 @@ class TestService(BaseK8sTest):
                                       test_pod=pod3)
     # end test_service_1
 
-    @test.attr(type=['k8s_sanity'])
     @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_service_with_type_loadbalancer(self):
