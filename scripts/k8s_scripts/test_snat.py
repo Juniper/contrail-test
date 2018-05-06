@@ -7,23 +7,15 @@ import time
 class TestSNAT(BaseK8sTest):
     @classmethod
     def setUpClass(cls):
-        try:
-            super(TestSNAT, cls).setUpClass()
-            cls.setup_fabric_gw()
-        except:
-            cls.tearDownClass()
-            raise
+        super(TestSNAT, cls).setUpClass()
+        if cls.inputs.get_ctrl_data_ip(cls.inputs.cfgm_ip):
+            cls.ip_to_ping = cls.inputs.get_ctrl_data_ip(cls.inputs.cfgm_ip)
+        else:
+            cls.ip_to_ping = cls.inputs.cfgm_ip
 
     @classmethod
     def tearDownClass(cls):
-        cls.cleanup_fabric_gw()
         super(TestSNAT, cls).tearDownClass()
-    def is_test_applicable(self):
-        '''verify the fabroic gateway info
-        '''
-        if not self.inputs.fabric_gw_info:
-            return (False , "Fabric gateway is needed for the test run")
-        return (True , None)
 
     def setup_namespaces_pods_for_snat_test(self, isolation=False ,ip_fabric_snat=False):
         """ common routine to create the namesapces and the pods  by enabling snat
@@ -92,10 +84,10 @@ class TestSNAT(BaseK8sTest):
         """
         client1, client2, client3 = self.setup_namespaces_pods_for_snat_test(isolation=True,
                                                                             ip_fabric_snat=True)
-        assert client1[0].ping_to_ip(self.inputs.public_host)
-        assert client1[1].ping_to_ip(self.inputs.public_host,container="c1")
-        assert client1[1].ping_to_ip(self.inputs.public_host,container="c2")
-        assert client2[0].ping_to_ip(self.inputs.public_host)
+        assert client1[0].ping_to_ip(self.ip_to_ping)
+        assert client1[1].ping_to_ip(self.ip_to_ping,container="c1")
+        assert client1[1].ping_to_ip(self.ip_to_ping,container="c2")
+        assert client2[0].ping_to_ip(self.ip_to_ping)
         assert client1[0].ping_to_ip(client1[2].pod_ip)
         assert client1[0].ping_to_ip(client2[0].pod_ip, expectation=False)
         assert client1[0].ping_to_ip(client3[0].pod_ip, expectation=False)
@@ -118,7 +110,8 @@ class TestSNAT(BaseK8sTest):
         assert namespace1.verify_on_setup()
         pod1_in_ns1 = self.setup_ubuntuapp_pod(namespace=namespace1_name)
         assert pod1_in_ns1.verify_on_setup()
-        assert pod1_in_ns1.ping_to_ip(self.inputs.public_host, expectation=False)
+        assert pod1_in_ns1.ping_to_ip(self.ip_to_ping, expectation=False)
+        self.perform_cleanup(pod1_in_ns1)
         self.perform_cleanup(namespace1)
         #recreate the same namespace with ip fabric snat enabled this time
         time.sleep(5)
@@ -126,7 +119,7 @@ class TestSNAT(BaseK8sTest):
                                                               ip_fabric_snat=True)
         pod1_in_ns1 = self.setup_ubuntuapp_pod(namespace=namespace1_name)
         assert pod1_in_ns1.verify_on_setup()
-        assert pod1_in_ns1.ping_to_ip(self.inputs.public_host)
+        assert pod1_in_ns1.ping_to_ip(self.ip_to_ping)
     #end test_snat_forwarding_disabled_by_default
     
     @preposttest_wrapper
@@ -144,11 +137,11 @@ class TestSNAT(BaseK8sTest):
         client1, client2, client3 = self.setup_namespaces_pods_for_snat_test(isolation=True,
                                                                              ip_fabric_snat=True)
         #TODO ping with jumbo frames fails to the outside of juniper network
-        assert client1[0].ping_to_ip(self.inputs.inputs.cfgm_ip, jumboframe=jumbo_frame_size)
+        assert client1[0].ping_to_ip(self.ip_to_ping, jumboframe=jumbo_frame_size)
         assert client1[0].ping_to_ip(client2[0].pod_ip, jumboframe=jumbo_frame_size,
                                      expectation=False,)
         #assert client1[1].ping_to_ip(client1[0],jumboframe=jumbo_frame_size, container="c1")
-        assert client1[1].ping_to_ip(self.inputs.inputs.cfgm_ip,jumboframe=jumbo_frame_size,
+        assert client1[1].ping_to_ip(self.ip_to_ping,jumboframe=jumbo_frame_size,
                                      container="c2")
         assert client1[0].ping_to_ip(client3[0].pod_ip, jumboframe=jumbo_frame_size,
                                      expectation=False)
@@ -171,14 +164,15 @@ class TestSNAT(BaseK8sTest):
         assert namespace1.verify_on_setup()
         pod1 = self.setup_busybox_pod(namespace=namespace1_name)
         assert pod1.verify_on_setup()
-        assert pod1.ping_to_ip(self.inputs.public_host)
+        assert pod1.ping_to_ip(self.ip_to_ping)
+        self.perform_cleanup(pod1)
         self.perform_cleanup(namespace1)
         time.sleep(5)
         namespace1 = self.setup_namespace(name=namespace1_name, isolation=True, ip_fabric_snat=True)
         assert namespace1.verify_on_setup()
         pod1 = self.setup_busybox_pod(namespace=namespace1_name)
         assert pod1.verify_on_setup()
-        assert pod1.ping_to_ip(self.inputs.public_host)
+        assert pod1.ping_to_ip(self.ip_to_ping)
 
     @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
@@ -229,7 +223,7 @@ class TestSNAT(BaseK8sTest):
             s_pod_fixture = self.setup_ubuntuapp_pod(name=x.metadata.name,
                                                   namespace=namespace1_name)
             s_pod_fixture.verify_on_setup()
-            assert s_pod_fixture.ping_to_ip(self.inputs.public_host)
+            assert s_pod_fixture.ping_to_ip(self.ip_to_ping)
 
         dep_1.set_replicas(new_replicas)
         assert dep_1.verify_on_setup()
@@ -239,6 +233,6 @@ class TestSNAT(BaseK8sTest):
             s_pod_fixture = self.setup_ubuntuapp_pod(name=x.metadata.name,
                                                   namespace=namespace1_name)
             assert s_pod_fixture.verify_on_setup()
-            assert s_pod_fixture.ping_to_ip(self.inputs.public_host)
+            assert s_pod_fixture.ping_to_ip(self.ip_to_ping)
         #end test_deployment_with_replica_update_snat
 

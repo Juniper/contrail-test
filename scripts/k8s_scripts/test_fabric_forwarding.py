@@ -7,25 +7,15 @@ import time
 class TestFabricFWD(BaseK8sTest):
     @classmethod
     def setUpClass(cls):
-        try:
-            super(TestFabricFWD, cls).setUpClass()
-            cls.setup_fabric_gw()
-        except:
-            cls.tearDownClass()
-            raise
-
+        super(TestFabricFWD, cls).setUpClass()
+        if cls.inputs.get_ctrl_data_ip(cls.inputs.cfgm_ip):
+            cls.ip_to_ping = cls.inputs.get_ctrl_data_ip(cls.inputs.cfgm_ip)
+        else:
+            cls.ip_to_ping = cls.inputs.cfgm_ip
 
     @classmethod
     def tearDownClass(cls):
-        cls.cleanup_fabric_gw()
         super(TestFabricFWD, cls).tearDownClass()
-
-    def is_test_applicable(self):
-        '''verify the fabroic gateway info
-        '''
-        if not self.inputs.fabric_gw_info:
-            return (False , "Fabric gateway is needed for the test run")
-        return (True , None)
 
     def setup_namespaces_pods_for_fabric_test(self, isolation=False,ip_fabric_forwarding=False):
         """ common routine to create the namesapces and the pods  by enabling the fabric forwarding
@@ -94,10 +84,10 @@ class TestFabricFWD(BaseK8sTest):
         """
         client1, client2, client3 = self.setup_namespaces_pods_for_fabric_test(isolation=True,
                                                                     ip_fabric_forwarding=True)
-        assert client1[0].ping_to_ip(self.inputs.public_host)
-        assert client1[1].ping_to_ip(self.inputs.public_host,container="c1")
-        assert client1[1].ping_to_ip(self.inputs.public_host,container="c2")
-        assert client2[0].ping_to_ip(self.inputs.public_host)
+        assert client1[0].ping_to_ip(self.ip_to_ping)
+        assert client1[1].ping_to_ip(self.ip_to_ping,container="c1")
+        assert client1[1].ping_to_ip(self.ip_to_ping,container="c2")
+        assert client2[0].ping_to_ip(self.ip_to_ping)
         assert client1[0].ping_to_ip(client1[2].pod_ip)
         assert client1[0].ping_to_ip(client2[0].pod_ip, expectation=False)
         assert client1[0].ping_to_ip(client3[0].pod_ip, expectation=False)
@@ -120,15 +110,16 @@ class TestFabricFWD(BaseK8sTest):
         assert namespace1.verify_on_setup()
         pod1_in_ns1 = self.setup_ubuntuapp_pod(namespace=namespace1_name)
         assert pod1_in_ns1.verify_on_setup()
-        assert pod1_in_ns1.ping_to_ip(self.inputs.public_host, expectation=False)
+        assert pod1_in_ns1.ping_to_ip(self.ip_to_ping, expectation=False)
+        self.perform_cleanup(pod1_in_ns1)
         self.perform_cleanup(namespace1)
         #recreate the same namespace with ip fabric enabled this time
-        #time.sleep(2)
+        time.sleep(2)
         namespace1 = self.setup_namespace(name=namespace1_name, isolation=True,
                                           ip_fabric_forwarding=True)
         pod1_in_ns1 = self.setup_ubuntuapp_pod(namespace=namespace1_name)
         assert pod1_in_ns1.verify_on_setup()
-        assert pod1_in_ns1.ping_to_ip(self.inputs.public_host)
+        assert pod1_in_ns1.ping_to_ip(self.ip_to_ping)
     #end test_fabric_forwarding_disabled_by_default
     
     @preposttest_wrapper
@@ -145,10 +136,10 @@ class TestFabricFWD(BaseK8sTest):
         jumbo_frame_size="4000"
         client1, client2, client3 = self.setup_namespaces_pods_for_fabric_test(isolation=True,
                                                                ip_fabric_forwarding=True)
-        assert client1[0].ping_to_ip(self.inputs.cfgm_ip, jumboframe=jumbo_frame_size)
+        assert client1[0].ping_to_ip(self.ip_to_ping, jumboframe=jumbo_frame_size)
         assert client1[0].ping_to_ip(client2[0].pod_ip, jumboframe=jumbo_frame_size,
                                      expectation=False)
-        assert client1[1].ping_to_ip(self.inputs.cfgm_ip,jumboframe=jumbo_frame_size,container="c2")
+        assert client1[1].ping_to_ip(self.ip_to_ping,jumboframe=jumbo_frame_size,container="c2")
         assert client1[0].ping_to_ip(client3[0].pod_ip, jumboframe=jumbo_frame_size,
                                      expectation=False)
     #end test_ping_with_jumbo_frame
@@ -170,14 +161,16 @@ class TestFabricFWD(BaseK8sTest):
         assert namespace1.verify_on_setup()
         pod1 = self.setup_busybox_pod(namespace=namespace1_name)
         assert pod1.verify_on_setup()
-        assert pod1.ping_to_ip(self.inputs.public_host)
+        assert pod1.ping_to_ip(self.ip_to_ping)
+        self.perform_cleanup(pod1)
         self.perform_cleanup(namespace1)
+        time.sleep(2)
         namespace1 = self.setup_namespace(name=namespace1_name, isolation=True,
                                           ip_fabric_forwarding=True)
         assert namespace1.verify_on_setup()
         pod1 = self.setup_busybox_pod(namespace=namespace1_name)
         assert pod1.verify_on_setup()
-        assert pod1.ping_to_ip(self.inputs.public_host)
+        assert pod1.ping_to_ip(self.ip_to_ping)
 
     @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
@@ -228,7 +221,7 @@ class TestFabricFWD(BaseK8sTest):
             s_pod_fixture = self.setup_ubuntuapp_pod(name=x.metadata.name,
                                                   namespace=namespace1_name)
             s_pod_fixture.verify_on_setup()
-            assert s_pod_fixture.ping_to_ip(self.inputs.public_host)
+            assert s_pod_fixture.ping_to_ip(self.ip_to_ping)
 
         dep_1.set_replicas(new_replicas)
         assert dep_1.verify_on_setup()
@@ -238,7 +231,7 @@ class TestFabricFWD(BaseK8sTest):
             s_pod_fixture = self.setup_ubuntuapp_pod(name=x.metadata.name,
                                                   namespace=namespace1_name)
             assert s_pod_fixture.verify_on_setup()
-            assert s_pod_fixture.ping_to_ip(self.inputs.public_host)
+            assert s_pod_fixture.ping_to_ip(self.ip_to_ping)
         #end test_deployment_with_replica_update_for_fabric_fwd
 
     @preposttest_wrapper
@@ -288,5 +281,5 @@ class TestFabricFWD(BaseK8sTest):
             s_pod_fixture = self.setup_ubuntuapp_pod(name=x.metadata.name,
                                                   namespace=namespace1_name)
             s_pod_fixture.verify_on_setup()
-            assert s_pod_fixture.ping_to_ip(self.inputs.public_host)
+            assert s_pod_fixture.ping_to_ip(self.ip_to_ping)
         #end test_deployment_with_fabric_fwd
