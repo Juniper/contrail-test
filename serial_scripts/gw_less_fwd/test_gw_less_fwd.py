@@ -693,6 +693,7 @@ class TestGWLessFWD(GWLessFWDTestBase):
         # Setup VNs, VMs as per user configuration
         ret_dict = self.setup_gw_less_fwd(vn=vn, vmi=vmi, vm=vm)
 
+        vn_fixtures = ret_dict['vn_fixtures']
         # Policy parameters. Configuring a policy between between ip-fabric vn
         # and vn1 to allow communication between compute node and VMs in vn1.
         policy = {'count':1,
