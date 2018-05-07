@@ -1685,8 +1685,10 @@ class ContrailTestInit(object):
                 if verify_service:
                     container_status = self.is_container_up(host, container)
                     assert container_status if 'start' in event else not container_status
-                    service_status = self.verify_service_state(host, container)[0]
-                    assert service_status if 'start' in event else not service_status
+                    #no need  to verify service state after stoppping container
+                    if 'start' in event:
+                        service_status = self.verify_service_state(host, container)[0]
+                        assert service_status if 'start' in event else not service_status
     #end _action_on_container
 
     def restart_container(self, host_ips=None, container=None, verify_service=True):

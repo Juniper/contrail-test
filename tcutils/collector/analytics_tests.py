@@ -2251,6 +2251,7 @@ class AnalyticsVerification(fixtures.Fixture):
             if len(self.inputs.cfgm_ips) > 1:
                 multi_instances = True
             if alarm_type == 'process-status':
+                result = result and self.verify_service_state()
                 for process in cfgm_processes:
                     if process == 'supervisor-config':
                         if len(self.inputs.cfgm_ips) > 1:
@@ -2262,6 +2263,7 @@ class AnalyticsVerification(fixtures.Fixture):
                         result = result and False
                     else:
                         self.logger.info("Config alarms were generated after stopping the process  %s " % (role))
+                    result = result and self.verify_service_state()
             elif alarm_type == 'partial-sysinfo-config':
                     if not self._verify_contrail_alarms(None, 'config-node', 'partial_sysinfo_config', multi_instances=multi_instances):
                         result = result and False
@@ -2273,6 +2275,7 @@ class AnalyticsVerification(fixtures.Fixture):
             if len(self.inputs.database_ips) > 1:
                 multi_instances = True
             if alarm_type == 'process-status':
+                result = result and self.verify_service_state()
                 for process in db_processes:
                     if process == 'kafka' or process == 'supervisor-database':
                         if len(self.inputs.database_ips) > 1:
@@ -2284,18 +2287,21 @@ class AnalyticsVerification(fixtures.Fixture):
                         result = result and False
                     else:
                         self.logger.info("Db alarms were generated after stopping the process  %s " % (role))
+                    result = result and self.verify_service_state()
 
         elif role == 'control-node':
             multi_instances = False
             if len(self.inputs.bgp_control_ips) > 1:
                 multi_instances = True
             if alarm_type == 'process-status':
+                result = result and self.verify_service_state()
                 for process in control_processes:
                     if not self._verify_contrail_alarms(process, 'control-node', 'service_stop', multi_instances=multi_instances):
                         result = result and False
                     else:
                         self.logger.info("Control alarms were generated after stopping the process  %s " % (role))
-
+                    result = result and self.verify_service_state()
+   
             elif alarm_type == 'bgp-connectivity':
                 if not self._verify_contrail_alarms(None, 'control-node', 'bgp_peer_mismatch', multi_instances=multi_instances):
                     self.logger.error("Control bgp connectivity alarm verification failed for  %s " % (role))
@@ -2323,6 +2329,7 @@ class AnalyticsVerification(fixtures.Fixture):
             if len(self.inputs.collector_ips) > 1:
                 multi_instances = True
             if alarm_type == 'process-status':
+                result = result and self.verify_service_state()
                 for process in analytics_processes:
                     if process == 'contrail-collector' or process == 'supervisor-analytics':
                         if len(self.inputs.collector_ips) > 1:
@@ -2336,6 +2343,8 @@ class AnalyticsVerification(fixtures.Fixture):
                         result = result and False
                     else:
                         self.logger.info("Analytics alarms were generated after stopping the process  %s " % (role))
+                    result = result and self.verify_service_state()
+
             elif alarm_type == 'process-connectivity' and service == 'contrail-alarm-gen':
                 if not self._verify_contrail_alarms('contrail-alarm-gen', 'analytics-node', 'process_connectivity',
                         multi_instances=multi_instances):
@@ -2346,11 +2355,14 @@ class AnalyticsVerification(fixtures.Fixture):
             if len(self.inputs.compute_ips) > 1:
                 multi_instances = True
             if alarm_type == 'process-status':
+                result = result and self.verify_service_state()
                 for process in vrouter_processes:
                     if not self._verify_contrail_alarms(process, 'vrouter','service_stop', multi_instances=multi_instances):
                         result = result and False
                     else:
                         self.logger.info("Vrouter alarms were generated after stopping the process  %s " % (role))
+                    result = result and self.verify_service_state()
+
             elif alarm_type == 'address-mismatch-control':
                 if not self._verify_contrail_alarms('contrail-vrouter-agent', 'vrouter', 'address_mismatch',
                         multi_instances=multi_instances):
@@ -2802,9 +2814,6 @@ class AnalyticsVerification(fixtures.Fixture):
         cfgm_ndmgr_ctl_required = False
         cfgm_services = ['contrail-config-nodemgr', 'contrail-device-manager']
         try:
-            if not self.inputs.verify_state():
-                self.logger.error( "All the contrail services are not up")
-                result = result and False
             if not self.inputs.is_microservices_env and service in cfgm_services and dist in ['centos', 'fedora', 'redhat']:
                 supervisorctl_cfg = 'supervisorctl -s unix:///var/run/supervisord_config.sock'
                 issue_stop_cmd = supervisorctl_cfg + ' stop ' + service
@@ -2829,9 +2838,6 @@ class AnalyticsVerification(fixtures.Fixture):
                 self.inputs.start_service(service, host_ips=[service_ip],
                     container=container)
             time.sleep(10)
-            if not self.inputs.verify_state():
-                self.logger.error( "All the contrail services are not up")
-                result = result and False
             if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances,
                     soak_timer=soak_timer, verify_alarm_cleared=True):
                 result = result and False
@@ -4739,6 +4745,12 @@ class AnalyticsVerification(fixtures.Fixture):
                 limit=1500000)
         else:
             self.logger.debug("Stat table not found")
+
+    def verify_service_state(self):
+        if not self.inputs.verify_state():
+            self.logger.error( "All the contrail services are not up")
+            return False
+        return True
                
 #    @classmethod
     def setUp(self):
