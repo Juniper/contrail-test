@@ -932,7 +932,7 @@ class VerifySvcFirewall(VerifySvcChain):
         assert self.verify_si(firewall_si_fixture)
         assert self.verify_si(mirror_si_fixture)
 
-        svms = self.get_svms_in_si(firewall_si_fixture)
+        svms = firewall_si_fixture.svm_list
         svm_node_ip = svms[0].vm_node_ip
         # Ping from left VM to right VM
         errmsg = "Ping to right VM ip %s from left VM failed" % vm2_fixture.vm_ip
