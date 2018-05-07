@@ -1295,8 +1295,7 @@ class TestMultiInlineSVCIPv6(TestMultiInlineSVC):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
 
-
-    @test.attr(type=['sanity','vcenter'])
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_svc_fate_sharing_basic(self):
         super(TestMultiInlineSVCIPv6,self).test_svc_fate_sharing_basic()

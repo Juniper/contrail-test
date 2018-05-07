@@ -126,9 +126,9 @@ class TestVcenter(BaseVnVmTest):
             "Ping from %s to %s is expected to fail" % (vm2_fixture.vm_name, vm1_fixture.vm_name)
         vm1_fixture.orch.change_network_to_vm(vm1_fixture.vm_obj,vn2_fixture.vn_name) 
         vm1_fixture.read(refresh=True)  
-        assert vm1_fixture.verify_on_setup(refresh=True)
         vm1_fixture.orch.poweroff_vm(vm1_fixture.vm_obj)
         vm1_fixture.orch.poweron_vm(vm1_fixture.vm_obj)
+        assert vm1_fixture.verify_on_setup(refresh=True)
         assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
             "Ping from %s to %s failed" % (vm2_fixture.vm_name, vm1_fixture.vm_name)
         return True

@@ -86,7 +86,7 @@ class TestBasicPolicy(BasePolicyTest):
         return True
     # end test_policy
 
-    @test.attr(type=['cb_sanity', 'sanity', 'ci_sanity', 'quick_sanity', 'vcenter', 'suite1', 'vcenter_compute'])
+    @test.attr(type=['cb_sanity', 'sanity', 'ci_sanity', 'quick_sanity','suite1', 'vcenter_compute'])
     @preposttest_wrapper
     def test_basic_policy_allow_deny(self):
         '''

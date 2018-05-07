@@ -2563,7 +2563,7 @@ class SecurityGroupBasicRegressionTests1Ipv6(
             return(False, 'Skipping IPv6 Test on vcenter setup')
         return (True, None)
 
-    @test.attr(type=['sanity', 'vcenter', 'suite1'])
+    @test.attr(type=['sanity','suite1'])
     def test_sec_group_basic(self):
         super(SecurityGroupBasicRegressionTests1Ipv6, self).test_sec_group_basic()
 
