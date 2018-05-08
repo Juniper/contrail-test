@@ -223,9 +223,7 @@ class TestServiceConnections(BaseServiceConnectionsTest):
                 {'contrail-alarm-gen' : self.inputs.collector_control_ips[0],
                  'contrail-analytics-api' : self.inputs.collector_control_ips[0],
                  'contrail-analytics-nodemgr' : self.inputs.collector_control_ips[0],
-                 'contrail-query-engine' : self.inputs.collector_control_ips[0],
-                 'contrail-snmp-collector' : self.inputs.collector_control_ips[0],
-                 'contrail-topology' : self.inputs.collector_control_ips[0]},
+                 'contrail-query-engine' : self.inputs.collector_control_ips[0]},
              'database':
                 {'contrail-database-nodemgr' : self.inputs.database_control_ips[0]}
             }
