@@ -83,6 +83,7 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         pr = vnc_api_test.PhysicalRouter(self.name)
         pr.physical_router_management_ip = self.mgmt_ip
         pr.physical_router_dataplane_ip = self.tunnel_ip
+        pr.physical_router_loopback_ip = self.tunnel_ip
         pr.physical_router_vendor_name = self.vendor
         pr.physical_router_product_name = self.model
         pr.physical_router_vnc_managed = True
