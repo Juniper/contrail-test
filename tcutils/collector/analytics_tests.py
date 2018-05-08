@@ -92,10 +92,9 @@ http_introspect_ports = {'HttpPortConfigNodemgr' : 8100,
 GENERATORS = {'Compute' : ['contrail-vrouter-agent',
                             'contrail-vrouter-nodemgr'
                             ],
-              'Analytics' : ['contrail-snmp-collector',
+              'Analytics' : [
                             'contrail-query-engine',
                             'contrail-analytics-nodemgr',
-                            'contrail-topology',
                             'contrail-collector',
                             'contrail-analytics-api'
                             ], 
@@ -2230,8 +2229,6 @@ class AnalyticsVerification(fixtures.Fixture):
             'contrail-device-manager', 'contrail-schema', 'contrail-svc-monitor']
         db_processes = ['contrail-database-nodemgr', 'kafka']
         analytics_processes = ['contrail-query-engine', 'contrail-collector', 'contrail-analytics-nodemgr']
-        if underlay:
-            analytics_processes.extend(['contrail-snmp-collector', 'contrail-topology'])
         control_processes = ['contrail-control',
             'contrail-control-nodemgr', 'contrail-dns', 'contrail-named']
 
