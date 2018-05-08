@@ -2230,8 +2230,6 @@ class AnalyticsVerification(fixtures.Fixture):
             'contrail-device-manager', 'contrail-schema', 'contrail-svc-monitor']
         db_processes = ['contrail-database-nodemgr', 'kafka']
         analytics_processes = ['contrail-query-engine', 'contrail-collector', 'contrail-analytics-nodemgr']
-        if underlay:
-            analytics_processes.extend(['contrail-snmp-collector', 'contrail-topology'])
         control_processes = ['contrail-control',
             'contrail-control-nodemgr', 'contrail-dns', 'contrail-named']
 
