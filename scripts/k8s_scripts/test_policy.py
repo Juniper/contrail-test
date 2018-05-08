@@ -3207,7 +3207,7 @@ class TestNetworkPolicyServiceIngress(BaseK8sTest):
         assert self.validate_wget(self.client2_pod_ns2, url1)
     #end test_egress_rule_on_pod_with_service
 
-    @skip_because(mx_gw = False)
+    @test.attr(type=['ci_k8s_sanity'])
     @preposttest_wrapper
     def test_ingress_rule_on_namespace_with_k8s_ingress(self):
         """
@@ -3220,8 +3220,8 @@ class TestNetworkPolicyServiceIngress(BaseK8sTest):
         1. Create a service in namespace 1.
         2. Create a k8s-Ingress with service as its backend
         3. Create a network policy with INgress rule to allow traffic only from a podSelector
-        4. Verify that access to Ingress via pod of same namespace, pod of different namespace
-           or external world should always be allowed.
+        4. Verify that access to Ingress via pod of same namespace or pod of different namespace
+           should always be allowed.
         5. Verify that policy works as expected for any access other than accessing the k8s-Ingress
            k8s-Ingress has to be the exception.
         """
@@ -3268,8 +3268,6 @@ class TestNetworkPolicyServiceIngress(BaseK8sTest):
         assert self.validate_nginx_lb([self.web1_pod_ns1,self.web2_pod_ns1], 
                                       k8s_ingress.cluster_ip,
                                       test_pod=self.client1_pod_ns2, expectation=False)
-        assert self.validate_nginx_lb([self.web1_pod_ns1,self.web2_pod_ns1], 
-                                      k8s_ingress.external_ips[0], expectation=False)
         assert self.validate_nginx_lb([self.web1_pod_ns1,self.web2_pod_ns1], 
                                       service_ns1.cluster_ip,
                                       test_pod=self.client1_pod_ns1, expectation=False)

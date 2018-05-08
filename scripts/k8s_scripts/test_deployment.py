@@ -5,7 +5,6 @@ import test
 
 class TestPodDeployment(BaseK8sTest):
    
-    @test.attr(type=['ci_k8s_sanity'])
     @preposttest_wrapper
     def test_deployment_1(self):
         '''
