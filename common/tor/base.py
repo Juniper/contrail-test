@@ -81,19 +81,17 @@ class BaseTorTest(BaseNeutronTest):
                 count, len(tors_info_list)))  
         for i in range(0, count):
             tor_params = tors_info_list[i]
-            tor_fixture = self.useFixture(ToRFixtureFactory.get_tor(
-                tor_params['name'], 
-                tor_params['mgmt_ip'],
-                vendor=tor_params['vendor'],
-                ssh_username=tor_params['ssh_username'],
-                ssh_password=tor_params['ssh_password'],
-                tunnel_ip=tor_params['tunnel_ip'],
-                ports=tor_params['ports'],
-                tor_ovs_port=tor_params['tor_ovs_port'],
-                tor_ovs_protocol=tor_params['tor_ovs_protocol'],
-                controller_ip=tor_params['controller_ip'],
-                connections=self.connections,
-                logger=self.logger))
+            tor_fixture = self.useFixture(PhysicalDeviceFixture(
+                    tor_params['name'],
+                    tor_params['mgmt_ip'],
+                    vendor=tor_params['vendor'],
+                    ssh_username=tor_params['ssh_username'],
+                    ssh_password=tor_params['ssh_password'],
+                    tunnel_ip=tor_params['tunnel_ip'],
+                    ports=tor_params['ports'],
+                    dm_managed=tor_params['dm_managed'],
+                    connections=self.connections,
+                    logger=self.logger))
             tor_objs.append(tor_fixture)
         return tor_objs
     # end setup_tors
@@ -125,7 +123,7 @@ class BaseTorTest(BaseNeutronTest):
 
     def setup_tor_port(self, tor_fixture, port_index=0, vlan_id=0, vmi_objs=[],
         cleanup=True):
-        device_id = tor_fixture.phy_device.uuid
+        device_id = tor_fixture.uuid
         tor_ip = tor_fixture.mgmt_ip 
         pif_name = self.inputs.tor_hosts_data[tor_ip][port_index]['tor_port']
         lif_name = pif_name + '.' + str(vlan_id)
