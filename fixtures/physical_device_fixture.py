@@ -49,7 +49,7 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         self.tunnel_ip = kwargs.get('tunnel_ip', None)
         self.ports = kwargs.get('ports', [])
         self.role = kwargs.get('role')
-        self.dm_managed = False
+        self.dm_managed = kwargs.get('dm_managed', True)
         self.device_details = {}
 
         self.phy_device = None
@@ -83,6 +83,7 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         pr = vnc_api_test.PhysicalRouter(self.name)
         pr.physical_router_management_ip = self.mgmt_ip
         pr.physical_router_dataplane_ip = self.tunnel_ip
+        pr.physical_router_loopback_ip = self.tunnel_ip
         pr.physical_router_vendor_name = self.vendor
         pr.physical_router_product_name = self.model
         pr.physical_router_vnc_managed = True
