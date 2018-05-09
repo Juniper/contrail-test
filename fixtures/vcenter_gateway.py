@@ -9,6 +9,8 @@ from contrailapi import ContrailVncApi
 import time
 
 
+# License: Apache-2.0
+# https://github.com/vmware/pyvmomi-community-samples/blob/master/samples/getvnicinfo.py
 def GetVMHosts(content):
     print("Getting all ESX hosts ...")
     host_view = content.viewManager.CreateContainerView(content.rootFolder,
@@ -37,6 +39,10 @@ def getvmnics(content,vm,hosts):
           }
     nics = []
 
+    #
+    # License: Apache-2.0
+    # https://github.com/vmware/pyvmomi-community-samples/blob/master/samples/getvnicinfo.py
+    #
     for dev in vm.config.hardware.device:
         if isinstance(dev, vim.vm.device.VirtualEthernetCard):
             dev_backing = dev.backing

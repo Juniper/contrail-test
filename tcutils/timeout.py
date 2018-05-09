@@ -1,3 +1,4 @@
+# License: CC-BY-SA-3.0
 # From http://stackoverflow.com/questions/2281850/timeout-function-if-it-takes-too-long-to-finish
 #
 # Usage : 
