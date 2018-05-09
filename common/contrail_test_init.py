@@ -48,6 +48,8 @@ DEFAULT_CA = '/etc/contrail/ssl/certs/ca-cert.pem'
 DEFAULT_CI_IMAGE = os.getenv('DEFAULT_CI_IMAGE', 'cirros')
 DEFAULT_CI_SVC_IMAGE = os.getenv('DEFAULT_CI_SVC_IMAGE', 'cirros_in_net')
 CI_IMAGES = [DEFAULT_CI_IMAGE, DEFAULT_CI_SVC_IMAGE]
+OPENSHIFT_CONFIG_FILE = '/root/.kube/config'
+K8S_CONFIG_FILE = '/etc/kubernetes/admin.conf'
 
 # monkey patch subprocess.check_output cos its not supported in 2.6
 if "check_output" not in dir(subprocess):  # duck punch it in!
@@ -714,7 +716,7 @@ class TestInputs(object):
                     with settings(
                         host_string='%s@%s' % (username, host_data['host_ip']),
                         password=password, warn_only=True, abort_on_prompts=False):
-                        if exists('/etc/kubernetes/admin.conf'):
+                        if exists(self.kube_config_file):
                             self.k8s_master_ip = host_data['host_ip'] #K8s Currently only supports 1 master
             if 'k8s_node' in roles:
                 self.k8s_slave_ips.append(host_data['host_ip'])
@@ -779,6 +781,12 @@ class TestInputs(object):
         test_configs = self.config.get('test_configuration') or {}
         self.orchestrator = deployment_configs.get('orchestrator') or 'openstack'
         self.slave_orchestrator = deployment_configs.get('slave_orchestrator')
+        if self.deployer == 'openshift':
+            kube_config_file = OPENSHIFT_CONFIG_FILE
+        else:
+            kube_config_file = K8S_CONFIG_FILE
+        self.kube_config_file = test_configs.get('kube_config_file') or kube_config_file
+
         self.parse_topo()
 
         # contrail related configs
@@ -859,8 +867,6 @@ class TestInputs(object):
         #BMS information connected to TOR's
         self.tor_hosts_data = test_configs.get('tor_hosts',{})
 
-        self.kube_config_file = test_configs.get('kube_config_file') or '/etc/kubernetes/admin.conf'
-        self.openshift_config_file = test_configs.get('openshift_config_file') or '/root/.kube/config'
         self.ext_routers = []
         for rtr_name, address in test_configs.get('ext_routers', {}).iteritems():
             self.ext_routers.append((rtr_name, address))
@@ -1412,13 +1418,9 @@ class ContrailTestInit(object):
         #                      'Basic', 'AddressFamily', 'dual')
         self.address_family = 'v4'
         if self.orchestrator == 'kubernetes' or self.slave_orchestrator == 'kubernetes':
-            if not os.path.exists(self.kube_config_file):
-                if self.deployer == 'openshift' :
-                    self.copy_file_from_server(self.k8s_master_ip,
-                        self.openshift_config_file, self.kube_config_file)
-                else:
-                    self.copy_file_from_server(self.k8s_master_ip,
-                        self.kube_config_file, self.kube_config_file)
+            if not os.path.exists(K8S_CONFIG_FILE):
+                 self.copy_file_from_server(self.k8s_master_ip,
+                        self.kube_config_file, K8S_CONFIG_FILE)
     # end __init__
 
     def is_ci_setup(self):
