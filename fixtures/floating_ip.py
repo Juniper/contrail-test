@@ -256,7 +256,7 @@ class FloatingIPFixture(fixtures.Fixture):
         try:
             fip_obj = self.create_floatingip(fip_pool_vn_id, project)
             self.logger.debug('Associating FIP %s to %s' %(fip_obj[0], vm_id))
-            self.assoc_floatingip(fip_obj[1], vm_id, port_id)
+            self.assoc_floatingip(fip_obj[1], vm_id, port_id=port_id)
             return fip_obj[1]
         except:
             self.logger.error('Failed to create or asscociate FIP. Error: %s' %
@@ -549,7 +549,7 @@ class FloatingIPFixture(fixtures.Fixture):
     # end delete_floatingip
 
     def assoc_floatingip(self, fip_id, vm_id, port_id=None):
-        return self.orch.assoc_floating_ip(fip_id, vm_id, port_id)
+        return self.orch.assoc_floating_ip(fip_id, vm_id, port_id=port_id)
     # end assoc_floatingip
 
     def disassoc_floatingip(self, fip_id):
