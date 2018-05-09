@@ -13,7 +13,7 @@ CONTRAIL_SERVICES_CONTAINER_MAP = {
     'collector': ['analytics_collector', 'contrail-collector'],
     'snmp-collector': ['analytics_snmp-collector', 'contrail-snmp-collector'],
     'agent': ['contrail-agent', 'vrouter-agent', 'contrail-vrouter-agent'],
-    'webui': ['webui_web', 'contrail-webui'],
+    'webui': ['webui_web', 'contrail-webui_'],
     'webui-middleware': ['webui_job', 'contrail-webui-middleware'],
     'config-rabbitmq': ['configdatabase_rabbitmq', 'rabbitmq'],
     'config-zookeeper': ['configdatabase_zookeeper',
@@ -40,7 +40,7 @@ CONTRAIL_SERVICES_CONTAINER_MAP = {
     'analytics-nodemgr': ['analytics_nodemgr', 'analytics-nodemgr'],
     'control-nodemgr': ['control_nodemgr', 'control-nodemgr'],
     'analyticsdb-nodemgr': ['analyticsdatabase_nodemgr',
-                            'analyticsdatabase-nodemgr'],
+                            'analyticsdb-nodemgr'],
     'contrail-kube-manager': ['contrail-kube-manager', 'kubemanager'],
     'kube-apiserver':  ['kube-apiserver']
 }
