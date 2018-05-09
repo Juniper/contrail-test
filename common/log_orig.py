@@ -17,6 +17,8 @@ ST = datetime.datetime.fromtimestamp(TS).strftime('%Y-%m-%d_%H:%M:%S')
 if not '_loggers' in locals():
     _loggers = {}
 
+# License: Apache-2.0
+# https://github.com/klarna/op5lib
 class NullHandler(logging.Handler):
     """
     For backward-compatibility with Python 2.6, a local class definition

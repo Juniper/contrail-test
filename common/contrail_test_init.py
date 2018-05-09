@@ -49,6 +49,10 @@ DEFAULT_CI_IMAGE = os.getenv('DEFAULT_CI_IMAGE', 'cirros')
 DEFAULT_CI_SVC_IMAGE = os.getenv('DEFAULT_CI_SVC_IMAGE', 'cirros_in_net')
 CI_IMAGES = [DEFAULT_CI_IMAGE, DEFAULT_CI_SVC_IMAGE]
 
+# License: PSF License 2.0
+# Copyright (c) 2003-2005 by Peter Astrand <astrand@lysator.liu.se>
+# https://hg.python.org/cpython/file/d37f963394aa/Lib/subprocess.py
+
 # monkey patch subprocess.check_output cos its not supported in 2.6
 if "check_output" not in dir(subprocess):  # duck punch it in!
     def f(*popenargs, **kwargs):
