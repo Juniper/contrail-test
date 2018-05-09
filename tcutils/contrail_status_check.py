@@ -58,7 +58,10 @@ class ContrailStatusChecker(object):
                     msg = msg+' on nodes %s'%nodes
                 else:
                     msg = msg+' on all nodes'
-                self.inputs.logger.info(msg)
+                try:
+                    self.inputs.logger.info(msg)
+                except Exception as e:
+                    pass
                 return (True, status_dict)
         self.inputs.logger.error(
             'Not all services up , Gave up!')

@@ -1444,22 +1444,20 @@ class TestPolicyAclIpv4v6(TestPolicyAcl):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
 
-    @attr(type=['vcenter'])
     @tcutils.wrappers.preposttest_wrapper
     def test_policy_cidr_src_cidr_dst_any(self):
         super(TestPolicyAclIpv4v6, self).test_policy_cidr_src_cidr_dst_any()
 
-    @attr(type=['sanity', 'vcenter', 'vcenter_compute'])
+    @attr(type=['sanity','vcenter_compute'])
     @tcutils.wrappers.preposttest_wrapper
     def test_policy_cidr_src_vn_dst_cidr(self):
         super(TestPolicyAclIpv4v6, self).test_policy_cidr_src_vn_dst_cidr()
 
-    @attr(type=['vcenter'])
     @tcutils.wrappers.preposttest_wrapper
     def test_policy_inheritance_src_vn_dst_pol(self):
         super(TestPolicyAclIpv4v6, self).test_policy_inheritance_src_vn_dst_pol()
 
-    @attr(type=['sanity', 'vcenter', 'vcenter_compute'])
+    @attr(type=['sanity','vcenter_compute'])
     @tcutils.wrappers.preposttest_wrapper
     def test_policy_inheritance_src_pol_dst_any(self):
         super(TestPolicyAclIpv4v6, self).test_policy_inheritance_src_pol_dst_any()

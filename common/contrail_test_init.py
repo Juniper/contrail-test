@@ -906,7 +906,12 @@ class TestInputs(object):
 
         #vcenter parsing
         if self.orchestrator == 'vcenter':
-            _parse_vcenter = VcenterParmParse(inputs=self,conf_file='vcenter_vars.yml')
+            if os.path.isfile('vcenter_vars.yaml') and os.access('vcenter_vars.yaml', os.R_OK):
+                conf_file = 'vcenter_vars.yaml'
+            else:
+                conf_file = 'vcenter_vars.yml'
+            
+            _parse_vcenter = VcenterParmParse(inputs=self,conf_file=conf_file)
             self.vcenter_dc = _parse_vcenter.vcenter_dc
             self.vcenter_server = _parse_vcenter.vcenter_server
             self.vcenter_port = _parse_vcenter.vcenter_port
@@ -914,6 +919,10 @@ class TestInputs(object):
             self.vcenter_password = _parse_vcenter.vcenter_password
             self.dv_switch = _parse_vcenter.dv_switch
             _parse_vcenter.add_esxi_info_to_host_data()
+            self.admin_username = self.vcenter_username
+            self.admin_password = self.vcenter_password
+            self.admin_tenant = self.stack_tenant 
+            self.admin_domain = self.stack_domain
 
     def get_os_env(self, var, default=''):
         if var in os.environ:
