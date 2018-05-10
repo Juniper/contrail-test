@@ -2,16 +2,23 @@
 
 REPO_TEMPLATE_FILE="docker/test/contrail.repo.template"
 REPO_FILE="docker/test/contrail.repo"
-declare -A SUBVERSIONS=([newton]=5 [ocata]=3 [pike]=1)
+OPENSTACK_REPO_TEMPLATE_FILE="docker/test/openstack.repo.template"
+OPENSTACK_REPO_FILE="docker/test/openstack.repo"
+declare -A SUBVERSIONS=([newton]=5 [ocata]=3 [pike]=1 [queens]=0)
 REGISTRY_SERVER="opencontrail"
 SKU=""
 INSTALL_PKG=""
 CONTRAIL_REPO=""
+OPENSTACK_REPO=""
 TAG=""
 
 create_repo () {
     local tmpl=$1
     local repo=$2
+    if [[ -f $repo ]]; then
+       echo "Skipping $repo file creation since a file by the same name already exists"
+       return
+    fi
     template=$(cat $tmpl)
     content=$(eval "echo \"$template\"")
     echo "$content" > $repo
@@ -76,6 +83,7 @@ Usage: $0 test [OPTIONS]
   --base-tag      BASE_TAG      Specify contrail-base-test container tag to use. Defaults to 'latest'.
   --sku           SKU           Openstack version. Defaults to ocata
   --contrail-repo CONTRAIL_REPO Contrail Repository, optional, if unspecified specify --package-url.
+  --openstack-repo OPENSTACK_REPO Openstack Repository, optional, repo to download openstack client packages
   --package-url   INSTALL_PKG   Contrail-install-packages package url (scp:// or http:// or https://)
                                 Optional, if unspecified specify --package-url
                                 Local repo will be setup based on install package.
@@ -86,7 +94,7 @@ Usage: $0 test [OPTIONS]
   --post          POST          Upload the test container to the registy-server, if specified
 EOF
     }
-    if ! options=$(getopt -o h -l help,base-tag:,tag:,sku:,contrail-repo:,package-url:,registry-server:,post -- "$@"); then
+    if ! options=$(getopt -o h -l help,base-tag:,tag:,sku:,contrail-repo:,openstack-repo:,package-url:,registry-server:,post -- "$@"); then
         usage
         exit 1
     fi
@@ -99,6 +107,7 @@ EOF
             --tag) TAG=$2; shift;;
             --sku) SKU=$2; shift;;
             --contrail-repo) CONTRAIL_REPO=$2; shift;;
+            --openstack-repo) OPENSTACK_REPO=$2; shift;;
             --package-url) INSTALL_PKG=$2; shift;;
             --registry-server) REGISTRY_SERVER=$2; shift;;
             --post) POST=1; shift;;
@@ -133,8 +142,12 @@ EOF
         download_pkg $INSTALL_PKG docker/test/
         INSTALL_PACKAGE="${INSTALL_PKG##*/}"
     fi
-    OPENSTACK_VERSION=$SKU
-    OPENSTACK_SUBVERSION="${SUBVERSIONS[$OPENSTACK_VERSION]}"
+    if [[ -z $OPENSTACK_REPO ]]; then
+        OPENSTACK_VERSION=$SKU
+        #OPENSTACK_SUBVERSION="${SUBVERSIONS[$OPENSTACK_VERSION]}"
+        OPENSTACK_REPO="http://mirror.centos.org/centos/7/cloud/x86_64/openstack-${OPENSTACK_VERSION}"
+    fi
+    create_repo $OPENSTACK_REPO_TEMPLATE_FILE $OPENSTACK_REPO_FILE
 
     docker_build "docker/test" "contrail-test-test" "$TAG"
     if [[ -n $POST ]]; then
