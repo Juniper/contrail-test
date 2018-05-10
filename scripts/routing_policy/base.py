@@ -104,8 +104,13 @@ class RPBase(test_v1.BaseTestCase_v1):
 
     def verify_policy_in_control(self, vn_fixture, test_vm_ip, search_value = ''):
 
-        found_value = re.findall(search_value, str(self.cn_inspect[self.inputs.inputs.bgp_control_ips[0]].get_cn_route_table_entry(test_vm_ip, vn_fixture.vn_fq_name+":"+vn_fixture.vn_name)[0]))
-        assert found_value, 'Search term not found in introspect'
+        for iteration in range(1,12):
+            found_value = re.findall(search_value, str(self.cn_inspect[self.inputs.inputs.bgp_control_ips[0]].get_cn_route_table_entry(test_vm_ip, vn_fixture.vn_fq_name+":"+vn_fixture.vn_name)[0]))
+            if found_value:
+                break
+            else:
+                sleep(3)
+        assert (not iteration == 12), 'Search term not found in introspect'
 
     def remove_routing_policy(self, rp, vn_fixture, regular_vn):
         if regular_vn:
