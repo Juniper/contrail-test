@@ -158,8 +158,7 @@ class TestInputs(object):
             'heat-api', 'heat-api-cfn', 'heat-engine', 'rabbitmq-server']
         self.collector_services = [
             'contrail-collector', 'contrail-analytics-api', 'contrail-alarm-gen',
-            'contrail-query-engine', 'contrail-analytics-nodemgr',
-            'contrail-snmp-collector', 'contrail-topology']
+            'contrail-query-engine', 'contrail-analytics-nodemgr']
         self.database_services = [
             'contrail-database', 'contrail-database-nodemgr', 'kafka']
         self.correct_states = ['active', 'backup']

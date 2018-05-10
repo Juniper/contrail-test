@@ -1240,7 +1240,7 @@ class AnalyticsTestSanityWithResource(
             'contrail-collector' , 'contrail-query-engine', 'contrail-svc-monitor', 'contrail-device-manager', 'contrail-dns',
             'contrail-discovery', 'IfmapServer', 'XmppServer', 'contrail-analytics-nodemgr', 'contrail-control-nodemgr',
             'contrail-config-nodemgr', 'contrail-database-nodemgr', 'Contrail-WebUI-Nodemgr', 'contrail-vrouter-nodemgr',
-            'Storage-Stats-mgr', 'Ipmi-Stats-mgr', 'contrail-snmp-collector', 'contrail-topology', 'InventoryAgent',
+            'Storage-Stats-mgr', 'Ipmi-Stats-mgr', 'InventoryAgent',
             'contrail-alarm-gen', 'contrail-tor-agent', 'contrail-broadview', 'contrail-kube-manager', 'contrail-mesos-manager']
 
         module_ = ['IfmapServer', 'XmppServer', 'Contrail-WebUI-Nodemgr', 'Storage-Stats-mgr', 'Storage-Stats-mgr', 'Ipmi-Stats-mgr',
@@ -1251,10 +1251,6 @@ class AnalyticsTestSanityWithResource(
         analytics = self.res.inputs.collector_ips[0]
         cfgm = self.res.inputs.cfgm_ips[0]
 
-        self.inputs.restart_service('contrail-topology', [analytics],
-                                    container='topology')
-        self.inputs.restart_service('contrail-snmp-collector', [analytics],
-                                    container='snmp-collector')
         self.inputs.restart_service('contrail-device-manager', [cfgm],
                                     container='controller')
 
