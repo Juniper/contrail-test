@@ -101,7 +101,7 @@ class _GenericTestBaseMethods():
                                     as_sudo=True)
 
         just_knob = knob[:knob.find('=')] 
-        issue_cmd = 'sed -i -e \'s/'+just_knob+'/#'+just_knob+'/g\' entrypoint.sh' 
+        issue_cmd = 'sed -i -e \'/'+just_knob+'/d\' entrypoint.sh'
         self.logger.info('Running %s on %s' % (issue_cmd, node_ip))
         self.inputs.run_cmd_on_server(node_ip, issue_cmd, username, password, pty=True,
                                     as_sudo=True)
