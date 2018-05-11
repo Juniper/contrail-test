@@ -45,9 +45,9 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         test2_vm = ret_dict['test2_vm']
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'interface', 'to_term':'community', 'sub_to':'64512:55555'} 
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(vn_fixture, str(test_vm.vm_ip), '55555')
+        self.addCleanup(self.remove_routing_policy, rp=rp, vn_fixture=vn_fixture, regular_vn=True) 
+        assert self.verify_policy_in_control(vn_fixture, str(test_vm.vm_ip), '55555'), 'Search term not found in introspect'
         assert test_vm.ping_with_certainty(test2_vm.vm_ip)
-        self.addCleanup(self.remove_routing_policy(rp = rp, vn_fixture = vn_fixture, regular_vn = True))
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
@@ -77,9 +77,9 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
             self.intf_table_to_right_obj)
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'interface-static', 'to_term':'community', 'sub_to':'64512:55555'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(vn_fixture, random_cidr, '55555')
-        test_vm.ping_with_certainty(test2_vm.vm_ip)
-        self.addCleanup(self.remove_routing_policy(rp = rp, vn_fixture = vn_fixture, regular_vn = True))
+        self.addCleanup(self.remove_routing_policy, rp=rp, vn_fixture=vn_fixture, regular_vn=True)
+        assert self.verify_policy_in_control(vn_fixture, random_cidr, '55555'), 'Search term not found in introspect'
+        assert test_vm.ping_with_certainty(test2_vm.vm_ip)  
 
     @preposttest_wrapper
     def test_rp_service_interface(self):
