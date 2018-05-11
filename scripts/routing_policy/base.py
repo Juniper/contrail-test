@@ -57,8 +57,6 @@ class RPBase(test_v1.BaseTestCase_v1):
         return ret_dict
 
     def configure_term_routing_policy(self, config_dicts):
-
-
         obj_1 = PolicyStatementType()
         obj_2 = PolicyTermType()
         obj_3 = TermMatchConditionType()
@@ -96,16 +94,27 @@ class RPBase(test_v1.BaseTestCase_v1):
             rp.add_service_instance(config_dicts['si_fixture'].si_obj, obj_11)
 
         self.vnc_lib.routing_policy_create(rp)
+        self.addCleanup(self.vnc_lib.routing_policy_delete, id=rp.uuid)
         if not config_dicts['sub_from'] == 'service-chain':
             fix_vn = self.vnc_lib.virtual_network_read(id = config_dicts['vn_fixture'].uuid)
             fix_vn.set_routing_policy(rp)
             self.vnc_lib.virtual_network_update(fix_vn)
+            self.addCleanup(self.delete_rp_refs_from_vn, rp, fix_vn)
         return rp
 
+    @retry(delay=1, tries=10)
     def verify_policy_in_control(self, vn_fixture, test_vm_ip, search_value = ''):
+        # ToDo: Shasikiran to find the CN connected to agent
+        # and check the introspect of that CN
+        found_value = re.findall(search_value, str(
+            self.cn_inspect[self.inputs.bgp_control_ips[0]
+            ].get_cn_route_table_entry(test_vm_ip,
+            vn_fixture.vn_fq_name+":"+vn_fixture.vn_name)[0]))
+        return True if found_value else False
 
-        found_value = re.findall(search_value, str(self.cn_inspect[self.inputs.inputs.bgp_control_ips[0]].get_cn_route_table_entry(test_vm_ip, vn_fixture.vn_fq_name+":"+vn_fixture.vn_name)[0]))
-        assert found_value, 'Search term not found in introspect'
+    def delete_rp_refs_from_vn(self, rp_obj, vn_obj):
+        vn_obj.del_routing_policy(rp_obj)
+        self.vnc_lib.virtual_network_update(vn_obj)
 
     def remove_routing_policy(self, rp, vn_fixture, regular_vn):
         if regular_vn:
