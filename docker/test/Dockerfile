@@ -14,8 +14,6 @@ COPY *.repo Dockerfile /etc/yum.repos.d/
 RUN if [ ! -z "$INSTALL_PACKAGE" ]; then yum localinstall -y /$INSTALL_PACKAGE; \
     cd /opt/contrail/contrail_packages; ./setup.sh; fi
 RUN yum install -y \
-      https://repos.fedorapeople.org/repos/openstack/openstack-$OPENSTACK_VERSION/rdo-release-$OPENSTACK_VERSION-$OPENSTACK_SUBVERSION.noarch.rpm ; \
-    yum install -y \
       python-ceilometerclient python-cinderclient python-barbicanclient \
       python-glanceclient python-heatclient python-novaclient \
       python-contrail contrail-test contrail-fabric-utils && \
