@@ -951,17 +951,11 @@ class TestInputs(object):
         Figure out the os type on each node in the cluster
         '''
         output = None
-        a_container = None
         if host_ip in self.os_type:
             return self.os_type[host_ip]
         username = self.host_data[host_ip]['username']
         password = self.host_data[host_ip]['password']
-        containers = self.host_data[host_ip]['containers'].keys()
-        if containers :
-            a_container = containers[0]
-        with hide('output','running','warnings'):
-            output = self.run_cmd_on_server(host_ip,
-                        'uname -a', username, password, container=a_container)
+        output = self.run_cmd_on_server(host_ip,'uname -a', username, password) 
         if 'el6' in output:
             self.os_type[host_ip] = 'centos_el6'
         elif 'fc17' in output:
