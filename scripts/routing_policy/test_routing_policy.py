@@ -45,9 +45,8 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         test2_vm = ret_dict['test2_vm']
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'interface', 'to_term':'community', 'sub_to':'64512:55555'} 
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(vn_fixture, str(test_vm.vm_ip), '55555')
+        assert self.verify_policy_in_control(vn_fixture, str(test_vm.vm_ip), '55555'), 'Search term not found in introspect'
         assert test_vm.ping_with_certainty(test2_vm.vm_ip)
-        self.addCleanup(self.remove_routing_policy(rp = rp, vn_fixture = vn_fixture, regular_vn = True))
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
@@ -77,9 +76,8 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
             self.intf_table_to_right_obj)
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'interface-static', 'to_term':'community', 'sub_to':'64512:55555'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(vn_fixture, random_cidr, '55555')
-        test_vm.ping_with_certainty(test2_vm.vm_ip)
-        self.addCleanup(self.remove_routing_policy(rp = rp, vn_fixture = vn_fixture, regular_vn = True))
+        assert self.verify_policy_in_control(vn_fixture, random_cidr, '55555'), 'Search term not found in introspect'
+        assert test_vm.ping_with_certainty(test2_vm.vm_ip)  
 
     @preposttest_wrapper
     def test_rp_service_interface(self):
@@ -97,9 +95,8 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         left_vn_fixture = ret_dict['left_vn_fixture']
         config_dicts = {'vn_fixture':left_vn_fixture, 'from_term':'protocol', 'sub_from':'service-interface', 'to_term':'community', 'sub_to':'64512:55555'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(left_vn_fixture, str(self.vnc_lib.routing_instance_read(id = str(self.vnc_lib.virtual_network_read(id = left_vn_fixture.uuid).get_routing_instances()[1]['uuid'])).get_service_chain_information().service_chain_address), '55555')
-        left_vm_fixture.ping_with_certainty(right_vm_fixture.vm_ip)
-        self.addCleanup(self.remove_routing_policy(rp = rp, vn_fixture = left_vn_fixture, regular_vn = True))
+        assert self.verify_policy_in_control(left_vn_fixture, str(self.vnc_lib.routing_instance_read(id = str(self.vnc_lib.virtual_network_read(id = left_vn_fixture.uuid).get_routing_instances()[1]['uuid'])).get_service_chain_information().service_chain_address), '55555')
+        assert left_vm_fixture.ping_with_certainty(right_vm_fixture.vm_ip)
 
     @preposttest_wrapper
     def test_rp_service_chain(self):
@@ -117,9 +114,8 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         left_vn_fixture = ret_dict['left_vn_fixture']
         config_dicts = {'vn_fixture':left_vn_fixture, 'si_fixture':si_fixture, 'from_term':'protocol', 'sub_from':'service-chain', 'to_term':'community', 'sub_to':'64512:55555'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(left_vn_fixture, str(right_vm_fixture.vm_ip), '55555')
-        left_vm_fixture.ping_with_certainty(right_vm_fixture.vm_ip)
-        self.addCleanup(self.remove_routing_policy(rp = rp, vn_fixture = si_fixture, regular_vn = False))
+        assert self.verify_policy_in_control(left_vn_fixture, str(right_vm_fixture.vm_ip), '55555')
+        assert left_vm_fixture.ping_with_certainty(right_vm_fixture.vm_ip)
 
     @preposttest_wrapper
     def test_rp_bgpaas(self):
@@ -158,8 +154,7 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         rp = self.configure_term_routing_policy(config_dicts)
         #will have to wait for bgp hold timer
         sleep(90)
-        self.verify_policy_in_control(vn_fixture, str(vn_fixture.get_subnets()[0]['cidr']), '55555')
-        self.addCleanup(self.remove_routing_policy(rp = rp, vn_fixture = vn_fixture, regular_vn = True))
+        assert self.verify_policy_in_control(vn_fixture, str(vn_fixture.get_subnets()[0]['cidr']), '55555')
 
     @preposttest_wrapper
     def test_rp_interface_matrix(self):
@@ -176,15 +171,14 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
 
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'interface', 'to_term':'med', 'sub_to':'444'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(vn_fixture, str(test_vm.vm_ip), '444')
+        assert self.verify_policy_in_control(vn_fixture, str(test_vm.vm_ip), '444')
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'interface', 'to_term':'local-preference', 'sub_to':'555'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(vn_fixture, str(test_vm.vm_ip), '555')
+        assert self.verify_policy_in_control(vn_fixture, str(test_vm.vm_ip), '555')
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'interface', 'to_term':'as-path', 'sub_to':'666'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(vn_fixture, str(test_vm.vm_ip), '666')
-        test_vm.ping_with_certainty(test2_vm.vm_ip)
-        self.addCleanup(self.remove_routing_policy(rp = rp, vn_fixture = vn_fixture, regular_vn = True))
+        assert self.verify_policy_in_control(vn_fixture, str(test_vm.vm_ip), '666')
+        assert test_vm.ping_with_certainty(test2_vm.vm_ip)
 
     @preposttest_wrapper
     def test_rp_interface_static_matrix(self):
@@ -213,15 +207,14 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
             self.intf_table_to_right_obj)
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'interface-static', 'to_term':'med', 'sub_to':'444'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(vn_fixture, random_cidr, '444')
+        assert self.verify_policy_in_control(vn_fixture, random_cidr, '444')
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'interface-static', 'to_term':'local-preference', 'sub_to':'555'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(vn_fixture, random_cidr, '555')
+        assert self.verify_policy_in_control(vn_fixture, random_cidr, '555')
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'interface-static', 'to_term':'as-path', 'sub_to':'666'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(vn_fixture, random_cidr, '666')
-        test_vm.ping_with_certainty(test2_vm.vm_ip)
-        self.addCleanup(self.remove_routing_policy(rp = rp, vn_fixture = vn_fixture, regular_vn = True))
+        assert self.verify_policy_in_control(vn_fixture, random_cidr, '666')
+        assert test_vm.ping_with_certainty(test2_vm.vm_ip)
 
     @preposttest_wrapper
     def test_rp_service_interface_matrix(self):
@@ -240,14 +233,13 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
 
         config_dicts = {'vn_fixture':left_vn_fixture, 'from_term':'protocol', 'sub_from':'service-interface', 'to_term':'med', 'sub_to':'444'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(left_vn_fixture, str(self.vnc_lib.routing_instance_read(id = str(self.vnc_lib.virtual_network_read(id = left_vn_fixture.uuid).get_routing_instances()[1]['uuid'])).get_service_chain_information().service_chain_address), '444')
+        assert self.verify_policy_in_control(left_vn_fixture, str(self.vnc_lib.routing_instance_read(id = str(self.vnc_lib.virtual_network_read(id = left_vn_fixture.uuid).get_routing_instances()[1]['uuid'])).get_service_chain_information().service_chain_address), '444')
         config_dicts = {'vn_fixture':left_vn_fixture, 'from_term':'protocol', 'sub_from':'service-interface', 'to_term':'local-preference', 'sub_to':'555'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(left_vn_fixture, str(self.vnc_lib.routing_instance_read(id = str(self.vnc_lib.virtual_network_read(id = left_vn_fixture.uuid).get_routing_instances()[1]['uuid'])).get_service_chain_information().service_chain_address), '555')
+        assert self.verify_policy_in_control(left_vn_fixture, str(self.vnc_lib.routing_instance_read(id = str(self.vnc_lib.virtual_network_read(id = left_vn_fixture.uuid).get_routing_instances()[1]['uuid'])).get_service_chain_information().service_chain_address), '555')
         config_dicts = {'vn_fixture':left_vn_fixture, 'from_term':'protocol', 'sub_from':'service-interface', 'to_term':'as-path', 'sub_to':'666'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(left_vn_fixture, str(self.vnc_lib.routing_instance_read(id = str(self.vnc_lib.virtual_network_read(id = left_vn_fixture.uuid).get_routing_instances()[1]['uuid'])).get_service_chain_information().service_chain_address), '666')
-        self.addCleanup(self.remove_routing_policy(rp = rp, vn_fixture = left_vn_fixture, regular_vn = True))
+        assert self.verify_policy_in_control(left_vn_fixture, str(self.vnc_lib.routing_instance_read(id = str(self.vnc_lib.virtual_network_read(id = left_vn_fixture.uuid).get_routing_instances()[1]['uuid'])).get_service_chain_information().service_chain_address), '666')
 
     @preposttest_wrapper
     def test_rp_bgpaas_matrix(self):
@@ -285,16 +277,15 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'bgpaas', 'to_term':'med', 'sub_to':'444'}
         rp = self.configure_term_routing_policy(config_dicts)
         sleep(90)
-        self.verify_policy_in_control(vn_fixture, str(vn_fixture.get_subnets()[0]['cidr']), '444')
+        assert self.verify_policy_in_control(vn_fixture, str(vn_fixture.get_subnets()[0]['cidr']), '444')
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'bgpaas', 'to_term':'local-preference', 'sub_to':'555'}
         rp = self.configure_term_routing_policy(config_dicts)
         sleep(90)
-        self.verify_policy_in_control(vn_fixture, str(vn_fixture.get_subnets()[0]['cidr']), '555')
+        assert self.verify_policy_in_control(vn_fixture, str(vn_fixture.get_subnets()[0]['cidr']), '555')
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'bgpaas', 'to_term':'as-path', 'sub_to':'666'}
         rp = self.configure_term_routing_policy(config_dicts)
         sleep(90)
-        self.verify_policy_in_control(vn_fixture, str(vn_fixture.get_subnets()[0]['cidr']), '666')
-        self.addCleanup(self.remove_routing_policy(rp = rp, vn_fixture = vn_fixture, regular_vn = True))
+        assert self.verify_policy_in_control(vn_fixture, str(vn_fixture.get_subnets()[0]['cidr']), '666')
 
     @preposttest_wrapper
     def test_rp_service_chain_matrix(self):
@@ -312,14 +303,13 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         left_vn_fixture = ret_dict['left_vn_fixture']
         config_dicts = {'vn_fixture':left_vn_fixture, 'si_fixture':si_fixture, 'si_fixture':si_fixture, 'from_term':'protocol', 'sub_from':'service-chain', 'to_term':'med', 'sub_to':'444'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(left_vn_fixture, str(right_vm_fixture.vm_ip), '444')
+        assert self.verify_policy_in_control(left_vn_fixture, str(right_vm_fixture.vm_ip), '444')
         config_dicts = {'vn_fixture':left_vn_fixture, 'si_fixture':si_fixture, 'si_fixture':si_fixture, 'from_term':'protocol', 'sub_from':'service-chain', 'to_term':'local-preference', 'sub_to':'555'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(left_vn_fixture, str(right_vm_fixture.vm_ip), '555')
+        assert self.verify_policy_in_control(left_vn_fixture, str(right_vm_fixture.vm_ip), '555')
         config_dicts = {'vn_fixture':left_vn_fixture, 'si_fixture':si_fixture, 'si_fixture':si_fixture, 'from_term':'protocol', 'sub_from':'service-chain', 'to_term':'as-path', 'sub_to':'666'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(left_vn_fixture, str(right_vm_fixture.vm_ip), '666')
-        self.addCleanup(self.remove_routing_policy(rp = rp, vn_fixture = si_fixture, regular_vn = False))
+        assert self.verify_policy_in_control(left_vn_fixture, str(right_vm_fixture.vm_ip), '666')
 
     @preposttest_wrapper
     def test_rp_xmpp_matrix(self):
@@ -336,18 +326,17 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
 
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'xmpp', 'to_term':'community', 'sub_to':'64512:55555'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(vn_fixture, str(test_vm.vm_ip), '55555')
+        assert self.verify_policy_in_control(vn_fixture, str(test_vm.vm_ip), '55555')
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'xmpp', 'to_term':'med', 'sub_to':'444'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(vn_fixture, str(test_vm.vm_ip), '444')
+        assert self.verify_policy_in_control(vn_fixture, str(test_vm.vm_ip), '444')
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'xmpp', 'to_term':'local-preference', 'sub_to':'555'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(vn_fixture, str(test_vm.vm_ip), '555')
+        assert self.verify_policy_in_control(vn_fixture, str(test_vm.vm_ip), '555')
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'xmpp', 'to_term':'as-path', 'sub_to':'666'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(vn_fixture, str(test_vm.vm_ip), '666')
-        test_vm.ping_with_certainty(test2_vm.vm_ip)
-        self.addCleanup(self.remove_routing_policy(rp = rp, vn_fixture = vn_fixture, regular_vn = True))
+        assert self.verify_policy_in_control(vn_fixture, str(test_vm.vm_ip), '666')
+        assert test_vm.ping_with_certainty(test2_vm.vm_ip)
 
     @preposttest_wrapper
     def test_rp_network_static_matrix(self):
@@ -378,16 +367,15 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
 
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'static', 'to_term':'community', 'sub_to':'64512:55555'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(vn_fixture, random_cidr, '55555')
+        assert self.verify_policy_in_control(vn_fixture, random_cidr, '55555')
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'static', 'to_term':'med', 'sub_to':'444'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(vn_fixture, random_cidr, '444')
+        assert self.verify_policy_in_control(vn_fixture, random_cidr, '444')
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'static', 'to_term':'local-preference', 'sub_to':'555'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(vn_fixture, random_cidr, '555')
+        assert self.verify_policy_in_control(vn_fixture, random_cidr, '555')
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'static', 'to_term':'as-path', 'sub_to':'666'}
         rp = self.configure_term_routing_policy(config_dicts)
-        self.verify_policy_in_control(vn_fixture, random_cidr, '666')
-        test_vm.ping_with_certainty(test2_vm.vm_ip)
-        self.addCleanup(self.remove_routing_policy(rp = rp, vn_fixture = vn_fixture, regular_vn = True))
+        assert self.verify_policy_in_control(vn_fixture, random_cidr, '666')
+        assert test_vm.ping_with_certainty(test2_vm.vm_ip)
 
