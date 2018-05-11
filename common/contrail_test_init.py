@@ -658,7 +658,7 @@ class TestInputs(object):
             if control_data_ip:
                 host_data_ip = host_control_ip = control_data_ip
             qos_queue_per_host, qos_queue_pg_properties_per_host = \
-                                    self._process_qos_data(host_data['host_ip'])
+                                    self._process_qos_data_yml(host_data['host_ip'])
             if qos_queue_per_host:
                 self.qos_queue.append(qos_queue_per_host)
             if qos_queue_pg_properties_per_host:
@@ -1305,6 +1305,55 @@ class TestInputs(object):
                     else:
                         pg_property = entry
                     pg_properties_list.append(pg_property)
+                qos_queue_pg_properties_per_host = [host_ip ,
+                                                     pg_properties_list]
+        except KeyError, e:
+            pass
+        return (qos_queue_per_host, qos_queue_pg_properties_per_host)
+
+    def _process_qos_data_yml(self, host_ip):
+        '''
+        Reads and populate qos related values
+        '''
+        qos_queue_per_host = []
+        qos_queue_pg_properties_per_host = []
+        vrouter_data_dict = self.host_data[host_ip]['roles'].get("vrouter", None)
+        if not vrouter_data_dict:
+            return (qos_queue_per_host, qos_queue_pg_properties_per_host)
+        try:
+            if vrouter_data_dict['QOS_QUEUE_ID']:
+                hw_queues = vrouter_data_dict['QOS_QUEUE_ID']
+                hw_queue_list = hw_queues.split(',')
+                hw_queue_list = [x.strip() for x in hw_queue_list]
+                logical_queues= vrouter_data_dict['QOS_LOGICAL_QUEUES']
+                logical_queue_list = logical_queues.split(';')
+                logical_queue_list = [x.strip("[] ") for x in logical_queue_list]
+                if "QOS_DEF_HW_QUEUE" in vrouter_data_dict.keys() and \
+                        len(logical_queue_list) == len(hw_queue_list):
+                    logical_queue_list[-1] = logical_queue_list[-1] + ",default"
+                elif "QOS_DEF_HW_QUEUE" in vrouter_data_dict.keys() and \
+                        len(logical_queue_list) == (len(hw_queue_list) -1):
+                    logical_queue_list.append("default")
+                hw_to_logical_map_list = [{hw_queue_list[x]:logical_queue_list[x].split(",")} for \
+                                     x in range(0,len(hw_queue_list))]
+                qos_queue_per_host = [host_ip , hw_to_logical_map_list]
+        except KeyError, e:
+            pass
+        try:
+            if vrouter_data_dict['PRIORITY_ID']:
+                priority_ids = vrouter_data_dict['PRIORITY_ID']
+                priority_id_list = priority_ids.split(",")
+                priority_id_list = [x.strip() for x in priority_id_list]
+                priority_bws = vrouter_data_dict['PRIORITY_BANDWIDTH']
+                priority_bw_list = priority_bws.split(",")
+                priority_bw_list = [x.strip() for x in priority_bw_list]
+                priority_schedulings = vrouter_data_dict['PRIORITY_SCHEDULING']
+                priority_scheduling_list = priority_schedulings.split(",")
+                priority_scheduling_list = [x.strip() for x in priority_scheduling_list]
+                pg_properties_list = [{'scheduling': priority_scheduling_list[x],
+                                        'bandwidth': priority_bw_list[x],
+                                        'priority_id': priority_id_list[x]} for \
+                                        x in range(0,len(priority_id_list))]
                 qos_queue_pg_properties_per_host = [host_ip ,
                                                      pg_properties_list]
         except KeyError, e:
