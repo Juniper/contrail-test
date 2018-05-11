@@ -194,7 +194,8 @@ class TrafficAnalyzer:
                 return False
         if expected_count:
             result = verify_tcpdump_count(self, self.session, self.pcap,
-                                          expected_count, exact_match=False)
+                                          expected_count, raw_count=True, 
+                                          exact_match=False)
             if not result:
                 return result
         file_transfer = self.compute_node_fixture.file_transfer(
