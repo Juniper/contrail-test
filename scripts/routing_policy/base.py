@@ -102,14 +102,23 @@ class RPBase(test_v1.BaseTestCase_v1):
             self.addCleanup(self.delete_rp_refs_from_vn, rp, fix_vn)
         return rp
 
+    #Routine to see if the Routing policy options are being correctly set.
+    #This involves using only get_control_nodes to see if cn_introspect has the values
     @retry(delay=1, tries=10)
-    def verify_policy_in_control(self, vn_fixture, test_vm_ip, search_value = ''):
+    def verify_policy_in_control(self, vn_fixture, vm_fixture, search_ip = '', search_value = ''):
         # ToDo: Shasikiran to find the CN connected to agent
         # and check the introspect of that CN
-        found_value = re.findall(search_value, str(
-            self.cn_inspect[self.inputs.bgp_control_ips[0]
-            ].get_cn_route_table_entry(test_vm_ip,
-            vn_fixture.vn_fq_name+":"+vn_fixture.vn_name)[0]))
+        # The above ToDo is taken care of.
+        if not search_ip:
+            search_in_cn = vm_fixture.vm_ip
+        else:
+            search_in_cn = search_ip
+        found_value = True
+        for cn in vm_fixture.get_control_nodes():
+            found_value = found_value and re.findall(search_value, str(
+                self.cn_inspect[cn
+                ].get_cn_route_table_entry(search_in_cn,
+                vn_fixture.vn_fq_name+":"+vn_fixture.vn_name)[0]))
         return True if found_value else False
 
     def delete_rp_refs_from_vn(self, rp_obj, vn_obj):
