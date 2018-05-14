@@ -64,6 +64,12 @@ class FirewallRuleFixture(vnc_api_test.VncLibFixture):
         else:
             return self.delete()
 
+    def get_object(self):
+        return self.vnc_h.read_firewall_rule(id=self.uuid)
+
+    def get_draft(self):
+        return self.vnc_h.read_firewall_rule(id=self.uuid, draft=True)
+
     def read(self):
         obj = self.vnc_h.read_firewall_rule(id=self.uuid)
         self.name = obj.name
@@ -94,6 +100,8 @@ class FirewallRuleFixture(vnc_api_test.VncLibFixture):
                                      destination=self.destination,
                                      service_groups=self.service_groups)
                 self.created = True
+                self.logger.info('Created Firewall Rule %s(%s)'%(self.name,
+                                                                self.uuid))
         if not self.created:
             self.read()
 
@@ -107,7 +115,7 @@ class FirewallRuleFixture(vnc_api_test.VncLibFixture):
 
     def update(self, action=None, direction=None, protocol=None,
                sports=None, dports=None, log=None, source=None,
-               destination=None, match=None):
+               destination=None, match=None, service_groups=None):
         if action:
             self.action = action
         if direction:
@@ -136,8 +144,12 @@ class FirewallRuleFixture(vnc_api_test.VncLibFixture):
                              log=self.log,
                              match=self.match,
                              source=self.source,
-                             destination=self.destination)
+                             destination=self.destination,
+                             service_groups=service_groups)
 
     def delete(self):
         self.logger.info('Deleting Firewall Rule %s(%s)'%(self.name, self.uuid))
-        self.vnc_h.delete_firewall_rule(id=self.uuid)
+        try:
+            self.vnc_h.delete_firewall_rule(id=self.uuid)
+        except NoIdError:
+            pass

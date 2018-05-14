@@ -12,6 +12,7 @@ from vm_test import VMFixture
 from project_test import ProjectFixture
 from policy_test import PolicyFixture
 from port_fixture import PortFixture
+from floating_ip import FloatingIPFixture
 from interface_route_table_fixture import InterfaceRouteTableFixture
 from tcutils.util import get_random_name, retry, get_random_cidr
 from fabric.context_managers import settings
@@ -237,36 +238,62 @@ class BaseNeutronTest(GenericTestBase):
             return next_hops['itf']
     # end get_active_snat_node
 
-    def create_fip(self, fip_fixture):
+    def create_fip_pool(self, vn_id, name=None, **kwargs):
+        connections = kwargs.get('connections') or self.connections
+        name = name or get_random_name('fip-pool')
+        return self.useFixture(FloatingIPFixture(
+               connections=connections, pool_name=name, vn_id=vn_id))
+
+    def create_fip(self, fip_fixture, **kwargs):
+        connections = kwargs.get('connections') or self.connections
+        vnc_h = connections.orch.vnc_h
         self.logger.info('Creating FIP from %s' % fip_fixture.pool_name)
-        return self.vnc_h.create_floating_ip(fip_fixture.fip_pool_obj, fip_fixture.project_obj)
+        return vnc_h.create_floating_ip(fip_fixture.fip_pool_obj, fip_fixture.project_obj)
 
-    def assoc_fip(self, fip_id, vm_id, vmi_id=None):
+    def assoc_fip(self, fip_id, vm_id, vmi_id=None, **kwargs):
+        connections = kwargs.get('connections') or self.connections
+        vnc_h = connections.orch.vnc_h
         if vmi_id:
-            return self.vnc_h.assoc_floating_ip(fip_id, vm_id, vmi_id=vmi_id)
+            return vnc_h.assoc_floating_ip(fip_id, vm_id, vmi_id=vmi_id)
         else:
-            return self.vnc_h.assoc_floating_ip(fip_id, vm_id)
+            return vnc_h.assoc_floating_ip(fip_id, vm_id)
 
-    def assoc_fixed_ip_to_fip(self, fip_id, fixed_ip):
-        return self.vnc_h.assoc_fixed_ip_to_floating_ip(fip_id, fixed_ip)
+    def assoc_fixed_ip_to_fip(self, fip_id, fixed_ip, **kwargs):
+        connections = kwargs.get('connections') or self.connections
+        vnc_h = connections.orch.vnc_h
+        return vnc_h.assoc_fixed_ip_to_floating_ip(fip_id, fixed_ip)
 
-    def disassoc_fip(self, fip_id):
-        self.vnc_h.disassoc_floating_ip(fip_id)
+    def disassoc_fip(self, fip_id, **kwargs):
+        connections = kwargs.get('connections') or self.connections
+        vnc_h = connections.orch.vnc_h
+        vnc_h.disassoc_floating_ip(fip_id)
 
-    def del_fip(self, fip_id):
-        self.vnc_h.delete_floating_ip(fip_id)
+    def del_fip(self, fip_id, **kwargs):
+        connections = kwargs.get('connections') or self.connections
+        vnc_h = connections.orch.vnc_h
+        vnc_h.delete_floating_ip(fip_id)
+
+    def create_and_assoc_fip(self, fip_fixture, vm_fixture,
+                             vmi_id=None, fixed_ip=None, **kwargs):
+        (fip_ip, fip_id) = self.create_fip(fip_fixture, **kwargs)
+        self.addCleanup(self.del_fip, fip_id, **kwargs)
+        self.assoc_fip(fip_id, vm_fixture.vm_id, vmi_id=vmi_id, **kwargs)
+        self.addCleanup(self.disassoc_fip, fip_id, **kwargs)
+        if fixed_ip:
+            self.assoc_fixed_ip_to_fip(fip_id, fixed_ip, **kwargs)
+        return (fip_ip, fip_id)
 
     def config_aap(self, port, prefix, prefix_len=32, mac='', aap_mode='active-standby', contrail_api=False):
-        self.logger.info('Configuring AAP on port %s' % port['id'])
+        self.logger.info('Configuring AAP on port %s' % port)
         if is_v6(prefix):
             prefix_len = 128
         if contrail_api:
             self.vnc_h.add_allowed_address_pair(
-                port['id'], prefix, prefix_len, mac, aap_mode)
+                port, prefix, prefix_len, mac, aap_mode)
         else:
             port_dict = {'allowed_address_pairs': [
                 {"ip_address": prefix + '/' + str(prefix_len), "mac_address": mac}]}
-            port_rsp = self.update_port(port['id'], port_dict)
+            port_rsp = self.update_port(port, port_dict)
         return True
     # end config_aap
 
@@ -707,28 +734,30 @@ print get_config.tostring
                     tenant_id=project_uuid)['subnets'])
     # end get_subnets_count
 
-    @retry(delay=5, tries=10)
     def config_keepalive(self, vm_fix, vip, vid, priority):
         self.logger.info('Configuring Keepalive on %s ' % vm_fix.vm_name)
         cmdList = []
-        cmdList.append("rm -rf /etc/keepalived/keepalived.conf")
-        cmdList.append("printf 'vrrp_instance VI_1 {' >> /etc/keepalived/keepalived.conf")
-        cmdList.append("printf '\n state MASTER' >> /etc/keepalived/keepalived.conf")
-        cmdList.append("printf '\n interface eth0' >> /etc/keepalived/keepalived.conf")
-        cmdList.append("printf '\n virtual_router_id %s' >> /etc/keepalived/keepalived.conf" %vid)
-        cmdList.append("printf '\n priority %s' >> /etc/keepalived/keepalived.conf" % priority)
-        cmdList.append("printf '\n advert_int 1' >> /etc/keepalived/keepalived.conf")
-        cmdList.append("printf '\n virtual_ipaddress {' >> /etc/keepalived/keepalived.conf")
-        cmdList.append("printf '\n %s' >> /etc/keepalived/keepalived.conf" % vip)
-        cmdList.append("printf '\n }' >> /etc/keepalived/keepalived.conf")
-        cmdList.append("printf '\n}' >> /etc/keepalived/keepalived.conf")
-        vm_fix.run_cmd_on_vm(cmds=cmdList, as_sudo=True)
-        service_restart= "service keepalived start"
+        cmd = '''cat > /etc/keepalived/keepalived.conf << EOS
+vrrp_instance VI_1 {
+    state MASTER
+    interface eth0
+    virtual_router_id %s
+    priority %s
+    advert_int 1
+    virtual_ipaddress {
+        %s
+    }
+}
+EOS
+'''%(vid, priority, vip)
+        vm_fix.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        service_restart= "service keepalived restart"
         vm_fix.run_cmd_on_vm(cmds=[service_restart], as_sudo=True)
         result = self.keepalive_chk(vm_fix)
         return result
     # end config_keepalive
 
+    @retry(delay=5, tries=10)
     def keepalive_chk(self, vm):
         keepalive_chk_cmd = 'netstat -anp | grep keepalived'
         vm.run_cmd_on_vm(cmds=[keepalive_chk_cmd], as_sudo=True)

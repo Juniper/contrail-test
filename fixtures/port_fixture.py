@@ -57,6 +57,11 @@ class PortFixture(vnc_api_test.VncLibFixture):
             id=self.uuid)
         if self.vmi_obj.get_virtual_network_refs():
             self.vn_id = self.vmi_obj.get_virtual_network_refs()[0]['uuid']
+        mac = self.vmi_obj.get_virtual_machine_interface_mac_addresses()
+        self.mac_address = mac.mac_address[0]
+        self.iip_objs = []
+        for iip in self.vmi_obj.get_instance_ip_back_refs():
+            self.iip_objs.append(self.vnc_api_h.instance_ip_read(id=iip['uuid']))
 
     def setUp(self):
         super(PortFixture, self).setUp()
@@ -287,6 +292,10 @@ class PortFixture(vnc_api_test.VncLibFixture):
         else :
             return None
     # end get_ip
+
+    def get_ip_addresses(self):
+        return [iip.instance_ip_address for iip in self.iip_objs]
+
 # end PortFixture
 
 if __name__ == "__main__":

@@ -1071,6 +1071,54 @@ class ContrailVncApi(object):
         '''
         return self._vnc.service_health_check_delete(**kwargs)
 
+    def _update_security_draft_mode(self, flag, project_fqname=None):
+        if project_fqname:
+            fq_name = project_fqname if type(project_fqname) is list\
+                      else project_fqname.split(':')
+            obj = self._vnc.project_read(fq_name=fq_name)
+        else:
+            obj = self._vnc.global_system_config_read(
+                  fq_name=["default-global-system-config"])
+        obj.set_enable_security_policy_draft(flag)
+        self.update_obj(obj)
+
+    def enable_security_draft_mode(self, project_fqname=None):
+        self._update_security_draft_mode(True, project_fqname)
+
+    def disable_security_draft_mode(self, project_fqname=None):
+        self._update_security_draft_mode(False, project_fqname)
+
+    def _security_draft_action(self, action, project_fqname=None):
+        if project_fqname:
+            fqname = project_fqname if type(project_fqname) is list\
+                      else project_fqname.split(':')
+            obj = self._vnc.project_read(fq_name=fqname)
+        else:
+            obj = self._vnc.global_system_config_read(
+                  fq_name=["default-global-system-config"])
+        if action == 'commit':
+            self._vnc.commit_security(obj)
+        elif action == 'discard':
+            self._vnc.discard_security(obj)
+        else:
+            raise Exception('action %s not allowed'%action)
+
+    def commit_security_draft(self, project_fqname=None):
+        self._security_draft_action('commit', project_fqname)
+
+    def discard_security_draft(self, project_fqname=None):
+        self._security_draft_action('discard', project_fqname)
+
+    def list_security_drafts(self, project_fqname=None):
+        fq_name = ['draft-policy-management']
+        if project_fqname:
+            fq_name = list(project_fqname) if type(project_fqname) is list\
+                      else project_fqname.split(':')
+            fq_name.append('draft-policy-management')
+        return self._vnc.policy_management_read(fq_name=fq_name,
+               fields=["application_policy_sets", "firewall_policys",
+                       "firewall_rules", "service_groups", "address_groups"])
+
     def create_tag_type(self, name):
         ''' Create a Tag Type
             :param name : name of the tag type
@@ -1147,6 +1195,9 @@ class ContrailVncApi(object):
             :param id : uuid of the object
         '''
         self._log.debug('Reading application policy set %s'%kwargs)
+        draft = kwargs.pop('draft', False)
+        if draft:
+            return self._vnc.application_policy_set_read_draft(**kwargs)
         return self._vnc.application_policy_set_read(**kwargs)
 
     def create_firewall_policy(self, fq_name, parent_type=None, rules=None, **kwargs):
@@ -1199,6 +1250,9 @@ class ContrailVncApi(object):
             :param id : uuid of the object
         '''
         self._log.debug('Reading firewall policy %s'%kwargs)
+        draft = kwargs.pop('draft', False)
+        if draft:
+            return self._vnc.firewall_policy_read_draft(**kwargs)
         return self._vnc.firewall_policy_read(**kwargs)
 
     def _get_fw_endpoint_obj(self, endpoint):
@@ -1217,7 +1271,7 @@ class ContrailVncApi(object):
     def update_firewall_rule(self, uuid, action=None, direction=None,
                              protocol=None, sports=None,
                              dports=None, log=False, source=None,
-                             destination=None, match=None):
+                             destination=None, match=None, service_groups=None):
         ''' Update a firewall policy rule
             :param uuid : uuid of the policy rule
             :param action : pass or deny
@@ -1235,7 +1289,7 @@ class ContrailVncApi(object):
                  'tags': ['deployment=prod', 'global:site=us'],
                 }
         '''
-        service=None
+        sg_list = []
         obj = self.read_firewall_rule(id=uuid)
         action_list = obj.get_action_list() or ActionListType()
         if log:
@@ -1261,6 +1315,13 @@ class ContrailVncApi(object):
             obj.set_endpoint_1(self._get_fw_endpoint_obj(source))
         if destination:
             obj.set_endpoint_2(self._get_fw_endpoint_obj(destination))
+        for uuid in service_groups or []:
+            sg = self.read_service_group(id=uuid)
+            sg_list.append({'to': sg.get_fq_name(), 'uuid': sg.uuid})
+        if sg_list:
+            obj.set_service(None)
+        if service_groups is not None:
+            obj.set_service_group_list(sg_list)
         self._log.debug('Updating firewall rule %s'%obj.name)
         return self._vnc.firewall_rule_update(obj)
 
@@ -1295,7 +1356,7 @@ class ContrailVncApi(object):
                                           src_ports=PortType(*sports),
                                           dst_ports=PortType(*dports))
         if match:
-            match = [] if match == 'dont' else match
+            match = [] if match == 'None' else match
             match = FirewallRuleMatchTagsType(tag_list=match)
         obj = FirewallRule(fq_name[-1],
                            fq_name=fq_name, parent_type=parent_type,
@@ -1342,6 +1403,9 @@ class ContrailVncApi(object):
             :param id : uuid of the object
         '''
         self._log.debug('Reading firewall rule %s'%kwargs)
+        draft = kwargs.pop('draft', False)
+        if draft:
+            return self._vnc.firewall_rule_read_draft(**kwargs)
         return self._vnc.firewall_rule_read(**kwargs)
 
     def create_service_group(self, fq_name, parent_type, services, **kwargs):
@@ -1407,6 +1471,9 @@ class ContrailVncApi(object):
             :param id : uuid of the object
         '''
         self._log.debug('Reading service group %s'%kwargs)
+        draft = kwargs.pop('draft', False)
+        if draft:
+            return self._vnc.service_group_read_draft(**kwargs)
         return self._vnc.service_group_read(**kwargs)
 
     def create_address_group(self, fq_name, parent_type, subnets, **kwargs):
@@ -1460,7 +1527,21 @@ class ContrailVncApi(object):
             :param id : uuid of the object
         '''
         self._log.debug('Reading address group %s'%kwargs)
+        draft = kwargs.pop('draft', False)
+        if draft:
+            return self._vnc.address_group_read_draft(**kwargs)
         return self._vnc.address_group_read(**kwargs)
+
+    def check_and_create_tag(self, fq_name, tag_type,
+                             tag_value, parent_type=None, **kwargs):
+        try:
+            return self.create_tag(fq_name, tag_type, tag_value,
+                                   parent_type, **kwargs)
+        except RefsExistError:
+            fqname = ['%s=%s'%(tag_type, tag_value)]
+            if parent_type == 'project':
+                fqname = fq_name[:-1] + fqname
+            return self.read_tag(fq_name=fqname).uuid
 
     def create_tag(self, fq_name, tag_type, tag_value, parent_type=None, **kwargs):
         ''' Create a Tag

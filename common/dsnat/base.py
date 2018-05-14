@@ -227,10 +227,8 @@ class BaseDSNAT(BaseNeutronTest, ConfigPolicy):
         for vm in vm_list:
             port = self.vnc_h.virtual_machine_interface_read(id=vm.vmi_ids.values()[0])
             mac_address = port.virtual_machine_interface_mac_addresses.mac_address[0]
-            port_id = {}
-            port_id['id'] = port.uuid
             self.config_aap(
-                port_id, vIP, mac=mac_address, aap_mode='active-active', contrail_api=True)
+                port.uuid, vIP, mac=mac_address, aap_mode='active-active', contrail_api=True)
             output = vm.run_cmd_on_vm(
                 ['sudo ifconfig eth0:10 ' + vIP + ' netmask 255.255.255.0'])
             self.check_master_in_agent(vm, vn, vIP, ecmp=True)

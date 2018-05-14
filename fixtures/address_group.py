@@ -43,6 +43,12 @@ class AddressGroupFixture(vnc_api_test.VncLibFixture):
         else:
             return self.delete()
 
+    def get_object(self):
+        return self.vnc_h.read_address_group(id=self.uuid)
+
+    def get_draft(self):
+        return self.vnc_h.read_address_group(id=self.uuid, draft=True)
+
     def read(self):
         obj = self.vnc_h.read_address_group(id=self.uuid)
         self.name = obj.name
@@ -50,7 +56,7 @@ class AddressGroupFixture(vnc_api_test.VncLibFixture):
         self.parent_type = obj.parent_type
         self.scope = 'local' if obj.parent_type == 'project' else 'global'
         self.subnets = ["%s/%s"%(subnet.ip_prefix, subnet.ip_prefix_len)
-                         for subnet in obj.get_address_group_prefix()]
+                         for subnet in obj.get_address_group_prefix() or []]
 
     def create(self):
         if not self.uuid:
@@ -62,6 +68,8 @@ class AddressGroupFixture(vnc_api_test.VncLibFixture):
                                      fq_name=self.fq_name,
                                      parent_type=self.parent_type,
                                      subnets=self.subnets)
+                self.logger.info('Created Address Group %s(%s)'%(self.name,
+                                                                self.uuid))
                 self.created = True
         if not self.created:
             self.read()
@@ -78,7 +86,10 @@ class AddressGroupFixture(vnc_api_test.VncLibFixture):
 
     def delete(self):
         self.logger.info('Deleting Address Group %s(%s)'%(self.name, self.uuid))
-        self.vnc_h.delete_address_group(id=self.uuid)
+        try:
+            self.vnc_h.delete_address_group(id=self.uuid)
+        except NoIdError:
+            pass
 
     def add_labels(self, tags, is_global=False):
         if type(tags[0]) is not str:
