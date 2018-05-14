@@ -723,7 +723,7 @@ class TestPorts(BaseNeutronTest):
         ), 'VM does not seem to be up'
         port_list = [port1_obj, port2_obj]
         for port in port_list:
-            self.config_aap(port, vIP, mac=port['mac_address'])
+            self.config_aap(port['id'], vIP, mac=port['mac_address'])
         self.config_vrrp(vm1_fixture, vIP, '20')
         self.config_vrrp(vm2_fixture, vIP, '10')
         time.sleep(10)
@@ -845,7 +845,7 @@ class TestPorts(BaseNeutronTest):
         self.addCleanup(self.disassoc_fip, fIP[1])
         port_list = [lvn_port_obj1, lvn_port_obj2]
         for port in port_list:
-            self.config_aap(port, vIP, mac='00:00:5e:00:01:01')
+            self.config_aap(port['id'], vIP, mac='00:00:5e:00:01:01')
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
         self.logger.info('We will configure VRRP on the two vSRX')
@@ -916,7 +916,7 @@ class TestPorts(BaseNeutronTest):
         ), 'VM does not seem to be up'
         port_list = [port1_obj, port2_obj]
         for port in port_list:
-            self.config_aap(port, vIP, mac=port['mac_address'])
+            self.config_aap(port['id'], vIP, mac=port['mac_address'])
         self.config_vrrp(vm1_fixture, vIP, '20')
         self.config_vrrp(vm2_fixture, vIP, '10')
         assert self.vrrp_mas_chk(vm_test_fixture, vm1_fixture, vn1_fixture, vIP)
@@ -1008,7 +1008,7 @@ class TestPorts(BaseNeutronTest):
         vm_list = [vm1_fixture, vm2_fixture]
         for port in port_list:
             self.config_aap(
-                port, vIP, mac=port['mac_address'], aap_mode='active-active', contrail_api=True)
+                port['id'], vIP, mac=port['mac_address'], aap_mode='active-active', contrail_api=True)
         self.logger.info(
             'Since no VRRP is run, both the ports should be seen as active')
         for vm in vm_list:
@@ -1070,7 +1070,7 @@ class TestPorts(BaseNeutronTest):
         ), 'VM does not seem to be up'
         for port in port_list:
             self.config_aap(
-                port, vIP, mac='00:00:00:00:00:00', contrail_api=True)
+                port['id'], vIP, mac='00:00:00:00:00:00', contrail_api=True)
         self.config_keepalive(vm1_fixture, vIP, vID, '10')
         self.config_keepalive(vm2_fixture, vIP, vID, '20')
 

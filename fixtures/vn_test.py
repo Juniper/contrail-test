@@ -421,12 +421,8 @@ class VNFixture(fixtures.Fixture):
                 self.created = False
             self.vn_fq_name = self.api_vn_obj.get_fq_name_str()
         except PermissionDenied:
-            self.logger.info('Permission denied to create VirtualNetwork')
+            self.logger.info('Permission denied to create/update VirtualNetwork')
             raise
-        except Exception as e:
-            with self.lock:
-                self.logger.exception(
-                    'Api exception while creating network %s' % (self.vn_name))
         self.obj = self._orch_call('get_vn_obj_from_id', self.uuid)
         if self.obj is None:
             raise ValueError('could not find %s in orchestrator' % (self.vn_name))
