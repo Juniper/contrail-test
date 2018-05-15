@@ -19,11 +19,12 @@ class JsonDrv (object):
     }
     _DEFAULT_AUTHN_URL = "/v2.0/tokens"
 
-    def __init__(self, vub, logger=LOG, args=None):
+    def __init__(self, vub, logger=LOG, args=None, timeout=None):
         self.log = logger
         self._vub = vub
         self._headers = dict()
         self._args = args
+        self._timeout = timeout
         msg_size = os.getenv('INTROSPECT_LOG_MAX_MSG', '10240')
         self.more_logger = contrail_logging.getLogger('introspect',
                                                       log_to_console=False,
@@ -91,9 +92,9 @@ class JsonDrv (object):
     def load(self, url, retry=True):
         self.common_log("Requesting: %s" %(url))
         if url.startswith('https:'):
-            resp = requests.get(url, headers=self._headers, verify=self.verify)
+            resp = requests.get(url, headers=self._headers, verify=self.verify, timeout=self._timeout)
         else:
-            resp = requests.get(url, headers=self._headers)
+            resp = requests.get(url, headers=self._headers, timeout=self._timeout)
         if resp.status_code in [401, 403]:
             if retry:
                 self._auth()
@@ -113,7 +114,7 @@ class JsonDrv (object):
         self.common_log("Posting: %s, payload %s"%(url, payload))
         self._headers.update({'Content-type': 'application/json; charset="UTF-8"'})
         data = json.dumps(payload)
-        resp = requests.put(url, headers=self._headers, data=data)
+        resp = requests.put(url, headers=self._headers, data=data, timeout=self._timeout)
         if resp.status_code == 401:
             if retry:
                 self._auth()
@@ -127,7 +128,7 @@ class JsonDrv (object):
 
 class XmlDrv (object):
 
-    def __init__(self, vub, logger=LOG, args=None):
+    def __init__(self, vub, logger=LOG, args=None, timeout=None):
         self.log = logger
         self._vub = vub
         self.more_logger = contrail_logging.getLogger('introspect',
@@ -137,6 +138,7 @@ class XmlDrv (object):
         self._args = args
         self.verify = True
         self.client_cert = None
+        self._timeout = timeout
         if self._args:
             self.verify = (not getattr(self._args, 'introspect_insecure', True)) \
                            and self._args.certbundle
@@ -147,7 +149,7 @@ class XmlDrv (object):
         self.common_log("Requesting: %s" %(url))
         try:
             resp = requests.get(url, cert=self.client_cert,
-                verify=self.verify)
+                verify=self.verify, timeout=self._timeout)
             output = etree.fromstring(resp.text) if not raw_data else resp.text
             self.log_xml(self.more_logger, output)
             return output
@@ -182,7 +184,7 @@ class VerificationUtilBase (object):
         self.log = logger
         self._ip = ip
         self._port = port
-        self._drv = drv(self, logger=logger, args=args)
+        self._drv = drv(self, logger=logger, args=args, timeout=120)
         self._force_refresh = False
         self._protocol = protocol
 
