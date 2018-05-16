@@ -353,7 +353,6 @@ class VerifySvcChain(ConfigSvcChain):
 
     def tcpdump_on_all_analyzer(self, si_fixture):
         sessions = {}
-        svms = self.get_svms_in_si(si_fixture)
         svm_fixtures = si_fixture.svm_list
         for svm in svm_fixtures:
             svm_name = svm.vm_name
