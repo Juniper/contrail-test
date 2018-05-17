@@ -4090,7 +4090,9 @@ class AnalyticsVerification(fixtures.Fixture):
                                 if not s_addr in el['server_addrs']:
                                     check = check and False
                         else:
-                            if not server_addrs in el['server_addrs']:
+                            if self.inputs.deployer == 'helm' and re.match('.*5672',server_addrs):
+                                server_addrs = '.*5672'
+                            if not re.match(server_addrs,el['server_addrs'][0]):  
                                 check = check and False
                         #if ((set(el['server_addrs']) == set(server_addrs)) \
                         if ((check or (server_addrs == el['server_addrs']))\
