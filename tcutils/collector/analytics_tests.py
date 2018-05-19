@@ -4253,14 +4253,25 @@ class AnalyticsVerification(fixtures.Fixture):
                             'contrail-api',\
                             server,node = cfgm)
             assert result
-            result = False    
-            for ip in self.inputs.config_amqp_ips:
-                server = "%s:%s"%(ip,port_dict['rmq'])
-                result = result or self.verify_connection_infos(ops_inspect,\
+            result = False   
+
+            if self.inputs.deployer == 'helm':
+                temp_config_amqp_ips = self.inputs.config_amqp_ips
+                self.inputs.config_amqp_ips = ['rabbitmq.openstack']
+                for ip in self.inputs.config_amqp_ips:
+                    server = "%s:%s"%(ip,port_dict['rmq'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
                                 'contrail-api',\
                                 server,node = cfgm)
-            assert result
-             
+                self.inputs.config_amqp_ips = temp_config_amqp_ips
+            else:
+                for ip in self.inputs.config_amqp_ips:
+                    server = "%s:%s"%(ip,port_dict['rmq'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                                'contrail-api',\
+                                server,node = cfgm)
+            assert result 
+ 
         for cfgm in self.inputs.cfgm_names:
             result1 = False
             try:
@@ -4296,12 +4307,24 @@ class AnalyticsVerification(fixtures.Fixture):
                             'contrail-device-manager',\
                             server,node = cfgm)
             result = False    
-            for ip in self.inputs.config_amqp_ips:
-               server = "%s:%s"%(ip,port_dict['rmq'])
-               result = result or self.verify_connection_infos(ops_inspect,\
+
+            if self.inputs.deployer == 'helm':
+                temp_config_amqp_ips = self.inputs.config_amqp_ips
+                self.inputs.config_amqp_ips = ['rabbitmq.openstack']
+                for ip in self.inputs.config_amqp_ips:
+                    server = "%s:%s"%(ip,port_dict['rmq'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
                                 'contrail-device-manager',\
                                 server,node = cfgm)
-            assert result
+                self.inputs.config_amqp_ips = temp_config_amqp_ips
+            else:
+                for ip in self.inputs.config_amqp_ips:
+                    server = "%s:%s"%(ip,port_dict['rmq'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                                'contrail-device-manager',\
+                                server,node = cfgm)
+            assert result 
+
         assert result_cassandra,'contrail-device-manager module connection to cfgm_cassandra server not up'
         result_cassandra = False
         for cfgm in self.inputs.cfgm_names:
@@ -4413,13 +4436,25 @@ class AnalyticsVerification(fixtures.Fixture):
                             bgp)
 
             result = False
-            for ip in self.inputs.config_amqp_ips:
-                server = "%s:%s"%(ip,port_dict['rabbitmq'])
-                result = result or self.verify_connection_infos(ops_inspect,\
+
+            if self.inputs.deployer == 'helm':
+                temp_config_amqp_ips = self.inputs.config_amqp_ips
+                self.inputs.config_amqp_ips = ['0.0.0.0']
+                for ip in self.inputs.config_amqp_ips:
+                    server = "%s:%s"%(ip,port_dict['rabbitmq'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
                                 'contrail-control',\
                                 server,node = bgp)
+                self.inputs.config_amqp_ips = temp_config_amqp_ips
+            else:
+                for ip in self.inputs.config_amqp_ips:
+                    server = "%s:%s"%(ip,port_dict['rabbitmq'])
+                    result = result or self.verify_connection_infos(ops_inspect,\
+                                'contrail-control',\
+                                server,node = bgp)
+
             assert result, 'Control node %s not connected to any AMQP' % (
-                            bgp)
+                            bgp)  
 
             result = False    
             for ip in self.inputs.collector_control_ips:
