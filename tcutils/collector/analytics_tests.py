@@ -4090,9 +4090,12 @@ class AnalyticsVerification(fixtures.Fixture):
                                 if not s_addr in el['server_addrs']:
                                     check = check and False
                         else:
-                            if not server_addrs in el['server_addrs']:
+                            s_addr_str = ','.join(el['server_addrs'])
+                            if '*:' in server_addrs:
+                                port = server_addrs.split(':')[1]
+                                server_addrs = '.*:%s'%port
+                            if not re.match(server_addrs, s_addr_str):
                                 check = check and False
-                        #if ((set(el['server_addrs']) == set(server_addrs)) \
                         if ((check or (server_addrs == el['server_addrs']))\
                                     and (el['status'] == status)):
                             self.logger.info("%s:%s module connection to \
@@ -4253,14 +4256,18 @@ class AnalyticsVerification(fixtures.Fixture):
                             'contrail-api',\
                             server,node = cfgm)
             assert result
-            result = False    
-            for ip in self.inputs.config_amqp_ips:
-                server = "%s:%s"%(ip,port_dict['rmq'])
-                result = result or self.verify_connection_infos(ops_inspect,\
+            result = False
+
+            config_amqp_ips = self.inputs.config_amqp_ips
+            if self.inputs.deployer == 'helm':
+                config_amqp_ips = ['*']
+            for ip in config_amqp_ips:
+               server = "%s:%s"%(ip,port_dict['rmq'])
+               result = result or self.verify_connection_infos(ops_inspect,\
                                 'contrail-api',\
                                 server,node = cfgm)
-            assert result
-             
+            assert result 
+ 
         for cfgm in self.inputs.cfgm_names:
             result1 = False
             try:
@@ -4296,12 +4303,17 @@ class AnalyticsVerification(fixtures.Fixture):
                             'contrail-device-manager',\
                             server,node = cfgm)
             result = False    
-            for ip in self.inputs.config_amqp_ips:
-               server = "%s:%s"%(ip,port_dict['rmq'])
-               result = result or self.verify_connection_infos(ops_inspect,\
+
+            config_amqp_ips = self.inputs.config_amqp_ips
+            if self.inputs.deployer == 'helm':
+                config_amqp_ips = ['*']
+            for ip in config_amqp_ips:
+                server = "%s:%s"%(ip,port_dict['rmq'])
+                result = result or self.verify_connection_infos(ops_inspect,\
                                 'contrail-device-manager',\
                                 server,node = cfgm)
-            assert result
+            assert result 
+
         assert result_cassandra,'contrail-device-manager module connection to cfgm_cassandra server not up'
         result_cassandra = False
         for cfgm in self.inputs.cfgm_names:
@@ -4413,13 +4425,17 @@ class AnalyticsVerification(fixtures.Fixture):
                             bgp)
 
             result = False
-            for ip in self.inputs.config_amqp_ips:
+
+            config_amqp_ips = self.inputs.config_amqp_ips
+            if self.inputs.deployer == 'helm':
+                config_amqp_ips = ['*']
+            for ip in config_amqp_ips:
                 server = "%s:%s"%(ip,port_dict['rabbitmq'])
                 result = result or self.verify_connection_infos(ops_inspect,\
                                 'contrail-control',\
                                 server,node = bgp)
             assert result, 'Control node %s not connected to any AMQP' % (
-                            bgp)
+                            bgp)  
 
             result = False    
             for ip in self.inputs.collector_control_ips:
