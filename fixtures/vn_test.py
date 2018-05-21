@@ -1925,6 +1925,26 @@ class VNFixture(fixtures.Fixture):
         vn_obj.add_security_logging_object(slo_obj)
         vnc_lib.virtual_network_update(vn_obj)
 
+    def set_fat_flow_protocols(self, fat_flow_protos):
+        '''Set the fat flow for VN
+            fat_flow_protos: obj of FatFlowProtocols
+        '''
+        vnc_lib = self.vnc_lib_h
+        vn_obj = vnc_lib.virtual_network_read(
+            fq_name=self.vn_fq_name.split(':'))
+        vn_obj.set_virtual_network_fat_flow_protocols(fat_flow_protos)
+        vnc_lib.virtual_network_update(vn_obj)
+        self.logger.info("Set Fat flow on VN %s: %s" % (
+                            self.vn_fq_name, fat_flow_protos))
+
+    def get_fat_flow_protocols(self):
+        '''Get the fat flow for VN'''
+        vnc_lib = self.vnc_lib_h
+        vn_obj = vnc_lib.virtual_network_read(
+            fq_name=self.vn_fq_name.split(':'))
+        fat_flow_protos = vn_obj.get_virtual_network_fat_flow_protocols()
+        return fat_flow_protos
+
     def verify_routing_instance_snat(self):
         '''
             Verify the routing instance fabric SNAT flag is same as its virtual network flag

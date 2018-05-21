@@ -258,7 +258,7 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
         Description: Verify Fat flows with allowed address pair
         Steps:
             1. launch 1 VN and launch 4 VMs in it.2 client VMs and 2 server VMs on different node.
-            2. on server VMs, config Fat flow for udp.
+            2. on server VMs, config Fat flow for udp with port 0
             3. from client VMs,send udp traffic to servers and
                 verify mastership and Fat flow
             4. Induce mastership switch and verify the Fat flow again
@@ -296,9 +296,10 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
 
         proto = 'udp'
         dport = 53
+        fat_port = 0
         baseport = random.randint(12000, 65000)
         sport = [str(baseport), str(baseport+1)]
-        fat_flow_config = {'proto':proto,'port':dport}
+        fat_flow_config = {'proto':proto,'port':fat_port}
         self.add_fat_flow_to_vmis([port1_obj['id'], port2_obj['id']], fat_flow_config)
 
         port_list = [port1_obj, port2_obj]                                      
@@ -313,7 +314,7 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
             assert vm1_fixture.add_ip_on_vm(vIP)
             assert client_fixtures[0].ping_with_certainty(vIP), 'Ping to vIP failure'
 
-        assert self.vrrp_mas_chk(vrrp_master, vn1_fixture, vIP)
+        assert self.vrrp_mas_chk(dst_vm=vrrp_master, vn=vn1_fixture, ip=vIP)
 
         for vm in client_fixtures:
             for port in sport:
@@ -324,7 +325,7 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
         vrf_id_dst = dst_compute_fix.get_vrf_id(vrrp_master.vn_fq_names[0])
         for vm in client_fixtures:
             self.verify_fat_flow_on_compute(dst_compute_fix, vm.vm_ip,
-                        vIP, dport, proto, vrf_id_dst,
+                        vIP, fat_port, proto, vrf_id_dst,
                         fat_flow_count=1)
 
         if is_v6(vIP):
@@ -336,7 +337,7 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
         self.logger.info(
             '%s should become the new VRRP master' % vm2_fixture.vm_name)
         vrrp_master = vm2_fixture
-        assert self.vrrp_mas_chk(vrrp_master, vn1_fixture, vIP)
+        assert self.vrrp_mas_chk(dst_vm=vrrp_master, vn=vn1_fixture, ip=vIP)
 
         for vm in client_fixtures:
             for port in sport:
@@ -347,8 +348,103 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
         vrf_id_dst = dst_compute_fix.get_vrf_id(vrrp_master.vn_fq_names[0])
         for vm in client_fixtures:
             self.verify_fat_flow_on_compute(dst_compute_fix, vm.vm_ip,
-                        vIP, dport, proto, vrf_id_dst,
+                        vIP, fat_port, proto, vrf_id_dst,
                         fat_flow_count=1)
+
+    @preposttest_wrapper
+    def test_fat_flow_with_aap_ignore_addrs(self):
+        """
+        Description: Verify Fat flows with ignore addrs with allowed address pair
+        Steps:
+            1. launch 1 VN and launch 4 VMs in it.2 client VMs and 2 server VMs on different node.
+            2. on server VMs, config Fat flow for udp with port 0
+            3. from client VMs,send udp traffic to servers and
+                verify mastership and Fat flow
+            4. Induce mastership switch and verify the Fat flow again
+        Pass criteria:
+            1. Fat flow and mastership verification should pass
+        """
+        compute_hosts = self.orch.get_hosts()
+        if len(compute_hosts) < 2:
+            raise self.skipTest("Skipping test case,"
+                                    "this test needs atleast 2 compute nodes")
+
+        vn1_fixture = self.create_vns(count=1)[0]
+        vm1_name = get_random_name('vm1')
+        vm2_name = get_random_name('vm2')
+        result = False
+        vIP = self.get_random_ip_from_vn(vn1_fixture)[0]
+        image = 'ubuntu-traffic'
+
+        port1_obj = self.create_port(net_id=vn1_fixture.vn_id)
+        port2_obj = self.create_port(net_id=vn1_fixture.vn_id)
+        vm1_fixture = self.create_vm(vn1_fixture, vm1_name,
+                                     image_name=image,
+                                     port_ids=[port1_obj['id']],
+                                     node_name=compute_hosts[0])
+        vm2_fixture = self.create_vm(vn1_fixture, vm2_name,
+                                     image_name=image,
+                                     port_ids=[port2_obj['id']],
+                                     node_name=compute_hosts[0])
+
+        client_fixtures = self.create_vms(vn_fixture= vn1_fixture,count=2,
+            node_name=compute_hosts[1], image_name=image)
+        assert vm1_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
+        assert vm2_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
+        self.verify_vms(client_fixtures)
+
+        proto = 'udp'
+        dport_list = [53, 54]
+        baseport = random.randint(12000, 65000)
+        sport_list = [str(baseport), str(baseport+1)]
+        port_list = [port1_obj, port2_obj]
+
+        for port in port_list:
+            self.config_aap(port, vIP, mac=port['mac_address'])
+        self.config_vrrp(vm1_fixture, vIP, '20')
+        self.config_vrrp(vm2_fixture, vIP, '10')
+        vrrp_master = vm1_fixture
+        if is_v6(vIP):
+            #current version of vrrpd does not support IPv6, as a workaround add the vIP
+            #    on one of the VM and start ping6 to make the VM as master
+            assert vm1_fixture.add_ip_on_vm(vIP)
+            assert client_fixtures[0].ping_with_certainty(vIP), 'Ping to vIP failure'
+
+        assert self.vrrp_mas_chk(dst_vm=vrrp_master, vn=vn1_fixture, ip=vIP)
+
+        fat_ignore_src = {'proto':proto,'port':dport_list[0],
+            'ignore_address':'source'}
+        fat_ignore_dst = {'proto':proto,'port':dport_list[1],
+            'ignore_address':'destination'}
+        fat_ignore_dst_port_0 = {'proto':proto,'port':0,
+            'ignore_address':'destination'}
+        fat_config_list = [fat_ignore_src, fat_ignore_dst,
+            fat_ignore_dst_port_0]
+
+        dst_compute_fix = self.compute_fixtures_dict[vrrp_master.vm_node_ip]
+        vrf_id_dst = dst_compute_fix.get_vrf_id(vrrp_master.vn_fq_names[0])
+        for fat_config in fat_config_list:
+            self.add_fat_flow_to_vmis([port1_obj['id'], port2_obj['id']],
+                fat_config)
+            for vm in client_fixtures:
+                for sport in sport_list:
+                    for dport in dport_list:
+                        assert self.send_nc_traffic(vm, vrrp_master,
+                            sport, dport, proto, ip=vIP)
+
+            if fat_config['ignore_address'] == 'source':
+                fat_src_ip = '0.0.0.0' if self.inputs.get_af() == 'v4' else '::'
+                for vm in client_fixtures:
+                    self.verify_fat_flow_on_compute(dst_compute_fix, vm.vm_ip,
+                                fat_src_ip, fat_config['port'], proto, vrf_id_dst,
+                                fat_flow_count=1)
+            if fat_config['ignore_address'] == 'destination':
+                fat_dst_ip = '0.0.0.0' if self.inputs.get_af() == 'v4' else '::'
+                self.verify_fat_flow_on_compute(dst_compute_fix, fat_dst_ip,
+                            vIP, fat_config['port'], proto, vrf_id_dst,
+                            fat_flow_count=1)
+            self.remove_fat_flow_on_vmis([port1_obj['id'], port2_obj['id']],
+                fat_config)
 
     @preposttest_wrapper
     def test_fat_flow_lbaasv2(self):
