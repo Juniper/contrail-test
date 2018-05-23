@@ -19,7 +19,8 @@ MVPN_CONFIG = {
 MX_CONFIG = {
     'name': 'umesh',
     'lo0': '1.1.1.1',                   # MX Loopback interface IP
-    'mcast_subnet': '30.30.30.0/24'   # Multicast source address behind MX
+    'mcast_subnet': '30.30.30.0/24',   # Multicast source address behind MX
+    'intf' : 'ge-2/3/9'
 }
 
 
@@ -95,10 +96,17 @@ class MVPNTestBase(BaseVrouterTest):
 
         # Controller IP
         ctrl_ip = self.inputs.bgp_ips[0]
+        #local_addr = self.inputs.ext_routers[0][1]
+        local_addr = self.inputs.dm_mx.values()[0]['control_ip']
+        #ctrl_ip = self.inputs.cfgm_ips[0]
+        #ctrl_ip = self.inputs.bgp_ips[0]
+        #ctrl_ip1 = self.inputs.cfgm_ips[1]
+        #ctrl_ip2 = self.inputs.cfgm_ips[2]
+        ce_int = MX_CONFIG.get('intf')
+
 
         # router asn
         asn = self.inputs.router_asn
-
         # MX configuration
         cmd.append('set groups mvpn interfaces lo0 unit 0 family inet address '+mx_lo0_ip+'/32')
         cmd.append('set groups mvpn interfaces lo0 unit 0 family mpls')
@@ -110,17 +118,22 @@ class MVPNTestBase(BaseVrouterTest):
         cmd.append('set groups mvpn routing-options dynamic-tunnels gre1 gre')
         cmd.append('set groups mvpn routing-options dynamic-tunnels gre1 destination-networks 10.204.217.0/24')
         cmd.append('set groups mvpn routing-options dynamic-tunnels gre1 destination-networks 10.204.216.0/24')
+        cmd.append('set groups mvpn routing-options dynamic-tunnels gre1 destination-networks 10.10.10.0/24')
         cmd.append('set groups mvpn protocols mpls interface all')
         cmd.append('set groups mvpn protocols bgp group mvpn type internal')
-        cmd.append('set groups mvpn protocols bgp group mvpn local-address '+mx_lo0_ip)
+        cmd.append('set groups mvpn protocols bgp group mvpn local-address '+local_addr)
+        #cmd.append('set groups mvpn protocols bgp group mvpn local-address '+mx_lo0_ip)
         cmd.append('set groups mvpn protocols bgp group mvpn family inet-vpn unicast')
         cmd.append('set groups mvpn protocols bgp group mvpn family inet6-vpn unicast')
         cmd.append('set groups mvpn protocols bgp group mvpn family evpn signaling')
         cmd.append('set groups mvpn protocols bgp group mvpn family inet-mvpn signaling')
         cmd.append('set groups mvpn protocols bgp group mvpn family route-target')
         cmd.append('set groups mvpn protocols bgp group mvpn mvpn-iana-rt-import')
-        cmd.append('set groups mvpn protocols bgp group mvpn neighbor '+ctrl_ip)
+        #cmd.append('set groups mvpn protocols bgp group mvpn neighbor '+ctrl_ip)
+        for ctrl_ip in self.inputs.cfgm_ips:
+            cmd.append('set groups mvpn protocols bgp group mvpn neighbor '+ctrl_ip)
         cmd.append('set groups mvpn routing-instances test instance-type vrf')
+        cmd.append('set groups mvpn routing-instances test interface '+ce_int)
         cmd.append('set groups mvpn routing-instances test route-distinguisher '+mx_lo0_ip+':100')
         cmd.append('set groups mvpn routing-instances test provider-tunnel ingress-replication create-new-ucast-tunnel')
         cmd.append('set groups mvpn routing-instances test provider-tunnel ingress-replication label-switched-path label-switched-path-template default-template')
@@ -133,6 +146,8 @@ class MVPNTestBase(BaseVrouterTest):
         cmd.append('set groups mvpn routing-instances test protocols pim interface all mode sparse')
         cmd.append('set groups mvpn routing-instances test protocols mvpn mvpn-mode spt-only')
         cmd.append('set apply-groups mvpn')
+        #cmd.append('set interfaces '+ce_int+' gigether-options loopback')
+        cmd.append('set interfaces '+ce_int+' unit 0 family inet address 30.30.30.2/24 arp 30.30.30.1 mac 4c:96:14:98:1f:22')
 
         mx_handle = NetconfConnection(host = mx_ip)
         mx_handle.connect()
@@ -140,6 +155,7 @@ class MVPNTestBase(BaseVrouterTest):
         mx_handle.disconnect()
         assert (not('failed' in cli_output)), "Not able to push config to mx"
         self.addCleanup(self.cleanup_mx, mx_ip)
+        time.sleep(30)
 
     # end configure_mx
 
@@ -253,12 +269,16 @@ class MVPNTestBase(BaseVrouterTest):
         # Configuring mvpn at global level
         name = MX_CONFIG.get('name', 'umesh')
         ip = MX_CONFIG.get('lo0', '1.1.1.1')
+        #ip = self.inputs.ext_routers[0][1]
+        ip = self.inputs.dm_mx.values()[0]['control_ip']
         asn = self.inputs.router_asn
         af = ["route-target", "inet-mvpn", "inet-vpn", "e-vpn", "inet6-vpn"]
         self.vnc_h.add_bgp_router('router', name, ip, asn, af)
         self.addCleanup(self.vnc_h.delete_bgp_router, name)
 
         # MX configuration
+        #ip = '10.204.217.191'
+        ip = self.inputs.dm_mx.values()[0]['mgmt_ip']
         self.provision_mx(ip)
 
         # VNs creation
@@ -410,6 +430,11 @@ class IGMPTestBase(BaseVrouterTest):
                                 if route_type == 7:
                                     mvpn_route = "7-"+".+"+srcaddr+","+maddr
 
+                                  
+                                if route_type == 4 and vn_name == 'vn2':
+                                    self.logger.info('Since IGMP join is from VN1 , type 4 wont be there in VN2')
+                                    expectation = False
+
                                 # Verify MVPN routes in bgp VRF mvpn table
                                 result = result & self.verify_mvpn_route(mvpn_route,
                                             ri_name=ri_name, expectation=expectation)
@@ -440,8 +465,8 @@ class IGMPTestBase(BaseVrouterTest):
                 if re.match(mvpn_route, mvpn_entry['prefix']):
                     pmsi_tunnel_label = self.get_pmsi_tunnel_label_mvpn_route(mvpn_entry)
                     pmsi_tunnel_id = self.get_pmsi_tunnel_id_mvpn_route(mvpn_entry)
-                    self.logger.info('Pmsi Tunnel Label:%s, Pmsi Tunnel Id:%s'
-                                     % (pmsi_tunnel_label, pmsi_tunnel_id))
+                    self.logger.info('Pmsi Tunnel Label:%s, Pmsi Tunnel Id:%s bgpip:%s'
+                                     % (pmsi_tunnel_label, pmsi_tunnel_id, cn))
                     return (pmsi_tunnel_label, pmsi_tunnel_id)
 
         return (pmsi_tunnel_label, pmsi_tunnel_id)
@@ -460,13 +485,16 @@ class IGMPTestBase(BaseVrouterTest):
         expectation = kwargs.get('expectation',True)
 
         # Verify MVPN routes at control node
+        result = False
+        temp = ri_name
         for cn in self.inputs.bgp_ips:
+            ri_name = temp
+            self.logger.info('In cn: %s ri is : %s' % (cn,ri_name))
             mvpn_table_entry = self.cn_inspect[cn].get_cn_mvpn_table(ri_name)
             if not ri_name:
                 ri_name = 'bgp.mvpn.0'
 
             if expectation:
-                result = False
                 for mvpn_entry in mvpn_table_entry:
                     if re.match(mvpn_route, mvpn_entry['prefix']):
                         result = True
@@ -487,8 +515,8 @@ class IGMPTestBase(BaseVrouterTest):
                         break
                 if result == False:
                     self.logger.warn('MVPN route: %s not seen in the %s table '\
-                                     'of the control nodes. NOT EXPECTED'
-                                     % (mvpn_route, ri_name))
+                                     'of the control nodes %s. NOT EXPECTED'
+                                     % (mvpn_route, ri_name, cn))
             else:
                 result = True
                 for mvpn_entry in mvpn_table_entry:
@@ -503,7 +531,7 @@ class IGMPTestBase(BaseVrouterTest):
                                      'of the control nodes as EXPECTED'
                                      % (mvpn_route, ri_name))
 
-            return result
+        return result
 
     def get_origin_mvpn_route(self, mvpn_entry, **kwargs):
         '''
@@ -667,6 +695,7 @@ class IGMPTestBase(BaseVrouterTest):
         params['igmpv3mr'] = kwargs.get('igmpv3mr',{})
         params['igmpv3gr'] = kwargs.get('igmpv3gr',{})
         params['payload'] = "''"
+        params['count'] = 10
 
         scapy_obj = ScapyTraffic(rcv_vm_fixture, **params)
         scapy_obj.start()
@@ -917,6 +946,8 @@ class IGMPTestBase(BaseVrouterTest):
         else:
             assert result, "Error in sending IGMPv3 reports"
 
+
+
         # Verify IGMP membership reports at agent
         self.logger.info('Verifying IGMPv3 report as per configuration')
         result = self.verify_igmp_reports(vm_fixtures, traffic, igmp)
@@ -959,8 +990,10 @@ class IGMPTestBase(BaseVrouterTest):
         session, pcap = self.start_tcpdump_mcast_rcvrs(vm_fixtures, traffic)
 
         # Send multicast traffic
+        time.sleep(5)
         self.logger.info('Sending mcast data traffic from mcast source')
         result = self.send_mcast_streams(vm_fixtures, traffic)
+        time.sleep(10)
 
         if result:
             self.logger.info('Successfully sent multicast data traffic')
