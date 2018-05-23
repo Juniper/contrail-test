@@ -9,9 +9,10 @@ import os
 import sys
 import test
 from tcutils.contrail_status_check import *
+from common.base import _GenericTestBaseMethods 
 
 
-class TestXmpptests(XmppBase, ConfigPolicy):
+class TestXmpptests(XmppBase, ConfigPolicy, _GenericTestBaseMethods):
 
     @classmethod
     def setUpClass(cls):
@@ -51,29 +52,14 @@ class TestXmpptests(XmppBase, ConfigPolicy):
         # there are asserts in the loop
         self.addCleanup(self.enable_auth_on_cluster)
         for node in self.inputs.bgp_control_ips:
-            self.update_contrail_conf(
-                conf_file='/etc/contrail/contrail-control.conf',
-                operation='del',
-                section='DEFAULT',
-                knob='xmpp_auth_enable',
-                node=node,
-                service='contrail-control',
-                container='control')
+            self.add_knob_to_container(node, 'control_control_1', 'DEFAULT', 'xmpp_auth_enable=False')
             assert (self.check_xmpp_status(node)
                     ), "XMPP between nodes not up after deleting xmpp auth"
             assert (self.check_if_xmpp_auth_enabled(node, 'NIL')
                     ), "Xmpp auth still set after disabling it on server side"
         assert (self.check_if_cluster_has_xmpp), "XMPP connections not found"
         for node in self.inputs.bgp_control_ips:
-            self.update_contrail_conf(
-                conf_file='/etc/contrail/contrail-control.conf',
-                operation='set',
-                section='DEFAULT',
-                knob='xmpp_auth_enable',
-                value='true',
-                node=node,
-                service='contrail-control',
-                container='control')
+            self.add_knob_to_container(node, 'control_control_1', 'DEFAULT', 'xmpp_auth_enable=True')
             assert (self.check_xmpp_status(node)
                     ), "XMPP between nodes not up after adding back xmpp auth"
             assert (self.check_if_xmpp_auth_enabled(node)
@@ -91,14 +77,7 @@ class TestXmpptests(XmppBase, ConfigPolicy):
         Also confirm if introspect reflects the changes as and when they are done
         """
         for node in self.inputs.bgp_control_ips:
-            self.update_contrail_conf(
-                conf_file='/etc/contrail/contrail-control.conf',
-                operation='del',
-                section='DEFAULT',
-                knob='xmpp_auth_enable',
-                node=node,
-                service='contrail-control',
-                container='control')
+            self.add_knob_to_container(node, 'control_control_1', 'DEFAULT', 'xmpp_auth_enable=False')
         # adding cleanup before assert
         self.addCleanup(self.enable_auth_on_cluster)
         assert (self.check_xmpp_status(node)
@@ -107,15 +86,7 @@ class TestXmpptests(XmppBase, ConfigPolicy):
         assert (self.check_if_xmpp_auth_enabled(node, 'NIL')
                 ), "Xmpp auth still set after disabling it on server side"
         for node in self.inputs.bgp_control_ips:
-            self.update_contrail_conf(
-                conf_file='/etc/contrail/contrail-control.conf',
-                operation='set',
-                section='DEFAULT',
-                knob='xmpp_auth_enable',
-                value='true',
-                node=node,
-                service='contrail-control',
-                container='control')
+            self.add_knob_to_container(node, 'control_control_1', 'DEFAULT', 'xmpp_auth_enable=True')
         assert (self.check_xmpp_status(node)
                 ), "XMPP between nodes not up after adding back xmpp auth"
         assert (self.check_if_cluster_has_xmpp), "XMPP connections not found"
@@ -132,13 +103,7 @@ class TestXmpptests(XmppBase, ConfigPolicy):
         """
 
         for node in self.inputs.compute_ips:
-            self.update_contrail_conf(
-                conf_file='/etc/contrail/contrail-vrouter-agent.conf',
-                operation='del',
-                section='DEFAULT',
-                knob='xmpp_auth_enable',
-                node=node,
-                service='contrail-vrouter-agent')
+            self.add_knob_to_container(node, 'vrouter_vrouter-agent_1', 'DEFAULT', 'xmpp_auth_enable=False')
         # adding cleanup before assert
         self.addCleanup(self.enable_auth_on_cluster)
         for node in self.inputs.bgp_control_ips:
@@ -148,14 +113,7 @@ class TestXmpptests(XmppBase, ConfigPolicy):
                 ), "XMPP connections should not be found"
 
         for node in self.inputs.compute_ips:
-            self.update_contrail_conf(
-                conf_file='/etc/contrail/contrail-vrouter-agent.conf',
-                operation='set',
-                section='DEFAULT',
-                knob='xmpp_auth_enable',
-                value='true',
-                node=node,
-                service='contrail-vrouter-agent')
+            self.add_knob_to_container(node, 'vrouter_vrouter-agent_1', 'DEFAULT', 'xmpp_auth_enable=True')
         for node in self.inputs.bgp_control_ips:
             assert (self.check_xmpp_status(node)
                     ), "XMPP between nodes not up after adding back xmpp auth"
