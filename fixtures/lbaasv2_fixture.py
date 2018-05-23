@@ -925,7 +925,7 @@ class LBaasV2Fixture(LBBaseFixture):
             pkey_payload=pkey_payload)
         return self.container_certs
 
-    def add_neutron_user_to_acl(self, user='neutron'):
+    def add_neutron_user_to_acl(self, user='barbican'):
         self.connections.auth.add_user_to_project(user, self.connections.project_name, '_member_')
         auth_token = self.connections.auth.get_token()
         user_id = str(self.connections.auth.keystone.get_user_dct(user).id)

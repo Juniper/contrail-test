@@ -57,6 +57,6 @@ except:
     heat_client = None
 
 try:
-    from barbicanclient import barbican_client
+    from barbicanclient import client as barbican_client
 except:
     barbican_client = None
