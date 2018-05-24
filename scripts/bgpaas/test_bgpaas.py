@@ -37,10 +37,8 @@ class TestBGPaaS(BaseBGPaaS):
         bgpaas_fixture = self.create_bgpaas(
             bgpaas_shared=True, autonomous_system=64500, bgpaas_ip_address=bgp_ip)
         self.logger.info('Configure two ports and configure AAP between them')
-        port1 = {}
-        port2 = {}
-        port1['id'] = bgpaas_vm1.vmi_ids[bgpaas_vm1.vn_fq_name]
-        port2['id'] = bgpaas_vm2.vmi_ids[bgpaas_vm2.vn_fq_name]
+        port1 = bgpaas_vm1.vmi_ids[bgpaas_vm1.vn_fq_name]
+        port2 = bgpaas_vm2.vmi_ids[bgpaas_vm2.vn_fq_name]
         port_list = [port1, port2]
         for port in port_list:
             self.config_aap(port, bgp_ip, mac='00:00:5e:00:01:01')
