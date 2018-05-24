@@ -174,34 +174,6 @@ class TestServiceConnections(BaseServiceConnectionsTest):
     # test_contrail_agent_connects_to_collector
 
     @preposttest_wrapper
-    def test_alarm_gen_connects_to_redis(self):
-        '''
-        This test case verifies that Contrail Alarm Gen connects to a valid 
-        Redis
-        Steps:
-        1. Read "contrail-alarm-gen.conf" and read all valid Redis UVE Servers.
-        2. Read OpServer connections and find valid Redis is connected
-           to the contrail-alarm-gen client.
-        3. Check that contrail-alarm-gen connections to all REDIS servers
-           configured in client .conf file
-        '''
-        valid_redis_servers = self.get_all_configured_servers("redis",
-                                        "analytics", "contrail-alarm-gen")[0]
-        for node in self.inputs.collector_control_ips:
-            redis_servers, status, ports = self.get_all_in_use_servers("redis",
-                                        "analytics", "contrail-alarm-gen",
-                                        node)
-            if redis_servers and set(redis_servers) == set(valid_redis_servers)\
-                and all(x == 'Up' for x in status) and all(y == '6381' for y in ports):
-                self.logger.info("contrail-alarm-gen running on '%s'"
-                                "connected to correct Redis" % node)
-            else:
-                self.logger.error("Either connection is absent or incorrect or"
-                                  "status is Down")
-                assert False, "Connection issue between vrouter-agent and Collector"
-    # test_alarm_gen_connects_to_redis
-    
-    @preposttest_wrapper
     def test_random_client_connections_to_collector(self):
         '''
         Almost all contrail services connects to Collector.
@@ -220,8 +192,7 @@ class TestServiceConnections(BaseServiceConnectionsTest):
                 {'contrail-api' : self.inputs.cfgm_control_ips[0],
                  'contrail-config-nodemgr' : self.inputs.cfgm_control_ips[0]},
              'analytics':
-                {'contrail-alarm-gen' : self.inputs.collector_control_ips[0],
-                 'contrail-analytics-api' : self.inputs.collector_control_ips[0],
+                { 'contrail-analytics-api' : self.inputs.collector_control_ips[0],
                  'contrail-analytics-nodemgr' : self.inputs.collector_control_ips[0],
                  'contrail-query-engine' : self.inputs.collector_control_ips[0]},
              'database':
