@@ -52,6 +52,10 @@ class NamespaceFixture(fixtures.Fixture):
                 self.logger.error('Namespace %s not seen in Contrail API' % (
                 self.name))
                 return False
+            if not self.verify_namespace_in_kube_manager():
+                self.logger.error('Namespace %s not seen in Kube Manager' % (
+                self.name))
+                return False
             self.logger.info('Namespace %s verification passed' % (self.name))
         self.verify_is_run = True
         return True
@@ -114,6 +118,25 @@ class NamespaceFixture(fixtures.Fixture):
             self.api_s_obj.uuid))
         return True
     # end verify_namespace_in_contrail_api
+    
+    @retry(delay=2, tries=10)
+    def verify_namespace_in_kube_manager(self):
+        km_h = self.connections.get_kube_manager_h()
+        self.namespace_info = km_h.get_namespace_info(ns_uuid = self.uuid)
+        if self.namespace_info:
+            if self.namespace_info['phase'] == "Active":
+                self.logger.info('Namespace %s with uuid %s found in kube manager' 
+                             % (self.name, self.uuid))
+            else:
+                self.logger.warn("Namespace present in kube manager but phase is %s"
+                                 % self.namespace_info['phase'])
+                return False
+        else:
+            self.logger.warn('Namespace %s with uuid %s not found in kube manager' 
+                             % (self.name, self.uuid))
+            return False
+        return True
+    # end verify_namespace_in_kube_manager
 
     def cleanUp(self):
         super(NamespaceFixture, self).cleanUp()
