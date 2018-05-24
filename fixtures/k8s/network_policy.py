@@ -25,7 +25,14 @@ class NetworkPolicyFixture(fixtures.Fixture):
         self.metadata = {} if metadata is None else metadata
         self.spec = {} if spec is None else spec
         self.v1_networking = self.k8s_client.v1_networking
-
+        self.agent_inspect = connections.agent_inspect
+        self.connections = connections
+        self.inputs = connections.inputs
+        self.k8s_default_network_policies = ['default-policy-management:k8s-allowall',
+                                             'default-policy-management:k8s-Ingress',
+                                             'default-policy-management:k8s-denyall']
+        self.k8s_defaut_aps = "default-policy-management:k8s"
+        
         self.already_exists = None
 
     def setUp(self):
@@ -33,7 +40,23 @@ class NetworkPolicyFixture(fixtures.Fixture):
         self.create()
 
     def verify_on_setup(self):
-        pass
+        if not self.verify_network_policy_in_k8s():
+            self.logger.error('Network Policy %s verification in kubernetes failed'
+                              % (self.name))
+            return False
+        if not self.verify_network_policy_in_kube_manager():
+            self.logger.error('Network Policy %s verification in Kube Manager failed'
+                              % (self.name))
+            return False
+        if not self.verify_default_policies_in_agent():
+            self.logger.error('Default k8s Policy verification in Agent failed')
+            return False
+        if not self.verify_firewall_policy_in_agent():
+            self.logger.error('Network Policy %s verification in Agent failed'
+                              % (self.name))
+            return False
+        self.logger.info('Network Policy %s verification passed' % (self.name))
+        return True
     # end verify_on_setup
 
     def cleanUp(self):
@@ -87,4 +110,72 @@ class NetworkPolicyFixture(fixtures.Fixture):
             metadata=self.metadata,
             spec=self.spec)
         self._populate_attr()
-    # end create
+    # end update
+    
+    @retry(delay=1, tries=10)
+    def verify_network_policy_in_k8s(self):
+        if self.read():
+            self.logger.info("Network policy found in k8s")
+        else:
+            self.logger.warn('Network policy not Found in K8s')
+            return False
+        return True
+    # end verify_ingress_in_k8s
+    
+    @retry(delay=1, tries=10)
+    def verify_network_policy_in_kube_manager(self):
+        km_h = self.connections.get_kube_manager_h()
+        self.np_info = km_h.get_network_policy_info(np_uuid = self.uuid)
+        if self.np_info:
+            self.logger.info('Network Policy %s with uuid %s found in kube manager' 
+                             % (self.name, self.uuid))
+        else:
+            self.logger.warn('Network Policy %s with uuid %s not found in kube manager' 
+                             % (self.name, self.uuid))
+            return False
+        return True
+    # end verify_ingress_in_k8s
+    
+    @retry(delay=1, tries=10)
+    def verify_firewall_policy_in_agent(self):
+        km_h = self.connections.get_kube_manager_h()
+        agent_h = self.agent_inspect[self.inputs.compute_ips[0]]
+        # Get associated Firewall policy.
+        self.np_info = km_h.get_network_policy_info(np_uuid = self.uuid)
+        fw_polify_fq_name = self.np_info['vnc_firewall_policy_fqname']
+        # Search for corresponding firewall policy in agent
+        fwPolicy = agent_h.get_fw_policy(policy_fq_name = fw_polify_fq_name)
+        #fw_policyNames = [elem['name'] for elem in fwPolicyList]
+        if not fwPolicy:
+            self.logger.warn("Network policy with name %s not found in agent"
+                             % self.name)
+            return False
+        return True
+    #end verify_firewall_policy_in_agent
+    
+    @retry(delay=1, tries=10)
+    def verify_default_policies_in_agent(self):
+        km_h = self.connections.get_kube_manager_h()
+        agent_h = self.agent_inspect[self.inputs.compute_ips[0]]
+
+        default_aps = agent_h.get_aps(aps_fq_name = self.k8s_defaut_aps)
+        if not default_aps:
+            self.logger.warn("Default APS %s for k8s not found in agent"
+                             % self.k8s_defaut_aps)
+            return False
+        aps_fw_policy_uuid = [elem['firewall_policy'] for elem in default_aps['firewall_policy_list']]
+        for elem in self.k8s_default_network_policies :
+            fw_policy = agent_h.get_fw_policy(policy_fq_name = elem)
+            if not fw_policy:
+                self.logger.warn("Network policy with name %s not found in agent"
+                             % elem)
+                return false
+            if fw_policy['uuid'] not in aps_fw_policy_uuid:
+                self.logger.warn("Network policy with name %s not associated with default ks8"
+                             % elem)
+                return false                
+        return True
+    #end verify_firewall_policy_in_agent
+    
+
+        

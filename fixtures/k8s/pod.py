@@ -71,6 +71,10 @@ class PodFixture(fixtures.Fixture):
             self.logger.error('Pod %s not seen in Contrail agent' % (
                 self.name))
             return False
+        if not self.verify_pod_in_kube_manager():
+            self.logger.error('Pod %s not seen in Contrail Kube Manager' % (
+                self.name))
+            return False
         self.logger.info('Pod %s verification passed' % (self.name))
         return True
     # end verify_on_setup
@@ -278,6 +282,20 @@ class PodFixture(fixtures.Fixture):
             self.compute_ip = self.host_ip
     # end set_compute_ip
 
+    @retry(delay=2, tries=10)
+    def verify_pod_in_kube_manager(self):
+        km_h = self.connections.get_kube_manager_h()
+        self.pod_info = km_h.get_pod_info(pod_uuid = self.uuid)
+        if self.pod_info:
+            self.logger.info('Pod %s with uuid %s found in kube manager' 
+                             % (self.name, self.uuid))
+        else:
+            self.logger.warn('Pod %s with uuid %s not found in kube manager' 
+                             % (self.name, self.uuid))
+            return False
+        return True
+    # verify_pod_in_kube_manager
+    
     @retry(delay=2, tries=10)
     def verify_pod_in_contrail_agent(self):
         self.set_compute_ip()

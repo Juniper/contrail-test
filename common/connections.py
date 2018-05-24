@@ -5,7 +5,8 @@ from tcutils.control.cn_introspect_utils import *
 from tcutils.agent.vna_introspect_utils import *
 from tcutils.collector.opserver_introspect_utils import *
 from tcutils.collector.analytics_tests import *
-from tcutils.config.kube_manager_introspect_utils import KubeManagerInspect
+
+from tcutils.kubernetes.k8s_introspect_utils import KubeManagerInspect
 from vnc_api.vnc_api import *
 from tcutils.vdns.dns_introspect_utils import DnsAgentInspect
 from tcutils.util import custom_dict, get_plain_uuid
@@ -228,7 +229,7 @@ class ContrailConnections():
         if not getattr(self, '_kube_manager_inspect', None) or refresh:
             for km_ip in self.inputs.kube_manager_ips:
                 #contrail-status would increase run time hence netstat approach
-                cmd = 'netstat -antp | grep :8108 | grep LISTEN'
+                cmd = 'netstat -antp | grep :%s | grep LISTEN' % self.inputs.k8s_port
                 if 'LISTEN' in self.inputs.run_cmd_on_server(km_ip, cmd,
                                    container='contrail-kube-manager'):
                     self._kube_manager_inspect = KubeManagerInspect(km_ip,
