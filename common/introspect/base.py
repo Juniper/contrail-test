@@ -18,7 +18,6 @@ CONTRAIL_CONF_FILES = {
     'contrail-collector': '/etc/contrail/contrail-collector.conf',
     'contrail-query-engine': '/etc/contrail/contrail-query-engine.conf',
     'contrail-snmp-collector': '/etc/contrail/contrail-snmp-collector.conf',
-    'contrail-alarm-gen': '/etc/contrail/contrail-alarm-gen.conf',
     'contrail-control': '/etc/contrail/contrail-control.conf',
     'contrail-dns': '/etc/contrail/contrail-dns.conf',
     'contrail-api': '/etc/contrail/contrail-api.conf',

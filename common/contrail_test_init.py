@@ -159,10 +159,10 @@ class TestInputs(object):
             'openstack-nova-api', 'openstack-nova-scheduler', 'openstack-nova-conductor',
             'heat-api', 'heat-api-cfn', 'heat-engine', 'rabbitmq-server']
         self.collector_services = [
-            'contrail-collector', 'contrail-analytics-api', 'contrail-alarm-gen',
+            'contrail-collector', 'contrail-analytics-api',
             'contrail-query-engine', 'contrail-analytics-nodemgr']
         self.database_services = [
-            'contrail-database', 'contrail-database-nodemgr', 'kafka']
+            'contrail-database', 'contrail-database-nodemgr']
         self.correct_states = ['active', 'backup']
 
     def parse_ini_file(self):
@@ -1030,7 +1030,6 @@ class TestInputs(object):
             host_dict['containers']['named'] = host_dict['containers']['controller']
         if 'alarm-gen' not in host_dict['containers'] and 'analytics' in host_dict['containers']:
             host_dict['containers']['analytics-api'] = host_dict['containers']['analytics']
-            host_dict['containers']['alarm-gen'] = host_dict['containers']['analytics']
             host_dict['containers']['collector'] = host_dict['containers']['analytics']
             host_dict['containers']['query-engine'] = host_dict['containers']['analytics']
         if 'analytics-cassandra' not in host_dict['containers'] and 'analyticsdb' in host_dict['containers']:
@@ -1627,7 +1626,6 @@ class ContrailTestInit(object):
                'contrail-webui': 'webui',
                'contrail-webui-middleware': 'webui-middleware',
                'contrail-collector': 'collector',
-               'contrail-alarm-gen': 'alarm-gen',
                'contrail-analytics-api': 'analytics-api',
                'contrail-query-engine': 'query-engine',
                'contrail-analytics-nodemgr': 'analytics-nodemgr',
@@ -1635,7 +1633,6 @@ class ContrailTestInit(object):
                'contrail-topology': 'topology',
                'contrail-database': 'analytics-cassandra',
                'contrail-database-nodemgr': 'analyticsdb-nodemgr',
-               'kafka': 'analytics-kafka',
                'contrail-vrouter-agent': 'agent',
                'contrail-vrouter-nodemgr': 'vrouter-nodemgr',
                'contrail-control': 'control',
