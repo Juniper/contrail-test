@@ -88,7 +88,7 @@ class TestNetworkPolicyProjectIsolation(BaseK8sTest):
                                    namespace = ns1_clients[3].name,
                                    policy_types = policy_types,
                                    ingress= ingress_list)
-        
+        assert policy1.verify_on_setup()
         # Verify that ingress policy works as expected
         assert ns1_clients[1].ping_with_certainty(ns1_clients[0].pod_ip)
         assert ns1_clients[0].ping_with_certainty(ns1_clients[1].pod_ip,
@@ -162,7 +162,7 @@ class TestNetworkPolicyProjectIsolation(BaseK8sTest):
                                    namespace = ns1_clients[3].name,
                                    policy_types = policy_types,
                                    egress= egress_list)
-        
+        assert policy1.verify_on_setup()
         # Verify that egress policy works as expected
         assert ns1_clients[1].ping_with_certainty(ns1_clients[0].pod_ip,
                                                     expectation=False)
@@ -487,6 +487,7 @@ class TestNetworkPolicyRestart(BaseK8sTest):
         self.validate_reachability_pre_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
         # Create a network Policy
         policy1 = self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        assert policy1.verify_on_setup()
         # Restart Kube manager
         self.restart_kube_manager()
         # Verify that policy works fine after restart
@@ -517,6 +518,7 @@ class TestNetworkPolicyRestart(BaseK8sTest):
         self.validate_reachability_pre_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
         # Create a network Policy
         policy1 = self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        assert policy1.verify_on_setup()
         # Restart Vrouter agent
         self.restart_vrouter_agent()
         # Verify that policy works fine after restart
@@ -546,6 +548,7 @@ class TestNetworkPolicyRestart(BaseK8sTest):
         self.validate_reachability_pre_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
         # Create a network Policy
         policy1 = self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        assert policy1.verify_on_setup()
         # Restart POD used as PodSelector in the rule
         assert self.restart_pod(self.client2_pod_ns3)
         # Verify that policy works fine after restart
@@ -575,6 +578,7 @@ class TestNetworkPolicyRestart(BaseK8sTest):
         self.validate_reachability_pre_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
         # Create a network Policy
         policy1 = self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        assert policy1.verify_on_setup()
         #Updating the policy
         self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3,
                                   update=True, policy_fixture=policy1)
@@ -603,6 +607,7 @@ class TestNetworkPolicyRestart(BaseK8sTest):
         self.validate_reachability_pre_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
         # Create a network Policy
         policy1 = self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        assert policy1.verify_on_setup()
         # Restart POD used as PodSelector in the rule
         self.inputs.restart_service(service_name = "docker",
                                             host_ips = self.inputs.k8s_slave_ips)
@@ -636,6 +641,7 @@ class TestNetworkPolicyRestart(BaseK8sTest):
         self.validate_reachability_pre_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
         # Create a network Policy
         policy1 = self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        assert policy1.verify_on_setup()
         # Restart POD used as PodSelector in the rule
         self.inputs.restart_service(service_name = "kubelet",
                                             host_ips = self.inputs.k8s_slave_ips)
@@ -668,6 +674,7 @@ class TestNetworkPolicyRestart(BaseK8sTest):
         self.validate_reachability_pre_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
         # Create a network Policy
         policy1 = self.create_update_policy_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
+        assert policy1.verify_on_setup()
         # Restart POD used as PodSelector in the rule
         self.inputs.restart_service(service_name = "kubelet",
                                             host_ips = [self.inputs.k8s_master_ip])
