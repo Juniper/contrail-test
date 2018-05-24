@@ -23,6 +23,7 @@ class ServiceFixture(fixtures.Fixture):
         self.metadata = {} if metadata is None else metadata
         self.spec = {} if spec is None else spec
         self.v1_h = self.k8s_client.v1_h
+        self.connections = connections
 
         self.already_exists = None
 
@@ -33,6 +34,10 @@ class ServiceFixture(fixtures.Fixture):
     def verify_on_setup(self):
         if not self.verify_service_in_contrail_api():
             self.logger.error('Service %s verification in Contrail api failed'
+                              % (self.name))
+            return False
+        if not self.verify_service_in_kube_manager():
+            self.logger.error('Service %s verification in Kube Manager failed'
                               % (self.name))
             return False
         self.logger.info('Service %s verification passed' % (self.name))
@@ -97,17 +102,30 @@ class ServiceFixture(fixtures.Fixture):
                 'Service UUID %s not yet found in contrail-api' %
                 (self.uuid))
             return False
-        exp_name = 'service-%s' % (self.name)
-        if obj.name != exp_name:
+        if self.name not in obj.name:
             self.logger.warn(
-                'Service %s name not matching that in contrail-api'
+                'Service name not matching that in contrail-api'
                 'Expected : %s, Got : %s' %
-                (self.name, exp_name, obj.name))
+                (self.name, obj.name))
             return False
         self.logger.info('Validated that Service %s is seen in '
                          'contrail-api' % (self.name))
         return True
     # end verify_service_in_contrail_api
+    
+    @retry(delay=1, tries=10)
+    def verify_service_in_kube_manager(self):
+        km_h = self.connections.get_kube_manager_h()
+        self.lb_info = km_h.get_svc_or_ingress_lb_info(uuid = self.uuid)
+        if self.lb_info:
+            self.logger.info('Service %s with uuid %s found in kube manager' 
+                             % (self.name, self.uuid))
+        else:
+            self.logger.warn('Service %s with uuid %s not found in kube manager' 
+                             % (self.name, self.uuid))
+            return False
+        return True
+    # end verify_service_in_kube_manager
 
     @retry(delay=1, tries=10)
     def get_external_ips(self):
