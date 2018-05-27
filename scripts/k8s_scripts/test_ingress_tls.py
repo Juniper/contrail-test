@@ -5,7 +5,7 @@ from tcutils.util import skip_because
 import test
 
 class TestIngressTLS(BaseK8sTest):
-
+    
     @classmethod
     def setUpClass(cls):
         super(TestIngressTLS, cls).setUpClass()
@@ -14,6 +14,10 @@ class TestIngressTLS(BaseK8sTest):
     def tearDownClass(cls):
         super(TestIngressTLS, cls).tearDownClass()
 
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        return self.get_parallel_deletion_instance_list(parallelCleanupCandidates)
+    
     @test.attr(type=['k8s_sanity']) 
     @skip_because(mx_gw = False)
     @preposttest_wrapper

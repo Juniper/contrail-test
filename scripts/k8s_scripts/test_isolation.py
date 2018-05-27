@@ -16,6 +16,10 @@ class TestNSIsolation(BaseK8sTest):
     def tearDownClass(cls):
         super(TestNSIsolation, cls).tearDownClass()
 
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        return self.get_parallel_deletion_instance_list(parallelCleanupCandidates)
+    
     def setup_common_namespaces_pods(self, prov_service = False):
         service_ns1 = None
         service_ns2 = None

@@ -11,6 +11,9 @@ from tcutils.test_lib.contrail_utils import check_xmpp_is_stable
 
 from cores import *
 
+import gevent
+from gevent import greenlet
+
 def detailed_traceback():
     buf = cStringIO.StringIO()
     cgitb.Hook(format="text", file=buf).handle(sys.exc_info())
@@ -94,6 +97,13 @@ def preposttest_wrapper(function):
         finally:
             cleanupfail = None
             cleanup_trace = ''
+            if getattr(self, 'parallel_cleanup',None):
+                parallel_cleanup_list = self.parallel_cleanup()
+                if parallel_cleanup_list:
+                    cleanup_list = [gevent.spawn(elem[0], *elem[1], **elem[2]) for elem in parallel_cleanup_list]
+                    gevent.joinall(cleanup_list)
+                else:
+                    log.info("Nothing to delete parallely")
             while self._cleanups:
                 cleanup, args, kwargs = self._cleanups.pop(-1)
                 try:

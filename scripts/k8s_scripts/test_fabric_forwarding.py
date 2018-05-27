@@ -5,6 +5,11 @@ import test
 import time
 
 class TestFabricFWD(BaseK8sTest):
+    
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        return self.get_parallel_deletion_instance_list(parallelCleanupCandidates)
+    
     @classmethod
     def setUpClass(cls):
         super(TestFabricFWD, cls).setUpClass()

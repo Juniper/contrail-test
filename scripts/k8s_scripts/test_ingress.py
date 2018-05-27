@@ -6,6 +6,10 @@ from tcutils.util import skip_because
 
 class TestIngress(BaseK8sTest):
 
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        return self.get_parallel_deletion_instance_list(parallelCleanupCandidates)
+    
     @classmethod
     def setUpClass(cls):
         super(TestIngress, cls).setUpClass()
@@ -77,7 +81,7 @@ class TestIngress(BaseK8sTest):
         host1 = 'foo.bar.com'
         host2 = 'bar.foo.com' 
         ingress_name = 'testingress' 
-       
+        import pdb;pdb.set_trace()      
         namespace = self.setup_namespace(name='default')
         assert namespace.verify_on_setup()
 

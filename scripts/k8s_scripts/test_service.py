@@ -18,6 +18,10 @@ class TestService(BaseK8sTest):
     def tearDownClass(cls):
         super(TestService, cls).tearDownClass()
 
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        return self.get_parallel_deletion_instance_list(parallelCleanupCandidates)
+
     @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_service_1(self):
@@ -206,6 +210,10 @@ class TestServiceExternalIP(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestServiceExternalIP, cls).tearDownClass()
+
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        return self.get_parallel_deletion_instance_list(parallelCleanupCandidates)
 
     @test.attr(type=['k8s_sanity'])
     @skip_because(mx_gw = False)

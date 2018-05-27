@@ -1968,6 +1968,10 @@ class TestNetworkPolicyNSIsolation(BaseK8sTest):
     def tearDownClass(cls):
         super(TestNetworkPolicyNSIsolation, cls).tearDownClass()
     
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        return self.get_parallel_deletion_instance_list(parallelCleanupCandidates)
+    
     def setup_common_namespaces_pods(self):
         namespace1 = self.setup_namespace(name = get_random_name("ns1"))
         namespace2 = self.setup_namespace(name = get_random_name("ns2"))
@@ -2197,11 +2201,15 @@ class TestNetworkPolicyRandom(BaseK8sTest):
     @classmethod
     def setUpClass(cls):
         super(TestNetworkPolicyRandom, cls).setUpClass()
-        
+
     @classmethod
     def tearDownClass(cls):
         super(TestNetworkPolicyRandom, cls).tearDownClass()
     
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        return self.get_parallel_deletion_instance_list(parallelCleanupCandidates)
+
     @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_k8s_configurations_post_policy_creation(self):

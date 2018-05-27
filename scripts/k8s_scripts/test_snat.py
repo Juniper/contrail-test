@@ -17,6 +17,10 @@ class TestSNAT(BaseK8sTest):
     def tearDownClass(cls):
         super(TestSNAT, cls).tearDownClass()
 
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        return self.get_parallel_deletion_instance_list(parallelCleanupCandidates)
+
     def setup_namespaces_pods_for_snat_test(self, isolation=False ,ip_fabric_snat=False):
         """ common routine to create the namesapces and the pods  by enabling snat
             1.create 2 namespaces (ns1,ns2 enable snat )
