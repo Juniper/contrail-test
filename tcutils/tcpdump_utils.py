@@ -24,7 +24,7 @@ def stop_tcpdump_for_intf(session, pcap, logger=None):
     return True
 
 def start_tcpdump_and_verify_pkts(obj, vm_fix, vn_fq_name, filters='-v', pcap_on_vm=False, vm_intf='eth0', svm=False,
-        run_func=False, check_tcpdump_count=True, exp_count=None, mac=None, exact_match=True, grep_string=None):
+        run_func=False, check_tcpdump_count=True, exp_count=None, mac=None, exact_match=True, grep_string=None, raw_count=False):
     session=None
     vm_fix_pcap_pid_files=[]
     pcap = None
@@ -40,7 +40,7 @@ def start_tcpdump_and_verify_pkts(obj, vm_fix, vn_fq_name, filters='-v', pcap_on
         tcpdump_files = stop_tcpdump_for_vm_intf(
             obj, session=session, pcap=pcap, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files, filters=filters, verify_on_all=verify_on_all, svm=svm)
     if check_tcpdump_count:
-        return verify_tcpdump_count(obj, session, pcap, exp_count=exp_count, mac=mac,
+        return verify_tcpdump_count(obj, session, pcap, exp_count=exp_count, mac=mac,raw_count=raw_count,
             exact_match=exact_match, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files, svm=svm, grep_string=grep_string)
 
 def start_tcpdump_for_vm_intf(obj, vm_fix, vn_fq_name, filters='-v', pcap_on_vm=False, vm_intf='eth0', svm=False):
@@ -133,14 +133,17 @@ def read_tcpdump(obj, session, pcap):
     return out
 
 @retry(delay=2, tries=6)
-def verify_tcpdump_count(obj, session, pcap, exp_count=None, mac=None,
+def verify_tcpdump_count(obj, session, pcap, exp_count=None, mac=None, raw_count=False,
         exact_match=True, vm_fix_pcap_pid_files=[], svm=False, grep_string=None):
-
     grep_string = grep_string or 'length'
-    if mac:
-        cmd = 'sudo tcpdump -nnr %s ether host %s | grep -c %s' % (pcap, mac, grep_string)
+    if raw_count:
+        new_grep_string = 'wc -l'
     else:
-        cmd = 'sudo tcpdump -nnr %s | grep -c %s' % (pcap, grep_string)
+        new_grep_string = 'grep -c %s' % grep_string
+    if mac:
+        cmd = 'sudo tcpdump -nnr %s ether host %s | %s' % (pcap, mac, new_grep_string)
+    else:
+        cmd = 'sudo tcpdump -nnr %s | %s' % (pcap, new_grep_string)
     if not vm_fix_pcap_pid_files:
         out, err = execute_cmd_out(session, cmd, obj.logger)
         count = int(out.strip('\n'))

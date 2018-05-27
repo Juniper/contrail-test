@@ -218,12 +218,12 @@ def remote_copy(src, dest, src_password=None, src_gw=None, src_gw_password=None,
                     if dest_node:
                         # Both source and destination are remote
                         local_dest = tempfile.mkdtemp()
-                        get(src_path, local_dest, use_sudo=True)
+                        get(src_path, local_dest)
                         src_path = os.path.join(local_dest, os.listdir(local_dest)[0])
                     else:
                         # Source is remote and destination is local
                         # Copied to destination
-                        get(src_path, dest_path, use_sudo=True)
+                        get(src_path, dest_path)
                         return True
                 else:
                     raise IOError("Source not found - %s No such file or directory" % src)
