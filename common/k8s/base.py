@@ -71,6 +71,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                            type=None,
                            external_ips=None,
                            frontend_port=80,
+                           nodePort=None,
                            backend_port=80):
         '''
         A simple helper method to create a service
@@ -84,14 +85,11 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         metadata.update({'name': name})
         selector_dict = {}
         labels = labels or {}
+        d1 =  {'protocol': 'TCP','port': int(frontend_port),'targetPort': int(backend_port) }
+        if nodePort:
+            d1['nodePort'] = int(nodePort)
         spec.update({
-            'ports': [
-                {
-                    'protocol': 'TCP',
-                    'port': int(frontend_port),
-                    'targetPort': int(backend_port)
-                }
-            ]
+            'ports': [d1]
         })
         if labels:
             selector_dict = {'selector': labels}
@@ -102,7 +100,6 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         if external_ips:
             external_ips_dict = {'external_i_ps': external_ips}
             spec.update(external_ips_dict)
-
         return self.useFixture(ServiceFixture(
             connections=self.connections,
             name=name,
@@ -249,7 +246,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         result = pod.verify_on_setup()
         if result:
             if path:
-                pod.run_cmd('echo %s > /usr/share/nginx/html/index.html' % (pod.name)) 
+                pod.run_cmd('echo %s > /usr/share/nginx/html/index.html' % (pod.name))
                 cmd = "cp /usr/share/nginx/html/index.html /usr/share/nginx/html/%s" %(path)
                 pod.run_cmd(cmd)
             else:
@@ -375,6 +372,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                           host=None,
                           path='',
                           port='80',
+                          nodePort=None,
                           barred_pods=None,
                           protocol=None,
                           cert=None,
@@ -396,7 +394,8 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             hit[x.name] = 0
         for x in barred_pods:
             hit_me_not[x.name] = 0
-
+        if nodePort:
+            port = nodePort
         link = '%s://%s:%s/%s' % (protocol, service_ip, port, path)
         for i in range(0, attempts):
             (ret_val, output) = self.do_wget(link, pod=test_pod, host=host,
@@ -465,11 +464,11 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             ...
         ]
         egress = [
-            { 'to': 
+            { 'to':
                 [
                     { 'pod_selector': {'role': 'temp' }
                         },
-                    {'ip_block': 
+                    {'ip_block':
                         {"cidr" : "1.2.3.4/24"},
                     },
                 ],
@@ -507,7 +506,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                     ingress_pod_selector = None
                     ingress_ns_selector = None
                     ingress_ip_block = None
-                    
+
                     from_item_dict = from_item.get('pod_selector') or {}
                     for k, v in from_item_dict.iteritems():
                         if not ingress_pod_dict:
@@ -534,7 +533,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                             ingress_ip_block_dict.update({k: v})
                     ingress_ip_block = {
                             'ip_block': ingress_ip_block_dict}
-                    
+
                     from_entries.append(ingress_pod_selector or
                                         ingress_ns_selector or
                                         ingress_ip_block)
@@ -582,7 +581,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                         egress_ns_dict['match_labels'].update({k: v})
                         egress_ns_selector = {
                             'namespace_selector': egress_ns_dict}
-                        
+
                     to_item_dict = to_item.get('ip_block') or {}
                     for k, v in to_item_dict.iteritems():
                         if not egress_ip_block_dict:
@@ -592,9 +591,9 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                         if k == "_except":
                             egress_ip_block_dict.update({k: v})
                     egress_ip_block = {
-                            'ip_block': egress_ip_block_dict}  
-                    
-                    to_entries.append(egress_pod_selector or 
+                            'ip_block': egress_ip_block_dict}
+
+                    to_entries.append(egress_pod_selector or
                                       egress_ns_selector or
                                       egress_ip_block)
                 # end for to_item
@@ -611,7 +610,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                 egress_list.append(egress_item_dict)
             # end for egress_item
         # end of egress
-        
+
         if policy_types:
             spec['policy_types'] = policy_types
         if ingress:
@@ -668,7 +667,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         '''
         metadata = metadata or {}
         spec = spec or {}
-        
+
         ingress_pods = ingress_pods
         ingress_namespaces = ingress_namespaces
         ingress_ipblock = ingress_ipblock
@@ -677,7 +676,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         egress_ipblock = egress_ipblock
         ports = ports
         egress_ports = egress_ports
-        
+
         ingress_pod_selector = None
         ingress_ns_selector = None
         ingress_ipblock_selector = None
@@ -686,7 +685,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         egress_ipblock_selector = None
         port_list = []
         egress_port_list = []
-        
+
         name = name or get_random_name('np-')
         metadata.update({'name': name})
         selector_dict = {}
@@ -710,7 +709,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
 
         if ingress_ipblock is not None:
             ingress_ipblock_selector = {'ip_block': ingress_ipblock}
-        
+
         if egress_pods is not None:
             egress_pod_dict = {'match_labels': {}}
             for k, v in egress_pods.iteritems():
@@ -722,7 +721,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             for k, v in egress_namespaces.iteritems():
                 egress_ns_dict['match_labels'].update({k: v})
             egress_ns_selector = {'namespace_selector': egress_ns_dict}
-            
+
         if egress_ipblock is not None:
             egress_ipblock_selector = {'ip_block': egress_ipblock}
 
@@ -730,7 +729,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             for port_str in ports:
                 protocol, port = port_str.split('/')
                 port_list.append({'protocol': protocol, 'port': int(port)})
-                
+
         if egress_ports is not None:
             for port_str in egress_ports:
                 protocol, port = port_str.split('/')
@@ -942,11 +941,11 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
 
     def create_snat_router(self, name):
 
-        obj =  self.connections.vnc_lib_fixture.vnc_h.create_router(name=name, 
+        obj =  self.connections.vnc_lib_fixture.vnc_h.create_router(name=name,
                                           project_obj=self.connections.vnc_lib_fixture.get_project_obj())
 
         self.addCleanup(self.connections.vnc_lib_fixture.vnc_h.delete_router, obj)
-        return obj 
+        return obj
 
     def connect_vn_with_router(self, router_obj, vn_fq_name):
 
@@ -977,16 +976,16 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         router_obj.del_virtual_machine_interface(vmi_obj)
         # Update logical router object
         self.vnc_lib.logical_router_update(router_obj)
-     
+
 
     def configure_snat_for_pod (self, pod):
-  
-        # Create logical router 
+
+        # Create logical router
         router_obj = self.create_snat_router("snat_router")
 
-        # Connect router with virtual network associated to pod 
+        # Connect router with virtual network associated to pod
         self.connect_vn_with_router(router_obj, pod.vn_fq_names[0])
- 
+
         # Configure external_gateway
         self.connections.vnc_lib_fixture.vnc_h.connect_gateway_with_router(router_obj,\
                                                   self.public_vn.public_vn_fixture.obj)
@@ -1021,8 +1020,8 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             data=data,
             **kwargs))
     # end setup_tls_secret
-    
-    def setup_vn(self, 
+
+    def setup_vn(self,
                  project_name = None,
                  connections = None,
                  inputs = None,
@@ -1034,7 +1033,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         vn_name = vn_name or get_random_name('vn_test')
         return self.useFixture(VNFixture(project_name=project_name,
                                         connections=connections,
-                                        inputs=inputs, 
+                                        inputs=inputs,
                                         vn_name=vn_name,
                                         option=option))
 
@@ -1061,9 +1060,9 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                         "Setting it to default project for few tests")
             cmd = r'crudini --set /entrypoint.sh KUBERNETES cluster_project \\${KUBERNETES_CLUSTER_PROJECT:-\\"{\'domain\':\'default-domain\'\,\'project\':\'default\'}\\"}'
             operation = "set"
-            project = "default" 
+            project = "default"
         for kube_manager in self.inputs.kube_manager_ips:
-            self.inputs.run_cmd_on_server(kube_manager, cmd, 
+            self.inputs.run_cmd_on_server(kube_manager, cmd,
                                           container='contrail-kube-manager',
                                           shell_prefix = None)
         self.restart_kube_manager()
@@ -1072,10 +1071,10 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                          operation = operation)
         return operation
     #end modify_cluster_project
-    
+
     def revert_cluster_project(self, project_name = None, operation = None):
         """
-        This method reverts the value of cluster_project after performing few 
+        This method reverts the value of cluster_project after performing few
         sanity tests.
         """
         if operation =="set":
