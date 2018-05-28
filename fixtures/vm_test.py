@@ -2447,7 +2447,7 @@ class VMFixture(fixtures.Fixture):
     def get_console_output(self):
         return self.orch.get_console_output(self.vm_obj)
 
-    @retry(delay=5, tries=10)
+    @retry(delay=5, tries=20)
     def wait_for_ssh_on_vm(self, port='22'):
         self.logger.debug('Waiting to SSH to VM %s, IP %s, Port %s' % (self.vm_name,
                                                                        self.vm_ip, port))
