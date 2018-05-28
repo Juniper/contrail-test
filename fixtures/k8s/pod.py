@@ -6,6 +6,7 @@ from kubernetes.client.rest import ApiException
 from vnc_api.vnc_api import NoIdError
 from common import log_orig as contrail_logging
 from tcutils.util import get_random_name, retry
+import gevent
 
 
 class PodFixture(fixtures.Fixture):
@@ -143,7 +144,7 @@ class PodFixture(fixtures.Fixture):
     def delete(self):
         if not self.already_exists:
             resp = self.delete_only()
-
+            gevent.sleep(0)
             assert self.verify_on_cleanup()
     # end delete
 
