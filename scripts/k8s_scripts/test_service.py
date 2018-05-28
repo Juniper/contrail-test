@@ -39,6 +39,7 @@ class TestService(BaseK8sTest):
         assert self.verify_nginx_pod(pod1)
         assert self.verify_nginx_pod(pod2)
         assert pod3.verify_on_setup()
+        assert service.verify_on_setup()
 
         # Now validate load-balancing on the service
         assert self.validate_nginx_lb([pod1, pod2], service.cluster_ip,
@@ -71,6 +72,7 @@ class TestService(BaseK8sTest):
         assert self.verify_nginx_pod(pod1)
         assert self.verify_nginx_pod(pod2)
         assert pod3.verify_on_setup()
+        assert service.verify_on_setup()
 
         # Now validate load-balancing on the service
         assert self.validate_nginx_lb([pod1, pod2], service.cluster_ip,
@@ -112,6 +114,7 @@ class TestService(BaseK8sTest):
         assert self.verify_nginx_pod(pod1)
         assert self.verify_nginx_pod(pod2)
         assert pod3.verify_on_setup()
+        assert service.verify_on_setup()
 
         if self.setup_namespace_isolation:
             expectation = False
@@ -142,6 +145,8 @@ class TestService(BaseK8sTest):
         client_pod = self.setup_busybox_pod(namespace=namespace.name)
         service = self.setup_http_service(namespace=namespace.name,
                                           labels=labels)
+        assert service.verify_on_setup()
+        
         for i in range(0, 10):
             pod = self.setup_nginx_pod(namespace=namespace.name, labels=labels)
             all_pods.append(pod)
@@ -237,6 +242,7 @@ class TestServiceExternalIP(BaseK8sTest):
         assert self.verify_nginx_pod(pod1)
         assert self.verify_nginx_pod(pod2)
         assert pod3.verify_on_setup()
+        assert service.verify_on_setup()
 
         # Now validate load-balancing on the service
         assert self.validate_nginx_lb([pod1, pod2], service.cluster_ip,
