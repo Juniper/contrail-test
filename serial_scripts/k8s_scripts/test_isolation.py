@@ -207,7 +207,8 @@ class TestCustomIsolationSerial(BaseK8sTest):
         namespace2_name = get_random_name("ns2")
         namespace1 = self.setup_namespace(name = namespace1_name)
         namespace2 = self.setup_namespace(name = namespace2_name, custom_isolation = True,
-                                           fq_network_name= vn_dict_for_namespace)
+                                           fq_network_name= vn_dict_for_namespace,
+                                           isolation=True)
         assert namespace1.verify_on_setup()
         assert namespace2.verify_on_setup()
         ns_1_label = "namespace1"
@@ -299,7 +300,7 @@ class TestCustomIsolationSerial(BaseK8sTest):
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
                                       test_pod=client2[2])
         # Disable of service isolation required or not ? For now, its working without disabling service isolation
-        #client2[4].disable_service_isolation()
+        client2[4].disable_service_isolation()
         assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
                                       test_pod=client1[2])
         self.restart_kube_manager()
