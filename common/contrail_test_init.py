@@ -281,6 +281,8 @@ class TestInputs(object):
                                           'dns_port', '8092')
         self.agent_port = read_config_option(self.config, 'services',
                                           'agent_port', '8085')
+        self.k8s_port = read_config_option(self.config, 'services',
+                                          'k8s_port', '8108')
         self.api_server_ip = read_config_option(self.config, 'services',
                                           'config_api_ip', None)
         self.analytics_api_ip = read_config_option(self.config, 'services',
@@ -798,6 +800,7 @@ class TestInputs(object):
         self.analytics_api_port = contrail_configs.get('ANALYTICS_API_PORT') or '8081'
         self.bgp_port = contrail_configs.get('CONTROL_INTROSPECT_PORT') or '8083'
         self.dns_port = contrail_configs.get('DNS_INTROSPECT_PORT') or '8092'
+        self.k8s_port = contrail_configs.get('K8S_INTROSPECT_PORT') or '8108'
         self.agent_port = '8085'
         self.api_server_ip = contrail_configs.get('CONFIG_API_VIP')
         self.analytics_api_ip = contrail_configs.get('ANALYTICS_API_VIP')

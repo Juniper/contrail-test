@@ -43,9 +43,11 @@ class TestService(BaseK8sTest):
                                     labels=labels)
         pod3 = self.setup_busybox_pod(namespace=namespace.name)
 
+
         assert self.verify_nginx_pod(pod1)
         assert self.verify_nginx_pod(pod2)
         assert pod3.verify_on_setup()
+        assert service.verify_on_setup()
 
         # Now validate load-balancing on the service
         assert self.validate_nginx_lb([pod1, pod2], service.cluster_ip,

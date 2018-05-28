@@ -1320,6 +1320,44 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                         port_pool[protocol]['bound_port_list'].append(bound_port.text)
         return port_pool
 
+    def get_fw_policy(self, policy_fq_name = None):
+        '''
+        Get the list of all firewall policies created on agent
+        '''
+        path = 'Snh_AclReq?'
+        xpath = './__AclResp_list/AclResp/acl_list'
+        p = self.dict_get(path)
+        fwPolicydict = EtreeToDict(xpath).get_all_entry(p)
+        fwPolicyList = fwPolicydict['acl_list']
+        if not policy_fq_name:
+            return fwPolicyList
+        else:
+            policy_index = [i for i, x in enumerate(fwPolicyList) if x['name']==policy_fq_name]
+            if policy_index:
+                return fwPolicyList[policy_index[0]]
+            else:
+                return []
+    # end get_fw_policy
+    
+    def get_aps(self, aps_fq_name = None):
+        '''
+        Get list of all Application Policy Set created on agent
+        '''
+        path = 'Snh_ApplicationPolicySetReq?'
+        xpath = './__ApplicationPolicySetResp_list/ApplicationPolicySetResp/application_policy_set_list'
+        p = self.dict_get(path)
+        apsdict = EtreeToDict(xpath).get_all_entry(p)
+        apsList = apsdict['application_policy_set_list']
+        if not aps_fq_name:
+            return apsList
+        else:
+            policy_index = [i for i, x in enumerate(apsList) if x['name']==aps_fq_name]
+            if policy_index:
+                return apsList[policy_index[0]]
+            else:
+                return []
+    # end get_aps
+
 if __name__ == '__main__':
     v = AgentInspect('10.204.217.198')
     import pdb; pdb.set_trace()

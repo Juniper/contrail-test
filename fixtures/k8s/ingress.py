@@ -32,7 +32,8 @@ class IngressFixture(fixtures.Fixture):
         self.tls = [] if tls is None else tls
         self.default_backend = {} if default_backend is None else default_backend
         self.v1_beta_h = self.k8s_client.v1_beta_h
-
+        self.connections = connections
+        
         self.already_exists = None
 
     def setUp(self):
@@ -46,6 +47,10 @@ class IngressFixture(fixtures.Fixture):
             return False
         if not self.verify_ingress_in_contrail_api():
             self.logger.error('Ingress %s verification in Contrail api failed'
+                              % (self.name))
+            return False
+        if not self.verify_ingress_in_kube_manager():
+            self.logger.error('Ingress %s verification in Kube Manager failed'
                               % (self.name))
             return False
         self.logger.info('Ingress %s verification passed' % (self.name))
@@ -148,3 +153,17 @@ class IngressFixture(fixtures.Fixture):
                          self.name))
         return True
     # end verify_ingress_in_k8s
+    
+    @retry(delay=1, tries=10)
+    def verify_ingress_in_kube_manager(self):
+        km_h = self.connections.get_kube_manager_h()
+        self.lb_info = km_h.get_svc_or_ingress_lb_info(uuid = self.uuid)
+        if self.lb_info:
+            self.logger.info('Ingress %s with uuid %s found in kube manager' 
+                             % (self.name, self.uuid))
+        else:
+            self.logger.warn('Ingress %s with uuid %s not found in kube manager' 
+                             % (self.name, self.uuid))
+            return False
+        return True
+    # end verify_service_in_kube_manager
