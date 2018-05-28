@@ -176,7 +176,8 @@ class TestCustomIsolation(BaseK8sTest):
         namespace1 = self.setup_namespace(name = namespace1_name)
         assert namespace1.verify_on_setup()
         namespace2 = self.setup_namespace(name = namespace2_name, custom_isolation = True,
-                                           fq_network_name= vn_dict_for_namespace)
+                                           fq_network_name= vn_dict_for_namespace,
+                                           isolation=True)
         assert namespace2.verify_on_setup()
         ns_1_label = "namespace1"
         ns_2_label = "namespace2"
@@ -276,8 +277,7 @@ class TestCustomIsolation(BaseK8sTest):
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
                                       test_pod=client2[2])
         #check 3
-        # Disable of service isolation required or not ? For now, its working without disabling service isolation
-        #client2[4].disable_service_isolation()
+        client2[4].disable_service_isolation()
         assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
                                       test_pod=client1[2])
     #end test_service_custom_isolation
