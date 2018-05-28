@@ -69,6 +69,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                            type=None,
                            external_ips=None,
                            frontend_port=80,
+                           nodePort=None,
                            backend_port=80):
         '''
         A simple helper method to create a service
@@ -82,14 +83,11 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         metadata.update({'name': name})
         selector_dict = {}
         labels = labels or {}
+        d1 =  {'protocol': 'TCP','port': int(frontend_port),'targetPort': int(backend_port) }
+        if nodePort:
+            d1['nodePort'] = int(nodePort)
         spec.update({
-            'ports': [
-                {
-                    'protocol': 'TCP',
-                    'port': int(frontend_port),
-                    'targetPort': int(backend_port)
-                }
-            ]
+            'ports': [d1]
         })
         if labels:
             selector_dict = {'selector': labels}
@@ -100,7 +98,6 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         if external_ips:
             external_ips_dict = {'external_i_ps': external_ips}
             spec.update(external_ips_dict)
-
         return self.useFixture(ServiceFixture(
             connections=self.connections,
             name=name,
@@ -373,6 +370,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                           host=None,
                           path='',
                           port='80',
+                          nodePort=None,
                           barred_pods=None,
                           protocol=None,
                           cert=None,
@@ -394,7 +392,8 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             hit[x.name] = 0
         for x in barred_pods:
             hit_me_not[x.name] = 0
-
+        if nodePort:
+            port = nodePort
         link = '%s://%s:%s/%s' % (protocol, service_ip, port, path)
         for i in range(0, attempts):
             (ret_val, output) = self.do_wget(link, pod=test_pod, host=host,

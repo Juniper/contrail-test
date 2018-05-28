@@ -50,11 +50,12 @@ class ServiceFixture(fixtures.Fixture):
         self.metadata_obj = self.obj.metadata
         self.kind = self.obj.kind
         self.type = self.obj.spec.type
-
         # While creating the object it is not getting updated with external IP
         # So reading it again . Will try to read it couple of times
         if self.type == 'LoadBalancer' or 'external_i_ps' in self.spec:
-            self.get_external_ips()
+            self.get_external_ips() 
+        if self.type == 'NodePort' or 'nodePort' in self.spec:
+            self.nodePort = self.obj.spec.ports[0].node_port
 
     def read(self):
         try:
