@@ -17,6 +17,10 @@ class TestFabricFWDRestarts(BaseK8sTest):
     def tearDownClass(cls):
         super(TestFabricFWDRestarts, cls).tearDownClass()
 
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        return self.get_parallel_deletion_instance_list(parallelCleanupCandidates)
+    
     def setup_namespaces_pods_for_fabric_restart(self, isolation=False,ip_fabric_forwarding=False):
         """ common routine to create the namesapces and the pods  by enabling the fabric forwarding
             1.create 2 namespaces (ns1,ns2:enable fabric forwarding)

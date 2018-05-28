@@ -13,6 +13,10 @@ class TestPodScale(BaseK8sTest):
     def tearDownClass(cls):
         super(TestPodScale, cls).tearDownClass()
 
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        return self.get_parallel_deletion_instance_list(parallelCleanupCandidates)
+    
     @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_many_pods(self):

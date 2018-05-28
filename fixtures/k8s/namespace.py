@@ -7,6 +7,7 @@ from vnc_api.vnc_api import NoIdError
 
 from common import log_orig as contrail_logging
 from tcutils.util import get_random_name, retry, get_lock
+import gevent
 
 
 class NamespaceFixture(fixtures.Fixture):
@@ -190,6 +191,7 @@ class NamespaceFixture(fixtures.Fixture):
             body = client.V1DeleteOptions()
             self.logger.info('Deleting namespace %s' % (self.name))
             self.k8s_client.v1_h.delete_namespace(self.name, body)
+            gevent.sleep(0)
             assert self.verify_on_cleanup()
     # end delete
 
