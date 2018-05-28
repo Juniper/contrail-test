@@ -26,6 +26,7 @@ from tcutils.contrail_status_check import *
 from vm_test import VMFixture
 from tcutils.tcpdump_utils import *
 from tcutils.fabutils import *
+from loadbalancer_vnc_api import *
 
 class QosTestBase(BaseNeutronTest):
 
@@ -621,19 +622,30 @@ class QosTestBase(BaseNeutronTest):
 
     def update_policy_qos_config(self, policy_fixture, qos_config_fixture, 
                                  operation = "add", entry_index =0):
-        policy_entry = policy_fixture.policy_obj['policy']['entries']
+        policy_entry = policy_fixture.get_entries()
         new_policy_entry = policy_entry
         if operation == "add":
             qos_obj_fq_name_str = self.vnc_lib.qos_config_read(
                                     id = qos_config_fixture.uuid).\
                                     get_fq_name_str()
-            new_policy_entry['policy_rule'][entry_index]['action_list']\
-                            ['qos_action'] = qos_obj_fq_name_str
+            if type(new_policy_entry) is PolicyEntriesType:
+                new_policy_entry.policy_rule[entry_index].action_list.qos_action = \
+                                            qos_obj_fq_name_str
+                policy_data = new_policy_entry
+            else:
+                new_policy_entry['policy_rule'][entry_index]['action_list']\
+                                        ['qos_action'] = qos_obj_fq_name_str
+                policy_data = {'policy': {'entries': new_policy_entry}}
         elif operation == "remove":
-            new_policy_entry['policy_rule'][entry_index]['action_list']\
+            if type(new_policy_entry) is PolicyEntriesType:
+                new_policy_entry.policy_rule[entry_index].action_list.qos_action = ''
+                policy_data = new_policy_entry
+            else:
+                new_policy_entry['policy_rule'][entry_index]['action_list']\
                             ['qos_action'] = ''
-        policy_id = policy_fixture.policy_obj['policy']['id']
-        policy_data = {'policy': {'entries': new_policy_entry}}
+                policy_data = {'policy': {'entries': new_policy_entry}}
+        policy_id = policy_fixture.get_id()
+        #policy_data = {'policy': {'entries': new_policy_entry}}
         policy_fixture.update_policy(policy_id, policy_data)
     
     def update_sg_qos_config(self, sg_fixture, qos_config_fixture, 
