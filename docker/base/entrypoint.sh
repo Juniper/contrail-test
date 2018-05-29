@@ -91,7 +91,7 @@ else
             rv_run_test=$?
             ;;
         vcenter)
-            $run_tests -T vcenter --send-mail -U -t $EXTRA_RUN_TEST_ARGS
+            $run_tests -T vcenter --send-mail -U $EXTRA_RUN_TEST_ARGS
             rv_run_test=$?
             ;;
         quick_sanity)
