@@ -564,6 +564,16 @@ class TestInputs(object):
         host_dict = self.host_data[host]
         if service.lower() == 'vrouter':
             return self.get_ips_of_host(host, 'vhost0')[0]
+        elif service.lower() == 'control':
+            ip_list = self.contrail_configs.get('CONTROL_NODES')
+            if not ip_list:
+                return
+            else:
+                ips = self.get_ips_of_host(host)
+                for ip in ip_list.split(','):
+                    if ip in ips:
+                        self.host_data[host]['control_data_ip'] = ip
+                        return ip
         elif service.lower() == 'openstack':
             nic = host_dict['roles']['openstack'].get('network_interface') \
                   if host_dict['roles']['openstack'] else \
@@ -695,6 +705,7 @@ class TestInputs(object):
                 self.bgp_ips.append(host_data['host_ip'])
                 self.bgp_control_ips.append(service_ip)
                 self.bgp_names.append(hostname)
+                host_data_ip = host_control_ip = service_ip
             if 'webui' in roles:
                 service_ip = self.get_service_ip(host_data['host_ip'], 'webui')
                 self.webui_ip = host_data['host_ip']
