@@ -38,6 +38,12 @@ class FirewallPolicyFixture(vnc_api_test.VncLibFixture):
         else:
             return self.delete()
 
+    def get_object(self):
+        return self.vnc_h.read_firewall_policy(id=self.uuid)
+
+    def get_draft(self):
+        return self.vnc_h.read_firewall_policy(id=self.uuid, draft=True)
+
     def read(self):
         obj = self.vnc_h.read_firewall_policy(id=self.uuid)
         self.name = obj.name
@@ -59,6 +65,8 @@ class FirewallPolicyFixture(vnc_api_test.VncLibFixture):
                                      fq_name=self.fq_name,
                                      rules=self.rules)
                 self.created = True
+                self.logger.info('Created Firewall Policy %s(%s)'%(self.name,
+                                                                  self.uuid))
         if not self.created:
             self.read()
 
@@ -73,4 +81,7 @@ class FirewallPolicyFixture(vnc_api_test.VncLibFixture):
 
     def delete(self):
         self.logger.info('Deleting Firewall Policy %s(%s)'%(self.name, self.uuid))
-        self.vnc_h.delete_firewall_policy(id=self.uuid)
+        try:
+            self.vnc_h.delete_firewall_policy(id=self.uuid)
+        except NoIdError:
+            pass

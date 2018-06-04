@@ -42,9 +42,10 @@ class _GenericTestBaseMethods():
         return ret
     # end set_global_asn
 
-    def perform_cleanup(self, obj):
+    def perform_cleanup(self, obj, remove_cleanup=True):
         if getattr(obj, 'cleanUp', None):
-            self.remove_from_cleanups(obj.cleanUp)
+            if remove_cleanup:
+                self.remove_from_cleanups(obj.cleanUp)
             obj.cleanUp()
     # end perform_cleanup
 
@@ -155,7 +156,7 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
     @classmethod
     def create_only_project(cls, project_name=None, **kwargs):
         project_name = project_name or get_random_name('project')
-        connections = kwargs.get('connections') or cls.connections
+        connections = kwargs.pop('connections', None) or cls.connections
         project_fixture = ProjectFixture(connections=connections,
                           project_name=project_name, **kwargs)
         project_fixture.setUp()
@@ -167,6 +168,14 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
             self.addCleanup(project_fixture.cleanUp)
         return project_fixture
 
+    def add_user_to_project(self, project_name=None, username=None, role='admin', **kwargs):
+        connections = kwargs.get('connections') or self.connections
+        username = username or self.inputs.stack_user
+        project_name = project_name or self.inputs.project_name
+        connections.auth.add_user_to_project(username, project_name, role)
+        self.addCleanup(connections.auth.remove_user_from_project,
+                        username, role, project_name)
+
     @classmethod
     def create_only_vn(cls, vn_name=None, vn_subnets=None, vxlan_id=None,
                    enable_dhcp=True, **kwargs):
@@ -174,8 +183,8 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         '''
         if not vn_name:
             vn_name = get_random_name('vn')
-        project_name = kwargs.get('project_name') or cls.connections.project_name
-        connections = kwargs.get('connections') or cls.connections
+        project_name = kwargs.pop('project_name', None) or cls.connections.project_name
+        connections = kwargs.pop('connections', None) or cls.connections
         vn_fixture = VNFixture(project_name=project_name,
                       connections=connections,
                       inputs=connections.inputs,
@@ -209,8 +218,8 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         vn_obj = None
         if vn_fixture:
             vn_obj = vn_fixture.obj
-        project_name = kwargs.get('project_name') or cls.connections.project_name
-        connections = kwargs.get('connections') or cls.connections
+        project_name = kwargs.pop('project_name', None) or cls.connections.project_name
+        connections = kwargs.pop('connections', None) or cls.connections
         vm_obj = VMFixture(
                     project_name=project_name,
                     connections=connections,
@@ -229,7 +238,7 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
                   flavor='contrail_flavor_small',
                   image_name='ubuntu-traffic',
                   port_ids=[], **kwargs):
-        cleanup = kwargs.get('cleanup', True)
+        cleanup = kwargs.pop('cleanup', True)
         vm_fixture = self.create_only_vm(vn_fixture=vn_fixture,
                         vm_name=vm_name,
                         node_name=node_name,
@@ -317,19 +326,6 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         connections = connections or self.connections
         name = name or get_random_name('ipam')
         return self.useFixture(IPAMFixture(name, connections))
-
-    def config_aap(self, port, prefix, prefix_len=32, mac='', aap_mode='active-standby', contrail_api=False):
-        self.logger.info('Configuring AAP on port %s' %port['id'])
-        if is_v6(prefix):
-            prefix_len = 128
-        if contrail_api:
-            self.vnc_h.add_allowed_address_pair(port['id'], prefix, prefix_len, mac, aap_mode)
-        else:
-            port_dict = {'allowed_address_pairs': [
-                {"ip_address": prefix + '/' + str(prefix_len) , "mac_address": mac}]}
-            port_rsp = self.update_port(port['id'], port_dict)
-        return True
-    #end config_aap
 
     def create_floatingip_pool(self, floating_vn, name=None):
         fip_pool_name = name if name else get_random_name('fip')
@@ -448,7 +444,7 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
                   security_groups=[],
                   extra_dhcp_opts=[],
                   **kwargs):
-        cleanup = kwargs.get('cleanup', True)
+        cleanup = kwargs.pop('cleanup', True)
         port_fixture = self.setup_only_vmi(vn_id=vn_id,fixed_ips=fixed_ips,
                                            mac_address=mac_address,
                                            security_groups=security_groups,
@@ -512,7 +508,7 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         policy_fqname = policy_fixture.policy_fq_name
         for fixture in vn_fixtures:
             fixture.bind_policies([policy_fqname])
-            self.addCleanup(fixture.unbind_policies, [policy_fqname])
+            self.addCleanup(fixture.unbind_policies, policy_fq_names=[policy_fqname])
 
     def create_policy(self, policy_name=None, rules=[], **kwargs):
         policy_name = policy_name or get_random_name('policy')
@@ -607,6 +603,28 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
             return False
         return True
     # end check_vms_booted
+
+    @classmethod
+    def check_vms_active(cls, vms_list, do_assert=True):
+        '''
+        If instances call this method, they may need to set do_assert to False
+        so that the fixture cleanup routines automatically take care of deletion
+        '''
+        failed = False
+        for vm_fixture in vms_list:
+            if not vm_fixture.wait_till_vm_is_active():
+                msg = 'VM %s has not booted' %(vm_fixture.vm_name)
+                cls.logger.error(msg)
+                failed = True
+                break
+        if failed and do_assert:
+            for vm_fixture in vms_list:
+                vm_fixture.cleanUp()
+            assert False, 'One or more vm-boots failed. Check logs'
+        if failed:
+            return False
+        return True
+    # end check_vms_active
 
     @classmethod
     def set_af(cls, family='v4'):

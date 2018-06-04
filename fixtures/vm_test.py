@@ -3064,6 +3064,10 @@ class VMFixture(fixtures.Fixture):
             fabric ip is not assigned as FIP ip to the VMI", vn_fq_name)
         return False
 
+    def setup_subintf(self, device=None, vlan=None):
+        cmd = 'vconfig add %s %s; dhclient %s.%s'%(device, vlan, device, vlan)
+        self.run_cmd_on_vm([cmd], timeout=60, as_sudo=True)
+
     def __repr__(self):
         return '<VMFixture: %s>' % (self.vm_name)
 # end VMFixture

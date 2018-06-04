@@ -39,6 +39,12 @@ class ApplicationPolicySetFixture(vnc_api_test.VncLibFixture):
         else:
             return self.delete()
 
+    def get_object(self):
+        return self.vnc_h.read_application_policy_set(id=self.uuid)
+
+    def get_draft(self):
+        return self.vnc_h.read_application_policy_set(id=self.uuid, draft=True)
+
     def read(self):
         obj = self.vnc_h.read_application_policy_set(id=self.uuid)
         self.name = obj.name
@@ -46,7 +52,7 @@ class ApplicationPolicySetFixture(vnc_api_test.VncLibFixture):
         self.parent_type = obj.parent_type
         self.scope = 'local' if obj.parent_type == 'project' else 'global'
         self.policies = [{'uuid': policy['uuid'], 'seq_no': policy['sequence']}
-                         for policy in obj.get_firewall_policy_refs()]
+                         for policy in obj.get_firewall_policy_refs() or []]
 
     def create(self):
         if not self.uuid:
@@ -59,6 +65,8 @@ class ApplicationPolicySetFixture(vnc_api_test.VncLibFixture):
                                      parent_type=self.parent_type,
                                      policies=self.policies)
                 self.created = True
+                self.logger.info('Created APS %s(%s)'%(self.name,
+                                                       self.uuid))
         if not self.created:
             self.read()
 
@@ -73,7 +81,10 @@ class ApplicationPolicySetFixture(vnc_api_test.VncLibFixture):
 
     def delete(self):
         self.logger.info('Deleting Application Policy Set %s(%s)'%(self.name, self.uuid))
-        self.vnc_h.delete_application_policy_set(id=self.uuid)
+        try:
+            self.vnc_h.delete_application_policy_set(id=self.uuid)
+        except NoIdError:
+            pass
 
     def add_tag(self, application):
         is_global = False if getattr(application, 'parent_type', None) == 'project' else True

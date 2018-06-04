@@ -39,6 +39,12 @@ class ServiceGroupFixture(vnc_api_test.VncLibFixture):
         else:
             return self.delete()
 
+    def get_object(self):
+        return self.vnc_h.read_service_group(id=self.uuid)
+
+    def get_draft(self):
+        return self.vnc_h.read_service_group(id=self.uuid, draft=True)
+
     def read(self):
         obj = self.vnc_h.read_service_group(id=self.uuid)
         self.name = obj.name
@@ -63,6 +69,8 @@ class ServiceGroupFixture(vnc_api_test.VncLibFixture):
                                      parent_type=self.parent_type,
                                      services=self.services)
                 self.created = True
+                self.logger.info('Created Service Group %s(%s)'%(self.name,
+                                                                self.uuid))
         if not self.created:
             self.read()
 
@@ -76,5 +84,7 @@ class ServiceGroupFixture(vnc_api_test.VncLibFixture):
 
     def delete(self):
         self.logger.info('Deleting Service Group %s(%s)'%(self.name, self.uuid))
-        self.vnc_h.delete_service_group(id=self.uuid)
-
+        try:
+            self.vnc_h.delete_service_group(id=self.uuid)
+        except NoIdError:
+            pass

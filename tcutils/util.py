@@ -1212,3 +1212,10 @@ def get_ips_of_host(host, nic=None, **kwargs):
     cidrs = output.split('\n') if output else []
     return [str(IPNetwork(cidr).ip) for cidr in cidrs]
 #end get_ips_of_host
+
+class SafeList(list):
+    def get(self, index, default=None):
+        try:
+            return super(SafeList, self).__getitem__(index)
+        except IndexError:
+            return default
