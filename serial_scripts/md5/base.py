@@ -75,7 +75,7 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
                         cmd.append('set groups md5_tests routing-options autonomous-system %s' % router_params['asn'])
                         cmd.append('set groups md5_tests protocols bgp group md5_tests type internal')
                         cmd.append('set groups md5_tests protocols bgp group md5_tests multihop')
-                        cmd.append('set groups md5_tests protocols bgp group md5_tests local-address %s' % router_params['mgmt_ip'])
+                        cmd.append('set groups md5_tests protocols bgp group md5_tests local-address %s' % router_params['control_ip'])
                         cmd.append('set groups md5_tests protocols bgp group md5_tests hold-time 90')
                         cmd.append('set groups md5_tests protocols bgp group md5_tests keep all')
                         cmd.append('set groups md5_tests protocols bgp group md5_tests family inet-vpn unicast')
