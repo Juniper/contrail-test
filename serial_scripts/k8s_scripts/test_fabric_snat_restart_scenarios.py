@@ -14,12 +14,7 @@ class TestFabricSNATRestarts(BaseK8sTest):
     @classmethod
     def setUpClass(cls):
         super(TestFabricSNATRestarts, cls).setUpClass()
-        if cls.inputs.get_service_ip(cls.inputs.bgp_control_ips[0],service="CONTROL"):
-            cls.ip_to_ping =  cls.inputs.get_service_ip(cls.inputs.bgp_control_ips[0],
-                                                        service="CONTROL")
-        else:
-            cls.ip_to_ping = cls.inputs.get_service_ip(cls.inputs.bgp_control_ips[0],
-                                                       service="CONTROLLER")
+        cls.ip_to_ping = cls.inputs.bgp_control_ips[0]
 
     @classmethod
     def tearDownClass(cls):
