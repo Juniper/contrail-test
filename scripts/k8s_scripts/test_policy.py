@@ -10,8 +10,11 @@ import time
 import test
 from tcutils.util import skip_because
 
-class TestNetworkPolicy(BaseK8sTest):
+import gevent
+from gevent import greenlet
 
+class TestNetworkPolicy(BaseK8sTest):
+        
     @classmethod
     def setUpClass(cls):
         super(TestNetworkPolicy, cls).setUpClass()
@@ -115,24 +118,26 @@ class TestNetworkPolicy(BaseK8sTest):
 
     @classmethod
     def tearDownClass(cls):
+        cleanup_list = list()
         if getattr(cls, 'web_pod_ns1', None):
-            cls.web_pod_ns1.cleanUp()
+            cleanup_list.append(gevent.spawn(cls.web_pod_ns1.cleanUp))
         if getattr(cls, 'web_pod_ns2', None):
-            cls.web_pod_ns2.cleanUp()
+            cleanup_list.append(gevent.spawn(cls.web_pod_ns2.cleanUp))
         if getattr(cls, 'client1_pod_ns1', None):
-            cls.client1_pod_ns1.cleanUp()
+            cleanup_list.append(gevent.spawn(cls.client1_pod_ns1.cleanUp))
         if getattr(cls, 'client2_pod_ns1', None):
-            cls.client2_pod_ns1.cleanUp()
+            cleanup_list.append(gevent.spawn(cls.client2_pod_ns1.cleanUp))
         if getattr(cls, 'client1_pod_ns2', None):
-            cls.client1_pod_ns2.cleanUp()
+            cleanup_list.append(gevent.spawn(cls.client1_pod_ns2.cleanUp))
         if getattr(cls, 'client2_pod_ns2', None):
-            cls.client2_pod_ns2.cleanUp()
+            cleanup_list.append(gevent.spawn(cls.client2_pod_ns2.cleanUp))
         if getattr(cls, 'client1_pod_ns3', None):
-            cls.client1_pod_ns3.cleanUp()
+            cleanup_list.append(gevent.spawn(cls.client1_pod_ns3.cleanUp))
         if getattr(cls, 'client2_pod_ns3', None):
-            cls.client2_pod_ns3.cleanUp()
+            cleanup_list.append(gevent.spawn(cls.client2_pod_ns3.cleanUp))
         if getattr(cls, 'client3_pod_ns3', None):
-            cls.client3_pod_ns3.cleanUp()
+            cleanup_list.append(gevent.spawn(cls.client3_pod_ns3.cleanUp))
+        gevent.joinall(cleanup_list)
         if getattr(cls, 'ns2', None):
             cls.ns2.cleanUp()
         if getattr(cls, 'ns3', None):
@@ -1967,7 +1972,11 @@ class TestNetworkPolicyNSIsolation(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestNetworkPolicyNSIsolation, cls).tearDownClass()
-    
+
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        self.delete_in_parallel(parallelCleanupCandidates)
+
     def setup_common_namespaces_pods(self):
         namespace1 = self.setup_namespace(name = get_random_name("ns1"))
         namespace2 = self.setup_namespace(name = get_random_name("ns2"))
@@ -2201,6 +2210,10 @@ class TestNetworkPolicyRandom(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestNetworkPolicyRandom, cls).tearDownClass()
+
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        self.delete_in_parallel(parallelCleanupCandidates)
     
     @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
@@ -2825,22 +2838,24 @@ class TestNetworkPolicyServiceIngress(BaseK8sTest):
 
     @classmethod
     def tearDownClass(cls):
+        cleanup_list = list()
         if getattr(cls, 'web1_pod_ns1', None):
-            cls.web1_pod_ns1.cleanUp()
+            cleanup_list.append(gevent.spawn(cls.web1_pod_ns1.cleanUp))
         if getattr(cls, 'web2_pod_ns1', None):
-            cls.web2_pod_ns1.cleanUp()
+            cleanup_list.append(gevent.spawn(cls.web2_pod_ns1.cleanUp))
         if getattr(cls, 'web1_pod_ns2', None):
-            cls.web1_pod_ns2.cleanUp()
+            cleanup_list.append(gevent.spawn(cls.web1_pod_ns2.cleanUp))
         if getattr(cls, 'web2_pod_ns2', None):
-            cls.web2_pod_ns2.cleanUp()
+            cleanup_list.append(gevent.spawn(cls.web2_pod_ns2.cleanUp))
         if getattr(cls, 'client1_pod_ns1', None):
-            cls.client1_pod_ns1.cleanUp()
+            cleanup_list.append(gevent.spawn(cls.client1_pod_ns1.cleanUp))
         if getattr(cls, 'client2_pod_ns1', None):
-            cls.client2_pod_ns1.cleanUp()
+            cleanup_list.append(gevent.spawn(cls.client2_pod_ns1.cleanUp))
         if getattr(cls, 'client1_pod_ns2', None):
-            cls.client1_pod_ns2.cleanUp()
+            cleanup_list.append(gevent.spawn(cls.client1_pod_ns2.cleanUp))
         if getattr(cls, 'client2_pod_ns2', None):
-            cls.client2_pod_ns2.cleanUp()
+            cleanup_list.append(gevent.spawn(cls.client2_pod_ns2.cleanUp))
+        gevent.joinall(cleanup_list)
         if getattr(cls, 'ns2', None):
             cls.ns2.cleanUp()
         if getattr(cls, 'ns1', None):

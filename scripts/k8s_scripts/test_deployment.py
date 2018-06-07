@@ -4,7 +4,11 @@ import time
 import test
 
 class TestPodDeployment(BaseK8sTest):
-   
+
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        self.delete_in_parallel(parallelCleanupCandidates)
+       
     @preposttest_wrapper
     def test_deployment_1(self):
         '''

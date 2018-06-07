@@ -17,7 +17,11 @@ class TestNSIsolationSerial(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestNSIsolationSerial, cls).tearDownClass()
-        
+
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        self.delete_in_parallel(parallelCleanupCandidates)
+    
     def setup_common_namespaces_pods(self, prov_service = False, prov_ingress = False):
         service_ns1, ingress_ns1 = None, None
         service_ns2, ingress_ns2 = None, None
@@ -184,7 +188,11 @@ class TestCustomIsolationSerial(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestCustomIsolationSerial, cls).tearDownClass()
-        
+
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        self.delete_in_parallel(parallelCleanupCandidates)
+    
     def setup_common_namespaces_pods(self, prov_service = False):
         service_ns1 = None
         service_ns2 = None
@@ -327,6 +335,10 @@ class TestProjectIsolationSerial(BaseK8sTest):
     def tearDownClass(cls):
         super(TestProjectIsolationSerial, cls).tearDownClass()
 
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        self.delete_in_parallel(parallelCleanupCandidates)
+    
     def setup_common_namespaces_pods(self, prov_service = False,
                                     prov_ingress = False,
                                     isolation = False):
