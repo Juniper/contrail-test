@@ -6,6 +6,7 @@ import ipaddress
 import vnc_api_test
 import uuid
 from tcutils.util import get_random_name, retry
+from tcutils.gevent_lib import exec_in_parallel
 from tcutils.verification_util import *
 from lxml import etree
 from k8s.pod import PodFixture
@@ -19,6 +20,7 @@ from common.connections import ContrailConnections
 from common import create_public_vn
 from common.base import GenericTestBase
 from vn_test import VNFixture
+import gevent
 
 K8S_SERVICE_IPAM = ['default-domain', 'default', 'service-ipam']
 K8S_PUBLIC_VN_NAME = '__public__'
@@ -1118,4 +1120,25 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         cls.vnc_h.delete_bgp_router(cls.name)
     #end fabric_fabric_gw
 
+    def delete_in_parallel(self, fixture_type_list):
+        ''' Populates list of objects to be deleted parallely based on
+            Fixture Type as input like VmFixture
+            Then It deletes the objects in the list parallely
+        '''
+        parallel_cleanup_list = list()
+        for fn in self._cleanups[:]:
+            try:
+                if fn[0].im_self.__class__.__name__ in fixture_type_list:
+                    index = self._cleanups.index(fn)
+                    parallel_cleanup_list.append(fn)
+                    self._cleanups.pop(index)
+            except AttributeError:
+                pass
+        if parallel_cleanup_list:
+            greenlets = exec_in_parallel(parallel_cleanup_list)
+            gevent.joinall(greenlets)
+        else:
+            self.logger.warn("Nothing to delete parallely")
+            return
+    #end delete_in_parallel
 

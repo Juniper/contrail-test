@@ -14,6 +14,10 @@ class TestIngressTLS(BaseK8sTest):
     def tearDownClass(cls):
         super(TestIngressTLS, cls).tearDownClass()
 
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        self.delete_in_parallel(parallelCleanupCandidates)
+    
     @test.attr(type=['k8s_sanity']) 
     @skip_because(mx_gw = False)
     @preposttest_wrapper

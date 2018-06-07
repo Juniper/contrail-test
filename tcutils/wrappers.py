@@ -94,6 +94,8 @@ def preposttest_wrapper(function):
         finally:
             cleanupfail = None
             cleanup_trace = ''
+            if getattr(self, 'parallel_cleanup',None):
+                parallel_cleanup_list = self.parallel_cleanup()
             while self._cleanups:
                 cleanup, args, kwargs = self._cleanups.pop(-1)
                 try:
