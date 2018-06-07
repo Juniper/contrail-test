@@ -14,6 +14,10 @@ class TestIngress(BaseK8sTest):
     def tearDownClass(cls):
         super(TestIngress, cls).tearDownClass()
 
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        self.delete_in_parallel(parallelCleanupCandidates)
+    
     @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_ingress_1(self):

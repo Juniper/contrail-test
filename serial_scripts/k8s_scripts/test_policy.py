@@ -17,7 +17,11 @@ class TestNetworkPolicyProjectIsolation(BaseK8sTest):
     @classmethod
     def tearDownClass(cls):
         super(TestNetworkPolicyProjectIsolation, cls).tearDownClass()
-        
+
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        self.delete_in_parallel(parallelCleanupCandidates)
+    
     def setup_common_namespaces_pods(self):
         operation = self.modify_cluster_project()
         namespace1 = self.setup_namespace(name = "ns1")

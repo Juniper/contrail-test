@@ -143,7 +143,6 @@ class PodFixture(fixtures.Fixture):
     def delete(self):
         if not self.already_exists:
             resp = self.delete_only()
-
             assert self.verify_on_cleanup()
     # end delete
 

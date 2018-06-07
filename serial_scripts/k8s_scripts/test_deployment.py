@@ -15,6 +15,10 @@ class TestDeployment(BaseK8sTest):
     def tearDownClass(cls):
         super(TestDeployment, cls).tearDownClass()
 
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        self.delete_in_parallel(parallelCleanupCandidates)
+    
     @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_deployment_with_kube_manager_restart(self):
