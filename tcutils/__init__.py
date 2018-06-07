@@ -1,6 +1,6 @@
 """Module to hold the test case related utilites.
 """
-import platform
+'''import platform
 
 from fabric.api import local
 
@@ -15,4 +15,4 @@ def get_release(pkg='contrail-install-packages'):
     if 'is not installed' in pkg_ver or 'is not available' in pkg_ver:
         print "Package %s not installed." % pkg
         return None
-    return pkg_ver
+    return pkg_ver'''
