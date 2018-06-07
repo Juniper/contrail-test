@@ -347,208 +347,214 @@ class PolicyFixture(fixtures.Fixture):
              }
                 ]
         '''
-        np_rules = []
-        for rule_dict in rules_list:
-            source_vn = None
-            dest_vn = None
-            source_policy = None
-            dest_policy = None
-            source_subnet_dict = None
-            dest_subnet_dict = None
+        if self.inputs.slave_orchestrator == 'vro':
 
-            new_rule = {
-                'direction': '<>',
-                'simple_action': 'pass',
-                'qos_action': None,
-                'protocol': 'any',
-                'source_network': None,
-                'source_policy': None,
-                'source_subnet': None,
-                'src_ports': [PortType(-1, -1)],
-                'application': None,
-                'dest_network': None,
-                'dest_policy': None,
-                'dest_subnet': None,
-                'dst_ports': [PortType(-1, -1)],
-                'action_list': {} 
-            }
-            for key in rule_dict:
-                new_rule[key] = rule_dict[key]
-            # end for
-            action_list_dict = rule_dict.get('action_list', {})
-            new_rule['action_list'][
-                'simple_action'] = action_list_dict.get('simple_action', new_rule['simple_action'])
-            if 'qos_action' in rule_dict:
+            self.connections.orch.create_policy(name = policy_name, rules = rules_list)
+            self.policy_obj = self.vnc_lib.network_policy_read(
+                fq_name=self.project_fq_name+[unicode(self.policy_name)])
+        else:              
+            np_rules = []
+            for rule_dict in rules_list:
+                source_vn = None
+                dest_vn = None
+                source_policy = None
+                dest_policy = None
+                source_subnet_dict = None
+                dest_subnet_dict = None
+    
+                new_rule = {
+                    'direction': '<>',
+                    'simple_action': 'pass',
+                    'qos_action': None,
+                    'protocol': 'any',
+                    'source_network': None,
+                    'source_policy': None,
+                    'source_subnet': None,
+                    'src_ports': [PortType(-1, -1)],
+                    'application': None,
+                    'dest_network': None,
+                    'dest_policy': None,
+                    'dest_subnet': None,
+                    'dst_ports': [PortType(-1, -1)],
+                    'action_list': {} 
+                }
+                for key in rule_dict:
+                    new_rule[key] = rule_dict[key]
+                # end for
+                action_list_dict = rule_dict.get('action_list', {})
                 new_rule['action_list'][
-                    'qos_action'] = rule_dict['qos_action']
-            # Format Source ports
-            if 'src_ports' in rule_dict:
-                if isinstance(
-                        rule_dict['src_ports'],
-                        tuple) or isinstance(
-                        rule_dict['src_ports'],
-                        list):
-                    new_rule['src_ports'] = [
-                        PortType(
-                            rule_dict['src_ports'][0],
-                            rule_dict['src_ports'][1])]
-                elif rule_dict['src_ports'] == 'any':
-                    new_rule['src_ports'] = [PortType(-1, -1)]
-                else:
-                    self.logger.error(
-                        "Error in Source ports arguments, should be (Start port, end port) or any ")
-                    return None
-            # Format Dest ports
-            if 'dst_ports' in rule_dict:
-                if 'dst_ports' in rule_dict and isinstance(
-                        rule_dict['dst_ports'],
-                        tuple) or isinstance(
-                        rule_dict['dst_ports'],
-                        list):
-                    new_rule['dst_ports'] = [
-                        PortType(
-                            rule_dict['dst_ports'][0],
-                            rule_dict['dst_ports'][1])]
-                elif rule_dict['dst_ports'] == 'any':
-                    new_rule['dst_ports'] = [PortType(-1, -1)]
-                else:
-                    self.logger.error(
-                        "Error in Destination ports arguments, should be (Start port, end port) or any ")
-                    return None
-
-            if new_rule['source_network'] is not None:
-                m = re.match(r"(\S+):(\S+):(\S+)", new_rule['source_network'])
-                if m:
-                    source_vn = new_rule['source_network']
-                else:
-                    source_vn = ':'.join(self.project_fq_name) + \
-                        ':' + new_rule['source_network']
-            if new_rule['dest_network'] is not None:
-                m = re.match(r"(\S+):(\S+):(\S+)", new_rule['dest_network'])
-                if m:
-                    dest_vn = new_rule['dest_network']
-                else:
-                    dest_vn = ':'.join(self.project_fq_name) + \
-                        ':' + new_rule['dest_network']
-            if new_rule['source_policy'] is not None:
-                m = re.match(r"(\S+):(\S+):(\S+)", new_rule['source_policy'])
-                if m:
-                    source_policy = new_rule['source_policy']
-                else:
-                    source_policy = ':'.join(self.project_fq_name) + \
-                        ':' + new_rule['source_policy']
-            if new_rule['dest_policy'] is not None:
-                m = re.match(r"(\S+):(\S+):(\S+)", new_rule['dest_policy'])
-                if m:
-                    dest_policy = new_rule['dest_policy']
-                else:
-                    dest_policy = ':'.join(self.project_fq_name) + \
-                        ':' + new_rule['dest_policy']
-            if new_rule['source_subnet'] is not None:
+                    'simple_action'] = action_list_dict.get('simple_action', new_rule['simple_action'])
+                if 'qos_action' in rule_dict:
+                    new_rule['action_list'][
+                        'qos_action'] = rule_dict['qos_action']
+                # Format Source ports
+                if 'src_ports' in rule_dict:
+                    if isinstance(
+                            rule_dict['src_ports'],
+                            tuple) or isinstance(
+                            rule_dict['src_ports'],
+                            list):
+                        new_rule['src_ports'] = [
+                            PortType(
+                                rule_dict['src_ports'][0],
+                                rule_dict['src_ports'][1])]
+                    elif rule_dict['src_ports'] == 'any':
+                        new_rule['src_ports'] = [PortType(-1, -1)]
+                    else:
+                        self.logger.error(
+                            "Error in Source ports arguments, should be (Start port, end port) or any ")
+                        return None
+                # Format Dest ports
+                if 'dst_ports' in rule_dict:
+                    if 'dst_ports' in rule_dict and isinstance(
+                            rule_dict['dst_ports'],
+                            tuple) or isinstance(
+                            rule_dict['dst_ports'],
+                            list):
+                        new_rule['dst_ports'] = [
+                            PortType(
+                                rule_dict['dst_ports'][0],
+                                rule_dict['dst_ports'][1])]
+                    elif rule_dict['dst_ports'] == 'any':
+                        new_rule['dst_ports'] = [PortType(-1, -1)]
+                    else:
+                        self.logger.error(
+                            "Error in Destination ports arguments, should be (Start port, end port) or any ")
+                        return None
+    
+                if new_rule['source_network'] is not None:
+                    m = re.match(r"(\S+):(\S+):(\S+)", new_rule['source_network'])
+                    if m:
+                        source_vn = new_rule['source_network']
+                    else:
+                        source_vn = ':'.join(self.project_fq_name) + \
+                            ':' + new_rule['source_network']
+                if new_rule['dest_network'] is not None:
+                    m = re.match(r"(\S+):(\S+):(\S+)", new_rule['dest_network'])
+                    if m:
+                        dest_vn = new_rule['dest_network']
+                    else:
+                        dest_vn = ':'.join(self.project_fq_name) + \
+                            ':' + new_rule['dest_network']
+                if new_rule['source_policy'] is not None:
+                    m = re.match(r"(\S+):(\S+):(\S+)", new_rule['source_policy'])
+                    if m:
+                        source_policy = new_rule['source_policy']
+                    else:
+                        source_policy = ':'.join(self.project_fq_name) + \
+                            ':' + new_rule['source_policy']
+                if new_rule['dest_policy'] is not None:
+                    m = re.match(r"(\S+):(\S+):(\S+)", new_rule['dest_policy'])
+                    if m:
+                        dest_policy = new_rule['dest_policy']
+                    else:
+                        dest_policy = ':'.join(self.project_fq_name) + \
+                            ':' + new_rule['dest_policy']
+                if new_rule['source_subnet'] is not None:
+                    try:
+                        source_subnet_prefix = str(new_rule['source_subnet'].split('/')[0])
+                        source_subnet_prefix_length = int(new_rule['source_subnet'].split('/')[1])
+                        source_subnet_dict = {'ip_prefix':source_subnet_prefix,
+                                              'ip_prefix_len':source_subnet_prefix_length}
+                    except:
+                        self.logger.debug("Subnet should be defined as ip/prefix_length \
+                            where ip = xx.xx.xx.xx and prefix_length is the subnet mask \
+                            length.")
+                if new_rule['dest_subnet'] is not None:
+                    try:
+                        dest_subnet_prefix = str(new_rule['dest_subnet'].split('/')[0])
+                        dest_subnet_prefix_length = int(new_rule['dest_subnet'].split('/')[1])
+                        dest_subnet_dict = {'ip_prefix':dest_subnet_prefix,
+                                            'ip_prefix_len':dest_subnet_prefix_length}
+                    except:
+                        self.logger.debug("Subnet should be defined as ip/prefix_length \
+                            where ip = xx.xx.xx.xx and prefix_length is the subnet mask \
+                            length.")
+    
+                # handle 'any' network case
                 try:
-                    source_subnet_prefix = str(new_rule['source_subnet'].split('/')[0])
-                    source_subnet_prefix_length = int(new_rule['source_subnet'].split('/')[1])
-                    source_subnet_dict = {'ip_prefix':source_subnet_prefix,
-                                          'ip_prefix_len':source_subnet_prefix_length}
+                    if rule_dict['source_network'] == 'any':
+                        source_vn = 'any'
                 except:
-                    self.logger.debug("Subnet should be defined as ip/prefix_length \
-                        where ip = xx.xx.xx.xx and prefix_length is the subnet mask \
-                        length.")
-            if new_rule['dest_subnet'] is not None:
+                    self.logger.debug("No source network defined")
                 try:
-                    dest_subnet_prefix = str(new_rule['dest_subnet'].split('/')[0])
-                    dest_subnet_prefix_length = int(new_rule['dest_subnet'].split('/')[1])
-                    dest_subnet_dict = {'ip_prefix':dest_subnet_prefix,
-                                        'ip_prefix_len':dest_subnet_prefix_length}
+                     if rule_dict['dest_network'] == 'any':
+                        dest_vn = 'any'
                 except:
-                    self.logger.debug("Subnet should be defined as ip/prefix_length \
-                        where ip = xx.xx.xx.xx and prefix_length is the subnet mask \
-                        length.")
+                    self.logger.debug("No destination network defined")
+                # end code to handle 'any' network
+    
+                try:
+                    if source_vn:
+                        new_rule['source_network'] = [
+                            AddressType(virtual_network=source_vn)]
+                        src_address = new_rule['source_network']
+                except:
+                    self.logger.debug("No source vn defined in this rule of %s \
+                        policy" % (policy_name))
+                try:
+                    if dest_vn:
+                        new_rule['dest_network'] = [
+                            AddressType(virtual_network=dest_vn)]
+                        dest_address = new_rule['dest_network']
+                except:
+                    self.logger.debug("No dest vn defined in this rule of %s \
+                        policy" % (policy_name))
+                try:
+                    if source_policy:
+                        new_rule['source_policy'] = [
+                            AddressType(network_policy=source_policy)]
+                        src_address = new_rule['source_policy']
+                except:
+                    self.logger.debug("No source policy defined in this rule of %s \
+                        policy" % (policy_name))
+                try:
+                    if dest_policy:
+                        new_rule['dest_policy'] = [
+                            AddressType(network_policy=dest_policy)]
+                        dest_address = new_rule['dest_policy']
+                except:
+                    self.logger.debug("No dest policy defined in this rule of %s \
+                        policy" % (policy_name))
+                try:
+                    if source_subnet_dict:
+                        new_rule['source_subnet'] = [
+                            AddressType(subnet=source_subnet_dict)]
+                        src_address = new_rule['source_subnet']
+                except:
+                    self.logger.debug("No source subnet defined in this rule of %s \
+                        policy" % (policy_name))
+                try:
+                    if dest_subnet_dict:
+                        new_rule['dest_subnet'] = [
+                            AddressType(subnet=dest_subnet_dict)]
+                        dest_address = new_rule['dest_subnet']
+                except:
+                    self.logger.debug("No destination subnet defined in this rule of %s \
+                        policy" % (policy_name))
+    
+                np_rules.append(
+                    PolicyRuleType(direction=new_rule['direction'],
+                        protocol=new_rule['protocol'],
+                        src_addresses=src_address,
+                        src_ports=new_rule['src_ports'],
+                        application=new_rule['application'],
+                        dst_addresses=dest_address,
+                        dst_ports=new_rule['dst_ports'],
+                        action_list=new_rule['action_list']))
 
-            # handle 'any' network case
-            try:
-                if rule_dict['source_network'] == 'any':
-                    source_vn = 'any'
-            except:
-                self.logger.debug("No source network defined")
-            try:
-                 if rule_dict['dest_network'] == 'any':
-                    dest_vn = 'any'
-            except:
-                self.logger.debug("No destination network defined")
-            # end code to handle 'any' network
-
-            try:
-                if source_vn:
-                    new_rule['source_network'] = [
-                        AddressType(virtual_network=source_vn)]
-                    src_address = new_rule['source_network']
-            except:
-                self.logger.debug("No source vn defined in this rule of %s \
-                    policy" % (policy_name))
-            try:
-                if dest_vn:
-                    new_rule['dest_network'] = [
-                        AddressType(virtual_network=dest_vn)]
-                    dest_address = new_rule['dest_network']
-            except:
-                self.logger.debug("No dest vn defined in this rule of %s \
-                    policy" % (policy_name))
-            try:
-                if source_policy:
-                    new_rule['source_policy'] = [
-                        AddressType(network_policy=source_policy)]
-                    src_address = new_rule['source_policy']
-            except:
-                self.logger.debug("No source policy defined in this rule of %s \
-                    policy" % (policy_name))
-            try:
-                if dest_policy:
-                    new_rule['dest_policy'] = [
-                        AddressType(network_policy=dest_policy)]
-                    dest_address = new_rule['dest_policy']
-            except:
-                self.logger.debug("No dest policy defined in this rule of %s \
-                    policy" % (policy_name))
-            try:
-                if source_subnet_dict:
-                    new_rule['source_subnet'] = [
-                        AddressType(subnet=source_subnet_dict)]
-                    src_address = new_rule['source_subnet']
-            except:
-                self.logger.debug("No source subnet defined in this rule of %s \
-                    policy" % (policy_name))
-            try:
-                if dest_subnet_dict:
-                    new_rule['dest_subnet'] = [
-                        AddressType(subnet=dest_subnet_dict)]
-                    dest_address = new_rule['dest_subnet']
-            except:
-                self.logger.debug("No destination subnet defined in this rule of %s \
-                    policy" % (policy_name))
-
-            np_rules.append(
-                PolicyRuleType(direction=new_rule['direction'],
-                    protocol=new_rule['protocol'],
-                    src_addresses=src_address,
-                    src_ports=new_rule['src_ports'],
-                    application=new_rule['application'],
-                    dst_addresses=dest_address,
-                    dst_ports=new_rule['dst_ports'],
-                    action_list=new_rule['action_list']))
-
-
-        # end for
-        self.logger.debug("Policy np_rules : %s" % (np_rules))
-        pol_entries = PolicyEntriesType(np_rules)
-        if policy_obj:
-            policy_obj.network_policy_entries = pol_entries
-            self.vnc_lib.network_policy_update(policy_obj)
-        else:
-            proj = self.vnc_lib.project_read(self.project_fq_name)
-            self.policy_obj = NetworkPolicy(
-                policy_name, network_policy_entries=pol_entries, parent_obj=proj)
-            uid = self.vnc_lib.network_policy_create(self.policy_obj)
+            # end for
+            self.logger.debug("Policy np_rules : %s" % (np_rules))
+            
+            pol_entries = PolicyEntriesType(np_rules)
+            if policy_obj:
+                policy_obj.network_policy_entries = pol_entries
+                self.vnc_lib.network_policy_update(policy_obj)
+            else:
+                proj = self.vnc_lib.project_read(self.project_fq_name)
+                self.policy_obj = NetworkPolicy(
+                    policy_name, network_policy_entries=pol_entries, parent_obj=proj)
+                uid = self.vnc_lib.network_policy_create(self.policy_obj)
         self._populate_attr()
         return self.policy_fq_name
     # end  _set_policy_api
@@ -1119,13 +1125,15 @@ class PolicyFixture(fixtures.Fixture):
             logger=self.logger)
         if out:
             err_msg.append(out)
+            
+        if 'vro' not in self.inputs.slave_orchestrator:
         # compare policy_rules
-        out = policy_test_utils.compare_args(
-            'policy_rules', self.api_s_policy_obj_x[
-                'network_policy_entries']['policy_rule'], rules['policy_rule'],
-                logger=self.logger)
-        if out:
-            err_msg.append(out)
+            out = policy_test_utils.compare_args(
+                'policy_rules', self.api_s_policy_obj_x[
+                    'network_policy_entries']['policy_rule'], rules['policy_rule'],
+                    logger=self.logger)
+            if out:
+                err_msg.append(out)
 
         if err_msg != []:
             result = False
