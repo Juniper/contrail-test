@@ -12,6 +12,7 @@ from tcutils.util import custom_dict, get_plain_uuid
 import os
 from openstack import OpenstackAuth, OpenstackOrchestrator
 from vcenter import VcenterAuth, VcenterOrchestrator
+from vro import VroWorkflows
 from common.contrail_test_init import ContrailTestInit
 from vcenter_gateway import VcenterGatewayOrch
 try:
@@ -79,6 +80,15 @@ class ContrailConnections():
             self.nova_h = self.orch.get_compute_handler()
             self.quantum_h = self.orch.get_network_handler()
             self.glance_h = self.orch.get_image_handler()
+        elif self.inputs.orchestrator == 'vcenter' and self.inputs.slave_orchestrator == 'vro':
+            self.orch = VroWorkflows(user=self.inputs.vcenter_username,
+                            pwd= self.inputs.vcenter_password,
+                            host=self.inputs.vcenter_server,
+                            port=self.inputs.vcenter_port,
+                            dc_name=self.inputs.vcenter_dc,
+                            vnc=self.vnc_lib,
+                            inputs=self.inputs,
+                            logger=self.logger)
         elif self.inputs.orchestrator == 'vcenter': # vcenter
             self.orch = VcenterOrchestrator(user=self.inputs.vcenter_username,
                                             pwd= self.inputs.vcenter_password,
