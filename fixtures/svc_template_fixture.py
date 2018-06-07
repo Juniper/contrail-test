@@ -88,45 +88,58 @@ class SvcTemplateFixture(fixtures.Fixture):
             self.logger.debug(
                 "Service template: %s already exists", self.st_fq_name)
         except NoIdError:
-            domain = self.connections.vnc_lib_fixture.domain_read(fq_name=self.domain_fq_name)
-            svc_template = ServiceTemplate(
-                name=self.st_name, parent_obj=domain)
-            svc_properties = ServiceTemplateType()
-            svc_properties.set_service_type(self.service_type)
-            svc_properties.set_service_mode(self.service_mode)
-            svc_properties.set_version(self.version)
-            # Add flavor if not already added
-            if self.version == 1:
-                svc_properties.set_image_name(self.image_name)
-                svc_properties.set_service_scaling(self.svc_scaling)
-                self.orch.get_flavor(self.flavor)
-                svc_properties.set_flavor(self.flavor)
-                svc_properties.set_availability_zone_enable(self.availability_zone_enable)
-#            for itf in self.if_list:
-            for itf_type, val in self.if_details.iteritems():
-                shared_ip = val.get('shared_ip_enable', None)
-                static_route_enable = val.get('static_route_enable', None)
-                if_type = ServiceTemplateInterfaceType(
-                    service_interface_type=itf_type,
-                    shared_ip=shared_ip,
-                    static_route_enable=static_route_enable)
-                if_type.set_service_interface_type(itf_type)
-                svc_properties.add_interface_type(if_type)
-
-            svc_template.set_service_template_properties(svc_properties)
-            if self.inputs.is_gui_based_config():
-                self.webui.create_svc_template(self)
-            else:
-                self.uuid = self.vnc_lib_h.service_template_create(svc_template)
-            svc_template = self.vnc_lib_h.service_template_read(
+            if self.inputs.slave_orchestrator == 'vro':
+                st = {}
+                st['st_name'] = self.st_name
+                st['if_details'] = self.if_details
+                st['svc_mode'] = self.service_mode
+                st['svc_type'] = self.service_type
+                self.orch.create_st(st)
+                svc_template = self.vnc_lib_h.service_template_read(
                 fq_name=self.st_fq_name)
+            else:
+                domain = self.connections.vnc_lib_fixture.domain_read(fq_name=self.domain_fq_name)
+                svc_template = ServiceTemplate(
+                    name=self.st_name, parent_obj=domain)
+                svc_properties = ServiceTemplateType()
+                svc_properties.set_service_type(self.service_type)
+                svc_properties.set_service_mode(self.service_mode)
+                svc_properties.set_version(self.version)
+                # Add flavor if not already added
+                if self.version == 1:
+                    svc_properties.set_image_name(self.image_name)
+                    svc_properties.set_service_scaling(self.svc_scaling)
+                    self.orch.get_flavor(self.flavor)
+                    svc_properties.set_flavor(self.flavor)
+                    svc_properties.set_availability_zone_enable(self.availability_zone_enable)
+    #            for itf in self.if_list:
+                for itf_type, val in self.if_details.iteritems():
+                    shared_ip = val.get('shared_ip_enable', None)
+                    static_route_enable = val.get('static_route_enable', None)
+                    if_type = ServiceTemplateInterfaceType(
+                        service_interface_type=itf_type,
+                        shared_ip=shared_ip,
+                        static_route_enable=static_route_enable)
+                    if_type.set_service_interface_type(itf_type)
+                    svc_properties.add_interface_type(if_type)
+    
+                svc_template.set_service_template_properties(svc_properties)
+                if self.inputs.is_gui_based_config():
+                    self.webui.create_svc_template(self)
+                else:
+                    self.uuid = self.vnc_lib_h.service_template_create(svc_template)
+                svc_template = self.vnc_lib_h.service_template_read(
+                    fq_name=self.st_fq_name)
 
         return svc_template
     # end _create_st
 
     def _delete_st(self):
         self.logger.debug("Deleting service template: %s", self.st_fq_name)
-        self.vnc_lib_h.service_template_delete(fq_name=self.st_fq_name)
+        if self.inputs.slave_orchestrator == 'vro':
+            self.orch.delete_st(self.st_name)
+        else:
+            self.vnc_lib_h.service_template_delete(fq_name=self.st_fq_name)
     # end _delete_st
 
     def verify_on_setup(self):

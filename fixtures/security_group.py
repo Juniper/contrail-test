@@ -63,6 +63,9 @@ class SecurityGroupFixture(ContrailFixture):
             self.already_present = False
             if self.inputs.is_gui_based_config():
                 self.webui.create_security_group(self)
+            elif self.inputs.slave_orchestrator == 'vro':
+                self.secgrp_id = self.orch.create_security_group(self.secgrp_name, 
+                                                                 self.secgrp_entries)
             else:
                 self.secgrp_id = self.orch.create_security_group(
                                                  sg_name=self.secgrp_name,
@@ -104,6 +107,8 @@ class SecurityGroupFixture(ContrailFixture):
         if do_cleanup:
             if self.inputs.is_gui_based_config():
                 self.webui.delete_security_group(self)
+            elif self.inputs.slave_orchestrator == 'vro':
+                self.orch.delete_security_group(self.secgrp_name) 
             else:
                 self.orch.delete_security_group(sg_id=self.secgrp_id, option=self.option)
             if self.verify_is_run or verify:
