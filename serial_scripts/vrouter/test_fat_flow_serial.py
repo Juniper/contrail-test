@@ -203,6 +203,344 @@ class FatFlowSerial(BaseVrouterTest, VerifySvcChain):
 
         self.logger.info("Fat flow got deleted after aging timeout as expected")
 
+    @preposttest_wrapper
+    def test_fat_flow_port_zero_intra_node(self):
+        """
+        Description: Verify Fat flow with port 0 for inter node traffic
+            sub-cases:
+                a. Fat config on server VMI
+                b. Fat config on client VMI
+        Steps:
+            1. Create 2 VNs and connect using policy
+            2. launch 2 client VMs and 1 server VM and config Fat flow
+            3. start traffic and verify Fat flow on required compute nodes
+        Pass criteria:
+            step 3 should pass
+        """
+        self._create_resources(test_type='intra-node', no_of_client=2,
+            no_of_server=1)
+
+        #Configure Fat flow on server VM
+        proto = 'udp'
+        dport_list = [53, 54]
+        server_vmi_id = self.server_fixtures[0].get_vmi_ids().values()
+        fat_flow_config = {'proto':proto,'port':0}
+        self.add_fat_flow_to_vmis(server_vmi_id, fat_flow_config)
+
+        #Set udp aging timeout to 300 sec
+        flow_timeout = 300
+        self.add_proto_based_flow_aging_time(proto, 0, flow_timeout)
+
+        afs = ['v4', 'v6'] if 'dual' in self.inputs.get_af() else [self.inputs.get_af()]
+        for af in afs:
+            self.verify_fat_flow_with_traffic(self.client_fixtures,self.server_fixtures[0],
+                proto, af=af, fat_flow_config=fat_flow_config,
+                dport_list=dport_list)
+
+        #Remove Fat flow from server VM
+        self.remove_fat_flow_on_vmis(server_vmi_id, fat_flow_config)
+        #Add Fat flow on client VMs
+        client1_vmi_id = self.client_fixtures[0].get_vmi_ids().values()
+        client2_vmi_id = self.client_fixtures[1].get_vmi_ids().values()
+        self.add_fat_flow_to_vmis(client1_vmi_id+client2_vmi_id,
+            fat_flow_config)
+
+        #Clear all the flows before starting traffic
+        self.delete_all_flows_on_vms_compute(
+            self.server_fixtures + self.client_fixtures)
+        #When Fat flow with port 0 is configured on client VMs
+        sport_list = [10000, 10001]
+        compute_fix = self.compute_fixtures_dict[self.client_fixtures[0].vm_node_ip]
+        for af in afs:
+            for client_vm in self.client_fixtures:
+                for sport in sport_list:
+                    for dport in dport_list:
+                        assert self.send_nc_traffic(client_vm,
+                            self.server_fixtures[0], sport,
+                            dport, proto,
+                            ip=self.server_fixtures[0].get_vm_ips(af=af)[0])
+
+            for client_vm in self.client_fixtures:
+                vrf_id_src = compute_fix.get_vrf_id(client_vm.vn_fq_names[0])
+                self.verify_fat_flow_on_compute(compute_fix,
+                    client_vm.get_vm_ips(af=af)[0],
+                    self.server_fixtures[0].get_vm_ips(af=af)[0], 0, proto,
+                    vrf_id_src, fat_flow_count=1)
+
+    @preposttest_wrapper
+    def test_fat_flow_ignore_addrs(self):
+        """
+        Description: Verify Fat flow with ignore address for inter node traffic
+            sub-cases:
+                a. ignore source and specific port
+                b. ignore destination and specific port
+                c. ignore source and port 0
+                d. ignore destination and port 0
+        Steps:
+            1. Create 2 VNs and connect using policy
+            2. launch VMs and config Fat flow on client/server VMs
+            3. start traffic and verify Fat flow on required compute nodes
+        Pass criteria:
+            step 3 should pass
+        """
+        self._create_resources(test_type='inter-node', no_of_client=2,
+            no_of_server=2)
+        proto = 'udp'
+        dport_list = [53]
+        sport_list = [10000]
+
+        #Set udp aging timeout to 300 sec
+        flow_timeout = 300
+        self.add_proto_based_flow_aging_time(proto, 0, flow_timeout)
+
+        fat_config_on = ['server']
+        for config in fat_config_on:
+            vmi_ids = []
+            if config == 'server':
+                port = dport_list[0]
+                for vm in self.server_fixtures:
+                    vmi_ids.extend(vm.get_vmi_ids().values())
+            elif config == 'client':
+                port = sport_list[0]
+                for vm in self.client_fixtures:
+                    vmi_ids.extend(vm.get_vmi_ids().values())
+            fat_config_list = [
+                {'proto':proto,'port':port, 'ignore_address':'source'},
+                {'proto':proto,'port':port, 'ignore_address':'destination'},
+                {'proto':proto,'port':0, 'ignore_address':'source'},
+                {'proto':proto,'port':0, 'ignore_address':'destination'},
+                {'proto':proto,'port':0}
+                ]
+
+            for fat_config in fat_config_list:
+                self.add_fat_flow_to_vmis(vmi_ids, fat_config)
+                self.verify_fat_flow_with_ignore_addrs(self.client_fixtures,
+                    self.server_fixtures, fat_config,
+                    fat_config_on=config)
+                self.remove_fat_flow_on_vmis(vmi_ids, fat_config)
+
+    @preposttest_wrapper
+    def test_fat_flow_ignore_addrs_icmp_error(self):
+        """
+        Description: Verify Fat flow with ignore address for icmp error for inter node traffic
+            sub-cases:
+                a. ignore source and specific port on server VMI
+                b. ignore destination and specific port on server VMI
+                c. ignore source and port 0 on server VMI
+                d. ignore destination and port 0 on server VMI
+        Steps:
+            1. Create 2 VNs and connect using policy
+            2. launch VMs and config Fat flow on server VMs
+            3. start traffic and verify Fat flow on required compute nodes
+        Pass criteria:
+            step 3 should pass
+        """
+        self._create_resources(test_type='inter-node', no_of_client=2,
+            no_of_server=2)
+        proto = 'udp'
+        dport_list = [53]
+        sport_list = [10000]
+
+        #Set udp aging timeout to 300 sec
+        flow_timeout = 300
+        self.add_proto_based_flow_aging_time(proto, 0, flow_timeout)
+
+        fat_config_on = ['client', 'server']
+        for config in fat_config_on:
+            vmi_ids = []
+            if config == 'server':
+                port = dport_list[0]
+                for vm in self.server_fixtures:
+                    vmi_ids.extend(vm.get_vmi_ids().values())
+            elif config == 'client':
+                port = sport_list[0]
+                for vm in self.client_fixtures:
+                    vmi_ids.extend(vm.get_vmi_ids().values())
+            fat_config_list = [
+                {'proto':proto,'port':port, 'ignore_address':'source'},
+                {'proto':proto,'port':port, 'ignore_address':'destination'},
+                {'proto':proto,'port':0, 'ignore_address':'source'},
+                {'proto':proto,'port':0, 'ignore_address':'destination'},
+                {'proto':proto,'port':0}
+                ]
+
+            for fat_config in fat_config_list:
+                self.add_fat_flow_to_vmis(vmi_ids, fat_config)
+                self.verify_fat_flow_with_ignore_addrs(self.client_fixtures,
+                    self.server_fixtures, fat_config, icmp_error=True,
+                    fat_config_on=config)
+                self.remove_fat_flow_on_vmis(vmi_ids, fat_config)
+
+    @preposttest_wrapper
+    def test_fat_flow_ignore_addrs_icmp_error_intra_node(self):
+        """
+        Description: Verify Fat flow with ignore address for icmp error for intra node traffic
+        Steps:
+            1. Create 2 VNs and connect using policy
+            2. launch VMs and config Fat flow on server VMs
+            3. start traffic and verify Fat flow on required compute nodes
+        Pass criteria:
+            step 3 should pass
+        """
+        self._create_resources(test_type='intra-node', no_of_client=2,
+            no_of_server=2)
+        proto = 'udp'
+        dport_list = [53]
+        sport_list = [10000]
+
+        #Set udp aging timeout to 300 sec
+        flow_timeout = 300
+        self.add_proto_based_flow_aging_time(proto, 0, flow_timeout)
+
+        fat_config_on = 'server'
+        vmi_ids = []
+        port = dport_list[0]
+        for vm in self.server_fixtures:
+            vmi_ids.extend(vm.get_vmi_ids().values())
+        fat_config_list = [
+            {'proto':proto,'port':port, 'ignore_address':'destination'},
+            {'proto':proto,'port':0, 'ignore_address':'destination'},
+            {'proto':proto,'port':0}
+            ]
+
+        for fat_config in fat_config_list:
+            self.add_fat_flow_to_vmis(vmi_ids, fat_config)
+            self.verify_fat_flow_with_ignore_addrs(self.client_fixtures,
+                self.server_fixtures, fat_config, icmp_error=True,
+                fat_config_on=fat_config_on)
+            self.remove_fat_flow_on_vmis(vmi_ids, fat_config)
+
+    @preposttest_wrapper
+    def test_fat_flow_at_vn(self):
+        """
+        Description: Verify Fat flow at VN level
+            sub-cases:
+                a. ignore source and specific port
+                b. ignore destination and specific port
+                c. ignore source and port 0
+                d. ignore destination and port 0
+        Steps:
+            1. Create 2 VNs and connect using policy
+            2. launch VMs and config Fat flow on client/server VMs
+            3. start traffic and verify Fat flow on required compute nodes
+        Pass criteria:
+            step 3 should pass
+        """
+        self._create_resources(test_type='inter-node', no_of_client=2,
+            no_of_server=2)
+        proto = 'udp'
+        dport_list = [10000]
+        sport_list = [10000]
+
+        #Set aging timeout to 300 sec
+        flow_timeout = 300
+        self.add_proto_based_flow_aging_time(proto, 0, flow_timeout)
+
+        fat_config_on = ['server']
+        for config in fat_config_on:
+            vns = []
+            if config == 'server':
+                port = dport_list[0]
+                vns.append(self.vn2_fixture)
+            elif config == 'client':
+                port = sport_list[0]
+                vns.append(self.vn1_fixture)
+            fat_config_list = [
+                {'proto':proto,'port':port, 'ignore_address':'source'},
+                {'proto':proto,'port':port, 'ignore_address':'destination'},
+                {'proto':proto,'port':0, 'ignore_address':'source'},
+                {'proto':proto,'port':0, 'ignore_address':'destination'},
+                {'proto':proto,'port':0}
+                ]
+
+            for fat_config in fat_config_list:
+                self.add_fat_flow_to_vns(vns, fat_config)
+                self.verify_fat_flow_with_ignore_addrs(self.client_fixtures,
+                    self.server_fixtures, fat_config,
+                    fat_config_on=config, sport=sport_list[0],
+                    dport=dport_list[0])
+                self.delete_fat_flow_from_vns(vns)
+
+    @preposttest_wrapper
+    def test_fat_flow_at_vn_intra_vn(self):
+        """
+        Description: Verify Fat flow at VN level and intra-vn/node traffic
+        Steps:
+            1. Create 2 VNs and connect using policy
+            2. launch VMs and config Fat flow on client/server VMs
+            3. start traffic and verify Fat flow on required compute nodes
+        Pass criteria:
+            step 3 should pass
+        """
+        self._create_resources(test_type='inter-node', no_of_client=4,
+            no_of_server=1)
+        proto = 'udp'
+        dport_list = [53]
+        sport_list = [10000]
+
+        #Set udp aging timeout to 300 sec
+        flow_timeout = 300
+        self.add_proto_based_flow_aging_time(proto, 0, flow_timeout)
+        client_fixs = [self.client_fixtures[0], self.client_fixtures[1]]
+        server_fixs = [self.client_fixtures[2], self.client_fixtures[3]]
+        port = dport_list[0]
+        vns = [self.vn1_fixture]
+        fat_config_list = [
+            {'proto':proto,'port':port, 'ignore_address':'destination'},
+            {'proto':proto,'port':0, 'ignore_address':'destination'},
+            {'proto':proto,'port':0}
+            ]
+
+        for fat_config in fat_config_list:
+            self.add_fat_flow_to_vns(vns, fat_config)
+            self.verify_fat_flow_with_ignore_addrs(client_fixs,
+                server_fixs, fat_config,
+                fat_config_on='all')
+            self.delete_fat_flow_from_vns(vns)
+
+    @preposttest_wrapper
+    def test_fat_flow_vn_vmi(self):
+        """
+        Description: configure Fat flow on both VN and VMI
+        Steps:
+            1. Create 2 VNs and connect using policy
+            2. launch VMs and config Fat flow on VMI and VN both
+            3. start traffic and verify Fat flow on required compute nodes
+        Pass criteria:
+            step 3 should pass
+        """
+        self._create_resources(test_type='inter-node', no_of_client=4,
+            no_of_server=1)
+        proto = 'udp'
+        dport_list = [11000]
+        sport_list = [10000]
+
+        #Set aging timeout to 300 sec
+        flow_timeout = 300
+        self.add_proto_based_flow_aging_time(proto, 0, flow_timeout)
+        port = dport_list[0]
+        vns = [self.vn2_fixture]
+        vmi_ids = []
+        for vm in self.server_fixtures:
+            vmi_ids.extend(vm.get_vmi_ids().values())
+        fat_config_vn = {
+            'proto':proto,'port':0, 'ignore_address':'destination'
+            }
+        fat_config_vmi = {
+            'proto':proto,'port':dport_list[0], 'ignore_address':'destination'
+            }
+        self.add_fat_flow_to_vns(vns, fat_config_vn)
+        self.add_fat_flow_to_vmis(vmi_ids, fat_config_vmi)
+        self.verify_fat_flow_with_ignore_addrs(self.client_fixtures,
+            self.server_fixtures, fat_config_vmi,
+            fat_config_on='server', sport=sport_list[0],
+            dport=dport_list[0])
+
+        self.verify_fat_flow_with_ignore_addrs(self.client_fixtures,
+            self.server_fixtures, fat_config_vn,
+            fat_config_on='server', sport=sport_list[0],
+            dport=dport_list[0])
+
 class FatFlowSerialIpv6(FatFlowSerial):
     @classmethod
     def setUpClass(cls):
