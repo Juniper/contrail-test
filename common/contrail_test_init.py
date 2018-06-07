@@ -796,9 +796,10 @@ class TestInputs(object):
             self.config.get('orchestrator_configuration') or {}
         test_configs = self.config.get('test_configuration') or {}
         self.orchestrator = deployment_configs.get('orchestrator') or 'openstack'
-        self.slave_orchestrator = deployment_configs.get('slave_orchestrator')
+        self.slave_orchestrator = deployment_configs.get('slave_orchestrator',None)
         if self.deployer == 'openshift':
             kube_config_file = OPENSHIFT_CONFIG_FILE
+            
         else:
             kube_config_file = K8S_CONFIG_FILE
         self.kube_config_file = test_configs.get('kube_config_file') or kube_config_file
@@ -950,6 +951,9 @@ class TestInputs(object):
             self.admin_password = self.vcenter_password
             self.admin_tenant = self.stack_tenant 
             self.admin_domain = self.stack_domain
+        if self.slave_orchestrator == 'vro':
+            self.vro_ip = '10.204.217.125'
+            self.vro_port = '8281'
 
     def get_os_env(self, var, default=''):
         if var in os.environ:
