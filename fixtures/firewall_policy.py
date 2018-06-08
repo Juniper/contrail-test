@@ -16,6 +16,7 @@ class FirewallPolicyFixture(vnc_api_test.VncLibFixture):
         self.uuid = kwargs.get('uuid')
         self.scope = kwargs.get('scope') or 'local'
         self.rules = kwargs.get('rules') or list()
+        self.slo = kwargs.get('slo') or None
         self.created = False
         self.verify_is_run = False
 
@@ -63,7 +64,7 @@ class FirewallPolicyFixture(vnc_api_test.VncLibFixture):
                 self.uuid = self.vnc_h.create_firewall_policy(
                                      parent_type=self.parent_type,
                                      fq_name=self.fq_name,
-                                     rules=self.rules)
+                                     rules=self.rules, slo=self.slo)
                 self.created = True
                 self.logger.info('Created Firewall Policy %s(%s)'%(self.name,
                                                                   self.uuid))

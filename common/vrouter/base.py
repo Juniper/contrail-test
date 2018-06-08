@@ -279,6 +279,13 @@ class BaseVrouterTest(BaseNeutronTest):
         for vm in vm_fixtures:
             self.compute_fixtures_dict[vm.vm_node_ip].delete_all_flows()
 
+    def restart_agent_on_vms_compute(self, vm_fixtures):
+        '''
+        Restart agent on the compute node of the VMs
+        '''
+        for vm in vm_fixtures:
+            self.compute_fixtures_dict[vm.vm_node_ip].restart_agent()
+
     def send_hping3_traffic(self, sender_vm_fix, dest_ip, srcport, destport,
                             count=1, interval='u100', stop=True, wait=False,
                             **kwargs):
