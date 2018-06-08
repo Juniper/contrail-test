@@ -147,7 +147,7 @@ def preposttest_wrapper(function):
             test_time = datetime.now().replace(microsecond=0) - start_time
             if cores == {} and crashes == {} and not testfail and \
 		            not cleanupfail and (result is None or result is True) and \
-                    flap_check_result:
+                    flap_check_result and not testskip:
                 log.info("END TEST : %s : PASSED[%s]",
                          function.__name__, test_time)
                 log.info('-' * 80)

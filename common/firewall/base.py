@@ -301,7 +301,7 @@ class BaseFirewallTest(BaseNeutronTest):
     def create_fw_policy(self, scope, rules=None, **kwargs):
         connections = kwargs.pop('connections', None) or self.connections
         return self.useFixture(FirewallPolicyFixture(scope=scope,
-               rules=rules, connections=connections))
+               rules=rules, connections=connections, **kwargs))
 
     def add_fw_rule(self, fwp_fixture, rule_uuid, seq_no):
         return fwp_fixture.add_firewall_rules([{'uuid': rule_uuid,
