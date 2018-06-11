@@ -20,6 +20,10 @@ class TestFabricSNATRestarts(BaseK8sTest):
     def tearDownClass(cls):
         super(TestFabricSNATRestarts, cls).tearDownClass()
 
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        self.delete_in_parallel(parallelCleanupCandidates)
+    
     def setup_common_namespaces_pods(self, isolation=False, ip_fabric_snat=False,
                                      ip_fabric_forwarding=False):
         """ common routine to create the namesapces and the pods  by enabling the fabric snat

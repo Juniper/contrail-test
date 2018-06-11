@@ -5,6 +5,7 @@ import test
 import time
 
 class TestSNAT(BaseK8sTest):
+    
     @classmethod
     def setUpClass(cls):
         super(TestSNAT, cls).setUpClass()
@@ -14,6 +15,10 @@ class TestSNAT(BaseK8sTest):
     def tearDownClass(cls):
         super(TestSNAT, cls).tearDownClass()
 
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        self.delete_in_parallel(parallelCleanupCandidates)
+    
     def setup_namespaces_pods_for_snat_test(self, isolation=False ,ip_fabric_snat=False):
         """ common routine to create the namesapces and the pods  by enabling snat
             1.create 2 namespaces (ns1,ns2 enable snat )

@@ -14,6 +14,10 @@ class TestNamespace(BaseK8sTest):
     def tearDownClass(cls):
         super(TestNamespace, cls).tearDownClass()
 
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        self.delete_in_parallel(parallelCleanupCandidates)
+    
     @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_namespace_1(self):
