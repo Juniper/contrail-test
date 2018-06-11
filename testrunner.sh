@@ -14,7 +14,7 @@
 # $TEST_RUN_CMD - this environment variable will be passed to container and this command will be used to run the test
 # $EXTRA_RUN_TEST_ARGS - any extra arguments for run_tests.sh
 ##
-
+error:remove
 docker=docker
 feature=sanity
 test_tags=${TEST_TAGS:-''}
