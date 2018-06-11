@@ -17,7 +17,7 @@ class TestMVPNSingleVNSingleCompute(MVPNTestSingleVNSingleComputeBase):
         super(TestMVPNSingleVNSingleCompute, cls).tearDownClass()
     # end tearDownClass
 
-    @test.attr(type=['sanity'])
+    #@test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_mvpn_single_vn_within_compute(self):
         '''
