@@ -2900,7 +2900,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         Test steps:
                 1. Creating vm's - vm1 and vm2 and a Vn - vn222
                 2. Transfer file from vm1 to vm2 with diferrent file sizes using scp
-                3. file sizes - 1000,1101,1202,1303,1373, 1374,2210, 2845, 3000, 10000, 10000003
+                3. file sizes - 64,1202,2210,10000
                 4. verify files present in vm2 match with the size of the file sent.
         Pass criteria: File in vm2 should match with the transferred file size from vm1
 
@@ -2910,8 +2910,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         vm2_name = get_random_name('vm2')
         vn_name = get_random_name('vn222')
         scp_test_file_sizes = ['1303'] if self.inputs.is_ci_setup() else \
-                              ['1000', '1101', '1202', '1303', '1373', '1374',
-                               '2210', '2845', '3000', '10000', '10000003']
+                              ['64', '1202', '2210', '10000']
         file = 'somefile'
         y = 'ls -lrt %s' % file
         cmd_to_check_file = [y]
@@ -2963,7 +2962,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         Test steps:
                 1. Creating vm's - vm1 and vm2 and a Vn - vn222
                 2. Transfer file from vm1 to vm2 with diferrent file sizes using tftp
-                3. file sizes - 1000,1101,1202,1303,1373, 1374,2210, 2845, 3000, 10000, 10000003
+                3. file sizes - 64,1202,2210,10000
                 4. verify files present in vm2 match with the size of the file sent.
         Pass criteria: File in vm2 should match with the transferred file size from vm1
         Maintainer : ganeshahv@juniper.net
@@ -2973,8 +2972,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         ts = time.time()
         vn_name = '%s_%s'%(inspect.stack()[0][3],str(ts))
         file_sizes=['1000'] if self.inputs.is_ci_setup() else \
-                            ['1000', '1101', '1202', '1303', '1373', '1374',
-                             '2210', '2845', '3000', '10000', '10000003']
+                            ['64', '1202', '2210', '10000']
         file= 'testfile'
         y = 'ls -lrt /var/lib/tftpboot/%s'%file
         cmd_to_check_file = [y]
