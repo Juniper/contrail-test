@@ -1206,12 +1206,17 @@ class ContrailVncApi(object):
             :param parent_type : one of 'project' or 'policy-management'
             :param rules : Ordered list of dict of firewall rules and seq no
                 [{'uuid': rule_uuid, 'seq_no': <int>}]
+            :param slo: {'slo_obj': slo obj, 'rate_obj':rate obj}
         '''
         obj = FirewallPolicy(fq_name[-1], fq_name=fq_name, parent_type=parent_type)
         for rule in rules or []:
             seq = FirewallSequence(str(rule['seq_no']))
             rule_obj = self.read_firewall_rule(id=rule['uuid'])
             obj.add_firewall_rule(rule_obj, seq)
+
+        slo = kwargs.get('slo') or None
+        if slo is not None:
+            obj.add_security_logging_object(slo['slo_obj'], slo['rate_obj'])
         self._log.debug('creating firewall policy %s'%fq_name)
         return self._vnc.firewall_policy_create(obj)
 

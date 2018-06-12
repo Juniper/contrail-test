@@ -161,7 +161,7 @@ class Hping3:
 
     def _check_if_hping_still_running(self):
         result = self.sender_vm_fixture.run_cmd_on_vm(
-            cmds=['kill `cat %s`' %(self.pid_file)],
+            cmds=['ps -p `cat %s`' %(self.pid_file)],
             raw=True)
         status = result.values()[0]
         if status.succeeded:
