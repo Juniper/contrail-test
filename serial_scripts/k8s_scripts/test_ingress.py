@@ -268,7 +268,6 @@ class TestIngress(BaseK8sTest):
         assert self.validate_nginx_lb([pod3, pod4], ingress.cluster_ip,
                                       test_pod=pod5, path=path2, host=host2)
 
-    @test.attr(type=['k8s_sanity'])
     @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_ingress_fanout_with_node_reboot(self):
@@ -276,7 +275,7 @@ class TestIngress(BaseK8sTest):
            This host are supported by repective service.  Service has required backend pod with required path
            mentioned in ingress rule.  From the local node, do a wget on the ingress public ip
            Validate that service and its loadbalancing works.
-           Reboot the nodes
+           Reboot the compute nodes
            Re verify the loadbalancing works after the nodes reboot
         '''
         app1 = 'http_test1'
@@ -354,7 +353,13 @@ class TestIngress(BaseK8sTest):
         # Now validate ingress from public network
         assert self.validate_nginx_lb([pod1, pod2], ingress.external_ips[0], path=path1, host=host1)
         assert self.validate_nginx_lb([pod3, pod4], ingress.external_ips[0], path=path2, host=host2)
-        self.restart_vrouter_agent()
+        for node in self.inputs.k8s_slave_ips:
+             self.inputs.reboot(node)
+        time.sleep(60) # Noticed that services are not ready after reboot. Thus, giving some time for service
+                       # like docker, kubelet and contrail services to start
+        cluster_status, error_nodes = ContrailStatusChecker(self.inputs).wait_till_contrail_cluster_stable(
+                                                            nodes=self.inputs.compute_ips, roles="vrouter")
+        assert cluster_status, 'Cluster is not stable after restart'
         assert self.validate_nginx_lb([pod1, pod2], ingress.cluster_ip,
                                       test_pod=pod5, path=path1, host=host1)
         assert self.validate_nginx_lb([pod3, pod4], ingress.cluster_ip,
