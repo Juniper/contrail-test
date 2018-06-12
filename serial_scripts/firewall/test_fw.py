@@ -1039,7 +1039,7 @@ class TestFirewallDraft_1(BaseFirewallTest_1):
         # Revert the created draft objects
         self.enable_security_draft_mode(SCOPE1, SCOPE2)
         self._create_objects(SCOPE1, SCOPE2)
-        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2)
+        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2, retry=3)
         self.addCleanup(self.discard, SCOPE1, SCOPE2)
         fixture_states = {
             'created': [self.ag, self.scope1_sg, self.sg_icmp,
@@ -1249,7 +1249,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
         SCOPE1 = 'local'; SCOPE2 = 'global'
         # Test regular mode after enable/disable of draft without commit/discard
         self.enable_security_draft_mode(SCOPE1, SCOPE2)
-        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2)
+        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2, retry=3)
         self.addCleanup(self.discard, SCOPE1, SCOPE2)
         services = [('tcp', (0,65535), (8000,8010))]
         sg = self.create_service_group(SCOPE2, services)
@@ -1283,7 +1283,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
         any_ep = {'any': True}
         # Test regular mode after enable/disable of draft with commit/discard
         self.enable_security_draft_mode(SCOPE1, SCOPE2)
-        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2)
+        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2, retry=3)
         self.addCleanup(self.discard, SCOPE1, SCOPE2)
         sg = self.create_service_group(SCOPE2, services)
         fwr = self.create_fw_rule(SCOPE1, source=any_ep, destination=any_ep,
@@ -1321,7 +1321,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
         fwr = self.create_fw_rule(SCOPE1, source=any_ep, destination=any_ep,
                                   protocol='udp', dports=(8000,8010))
         self.enable_security_draft_mode(SCOPE1, SCOPE2)
-        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2)
+        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2, retry=3)
         self.addCleanup(self.discard, SCOPE1, SCOPE2)
         self.perform_cleanup(fwr)
         self.perform_cleanup(sg)
@@ -1339,7 +1339,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
         # Draft on global mode shouldnt affect local mode
         # As well as draft on project1 shouldnt affect project2
         self.enable_security_draft_mode()
-        self.addCleanup(self.disable_security_draft_mode)
+        self.addCleanup(self.disable_security_draft_mode, retry=3)
         self.addCleanup(self.commit)
         any_ep = {'any': True}
         services = [('tcp', (0,65535), (8000,8010))]
@@ -1358,7 +1358,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
         proj1_conn = proj1.get_project_connections()
         self.enable_security_draft_mode(project_fqname=proj1.project_fq_name)
         self.addCleanup(self.disable_security_draft_mode,
-                        project_fqname=proj1.project_fq_name)
+                        project_fqname=proj1.project_fq_name, retry=3)
         self.addCleanup(self.commit, project_fqname=proj1.project_fq_name)
         sg_proj1 = self.create_service_group('local', services, connections=proj1_conn)
         fwr_proj1 = self.create_fw_rule('local', source=any_ep, destination=any_ep,
@@ -1380,14 +1380,14 @@ class TestFirewallDraftMisc(BaseFirewallTest):
         # Do parallel commit across projects and scopes
         SCOPE1='local'; SCOPE2='global'
         self.enable_security_draft_mode(SCOPE1, SCOPE2)
-        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2)
+        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2, retry=3)
         self.addCleanup(self.commit, SCOPE1, SCOPE2)
         proj1 = self.create_project()
         self.add_user_to_project(project_name=proj1.project_name)
         proj1_conn = proj1.get_project_connections()
         self.enable_security_draft_mode(project_fqname=proj1.project_fq_name)
         self.addCleanup(self.disable_security_draft_mode,
-                        project_fqname=proj1.project_fq_name)
+                        project_fqname=proj1.project_fq_name, retry=3)
         self.addCleanup(self.commit, project_fqname=proj1.project_fq_name)
 
         local_objs = self.create_n_security_objects(scope=SCOPE1)
@@ -1424,7 +1424,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
         # Do parallel commit in the same scope
         SCOPE1='local'; SCOPE2='global'
         self.enable_security_draft_mode(SCOPE1, SCOPE2)
-        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2)
+        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2, retry=3)
         self.addCleanup(self.commit, SCOPE1, SCOPE2)
 
         local_objs = self.create_n_security_objects(scope=SCOPE1)
@@ -1488,7 +1488,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
     def test_discard_while_commit_in_progress(self):
         SCOPE1='local'; SCOPE2='global'
         self.enable_security_draft_mode(SCOPE1, SCOPE2)
-        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2)
+        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2, retry=3)
         self.addCleanup(self.commit, SCOPE1, SCOPE2)
 
         local_objs = self.create_n_security_objects(scope=SCOPE1)
@@ -1513,7 +1513,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
     def test_commit_while_discard_in_progress(self):
         SCOPE1='local'; SCOPE2='global'
         self.enable_security_draft_mode(SCOPE1, SCOPE2)
-        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2)
+        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2, retry=3)
         self.addCleanup(self.commit, SCOPE1, SCOPE2)
 
         local_objs = self.create_n_security_objects(scope=SCOPE1)
@@ -1543,7 +1543,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
         sg_global = self.create_service_group('global')
         services = [('tcp', (0,65535), (8085, 8085))]
         self.enable_security_draft_mode(SCOPE1, SCOPE2)
-        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2)
+        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2, retry=3)
         self.addCleanup(self.commit, SCOPE1, SCOPE2)
 
         local_objs = self.create_n_security_objects(scope=SCOPE1)
@@ -1579,7 +1579,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
         sg_proj = self.create_service_group('local', connections=proj1_conn)
         services = [('tcp', (0,65535), (8085, 8085))]
         self.enable_security_draft_mode(SCOPE1, SCOPE2)
-        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2)
+        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2, retry=3)
         self.addCleanup(self.commit, SCOPE1, SCOPE2)
 
         local_objs = self.create_n_security_objects(scope=SCOPE1)
@@ -1607,7 +1607,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
         sg_global = self.create_service_group('global')
         services = [('tcp', (0,65535), (8085, 8085))]
         self.enable_security_draft_mode(SCOPE1, SCOPE2)
-        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2)
+        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2, retry=3)
         self.addCleanup(self.commit, SCOPE1, SCOPE2)
         self.addCleanup(self.sleep, 30)
 
@@ -1644,7 +1644,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
         sg_proj = self.create_service_group('local', connections=proj1_conn)
         services = [('tcp', (0,65535), (8085, 8085))]
         self.enable_security_draft_mode(SCOPE1, SCOPE2)
-        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2)
+        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2, retry=3)
         self.addCleanup(self.commit, SCOPE1, SCOPE2)
 
         local_objs = self.create_n_security_objects(scope=SCOPE1)
