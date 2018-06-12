@@ -1,5 +1,3 @@
-from gevent import monkey
-monkey.patch_all()
 from common.neutron.base import BaseNeutronTest
 from tcutils.util import get_random_name
 from vn_test import VNFixture
@@ -13,7 +11,7 @@ from address_group import AddressGroupFixture
 from service_group import ServiceGroupFixture
 from tcutils.traffic_utils.base_traffic import BaseTraffic, SCAPY
 from collections import defaultdict
-from vnc_api.vnc_api import NoIdError
+from vnc_api.vnc_api import NoIdError, BadRequest
 import random
 import copy
 
@@ -127,17 +125,26 @@ class BaseFirewallTest(BaseNeutronTest):
     def disable_security_draft_mode(self, SCOPE1=None, SCOPE2=None,
                                     project_fqname=None, **kwargs):
         connections = kwargs.pop('connections', None) or self.connections
+        retry = kwargs.get('retry', 1)
         vnc_h = connections.orch.vnc_h
-        if SCOPE1 == 'global':
-            project_fqname = None
-        elif SCOPE1 == 'local':
-            project_fqname = self.project.project_fq_name
-            if SCOPE2 == 'global':
-                self.logger.info('Disable security draft mode on global')
-                vnc_h.disable_security_draft_mode()
-        self.logger.info('Disable security draft mode on %s'%(
-            project_fqname if project_fqname else 'global'))
-        vnc_h.disable_security_draft_mode(project_fqname)
+        while retry:
+            try:
+                if SCOPE1 == 'global':
+                    project_fqname = None
+                elif SCOPE1 == 'local':
+                    project_fqname = self.project.project_fq_name
+                    if SCOPE2 == 'global':
+                        self.logger.info('Disable security draft mode on global')
+                        vnc_h.disable_security_draft_mode()
+                self.logger.info('Disable security draft mode on %s'%(
+                    project_fqname if project_fqname else 'global'))
+                vnc_h.disable_security_draft_mode(project_fqname)
+                break
+            except BadRequest as e:
+                retry = retry - 1
+                if not retry:
+                    raise
+                self.sleep(5)
 
     def discard(self, SCOPE1=None, SCOPE2=None, project_fqname=None, **kwargs):
         connections = kwargs.pop('connections', None) or self.connections
@@ -146,12 +153,13 @@ class BaseFirewallTest(BaseNeutronTest):
             project_fqname = None
         elif SCOPE1 == 'local':
             project_fqname = self.project.project_fq_name
-            if SCOPE2 == 'global':
-                self.logger.info('discard security drafts on global')
-                vnc_h.discard_security_draft()
         self.logger.info('discard security drafts on %s'%(
             project_fqname if project_fqname else 'global'))
         vnc_h.discard_security_draft(project_fqname)
+        if SCOPE1 == 'local' and SCOPE2 == 'global':
+            self.logger.info('discard security drafts on global')
+            self.sleep(kwargs.get('interval') or 2)
+            vnc_h.discard_security_draft()
 
     def commit(self, SCOPE1=None, SCOPE2=None, project_fqname=None, **kwargs):
         connections = kwargs.pop('connections', None) or self.connections
@@ -160,12 +168,13 @@ class BaseFirewallTest(BaseNeutronTest):
             project_fqname = None
         elif SCOPE1 == 'local':
             project_fqname = self.project.project_fq_name
-            if SCOPE2 == 'global':
-                self.logger.info('commit security drafts on global')
-                vnc_h.commit_security_draft()
         self.logger.info('commit security drafts on %s'%(
             project_fqname if project_fqname else 'global'))
         vnc_h.commit_security_draft(project_fqname)
+        if SCOPE1 == 'local' and SCOPE2 == 'global':
+            self.logger.info('commit security drafts on global')
+            self.sleep(kwargs.get('interval') or 2)
+            vnc_h.commit_security_draft()
 
     def list_security_drafts(self, SCOPE1=None, SCOPE2=None, project_fqname=None, **kwargs):
         drafts = defaultdict(list)
