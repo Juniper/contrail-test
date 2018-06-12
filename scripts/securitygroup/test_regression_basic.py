@@ -160,3 +160,4 @@ class SecurityGroupBasicRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolic
         #Ping should pass now
         assert vm1_fixture.ping_with_certainty(ip=vm2_fixture.vm_ip,
             expectation=True)
+        return False
