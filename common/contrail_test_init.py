@@ -276,6 +276,7 @@ class TestInputs(object):
         self.kube_manager_control_ips = []
         self.k8s_master_ip = ""
         self.k8s_slave_ips = []
+        self.dpdk_ips = []
         self.host_data = {}
         self.tor = {}
         self.tor_hosts_data = {}
@@ -342,6 +343,7 @@ class TestInputs(object):
                     if roles['vrouter'].get('AGENT_MODE') == 'dpdk':
                         host_data['is_dpdk'] = True
                         self.is_dpdk_cluster = True
+                        self.dpdk_ips.append(host_data['host_ip'])
                 host_data_ip = host_control_ip = data_ip
             if 'control' in roles:
                 service_ip = self.get_service_ip(host_data['host_ip'], 'control')
@@ -546,6 +548,13 @@ class TestInputs(object):
 	    self.ixia_linux_password = traffic_gen.get('ixia_linux_password')
 	    self.spirent_linux_username = traffic_gen.get('spirent_linux_username')
 	    self.spirent_linux_password = traffic_gen.get('spirent_linux_password')
+            self.ixia_mx_ip = traffic_gen.get('ixia_mx_ip')
+            self.spirent_mx_ip = traffic_gen.get('spirent_mx_ip')
+            self.ixia_mx_username = traffic_gen.get('ixia_mx_username')
+            self.ixia_mx_password = traffic_gen.get('ixia_mx_password')
+            self.spirent_mx_username = traffic_gen.get('spirent_mx_username')
+            self.spirent_mx_password = traffic_gen.get('spirent_mx_password')
+
         if 'device_manager' in test_configs:
             self.dm_mx = test_configs['device_manager']
         if 'ns_agilio_vrouter' in test_configs:

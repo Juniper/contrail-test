@@ -1,0 +1,7 @@
+#NODIVIDE
+
+LOOP loop_1 START COUNT=500
+
+1 get http://18.1.0.10:8080/index.html
+
+LOOP loop_1 STOP
