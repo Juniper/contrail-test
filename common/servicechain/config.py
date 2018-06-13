@@ -178,16 +178,17 @@ class ConfigSvcChain(fixtures.Fixture):
                        count=1,
                        flavor='contrail_flavor_small',
                        zone=None,
-                       node_name=None):
+                       node_name=None,
+                       **kwargs):
         if vns:
             vn_objs = [vn.obj for vn in vns if vn is not None]
             vm_fixture = self.config_vm(
                 vm_name, vns=vn_objs, image_name=image_name, count=count,
-                flavor=flavor, zone=zone, node_name=node_name)
+                flavor=flavor, zone=zone, node_name=node_name,**kwargs)
         else:
             vm_fixture = self.config_vm(
                 vm_name, vn_fix=vn_fix, image_name=image_name, count=count,
-                flavor=flavor, zone=zone, node_name=node_name)
+                flavor=flavor, zone=zone, node_name=node_name,**kwargs)
         return vm_fixture
     # end config_vm_only
 
@@ -214,17 +215,18 @@ class ConfigSvcChain(fixtures.Fixture):
                   flavor='contrail_flavor_small',
                   vns=[],
                   count=1,
-                  zone=None):
+                  zone=None,
+                  **kwargs):
         if vn_fix:
             vm_fixture = self.useFixture(VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
                 vn_obj=vn_fix.obj, vm_name=vm_name, node_name=node_name,
-                image_name=image_name, flavor=flavor, count=count, zone=zone))
+                image_name=image_name, flavor=flavor, count=count, zone=zone,**kwargs))
         elif vns:
             vm_fixture = self.useFixture(VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
                 vm_name=vm_name, node_name=node_name, image_name=image_name,
-                flavor=flavor, vn_objs=vns, count=count, zone=zone))
+                flavor=flavor, vn_objs=vns, count=count, zone=zone,**kwargs))
 
         return vm_fixture
 

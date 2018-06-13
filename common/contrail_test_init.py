@@ -164,6 +164,363 @@ class TestInputs(object):
             'contrail-database', 'contrail-database-nodemgr']
         self.correct_states = ['active', 'backup']
 
+    def parse_ini_file(self):
+        self.config = ConfigParser.ConfigParser()
+        self.config.read(self.input_file)
+        self.orchestrator = read_config_option(self.config,
+                                               'Basic', 'orchestrator', 'openstack')
+        self.slave_orchestrator = read_config_option(self.config,
+                                                     'Basic', 'slave_orchestrator', None)
+        self.deployer = read_config_option(self.config,
+                                               'Basic', 'deployer', 'openstack')
+        self.prov_file = read_config_option(self.config,
+                                            'Basic', 'provFile', None)
+        self.key = read_config_option(self.config,
+                                      'Basic', 'key', 'key1')
+        self.keystone_version = read_config_option(self.config,
+                                                   'Basic',
+                                                   'keystone_version',
+                                                   'v2')
+        self.use_project_scoped_token = read_config_option(self.config,
+                                                   'Basic',
+                                                   'use_project_scoped_token',
+                                                   False)
+        self.domain_isolation = read_config_option(self.config,
+            'Basic',
+            'domain_isolation',
+            False) if self.keystone_version == 'v3' else False
+        self.cloud_admin_domain = read_config_option(self.config,
+            'Basic',
+            'cloud_admin_domain',
+            'Default')
+        self.tenant_isolation = read_config_option(self.config,
+            'Basic',
+            'tenant_isolation',
+            True)
+        self.user_isolation = read_config_option(self.config,
+            'Basic',
+            'user_isolation',
+            True)
+        # Read admin credentials if any
+
+        self.admin_username = read_config_option(self.config,
+            'Basic',
+            'adminUser',
+            os.getenv('OS_USERNAME', 'admin'))
+        self.admin_password = read_config_option(self.config,
+            'Basic',
+            'adminPassword',
+            os.getenv('OS_PASSWORD', 'contrail123'))
+        self.admin_tenant = read_config_option(self.config,
+            'Basic',
+            'adminTenant',
+            os.getenv('OS_TENANT_NAME', 'admin'))
+
+        self.admin_domain = read_config_option(self.config,
+            'Basic',
+            'adminDomain',
+            os.getenv('OS_DOMAIN_NAME',
+                ORCH_DEFAULT_DOMAIN.get(self.orchestrator)))
+
+        if self.orchestrator == 'kubernetes':
+            self.admin_tenant = 'default'
+            self.tenant_isolation = False
+        self.stack_user = read_config_option(
+            self.config,
+            'Basic',
+            'stackUser',
+            self.admin_username)
+        self.stack_password = read_config_option(
+            self.config,
+            'Basic',
+            'stackPassword',
+            self.admin_password)
+        self.stack_tenant = read_config_option(
+            self.config,
+            'Basic',
+            'stackTenant',
+            self.admin_tenant)
+        self.stack_domain = read_config_option(
+            self.config,
+            'Basic',
+            'stackDomain',
+            os.getenv('OS_DOMAIN_NAME', self.admin_domain))
+        self.region_name = read_config_option(
+            self.config,
+            'Basic',
+            'stackRegion',
+            os.getenv('OS_REGION_NAME', 'RegionOne'))
+        self.availability_zone = read_config_option(
+            self.config,
+            'Basic',
+            'availability_zone',
+            None)
+        self.endpoint_type = read_config_option(
+            self.config,
+            'Basic',
+            'endpoint_type',
+            'publicURL')
+        self.auth_ip = read_config_option(self.config,
+                                          'Basic', 'auth_ip', None)
+        self.auth_port = read_config_option(self.config,
+                                            'Basic', 'auth_port', 5000)
+        self.auth_protocol = read_config_option(self.config,
+                                            'Basic', 'auth_protocol', 'http')
+        self.api_protocol = read_config_option(self.config,
+                                          'cfgm', 'api_protocol', 'http')
+        self.api_insecure = read_config_option(self.config,
+                                          'cfgm', 'api_insecure_flag', True)
+        self.api_server_port = read_config_option(self.config, 'services',
+                                          'config_api_port', '8082')
+        self.analytics_api_port = read_config_option(self.config, 'services',
+                                          'analytics_api_port', '8081')
+        self.bgp_port = read_config_option(self.config, 'services',
+                                          'control_port', '8083')
+        self.dns_port = read_config_option(self.config, 'services',
+                                          'dns_port', '8092')
+        self.agent_port = read_config_option(self.config, 'services',
+                                          'agent_port', '8085')
+        self.k8s_port = read_config_option(self.config, 'services',
+                                          'k8s_port', '8108')
+        self.api_server_ip = read_config_option(self.config, 'services',
+                                          'config_api_ip', None)
+        self.analytics_api_ip = read_config_option(self.config, 'services',
+                                          'analytics_api_ip', None)
+        self.contrail_internal_vip = read_config_option(self.config, 'HA',
+                                          'contrail_internal_vip', None)
+        self.contrail_external_vip = read_config_option(self.config, 'HA',
+                                          'contrail_external_vip',
+                                          self.contrail_internal_vip)
+        self.internal_vip = read_config_option(self.config, 'HA',
+                                          'internal_vip', None)
+        self.external_vip = read_config_option(self.config, 'HA',
+                                          'external_vip', self.internal_vip)
+        self.multi_tenancy = read_config_option(self.config,
+                                                'Basic', 'multiTenancy', False)
+        self.enable_ceilometer = read_config_option(self.config,
+                                                    'Basic', 'enable_ceilometer', False)
+        self.ci_flavor = read_config_option(self.config,
+                                            'Basic', 'ci_flavor', None)
+        self.config_amqp_ips = read_config_option(self.config,
+                                            'services', 'config_amqp_ips', None)
+        if self.config_amqp_ips:
+            self.config_amqp_ips = self.config_amqp_ips.split(',')
+        self.config_amqp_port = read_config_option(self.config,
+                                            'services', 'config_amqp_port', '5673')
+        self.fixture_cleanup = read_config_option(
+            self.config,
+            'Basic',
+            'fixtureCleanup',
+            'yes')
+        self.key_filename = read_config_option(self.config, 'Basic',
+                                               'key_filename', None)
+        self.pubkey_filename = read_config_option(self.config, 'Basic',
+                                                  'pubkey_filename', None)
+        self.http_proxy = read_config_option(self.config,
+                                             'proxy', 'proxy_url', None)
+        self.ui_config = read_config_option(self.config,
+                                            'ui', 'ui_config', None)
+        self.ui_browser = read_config_option(self.config,
+                                             'ui', 'ui_browser', None)
+        self.verify_webui = read_config_option(self.config,
+                                               'ui', 'webui', False)
+        self.verify_horizon = read_config_option(self.config,
+                                                 'ui', 'horizon', False)
+        self.kube_config_file = read_config_option(self.config,
+                                                   'kubernetes', 'config_file',
+                                                   '/etc/kubernetes/admin.conf')
+        self.use_devicemanager_for_md5 = read_config_option(
+            self.config, 'use_devicemanager_for_md5', 'use_devicemanager_for_md5', False)
+        # router options
+        self.mx_rt = read_config_option(self.config,
+                                        'router', 'route_target', '10003')
+        self.router_asn = read_config_option(self.config,
+                                             'router', 'asn', '64512')
+        router_info_tuples_string = read_config_option(
+            self.config,
+            'router',
+            'router_info',
+            '[]')
+        self.ext_routers = ast.literal_eval(router_info_tuples_string)
+
+        fabric_gw_info_tuples_string = read_config_option(
+            self.config,
+            'router',
+            'fabric_gw_info',
+            '[]')
+        self.fabric_gw_info = ast.literal_eval(fabric_gw_info_tuples_string)
+
+        self.fip_pool_name = read_config_option(
+            self.config,
+            'router',
+            'fip_pool_name',
+            'public-pool')
+        self.fip_pool = read_config_option(self.config,
+                                           'router', 'fip_pool', None)
+        self.public_vn = read_config_option(
+            self.config,
+            'router',
+            'public_virtual_network',
+            'public-network')
+        self.public_tenant = read_config_option(
+            self.config,
+            'router',
+            'public_tenant_name',
+            'public-tenant')
+
+        # HA setup IPMI username/password
+        self.ha_setup = read_config_option(self.config, 'HA', 'ha_setup', None)
+
+        if self.ha_setup == True:
+            self.ipmi_username = read_config_option(
+                self.config,
+                'HA',
+                'ipmi_username',
+                'ADMIN')
+            self.ipmi_password = read_config_option(
+                self.config,
+                'HA',
+                'ipmi_password',
+                'ADMIN')
+        # debug option
+        self.verify_on_setup = read_config_option(
+            self.config,
+            'debug',
+            'verify_on_setup',
+            True)
+        self.stop_on_fail = bool(
+            read_config_option(
+                self.config,
+                'debug',
+                'stop_on_fail',
+                None))
+        self.public_host = read_config_option(self.config, 'Basic',
+                                              'public_host', '10.204.216.50')
+
+        if self.keystone_version == 'v3':
+            self.auth_url = os.getenv('OS_AUTH_URL') or \
+                        '%s://%s:%s/v3'%(self.auth_protocol,
+                                           self.auth_ip,
+                                           self.auth_port)
+            self.authn_url = '/v3/auth/tokens'
+        else:
+            self.auth_url = os.getenv('OS_AUTH_URL') or \
+                        '%s://%s:%s/v2.0'%(self.auth_protocol,
+                                           self.auth_ip,
+                                           self.auth_port)
+            self.authn_url = '/v2.0/tokens'
+        self._set_auth_vars()
+        self.apicertfile = read_config_option(self.config,
+                                             'cfgm', 'api_certfile', DEFAULT_CERT)
+        self.apikeyfile = read_config_option(self.config,
+                                            'cfgm', 'api_keyfile', DEFAULT_PRIV_KEY)
+        self.apicafile = read_config_option(self.config,
+                                           'cfgm', 'api_cafile', DEFAULT_CA)
+        self.api_insecure = bool(read_config_option(self.config,
+                                 'cfgm', 'api_insecure_flag', False))
+
+        self.introspect_certfile = read_config_option(self.config,
+                                             'introspect', 'introspect_certfile', DEFAULT_CERT)
+        self.introspect_keyfile = read_config_option(self.config,
+                                            'introspect', 'introspect_keyfile', DEFAULT_PRIV_KEY)
+        self.introspect_cafile = read_config_option(self.config,
+                                           'introspect', 'introspect_cafile', DEFAULT_CA)
+        self.introspect_insecure = bool(read_config_option(self.config,
+                                 'introspect', 'introspect_insecure_flag', True))
+        self.introspect_protocol = read_config_option(self.config,
+                                          'introspect', 'introspect_protocol', 'http')
+
+        self.keystonecertfile = read_config_option(self.config,
+                                'Basic', 'keystone_certfile',
+                                os.getenv('OS_CERT', None))
+        self.keystonekeyfile = read_config_option(self.config,
+                               'Basic', 'keystone_keyfile',
+                               os.getenv('OS_KEY', None))
+        self.keystonecafile = read_config_option(self.config,
+                              'Basic', 'keystone_cafile',
+                              os.getenv('OS_CACERT', None))
+        self.insecure = bool(read_config_option(self.config,
+                             'Basic', 'keystone_insecure_flag', False))
+        self.prov_data = self.read_prov_file()
+        #vcenter server
+        self.vcenter_dc = read_config_option(
+           self.config, 'vcenter', 'vcenter_dc', None)
+        self.vcenter_server = read_config_option(
+           self.config, 'vcenter', 'vcenter_server', None)
+        self.vcenter_port = read_config_option(
+           self.config, 'vcenter', 'vcenter_port', None)
+        self.vcenter_username = read_config_option(
+           self.config, 'vcenter', 'vcenter_username', None)
+        self.vcenter_password = read_config_option(
+           self.config, 'vcenter', 'vcenter_password', None)
+        self.vcenter_compute = read_config_option(
+           self.config, 'vcenter', 'vcenter_compute', None)
+        #for multiple vcenter
+        try:
+            if 'vcenter_servers' in self.prov_data.keys():
+                for server in self.prov_data['vcenter_servers']:
+                    for dc in server['datacenters']:
+                        for dv in server['datacenters'][dc]['dv_switches']:
+                            self.dv_switch = dv
+            elif 'vcenter' in self.prov_data.keys():
+                self.dv_switch = self.prov_data['vcenter'][0]['dv_switch']['dv_switch_name']
+        except Exception as e:
+            pass
+        self.gc_host_mgmt = read_config_option(self.config,
+                                             'global-controller', 'gc_host_mgmt', 'None')
+        self.gc_host_control_data = read_config_option(self.config,
+                                             'global-controller', 'gc_host_control_data', 'None')
+        self.gc_user_name = read_config_option(self.config,
+                                             'global-controller', 'gc_user_name', 'None')
+        self.gc_user_pwd = read_config_option(self.config,
+                                             'global-controller', 'gc_user_pwd', 'None')
+        self.keystone_password = read_config_option(self.config,
+                                             'global-controller', 'keystone_password', 'None')
+	self.ixia_linux_host_ip = read_config_option(self.config,
+                                             'traffic_data', 'ixia_linux_host_ip', None)
+	self.ixia_host_ip = read_config_option(self.config,
+                                             'traffic_data', 'ixia_host_ip', None)
+	self.spirent_linux_host_ip = read_config_option(self.config,
+                                             'traffic_data', 'spirent_linux_host_ip', None)
+	self.ixia_linux_username = read_config_option(self.config,
+	                                     'traffic_data', 'ixia_linux_username', None)
+	self.ixia_linux_password = read_config_option(self.config,
+                                             'traffic_data', 'ixia_linux_password', None)
+	self.spirent_linux_username = read_config_option(self.config,
+                                             'traffic_data', 'spirent_linux_username', None)
+	self.spirent_linux_password = read_config_option(self.config,
+                                             'traffic_data', 'spirent_linux_password', None)
+
+        #Report Parsing
+        self.log_scenario = read_config_option(self.config,
+                                               'Basic', 'logScenario', 'Sanity')
+        self.image_web_server = read_config_option(self.config,
+            'Basic',
+            'image_web_server',
+            os.getenv('IMAGE_WEB_SERVER') or '10.204.216.50')
+        # Web Server related details
+        self.web_server = read_config_option(self.config,
+                                             'WebServer', 'host', None)
+        self.web_server_user = read_config_option(self.config,
+                                                  'WebServer', 'username', None)
+        self.web_server_password = read_config_option(self.config,
+                                                      'WebServer', 'password', None)
+        self.web_server_report_path = read_config_option(self.config,
+                                                         'WebServer', 'reportPath', None)
+        self.web_server_log_path = read_config_option(self.config,
+                                                      'WebServer', 'logPath', None)
+        self.web_root = read_config_option(self.config,
+                                           'WebServer', 'webRoot', None)
+        # Mail Setup
+        self.smtpServer = read_config_option(self.config,
+                                             'Mail', 'server', None)
+        self.smtpPort = read_config_option(self.config,
+                                           'Mail', 'port', '25')
+        self.mailTo = read_config_option(self.config,
+                                         'Mail', 'mailTo', None)
+        self.mailSender = read_config_option(self.config,
+                                             'Mail', 'mailSender', 'contrailbuild@juniper.net')
+
     def _set_auth_vars(self):
         '''
         Set auth_protocol, auth_ip, auth_port from self.auth_url
@@ -276,6 +633,7 @@ class TestInputs(object):
         self.kube_manager_control_ips = []
         self.k8s_master_ip = ""
         self.k8s_slave_ips = []
+        self.dpdk_ips = []
         self.host_data = {}
         self.tor = {}
         self.tor_hosts_data = {}
@@ -342,6 +700,7 @@ class TestInputs(object):
                     if roles['vrouter'].get('AGENT_MODE') == 'dpdk':
                         host_data['is_dpdk'] = True
                         self.is_dpdk_cluster = True
+                        self.dpdk_ips.append(host_data['host_ip'])
                 host_data_ip = host_control_ip = data_ip
             if 'control' in roles:
                 service_ip = self.get_service_ip(host_data['host_ip'], 'control')
@@ -546,6 +905,13 @@ class TestInputs(object):
 	    self.ixia_linux_password = traffic_gen.get('ixia_linux_password')
 	    self.spirent_linux_username = traffic_gen.get('spirent_linux_username')
 	    self.spirent_linux_password = traffic_gen.get('spirent_linux_password')
+            self.ixia_mx_ip = traffic_gen.get('ixia_mx_ip')
+            self.spirent_mx_ip = traffic_gen.get('spirent_mx_ip')
+            self.ixia_mx_username = traffic_gen.get('ixia_mx_username')
+            self.ixia_mx_password = traffic_gen.get('ixia_mx_password')
+            self.spirent_mx_username = traffic_gen.get('spirent_mx_username')
+            self.spirent_mx_password = traffic_gen.get('spirent_mx_password')
+
         if 'device_manager' in test_configs:
             self.dm_mx = test_configs['device_manager']
         if 'ns_agilio_vrouter' in test_configs:

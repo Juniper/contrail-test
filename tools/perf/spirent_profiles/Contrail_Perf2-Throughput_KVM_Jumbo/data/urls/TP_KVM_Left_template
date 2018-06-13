@@ -1,0 +1,9 @@
+#NODIVIDE
+
+LOOP loop_1 START COUNT=500
+
+1 get http://left_IP_1:81/index.html
+1 get http://left_IP_2:81/index.html
+1 get http://left_IP_3:81/index.html
+
+LOOP loop_1 STOP

@@ -1,0 +1,309 @@
+(2016/09/02 06:14:20) -       STATUS:   Avalanche initialization is complete
+(2016/09/02 06:14:20) -       STATUS:   Tcl API root: '/opt/spirent/api/Layer_4_7_Application_Linux/TclAPI'
+(2016/09/02 06:14:20) -       STATUS:   Login as default user ...
+(2016/09/02 06:14:20) - DEBUG:          (AV_COMMANDS) *** <av::login> *** Executing "av::login {} -temp-workspace"
+(2016/09/02 06:14:20) - DEBUG:          (AV_COMMANDS) *** <av::login> *** "av::login" command execution run#1
+(2016/09/02 06:14:20) - DEBUG:                    (AV_COMMANDS) *** <av::execute> *** Executing "av::execute login 9194 {{string root} {string ""} {string manage} {string -temp}}"
+(2016/09/02 06:14:22) - DEBUG:                    (AV_COMMANDS) *** <av::execute> *** xmlrpc::call returned: {} {{port 9195} {error {}} {sessionId 362521102} {requestId 0} {status PASS} {workspaceName .temp1472811261434}}
+(2016/09/02 06:14:22) - DEBUG:          (AV_COMMANDS) *** <av::login> *** "av::login" command execution completed after 1 trials
+(2016/09/02 06:14:22) - DEBUG:          (AV_COMMANDS) *** <av::login> *** "av::login" command returned: port 9195 error {} sessionId 362521102 requestId 0 status PASS workspaceName .temp1472811261434
+(2016/09/02 06:14:22) - DEBUG:          (AV_COMMANDS) *** <av::login> *** "av::login" set sessionId as 362521102
+(2016/09/02 06:14:22) - DEBUG:          (AV_COMMANDS) *** <av::login> *** "av::login" set requestId as 0
+(2016/09/02 06:14:22) - DEBUG:          (AV_COMMANDS) *** <av::login> *** "av::login" set ablPort as 9195
+(2016/09/02 06:14:22) -       STATUS:   Login as default user ...  - done
+(2016/09/02 06:14:22) -       STATUS:   Connect to '10.87.129.177' ...
+(2016/09/02 06:14:22) - DEBUG:          (AV_COMMANDS) *** <av::connect> *** Executing "av::connect 10.87.129.177"
+(2016/09/02 06:14:22) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** Executing "av::cmd_caller connect {{string system1} {string 10.87.129.177} } result"
+(2016/09/02 06:14:22) - DEBUG:                              (AV_COMMANDS) *** <av::execute> *** Executing "av::execute connect 9195 {{string system1} {string 10.87.129.177} }"
+(2016/09/02 06:14:22) - DEBUG:                              (AV_COMMANDS) *** <av::execute> *** xmlrpc::call returned: {} {{handle {}} {error {}} {status PENDING} {requestId 1} {sessionId 362521102}}
+(2016/09/02 06:14:22) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" command execution completed
+(2016/09/02 06:14:22) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" returned: handle {} error {} status PENDING requestId 1 sessionId 362521102
+(2016/09/02 06:14:22) - DEBUG:                    (AV_COMMANDS) *** <av::waitUntilCommandIsDone> *** Executing "av::waitUntilCommandIsDone 1"
+(2016/09/02 06:14:22) - DEBUG:                              (AV_COMMANDS) *** <av::getEvents> *** Executing "av::getEvents"
+(2016/09/02 06:14:22) - DEBUG:                                        (AV_COMMANDS) *** <av::cmd_caller> *** Executing "av::cmd_caller getEvents {} event"
+(2016/09/02 06:14:22) - DEBUG:                                                  (AV_COMMANDS) *** <av::execute> *** Executing "av::execute getEvents 9195 {}"
+(2016/09/02 06:14:22) - DEBUG:                                                  (AV_COMMANDS) *** <av::execute> *** xmlrpc::call returned: {} {{error {}} {status PASS} {requestId 2} {sessionId 362521102} {event {}}}
+(2016/09/02 06:14:22) - DEBUG:                                        (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" command execution completed
+(2016/09/02 06:14:22) - DEBUG:                                        (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" returned: error {} status PASS requestId 2 sessionId 362521102 event {}
+(2016/09/02 06:14:22) - DEBUG:                              (AV_COMMANDS) *** <av::getEvents> *** Executing "av::getEvents"
+(2016/09/02 06:14:22) - DEBUG:                                        (AV_COMMANDS) *** <av::cmd_caller> *** Executing "av::cmd_caller getEvents {} event"
+(2016/09/02 06:14:22) - DEBUG:                                                  (AV_COMMANDS) *** <av::execute> *** Executing "av::execute getEvents 9195 {}"
+(2016/09/02 06:14:22) - DEBUG:                                                  (AV_COMMANDS) *** <av::execute> *** xmlrpc::call returned: {} {{error {}} {status PASS} {requestId 3} {sessionId 362521102} {event {}}}
+(2016/09/02 06:14:22) - DEBUG:                                        (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" command execution completed
+(2016/09/02 06:14:22) - DEBUG:                                        (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" returned: error {} status PASS requestId 3 sessionId 362521102 event {}
+(2016/09/02 06:14:22) - DEBUG:                              (AV_COMMANDS) *** <av::getEvents> *** Executing "av::getEvents"
+(2016/09/02 06:14:22) - DEBUG:                                        (AV_COMMANDS) *** <av::cmd_caller> *** Executing "av::cmd_caller getEvents {} event"
+(2016/09/02 06:14:22) - DEBUG:                                                  (AV_COMMANDS) *** <av::execute> *** Executing "av::execute getEvents 9195 {}"
+(2016/09/02 06:14:22) - DEBUG:                                                  (AV_COMMANDS) *** <av::execute> *** xmlrpc::call returned: {} {{error {}} {status PASS} {requestId 4} {sessionId 362521102} {event {{{message {}} {additional {{handle physicalchassis1} {error {}} {status PASS} {requestId 1} {sessionId 362521102}}} {name async_method_completed}}}}}
+(2016/09/02 06:14:22) - DEBUG:                                        (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" command execution completed
+(2016/09/02 06:14:22) - DEBUG:                                        (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" returned: error {} status PASS requestId 4 sessionId 362521102 event {{{message {}} {additional {{handle physicalchassis1} {error {}} {status PASS} {requestId 1} {sessionId 362521102}}} {name async_method_completed}}}
+(2016/09/02 06:14:23) - DEBUG:          (AV_COMMANDS) *** <av::get> *** Executing "av::get physicalchassis1 -deviceType"
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::get> *** Executing "av::get physicalchassis1"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::cmd_caller> *** Executing "av::cmd_caller get {{string physicalchassis1} } result"
+(2016/09/02 06:14:23) - DEBUG:                                        (AV_COMMANDS) *** <av::execute> *** Executing "av::execute get 9195 {{string physicalchassis1} }"
+(2016/09/02 06:14:23) - DEBUG:                                        (AV_COMMANDS) *** <av::execute> *** xmlrpc::call returned: {} {{result {{model CEE-3100-4X10G/1G} {handle physicalchassis1} {location 10.87.129.177} {activeSoftware {4.40.1526 Mar 26 2014 09:38:57}} {appliancedata appliancedata1} {parent physicalchassismanager1} {serialNumber 001517ea9a94} {liveSupportOn false} {physicaltestmodules physicaltestmodule1} {availableModes MODE_FUNCTIONAL,MODE_PERFORMANCE,MODE_MAXIMUM} {deviceType APPLIANCE} {portLinkStatus STATUS_UNKNOWN} {linkStatus true} {ipAddress 10.87.129.177}}} {error {}} {status PASS} {requestId 5} {sessionId 362521102}}
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" command execution completed
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" returned: result {{model CEE-3100-4X10G/1G} {handle physicalchassis1} {location 10.87.129.177} {activeSoftware {4.40.1526 Mar 26 2014 09:38:57}} {appliancedata appliancedata1} {parent physicalchassismanager1} {serialNumber 001517ea9a94} {liveSupportOn false} {physicaltestmodules physicaltestmodule1} {availableModes MODE_FUNCTIONAL,MODE_PERFORMANCE,MODE_MAXIMUM} {deviceType APPLIANCE} {portLinkStatus STATUS_UNKNOWN} {linkStatus true} {ipAddress 10.87.129.177}} error {} status PASS requestId 5 sessionId 362521102
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** Executing "av::cmd_caller get {{string physicalchassis1} {string deviceType}} result"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::execute> *** Executing "av::execute get 9195 {{string physicalchassis1} {string deviceType}}"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::execute> *** xmlrpc::call returned: {} {{result APPLIANCE} {error {}} {status PASS} {requestId 6} {sessionId 362521102}}
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" command execution completed
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" returned: result APPLIANCE error {} status PASS requestId 6 sessionId 362521102
+(2016/09/02 06:14:23) -       STATUS:   Connect to '10.87.129.177' ...  - done
+(2016/09/02 06:14:23) -       STATUS:   Using license 'Juniper_3100B_3.XX' ...
+(2016/09/02 06:14:23) - DEBUG:          (AV_COMMANDS) *** <av::get> *** Executing "av::get system1 -licensemanager"
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::get> *** Executing "av::get system1"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::cmd_caller> *** Executing "av::cmd_caller get {{string system1} } result"
+(2016/09/02 06:14:23) - DEBUG:                                        (AV_COMMANDS) *** <av::execute> *** Executing "av::execute get 9195 {{string system1} }"
+(2016/09/02 06:14:23) - DEBUG:                                        (AV_COMMANDS) *** <av::execute> *** xmlrpc::call returned: {} {{result {{physicalchassismanager physicalchassismanager1} {projectsBackup {}} {runningtestinfo runningtestinfo1} {handle system1} {lastfinishedtestinfo lastfinishedtestinfo1} {workspace .temp1472811261434} {parent {}} {serverconfiguration serverconfiguration1} {metainfo metainfo1} {workspacemanager workspacemanager1} {projects {}} {testtypes {testtype1 testtype2 testtype3 testtype4 testtype5}} {disconnectedTest {}} {licensemanager licensemanager1} {isLowDiskSpace false} {latestExportedFile {}} {resultdatasets {}} {user root}}} {error {}} {status PASS} {requestId 7} {sessionId 362521102}}
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" command execution completed
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" returned: result {{physicalchassismanager physicalchassismanager1} {projectsBackup {}} {runningtestinfo runningtestinfo1} {handle system1} {lastfinishedtestinfo lastfinishedtestinfo1} {workspace .temp1472811261434} {parent {}} {serverconfiguration serverconfiguration1} {metainfo metainfo1} {workspacemanager workspacemanager1} {projects {}} {testtypes {testtype1 testtype2 testtype3 testtype4 testtype5}} {disconnectedTest {}} {licensemanager licensemanager1} {isLowDiskSpace false} {latestExportedFile {}} {resultdatasets {}} {user root}} error {} status PASS requestId 7 sessionId 362521102
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** Executing "av::cmd_caller get {{string system1} {string licensemanager}} result"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::execute> *** Executing "av::execute get 9195 {{string system1} {string licensemanager}}"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::execute> *** xmlrpc::call returned: {} {{result licensemanager1} {error {}} {status PASS} {requestId 8} {sessionId 362521102}}
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" command execution completed
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" returned: result licensemanager1 error {} status PASS requestId 8 sessionId 362521102
+(2016/09/02 06:14:23) - DEBUG:          (AV_COMMANDS) *** <av::get> *** Executing "av::get licensemanager1 -licenses"
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::get> *** Executing "av::get licensemanager1"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::cmd_caller> *** Executing "av::cmd_caller get {{string licensemanager1} } result"
+(2016/09/02 06:14:23) - DEBUG:                                        (AV_COMMANDS) *** <av::execute> *** Executing "av::execute get 9195 {{string licensemanager1} }"
+(2016/09/02 06:14:23) - DEBUG:                                        (AV_COMMANDS) *** <av::execute> *** xmlrpc::call returned: {} {{result {{handle licensemanager1} {currentlicense license1} {parent system1} {licenses license1}}} {error {}} {status PASS} {requestId 9} {sessionId 362521102}}
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" command execution completed
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" returned: result {{handle licensemanager1} {currentlicense license1} {parent system1} {licenses license1}} error {} status PASS requestId 9 sessionId 362521102
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** Executing "av::cmd_caller get {{string licensemanager1} {string licenses}} result"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::execute> *** Executing "av::execute get 9195 {{string licensemanager1} {string licenses}}"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::execute> *** xmlrpc::call returned: {} {{result license1} {error {}} {status PASS} {requestId 10} {sessionId 362521102}}
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" command execution completed
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" returned: result license1 error {} status PASS requestId 10 sessionId 362521102
+(2016/09/02 06:14:23) - DEBUG:          (AV_COMMANDS) *** <av::get> *** Executing "av::get license1 -name"
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::get> *** Executing "av::get license1"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::cmd_caller> *** Executing "av::cmd_caller get {{string license1} } result"
+(2016/09/02 06:14:23) - DEBUG:                                        (AV_COMMANDS) *** <av::execute> *** Executing "av::execute get 9195 {{string license1} }"
+(2016/09/02 06:14:23) - DEBUG:                                        (AV_COMMANDS) *** <av::execute> *** xmlrpc::call returned: {} {{result {{handle license1} {contents {Hardware identifiers for Portable:
+Hardware identifiers for Chassis:
+Hardware identifiers for Appliance:
+00-15-17-D8-3F-08
+00-15-17-C5-62-D0
+00-15-17-EA-69-08
+00-15-17-EA-95-68
+00-15-17-EA-9A-94
+00-15-17-EA-93-F0
+00-15-17-A1-DA-C6
+00-15-17-A1-E0-EE
+00-15-17-A2-E6-AC
+00-15-17-A2-E0-20
+00-15-17-B7-D3-54
+00-15-17-B7-D2-64
+00-15-17-B7-D2-90
+00-15-17-B7-D2-54
+00-15-17-B7-D2-54
+00-15-17-A2-8C-20
+Hardware identifiers for SpirentTestCenter:
+
+Start Date: Fri Mar 07 00:00:00 AST 2014
+End Date: none
+
+Avalanche Information:
+
+# of Avalanches: 192
+Performance: 192 Premium
+PPPoE Performance: 168 Premium
+Smtp: 168
+Sapee: 168
+EnhancedHttp: 168
+InlineDdos: 168
+NFS: 168
+RealNetworksStreaming: 192
+RTMP: 192
+QuicktimeRtsp: 192
+DHCP: 168
+ApplicationTesting: 168
+ThreatEx: 168
+IPSec: 168
+802.1x: 168
+CIFS NG: 168
+Multicast: 168
+CaptureReplay: 168
+Cifs: 168
+MicrosoftMms: 192
+SslAcceleration: 168
+IPv6: 168
+Ssl: 168
+Sip: 168
+NACP: 168
+VulnerabilityTesting: 168
+NAC: 168
+Pop3: 168
+Imap4: 168
+MM4: 168
+RADIUS: 168
+
+
+Reflector Information:
+
+# of Reflectors: 192
+Performance: 192 Premium
+Smtp: 168
+Sapee: 168
+EnhancedHttp: 168
+InlineDdos: 168
+NFS: 168
+RealNetworksStreaming: 192
+RTMP: 192
+QuicktimeRtsp: 192
+DHCP: 168
+ApplicationTesting: 168
+ThreatEx: 168
+IPSec: 168
+802.1x: 168
+CIFS NG: 168
+Multicast: 168
+CaptureReplay: 168
+Cifs: 168
+MicrosoftMms: 192
+SslAcceleration: 168
+IPv6: 168
+Ssl: 168
+Sip: 168
+NACP: 168
+VulnerabilityTesting: 168
+NAC: 168
+Pop3: 168
+Imap4: 168
+MM4: 168
+RADIUS: 168
+
+}} {file /home/Spirent/data/user/root/license/Juniper_site_lic_3100B_4.XX} {name Juniper_site_lic_3100B_4.XX} {parent licensemanager1}}} {error {}} {status PASS} {requestId 11} {sessionId 362521102}}
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" command execution completed
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" returned: result {{handle license1} {contents {Hardware identifiers for Portable:
+Hardware identifiers for Chassis:
+Hardware identifiers for Appliance:
+00-15-17-D8-3F-08
+00-15-17-C5-62-D0
+00-15-17-EA-69-08
+00-15-17-EA-95-68
+00-15-17-EA-9A-94
+00-15-17-EA-93-F0
+00-15-17-A1-DA-C6
+00-15-17-A1-E0-EE
+00-15-17-A2-E6-AC
+00-15-17-A2-E0-20
+00-15-17-B7-D3-54
+00-15-17-B7-D2-64
+00-15-17-B7-D2-90
+00-15-17-B7-D2-54
+00-15-17-B7-D2-54
+00-15-17-A2-8C-20
+Hardware identifiers for SpirentTestCenter:
+
+Start Date: Fri Mar 07 00:00:00 AST 2014
+End Date: none
+
+Avalanche Information:
+
+# of Avalanches: 192
+Performance: 192 Premium
+PPPoE Performance: 168 Premium
+Smtp: 168
+Sapee: 168
+EnhancedHttp: 168
+InlineDdos: 168
+NFS: 168
+RealNetworksStreaming: 192
+RTMP: 192
+QuicktimeRtsp: 192
+DHCP: 168
+ApplicationTesting: 168
+ThreatEx: 168
+IPSec: 168
+802.1x: 168
+CIFS NG: 168
+Multicast: 168
+CaptureReplay: 168
+Cifs: 168
+MicrosoftMms: 192
+SslAcceleration: 168
+IPv6: 168
+Ssl: 168
+Sip: 168
+NACP: 168
+VulnerabilityTesting: 168
+NAC: 168
+Pop3: 168
+Imap4: 168
+MM4: 168
+RADIUS: 168
+
+
+Reflector Information:
+
+# of Reflectors: 192
+Performance: 192 Premium
+Smtp: 168
+Sapee: 168
+EnhancedHttp: 168
+InlineDdos: 168
+NFS: 168
+RealNetworksStreaming: 192
+RTMP: 192
+QuicktimeRtsp: 192
+DHCP: 168
+ApplicationTesting: 168
+ThreatEx: 168
+IPSec: 168
+802.1x: 168
+CIFS NG: 168
+Multicast: 168
+CaptureReplay: 168
+Cifs: 168
+MicrosoftMms: 192
+SslAcceleration: 168
+IPv6: 168
+Ssl: 168
+Sip: 168
+NACP: 168
+VulnerabilityTesting: 168
+NAC: 168
+Pop3: 168
+Imap4: 168
+MM4: 168
+RADIUS: 168
+
+}} {file /home/Spirent/data/user/root/license/Juniper_site_lic_3100B_4.XX} {name Juniper_site_lic_3100B_4.XX} {parent licensemanager1}} error {} status PASS requestId 11 sessionId 362521102
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** Executing "av::cmd_caller get {{string license1} {string name}} result"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::execute> *** Executing "av::execute get 9195 {{string license1} {string name}}"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::execute> *** xmlrpc::call returned: {} {{result Juniper_site_lic_3100B_4.XX} {error {}} {status PASS} {requestId 12} {sessionId 362521102}}
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" command execution completed
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" returned: result Juniper_site_lic_3100B_4.XX error {} status PASS requestId 12 sessionId 362521102
+(2016/09/02 06:14:23) -       STATUS:   
+License file 'Juniper_3100B_3.XX' has not been yet added as a license for TclAPI package
+(2016/09/02 06:14:23) -       STATUS:   Adding license 'Juniper_3100B_3.XX' now...
+(2016/09/02 06:14:23) - DEBUG:          (AV_COMMANDS) *** <av::create> *** Executing "av::create licenses -under licensemanager1 -name Juniper_3100B_3.XX -file /opt/spirent/licenses/Juniper_3100B_3.XX.xml"
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** Executing "av::cmd_caller create {{string licensemanager1} {string licenses} {struct attrArr}} handle"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::execute> *** Executing "av::execute create 9195 {{string licensemanager1} {string licenses} {struct attrArr}}"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::execute> *** xmlrpc::call returned: {} {{handle license2} {error {}} {status PASS} {requestId 13} {sessionId 362521102}}
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" command execution completed
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" returned: handle license2 error {} status PASS requestId 13 sessionId 362521102
+(2016/09/02 06:14:23) - DEBUG:          (AV_COMMANDS) *** <av::config> *** Executing "av::config licensemanager1 -currentlicense license2"
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** Executing "av::cmd_caller config {{string licensemanager1} {struct attrArr} } {}"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::execute> *** Executing "av::execute config 9195 {{string licensemanager1} {struct attrArr} }"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::execute> *** xmlrpc::call returned: {} {{error {}} {status PASS} {requestId 14} {sessionId 362521102}}
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" command execution completed
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" returned: error {} status PASS requestId 14 sessionId 362521102
+(2016/09/02 06:14:23) -       STATUS:   Adding license 'Juniper_3100B_3.XX' now...  - done
+(2016/09/02 06:14:23) -       STATUS:   Reserve port '10.87.129.177/1/16' ...
+(2016/09/02 06:14:23) - DEBUG:          (AV_COMMANDS) *** <av::reserve> *** Executing "av::reserve 10.87.129.177/1/16"
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** Executing "av::cmd_caller reserve {{string system1} {string 10.87.129.177/1/16}} handle"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::execute> *** Executing "av::execute reserve 9195 {{string system1} {string 10.87.129.177/1/16}}"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::execute> *** xmlrpc::call returned: {} {{handle {}} {error {{{message {The port is disabled}} {arg {}} {type cannot_reserve_port}}}} {status ERROR} {requestId 15} {sessionId 362521102}}
+(2016/09/02 06:14:23) -       STATUS:   
+--------- error --------------------
+(2016/09/02 06:14:23) - DEBUG:(ERROR) *** <runTest> *** (cannot_reserve_port) The port is disabled
+(2016/09/02 06:14:23) -       STATUS:   Logout ...
+(2016/09/02 06:14:23) - DEBUG:          (AV_COMMANDS) *** <av::logout> *** Executing "av::logout shutdown"
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** Executing "av::cmd_caller logout {{string "shutdown"}} {} 9194"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::execute> *** Executing "av::execute logout 9194 {{string "shutdown"}}"
+(2016/09/02 06:14:23) - DEBUG:                              (AV_COMMANDS) *** <av::execute> *** xmlrpc::call returned: {} {{error {}} {sessionId 362521102} {requestId 16} {status PASS}}
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" command execution completed
+(2016/09/02 06:14:23) - DEBUG:                    (AV_COMMANDS) *** <av::cmd_caller> *** "av::cmd_caller" returned: error {} sessionId 362521102 requestId 16 status PASS
+(2016/09/02 06:14:23) -       STATUS:   Logout ...  - done
