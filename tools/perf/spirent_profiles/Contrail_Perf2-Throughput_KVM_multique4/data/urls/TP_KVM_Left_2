@@ -1,0 +1,7 @@
+#NODIVIDE
+
+LOOP loop_1 START COUNT=500
+
+1 get http://13.0.0.3:82/index.html
+
+LOOP loop_1 STOP

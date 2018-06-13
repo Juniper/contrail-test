@@ -84,7 +84,7 @@ class VMFixture(fixtures.Fixture):
         self.fixed_ips = fixed_ips
         self.subnets = subnets
         self.image_name = self.inputs.get_ci_image(image_name) or image_name
-        self.flavor = self.orch.get_default_image_flavor(self.image_name) or flavor
+        self.flavor = kwargs.get('force_flavor') or self.orch.get_default_image_flavor(self.image_name) or flavor
         self.project_name = connections.project_name
         self.project_id = connections.project_id
         self.domain_name = connections.domain_name
