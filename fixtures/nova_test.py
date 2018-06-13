@@ -133,7 +133,9 @@ class NovaHelper(object):
         else:
             return self.hosts_list
 
-    def get_zones(self):
+    def get_zones(self,refresh=False):
+        if refresh:
+            self._zones = None
         return self.zones[:]
 
     def _list_hosts(self):
@@ -158,6 +160,22 @@ class NovaHelper(object):
     def get_handle(self):
         return self.obj
     # end get_handle
+
+    def create_agg(self,name,zone):
+        return self.obj.aggregates.create(name,zone)
+
+    def add_host_to_agg(self,agg_id,hosts):
+        for host in hosts:
+            self.obj.aggregates.add_host(agg_id,host)
+        return
+
+    def del_host_from_agg(self,agg_id,hosts):
+        for host in hosts:
+            self.obj.aggregates.remove_host(agg_id,host)
+        return
+ 
+    def delete_agg(self,agg_id):
+        return self.obj.aggregates.delete(agg_id)
 
     @retry(delay=5, tries=20)
     def check_if_image_active(self, image_id):
@@ -222,6 +240,34 @@ class NovaHelper(object):
             lock.release()
         return flavor
     # end get_flavor
+
+    def get_flavor_list(self):
+        f = '/tmp/%s'%('flavor')
+        lock = Lock(f)
+        try:
+            lock.acquire()
+            flavor = self.obj.flavors.list()
+        except novaException:
+            self.logger.exception('Exception while listing flavors')
+        finally:
+            lock.release()
+        return flavor
+    # end get_flavor
+
+
+    def delete_flavor(self, name):
+        f = '/tmp/%s'%('flavor')
+        lock = Lock(f)
+        try:
+            lock.acquire()
+            flavor = self.obj.flavors.delete(name)
+        except novaException:
+            self.logger.exception('Exception while deleting flavor')
+        finally:
+            lock.release()
+        return flavor
+    # end get_flavor
+
 
     def get_vm_if_present(self, vm_name=None, project_id=None, vm_id=None):
         try:
@@ -529,15 +575,9 @@ class NovaHelper(object):
         if node_name == 'disable':
             zone = None
         elif zone and node_name:
-            if zone not in self.zones:
+            if zone not in self.get_zones(refresh=True):
                 raise RuntimeError("Zone %s is not available" % zone)
-            for host in self.hosts_dict[zone]:
-                if node_name == self.get_host_name(host):
-                   node_name = host
-                   break
-            else:
-                raise RuntimeError("Zone %s doesn't have compute with name %s"
-                                        % (zone, node_name))
+                                       % (zone, node_name))
         elif node_name:
             nova_services = self.get_nova_compute_service_list()
             for compute_svc in nova_services:

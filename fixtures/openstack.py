@@ -82,6 +82,12 @@ class OpenstackOrchestrator(Orchestrator):
    def get_flavor(self, flavor):
        return self.nova_h.get_flavor(flavor)
 
+   def get_flavor_list(self):
+       return self.nova_h.get_flavor_list()
+
+   def delete_flavor(self, flavor):
+       return self.nova_h.delete_flavor(flavor)
+
    def get_hosts(self, zone=None):
        if not zone:
           return self.nova_h.get_hosts()
@@ -90,6 +96,18 @@ class OpenstackOrchestrator(Orchestrator):
 
    def get_zones(self):
        return self.nova_h.get_zones()
+
+   def create_agg(self,name,zone):
+       return self.nova_h.create_agg(name,zone)
+
+   def delete_agg(self,agg_id):
+       return self.nova_h.delete_agg(agg_id)
+
+   def add_host_to_agg(self,agg_id,host):
+       return self.nova_h.add_host_to_agg(agg_id,host)
+
+   def del_host_from_agg(self,agg_id,host):
+       return self.nova_h.del_host_from_agg(agg_id,host)
 
    def create_vm(self, vm_name, image_name, vn_objs, **kwargs):
        vn_ids = []
