@@ -880,6 +880,7 @@ class TestInputs(object):
         #    name,type,mgmt_ip,model,vendor,asn,ssh_username,ssh_password,tunnel_ip,ports
 
         self.physical_routers_data = test_configs.get('physical_routers',{})
+        self.ovsdb_setup = True if test_configs.get('evpn') is False else False
 
         #BMS information connected to TOR's
         self.tor_hosts_data = test_configs.get('tor_hosts',{})

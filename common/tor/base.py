@@ -12,6 +12,7 @@ from host_endpoint import HostEndpointFixture
 from tor_fixture import ToRFixtureFactory
 import test
 from tcutils.tcpdump_utils import search_in_pcap, delete_pcap
+from physical_device_fixture import PhysicalDeviceFixture
 from vm_test import VMFixture
 
 
@@ -85,6 +86,9 @@ class BaseTorTest(BaseNeutronTest):
                     tor_params['name'],
                     tor_params['mgmt_ip'],
                     vendor=tor_params['vendor'],
+                    model=tor_params['model'],
+                    role=tor_params['role'],
+                    role=tor_params['role'],
                     ssh_username=tor_params['ssh_username'],
                     ssh_password=tor_params['ssh_password'],
                     tunnel_ip=tor_params['tunnel_ip'],

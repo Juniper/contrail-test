@@ -38,7 +38,7 @@ class TestTor(BaseTorTest):
         return (True, None)
 
 
-    def one_kvm_one_bms_test(self, tor_id, vlan_id=0):
+    def one_kvm_one_bms_test(self, vlan_id=0):
         '''Common test code for one kvm and one bms test
         '''
         vn1_fixture = self.create_vn(disable_dns=True)
@@ -92,7 +92,7 @@ class TestTor(BaseTorTest):
         '''Validate ping between a KVM VM and a untagged BMS
 
         '''
-        self.one_kvm_one_bms_test(tor_id='1', vlan_id=0)
+        self.one_kvm_one_bms_test(vlan_id=0)
 
     # end test_ping_between_kvm_vm_and_untagged_bms
 
@@ -101,7 +101,7 @@ class TestTor(BaseTorTest):
         '''Validate ping between a KVM VM and a tagged BMS
 
         '''
-        self.one_kvm_one_bms_test(tor_id='2', vlan_id=10)
+        self.one_kvm_one_bms_test(vlan_id=10)
 
     # end test_ping_between_kvm_vm_and_tagged_bms
 
@@ -265,6 +265,7 @@ class TestTor(BaseTorTest):
                           bms2_fixture.info['inet_addr'])
     # end test_with_multiple_subnets
 
+    @skip_because(ovsdb_setup = False)
     @preposttest_wrapper
     def test_ovsdb_config_on_tor(self):
         ''' Associate VMI to a lif. Check that logical switch is created on ToR
@@ -377,6 +378,7 @@ class TestTor(BaseTorTest):
         assert result, message
     # end test_dhcp_flood_for_unknown_mac
 
+    @skip_because(ovsdb_setup = False)
     @preposttest_wrapper
     def test_arp_proxy_by_vrouter_for_vms(self):
         '''
@@ -462,6 +464,7 @@ class TestTor(BaseTorTest):
     # end test_unknown_unicast_forwarding
         
 
+    @skip_because(ovsdb_setup = False)
     @preposttest_wrapper
     def test_enable_disable_unknown_unicast_forwarding(self):
         ''' 

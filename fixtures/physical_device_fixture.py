@@ -54,6 +54,7 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
 
         self.phy_device = None
         self.nc_handle = None
+        self.uuid = None
 
         self.already_present = False
         self.physical_port_fixtures = {}
@@ -87,6 +88,15 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         pr.physical_router_vendor_name = self.vendor
         pr.physical_router_product_name = self.model
         pr.physical_router_vnc_managed = True
+        bgprouter_uuid = self.connections.vnc_lib.bgp_routers_list()
+        bgprouter_uuid = str(bgprouter_uuid)
+        list_uuid = re.findall('u\'uuid\': u\'([a-zA-Z0-9-]+)\'', bgprouter_uuid)
+        for node in list_uuid:
+           bgp_router_obj = self.connections.vnc_lib.bgp_router_read(id=node)
+           router_info = bgp_router_obj.get_fq_name()
+           name_pos = len(router_info)-1
+           if str(router_info[name_pos]) == str(self.name):
+              pr.set_bgp_router(bgp_router_obj)
         uc = vnc_api_test.UserCredentials(self.ssh_username, self.ssh_password)
         pr.set_physical_router_user_credentials(uc)
         if self.tsn:
@@ -96,6 +106,7 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
             self.webui.create_physical_router(self)
         else:
             pr_id = self.vnc_api_h.physical_router_create(pr)
+            self.uuid = pr.uuid
         self.logger.info('Created Physical device %s with ID %s' % (
             pr.fq_name, pr.uuid))
         return pr

@@ -1043,6 +1043,12 @@ def skip_because(*args, **kwargs):
                     msg = "Skipped as not supported in non-HA setup"
                     raise testtools.TestCase.skipException(msg)
             
+            if 'ovsdb_setup' in kwargs:
+                if ((not self.inputs.ovsdb_setup) and (kwargs["ovsdb_setup"] == False)):
+                    skip = True
+                    msg = "Skipped as not supported in non-OVSDB setup"
+                    raise testtools.TestCase.skipException(msg)
+
             if "mx_gw" in kwargs:
                 if ((not get_os_env('MX_GW_TEST') == '1') and (kwargs["mx_gw"] == False)):
                     skip = True
