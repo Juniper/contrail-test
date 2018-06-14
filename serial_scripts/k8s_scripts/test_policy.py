@@ -664,7 +664,6 @@ class TestNetworkPolicyRestart(BaseK8sTest):
         self.verify_policy_post_modification_common(pod_list_ns1, pod_list_ns2, pod_list_ns3)
     #end test_policy_kubelet_restart_on_slave
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_policy_kubelet_restart_on_master(self):
         """

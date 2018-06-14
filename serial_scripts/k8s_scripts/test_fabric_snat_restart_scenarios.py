@@ -7,7 +7,7 @@ from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import get_random_name
 import test
 import time
-
+from tcutils.contrail_status_check import ContrailStatusChecker
 
 class TestFabricSNATRestarts(BaseK8sTest):
 
@@ -207,7 +207,6 @@ class TestFabricSNATRestarts(BaseK8sTest):
                                                                            client3, client4)
     #end test_snat_with_kubelet_restart_on_master
 
-    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_snat_with_docker_restart_on_master(self):
         """
@@ -222,7 +221,10 @@ class TestFabricSNATRestarts(BaseK8sTest):
                                                                            client3, client4)
         self.inputs.restart_service(service_name = "docker",
                                             host_ips = [self.inputs.k8s_master_ip])
-        time.sleep(60) # Wait timer for all contrail service to come up.
+        time.sleep(30)
+        cluster_status, error_nodes = ContrailStatusChecker(self.inputs).wait_till_contrail_cluster_stable()
+        assert cluster_status, 'All nodes and services not up. Failure nodes are: %s' % (
+                    error_nodes)
         self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2,
                                                                            client3, client4)
     #end test_snat_with_docker_restart
