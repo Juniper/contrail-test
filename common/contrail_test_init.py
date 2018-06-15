@@ -287,11 +287,9 @@ class TestInputs(object):
                                           'config_api_ip', None)
         self.analytics_api_ip = read_config_option(self.config, 'services',
                                           'analytics_api_ip', None)
-        self.contrail_internal_vip = read_config_option(self.config, 'HA',
-                                          'contrail_internal_vip', None)
-        self.contrail_external_vip = read_config_option(self.config, 'HA',
-                                          'contrail_external_vip',
-                                          self.contrail_internal_vip)
+        #From 5.0 onwards contrail_internal_vip and contrail_external_vip are not supported.
+        self.contrail_internal_vip = None
+        self.contrail_external_vip = None
         self.internal_vip = read_config_option(self.config, 'HA',
                                           'internal_vip', None)
         self.external_vip = read_config_option(self.config, 'HA',
@@ -817,7 +815,8 @@ class TestInputs(object):
         self.analytics_api_ip = contrail_configs.get('ANALYTICS_API_VIP')
         self.config_amqp_ips = contrail_configs.get('RABBITMQ_NODES')
         self.config_amqp_port = contrail_configs.get('RABBITMQ_NODE_PORT', 5673)
-        self.contrail_internal_vip = self.contrail_external_vip = self.api_server_ip
+        #From 5.0 onwards contrail_internal_vip and contrail_external_vip are not supported.
+        self.contrail_internal_vip = self.contrail_external_vip = None
         self.xmpp_auth_enable = contrail_configs.get('XMPP_SSL_ENABLE')
         self.xmpp_dns_auth_enable = contrail_configs.get('XMPP_SSL_ENABLE')
 
