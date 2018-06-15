@@ -84,6 +84,7 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
 
         #Verify mac learned
         for stream in traffic.values():
+            sleep(5)
             src_vmi = vm[stream['src']]['vmi'][0]
             assert self.verify_mac_learning(vmi_fixtures[src_vmi],
                 bd_fixtures[stream['bd']], pbb_compute_node_ips,
