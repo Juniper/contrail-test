@@ -168,7 +168,7 @@ class CNFixture(fixtures.Fixture):
         return result
     # end is_cn_present
 
-    @retry(delay=5, tries=6)
+    @retry(delay=5, tries=12)
     def verify_peer_in_control_nodes(self):
         """
         Check the configured control node has any peer and if so the state is Established.
