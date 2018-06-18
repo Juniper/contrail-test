@@ -870,6 +870,7 @@ class TestInputs(object):
         self.verify_on_setup = False if test_configs.get('verify_on_setup') is False else True
         self.stop_on_fail = test_configs.get('stop_on_fail') or False
         self.public_host = test_configs.get('public_host') or '10.204.216.50'
+        self.public_host_url = test_configs.get('public_host_url') or 'ntp.juniper.net'
         self.public_vn = test_configs.get('public_virtual_network') or 'public-network'
         self.fip_pool = test_configs.get('public_subnet')
         self.fip_pool_name = test_configs.get('fip_pool_name')
