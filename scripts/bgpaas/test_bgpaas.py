@@ -68,12 +68,12 @@ class TestBGPaaS(BaseBGPaaS):
         bgpaas_vm1.wait_for_ssh_on_vm()
         bgpaas_vm2.wait_for_ssh_on_vm()
         self.logger.info('Attaching both the VMIs to the BGPaaS object')
-        self.attach_vmi_to_bgpaas(port1['id'], bgpaas_fixture)
+        self.attach_vmi_to_bgpaas(port1, bgpaas_fixture)
         self.addCleanup(self.detach_vmi_from_bgpaas,
-                        port1['id'], bgpaas_fixture)
-        self.attach_vmi_to_bgpaas(port2['id'], bgpaas_fixture)
+                        port1, bgpaas_fixture)
+        self.attach_vmi_to_bgpaas(port2, bgpaas_fixture)
         self.addCleanup(self.detach_vmi_from_bgpaas,
-                        port2['id'], bgpaas_fixture)
+                        port2, bgpaas_fixture)
 
         if bfd_enabled:
             shc_fixture = self.create_hc(
