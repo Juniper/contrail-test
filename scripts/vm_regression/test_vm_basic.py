@@ -344,8 +344,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         compute_user = self.inputs.host_data[vm1_fixture.vm_node_ip]['username']
         compute_password = self.inputs.host_data[vm1_fixture.vm_node_ip]['password']
         cfgm_host_new_name = cfgm_hostname + '-test'
-        cfgm_ip = self.inputs.api_server_ip or \
-                  self.inputs.contrail_external_vip or self.inputs.cfgm_ip
+        cfgm_ip = self.inputs.api_server_ip or self.inputs.cfgm_ip
         cfgm_intro_port = '8084'
         service_name = 'cfgmintrospect'
 

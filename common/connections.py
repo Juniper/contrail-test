@@ -135,7 +135,7 @@ class ContrailConnections():
     def get_vnc_lib_h(self, refresh=False):
         attr = '_vnc_lib_fixture_' + self.project_name + '_' + self.username
         cfgm_ip = self.inputs.api_server_ip or \
-                  self.inputs.contrail_external_vip or self.inputs.cfgm_ip
+                  self.inputs.cfgm_ip
         if not getattr(env, attr, None) or refresh:
             if self.inputs.orchestrator == 'openstack' :
                 domain = self.orch_domain_name     
@@ -160,7 +160,7 @@ class ContrailConnections():
         return self.vnc_lib
 
     def get_api_inspect_handle(self, host):
-        cfgm_ip = self.inputs.api_server_ip or self.inputs.contrail_external_vip
+        cfgm_ip = self.inputs.api_server_ip
         if cfgm_ip:
             host = cfgm_ip
         if host not in self.api_server_inspects:
@@ -194,8 +194,7 @@ class ContrailConnections():
     def get_opserver_inspect_handle(self, host):
         #ToDo: WA till scripts are modified to use ip rather than hostname
         ip = host if is_v4(host) else self.inputs.get_host_ip(host)
-        collector_ip = self.inputs.analytics_api_ip or \
-                       self.inputs.contrail_external_vip
+        collector_ip = self.inputs.analytics_api_ip
         if collector_ip:
             ip = collector_ip
         if ip not in self.ops_inspects:

@@ -121,7 +121,6 @@ class AnalyticsVerification(fixtures.Fixture):
         self.logger = logger
         self.get_all_generators()
         self.uve_verification_flags = []
-        self.contrail_internal_vip = self.inputs.contrail_internal_vip
 
     def get_all_generators(self):
         self.generator_hosts = []
@@ -130,16 +129,12 @@ class AnalyticsVerification(fixtures.Fixture):
         self.collector_hosts = []
 
         for collector_ip in self.inputs.collector_ips:
-            if collector_ip == self.inputs.contrail_internal_vip:
-                continue
             c_host = self.inputs.host_data[collector_ip]['name']
             self.collector_hosts.append(c_host)
             if (c_host not in self.generator_hosts):
                 self.generator_hosts.append(c_host)
 
         for ip in self.inputs.bgp_ips:
-            if ip == self.inputs.contrail_internal_vip:
-                continue
             bgp_host = self.inputs.host_data[ip]['name']
             self.bgp_hosts.append(bgp_host)
             if (bgp_host not in self.generator_hosts):
