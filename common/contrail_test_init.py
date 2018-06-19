@@ -90,7 +90,6 @@ class TestInputs(object):
         self.input_file = input_file
         self.logger = logger or contrail_logging.getLogger(__name__)
 
-        self.ha_tmp_list = []
         self.tor_agent_data = {}
         self.sriov_data = {}
         self.dpdk_data = {}
@@ -818,7 +817,6 @@ class TestInputs(object):
         self.analytics_api_ip = contrail_configs.get('ANALYTICS_API_VIP')
         self.config_amqp_ips = contrail_configs.get('RABBITMQ_NODES')
         self.config_amqp_port = contrail_configs.get('RABBITMQ_NODE_PORT', 5673)
-        self.contrail_internal_vip = self.contrail_external_vip = self.api_server_ip
         self.xmpp_auth_enable = contrail_configs.get('XMPP_SSL_ENABLE')
         self.xmpp_dns_auth_enable = contrail_configs.get('XMPP_SSL_ENABLE')
 
@@ -1375,14 +1373,10 @@ class TestInputs(object):
         except KeyError:
             short_name = name.split('.')[0]
             ip = self.host_data[short_name]['host_ip']
-        if ip in self.ha_tmp_list:
-            ip = self.contrail_external_vip
         return ip
 
     def get_host_data_ip(self, name):
         ip = self.host_data[name]['host_data_ip']
-        if ip in self.ha_tmp_list:
-            ip = self.contrail_internal_vip
         return ip
 
     def get_node_name(self, ip):
