@@ -178,13 +178,19 @@ class VerifyEvpnCases():
                break
 
         cmd_to_pass1 = ['dig @13.1.1.253 www.google.com']
-        vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
-        output = vn_l2_vm1_fixture.return_output_cmd_dict['dig @13.1.1.253 www.google.com']
-        self.logger.info("Result for Dns Query is %s \n" %output)
-        record = re.search(r'ANSWER SECTION:\r\nwww.google.com.', output)
-        if record is None:
-           result = result and False
-           self.logger.error('DNS Query for www.google.com Failed Not Expected')
+        for i in range(3):
+            vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
+            output = vn_l2_vm1_fixture.return_output_cmd_dict['dig @13.1.1.253 www.google.com']
+            self.logger.info("Result for Dns Query is %s \n" %output)
+            record = re.search(r'ANSWER SECTION:\r\nwww.google.com.', output)
+            if record is None:
+               self.logger.error('DNS Query for www.google.com Failed Not Expected')
+               sleep(2)
+            else:
+               break
+            if (i == 2):
+               result = result and False
+               self.logger.error('DNS Query for www.google.com Failed 3 times .Not Expected')
 
         cmd_to_pass1 = ['nslookup 13.1.1.251 13.1.1.253']
         vn_l2_vm1_fixture.run_cmd_on_vm(cmds=cmd_to_pass1, as_sudo=True, timeout=60)
