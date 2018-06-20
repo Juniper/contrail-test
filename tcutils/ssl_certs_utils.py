@@ -10,7 +10,7 @@ import sys
 
 LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.INFO)
 
-OPEN_SSL_CNF='/etc/ssl/openssl.cnf'
+OPEN_SSL_CNF='./common/introspect/openssl.cnf'
 TMP_SSL_CNF='/tmp/openssl.cnf'
 
 class SslCert(object):
