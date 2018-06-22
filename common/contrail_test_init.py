@@ -840,10 +840,14 @@ class TestInputs(object):
             self.authn_url = '/v3/auth/tokens'
         else:
             self.authn_url = '/v2.0/tokens'
-        if self.orchestrator == 'kubernetes':
-            self.admin_tenant = 'default'
         self.internal_vip = orchestrator_configs.get('internal_vip')
         self.external_vip = orchestrator_configs.get('external_vip') or self.internal_vip
+
+        #kubernetes specific configs
+        self.k8s_cluster_name = contrail_configs.get('KUBERNETES_CLUSTER_NAME') or "k8s"
+        if self.orchestrator == 'kubernetes':
+            self.admin_tenant = self.k8s_cluster_name + '-default'
+
         # test specific configs
         self.auth_url = test_configs.get('auth_url') or os.getenv('OS_AUTH_URL',
                                                      self._gen_auth_url())
