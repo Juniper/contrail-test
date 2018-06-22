@@ -88,6 +88,16 @@ class NamespaceFixture(fixtures.Fixture):
         return project
     # end _read_cluster_project
 
+    def _read_cluster_name(self):
+        project = None
+        m = None
+        cmd = 'grep "^[ \t]*cluster_name" /etc/contrail/contrail-kubernetes.conf'
+        cluster_name_info = self.inputs.run_cmd_on_server(self.inputs.kube_manager_ips[0],
+                cmd, container='contrail-kube-manager')
+        cluster_name = cluster_name_info.split("=")[-1].strip()
+        return cluster_name
+    # end _read_cluster_name
+
     def get_project_name_for_namespace(self):
         # Check if cluster_project is defined, return that
         # Else, return self.name
@@ -95,10 +105,11 @@ class NamespaceFixture(fixtures.Fixture):
         # Get lock in case some other api is setting the config
         with get_lock('kube_manager_conf'):
             project = self._read_cluster_project()
+            cluster_name = self._read_cluster_name()
             if project:
                 return project
             else:
-                return self.name
+                return cluster_name+ "_" + self.name
 
     @retry(delay=2, tries=10)
     def verify_namespace_in_contrail_api(self):

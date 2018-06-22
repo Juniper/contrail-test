@@ -1058,16 +1058,17 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         if not cp_line or no_match:
             self.logger.debug("Cluster_project not set in this sanity run. "
                         "Setting it to default project for few tests")
-            cmd = r'crudini --set /entrypoint.sh KUBERNETES cluster_project \\${KUBERNETES_CLUSTER_PROJECT:-\\"{\'domain\':\'default-domain\'\,\'project\':\'default\'}\\"}'
+            default_project = self.inputs.admin_tenant
+            cmd = r'crudini --set /entrypoint.sh KUBERNETES cluster_project \\${KUBERNETES_CLUSTER_PROJECT:-\\"{\'domain\':\'default-domain\'\,\'project\':\'%s\'}\\"}' 
+                  % default_project
             operation = "set"
-            project = "default"
         for kube_manager in self.inputs.kube_manager_ips:
             self.inputs.run_cmd_on_server(kube_manager, cmd,
                                           container='contrail-kube-manager',
                                           shell_prefix = None)
         self.restart_kube_manager()
         self.addCleanup(self.revert_cluster_project,
-                         project_name = project,
+                         project_name = default_project,
                          operation = operation)
         return operation
     #end modify_cluster_project
