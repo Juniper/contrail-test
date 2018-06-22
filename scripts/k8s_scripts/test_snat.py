@@ -187,8 +187,8 @@ class TestSNAT(BaseK8sTest):
             4.should be able to reach pubic network from each pod
         '''
         labels = {'app': 'test'}
-        replicas = len(self.inputs.compute_ips)*2
-        new_replicas = len(self.inputs.compute_ips)*3
+        replicas = len(self.inputs.compute_ips)*1
+        new_replicas = len(self.inputs.compute_ips)*2
 
         namespace1_name = get_random_name("ns1")
         namespace1 = self.setup_namespace(name=namespace1_name, isolation=True,
