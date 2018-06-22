@@ -98,7 +98,7 @@ class NamespaceFixture(fixtures.Fixture):
             if project:
                 return project
             else:
-                return self.name
+                return self.inputs.k8s_cluster_name + "_" + self.name
 
     @retry(delay=2, tries=10)
     def verify_namespace_in_contrail_api(self):
