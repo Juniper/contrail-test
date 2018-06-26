@@ -2373,6 +2373,39 @@ class ContrailVncApi(object):
     def get_ip(self, ip_w_pfx):
         return str(IPNetwork(ip_w_pfx).ip)
 
+    def create_vn_api(self, vn_name, project,subnets,ipam,**kwargs):
+        project_obj = self.read_project_obj(project_fq_name=project)
+        ipam_obj = self._vnc.network_ipam_read(
+               fq_name=ipam)
+        vn_obj = VirtualNetwork(vn_name, parent_obj=project_obj)
+        for pfx in subnets:
+            px = pfx['cidr'].split('/')[0]
+            pfx_len = int(pfx['cidr'].split('/')[1])
+            subnet_vnc = IpamSubnetType(subnet=SubnetType(px, pfx_len))
+            vnsn_data = VnSubnetsType([subnet_vnc])
+            vn_obj.add_network_ipam(ipam_obj, vnsn_data)
+        try:
+            return self._vnc.virtual_network_create(vn_obj)
+        except RefsExistError:
+            project_fq_name.append(vn_name)
+            return self._vnc.virtual_network_read(vn_fq_name = project_fq_name)
+
+    def delete_vn_api(self, vn_obj):
+        try:
+            self._vnc.virtual_network_delete(id=vn_obj.uuid)
+            return True
+        except RefsExistError,e:
+            self.logger.debug('RefsExistError %s while deleting VN %s..%(e, vn_obj.name)')
+            return False
+    
+    def get_vmi_by_vm(self,vm_id,**kwargs):
+        try:
+            vm_obj = self._vnc.virtual_machine_read(id=vm_id)
+        except Exception as e:
+            self._log.debug("Got exception as %s while reading the vm obj"%(e))
+        vmis = vm_obj.get_virtual_machine_interface_back_refs()
+        return [self._vnc.virtual_machine_interface_read(id=vmi['uuid']) for vmi in vmis]
+
 class LBFeatureHandles:
     __metaclass__ = Singleton
 

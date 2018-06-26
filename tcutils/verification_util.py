@@ -159,7 +159,7 @@ class XmlDrv (object):
         except requests.ConnectionError, e:
             self.log.error("Socket Connection error: %s", str(e))
             return None
-        except:
+        except Exception as e:
             self.log.error("Error while getting the url: %s, error: %s" % (
                 url, str(e)))
             return None
