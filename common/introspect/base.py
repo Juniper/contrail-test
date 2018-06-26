@@ -11,7 +11,7 @@ from tcutils.verification_util import VerificationUtilBase, XmlDrv
 from common.contrail_test_init import DEFAULT_CERT, DEFAULT_PRIV_KEY, DEFAULT_CA
 
 CERT_LOCATION = '/tmp/'
-
+DOCKER_CONF_FILE1 = 'common.sh'
 CONTRAIL_CONF_FILES = {
     'contrail-vrouter-agent': '/etc/contrail/contrail-vrouter-agent.conf',
     'contrail-analytics-api': '/etc/contrail/contrail-analytics-api.conf',
@@ -151,7 +151,7 @@ class BaseIntrospectSsl(GenericTestBase):
 
         for cert in cert_list:
             self.inputs.copy_file_to_server(node_ip, cert, self.cert_location,
-                cert.split('/')[-1], container=container)
+                cert.split('/')[-1], container=container, force=True)
             self.addCleanup(self.delete_cert_file, node_ip,
                 dstdir+cert.split('/')[-1], container)
 
@@ -162,8 +162,9 @@ class BaseIntrospectSsl(GenericTestBase):
         agent_key, agent_csr, agent_cert = self.create_cert(subject=subject,
             subjectAltName=subjectAltName)
 
+        cntr = CONTRAIL_SERVICE_CONTAINER[service]
         self.copy_certs_on_node(host_ip, [agent_key, agent_cert,
-            self.ca_cert], container=container)
+            self.ca_cert], container=cntr)
 
         self.update_config_file_and_restart_service(host_ip,
             CONTRAIL_CONF_FILES[service], ssl_enable, agent_key,
@@ -172,17 +173,18 @@ class BaseIntrospectSsl(GenericTestBase):
 
         self.inputs.restart_service(service, [host_ip], container=container,
             verify_service=False)
-        return self.inputs.confirm_service_active(service, host_ip, container,
-            certs_dict={'key': agent_key, 'cert': agent_cert, 'ca': self.ca_cert})
+        return self.inputs.verify_service_state(host_ip, service,
+            tries=30, delay=5, expected_state='active')[0]
 
     def restore_default_config_file(self, conf_file_backup, service_name, node_ip,
-            container=None, verify_in_cleanup=True):
+            container=None, verify_in_cleanup=True, original_conf_file_name=None):
 
-        cmd = "mv %s %s" % (conf_file_backup, CONTRAIL_CONF_FILES[service_name])
+        dst_file = original_conf_file_name or DOCKER_CONF_FILE1
+        cmd = 'docker cp %s %s:/%s;rm -f %s' % (conf_file_backup, container,
+            dst_file, conf_file_backup)
         output = self.inputs.run_cmd_on_server(
             node_ip,
-            cmd,
-            container=container)
+            cmd)
 
         self.inputs.introspect_insecure = self.introspect_insecure_old
         self.inputs.restart_service(service_name, [node_ip], container=container,
@@ -210,41 +212,35 @@ class BaseIntrospectSsl(GenericTestBase):
 
     def update_config_file_and_restart_service(self, node_ip, conf_file, ssl_enable, keyfile,
             certfile, ca_certfile, service_name, container_name=None,
-            verify_service=True, verify_in_cleanup=True):
+            verify_service=True, verify_in_cleanup=True, tries=30, delay=5):
         '''
         set the introspect ssl configurations and restart the service
         '''
 
         self.logger.info('Set introspect ssl configs in node %s' % (node_ip))
-
-        #Take backup of original conf file to revert back later
-        conf_file_backup = CERT_LOCATION + get_random_name(conf_file.split('/')[-1])
-        cmd = 'cp %s %s' % (conf_file, conf_file_backup)
+        conf_file = DOCKER_CONF_FILE1
+        #Take backup of original common.sh file to revert back later
+        conf_file_backup = CERT_LOCATION + get_random_name(container_name+conf_file)
+        cmd = 'docker cp %s:%s %s' % (container_name, conf_file, conf_file_backup)
         status = self.inputs.run_cmd_on_server(node_ip, cmd, container=container_name)
 
-        oper = 'set'
-        section = 'SANDESH'
-        self.update_contrail_conf(service_name, oper, section,
-            'introspect_ssl_enable', ssl_enable, node_ip, container_name)
-        self.update_contrail_conf(service_name, oper, section,
-            'sandesh_keyfile', keyfile, node_ip, container_name)
-        self.update_contrail_conf(service_name, oper, section,
-            'sandesh_certfile', certfile, node_ip, container_name)
-        self.update_contrail_conf(service_name, oper, section,
-            'sandesh_ca_cert', ca_certfile, node_ip, container_name)
+        self.add_knob_to_container(node_ip, container_name,
+            level=None, knob=[
+            'INTROSPECT_SSL_ENABLE=%s' % (ssl_enable),
+            'SANDESH_KEYFILE=%s' % (keyfile),
+            'SANDESH_CERTFILE=%s' % (certfile),
+            'SANDESH_CA_CERTFILE=%s' % (ca_certfile)],
+            file_name=DOCKER_CONF_FILE1, restart_container=verify_service)
 
         self.addCleanup(
             self.restore_default_config_file,
             conf_file_backup, service_name, node_ip, container_name,
-            verify_in_cleanup)
+            verify_in_cleanup, original_conf_file_name=conf_file)
 
         if verify_service:
-            self.inputs.restart_service(service_name, [node_ip],
-                container=container_name, verify_service=False)
-            return self.inputs.confirm_service_active(service_name, node_ip,
-                container_name, certs_dict={'key': keyfile,
-                                            'cert': certfile,
-                                            'ca': ca_certfile})
+            return self.inputs.verify_service_state(node_ip, service_name,
+                tries=tries, delay=delay, expected_state='active',
+                keyfile=keyfile, certfile=certfile, cacert=ca_certfile)[0]
 
     def get_introspect_for_service(self, service, host_ip):
         if service == 'contrail-svc-monitor':

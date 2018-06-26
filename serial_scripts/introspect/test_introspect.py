@@ -45,7 +45,7 @@ class IntrospectSslTest(BaseIntrospectSsl):
         url_http = 'http://%s:%s' % (host_name, port)
         output_http = self.get_url_and_verify(url_http, agent_inspect)
 
-        assert self.create_agent_certs_and_update_on_compute(host_ip,
+        assert self.create_agent_certs_and_update_on_compute(host_name,
             subject='/CN=%s' % host_name, ssl_enable='true')
 
         url = 'https://%s:%s' % (host_name, port)
@@ -161,8 +161,6 @@ class IntrospectSslTest(BaseIntrospectSsl):
         """
         #Create the CA
         self.create_ca_cert()
-        #Create client certs
-        key, csr, cert = self.create_cert(subject='/CN=%s' % self.connections.project_name)
 
         host_name = self.inputs.compute_names[0]
         host_ip = self.inputs.compute_info[host_name]
@@ -180,22 +178,23 @@ class IntrospectSslTest(BaseIntrospectSsl):
         ssl_enable = 'true'
         key, csr, cert = self.create_cert(subject=subject)
 
+        cntr = CONTRAIL_SERVICE_CONTAINER[service]
         self.inputs.copy_file_to_server(host_ip, key, self.cert_location,
-            key.split('/')[-1], container=container)
+            key.split('/')[-1], container=cntr)
         self.inputs.copy_file_to_server(host_ip, cert, self.cert_location,
-            cert.split('/')[-1], container=container)
+            cert.split('/')[-1], container=cntr)
         self.inputs.copy_file_to_server(host_ip, self.ca_cert, self.cert_location,
-            self.ca_cert.split('/')[-1], container=container)
+            self.ca_cert.split('/')[-1], container=cntr)
 
         #Add to cleanup to delete the certs
         self.addCleanup(self.delete_cert_file, host_ip,
-            self.cert_location+key.split('/')[-1], container)
+            self.cert_location+key.split('/')[-1], cntr)
         self.addCleanup(self.delete_cert_file, host_ip,
-            self.cert_location+cert.split('/')[-1], container)
+            self.cert_location+cert.split('/')[-1], cntr)
         self.addCleanup(self.delete_cert_file, host_ip,
-            self.cert_location+self.ca_cert.split('/')[-1], container)
+            self.cert_location+self.ca_cert.split('/')[-1], cntr)
 
-        self.update_config_file_and_restart_service(host_ip,
+        assert self.update_config_file_and_restart_service(host_name,
             CONTRAIL_CONF_FILES[service], ssl_enable, key,
             cert, self.ca_cert, service, container, verify_service=True)
 
@@ -250,21 +249,22 @@ class IntrospectSslTest(BaseIntrospectSsl):
         agent_inspect = AgentInspect(host_ip, port, self.logger,
             inputs=self.inputs)
 
+        cntr = CONTRAIL_SERVICE_CONTAINER[service]
         self.inputs.copy_file_to_server(host_ip, key, self.cert_location,
-            key.split('/')[-1], container=container)
+            key.split('/')[-1], container=cntr)
         self.inputs.copy_file_to_server(host_ip, cert, self.cert_location,
-            cert.split('/')[-1], container=container)
+            cert.split('/')[-1], container=cntr)
 
         #Add to cleanup to delete the certs
         self.addCleanup(self.delete_cert_file, host_ip,
-            self.cert_location+key.split('/')[-1], container)
+            self.cert_location+key.split('/')[-1], cntr)
         self.addCleanup(self.delete_cert_file, host_ip,
-            self.cert_location+cert.split('/')[-1], container)
+            self.cert_location+cert.split('/')[-1], cntr)
 
         url_http = 'http://%s:%s' % (host_name, port)
         output_http = self.get_url_and_verify(url_http, agent_inspect)
 
-        self.update_config_file_and_restart_service(host_ip,
+        assert self.update_config_file_and_restart_service(host_name,
             CONTRAIL_CONF_FILES[service], ssl_enable, key,
             cert, cert, service, container, verify_service=True)
 
@@ -306,16 +306,12 @@ class IntrospectSslTest(BaseIntrospectSsl):
         inspect = VerificationOpsSrvIntrospect(host_ip, port, self.logger,
             inputs=self.inputs)
 
-
-        container = 'analytics'
         subject = '/CN=%s' % host_name
         subjectAltName = 'IP:%s,DNS:%s,DNS:%s' % (host_ip, host_fqname, host_name)
         ssl_enable = 'true'
 
         server_key, server_csr, server_cert = self.create_cert(
             subject=subject, subjectAltName=subjectAltName)
-        self.copy_certs_on_node(host_ip, [server_key, server_cert, self.ca_cert],
-            container=container)
 
         services = ['contrail-query-engine', 'contrail-analytics-api', 'contrail-collector']
         for service in services:
@@ -323,7 +319,12 @@ class IntrospectSslTest(BaseIntrospectSsl):
             url_http = 'http://%s:%s' % (host_name, port)
             output_http = self.get_url_and_verify(url_http, inspect)
 
-            self.update_config_file_and_restart_service(host_ip,
+            cntr = CONTRAIL_SERVICE_CONTAINER[service]
+            container = self.inputs.get_container_name(host_ip, cntr)
+
+            self.copy_certs_on_node(host_ip, [server_key, server_cert, self.ca_cert],
+                container=cntr)
+            assert self.update_config_file_and_restart_service(host_ip,
                 CONTRAIL_CONF_FILES[service], ssl_enable, server_key,
                 server_cert, self.ca_cert, service, container)
 
@@ -379,9 +380,10 @@ class IntrospectSslTest(BaseIntrospectSsl):
             url_http = 'http://%s:%s' % (host_name, port)
             output_http = inspect.dict_get(url=url_http, raw_data=True)
 
+            cntr = CONTRAIL_SERVICE_CONTAINER[service]
             self.copy_certs_on_node(host_ip, [server_key, server_cert, self.ca_cert],
-                container=container)
-            self.update_config_file_and_restart_service(host_ip,
+                container=cntr)
+            assert self.update_config_file_and_restart_service(host_ip,
                 CONTRAIL_CONF_FILES[service], ssl_enable, server_key,
                 server_cert, self.ca_cert, service, container)
 
@@ -425,7 +427,7 @@ class IntrospectSslTest(BaseIntrospectSsl):
         ca_cert = '/tmp/' + DEFAULT_CA.split('/')[-1]
         assert not self.update_config_file_and_restart_service(host_ip,
             CONTRAIL_CONF_FILES[service], ssl_enable, server_key,
-            server_cert, ca_cert, service, container)
+            server_cert, ca_cert, service, container, tries=3, delay=2)
 
         url = 'http://%s:%s' % (host_name, port)
         output_http = inspect.dict_get(url=url, raw_data=True)
@@ -443,9 +445,10 @@ class IntrospectSslTest(BaseIntrospectSsl):
         server_key, server_csr, server_cert = self.create_cert(
             subject=subject, subjectAltName=subjectAltName, ca_cert=ca2)
 
+        cntr = CONTRAIL_SERVICE_CONTAINER[service]
         self.copy_certs_on_node(host_ip, [server_key, server_cert, ca2],
-            container=container)
-        self.update_config_file_and_restart_service(host_ip,
+            container=cntr)
+        assert self.update_config_file_and_restart_service(host_ip,
             CONTRAIL_CONF_FILES[service], ssl_enable, server_key,
             server_cert, ca2, service, container, verify_in_cleanup=False)
 
