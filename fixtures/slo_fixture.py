@@ -7,12 +7,14 @@ class SLOFixture(vnc_api_test.VncLibFixture):
     Security Logging Object Fixture
     '''
 
-    def __init__(self, parent_obj, **kwargs):
+    def __init__(self, parent_obj=None, **kwargs):
         '''
         Optional param:
+            parent_obj: parent tenant obj or global-vrouter-config
             sg_refs: list of dict of SG objects and ref_data of SecurityLoggingObjectRuleListType object
                 [{'obj':<SG obj>, 'ref_data':<ref data obj>}]
             vn_policy_refs: same as sg_refs but for VN policy
+            rules: SecurityLoggingObjectRuleListType obj
         '''
         super(SLOFixture, self).__init__(self, **kwargs)
         self.parent_obj = parent_obj
@@ -20,6 +22,7 @@ class SLOFixture(vnc_api_test.VncLibFixture):
         self.uuid = None
         self.obj = None
         self.rate = None
+        self.rules = None
         self.sg_refs = None
         self.vn_policy_refs = None
         self.parse_slo_kwargs(**kwargs)
@@ -28,7 +31,7 @@ class SLOFixture(vnc_api_test.VncLibFixture):
         if self.parent_obj is None:
             fq_name = [ 'default-global-system-config',
                         'default-global-vrouter-config']
-            self.parent_obj = self.vnc_lib.global_vrouter_config_read(fq_name=fq_name)
+            self.parent_obj = self.vnc_api_h.global_vrouter_config_read(fq_name=fq_name)
 
     def parse_slo_kwargs(self, **kwargs):
         self.sg_refs = kwargs.get('sg_refs',
@@ -41,6 +44,8 @@ class SLOFixture(vnc_api_test.VncLibFixture):
             self.name)
         self.uuid = kwargs.get('uuid',
             self.uuid)
+        self.rules = kwargs.get('rules',
+            self.rules)
 
     def _populate_attr(self):
         if self.obj:
@@ -115,11 +120,13 @@ class SLOFixture(vnc_api_test.VncLibFixture):
         if self.rate is not None:
             self.obj = SecurityLoggingObject(name=self.name,
                 parent_obj=self.parent_obj,
-                security_logging_object_rate=self.rate)
+                security_logging_object_rate=self.rate,
+                security_logging_object_rules=self.rules)
         else:
             #Default SLO rate
             self.obj = SecurityLoggingObject(name=self.name,
-                parent_obj=self.parent_obj)
+                parent_obj=self.parent_obj,
+                security_logging_object_rules=self.rules)
 
         if self.sg_refs:
             for sg_ref in self.sg_refs:
