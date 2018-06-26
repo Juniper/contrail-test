@@ -591,10 +591,16 @@ class ContrailVncApi(object):
 
     def add_fat_flow_to_vmi(self, vmi_id, fat_flow_config):
         '''vmi_id: vmi id where Fat flow config is to be added
-           fat_flow_config: dictionary of format {'proto':<string>,'port':<int>}
+           fat_flow_config: dictionary of format {'proto':<string>,'port':<int>,
+            'ignore_address': <string, source/destination>}
         '''
-        proto_type = ProtocolType(protocol=fat_flow_config['proto'],
-                        port=fat_flow_config['port'])
+        ignore_address = fat_flow_config.get('ignore_address', None)
+        if ignore_address:
+            proto_type = ProtocolType(protocol=fat_flow_config['proto'],
+                port=fat_flow_config['port'], ignore_address=ignore_address)
+        else:
+            proto_type = ProtocolType(protocol=fat_flow_config['proto'],
+                            port=fat_flow_config['port'])
 
         vmi_obj = self._vnc.virtual_machine_interface_read(id=vmi_id)
         fat_config = vmi_obj.get_virtual_machine_interface_fat_flow_protocols()
@@ -622,7 +628,8 @@ class ContrailVncApi(object):
         if fat_config_get:
             for config in fat_config_get.fat_flow_protocol:
                 if config.protocol == fat_flow_config['proto'] and \
-                    config.port == fat_flow_config['port']:
+                    config.port == fat_flow_config['port'] and \
+                    config.ignore_address == fat_flow_config.get('ignore_address'):
                     fat_config_get.fat_flow_protocol.remove(config)
                     vmi_obj.set_virtual_machine_interface_fat_flow_protocols(
                                                             fat_config_get)

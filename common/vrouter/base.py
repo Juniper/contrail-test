@@ -11,6 +11,8 @@ from common.neutron.base import BaseNeutronTest
 import random
 from security_group import get_secgrp_id_from_name, SecurityGroupFixture
 from tcutils.agent.vrouter_lib import *
+from policy_test import PolicyFixture
+from vn_policy_test import VN_Policy_Fixture
 
 class BaseVrouterTest(BaseNeutronTest):
 
@@ -44,6 +46,77 @@ class BaseVrouterTest(BaseNeutronTest):
             cls.compute_fixtures_dict[ip].cleanUp()
         super(BaseVrouterTest, cls).tearDownClass()
     # end tearDownClass
+
+    def _create_resources(self, test_type='intra-node', no_of_client=1,
+            no_of_server=1):
+        '''
+            test_type: can be intra-node or inter-node
+        '''
+        compute_hosts = self.orch.get_hosts()
+        if (len(compute_hosts) < 2) and (test_type == 'inter-node'):
+            raise self.skipTest("Skipping test case,\
+                                    this test needs atleast 2 compute nodes")
+
+        node_name1 = compute_hosts[0]
+        node_ip1 = self.inputs.compute_info[node_name1]
+        node_name2 = compute_hosts[0]
+        node_ip2 = self.inputs.compute_info[node_name2]
+
+        if test_type == 'inter-node':
+            node_name2 = compute_hosts[1]
+            node_ip2 = self.inputs.compute_info[node_name2]
+
+        self.vn_fixtures = self.create_vns(count=2)
+        self.verify_vns(self.vn_fixtures)
+        self.vn1_fixture = self.vn_fixtures[0]
+        self.vn2_fixture = self.vn_fixtures[1]
+        self.client_fixtures = self.create_vms(vn_fixture=self.vn1_fixture,
+            count=no_of_client, node_name=node_name1, image_name='ubuntu-traffic')
+        self.server_fixtures = self.create_vms(vn_fixture=self.vn2_fixture,
+            count=no_of_server, node_name=node_name2, image_name='ubuntu-traffic')
+        self.client_fixture = self.client_fixtures[0]
+        self.server_fixture = self.server_fixtures[0]
+
+        policy_name = 'policy1'
+        policy_rules = [
+            {
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'any',
+                'source_network': self.vn1_fixture.vn_name,
+                'dest_network': self.vn2_fixture.vn_name,
+            }
+        ]
+        self.policy_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name,
+                rules_list=policy_rules,
+                inputs=self.inputs,
+                connections=self.connections,
+                api=True))
+
+        self.vn1_policy_fixture = self.useFixture(
+            VN_Policy_Fixture(
+                connections=self.connections,
+                vn_name=self.vn1_fixture.vn_name,
+                policy_obj={self.vn1_fixture.vn_name : \
+                           [self.policy_fixture.policy_obj]},
+                vn_obj={self.vn1_fixture.vn_name : self.vn1_fixture},
+                vn_policys=[policy_name],
+                project_name=self.project.project_name))
+
+        self.vn2_policy_fixture = self.useFixture(
+            VN_Policy_Fixture(
+                connections=self.connections,
+                vn_name=self.vn2_fixture.vn_name,
+                policy_obj={self.vn2_fixture.vn_name : \
+                           [self.policy_fixture.policy_obj]},
+                vn_obj={self.vn2_fixture.vn_name : self.vn2_fixture},
+                vn_policys=[policy_name],
+                project_name=self.project.project_name))
+
+        self.verify_vms(self.client_fixtures + self.server_fixtures)
+
+    #end _create_resources
 
     @retry(delay=2, tries=15)
     def get_vna_route_with_retry(self, agent_inspect, vrf_id, ip, prefix):
@@ -147,7 +220,8 @@ class BaseVrouterTest(BaseNeutronTest):
 
     def add_fat_flow_to_vmis(self, vmi_ids, fat_flow_config):
         '''vmi_ids: list of vmi ids
-           fat_flow_config: dictionary of format {'proto':<string>,'port':<int>}
+           fat_flow_config: dictionary of format {'proto':<string>,'port':<int>,
+            'ignore_address': <string, source/destination>}
         '''
         for vmi_id in vmi_ids:
             self.vnc_h.add_fat_flow_to_vmi(vmi_id, fat_flow_config)
@@ -162,6 +236,34 @@ class BaseVrouterTest(BaseNeutronTest):
             vmi_obj = self.vnc_h.remove_fat_flow_on_vmi(vmi_id, fat_flow_config)
 
         return True
+
+    def add_fat_flow_to_vns(self, vn_fixtures, fat_flow_config):
+        '''vn_fixtures: list of vn fixtures
+           fat_flow_config: dictionary of format {'proto':<string>,'port':<int>,
+            'ignore_address': <string, source/destination>}
+        '''
+        ignore_address = fat_flow_config.get('ignore_address', None)
+        if ignore_address:
+            proto_type = ProtocolType(protocol=fat_flow_config['proto'],
+                port=fat_flow_config['port'], ignore_address=ignore_address)
+        else:
+            proto_type = ProtocolType(protocol=fat_flow_config['proto'],
+                            port=fat_flow_config['port'])
+        for vn in vn_fixtures:
+            fat_config = vn.get_fat_flow_protocols()
+            if fat_config:
+                fat_config.fat_flow_protocol.append(proto_type)
+            else:
+                fat_config = FatFlowProtocols(fat_flow_protocol=[proto_type])
+            vn.set_fat_flow_protocols(fat_config)
+
+        return True
+
+    def delete_fat_flow_from_vns(self, vn_fixtures):
+        '''Removes all Fat flow config from VNs'''
+        fat_config = FatFlowProtocols()
+        for vn in vn_fixtures:
+            vn.set_fat_flow_protocols(fat_config)
 
     def add_proto_based_flow_aging_time(self, proto, port=0, timeout=180):
         self.vnc_h.add_proto_based_flow_aging_time(proto, port, timeout)
@@ -595,7 +697,8 @@ class BaseVrouterTest(BaseNeutronTest):
             'compute, please check logs..')
 
     def verify_fat_flow_on_compute(self, compute_fixture, source_ip, dest_ip,
-                               dest_port, proto, vrf_id, fat_flow_count=1):
+                               dest_port, proto, vrf_id, fat_flow_count=1,
+                               sport=0):
         '''
         Verifies Fat flow on specific compute node
         '''
@@ -603,7 +706,7 @@ class BaseVrouterTest(BaseNeutronTest):
         (ff_count, rf_count) = compute_fixture.get_flow_count(
                                     source_ip=source_ip,
                                     dest_ip=dest_ip,
-                                    source_port=0,
+                                    source_port=sport,
                                     dest_port=dest_port,
                                     proto=proto,
                                     vrf_id=vrf_id
@@ -612,12 +715,13 @@ class BaseVrouterTest(BaseNeutronTest):
             str_log = 'FAILED'
         else:
             str_log = 'PASSED'
-        self.logger.debug("Fat flow verification %s on node: %s for VMs - "
-                            "Sender: %s, Receiver: %s, "
-                            "Fat flow expected: %s, got:%s" % (
+        self.logger.info("Fat flow verification %s on node: %s for - "
+                            "SIP: %s, DIP: %s, sport: %s, dport: %s, "
+                            "vrf-id: %s "
+                            "Fat flow expected: %s, got: %s" % (
                             str_log,
                             compute_fixture.ip,
-                            source_ip, dest_ip,
+                            source_ip, dest_ip, sport, dest_port, vrf_id,
                             fat_flow_count, ff_count))
 
         assert ff_count == fat_flow_count, ('Fat flow count mismatch on '
@@ -668,8 +772,9 @@ class BaseVrouterTest(BaseNeutronTest):
         return True
 
     def verify_fat_flow_with_traffic(self, sender_vm_fix_list, dst_vm_fix,
-                           proto, dest_port, traffic=True,
-                           expected_flow_count=1, fat_flow_count=1, af=None):
+            proto, dest_port=None, traffic=True,
+            expected_flow_count=1, fat_flow_count=1, af=None,
+            fat_flow_config=None, sport_list=None, dport_list=None):
         '''
         Common method to be used for Fat and non-Fat flow verifications:
             1. Use 2 different source ports from each sender VM to send traffic
@@ -683,65 +788,211 @@ class BaseVrouterTest(BaseNeutronTest):
         '''
         af = af or self.inputs.get_af()
         #Use 2 different source ports for each sender VM
-        sport_list = [10000, 10001]
+        sport_list = sport_list or [10000, 10001]
+        dport_list = dport_list or [dest_port]
+        fat_flow_dport = dest_port or 0
         dst_compute_fix = self.compute_fixtures_dict[dst_vm_fix.vm_node_ip]
+        if fat_flow_config:
+            #mask both source and dest port in the flow
+            if fat_flow_config['port'] == 0:
+                fat_flow_dport = 0
 
         #Start the traffic from each of the VM in sender_vm_fix_list to dst_vm_fix
         if traffic:
             for fix in sender_vm_fix_list:
-                for port in sport_list:
-                    assert self.send_nc_traffic(fix, dst_vm_fix, port,
-                        dest_port, proto, ip=dst_vm_fix.get_vm_ips(af=af)[0])
+                for sport in sport_list:
+                    for dport in dport_list:
+                        assert self.send_nc_traffic(fix, dst_vm_fix, sport,
+                            dport, proto, ip=dst_vm_fix.get_vm_ips(af=af)[0])
 
-        #Verify the flows on sender computes for each sender/receiver VMs and ports
+        #Verify the non-Fat flows on sender computes for each sender/receiver VMs and ports
         for fix in sender_vm_fix_list:
-            for port in sport_list:
-                compute_fix = self.compute_fixtures_dict[fix.vm_node_ip]
-                (ff_count, rf_count) = compute_fix.get_flow_count(
-                                    source_ip=fix.get_vm_ips(af=af)[0],
-                                    dest_ip=dst_vm_fix.get_vm_ips(af=af)[0],
-                                    source_port=port,
-                                    dest_port=dest_port,
-                                    proto=proto,
-                                    vrf_id=compute_fix.get_vrf_id(
-                                              fix.vn_fq_names[0])
-                                    )
-                assert ff_count == expected_flow_count, ('Flows count mismatch on '
-                    'sender compute, got:%s, expected:%s' % (
-                    ff_count, expected_flow_count))
-                assert rf_count == expected_flow_count, ('Flows count mismatch on '
-                    'sender compute, got:%s, expected:%s' % (
-                    rf_count, expected_flow_count))
+            for sport in sport_list:
+                for dport in dport_list:
+                    compute_fix = self.compute_fixtures_dict[fix.vm_node_ip]
+                    (ff_count, rf_count) = compute_fix.get_flow_count(
+                                        source_ip=fix.get_vm_ips(af=af)[0],
+                                        dest_ip=dst_vm_fix.get_vm_ips(af=af)[0],
+                                        source_port=sport,
+                                        dest_port=dport,
+                                        proto=proto,
+                                        vrf_id=compute_fix.get_vrf_id(
+                                                  fix.vn_fq_names[0])
+                                        )
+                    assert ff_count == expected_flow_count, ('Flows count mismatch on '
+                        'sender compute, got:%s, expected:%s' % (
+                        ff_count, expected_flow_count))
+                    assert rf_count == expected_flow_count, ('Flows count mismatch on '
+                        'sender compute, got:%s, expected:%s' % (
+                        rf_count, expected_flow_count))
 
-                #For the case when sender and receiver are on different nodes
-                if dst_vm_fix.vm_node_ip != fix.vm_node_ip:
-                    #Flow with source and dest port should not be created on dest node, if Fat flow is expected
-                    if fat_flow_count:
-                        expected_count_dst = 0
-                    else:
-                        expected_count_dst = expected_flow_count
-                    (ff_count, rf_count) = dst_compute_fix.get_flow_count(
-                                    source_ip=fix.get_vm_ips(af=af)[0],
-                                    dest_ip=dst_vm_fix.get_vm_ips(af=af)[0],
-                                    source_port=port,
-                                    dest_port=dest_port,
-                                    proto=proto,
-                                    vrf_id=dst_compute_fix.get_vrf_id(
-                                              dst_vm_fix.vn_fq_names[0])
-                                    )
-                    assert ff_count == expected_count_dst, ('Flows count '
-                        'mismatch on dest compute, got:%s, expected:%s' % (
-                        ff_count, expected_count_dst))
-                    assert rf_count == expected_count_dst, ('Flows count '
-                        'mismatch on dest compute, got:%s, expected:%s' % (
-                        rf_count, expected_count_dst))
+                    #For the case when sender and receiver are on different nodes
+                    if dst_vm_fix.vm_node_ip != fix.vm_node_ip:
+                        #Flow with source and dest port should not be created on dest node, if Fat flow is expected
+                        if fat_flow_count:
+                            expected_count_dst = 0
+                        else:
+                            expected_count_dst = expected_flow_count
+                        (ff_count, rf_count) = dst_compute_fix.get_flow_count(
+                                        source_ip=fix.get_vm_ips(af=af)[0],
+                                        dest_ip=dst_vm_fix.get_vm_ips(af=af)[0],
+                                        source_port=sport,
+                                        dest_port=dport,
+                                        proto=proto,
+                                        vrf_id=dst_compute_fix.get_vrf_id(
+                                                  dst_vm_fix.vn_fq_names[0])
+                                        )
+                        assert ff_count == expected_count_dst, ('Flows count '
+                            'mismatch on dest compute, got:%s, expected:%s' % (
+                            ff_count, expected_count_dst))
+                        assert rf_count == expected_count_dst, ('Flows count '
+                            'mismatch on dest compute, got:%s, expected:%s' % (
+                            rf_count, expected_count_dst))
 
         #FAT flow verification
         assert self.verify_fat_flow(sender_vm_fix_list, dst_vm_fix,
-                               proto, dest_port, fat_flow_count, af=af)
+                               proto, fat_flow_dport, fat_flow_count, af=af)
 
         self.logger.info("Fat flow verification passed for "
-            "protocol %s and port %s" % (proto, dest_port))
+            "protocol %s and port %s" % (proto, fat_flow_dport))
+        return True
+
+    def verify_fat_flow_with_ignore_addrs(self, sender_vm_fix_list,
+            dst_vm_fix_list, fat_flow_config, traffic=True,
+            fat_flow_count=1, af=None, icmp_error=False, fat_config_on='server',
+            sport=10000, dport=53):
+        '''
+        Common method to be used for Fat flow verification with ignore addrs
+        '''
+        af = af or self.inputs.get_af()
+        #Use 2 different source ports for each sender VM
+        port1 = dport
+        port2 = sport
+        dport_list = [port1, port1+1]
+        sport_list = [port2, port2+1]
+        fat_flow_dport = dport_list[0]
+        fat_flow_sport = 0
+        fat_flow_sip = None
+        fat_flow_dip = None
+        proto = fat_flow_config['proto']
+        ignore_address = fat_flow_config.get('ignore_address')
+
+        if fat_flow_config['port'] == 0:
+            #mask both source and dest port in the flow
+            fat_flow_dport = 0
+            fat_flow_sport = 0
+        else:
+            if fat_config_on == 'server':
+                dport_list = [port1]
+                #mask only source port
+                fat_flow_sport = 0
+                fat_flow_dport = dport_list[0]
+            elif fat_config_on == 'client':
+                sport_list = [port2]
+                #mask only dst port
+                fat_flow_dport = 0
+                fat_flow_sport = sport_list[0]
+            else:
+                fat_flow_sport = 0
+                fat_flow_dport = 0
+                dport_list = [port1]
+                fat_flow_dport = dport_list[0]
+
+        #mask source IP
+        if ignore_address == 'source':
+            if fat_config_on == 'server':
+                #use 1 client and multiple server VMs
+                sender_vm_fix_list = [sender_vm_fix_list[0]]
+                fat_flow_dip = '0.0.0.0' if af == 'v4' else '::'
+                fat_flow_sip = sender_vm_fix_list[0].get_vm_ips(af=af)[0]
+            elif fat_config_on == 'client' or fat_config_on == 'all':
+                #use multiple clients and 1 server VM
+                dst_vm_fix_list = [dst_vm_fix_list[0]]
+                fat_flow_sip = '0.0.0.0' if af == 'v4' else '::'
+                fat_flow_dip = dst_vm_fix_list[0].get_vm_ips(af=af)[0]
+        #mask dest IP
+        elif ignore_address == 'destination':
+            if fat_config_on == 'server':
+                #use multiple clients and 1 server VM
+                dst_vm_fix_list = [dst_vm_fix_list[0]]
+                fat_flow_sip = '0.0.0.0' if af == 'v4' else '::'
+                fat_flow_dip = dst_vm_fix_list[0].get_vm_ips(af=af)[0]
+                #Disable rpf
+                self.vnc_lib_fixture.set_rpf_mode(
+                    dst_vm_fix_list[0].vn_fq_names[0], 'disable')
+            elif fat_config_on == 'client' or fat_config_on == 'all':
+                #use 1 client and multiple server VMs
+                sender_vm_fix_list = [sender_vm_fix_list[0]]
+                fat_flow_dip = '0.0.0.0' if af == 'v4' else '::'
+                fat_flow_sip = sender_vm_fix_list[0].get_vm_ips(af=af)[0]
+                #Disable rpf
+                self.vnc_lib_fixture.set_rpf_mode(
+                    sender_vm_fix_list[0].vn_fq_names[0], 'disable')
+        elif ignore_address == None:
+            if fat_config_on == 'server':
+                #use multiple clients and 1 server VM
+                dst_vm_fix_list = [dst_vm_fix_list[0]]
+            elif fat_config_on == 'client' or fat_config_on == 'all':
+                #use 1 client and multiple server VMs
+                sender_vm_fix_list = [sender_vm_fix_list[0]]
+
+        #For intra-node traffic
+        if dst_vm_fix_list[0].vm_node_ip == sender_vm_fix_list[0].vm_node_ip:
+            compute_fix = self.compute_fixtures_dict[sender_vm_fix_list[0].vm_node_ip]
+            vrf_id = None
+        #For inter-node traffic
+        else:
+            if fat_config_on == 'server':
+                compute_fix = self.compute_fixtures_dict[dst_vm_fix_list[0].vm_node_ip]
+                vrf_id = compute_fix.get_vrf_id(dst_vm_fix_list[0].vn_fq_names[0])
+            elif fat_config_on == 'client':
+                compute_fix = self.compute_fixtures_dict[sender_vm_fix_list[0].vm_node_ip]
+                vrf_id = compute_fix.get_vrf_id(sender_vm_fix_list[0].vn_fq_names[0])
+
+        #Start the traffic
+        if traffic:
+            for svm in sender_vm_fix_list:
+                for dvm in dst_vm_fix_list:
+                    for sport in sport_list:
+                        for dport in dport_list:
+                            assert self.send_nc_traffic(svm, dvm, sport,
+                                dport, proto, ip=dvm.get_vm_ips(af=af)[0],
+                                receiver=(not icmp_error))
+
+        #FAT flow verification
+        if ignore_address == 'destination':
+            self.verify_fat_flow_on_compute(compute_fix,
+                fat_flow_sip, fat_flow_dip,
+                fat_flow_dport, proto,
+                vrf_id, fat_flow_count=fat_flow_count,
+                sport=fat_flow_sport)
+            if fat_config_on == 'server':
+                #Enable back rpf
+                self.vnc_lib_fixture.set_rpf_mode(
+                    dst_vm_fix_list[0].vn_fq_names[0], 'enable')
+            elif fat_config_on == 'client' or fat_config_on == 'all':
+                #Enable back rpf
+                self.vnc_lib_fixture.set_rpf_mode(
+                    sender_vm_fix_list[0].vn_fq_names[0], 'enable')
+        elif ignore_address == 'source':
+            self.verify_fat_flow_on_compute(compute_fix,
+                fat_flow_sip, fat_flow_dip,
+                fat_flow_dport, proto,
+                vrf_id, fat_flow_count=2*fat_flow_count,
+                sport=fat_flow_sport)
+        elif ignore_address == None and fat_flow_config['port'] == 0:
+            for svm in sender_vm_fix_list:
+                for dvm in dst_vm_fix_list:
+                    self.verify_fat_flow_on_compute(compute_fix,
+                        svm.get_vm_ips(af=af)[0],
+                        dvm.get_vm_ips(af=af)[0], fat_flow_dport, proto,
+                        vrf_id, fat_flow_count=fat_flow_count,
+                        sport=fat_flow_sport)
+
+        #Verify NO hold flows
+        action = 'HOLD'
+        self.verify_flow_action(compute_fix, action,
+            src_vrf=vrf_id, exp=False)
         return True
 
     def get_vrouter_route(self, prefix, vn_fixture=None, vrf_id=None,
