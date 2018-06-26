@@ -25,12 +25,16 @@ class BaseDropStats(GenericTestBase) :
             self.logger.info("%s : %s"  % (k, v))
     # end print_drop_stats_dict
 
+    @retry(delay=2, tries=15)
     def get_drop_stats_dict(self, compute, fq_name=None, module='vif'):
         if module == 'vrouter':
             drop_stats_list = self.agent_inspect_h[compute].get_agent_vrouter_drop_stats()
         else:
             drop_stats_list = self.agent_inspect_h[compute].get_agent_vm_interface_drop_stats(fq_name)
-        return drop_stats_list
+
+        if drop_stats_list is not None:
+            return True, drop_stats_list
+        return False, None
 
     def verify_flow_action_drop_stats(self, drop_type='ds_flow_action_drop'):
         result = True
@@ -55,18 +59,18 @@ class BaseDropStats(GenericTestBase) :
         ip_addr = intf_details[0]['ip_addr']
         fq_name = intf_details[0]['config_name']
 
-        vif_dict_before = self.get_drop_stats_dict(compute0, fq_name)
+        vif_dict_before = self.get_drop_stats_dict(compute0, fq_name)[1]
         self.print_drop_stats_dict(vif_dict_before)
 
-        vrouter_dict_before = self.get_drop_stats_dict(compute0, module='vrouter')
+        vrouter_dict_before = self.get_drop_stats_dict(compute0, module='vrouter')[1]
         self.print_drop_stats_dict(vrouter_dict_before)
 
         assert not vm1_fixture.ping_to_ip(vm2_ip, count=ping_count)
 
         count = 0
         while True:
-            vif_dict_after = self.get_drop_stats_dict(compute0, fq_name)
-            vrouter_dict_after = self.get_drop_stats_dict(compute0, module='vrouter')
+            vif_dict_after = self.get_drop_stats_dict(compute0, fq_name)[1]
+            vrouter_dict_after = self.get_drop_stats_dict(compute0, module='vrouter')[1]
             vif_stats = self.verify_dropstats_of_type(drop_type, vif_dict_before,
                 vif_dict_after, ping_count)
             vrouter_stats = self.verify_dropstats_of_type(drop_type, vrouter_dict_before,

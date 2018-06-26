@@ -1523,11 +1523,14 @@ class ContrailTestInit(object):
         return result
     # end verify_state
 
-    def verify_service_state(self, host, service=None, role=None):
+    def verify_service_state(self, host, service=None, role=None,
+            tries=15, delay=5, expected_state=None,
+            keyfile=None, certfile=None, cacert=None):
         '''
         Based on name of service, it decides whether its a service name like
         "contrail-vrouter-agent", container name like "agent" or a non contrail service
         like docker.
+         expected_state: service status expected, like active, backup etc.
         '''
         contrail_svc = []
         non_contrail_svc = []
@@ -1545,7 +1548,9 @@ class ContrailTestInit(object):
                 return self.verify_non_contrail_service_state(host,
                                                               non_contrail_svc)
         return ContrailStatusChecker(self).wait_till_contrail_cluster_stable(
-            host, role, contrail_svc, tries=15, delay=5)
+            host, role, contrail_svc, tries=tries, delay=delay,
+            expected_state=expected_state,
+            keyfile=keyfile, certfile=certfile, cacert=cacert)
     #end verify_service_state
     
     def verify_service_down(self, host, service=None, role=None):
@@ -1998,6 +2003,8 @@ class ContrailTestInit(object):
             container = None
             self.logger.debug('Container %s not in host %s, copying to '
                 ' host itself' % (container, ip))
+        else:
+            container=self.host_data[ip].get('containers', {}).get(container)
         copy_file_to_server(host, src, dstdir, dst, force, container=container)
 
     def copy_file_from_server(self, ip, src_file_path, dest_folder,
