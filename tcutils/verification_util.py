@@ -159,7 +159,7 @@ class XmlDrv (object):
         except requests.ConnectionError, e:
             self.log.error("Socket Connection error: %s", str(e))
             return None
-        except:
+        except Exception as e:
             self.log.error("Error while getting the url: %s, error: %s" % (
                 url, str(e)))
             return None
@@ -222,6 +222,10 @@ class VerificationUtilBase (object):
 
 def elem2dict(node, alist=False):
     d = list() if alist else dict()
+    if not node.getchildren():
+        d[node.tag] = node.text
+        return d
+             
     for e in node.iterchildren():
         #key = e.tag.split('}')[1] if '}' in e.tag else e.tag
         if e.tag == 'list':
