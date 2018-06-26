@@ -1102,6 +1102,12 @@ def skip_because(*args, **kwargs):
                 if check_metadata == 1:
                     raise testtools.TestCase.skipException(msg)
 
+            if "deployer" in kwargs:
+                if kwargs["deployer"] == self.inputs.deployer:
+                    skip = True
+                    msg = "Skipped as this testcase cannot be executed with %s deployer " % self.inputs.deployer
+                    raise testtools.TestCase.skipException(msg)
+
             return f(self, *func_args, **func_kwargs)
         return wrapper
     return decorator

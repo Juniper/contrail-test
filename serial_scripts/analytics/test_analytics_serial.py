@@ -160,6 +160,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         return True
 
     @test.attr(type=['sanity', 'vcenter', 'vcenter_compute'])
+    @skip_because(deployer = 'helm')
     @preposttest_wrapper
     def test_cfgm_node_process_status_alarms(self):
         ''' Test whether process status alarm gets generated/cleared
@@ -176,6 +177,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         return True
 
     @test.attr(type=['sanity','vcenter', 'vcenter_compute'])
+    @skip_because(deployer = 'helm')
     @preposttest_wrapper
     def test_db_node_process_status_alarms(self):
         ''' Test whether process status alarm gets generated/cleared
@@ -192,6 +194,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         return True
 
     @test.attr(type=['sanity','vcenter', 'vcenter_compute'])
+    @skip_because(deployer = 'helm')
     @preposttest_wrapper
     def test_analytics_node_process_status_alarms(self):
         ''' Test whether process status alarm gets generated/cleared
@@ -207,6 +210,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         return True
 
     @test.attr(type=['sanity','vcenter', 'vcenter_compute'])
+    @skip_because(deployer = 'helm')
     @preposttest_wrapper
     def test_control_node_process_status_alarms(self):
         ''' Test whether process status alarm gets generated/cleared
