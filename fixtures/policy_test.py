@@ -1152,7 +1152,7 @@ class PolicyFixture(fixtures.Fixture):
     # end verify_policy_in_api_server
 
     @retry(delay=5, tries=3)
-    def sverify_policy_not_in_api_server(self):
+    def verify_policy_not_in_api_server(self):
         '''Verify that policy is removed in API Server.
 
         '''
