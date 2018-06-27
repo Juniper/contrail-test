@@ -76,7 +76,10 @@ class PolicyFixture(fixtures.Fixture):
             try:
                 self.policy_obj = self.vnc_lib.network_policy_read(fq_name=self.project_fq_name+[unicode(self.policy_name)])
             except:
-                self.policy_fq_name = self._set_policy_api(self.policy_name, self.rules_list)
+                if self.inputs.slave_orchestrator == 'vro':
+                    self.policy_fq_name = self._set_policy_vro(self.policy_name, self.rules_list)
+                else:
+                    self.policy_fq_name = self._set_policy_api(self.policy_name, self.rules_list)
             else:
                 self.already_present = True
                 self.policy_fq_name=self.policy_obj.fq_name
@@ -321,7 +324,16 @@ class PolicyFixture(fixtures.Fixture):
         self.policy_obj = policy_rsp
         return policy_rsp
     # end  _create_policy
-
+    
+    def _set_policy_vro(self, policy_name, rules_list, policy_obj=None):
+        '''create policy and rules from vro'''
+        self.connections.orch.create_policy(name = policy_name, rules = rules_list)
+        self.policy_obj = self.vnc_lib.network_policy_read(
+                fq_name=self.project_fq_name+[unicode(self.policy_name)])
+        self._populate_attr()
+        return self.policy_fq_name
+    #end _set_policy_vro
+    
     def _set_policy_api(self, policy_name, rules_list, policy_obj=None):
         ''' Create a policy from the supplied rules
         Sample rules_list:
@@ -346,7 +358,7 @@ class PolicyFixture(fixtures.Fixture):
                'dest_network'  : vn1_name, 'dst_ports'     : [100,10],
              }
                 ]
-        '''
+        '''              
         np_rules = []
         for rule_dict in rules_list:
             source_vn = None
@@ -537,9 +549,9 @@ class PolicyFixture(fixtures.Fixture):
                     dst_ports=new_rule['dst_ports'],
                     action_list=new_rule['action_list']))
 
-
         # end for
         self.logger.debug("Policy np_rules : %s" % (np_rules))
+        
         pol_entries = PolicyEntriesType(np_rules)
         if policy_obj:
             policy_obj.network_policy_entries = pol_entries
@@ -606,7 +618,10 @@ class PolicyFixture(fixtures.Fixture):
 
     def _delete_policy(self):
         if self.api_flag:
-            self.vnc_lib.network_policy_delete(id=self.policy_obj.uuid)
+            if self.inputs.slave_orchestrator == 'vro':
+                self.connections.orch.delete_policy(self.policy_name)
+            else:
+                self.vnc_lib.network_policy_delete(id=self.policy_obj.uuid)
             self.logger.info("Deleted policy %s" % (self.policy_name))
         elif self.inputs.is_gui_based_config():
             self.webui.delete_policy(self)
@@ -1119,6 +1134,7 @@ class PolicyFixture(fixtures.Fixture):
             logger=self.logger)
         if out:
             err_msg.append(out)
+
         # compare policy_rules
         out = policy_test_utils.compare_args(
             'policy_rules', self.api_s_policy_obj_x[
@@ -1136,7 +1152,7 @@ class PolicyFixture(fixtures.Fixture):
     # end verify_policy_in_api_server
 
     @retry(delay=5, tries=3)
-    def verify_policy_not_in_api_server(self):
+    def sverify_policy_not_in_api_server(self):
         '''Verify that policy is removed in API Server.
 
         '''
