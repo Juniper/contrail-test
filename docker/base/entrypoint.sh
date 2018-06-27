@@ -133,8 +133,8 @@ else
             rv_run_test=$?
             ;;
         *)
-            echo "Unknown FEATURE - ${FEATURE}"
-            exit 1
+            $run_tests -F $FEATURE --send-mail -t $EXTRA_RUN_TEST_ARGS
+            rv_run_test=$?
             ;;
     esac
 fi

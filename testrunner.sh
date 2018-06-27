@@ -208,9 +208,7 @@ docker_run () {
         fi
     fi
 
-    if [[ $testbed ]]; then
-        arg_testbed_vol=" -v $testbed:/opt/contrail/utils/fabfile/testbeds/testbed.py:ro "
-    elif [[ $params_file ]] && [[ $params_file == *.yml || $params_file == *.yaml ]]; then
+    if [[ $params_file ]] && [[ $params_file == *.yml || $params_file == *.yaml ]]; then
         arg_params_vol=" -v $params_file:$CONTRAIL_TEST_FOLDER/contrail_test_input.yaml:ro"
     fi
     if [[ $vcenter_vars ]] && [[ $vcenter_vars == *.yml || $vcenter_vars == *.yaml ]]; then
@@ -305,13 +303,7 @@ prerun () {
     # Create log directory if not exist
     mkdir -p ${run_path}/${SCRIPT_TIMESTAMP}/{logs,reports}
 
-    if [[ $testbed ]]; then
-        testbed=`readlink -f $testbed`
-        if [ ! -f $testbed ]; then
-            red "testbed path ($testbed) doesn't exist"
-            exit 1
-        fi
-    elif [[ $params_file ]] && [[ $params_file == *.yml || $params_file == *.yaml ]]; then
+    if [[ $params_file ]] && [[ $params_file == *.yml || $params_file == *.yaml ]]; then
         params_file=`readlink -f $params_file`
         if [ ! -f $params_file ]; then
             red "params_file path ($params_file) doesn't exist"
@@ -346,12 +338,10 @@ $GREEN  -r, --rm	                    $NO_COLOR Remove the container on container
 $GREEN  -b, --background                $NO_COLOR run the container in background
 $GREEN  -n, --no-color                  $NO_COLOR Disable output coloring
 $GREEN  -z, --tempest_dir TEMPEST DIR           $NO_COLOR Path to the tempest , where it is cloned
-$GREEN  -t, --testbed TESTBED           $NO_COLOR Path to testbed file in the host,
-                                            Default: /opt/contrail/utils/fabfile/testbeds/testbed.py
 $GREEN  -k, --ssh-key FILE_PATH         $NO_COLOR ssh key file path - in case of using key based ssh to cluster nodes.
                                                   Default: $HOME/.ssh/id_rsa
 $GREEN  -K, --ssh-public-key FILE_PATH  $NO_COLOR ssh public key file path. Default: <ssh-key provided>.pub
-$GREEN  -P, --params-file PARAMS_FILE   $NO_COLOR Optional Sanity Params ini file or yml file
+$GREEN  -P, --params-file PARAMS_FILE   $NO_COLOR instance.yaml file
 $GREEN  -f, --feature FEATURE           $NO_COLOR Features or Tags to test - valid options are sanity, quick_sanity,
                                             ci_sanity, ci_sanity_WIP, ci_svc_sanity, upgrade, webui_sanity,
                                             ci_webui_sanity, devstack_sanity, upgrade_only. Default: sanity
@@ -359,7 +349,7 @@ $GREEN  -f, --feature FEATURE           $NO_COLOR Features or Tags to test - val
 $GREEN -T, --test-tags TEST_TAGS        $NO_COLOR test tags to run specific tests
 $GREEN -c, --testcase TESTCASE          $NO_COLOR testcase to execute
 $GREEN -m, --mount_local path          $NO_COLOR mount a local folder which has contrail-test
-NOTE: Either testbed.py (-t) or params-file required
+NOTE: YAML file is required
 
 ${GREEN}Possitional Parameters:
 
@@ -369,9 +359,8 @@ ${GREEN}Possitional Parameters:
 EOF
     }
 
-    while getopts "ibhf:t:p:sS:k:K:nrT:P:m:j:c:z:" flag; do
+    while getopts "ibhf:p:sS:k:K:nrT:P:m:j:c:z:" flag; do
         case "$flag" in
-            t) testbed=$OPTARG;;
             z) tempest_dir=$OPTARG;;
             P) params_file=$OPTARG;;
             f) feature=$OPTARG;;
@@ -569,24 +558,6 @@ rebuild () {
 Usage: $0 rebuild [OPTIONS] <container id/name>
 Rebuild contrail-test containers
 
-$GREEN  -p, --run-path RUNPATH          $NO_COLOR Directory path on the host, in which contrail-test save all the
-                                            results and other data. Default: $HOME/contrail-test-runs/
-$GREEN  -s, --shell                     $NO_COLOR Do not run tests, but leave a shell, this is useful for debugging.
-$GREEN  -r, --rm	                    $NO_COLOR Remove the container on container exit, Default: Container will be kept.
-$GREEN  -b, --background                $NO_COLOR run the container in background
-$GREEN  -n, --no-color                  $NO_COLOR Disable output coloring
-$GREEN  -t, --testbed TESTBED           $NO_COLOR Path to testbed file in the host,
-$GREEN  -i, --use-ci-image              $NO_COLOR Use ci image, by default it will use the image name "$DEFAULT_CI_IMAGE",
-                                                  One may override this by setting the environment variable \$CI_IMAGE
-$GREEN  -P, --params-file PARAMS_FILE   $NO_COLOR Optional Sanity Params ini file
-$GREEN  -k, --ssh-private-key FILE_PATH $NO_COLOR ssh private key file path - in case of using key based ssh to cluster nodes.
-$GREEN  -f, --feature FEATURE           $NO_COLOR Features or Tags to test - valid options are sanity, quick_sanity,
-                                            ci_sanity, ci_sanity_WIP, ci_svc_sanity, upgrade, webui_sanity,
-                                            ci_webui_sanity, devstack_sanity, upgrade_only. Default: sanity
-                                            NOTE: this is only valid for Full contrail-test suite.
-$GREEN  -T, --test-tags TEST_TAGS           $NO_COLOR test tags to run tests,
-NOTE: Either testbd.py (-t) or params-file required
-
 ${GREEN}Possitional Parameters:
 
   <container id/name>       $NO_COLOR The container ID or name ( "$0 list -ca" to list all containers)
@@ -594,24 +565,6 @@ ${GREEN}Possitional Parameters:
 EOF
     }
 
-    while getopts "ibhf:t:p:sk:nrT:P:j:" flag; do
-        case "$flag" in
-            t) testbed=$OPTARG;;
-            P) params_file=$OPTARG;;
-            i) use_ci_image=1;;
-            r) rm=1;;
-            f) feature=$OPTARG;;
-            p) run_path=$OPTARG;;
-            s) shell=1;;
-            k) ssh_key_file=$OPTARG;;
-            b) background=1;;
-            h) usage; exit;;
-            n) clear_colors ;;
-            j) test_tags=$OPTARG;;
-        esac
-    done
-
-    shift $(( OPTIND - 1 ))
     pos_arg=$1
 
     container_name=`get_container_name`
@@ -635,7 +588,6 @@ for arg in "$@"; do
     shift
     case "$arg" in
         "--help") set -- "$@" "-h" ;;
-        "--testbed") set -- "$@" "-t" ;;
         "--feature") set -- "$@" "-f" ;;
         "--log-path") set -- "$@" "-p" ;;
         "--shell") set == "$@" "-s";;
