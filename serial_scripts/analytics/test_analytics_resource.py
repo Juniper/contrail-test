@@ -180,7 +180,7 @@ class AnalyticsTestSanityWithMin(
 
         cmd_args_list = [
 
-            'contrail-stats --table UveVMInterfaceAgent.raw_if_stats --select "SUM(raw_if_stats.in_bytes)" \
+            'contrail-stats --table UveVMInterfaceAgent.if_stats --select "SUM(if_stats.in_bytes)" \
             name --where name="*" --start-time now-11h --end-time now-10h',
 
             'contrail-stats --table NodeStatus.process_mem_cpu_usage --select "T=120" "AVG(process_mem_cpu_usage.cpu_share)" \
