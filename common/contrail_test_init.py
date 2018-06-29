@@ -844,7 +844,7 @@ class TestInputs(object):
         #kubernetes specific configs
         self.k8s_cluster_name = contrail_configs.get('KUBERNETES_CLUSTER_NAME') or "k8s"
         if self.orchestrator == 'kubernetes':
-            self.admin_tenant = self.k8s_cluster_name + '_default'
+            self.admin_tenant = self.k8s_cluster_name + '-default'
 
         # test specific configs
         self.auth_url = test_configs.get('auth_url') or os.getenv('OS_AUTH_URL',
