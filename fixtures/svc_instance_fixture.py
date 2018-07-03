@@ -32,6 +32,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.port_tuples_props = port_tuples_props
 
         self.connections = connections
+        self.orch = connections.orch
         self.vnc_lib = connections.vnc_lib
         self.api_s_inspect = connections.api_server_inspect
         self.nova_h = connections.nova_h
@@ -115,6 +116,11 @@ class SvcInstanceFixture(fixtures.Fixture):
                 "Service instance: %s already exists", self.si_fq_name)
         except NoIdError:
             self.logger.debug("Creating service instance: %s", self.si_fq_name)
+            if self.inputs.slave_orchestrator == 'vro':
+                self.orch.create_si(self.si_name, self.svc_template, self.if_details)
+                self.si_obj = self.vnc_lib.service_instance_read(
+                fq_name=self.si_fq_name)
+                self.orch.add_port_tuple(self.si_name, self.port_tuples_props)
             project = self.vnc_lib.project_read(fq_name=self.project_fq_name)
             svc_instance = ServiceInstance(self.si_name, parent_obj=project)
             si_type_args = None
@@ -279,7 +285,10 @@ class SvcInstanceFixture(fixtures.Fixture):
         for irt in intf_rt_table_list:
             self.disassociate_static_route_table(irt['uuid'])
         self.logger.debug("Deleting service instance: %s", self.si_fq_name)
-        self.vnc_lib.service_instance_delete(fq_name=self.si_fq_name)
+        if self.inputs.slave_orchestrator == 'vro':
+            self.orch.delete_si(self.si_name)
+        else:
+            self.vnc_lib.service_instance_delete(fq_name=self.si_fq_name)
     # end _delete_si
 
     @property
