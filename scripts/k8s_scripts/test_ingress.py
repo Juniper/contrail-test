@@ -4,29 +4,34 @@ from tcutils.wrappers import preposttest_wrapper
 import test
 from tcutils.util import skip_because
 
-class TestIngress(BaseK8sTest):
+class TestIngressClusterIp(BaseK8sTest):
 
     @classmethod
     def setUpClass(cls):
-        super(TestIngress, cls).setUpClass()
+        super(TestIngressClusterIp, cls).setUpClass()
 
     @classmethod
     def tearDownClass(cls):
-        super(TestIngress, cls).tearDownClass()
+        super(TestIngressClusterIp, cls).tearDownClass()
 
     def parallel_cleanup(self):
         parallelCleanupCandidates = ["PodFixture"]
         self.delete_in_parallel(parallelCleanupCandidates)
     
-    @skip_because(mx_gw = False)
+    @test.attr(type=['ci_k8s_sanity'])
     @preposttest_wrapper
-    def test_ingress_1(self):
-        ''' Create a service with 2 pods running nginx
-            Create an ingress out of this service
-            From the local node, do a wget on the ingress public ip
-            Validate that service and its loadbalancing works
-
-            For now, do this test only in default project
+    def test_ingress_ip_assignment(self):
+        ''' 
+        Verify that Ingress gets a CLuster IP which is reachable to Pods in same
+        namespace. Also verify that a Floating IP is assigned to the Ingress 
+        from the Public FIP poo.
+        Steps:
+        1. Create a service with 2 pods running nginx
+        2. Create an ingress out of this service
+        3. From another Pod do a wget on the ingress Cluster ip
+            
+        Validate that Ingress get a IP from Public FIP pool which might/might not be accessible.
+        Validate that service and its loadbalancing work
         '''
         app = 'http_test'
         labels = {'app':app}
@@ -53,10 +58,21 @@ class TestIngress(BaseK8sTest):
         # Now validate ingress from within the cluster network
         assert self.validate_nginx_lb([pod1, pod2], ingress.cluster_ip,
                                       test_pod=pod3)
+    # end test_ingress_ip_assignment
 
-        # Now validate ingress from public network
-        assert self.validate_nginx_lb([pod1, pod2], ingress.external_ips[0])
-    # end test_service_1
+class TestIngress(BaseK8sTest):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestIngress, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestIngress, cls).tearDownClass()
+
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        self.delete_in_parallel(parallelCleanupCandidates)
 
     @skip_because(mx_gw = False)
     @preposttest_wrapper
