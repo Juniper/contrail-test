@@ -33,7 +33,8 @@ class IngressFixture(fixtures.Fixture):
         self.default_backend = {} if default_backend is None else default_backend
         self.v1_beta_h = self.k8s_client.v1_beta_h
         self.connections = connections
-        
+
+        self.verify_is_run = False
         self.already_exists = None
 
     def setUp(self):
@@ -54,8 +55,20 @@ class IngressFixture(fixtures.Fixture):
                               % (self.name))
             return False
         self.logger.info('Ingress %s verification passed' % (self.name))
+        self.verify_is_run = True
         return True
     # end verify_on_setup
+
+    def verify_on_cleanup(self):
+        if not self.verify_is_run:
+            return
+        #assert self.verify_ingress_not_in_contrail_api(), ('Ingress %s cleanup checks'
+        #                                               ' in contrail-api failed' % (self.name))
+        assert self.verify_ingress_not_in_kube_manager(), ('Ingress %s cleanup checks'
+                                                         ' in kube Manager failed' % (self.name))
+        return True
+        self.logger.info('Verifications on Ingress %s cleanup passed')
+    # end verify_on_cleanup
 
     def cleanUp(self):
         super(IngressFixture, self).cleanUp()
@@ -112,7 +125,8 @@ class IngressFixture(fixtures.Fixture):
 
     def delete(self):
         if not self.already_exists:
-            return self.k8s_client.delete_ingress(self.namespace, self.name)
+            self.k8s_client.delete_ingress(self.namespace, self.name)
+            self.verify_on_cleanup()
     # end delete
 
     def disable_tls(self):
@@ -165,5 +179,19 @@ class IngressFixture(fixtures.Fixture):
             self.logger.warn('Ingress %s with uuid %s not found in kube manager' 
                              % (self.name, self.uuid))
             return False
+        return True
+    # end verify_service_in_kube_manager
+    
+    @retry(delay=1, tries=10)
+    def verify_ingress_not_in_kube_manager(self):
+        km_h = self.connections.get_kube_manager_h()
+        self.lb_info = km_h.get_svc_or_ingress_lb_info(uuid = self.uuid)
+        if self.lb_info:
+            self.logger.error('Ingress %s with uuid %s still found in kube manager'
+                             % (self.name, self.uuid))
+            return False
+        else:
+            self.logger.info('Ingress %s with uuid %s deleted successfully from kube manager'
+                             % (self.name, self.uuid))
         return True
     # end verify_service_in_kube_manager
