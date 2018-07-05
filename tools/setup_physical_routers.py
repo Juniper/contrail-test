@@ -42,6 +42,10 @@ if __name__ == "__main__":
                 domain=init_obj.admin_domain
                 )
             phy_router_obj.setUp()
+            result = phy_router_obj.verify_bgp_peer()
+            if result == False:
+                raise Exception('BGP peering is not up.')
+
         if device_dict['type'] == 'vcenter_gateway':
                vrouter_obj = VirtualRouterFixture(device_dict['name'],
                                       'embedded', 

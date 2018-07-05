@@ -120,6 +120,38 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
             password=self.ssh_password,
             logger=self.logger)
 
+    @retry(delay=15, tries=10)
+    def verify_bgp_peer(self):
+        """
+        Check the configured control node and mx has any peer and if so the state is Established.
+        """
+        result = True
+
+        for entry1 in self.inputs.bgp_ips:
+
+            cn_ispec = ControlNodeInspect(entry1)
+            cn_bgp_entry = cn_ispec.get_cn_bgp_neigh_entry(encoding='BGP')
+
+            if not cn_bgp_entry:
+                result = False
+                self.logger.info(
+                    'Control Node %s does not have any BGP Peer' %
+                    (self.router_ip))
+            else:
+                for entry in cn_bgp_entry:
+                    if entry['state'] != 'Established':
+                        result = result and False
+                        self.logger.error('!!! With Peer %s peering is not Established. Current State %s ' % (
+                            entry['peer'], entry['state']))
+                    else:
+                        self.logger.info(
+                            'With Peer %s peering is Current State is %s ' %
+                            (entry['peer'], entry['state']))
+        return result
+    # end verify_vn_in_control_node
+
+
+
     def cleanUp(self):
         super(PhysicalRouterFixture, self).cleanUp()
         do_cleanup = True
