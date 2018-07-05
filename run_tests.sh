@@ -406,6 +406,8 @@ fi
 check_test_discovery
 
 setup_physical_routers
+retval=$?
+exit $retval
 
 if [[ -n $JENKINS_TRIGGERED && $JENKINS_TRIGGERED -eq 1 ]]; then
     export REPORT_DETAILS_FILE=report_details_${SCRIPT_TS}_$(date +"%Y_%m_%d_%H_%M_%S").ini
