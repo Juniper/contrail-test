@@ -405,7 +405,7 @@ fi
 
 check_test_discovery
 
-setup_physical_routers
+setup_physical_routers || die "BGP peering is not up."
 
 if [[ -n $JENKINS_TRIGGERED && $JENKINS_TRIGGERED -eq 1 ]]; then
     export REPORT_DETAILS_FILE=report_details_${SCRIPT_TS}_$(date +"%Y_%m_%d_%H_%M_%S").ini

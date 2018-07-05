@@ -3,6 +3,7 @@ from netaddr import *
 import vnc_api_test
 from pif_fixture import PhysicalInterfaceFixture
 from physical_device_fixture import PhysicalDeviceFixture
+from tcutils.control.cn_introspect_utils import *
 
 class PhysicalRouterFixture(PhysicalDeviceFixture):
 
@@ -119,6 +120,37 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
             username=self.ssh_username,
             password=self.ssh_password,
             logger=self.logger)
+
+    @retry(delay=15, tries=10)
+    def verify_bgp_peer(self):
+        """
+        Check the configured control node has any peer and if so the state is Established.
+        """
+
+        result = True
+        for entry1 in self.inputs.bgp_ips:
+            cn_ispec = ControlNodeInspect(entry1)
+            cn_bgp_entry = cn_ispec.get_cn_bgp_neigh_entry(encoding='BGP')
+
+            if not cn_bgp_entry:
+                result = False
+                self.logger.error(
+                    'Control Node %s does not have any BGP Peer' %
+                    (entry1))
+            else:
+                for entry in cn_bgp_entry:
+
+                    if entry['peer'] == self.name:
+
+                        if entry['state'] != 'Established':
+                            result = result and False
+                            self.logger.error('!!!Node %s peering info:With Peer %s: %s  peering is not Established. Current State %s ' % (
+                                entry1, self.tunnel_ip, entry['peer'], entry['state']))
+                        else:
+                            self.logger.info(
+                                'Node %s peering info:With Peer %s : %s peering is Current State is %s ' %
+                                (entry1,self.tunnel_ip, entry['peer'], entry['state']))
+        return result
 
     def cleanUp(self):
         super(PhysicalRouterFixture, self).cleanUp()
