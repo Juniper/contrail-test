@@ -52,6 +52,7 @@ class TestService(BaseK8sTest):
                                       test_pod=pod3)
     # end test_service_1
 
+    @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_service_type_nodeport_without_namespace_isolation(self):
         ''' Create a service with 2 pods running nginx
