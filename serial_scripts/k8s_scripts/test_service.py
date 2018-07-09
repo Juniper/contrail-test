@@ -174,7 +174,6 @@ class TestService(BaseK8sTest):
         # Restart Vrouter agent
         self.restart_vrouter_agent()
         self.common_checks_for_nodeport_service(svc, pds)
-
     @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_kube_manager_restart_with_multiple_nodeport_services_with_namespace_isolation(self):
