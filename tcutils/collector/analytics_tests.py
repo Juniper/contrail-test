@@ -2252,7 +2252,7 @@ class AnalyticsVerification(fixtures.Fixture):
             if len(self.inputs.cfgm_ips) > 1:
                 multi_instances = True
             if alarm_type == 'process-status':
-                result = result and self.inputs.verify_state()
+                assert self.inputs.verify_state()
                 for process in cfgm_processes:
                     if process == 'supervisor-config':
                         if len(self.inputs.cfgm_ips) > 1:
@@ -2276,7 +2276,7 @@ class AnalyticsVerification(fixtures.Fixture):
             if len(self.inputs.database_ips) > 1:
                 multi_instances = True
             if alarm_type == 'process-status':
-                result = result and self.inputs.verify_state()
+                assert self.inputs.verify_state()
                 for process in db_processes:
                     if process == 'kafka' or process == 'supervisor-database':
                         if len(self.inputs.database_ips) > 1:
@@ -2294,7 +2294,7 @@ class AnalyticsVerification(fixtures.Fixture):
             if len(self.inputs.bgp_control_ips) > 1:
                 multi_instances = True
             if alarm_type == 'process-status':
-                result = result and self.inputs.verify_state()
+                assert self.inputs.verify_state()
                 for process in control_processes:
                     if not self._verify_contrail_alarms(process, 'control-node', 'service_stop', multi_instances=multi_instances):
                         result = result and False
@@ -2328,7 +2328,7 @@ class AnalyticsVerification(fixtures.Fixture):
             if len(self.inputs.collector_ips) > 1:
                 multi_instances = True
             if alarm_type == 'process-status':
-                result = result and self.inputs.verify_state()
+                assert self.inputs.verify_state()
                 for process in analytics_processes:
                     if process == 'contrail-collector' or process == 'supervisor-analytics':
                         if len(self.inputs.collector_ips) > 1:
@@ -2353,7 +2353,7 @@ class AnalyticsVerification(fixtures.Fixture):
             if len(self.inputs.compute_ips) > 1:
                 multi_instances = True
             if alarm_type == 'process-status':
-                result = result and self.inputs.verify_state()
+                assert self.inputs.verify_state()
                 for process in vrouter_processes:
                     if not self._verify_contrail_alarms(process, 'vrouter','service_stop', multi_instances=multi_instances):
                         result = result and False
