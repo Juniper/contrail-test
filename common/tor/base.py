@@ -81,10 +81,13 @@ class BaseTorTest(BaseNeutronTest):
                 count, len(tors_info_list)))  
         for i in range(0, count):
             tor_params = tors_info_list[i]
-            tor_fixture = self.useFixture(PhysicalDeviceFixture(
+            tor_fixture = self.useFixture(PhysicalRouterFixture(
                     tor_params['name'],
                     tor_params['mgmt_ip'],
                     vendor=tor_params['vendor'],
+                    model=tor_params['model'],
+                    role=tor_params['role'],
+                    tsn=tor_params['tsn'],
                     ssh_username=tor_params['ssh_username'],
                     ssh_password=tor_params['ssh_password'],
                     tunnel_ip=tor_params['tunnel_ip'],
@@ -123,7 +126,7 @@ class BaseTorTest(BaseNeutronTest):
 
     def setup_tor_port(self, tor_fixture, port_index=0, vlan_id=0, vmi_objs=[],
         cleanup=True):
-        device_id = tor_fixture.uuid
+        device_id = tor_fixture.phy_device.uuid
         tor_ip = tor_fixture.mgmt_ip 
         pif_name = self.inputs.tor_hosts_data[tor_ip][port_index]['tor_port']
         lif_name = pif_name + '.' + str(vlan_id)
