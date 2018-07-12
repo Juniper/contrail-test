@@ -1,8 +1,79 @@
 from common.k8s.base import BaseK8sTest
 from k8s.ingress import IngressFixture
+from vn_test import VNFixture
+from floating_ip import FloatingIPFixture
 from tcutils.wrappers import preposttest_wrapper
 import test
 from tcutils.util import skip_because
+
+class TestIngressClusterIp(BaseK8sTest):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestIngressClusterIp, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestIngressClusterIp, cls).tearDownClass()
+
+    def parallel_cleanup(self):
+        parallelCleanupCandidates = ["PodFixture"]
+        self.delete_in_parallel(parallelCleanupCandidates)
+    
+    @test.attr(type=['ci_k8s_sanity'])
+    @preposttest_wrapper
+    def test_ingress_ip_assignment(self):
+        ''' 
+        Verify that Ingress gets a CLuster IP which is reachable to Pods in same
+        namespace. Also verify that a Floating IP is assigned to the Ingress 
+        from the Public FIP poo.
+        Steps:
+        1. Create a service with 2 pods running nginx
+        2. Create an ingress out of this service
+        3. From another Pod do a wget on the ingress Cluster ip
+            
+        Validate that Ingress get a IP from Public FIP pool which might/might not be accessible.
+        Validate that service and its loadbalancing work
+        '''
+        K8S_PUB_VN_NAME = '__public__'
+        K8S_PUB_FIP_POOL_NAME = '__fip_pool_public__'
+        
+        app = 'http_test'
+        labels = {'app':app}
+        namespace = self.setup_namespace(name='default')
+        assert namespace.verify_on_setup()
+
+        service = self.setup_http_service(namespace=namespace.name,
+                                          labels=labels)
+        pod1 = self.setup_nginx_pod(namespace=namespace.name, 
+                                          labels=labels)
+
+        pod2 = self.setup_nginx_pod(namespace=namespace.name, 
+                                          labels=labels)
+        vn_fixture = self.useFixture(VNFixture(project_name=self.inputs.project_name,
+                                               vn_name=K8S_PUB_VN_NAME,
+                                               connections=self.connections,
+                                               inputs=self.inputs,
+                                               option="contrail"))
+        fip_pool_fixture = self.useFixture(FloatingIPFixture(
+                                            project_name=self.inputs.project_name,
+                                            inputs=self.inputs,
+                                            connections=self.connections,
+                                            pool_name=K8S_PUB_FIP_POOL_NAME,
+                                            vn_id=vn_fixture.vn_id))
+        ingress = self.setup_simple_nginx_ingress(service.name,
+                                                  namespace=namespace.name)
+        assert ingress.verify_on_setup()
+
+        pod3 = self.setup_busybox_pod(namespace=namespace.name)
+        self.verify_nginx_pod(pod1)
+        self.verify_nginx_pod(pod2)
+        assert pod3.verify_on_setup()
+
+        # Now validate ingress from within the cluster network
+        assert self.validate_nginx_lb([pod1, pod2], ingress.cluster_ip,
+                                      test_pod=pod3)
+    # end test_ingress_ip_assignment
 
 class TestIngress(BaseK8sTest):
 
@@ -17,46 +88,6 @@ class TestIngress(BaseK8sTest):
     def parallel_cleanup(self):
         parallelCleanupCandidates = ["PodFixture"]
         self.delete_in_parallel(parallelCleanupCandidates)
-    
-    @skip_because(mx_gw = False)
-    @preposttest_wrapper
-    def test_ingress_1(self):
-        ''' Create a service with 2 pods running nginx
-            Create an ingress out of this service
-            From the local node, do a wget on the ingress public ip
-            Validate that service and its loadbalancing works
-
-            For now, do this test only in default project
-        '''
-        app = 'http_test'
-        labels = {'app':app}
-        namespace = self.setup_namespace(name='default')
-        assert namespace.verify_on_setup()
-
-        service = self.setup_http_service(namespace=namespace.name,
-                                          labels=labels)
-        pod1 = self.setup_nginx_pod(namespace=namespace.name, 
-                                          labels=labels)
-
-        pod2 = self.setup_nginx_pod(namespace=namespace.name, 
-                                          labels=labels)
-
-        ingress = self.setup_simple_nginx_ingress(service.name,
-                                                  namespace=namespace.name)
-        assert ingress.verify_on_setup()
-
-        pod3 = self.setup_busybox_pod(namespace=namespace.name)
-        self.verify_nginx_pod(pod1)
-        self.verify_nginx_pod(pod2)
-        assert pod3.verify_on_setup()
-
-        # Now validate ingress from within the cluster network
-        assert self.validate_nginx_lb([pod1, pod2], ingress.cluster_ip,
-                                      test_pod=pod3)
-
-        # Now validate ingress from public network
-        assert self.validate_nginx_lb([pod1, pod2], ingress.external_ips[0])
-    # end test_service_1
 
     @skip_because(mx_gw = False)
     @preposttest_wrapper
