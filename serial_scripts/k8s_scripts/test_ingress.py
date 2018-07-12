@@ -92,7 +92,7 @@ class TestIngress(BaseK8sTest):
                                     [self.inputs.k8s_master_ip],
                                     container = "kube-apiserver",
                                     verify_service = False)
-        time.sleep(20) # Kube-apiserver being non contrail service, skipping the verification and putting a sleep
+        time.sleep(120) # Kube-apiserver being non contrail service, skipping the verification and putting a sleep
         app = 'http_test'
         labels = {'app':app}
         namespace = self.setup_namespace(name='default')
