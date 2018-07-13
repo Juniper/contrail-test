@@ -273,6 +273,7 @@ class TestRouterSNAT(BaseNeutronTest):
                 router_dict['id'],
                 self.public_vn_obj.public_vn_fixture.vn_id)
         self.add_vn_to_router(router_dict['id'], vn1_fixture)
+        time.sleep(50)
         assert self.verify_snat(vm1_fixture)
 
     @preposttest_wrapper
