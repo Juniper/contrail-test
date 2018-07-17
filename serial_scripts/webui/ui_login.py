@@ -37,13 +37,12 @@ class UILogin:
         if not UILogin.os_url:
             url_string = "http://" + self.inputs.openstack_ip
             if self.os_name == 'ubuntu':
-                if self.inputs.get_build_sku() == 'ocata':
-                    UILogin.os_url = url_string
-                else:
-                    UILogin.os_url = url_string + "/horizon"
+                UILogin.os_url = url_string + "/horizon"
             else:
                 UILogin.os_url = url_string + "/dashboard"
-            UILogin.webui_url = 'http://' + self.inputs.webui_ip + ':8080'
+            if self.inputs.get_build_sku() == 'ocata':
+                UILogin.os_url = url_string
+            UILogin.webui_url = 'http://' + self.inputs.webui_ip + ':8180'
         if not UILogin.browser:
             self._start_virtual_display()
             if self.ui_flag == 'firefox':
@@ -118,7 +117,7 @@ class UILogin:
     def webui(self, username, password):
         self._launch(self.browser)
         self._set_display(self.browser)
-        url = 'http://' + self.inputs.webui_ip + ':8080'
+        url = 'http://' + self.inputs.webui_ip + ':8180'
         self.get_login_page(self.browser, url)
         self.login(self.browser, url, username, password)
     # end login_webui
@@ -133,7 +132,7 @@ class UILogin:
         obj = self.webui_common
         self.get_login_page(br, url, 2)
         try:
-            if url.find('8080') != -1:
+            if url.find('8180') != -1:
                 obj.find_element('btn-monitor', browser=br, delay=4)
             else:
                 obj.find_element('main_content', browser=br, delay=4)
@@ -143,12 +142,14 @@ class UILogin:
             pass
         if not login:
             try:
+                if url.find(':') != 1:
+                    obj.send_keys('default', 'domain', 'name', browser=br)
                 obj.send_keys(user, 'username', 'name', browser=br)
                 obj.send_keys(password, 'password', 'name', browser=br)
                 obj.click_element('btn', 'class', browser=br)
                 time.sleep(60)
                 try:
-                    if url.find('8080') != -1:
+                    if url.find('8180') != -1:
                         obj.find_element('btn-monitor', browser=br)
                     else:
                         obj.find_element('main_content', browser=br)
