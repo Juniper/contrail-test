@@ -192,7 +192,7 @@ class VcenterOrchestrator(Orchestrator):
         if len(dvs) > 1:
             for dv in dvs:
                 if dv.name in self._inputs.dv_switch:
-                     self._vs = dvs[0]
+                     self._vs = dv
                      break
         else:
             self._vs = dvs[0]
