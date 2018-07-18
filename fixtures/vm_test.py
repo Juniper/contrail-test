@@ -1292,7 +1292,7 @@ class VMFixture(fixtures.Fixture):
         return self.ping_to_ip(*args, **kwargs)
     # end ping_to_ipv6
 
-    @retry(delay=1, tries=10)
+    @retry(delay=1, tries=15)
     def ping_with_certainty(self, ip=None, return_output=False, other_opt='',
                             size='56', count='5', expectation=True,
                             dst_vm_fixture=None, vn_fq_name=None, af=None):
