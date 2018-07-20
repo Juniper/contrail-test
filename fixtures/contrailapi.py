@@ -1084,8 +1084,7 @@ class ContrailVncApi(object):
                       else project_fqname.split(':')
             obj = self._vnc.project_read(fq_name=fq_name)
         else:
-            obj = self._vnc.global_system_config_read(
-                  fq_name=["default-global-system-config"])
+            obj = self.read_global_system_config()
         obj.set_enable_security_policy_draft(flag)
         self.update_obj(obj)
 
@@ -1101,8 +1100,7 @@ class ContrailVncApi(object):
                       else project_fqname.split(':')
             obj = self._vnc.project_read(fq_name=fqname)
         else:
-            obj = self._vnc.global_system_config_read(
-                  fq_name=["default-global-system-config"])
+            obj = self.read_global_system_config()
         if action == 'commit':
             self._vnc.commit_security(obj)
         elif action == 'discard':
@@ -2041,6 +2039,9 @@ class ContrailVncApi(object):
 
     # end delete_bgp_router
 
+    def read_global_system_config(self):
+        fq_name = ['default-global-system-config']
+        return self._vnc.global_system_config_read(fq_name=fq_name)
 
     def read_global_vrouter_config(self):
         fq_name = [ 'default-global-system-config',
@@ -2372,6 +2373,435 @@ class ContrailVncApi(object):
 
     def get_ip(self, ip_w_pfx):
         return str(IPNetwork(ip_w_pfx).ip)
+
+    def create_vn_api(self, vn_name, project,subnets,ipam,**kwargs):
+        project_obj = self.read_project_obj(project_fq_name=project)
+        ipam_obj = self._vnc.network_ipam_read(
+               fq_name=ipam)
+        vn_obj = VirtualNetwork(vn_name, parent_obj=project_obj)
+        for pfx in subnets:
+            px = pfx['cidr'].split('/')[0]
+            pfx_len = int(pfx['cidr'].split('/')[1])
+            subnet_vnc = IpamSubnetType(subnet=SubnetType(px, pfx_len))
+            vnsn_data = VnSubnetsType([subnet_vnc])
+            vn_obj.add_network_ipam(ipam_obj, vnsn_data)
+        try:
+            vn_uuid = self._vnc.virtual_network_create(vn_obj)
+            if not kwargs.get('enable_dhcp',None):
+                vn_obj.external_ipam=True
+                self._vnc.virtual_network_update(vn_obj)
+            return vn_uuid
+        except RefsExistError:
+            project_fq_name.append(vn_name)
+            return self._vnc.virtual_network_read(vn_fq_name = project_fq_name)
+
+    def delete_vn_api(self, vn_obj):
+        try:
+            self._vnc.virtual_network_delete(id=vn_obj.uuid)
+            return True
+        except RefsExistError,e:
+            self._log.debug('RefsExistError %s while deleting VN %s..%(e, vn_obj.name)')
+            return False
+    
+    def get_vmi_by_vm(self,vm_id,**kwargs):
+        try:
+            vm_obj = self._vnc.virtual_machine_read(id=vm_id)
+        except Exception as e:
+            self._log.debug("Got exception as %s while reading the vm obj"%(e))
+        vmis = vm_obj.get_virtual_machine_interface_back_refs()
+        return [self._vnc.virtual_machine_interface_read(id=vmi['uuid']) for vmi in vmis]
+
+    def create_fabric(self, name, creds=None):
+        fqname = ['default-global-system-config', name]
+        parent_type = 'global-system-config'
+        credentials = DeviceCredentialList()
+        for cred in creds or list():
+            user_creds = UserCredentials(username=cred['username'],
+                                         password=cred['password'])
+            credential = DeviceCredential(vendor=cred['vendor'],
+                                          device_family=cred['device_family'],
+                                          credential=user_creds)
+            credentials.add_device_credential(credential)
+        obj = Fabric(name, fq_name=fqname, parent_type=parent_type,
+                     fabric_credentials=credentials)
+        self._log.debug('Creating fabric %s'%fqname)
+        return self._vnc.fabric_create(obj)
+
+    def add_creds_to_fabric(self, name, creds):
+        obj = self.read_fabric(name)
+        credentials = obj.get_fabric_credentials()
+        for cred in creds:
+            user_creds = UserCredentials(username=cred['username'],
+                                         password=cred['password'])
+            credential = DeviceCredential(vendor=cred['vendor'],
+                                          device_family=cred['device_family'],
+                                          credential=user_creds)
+            credentials.add_device_credential(credential)
+        obj.set_fabric_credentials(credentials)
+        return self._vnc.fabric_update(obj)
+
+    def delete_creds_from_fabric(self, name, creds):
+        obj = self.read_fabric(name)
+        credentials = obj.get_fabric_credentials()
+        for cred in creds:
+            for curr_cred in credentials.get_device_credential() or list():
+                user_creds = curr_cred.get_credential()
+                if cred['username'] == user_creds.get_username() and \
+                   cred['password'] == user_creds.get_password() and \
+                   cred['vendor'] == curr_cred.get_vendor() and \
+                   cred['device_family'] == curr_cred.get_device_family():
+                    credentials.delete_device_credential(curr_cred)
+                    break
+
+    def read_fabric(self, name=None, **kwargs):
+        '''
+            :param name : name of the object
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        if name:
+            kwargs['fq_name'] = ['default-global-system-config', name]
+        self._log.debug('Reading fabric %s'%kwargs)
+        return self._vnc.fabric_read(**kwargs)
+
+    def delete_fabric(self, name=None, **kwargs):
+        '''
+            :param name : name of the object
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        if name:
+            kwargs['fq_name'] = ['default-global-system-config', name]
+        self._log.debug('Deleting fabric %s'%kwargs)
+        return self._vnc.fabric_delete(**kwargs)
+
+    def get_fabric_namespace_value(self, **kwargs):
+        obj = self.read_fabric_namespace(**kwargs)
+        value = obj.fabric_namespace_value
+        if obj.fabric_namespace_type == 'IPV4-CIDR':
+            v4_cidr = value.get_ipv4_cidr()
+            subnet = v4_cidr.get_subnet()[0]
+            return '%s/%s'%(subnet.ip_prefix, subnet.ip_prefix_len)
+        elif obj.fabric_namespace_type =='ASN':
+            asn = value.get_asn()
+            return asn.get_asn()[0]
+        elif obj.fabric_namespace_type =='MAC_ADDR':
+            mac = value.get_mac_addr()
+            return mac.get_mac_address()[0]
+
+    def create_fabric_namespace(self, fq_name, ns_type, ns_value):
+        ns_value_obj = NamespaceValue()
+        if ns_type == 'IPV4-CIDR':
+            cidrs = ns_value if isinstance(ns_value, list) else [ns_value]
+            subnets = SubnetListType()
+            for cidr in cidrs:
+                subnets.add_subnet(SubnetType(
+                                   ip_prefix=cidr.split('/')[0],
+                                   ip_prefix_len=cidr.split('/')[1]))
+            ns_value_obj.set_ipv4_cidr(subnets)
+        elif ns_type == 'ASN':
+            asns = ns_value if isinstance(ns_value, list) else [ns_value]
+            ns_value_obj.set_asn(AutonomousSystemsType(asn=asns))
+        elif ns_type == 'MAC_ADDR':
+            macs = ns_value if isinstance(ns_value, list) else [ns_value]
+            ns_value_obj.set_mac_addr(MacAddressesType(mac_address=macs))
+        else:
+            raise Exception('unsupported namespace type')
+        obj = FabricNamespace(fq_name[-1], fq_name=fq_name,
+                              parent_type='fabric',
+                              fabric_namespace_type=ns_type,
+                              fabric_namespace_value=ns_value_obj)
+        return self._vnc.fabric_namespace_create(obj)
+
+    def read_fabric_namespace(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Reading fabric namespace %s'%kwargs)
+        return self._vnc.fabric_namespace_read(**kwargs)
+
+    def delete_fabric_namespace(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting fabric namespace %s'%kwargs)
+        return self._vnc.fabric_namespace_delete(**kwargs)
+
+    def add_device_to_fabric(self, fabric, device):
+        '''
+           :param fabric: uuid or name of the fabric
+           :param device: uuid or name of the device
+        '''
+        kwargs = dict()
+        if is_uuid(device):
+            kwargs['id'] = device
+        else:
+            kwargs['name'] = device
+        device_obj = self.read_physical_router(**kwargs)
+        kwargs = dict()
+        if is_uuid(fabric):
+            kwargs['id'] = fabric
+        else:
+            kwargs['name'] = fabric
+        fabric_obj = self.read_fabric(**kwargs)
+        fabric_obj.add_physical_router(device_obj)
+        return self._vnc.fabric_update(fabric_obj)
+
+    def delete_device_from_fabric(self, fabric, device):
+        kwargs = dict()
+        if is_uuid(device):
+            kwargs['id'] = device
+        else:
+            kwargs['name'] = device
+        device_obj = self.read_physical_router(**kwargs)
+        kwargs = dict()
+        if is_uuid(fabric):
+            kwargs['id'] = fabric
+        else:
+            kwargs['name'] = fabric
+        fabric_obj = self.read_fabric(**kwargs)
+        fabric_obj.del_physical_router(device_obj)
+        return self._vnc.fabric_update(fabric_obj)
+
+    def delete_logical_interface(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting logical interface %s'%kwargs)
+        return self._vnc.logical_interface_delete(**kwargs)
+
+    def read_logical_interface(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Reading logical interface %s'%kwargs)
+        return self._vnc.logical_interface_read(**kwargs)
+
+    def create_logical_interface(self, name, pif_fqname, vlan=None,
+                                  interface_type=None):
+        fq_name = pif_fqname + [name.replace(':', '__')]
+        obj = LogicalInterface(name=fq_name[-1], parent_type='physical-interface',
+                                fq_name=fq_name, display_name=name)
+        if vlan is not None:
+            obj.set_logical_interface_vlan_tag(vlan)
+        if interface_type:
+            obj.set_logical_interface_type(interface_type)
+        return self._vnc.logical_interface_create(obj)
+
+    def update_logical_interface(self, vlan=None, interface_type=None, **kwargs):
+        obj = self.read_logical_interface(**kwargs)
+        if vlan is not None:
+            obj.set_logical_interface_vlan_tag(vlan_id)
+        if interface_type:
+            obj.set_logical_interface_type(interface_type)
+        self._vnc.logical_interface_update(obj)
+
+    def add_vmi_to_lif(self, vmi_id, lif_id):
+        lif_obj = self.read_logical_interface(id=lif_id)
+        vmi_obj = self.read_virtual_machine_interface(id=vmi_id)
+        lif_obj.add_virtual_machine_interface(vmi_obj)
+        self._vnc.logical_interface_update(lif_obj)
+
+    def delete_vmi_from_lif(self, vmi_id, lif_id):
+        lif_obj = self.read_logical_interface(id=lif_id)
+        vmi_obj = self.read_virtual_machine_interface(id=vmi_id)
+        lif_obj.del_virtual_machine_interface(vmi_obj)
+        self._vnc.logical_interface_update(lif_obj)
+
+    def delete_physical_interface(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting physical interface %s'%kwargs)
+        return self._vnc.physical_interface_delete(**kwargs)
+
+    def read_physical_interface(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Reading physical interface %s'%kwargs)
+        return self._vnc.physical_interface_read(**kwargs)
+
+    def create_physical_interface(self, name, device_name, mac=None,
+                                  interface_type=None):
+        fq_name = ['default-global-system-config', device_name, 
+                   name.replace(':', '__')]
+        obj = PhysicalInterface(name=fq_name[-1], parent_type='physical-router',
+                                fq_name=fq_name, display_name=name)
+        if mac:
+            macs = mac if isinstance(mac, list) else [mac]
+            mac_addr = MacAddressesType(mac_address=macs)
+            obj.set_physical_interface_mac_addresses(mac_addr)
+        if interface_type:
+            obj.set_physical_interface_type(interface_type)
+        return self._vnc.physical_interface_create(obj)
+
+    def update_physical_router(self, role=None, **kwargs):
+        obj = self.read_physical_router(**kwargs)
+        obj.set_physical_router_role(role)
+        self._vnc.physical_router_update(obj)
+
+    def create_physical_router(self, name, mgmt_ip, loopback_ip, peer_ip=None,
+                               dm_managed=True, username=None, password=None,
+                               lldp=True, vendor='Juniper', family='junos',
+                               role=None, model=None):
+        peer_ip = peer_ip or loopback_ip
+        creds = UserCredentials(username=username, password=password)
+        obj = PhysicalRouter(name, physical_router_management_ip=mgmt_ip,
+                             physical_router_loopback_ip=loopback_ip,
+                             physical_router_dataplane_ip=peer_ip,
+                             physical_router_vnc_managed=dm_managed,
+                             physical_router_user_credentials=creds,
+                             physical_router_lldp=lldp,
+                             physical_router_vendor_name=vendor,
+                             physical_router_device_family=family,
+                             physical_router_role=role,
+                             physical_router_product_name=model)
+        return self._vnc.physical_router_create(obj)
+
+    def read_physical_router(self, name=None, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Reading physical router %s'%kwargs)
+        if name:
+            kwargs['fq_name'] = ['default-global-system-config', name]
+        return self._vnc.physical_router_read(**kwargs)
+
+    def delete_physical_router(self, name=None, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting physical router %s'%kwargs)
+        if name:
+            kwargs['fq_name'] = ['default-global-system-config', name]
+        return self._vnc.physical_router_delete(**kwargs)
+
+    def read_virtual_machine_interface(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Read virtual machine interface %s'%kwargs)
+        return self._vnc.virtual_machine_interface_read(**kwargs)
+
+    def read_virtual_network(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Read virtual network %s'%kwargs)
+        return self._vnc.virtual_network_read(**kwargs)
+
+    def read_virtual_router(self, name=None, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Read virtual router %s'%kwargs)
+        if name:
+            kwargs['fq_name'] = ['default-global-system-config', name]
+        return self._vnc.virtual_router_read(**kwargs)
+
+    def delete_vn_from_physical_router(self, device, vn_id):
+        kwargs = dict()
+        if is_uuid(device):
+            kwargs['id'] = device
+        else:
+            kwargs['name'] = device
+        device_obj = self.read_physical_router(**kwargs)
+        vn_obj = self.read_virtual_network(id=vn_id)
+        device_obj.del_virtual_network(vn_obj)
+        self._vnc.physical_router_update(device_obj)
+
+    def add_vn_to_physical_router(self, device, vn_id):
+        kwargs = dict()
+        if is_uuid(device):
+            kwargs['id'] = device
+        else:
+            kwargs['name'] = device
+        device_obj = self.read_physical_router(**kwargs)
+        vn_obj = self.read_virtual_network(id=vn_id)
+        device_obj.add_virtual_network(vn_obj)
+        self._vnc.physical_router_update(device_obj)
+
+    def delete_csn_from_physical_router(self, device, csn):
+        '''
+           :param device: uuid or name of the device
+           :param csn: uuid or name of the contrail service node
+        '''
+        kwargs = dict()
+        if is_uuid(device):
+            kwargs['id'] = device
+        else:
+            kwargs['name'] = device
+        device_obj = self.read_physical_router(**kwargs)
+        kwargs = dict()
+        if is_uuid(csn):
+            kwargs['id'] = csn
+        else:
+            kwargs['name'] = csn
+        vr_obj = self.read_virtual_router(**kwargs)
+        device_obj.del_virtual_router(vr_obj)
+        return self._vnc.physical_router_update(device_obj)
+
+    def add_csn_to_physical_router(self, device, csn):
+        '''
+           :param device: uuid or name of the device
+           :param csn: uuid or name of the contrail service node
+        '''
+        kwargs = dict()
+        if is_uuid(device):
+            kwargs['id'] = device
+        else:
+            kwargs['name'] = device
+        device_obj = self.read_physical_router(**kwargs)
+        kwargs = dict()
+        if is_uuid(csn):
+            kwargs['id'] = csn
+        else:
+            kwargs['name'] = csn
+        vr_obj = self.read_virtual_router(**kwargs)
+        device_obj.add_virtual_router(vr_obj)
+        return self._vnc.physical_router_update(device_obj)
+
+    def execute_job(self, template_fqname, payload_dict, devices=None):
+        '''
+            :param template_fqname : fqname of Job template
+            :param payload : input for the job in json format
+        '''
+        device_str = '' if not devices else ' on devices %s'
+        self._log.debug('Executing job %s with %s payload%s'%(
+                        template_fqname, payload_dict, device_str))
+        #payload = json.dumps(payload_dict)
+        kwargs = {'job_template_fq_name': template_fqname,
+                  'job_input': payload_dict}
+        if devices:
+            kwargs['device_list'] = devices
+        resp = self._vnc.execute_job(**kwargs)
+        self._log.debug('Execution id %s'%resp['job_execution_id'])
+        return resp['job_execution_id']
 
 class LBFeatureHandles:
     __metaclass__ = Singleton

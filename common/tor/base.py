@@ -130,7 +130,7 @@ class BaseTorTest(BaseNeutronTest):
         tor_ip = tor_fixture.mgmt_ip 
         pif_name = self.inputs.tor_hosts_data[tor_ip][port_index]['tor_port']
         lif_name = pif_name + '.' + str(vlan_id)
-        pif_fixture = PhysicalInterfaceFixture(pif_name,
+        pif_fixture = PhysicalInterfaceFixture(name=pif_name,
             device_id=device_id,
             connections=self.connections)
         pif_fixture.setUp()
@@ -138,7 +138,7 @@ class BaseTorTest(BaseNeutronTest):
             self.addCleanup(pif_fixture.cleanUp)
 
         lif_fixture = LogicalInterfaceFixture(
-            lif_name,
+            name=lif_name,
             pif_id=pif_fixture.uuid,
             vlan_id=vlan_id,
             vmi_ids=[x.uuid for x in vmi_objs],

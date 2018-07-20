@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import pprint
 import urllib2
@@ -19,7 +20,7 @@ class JsonDrv (object):
     }
     _DEFAULT_AUTHN_URL = "/v2.0/tokens"
 
-    def __init__(self, vub, logger=LOG, args=None):
+    def __init__(self, vub, logger=LOG, args=None, insecure=False):
         self.log = logger
         self._vub = vub
         self._headers = dict()
@@ -34,6 +35,8 @@ class JsonDrv (object):
         if self._args:
             self.verify = (not getattr(self._args, 'api_insecure')) \
                            and self._args.certbundle
+        if insecure:
+            self.verify = False
 
     def _auth(self):
         if self._args:
@@ -90,10 +93,7 @@ class JsonDrv (object):
 
     def load(self, url, retry=True):
         self.common_log("Requesting: %s" %(url))
-        if url.startswith('https:'):
-            resp = requests.get(url, headers=self._headers, verify=self.verify)
-        else:
-            resp = requests.get(url, headers=self._headers)
+        resp = requests.get(url, headers=self._headers, verify=self.verify)
         if resp.status_code in [401, 403]:
             if retry:
                 self._auth()
@@ -113,12 +113,27 @@ class JsonDrv (object):
         self.common_log("Posting: %s, payload %s"%(url, payload))
         self._headers.update({'Content-type': 'application/json; charset="UTF-8"'})
         data = json.dumps(payload)
-        resp = requests.put(url, headers=self._headers, data=data)
+        resp = requests.put(url, headers=self._headers, verify=self.verify, data=data)
         if resp.status_code == 401:
             if retry:
                 self._auth()
                 return self.put(url, payload, retry=False)
-        return resp
+        if resp.status_code == 200:
+            return json.loads(resp.text)
+        return None
+
+    def post(self, url, payload, retry=True):
+        self.common_log("Posting: %s, payload %s"%(url, payload))
+        self._headers.update({'Content-type': 'application/json; charset="UTF-8"'})
+        data = json.dumps(payload)
+        resp = requests.post(url, headers=self._headers, verify=self.verify, data=data)
+        if resp.status_code == 401:
+            if retry:
+                self._auth()
+                return self.post(url, payload, retry=False)
+        if resp.status_code == 200:
+            return json.loads(resp.text)
+        return None
 
     def common_log(self, line, mode=LOG.DEBUG):
         self.log.log(mode, line)
@@ -127,7 +142,7 @@ class JsonDrv (object):
 
 class XmlDrv (object):
 
-    def __init__(self, vub, logger=LOG, args=None):
+    def __init__(self, vub, logger=LOG, args=None, **kwargs):
         self.log = logger
         self._vub = vub
         self.more_logger = contrail_logging.getLogger('introspect',
@@ -178,13 +193,14 @@ class XmlDrv (object):
 class VerificationUtilBase (object):
 
     def __init__(self, ip, port, drv=JsonDrv, logger=LOG, args=None,
-                    protocol='http'):
+                    protocol='http', base_url='/', insecure=False):
         self.log = logger
         self._ip = ip
         self._port = port
-        self._drv = drv(self, logger=logger, args=args)
+        self._drv = drv(self, logger=logger, args=args, insecure=insecure)
         self._force_refresh = False
         self._protocol = protocol
+        self.base_url = base_url
 
     def get_force_refresh(self):
         return self._force_refresh
@@ -195,9 +211,19 @@ class VerificationUtilBase (object):
 
     def _mk_url_str(self, path=''):
         if path.startswith('http' or 'https'):
+            if self.base_url not in path:
+                split_path = path.split(':')
+                port = re.match('(\d+)/', split_path[-1]).groups()[0]
+                split_path[-1] = port + self.base_url.rstrip('/') + split_path[-1].lstrip(port)
+                path = ':'.join(split_path)
+            if not path.startswith(self._protocol):
+                split_path = path.split(':')
+                split_path[0] = self._protocol
+                path = ':'.join(split_path)
             return path
         else:
-            return self._protocol + "://%s:%s/%s" % (self._ip, str(self._port), path)
+            path = self.base_url+path
+            return self._protocol + "://%s:%s%s" % (self._ip, str(self._port), path)
 
     def dict_get(self, path='',url='', raw_data=False):
         try:
@@ -215,6 +241,15 @@ class VerificationUtilBase (object):
                 return self._drv.put(self._mk_url_str(path), payload)
             if url:
                 return self._drv.put(url, payload)
+        except urllib2.HTTPError:
+            return None
+
+    def post(self, payload, path='', url=''):
+        try:
+            if path:
+                return self._drv.post(self._mk_url_str(path), payload)
+            if url:
+                return self._drv.post(url, payload)
         except urllib2.HTTPError:
             return None
 
