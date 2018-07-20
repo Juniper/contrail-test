@@ -81,7 +81,7 @@ class ConfigScale(object):
 
         time.sleep(1)
         try:
-            self.pif_fixture = pif_fixture.PhysicalInterfaceFixture(pif_name,
+            self.pif_fixture = pif_fixture.PhysicalInterfaceFixture(name=pif_name,
                                                                     device_id=device_id,
                                                                     connections=self.connections)
             self.pif_fixture.setUp()
@@ -117,7 +117,7 @@ class ConfigScale(object):
     def create_lif(self, lif_name, pif_id, vlan_id, vmi_objs=[]):
         try:
             self.lif_fixture = lif_fixture.LogicalInterfaceFixture(
-                lif_name,
+                name=lif_name,
                 pif_id=pif_id.uuid,
                 vlan_id=vlan_id,
                 vmi_ids=[x.uuid for x in vmi_objs],

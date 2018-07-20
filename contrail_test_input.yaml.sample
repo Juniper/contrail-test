@@ -10,7 +10,7 @@ provider_config:
   bms:
     ssh_pwd: password
     ssh_user: root
-    ntpserver: 10.84.5.100
+    ntpserver: ntp.juniper.net
     domainsuffix: local
 
 instances:
@@ -147,23 +147,99 @@ test_configuration:
             name  : mx1
             control_ip : 10.10.10.100
             ssh_username : root
-            ssh_password : c0ntrail123
-            mgmt_ip  : 10.204.217.190
+            ssh_password : password
+            mgmt_ip  : 10.0.0.20
     physical_routers:
         mx1:
             vendor: juniper
             model : mx
             asn   : 64512
             name  : mx1
-            control_ip : 10.10.10.100
             ssh_username : root
-            ssh_password : c0ntrail123
-            mgmt_ip  : 10.204.217.190
-            tunnel_ip: 7.7.7.7
+            ssh_password : password
+            control_ip : 10.10.10.100
+            mgmt_ip  : 10.0.0.21
+            tunnel_ip: 1.1.1.1
             ports :
             type  : router
-            role  : leaf
             dm_managed: True
+
+        qfx1:
+            model: qfx5100
+            asn: 64513
+            name: qfx1
+            ssh_username: root
+            ssh_password: Embe1mpls
+            mgmt_ip: 10.0.0.22
+            tunnel_ip: 1.1.1.2
+            ports: xe-0/0/1
+            type: tor
+            dm_managed: True
+            role: leaf
+            spine: qfx2 # Specify spine to identify the
+                        # spine the leaf node is connected to
+                        # by default, connects to all spines
+
+        qfx2:
+            model: qfx10k
+            asn: 64514
+            name: qfx2
+            ssh_username: root
+            ssh_password: Embe1mpls
+            mgmt_ip: 10.0.0.23
+            tunnel_ip: 1.1.1.3
+            ports: xe-0/0/1
+            type: tor
+            dm_managed: True
+            role: spine
+
+    bms:
+        bms1:
+            interfaces:
+                - tor: qfx1
+                  tor_port: xe-0/0/1
+                  host_mac: aa:bb:cc:dd:ee:f0
+                - tor: qfx2
+                  tor_port: xe-0/0/1
+                  host_mac: aa:bb:cc:dd:ee:f1
+            mgmt_ip: 10.0.0.24 # Specify mgmt ip if multi interface setup
+            username: root
+            password: password
+        bms2:
+            tor: qfx2
+            tor_port: xe-0/0/2
+            host_mac: bb:cc:dd:ee:ff:gg
+            mgmt_ip:            # This is more to do with bms LCM tests with single interface
+            username: root
+            password: password
+
+    fabric:
+        - namespaces:
+            management:
+                - cidr: 10.0.0.0/25
+                  gateway: 10.0.0.1
+                - cidr: 10.0.0.128/25
+                  gateway: 10.0.0.129
+            peer:
+                - 10.1.1.0/25
+                - 10.1.2.0/25
+            loopback:
+                - 1.1.1.0/25
+            asn:
+                - max: 64512
+                  min: 64512
+            ebgp_asn:
+                - max: 65000
+                  min: 65100
+          node_profiles:
+            - juniper-mx
+            - juniper-qfx10k
+            - juniper-qfx5k
+          credentials:
+            - username: root
+              password: password
+              vendor: Juniper
+              device_family: qfx
     web_server:
         server:
         username:

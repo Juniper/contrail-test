@@ -2730,6 +2730,16 @@ class VMFixture(fixtures.Fixture):
     def wait_till_vm_boots(self):
         return self.nova_h.wait_till_vm_is_up(self.vm_obj)
 
+    def clear_arp(self, all_entries=True, ip_address=None, mac_address=None):
+        if ip_address or mac_address:
+            (output, ip, mac) = self.get_arp_entry(ip_address, mac_address)
+            cmd = 'arp -d %s' % (ip_address)
+        elif all_entries:
+            cmd = 'ip -s -s neigh flush all'
+        output = self.run_cmd_on_vm([cmd])
+        return output
+    # end clear_arp
+
     def get_arp_entry(self, ip_address=None, mac_address=None):
         out_dict = self.run_cmd_on_vm(["arp -an"])
         if ip_address and not search_arp_entry(out_dict.values()[0], ip_address, mac_address)[0]:

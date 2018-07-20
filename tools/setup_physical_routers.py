@@ -19,7 +19,9 @@ if __name__ == "__main__":
     init_obj = ContrailTestInit(sys.argv[1])
     for (device, device_dict) in init_obj.physical_routers_data.iteritems():
         if device_dict['type'] in ['router', 'tor']:
-            dm_managed = True if device_dict['type'] == 'tor' else False
+            fabric_managed = True if device_dict['type'] == 'tor' else False
+            if fabric_managed:
+                continue
             phy_router_obj = PhysicalRouterFixture(
                 device_dict['name'],
                 device_dict['mgmt_ip'],
@@ -30,7 +32,7 @@ if __name__ == "__main__":
                 ssh_password=device_dict.get('ssh_password'),
                 tunnel_ip=device_dict.get('tunnel_ip'),
                 ports=device_dict.get('ports'),
-                dm_managed=device_dict.get('dm_managed', dm_managed),
+                dm_managed=device_dict.get('dm_managed'),
                 tsn=device_dict.get('tsn'),
                 role=device_dict.get('role'),
                 cfgm_ip=init_obj.cfgm_ip,
