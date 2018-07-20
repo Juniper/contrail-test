@@ -17,12 +17,12 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
     :param mgmt_ip  : Management IP
 
     Optional:
-    :param vendor : juniper
     :param model  : mx
-    :param asn    : default is 64512
     :param ssh_username : Login username to ssh, default is root
     :param ssh_password : Login password, default is Embe1mpls
     :param tunnel_ip    : Tunnel IP (for vtep)
+    :param peer_ip      : BGP Peer IP (mostly tunnel ip)
+    :param lldp         : List of Ports which are available to use
     :param ports        : List of Ports which are available to use
 
     Inherited optional parameters:
@@ -39,25 +39,26 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
 
     def __init__(self, *args, **kwargs):
         super(PhysicalDeviceFixture, self).__init__(*args, **kwargs)
-        self.name = args[0]
-        self.mgmt_ip = args[1]
-        self.vendor = kwargs.get('vendor', None)
-        self.model = kwargs.get('model', None)
-        self.asn = kwargs.get('asn', None)
+        if args:
+            self.name = args[0]
+            self.mgmt_ip = args[1]
+        else:
+            self.name = kwargs['name']
+            self.mgmt_ip = kwargs.get('mgmt_ip')
+        self.tunnel_ip = kwargs.get('tunnel_ip')
+        self.peer_ip = kwargs.get('peer_ip') or self.tunnel_ip
+        self.dm_managed = kwargs.get('dm_managed', True)
         self.ssh_username = kwargs.get('ssh_username', 'root')
         self.ssh_password = kwargs.get('ssh_password', 'Embe1mpls')
-        self.tunnel_ip = kwargs.get('tunnel_ip', None)
-        self.ports = kwargs.get('ports', [])
+        self.lldp = kwargs.get('lldp', True)
         self.role = kwargs.get('role')
-        self.dm_managed = kwargs.get('dm_managed', True)
+        self.model = kwargs.get('model', None)
+        self.ports = kwargs.get('ports', [])
         self.device_details = {}
 
-        self.phy_device = None
-        self.nc_handle = None
-
-        self.already_present = False
+        self.created = False
         self.physical_port_fixtures = {}
-        self.tsn = kwargs.get('tsn')
+        self.csn = kwargs.get('tsn')
         try:
             if self.inputs.verify_thru_gui():
                 connections = kwargs.get('connections', None)
@@ -75,49 +76,62 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
 
     # end _get_ip_fabric_ri_obj
 
+    def read(self):
+        obj = self.vnc_h.read_physical_router(self.name)
+        self.uuid = obj.uuid
+        self.mgmt_ip = obj.physical_router_management_ip
+        self.tunnel_ip = obj.physical_router_loopback_ip
+        self.peer_ip = obj.physical_router_dataplane_ip
+        self.role = obj.physical_router_role
+        self.model = obj.physical_router_product_name
+        self.dm_managed = obj.physical_router_vnc_managed
+        creds = obj.get_physical_router_user_credentials()
+        self.ssh_username = creds.username
+        self.ssh_password = creds.password
+        csn = obj.get_virtual_router_refs() or []
+        if csn:
+            self.csn = csn[0]['to'][-1]
+
     def create_physical_device(self):
-        def add_tsn():
-            fq_name = ['default-global-system-config', self.tsn]
-            vr_obj = self.vnc_api_h.virtual_router_read(fq_name=fq_name)
-            pr.add_virtual_router(vr_obj)
-        pr = vnc_api_test.PhysicalRouter(self.name)
-        pr.physical_router_management_ip = self.mgmt_ip
-        pr.physical_router_dataplane_ip = self.tunnel_ip
-        pr.physical_router_loopback_ip = self.tunnel_ip
-        pr.physical_router_vendor_name = self.vendor
-        pr.physical_router_product_name = self.model
-        pr.physical_router_vnc_managed = True
-        uc = vnc_api_test.UserCredentials(self.ssh_username, self.ssh_password)
-        pr.set_physical_router_user_credentials(uc)
-        if self.tsn:
-            add_tsn()
-        pr.physical_router_role = self.role #One of leaf/spine or None
         if self.inputs.is_gui_based_config():
             self.webui.create_physical_router(self)
         else:
-            pr_id = self.vnc_api_h.physical_router_create(pr)
+            self.uuid = self.vnc_h.create_physical_router(self.name,
+                self.mgmt_ip, self.tunnel_ip, peer_ip=self.peer_ip,
+                role=self.role, model=self.model,
+                username=self.ssh_username, password=self.ssh_password)
+            if self.csn:
+                self.add_csn(csn=self.csn)
         self.logger.info('Created Physical device %s with ID %s' % (
-            pr.fq_name, pr.uuid))
-        return pr
+            self.name, self.uuid))
+
+    def add_csn(self, csns=None):
+        csns = csns or self.inputs.get_csn()
+        for csn in csns:
+            self.vnc_h.add_csn_to_physical_router(device=self.name,
+                                                  csn=csn)
+
+    def delete_csn(self, csns=None):
+        csns = csns or self.inputs.get_csn()
+        for csn in csns:
+            self.vnc_h.delete_csn_from_physical_router(device=self.name,
+                                                   csn=csn)
 
     def delete_device(self):
-        self.vnc_api_h.physical_router_delete(id=self.phy_device.uuid)
-        self.logger.info('Deleted physical device : %s, UUID %s' %
-            (self.phy_device.fq_name, self.phy_device.uuid))
+        self.vnc_h.delete_physical_router(id=self.name)
+        self.logger.info('Deleted physical device: %s' %(self.name))
 
     def setUp(self):
         super(PhysicalDeviceFixture, self).setUp()
         if not self.dm_managed:
             return
-        pr_fq_name = ['default-global-system-config', self.name]
         try:
-            self.phy_device = self.vnc_api_h.physical_router_read(
-                fq_name=pr_fq_name)
-            self.already_present = True
+            self.read()
             self.logger.info('Physical device %s already present' % (
                 pr_fq_name))
         except vnc_api_test.NoIdError:
             self.phy_device = self.create_physical_device()
+            self.created = True
         if self.inputs:
             self.device_details = self.get_device_details(
                 self.inputs.physical_routers_data)
@@ -131,47 +145,54 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
                 return device_dict
     # end get_device_details
 
-    def setup_physical_ports(self):
-        self.physical_port_fixtures = self.add_physical_ports()
-        self.addCleanup(self.delete_physical_ports)
-
-    def cleanUp(self):
-        super(PhysicalDeviceFixture, self).cleanUp()
+    def cleanUp(self, force=False):
         do_cleanup = True
-        if self.already_present:
+        if not self.created and not force:
             do_cleanup = False
             self.logger.info('Skipping deletion of device %s' % (
-                self.phy_device.fq_name))
+                self.name))
         if self.dm_managed and do_cleanup:
             if self.inputs.is_gui_based_config():
                 self.webui.delete_physical_router(self)
             else:
+                if self.csn:
+                    self.delete_csn(self.csn)
                 self.delete_device()
+        self.verify_on_cleanup()
+        super(PhysicalDeviceFixture, self).cleanUp()
 
     def add_virtual_network(self, vn_id):
         self.logger.debug('Adding VN %s to physical device %s' % (
             vn_id, self.name))
-        self.phy_device = self.vnc_api_h.physical_router_read(
-            id=self.phy_device.uuid)
-        vn_obj = self.vnc_api_h.virtual_network_read(id=vn_id)
-        self.phy_device.add_virtual_network(vn_obj)
-        self.vnc_api_h.physical_router_update(self.phy_device)
+        self.vnc_h.add_vn_to_physical_router(self.name, vn_id)
 
     def delete_virtual_network(self, vn_id):
         self.logger.debug('Removing VN %s from physical device %s' % (
             vn_id, self.name))
-        self.phy_device = self.vnc_api_h.physical_router_read(
-            id=self.phy_device.uuid)
-        vn_ref_list = []
-        for x in self.phy_device.get_virtual_network_refs():
-            if not x['uuid'] == vn_id:
-                vn_ref_list.append(x)
-        self.phy_device.set_virtual_network_list(vn_ref_list)
-        self.vnc_api_h.physical_router_update(self.phy_device)
+        self.vnc_h.delete_vn_from_physical_router(self.name, vn_id)
+
+    def verify_on_cleanup(self):
+        try:
+            self.vnc_h.read_physical_router(self.name)
+            assert False, 'phsyical router %s is not yet deleted'%self.name
+        except vnc_api_test.NoIdError:
+            self.logger.info('physical router %s got deleted as expected'%self.name)
+            return True
+
+    def get_physical_ports(self):
+        obj = self.vnc_h.read_physical_router(self.name)
+        return [pif['uuid'] for pif in obj.get_physical_interfaces() or []]
+
+    def assign_role(self, role):
+        self.vnc_h.update_physical_router(role=role, name=self.name)
+
+    def setup_physical_ports(self):
+        self.physical_port_fixtures = self.add_physical_ports()
+        self.addCleanup(self.delete_physical_ports)
 
     def add_physical_port(self, port_name):
-        pif_fixture = PhysicalInterfaceFixture(port_name,
-                                               device_id=self.phy_device.uuid,
+        pif_fixture = PhysicalInterfaceFixture(name=port_name,
+                                               device_name=self.name,
                                                connections=self.connections,
                                                cfgm_ip=self.cfgm_ip,
                                                auth_server_ip=self.auth_server_ip)
