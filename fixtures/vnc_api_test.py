@@ -10,6 +10,40 @@ from tcutils.util import get_dashed_uuid
 from openstack import OpenstackAuth, OpenstackOrchestrator
 from vcenter import VcenterAuth, VcenterOrchestrator
 from common import log_orig as contrail_logging
+from ConfigParser import SafeConfigParser, DuplicateSectionError
+
+_VNC_API_LIB_INI_ = '/etc/contrail/vnc_api_lib.ini'
+
+class TestVncApi(VncApi):
+    def __init__(self, *args, **kwargs):
+        insecure = kwargs.pop('insecure')
+        super(TestVncApi, self).__init__(*args, **kwargs)
+        if insecure is not None:
+            self._apiinsecure = insecure
+
+    def _http_put(self, uri, body, headers):
+        if self._base_url not in uri:
+            uri = self._base_url + uri.lstrip('/')
+        return super(TestVncApi, self)._http_put(uri,
+            body, headers)
+
+    def _http_delete(self, uri, body, headers):
+        if self._base_url not in uri:
+            uri = self._base_url + uri.lstrip('/')
+        return super(TestVncApi, self)._http_delete(uri,
+            body, headers)
+
+    def _http_post(self, uri, body, headers):
+        if self._base_url not in uri:
+            uri = self._base_url + uri.lstrip('/')
+        return super(TestVncApi, self)._http_post(uri,
+            body, headers)
+
+    def _http_get(self, uri, headers=None, query_params=None):
+        if self._base_url not in uri:
+            uri = self._base_url + uri.lstrip('/')
+        return super(TestVncApi, self)._http_get(uri,
+            headers=headers, query_params=query_params)
 
 class VncLibFixture(fixtures.Fixture):
     ''' Wrapper for VncApi
@@ -45,6 +79,7 @@ class VncLibFixture(fixtures.Fixture):
         self.neutron_handle = None
         self.cfgm_ip = kwargs.get('cfgm_ip',self.inputs.cfgm_ip \
                           if self.inputs else '127.0.0.1')
+        self.api_server_url = kwargs.get('api_server_url')
         self.auth_server_ip = self.inputs.auth_ip if self.inputs else \
                         kwargs.get('auth_server_ip', '127.0.0.1')
         self.auth_port = self.inputs.auth_port if self.inputs else \
@@ -56,10 +91,10 @@ class VncLibFixture(fixtures.Fixture):
         self.certfile = kwargs.get('certfile', None)
         self.keyfile = kwargs.get('keyfile', None)
         self.cacert = kwargs.get('cacert', None)
-        self.insecure = self.inputs.insecure if self.inputs \
-                       else kwargs.get('insecure', True)
-        self.use_ssl = self.inputs.api_protocol == 'https' if self.inputs \
-                       else kwargs.get('use_ssl', False)
+        self.insecure = kwargs.get('insecure') or self.inputs.insecure \
+                        if self.inputs else False
+        self.use_ssl = kwargs.get('use_ssl') or \
+            self.inputs.api_protocol == 'https' if self.inputs else False
         self.authn_url = self.inputs.authn_url if self.inputs else \
                          kwargs.get('authn_url', None)
         if self.connections:
@@ -76,21 +111,37 @@ class VncLibFixture(fixtures.Fixture):
             self.project_id = self.connections.project_id
     # end __init__
 
+    # Create tmp ini file as workaround for insecure
+    def _update_vnc_api_ini(self, insecure=True):
+        config = SafeConfigParser()
+        config.read(_VNC_API_LIB_INI_)
+        try:
+            config.add_section('global')
+        except DuplicateSectionError:
+            pass
+        config.set('global', 'insecure', str(insecure))
+        with open(_VNC_API_LIB_INI_, 'w') as fd:
+            config.write(fd)
+
     def setUp(self):
         super(VncLibFixture, self).setUp()
         if not self.connections:
             self.logger = self.logger or contrail_logging.getLogger(__name__)
-            self.vnc_api_h = VncApi(
+            #if self.insecure:
+            #    self._update_vnc_api_ini(insecure=True)
+            self.vnc_api_h = TestVncApi(
                               username=self.username,
                               password=self.password,
                               tenant_name=self.project_name,
                               domain_name=self.orch_domain,
                               api_server_host=self.cfgm_ip,
                               api_server_port=self.api_server_port,
+                              api_server_url=self.api_server_url,
                               auth_host=self.auth_server_ip,
                               auth_port=self.auth_port,
                               api_server_use_ssl=self.use_ssl,
-                              auth_url=self.authn_url)
+                              auth_url=self.authn_url,
+                              insecure=self.insecure)
             if self.orchestrator == 'openstack':
                 self.auth_client = OpenstackAuth(
                                     self.username,

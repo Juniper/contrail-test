@@ -5,6 +5,7 @@ from tcutils.control.cn_introspect_utils import *
 from tcutils.agent.vna_introspect_utils import *
 from tcutils.collector.opserver_introspect_utils import *
 from tcutils.collector.analytics_tests import *
+from tcutils.go.go_server_utils import *
 
 from tcutils.kubernetes.k8s_introspect_utils import KubeManagerInspect
 from vnc_api.vnc_api import *
@@ -144,8 +145,13 @@ class ContrailConnections():
     
     def get_vnc_lib_h(self, refresh=False):
         attr = '_vnc_lib_fixture_' + self.project_name + '_' + self.username
-        cfgm_ip = self.inputs.api_server_ip or \
+        cfgm_ip = self.inputs.command_server_ip or self.inputs.api_server_ip or \
                   self.inputs.cfgm_ip
+        api_server_url = self.go_config_proxy_url
+        api_server_port = self.inputs.go_server_port if self.inputs.command_server_ip \
+                          else self.inputs.api_server_port
+        insecure = True if self.inputs.command_server_ip else self.inputs.insecure
+        use_ssl = True if self.inputs.command_server_ip else self.inputs.api_protocol
         if not getattr(env, attr, None) or refresh:
             if self.inputs.orchestrator == 'openstack' :
                 domain = self.orch_domain_name     
@@ -157,26 +163,43 @@ class ContrailConnections():
                 inputs=self.inputs,
                 cfgm_ip=cfgm_ip,
                 project_id=self.get_project_id(),
-                api_server_port=self.inputs.api_server_port,
+                api_server_port=api_server_port,
+                api_server_url=api_server_url,
                 orchestrator=self.inputs.orchestrator,
                 certfile = self.inputs.keystonecertfile,
                 keyfile = self.inputs.keystonekeyfile,
                 cacert = self.inputs.certbundle,
-                insecure = self.inputs.insecure,
+                insecure = insecure,
+                use_ssl = use_ssl,
                 logger=self.logger)
             env[attr].setUp()
         self.vnc_lib_fixture = env[attr]
         self.vnc_lib = self.vnc_lib_fixture.get_handle()
         return self.vnc_lib
 
+    def get_go_client_handle(self):
+        if not self.inputs.command_server_ip:
+            return None
+        return GoApiInspect(self.inputs.command_server_ip,
+                            port=self.inputs.go_server_port,
+                            inputs=self.inputs,
+                            logger=self.logger)
+
     def get_api_inspect_handle(self, host):
-        cfgm_ip = self.inputs.api_server_ip
+        cfgm_ip = self.inputs.command_server_ip or self.inputs.api_server_ip
         if cfgm_ip:
             host = cfgm_ip
+        api_protocol = 'https' if self.inputs.command_server_ip else self.inputs.api_protocol
+        api_server_port = self.inputs.go_server_port if self.inputs.command_server_ip \
+                          else self.inputs.api_server_port
+        insecure = True if self.inputs.command_server_ip else self.inputs.insecure
         if host not in self.api_server_inspects:
             self.api_server_inspects[host] = VNCApiInspect(host,
                                                            inputs=self.inputs,
-                                                           protocol=self.inputs.api_protocol,
+                                                           port=api_server_port,
+                                                           protocol=api_protocol,
+                                                           base_url=self.go_config_proxy_url,
+                                                           insecure=insecure,
                                                            logger=self.logger)
         return self.api_server_inspects[host]
 
@@ -204,12 +227,19 @@ class ContrailConnections():
     def get_opserver_inspect_handle(self, host):
         #ToDo: WA till scripts are modified to use ip rather than hostname
         ip = host if is_v4(host) else self.inputs.get_host_ip(host)
-        collector_ip = self.inputs.analytics_api_ip
+        collector_ip = self.inputs.command_server_ip or self.inputs.analytics_api_ip
         if collector_ip:
             ip = collector_ip
+        port = self.inputs.go_server_port if self.inputs.command_server_ip \
+               else self.inputs.analytics_api_port
+        protocol = 'https' if self.inputs.command_server_ip else 'http'
+        insecure = True if self.inputs.command_server_ip else self.inputs.insecure
         if ip not in self.ops_inspects:
             self.ops_inspects[ip] = VerificationOpsSrv(ip,
-                                        port=self.inputs.analytics_api_port,
+                                        port=port,
+                                        protocol=protocol,
+                                        base_url=self.go_analytics_proxy_url,
+                                        insecure=insecure,
                                         logger=self.logger,
                                         inputs=self.inputs)
         return self.ops_inspects[ip]
@@ -246,6 +276,36 @@ class ContrailConnections():
                     break
         return self._kube_manager_inspect
     # end get_kube_manager_h
+
+    @property
+    def go_api_handle(self):
+        if not getattr(self, '_go_api_handle', None):
+            self._go_api_handle = self.get_go_client_handle()
+        return self._go_api_handle
+
+    @property
+    def go_cluster_id(self):
+        if not self.go_api_handle:
+            return None
+        if not getattr(self, '_go_cluster_id', None):
+            self._go_cluster_id = self.go_api_handle.get_cluster_id()
+        return self._go_cluster_id
+
+    @property
+    def go_config_proxy_url(self):
+        if not self.go_api_handle:
+            return '/'
+        if not getattr(self, '_config_proxy_url', None):
+            self._config_proxy_url = '/proxy/%s/config/'%self.go_cluster_id
+        return self._config_proxy_url
+
+    @property
+    def go_analytics_proxy_url(self):
+        if not self.go_api_handle:
+            return '/'
+        if not getattr(self, '_analytics_proxy_url', None):
+            self._analytics_proxy_url = '/proxy/%s/telemetry/'%self.go_cluster_id
+        return self._analytics_proxy_url
 
     @property
     def api_server_inspect(self):
