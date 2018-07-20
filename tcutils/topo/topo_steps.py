@@ -818,7 +818,7 @@ def createPhysicalInterface(self, config_topo):
     for pif_name in self.topo.pif_list:
         self.pif_fixture[pif_name] = self.useFixture(
             PhysicalInterfaceFixture(
-                pif_name,
+                name=pif_name,
                 device_id=config_topo['pr'][self.pr_name].uuid,
                 int_type=self.topo.pif_params[pif_name]['int_type'],
                 connections=self.project_connections))
