@@ -7,6 +7,7 @@ import xmltodict
 import json
 import requests
 import socket
+import time
 from lxml import etree
 from tcutils.verification_util import *
 from opserver_results import *
@@ -16,9 +17,11 @@ from cfgm_common.exceptions import PermissionDenied
 
 class VerificationOpsSrv (VerificationUtilBase):
 
-    def __init__(self, ip, port=8081, logger=LOG, inputs=None):
-        super(VerificationOpsSrv, self).__init__(ip, port, logger=logger, args=inputs)
-
+    def __init__(self, ip, port=8081, insecure=False, protocol='http',
+                 logger=LOG, inputs=None, base_url='/'):
+        super(VerificationOpsSrv, self).__init__(ip, port, logger=logger,
+                                        insecure=insecure, protocol=protocol,
+                                        args=inputs, base_url=base_url)
 
     def get_ops_generator(self, generator=None, 
                         moduleid=None, node_type=None, 
@@ -310,7 +313,32 @@ class VerificationOpsSrv (VerificationUtilBase):
         finally:
             return res
 
-#    @timeout(600, os.strerror(errno.ETIMEDOUT))
+    def get_query_result(self, qid):
+        max_retries = 60
+        retry = 0
+        while True:
+            status = self.dict_get('/analytics/query/%s'%qid)
+            if not status:
+                yield {}
+                return
+            if status['progress'] != 100:
+                if retry < max_retries:
+                    retry = retry + 1
+                    time.sleep(5)
+                    continue
+                yield {}
+                return
+            else:
+                for chunk in status['chunks']:
+                    resp = self.dict_get(chunk['href'])
+                    if resp:
+                        yield {}
+                    else:
+                        for result in OpServerUtils.parse_query_result(resp):
+                            yield result
+                return
+    # end get_query_result
+
     def post_query(self, table, start_time=None, end_time=None,
                    select_fields=None,
                    where_clause='',
@@ -318,15 +346,6 @@ class VerificationOpsSrv (VerificationUtilBase):
                    session_type=None):
         res = None
         try:
-            self._drv._auth()
-            headers = self._drv._headers
-        except Exception as e:
-            headers = None #vcenter case where openstack not available
-
-        try:
-            flows_url = OpServerUtils.opserver_query_url(
-                self._ip, str(self._port))
-            print flows_url
             query_dict = OpServerUtils.get_query_dict(
                 table, start_time, end_time,
                 select_fields,
@@ -334,16 +353,12 @@ class VerificationOpsSrv (VerificationUtilBase):
                 sort_fields, sort, limit, filter, dir,
                 session_type)
 
-            print json.dumps(query_dict)
             res = []
-            resp = OpServerUtils.post_url_http(
-                flows_url, json.dumps(query_dict), headers)
+            resp = self.post(path='analytics/query', payload=query_dict)
             if resp is not None:
-                resp = json.loads(resp)
                 try:
                     qid = resp['href'].rsplit('/', 1)[1]
-                    result = OpServerUtils.get_query_result(
-                        self._ip, str(self._port), qid, headers)
+                    result = self.get_query_result(qid)
                     for item in result:
                         res.append(item)
                 except Exception as e:
@@ -351,26 +366,20 @@ class VerificationOpsSrv (VerificationUtilBase):
                         for item in resp['value']:
                             res.append(item)
         except Exception as e:
-            print str(e)
+            self.log.debug("Got exception %s"%e)
         finally:
             return res
 
     def post_db_purge(self,purge_input):
-        
         res = []
         json_body = OpServerUtils.get_json_body(purge_input = purge_input)
-        print json.dumps(json_body)
         try:
-            purge_url = OpServerUtils.opserver_db_purge_url(
-                self._ip, str(self._port))
-            print purge_url
-            resp = OpServerUtils.post_url_http(
-                purge_url, json.dumps(json_body))
+            resp = self.post(path='analytics/operation/database-purge',
+                             payload=json_body)
             if resp is not None:
-                resp = json.loads(resp)
                 res.append(resp)
         except Exception as e:
-            print str(e)
+            self.log.debug("Got exception %s"%e)
         finally:
             return res
 

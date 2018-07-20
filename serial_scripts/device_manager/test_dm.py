@@ -880,7 +880,7 @@ class TestDM(BaseDM, Md5Base, BaseNeutronTest):
         new_port = self.create_port(net_id=self.vn1_fixture.vn_id, mac_address='00:e0:81:cf:5c:00')
         for dev_fixture in self.phy_router_fixture.values():
             phy_new_port = dev_fixture.add_physical_port('ge-0/0/6')
-            logical_new_port = self.useFixture(LogicalInterfaceFixture('ge-0/0/6.0', pif_id=phy_new_port.uuid, vlan_id=100,vmi_ids=[new_port['id']], vn_obj=self.vn1_fixture.obj))
+            logical_new_port = self.useFixture(LogicalInterfaceFixture(name='ge-0/0/6.0', pif_id=phy_new_port.uuid, vlan_id=100,vmi_ids=[new_port['id']], vn_obj=self.vn1_fixture.obj))
         cmd = 'show configuration groups __contrail__ interfaces ge-0/0/6 unit 0 vlan-id'
         self.does_mx_have_config(cmd)
 

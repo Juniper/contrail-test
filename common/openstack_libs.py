@@ -52,6 +52,11 @@ except:
     glance_exception = None
 
 try:
+    from ironicclient import client as ironic_client
+except:
+    ironic_client = None
+
+try:
     from heatclient import client as heat_client
 except:
     heat_client = None
