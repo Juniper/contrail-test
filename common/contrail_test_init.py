@@ -20,8 +20,6 @@ from fabric.contrib.files import exists
 from tcutils.util import *
 from tcutils.util import custom_dict, read_config_option, get_build_sku, retry
 from tcutils.custom_filehandler import *
-from tcutils.config.vnc_introspect_utils import VNCApiInspect
-from tcutils.collector.opserver_introspect_utils import VerificationOpsSrv
 from tcutils.contrail_status_check import ContrailStatusChecker
 from keystone_tests import KeystoneCommands
 from tempfile import NamedTemporaryFile
@@ -96,10 +94,7 @@ class TestInputs(object):
         self.mysql_token = None
         self.pcap_on_vm = False
 
-        if input_file.endswith('.ini'):
-            self.parse_ini_file()
-        elif input_file.endswith(('.yml', '.yaml')):
-            self.parse_yml_file()
+        self.parse_yml_file()
         if self.fip_pool:
             update_reserve_cidr(self.fip_pool)
         if not self.ui_browser and (self.verify_webui or self.verify_horizon):
@@ -264,6 +259,7 @@ class TestInputs(object):
         self.database_control_ips = []
         self.compute_ips = []
         self.compute_names = []
+        self.contrail_service_nodes = []
         self.compute_control_ips = []
         self.compute_info = {}
         self.bgp_ips = []
@@ -295,6 +291,8 @@ class TestInputs(object):
             roles = values.get('roles') or {}
             host_data = dict()
             host_data['host_ip'] = values['ip']
+            if 'openstack_control' in roles and not 'openstack' in roles:
+                roles.update({'openstack': {}})
             host_data['roles'] = roles
             host_data['username'] = username
             host_data['password'] = password
@@ -342,6 +340,8 @@ class TestInputs(object):
                     if roles['vrouter'].get('AGENT_MODE') == 'dpdk':
                         host_data['is_dpdk'] = True
                         self.is_dpdk_cluster = True
+                    if roles['vrouter'].get('TSN_EVPN_MODE'):
+                        self.contrail_service_nodes.append(hostname)
                 host_data_ip = host_control_ip = data_ip
             if 'control' in roles:
                 service_ip = self.get_service_ip(host_data['host_ip'], 'control')
@@ -379,6 +379,8 @@ class TestInputs(object):
                             self.k8s_master_ip = host_data['host_ip'] #K8s Currently only supports 1 master
             if 'k8s_node' in roles:
                 self.k8s_slave_ips.append(host_data['host_ip'])
+            if 'contrail_command' in roles:
+                self.command_server_ip = host_data['host_ip']
             host_data['data-ip'] = host_data['host_data_ip'] = host_data_ip
             host_data['control-ip'] = host_data['host_control_ip'] = host_control_ip
             self.host_data[host_data_ip] = self.host_data[host_control_ip] = host_data
@@ -406,10 +408,11 @@ class TestInputs(object):
         return roles
 
     def _gen_auth_url(self):
+        auth_server_ip = self.external_vip or self.openstack_ip
         if self.keystone_version == 'v3':
-            auth_url = 'http://%s:5000/v3'%(self.external_vip or self.openstack_ip)
+            auth_url = 'http://%s:5000/v3'%(auth_server_ip)
         else:
-            auth_url = 'http://%s:5000/v2.0'%(self.external_vip or self.openstack_ip)
+            auth_url = 'http://%s:5000/v2.0'%(auth_server_ip)
         return auth_url
 
     def parse_yml_file(self):
@@ -442,14 +445,16 @@ class TestInputs(object):
         self.slave_orchestrator = deployment_configs.get('slave_orchestrator',None)
         if self.deployer == 'openshift':
             kube_config_file = OPENSHIFT_CONFIG_FILE
-            
         else:
             kube_config_file = K8S_CONFIG_FILE
         self.kube_config_file = test_configs.get('kube_config_file') or kube_config_file
 
         self.parse_topo()
+        if self.deployer != 'contrail_command':
+            self.command_server_ip = None
 
         # contrail related configs
+        self.go_server_port = '9091'
         self.api_protocol = 'https' if contrail_configs.get('CONFIG_API_USE_SSL') else 'http'
         self.api_server_port = contrail_configs.get('CONFIG_API_PORT') or '8082'
         self.analytics_api_port = contrail_configs.get('ANALYTICS_API_PORT') or '8081'
@@ -527,6 +532,7 @@ class TestInputs(object):
         #    name,type,mgmt_ip,model,vendor,asn,ssh_username,ssh_password,tunnel_ip,ports
 
         self.physical_routers_data = test_configs.get('physical_routers',{})
+        self.bms_data = test_configs.get('bms',{})
 
         #BMS information connected to TOR's
         self.tor_hosts_data = test_configs.get('tor_hosts',{})
@@ -551,6 +557,7 @@ class TestInputs(object):
         if 'ns_agilio_vrouter' in test_configs:
             self.pcap_on_vm = True
 
+        self._parse_fabric(test_configs.get('fabric'))
         # If no explicit amqp servers are configured, it will be cfgm ips
         if not self.config_amqp_ips:
             self.config_amqp_ips = self.cfgm_ips
@@ -703,6 +710,14 @@ class TestInputs(object):
             if orch['type'] == 'vcenter':
                 return random.choice(orch['gateway_vrouters'])
 
+    def _parse_fabric(self, fabrics):
+        self.fabrics = list()
+        for fabric in fabrics or list():
+            fabric_dict = dict()
+            fabric_dict['namespaces'] = fabric.get('namespaces')
+            fabric_dict['credentials'] = fabric.get('credentials')
+            self.fabrics.append(fabric_dict)
+
     def _process_qos_data_yml(self, host_ip):
         '''
         Reads and populate qos related values
@@ -751,6 +766,9 @@ class TestInputs(object):
         except KeyError, e:
             pass
         return (qos_queue_per_host, qos_queue_pg_properties_per_host)
+
+    def get_csn(self):
+        return self.contrail_service_nodes
 
     def get_host_ip(self, name):
         try:

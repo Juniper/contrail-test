@@ -6,8 +6,7 @@ import time
 import netifaces
 from collections import defaultdict, MutableMapping
 from netaddr import *
-import pprint
-from fabric.operations import get, put, sudo
+from fabric.operations import get, put, sudo, local
 from fabric.api import run, env
 from common import log_orig as contrail_logging
 import threading
@@ -22,7 +21,7 @@ import socket
 import struct
 from fabric.exceptions import CommandTimeout, NetworkError
 from fabric.contrib.files import exists
-from fabric.context_managers import settings, hide, cd
+from fabric.context_managers import settings, hide, cd, lcd
 from fabric.state import connections as fab_connections
 from paramiko.ssh_exception import ChannelException
 #from tcutils.util import retry
@@ -32,6 +31,7 @@ import functools
 import testtools
 from fabfile import *
 from fabutils import *
+import ast
 
 sku_dict = {'2014.1': 'icehouse', '2014.2': 'juno', '2015.1': 'kilo', '12': 'liberty', '13': 'mitaka',
             '14': 'newton', '15': 'ocata'}
@@ -557,6 +557,8 @@ def is_mac(address):
 
 def get_af_type(address):
     try:
+        if type(address) is int:
+            return None
         if is_v4(address):
             return 'v4'
         if is_v6(address):
@@ -1212,6 +1214,39 @@ def get_ips_of_host(host, nic=None, **kwargs):
     cidrs = output.split('\n') if output else []
     return [str(IPNetwork(cidr).ip) for cidr in cidrs]
 #end get_ips_of_host
+
+def get_intf_name_from_mac(host, mac_address, **kwargs):
+    cmd = "ip link | grep -B1 %s"%mac_address
+    output = run_cmd_on_server(cmd, host, **kwargs)
+    if not output:
+        return None
+    return output.split(':')[1].strip()
+
+def execute_ansible_playbook(self, playbook, **kwargs):
+    ev = ''
+    for key,value in kwargs.iteritems():
+        ev = ev + ' -e "%s=%s"'%(key, value)
+    cmd = 'ansible-playbook -i inventory %s %s'%(ev, playbook)
+    with lcd('./ansible'):
+      with settings(warn_only=True):
+        output = local(cmd, capture=True)
+    if output and output.succeeded:
+        return True
+    return False
+
+def execute_junos_command(self, host, username, password, command):
+    playbook = './junos_command.yml'
+    json_file = '/tmp/%s.json'%host
+    with settings(warn_only=True):
+      with hide('everything'):
+        local('rm -f %s'%json_file)
+    if self.execute_ansible_playbook(playbook, host=host, username=username,
+                                     password=password, command=command,
+                                     json=json_file):
+        with open(json_file, 'r') as fd:
+            content = fd.readlines()[0]
+        return ast.literal_eval(content)
+    return False
 
 class SafeList(list):
     def get(self, index, default=None):

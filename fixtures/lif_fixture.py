@@ -5,16 +5,13 @@ class LogicalInterfaceFixture(vnc_api_test.VncLibFixture):
     '''Fixture to handle Logical Interface object in 
        a phyiscal port 
 
-    Mandatory:
-    :param name     : name of the lif
-    :param pif_id   : Physical interface UUID 
-                      One of pif_id or pif_obj is mandatory 
-    :param pif_obj  : PhysicalInterface object which is to be the parent
-                      of this object
-                      One of pif_id or pif_obj is mandatory
-
     Optional:
-    :params vlan_id : Default is 0
+    :param name     : name of the lif
+    :param uuid     : UUID of the logical interface
+    :param pif_id   : Physical interface UUID 
+    :param pif_fqname   : Physical interface fqname 
+    :param vlan_id : Default is 0
+    :param interface_type : l2 or l3
     :param vmi_ids  : List of vmi ids part of this lif, default is []
 
     Inherited parameters:
@@ -30,75 +27,74 @@ class LogicalInterfaceFixture(vnc_api_test.VncLibFixture):
 
     def __init__(self, *args, **kwargs):
         super(LogicalInterfaceFixture, self).__init__(self, *args, **kwargs)
-        self.name = args[0]
-        self.pif_id = kwargs.get('pif_id',None)
-        self.pif_obj = kwargs.get('pif_obj',None)
-        if not (self.pif_obj or self.pif_id):
-            raise TypeError('One of pif_id or pif_obj is mandatory')
-        vlan_id = kwargs.get('vlan_id', 0)
+        self.name = kwargs.get('name')
+        self.uuid = kwargs.get('uuid')
+        self.pif_id = kwargs.get('pif_id')
+        self.pif_fqname = kwargs.get('pif_fqname')
+        self.interface_type = kwargs.get('interface_type')
         self.vmi_ids = kwargs.get('vmi_ids', [])
-        
-        self.vlan_id = int(vlan_id)
+        self.vlan_id = int(kwargs.get('vlan_id') or 0)
 
-        self.already_present = False
-
+        self.created = False
         self.vn_obj = None
      # end __init__
 
+    def read(self):
+        kwargs = dict()
+        if not self.uuid:
+            if not self.pif_fqname:
+                obj = self.vnc_h.read_physical_interface(id=self.pif_id)
+                self.pif_fqname = list(obj.get_fq_name())
+            self.fq_name = self.pif_fqname + [self.name.replace(':', '__')]
+            kwargs['fq_name'] = list(self.fq_name)
+        else:
+            kwargs['id'] = self.uuid
+        obj = self.vnc_h.read_logical_interface(**kwargs)
+        self.pif_fqname = obj.fq_name[:-1]
+        self.uuid = obj.uuid
+        self.fq_name = obj.fq_name
+        self.name = obj.display_name
+        self.interface_type = obj.get_logical_interface_type()
+        self.vlan_id = int(obj.logical_interface_vlan_tag or 0)
+
     def setUp(self):
         super(LogicalInterfaceFixture, self).setUp()
-        if self.pif_obj:
-            self.pif_id = self.pif_obj.uuid
-        else:
-            self.pif_obj = self.vnc_api_h.physical_interface_read(id=self.pif_id)
-        lif_fq_name = self.pif_obj.fq_name[:]
-        lif_fq_name.append(self.name)
-        self.fq_name = lif_fq_name
-
         try:
-            self.obj = self.vnc_api_h.logical_interface_read(
-                fq_name=lif_fq_name)
-            self.already_present = True
-            self.logger.debug('Logical port %s already present' % (
-                lif_fq_name))
-            self.uuid = self.obj.get_uuid()
+            self.read()
+            self.logger.debug('Logical port %s is already present' % (
+                self.fq_name))
         except vnc_api_test.NoIdError:
+            if self.uuid:
+                raise
             self.create_lif()
-
+            self.created = True
         if self.vmi_ids:
             for vmi_id in self.vmi_ids:
-                vmi_obj = self.vnc_api_h.virtual_machine_interface_read(
-                    id=vmi_id)
-                self.obj.add_virtual_machine_interface(vmi_obj)
-            self.vnc_api_h.logical_interface_update(self.obj)
+                self.add_virtual_machine_interface(vmi_id)
     # end setUp
 
     def create_lif(self):
         self.logger.info('Creating Logical port %s' % (self.fq_name))
-        lif_obj = vnc_api_test.LogicalInterface(name=self.name.replace(':', '__'),
-                                   parent_obj=self.pif_obj,
-                                   display_name=self.name)
-        lif_obj.set_logical_interface_vlan_tag(self.vlan_id)
-        self.uuid = self.vnc_api_h.logical_interface_create(lif_obj)
-        self.obj = self.vnc_api_h.logical_interface_read(id=self.uuid)
+        self.uuid = self.vnc_h.create_logical_interface(name=self.name,
+            pif_fqname=self.pif_fqname, vlan=self.vlan_id,
+            interface_type=self.interface_type)
     # end create_lif
 
     def set_vlan_tag(self, vlan_id=0):
         self.vlan_id = vlan_id
-        self.obj = self.vnc_api_h.logical_interface_read(id=self.uuid)
-        lif_obj.set_logical_interface_vlan_tag(vlan_id)
-        self.vnc_api_h.logical_interface_update(lif_obj)
+        self.vnc_h.update_logical_interface(id=self.uuid, vlan=vlan_id)
     # end set_vlan_tag
 
-    def cleanUp(self):
+    def cleanUp(self, force=False):
         do_cleanup = True
-        if self.already_present:
+        if not self.created and not force:
             do_cleanup = False
             self.logger.debug('Skipping deletion of logical port %s' % (
                 self.fq_name))
         self.clear_vmi_mapping()
         if do_cleanup:
             self.delete_lif()
+        self.verify_on_cleanup()
         super(LogicalInterfaceFixture, self).cleanUp()
     # end cleanUp
 
@@ -111,28 +107,28 @@ class LogicalInterfaceFixture(vnc_api_test.VncLibFixture):
         self.vnc_api_h.logical_interface_update(self.obj)
     # end clear_vmi_mapping
         
-
     def delete_lif(self):
-        self.clear_vmi_mapping()
         self.logger.info('Deleting Logical port %s' % (self.fq_name))
-        self.vnc_api_h.logical_interface_delete(id=self.uuid)
+        self.vnc_h.delete_logical_interface(id=self.uuid)
     # end delete_lif
-    
 
     def add_virtual_machine_interface(self, vmi_id):
         self.logger.info('Adding VMI %s to logical interface %s' % (
             vmi_id, self.fq_name))
-        vmi_obj = self.vnc_api_h.virtual_machine_interface_read(id=vmi_id)
-        self.obj.add_virtual_machine_interface(vmi_obj)
-        self.vnc_api_h.logical_interface_update(self.obj)
+        self.vnc_h.add_vmi_to_lif(vmi_id=vmi_id, lif_id=self.uuid)
 
     def delete_virtual_machine_interface(self, vmi_id):
         self.logger.info('Deleting VMI %s from logical interface %s' % (
             vmi_id, self.fq_name))
-        vmi_obj = self.vnc_api_h.virtual_machine_interface_read(id=vmi_id)
-        self.obj.del_virtual_machine_interface(vmi_obj)
-        self.vnc_api_h.logical_interface_update(self.obj)
+        self.vnc_h.delete_vmi_from_lif(vmi_id=vmi_id, lif_id=self.uuid)
 
+    def verify_on_cleanup(self):
+        try:
+            self.vnc_h.read_logical_interface(id=self.uuid)
+            assert False, 'logical interface %s is not yet deleted'%self.fq_name
+        except vnc_api_test.NoIdError:
+            self.logger.info('logical interface %s got deleted as expected'%self.fq_name)
+            return True
 # end LogicalInterfaceFixture
 
 if __name__ == "__main__":
