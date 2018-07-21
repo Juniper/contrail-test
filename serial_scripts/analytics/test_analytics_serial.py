@@ -227,6 +227,8 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         return True
 
     @test.attr(type=['cb_sanity', 'sanity','vcenter', 'vcenter_compute'])
+    @skip_because(deployer = 'helm')
+    @preposttest_wrapper
     def test_vrouter_process_status_alarms(self):
         ''' Test whether process status alarm gets generated/cleared
             after stopping the process
