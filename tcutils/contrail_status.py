@@ -259,6 +259,8 @@ def contrail_status(inputs=None, host=None, role=None, service=None,
                     continue
                 for svc in CONTRAIL_PODS_SERVICES_MAP[r]:
                     desc = None
+                    if inputs.deployer == 'helm' and svc == 'config-rabbitmq':
+                        continue
                     status = get_container_status(
                         inputs.get_container_name(node, svc), containers)
                     if status == 'active':
