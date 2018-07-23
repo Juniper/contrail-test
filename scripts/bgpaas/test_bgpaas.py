@@ -83,6 +83,7 @@ class TestBGPaaS(BaseBGPaaS):
                             shc_fixture, bgpaas_fixture)
             agent = bgpaas_vm1.vm_node_ip
             shc_fixture.verify_in_agent(agent)
+            time.sleep(60)
             assert bgpaas_fixture.verify_in_control_node(
                 bgpaas_vm1), 'BGPaaS Session not seen in the control-node'
             assert self.verify_bfd_packets(
