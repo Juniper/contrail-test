@@ -1,6 +1,8 @@
 import os
 import openstack
 from common.openstack_libs import glance_client as client
+from common.openstack_libs import glance_exception as glanceException
+from tcutils.util import retry
 
 class GlanceHelper(object):
     '''
@@ -50,3 +52,29 @@ class GlanceHelper(object):
 
     def upload_image(self, uuid, filename):
         self.obj.images.upload(uuid, open(filename, 'rb'))
+
+    def get_image(self, image_id=None, image_name=None, check_active=True):
+        if not image_id:
+            for image in self.obj.images.list():
+                if image.name == image_name:
+                    image_id = image.id
+                    break
+            else:
+                self.logger.debug('Image by name %s not found'%image_name)
+                return False
+        if not image_id:
+            self.logger.debug('image_id cant be empty')
+            return False
+        try:
+            if check_active:
+                return self.is_active(image_id)[1]
+            return self.obj.images.get(image_id)
+        except glanceException.NotFound:
+            return None
+
+    @retry(delay=5, tries=20)
+    def is_active(self, image_id):
+        image = self.obj.images.get(image_id)
+        if image.status.lower() == 'active':
+            return (True, image)
+        return (False, None)
