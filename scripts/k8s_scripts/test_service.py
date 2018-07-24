@@ -15,6 +15,10 @@ class TestService(BaseK8sTest):
     @classmethod
     def setUpClass(cls):
         super(TestService, cls).setUpClass()
+        if cls.inputs.compute_control_ips:
+          cls.cn_list = list(cls.inputs.compute_control_ips)
+        else:
+          cls.cn_list = list(cls.inputs.compute_ips)
 
     @classmethod
     def tearDownClass(cls):
@@ -53,7 +57,7 @@ class TestService(BaseK8sTest):
     # end test_service_1
 
     @preposttest_wrapper
-    def test_service_type_nodeport_without_namespace_isolation(self):
+    def test_service_type_nodeport(self):
         ''' Create a service with 2 pods running nginx
             Create a third busybox pod and validate that webservice is
             load-balanced using NodePort service from with in the cluster
@@ -61,108 +65,34 @@ class TestService(BaseK8sTest):
         '''
         app = 'http_nodeport_test'
         labels = {'app': app}
-        namespace = self.setup_namespace("ns1")
+
+        service = self.setup_http_service(labels=labels, type="NodePort")
+        pod1 = self.setup_nginx_pod(labels=labels)
+        pod2 = self.setup_nginx_pod(labels=labels)
+        pod3 = self.setup_busybox_pod()
+
+        namespace = self.setup_namespace()
         assert namespace.verify_on_setup()
-
-        service = self.setup_http_service(namespace=namespace.name,
-                                          labels=labels, type="NodePort")
-        pod1 = self.setup_nginx_pod(namespace=namespace.name, labels=labels)
-        pod2 = self.setup_nginx_pod(namespace=namespace.name, labels=labels)
-        pod3 = self.setup_busybox_pod(namespace=namespace.name)
+        pod4 = self.setup_busybox_pod(namespace=namespace.name)
 
         assert self.verify_nginx_pod(pod1)
         assert self.verify_nginx_pod(pod2)
         assert pod3.verify_on_setup()
-        # validate Service Nodeport functionality with load-balancing on the service
-        for node_ip in self.inputs.k8s_slave_ips:
-             assert self.validate_nginx_lb([pod1, pod2], node_ip,
-                                            test_pod=pod3,
-                                            nodePort=service.nodePort)
-             assert self.validate_nginx_lb([pod1, pod2], node_ip,
-                                      nodePort=service.nodePort)
-    # end test_service_type_nodeport__without_namespace_isolation
+        assert pod4.verify_on_setup()
+        assert service.verify_on_setup()
 
-    @preposttest_wrapper
-    def test_service_type_nodeport_with_namespace_isolation(self):
-        ''' Create a service with 2 pods running nginx
-            Create a third busybox pod and validate that webservice is
-            load-balanced using NodePort service using NodePort service from with in the cluster
-            outside of the cluster with namespace isolation
 
-        '''
-        app = 'http_nodeport_test'
-        labels = {'app': app}
-        namespace1_name = get_random_name("ns1")
-        namespace2_name = get_random_name("ns2")
-        namespace1 = self.setup_namespace(name = namespace1_name, isolation = True)
-        namespace2 = self.setup_namespace(name = namespace2_name, isolation = True)
-        assert namespace1.verify_on_setup()
-        assert namespace2.verify_on_setup()
-        service = self.setup_http_service(namespace=namespace1.name,
-                                          labels=labels, type="NodePort")
-        pod1 = self.setup_nginx_pod(namespace=namespace1.name, labels=labels)
-        pod2 = self.setup_nginx_pod(namespace=namespace1.name, labels=labels)
-        pod3 = self.setup_busybox_pod(namespace=namespace1.name)
-        pod4 = self.setup_busybox_pod(namespace=namespace2.name)
-        assert self.verify_nginx_pod(pod1)
-        assert self.verify_nginx_pod(pod2)
-        assert pod3.verify_on_setup()
         # validate Service Nodeport functionality with load-balancing on the service
-        for node_ip in self.inputs.k8s_slave_ips:
+        for node_ip in self.cn_list:
              assert self.validate_nginx_lb([pod1, pod2], node_ip,
-                                            test_pod=pod3,
                                             nodePort=service.nodePort)
-             #access the Nodeport from outside the cluster
-             assert self.validate_nginx_lb([pod1, pod2], node_ip,
-                                      nodePort=service.nodePort)
-             assert self.validate_nginx_lb([pod1, pod2], node_ip,
-                                            test_pod=pod4,
+             if self.setup_namespace_isolation:
+                  assert self.validate_nginx_lb([pod1, pod2], service.cluster_ip,
+                                            test_pod = pod4,
                                             nodePort=service.nodePort,
-                                            expectation=False)
-    # end test_service_type_nodeport_with_namespace_isolation
+                                            expectation=False) 
 
-    @preposttest_wrapper
-    def test_service_type_nodeport_with_namespace_isolation_with_userdefined_nodeport(self):
-        ''' Create a service with 2 pods running nginx
-            Create a third busybox pod and validate that webservice is
-            load-balanced  NodePort service from with in the cluster 
-            outside of the cluster with user defied noport
-
-        '''
-        app = 'http_nodeport_test'
-        labels = {'app': app}
-        user_node_port = 31111
-        namespace1_name = get_random_name("ns1")
-        namespace2_name = get_random_name("ns2")
-        namespace1 = self.setup_namespace(name = namespace1_name, isolation = True)
-        namespace2 = self.setup_namespace(name = namespace2_name, isolation = True)
-        assert namespace1.verify_on_setup()
-        assert namespace2.verify_on_setup()
-        service = self.setup_http_service(namespace=namespace1.name,
-                                        labels=labels, type="NodePort", nodePort = user_node_port)
-        pod1 = self.setup_nginx_pod(namespace=namespace1.name, labels=labels)
-        pod2 = self.setup_nginx_pod(namespace=namespace1.name, labels=labels)
-        pod3 = self.setup_busybox_pod(namespace=namespace1.name)
-        pod4 = self.setup_busybox_pod(namespace=namespace2.name)
-        assert self.verify_nginx_pod(pod1)
-        assert self.verify_nginx_pod(pod2)
-        assert pod3.verify_on_setup()
-        assert (service.nodePort == user_node_port) , "service should be having the node port which is user provided"
-        # validate Service Nodeport functionality with load-balancing on the service
-        for node_ip in self.inputs.k8s_slave_ips:
-             assert self.validate_nginx_lb([pod1, pod2], node_ip,
-                                            test_pod=pod3,
-                                            nodePort=user_node_port)
-             #access the Nodeport from outside the cluster
-             assert self.validate_nginx_lb([pod1, pod2], node_ip,
-                                      nodePort=user_node_port)
-             assert self.validate_nginx_lb([pod1, pod2], node_ip,
-                                            test_pod=pod4,
-                                            nodePort=user_node_port,
-                                            expectation=False)
-    # end test_service_type_nodeport_with_namespace_isolation
-
-
+    # end test_service_type_nodeport__without_namespace_isolation
 
     @skip_because(mx_gw = False)
     @preposttest_wrapper
@@ -310,7 +240,7 @@ class TestService(BaseK8sTest):
         lookup_str = 'nslookup kubernetes.default.svc.cluster.local'
         output = client_pod.run_cmd(lookup_str)
         msg = 'DNS resolution failed'
-        assert 'nslookup: can\'t resolve' not in output, msg
+        assert ('connection timed out' not in output) and ('nslookup: can\'t resolve' not in output), msg
         self.logger.info('DNS resolution check : %s passed. Output: %s' % (
             lookup_str, output))
     # end test_kube_dns_lookup
