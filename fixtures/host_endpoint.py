@@ -178,7 +178,6 @@ class HostEndpointFixture(fixtures.Fixture):
     # end setUp
 
     def cleanUp(self):
-        super(HostEndpointFixture, self).cleanUp()
         self.logger.info('Deleting namespace %s on BMS host %s' % (
             self.namespace, self.host_ip)) 
         with settings(
@@ -198,6 +197,7 @@ class HostEndpointFixture(fixtures.Fixture):
             time.sleep(1)
             run('ip netns delete %s' % (self.namespace))
             time.sleep(1)
+        super(HostEndpointFixture, self).cleanUp()
     # end cleanUp
 
     def run_cmd(self, cmd, pty=True, timeout=None, as_sudo=False):

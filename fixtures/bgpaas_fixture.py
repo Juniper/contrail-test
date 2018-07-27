@@ -31,7 +31,6 @@ class BGPaaSFixture(vnc_api_test.VncLibFixture):
         self.create()
 
     def cleanUp(self):
-        super(BGPaaSFixture, self).cleanUp()
         do_cleanup = True
         if (self.created == False or self.inputs.fixture_cleanup == 'no') and\
            self.inputs.fixture_cleanup != 'force':
@@ -43,6 +42,7 @@ class BGPaaSFixture(vnc_api_test.VncLibFixture):
                 self.webui.delete_bgpaas(self)
             else:
                 self.delete()
+        super(BGPaaSFixture, self).cleanUp()
 
     def read(self):
         self.logger.debug('Fetching info about BGPaaS %s' % self.uuid)

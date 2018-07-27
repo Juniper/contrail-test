@@ -32,12 +32,12 @@ class ApplicationPolicySetFixture(vnc_api_test.VncLibFixture):
         self.create()
 
     def cleanUp(self):
-        super(ApplicationPolicySetFixture, self).cleanUp()
         if self.created == False and self.inputs.fixture_cleanup != 'force':
             self.logger.info('Skipping deletion of address group %s:'
                               %(self.fq_name))
         else:
-            return self.delete()
+            self.delete()
+        super(ApplicationPolicySetFixture, self).cleanUp()
 
     def get_object(self):
         return self.vnc_h.read_application_policy_set(id=self.uuid)

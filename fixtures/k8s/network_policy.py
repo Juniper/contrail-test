@@ -60,8 +60,8 @@ class NetworkPolicyFixture(fixtures.Fixture):
     # end verify_on_setup
 
     def cleanUp(self):
-        super(NetworkPolicyFixture, self).cleanUp()
         self.delete()
+        super(NetworkPolicyFixture, self).cleanUp()
 
     def _populate_attr(self):
         self.uuid = self.obj.metadata.uid

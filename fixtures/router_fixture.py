@@ -60,13 +60,13 @@ class LogicalRouterFixture(vnc_api_test.VncLibFixture):
         self.create()
 
     def cleanUp(self):
-        super(LogicalRouterFixture, self).cleanUp()
         if (self.already_present or self.inputs.fixture_cleanup == 'no') and\
            self.inputs.fixture_cleanup != 'force':
             self.logger.info('Skipping deletion of Logical Router %s :'
                               %(self.fq_name))
         else:
             self.delete()
+        super(LogicalRouterFixture, self).cleanUp()
     
     def get_network_handle(self):
         if self.api_type == 'contrail':

@@ -63,7 +63,6 @@ class UserFixture(fixtures.Fixture):
     # end setUp
 
     def cleanUp(self):
-        super(UserFixture, self).cleanUp()
         if self.inputs.orchestrator == 'vcenter':
             # No concept of user in vcenter
             return
@@ -82,7 +81,7 @@ class UserFixture(fixtures.Fixture):
         else:
             self.logger.debug('Skipping the deletion of User %s' %
                               self.username)
-
+        super(UserFixture, self).cleanUp()
     # end cleanUp
 
     def verify_on_setup(self):
