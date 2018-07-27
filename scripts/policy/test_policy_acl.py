@@ -1078,15 +1078,15 @@ class TestPolicyAcl(BasePolicyTest):
                                      dst_vm_fixture=self.VM11_fixture)
 
         if ((ret1 == True) and (ret2 == True)):
-            cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
+            cmd = "flow -l | grep %s -A2 | grep %s -A1 " % (
                    self.VM11_fixture.vm_ip, self.VM21_fixture.vm_ip)
-            cmd = cmd + "| grep 'Action:D(Policy)' | wc -l"
+            cmd = cmd + '''| grep "Action:D(Policy)" | wc -l'''
             flow_record = self.inputs.run_cmd_on_server(
                 self.VM11_fixture.vm_node_ip, cmd,
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['username'],
                 self.inputs.host_data[self.VM11_fixture.vm_node_ip]['password'],
                 container='agent')
-            if flow_record > 0:
+            if int(flow_record) > 0:
                 self.logger.info("Found %s matching flows" % flow_record)
                 self.logger.info("Test with src as CIDR and dst as ANY PASSED")
             else:
