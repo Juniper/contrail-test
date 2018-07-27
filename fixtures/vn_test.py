@@ -1384,8 +1384,8 @@ class VNFixture(fixtures.Fixture):
                     vnc_lib.virtual_network_update(vni_obj)
 
     def cleanUp(self):
-        super(VNFixture, self).cleanUp()
         self.delete()
+        super(VNFixture, self).cleanUp()
 
     @retry(delay=5, tries=12)
     def _delete_vn(self):

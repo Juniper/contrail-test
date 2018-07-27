@@ -44,8 +44,8 @@ class DeploymentFixture(fixtures.Fixture):
     # end verify_on_setup
 
     def cleanUp(self):
-        super(DeploymentFixture, self).cleanUp()
         self.delete()
+        super(DeploymentFixture, self).cleanUp()
 
     def _populate_attr(self):
         self.uuid = self.obj.metadata.uid

@@ -29,8 +29,8 @@ class InterfaceRouteTableFixture(vnc_api_test.VncLibFixture):
         self.create()
 
     def cleanUp(self):
-        super(InterfaceRouteTableFixture, self).cleanUp()
         self.delete()
+        super(InterfaceRouteTableFixture, self).cleanUp()
 
     def create(self):
         if self.uuid:

@@ -41,8 +41,8 @@ class TLSSecretFixture(fixtures.Fixture):
         self.create()
 
     def cleanUp(self):
-        super(TLSSecretFixture, self).cleanUp()
         self.delete()
+        super(TLSSecretFixture, self).cleanUp()
 
     def _populate_attr(self):
         self.uuid = self.obj.metadata.uid

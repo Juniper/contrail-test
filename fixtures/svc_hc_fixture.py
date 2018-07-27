@@ -59,7 +59,6 @@ class HealthCheckFixture(vnc_api_test.VncLibFixture):
         self.create()
 
     def cleanUp(self):
-        super(HealthCheckFixture, self).cleanUp()
         do_cleanup = True
         if (self.created == False or self.inputs.fixture_cleanup == 'no') and\
            self.inputs.fixture_cleanup != 'force':
@@ -71,6 +70,7 @@ class HealthCheckFixture(vnc_api_test.VncLibFixture):
                 self.webui.delete_svc_health_check(self)
             else:
                 self.delete()
+        super(HealthCheckFixture, self).cleanUp()
 
     def read(self):
         self.logger.debug('Fetching info about Health Check %s'%self.uuid)

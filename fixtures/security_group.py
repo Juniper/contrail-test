@@ -92,8 +92,8 @@ class SecurityGroupFixture(ContrailFixture):
         return self.orch.set_security_group_rules(sg_id=sg_id, sg_entries=secgrp_rules, option=self.option)
 
     def cleanUp(self):
-        super(SecurityGroupFixture, self).cleanUp()
         self.delete()
+        super(SecurityGroupFixture, self).cleanUp()
 
     def delete(self, verify=False):
         self.logger.info("Deleting Security group: %s", self.secgrp_fq_name)

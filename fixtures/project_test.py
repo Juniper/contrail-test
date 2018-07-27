@@ -140,8 +140,8 @@ class ProjectFixture(fixtures.Fixture):
         return self.project_obj
 
     def cleanUp(self):
-        super(ProjectFixture, self).cleanUp()
         self.delete()
+        super(ProjectFixture, self).cleanUp()
 
     def delete(self, verify=False):
         if self.inputs.orchestrator == 'vcenter':

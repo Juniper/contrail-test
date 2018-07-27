@@ -107,7 +107,6 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
         self.create()
 
     def cleanUp(self):
-        super(LBaasFixture, self).cleanUp()
         self.inputs.fixture_cleanup = 'force'
         if (self.already_present or self.inputs.fixture_cleanup == 'no') and\
            self.inputs.fixture_cleanup != 'force':
@@ -115,6 +114,7 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
                               %(self.fq_name))
         else:
             self.delete()
+        super(LBaasFixture, self).cleanUp()
 
     def get_network_handle(self):
         if self.api_type == 'contrail':

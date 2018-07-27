@@ -250,7 +250,6 @@ class CNFixture(fixtures.Fixture):
     # end start_service
 
     def cleanUp(self):
-        super(CNFixture, self).cleanUp()
         do_cleanup = True
         if self.inputs.fixture_cleanup == 'no':
             do_cleanup = False
@@ -266,6 +265,7 @@ class CNFixture(fixtures.Fixture):
         else:
             self.logger.info('Skipping the deletion of the Control Node %s ' %
                              (self.router_ip))
+        super(CNFixture, self).cleanUp()
     # end cleanUp
 
 

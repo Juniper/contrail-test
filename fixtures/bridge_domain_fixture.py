@@ -68,8 +68,8 @@ class BDFixture(vnc_api_test.VncLibFixture):
         self.create()
 
     def cleanUp(self):
-        super(BDFixture, self).cleanUp()
         self.delete()
+        super(BDFixture, self).cleanUp()
 
     def create(self):
         if self.read():
