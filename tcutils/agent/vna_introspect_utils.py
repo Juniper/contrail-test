@@ -863,15 +863,16 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
     # end get_agent_physical_interface
 
     def get_agent_vm_interface_drop_stats(self, fq_name):
-        ''' Get it from http://nodek2:8085/Snh_SandeshUVECacheReq?x=UveVMInterfaceAgent
+        ''' Get it from http://nodek2:8085/Snh_SandeshUVECacheReq?x=VMIStats
         '''
-        xml_obj = self.dict_get('Snh_SandeshUVECacheReq?x=UveVMInterfaceAgent')
-        xml_data = xml_obj.xpath('./UveVMInterfaceAgentTrace/data/UveVMInterfaceAgent')
+        import pdb;pdb.set_trace()
+        xml_obj = self.dict_get('Snh_SandeshUVECacheReq?x=VMIStats')
+        xml_data = xml_obj.xpath('./UVEVMIStats/data/VMIStats')
         l = []
         for index, x_data in enumerate(xml_data):
             fq_name_inspect = x_data.xpath('./name')[0].text
             if fq_name == fq_name_inspect:
-                x_path = './UveVMInterfaceAgentTrace/data/UveVMInterfaceAgent/raw_drop_stats/AgentDropStats'
+                x_path = './UVEVMIStats/data/VMIStats/raw_drop_stats/AgentDropStats'
                 raw_drop_stats_obj = xml_obj.xpath(x_path)
                 try:
                     raw_drop_stats_obj = raw_drop_stats_obj[index]
