@@ -1664,6 +1664,51 @@ class ContrailVncApi(object):
         self._log.debug('Deleting tag-type %s from obj %s'%(tag_type, obj.name))
         return self._vnc.unset_tag(obj, tag_type)
 
+    def read_virtual_router(self, compute_name):
+        fq_name = ['default-global-system-config', compute_name]
+        return self._vnc.virtual_router_read(fq_name=fq_name)
+
+    def enable_datapath_encryption(self, vrouters=None):
+        gr_obj = self.read_global_vrouter_config()
+        gr_obj.encryption_mode = 'all'
+        vr_endpoints = gr_obj.get_encryption_tunnel_endpoints() or \
+            EncryptionTunnelEndpointList()
+        for vrouter in vrouters or list():
+            vr_endpoints.add_endpoint(EncryptionTunnelEndpoint(vrouter))
+        gr_obj.set_encryption_tunnel_endpoints(vr_endpoints)
+        self._vnc.global_vrouter_config_update(gr_obj)
+
+    def disable_datapath_encryption(self):
+        gr_obj = self.read_global_vrouter_config()
+        gr_obj.encryption_mode = None
+        gr_obj.set_encryption_tunnel_endpoints(list())
+        self._vnc.global_vrouter_config_update(gr_obj)
+
+    def add_vrouter_to_encryption(self, vrouters):
+        self.enable_datapath_encryption(vrouters)
+
+    def delete_vrouter_from_encryption(self, vrouters):
+        gr_obj = self.read_global_vrouter_config()
+        vr_endpoints = gr_obj.get_encryption_tunnel_endpoints()
+        for vrouter in vrouters:
+            vr_endpoints.delete_endpoint(EncryptionTunnelEndpoint(vrouter))
+        gr_obj.set_encryption_tunnel_endpoints(vr_endpoints)
+        self._vnc.global_vrouter_config_update(gr_obj)
+
+    def get_encap_priority(self):
+        gr_obj = self.read_global_vrouter_config()
+        encap = gr_obj.get_encapsulation_priorities() or EncapsulationPrioritiesType()
+        return encap.get_encapsulation()
+
+    def set_encap_priority(self, encaps):
+        gr_obj = self.read_global_vrouter_config()
+        encap = EncapsulationPrioritiesType(encapsulation=encaps)
+        gr_obj.set_encapsulation_priorities(encap)
+        self._vnc.global_vrouter_config_update(gr_obj)
+
+    def delete_encap_priority(self):
+        self.set_encap_priority(list())
+
     def assoc_intf_rt_table_to_si(self, si_fq_name, intf_rt_table_uuid, intf_type):
         '''
             :param si_uuid : UUID of the Service Instance object
