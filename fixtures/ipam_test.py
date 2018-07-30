@@ -127,8 +127,8 @@ class IPAMFixture(fixtures.Fixture):
         # end verify
 
     def cleanUp(self):
-        super(IPAMFixture, self).cleanUp()
         self.delete()
+        super(IPAMFixture, self).cleanUp()
 
     def delete(self, verify=False):
         do_cleanup = True

@@ -78,8 +78,8 @@ class SLOFixture(vnc_api_test.VncLibFixture):
         self.create()
 
     def cleanUp(self):
-        super(SLOFixture, self).cleanUp()
         self.delete()
+        super(SLOFixture, self).cleanUp()
 
     def create(self):
         if self.read():

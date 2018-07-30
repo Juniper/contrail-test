@@ -139,8 +139,8 @@ class NamespaceFixture(fixtures.Fixture):
     # end verify_namespace_in_kube_manager
 
     def cleanUp(self):
-        super(NamespaceFixture, self).cleanUp()
         self.delete()
+        super(NamespaceFixture, self).cleanUp()
 
     def _populate_attr(self):
         self.uuid = self.obj.metadata.uid

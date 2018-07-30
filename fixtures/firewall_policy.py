@@ -32,12 +32,12 @@ class FirewallPolicyFixture(vnc_api_test.VncLibFixture):
         self.create()
 
     def cleanUp(self):
-        super(FirewallPolicyFixture, self).cleanUp()
         if self.created == False and self.inputs.fixture_cleanup != 'force':
             self.logger.info('Skipping deletion of Firewall Policy %s:'
                               %(self.fq_name))
         else:
-            return self.delete()
+            self.delete()
+        super(FirewallPolicyFixture, self).cleanUp()
 
     def get_object(self):
         return self.vnc_h.read_firewall_policy(id=self.uuid)

@@ -596,8 +596,8 @@ class FloatingIPFixture(fixtures.Fixture):
     # end assoc_project
 
     def cleanUp(self):
-        super(FloatingIPFixture, self).cleanUp()
         self.delete()
+        super(FloatingIPFixture, self).cleanUp()
     # end cleanUp
 
     def delete(self, verify=False):

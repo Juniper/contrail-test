@@ -76,8 +76,8 @@ class VdnsFixture(fixtures.Fixture):
          return ':'.join(self.get_fq_name())
 
     def cleanUp(self):
-        super(VdnsFixture, self).cleanUp()
         self.delete()
+        super(VdnsFixture, self).cleanUp()
 
     def delete(self, verify=False):
         if not self.already_present:
@@ -304,8 +304,8 @@ class VdnsRecordFixture(fixtures.Fixture):
         return self.fq_name[:-1][-1]
 
     def cleanUp(self):
-        super(VdnsRecordFixture, self).cleanUp()
         self.delete()
+        super(VdnsRecordFixture, self).cleanUp()
 
     def delete(self, verify=False):
         if not self.already_present:

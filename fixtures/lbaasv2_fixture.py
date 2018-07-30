@@ -42,13 +42,13 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.lb_create()
 
     def cleanUp(self):
-        super(LBBaseFixture, self).cleanUp()
         if (self.lb_present or self.inputs.fixture_cleanup == 'no') and\
            self.inputs.fixture_cleanup != 'force':
             self.logger.info('Skipping deletion of Load Balancer %s :'
                               %(self.fq_name))
         else:
             self.lb_delete()
+        super(LBBaseFixture, self).cleanUp()
 
     def get_network_handle(self):
         if self.api_type == 'contrail':

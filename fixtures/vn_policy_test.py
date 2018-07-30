@@ -79,7 +79,6 @@ class VN_Policy_Fixture(fixtures.Fixture):
     # end setUp
 
     def cleanUp(self):
-        super(VN_Policy_Fixture, self).cleanUp()
         do_cleanup = True
         if self.inputs.fixture_cleanup == 'no':
             do_cleanup = False
@@ -91,6 +90,7 @@ class VN_Policy_Fixture(fixtures.Fixture):
             self.detach_Policy_VN()
         else:
             self.logger.debug('Skipping policy detach from VN %s' % (self.vn))
+        super(VN_Policy_Fixture, self).cleanUp()
     # end cleanUp
 
     def detach_Policy_VN(self):

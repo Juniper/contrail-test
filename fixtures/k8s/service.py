@@ -45,8 +45,8 @@ class ServiceFixture(fixtures.Fixture):
     # end verify_on_setup
 
     def cleanUp(self):
-        super(ServiceFixture, self).cleanUp()
         self.delete()
+        super(ServiceFixture, self).cleanUp()
 
     def _populate_attr(self):
         self.uuid = self.obj.metadata.uid

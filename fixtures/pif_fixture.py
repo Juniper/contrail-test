@@ -87,7 +87,6 @@ class PhysicalInterfaceFixture(vnc_api_test.VncLibFixture):
     # end create_pif
 
     def cleanUp(self):
-        super(PhysicalInterfaceFixture, self).cleanUp()
         do_cleanup = True
         if self.already_present:
             do_cleanup = False
@@ -98,8 +97,8 @@ class PhysicalInterfaceFixture(vnc_api_test.VncLibFixture):
                 if self.inputs.is_gui_based_config():
                     self.webui.delete_physical_interface(self)
                     return
-            
         self.delete_pif()
+        super(PhysicalInterfaceFixture, self).cleanUp()
     # end cleanUp
 
     def delete_pif(self):
