@@ -639,6 +639,12 @@ class TestInputs(object):
         containers = [x.strip('\r') for x in output.split('\n')]
         return containers
 
+    @property
+    def is_dp_encryption_enabled(self):
+        if self.host_data[self.compute_names[0]]['containers'].get('strongswan'):
+            return True
+        return False
+
     def _check_containers(self, host_dict):
         '''
         Find out which components have containers and set
@@ -1124,6 +1130,19 @@ class ContrailTestInit(object):
             'schema' in self.host_data[self.cfgm_ip]['containers']['schema']:
             return True
         return False
+
+    def relaunch_container(self, hosts, pod):
+        pods_dir = ANSIBLE_DEPLOYER_PODS_DIR[pod]
+        yml_file = ANSIBLE_DEPLOYER_PODS_YML_FILE.get(pod)
+        yml_file_str = '-f %s'%yml_file if yml_file else ''
+        for host in hosts:
+            cmd = 'cd %s ;'%pods_dir
+            down_cmd = cmd + 'docker-compose %s down'%yml_file_str
+            up_cmd = cmd + 'docker-compose %s up -d'%yml_file_str
+            self.logger.info('Running %s on %s' %(down_cmd, host))
+            self.run_cmd_on_server(host, down_cmd, pty=True, as_sudo=True)
+            self.logger.info('Running %s on %s' %(up_cmd, host))
+            self.run_cmd_on_server(host, up_cmd, pty=True, as_sudo=True)
 
     def _action_on_container(self, hosts, event, container, services=None, verify_service=True, timeout=60):
         containers = set()
