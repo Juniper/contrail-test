@@ -1715,9 +1715,12 @@ class TestBasicVMVN5(BaseVnVmTest):
                 The same is not done for \
                  %s as it points to the default GW'%(other_interface,default_gateway_interface))
         self.logger.info('-' * 80)
+        vm1_intf = vm1_fixture.get_vm_interface_list()
+        vm1_intf.remove(other_interface)
+        vm1_intf_local_ip = vm1_fixture.get_local_ip_vm_intf_name(vm1_intf[0])
         cmd = 'ifdown %s'%other_interface
 
-        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, local_ip=vm1_intf_local_ip)
 
         if vm1_fixture.ping_to_vn(intf_vm_dct[other_interface]):
             result = False
@@ -1740,7 +1743,7 @@ class TestBasicVMVN5(BaseVnVmTest):
         self.logger.info('-' * 80)
 
         cmd = 'ifup %s'%other_interface
-        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=90)
+        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=90, local_ip=vm1_intf_local_ip)
         if not vm1_fixture.ping_to_vn(intf_vm_dct[other_interface]):
             result = False
             assert result, "Ping to %s Fail"%intf_vm_dct[other_interface].vm_name
@@ -2872,7 +2875,7 @@ class TestBasicIPv6VMVN6(TestBasicVMVN6):
     @skip_because(orchestrator = 'vcenter',address_family = 'v6',
         hypervisor='docker',msg='Bug 1461423:Need privileged access')
     def test_ping_on_broadcast_multicast_with_frag(self):
-        super(TestBasicIPv6VMVN6, cls).test_ping_on_broadcast_multicast_with_frag()
+        super(TestBasicIPv6VMVN6, self).test_ping_on_broadcast_multicast_with_frag()
 
 class TestBasicIPv6VMVN9(TestBasicVMVN9):
 
