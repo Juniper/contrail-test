@@ -109,8 +109,8 @@ class DomainFixture(fixtures.Fixture):
         return self.domain_obj
 
     def cleanUp(self):
-        super(DomainFixture, self).cleanUp()
         self.delete()
+        super(DomainFixture, self).cleanUp()
 
     def update_domain(self,domain_name,description='',enabled=True):
         try:

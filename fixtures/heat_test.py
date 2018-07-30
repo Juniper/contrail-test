@@ -110,7 +110,6 @@ class HeatStackFixture(fixtures.Fixture):
     # end create_stack
 
     def cleanUp(self):
-        super(HeatStackFixture, self).cleanUp()
         do_cleanup = True
         self.logger.info('Deleting Stack %s' % self.stack_name)
         if self.already_present:
@@ -122,6 +121,7 @@ class HeatStackFixture(fixtures.Fixture):
             self.wait_till_stack_is_deleted()
         else:
             self.logger.info('Skipping the deletion of Stack %s' %self.stack_name)
+        super(HeatStackFixture, self).cleanUp()
     # end delete_stack
 
     def update(self, new_parameters):

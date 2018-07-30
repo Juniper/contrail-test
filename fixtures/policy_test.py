@@ -586,7 +586,6 @@ class PolicyFixture(fixtures.Fixture):
                                     rules_list=rules_list)
 
     def cleanUp(self):
-        super(PolicyFixture, self).cleanUp()
         do_cleanup = True
         if self.inputs.fixture_cleanup == 'no':
             do_cleanup = False
@@ -601,6 +600,7 @@ class PolicyFixture(fixtures.Fixture):
         else:
             self.logger.info('Skipping deletion of policy %s' %
                              (self.policy_name))
+        super(PolicyFixture, self).cleanUp()
     # end cleanUp
 
     def get_id(self):

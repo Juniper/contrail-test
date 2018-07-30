@@ -91,7 +91,6 @@ class LogicalInterfaceFixture(vnc_api_test.VncLibFixture):
     # end set_vlan_tag
 
     def cleanUp(self):
-        super(LogicalInterfaceFixture, self).cleanUp()
         do_cleanup = True
         if self.already_present:
             do_cleanup = False
@@ -100,6 +99,7 @@ class LogicalInterfaceFixture(vnc_api_test.VncLibFixture):
         self.clear_vmi_mapping()
         if do_cleanup:
             self.delete_lif()
+        super(LogicalInterfaceFixture, self).cleanUp()
     # end cleanUp
 
     def clear_vmi_mapping(self):

@@ -80,8 +80,8 @@ class PodFixture(fixtures.Fixture):
     # end verify_on_setup
 
     def cleanUp(self):
-        super(PodFixture, self).cleanUp()
         self.delete()
+        super(PodFixture, self).cleanUp()
 
     @retry(delay=3, tries=20)
     def _get_uuid(self):

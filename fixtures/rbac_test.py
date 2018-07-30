@@ -47,7 +47,6 @@ class RbacFixture(vnc_api_test.VncLibFixture):
         self.create()
 
     def cleanUp(self):
-        super(RbacFixture, self).cleanUp()
         if self.created == False and self.inputs.fixture_cleanup != 'force':
             self.logger.info('Skipping deletion of RBAC ACL %s :'
                               %(self.fq_name))
@@ -55,7 +54,8 @@ class RbacFixture(vnc_api_test.VncLibFixture):
             if self.inputs.is_gui_based_config():
                 self.webui.delete_rbac(self)
             else:
-                return self.delete()
+                self.delete()
+        super(RbacFixture, self).cleanUp()
 
     def read(self):
         obj = self.vnc_h.get_api_access_list(id=self.uuid)

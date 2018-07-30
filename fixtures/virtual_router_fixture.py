@@ -80,13 +80,13 @@ class VirtualRouterFixture(VirtualRouterBase):
             self.update_virtual_router_type()
 
     def cleanUp(self):
-        super(VirtualRouterFixture, self).cleanUp()
         do_cleanup = True
         if do_cleanup:
             if self.inputs.is_gui_based_config():
                 self.webui.delete_virtual_router(self)
             else:
                 pass
+        super(VirtualRouterFixture, self).cleanUp()
 
 # end VirtualRouterFixture
 

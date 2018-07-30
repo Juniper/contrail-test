@@ -71,8 +71,8 @@ class IngressFixture(fixtures.Fixture):
     # end verify_on_cleanup
 
     def cleanUp(self):
-        super(IngressFixture, self).cleanUp()
         self.delete()
+        super(IngressFixture, self).cleanUp()
 
     def _populate_attr(self):
         self.uuid = self.obj.metadata.uid

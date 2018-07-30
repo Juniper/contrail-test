@@ -69,7 +69,6 @@ class SvcTemplateFixture(fixtures.Fixture):
     # end setUp
 
     def cleanUp(self):
-        super(SvcTemplateFixture, self).cleanUp()
         if self.already_present:
             return
         if self.inputs.is_gui_based_config():
@@ -77,6 +76,7 @@ class SvcTemplateFixture(fixtures.Fixture):
         else:
             self._delete_st()
         assert self.verify_on_cleanup()
+        super(SvcTemplateFixture, self).cleanUp()
     # end cleanUp
 
     def _create_st(self):

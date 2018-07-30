@@ -86,7 +86,6 @@ class SvcInstanceFixture(fixtures.Fixture):
     # end setUp
 
     def cleanUp(self):
-        super(SvcInstanceFixture, self).cleanUp()
         do_cleanup = True
         if self.inputs.fixture_cleanup == 'no':
             do_cleanup = False
@@ -104,6 +103,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         else:
             self.logger.debug('Skipping deletion of SI %s' %
                               (self.si_fq_name))
+        super(SvcInstanceFixture, self).cleanUp()
     # end cleanUp
 
     def _create_si(self):

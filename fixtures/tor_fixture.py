@@ -184,9 +184,9 @@ class QFXFixture(ToRFixture, AbstractToR):
             self.config_ovsdb()
 
     def cleanUp(self):
-        super(QFXFixture, self).cleanUp()
         if self.bringup:
             self.remove_ovsdb()
+        super(QFXFixture, self).cleanUp()
 
     def _copy_certs_to_switch(self):
         pwd = os.getcwd()
@@ -344,8 +344,6 @@ class OpenVSwitchFixture(ToRFixture, AbstractToR):
             self.config_ovsdb()
 
     def cleanUp(self):
-        super(OpenVSwitchFixture, self).cleanUp()
-
         # Workaround for issue in ovs-vtep where the local-macs 
         # are not deleted on deleting the bindings
         # We manually go ahead and clear the local-macs 
@@ -355,6 +353,7 @@ class OpenVSwitchFixture(ToRFixture, AbstractToR):
         if self.bringup:
             self.delete_ports()
             self.remove_ovsdb()
+        super(OpenVSwitchFixture, self).cleanUp()
 
     def delete_all_local_macs(self):
         ls_list = self.get_all_logical_switches()
