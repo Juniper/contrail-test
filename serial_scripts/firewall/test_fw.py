@@ -410,6 +410,7 @@ class TestFirewallBasic(BaseFirewallTest):
         self.fwp_hr.remove_firewall_rules(rules)
         self._verify_traffic(self.vms['eng_web'], self.vms['eng_logic'],
                              self.vms['eng_db'])
+        self._verify_ping(self.vms['hr_web'], self.vms['hr_logic'], self.vms['hr_db'])
         self._verify_traffic(self.vms['hr_web'], self.vms['hr_logic'],
                              self.vms['hr_db'])
         #Both EP1 and EP2 as same AG
@@ -1061,6 +1062,8 @@ class TestFirewallDraft_1(BaseFirewallTest_1):
                             sport=1111, dport=8005)
         # Disable draft mode
         self._create_objects(SCOPE1, SCOPE2)
+        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2, retry=3)
+        self.addCleanup(self.discard, SCOPE1, SCOPE2)
         fixture_states = {
             'created': [self.ag, self.scope1_sg, self.sg_icmp,
                         self.fwr_icmp, self.fwr_hr_tcp, self.fwr_hr_udp,

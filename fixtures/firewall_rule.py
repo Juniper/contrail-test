@@ -116,6 +116,18 @@ class FirewallRuleFixture(vnc_api_test.VncLibFixture):
     def update(self, action=None, direction=None, protocol=None,
                sports=None, dports=None, log=None, source=None,
                destination=None, match=None, service_groups=None):
+        self.vnc_h.update_firewall_rule(
+                             uuid=self.uuid,
+                             action=action,
+                             direction=direction,
+                             protocol=protocol,
+                             sports=sports,
+                             dports=dports,
+                             log=log,
+                             match=match,
+                             source=source,
+                             destination=destination,
+                             service_groups=service_groups)
         if action:
             self.action = action
         if direction:
@@ -134,18 +146,8 @@ class FirewallRuleFixture(vnc_api_test.VncLibFixture):
             self.destination = destination
         if match:
             self.match = match
-        self.vnc_h.update_firewall_rule(
-                             uuid=self.uuid,
-                             action=self.action,
-                             direction=self.direction,
-                             protocol=self.protocol,
-                             sports=self.sports,
-                             dports=self.dports,
-                             log=self.log,
-                             match=self.match,
-                             source=self.source,
-                             destination=self.destination,
-                             service_groups=service_groups)
+        if service_groups:
+            self.service_groups = service_groups
 
     def delete(self):
         self.logger.info('Deleting Firewall Rule %s(%s)'%(self.name, self.uuid))

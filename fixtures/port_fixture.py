@@ -60,7 +60,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
         mac = self.vmi_obj.get_virtual_machine_interface_mac_addresses()
         self.mac_address = mac.mac_address[0]
         self.iip_objs = []
-        for iip in self.vmi_obj.get_instance_ip_back_refs():
+        for iip in self.vmi_obj.get_instance_ip_back_refs() or []:
             self.iip_objs.append(self.vnc_api_h.instance_ip_read(id=iip['uuid']))
 
     def setUp(self):
@@ -216,13 +216,13 @@ class PortFixture(vnc_api_test.VncLibFixture):
         return True
 
     def disable_policy(self):
-        return self.set_policy(self, False)
+        return self.set_policy(True)
 
     def enable_policy(self):
-        return self.set_policy(self, True)
+        return self.set_policy(False)
 
     def set_policy(self, value):
-        vmi_obj = self.vnc_h.virtual_machine_interface_read(self.uuid)
+        vmi_obj = self.vnc_h.virtual_machine_interface_read(id=self.uuid)
         vmi_obj.set_virtual_machine_interface_disable_policy(bool(value))
         self.vnc_h.virtual_machine_interface_update(vmi_obj)
 
