@@ -1664,6 +1664,51 @@ class ContrailVncApi(object):
         self._log.debug('Deleting tag-type %s from obj %s'%(tag_type, obj.name))
         return self._vnc.unset_tag(obj, tag_type)
 
+    def read_virtual_router(self, compute_name):
+        fq_name = ['default-global-system-config', compute_name]
+        return self._vnc.virtual_router_read(fq_name=fq_name)
+
+    def enable_datapath_encryption(self, vrouters=None):
+        gr_obj = self.read_global_vrouter_config()
+        gr_obj.encryption_mode = 'all'
+        vr_endpoints = gr_obj.get_encryption_tunnel_endpoints() or \
+            EncryptionTunnelEndpointList()
+        for vrouter in vrouters or list():
+            vr_endpoints.add_endpoint(EncryptionTunnelEndpoint(vrouter))
+        gr_obj.set_encryption_tunnel_endpoints(vr_endpoints)
+        self._vnc.global_vrouter_config_update(gr_obj)
+
+    def disable_datapath_encryption(self):
+        gr_obj = self.read_global_vrouter_config()
+        gr_obj.encryption_mode = None
+        gr_obj.set_encryption_tunnel_endpoints(list())
+        self._vnc.global_vrouter_config_update(gr_obj)
+
+    def add_vrouter_to_encryption(self, vrouters):
+        self.enable_datapath_encryption(vrouters)
+
+    def delete_vrouter_from_encryption(self, vrouters):
+        gr_obj = self.read_global_vrouter_config()
+        vr_endpoints = gr_obj.get_encryption_tunnel_endpoints()
+        for vrouter in vrouters:
+            vr_endpoints.delete_endpoint(EncryptionTunnelEndpoint(vrouter))
+        gr_obj.set_encryption_tunnel_endpoints(vr_endpoints)
+        self._vnc.global_vrouter_config_update(gr_obj)
+
+    def get_encap_priority(self):
+        gr_obj = self.read_global_vrouter_config()
+        encap = gr_obj.get_encapsulation_priorities() or EncapsulationPrioritiesType()
+        return encap.get_encapsulation()
+
+    def set_encap_priority(self, encaps):
+        gr_obj = self.read_global_vrouter_config()
+        encap = EncapsulationPrioritiesType(encapsulation=encaps)
+        gr_obj.set_encapsulation_priorities(encap)
+        self._vnc.global_vrouter_config_update(gr_obj)
+
+    def delete_encap_priority(self):
+        self.set_encap_priority(list())
+
     def assoc_intf_rt_table_to_si(self, si_fq_name, intf_rt_table_uuid, intf_type):
         '''
             :param si_uuid : UUID of the Service Instance object
@@ -2227,7 +2272,7 @@ class ContrailVncApi(object):
     #End delete_lbaas_pool
 
     def get_port_ips(self, port_id):
-        vmi_obj=self._vnc.virtual_machine_interfaces_read(id=port_id)
+        vmi_obj=self._vnc.virtual_machine_interface_read(id=port_id)
     #End get_port_ips
 
     def get_subnet_id_from_network(self,vn_id):
@@ -2409,6 +2454,56 @@ class ContrailVncApi(object):
             self._log.debug("Got exception as %s while reading the vm obj"%(e))
         vmis = vm_obj.get_virtual_machine_interface_back_refs()
         return [self._vnc.virtual_machine_interface_read(id=vmi['uuid']) for vmi in vmis]
+
+    def enable_intf_mirroring(self, vmi_uuid, analyzer_ip, analyzer_name=None,
+                             analyzer_mac=None, routing_instance=None,
+                             direction='both', udp_port=8099, encapsulation=None,
+                             nic_assisted_mirroring=False, nh_mode='dynamic',
+                             nic_assisted_mirroring_vlan=None, header=True,
+                             vn_uuid=None, vtep_ip=None):
+        analyzer_name = analyzer_name or get_random_name('mirror')
+        vmi = self._vnc.virtual_machine_interface_read(id=vmi_uuid)
+        prop_obj = vmi.get_virtual_machine_interface_properties() or \
+                   VirtualMachineInterfacePropertiesType()
+        interface_mirror = prop_obj.get_interface_mirror()
+        if nh_mode == 'static':
+            vn = self._vnc.virtual_network_read(id=vn_uuid)
+            vni = vn.get_virtual_network_network_id()
+            static_nh = StaticMirrorNhType(vtep_dst_ip_address=vtep_ip, vni=vni)
+            mirror_to = MirrorActionType(analyzer_name=analyzer_name,
+                                         encapsulation=encapsulation,
+                                         analyzer_ip_address=analyzer_ip,
+                                         juniper_header=header,
+                                         nh_mode=nh_mode,
+                                         static_nh_header=static_nh,
+                                         routing_instance=routing_instance,
+                                         udp_port=udp_port,
+                                         analyzer_mac_address=analyzer_mac)
+        else:
+            mirror_to = MirrorActionType(analyzer_name=analyzer_name,
+                                         analyzer_ip_address=analyzer_ip,
+                                         juniper_header=header,
+                                         nh_mode=nh_mode,
+                                         udp_port=udp_port,
+                                         nic_assisted_mirroring=nic_assisted_mirroring,
+                                         nic_assisted_mirroring_vlan=nic_assisted_mirroring_vlan,
+                                         analyzer_mac_address=analyzer_mac)
+            if routing_instance:
+                mirror_to.set_routing_instance(routing_instance)
+            if encapsulation:
+                mirror_to.set_encapsulation(encapsulation)
+        interface_mirror = InterfaceMirrorType(direction, mirror_to)
+        prop_obj.set_interface_mirror(interface_mirror)
+        vmi.set_virtual_machine_interface_properties(prop_obj)
+        self._vnc.virtual_machine_interface_update(vmi)
+
+    def disable_intf_mirroring(self, vmi_uuid):
+        vmi = self._vnc.virtual_machine_interface_read(id=vmi_uuid)
+        prop_obj = vmi.get_virtual_machine_interface_properties() or \
+                   VirtualMachineInterfacePropertiesType()
+        prop_obj.set_interface_mirror(None)
+        vmi.set_virtual_machine_interface_properties(prop_obj)
+        self._vnc.virtual_machine_interface_update(vmi)
 
 class LBFeatureHandles:
     __metaclass__ = Singleton

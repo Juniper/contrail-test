@@ -100,14 +100,15 @@ class Scapy(BaseTraffic):
         # stop traffic
         self.sender.stop()
         self.receiver.stop()
-
-        self.sent = self.sender.sent
-        self.recv= self.receiver.recv
-
         return self.get_packet_count()
 
     def get_packet_count(self):
 
-        self.logger.info("Sent : %s, Received: %s" % (self.sent, self.recv))
-        return (self.sent, self.recv)
+        self.logger.info("Sent : %s, Received: %s" % (self.sender.sent,
+                                                      self.receiver.recv))
+        return (self.sender.sent, self.receiver.recv)
 
+    def poll(self):
+        self.sender.poll()
+        self.receiver.poll()
+        return self.get_packet_count()
