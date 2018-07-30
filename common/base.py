@@ -368,6 +368,39 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
             parent_obj=self.project.project_obj)
         return intf_route_table_obj
 
+    def get_encap_priority(self):
+        return self.vnc_h.get_encap_priority()
+
+    def set_encap_priority(self, encaps):
+        return self.vnc_h.set_encap_priority(encaps)
+
+    def delete_encap_priority(self):
+        return self.vnc_h.delete_encap_priority()
+
+    def add_linklocal_service(self, name=None, linklocal_ip='169.254.1.2',
+                              linklocal_port='8084', ipfabric_ip=None,
+                              ipfabric_port='8084'):
+        ipfabric_ip = ipfabric_ip or self.inputs.cfgm_ip
+        name = name or get_random_name('lls')
+        self.vnc_h.add_link_local_service(name,
+             linklocal_ip, linklocal_port, ipfabric_port,
+             ipfabric_service_ip=ipfabric_ip)
+        self.addCleanup(self.vnc_h.delete_link_local_service,
+                        name)
+
+    def validate_linklocal_service(self, vm_fixture, linklocal_ip='169.254.1.2',
+                                   linklocal_port='8084', expectation=True):
+        cmd = 'wget http://%s:%s'%(linklocal_ip, linklocal_port)
+        ret = vm_fixture.run_cmd_on_vm(cmds=[cmd])
+        if not ret[cmd]:
+            assert not expectation, 'wget of http://169.254.1.2:8084 returned None'
+            return True
+        if '200 OK' in str(ret) or '100%' in str(ret):
+            assert expectation, 'linklocal service shouldnt work, got %s'%ret
+            return True
+        assert not expectation, 'linklocal service didnt work, got %s'%ret
+        return True
+
     @classmethod
     def setup_only_policy_between_vns(cls, vn1_fixture, vn2_fixture, rules=[], **kwargs):
         connections = kwargs.get('connections') or cls.connections
