@@ -165,8 +165,12 @@ class QuantumHelper():
     # end create_port
 
     def get_port(self, port_id, field=''):
+
         try:
-            port_obj = self.obj.show_port(port_id, fields=field)['port']
+            if field:
+                port_obj = self.obj.show_port(port_id, fields=field)['port']
+            else:
+                port_obj = self.obj.show_port(port_id)['port']
             return port_obj[field] if field else port_obj
         except CommonNetworkClientException as e:
             self.logger.debug('Get port on %s failed' % (port_id))
