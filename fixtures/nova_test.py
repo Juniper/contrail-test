@@ -159,40 +159,13 @@ class NovaHelper(object):
         return self.obj
     # end get_handle
 
-    @retry(delay=5, tries=20)
-    def check_if_image_active(self, image_id):
-        ''' Check whether the given image id is in 'active' state '''
-        self.logger.debug('Check whether image by uuid %s is active'%image_id)
-        image = self.obj.images.get(image_id)
-        if image.status.lower() == 'active':
-            return (True, image)
-        self.logger.debug('Image %s is not active.'%image.name)
-        return (False, None)
-
     def find_image(self, image_name):
-        got_image = None
-        images_list = self.obj.images.list()
-        for image in images_list:
-            if image.name == image_name:
-                (rv, got_image) = self.check_if_image_active(image.id)
-                if rv is True:
-                   return got_image
-        # end for
-        if not got_image:
-            self.logger.debug('Image by name %s either not found or not active'%
-                              (image_name))
-        return got_image
+        return self.glance_h.get_image(image_name=image_name)
     # end find_image
 
     def get_image_by_id(self, image_id):
-        try:
-            image = self.obj.images.get(image_id)
-            return image.name
-        except novaException.NotFound:
-            return None
-        except Exception:
-            self.logger.exception('Exception while finding a VM')
-            return None
+        return self.glance_h.get_image(image_id=image_id,
+                                       check_active=False)
     # end get_image_by_id
 
     def get_image(self, image_name='ubuntu'):
