@@ -11,9 +11,8 @@ COPY *.repo Dockerfile /etc/yum.repos.d/
 
 RUN yum install -y \
       yum-plugin-priorities \
-      https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-
-RUN yum install -y unzip vim tcpdump ant git ipmitool gcc python-devel \
+      https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
+    yum install -y unzip vim tcpdump ant git ipmitool gcc python-devel \
       patch sshpass bzip2 wget sudo python-pip python-netaddr python-lxml \
       python-testresources python-testrepository python-junitxml pexpect \
       python-linecache2 python-xmltodict python-eventlet python-ncclient \
@@ -36,7 +35,7 @@ COPY requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 
 # cleanup CI mirrors and restore from backup
-RUN rm -rf /etc/yum.repos.d
-RUN mv /etc/yum.repos.d.orig /etc/yum.repos.d
+RUN rm -rf /etc/yum.repos.d && \
+    mv /etc/yum.repos.d.orig /etc/yum.repos.d
 
 COPY entrypoint.sh /
