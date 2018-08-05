@@ -181,7 +181,8 @@ class VMFixture(fixtures.Fixture):
             try:
                 #Avoid crashing in vcenter scenario where nova not present
                 self.image_id = self.vm_obj.image['id']
-                self.image_name = self.nova_h.get_image_by_id(self.image_id)
+                image = self.nova_h.get_image_by_id(self.image_id)
+                self.image_name = image['name']
                 self.set_image_details(self.vm_obj)
             except Exception as e:
                 pass 
