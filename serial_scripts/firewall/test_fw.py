@@ -875,11 +875,11 @@ class TestFirewall_1(BaseFirewallTest_1):
 
     def test_floating_ip(self):
         SCOPE1 = 'global'; SCOPE2 = 'global'
-        self._create_objects(SCOPE1, SCOPE2)
         fvn = self.create_vn()
         fvm = self.create_vm(vn_fixture=fvn)
         fip_pool = self.create_fip_pool(fvn.uuid)
         fip_ip, fip_id = self.create_and_assoc_fip(fip_pool, self.vms['hr_logic'])
+        self._create_objects(SCOPE1, SCOPE2)
 
         # Validate regular FIP works
         assert self.check_vms_booted([fvm], do_assert=False)
@@ -1027,6 +1027,7 @@ class TestFirewall_3(BaseFirewallTest_1):
             'udp', sport=1111, dport=8085, fip_ip=vIP, expectation=False)
         #Flip the master
         self.service_keepalived(self.vms['hr_logic'], 'stop')
+        self.sleep(30)
         self.verify_traffic(self.vms['hr_db'], self.vms['hr_web'],
             'udp', sport=1111, dport=8085, fip_ip=vIP)
         self.verify_traffic(self.vms['hr_db'], self.vms['hr_logic'],
@@ -1147,12 +1148,12 @@ class TestFirewallDraft_1(BaseFirewallTest_1):
         self.aps_hr.delete_policies(policies)
         fixture_states = { 'updated': [self.aps_hr]}
         self.validate_draft(fixture_states, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'], 'tcp',
-                            sport=1111, dport=8005)
+        self.verify_traffic(self.vms['hr_web'], self.vms['hr_db'], 'tcp',
+                            sport=1111, dport=7005, expectation=False)
         self.commit(SCOPE1, SCOPE2)
         self.validate_draft({}, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'], 'tcp',
-                            sport=1111, dport=8005, expectation=False)
+        self.verify_traffic(self.vms['hr_web'], self.vms['hr_db'], 'tcp',
+                            sport=1111, dport=7005, expectation=True)
 
         self.aps_hr.add_policies(policies)
         rules = [{'uuid': self.fwr_icmp.uuid, 'seq_no': 20}]
