@@ -203,8 +203,7 @@ class VcenterOrchestrator(Orchestrator):
         if len(self.get_hosts()) == 0:
             raise Exception("Datacenter %s has no hosts" % self._dc_name)
         self._computes = self._get_computes()
-    
-    @retry_for_value(delay=2, tries=5)
+
     def _find_obj (self, root, vimtype, param):
         self._content = self._si.RetrieveContent()
         if vimtype == 'ip.Pool':
@@ -539,16 +538,32 @@ class VcenterOrchestrator(Orchestrator):
                  self.tmp_key_file = '/tmp/id_rsa'
 
     def create_vn(self, name, subnets, **kwargs):
-        project_fq_name = ['default-domain','vCenter']
-        ipam_fq_name = ['default-domain','vCenter','vCenter-ipam']
-        uuid=self.vnc_h.create_vn_api(name, project_fq_name,subnets,ipam_fq_name,**kwargs)
-        if self._find_obj(self._dc, 'dvs.PortGroup', {'name' : name}):
-            self._log.info('A portgroup %s created in vcenter' % (name))
-        return self.get_vn_obj_if_present(name)
+        if self._find_obj(self._dc, 'dvs.PortGroup', {'name' : name}) or self._find_obj(self._dc,
+                              'ip.Pool', {'name' : 'pool-'+name}):
+            raise Exception('A VN %s or ip pool %s, exists with the name' % (name, 'pool-'+name))
+        if len(subnets) != 1:
+            raise Exception('Cannot create VN with %d subnets' % len(subnets))
+        vlan = self._vlanmgmt.allocate_vlan()
+        if not vlan:
+            raise Exception("Vlans exhausted")
+        try:
+            dhcp = kwargs.get('enable_dhcp', True)
+            return VcenterVN.create_in_vcenter(self, name, vlan, subnets, dhcp)
+        except:
+            self._vlanmgmt.free_vlan(vlan)
+            raise
 
     def delete_vn(self, vn_obj, **kwargs):
-        return self.vnc_h.delete_vn_api(vn_obj)
- 
+        self._vlanmgmt.free_vlan(vn_obj.vlan)
+        try: #Sometimes the ip pool delete fails in vcenter - not root caused yet.
+             #Till its completely debugged, handled the exception.
+            pg = self._find_obj(self._dc, 'dvs.PortGroup', {'name' : vn_obj.name})
+            pg.Destroy()
+            self._content.ipPoolManager.DestroyIpPool(self._dc, vn_obj.ip_pool_id, True)
+        except Exception as e:
+            return True
+        return True
+
     def get_vn_obj_if_present(self, vn_name, **kwargs):
         pg = self._find_obj(self._dc, 'dvs.PortGroup', {'name' : vn_name})
         if pg:
@@ -587,8 +602,8 @@ class VcenterOrchestrator(Orchestrator):
             return ret
         return super(VcenterOrchestrator, self).get_security_group(['default-domain', 'vCenter', sg])
 
-    def get_vcenter_introspect(self,vrouter):
-        return vcenter_verification.VMWareVerificationLib(self._inputs,vrouter)
+    def get_vcenter_introspect(self):
+        return vcenter_verification.VMWareVerificationLib(self._inputs)
 
     def verify_vm_in_vcenter(self, vm_obj):
         vm_name = vm_obj.name
@@ -605,7 +620,7 @@ class VcenterOrchestrator(Orchestrator):
     def get_vmi_from_vcenter_introspect(self,vm_obj):
         vm_name = vm_obj.name
         vrouter = self._inputs.host_data[self.get_host_of_vm(vm_obj)]['host_ip']
-        inspect = self.get_vcenter_introspect(vrouter)
+        inspect = self.get_vcenter_introspect()
         return inspect.get_vmi_from_vcenter_introspect(vrouter,vm_name)
 
     def poweroff_vm(self,vm_obj):
@@ -744,20 +759,16 @@ class VcenterVN:
         vn.name = vn_obj.name
         vn.uuid = None
         try:#when vcenter only mode, we need to get the pvlan id
-            pass
-            #vlan = vn_obj.config.defaultPortConfig.vlan.pvlanId
-            #vn.vlan = (vlan - 1, vlan)
+            vlan = vn_obj.config.defaultPortConfig.vlan.pvlanId
+            vn.vlan = (vlan - 1, vlan)
         except Exception as e:#vcenter gateway mode,where we create normal vlan
             vlan = vn_obj.config.defaultPortConfig.vlan.vlanId
             vn.vlan =  vlan
             
-        try:
-            vn.ip_pool_id = vn_obj.summary.ipPoolId
-            pool = vcenter._find_obj(vcenter._dc, 'ip.Pool', {'id':vn.ip_pool_id})
-            vn.prefix = IPNetwork(pool.ipv4Config.subnetAddress+'/'+pool.ipv4Config.netmask)
-            ip_list = list(vn.prefix.iter_hosts())
-        except Exception as e:
-            pass
+        vn.ip_pool_id = vn_obj.summary.ipPoolId
+        pool = vcenter._find_obj(vcenter._dc, 'ip.Pool', {'id':vn.ip_pool_id})
+        vn.prefix = IPNetwork(pool.ipv4Config.subnetAddress+'/'+pool.ipv4Config.netmask)
+        ip_list = list(vn.prefix.iter_hosts())
         vn.get() 
         return vn
 
@@ -810,7 +821,7 @@ class VcenterVM:
         switch_id = vcenter._vs.uuid
         for net in networks:
             spec = _vim_obj('dev.VDSpec', operation=_vimtype_dict['dev.Ops.add'],
-                           device=_vim_obj('dev.Vmxnet3',
+                           device=_vim_obj('dev.E1000',
                                           addressType='Generated',
                                           connectable=_vim_obj('dev.ConnectInfo',
                                                               startConnected=True,
@@ -866,11 +877,8 @@ class VcenterVM:
         try:
             intfs = self.vcenter.get_vmi_from_vcenter_introspect(self)
             for intf in intfs:
-                vn_uuid = intf['vn_uuid']
-                vn_obj = self.vcenter.vnc_h.get_vn_obj_from_id(vn_uuid)
-                vn_name = str(vn_obj.name) 
-                self.ips[vn_name] = intf['ip_address']
-                self.macs[vn_name] = intf['mac_address']
+                self.ips[intf.virtual_network] = intf.ip_addr
+                self.macs[intf.virtual_network] = intf.macAddr
             self.status='ACTIVE'
             return len(self.ips) == len(self.nets)
         except Exception as e:
@@ -886,7 +894,7 @@ class VcenterVM:
         intfs = []
         for net in nets:
             spec = _vim_obj('dev.VDSpec', operation=_vimtype_dict['dev.Ops.add'],
-                           device=_vim_obj('dev.Vmxnet3',
+                           device=_vim_obj('dev.E1000',
                                           addressType='Generated',
                                           connectable=_vim_obj('dev.ConnectInfo',
                                                               startConnected=True,
@@ -905,7 +913,7 @@ class VcenterVM:
         intfs = []
         for net in nets:
             for dev in vm.config.hardware.device:
-                if isinstance(dev, _vimtype_dict['dev.Vmxnet3']) and dev.backing.port.portgroupKey == net.key:
+                if isinstance(dev, _vimtype_dict['dev.E1000']) and dev.backing.port.portgroupKey == net.key:
                     spec = _vim_obj('dev.VDSpec', operation=_vimtype_dict['dev.Ops.remove'],
                                     device=dev)
                     intfs.append(spec)
@@ -918,7 +926,7 @@ class VcenterVM:
         device_change = []
         try:
             for dev in vm.config.hardware.device:
-                if isinstance(dev, _vimtype_dict['dev.Vmxnet3']):
+                if isinstance(dev, _vimtype_dict['dev.E1000']):
                     nicspec = _vimtype_dict['dev.VDSpec']()
                     nicspec.operation = _vimtype_dict['dev.Ops.edit']
                     nicspec.device = dev
@@ -943,7 +951,7 @@ class VcenterVM:
         except vmodl.MethodFault as error:
             self._log.debug("Caught vmodl fault : %s" %error.msg)
 
-    @retry(tries=60, delay=10)
+    @retry(tries=30, delay=5)
     def assign_ip(self, intf, ip, gw, mask='255.255.255.0'):
         cmd_path = '/usr/bin/sudo'
         user = 'ubuntu'

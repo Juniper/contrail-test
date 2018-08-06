@@ -68,14 +68,6 @@ def get_vrouter_details(vcenterclient,query_value):
         LOG.exception(e)
         return None
 
-def get_vm_details(vcenterclient,query_value):
-    try:
-    	inspect = vcenterclient.get_vcm_vm_details(query_value)
-        return VirtualMachinesInVcenter(inspect)
-    except Exception as e:
-        LOG.exception(e)
-        return None
-
 class VRouterDetails(Result):
     '''Vrouter details objects'''
     def __init__(self,d={}):
@@ -97,63 +89,14 @@ class VirtualNetworks():
 
 class VirtualMachinesInVcenter():
     '''Represents one vm in the vcenter introspect page'''
-    def __init__(self,elems=[]):
-        self.virtual_machine = {}
-        for elem in elems:
-            #mapping to each class to avoid if-else
-            #tag uuid would map
-            dct = eval(elem.tag + '(elem)')
-            dct = dct.make_dict()
-            self.virtual_machine.update(dct)
-
-class uuid:
-    def __init__(self,d):
-        self.d = d
-    def make_dict(self):
-        d = {}
-        d[self.d.tag] = self.d.text
-        return d
-
-class name:
-    def __init__(self,d):
-        self.d = d
-    def make_dict(self):
-        d = {}
-        d[self.d.tag] = self.d.text
-        return d
-
-class vrouter_uuid:
-    def __init__(self,d):
-        self.d = d
-    def make_dict(self):
-        d = {}
-        d[self.d.tag] = self.d.text
-        return d
-
-class interfaces:
-    def __init__(self,d):
-        self.d = d
-    def make_dict(self):
-        intfs = []
-        intf_dct = {}
-        interfaces = self.d.xpath('./list/VirtualMachineInterfaceData')
-        for intf in interfaces:
-            intf_dct = {}
-            for child in intf.getchildren():
-                dct = {}
-                dct[child.tag] = child.text
-                intf_dct.update(dct)
-            intfs.append(intf_dct)
-        interfaces = {}
-        interfaces['interfaces'] = intfs 
-        return interfaces 
-    
-class VirtualMachinesInterface:
-    def __init__(self,d):
-        self.d = d
-    def make_dict(self):
-        pass
-
+    def __init__(self,vn,vm):
+        self.vm = vm
+        self.virtual_network = vn
+        self.macAddr = self.vm['macAddress']
+        self.powerState = self.vm['poweredOn']
+        self.name = self.vm['virtualMachine']
+        self.ip_addr = self.vm['ipAddress']
+            
 class Master():
     '''Represent vcenter plugin master'''
     def __init__(self,element):
@@ -242,7 +185,7 @@ class VMWareInspect (VerificationUtilBase):
 
     def __init__(self, ip, logger=LOG, args=None):
         super(VMWareInspect, self).__init__(
-            ip, 9090,XmlDrv, logger=logger, args=args)
+            ip, 8234,XmlDrv, logger=logger, args=args)
         self.ip = ip
 
     def get_vcenter_plugin_struct(self):
@@ -259,16 +202,11 @@ class VMWareInspect (VerificationUtilBase):
         path = 'Snh_vRouterDetail?x=%s' %query_val
         val = self.dict_get(path)
         return val.xpath('./VRouterInfo/VRouterInfoStruct')
-    
-    def get_vcm_vm_details(self,query_val,*args):
-        path = 'Snh_VirtualMachineRequest?uuid=&name=%s' %query_val
-        val = self.dict_get(path)
-        return val.xpath('./machines/list/VirtualMachineData')[0].getchildren()
 
 class VMWarePluginResult(Result):
     '''
         Returns value from the below link
-        http://<ip>:9090/Snh_VCenterPluginInfo
+        http://<ip>:8777/Snh_VCenterPluginInfo
     '''
     
     def master(self):
@@ -287,11 +225,10 @@ class VMWarePluginResult(Result):
         return self['VCenterServerInfo']
 
 if __name__ == '__main__':
-    va = VMWareInspect('10.204.216.183')
+    va = VMWareInspect('10.204.216.61')
     class Inputs:
         def __init__(self):
             self.cfgm_ips = ['10.204.216.61','10.204.216.62','10.204.216.63'] 
-    r = get_vm_details(va,'test_vm1')
-    import pdb;pdb.set_trace()
+    r = get_vrouter_details(va,'10.204.216.183')
     import pprint
     pprint.pprint(r)
