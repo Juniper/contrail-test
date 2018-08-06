@@ -167,19 +167,19 @@ class sdn_webui_config ():
             'rbac_acl_global': {
                 'parent_type': 'global',
                 'rules': {
-                    'rule_object': 'virtual-network',
+                    'rule_object': 'virtual-networks',
                     'rule_field': 'network_policy_refs',
                     'perms': [{'role': 'admin', 'crud': 'Create, Read'}]}},
             'rbac_acl_domain': {
                 'parent_type': 'domain',
                 'rules': {
-                    'rule_object': 'virtual-machine',
+                    'rule_object': 'virtual-machines',
                     'rule_field': 'display_name',
                     'perms': [{'role': 'Member', 'crud': 'Read, Delete'}]}},
             'rbac_acl_project': {
                 'parent_type': 'project',
                 'rules': {
-                    'rule_object': 'network-policies',
+                    'rule_object': 'network-policys',
                     'rule_field': 'id_perms',
                     'perms': [{'role': 'admin', 'crud': 'Create, Update'}]}}}
 

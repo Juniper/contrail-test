@@ -1835,46 +1835,6 @@ class WebuiTestSanity(base.WebuiBaseTest):
                                                   'Editing network with dns is failed'
     # end test3_9_edit_dns_neg
 
-    @test.attr(type=['ui_sanity'])
-    @preposttest_wrapper
-    def test4_1_edit_net_fip(self):
-        ''' Test to edit the existing network by Floating IP
-            1. Go to Configure->Networking->Networks. Then select any of the vn
-               and click the edit button
-            2. Add Pool name and project name under Floating IP.
-            3. Check that pool and project name got added in WebUI,API and OPS.
-
-            Pass Criteria : Step 3 should pass
-        '''
-        result = True
-        opt_list = [topo.fpool]
-        self.webui.logger.debug("Step 1 : Add Floating server IP under VN")
-        if not self.webui_common.edit_vn_with_fpool('add', topo.fpool):
-            self.webui.logger.debug('Editing network with FIP is failed')
-            result = result and False
-        self.webui_common.wait_till_ajax_done(self.browser, wait=3)
-        uuid = self.webui_common.get_vn_detail_ui('UUID')
-        self.vn_disp_name = self.webui_common.get_vn_detail_ui('Display Name')
-        fip = self.webui_common.get_vn_detail_ui('FIP')
-        self.webui.logger.debug("Step 2 : Verify the Floating IP in WebUI")
-        if not self.webui.verify_vn_after_edit_ui('FIP', fip, opt_list):
-            self.webui.logger.debug('Virtual networks config data verification in UI failed')
-            result = result and False
-        self.webui.logger.debug("Step 3 : Verify Floating IP in API server")
-        if not self.webui.verify_vn_after_edit_api('FIP', fip, uuid, opt_list):
-            self.webui.logger.debug('Virtual networks config data verification in API failed')
-            result = result and False
-        self.webui.logger.debug("Step 4 : Verify the VN for Floating IP in OPS server")
-        if not self.webui.verify_vn_after_edit_ops('FIP', self.vn_disp_name, uuid, opt_list):
-            self.webui.logger.debug('Virtual networks config data verification in OPS failed')
-            result = result and False
-        self.webui.logger.debug("Step 5 : Remove the FIP which is added")
-        if not self.webui_common.edit_vn_with_fpool('remove', topo.fpool):
-            self.webui.logger.debug('Editing network with FIP is failed')
-            result = result and False
-        return result
-    # end test4_1_edit_net_fip
-
     @preposttest_wrapper
     def test4_2_edit_net_route_target_asn_num(self):
         ''' Test to edit the existing network by Route Target

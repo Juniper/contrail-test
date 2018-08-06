@@ -268,9 +268,9 @@ class WebuiEdit:
             default = kwargs.get('default', True)
             grace_restart = kwargs.get('grace_restart', True)
             subnet = kwargs.get('subnet', True)
-            if not self.ui.click_configure_global_config():
+            if not self.ui.click_configure_global_config(parent_tab='global_system',
+                                                        tab='bgp_options'):
                 result = result and False
-            self.ui.click_element('bgp_options_tab-tab-link')
             self.ui.click_element('fa-pencil-square-o', 'class', elements=True, index=1)
             self.ui.send_keys(parameter_list[0], 'autonomous_system', 'name', clear=True)
             self.ui.click_element('ibgp_auto_mesh', 'name')
