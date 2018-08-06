@@ -27,7 +27,6 @@ try:
         'ip.Association' : vim.vApp.IpPool.Association,
         'ip.Pool' : vim.vApp.IpPool,
         'dev.E1000' : vim.vm.device.VirtualE1000,
-        'dev.Vmxnet3' : vim.vm.device.VirtualVmxnet3,
         'dev.VDSpec' : vim.vm.device.VirtualDeviceSpec,
         'dev.VD' : vim.vm.device.VirtualDevice,
         'dev.ConnectInfo' : vim.vm.device.VirtualDevice.ConnectInfo,
