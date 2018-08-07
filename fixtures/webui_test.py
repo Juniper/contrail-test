@@ -9108,6 +9108,7 @@ class WebuiTest:
         if not self.ui.click_configure_global_config():
             result = result and False
         webui_global_key_value = self.ui.get_global_config_row_details_webui()
+        self.ui.click_element('global_system_configs-tab-link')
         self.ui.click_element('bgp_options_tab-tab-link')
         webui_global_key_value = self.ui.get_global_config_row_details_webui(
                                      webui_global_key_value=webui_global_key_value,
