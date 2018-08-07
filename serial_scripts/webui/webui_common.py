@@ -2023,14 +2023,14 @@ class WebuiCommon:
         return self.check_error_msg("configure project quotas")
     # end click_configure_project_quota
 
-    def click_configure_global_config(self, tab='forwarding_options',
-                                     msg='Global Config'):
+    def click_configure_global_config(self, parent_tab='global_vrouter',
+                                     tab='forwarding_options', msg='Global Config'):
         if not self.click_configure_elements(0, 'config_infra_gblconfig',
                                              msg="Configure Global config"):
             return False
         else:
-            element = tab + '_tab-tab-link'
-            self.click_element(element)
+            self.click_element(parent_tab + '_configs-tab-link')
+            self.click_element(tab + '_tab-tab-link')
             self.wait_till_ajax_done(self.browser, wait=3)
             return self.check_error_msg("Configure " + msg + " globally")
     # end click_configure_global_config
@@ -2188,8 +2188,9 @@ class WebuiCommon:
     # end click_configure_alarms_project_basic
 
     def click_configure_log_stat_in_global(self):
-        return self.click_configure_global_config(tab='user_defined_counter',
-                                           msg='Log Statistic')
+        return self.click_configure_global_config(parent_tab='global_system',
+                                                 tab='user_defined_counter',
+                                                 msg='Log Statistic')
     # end click_configure_log_stat_in_global
 
     def click_configure_flow_aging(self):
@@ -2311,8 +2312,8 @@ class WebuiCommon:
     #end click_configure_interfaces_basic
 
     def click_configure_forwarding_class(self):
-        return self.click_configure_global_config(tab='fc_global',
-                                           msg='Fowarding')
+        return self.click_configure_global_config(parent_tab='global_qos',
+                                                 tab='fc_global', msg='Fowarding')
     # end click_configure_forwarding_class
 
     def click_configure_forwarding_class_basic(self, row_index):
@@ -2333,8 +2334,8 @@ class WebuiCommon:
     #end click_configure_forwarding_class_advanced
 
     def click_configure_global_qos(self):
-        return self.click_configure_global_config(tab='qos_global',
-                                           msg='QOS')
+        return self.click_configure_global_config(parent_tab='global_qos',
+                                                 tab='qos_global', msg='QOS')
     # end click_configure_global_qos
 
     def click_configure_global_qos_basic(self, row_index):
