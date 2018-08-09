@@ -39,7 +39,8 @@ if __name__ == "__main__":
                 username=init_obj.admin_username,
                 password=init_obj.admin_password,
                 project_name=init_obj.admin_tenant,
-                domain=init_obj.admin_domain
+                domain=init_obj.admin_domain,
+                orchestrator=init_obj.orchestrator
                 )
             phy_router_obj.setUp()
             assert phy_router_obj.verify_bgp_peer(), 'BGP peering is not up.'
