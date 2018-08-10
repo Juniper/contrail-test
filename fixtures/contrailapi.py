@@ -5,6 +5,7 @@ from tcutils.util import *
 from vnc_api.vnc_api import *
 from loadbalancer_vnc_api import *
 
+
 class ContrailVncApi(object):
 
     def __init__(self, vnc, _log=None):
@@ -16,7 +17,7 @@ class ContrailVncApi(object):
         if hasattr(self._vnc, name):
             return getattr(self._vnc, name)
         else:
-            raise AttributeError('%s object has no attribute %s'%(
+            raise AttributeError('%s object has no attribute %s' % (
                                  self.__class__.__name__, name))
 
     def get_policy(self, fq_name, **kwargs):
@@ -28,7 +29,7 @@ class ContrailVncApi(object):
     def delete_project(self, project_name):
         return self._vnc.project_delete(project_name)
 
-    def read_project_obj(self,project_fq_name=None,project_id=None):
+    def read_project_obj(self, project_fq_name=None, project_id=None):
         if project_fq_name:
             return self._vnc.project_read(project_fq_name)
         if project_id:
@@ -36,13 +37,14 @@ class ContrailVncApi(object):
 
     @property
     def vnc_project(self):
-         '''This method returns the project object
-            for this vnc_api object
-         '''
-         project = self._vnc._tenant_name
-         fq_name = ['default-domain',project] #This may fail for non-default domain
-                                              #WA for vcenter/vcenter-gw
-         return self.read_project_obj(project_fq_name=fq_name)
+        '''This method returns the project object
+           for this vnc_api object
+        '''
+        project = self._vnc._tenant_name
+        # This may fail for non-default domain
+        fq_name = ['default-domain', project]
+        # WA for vcenter/vcenter-gw
+        return self.read_project_obj(project_fq_name=fq_name)
 
     def get_floating_ip(self, fip_id, **kwargs):
         fip_obj = self._vnc.floating_ip_read(id=fip_id)
@@ -52,13 +54,13 @@ class ContrailVncApi(object):
         owner = kwargs.get('owner')
 
         if not pool_obj:
-            #Create FIP Poola
-            vn_obj = kwargs.get('vn_obj',None)
+            # Create FIP Poola
+            vn_obj = kwargs.get('vn_obj', None)
             fip_pool_name = 'fip_pool'
             pool_obj = FloatingIpPool(fip_pool_name, vn_obj)
             self._vnc.floating_ip_pool_create(pool_obj)
 
-        fip_obj = FloatingIp(get_random_name('fip'),pool_obj)
+        fip_obj = FloatingIp(get_random_name('fip'), pool_obj)
         fip_obj.set_project(project_obj)
         if owner:
             project_id = owner.replace('-', '')
@@ -78,12 +80,14 @@ class ContrailVncApi(object):
         self._vnc.floating_ip_update(fip_obj)
         return fip_obj
 
-    def assoc_floating_ip(self, fip_id,vm_id,**kwargs):
+    def assoc_floating_ip(self, fip_id, vm_id, **kwargs):
         fip_obj = self._vnc.floating_ip_read(id=fip_id)
         try:
             vm_obj = self._vnc.virtual_machine_read(id=vm_id)
         except Exception as e:
-            self._log.debug("Got exception as %s while reading the vm obj"%(e))
+            self._log.debug(
+                "Got exception as %s while reading the vm obj" %
+                (e))
         if kwargs.get('vmi_id'):
             vmi = kwargs['vmi_id']
         else:
@@ -114,53 +118,66 @@ class ContrailVncApi(object):
         vmi = self._vnc.virtual_machine_interface_read(id=vmi_id)
         return vmi.get_virtual_machine_interface_allowed_address_pairs()
 
-
     def add_security_group(self, vm_id, sg_id, **kwargs):
         sg = self.get_security_group(sg_id)
         vnc_vm = self._vnc.virtual_machine_read(id=vm_id)
-        vmis = [vmi['uuid'] for vmi in vnc_vm.get_virtual_machine_interface_back_refs()]
-        vmis = [self._vnc.virtual_machine_interface_read(id=vmi) for vmi in vmis]
+        vmis = [vmi['uuid']
+                for vmi in vnc_vm.get_virtual_machine_interface_back_refs()]
+        vmis = [
+            self._vnc.virtual_machine_interface_read(
+                id=vmi) for vmi in vmis]
         for vmi in vmis:
             sg_lst = vmi.get_security_group_refs()
             if not sg_lst:
                 sg_lst = []
-            sg_lst.append({'uuid': sg.uuid, 'to':sg.fq_name})
+            sg_lst.append({'uuid': sg.uuid, 'to': sg.fq_name})
             vmi.set_security_group_list(sg_lst)
             self._vnc.virtual_machine_interface_update(vmi)
 
     def set_security_group(self, vm_id, sg_ids, **kwargs):
-        sgs = [ self.get_security_group(sg_id) for sg_id in sg_ids ]
+        sgs = [self.get_security_group(sg_id) for sg_id in sg_ids]
         vnc_vm = self._vnc.virtual_machine_read(id=vm_id)
-        vmis = [vmi['uuid'] for vmi in vnc_vm.get_virtual_machine_interface_back_refs()]
-        vmis = [self._vnc.virtual_machine_interface_read(id=vmi) for vmi in vmis]
+        vmis = [vmi['uuid']
+                for vmi in vnc_vm.get_virtual_machine_interface_back_refs()]
+        vmis = [
+            self._vnc.virtual_machine_interface_read(
+                id=vmi) for vmi in vmis]
         for vmi in vmis:
             sg_lst = []
             for sg in sgs:
-                sg_lst.append({'uuid': sg.uuid, 'to':sg.fq_name})
+                sg_lst.append({'uuid': sg.uuid, 'to': sg.fq_name})
             vmi.set_security_group_list(sg_lst)
             self._vnc.virtual_machine_interface_update(vmi)
 
     def remove_security_group(self, vm_id, sg_id, **kwargs):
         sg = self.get_security_group(sg_id)
         vnc_vm = self._vnc.virtual_machine_read(id=vm_id)
-        vmis = [vmi['uuid'] for vmi in vnc_vm.get_virtual_machine_interface_back_refs()]
-        vmis = [self._vnc.virtual_machine_interface_read(id=vmi) for vmi in vmis]
+        vmis = [vmi['uuid']
+                for vmi in vnc_vm.get_virtual_machine_interface_back_refs()]
+        vmis = [
+            self._vnc.virtual_machine_interface_read(
+                id=vmi) for vmi in vmis]
         for vmi in vmis:
             sg_lst = vmi.get_security_group_refs()
             if not sg_lst:
                 return
             for i, sg_ref in enumerate(sg_lst):
                 if sg_ref['uuid'] == sg.uuid:
-                     break
+                    break
             else:
                 return
             sg_lst.pop(i)
             vmi.set_security_group_list(sg_lst)
             self._vnc.virtual_machine_interface_update(vmi)
 
-    def create_security_group(self, sg_name, parent_fqname, sg_entries, **kwargs):
+    def create_security_group(
+            self,
+            sg_name,
+            parent_fqname,
+            sg_entries,
+            **kwargs):
         sg = SecurityGroup(sg_name, parent_type='project',
-                           fq_name=parent_fqname+[sg_name])
+                           fq_name=parent_fqname + [sg_name])
         sg.security_group_entries = PolicyEntriesType(sg_entries)
         self._vnc.security_group_create(sg)
         sg = self._vnc.security_group_read(fq_name=sg.get_fq_name())
@@ -172,15 +189,16 @@ class ContrailVncApi(object):
     def get_security_group(self, sg_id, **kwargs):
         try:
             return self._vnc.security_group_read(id=sg_id)
-        except:
+        except BaseException:
             try:
                 return self._vnc.security_group_read(fq_name=sg_id)
-            except:
+            except BaseException:
                 return None
 
     def get_security_group_rules(self, sg_id, **kwargs):
         sg_info = self._vnc.security_group_read(id=sg_id)
-        return sg_info.get_security_group_entries().exportDict()['PolicyEntriesType']['policy_rule']
+        return sg_info.get_security_group_entries().exportDict()[
+            'PolicyEntriesType']['policy_rule']
 
     def delete_security_group_rules(self, sg_id, **kwargs):
         sg = self._vnc.security_group_read(id=sg_id)
@@ -193,26 +211,34 @@ class ContrailVncApi(object):
         return self._vnc.security_group_update(sg)
 
     def get_vn_list(self, **kwargs):
-       return self._vnc.virtual_networks_list(kwargs['parent_id'])['virtual-networks']
+        return self._vnc.virtual_networks_list(kwargs['parent_id'])[
+            'virtual-networks']
 
     def create_queue(self, name, queue_id, parent_obj=None):
         queue_obj = QosQueue(name=name,
-                              qos_queue_identifier=queue_id,
-                              parent_obj=parent_obj)
+                             qos_queue_identifier=queue_id,
+                             parent_obj=parent_obj)
         queue_uuid = self._vnc.qos_queue_create(queue_obj)
-        self._log.info('Created Queue %s, UUID %s' % (self._vnc.id_to_fq_name(queue_uuid),
-                         queue_uuid))
+        self._log.info('Created Queue %s, UUID %s' %
+                       (self._vnc.id_to_fq_name(queue_uuid), queue_uuid))
         return queue_uuid
     # end create_queue
 
     def delete_queue(self, uuid):
         fq_name = self._vnc.id_to_fq_name(uuid)
-        self._log.info('Deleting Queue %s, UUID: %s' %(fq_name, uuid))
+        self._log.info('Deleting Queue %s, UUID: %s' % (fq_name, uuid))
         return self._vnc.qos_queue_delete(id=uuid)
     # end delete_queue
 
-    def create_forwarding_class(self, name, fc_id, parent_obj=None,
-                                dscp=None, dot1p=None, exp=None, queue_uuid=None):
+    def create_forwarding_class(
+            self,
+            name,
+            fc_id,
+            parent_obj=None,
+            dscp=None,
+            dot1p=None,
+            exp=None,
+            queue_uuid=None):
         fc_obj = ForwardingClass(name=name,
                                  parent_obj=parent_obj,
                                  forwarding_class_id=fc_id,
@@ -223,15 +249,17 @@ class ContrailVncApi(object):
             queue_obj = self._vnc.qos_queue_read(id=queue_uuid)
             fc_obj.add_qos_queue(queue_obj)
         fc_uuid = self._vnc.forwarding_class_create(fc_obj)
-        self._log.info('Created FC %s, UUID %s' % (self._vnc.id_to_fq_name(fc_uuid),
-                         fc_uuid))
+        self._log.info('Created FC %s, UUID %s' %
+                       (self._vnc.id_to_fq_name(fc_uuid), fc_uuid))
         return fc_uuid
     # end create_forwarding_class
 
     def update_forwarding_class(self, uuid, fc_id=None, dscp=None, dot1p=None,
                                 exp=None, queue_uuid=None):
-        self._log.info('Updating FC %s: fc_id: %s, dscp: %s, dot1p: %s, exp: %s,'
-                         'queue: %s' % (uuid, fc_id, dscp, dot1p, exp, queue_uuid))
+        self._log.info(
+            'Updating FC %s: fc_id: %s, dscp: %s, dot1p: %s, exp: %s,'
+            'queue: %s' %
+            (uuid, fc_id, dscp, dot1p, exp, queue_uuid))
         fc_obj = self._vnc.forwarding_class_read(id=uuid)
         if fc_id:
             fc_obj.set_forwarding_class_id(fc_id)
@@ -250,7 +278,7 @@ class ContrailVncApi(object):
 
     def delete_forwarding_class(self, uuid):
         fq_name = self._vnc.id_to_fq_name(uuid)
-        self._log.info('Deleting FC %s, UUID: %s' %(fq_name, uuid))
+        self._log.info('Deleting FC %s, UUID: %s' % (fq_name, uuid))
         return self._vnc.forwarding_class_delete(id=uuid)
     # end delete_forwarding_class
 
@@ -281,17 +309,21 @@ class ContrailVncApi(object):
                                    default_forwarding_class_id=default_fc_id)
         uuid = self._vnc.qos_config_create(qos_config_obj)
         self._log.info('Created QosConfig %s, UUID: %s' % (
-                         self._vnc.id_to_fq_name(uuid), uuid))
+            self._vnc.id_to_fq_name(uuid), uuid))
         return uuid
     # end create_qos_config
 
-    def set_qos_config_entries(self, uuid, dscp_mapping=None, dot1p_mapping=None,
-                               exp_mapping=None):
+    def set_qos_config_entries(
+            self,
+            uuid,
+            dscp_mapping=None,
+            dot1p_mapping=None,
+            exp_mapping=None):
         ''' If the user wants to clear the entries, {} needs to be passed
         '''
         self._log.info('Updating qos-config:%s, dscp_mapping: %s,'
-                         'dot1p_mapping: %s, exp_mapping: %s' % (
-                         uuid, dscp_mapping, dot1p_mapping, exp_mapping))
+                       'dot1p_mapping: %s, exp_mapping: %s' % (
+                           uuid, dscp_mapping, dot1p_mapping, exp_mapping))
         qos_config_obj = self._vnc.qos_config_read(id=uuid)
         if dscp_mapping is not None:
             dscp_entries = self._get_code_point_to_fc_map(dscp_mapping)
@@ -310,7 +342,7 @@ class ContrailVncApi(object):
         ''' Updates the default FC ID associated with this qos config
         '''
         self._log.info('Updating qos-config: Default_FC_Id: %d,'
-                          % (default_fc_id))
+                       % (default_fc_id))
         qos_config_obj = self._vnc.qos_config_read(id=uuid)
         qos_config_obj.set_default_forwarding_class_id(default_fc_id)
         self._vnc.qos_config_update(qos_config_obj)
@@ -327,9 +359,10 @@ class ContrailVncApi(object):
 
     def _add_to_entries(self, qos_config_obj, dscp_mapping=None,
                         dot1p_mapping=None, exp_mapping=None):
-        self._log.debug('Adding FC entries to Qos Config %s, dscp:%s, '
-            'dot1p: %s, exp: %s' % (qos_config_obj.uuid, dscp_mapping,
-            dot1p_mapping, exp_mapping))
+        self._log.debug(
+            'Adding FC entries to Qos Config %s, dscp:%s, '
+            'dot1p: %s, exp: %s' %
+            (qos_config_obj.uuid, dscp_mapping, dot1p_mapping, exp_mapping))
         if dscp_mapping:
             for k, v in dscp_mapping.iteritems():
                 entry = QosIdForwardingClassPair(k, v)
@@ -394,7 +427,7 @@ class ContrailVncApi(object):
         '''
         qos_config_obj = self._vnc.qos_config_read(id=uuid)
         self._log.info('In Qos config %s, Removing entry for key dscp:%s, '
-            'dot1p:%s, exp:%s' % (uuid, dscp, dot1p, exp))
+                       'dot1p:%s, exp:%s' % (uuid, dscp, dot1p, exp))
 
         dscp_entry = self.get_code_point_entry(qos_config_obj, dscp=dscp)
         if dscp_entry:
@@ -424,7 +457,10 @@ class ContrailVncApi(object):
             role = perm.get('role', '*')
             crud = perm.get('crud', 'CRUD')
             rule_perms.append(RbacPermType(role_name=role, role_crud=crud))
-        return RbacRuleType(rule_object=rule_object, rule_field=rule_field, rule_perms=rule_perms)
+        return RbacRuleType(
+            rule_object=rule_object,
+            rule_field=rule_field,
+            rule_perms=rule_perms)
 
     def update_api_access_list(self, uuid, rules, delete=False):
         '''
@@ -452,8 +488,8 @@ class ContrailVncApi(object):
                     perms.append({'role': perm.get_role_name(),
                                   'crud': perm.get_role_crud()})
                 current_rules.append({'rule_object': rule.get_rule_object(),
-                                   'rule_field': rule.get_rule_field(),
-                                   'perms': perms})
+                                      'rule_field': rule.get_rule_field(),
+                                      'perms': perms})
             # Remove the to be removed from the list
             for rule in rules or []:
                 current_rules.remove(rule)
@@ -489,8 +525,12 @@ class ContrailVncApi(object):
         prop = list()
         for rule in rules or []:
             prop.append(self._get_rbac_prop(**rule))
-        obj = ApiAccessList(name, parent_type=parent_type, fq_name=fq_name,
-                            api_access_list_entries=RbacRuleEntriesType(rbac_rule=prop))
+        obj = ApiAccessList(
+            name,
+            parent_type=parent_type,
+            fq_name=fq_name,
+            api_access_list_entries=RbacRuleEntriesType(
+                rbac_rule=prop))
         return self._vnc.api_access_list_create(obj)
 
     def delete_api_access_list(self, **kwargs):
@@ -510,12 +550,12 @@ class ContrailVncApi(object):
         return self._vnc.api_access_list_read(**kwargs)
 
     def _get_obj(self, object_type, uuid):
-        api = ('self._vnc.'+object_type+'_read').replace('-', '_')
+        api = ('self._vnc.' + object_type + '_read').replace('-', '_')
         return eval(api)(id=uuid)
 
     def update_obj(self, obj):
         object_type = obj.object_type
-        api = 'self._vnc.'+object_type+'_update'
+        api = 'self._vnc.' + object_type + '_update'
         eval(api)(obj)
 
     def get_perms2(self, obj):
@@ -540,7 +580,13 @@ class ContrailVncApi(object):
         perms2.set_global_access(rwx)
         self.set_perms2(perms2, obj)
 
-    def set_share_tenants(self, tenant, tenant_access, obj=None, object_type=None, uuid=None):
+    def set_share_tenants(
+            self,
+            tenant,
+            tenant_access,
+            obj=None,
+            object_type=None,
+            uuid=None):
         if not obj:
             obj = self._get_obj(object_type, uuid)
         perms2 = self.get_perms2(obj)
@@ -555,24 +601,24 @@ class ContrailVncApi(object):
         perms2.set_owner(tenant)
         self.set_perms2(perms2, obj)
 
-    def update_virtual_router_type(self,name,vrouter_type):
+    def update_virtual_router_type(self, name, vrouter_type):
         vr_fq_name = ['default-global-system-config', name]
         vr = self._vnc.virtual_router_read(
             fq_name=vr_fq_name)
         vr.set_virtual_router_type(vrouter_type)
         self._vnc.virtual_router_update(vr)
 
-    def create_virtual_machine(self,vm_uuid=None):
+    def create_virtual_machine(self, vm_uuid=None):
         vm = VirtualMachine()
         if vm_uuid:
             vm.set_uuid(vm_uuid)
         self._vnc.virtual_machine_create(vm)
         return vm
-    #end create_virtual_machine
+    # end create_virtual_machine
 
-    def delete_virtual_machine(self,vm_uuid):
+    def delete_virtual_machine(self, vm_uuid):
         self._vnc.virtual_machine_delete(id=vm_uuid)
-    #end delete_virtual_machine
+    # end delete_virtual_machine
 
     def disable_policy_on_vmi(self, vmi_id, disable=True):
         '''
@@ -596,11 +642,13 @@ class ContrailVncApi(object):
         '''
         ignore_address = fat_flow_config.get('ignore_address', None)
         if ignore_address:
-            proto_type = ProtocolType(protocol=fat_flow_config['proto'],
-                port=fat_flow_config['port'], ignore_address=ignore_address)
+            proto_type = ProtocolType(
+                protocol=fat_flow_config['proto'],
+                port=fat_flow_config['port'],
+                ignore_address=ignore_address)
         else:
             proto_type = ProtocolType(protocol=fat_flow_config['proto'],
-                            port=fat_flow_config['port'])
+                                      port=fat_flow_config['port'])
 
         vmi_obj = self._vnc.virtual_machine_interface_read(id=vmi_id)
         fat_config = vmi_obj.get_virtual_machine_interface_fat_flow_protocols()
@@ -609,13 +657,13 @@ class ContrailVncApi(object):
         else:
             fat_config = FatFlowProtocols(fat_flow_protocol=[proto_type])
         vmi_obj.set_virtual_machine_interface_fat_flow_protocols(
-                                                fat_config)
+            fat_config)
         self._vnc.virtual_machine_interface_update(vmi_obj)
         self._log.info("Fat flow added on VMI %s: %s" % (
-                            vmi_id, fat_flow_config))
+            vmi_id, fat_flow_config))
 
         return True
-    #end add_fat_flow_to_vmi
+    # end add_fat_flow_to_vmi
 
     def remove_fat_flow_on_vmi(self, vmi_id, fat_flow_config):
         '''
@@ -628,18 +676,19 @@ class ContrailVncApi(object):
         if fat_config_get:
             for config in fat_config_get.fat_flow_protocol:
                 if config.protocol == fat_flow_config['proto'] and \
-                    config.port == fat_flow_config['port'] and \
-                    config.ignore_address == fat_flow_config.get('ignore_address'):
+                        config.port == fat_flow_config['port'] and \
+                        config.ignore_address == fat_flow_config.get('ignore_address'):
                     fat_config_get.fat_flow_protocol.remove(config)
                     vmi_obj.set_virtual_machine_interface_fat_flow_protocols(
-                                                            fat_config_get)
+                        fat_config_get)
                     self._vnc.virtual_machine_interface_update(vmi_obj)
-                    self._log.info("Fat flow config removed from VMI %s: %s" % (
-                                        vmi_id, vars(config)))
+                    self._log.info(
+                        "Fat flow config removed from VMI %s: %s" %
+                        (vmi_id, vars(config)))
                     break
 
         return True
-    #end remove_fat_flow_on_vmi
+    # end remove_fat_flow_on_vmi
 
     def add_proto_based_flow_aging_time(self, proto, port=0, timeout=180):
         '''
@@ -647,12 +696,13 @@ class ContrailVncApi(object):
         proto: <string>, port: <int>, timeout: <int-in-seconds>
         '''
 
-        fq_name = [ 'default-global-system-config',
-                    'default-global-vrouter-config']
+        fq_name = ['default-global-system-config',
+                   'default-global-vrouter-config']
         gv_obj = self._vnc.global_vrouter_config_read(fq_name=fq_name)
         flow_aging = gv_obj.get_flow_aging_timeout_list()
 
-        flow_aging_add = FlowAgingTimeout(protocol=proto, port=port, timeout_in_seconds=timeout)
+        flow_aging_add = FlowAgingTimeout(
+            protocol=proto, port=port, timeout_in_seconds=timeout)
         if flow_aging:
             flow_aging.flow_aging_timeout.append(flow_aging_add)
         else:
@@ -660,10 +710,12 @@ class ContrailVncApi(object):
         gv_obj.set_flow_aging_timeout_list(flow_aging)
         self._vnc.global_vrouter_config_update(gv_obj)
 
-        self._log.info('Added global flow aging configuration: %s' % (vars(flow_aging_add)))
+        self._log.info(
+            'Added global flow aging configuration: %s' %
+            (vars(flow_aging_add)))
 
         return True
-    #end add_proto_based_flow_aging_time
+    # end add_proto_based_flow_aging_time
 
     def delete_proto_based_flow_aging_time(self, proto, port=0, timeout=180):
         '''
@@ -671,8 +723,8 @@ class ContrailVncApi(object):
         proto: <string>, port: <int>, timeout: <int-in-seconds>
         '''
 
-        fq_name = [ 'default-global-system-config',
-                    'default-global-vrouter-config']
+        fq_name = ['default-global-system-config',
+                   'default-global-vrouter-config']
         gv_obj = self._vnc.global_vrouter_config_read(fq_name=fq_name)
         flow_aging = gv_obj.get_flow_aging_timeout_list()
 
@@ -681,16 +733,18 @@ class ContrailVncApi(object):
         for aging in flow_aging.flow_aging_timeout:
             values = vars(aging)
             if values['timeout_in_seconds'] == timeout and \
-                values['protocol'] == proto and values['port'] == port:
+                    values['protocol'] == proto and values['port'] == port:
                 flow_aging.flow_aging_timeout.remove(aging)
 
                 gv_obj.set_flow_aging_timeout_list(flow_aging)
                 self._vnc.global_vrouter_config_update(gv_obj)
 
-                self._log.info('Deleted the flow aging configuration: %s' % (vars(aging)))
+                self._log.info(
+                    'Deleted the flow aging configuration: %s' %
+                    (vars(aging)))
 
                 return True
-    #end delete_proto_based_flow_aging_time
+    # end delete_proto_based_flow_aging_time
 
     def create_interface_route_table(self, name, parent_obj=None, prefixes=[]):
         '''
@@ -700,23 +754,24 @@ class ContrailVncApi(object):
             prefixes : list of x.y.z.a/mask entries
         '''
         route_table = RouteTableType(name)
-        nw_prefixes = [ IPNetwork(x) for x in prefixes]
+        nw_prefixes = [IPNetwork(x) for x in prefixes]
         route_table.set_route([])
         intf_route_table = InterfaceRouteTable(
-                                interface_route_table_routes = route_table,
-                                parent_obj=parent_obj,
-                                name=name)
+            interface_route_table_routes=route_table,
+            parent_obj=parent_obj,
+            name=name)
         if prefixes:
             rt_routes = intf_route_table.get_interface_route_table_routes()
             routes = rt_routes.get_route()
             for prefix in prefixes:
-                rt1 = RouteType(prefix = prefix)
+                rt1 = RouteType(prefix=prefix)
                 routes.append(rt1)
             intf_route_table.set_interface_route_table_routes(rt_routes)
         uuid = self._vnc.interface_route_table_create(intf_route_table)
         intf_route_table_obj = self._vnc.interface_route_table_read(id=uuid)
-        self._log.info('Created InterfaceRouteTable %s(UUID %s), prefixes : %s'\
-            %(intf_route_table_obj.fq_name, intf_route_table_obj.uuid, prefixes))
+        self._log.info(
+            'Created InterfaceRouteTable %s(UUID %s), prefixes : %s' %
+            (intf_route_table_obj.fq_name, intf_route_table_obj.uuid, prefixes))
         return intf_route_table_obj
     # end create_interface_route_table
 
@@ -728,20 +783,20 @@ class ContrailVncApi(object):
             prefixes : list of x.y.z.a/mask entries
         '''
         intf_route_table = self._vnc.interface_route_table_read(id=uuid)
-        nw_prefixes = [ IPNetwork(x) for x in prefixes]
+        nw_prefixes = [IPNetwork(x) for x in prefixes]
         intf_route_table = self._vnc.interface_route_table_read(id=uuid)
         if nw_prefixes:
             rt_routes = intf_route_table.get_interface_route_table_routes()
             routes = rt_routes.get_route()
             for prefix in prefixes:
-                rt1 = RouteType(prefix = prefix)
+                rt1 = RouteType(prefix=prefix)
                 routes.append(rt1)
                 self._log.info('Adding prefix %s to intf route table'
-                    '%s' % str((prefix)))
+                               '%s' % str((prefix)))
             intf_route_table.set_interface_route_table_routes(rt_routes)
         self._vnc.interface_route_table_update(intf_route_table)
         return intf_route_table
-    #end add_interface_route_table_routes
+    # end add_interface_route_table_routes
 
     def delete_interface_route_table_routes(self, uuid, prefixes):
         '''
@@ -762,10 +817,10 @@ class ContrailVncApi(object):
                     routes.remove(route)
                 if not prefix_found:
                     self._log.warn('Prefix %s not found in intf route table'
-                        ' %s' % (prefix, self.name))
+                                   ' %s' % (prefix, self.name))
                 else:
                     self._log.info('Prefix %s deleted from intf route table'
-                        ' %s' % (prefix, self.name))
+                                   ' %s' % (prefix, self.name))
         intf_route_table.set_interface_route_table_routes(rt_routes)
         self._vnc.interface_route_table_update(intf_route_table)
     # end delete_interface_route_table_routes
@@ -822,7 +877,14 @@ class ContrailVncApi(object):
             intf_rtb_obj.uuid, vmi_uuid))
     # end unbind_vmi_from_interface_route_table
 
-    def create_route_table(self, name,route_table_type = 'interface', parent_obj=None, prefixes=[], next_hop='', next_hop_type = 'ip-address'):
+    def create_route_table(
+            self,
+            name,
+            route_table_type='interface',
+            parent_obj=None,
+            prefixes=[],
+            next_hop='',
+            next_hop_type='ip-address'):
         '''
         Create and return InterfaceRouteTable or RouteTable object
         Args:
@@ -841,35 +903,40 @@ class ContrailVncApi(object):
         '''
         route_table = RouteTableType(name)
         if route_table_type == 'interface':
-            nw_prefixes = [ IPNetwork(x) for x in prefixes]
+            nw_prefixes = [IPNetwork(x) for x in prefixes]
             route_table.set_route([])
             intf_route_table = InterfaceRouteTable(
-                                    interface_route_table_routes = route_table,
-                                    parent_obj=parent_obj,
-                                    name=name)
+                interface_route_table_routes=route_table,
+                parent_obj=parent_obj,
+                name=name)
             if prefixes:
                 rt_routes = intf_route_table.get_interface_route_table_routes()
                 routes = rt_routes.get_route()
                 for prefix in prefixes:
-                    rt1 = RouteType(prefix = prefix)
+                    rt1 = RouteType(prefix=prefix)
                     routes.append(rt1)
                 intf_route_table.set_interface_route_table_routes(rt_routes)
             uuid = self._vnc.interface_route_table_create(intf_route_table)
-            intf_route_table_obj = self._vnc.interface_route_table_read(id=uuid)
-            self._log.info('Created InterfaceRouteTable %s(UUID %s), prefixes : %s'\
-                %(intf_route_table_obj.fq_name, intf_route_table_obj.uuid, prefixes))
+            intf_route_table_obj = self._vnc.interface_route_table_read(
+                id=uuid)
+            self._log.info(
+                'Created InterfaceRouteTable %s(UUID %s), prefixes : %s' %
+                (intf_route_table_obj.fq_name, intf_route_table_obj.uuid, prefixes))
             return intf_route_table_obj
         else:
-            nw_route_table=RouteTable(name, parent_obj)
+            nw_route_table = RouteTable(name, parent_obj)
             if prefixes:
                 for prefix in prefixes:
-                    rt1=RouteType(prefix=prefix, next_hop=next_hop, next_hop_type=next_hop_type)
+                    rt1 = RouteType(
+                        prefix=prefix,
+                        next_hop=next_hop,
+                        next_hop_type=next_hop_type)
                     route_table.set_route([rt1])
             nw_route_table.set_routes(route_table)
-            uuid=self._vnc.route_table_create(nw_route_table)
+            uuid = self._vnc.route_table_create(nw_route_table)
             network_route_table_obj = self._vnc.route_table_read(id=uuid)
-            self._log.info('Created NetworkRouteTable %s(UUID %s), prefixes : %s'\
-                %(network_route_table_obj.fq_name, network_route_table_obj.uuid, prefixes))
+            self._log.info('Created NetworkRouteTable %s(UUID %s), prefixes : %s' % (
+                network_route_table_obj.fq_name, network_route_table_obj.uuid, prefixes))
             return network_route_table_obj
 
     def bind_network_route_table_to_vn(self, vn_uuid, nw_route_table_obj):
@@ -882,11 +949,12 @@ class ContrailVncApi(object):
         '''
 
         if is_uuid(nw_route_table_obj):
-            network_route_table_obj = self._vnc.route_table_read(id=nw_route_table_obj)
+            network_route_table_obj = self._vnc.route_table_read(
+                id=nw_route_table_obj)
         elif isinstance(nw_route_table_obj, RouteTable):
             network_route_table_obj = nw_route_table_obj
 
-        vn_rt_obj = self._vnc.virtual_network_read(id = vn_uuid)
+        vn_rt_obj = self._vnc.virtual_network_read(id=vn_uuid)
         vn_rt_obj.add_route_table(network_route_table_obj)
         self._vnc.virtual_network_update(vn_rt_obj)
 
@@ -902,7 +970,8 @@ class ContrailVncApi(object):
         '''
 
         if is_uuid(nw_route_table_obj):
-            network_route_table_obj = self._vnc.route_table_read(id=nw_route_table_obj)
+            network_route_table_obj = self._vnc.route_table_read(
+                id=nw_route_table_obj)
         elif isinstance(nw_route_table_obj, RouteTable):
             network_route_table_obj = nw_route_table_obj
         vn_obj = self._vnc.virtual_network_read(id=vn_uuid)
@@ -923,30 +992,39 @@ class ContrailVncApi(object):
         self._log.info('Deleted Network route table %s' % (uuid))
     # end delete_network_route_table
 
-    def get_alarm(self,alarm_id):
+    def get_alarm(self, alarm_id):
         try:
             return self._vnc.alarm_read(id=alarm_id)
-        except:
+        except BaseException:
             try:
                 return self._vnc.alarm_read(fq_name=alarm_id)
-            except:
+            except BaseException:
                 return None
-    #end get_alarm
+    # end get_alarm
 
-    def create_alarm(self, name, parent_obj, alarm_rules, alarm_severity, uve_keys):
-        alarm_obj = Alarm(name=name, parent_obj=parent_obj,
-                                   alarm_rules=alarm_rules, alarm_severity=alarm_severity,
-                                   uve_keys=uve_keys)
+    def create_alarm(
+            self,
+            name,
+            parent_obj,
+            alarm_rules,
+            alarm_severity,
+            uve_keys):
+        alarm_obj = Alarm(
+            name=name,
+            parent_obj=parent_obj,
+            alarm_rules=alarm_rules,
+            alarm_severity=alarm_severity,
+            uve_keys=uve_keys)
         return self._vnc.alarm_create(alarm_obj)
-    #end create_alarm
+    # end create_alarm
 
-    def update_alarm(self,alarm_obj):
+    def update_alarm(self, alarm_obj):
         return self._vnc.alarm_update(alarm_obj)
-    #end update_alarm
+    # end update_alarm
 
-    def delete_alarm(self,alarm_id):
+    def delete_alarm(self, alarm_id):
         self._vnc.alarm_delete(id=alarm_id)
-    #end delete_alarm
+    # end delete_alarm
 
     def get_global_config_obj(self):
         gsc_id = self._vnc.get_default_global_system_config_id()
@@ -972,9 +1050,17 @@ class ContrailVncApi(object):
         autonomous_system = kwargs['autonomous_system']
         bgpaas_ip_address = kwargs['bgpaas_ip_address']
         bgpaas_shared = kwargs['bgpaas_shared']
+        local_autonomous_system = kwargs['local_autonomous_system']
         session_attributes = BgpSessionAttributes(**kwargs)
-        obj = BgpAsAService(name, parent_type='project', fq_name=fq_name, bgpaas_session_attributes=session_attributes,
-                            autonomous_system=autonomous_system, bgpaas_shared=bgpaas_shared, bgpaas_ip_address=bgpaas_ip_address)
+        obj = BgpAsAService(
+            name,
+            parent_type='project',
+            fq_name=fq_name,
+            bgpaas_session_attributes=session_attributes,
+            autonomous_system=autonomous_system,
+            bgpaas_shared=bgpaas_shared,
+            bgpaas_ip_address=bgpaas_ip_address,
+            local_autonomous_system=local_autonomous_system)
         return self._vnc.bgp_as_a_service_create(obj)
 
     def update_bgpaas(self, bgpaas_uuid, **kwargs):
@@ -994,28 +1080,32 @@ class ContrailVncApi(object):
         return self._vnc.bgp_as_a_service_delete(**kwargs)
 
     def attach_vmi_to_bgpaas(self, bgpaas_uuid, vmi_id):
-        self._log.info('Attaching VMI %s to BGPaaS %s'%(vmi_id, bgpaas_uuid))
+        self._log.info('Attaching VMI %s to BGPaaS %s' % (vmi_id, bgpaas_uuid))
         bgpaas_obj = self._vnc.bgp_as_a_service_read(id=bgpaas_uuid)
         ref_obj = self._vnc.virtual_machine_interface_read(id=vmi_id)
         bgpaas_obj.add_virtual_machine_interface(ref_obj)
         return self._vnc.bgp_as_a_service_update(bgpaas_obj)
 
     def detach_vmi_from_bgpaas(self, bgpaas_uuid, vmi_id):
-        self._log.info('Detaching VMI %s from BGPaaS %s'%(vmi_id, bgpaas_uuid))
+        self._log.info(
+            'Detaching VMI %s from BGPaaS %s' %
+            (vmi_id, bgpaas_uuid))
         bgpaas_obj = self._vnc.bgp_as_a_service_read(id=bgpaas_uuid)
         ref_obj = self._vnc.virtual_machine_interface_read(id=vmi_id)
         bgpaas_obj.del_virtual_machine_interface(ref_obj)
         return self._vnc.bgp_as_a_service_update(bgpaas_obj)
 
     def attach_shc_to_bgpaas(self, bgpaas_uuid, shc_id):
-        self._log.info('Attaching HC %s to BGPaaS %s'%(shc_id, bgpaas_uuid))
+        self._log.info('Attaching HC %s to BGPaaS %s' % (shc_id, bgpaas_uuid))
         bgpaas_obj = self._vnc.bgp_as_a_service_read(id=bgpaas_uuid)
         ref_obj = self._vnc.service_health_check_read(id=shc_id)
         bgpaas_obj.add_service_health_check(ref_obj)
         return self._vnc.bgp_as_a_service_update(bgpaas_obj)
 
     def detach_shc_from_bgpaas(self, bgpaas_uuid, shc_id):
-        self._log.info('Detaching HC %s from BGPaaS %s'%(shc_id, bgpaas_uuid))
+        self._log.info(
+            'Detaching HC %s from BGPaaS %s' %
+            (shc_id, bgpaas_uuid))
         bgpaas_obj = self._vnc.bgp_as_a_service_read(id=bgpaas_uuid)
         ref_obj = self._vnc.service_health_check_read(id=shc_id)
         bgpaas_obj.del_service_health_check(ref_obj)
@@ -1065,7 +1155,7 @@ class ContrailVncApi(object):
         '''
         hc_obj = self._vnc.service_health_check_read(id=hc_uuid)
         curr_prop = hc_obj.get_service_health_check_properties()
-        for k,v in kwargs.iteritems():
+        for k, v in kwargs.iteritems():
             setattr(curr_prop, k, v)
         hc_obj.set_service_health_check_properties(curr_prop)
         return self._vnc.service_health_check_update(hc_obj)
@@ -1080,8 +1170,8 @@ class ContrailVncApi(object):
 
     def _update_security_draft_mode(self, flag, project_fqname=None):
         if project_fqname:
-            fq_name = project_fqname if type(project_fqname) is list\
-                      else project_fqname.split(':')
+            fq_name = project_fqname if isinstance(project_fqname, list)\
+                else project_fqname.split(':')
             obj = self._vnc.project_read(fq_name=fq_name)
         else:
             obj = self.read_global_system_config()
@@ -1096,8 +1186,8 @@ class ContrailVncApi(object):
 
     def _security_draft_action(self, action, project_fqname=None):
         if project_fqname:
-            fqname = project_fqname if type(project_fqname) is list\
-                      else project_fqname.split(':')
+            fqname = project_fqname if isinstance(project_fqname, list)\
+                else project_fqname.split(':')
             obj = self._vnc.project_read(fq_name=fqname)
         else:
             obj = self.read_global_system_config()
@@ -1106,7 +1196,7 @@ class ContrailVncApi(object):
         elif action == 'discard':
             self._vnc.discard_security(obj)
         else:
-            raise Exception('action %s not allowed'%action)
+            raise Exception('action %s not allowed' % action)
 
     def commit_security_draft(self, project_fqname=None):
         self._security_draft_action('commit', project_fqname)
@@ -1117,18 +1207,23 @@ class ContrailVncApi(object):
     def list_security_drafts(self, project_fqname=None):
         fq_name = ['draft-policy-management']
         if project_fqname:
-            fq_name = list(project_fqname) if type(project_fqname) is list\
-                      else project_fqname.split(':')
+            fq_name = list(project_fqname) if isinstance(project_fqname, list)\
+                else project_fqname.split(':')
             fq_name.append('draft-policy-management')
-        return self._vnc.policy_management_read(fq_name=fq_name,
-               fields=["application_policy_sets", "firewall_policys",
-                       "firewall_rules", "service_groups", "address_groups"])
+        return self._vnc.policy_management_read(
+            fq_name=fq_name,
+            fields=[
+                "application_policy_sets",
+                "firewall_policys",
+                "firewall_rules",
+                "service_groups",
+                "address_groups"])
 
     def create_tag_type(self, name):
         ''' Create a Tag Type
             :param name : name of the tag type
         '''
-        self._log.debug('Creating tag type %s'%name)
+        self._log.debug('Creating tag type %s' % name)
         obj = TagType(name)
         return self._vnc.tag_type_create(obj)
 
@@ -1138,7 +1233,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Deleting tag type %s'%kwargs)
+        self._log.debug('Deleting tag type %s' % kwargs)
         return self._vnc.tag_type_delete(**kwargs)
 
     def read_tag_type(self, **kwargs):
@@ -1147,22 +1242,28 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Reading tag type %s'%kwargs)
+        self._log.debug('Reading tag type %s' % kwargs)
         return self._vnc.tag_type_read(**kwargs)
 
-    def create_application_policy_set(self, fq_name, parent_type, policies=None, **kwargs):
+    def create_application_policy_set(
+            self,
+            fq_name,
+            parent_type,
+            policies=None,
+            **kwargs):
         ''' Create a firewall policy
             :param fq_name : name of the APS
             :param parent_type : parent type ('project' or 'policy-management')
             :param policies : Ordered list of dict of firewall policies and seq no
                 [{'uuid': uuid, 'seq_no': <int>}]
         '''
-        obj = ApplicationPolicySet(fq_name[-1], fq_name=fq_name, parent_type=parent_type)
+        obj = ApplicationPolicySet(
+            fq_name[-1], fq_name=fq_name, parent_type=parent_type)
         for policy in policies or []:
             policy_obj = self.read_firewall_policy(id=policy['uuid'])
             seq = FirewallSequence(str(policy['seq_no']))
             obj.add_firewall_policy(policy_obj, seq)
-        self._log.debug('Creating application policy set %s'%fq_name)
+        self._log.debug('Creating application policy set %s' % fq_name)
         return self._vnc.application_policy_set_create(obj)
 
     def add_firewall_policies(self, uuid, policies):
@@ -1171,8 +1272,8 @@ class ContrailVncApi(object):
             seq = FirewallSequence(str(policy['seq_no']))
             policy_obj = self.read_firewall_policy(id=policy['uuid'])
             obj.add_firewall_policy(policy_obj, seq)
-            self._log.debug('Adding firewall policy %s to APS %s'%(
-                             policy_obj.name, obj.name))
+            self._log.debug('Adding firewall policy %s to APS %s' % (
+                policy_obj.name, obj.name))
         return self._vnc.application_policy_set_update(obj)
 
     def remove_firewall_policies(self, uuid, policies):
@@ -1180,8 +1281,8 @@ class ContrailVncApi(object):
         for policy in policies or []:
             policy_obj = self.read_firewall_policy(id=policy['uuid'])
             obj.del_firewall_policy(policy_obj)
-            self._log.debug('Removing firewall policy %s from APS %s'%(
-                             policy_obj.name, obj.name))
+            self._log.debug('Removing firewall policy %s from APS %s' % (
+                policy_obj.name, obj.name))
         return self._vnc.application_policy_set_update(obj)
 
     def delete_application_policy_set(self, **kwargs):
@@ -1190,7 +1291,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Deleting application policy set %s'%kwargs)
+        self._log.debug('Deleting application policy set %s' % kwargs)
         return self._vnc.application_policy_set_delete(**kwargs)
 
     def read_application_policy_set(self, **kwargs):
@@ -1199,13 +1300,18 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Reading application policy set %s'%kwargs)
+        self._log.debug('Reading application policy set %s' % kwargs)
         draft = kwargs.pop('draft', False)
         if draft:
             return self._vnc.application_policy_set_read_draft(**kwargs)
         return self._vnc.application_policy_set_read(**kwargs)
 
-    def create_firewall_policy(self, fq_name, parent_type=None, rules=None, **kwargs):
+    def create_firewall_policy(
+            self,
+            fq_name,
+            parent_type=None,
+            rules=None,
+            **kwargs):
         ''' Create a firewall policy
             :param fq_name : name of the FWP
             :param parent_type : one of 'project' or 'policy-management'
@@ -1213,7 +1319,8 @@ class ContrailVncApi(object):
                 [{'uuid': rule_uuid, 'seq_no': <int>}]
             :param slo: {'slo_obj': slo obj, 'rate_obj':rate obj}
         '''
-        obj = FirewallPolicy(fq_name[-1], fq_name=fq_name, parent_type=parent_type)
+        obj = FirewallPolicy(
+            fq_name[-1], fq_name=fq_name, parent_type=parent_type)
         for rule in rules or []:
             seq = FirewallSequence(str(rule['seq_no']))
             rule_obj = self.read_firewall_rule(id=rule['uuid'])
@@ -1222,7 +1329,7 @@ class ContrailVncApi(object):
         slo = kwargs.get('slo') or None
         if slo is not None:
             obj.add_security_logging_object(slo['slo_obj'], slo['rate_obj'])
-        self._log.debug('creating firewall policy %s'%fq_name)
+        self._log.debug('creating firewall policy %s' % fq_name)
         return self._vnc.firewall_policy_create(obj)
 
     def add_firewall_rules(self, uuid, rules):
@@ -1230,8 +1337,8 @@ class ContrailVncApi(object):
         for rule in rules or []:
             seq = FirewallSequence(str(rule['seq_no']))
             rule_obj = self.read_firewall_rule(id=rule['uuid'])
-            self._log.debug('Adding rule %s to policy %s'%(
-                             rule_obj.name, obj.name))
+            self._log.debug('Adding rule %s to policy %s' % (
+                rule_obj.name, obj.name))
             obj.add_firewall_rule(rule_obj, seq)
         return self._vnc.firewall_policy_update(obj)
 
@@ -1239,8 +1346,8 @@ class ContrailVncApi(object):
         obj = self.read_firewall_policy(id=uuid)
         for rule in rules or []:
             rule_obj = self.read_firewall_rule(id=rule['uuid'])
-            self._log.debug('Removing rule %s from policy %s'%(
-                             rule_obj.name, obj.name))
+            self._log.debug('Removing rule %s from policy %s' % (
+                rule_obj.name, obj.name))
             obj.del_firewall_rule(rule_obj)
         return self._vnc.firewall_policy_update(obj)
 
@@ -1250,7 +1357,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Deleting firewall policy %s'%kwargs)
+        self._log.debug('Deleting firewall policy %s' % kwargs)
         return self._vnc.firewall_policy_delete(**kwargs)
 
     def read_firewall_policy(self, **kwargs):
@@ -1259,7 +1366,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Reading firewall policy %s'%kwargs)
+        self._log.debug('Reading firewall policy %s' % kwargs)
         draft = kwargs.pop('draft', False)
         if draft:
             return self._vnc.firewall_policy_read_draft(**kwargs)
@@ -1267,8 +1374,8 @@ class ContrailVncApi(object):
 
     def _get_fw_endpoint_obj(self, endpoint):
         if not endpoint:
-           return None
-        subnet=None
+            return None
+        subnet = None
         if endpoint.get('subnet'):
             subnet = SubnetType(*endpoint['subnet'].split('/'))
         vn = endpoint.get('virtual_network')
@@ -1278,10 +1385,19 @@ class ContrailVncApi(object):
         return FirewallRuleEndpointType(subnet=subnet, virtual_network=vn,
                                         address_group=ag, tags=tags, any=any)
 
-    def update_firewall_rule(self, uuid, action=None, direction=None,
-                             protocol=None, sports=None,
-                             dports=None, log=False, source=None,
-                             destination=None, match=None, service_groups=None):
+    def update_firewall_rule(
+            self,
+            uuid,
+            action=None,
+            direction=None,
+            protocol=None,
+            sports=None,
+            dports=None,
+            log=False,
+            source=None,
+            destination=None,
+            match=None,
+            service_groups=None):
         ''' Update a firewall policy rule
             :param uuid : uuid of the policy rule
             :param action : pass or deny
@@ -1332,13 +1448,24 @@ class ContrailVncApi(object):
             obj.set_service(None)
         if service_groups is not None:
             obj.set_service_group_list(sg_list)
-        self._log.debug('Updating firewall rule %s'%obj.name)
+        self._log.debug('Updating firewall rule %s' % obj.name)
         return self._vnc.firewall_rule_update(obj)
 
-    def create_firewall_rule(self, fq_name, parent_type, action=None,
-                             direction=None, service_groups=None, protocol=None,
-                             sports=None, dports=None, log=False, source=None,
-                             destination=None, match=None, **kwargs):
+    def create_firewall_rule(
+            self,
+            fq_name,
+            parent_type,
+            action=None,
+            direction=None,
+            service_groups=None,
+            protocol=None,
+            sports=None,
+            dports=None,
+            log=False,
+            source=None,
+            destination=None,
+            match=None,
+            **kwargs):
         ''' Create a firewall policy rule
             :param fq_name : name of the policy rule
             :param parent_type : parent type ('project' or 'policy-management')
@@ -1358,7 +1485,7 @@ class ContrailVncApi(object):
                  'tags': ['deployment=prod', 'global:site=us'],
                 }
         '''
-        service=None
+        service = None
         if protocol or sports or dports:
             sports = sports if sports else (0, 65535)
             dports = dports if dports else (0, 65535)
@@ -1369,16 +1496,18 @@ class ContrailVncApi(object):
             match = [] if match == 'None' else match
             match = FirewallRuleMatchTagsType(tag_list=match)
         obj = FirewallRule(fq_name[-1],
-                           fq_name=fq_name, parent_type=parent_type,
-                           action_list=ActionListType(simple_action=action, log=log),
+                           fq_name=fq_name,
+                           parent_type=parent_type,
+                           action_list=ActionListType(simple_action=action,
+                                                      log=log),
                            direction=direction,
                            service=service,
-                           endpoint_1 = self._get_fw_endpoint_obj(source),
-                           endpoint_2 = self._get_fw_endpoint_obj(destination),
-                           match_tags = match)
+                           endpoint_1=self._get_fw_endpoint_obj(source),
+                           endpoint_2=self._get_fw_endpoint_obj(destination),
+                           match_tags=match)
         for uuid in service_groups:
             obj.add_service_group(self.read_service_group(id=uuid))
-        self._log.debug('Creating firewall rule %s'%fq_name)
+        self._log.debug('Creating firewall rule %s' % fq_name)
         return self._vnc.firewall_rule_create(obj)
 
     def add_service_group(self, uuid, service_groups):
@@ -1386,7 +1515,9 @@ class ContrailVncApi(object):
         for uuid in service_groups:
             sg_obj = self.read_service_group(id=uuid)
             obj.add_service_group(sg_obj)
-            self._log.debug('Add Service Group %s to Rule %s'%(sg_obj.name, obj.name))
+            self._log.debug(
+                'Add Service Group %s to Rule %s' %
+                (sg_obj.name, obj.name))
         return self._vnc.firewall_rule_update(obj)
 
     def remove_service_group(self, uuid, service_groups):
@@ -1394,7 +1525,9 @@ class ContrailVncApi(object):
         for uuid in service_groups:
             sg_obj = self.read_service_group(id=uuid)
             obj.del_service_group(sg_obj)
-            self._log.debug('Remove Service Group %s from Rule %s'%(sg_obj.name, obj.name))
+            self._log.debug(
+                'Remove Service Group %s from Rule %s' %
+                (sg_obj.name, obj.name))
         return self._vnc.firewall_rule_update(obj)
 
     def delete_firewall_rule(self, **kwargs):
@@ -1403,7 +1536,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Deleting firewall rule %s'%kwargs)
+        self._log.debug('Deleting firewall rule %s' % kwargs)
         return self._vnc.firewall_rule_delete(**kwargs)
 
     def read_firewall_rule(self, **kwargs):
@@ -1412,7 +1545,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Reading firewall rule %s'%kwargs)
+        self._log.debug('Reading firewall rule %s' % kwargs)
         draft = kwargs.pop('draft', False)
         if draft:
             return self._vnc.firewall_rule_read_draft(**kwargs)
@@ -1427,15 +1560,20 @@ class ContrailVncApi(object):
         '''
         services_list = list()
         for service in services or []:
-             sports = PortType(*service[1])
-             dports = PortType(*service[2])
-             services_list.append(FirewallServiceType(protocol=service[0],
-                                  src_ports=sports, dst_ports=dports))
+            sports = PortType(*service[1])
+            dports = PortType(*service[2])
+            services_list.append(
+                FirewallServiceType(
+                    protocol=service[0],
+                    src_ports=sports,
+                    dst_ports=dports))
         services = FirewallServiceGroupType(firewall_service=services_list)
-        obj = ServiceGroup(fq_name[-1], fq_name=fq_name, parent_type=parent_type,
+        obj = ServiceGroup(fq_name[-1],
+                           fq_name=fq_name,
+                           parent_type=parent_type,
                            service_group_firewall_service_list=services,
                            **kwargs)
-        self._log.debug('Creating service group %s'%fq_name)
+        self._log.debug('Creating service group %s' % fq_name)
         return self._vnc.service_group_create(obj)
 
     def update_service_group(self, uuid, services, delete=False):
@@ -1457,12 +1595,13 @@ class ContrailVncApi(object):
             services = set(curr_services).union(services)
         services_list = list()
         for service in services or []:
-             sports = PortType(*service[1])
-             dports = PortType(*service[2])
-             services_list.append(FirewallServiceType(
-                 protocol=service[0], src_ports=sports, dst_ports=dports))
-        sg.set_service_group_firewall_service_list(FirewallServiceGroupType(services_list))
-        self._log.debug('Updating service group %s'%sg.name)
+            sports = PortType(*service[1])
+            dports = PortType(*service[2])
+            services_list.append(FirewallServiceType(
+                protocol=service[0], src_ports=sports, dst_ports=dports))
+        sg.set_service_group_firewall_service_list(
+            FirewallServiceGroupType(services_list))
+        self._log.debug('Updating service group %s' % sg.name)
         return self._vnc.service_group_update(sg)
 
     def delete_service_group(self, **kwargs):
@@ -1471,7 +1610,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Deleting service group %s'%kwargs)
+        self._log.debug('Deleting service group %s' % kwargs)
         return self._vnc.service_group_delete(**kwargs)
 
     def read_service_group(self, **kwargs):
@@ -1480,7 +1619,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Reading service group %s'%kwargs)
+        self._log.debug('Reading service group %s' % kwargs)
         draft = kwargs.pop('draft', False)
         if draft:
             return self._vnc.service_group_read_draft(**kwargs)
@@ -1495,10 +1634,12 @@ class ContrailVncApi(object):
         subnets = [SubnetType(ip_prefix=subnet.split('/')[0],
                               ip_prefix_len=int(subnet.split('/')[1]))
                    for subnet in subnets]
-        obj = AddressGroup(fq_name[-1], fq_name=fq_name, parent_type=parent_type,
+        obj = AddressGroup(fq_name[-1],
+                           fq_name=fq_name,
+                           parent_type=parent_type,
                            address_group_prefix=SubnetListType(subnet=subnets),
                            **kwargs)
-        self._log.debug('Creating address group %s'%fq_name)
+        self._log.debug('Creating address group %s' % fq_name)
         return self._vnc.address_group_create(obj)
 
     def update_address_group(self, uuid, subnets, delete=False):
@@ -1508,17 +1649,19 @@ class ContrailVncApi(object):
         '''
         obj = self.read_address_group(id=uuid)
         prefixes = obj.get_address_group_prefix() or SubnetListType()
-        curr_subnet = ['%s/%s'%(subnet.ip_prefix, subnet.ip_prefix_len)
+        curr_subnet = ['%s/%s' % (subnet.ip_prefix, subnet.ip_prefix_len)
                        for subnet in prefixes.subnet or []]
         if delete:
             subnets = set(curr_subnet) - set(subnets)
         else:
             subnets = set(curr_subnet).union(subnets)
-        to_update_subnets = [SubnetType(ip_prefix=subnet.split('/')[0],
-                              ip_prefix_len=int(subnet.split('/')[1]))
-                            for subnet in subnets]
+        to_update_subnets = [
+            SubnetType(
+                ip_prefix=subnet.split('/')[0],
+                ip_prefix_len=int(
+                    subnet.split('/')[1])) for subnet in subnets]
         obj.set_address_group_prefix(SubnetListType(subnet=to_update_subnets))
-        self._log.debug('Updating address group %s'%obj.name)
+        self._log.debug('Updating address group %s' % obj.name)
         return self._vnc.address_group_update(obj)
 
     def delete_address_group(self, **kwargs):
@@ -1527,7 +1670,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Deleting address group %s'%kwargs)
+        self._log.debug('Deleting address group %s' % kwargs)
         return self._vnc.address_group_delete(**kwargs)
 
     def read_address_group(self, **kwargs):
@@ -1536,7 +1679,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Reading address group %s'%kwargs)
+        self._log.debug('Reading address group %s' % kwargs)
         draft = kwargs.pop('draft', False)
         if draft:
             return self._vnc.address_group_read_draft(**kwargs)
@@ -1548,12 +1691,18 @@ class ContrailVncApi(object):
             return self.create_tag(fq_name, tag_type, tag_value,
                                    parent_type, **kwargs)
         except RefsExistError:
-            fqname = ['%s=%s'%(tag_type, tag_value)]
+            fqname = ['%s=%s' % (tag_type, tag_value)]
             if parent_type == 'project':
                 fqname = fq_name[:-1] + fqname
             return self.read_tag(fq_name=fqname).uuid
 
-    def create_tag(self, fq_name, tag_type, tag_value, parent_type=None, **kwargs):
+    def create_tag(
+            self,
+            fq_name,
+            tag_type,
+            tag_value,
+            parent_type=None,
+            **kwargs):
         ''' Create a Tag
             :param fq_name : fqname of the Tag
             :param parent_type : parent type ('project' or None for global tag)
@@ -1562,7 +1711,7 @@ class ContrailVncApi(object):
         '''
         obj = Tag(fq_name[-1], tag_type_name=tag_type, tag_value=tag_value,
                   parent_type=parent_type, fq_name=fq_name, **kwargs)
-        self._log.debug('Creating tag %s'%fq_name)
+        self._log.debug('Creating tag %s' % fq_name)
         return self._vnc.tag_create(obj)
 
     def delete_tag(self, **kwargs):
@@ -1571,7 +1720,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Deleting tag %s'%kwargs)
+        self._log.debug('Deleting tag %s' % kwargs)
         return self._vnc.tag_delete(**kwargs)
 
     def read_tag(self, **kwargs):
@@ -1580,7 +1729,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Reading tag %s'%kwargs)
+        self._log.debug('Reading tag %s' % kwargs)
         return self._vnc.tag_read(**kwargs)
 
     def add_tag(self, tag, obj=None, object_type=None, uuid=None):
@@ -1595,12 +1744,12 @@ class ContrailVncApi(object):
         if not obj:
             obj = self._get_obj(object_type, uuid)
         obj.add_tag(tag)
-        self._log.debug('Adding tag %s to obj %s'%(tag.get_fq_name_str(),
-                                                   obj.get_fq_name_str()))
+        self._log.debug('Adding tag %s to obj %s' % (tag.get_fq_name_str(),
+                                                     obj.get_fq_name_str()))
         self.update_obj(obj)
 
     def add_labels(self, tags, is_global=False, obj=None,
-                  object_type=None, uuid=None):
+                   object_type=None, uuid=None):
         ''' add labels to an object
             :param tags : list of tags
             :param obj : object to which tag has to be set (optional)
@@ -1612,12 +1761,12 @@ class ContrailVncApi(object):
             obj = self._get_obj(object_type, uuid)
         tags_dict = dict()
         tags_dict['label'] = {'is_global': is_global, 'add_values': tags}
-        self._log.debug('Adding labels %s to obj %s'%(tags,
-                        obj.get_fq_name_str()))
+        self._log.debug('Adding labels %s to obj %s' % (tags,
+                                                        obj.get_fq_name_str()))
         return self._vnc.set_tags(obj, tags_dict)
 
     def delete_labels(self, tags, is_global=False,
-                     obj=None, object_type=None, uuid=None):
+                      obj=None, object_type=None, uuid=None):
         ''' delete labels from an object
             :param tags : list of tags
             :param obj : object to which tag has to be set (optional)
@@ -1629,8 +1778,9 @@ class ContrailVncApi(object):
             obj = self._get_obj(object_type, uuid)
         tags_dict = dict()
         tags_dict['label'] = {'is_global': is_global, 'delete_values': tags}
-        self._log.debug('Deleting labels %s from obj %s'%(tags,
-                        obj.get_fq_name_str()))
+        self._log.debug(
+            'Deleting labels %s from obj %s' %
+            (tags, obj.get_fq_name_str()))
         return self._vnc.set_tags(obj, tags_dict)
 
     def set_tag(self, tag_type, tag_value, is_global=False,
@@ -1645,8 +1795,9 @@ class ContrailVncApi(object):
         '''
         if not obj:
             obj = self._get_obj(object_type, uuid)
-        self._log.debug('Adding %s tag %s:%s to obj %s'%('global' if is_global
-                        else 'local', tag_type, tag_value, obj.name))
+        self._log.debug(
+            'Adding %s tag %s:%s to obj %s' %
+            ('global' if is_global else 'local', tag_type, tag_value, obj.name))
         return self._vnc.set_tag(obj, tag_type, tag_value, is_global)
 
     def unset_tag(self, tag_type, obj=None, object_type=None, uuid=None):
@@ -1659,10 +1810,16 @@ class ContrailVncApi(object):
         '''
         if not obj:
             obj = self._get_obj(object_type, uuid)
-        self._log.debug('Deleting tag-type %s from obj %s'%(tag_type, obj.name))
+        self._log.debug(
+            'Deleting tag-type %s from obj %s' %
+            (tag_type, obj.name))
         return self._vnc.unset_tag(obj, tag_type)
 
-    def assoc_intf_rt_table_to_si(self, si_fq_name, intf_rt_table_uuid, intf_type):
+    def assoc_intf_rt_table_to_si(
+            self,
+            si_fq_name,
+            intf_rt_table_uuid,
+            intf_type):
         '''
             :param si_uuid : UUID of the Service Instance object
             :param intf_table_uuid : UUID of Interface Route Table object
@@ -1727,7 +1884,7 @@ class ContrailVncApi(object):
                               isid=isid)
         uuid = self._vnc.bridge_domain_create(bd_obj)
         self._log.info('Created Bridge Domain %s, UUID: %s' % (
-                         self._vnc.id_to_fq_name(uuid), uuid))
+            self._vnc.id_to_fq_name(uuid), uuid))
         return bd_obj
     # end create_bd
 
@@ -1754,10 +1911,9 @@ class ContrailVncApi(object):
 
         self._vnc.bridge_domain_update(bd_obj)
         self._log.info('Updated Bridge Domain %s, UUID: %s' % (
-                         self._vnc.id_to_fq_name(uuid), uuid))
+            self._vnc.id_to_fq_name(uuid), uuid))
         return uuid
     # end update_bd
-
 
     def delete_bd(self, uuid=None):
         '''
@@ -1778,7 +1934,7 @@ class ContrailVncApi(object):
             uuid : UUID of BridgeDomain object
         '''
         bd_obj = self._vnc.bridge_domain_read(id=uuid)
-        self._log.info('Bridge Domain %s info' % (uuid,bd_obj))
+        self._log.info('Bridge Domain %s info' % (uuid, bd_obj))
     # end read_bd
 
     def get_bd(self, uuid=None):
@@ -1789,7 +1945,7 @@ class ContrailVncApi(object):
             uuid : UUID of BridgeDomain object
         '''
         bd_obj = self._vnc.bridge_domain_read(id=uuid)
-        self._log.info('Bridge Domain %s info' % (uuid,bd_obj))
+        self._log.info('Bridge Domain %s info' % (uuid, bd_obj))
         bd_obj.dump()
     # end get_bd
 
@@ -1802,7 +1958,7 @@ class ContrailVncApi(object):
             vmi_id: ID of VMI
             vlan_tag: vlan tag
         '''
-        self._log.info('Adding Bridge Domain %s to VMI %s' % (bd_id,vmi_id))
+        self._log.info('Adding Bridge Domain %s to VMI %s' % (bd_id, vmi_id))
         vmi = self._vnc.virtual_machine_interface_read(id=vmi_id)
         bd_obj = self._vnc.bridge_domain_read(id=bd_id)
         bmeb = BridgeDomainMembershipType()
@@ -1810,7 +1966,8 @@ class ContrailVncApi(object):
         vmi.add_bridge_domain(bd_obj, bmeb)
         self._vnc.virtual_machine_interface_update(vmi)
 
-    def enable_vlan_tag_based_bridge_domain(self, vmi_id, vlan_tag_based_bridge_domain):
+    def enable_vlan_tag_based_bridge_domain(
+            self, vmi_id, vlan_tag_based_bridge_domain):
         '''
         Enabling vlan tag based bridge domain
 
@@ -1818,7 +1975,9 @@ class ContrailVncApi(object):
             vmi_id: ID of VMI
             vlan_tag_based_bridge_domain: vlan tag based bridge domain
         '''
-        self._log.info('Enabling vlan tag based bridge domain %s on  VMI %s' % (vlan_tag_based_bridge_domain, vmi_id))
+        self._log.info(
+            'Enabling vlan tag based bridge domain %s on  VMI %s' %
+            (vlan_tag_based_bridge_domain, vmi_id))
         vmi = self._vnc.virtual_machine_interface_read(id=vmi_id)
         vmi.set_vlan_tag_based_bridge_domain(vlan_tag_based_bridge_domain)
         self._vnc.virtual_machine_interface_update(vmi)
@@ -1831,10 +1990,12 @@ class ContrailVncApi(object):
         vmi_host = None
         vmi_obj = self._vnc.virtual_machine_interface_read(id=vmi_id)
         vmi_bindings = vmi_obj.get_virtual_machine_interface_bindings()
-        #Sub-interface case, get the host of parent VMI
+        # Sub-interface case, get the host of parent VMI
         if not vmi_bindings:
-            parent_vmi_id = vmi_obj.get_virtual_machine_interface_refs()[0]['uuid']
-            vmi_obj = self._vnc.virtual_machine_interface_read(id=parent_vmi_id)
+            parent_vmi_id = vmi_obj.get_virtual_machine_interface_refs()[
+                0]['uuid']
+            vmi_obj = self._vnc.virtual_machine_interface_read(
+                id=parent_vmi_id)
             vmi_bindings = vmi_obj.get_virtual_machine_interface_bindings()
         if not vmi_bindings:
             self._log.error('Could not get VMI bindings for VMI %s' % (vmi_id))
@@ -1850,7 +2011,10 @@ class ContrailVncApi(object):
 
     def create_router(self, name, project_obj):
 
-        obj = LogicalRouter(name=name, parent_obj=project_obj, display_name=name)
+        obj = LogicalRouter(
+            name=name,
+            parent_obj=project_obj,
+            display_name=name)
 
         self._vnc.logical_router_create(obj)
 
@@ -1866,7 +2030,9 @@ class ContrailVncApi(object):
         if type(public_network_obj).__name__ is 'VirtualNetwork':
             router_obj.add_virtual_network(public_network_obj)
         else:
-            router_obj.add_virtual_network(self.get_vn_obj_from_id(public_network_obj['network']['id']))
+            router_obj.add_virtual_network(
+                self.get_vn_obj_from_id(
+                    public_network_obj['network']['id']))
 
         # Update logical router object
         self._vnc.logical_router_update(router_obj)
@@ -1885,7 +2051,7 @@ class ContrailVncApi(object):
 
         rt_inst_obj = self._vnc.routing_instance_read(
             fq_name=['default-domain', 'default-project',
-                    'ip-fabric', '__default__'])
+                     'ip-fabric', '__default__'])
         bgp_router = BgpRouter(router_name, rt_inst_obj)
         params = BgpRouterParams()
         params.address = router_ip
@@ -1905,19 +2071,17 @@ class ContrailVncApi(object):
             return bgp_router_obj
 
         except RefsExistError:
-            self._log.info("BGP router: %s is already present, "\
-                                "continuing the test" %(router_name))
-            bgp_fq_name=['default-domain', 'default-project',
-                            'ip-fabric', '__default__']
+            self._log.info("BGP router: %s is already present, "
+                           "continuing the test" % (router_name))
+            bgp_fq_name = ['default-domain', 'default-project',
+                           'ip-fabric', '__default__']
             bgp_fq_name.append(router_name)
-            bgp_router_obj = self._vnc.bgp_router_read(fq_name=
-                                                        bgp_fq_name)
+            bgp_router_obj = self._vnc.bgp_router_read(fq_name=bgp_fq_name)
             return bgp_router_obj
-        except:
-            self._log.error("Error in configuring BGP router: %s" %(
+        except BaseException:
+            self._log.error("Error in configuring BGP router: %s" % (
                 router_name))
             return False
-
 
     # end provision_bgp_router
 
@@ -1944,7 +2108,7 @@ class ContrailVncApi(object):
 
         rt_inst_obj = self._vnc.routing_instance_read(
             fq_name=['default-domain', 'default-project',
-                    'ip-fabric', '__default__'])
+                     'ip-fabric', '__default__'])
         if router_type == 'control-node':
             vendor = 'contrail'
         elif router_type == 'router':
@@ -1952,11 +2116,14 @@ class ContrailVncApi(object):
         else:
             vendor = 'unknown'
 
-        router_params = BgpRouterParams(router_type=router_type,
-            vendor=vendor, autonomous_system=int(router_asn),
+        router_params = BgpRouterParams(
+            router_type=router_type,
+            vendor=vendor,
+            autonomous_system=int(router_asn),
             identifier=self.get_ip(router_ip),
             address=self.get_ip(router_ip),
-            port=port, address_families=bgp_addr_fams)
+            port=port,
+            address_families=bgp_addr_fams)
 
         bgp_router_obj = BgpRouter(router_name, rt_inst_obj,
                                    bgp_router_parameters=router_params)
@@ -1966,27 +2133,27 @@ class ContrailVncApi(object):
             if not sub_cluster_name:
                 fq_name = rt_inst_obj.get_fq_name()
                 bgp_other_objs = self._vnc.bgp_routers_list(
-                                                      parent_fq_name=fq_name,
-                                                      detail=True)
+                    parent_fq_name=fq_name,
+                    detail=True)
                 bgp_router_names = [bgp_obj.fq_name
-                   for bgp_obj in bgp_other_objs
-                           if bgp_obj.get_sub_cluster_refs() == None]
-                bgp_router_obj.set_bgp_router_list(bgp_router_names,
-                                      [bgp_peering_attrs]*len(bgp_router_names))
+                                    for bgp_obj in bgp_other_objs
+                                    if bgp_obj.get_sub_cluster_refs() is None]
+                bgp_router_obj.set_bgp_router_list(
+                    bgp_router_names, [bgp_peering_attrs] * len(bgp_router_names))
             else:
                 sub_cluster_obj = SubCluster(sub_cluster_name)
                 try:
                     sub_cluster_obj = self._vnc.sub_cluster_read(
-                    fq_name=sub_cluster_obj.get_fq_name())
+                        fq_name=sub_cluster_obj.get_fq_name())
                 except NoIdError:
                     raise RuntimeError("Sub cluster to be provisioned first")
                 bgp_router_obj.add_sub_cluster(sub_cluster_obj)
                 refs = sub_cluster_obj.get_bgp_router_back_refs()
                 if refs:
-                    bgp_router_names = [ref['to']
-                          for ref in refs if ref['uuid'] != bgp_router_obj.uuid]
-                    bgp_router_obj.set_bgp_router_list(bgp_router_names,
-                                     [bgp_peering_attrs]*len(bgp_router_names))
+                    bgp_router_names = [
+                        ref['to'] for ref in refs if ref['uuid'] != bgp_router_obj.uuid]
+                    bgp_router_obj.set_bgp_router_list(
+                        bgp_router_names, [bgp_peering_attrs] * len(bgp_router_names))
             self._vnc.bgp_router_create(bgp_router_obj)
         except RefsExistError as e:
             print ("BGP Router " + pformat(bgp_router_fq_name) +
@@ -1996,7 +2163,7 @@ class ContrailVncApi(object):
         changed = False
         if md5:
             changed = True
-            md5 = {'key_items': [ { 'key': md5 ,"key_id":0 } ], "key_type":"md5"}
+            md5 = {'key_items': [{'key': md5, "key_id": 0}], "key_type": "md5"}
             rparams = cur_obj.bgp_router_parameters
             rparams.set_auth_data(md5)
             cur_obj.set_bgp_router_parameters(rparams)
@@ -2005,7 +2172,8 @@ class ContrailVncApi(object):
             changed = True
             local_asn = int(local_asn)
             if local_asn <= 0 or local_asn > 65535:
-                raise argparse.ArgumentTypeError("local_asn %s must be in range (1..65535)" % local_asn)
+                raise argparse.ArgumentTypeError(
+                    "local_asn %s must be in range (1..65535)" % local_asn)
             rparams = cur_obj.bgp_router_parameters
             rparams.set_local_autonomous_system(local_asn)
             cur_obj.set_bgp_router_parameters(rparams)
@@ -2015,7 +2183,6 @@ class ContrailVncApi(object):
 
     # end add_bgp_router
 
-
     def delete_bgp_router(self, name):
         '''Delete Fabric Gateway.
            Input is: name of fabric gateway
@@ -2023,19 +2190,20 @@ class ContrailVncApi(object):
         '''
         router_name = name
 
-        bgp_fq_name=['default-domain', 'default-project', 'ip-fabric',
-                     '__default__']
+        bgp_fq_name = ['default-domain', 'default-project', 'ip-fabric',
+                       '__default__']
         bgp_fq_name.append(router_name)
 
         try:
             self._vnc.bgp_router_delete(fq_name=bgp_fq_name)
-            self._log.info("Deleted BGP router %s successfully" % (router_name))
+            self._log.info(
+                "Deleted BGP router %s successfully" %
+                (router_name))
             return True
 
-        except:
-            self._log.error("%s Error in Deleting BGP router " %(router_name))
+        except BaseException:
+            self._log.error("%s Error in Deleting BGP router " % (router_name))
             return False
-
 
     # end delete_bgp_router
 
@@ -2044,34 +2212,34 @@ class ContrailVncApi(object):
         return self._vnc.global_system_config_read(fq_name=fq_name)
 
     def read_global_vrouter_config(self):
-        fq_name = [ 'default-global-system-config',
-                    'default-global-vrouter-config']
+        fq_name = ['default-global-system-config',
+                   'default-global-vrouter-config']
         return self._vnc.global_vrouter_config_read(fq_name=fq_name)
 
     def add_link_local_service(self, name, ip, port, ipfabric_service_port,
                                ipfabric_service_ip=None,
                                ipfabric_service_dns_name=None):
-        if type(ipfabric_service_ip) is str:
+        if isinstance(ipfabric_service_ip, str):
             ipfabric_service_ip = [ipfabric_service_ip]
-        linklocal_obj=LinklocalServiceEntryType(
-                 linklocal_service_name=name,
-                 linklocal_service_ip=ip,
-                 linklocal_service_port=int(port),
-                 ip_fabric_DNS_service_name=ipfabric_service_dns_name,
-                 ip_fabric_service_port=int(ipfabric_service_port),
-                 ip_fabric_service_ip=ipfabric_service_ip)
+        linklocal_obj = LinklocalServiceEntryType(
+            linklocal_service_name=name,
+            linklocal_service_ip=ip,
+            linklocal_service_port=int(port),
+            ip_fabric_DNS_service_name=ipfabric_service_dns_name,
+            ip_fabric_service_port=int(ipfabric_service_port),
+            ip_fabric_service_ip=ipfabric_service_ip)
         gv_obj = self.read_global_vrouter_config()
         services = gv_obj.get_linklocal_services() or LinklocalServicesTypes()
         lls_entries = services.get_linklocal_service_entry()
         for entry in lls_entries:
             if entry.get_linklocal_service_name() == name:
-                self._log.info("Link local service %s already there"%name)
+                self._log.info("Link local service %s already there" % name)
                 return
         lls_entries.append(linklocal_obj)
         services.set_linklocal_service_entry(lls_entries)
         gv_obj.set_linklocal_services(services)
         self._vnc.global_vrouter_config_update(gv_obj)
-        self._log.debug("Link local service %s added"%name)
+        self._log.debug("Link local service %s added" % name)
 
     def delete_link_local_service(self, name):
         gv_obj = self.read_global_vrouter_config()
@@ -2081,184 +2249,200 @@ class ContrailVncApi(object):
             if entry.get_linklocal_service_name() == name:
                 break
         else:
-            self._log.info("Link local service %s not found"%name)
+            self._log.info("Link local service %s not found" % name)
             return
         lls_entries.remove(entry)
         services.set_linklocal_service_entry(lls_entries)
         gv_obj.set_linklocal_services(services)
         self._vnc.global_vrouter_config_update(gv_obj)
-        self._log.debug("Link local service %s removed"%name)
+        self._log.debug("Link local service %s removed" % name)
 
-    #Lbaasv2 functions
-    def get_loadbalancer(self,lb_uuid):
-        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+    # Lbaasv2 functions
+    def get_loadbalancer(self, lb_uuid):
+        self.lb_feature_handles = LBFeatureHandles(self._vnc, self._log)
         return self.lb_feature_handles.lb_mgr.read(id=lb_uuid)
-    #End get_loadbalancer
+    # End get_loadbalancer
 
     def list_floatingips(self, tenant_id=None, port_id=None):
         if port_id:
             port_obj = self._vnc.virtual_machine_interface_read(id=port_id)
             fip_refs = port_obj.get_floating_ip_back_refs()
             if fip_refs:
-                fip_ids= [ref['uuid'] for ref in fip_refs]
+                fip_ids = [ref['uuid'] for ref in fip_refs]
                 if fip_ids:
-                    fip_dict = self._vnc.floating_ips_list(obj_uuids=fip_ids,
-                        fields=['parent_uuid', 'floating_ip_fixed_ip_address'],
-                        detail=False)
+                    fip_dict = self._vnc.floating_ips_list(
+                        obj_uuids=fip_ids, fields=[
+                            'parent_uuid', 'floating_ip_fixed_ip_address'], detail=False)
                     fip_list = fip_dict.get('floating-ips')
                 return fip_list
         return None
-    #End list_floatingips
+    # End list_floatingips
 
     def list_loadbalancers(self, **kwargs):
-        lb_name = kwargs.get('name',None)
+        lb_name = kwargs.get('name', None)
         if lb_name:
-            self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
-            lb_objects=self.lb_feature_handles.lb_mgr.lb_list()
+            self.lb_feature_handles = LBFeatureHandles(self._vnc, self._log)
+            lb_objects = self.lb_feature_handles.lb_mgr.lb_list()
             return lb_objects['loadbalancers']
-    #End list_loadbalancers
+    # End list_loadbalancers
 
     def create_loadbalancer(self, name=None, network_id=None,
-                            subnet_id=None, address=None,project=None):
-        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+                            subnet_id=None, address=None, project=None):
+        self.lb_feature_handles = LBFeatureHandles(self._vnc, self._log)
         #proj_obj = self.read_project_obj(project_fq_name=project)
         proj_obj = self.vnc_project
         vn_obj = self.get_vn_obj_from_id(network_id)
-        lb_obj=self.lb_feature_handles.lb_mgr.create(name,proj_obj,
-                        		vn_obj,vip_address=address,
-                        		subnet_uuid=subnet_id)
+        lb_obj = self.lb_feature_handles.lb_mgr.create(
+            name, proj_obj, vn_obj, vip_address=address, subnet_uuid=subnet_id)
         return lb_obj
-    #End create_loadbalancer
+    # End create_loadbalancer
 
     def delete_loadbalancer(self, lb_id):
-        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        self.lb_feature_handles = LBFeatureHandles(self._vnc, self._log)
         self.lb_feature_handles.lb_mgr.delete(lb_id)
-    #End delete_loadbalancer
+    # End delete_loadbalancer
 
     def assoc_floatingip(self, fip_id, port_id):
-        return self.assoc_floating_ip(fip_id, port_id,vmi_id=port_id)
-    #End assoc_floatingip
+        return self.assoc_floating_ip(fip_id, port_id, vmi_id=port_id)
+    # End assoc_floatingip
 
     def create_floatingip(self, fip_pool_vn_id,
-                        	project_id=None, port_id=None,
+                          project_id=None, port_id=None,
                           project_fq_name=None):
-        pool_obj= self.get_vn_obj_from_id(fip_pool_vn_id)
+        pool_obj = self.get_vn_obj_from_id(fip_pool_vn_id)
         proj_obj = self.vnc_project
-        (fip, fip_id) = self.create_floating_ip(None, proj_obj,vn_obj=pool_obj)
+        (fip, fip_id) = self.create_floating_ip(
+            None, proj_obj, vn_obj=pool_obj)
         if port_id:
-            self.assoc_floating_ip(fip_id, port_id,vmi_id=port_id)
+            self.assoc_floating_ip(fip_id, port_id, vmi_id=port_id)
         fip_obj = self._vnc.floating_ip_read(id=fip_id)
         return fip_obj
-    #End create_floatingip
+    # End create_floatingip
 
     def delete_floatingip(self, fip_id):
         self.delete_floating_ip(fip_id)
-    #End delete_floatingip
+    # End delete_floatingip
 
     def apply_sg_to_port(self, port_id, sg_list):
         return self.set_security_group(port_id, sg_list)
-    #End apply_sg_to_port
+    # End apply_sg_to_port
 
     def get_listener(self, listener_id, **kwargs):
-        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        self.lb_feature_handles = LBFeatureHandles(self._vnc, self._log)
         return self.lb_feature_handles.ll_mgr.read(id=listener_id)
-    #End get_listener
+    # End get_listener
 
     def list_lbaas_pools(self, **kwargs):
-        ll_id = kwargs.get('listener','')
+        ll_id = kwargs.get('listener', '')
         parent_obj = self.vnc_project
         parent_id = parent_obj.uuid
-        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
-        ll_list = self.lb_feature_handles.lb_pool_mgr.resource_list(tenant_id=parent_id)
+        self.lb_feature_handles = LBFeatureHandles(self._vnc, self._log)
+        ll_list = self.lb_feature_handles.lb_pool_mgr.resource_list(
+            tenant_id=parent_id)
         return ll_list['loadbalancer-pools']
-    #End list_lbaas_pools
+    # End list_lbaas_pools
 
     def get_lbaas_member(self, member_id, pool_id, **kwargs):
-        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        self.lb_feature_handles = LBFeatureHandles(self._vnc, self._log)
         return self.lb_feature_handles.lb_member_mgr.read(id=member_id)
-    #End get_lbaas_member
+    # End get_lbaas_member
 
     def get_lbaas_healthmonitor(self, hm_id, **kwargs):
-        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        self.lb_feature_handles = LBFeatureHandles(self._vnc, self._log)
         return self.lb_feature_handles.lb_hm_mgr.read(id=hm_id)
-    #End get_lbaas_healthmonitor
+    # End get_lbaas_healthmonitor
 
     def list_listeners(self, **kwargs):
-        parent = kwargs.get('parent_fq_name',None)
+        parent = kwargs.get('parent_fq_name', None)
         if parent:
-             parent_obj = self.vnc_project
-             parent_id = parent_obj.id
+            parent_obj = self.vnc_project
+            parent_id = parent_obj.id
         else:
             parent_id = None
-        lb_listeners = self._vnc.loadbalancer_listeners_list(parent_id=parent_id)
+        lb_listeners = self._vnc.loadbalancer_listeners_list(
+            parent_id=parent_id)
         return lb_listeners['loadbalancer-listeners']
-    #End list_listeners
+    # End list_listeners
 
-    def create_listener(self, lb_id, protocol, port, default_tls_container=None,
-                        name=None, connection_limit=-1,**kwargs):
-        sni_containers=kwargs.get('sni_containers',None)
-        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
-        lb_obj =self._vnc.loadbalancer_read(id=lb_id)
-        proj_fq_name = kwargs.get('projetc_fq_name',None)
-        proj_obj=self.vnc_project
-        return self.lb_feature_handles.ll_mgr.create(lb_obj,proj_obj,name=name,
-                        							protocol=protocol,
-                        							protocol_port=port,
-                        							connection_limit=connection_limit,
-                        							default_tls_container=default_tls_container,
-                        							sni_containers=sni_containers
-                        							)
-    #End create_listener
+    def create_listener(
+            self,
+            lb_id,
+            protocol,
+            port,
+            default_tls_container=None,
+            name=None,
+            connection_limit=-1,
+            **kwargs):
+        sni_containers = kwargs.get('sni_containers', None)
+        self.lb_feature_handles = LBFeatureHandles(self._vnc, self._log)
+        lb_obj = self._vnc.loadbalancer_read(id=lb_id)
+        proj_fq_name = kwargs.get('projetc_fq_name', None)
+        proj_obj = self.vnc_project
+        return self.lb_feature_handles.ll_mgr.create(
+            lb_obj,
+            proj_obj,
+            name=name,
+            protocol=protocol,
+            protocol_port=port,
+            connection_limit=connection_limit,
+            default_tls_container=default_tls_container,
+            sni_containers=sni_containers)
+    # End create_listener
 
     def create_lbaas_pool(self, listener_id, protocol, lb_algorithm,
-                          name=None, session_persistence=None,**kwargs):
-        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
-        ll_obj= self._vnc.loadbalancer_listener_read(id=listener_id)
-        proj_fq_name = kwargs.get('projetc_fq_name',None)
-        proj_obj=self.vnc_project
-        return self.lb_feature_handles.lb_pool_mgr.create(ll_obj,proj_obj,
-                        					protocol,name=name,
-                        					session_persistence=session_persistence,
-                        					lb_algorithm=lb_algorithm)
-    #End create_lbaas_pool
+                          name=None, session_persistence=None, **kwargs):
+        self.lb_feature_handles = LBFeatureHandles(self._vnc, self._log)
+        ll_obj = self._vnc.loadbalancer_listener_read(id=listener_id)
+        proj_fq_name = kwargs.get('projetc_fq_name', None)
+        proj_obj = self.vnc_project
+        return self.lb_feature_handles.lb_pool_mgr.create(
+            ll_obj,
+            proj_obj,
+            protocol,
+            name=name,
+            session_persistence=session_persistence,
+            lb_algorithm=lb_algorithm)
+    # End create_lbaas_pool
 
     def delete_lbaas_pool(self, pool_id):
-        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        self.lb_feature_handles = LBFeatureHandles(self._vnc, self._log)
         self.lb_feature_handles.lb_pool_mgr.delete(id=pool_id)
-    #End delete_lbaas_pool
+    # End delete_lbaas_pool
 
     def get_port_ips(self, port_id):
-        vmi_obj=self._vnc.virtual_machine_interfaces_read(id=port_id)
-    #End get_port_ips
+        vmi_obj = self._vnc.virtual_machine_interfaces_read(id=port_id)
+    # End get_port_ips
 
-    def get_subnet_id_from_network(self,vn_id):
-        vn_obj=self._vnc.virtual_network_read(id=vn_id)
+    def get_subnet_id_from_network(self, vn_id):
+        vn_obj = self._vnc.virtual_network_read(id=vn_id)
 
     def create_lbaas_member(self, address, port, pool_id, weight=1,
                             subnet_id=None, network_id=None):
-        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        self.lb_feature_handles = LBFeatureHandles(self._vnc, self._log)
         pool_obj = self._vnc.loadbalancer_pool_read(id=pool_id)
         if network_id and not subnet_id:
-            subnet_id=self.get_subnet_id_from_network(network_id)
-        return self.lb_feature_handles.lb_member_mgr.create(pool_obj, address=address,
-                        						protocol_port=port,
-                        						weight=weight,
-                        						subnet_id=subnet_id)
-    #End create_lbaas_member
+            subnet_id = self.get_subnet_id_from_network(network_id)
+        return self.lb_feature_handles.lb_member_mgr.create(
+            pool_obj,
+            address=address,
+            protocol_port=port,
+            weight=weight,
+            subnet_id=subnet_id)
+    # End create_lbaas_member
 
     def list_lbaas_members(self, pool_id, **kwargs):
         return self._vnc.loadbalancer_members_list(
-                parent_id=pool_id)
-    #End list_lbaas_members
+            parent_id=pool_id)
+    # End list_lbaas_members
 
     def delete_lbaas_member(self, member_id, pool_id):
-        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        self.lb_feature_handles = LBFeatureHandles(self._vnc, self._log)
         self.lb_feature_handles.lb_member_mgr.delete(id=member_id)
-    #End delete_lbaas_member
+    # End delete_lbaas_member
 
     def update_lbaas_member(self, member_id, pool_id, port=None,
                             weight=None, admin_state=None,
-                        	status=None,address=None):
+                            status=None, address=None):
         '''
         'admin_state': 'admin_state_up',
         'status': 'status',
@@ -2268,73 +2452,89 @@ class ContrailVncApi(object):
         'subnet_id': 'subnet_id',
         '''
 
-
-        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
-        return self.lb_feature_handles.lb_member_mgr.update(member_id,
-                        							admin_state=admin_state,
-                        							status=status,
-                        							port=port,
-                        							weight=weight,
-                        							address=address)
-    #End update_lbaas_member
+        self.lb_feature_handles = LBFeatureHandles(self._vnc, self._log)
+        return self.lb_feature_handles.lb_member_mgr.update(
+            member_id,
+            admin_state=admin_state,
+            status=status,
+            port=port,
+            weight=weight,
+            address=address)
+    # End update_lbaas_member
 
     def create_lbaas_healthmonitor(self, pool_id, delay, max_retries,
                                    probe_type, timeout, http_method=None,
                                    http_codes=None, http_url=None):
-        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
-        proj_obj=self.vnc_project
-        return self.lb_feature_handles.lb_hm_mgr.create(pool_id, delay, max_retries,
-                        						probe_type, timeout,
-                        						http_method=http_method,
-                        						http_codes=http_codes,
-                        						http_url=http_url,
-                        						proj_obj=proj_obj)
+        self.lb_feature_handles = LBFeatureHandles(self._vnc, self._log)
+        proj_obj = self.vnc_project
+        return self.lb_feature_handles.lb_hm_mgr.create(
+            pool_id,
+            delay,
+            max_retries,
+            probe_type,
+            timeout,
+            http_method=http_method,
+            http_codes=http_codes,
+            http_url=http_url,
+            proj_obj=proj_obj)
 
-    #End create_lbaas_healthmonitor
+    # End create_lbaas_healthmonitor
 
     def delete_lbaas_healthmonitor(self, hm_id):
-        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        self.lb_feature_handles = LBFeatureHandles(self._vnc, self._log)
         return self.lb_feature_handles.lb_hm_mgr.delete(id=hm_id)
-    #End delete_lbaas_healthmonitor
+    # End delete_lbaas_healthmonitor
 
-    def update_lbaas_healthmonitor(self,hm_id, delay=None, max_retries=None,
+    def update_lbaas_healthmonitor(self, hm_id, delay=None, max_retries=None,
                                    timeout=None, http_method=None,
                                    http_codes=None, http_url=None,
-                        			project_fq_name=None):
+                                   project_fq_name=None):
 
-        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
-        proj_obj=self.vnc_project
-        return self.lb_feature_handles.lb_hm_mgr.update(hm_id=hm_id,proj_obj=proj_obj,
-                        			 delay=delay,
-                        			 max_retries=max_retries,
-                                     timeout=timeout, http_method=http_method,
-                                     http_codes=http_codes, http_url=http_url)
-    #End update_lbaas_healthmonitor
+        self.lb_feature_handles = LBFeatureHandles(self._vnc, self._log)
+        proj_obj = self.vnc_project
+        return self.lb_feature_handles.lb_hm_mgr.update(
+            hm_id=hm_id,
+            proj_obj=proj_obj,
+            delay=delay,
+            max_retries=max_retries,
+            timeout=timeout,
+            http_method=http_method,
+            http_codes=http_codes,
+            http_url=http_url)
+    # End update_lbaas_healthmonitor
 
     def delete_listener(self, listener_id):
-        self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
+        self.lb_feature_handles = LBFeatureHandles(self._vnc, self._log)
         self.lb_feature_handles.ll_mgr.delete(id=listener_id)
-    #End delete_listener
-    #End Lbaasv2 functions
+    # End delete_listener
+    # End Lbaasv2 functions
 
-    def get_vn_of_subnet(self,subnet_id):
-        return get_subnet_network_id(self._vnc,subnet_id)
+    def get_vn_of_subnet(self, subnet_id):
+        return get_subnet_network_id(self._vnc, subnet_id)
 
     def delete_fip_on_vip(self):
-        #This function is needed to meet the expectation
-        #of lbaasV2 fixture.The intent is achieved
-        #in delete of pool.Hence keeping is empty
+        # This function is needed to meet the expectation
+        # of lbaasV2 fixture.The intent is achieved
+        # in delete of pool.Hence keeping is empty
         pass
 
-    def port_translation_pool(self, protocol, port_count, start_port=0, end_port=0):
-        port_range = PortType(start_port = start_port, end_port = end_port)
-        pp = PortTranslationPool(protocol = protocol, port_count = str(port_count), port_range = port_range)
+    def port_translation_pool(
+            self,
+            protocol,
+            port_count,
+            start_port=0,
+            end_port=0):
+        port_range = PortType(start_port=start_port, end_port=end_port)
+        pp = PortTranslationPool(
+            protocol=protocol,
+            port_count=str(port_count),
+            port_range=port_range)
         return pp
 
     def get_port_translation_pools(self):
         gv_obj = self.read_global_vrouter_config()
         return gv_obj.get_port_translation_pools()
-    #end get_port_translation_pool_global_config
+    # end get_port_translation_pool_global_config
 
     def set_port_translation_pool(self, pp=None):
         pp = pp or []
@@ -2344,7 +2544,7 @@ class ContrailVncApi(object):
         gv_obj.set_port_translation_pools(ppp)
         self._vnc.global_vrouter_config_update(gv_obj)
         return True
-    #end set_port_translation_pool
+    # end set_port_translation_pool
 
     def delete_port_translation_pool(self, pp):
         gv_obj = self.read_global_vrouter_config()
@@ -2374,10 +2574,10 @@ class ContrailVncApi(object):
     def get_ip(self, ip_w_pfx):
         return str(IPNetwork(ip_w_pfx).ip)
 
-    def create_vn_api(self, vn_name, project,subnets,ipam,**kwargs):
+    def create_vn_api(self, vn_name, project, subnets, ipam, **kwargs):
         project_obj = self.read_project_obj(project_fq_name=project)
         ipam_obj = self._vnc.network_ipam_read(
-               fq_name=ipam)
+            fq_name=ipam)
         vn_obj = VirtualNetwork(vn_name, parent_obj=project_obj)
         for pfx in subnets:
             px = pfx['cidr'].split('/')[0]
@@ -2387,29 +2587,34 @@ class ContrailVncApi(object):
             vn_obj.add_network_ipam(ipam_obj, vnsn_data)
         try:
             vn_uuid = self._vnc.virtual_network_create(vn_obj)
-            if not kwargs.get('enable_dhcp',None):
-                vn_obj.external_ipam=True
+            if not kwargs.get('enable_dhcp', None):
+                vn_obj.external_ipam = True
                 self._vnc.virtual_network_update(vn_obj)
             return vn_uuid
         except RefsExistError:
             project_fq_name.append(vn_name)
-            return self._vnc.virtual_network_read(vn_fq_name = project_fq_name)
+            return self._vnc.virtual_network_read(vn_fq_name=project_fq_name)
 
     def delete_vn_api(self, vn_obj):
         try:
             self._vnc.virtual_network_delete(id=vn_obj.uuid)
             return True
-        except RefsExistError,e:
-            self._log.debug('RefsExistError %s while deleting VN %s..%(e, vn_obj.name)')
+        except RefsExistError as e:
+            self._log.debug(
+                'RefsExistError %s while deleting VN %s..%(e, vn_obj.name)')
             return False
-    
-    def get_vmi_by_vm(self,vm_id,**kwargs):
+
+    def get_vmi_by_vm(self, vm_id, **kwargs):
         try:
             vm_obj = self._vnc.virtual_machine_read(id=vm_id)
         except Exception as e:
-            self._log.debug("Got exception as %s while reading the vm obj"%(e))
+            self._log.debug(
+                "Got exception as %s while reading the vm obj" %
+                (e))
         vmis = vm_obj.get_virtual_machine_interface_back_refs()
-        return [self._vnc.virtual_machine_interface_read(id=vmi['uuid']) for vmi in vmis]
+        return [
+            self._vnc.virtual_machine_interface_read(
+                id=vmi['uuid']) for vmi in vmis]
 
     def create_fabric(self, name, creds=None):
         fqname = ['default-global-system-config', name]
@@ -2424,7 +2629,7 @@ class ContrailVncApi(object):
             credentials.add_device_credential(credential)
         obj = Fabric(name, fq_name=fqname, parent_type=parent_type,
                      fabric_credentials=credentials)
-        self._log.debug('Creating fabric %s'%fqname)
+        self._log.debug('Creating fabric %s' % fqname)
         return self._vnc.fabric_create(obj)
 
     def add_creds_to_fabric(self, name, creds):
@@ -2462,7 +2667,7 @@ class ContrailVncApi(object):
         '''
         if name:
             kwargs['fq_name'] = ['default-global-system-config', name]
-        self._log.debug('Reading fabric %s'%kwargs)
+        self._log.debug('Reading fabric %s' % kwargs)
         return self._vnc.fabric_read(**kwargs)
 
     def delete_fabric(self, name=None, **kwargs):
@@ -2474,7 +2679,7 @@ class ContrailVncApi(object):
         '''
         if name:
             kwargs['fq_name'] = ['default-global-system-config', name]
-        self._log.debug('Deleting fabric %s'%kwargs)
+        self._log.debug('Deleting fabric %s' % kwargs)
         return self._vnc.fabric_delete(**kwargs)
 
     def get_fabric_namespace_value(self, **kwargs):
@@ -2483,11 +2688,11 @@ class ContrailVncApi(object):
         if obj.fabric_namespace_type == 'IPV4-CIDR':
             v4_cidr = value.get_ipv4_cidr()
             subnet = v4_cidr.get_subnet()[0]
-            return '%s/%s'%(subnet.ip_prefix, subnet.ip_prefix_len)
-        elif obj.fabric_namespace_type =='ASN':
+            return '%s/%s' % (subnet.ip_prefix, subnet.ip_prefix_len)
+        elif obj.fabric_namespace_type == 'ASN':
             asn = value.get_asn()
             return asn.get_asn()[0]
-        elif obj.fabric_namespace_type =='MAC_ADDR':
+        elif obj.fabric_namespace_type == 'MAC_ADDR':
             mac = value.get_mac_addr()
             return mac.get_mac_address()[0]
 
@@ -2521,7 +2726,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Reading fabric namespace %s'%kwargs)
+        self._log.debug('Reading fabric namespace %s' % kwargs)
         return self._vnc.fabric_namespace_read(**kwargs)
 
     def delete_fabric_namespace(self, **kwargs):
@@ -2530,7 +2735,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Deleting fabric namespace %s'%kwargs)
+        self._log.debug('Deleting fabric namespace %s' % kwargs)
         return self._vnc.fabric_namespace_delete(**kwargs)
 
     def add_device_to_fabric(self, fabric, device):
@@ -2575,7 +2780,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Deleting logical interface %s'%kwargs)
+        self._log.debug('Deleting logical interface %s' % kwargs)
         return self._vnc.logical_interface_delete(**kwargs)
 
     def read_logical_interface(self, **kwargs):
@@ -2584,21 +2789,27 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Reading logical interface %s'%kwargs)
+        self._log.debug('Reading logical interface %s' % kwargs)
         return self._vnc.logical_interface_read(**kwargs)
 
     def create_logical_interface(self, name, pif_fqname, vlan=None,
-                                  interface_type=None):
+                                 interface_type=None):
         fq_name = pif_fqname + [name.replace(':', '__')]
-        obj = LogicalInterface(name=fq_name[-1], parent_type='physical-interface',
-                                fq_name=fq_name, display_name=name)
+        obj = LogicalInterface(name=fq_name[-1],
+                               parent_type='physical-interface',
+                               fq_name=fq_name,
+                               display_name=name)
         if vlan is not None:
             obj.set_logical_interface_vlan_tag(vlan)
         if interface_type:
             obj.set_logical_interface_type(interface_type)
         return self._vnc.logical_interface_create(obj)
 
-    def update_logical_interface(self, vlan=None, interface_type=None, **kwargs):
+    def update_logical_interface(
+            self,
+            vlan=None,
+            interface_type=None,
+            **kwargs):
         obj = self.read_logical_interface(**kwargs)
         if vlan is not None:
             obj.set_logical_interface_vlan_tag(vlan_id)
@@ -2624,7 +2835,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Deleting physical interface %s'%kwargs)
+        self._log.debug('Deleting physical interface %s' % kwargs)
         return self._vnc.physical_interface_delete(**kwargs)
 
     def read_physical_interface(self, **kwargs):
@@ -2633,15 +2844,17 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Reading physical interface %s'%kwargs)
+        self._log.debug('Reading physical interface %s' % kwargs)
         return self._vnc.physical_interface_read(**kwargs)
 
     def create_physical_interface(self, name, device_name, mac=None,
                                   interface_type=None):
-        fq_name = ['default-global-system-config', device_name, 
+        fq_name = ['default-global-system-config', device_name,
                    name.replace(':', '__')]
-        obj = PhysicalInterface(name=fq_name[-1], parent_type='physical-router',
-                                fq_name=fq_name, display_name=name)
+        obj = PhysicalInterface(name=fq_name[-1],
+                                parent_type='physical-router',
+                                fq_name=fq_name,
+                                display_name=name)
         if mac:
             macs = mac if isinstance(mac, list) else [mac]
             mac_addr = MacAddressesType(mac_address=macs)
@@ -2679,7 +2892,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Reading physical router %s'%kwargs)
+        self._log.debug('Reading physical router %s' % kwargs)
         if name:
             kwargs['fq_name'] = ['default-global-system-config', name]
         return self._vnc.physical_router_read(**kwargs)
@@ -2690,7 +2903,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Deleting physical router %s'%kwargs)
+        self._log.debug('Deleting physical router %s' % kwargs)
         if name:
             kwargs['fq_name'] = ['default-global-system-config', name]
         return self._vnc.physical_router_delete(**kwargs)
@@ -2701,7 +2914,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Read virtual machine interface %s'%kwargs)
+        self._log.debug('Read virtual machine interface %s' % kwargs)
         return self._vnc.virtual_machine_interface_read(**kwargs)
 
     def read_virtual_network(self, **kwargs):
@@ -2710,7 +2923,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Read virtual network %s'%kwargs)
+        self._log.debug('Read virtual network %s' % kwargs)
         return self._vnc.virtual_network_read(**kwargs)
 
     def read_virtual_router(self, name=None, **kwargs):
@@ -2719,7 +2932,7 @@ class ContrailVncApi(object):
             :param fq_name_str : fqname of the object in string notation
             :param id : uuid of the object
         '''
-        self._log.debug('Read virtual router %s'%kwargs)
+        self._log.debug('Read virtual router %s' % kwargs)
         if name:
             kwargs['fq_name'] = ['default-global-system-config', name]
         return self._vnc.virtual_router_read(**kwargs)
@@ -2792,7 +3005,7 @@ class ContrailVncApi(object):
             :param payload : input for the job in json format
         '''
         device_str = '' if not devices else ' on devices %s'
-        self._log.debug('Executing job %s with %s payload%s'%(
+        self._log.debug('Executing job %s with %s payload%s' % (
                         template_fqname, payload_dict, device_str))
         #payload = json.dumps(payload_dict)
         kwargs = {'job_template_fq_name': template_fqname,
@@ -2800,23 +3013,24 @@ class ContrailVncApi(object):
         if devices:
             kwargs['device_list'] = devices
         resp = self._vnc.execute_job(**kwargs)
-        self._log.debug('Execution id %s'%resp['job_execution_id'])
+        self._log.debug('Execution id %s' % resp['job_execution_id'])
         return resp['job_execution_id']
+
 
 class LBFeatureHandles:
     __metaclass__ = Singleton
 
-    def __init__(self,vnc,log):
-        self._vnc=vnc
-        self._log=log
+    def __init__(self, vnc, log):
+        self._vnc = vnc
+        self._log = log
         self.get_lb_feature_handles()
 
     def get_lb_feature_handles(self):
-        self.lb_mgr = ServiceLbManager(self._vnc,self._log)
-        self.ll_mgr = ServiceLbListenerManager(self._vnc,self._log)
-        self.lb_pool_mgr = ServiceLbPoolManager(self._vnc,self._log)
-        self.lb_member_mgr = ServiceLbMemberManager(self._vnc,self._log)
-        self.lb_hm_mgr = ServiceLbHealthMonitorManager(self._vnc,self._log)
+        self.lb_mgr = ServiceLbManager(self._vnc, self._log)
+        self.ll_mgr = ServiceLbListenerManager(self._vnc, self._log)
+        self.lb_pool_mgr = ServiceLbPoolManager(self._vnc, self._log)
+        self.lb_member_mgr = ServiceLbMemberManager(self._vnc, self._log)
+        self.lb_hm_mgr = ServiceLbHealthMonitorManager(self._vnc, self._log)
 
-#vn.get_floating_ip_pools()
-#floating_ip_pool_delete
+# vn.get_floating_ip_pools()
+# floating_ip_pool_delete
