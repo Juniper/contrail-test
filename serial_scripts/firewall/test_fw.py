@@ -128,7 +128,7 @@ class TestFirewallBasic(BaseFirewallTest):
 
         assert self.check_vms_booted(self.vms.itervalues(), do_assert=False)
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     def test_global_scope(self):
         '''
