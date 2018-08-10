@@ -540,7 +540,6 @@ src_cidr_svc = {
             "type" : "OS::Nova::Server",
             "depends_on" : [ "template_InstanceIp_4"],
             "properties" : {
-                "config_root": "config-root",
                 "name" : {"get_param" : "left_vm1_name"},
                 "image" : { "get_param" :  "image" },
                 "flavor" : { "get_param" : "flavor" },
@@ -554,7 +553,6 @@ src_cidr_svc = {
             "type" : "OS::Nova::Server",
             "depends_on" : [ "template_InstanceIp_6"],
             "properties" : {
-                "config_root": "config-root",
                 "name" : {"get_param" : "left_vm2_name"},
                 "image" : { "get_param" :  "image"},
                 "flavor" : { "get_param" : "flavor"},
