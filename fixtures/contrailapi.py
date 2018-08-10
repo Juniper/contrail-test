@@ -972,9 +972,10 @@ class ContrailVncApi(object):
         autonomous_system = kwargs['autonomous_system']
         bgpaas_ip_address = kwargs['bgpaas_ip_address']
         bgpaas_shared = kwargs['bgpaas_shared']
+        local_autonomous_system = kwargs['local_autonomous_system']
         session_attributes = BgpSessionAttributes(**kwargs)
         obj = BgpAsAService(name, parent_type='project', fq_name=fq_name, bgpaas_session_attributes=session_attributes,
-                            autonomous_system=autonomous_system, bgpaas_shared=bgpaas_shared, bgpaas_ip_address=bgpaas_ip_address)
+                            autonomous_system=autonomous_system, bgpaas_shared=bgpaas_shared, bgpaas_ip_address=bgpaas_ip_address, local_autonomous_system=local_autonomous_system)
         return self._vnc.bgp_as_a_service_create(obj)
 
     def update_bgpaas(self, bgpaas_uuid, **kwargs):

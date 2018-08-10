@@ -27,20 +27,20 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
         cls.analytics_obj = cls.connections.analytics_obj
     # end setUpClass
 
-    def create_bgpaas(self, bgpaas_shared='false', autonomous_system='64512', bgpaas_ip_address=None, address_families=['inet', 'inet6'], verify=True):
+    def create_bgpaas(self, bgpaas_shared='false', autonomous_system='64512', bgpaas_ip_address=None, address_families=['inet', 'inet6'], verify=True, local_autonomous_system=''):
         '''
         Calls the BGPaaS Fixture to create the object
         '''
         bgpaas_fixture = self.useFixture(BGPaaSFixture(
             connections=self.connections,
             name=get_random_name(self.project_name),
-            bgpaas_shared=bgpaas_shared, autonomous_system=autonomous_system, bgpaas_ip_address=bgpaas_ip_address, address_families=address_families))
+            bgpaas_shared=bgpaas_shared, autonomous_system=autonomous_system, bgpaas_ip_address=bgpaas_ip_address, address_families=address_families, local_autonomous_system=local_autonomous_system))
         if verify:
             bgpaas_fixture.verify_on_setup()
         return bgpaas_fixture
     # end create_bgpaas
 
-    def config_bgp_on_vsrx(self, src_vm=None, dst_vm=None, bgp_ip=None, lo_ip=None, address_families=[], autonomous_system='64512', neighbors=[], bfd_enabled=True):
+    def config_bgp_on_vsrx(self, src_vm=None, dst_vm=None, bgp_ip=None, lo_ip=None, address_families=[], autonomous_system='64512', neighbors=[], bfd_enabled=True, local_autonomous_system='', peer_local= ''):
         '''
         Pass VRRP config to the vSRX
         '''
@@ -53,8 +53,14 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
         for neighbor in neighbors:
             cmdList.append(
                 'set protocols bgp group bgpaas neighbor ' + str(neighbor))
-        cmdList.append('set protocols bgp group bgpaas peer-as ' +
-                       str(self.inputs.router_asn))
+        #cmdList.append('set protocols bgp group bgpaas peer-as ' +
+        #               str(self.inputs.router_asn))
+        if local_autonomous_system:
+            cmdList.append('set protocols bgp group bgpaas peer-as ' + str(local_autonomous_system))
+        else:
+            cmdList.append('set protocols bgp group bgpaas peer-as ' + str(self.inputs.router_asn))
+        if peer_local:
+            cmdList.append('set protocols bgp group bgpaas local-as ' + str(peer_local))
         if bfd_enabled:
             cmdList.extend(('set protocols bgp group bgpaas bfd-liveness-detection minimum-interval 1000',
                             'set protocols bgp group bgpaas bfd-liveness-detection multiplier 3',
