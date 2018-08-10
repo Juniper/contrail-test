@@ -27,34 +27,78 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
         cls.analytics_obj = cls.connections.analytics_obj
     # end setUpClass
 
-    def create_bgpaas(self, bgpaas_shared='false', autonomous_system='64512', bgpaas_ip_address=None, address_families=['inet', 'inet6'], verify=True):
+    def create_bgpaas(
+            self,
+            bgpaas_shared='false',
+            autonomous_system='64512',
+            bgpaas_ip_address=None,
+            address_families=[
+                'inet',
+                'inet6'],
+            verify=True,
+            local_autonomous_system=''):
         '''
         Calls the BGPaaS Fixture to create the object
         '''
-        bgpaas_fixture = self.useFixture(BGPaaSFixture(
-            connections=self.connections,
-            name=get_random_name(self.project_name),
-            bgpaas_shared=bgpaas_shared, autonomous_system=autonomous_system, bgpaas_ip_address=bgpaas_ip_address, address_families=address_families))
+        bgpaas_fixture = self.useFixture(
+            BGPaaSFixture(
+                connections=self.connections,
+                name=get_random_name(
+                    self.project_name),
+                bgpaas_shared=bgpaas_shared,
+                autonomous_system=autonomous_system,
+                bgpaas_ip_address=bgpaas_ip_address,
+                address_families=address_families,
+                local_autonomous_system=local_autonomous_system))
         if verify:
             bgpaas_fixture.verify_on_setup()
         return bgpaas_fixture
     # end create_bgpaas
 
-    def config_bgp_on_vsrx(self, src_vm=None, dst_vm=None, bgp_ip=None, lo_ip=None, address_families=[], autonomous_system='64512', neighbors=[], bfd_enabled=True):
+    def config_bgp_on_vsrx(
+            self,
+            src_vm=None,
+            dst_vm=None,
+            bgp_ip=None,
+            lo_ip=None,
+            address_families=[],
+            autonomous_system='64512',
+            neighbors=[],
+            bfd_enabled=True,
+            local_autonomous_system='',
+            peer_local=''):
         '''
         Pass VRRP config to the vSRX
         '''
         cmdList = []
-        cmdList.extend(('set routing-options router-id ' + str(lo_ip), 'set routing-options autonomous-system ' + str(autonomous_system),
-                        'set protocols bgp group bgpaas local-address ' + str(bgp_ip)))
+        cmdList.extend(
+            ('set routing-options router-id ' +
+             str(lo_ip),
+                'set routing-options autonomous-system ' +
+                str(autonomous_system),
+                'set protocols bgp group bgpaas local-address ' +
+                str(bgp_ip)))
         for family in address_families:
             cmdList.append(
-                'set protocols bgp group bgpaas family ' + str(family) + ' unicast')
+                'set protocols bgp group bgpaas family ' +
+                str(family) +
+                ' unicast')
         for neighbor in neighbors:
             cmdList.append(
                 'set protocols bgp group bgpaas neighbor ' + str(neighbor))
-        cmdList.append('set protocols bgp group bgpaas peer-as ' +
-                       str(self.inputs.router_asn))
+        # cmdList.append('set protocols bgp group bgpaas peer-as ' +
+        #               str(self.inputs.router_asn))
+        if local_autonomous_system:
+            cmdList.append(
+                'set protocols bgp group bgpaas peer-as ' +
+                str(local_autonomous_system))
+        else:
+            cmdList.append(
+                'set protocols bgp group bgpaas peer-as ' + str(self.inputs.router_asn))
+        if peer_local:
+            cmdList.append(
+                'set protocols bgp group bgpaas local-as ' +
+                str(peer_local))
         if bfd_enabled:
             cmdList.extend(('set protocols bgp group bgpaas bfd-liveness-detection minimum-interval 1000',
                             'set protocols bgp group bgpaas bfd-liveness-detection multiplier 3',
@@ -66,8 +110,80 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
                         str(bgp_ip),
                         'set policy-options policy-statement export-to-bgp term allow_local then accept', 'set policy-options policy-statement export-to-bgp term deny_all then reject'	))
         cmd_string = (';').join(cmdList)
-        assert self.set_config_via_netconf(src_vm, dst_vm,
-                                             cmd_string, timeout=10, device='junos', hostkey_verify="False"), 'Could not configure BGP thru Netconf'
+        assert self.set_config_via_netconf(src_vm, dst_vm, cmd_string, timeout=10,
+                                           device='junos', hostkey_verify="False"), 'Could not configure BGP thru Netconf'
+
+    def config_2legs_on_vsrx(
+            self,
+            src_vm=None,
+            dst_vm=None,
+            bgp_left_ip=None,
+            bgp_right_ip=None,
+            address_families=[],
+            autonomous_system='64512',
+            left_neighbors=[],
+            right_neighbors=[],
+            left_local_autonomous_system='',
+            right_local_autonomous_system='',
+            peer_local_left='',
+            peer_local_right=''):
+        '''
+        Configure 2 legs to the vSRX
+        '''
+        cmdList = []
+        cmdList.extend(
+            ('set routing-options autonomous-system ' +
+             str(autonomous_system),
+                'set protocols bgp group bgpaas local-address ' +
+                str(bgp_left_ip)))
+        for family in address_families:
+            cmdList.append(
+                'set protocols bgp group bgpaas family ' +
+                str(family) +
+                ' unicast')
+        for neighbor in left_neighbors:
+            cmdList.append(
+                'set protocols bgp group bgpaas neighbor ' + str(neighbor))
+        # cmdList.append('set protocols bgp group bgpaas peer-as ' +
+        #               str(self.inputs.router_asn))
+        cmdList.append(
+            'set protocols bgp group bgpaas local-as ' +
+            str(peer_local_left))
+        cmdList.append(
+            'set protocols bgp group bgpaas1 local-as ' +
+            str(peer_local_right))
+        if left_local_autonomous_system:
+            cmdList.append(
+                'set protocols bgp group bgpaas peer-as ' +
+                str(left_local_autonomous_system))
+        cmdList.append(
+            'set protocols bgp group bgpaas1 local-address ' +
+            str(bgp_right_ip))
+        for family in address_families:
+            cmdList.append(
+                'set protocols bgp group bgpaas1 family ' +
+                str(family) +
+                ' unicast')
+        for neighbor in right_neighbors:
+            cmdList.append(
+                'set protocols bgp group bgpaas1 neighbor ' + str(neighbor))
+
+        if right_local_autonomous_system:
+            cmdList.append(
+                'set protocols bgp group bgpaas1 peer-as ' +
+                str(right_local_autonomous_system))
+        cmdList.append(
+            'deactivate routing-instances left interface ge-0/0/1.0')
+        cmdList.append('set protocols bgp group bgpaas type external')
+        cmdList.append('set protocols bgp group bgpaas1 type external')
+        cmdList.append('set protocols bgp group bgpaas multihop')
+        cmdList.append('set protocols bgp group bgpaas1 multihop')
+        cmdList.append('set protocols bgp group bgpaas hold-time 90')
+        cmdList.append('set protocols bgp group bgpaas1 hold-time 90')
+        cmdList.append('deactivate interfaces ge-0/0/1.0 family inet filter')
+        cmd_string = (';').join(cmdList)
+        assert self.set_config_via_netconf(src_vm, dst_vm, cmd_string, timeout=10,
+                                           device='junos', hostkey_verify="False"), 'Could not configure BGP thru Netconf'
 
     def attach_vmi_to_bgpaas(self, vmi, bgpaas_fixture):
         '''
@@ -103,7 +219,8 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
         username = self.inputs.host_data[vm.vm_node_ip]['username']
         password = self.inputs.host_data[vm.vm_node_ip]['password']
         ip = self.inputs.host_data[vm.vm_node_ip]['host_ip']
-        (session, pcap) = start_tcpdump_for_intf(ip, username, password, interface)
+        (session, pcap) = start_tcpdump_for_intf(
+            ip, username, password, interface)
         time.sleep(5)
         stop_tcpdump_for_intf(session, pcap)
         result = search_in_pcap(session, pcap, '4784')
