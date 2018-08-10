@@ -19,6 +19,8 @@ class BGPaaSFixture(vnc_api_test.VncLibFixture):
         self.ip = kwargs.get('bgpaas_ip_address') or None
         self.shared = kwargs.get('bgpaas_shared') or 'false'
         self.address_families = ['inet', 'inet6']
+        self.local_autonomous_system = kwargs.get(
+            'local_autonomous_system') or None
         self.created = False
 #	if self.inputs.verify_thru_gui():
 #            self.browser = self.connections.browser
@@ -31,6 +33,7 @@ class BGPaaSFixture(vnc_api_test.VncLibFixture):
         self.create()
 
     def cleanUp(self):
+        super(BGPaaSFixture, self).cleanUp()
         do_cleanup = True
         if (self.created == False or self.inputs.fixture_cleanup == 'no') and\
            self.inputs.fixture_cleanup != 'force':
@@ -42,7 +45,6 @@ class BGPaaSFixture(vnc_api_test.VncLibFixture):
                 self.webui.delete_bgpaas(self)
             else:
                 self.delete()
-        super(BGPaaSFixture, self).cleanUp()
 
     def read(self):
         self.logger.debug('Fetching info about BGPaaS %s' % self.uuid)
@@ -64,12 +66,13 @@ class BGPaaSFixture(vnc_api_test.VncLibFixture):
             if self.inputs.is_gui_based_config():
                 self.webui.create_bgpaas(self)
             else:
-                self.uuid = self.vnc_h.create_bgpaas(self.fq_name,
-                                                     bgpaas_shared=self.shared,
-                                                     autonomous_system=self.asn,
-                                                     bgpaas_ip_address=self.ip,
-                                                     address_families=self.address_families
-                                                     )
+                self.uuid = self.vnc_h.create_bgpaas(
+                    self.fq_name,
+                    bgpaas_shared=self.shared,
+                    autonomous_system=self.asn,
+                    bgpaas_ip_address=self.ip,
+                    address_families=self.address_families,
+                    local_autonomous_system=self.local_autonomous_system)
             self.created = True
         self.logger.info('BGPaaS: %s(%s)'
                          % (self.name, self.uuid))
@@ -86,14 +89,16 @@ class BGPaaSFixture(vnc_api_test.VncLibFixture):
     def verify_on_setup(self):
         self.verify_is_run = True
         ret = self.verify_in_api_server()
-        self.logger.info('BGPaaS(%s): verify_on_setup %s' % (self.uuid,
-                                                             'passed' if ret else 'failed'))
+        self.logger.info(
+            'BGPaaS(%s): verify_on_setup %s' %
+            (self.uuid, 'passed' if ret else 'failed'))
         return ret
 
     def verify_on_cleanup(self):
         ret = self.verify_not_in_api_server()
-        self.logger.info('BGPaaS(%s): verify_on_cleanup %s' % (self.uuid,
-                                                               'passed' if ret else 'failed'))
+        self.logger.info(
+            'BGPaaS(%s): verify_on_cleanup %s' %
+            (self.uuid, 'passed' if ret else 'failed'))
         return ret
 
     @retry(delay=2, tries=5)
@@ -105,8 +110,9 @@ class BGPaaSFixture(vnc_api_test.VncLibFixture):
                 self.asn, api_obj.asn))
             return False
         if self.shared != api_obj.bgpaas_shared():
-            self.logger.warn('BGPaaS shared attribute didnt match. Exp: %s Act: %s' % (
-                self.shared, api_obj.shared))
+            self.logger.warn(
+                'BGPaaS shared attribute didnt match. Exp: %s Act: %s' %
+                (self.shared, api_obj.shared))
             return False
         if self.ip != api_obj.bgpaas_ip_address():
             self.logger.warn('BGPaaS IP didnt match. Exp: %s Act: %s' % (
@@ -133,8 +139,9 @@ class BGPaaSFixture(vnc_api_test.VncLibFixture):
         agent_h = self.connections.agent_inspect[agent]
         agent_obj = agent_h.get_bgpaas(self.uuid)
         if self.shared != agent_obj.is_shared:
-            self.logger.warn('BGPaaS shared attribute didnt match. Exp: %s Act: %s' % (
-                self.shared, agent_obj.shared))
+            self.logger.warn(
+                'BGPaaS shared attribute didnt match. Exp: %s Act: %s' %
+                (self.shared, agent_obj.shared))
             return False
         if self.ip != agent_obj.vm_bgp_peer_ip:
             self.logger.warn('BGPaaS IP didnt match. Exp: %s Act: %s' % (
@@ -162,7 +169,8 @@ class BGPaaSFixture(vnc_api_test.VncLibFixture):
             for entry in cn_bgp_entry:
                 if entry['router_type'] == 'bgpaas-client' and entry['state'] == 'Established':
                     self.logger.error(
-                        'BGPaaS session still seen in control-node %s' % ctrl_node)
+                        'BGPaaS session still seen in control-node %s' %
+                        ctrl_node)
                     result = False
         return result
 
