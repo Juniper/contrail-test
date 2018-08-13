@@ -58,7 +58,7 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
     def create_bgp_router(self):
         bgp_router = vnc_api_test.BgpRouter(self.name, parent_obj=self._get_ip_fabric_ri_obj())
         params = vnc_api_test.BgpRouterParams()
-        params.address = self.tunnel_ip
+        params.address = self.tunnel_ip or self.mgmt_ip
         params.address_families = vnc_api_test.AddressFamilies(['route-target',
             'inet-vpn', 'e-vpn', 'inet6-vpn'])
         params.autonomous_system = int(self.asn)
