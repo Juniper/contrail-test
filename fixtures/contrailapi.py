@@ -2238,7 +2238,7 @@ class ContrailVncApi(object):
         self.lb_feature_handles = LBFeatureHandles(self._vnc,self._log)
         pool_obj = self._vnc.loadbalancer_pool_read(id=pool_id)
         if network_id and not subnet_id:
-            subnet_id=get_network_subnet_id(self._vnc,network_id)
+            subnet_id=self.get_subnet_id_from_network(network_id)
         return self.lb_feature_handles.lb_member_mgr.create(pool_obj, address=address,
                         						protocol_port=port,
                         						weight=weight,
