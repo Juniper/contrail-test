@@ -62,6 +62,7 @@ class TestIntfMirror(BaseIntfMirrorTest, VerifyIntfMirror):
         """
         return self.verify_juniper_header_testcase(header = 2, direction = direction)
 
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_juniper_header_without_header_ingress(self, direction = 'ingress'):
         """Validate the presence of no juniper header
