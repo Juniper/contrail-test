@@ -103,6 +103,7 @@ try:
         # end transit_vn_with_left_right_svc
 
         @preposttest_wrapper
+        @skip_because(address_family='v6')
         def test_transit_vn_sym_1_innetnat(self):
             svcs= ['in-network-nat']
             self.transit_vn_with_left_right_svc(svcs, svcs)
@@ -123,6 +124,7 @@ try:
             return True
 
         @preposttest_wrapper
+        @skip_because(address_family='v6')
         def test_transit_vn_asym_innetnat_trans(self):
             left= ['in-network-nat']
             right= ['transparent']
@@ -137,6 +139,7 @@ try:
             return True
 
         @preposttest_wrapper
+        @skip_because(address_family='v6')
         def test_transit_vn_asym_innet_nat(self):
             left= ['in-network']
             right= ['in-network-nat']
@@ -156,12 +159,14 @@ try:
             return True
 
         @preposttest_wrapper
+        @skip_because(address_family='v6')
         def test_transit_vn_sym_innet_nat(self):
             svcs= ['in-network', 'in-network-nat']
             self.transit_vn_with_left_right_svc(svcs, svcs)
             return True
 
         @preposttest_wrapper
+        @skip_because(address_family='v6')
         def test_transit_vn_sym_trans_nat(self):
             svcs= ['transparent', 'in-network-nat']
             self.transit_vn_with_left_right_svc(svcs, svcs)
@@ -174,7 +179,7 @@ try:
             return True
 
         @preposttest_wrapper
-        @skip_because(pt_based_svc=True)
+        @skip_because(pt_based_svc=True, address_family='v6')
         def test_max_inst_change_in_ecmp_svc(self):
             '''
             Validate creation of a in-network-nat service chain with 3 Service VMs using heat
@@ -381,6 +386,7 @@ try:
         # end test_public_access_thru_svc_w_fip
 
         @preposttest_wrapper
+        @skip_because(address_family='v6')
         def test_ecmp_svc_creation_with_heat(self):
             '''
             Validate creation of a in-network-nat ECMP service chain using port-tuple
