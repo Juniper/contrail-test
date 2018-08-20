@@ -804,7 +804,7 @@ class TestInputs(object):
 
     def run_cmd_on_server(self, server_ip, issue_cmd, username=None,
                           password=None, pty=True, as_sudo=True,
-                          container=None, detach=None, shell_prefix='/bin/bash -c '):
+                          container=None, detach=None, shell_prefix='/bin/bash -c ', logger=True):
         '''
         container : name or id of the container
         '''
@@ -818,6 +818,8 @@ class TestInputs(object):
             # If the container does not exist on this host, log it and
             # run the cmd on the host itself
             # This helps backward compatibility
+            if logger:
+                logger = self.logger
             if not cntr:
                 self.logger.debug('Container %s not in host %s, running on '
                     ' host itself' % (container, server_ip))
@@ -828,7 +830,7 @@ class TestInputs(object):
                           password,
                           pty=pty,
                           as_sudo=as_sudo,
-                          logger=self.logger,
+                          logger=logger,
                           container=container,
                           detach=detach,
                           shell_prefix=shell_prefix)
