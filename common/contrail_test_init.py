@@ -804,7 +804,7 @@ class TestInputs(object):
 
     def run_cmd_on_server(self, server_ip, issue_cmd, username=None,
                           password=None, pty=True, as_sudo=True,
-                          container=None, detach=None, shell_prefix='/bin/bash -c '):
+                          container=None, detach=None, shell_prefix='/bin/bash -c ', logger=self.logger):
         '''
         container : name or id of the container
         '''
@@ -828,7 +828,7 @@ class TestInputs(object):
                           password,
                           pty=pty,
                           as_sudo=as_sudo,
-                          logger=self.logger,
+                          logger=logger,
                           container=container,
                           detach=detach,
                           shell_prefix=shell_prefix)
