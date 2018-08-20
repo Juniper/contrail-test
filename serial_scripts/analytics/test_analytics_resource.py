@@ -129,7 +129,7 @@ class AnalyticsTestSanityWithMin(
             {'no_key': ['help']}]
 
 
-        return self.test_cmd_output('contrail-flows', cmd_args_list, check_output=True, as_sudo=True)
+        return self.test_cmd_output('contrail-flows', cmd_args_list, check_output=True, as_sudo=True, print_output=False)
 
     @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
@@ -164,7 +164,7 @@ class AnalyticsTestSanityWithMin(
             {'no_key': ['help']}
             ]
 
-        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True)
+        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True, print_output=False)
 
     @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
@@ -225,7 +225,7 @@ class AnalyticsTestSanityWithMin(
 
             'contrail-stats --help']
 
-        return self.test_cmd_output('contrail-stats', cmd_args_list, check_output=True, form_cmd=False)
+        return self.test_cmd_output('contrail-stats', cmd_args_list, check_output=True, form_cmd=False, print_output=False)
 # end class AnalyticsTestSanityWithMin
 
 class AnalyticsTestSanityWithResource(
@@ -1262,7 +1262,7 @@ class AnalyticsTestSanityWithResource(
         for arg_type in module:
             cmd = {'module':arg_type, 'no_key': ['last 10m']}
             cmd_args_list.append(cmd)
-        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True)
+        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True, print_output=False)
 
     @preposttest_wrapper
     def test_run_contrail_logs_cli_cmd_with_optional_arg_object_type(self):
@@ -1299,7 +1299,7 @@ class AnalyticsTestSanityWithResource(
             for cmd in cmds:
                 cmd_args_list.append(cmd)
 
-        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True)
+        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True, print_output=False)
 
     @preposttest_wrapper
     def test_run_contrail_logs_cli_cmd_with_optional_arg_message_type(self):
@@ -1322,7 +1322,7 @@ class AnalyticsTestSanityWithResource(
             for cmd in cmds:
                 cmd_args_list.append(cmd)
 
-        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True)
+        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True, print_output=False)
 
     @preposttest_wrapper
     def test_run_contrail_logs_cli_cmd_with_optional_arg_level_type(self):
@@ -1338,7 +1338,7 @@ class AnalyticsTestSanityWithResource(
             cmd = { 'level':arg_type, 'no_key':['last 5m', 'verbose'] }
             cmd_args_list.append(cmd)
 
-        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output)
+        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output, print_output=False)
 
     @preposttest_wrapper
     def test_run_contrail_logs_cli_cmd_with_optional_arg_node_type(self):
@@ -1351,7 +1351,7 @@ class AnalyticsTestSanityWithResource(
         for arg_type in node_type:
             cmd = {'node-type':arg_type, 'no_key':['last 5m', 'verbose']}
             cmd_args_list.append(cmd)
-        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True)
+        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True, print_output=False)
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
