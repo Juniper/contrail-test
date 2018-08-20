@@ -50,7 +50,10 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
             if form_cmd:
                 cmd = self._form_cmd(cmd_type, cmd_args)
             self.logger.info("Running the following cmd:%s \n" %cmd)
-            if not self.execute_cli_cmd(cmd, check_output, as_sudo=as_sudo, print_output=print_output):
+            logger=self.logger
+            if not print_output:
+                logger = None
+            if not self.execute_cli_cmd(cmd, check_output, as_sudo=as_sudo, print_output=print_output, logger=logger):
                 self.logger.error('%s command failed..' % cmd)
                 failed_cmds.append(cmd)
                 result = result and False
@@ -73,11 +76,13 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
         return cmd
     # _form_cmd
 
-    def execute_cli_cmd(self, cmd, check_output=False, as_sudo=False, print_output=True):
+    def execute_cli_cmd(self, cmd, check_output=False, as_sudo=False, print_output=True, logger=True):
         result = True
         analytics = self.res.inputs.collector_ips[0]
+        if logger:
+            logger = self.logger
         output = self.res.inputs.run_cmd_on_server(analytics, cmd,
-                                                   container='analytics-api', as_sudo=as_sudo)
+                                                   container='analytics-api', as_sudo=as_sudo, logger=logger)
         if print_output:
             self.logger.info("Output: %s \n" % output)
         if output.failed:
