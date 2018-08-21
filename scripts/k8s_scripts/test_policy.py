@@ -299,7 +299,7 @@ class TestNetworkPolicy(BaseK8sTest):
                                                         expectation=False)
     #end test_ingress_ipblock_for_pod
 
-    @test.attr(type=['openshift_1'])
+    @test.attr(type=['openshift_1', 'openshift_ci'])
     @preposttest_wrapper
     def test_ingress_port_for_pod(self):
         """
