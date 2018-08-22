@@ -112,7 +112,7 @@ class NetworkPolicyFixture(fixtures.Fixture):
         self._populate_attr()
     # end update
     
-    @retry(delay=1, tries=10)
+    @retry(delay=2, tries=15)
     def verify_network_policy_in_k8s(self):
         if self.read():
             self.logger.info("Network policy found in k8s")
@@ -122,7 +122,7 @@ class NetworkPolicyFixture(fixtures.Fixture):
         return True
     # end verify_ingress_in_k8s
     
-    @retry(delay=1, tries=10)
+    @retry(delay=2, tries=15)
     def verify_network_policy_in_kube_manager(self):
         km_h = self.connections.get_kube_manager_h()
         self.np_info = km_h.get_network_policy_info(np_uuid = self.uuid)
@@ -135,47 +135,43 @@ class NetworkPolicyFixture(fixtures.Fixture):
             return False
         return True
     # end verify_ingress_in_k8s
-    
+
     @retry(delay=1, tries=10)
     def verify_firewall_policy_in_agent(self):
         km_h = self.connections.get_kube_manager_h()
-        agent_h = self.agent_inspect[self.inputs.compute_ips[0]]
-        # Get associated Firewall policy.
-        self.np_info = km_h.get_network_policy_info(np_uuid = self.uuid)
-        fw_polify_fq_name = self.np_info['vnc_firewall_policy_fqname']
-        # Search for corresponding firewall policy in agent
-        fwPolicy = agent_h.get_fw_policy(policy_fq_name = fw_polify_fq_name)
-        #fw_policyNames = [elem['name'] for elem in fwPolicyList]
-        if not fwPolicy:
-            self.logger.warn("Network policy with name %s not found in agent"
+        for nodeip in self.inputs.compute_ips:
+           agent_h = self.agent_inspect[nodeip]
+           self.np_info = km_h.get_network_policy_info(np_uuid = self.uuid)
+           fw_polify_fq_name = self.np_info['vnc_firewall_policy_fqname']
+           fwPolicy = agent_h.get_fw_policy(policy_fq_name = fw_polify_fq_name)
+           if fwPolicy:
+                self.logger.info("Network policy with name %s found in agent"
                              % self.name)
-            return False
-        return True
+                return True
+        self.logger.warn("Network policy with name %s not found in agent"
+                         % self.name)
+        return False
     #end verify_firewall_policy_in_agent
-    
+
+
     @retry(delay=1, tries=10)
     def verify_default_policies_in_agent(self):
         km_h = self.connections.get_kube_manager_h()
-        agent_h = self.agent_inspect[self.inputs.compute_ips[0]]
-
-        default_aps = agent_h.get_aps(aps_fq_name = self.k8s_defaut_aps)
-        if not default_aps:
-            self.logger.warn("Default APS %s for k8s not found in agent"
+        for nodeip in self.inputs.compute_ips:
+           agent_h = self.agent_inspect[nodeip]
+           default_aps = agent_h.get_aps(aps_fq_name = self.k8s_defaut_aps)
+           if default_aps:
+               aps_fw_policy_uuid = [elem['firewall_policy'] for elem in default_aps['firewall_policy_list']]
+               for elem in self.k8s_default_network_policies :
+                  fw_policy = agent_h.get_fw_policy(policy_fq_name = elem)
+                  if  fw_policy:
+                      self.logger.info("Network policy with name %s found in agent"
+                                     % elem)
+                      if fw_policy['uuid'] in aps_fw_policy_uuid:
+                         self.logger.info("Network policy with name %s associated with default ks8"
+                                      % elem)
+                         return True
+        self.logger.warn("Default APS %s for k8s not found in any agent"
                              % self.k8s_defaut_aps)
-            return False
-        aps_fw_policy_uuid = [elem['firewall_policy'] for elem in default_aps['firewall_policy_list']]
-        for elem in self.k8s_default_network_policies :
-            fw_policy = agent_h.get_fw_policy(policy_fq_name = elem)
-            if not fw_policy:
-                self.logger.warn("Network policy with name %s not found in agent"
-                             % elem)
-                return False
-            if fw_policy['uuid'] not in aps_fw_policy_uuid:
-                self.logger.warn("Network policy with name %s not associated with default ks8"
-                             % elem)
-                return False                
-        return True
-    #end verify_firewall_policy_in_agent
-    
-
-        
+        return False
+    #end verify_default_policies_in_agent

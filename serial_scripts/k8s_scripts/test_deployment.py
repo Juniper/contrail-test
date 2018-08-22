@@ -3,6 +3,7 @@ import test
 from common.k8s.base import BaseK8sTest
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.contrail_status_check import ContrailStatusChecker
+from tcutils.util import get_random_name
 
 
 class TestDeployment(BaseK8sTest):
@@ -31,7 +32,8 @@ class TestDeployment(BaseK8sTest):
         client_pod = self.setup_busybox_pod()
         namespace = 'default'
         labels = {'deployment': 'test'}
-        dep = self.setup_nginx_deployment(name='dep-test',
+        depname = get_random_name ("dep-test")
+        dep = self.setup_nginx_deployment(name=depname,
                                             replicas=3,
                                             pod_labels=labels)
         assert dep.verify_on_setup()
@@ -49,10 +51,10 @@ class TestDeployment(BaseK8sTest):
         assert self.validate_nginx_lb(s_pod_fixtures, service.cluster_ip,
                                       test_pod=client_pod)
         self.perform_cleanup(dep)
-        self.sleep(1)
+        self.sleep(2)
         '''After restart of the Kube Manager recreate the deployment obect 
            With additional pod replicas''' 
-        dep = self.setup_nginx_deployment(name='dep-test',
+        dep = self.setup_nginx_deployment(name=depname,
                                           replicas=5,
                                           pod_labels=labels)
         
@@ -79,7 +81,8 @@ class TestDeployment(BaseK8sTest):
         client_pod = self.setup_busybox_pod()
         namespace = 'default'
         labels = {'deployment': 'test'}
-        dep = self.setup_nginx_deployment(name='dep-test',
+        depname = get_random_name ("dep-test")
+        dep = self.setup_nginx_deployment(name=depname,
                                             replicas=3,
                                             pod_labels=labels)
         assert dep.verify_on_setup()
@@ -97,10 +100,10 @@ class TestDeployment(BaseK8sTest):
         assert self.validate_nginx_lb(s_pod_fixtures, service.cluster_ip,
                                       test_pod=client_pod)
         self.perform_cleanup(dep)
-        self.sleep(1)
+        self.sleep(2)
         '''After restart of the vrouter agent recreate the deployment obect 
            With additional pod replicas''' 
-        dep = self.setup_nginx_deployment(name='dep-test',
+        dep = self.setup_nginx_deployment(name=depname,
                                           replicas=5,
                                           pod_labels=labels)
         
