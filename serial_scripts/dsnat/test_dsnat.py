@@ -138,12 +138,13 @@ class TestDSNAT(BaseDSNAT):
         self.addCleanup(self.disable_policy_on_vhost0,\
             self.inputs.host_data[test_vm1.vm_node_ip]['name'])
         #with DSNAT enabled on VN, verify the ping to the external IP
-        assert test_vm1.ping_with_certainty(self.inputs.cfgm_ip)
+        cfgm_ip = self.inputs.inputs.get_host_data_ip(self.inputs.cfgm_names[0])
+        assert test_vm1.ping_with_certainty(cfgm_ip)
 
         self.disable_policy_on_vhost0(
             self.inputs.host_data[test_vm1.vm_node_ip]['name'])
         #with DSNAT enabled on VN, verify the ping to the external IP
-        assert test_vm1.ping_with_certainty(self.inputs.cfgm_ip)
+        assert test_vm1.ping_with_certainty(cfgm_ip)
 
     @skip_because(min_nodes=2)
     @preposttest_wrapper
