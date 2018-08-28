@@ -135,7 +135,7 @@ class TestService(BaseK8sTest):
         assert self.validate_nginx_lb([pod1, pod2], service.external_ips[0])
     # end test_service_with_type_loadbalancer
 
-    @test.attr(type=['openshift_1', 'openshift_ci'])
+    @test.attr(type=['openshift_1', 'ci_openshift'])
     @preposttest_wrapper
     def test_service_access_from_different_ns(self):
         ''' Create a service  in one namespace with 2 pods
