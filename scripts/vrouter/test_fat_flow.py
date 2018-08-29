@@ -1,13 +1,16 @@
+from tcutils.util import get_random_name, retry, get_random_cidr
 from tcutils.wrappers import preposttest_wrapper
 from common.vrouter.base import BaseVrouterTest
 import test
 from tcutils.util import get_random_name, is_v6
-import random
+import random, time
 from common.neutron.lbaasv2.base import BaseLBaaSTest
+from tcutils.util import get_an_ip
+from common.bgpaas.base import BaseBGPaaS
 
 AF_TEST = 'v6'
 
-class FatFlow(BaseVrouterTest, BaseLBaaSTest):
+class FatFlow(BaseVrouterTest, BaseLBaaSTest, BaseBGPaaS):
 
     @classmethod
     def setUpClass(cls):
@@ -60,6 +63,85 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
         for af in afs:
             self.verify_fat_flow_with_traffic(client_fixtures,server_fixtures[0],
                                                 proto, port, af=af)
+
+    @test.attr(type=['cb_sanity', 'sanity'])
+    def test_fat_flow_exclude_list_with_bgpaas(self):
+        """
+        Description: Verify Fat flow exclude list with bgpaas
+        Steps:
+            1. Create 1 VN and launch 1 vsrx VM with bgpaas config.
+            2. On the VM port, enable Fat flow for tcp ports 179 and 22.
+            3. Verify that the bgp sessions with .1 and .2 addresses as peers
+            4. Make sure that the flows with .1 and .2 addresses are also created
+            5. Verify that exclude list is applied for .1,.2 and 169.x addresses
+            6. Verify that fat flow is not created on the compute
+        Pass criteria:
+            1. On the compute node, no fat flow should be present
+        """
+
+        vn_name = get_random_name('bgpaas_vn')
+        vn_subnets = [get_random_cidr()]
+        vn_fixture = self.create_vn(vn_name, vn_subnets)
+        test_vm = self.create_vm(vn_fixture, 'test_vm',
+                                 image_name='ubuntu-traffic')
+        bgpaas_vm1 = self.create_vm(vn_fixture, 'bgpaas_vm1',
+                                    image_name='vsrx')
+        assert test_vm.wait_till_vm_is_up()
+        assert bgpaas_vm1.wait_till_vm_is_up()
+        port1 = bgpaas_vm1.vmi_ids[bgpaas_vm1.vn_fq_name]
+        bfd_enabled = True
+        bgp_ip = bgpaas_vm1.get_vm_ips()[0]
+        bgpaas_fixture = self.create_bgpaas(
+            bgpaas_shared=True, autonomous_system=64500, bgpaas_ip_address=bgp_ip)
+        bgpaas_vm1.wait_for_ssh_on_vm()
+        address_families = []
+        address_families = ['inet', 'inet6']
+        autonomous_system = 64500
+        gw_ip = vn_fixture.get_subnets()[0]['gateway_ip']
+        dns_ip = vn_fixture.get_subnets()[0]['dns_server_address']
+        neighbors = []
+        neighbors = [gw_ip, dns_ip]
+        self.config_bgp_on_vsrx(src_vm=test_vm, dst_vm=bgpaas_vm1, bgp_ip=bgp_ip, lo_ip=bgp_ip,
+                                address_families=address_families, autonomous_system=autonomous_system, neighbors=neighbors, bfd_enabled=True)
+        self.logger.info('Will wait for both the vSRXs to come up')
+        bgpaas_vm1.wait_for_ssh_on_vm()
+        self.logger.info('Attaching both the VMIs to the BGPaaS object')
+        self.attach_vmi_to_bgpaas(port1, bgpaas_fixture)
+        self.addCleanup(self.detach_vmi_from_bgpaas,
+                        port1, bgpaas_fixture)
+
+        if bfd_enabled:
+            shc_fixture = self.create_hc(
+                probe_type='BFD', http_url=bgp_ip, timeout=1, delay=1, max_retries=3)
+            self.attach_shc_to_bgpaas(shc_fixture, bgpaas_fixture)
+            self.addCleanup(self.detach_shc_from_bgpaas,
+                            shc_fixture, bgpaas_fixture)
+            agent = bgpaas_vm1.vm_node_ip
+            shc_fixture.verify_in_agent(agent)
+            time.sleep(60)
+            assert bgpaas_fixture.verify_in_control_node(
+                bgpaas_vm1), 'BGPaaS Session not seen in the control-node'
+            assert self.verify_bfd_packets(
+                bgpaas_vm1, vn_fixture), 'Multihop BFD packets not seen over the BGPaaS interface'
+
+        compute_fix = self.compute_fixtures_dict[bgpaas_vm1.vm_node_ip]
+        compute_hosts = self.orch.get_hosts()
+        #Configure Fat flow on BGPaaS VM
+        proto = 'tcp'
+        port = 179
+        port1 = 22
+        server_vmi_id = bgpaas_vm1.get_vmi_ids().values()
+        fat_flow_config = {'proto':proto,'port':port}
+        fat_flow_config1 = {'proto':proto,'port':port1}
+        self.add_fat_flow_to_vmis(server_vmi_id, fat_flow_config)
+        self.add_fat_flow_to_vmis(server_vmi_id, fat_flow_config1)
+        afs = ['v4', 'v6'] if 'dual' in self.inputs.get_af() else [self.inputs.get_af()]
+        for af in afs:
+            (ff_count, rf_count) = compute_fix.get_flow_count(dest_port=port, proto=proto)
+            if not ff_count or not rf_count:
+                self.logger.error("No forward or reverse flows with the port 179 created")
+                return False
+            self.verify_fat_flow_on_compute(compute_fixture=compute_fix, dest_port=port, proto=proto, fat_flow_count=0)
 
     @preposttest_wrapper
     def test_fat_flow_intra_vn_intra_node(self):
@@ -546,6 +628,11 @@ class FatFlowIpv6(FatFlow):
     @preposttest_wrapper
     def test_fat_flow_lbaasv2(self):
         raise self.skipTest("Skipping Test. LBaas is NOT supported for IPv6")
+
+    @preposttest_wrapper
+    def test_fat_flow_exclude_list_with_bgpaas(self):
+        raise self.skipTest("Skipping Test. BGPaaS is NOT supported for IPv6")
+
 
     @test.attr(type=['cb_sanity', 'sanity'])
     def test_fat_flow_intra_vn_inter_node(self):
