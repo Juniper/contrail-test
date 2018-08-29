@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name:
+  namespace: default
+  command: 
+  stderr: true
+  stdin: true
+  stdout: true
+  tty: true
+spec:
