@@ -157,16 +157,9 @@ EOF
 docker_run () {
     if [[ -e $mount_local ]]; then
         mount_local=`readlink -f $mount_local`
-        if [[ -d $mount_local/contrail-test ]]; then
-            temp_dir=`mktemp -d`
-            rsync -a -f"+ */" -f"- *" $mount_local/contrail-test/* $temp_dir
-            for i in `find $mount_local/contrail-test/ -not \( -path $mount_local/contrail-test/.git\* -prune \) -type f -print`; do
-                d=`echo $i | sed "s#$mount_local/contrail-test/##"`
-                s=`echo $i | sed "s#$mount_local#/combined/#"`
-                ln -s $s $temp_dir/$d
-            done
+        if [[ -d $mount_local ]]; then
 	    CONTRAIL_TEST_FOLDER="/contrail-test-local"
-            local_vol=" -v $mount_local:/combined -v $temp_dir:${CONTRAIL_TEST_FOLDER} "
+            local_vol=" -v $mount_local:${CONTRAIL_TEST_FOLDER} "
             dont_write_byte_code_arg=" -e PYTHONDONTWRITEBYTECODE=1 "
         else
             echo "ERROR: Mount local directory ($mount_local) should have contrail-test "
