@@ -226,6 +226,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         spec = spec or {
             'containers': [
                 {'image': 'nginx',
+                 'name': name,
                  'ports': [
                      {'container_port': int(container_port)}
                  ],
@@ -270,6 +271,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         spec = spec or {
             'containers': [
                 {'image': 'busybox',
+                 'name': name,
                  'command': ['sleep', '1000000'],
                  'image_pull_policy': 'IfNotPresent',
                  }
@@ -300,6 +302,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             'containers': [
                 {'image': 'ubuntu-upstart',
                  'command': ['sleep', '1000000'],
+                 'name': name,
                  'image_pull_policy': 'IfNotPresent',
                  }
             ],
