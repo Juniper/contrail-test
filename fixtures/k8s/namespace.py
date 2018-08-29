@@ -26,14 +26,13 @@ class NamespaceFixture(fixtures.Fixture):
         self.ip_fabric_forwarding = ip_fabric_forwarding
         self.custom_isolation = custom_isolation
         self.fq_network_name = fq_network_name
-        
-        self.already_exists = False
         self.api_s_obj = None
         self.project_name = None
         self.project_fq_name = None
         self.inputs = self.connections.inputs
         self.project_isolation = True
         self.verify_is_run = False
+        self.created = False
 
     def setUp(self):
         super(NamespaceFixture, self).setUp()
@@ -149,9 +148,8 @@ class NamespaceFixture(fixtures.Fixture):
 
     def read(self):
         try:
-            self.obj = self.k8s_client.v1_h.read_namespace(self.name)
+            self.obj = self.k8s_client.read_namespace(self.name)
             self._populate_attr()
-            self.already_exists = True
             return self.obj
         except ApiException as e:
             self.logger.debug('Namespace %s not present' % (self.name))
@@ -163,19 +161,12 @@ class NamespaceFixture(fixtures.Fixture):
         if ns_exists:
             self.logger.info('Namespace %s already exists' % (self.name))
             return ns_exists
-        body = client.V1Namespace()
-        body.metadata = client.V1ObjectMeta(name=self.name)
-        # initialize to allow different combinations
-        body.metadata.annotations = {}
-        if self.isolation:
-            body.metadata.annotations = {"opencontrail.org/isolation" : "true"}
-        if self.ip_fabric_forwarding:
-            body.metadata.annotations["opencontrail.org/ip_fabric_forwarding"] = "true"
-        if self.ip_fabric_snat:
-            body.metadata.annotations["opencontrail.org/ip_fabric_snat"] = "true"
-        if self.custom_isolation:
-            body.metadata.annotations = {"opencontrail.org/network": "%s" % self.fq_network_name}
-        self.obj = self.k8s_client.v1_h.create_namespace(body)
+        self.obj = self.k8s_client.create_namespace(body,
+            isolation=self.isolation,
+            ip_fabric_forwarding=self.ip_fabric_forwarding,
+            ip_fabric_snat=self.ip_fabric_snat,
+            network_fqname=self.fq_network_name)
+        self.created = True
         self._populate_attr()
         self.logger.info('Created namespace %s' % (self.name))
         if self.inputs.deployer=='openshift':
@@ -188,10 +179,9 @@ class NamespaceFixture(fixtures.Fixture):
     # end create
 
     def delete(self):
-        if not self.already_exists:
-            body = client.V1DeleteOptions()
+        if self.created:
             self.logger.info('Deleting namespace %s' % (self.name))
-            self.k8s_client.v1_h.delete_namespace(self.name, body)
+            self.k8s_client.delete_namespace(self.name)
             assert self.verify_on_cleanup()
     # end delete
 

@@ -7,7 +7,6 @@ from vnc_api.vnc_api import NoIdError
 from common import log_orig as contrail_logging
 from tcutils.util import get_random_name, retry
 
-
 class PodFixture(fixtures.Fixture):
     '''
     '''
@@ -95,10 +94,10 @@ class PodFixture(fixtures.Fixture):
     @retry(delay=3, tries=20)
     def _get_pod_node_name(self):
         self.obj = self.k8s_client.read_pod(self.name, self.namespace)
-        if not self.obj.spec.node_name:
+        if not self.obj.spec.node_name and not self.obj.spec.nodeName:
             self.logger.debug('Node for Pod %s not yet populated' % (self.name))
             return (False, None)
-        return (True, self.obj.spec.node_name)
+        return (True, self.obj.spec.node_name or self.obj.spec.nodeName)
     # end _get_pod_node_name
 
     def _populate_attr(self):
@@ -215,8 +214,8 @@ class PodFixture(fixtures.Fixture):
             self.logger.info('Pod %s is in running state.'
                              'Got IP %s' % (self.name,
                                             pod_status.status.pod_ip))
-            self.pod_ip = pod_status.status.pod_ip
-            self.host_ip = pod_status.status.host_ip
+            self.pod_ip = pod_status.status.pod_ip or pod_status.status.podIP
+            self.host_ip = pod_status.status.host_ip or pod_status.status.hostIP
             self.set_compute_ip()
             result = True
         return result
