@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+ name: egress-allow-tcp-80
+
+spec:
+ egress:
+ - to:
+   - ipBlock:
+       cidr: 
+   ports:
+   - protocol: TCP
+     port: 80
+
+ ingress:
+ - from:
+   - ipBlock:
+        cidr: 
+   - namespaceSelector:
+        matchLabels:
+          project::
+   - podSelector:
+        matchLabels:
+          role:
+   ports:
+   - protocol: TCP
+     port: 80
+
+ podSelector: {}
+ policyTypes:
+ - Egress

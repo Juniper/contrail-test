@@ -6,7 +6,7 @@ from common import log_orig as contrail_logging
 from tcutils.util import get_random_name, retry
 from kubernetes.stream import stream
 
-class Client():
+class Client(object):
 
     def __init__(self, config_file='/etc/kubernetes/admin.conf', logger=None):
         self.api_client = config.new_client_from_config(config_file)
@@ -697,7 +697,7 @@ class Client():
                       name):
         self.logger.info('Deleting secret : %s' % (name))
         body = client.V1DeleteOptions()
-        return self.v1_h.delete_namespaced_secret(name, namespace, body)
+        return self.v1_h.delete_namespaced_secret(name, namespace)
     # end delete_secret
 
 if __name__ == '__main__':
