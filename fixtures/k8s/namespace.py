@@ -149,7 +149,7 @@ class NamespaceFixture(fixtures.Fixture):
 
     def read(self):
         try:
-            self.obj = self.k8s_client.v1_h.read_namespace(self.name)
+            self.obj = self.k8s_client.read_namespace(self.name)
             self._populate_attr()
             self.already_exists = True
             return self.obj
@@ -163,19 +163,12 @@ class NamespaceFixture(fixtures.Fixture):
         if ns_exists:
             self.logger.info('Namespace %s already exists' % (self.name))
             return ns_exists
-        body = client.V1Namespace()
-        body.metadata = client.V1ObjectMeta(name=self.name)
-        # initialize to allow different combinations
-        body.metadata.annotations = {}
-        if self.isolation:
-            body.metadata.annotations = {"opencontrail.org/isolation" : "true"}
-        if self.ip_fabric_forwarding:
-            body.metadata.annotations["opencontrail.org/ip_fabric_forwarding"] = "true"
-        if self.ip_fabric_snat:
-            body.metadata.annotations["opencontrail.org/ip_fabric_snat"] = "true"
-        if self.custom_isolation:
             body.metadata.annotations = {"opencontrail.org/network": "%s" % self.fq_network_name}
-        self.obj = self.k8s_client.v1_h.create_namespace(body)
+        self.obj = self.k8s_client.create_namespace(body,
+            isolation=self.isolation,
+            ip_fabric_forwarding=self.ip_fabric_forwarding,
+            ip_fabric_snat=self.ip_fabric_snat,
+            network_fqname=self.fq_network_name)
         self._populate_attr()
         self.logger.info('Created namespace %s' % (self.name))
         if self.inputs.deployer=='openshift':
@@ -189,9 +182,8 @@ class NamespaceFixture(fixtures.Fixture):
 
     def delete(self):
         if not self.already_exists:
-            body = client.V1DeleteOptions()
             self.logger.info('Deleting namespace %s' % (self.name))
-            self.k8s_client.v1_h.delete_namespace(self.name, body)
+            self.k8s_client.delete_namespace(self.name)
             assert self.verify_on_cleanup()
     # end delete
 
