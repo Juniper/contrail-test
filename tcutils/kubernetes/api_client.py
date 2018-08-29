@@ -6,7 +6,7 @@ from common import log_orig as contrail_logging
 from tcutils.util import get_random_name, retry
 from kubernetes.stream import stream
 
-class Client():
+class Client(object):
 
     def __init__(self, config_file='/etc/kubernetes/admin.conf', logger=None):
         self.api_client = config.new_client_from_config(config_file)
