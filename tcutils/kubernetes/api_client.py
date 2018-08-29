@@ -6,7 +6,7 @@ from common import log_orig as contrail_logging
 from tcutils.util import get_random_name, retry
 from kubernetes.stream import stream
 
-class Client():
+class Client(object):
 
     def __init__(self, config_file='/etc/kubernetes/admin.conf', logger=None):
         self.api_client = config.new_client_from_config(config_file)
@@ -305,7 +305,7 @@ class Client():
                        namespace,
                        name):
         self.logger.info('Deleting service : %s' % (name))
-        return self.v1_h.delete_namespaced_service(name, namespace)
+        return self.v1_h.delete_namespaced_service(name, namespace, body)
 
     def create_pod(self,
                    namespace='default',
