@@ -247,7 +247,7 @@ class ContrailPlugApi(object):
 
     def _create_lif(self,name,vlan,pif_id,vmi_ids=[],vm=None):
         lif_obj = LogicalInterfaceFixture(
-        name, pif_id=pif_id, vlan_id=vlan,vmi_ids=vmi_ids,inputs=self._inputs)
+        name=name, pif_id=pif_id, vlan_id=vlan,vmi_ids=vmi_ids,inputs=self._inputs)
         lif_obj.setUp()
         if vm:
             vm.lifs.append(lif_obj)
@@ -303,6 +303,6 @@ class VcenterGateway:
         phy_device_fixture=PhysicalDeviceFixture(self.name,self.mgmt_ip,inputs=inputs)
         phy_device_fixture.setUp()
         phy_device_uuid = phy_device_fixture.phy_device.uuid
-        pif_fixture=PhysicalInterfaceFixture(port,device_id=phy_device_uuid,inputs=inputs)
+        pif_fixture=PhysicalInterfaceFixture(name=port,device_id=phy_device_uuid,inputs=inputs)
         pif_fixture.setUp()
         return pif_fixture.uuid

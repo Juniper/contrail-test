@@ -18,7 +18,7 @@ class BaseMultitenancyTest(test_v1.BaseTestCase_v1):
         cls.agent_inspect= cls.connections.agent_inspect
         cls.cn_inspect= cls.connections.cn_inspect
         auth_url = os.getenv('OS_AUTH_URL') or \
-                       'http://' + cls.inputs.openstack_ip + ':5000/v2.0'
+                       'http://' + cls.inputs.auth_ip + ':5000/v2.0'
         insecure = bool(os.getenv('OS_INSECURE',True))
         cls.key_stone_clients = KeystoneCommands(
             username=cls.inputs.admin_user,

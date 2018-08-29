@@ -9,13 +9,14 @@ class PhysicalInterfaceFixture(vnc_api_test.VncLibFixture):
     '''Fixture to handle Physical Interface object in
        a physical device
 
-    Mandatory:
-    :param name : name of the physical interface
+    optional:
+    :param name         : name of the physical interface
+    :param uuid         : UUID of the physical interface
     :param device_id    : UUID of physical device
-                          One of device_obj and device_id is mandatory
-    :param device_obj   : PhysicalRouter object which would be 
-                          the parent_obj of this intf
-                          One of device_obj and device_id is mandatory
+    :param device_name  : Name of the physical device
+                          One of device_name or device_id is mandatory
+    :param interface_type : one of 'lag' or 'regular'
+    :param mac_address : mac address of the interface
 
     Inherited optional parameters:
     :param domain   : default is default-domain
@@ -31,15 +32,15 @@ class PhysicalInterfaceFixture(vnc_api_test.VncLibFixture):
 
     def __init__(self, *args, **kwargs):
         super(PhysicalInterfaceFixture, self).__init__(self, *args, **kwargs)
-        self.name = args[0]
-        self.device_id = kwargs.get('device_id', None)
-        self.device_obj = kwargs.get('device_obj', None)
-        if not (self.device_obj or self.device_id):
-            raise TypeError('One of device_id or device_obj is mandatory')
+        self.name = kwargs.get('name')
+        self.uuid = kwargs.get('uuid')
+        self.device_id = kwargs.get('device_id')
+        self.device_name = kwargs.get('device_name')
+        self.interface_type = kwargs.get('interface_type')
+        self.mac_address = kwargs.get('mac_address')
 
-        self.already_present = False
+        self.created = False
 
-        self.vn_obj = None
         try:
             if self.inputs.verify_thru_gui():
                 self.int_type = kwargs.get('int_type', None)
@@ -49,26 +50,36 @@ class PhysicalInterfaceFixture(vnc_api_test.VncLibFixture):
             pass 
      # end __init__
 
+    def read(self):
+        kwargs = dict()
+        if not self.uuid:
+            if not self.device_name:
+                obj = self.vnc_h.read_physical_router(id=self.device_id)
+                self.device_name = obj.name
+            self.fq_name = ['default-global-system-config',
+                            self.device_name, self.name.replace(':', '__')]
+            kwargs['fq_name'] = list(self.fq_name)
+        else:
+            kwargs['id'] = self.uuid
+        obj = self.vnc_h.read_physical_interface(**kwargs)
+        self.device_name = obj.fq_name[-2]
+        self.uuid = obj.uuid
+        self.name = obj.display_name
+        self.fq_name = obj.fq_name
+        self.interface_type = obj.get_physical_interface_type()
+        self.mac_address = obj.get_physical_interface_mac_addresses()
+
     def setUp(self):
         super(PhysicalInterfaceFixture, self).setUp()
-        if self.device_id:
-            self.device_obj = self.vnc_api_h.physical_router_read(
-                id=self.device_id)
-        else:
-            self.device_id = self.device_obj.uuid
-        self.device_name = self.device_obj.fq_name[-1]
-        self.fq_name = self.device_obj.fq_name[:]
-        self.fq_name.append(self.name)
         try:
-            self.obj = self.vnc_api_h.physical_interface_read(
-                fq_name=self.fq_name)
-            self.already_present = True
-            self.uuid = self.obj.uuid
+            self.read()
             self.logger.debug('Physical port %s is already present' % (
-                self.name))
+                self.fq_name))
         except vnc_api_test.NoIdError:
+            if self.uuid:
+                raise
             self.create_pif()
-
+            self.created = True
     # end setUp
 
     def create_pif(self):
@@ -78,17 +89,14 @@ class PhysicalInterfaceFixture(vnc_api_test.VncLibFixture):
             if self.inputs.is_gui_based_config():
                 self.webui.create_physical_interface(self)
                 return
-        
-        pif_obj = vnc_api_test.PhysicalInterface(name=self.name.replace(':', '__'),
-                                parent_obj=self.device_obj,
-                                display_name=self.name)
-        self.uuid = self.vnc_api_h.physical_interface_create(pif_obj)
-        self.obj = self.vnc_api_h.physical_interface_read(id=self.uuid)
+        self.uuid = self.vnc_h.create_physical_interface(
+            name=self.name, device_name=self.device_name,
+            mac=self.mac_address, interface_type=self.interface_type)
     # end create_pif
 
-    def cleanUp(self):
+    def cleanUp(self, force=False):
         do_cleanup = True
-        if self.already_present:
+        if not self.created and not force:
             do_cleanup = False
             self.logger.debug('Skipping deletion of physical port %s :' % (
                  self.fq_name))
@@ -98,15 +106,27 @@ class PhysicalInterfaceFixture(vnc_api_test.VncLibFixture):
                     self.webui.delete_physical_interface(self)
                     return
         self.delete_pif()
+        self.verify_on_cleanup()
         super(PhysicalInterfaceFixture, self).cleanUp()
     # end cleanUp
 
     def delete_pif(self):
         self.logger.info('Deleting physical port %s:' % (
             self.fq_name))
-        self.vnc_api_h.physical_interface_delete(id=self.uuid) 
+        self.vnc_h.delete_physical_interface(id=self.uuid) 
     # end delete_pif
 
+    def get_logical_ports(self):
+        obj = self.read_physical_interface(id=self.uuid)
+        return [lif['uuid'] for lif in obj.get_logical_interfaces() or []]
+
+    def verify_on_cleanup(self):
+        try:
+            self.vnc_h.read_physical_interface(id=self.uuid)
+            assert False, 'physical interface %s is not yet deleted'%self.fq_name
+        except vnc_api_test.NoIdError:
+            self.logger.info('physical interface %s got deleted as expected'%self.fq_name)
+            return True
 # end PhysicalInterfaceFixture
 
 if __name__ == "__main__":

@@ -13,6 +13,9 @@ from floating_ip import FloatingIPFixture
 from interface_route_table_fixture import InterfaceRouteTableFixture
 from tcutils.util import get_random_name, get_random_cidr, is_v6
 from tcutils.contrail_status_check import ContrailStatusChecker
+from physical_device_fixture import PhysicalDeviceFixture
+from pif_fixture import PhysicalInterfaceFixture
+from lif_fixture import LogicalInterfaceFixture
 
 class _GenericTestBaseMethods():
 
@@ -664,3 +667,18 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         if obj and getattr(obj, 'created', False):
             return obj.cleanUp()
     # end cleanup
+
+    def create_physical_router(self, connections=None, **kwargs):
+        ''' Refer PhysicalDeviceFixture for params info '''
+        connections = connections or self.connections
+        return self.useFixture(PhysicalDeviceFixture(connections=connections, **kwargs))
+
+    def create_physical_interface(self, connections=None, **kwargs):
+        ''' Refer PhysicalInterfaceFixture for params info '''
+        connections = connections or self.connections
+        return self.useFixture(PhysicalInterfaceFixture(connections=connections, **kwargs))
+
+    def create_logical_interface(self, connections=None, **kwargs):
+        ''' Refer LogicalInterfaceFixture for params info '''
+        connections = connections or self.connections
+        return self.useFixture(LogicalInterfaceFixture(connections=connections, **kwargs))
