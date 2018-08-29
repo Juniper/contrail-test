@@ -660,7 +660,7 @@ class BaseVrouterTest(BaseNeutronTest):
             dst_ip, src_vrf, dst_vrf, sport=sport, dport=dport, proto=proto,
             ff_exp=ff_exp, rf_exp=rf_exp)
 
-    def verify_flow_on_compute(self, compute_fixture, source_ip, dest_ip,
+    def verify_flow_on_compute(self, compute_fixture, source_ip=None, dest_ip=None,
             src_vrf=None, dst_vrf=None, sport=None, dport=None, proto=None,
             ff_exp=1, rf_exp=1):
         '''
@@ -696,8 +696,8 @@ class BaseVrouterTest(BaseNeutronTest):
         assert rf_count == rf_exp, ('Flow count mismatch on '
             'compute, please check logs..')
 
-    def verify_fat_flow_on_compute(self, compute_fixture, source_ip, dest_ip,
-                               dest_port, proto, vrf_id, fat_flow_count=1,
+    def verify_fat_flow_on_compute(self, compute_fixture, source_ip=None, dest_ip=None,
+                               dest_port=None, proto=None, vrf_id=None, fat_flow_count=1,
                                sport=0):
         '''
         Verifies Fat flow on specific compute node
