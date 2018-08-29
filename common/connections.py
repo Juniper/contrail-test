@@ -1,3 +1,7 @@
+import os
+
+from kubernetes import client, config
+from openshift.dynamic import DynamicClient
 from vnc_api_test import *
 from tcutils.config.vnc_introspect_utils import *
 from tcutils.config.svc_mon_introspect_utils import SvcMonInspect
@@ -10,7 +14,6 @@ from tcutils.kubernetes.k8s_introspect_utils import KubeManagerInspect
 from vnc_api.vnc_api import *
 from tcutils.vdns.dns_introspect_utils import DnsAgentInspect
 from tcutils.util import custom_dict, get_plain_uuid
-import os
 from openstack import OpenstackAuth, OpenstackOrchestrator
 from vcenter import VcenterAuth, VcenterOrchestrator
 from vro import VroWorkflows
@@ -18,6 +21,10 @@ from common.contrail_test_init import ContrailTestInit
 from vcenter_gateway import VcenterGatewayOrch
 try:
     from tcutils.kubernetes.api_client import Client as Kubernetes_client
+except ImportError:
+    pass
+try:
+    from tcutils.kubernetes.openshift_client import Client as Openshift_client
 except ImportError:
     pass
 
@@ -54,6 +61,9 @@ class ContrailConnections():
         self.cn_inspect = custom_dict(self.get_control_node_inspect_handle,
                                       'cn_inspect')
         self.k8s_client = self.get_k8s_api_client_handle()
+        k8s_client_new = config.new_client_from_config()
+        self.dyn_client = DynamicClient(k8s_client_new)
+        #self.oc_client = self.get_oc_api_client_handle()
 
         # ToDo: msenthil/sandipd rest of init needs to be better handled
         self.domain_id = None
@@ -218,10 +228,22 @@ class ContrailConnections():
         if self.inputs.orchestrator != 'kubernetes' and self.inputs.slave_orchestrator != 'kubernetes':
             return None
         if not getattr(self, 'k8s_client', None):
-            self.k8s_client = Kubernetes_client(self.inputs.kube_config_file,
+            if self.inputs.deployer == 'openshift':
+                self.k8s_client = Openshift_client(self.inputs.kube_config_file,
+                                                self.logger)
+            else:
+                self.k8s_client = Kubernetes_client(self.inputs.kube_config_file,
                                                 self.logger)
         return self.k8s_client
     # end get_k8s_api_client_handle
+
+    def get_oc_api_client_handle(self):
+        #if self.inputs.orchestrator != 'openshift' and self.inputs.slave_orchestrator != 'openshift':
+        #    return None
+        #if not getattr(self, 'oc_client', None):
+        #    import pdb;pdb.set_trace()
+        #    self.dyn_client = openshift.dynamic.DynamicClient(self.k8s_client)
+        return self.dyn_client
 
     def get_svc_mon_h(self, refresh=False):
         if not getattr(self, '_svc_mon_inspect', None) or refresh:
