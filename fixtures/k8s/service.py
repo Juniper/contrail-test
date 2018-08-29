@@ -50,7 +50,7 @@ class ServiceFixture(fixtures.Fixture):
 
     def _populate_attr(self):
         self.uuid = self.obj.metadata.uid
-        self.cluster_ip = self.obj.spec.cluster_ip
+        self.cluster_ip = self.obj.spec.cluster_ip or self.obj.spec[u'clusterIP'].encode('ascii','ignore')
         self.spec_obj = self.obj.spec
         self.metadata_obj = self.obj.metadata
         self.kind = self.obj.kind
