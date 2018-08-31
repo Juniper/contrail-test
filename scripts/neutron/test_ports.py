@@ -751,9 +751,8 @@ class TestPorts(BaseNeutronTest):
     # end test_aap_with_vrrp_admin_state_toggle
 
     @skip_because(hypervisor='docker',msg='Uses vsrx image', min_nodes=3)
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
-    def test_aap_with_fip(self):
+    def test_aap_with_fip_vsrx(self):
         '''
         1. Create 2 VSRXs and enable VRRP between them, specifying a vIP.
         2. Update the ports of the respective VMs to allow the vIP so configured.
@@ -880,7 +879,7 @@ class TestPorts(BaseNeutronTest):
         assert self.verify_vrrp_action(
             fvn_vm_fixture, vm2_fixture, fIP[0], vsrx=True)
 
-    # end test_aap_with_fip
+    # end test_aap_with_fip_vsrx
 
     @preposttest_wrapper
     def test_aap_with_vrrp_priority_change(self):
@@ -1026,7 +1025,105 @@ class TestPorts(BaseNeutronTest):
 
     @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
-    @skip_because(min_nodes=3)
+    def test_aap_with_fip(self):
+
+        '''
+        1. Create 2 VMs and enable keepalived between them, specifying a vIP.
+        2. Update the ports of the respective VMs to allow the vIP so configured.
+        3. Associate the same FIP to both the ports using API.
+        4. In the Floating IP object, add the vIP as the fixed_ip_address.
+        5. Ping to the vIP and FIP should be answered by the AAP active port.
+        6. Cause a keepalived mastership switchover.
+        7. The vIP and FIP should still be accessible via the new VRRP master.
+        
+	Maintainer: ganeshahv@juniper.net
+        '''
+
+        self.logger.info('Create a FVN. Create a FIP-Pool and FIP')
+        fvn_name = get_random_name('fvn')
+        fvn_subnets = [get_random_cidr()]
+        fvn_vm_name = get_random_name('fvn-vm')
+        fvn_fixture = self.create_vn(fvn_name, fvn_subnets)
+        fvn_vm_fixture = self.create_vm(fvn_fixture, fvn_vm_name,
+                                        image_name='cirros')
+        assert fvn_vm_fixture.wait_till_vm_is_up(
+        ), 'VM does not seem to be up'
+        fip_pool_name = 'some-pool1'
+        my_fip_name = 'fip'
+        fvn_obj = fvn_fixture.obj
+        fvn_id = fvn_fixture.vn_id
+        fip_fixture = self.useFixture(
+            FloatingIPFixture(
+                project_name=self.inputs.project_name, inputs=self.inputs,
+                connections=self.connections, pool_name=fip_pool_name, vn_id=fvn_fixture.vn_id))
+        assert fip_fixture.verify_on_setup()
+        fIP = self.create_fip(fip_fixture)
+        self.addCleanup(self.del_fip, fIP[1])
+
+        vn1_name = get_random_name('vn1')
+        vn1_subnets = [get_random_cidr()]
+        vm1_name = get_random_name('vm1')
+        vm2_name = get_random_name('vm2')
+        vm_test_name = get_random_name('vm_test')
+        vID = '51'
+        result = False
+
+        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+        vIP = get_an_ip(vn1_subnets[0], offset=10)
+        port1_obj = self.create_port(net_id=vn1_fixture.vn_id)
+        port2_obj = self.create_port(net_id=vn1_fixture.vn_id)
+        port_list = [port1_obj, port2_obj]
+        vm1_fixture = self.create_vm(vn1_fixture, vm1_name,
+                                     image_name='ubuntu-keepalive',
+                                     port_ids=[port1_obj['id']])
+        vm2_fixture = self.create_vm(vn1_fixture, vm2_name,
+                                     image_name='ubuntu-keepalive',
+                                     port_ids=[port2_obj['id']])
+        vm_test_fixture = self.create_vm(vn1_fixture, vm_test_name,
+                                          image_name='ubuntu')
+        assert vm1_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
+        assert vm2_fixture.wait_till_vm_is_up(), 'VM does not seem to be up'
+        assert vm_test_fixture.wait_till_vm_is_up(
+        ), 'VM does not seem to be up'
+        for port in port_list:
+            self.config_aap(
+                port['id'], vIP, mac='00:00:00:00:00:00', contrail_api=True)
+        self.config_keepalive(vm1_fixture, vIP, vID, '10')
+        self.config_keepalive(vm2_fixture, vIP, vID, '20')
+        self.logger.info('Use VNC API to associate the same fIP to two ports')
+        self.logger.info(
+            'Add the vIP- %s as Fixed IP of the fIP- %s' % (vIP, fIP[0]))
+        vm1_l_vmi_id = vm1_fixture.get_vmi_ids()[vn1_fixture.vn_fq_name]
+        vm2_l_vmi_id = vm2_fixture.get_vmi_ids()[vn1_fixture.vn_fq_name]
+        self.assoc_fip(fIP[1], vm1_fixture.vm_id, vmi_id=vm1_l_vmi_id)
+        self.assoc_fip(fIP[1], vm2_fixture.vm_id, vmi_id=vm2_l_vmi_id)
+        self.assoc_fixed_ip_to_fip(fIP[1], vIP)
+        self.addCleanup(self.disassoc_fip, fIP[1])
+        self.logger.info('Ping to the Virtual IP from the test VM (Same Network)')
+        assert vm_test_fixture.ping_with_certainty(vIP), ''\
+            'Ping to the Virtual IP %s from the test VM  %s failed' % (vIP,
+                                                vm_test_fixture.vm_ip)
+        self.logger.info('Ping to the Floating IP from the test VM')
+        assert fvn_vm_fixture.ping_with_certainty(fIP[0]), ''\
+            'Ping to the Floating IP %s from the test VM  %s failed' % (fIP[0],
+                                                fvn_vm_fixture.vm_ip)
+
+        self.logger.info('Forcing VIP Switch by stopping keepalive on master')
+        self.service_keepalived(vm2_fixture, 'stop')
+
+        self.logger.info('Ping to the Virtual IP after switch over \
+                         from the test VM (Same Network)')
+        assert vm_test_fixture.ping_with_certainty(vIP), ''\
+            'Ping to the Virtual IP %s from the test VM  %s, failed' % (vIP,vm_test_fixture.vm_ip)
+        self.logger.info('Ping to the Floating IP from the test VM')
+        assert fvn_vm_fixture.ping_with_certainty(fIP[0]), ''\
+            'Ping to the Floating IP %s from the test VM  %s failed' % (fIP[0],
+                                                fvn_vm_fixture.vm_ip)
+
+    # end test_aap_with_fip  
+
+    @test.attr(type=['cb_sanity', 'sanity'])
+    @preposttest_wrapper
     def test_aap_with_zero_mac(self):
         '''
         Verify  VIP reachability over L2 network when AAP MAC is configured with all zeo
