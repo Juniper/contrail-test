@@ -25,19 +25,16 @@ class TestVrouterDetach(BaseNeutronTest):
         4. Verify Xconnect mode
         5. start vrouter-agent'''
         result = True
-        cmd_stop = 'service contrail-vrouter-agent stop'
-        cmd_start = 'service contrail-vrouter-agent start'
         verify_Xconnect ="vif --list | grep Flags:X"
         compute_ip = self.inputs.compute_ips[0]
-        self.inputs.run_cmd_on_server(compute_ip,cmd_stop, container='agent')
+        self.inputs.stop_service('contrail-vrouter-agent',[compute_ip],container='agent')
         self.logger.info('Verify Xconnect mode ')
         output=self.inputs.run_cmd_on_server(compute_ip,issue_cmd=verify_Xconnect)
         if not output:
             result = result and False
         else:
             self.logger.info('Xconnect mode got enabled')
-        self.inputs.run_cmd_on_server(compute_ip,issue_cmd=cmd_start,
-                                      container='agent')
+        self.inputs.start_service('contrail-vrouter-agent',[compute_ip],container='agent')
         status = ContrailStatusChecker(self.inputs)
         status.wait_till_contrail_cluster_stable([compute_ip])
         assert result,'Xconnect mode not enabled'
