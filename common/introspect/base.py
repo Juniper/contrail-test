@@ -9,6 +9,7 @@ from tcutils.control.cn_introspect_utils import ControlNodeInspect
 from tcutils.vdns.dns_introspect_utils import DnsAgentInspect
 from tcutils.verification_util import VerificationUtilBase, XmlDrv
 from common.contrail_test_init import DEFAULT_CERT, DEFAULT_PRIV_KEY, DEFAULT_CA
+from tcutils.util import add_knob_to_container
 
 CERT_LOCATION = '/tmp/'
 DOCKER_CONF_FILE1 = 'common.sh'
@@ -188,7 +189,7 @@ class BaseIntrospectSsl(GenericTestBase):
             cmd)
 
         self.inputs.introspect_insecure = self.introspect_insecure_old
-        self.inputs.restart_service(service_name, [node_ip], container=container,
+        self.inputs.restart_container(service_name, [node_ip], container=container,
             verify_service=verify_in_cleanup)
 
     def get_url_and_verify(self, url, inspect, exp_out=None):
@@ -225,7 +226,7 @@ class BaseIntrospectSsl(GenericTestBase):
         cmd = 'docker cp %s:%s %s' % (container_name, conf_file, conf_file_backup)
         status = self.inputs.run_cmd_on_server(node_ip, cmd, container=container_name)
 
-        self.add_knob_to_container(node_ip, container_name,
+        add_knob_to_container(self, node_ip, container_name,
             level=None, knob=[
             'INTROSPECT_SSL_ENABLE=%s' % (ssl_enable),
             'SANDESH_KEYFILE=%s' % (keyfile),

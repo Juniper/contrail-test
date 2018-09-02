@@ -14,7 +14,7 @@ from physical_router_fixture import PhysicalRouterFixture
 from time import sleep
 from tcutils.verification_util import *
 from tcutils.contrail_status_check import *
-
+from tcutils.util import add_knob_to_container
 
 class XmppBase(test_v1.BaseTestCase_v1, ConfigPolicy):
 
@@ -127,9 +127,9 @@ class XmppBase(test_v1.BaseTestCase_v1, ConfigPolicy):
 
     def enable_auth_on_cluster(self):
         for node in self.inputs.bgp_control_ips:
-            self.add_knob_to_container(node, 'control_control_1', '', 'xmpp_auth_enable=True')
+            add_knob_to_container(self, node, 'control_control_1', '', 'xmpp_auth_enable=True')
         for node in self.inputs.compute_ips:
-            self.add_knob_to_container(node, 'vrouter_vrouter-agent_1', '', 'xmpp_auth_enable=True')
+            add_knob_to_container(self, node, 'vrouter_vrouter-agent_1', '', 'xmpp_auth_enable=True')
 
     def update_contrail_conf(
         self,
