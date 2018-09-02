@@ -224,7 +224,7 @@ class BaseIntrospectSsl(GenericTestBase):
         cmd = 'docker cp %s:%s %s' % (container_name, conf_file, conf_file_backup)
         status = self.inputs.run_cmd_on_server(node_ip, cmd, container=container_name)
 
-        self.add_knob_to_container(node_ip, container_name,
+        self.inputs.add_knob_to_container(node_ip, container_name,
             level=None, knob=[
             'INTROSPECT_SSL_ENABLE=%s' % (ssl_enable),
             'SANDESH_KEYFILE=%s' % (keyfile),

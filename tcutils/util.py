@@ -1219,3 +1219,4 @@ class SafeList(list):
             return super(SafeList, self).__getitem__(index)
         except IndexError:
             return default
+
