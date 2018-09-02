@@ -10,7 +10,7 @@ import sys
 import test
 from tcutils.contrail_status_check import *
 from common.base import _GenericTestBaseMethods 
-
+from tcutils.util import add_knob_to_container
 
 class TestXmpptests(XmppBase, ConfigPolicy, _GenericTestBaseMethods):
 
@@ -52,14 +52,14 @@ class TestXmpptests(XmppBase, ConfigPolicy, _GenericTestBaseMethods):
         # there are asserts in the loop
         self.addCleanup(self.enable_auth_on_cluster)
         for node in self.inputs.bgp_control_ips:
-            self.add_knob_to_container(node, 'control_control_1', 'DEFAULT', 'xmpp_auth_enable=False')
+            add_knob_to_container(self, node, 'control_control_1', 'DEFAULT', 'xmpp_auth_enable=False')
             assert (self.check_xmpp_status(node)
                     ), "XMPP between nodes not up after deleting xmpp auth"
             assert (self.check_if_xmpp_auth_enabled(node, 'NIL')
                     ), "Xmpp auth still set after disabling it on server side"
         assert (self.check_if_cluster_has_xmpp), "XMPP connections not found"
         for node in self.inputs.bgp_control_ips:
-            self.add_knob_to_container(node, 'control_control_1', 'DEFAULT', 'xmpp_auth_enable=True')
+            add_knob_to_container(self, node, 'control_control_1', 'DEFAULT', 'xmpp_auth_enable=True')
             assert (self.check_xmpp_status(node)
                     ), "XMPP between nodes not up after adding back xmpp auth"
             assert (self.check_if_xmpp_auth_enabled(node)
@@ -77,7 +77,7 @@ class TestXmpptests(XmppBase, ConfigPolicy, _GenericTestBaseMethods):
         Also confirm if introspect reflects the changes as and when they are done
         """
         for node in self.inputs.bgp_control_ips:
-            self.add_knob_to_container(node, 'control_control_1', 'DEFAULT', 'xmpp_auth_enable=False')
+            add_knob_to_container(self, node, 'control_control_1', 'DEFAULT', 'xmpp_auth_enable=False')
         # adding cleanup before assert
         self.addCleanup(self.enable_auth_on_cluster)
         assert (self.check_xmpp_status(node)
@@ -86,7 +86,7 @@ class TestXmpptests(XmppBase, ConfigPolicy, _GenericTestBaseMethods):
         assert (self.check_if_xmpp_auth_enabled(node, 'NIL')
                 ), "Xmpp auth still set after disabling it on server side"
         for node in self.inputs.bgp_control_ips:
-            self.add_knob_to_container(node, 'control_control_1', 'DEFAULT', 'xmpp_auth_enable=True')
+            add_knob_to_container(self, node, 'control_control_1', 'DEFAULT', 'xmpp_auth_enable=True')
         assert (self.check_xmpp_status(node)
                 ), "XMPP between nodes not up after adding back xmpp auth"
         assert (self.check_if_cluster_has_xmpp), "XMPP connections not found"
@@ -103,7 +103,7 @@ class TestXmpptests(XmppBase, ConfigPolicy, _GenericTestBaseMethods):
         """
 
         for node in self.inputs.compute_ips:
-            self.add_knob_to_container(node, 'vrouter_vrouter-agent_1', 'DEFAULT', 'xmpp_auth_enable=False')
+            add_knob_to_container(self, node, 'vrouter_vrouter-agent_1', 'DEFAULT', 'xmpp_auth_enable=False')
         # adding cleanup before assert
         self.addCleanup(self.enable_auth_on_cluster)
         for node in self.inputs.bgp_control_ips:
@@ -113,7 +113,7 @@ class TestXmpptests(XmppBase, ConfigPolicy, _GenericTestBaseMethods):
                 ), "XMPP connections should not be found"
 
         for node in self.inputs.compute_ips:
-            self.add_knob_to_container(node, 'vrouter_vrouter-agent_1', 'DEFAULT', 'xmpp_auth_enable=True')
+            add_knob_to_container(self, node, 'vrouter_vrouter-agent_1', 'DEFAULT', 'xmpp_auth_enable=True')
         for node in self.inputs.bgp_control_ips:
             assert (self.check_xmpp_status(node)
                     ), "XMPP between nodes not up after adding back xmpp auth"
