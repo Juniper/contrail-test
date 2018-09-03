@@ -305,23 +305,17 @@ class BaseNeutronTest(GenericTestBase):
         cmdList.append('deactivate interfaces ' +
                        interface + ' unit 0 family inet dhcp')
         cmdList.append('deactivate security policies')
-        cmdList.append(
-            'set security forwarding-options family inet6 mode packet-based')
-        cmdList.append(
-            'set security forwarding-options family mpls mode packet-based')
-        cmdList.append(
-            'set security forwarding-options family iso mode packet-based')
         vm_ip = dst_vm.vm_ips[int(interface[-1])]
         vsrx_vrrp_config = ['set interfaces ' + interface + ' unit 0 family inet address ' + vm_ip
                             + '/' + '24 vrrp-group 1 priority ' + priority + ' virtual-address ' + vip + ' accept-data']
         cmdList = cmdList + vsrx_vrrp_config
         cmd_string = (';').join(cmdList)
         assert self.set_config_via_netconf(src_vm, dst_vm,
-                                             cmd_string, timeout=10, device='junos', hostkey_verify="False"), 'Could not configure VRRP thru Netconf'
+                                             cmd_string, timeout=10, device='junos', hostkey_verify="False", reboot_required=False), 'Could not configure VRRP thru Netconf'
     # end config_vrrp_on_vsrx
 
     @retry(delay=5, tries=20)
-    def set_config_via_netconf(self, src_vm, dst_vm, cmd_string, timeout=10, device='junos', hostkey_verify="False"):
+    def set_config_via_netconf(self, src_vm, dst_vm, cmd_string, timeout=10, device='junos', hostkey_verify="False", reboot_required=False):
         python_code = Template('''
 from ncclient import manager
 conn = manager.connect(host='$ip', username='$username', password='$password',timeout=$timeout, device_params=$device_params, hostkey_verify=$hostkey_verify)
@@ -330,7 +324,7 @@ send_config = conn.load_configuration(action='set', config=$cmdList)
 check_config = conn.validate()
 compare_config = conn.compare_configuration()
 conn.commit()
-conn.reboot()
+'$reboot_cmd'
 conn.unlock()
 conn.close_session()
     	''')
@@ -340,8 +334,12 @@ conn.close_session()
         if device == 'junos':
             device_params = {'name': 'junos'}
         cmdList = cmd_string.split(';')
+	if reboot_required:
+	    reboot_cmd='conn.reboot()'
+	else:
+	    reboot_cmd=' '
         python_code = python_code.substitute(ip=str(dst_vm.vm_ip), username=str(dst_vm.vm_username), password=str(
-            dst_vm.vm_password), device_params=device_params, cmdList=cmdList, timeout=timeout, hostkey_verify=hostkey_verify)
+            dst_vm.vm_password), device_params=device_params, cmdList=cmdList, timeout=timeout, hostkey_verify=hostkey_verify, reboot_cmd=reboot_cmd)
         assert dst_vm.wait_for_ssh_on_vm(port='830')
         op = src_vm.run_python_code(python_code)
 	if op != None:
