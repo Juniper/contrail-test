@@ -153,31 +153,30 @@ class BGPaaSFixture(vnc_api_test.VncLibFixture):
             return False
         return True
 
-    @retry(delay=5, tries=10)
+    @retry(delay=6, tries=10)
     def verify_not_in_control_node(self, bgpaas_vm):
         for ctrl_node in bgpaas_vm.get_control_nodes():
             result = True
             cn_bgp_entry = self.connections.get_control_node_inspect_handle(
                 ctrl_node).get_cn_bgp_neigh_entry(encoding='BGP')
             for entry in cn_bgp_entry:
-                if entry['router_type'] == 'bgpaas-client' and entry['state'] == 'Established':
+                if entry['peer_address'] == self.ip and entry['state'] == 'Established':
                     self.logger.error(
                         'BGPaaS session still seen in control-node %s' % ctrl_node)
                     result = False
         return result
 
-    @retry(delay=5, tries=20)
+    @retry(delay=6, tries=10) #vSRX takes a long time to come up and start rpd
     def verify_in_control_node(self, bgpaas_vm):
-        for ctrl_node in bgpaas_vm.get_control_nodes():
-            result = False
+        result = False
+        for ctrl_node in  bgpaas_vm.get_control_nodes():
             cn_bgp_entry = self.connections.get_control_node_inspect_handle(
                 ctrl_node).get_cn_bgp_neigh_entry(encoding='BGP')
             for entry in cn_bgp_entry:
-                if entry['router_type'] == 'bgpaas-client' and entry['state'] == 'Established':
-                    self.logger.info(
+                if entry['peer_address'] == self.ip and entry['state'] == 'Established':
+		    self.logger.info(
                         'BGPaaS session seen in control-node %s' % ctrl_node)
                     result = True
-        result = result and True
         return result
 
     def attach_vmi(self, vmi):

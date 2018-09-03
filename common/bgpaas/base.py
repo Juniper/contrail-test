@@ -58,10 +58,9 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
         if bfd_enabled:
             cmdList.extend(('set protocols bgp group bgpaas bfd-liveness-detection minimum-interval 1000',
                             'set protocols bgp group bgpaas bfd-liveness-detection multiplier 3',
-                            'set protocols bgp group bgpaas bfd-liveness-detection session-mode multihop',
-                            'deactivate protocols bgp group bgpaas bfd-liveness-detection'))  # This will help to check if contrail is sending multihop BFD packets over port 4784
+                            'set protocols bgp group bgpaas bfd-liveness-detection session-mode multihop')),
         cmdList.extend(('set protocols bgp group bgpaas type external', 'set protocols bgp group bgpaas multihop', 'set protocols bgp group bgpaas export export-to-bgp',
-                        'set protocols bgp group bgpaas hold-time 90', 'set policy-options policy-statement export-to-bgp term allow_local from protocol direct',
+                        'set protocols bgp group bgpaas hold-time 30', 'set policy-options policy-statement export-to-bgp term allow_local from protocol direct',
                         'set policy-options policy-statement export-to-bgp term allow_local from protocol local',
                         'set policy-options policy-statement export-to-bgp term allow_local from protocol static', 'set policy-options policy-statement export-to-bgp term allow_local then next-hop ' +
                         str(bgp_ip),
@@ -98,7 +97,7 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
         result = bgpaas_fixture.detach_shc(shc.uuid)
         return result
 
-    @retry(delay=2, tries=5)
+    @retry(delay=5, tries=10)
     def verify_bfd_packets(self, vm, vn):
         interface = vm.tap_intf[vn.vn_fq_name]['name']
         username = self.inputs.host_data[vm.vm_node_ip]['username']
@@ -109,3 +108,27 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
         stop_tcpdump_for_intf(session, pcap)
         result = search_in_pcap(session, pcap, '4784')
         return result
+
+    def config_bgp_on_bird(self, bgpaas_vm, local_ip, peer_ip, local_as, peer_as):
+        self.logger.info('Configuring BGP on %s ' % bgpaas_vm.vm_name)
+        cmd = '''cat > /etc/bird/bird.conf << EOS
+router id %s;
+protocol bgp {
+        description "BGPaaS";
+        local as %s;
+        neighbor %s as %s;
+        multihop;
+        hold time 90;
+        bfd on;
+        source address %s;      # What local address we use for the TCP connection
+}
+protocol bfd {
+    neighbor %s local %s multihop on;
+}
+EOS
+'''%(local_ip, local_as, peer_ip, peer_as, local_ip, peer_ip, local_ip)
+        bgpaas_vm.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        service_restart= "service bird restart"
+        op=bgpaas_vm.run_cmd_on_vm(cmds=[service_restart], as_sudo=True)
+    # end config_bgp_on_bird
+
