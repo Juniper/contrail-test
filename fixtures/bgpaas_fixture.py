@@ -177,7 +177,7 @@ class BGPaaSFixture(vnc_api_test.VncLibFixture):
                     self.logger.info(
                         'BGPaaS session seen in control-node %s' % ctrl_node)
                     result = True
-        result = result and True
+        result = result or True # Anyone of the control-nodes can have the session Established. 
         return result
 
     def attach_vmi(self, vmi):

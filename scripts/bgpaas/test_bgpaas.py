@@ -10,14 +10,14 @@ from common import isolated_creds
 
 class TestBGPaaS(BaseBGPaaS):
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
-    def test_bgpaas_basic(self):
+    def test_bgpaas_vsrx(self):
         '''
         1. Create a BGPaaS object with shared attribute, IP address and ASN.
         2. Launch vSRXs which will act as the clients. 
         3. Run VRRP among them. 
         4. The VRRP master will claim the BGP Source Address of the BGPaaS object. 
+	Maintainer: ganeshahv@juniper.net
         '''
         vn_name = get_random_name('bgpaas_vn')
         vn_subnets = [get_random_cidr()]
@@ -83,9 +83,50 @@ class TestBGPaaS(BaseBGPaaS):
                             shc_fixture, bgpaas_fixture)
             agent = bgpaas_vm1.vm_node_ip
             shc_fixture.verify_in_agent(agent)
-            time.sleep(60)
             assert bgpaas_fixture.verify_in_control_node(
                 bgpaas_vm1), 'BGPaaS Session not seen in the control-node'
             assert self.verify_bfd_packets(
                 bgpaas_vm1, vn_fixture), 'Multihop BFD packets not seen over the BGPaaS interface'
+        # end test_bgpaas_vsrx
+
+#    @test.attr(type=['sanity']) # Will enable once the ubuntu image is ready with bird
+    @preposttest_wrapper
+    def test_bgpaas_basic(self):
+        '''
+        1. Create a BGPaaS object with shared attribute, IP address and ASN.
+        2. Launch a VM which will act as the BGPaaS client. 
+        3. Configure BFDoBGPaaS on it. 
+        4. Verify BGP and BFD sessions over it come up fine.
+	Maintainer: ganeshahv@juniper.net
+        '''
+        vn_name = get_random_name('bgpaas_vn')
+        vn_subnets = [get_random_cidr()]
+        vn_fixture = self.create_vn(vn_name, vn_subnets)
+        bgpaas_vm = self.create_vm(vn_fixture, 'bgpaas_vm1',
+                                    image_name='ubuntu')
+        assert bgpaas_vm.wait_till_vm_is_up()
+	bgp_vm_port = bgpaas_vm.vmi_ids[bgpaas_vm.vn_fq_name]
+        local_as = 65000
+	local_ip = bgpaas_vm.vm_ip
+        peer_ip = vn_fixture.get_subnets()[0]['gateway_ip']
+	peer_as=self.connections.vnc_lib_fixture.get_global_asn()
+        bgpaas_fixture = self.create_bgpaas(
+            bgpaas_shared=True, autonomous_system=local_as, bgpaas_ip_address=local_ip)
+        self.logger.info('We will configure BGP on the VM')
+	self.config_bgp_on_bird(bgpaas_vm, local_ip, peer_ip, local_as, peer_as)
+        self.logger.info('Attaching the VMI to the BGPaaS object')
+        self.attach_vmi_to_bgpaas(bgp_vm_port, bgpaas_fixture)
+        self.addCleanup(self.detach_vmi_from_bgpaas,
+                        bgp_vm_port, bgpaas_fixture)
+        shc_fixture = self.create_hc(
+            probe_type='BFD', http_url=local_ip, timeout=1, delay=1, max_retries=3)
+        self.attach_shc_to_bgpaas(shc_fixture, bgpaas_fixture)
+        self.addCleanup(self.detach_shc_from_bgpaas,
+                        shc_fixture, bgpaas_fixture)
+        agent = bgpaas_vm.vm_node_ip
+        shc_fixture.verify_in_agent(agent)
+        assert bgpaas_fixture.verify_in_control_node(
+            bgpaas_vm), 'BGPaaS Session not seen in the control-node'
+        assert self.verify_bfd_packets(
+            bgpaas_vm, vn_fixture), 'Multihop BFD packets not seen over the BGPaaS interface'
         # end test_bgpaas_basic
