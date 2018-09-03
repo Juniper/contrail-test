@@ -168,8 +168,8 @@ class BGPaaSFixture(vnc_api_test.VncLibFixture):
 
     @retry(delay=5, tries=20)
     def verify_in_control_node(self, bgpaas_vm):
-        for ctrl_node in bgpaas_vm.get_control_nodes():
-            result = False
+        result = False
+        for ctrl_node in  bgpaas_vm.get_control_nodes():
             cn_bgp_entry = self.connections.get_control_node_inspect_handle(
                 ctrl_node).get_cn_bgp_neigh_entry(encoding='BGP')
             for entry in cn_bgp_entry:
@@ -177,7 +177,6 @@ class BGPaaSFixture(vnc_api_test.VncLibFixture):
                     self.logger.info(
                         'BGPaaS session seen in control-node %s' % ctrl_node)
                     result = True
-        result = result and True
         return result
 
     def attach_vmi(self, vmi):
