@@ -109,3 +109,29 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
         stop_tcpdump_for_intf(session, pcap)
         result = search_in_pcap(session, pcap, '4784')
         return result
+
+    def config_bgp_on_bird(self, bgpaas_vm, local_ip, peer_ip, local_as, peer_as):
+        self.logger.info('Configuring BGP on %s ' % bgpaas_vm.vm_name)
+        cmdList = []
+        cmd = '''cat > /etc/bird/bird.conf << EOS
+router id %s;
+protocol bgp {
+        description "BGPaaS";
+        local as %s;
+        neighbor %s as %s;
+        multihop;
+        hold time 90;
+        bfd on;
+        source address %s;      # What local address we use for the TCP connection
+}
+protocol bfd {
+    neighbor %s local %s multihop on;
+}
+EOS
+'''%(local_ip, local_as, peer_ip, peer_as, local_ip, peer_ip, local_ip)
+        bgpaas_vm.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+        service_restart= "service bird restart"
+        op=bgpaas_vm.run_cmd_on_vm(cmds=[service_restart], as_sudo=True)
+	print op
+    # end config_bgp_on_bird
+
