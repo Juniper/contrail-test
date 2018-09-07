@@ -113,7 +113,6 @@ GENERATORS = {'Compute' : ['contrail-vrouter-agent',
 class AnalyticsVerification(fixtures.Fixture):
 
     def __init__(self, inputs, cn_inspect, agent_inspect, ops_inspect, logger=LOG):
-
         self.inputs = inputs
         self.ops_inspect = ops_inspect
         self.agent_inspect = agent_inspect
@@ -121,7 +120,7 @@ class AnalyticsVerification(fixtures.Fixture):
         self.logger = logger
         self.get_all_generators()
         self.uve_verification_flags = []
-
+        
     def get_all_generators(self):
         self.generator_hosts = []
         self.bgp_hosts = []
@@ -2444,14 +2443,12 @@ class AnalyticsVerification(fixtures.Fixture):
     def _verify_alarms_bgp_peer_mismatch(self, service_ip, role, alarm_type, multi_instances):
         result = True
         new_ip = self.new_ip_addr
-        bgp_router_fixture = PhysicalRouterFixture('test_bgp_connectivity_alarm', self.new_ip_addr)
-        super(PhysicalRouterFixture, bgp_router_fixture).setUp()
-        self.bgp_router = bgp_router_fixture.create_bgp_router()
-        bgp_router_fixture.bgp_router = self.bgp_router
+        bgp_router_fixture = PhysicalRouterFixture('test_bgp_connectivity_alarm', self.new_ip_addr,
+                                    connections=self.connections)
+        bgp_router_fixture.setUp()
         if not self._verify_alarms_by_type(None, service_ip, role, alarm_type, multi_instances=False, soak_timer=15):
             result = result and False
         bgp_router_fixture.delete_bgp_router()
-        super(PhysicalRouterFixture, bgp_router_fixture).delete_device()
         if not self._verify_alarms_by_type(None, service_ip, role, alarm_type, multi_instances=False,
                 soak_timer=15, verify_alarm_cleared=True):
             result = result and False
@@ -2467,28 +2464,41 @@ class AnalyticsVerification(fixtures.Fixture):
         return result
     # end _verify_vrouter_interface_alarm
 
-    def update_contrail_conf(self, node, ip, conf_file_type, section, value, cluster_verify=False,
-                             container=None):
-        file_loc = '/etc/contrail/' + conf_file_type + '.conf'
-        self._update_contrail_conf(file_loc, 'set', section,
-            value, node, conf_file_type, ip, cluster_verify,
-                       container=container)
-    # end update_contrail_conf
+    def update_contrail_conf(self, node_ip, new_host_ip, section, value, conf_file_backup, container, 
+                             conf_file='entrypoint.sh', cluster_verify=False):
+        #Take backup of original entry_point.sh file to revert back later
+        container = self.inputs.get_container_name(node_ip, container)
+        cmd = 'docker cp %s:%s %s' % (container, conf_file, conf_file_backup)
+        status = self.inputs.run_cmd_on_server(node_ip, cmd, container=container)
+        knob = value + '=' + new_host_ip
+        self.inputs.add_knob_to_container(node_ip, container, section, knob)
+        return conf_file_backup
 
+    # end update_contrail_conf
+    
+    def restore_contrail_conf(self, node_ip, conf_file_backup, container, conf_file='entrypoint.sh'):
+        dst_file = conf_file
+        container_name = self.inputs.get_container_name(node_ip, container)
+        cmd = 'docker cp %s %s:/%s;rm -f %s' % (conf_file_backup, container_name,
+            dst_file, conf_file_backup)
+        output = self.inputs.run_cmd_on_server(node_ip, cmd)
+        self.inputs.restart_container([node_ip], container)
+        assert self.inputs.verify_state(), 'Cluster is not stable after reverting config'
+            
     def update_contrail_control_conf_file_and_verify_alarms(self, section, value, service_ip, role,
             alarm_type, multi_instances, service=None):
         result = True
+        conf_file_backup = get_random_name('control')
         try:
             len_of_bgp_control_ips = len(self.inputs.bgp_control_ips)
             new_host_ip = self.new_ip_addr
             if multi_instances:
                 for ip in self.inputs.bgp_control_ips:
-                    self.update_contrail_conf(ip, new_host_ip, 'contrail-control', section, value,
-                                              container='controller')
+                    self.update_contrail_conf(ip, new_host_ip, section, value,
+                            conf_file_backup,container='control')
             else:
-                self.update_contrail_conf(service_ip, new_host_ip, 'contrail-control', section, value,
-                                          container='controller')
-            self.wait_for_system_stability()
+                self.update_contrail_conf(service_ip, new_host_ip, section, value,
+                        conf_file_backup,container='control')
             if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances=False, soak_timer=15):
                 result = result and False
         except Exception, e:
@@ -2500,12 +2510,10 @@ class AnalyticsVerification(fixtures.Fixture):
                 for ip in self.inputs.bgp_control_ips:
                     if ip == self.inputs.bgp_control_ips[len_of_bgp_control_ips-1]:
                         cluster_verify = False
-                    self.update_contrail_conf(ip, ip, 'contrail-control', section, value, cluster_verify=cluster_verify,
-                                              container='controller')
+                        
+                    self.restore_contrail_conf(ip, conf_file_backup,container='control')
             else:
-                self.update_contrail_conf(service_ip, service_ip, 'contrail-control', section, value, cluster_verify=False,
-                                          container='controller')
-            self.wait_for_system_stability()
+                self.restore_contrail_conf(ip, conf_file_backup,container='control')
             if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances=False,
                     soak_timer=15, verify_alarm_cleared=True):
                 result = result and False
@@ -2605,18 +2613,17 @@ class AnalyticsVerification(fixtures.Fixture):
         result = True
         is_file_created = {  'config-node':False, 'analytics-node':False,
             'vrouter':False, 'database-node':False, 'control-node':False }
+
         try:
             for role in is_file_created:
                 svc_ip = service_ip[role]
                 contnr = container[role]
                 hostname = self.inputs.host_data[svc_ip]['name']
-                cmd = "df -h /dev/mapper/" + hostname + "--vg-root"
+                cmd = "df -h /dev/mapper/" + hostname + "--vg00-lv_root"
                 cmd1 = cmd + " | awk 'NR==2 {print $2}'"
                 cmd2 = cmd + " | awk 'NR==2 {print $3}'"
-                total = int(self.inputs.run_cmd_on_server(svc_ip, cmd1,
-                            container=contnr).split('G')[0])
-                used = int(self.inputs.run_cmd_on_server(svc_ip, cmd2,
-                           container=contnr).split('G')[0])
+                total = int(self.inputs.run_cmd_on_server(svc_ip, cmd1).split('G')[0])
+                used = int(self.inputs.run_cmd_on_server(svc_ip, cmd2).split('G')[0])
                 diff = 0
                 limit = 0.91 * total
                 if not used > limit:
@@ -2626,22 +2633,22 @@ class AnalyticsVerification(fixtures.Fixture):
                 dd_cmd = 'fallocate -l ' + str_mb + ' large_test_file.txt'
                 self.logger.info('Disk usage alarm verification for role %s' % (role))
                 if not is_file_created[role]:
-                    status = self.inputs.run_cmd_on_server(svc_ip, cmd, container=contnr)
+                    status = self.inputs.run_cmd_on_server(svc_ip, cmd)
                     self.logger.debug('Printing df -h before file creation: \n %s \n' % (status))
                     if diff:
                         self.logger.info('Creating a file of size %s GB(%s MB) to fill 91 percent of the disk space on %s' %
                             (str(mb/1024), str(mb), role))
-                        self.inputs.run_cmd_on_server(svc_ip, dd_cmd, container=contnr)
+                        self.inputs.run_cmd_on_server(svc_ip, dd_cmd)
                     else:
                         self.logger.info('Disk usage is already more than 91 percent, disk usage alarm expected')
-                    status = self.inputs.run_cmd_on_server(svc_ip, cmd, container=contnr)
+                    status = self.inputs.run_cmd_on_server(svc_ip, cmd)
                     self.logger.debug('Printing df -h after file creation: \n %s \n' % (status))
                     self.wait_for_system_stability(wait=10)
                     for node_role in is_file_created:
                         if svc_ip == service_ip[node_role]:
                             is_file_created[node_role] = True
                 else:
-                   status = self.inputs.run_cmd_on_server(svc_ip, cmd, container=contnr)
+                   status = self.inputs.run_cmd_on_server(svc_ip, cmd)
                    self.logger.debug('Printing current disk usage: \n\n %s' % (status))
                    self.logger.debug('Large file already created on %s, skipping creation, disk usage is above 91 percent' % (role))
                 if not self._verify_alarms_by_type(None, svc_ip, role, alarm_type, multi_instances=False,
@@ -2708,19 +2715,6 @@ class AnalyticsVerification(fixtures.Fixture):
         return result
     # end _verify_alarms_process_connectivity_vrouter_agent
 
-    def _update_contrail_conf(self, conf_file, operation, section, knob, node, service, value, cluster_verify,
-                              container=None):
-        if operation == 'del':
-            cmd = 'openstack-config --del %s %s %s' % (conf_file, section, knob)
-            xmpp_status = self.inputs.run_cmd_on_server(node, cmd, container=container)
-        if operation == 'set':
-            cmd = 'openstack-config --set %s %s %s %s' % (conf_file, section, knob, value)
-        status = self.inputs.run_cmd_on_server(node, cmd, container=container)
-        self.inputs.restart_service(service, [node], container=container)
-        if cluster_verify:
-            cluster_status, error_nodes = ContrailStatusChecker().wait_till_contrail_cluster_stable()
-            assert cluster_status, 'Hash of error nodes and services : %s' % (error_nodes)
-
     def verify_prouter_connectivity_alarm(self):
         return self.verify_alarms(role='prouter', alarm_type='prouter-connectivity')
     # end verify_prouter_connectivity_alarm
@@ -2750,7 +2744,8 @@ class AnalyticsVerification(fixtures.Fixture):
         return self.verify_alarms( role='analytics-node')
     # end analytics_alarms
 
-    def verify_bgp_connectivity_alarm(self):
+    def verify_bgp_connectivity_alarm(self, connections):
+        self.connections = connections
         return self.verify_alarms(role='control-node', alarm_type='bgp-connectivity')
     # end verify_bgp_peer_mismatch_alarm
 
@@ -2858,7 +2853,6 @@ class AnalyticsVerification(fixtures.Fixture):
             'supervisor-database',
             'supervisor-vrouter',
             'contrail-database-nodemgr']
-
         if service in supervisors:
             alarm_type = ['node-status']
         collector_ip = self.inputs.collector_ips[0]
@@ -3038,7 +3032,7 @@ class AnalyticsVerification(fixtures.Fixture):
             if not self._verify_alarms_bgp_peer_mismatch(service_ip, role, alarm_type, multi_instances):
                 result = result and False
         elif trigger == 'disk_usage':
-            alarm_type = 'disk-usage'
+            alarm_type = 'disk-usage-critical'
             if not self._verify_alarms_disk_usage(service_ip, role, alarm_type, multi_instances, container):
                 result = result and False
         elif role == 'control-node':

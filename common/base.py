@@ -85,66 +85,6 @@ class _GenericTestBaseMethods():
             nodes=[node_ip])[0]
     # end start_containers
 
-    def add_knob_to_container(self, node_ip, container_name, level='DEFAULT',
-        knob=None, restart_container=True, file_name='entrypoint.sh'):
-        ''' Add/update a configuration knob to container via common.sh or entrypoint.sh
-                For entrypoint.sh, it can add at specified level
-                For common.sh, it can only edit the existing knob and
-                    level must be None in this case
-            Args:
-                node_ip         : Node on which containers need to be stopped
-                container_name  : Name of the container
-                file_name       : config script file name
-                level           : Hierarchy level where knob needs to be added
-                knob            : Knob which needs to be added or list of knobs
-            E.g: add_knob_to_container('10.204.217.127', 'control_control_1',
-            'DEFAULT', 'mvpn_ipv4_enable=1')
-        '''
-
-        issue_cmd = 'docker cp %s:/%s .' % (container_name, file_name)
-        username = self.inputs.host_data[node_ip]['username']
-        password = self.inputs.host_data[node_ip]['password']
-
-        self.logger.info('Running %s on %s' % (issue_cmd, node_ip))
-        self.inputs.run_cmd_on_server(node_ip, issue_cmd, username, password, pty=True,
-                                    as_sudo=True)
-
-        knob_list = [knob] if isinstance(knob, str) else knob
-
-        for knob in knob_list:
-            just_knob = knob[:knob.find('=')]
-            if level is not None:
-                #Delete the existing knob
-                issue_cmd = 'sed -i -e \'/'+just_knob+'/d\' %s' % (file_name)
-                self.logger.info('Running %s on %s' % (issue_cmd, node_ip))
-                self.inputs.run_cmd_on_server(node_ip, issue_cmd, username, password, pty=True,
-                                            as_sudo=True)
-                #Insert the new knob at given level
-                issue_cmd = 'grep -q -F \''+knob+'\' %s ||' % (file_name) + \
-                    'sed -i  \'/\['+level+'\]/a '+knob+'\' %s' % (file_name)
-            else:
-                #Replace the existing knob with new value
-                #Append at next line of first match then delete first match
-                issue_cmd = 'sed -i \'/'+just_knob+'=.*/a %s\' %s' % (knob, file_name)
-                issue_cmd = issue_cmd + ';sed -i \'0,/%s=.*/{//d}\' %s' % (
-                    just_knob, file_name)
-
-            self.logger.info('Running %s on %s' % (issue_cmd, node_ip))
-            self.inputs.run_cmd_on_server(node_ip, issue_cmd, username, password, pty=True,
-                                    as_sudo=True)
-
-        issue_cmd = 'docker cp %s %s:/%s' % (file_name, container_name,
-            file_name)
-        self.logger.info('Running %s on %s' % (issue_cmd, node_ip))
-        self.inputs.run_cmd_on_server(node_ip, issue_cmd, username, password, pty=True,
-                                    as_sudo=True)
-
-        if restart_container:
-            issue_cmd = 'docker restart %s -t 60' % (container_name)
-            self.logger.info('Running %s on %s' % (issue_cmd, node_ip))
-            self.inputs.run_cmd_on_server(node_ip, issue_cmd, username, password, pty=True,
-                                        as_sudo=True)
-
 # end _GenericTestBaseMethods
 
 
