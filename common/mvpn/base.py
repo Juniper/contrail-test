@@ -1035,7 +1035,7 @@ class MVPNTestSingleVNSingleComputeBase(MVPNTestBase, IGMPTestBase, GWLessFWDTes
         # Configure MVPN at control node. Right now, there is no VNC API. Need
         # to update entrypoint.sh file and restart control docker
         for node_ip in self.inputs.cfgm_ips:
-            self.add_knob_to_container(node_ip, 'control_control_1', 'DEFAULT', 'mvpn_ipv4_enable=1')
+            self.inputs.add_knob_to_container(node_ip, 'control_control_1', 'DEFAULT', 'mvpn_ipv4_enable=1')
 
         # Gateway less forward provision for multicast source simulation
         self.provision_gw_less_fwd_mcast_src()
@@ -1096,7 +1096,7 @@ class MVPNTestSingleVNMultiComputeBase(MVPNTestBase, IGMPTestBase, GWLessFWDTest
         # Configure MVPN at control node. Right now, there is no VNC API. Need
         # to update entrypoint.sh file and restart control docker
         for node_ip in self.inputs.cfgm_ips:
-            self.add_knob_to_container(node_ip, 'control_control_1', 'DEFAULT', 'mvpn_ipv4_enable=1')
+            self.inputs.add_knob_to_container(node_ip, 'control_control_1', 'DEFAULT', 'mvpn_ipv4_enable=1')
 
         # Gateway less forward provision for multicast source simulation
         self.provision_gw_less_fwd_mcast_src()
@@ -1157,7 +1157,7 @@ class MVPNTestMultiVNSingleComputeBase(MVPNTestBase, IGMPTestBase, GWLessFWDTest
         # Configure MVPN at control node. Right now, there is no VNC API. Need
         # to update entrypoint.sh file and restart control docker
         for node_ip in self.inputs.cfgm_ips:
-            self.add_knob_to_container(node_ip, 'control_control_1', 'DEFAULT', 'mvpn_ipv4_enable=1')
+            self.inputs.add_knob_to_container(node_ip, 'control_control_1', 'DEFAULT', 'mvpn_ipv4_enable=1')
 
         # Gateway less forward provision for multicast source simulation
         self.provision_gw_less_fwd_mcast_src()
@@ -1243,7 +1243,7 @@ class MVPNTestMultiVNMultiComputeBase(MVPNTestBase, IGMPTestBase, GWLessFWDTestB
         # Configure MVPN at control node. Right now, there is no VNC API. Need
         # to update entrypoint.sh file and restart control docker
         for node_ip in self.inputs.cfgm_ips:
-            self.add_knob_to_container(node_ip, 'control_control_1', 'DEFAULT', 'mvpn_ipv4_enable=1')
+            self.inputs.add_knob_to_container(node_ip, 'control_control_1', 'DEFAULT', 'mvpn_ipv4_enable=1')
 
         # Gateway less forward provision for multicast source simulation
         self.provision_gw_less_fwd_mcast_src()

@@ -414,7 +414,7 @@ class VerifyEvpnCases():
         session, pcap = vn_l2_vm2_fixture.start_tcpdump(filters = filters,interface = tap_intf)
         sleep(20)
         self.send_l3_traffic(vn_l2_vm1_fixture)
-        assert verify_tcpdump_count(self,session, pcap,exp_count=10)
+        assert verify_tcpdump_count(self,session, pcap, raw_count=True, exp_count=10)
         
         #send l2 traffic and verify
         self.mac1=vn_l2_vm1_fixture.mac_addr[self.vn1_fixture.vn_fq_name]
@@ -624,7 +624,7 @@ class VerifyEvpnCases():
         session, pcap = vn_l2_vm2_fixture.start_tcpdump(filters = filters,interface = tap_intf)
         sleep(10)
         output = self.send_l3_traffic(vn_l2_vm1_fixture)
-        assert verify_tcpdump_count(self,session, pcap,exp_count=10)
+        assert verify_tcpdump_count(self,session, pcap,raw_count=True, exp_count=10)
         
         return result
     
@@ -889,7 +889,7 @@ class VerifyEvpnCases():
         session, pcap = vn_l2_vm2_fixture.start_tcpdump(filters = filters,interface = tap_intf)
         sleep(10)
         self.send_l3_traffic(vn_l2_vm1_fixture)
-        assert verify_tcpdump_count(self,session, pcap,exp_count=10)
+        assert verify_tcpdump_count(self,session, pcap, raw_count=True, exp_count=10)
         comp_vm1_ip = vn_l2_vm1_fixture.vm_node_ip
         comp_vm2_ip = vn_l2_vm2_fixture.vm_node_ip
         

@@ -105,17 +105,17 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         assert self.analytics_obj.verify_conf_incorrect_alarm()
         return True
 
-    @preposttest_wrapper
+    '''@preposttest_wrapper
     def test_contrail_control_process_connectivity_alarm(self):
-        ''' Test to check contrail-control process connectivity alarm
+         Test to check contrail-control process connectivity alarm
             Steps:
                 1) Change ifmap user in contrail-control conf file and restart
                 2) Expect contrail control  process connectivity alarm to get raised
                 3) Verify contrail control process connectivity alarm
 
-        '''
-        assert self.analytics_obj.verify_process_connectivity_contrail_control_alarm()
-        return True
+        
+        #assert self.analytics_obj.verify_process_connectivity_contrail_control_alarm()
+    #    return True'''
 
     @preposttest_wrapper
     def test_partial_sysinfo_config_alarm(self):
@@ -129,16 +129,16 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         assert self.analytics_obj.verify_partial_sysinfo_config_alarm()
         return True
 
-    @preposttest_wrapper
+    '''@preposttest_wrapper
     def test_vrouter_agent_process_connectivity_alarm(self):
-        ''' Test to check vrouter agent process connectivity alarm
+       Test to check vrouter agent process connectivity alarm
             Steps:
                 1) Change ifmap user in contrail-control conf file and restart
                 2) Expect process connectivity alarm to get raised
                 3) Verify vrouter agent process connectivity alarm
-        '''
+        
         assert self.analytics_obj.verify_process_connectivity_vrouter_agent_alarm()
-        return True
+        return True'''
 
     @preposttest_wrapper
     def test_address_mismatch_control_alarm(self):
@@ -156,7 +156,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         ''' Test whether contrail bgp connectivity alarm is generated 
             when there is bgp peer mismatch
         '''
-        assert self.analytics_obj.verify_bgp_connectivity_alarm()
+        assert self.analytics_obj.verify_bgp_connectivity_alarm(self.connections)
         return True
 
     @test.attr(type=['sanity', 'vcenter', 'vcenter_compute'])
