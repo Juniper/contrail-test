@@ -201,3 +201,12 @@ def check_pcap_file_exists(session, pcap, expect=True):
     return False
 
 
+class TcpdumpUtil(object):
+    def __init__(self, host=None, interface=None, VMFixture=None,
+                 capture_on_host=True, capture_filter=None,
+                 inputs=None, username=None, password=None):
+        if inputs:
+            username = inputs.host_data[host].username
+            password = inputs.host_data[host].password
+        if VMFixture:
+            pass
