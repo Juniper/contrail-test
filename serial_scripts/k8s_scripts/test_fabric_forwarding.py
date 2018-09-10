@@ -176,32 +176,32 @@ class TestFabricFWDRestarts(BaseK8sTest):
         self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3)
     #end test_fabric_fwd__with_kubelet_restart_on_master
 
-    @preposttest_wrapper
-    def test_fabric_fwd_with_docker_restart_on_master(self):
-        """
-            1.verifies pods can reach to public network when  fabric forwarding is enabled
-            2.restart the docker service on master
-            3.re verify  pods can reach to public network when  fabric forwarding is enabled
-        """
-        client1, client2, client3 = self.setup_namespaces_pods_for_fabric_restart(isolation=True,
-                                                               ip_fabric_forwarding=True)
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3)
-        self.inputs.restart_service(service_name = "docker",
-                                    host_ips = [self.inputs.k8s_master_ip])
-        time.sleep(60) # Wait timer for all contrail service to come up.
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3)
+    #@preposttest_wrapper
+    #def test_fabric_fwd_with_docker_restart_on_master(self):
+    #    """
+    #        1.verifies pods can reach to public network when  fabric forwarding is enabled
+    #        2.restart the docker service on master
+    #        3.re verify  pods can reach to public network when  fabric forwarding is enabled
+    #    """
+    #    client1, client2, client3 = self.setup_namespaces_pods_for_fabric_restart(isolation=True,
+    #                                                           ip_fabric_forwarding=True)
+    #    self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3)
+    #    self.inputs.restart_service(service_name = "docker",
+    #                                host_ips = [self.inputs.k8s_master_ip])
+    #    time.sleep(60) # Wait timer for all contrail service to come up.
+    #    self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3)
     #end test_fabric_fwd_with_docker_restart_on_master
 
-    @preposttest_wrapper
-    def test_fabric_fwd_with_master_reboot(self):
-        """
-            1.verifies pods can reach to public network when fabric forwarding is enabled
-            2.restart the docker service on master
-            3.re verify  pods can reach to public network when fabric forwarding is enabled
-        """
-        client1, client2, client3 = self.setup_namespaces_pods_for_fabric_restart(isolation=True,
-                                                               ip_fabric_forwarding=True)
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3)
-        self.inputs.reboot(self.inputs.k8s_master_ip)
-        self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3)
+    ##@preposttest_wrapper
+    #def test_fabric_fwd_with_master_reboot(self):
+    #    """
+    #        1.verifies pods can reach to public network when fabric forwarding is enabled
+    #        2.restart the docker service on master
+    #        3.re verify  pods can reach to public network when fabric forwarding is enabled
+    #    """
+    #    client1, client2, client3 = self.setup_namespaces_pods_for_fabric_restart(isolation=True,
+    #                                                           ip_fabric_forwarding=True)
+    #    self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3)
+    #    self.inputs.reboot(self.inputs.k8s_master_ip)
+    #    self.verify_ping_between_pods_across_namespaces_and_public_network(client1, client2, client3)
     #end test_fabric_fwd_with_master_reboot
