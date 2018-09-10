@@ -313,7 +313,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                               shell='/bin/sh')
     # end setup_ubuntuapp_pod
 
-    @retry(delay=1, tries=5)
+    @retry(delay=2, tries=10)
     def validate_wget(self, pod, link, expectation=True, **kwargs):
         ret_val = self.do_wget(link, pod=pod, **kwargs)
         result = ret_val == expectation
@@ -364,7 +364,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             return result
     # end do_wget
 
-    @retry(delay=1, tries=5)
+    @retry(delay=2, tries=15)
     def validate_nginx_lb(self,
                           lb_pods,
                           service_ip,
