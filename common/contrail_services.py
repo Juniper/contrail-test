@@ -42,7 +42,8 @@ CONTRAIL_SERVICES_CONTAINER_MAP = {
     'analyticsdb-nodemgr': ['analyticsdatabase_nodemgr',
                             'analyticsdb-nodemgr', 'analytics_database_nodemgr'],
     'contrail-kube-manager': ['contrail-kube-manager', 'kubemanager'],
-    'kube-apiserver':  ['kube-apiserver']
+    'kube-apiserver':  ['kube-apiserver'],
+    'strongswan':  ['strongswan_strongswan']
 }
 
 CONTRAIL_PODS_SERVICES_MAP = {
@@ -100,3 +101,15 @@ ServiceHttpPortMap = {
     "contrail-kube-manager" : 8108,
 }
 
+ANSIBLE_DEPLOYER_PODS_DIR = {
+    "vrouter": "/etc/contrail/vrouter",
+    "config": "/etc/contrail/config",
+    "control": "/etc/contrail/control",
+    "analytics": "/etc/contrail/analytics",
+    "analytics-database": "/etc/contrail/analytics_database",
+    "strongswan": "/etc/contrail/vrouter/strongswan"
+}
+
+ANSIBLE_DEPLOYER_PODS_YML_FILE = {
+    "strongswan": "strongswan_compose.yml"
+}
