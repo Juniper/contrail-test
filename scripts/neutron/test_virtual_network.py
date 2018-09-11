@@ -72,8 +72,7 @@ class TestVirtualNetwork(BaseNeutronTest):
             net_dict)
         assert net_rsp['network'][
             'admin_state_up'] == False, 'Failed to update admin_state_up'
-        assert vn1_vm1_fixture.ping_with_certainty(vn1_vm2_fixture.vm_ip,
-                                                   expectation=False)
+
         body = {'admin_state_up': True}
         net_dict = {'network': body}
         net_rsp = self.quantum_h.update_network(
