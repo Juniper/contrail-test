@@ -217,8 +217,8 @@ class TestBasicVMVN0(BaseVnVmTest):
         assert vn1_fixture.verify_on_setup(), "Verification of VN %s failed" % (
             vn1_name)
 
-        # Create 15 VMs in bulk
-        vm_count = 15
+        # Create 10 VMs in bulk
+        vm_count = 10
         vmx_fixture = self.create_vm(vn_fixture=vn1_fixture,
                                      vm_name=vn1_name,
                                      count=vm_count)
@@ -1652,7 +1652,9 @@ class TestBasicVMVN5(BaseVnVmTest):
         '''
         list_of_ips = []
         vn1_fixture = self.create_vn()
+        time.sleep(10)
         vn2_fixture = self.create_vn()
+        time.sleep(10)
         assert vn1_fixture.verify_on_setup()
         assert vn2_fixture.verify_on_setup()
         vm1_fixture = self.useFixture(VMFixture(connections=self.connections,
@@ -1670,6 +1672,15 @@ class TestBasicVMVN5(BaseVnVmTest):
         intf_vm_dct['eth0'] = vm2_fixture
         intf_vm_dct['eth1'] = vm3_fixture
         list_of_ips = vm1_fixture.vm_ips
+
+        cmd = 'ifmetric eth1 200'
+        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=30)
+        cmd = 'ifconfig eth0 inet6 add %s/64'%list_of_ips[0]
+        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=30)
+        cmd = 'ifconfig eth1 inet6 add %s/64'%list_of_ips[1]
+        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=30)
+        time.sleep(30)
+
 
         j = 'ifconfig -a'
         cmd_to_output1 = [j]
@@ -1718,9 +1729,9 @@ class TestBasicVMVN5(BaseVnVmTest):
         vm1_intf = vm1_fixture.get_vm_interface_list()
         vm1_intf.remove(other_interface)
         vm1_intf_local_ip = vm1_fixture.get_local_ip_vm_intf_name(vm1_intf[0])
-        cmd = 'ifdown %s'%other_interface
+        cmd = 'ifdown %s --force'%other_interface
 
-        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, local_ip=vm1_intf_local_ip)
+        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, local_ip=vm1_intf_local_ip, timeout=250)
 
         if vm1_fixture.ping_to_vn(intf_vm_dct[other_interface]):
             result = False
@@ -1742,8 +1753,15 @@ class TestBasicVMVN5(BaseVnVmTest):
                    not done for eth0 as it points to the default GW'%(other_interface))
         self.logger.info('-' * 80)
 
-        cmd = 'ifup %s'%other_interface
-        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=90, local_ip=vm1_intf_local_ip)
+        cmd = 'ifup %s --force'%other_interface
+        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=200, local_ip=vm1_intf_local_ip)
+
+        cmd = 'ifconfig eth0 inet6 add %s/64'%list_of_ips[0]
+        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=30)
+        cmd = 'ifconfig eth1 inet6 add %s/64'%list_of_ips[1]
+        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=30)
+        time.sleep(30)
+
         if not vm1_fixture.ping_to_vn(intf_vm_dct[other_interface]):
             result = False
             assert result, "Ping to %s Fail"%intf_vm_dct[other_interface].vm_name
@@ -2518,17 +2536,24 @@ class TestBasicVMVN9(BaseVnVmTest):
             '+++++ Will add a static route with the VM1 as the next-hop and verify the route entry in the agent ++++++')
         vm1_vmi_id = vm1_fixture.cs_vmi_obj[vn1_fixture.vn_fq_name][
             'virtual-machine-interface']['uuid']
-        add_static_route_cmd = 'python provision_static_route.py \
+
+        api_server_ip = self.inputs.cfgm_ip
+        add_static_route_cmd = 'python \/usr\/share\/contrail-utils\/provision_static_route.py \
                                 --prefix 1.2.3.4/32 --virtual_machine_interface_id %s \
-                                 --tenant_name %s --api_server_ip 127.0.0.1 --api_server_port 8082 \
+                                 --tenant_name %s --api_server_ip %s --api_server_port 8082 \
                                 --oper add --route_table_name my_route_table \
                                 --user  %s --password %s'\
-                                  %(vm1_vmi_id,self.inputs.project_name,self.inputs.stack_user,self.inputs.stack_password)
+                                  %(vm1_vmi_id,self.inputs.project_name,self.inputs.cfgm_ip,self.inputs.stack_user,self.inputs.stack_password)
+
+
 
         with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.cfgm_ips[0]), 
                                     password=self.inputs.password, warn_only=True, 
                                     abort_on_prompts=False, debug=True):
-            status = run('cd /usr/share/contrail-utils/;' + add_static_route_cmd)
+            username = self.inputs.username
+            password = self.inputs.password
+            status = self.inputs.run_cmd_on_server( self.inputs.cfgm_ips[0], add_static_route_cmd, username, password, container='api-server')
+
             self.logger.debug("%s" % status)
             m = re.search(r'Creating Route table', status)
             assert m, 'Failed in Creating Route table'
@@ -2583,18 +2608,22 @@ class TestBasicVMVN9(BaseVnVmTest):
 
         self.logger.info(
             '-------------------------Will delete the static route now------------------')
-        del_static_route_cmd = 'python provision_static_route.py --prefix 1.2.3.4/32 \
+        del_static_route_cmd = 'python \/usr\/share\/contrail-utils\/provision_static_route.py --prefix 1.2.3.4/32 \
                                 --virtual_machine_interface_id %s \
-                                --tenant_name %s --api_server_ip 127.0.0.1 \
+                                --tenant_name %s --api_server_ip %s \
                                 --api_server_port 8082 \
                                 --oper del --route_table_name my_route_table \
                                  --user %s --password %s'\
-                                %(vm1_vmi_id,self.inputs.project_name,self.inputs.stack_user ,self.inputs.stack_password ) 
+                                %(vm1_vmi_id,self.inputs.project_name,self.inputs.cfgm_ip,self.inputs.stack_user ,self.inputs.stack_password )
+
+
 
         with settings(host_string='%s@%s' % (self.inputs.username, self.inputs.cfgm_ips[0]), 
                         password=self.inputs.password, warn_only=True, 
                         abort_on_prompts=False, debug=True):
-            del_status = run('cd /usr/share/contrail-utils/;' + del_static_route_cmd)
+            username = self.inputs.username
+            password = self.inputs.password
+            del_status = self.inputs.run_cmd_on_server( self.inputs.cfgm_ips[0], del_static_route_cmd, username, password, container='api-server')
             self.logger.debug("%s" % del_status)
         time.sleep(10)
 
