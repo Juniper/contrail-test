@@ -1893,17 +1893,6 @@ class ContrailVncApi(object):
     def get_vn_obj_from_id(self, uuid):
         return self._vnc.virtual_network_read(id=uuid)
 
-    def create_router(self, name, project_obj):
-
-        obj = LogicalRouter(name=name, parent_obj=project_obj, display_name=name)
-
-        self._vnc.logical_router_create(obj)
-
-        return obj
-
-    def delete_router(self, router_obj):
-
-        self._vnc.logical_router_delete(id=router_obj.uuid)
 
     def connect_gateway_with_router(self, router_obj, public_network_obj):
 
@@ -2897,6 +2886,102 @@ class ContrailVncApi(object):
         prop_obj.set_interface_mirror(None)
         vmi.set_virtual_machine_interface_properties(prop_obj)
         self._vnc.virtual_machine_interface_update(vmi)
+
+    def create_router(self, name, project_obj,vni=None):
+        if vni :
+            obj = LogicalRouter(name=name, parent_obj=project_obj, display_name=name,
+                                       vxlan_network_identifier=str(vni))
+        else:
+            obj = LogicalRouter(name=name, parent_obj=project_obj, display_name=name)
+
+        self._vnc.logical_router_create(obj)
+
+        return obj
+
+    def delete_router(self, router_obj=None, fq_name=[]):
+        if router_obj:
+            self._vnc.logical_router_delete(id=router_obj.uuid)
+        elif fq_name:
+            router_obj = self._vnc.logical_router_read(fq_name=fq_name)
+            self._vnc.logical_router_delete(id=router_obj.uuid)
+        else:
+            return False
+
+    def enable_vxlan_routing(self, project_name=None):
+        '''Used to change the existing encapsulation priorities to new values'''
+        if project_name:
+            project_id = self._vnc.project_read(fq_name=['default-domain',
+                                                          project_name]).uuid
+            project_obj = self._vnc.project_read(id=project_id)
+        else:
+            project_obj =  self.vnc_project
+
+        self._log.info('Enabling VxLAN Routing for the project: %s' %(project_name))
+        project_obj.set_vxlan_routing(True)
+        return self._vnc.project_update(project_obj)
+
+    def disable_vxlan_routing(self, project_name=None):
+        '''Used to change the existing encapsulation priorities to new values'''
+        if project_name:
+            project_id = self._vnc.project_read(fq_name=['default-domain',
+                                                          project_name]).uuid
+            project_obj = self._vnc.project_read(id=project_id)
+        else:
+            project_obj =  self.vnc_project
+
+        self._log.info('Disabling VxLAN Routing for the project: %s' %(project_name))
+        project_obj.set_vxlan_routing(False)
+        return self._vnc.project_update(project_obj)
+
+    def set_logical_router_vni(self, lr_id, vni):
+        ''' Used to configure VxLAN Network Identifier on logical router'''
+        lr_obj = self._vnc.logical_router_read(id=lr_id)
+        lr_obj.set_vxlan_network_identifier(str(vni))
+        return self._vnc.logical_router_update(lr_obj)
+
+    def delete_logical_router_vni(self, lr_id):
+        ''' Used to delete VxLAN Network Identifier on logical router'''
+        lr_obj = self._vnc.logical_router_read(id=lr_id)
+        lr_obj.set_vxlan_network_identifier(None)
+        return self._vnc.logical_router_update(lr_obj)
+
+    def create_rt(self, rt_name):
+        ''' Used to create route target and returns rt object '''
+        rt_obj = RouteTarget(name=rt_name)
+        try:
+            rt_obj = self._vnc.route_target_read(fq_name=[rt_name])
+        except Exception as exp:
+            self._vnc.route_target_create(rt_obj)
+        return rt_obj
+
+    def extend_lr_to_physical_router(self, lr_id, router_id):
+        ''' Logical router extended to given physical router'''
+        lr_obj = self._vnc.logical_router_read(id=lr_id)
+        phy_router_ref_list = lr_obj.get_physical_router_refs()
+        phy_router_obj = self._vnc.physical_router_read(id=router_id)
+        lr_obj.add_physical_router(phy_router_obj)
+        return self._vnc.logical_router_update(lr_obj)
+
+    def remove_physical_router_from_lr(self, lr_id, router_id):
+        ''' Given physical router is removed from logical router'''
+        lr_obj = self._vnc.logical_router_read(id=lr_id)
+        phy_router_ref_list = lr_obj.get_physical_router_refs()
+        phy_router_obj = self._vnc.physical_router_read(id=router_id)
+        lr_obj.del_physical_router(phy_router_obj)
+        return self._vnc.logical_router_update(lr_obj)
+
+    def add_route_target_to_lr(self, lr_id, rt):
+        lr_obj = self._vnc.logical_router_read(id=lr_id)
+        rt_obj = self.create_rt(rt_name=rt)
+        lr_obj.add_route_target(rt_obj)
+        return self._vnc.logical_router_update(lr_obj)
+
+    def remove_route_target_from_lr(self, lr_id, rt):
+        rt_obj = self._vnc.route_target_read(fq_name=[rt])
+        lr_obj = self._vnc.logical_router_read(id=lr_id)
+        lr_obj.del_route_target(rt_obj)
+        return self._vnc.logical_router_update(lr_obj)
+
 
 class LBFeatureHandles:
     __metaclass__ = Singleton
