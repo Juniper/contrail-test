@@ -268,13 +268,3 @@ class FabricUtils(object):
             self.logger.warn('Query failed for table ObjectJobExecutionTable. Will retry...')
         return False
 
-    def create_bms(self, bms_name, **kwargs):
-        self.logger.info('Creating bms %s'%bms_name)
-        bms = self.useFixture(BMSFixture(
-                              connections=self.connections,
-                              name=bms_name,
-                              **kwargs))
-        status, msg = bms.run_dhclient()
-        assert status, 'DHCP failed to fetch address'
-        bms.verify_on_setup()
-        return bms
