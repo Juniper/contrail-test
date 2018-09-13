@@ -208,7 +208,7 @@ class BMSFixture(fixtures.Fixture):
         return info
     # end get_interface_info
 
-    @retry(delay=5, tries=5)
+    @retry(delay=5, tries=10)
     def run_dhclient(self, timeout=60):
         #self.run_namespace('dhclient -r -v %s' % (self.mvlanintf))
         output = self.run_namespace('timeout %s dhclient -v %s'%(
