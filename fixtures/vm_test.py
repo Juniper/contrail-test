@@ -509,6 +509,7 @@ class VMFixture(fixtures.Fixture):
         '''
         Verify that VM's /32 route is in vrouter of all computes
         '''
+        self.get_vrf_ids(refresh=True)
         for vn_fq_name in self.vn_fq_names:
             if self.vnc_lib_fixture.get_active_forwarding_mode(vn_fq_name) =='l2':
                 # TODO
