@@ -54,7 +54,7 @@ class TestLlgrBase(BaseNeutronTest):
         super(TestLlgrBase, cls).tearDownClass()
     # end cleanUp
 
-    @classmethod
+    #@classmethod
     def set_gr_llgr(self, **kwargs):
         '''
            Enable/Disable GR / LLGR configuration with gr/llgr timeout values as parameters
@@ -79,7 +79,7 @@ class TestLlgrBase(BaseNeutronTest):
                                      xmpp_helper_enable = False)
         return True
 
-    @classmethod
+    #@classmethod
     def set_bgp_peering(self,**kwargs):
         ''' 
            Stop and start of BGP peer communication so that GR/LLGR timers are triggered
