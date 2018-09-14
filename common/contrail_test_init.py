@@ -297,6 +297,7 @@ class TestInputs(object):
             host_data['roles'] = roles
             host_data['username'] = username
             host_data['password'] = password
+            host_data['static_routes']  = values.get('static_routes',[])
             self.host_data[host_data['host_ip']] = host_data
             hostname = self.run_cmd_on_server(host_data['host_ip'], 'hostname')
             host_fqname = self.run_cmd_on_server(host_data['host_ip'], 'hostname -f')
@@ -533,6 +534,7 @@ class TestInputs(object):
         #physical_router needs the following configuration
         #    name,type,mgmt_ip,model,vendor,asn,ssh_username,ssh_password,tunnel_ip,ports
 
+        self.bms_lcm_config = test_configs.get('bms_lcm_config',{})
         self.physical_routers_data = test_configs.get('physical_routers',{})
         self.bms_data = test_configs.get('bms',{})
 

@@ -79,6 +79,7 @@ class ContrailConnections():
                                               logger=self.logger,
                                               auth_h=self.auth
                                              )
+            self.ironic_h = self.orch.get_ironic_handler()
             self.nova_h = self.orch.get_compute_handler()
             self.quantum_h = self.orch.get_network_handler()
             self.glance_h = self.orch.get_image_handler()
