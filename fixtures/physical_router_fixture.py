@@ -43,6 +43,8 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
         self.tunnel_ip = kwargs.get('tunnel_ip', self.mgmt_ip)
         self.ports = kwargs.get('ports', [])
 
+        self.do_cleanup = kwargs.get('do_cleanup',True)
+
         self.bgp_router = None
         self.bgp_router_already_present = False
         self.dm_managed = kwargs.get('dm_managed', False)
@@ -153,6 +155,8 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
         return result
 
     def cleanUp(self):
+        if not self.do_cleanup:
+           return
         do_cleanup = True
         if self.bgp_router_already_present:
             do_cleanup = False

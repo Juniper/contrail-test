@@ -17,6 +17,9 @@ instances:
   bms1:
     provider: bms
     ip: 10.0.0.4
+    static_routes:
+        - ip route add 11.11.11.11/32 via 192.169.3.254
+        - ip route add 12.12.12.12/32 via 192.169.3.254
     roles:
       config_database:
       config:
@@ -195,13 +198,31 @@ test_configuration:
 
     bms:
         bms1:
+            username:
+            password:
+            bms_type: single_interface
+            driver_info:
+               ipmi_address: 10.207.25.114
+               ipmi_password: ADMIN
+               ipmi_username: ADMIN
+               ipmi_terminal_port: 4100
+            properties:
+               memory_mb: 32000
+               cpu_arch: x86_64
+               local_gb: 70
+               cpus: 4
+               capabilities: boot_option:local
             interfaces:
                 - tor: qfx1
                   tor_port: xe-0/0/1
                   host_mac: aa:bb:cc:dd:ee:f0
+                  switch_id: "11:11:11:11:11:11"
+                  pxe_enabled: True
                 - tor: qfx2
                   tor_port: xe-0/0/1
                   host_mac: aa:bb:cc:dd:ee:f1
+                  switch_id: "11:11:11:11:11:11"
+                  pxe_enabled: False
             mgmt_ip: 10.0.0.24 # Specify mgmt ip if multi interface setup
             username: root
             password: password
@@ -212,6 +233,28 @@ test_configuration:
             mgmt_ip:            # This is more to do with bms LCM tests with single interface
             username: root
             password: password
+
+    bms_lcm_config:
+       tftp:
+         config_url: http://10.204.217.158/images/ironic_images/config.json
+         mtu: 1300
+       ironic_provision_vn:
+         name: ironic-provision
+         subnet: 10.1.1.0/24
+       nova_quota:
+         ram: 512000
+         cores: 20
+       availability_zone: nova-baremetal
+       availability_host: nodea17-ironic
+       deploy_kernel: trusty-ird2.kernel
+       deploy_ramdisk: trusty-ird2.ramdisk
+       bms_image: ub_bm_cloudinit2.qcow2
+       bms_vm_username: contrail
+       bms_vm_password: c0ntrail123
+       vm:
+         glance_image: soln-slave
+         username: root
+         password: contrail123
 
     fabric:
         - namespaces:
