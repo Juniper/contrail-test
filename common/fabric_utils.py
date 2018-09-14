@@ -47,10 +47,11 @@ class FabricUtils(object):
             return (False, None)
         return (True, fabric)
 
-    def onboard_existing_fabric(self, fabric_dict, wait_for_finish=True):
+    def onboard_existing_fabric(self, fabric_dict, wait_for_finish=True,name=None,clean_up=True):
         interfaces = {'physical': [], 'logical': []}
         devices = list()
-        name = get_random_name('fabric')
+        if name is None:
+           name = get_random_name('fabric')
         fq_name = ['default-global-system-config',
                    'existing_fabric_onboard_template']
         payload = {'fabric_fq_name': ["default-global-system-config", name],
@@ -68,7 +69,8 @@ class FabricUtils(object):
         execution_id = self.vnc_h.execute_job(fq_name, payload)
         status, fabric = self._get_fabric_fixture(name)
         assert fabric, 'Create fabric seems to have failed'
-        self.addCleanup(self.cleanup_fabric, fabric, devices, interfaces)
+        if clean_up:
+           self.addCleanup(self.cleanup_fabric, fabric, devices, interfaces)
         if wait_for_finish:
             status = self.wait_for_job_to_finish(':'.join(fq_name), execution_id)
             assert status, 'job %s to create fabric failed'%execution_id

@@ -1,6 +1,7 @@
 import os
 from common import log_orig as contrail_logging
 from orchestrator import Orchestrator, OrchestratorAuth
+import ironic_test
 import nova_test
 import glance_test
 import quantum_test
@@ -50,6 +51,13 @@ class OpenstackOrchestrator(Orchestrator):
                                           inputs=self.inputs)
            self.quantum_h.setUp()
        return self.quantum_h
+
+   def get_ironic_handler(self):
+       self.ironic_h = ironic_test.IronicHelper(inputs=self.inputs,
+                                   auth_h=self.auth_h,
+                                   region_name=self.region_name)
+       self.ironic_h.setUp()
+       return self.ironic_h
 
    def get_compute_handler(self):
        if not self.nova_h:
