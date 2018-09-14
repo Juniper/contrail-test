@@ -129,7 +129,7 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         try:
             self.read()
             self.logger.info('Physical device %s already present' % (
-                pr_fq_name))
+                self.name))
         except vnc_api_test.NoIdError:
             self.phy_device = self.create_physical_device()
             self.created = True
