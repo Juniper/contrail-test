@@ -267,6 +267,7 @@ class TestVcenter2(BaseVnVmTest):
         Pass criteria: Ping between the VMs should work
         Maintainer : sunilbasker@juniper.net
         '''
+        self.orch.set_migration(True)
         esxs = self.orch.get_hosts()
         vn_fixture = self.create_vn(vn_name=get_random_name('vn_mig'))
         assert vn_fixture.verify_on_setup()

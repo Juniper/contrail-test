@@ -123,6 +123,7 @@ class FabricFixture(vnc_api_test.VncLibFixture):
 
     def delete(self):
         self.logger.info('Deleting Fabric %s(%s)'%(self.name, self.uuid))
+        self.disassociate_devices()
         self.delete_namespaces(self._ns_id.keys())
         try:
             self.vnc_h.delete_fabric(id=self.uuid)
