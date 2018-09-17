@@ -37,6 +37,8 @@ class IronicHelper(object):
         self.obj = client.get_client('1',
                        session=self.auth_h.get_session(scope='project'),
                        os_region_name=self.region_name)
+        self.obj.http_client.api_version_select_state='user'
+        self.obj.http_client.os_ironic_api_version="1.31"
     # end setUp
 
     def get_auth_h(self, **kwargs):

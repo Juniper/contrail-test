@@ -143,6 +143,7 @@ class VcenterOrchestrator(Orchestrator):
         self._create_keypair()
         self._nfs_ds = NFSDatastore(self._inputs, self)
         self.enable_vmotion(self.get_hosts())
+        self.migration = False
 
     def is_feature_supported(self, feature):
         unsupported_features = ['multi-subnet', 'multi-tenant', 'multi-ipam', 'service-instance', 'ipv6']
@@ -615,7 +616,10 @@ class VcenterOrchestrator(Orchestrator):
     def poweron_vm(self,vm_obj):
         vm_obj=vm_obj.vcenter._find_obj(vm_obj.vcenter._dc, 'vm', {'name' : vm_obj.name})
         _wait_for_task(vm_obj.PowerOn())
-        
+
+    def set_migration(self, migration=False):
+        self.migration = migration
+
 
 class Subnets(object):
 
@@ -820,10 +824,10 @@ class VcenterVM:
                                                           switchUuid=switch_id,
                                                           portgroupKey=net.key))))
             intfs.append(spec)
-
+        datastore = host.datastore[0] if vcenter.migration else host.datastore[1]
         spec = _vim_obj('vm.Clone',
                        location=_vim_obj('vm.Reloc',
-                                        datastore=host.datastore[0],
+                                        datastore=datastore,
                                         pool=host.parent.resourcePool),
                        config=_vim_obj('vm.Config', deviceChange=intfs),
                        powerOn=True)
