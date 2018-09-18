@@ -1,7 +1,7 @@
 import test
 from common.k8s.base import BaseK8sTest
 from k8s.namespace import NamespaceFixture
-from tcutils.util import get_random_name
+from tcutils.util import get_random_name, retry
 from tcutils.wrappers import preposttest_wrapper
 
 class TestNamespace(BaseK8sTest):
@@ -28,7 +28,6 @@ class TestNamespace(BaseK8sTest):
 
     # end test_namespace_1
 
-    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_many_add_delete_ns(self):
         '''
@@ -41,10 +40,14 @@ class TestNamespace(BaseK8sTest):
 
         '''
         name = get_random_name('ns')
-        for i in range(0,10):
+        @retry(delay=3, tries=2)
+        def check_namespace_creation():
             namespace = self.useFixture(
                 NamespaceFixture(self.connections, name=name))
-            assert namespace.verify_on_setup()
+            result = namespace.verify_on_setup()
             self.perform_cleanup(namespace)
+            return result
+        for i in range(0,10):
+           assert check_namespace_creation()
         # end for
     # end test_many_add_delete_ns
