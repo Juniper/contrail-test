@@ -140,3 +140,27 @@ class ServiceFixture(fixtures.Fixture):
             return False
         return True
     # end verify_service_in_contrail_api
+
+    @retry(delay=1, tries=2)
+    def verify_daemon_set_status(self, namespace='kube-system'):
+        daemon_set_info = self.k8s_client.read_daemon_sets(namespace=namespace)
+        for item in daemon_set_info.items:
+            item_status = item.status
+            if item_status.desiredNumberScheduled == item_status.numberAvailable == \
+                item_status.numberReady == item_status.currentNumberScheduled:
+                continue
+            self.logger.error('One or more daemonsets not in expected state')
+            return False
+        self.logger.info('All daemonsets are in expected states')
+        return True
+
+    def get_daemon_set_status(self, namespace='kube-system'):
+        daemon_set_info = self.k8s_client.read_daemon_sets(namespace=namespace)
+        daemon_set_status = {}
+        for item in daemon_set_info.items:
+            daemon_set_status[str(item.metadata.name)] = item.status
+        return daemon_set_status
+
+    def get_daemon_set_info(self, namespace='kube-system'):
+        return self.k8s_client.read_daemon_sets(namespace=namespace)
+
