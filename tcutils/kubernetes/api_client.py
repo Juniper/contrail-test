@@ -6,7 +6,7 @@ from common import log_orig as contrail_logging
 from tcutils.util import get_random_name, retry
 from kubernetes.stream import stream
 
-class Client():
+class Client(object):
 
     def __init__(self, config_file='/etc/kubernetes/admin.conf', logger=None):
         self.api_client = config.new_client_from_config(config_file)
@@ -20,19 +20,33 @@ class Client():
         self.logger = logger or contrail_logging.getLogger(__name__)
     # end __init__
 
-    def create_namespace(self, name):
+    def create_namespace(self, name, isolation=False, ip_fabric_forwarding=False,
+                         ip_fabric_snat=False, network_fqname=None):
         '''
         returns instance of class V1Namespace
         '''
         body = client.V1Namespace()
         body.metadata = client.V1ObjectMeta(name=name)
+        # initialize to allow different combinations
+        body.metadata.annotations = {}
+        if isolation:
+            body.metadata.annotations = {"opencontrail.org/isolation" : "true"}
+        if ip_fabric_forwarding:
+            body.metadata.annotations["opencontrail.org/ip_fabric_forwarding"] = "true"
+        if ip_fabric_snat:
+            body.metadata.annotations["opencontrail.org/ip_fabric_snat"] = "true"
+        if network_fqname:
+            body.metadata.annotations = {"opencontrail.org/network": "%s" % network_fqname}
         resp = self.v1_h.create_namespace(body)
         return resp
     # end create_namespace
 
     def delete_namespace(self, name):
-        return self.vn1_h.delete_namespace(name=name, body=client.V1DeleteOptions())
+        return self.v1_h.delete_namespace(name=name, body=client.V1DeleteOptions())
     # end delete_namespace
+
+    def read_namespace(self, name):
+        return self.v1_h.read_namespace(name)
 
     def _get_metadata(self, mdata_dict):
         if mdata_dict:
@@ -305,7 +319,8 @@ class Client():
                        namespace,
                        name):
         self.logger.info('Deleting service : %s' % (name))
-        return self.v1_h.delete_namespaced_service(name, namespace)
+        body = client.V1DeleteOptions()
+        return self.v1_h.delete_namespaced_service(name, namespace, body)
 
     def create_pod(self,
                    namespace='default',
@@ -696,8 +711,7 @@ class Client():
                       namespace,
                       name):
         self.logger.info('Deleting secret : %s' % (name))
-        body = client.V1DeleteOptions()
-        return self.v1_h.delete_namespaced_secret(name, namespace, body)
+        return self.v1_h.delete_namespaced_secret(name, namespace)
     # end delete_secret
 
 if __name__ == '__main__':
