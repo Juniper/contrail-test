@@ -7,6 +7,7 @@ from vnc_api.vnc_api import NoIdError
 from common import log_orig as contrail_logging
 from tcutils.util import get_random_name, retry
 
+
 class PodFixture(fixtures.Fixture):
     '''
     '''
@@ -94,10 +95,10 @@ class PodFixture(fixtures.Fixture):
     @retry(delay=3, tries=20)
     def _get_pod_node_name(self):
         self.obj = self.k8s_client.read_pod(self.name, self.namespace)
-        if not self.obj.spec.node_name and not self.obj.spec.nodeName:
+        if not self.obj.spec.node_name:
             self.logger.debug('Node for Pod %s not yet populated' % (self.name))
             return (False, None)
-        return (True, self.obj.spec.node_name or self.obj.spec.nodeName)
+        return (True, self.obj.spec.node_name)
     # end _get_pod_node_name
 
     def _populate_attr(self):
@@ -214,8 +215,8 @@ class PodFixture(fixtures.Fixture):
             self.logger.info('Pod %s is in running state.'
                              'Got IP %s' % (self.name,
                                             pod_status.status.pod_ip))
-            self.pod_ip = pod_status.status.pod_ip or pod_status.status.podIP
-            self.host_ip = pod_status.status.host_ip or pod_status.status.hostIP
+            self.pod_ip = pod_status.status.pod_ip
+            self.host_ip = pod_status.status.host_ip
             self.set_compute_ip()
             result = True
         return result
@@ -422,3 +423,17 @@ class PodFixture(fixtures.Fixture):
             returnVal = self.inputs.get_host_ip(
                 self.connections.orch.get_host_of_vm(self.vm_obj))
         return returnVal
+
+    def read_namespaced_pods(self, namespace='kube-system'):
+        '''
+        Returns all pods in the given namespace
+        '''
+        
+        try:
+            self.obj = self.k8s_client.read_pod(namespace=namespace)
+            self._populate_attr()
+            self.already_exists = True
+            return self.obj
+        except ApiException as e:
+            self.logger.debug('Pod %s not present' % (self.name))
+            return None
