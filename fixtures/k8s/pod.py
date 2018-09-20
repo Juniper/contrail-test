@@ -118,6 +118,20 @@ class PodFixture(fixtures.Fixture):
             return None
     # end read
 
+    def read_namespaced_pods(self, namespace='kube-system'):
+        '''
+        Returns all pods in the given namespace
+        '''
+        
+        try:
+            self.obj = self.k8s_client.read_pod(namespace=namespace)
+            self._populate_attr()
+            self.already_exists = True
+            return self.obj
+        except ApiException as e:
+            self.logger.debug('Pod %s not present' % (self.name))
+            return None
+
     def create(self):
         pod = self.read()
         if pod:
