@@ -263,9 +263,9 @@ def contrail_status(inputs=None, host=None, role=None, service=None,
                         continue
                     status = get_container_status(
                         inputs.get_container_name(node, svc), containers)
-                    if status == 'active':
-                        status, desc = get_svc_uve_info(node, svc,
-                            debug, detail, timeout, keyfile, certfile, cacert)
+                    #if status == 'active':
+                    #    status, desc = get_svc_uve_info(node, svc,
+                    #        debug, detail, timeout, keyfile, certfile, cacert)
                     status_dict[node][svc] = {'status': status, 'description': desc}
                     print '    %s:%s%s'%(svc, status, ' (%s)'%desc if desc else '')
     return status_dict

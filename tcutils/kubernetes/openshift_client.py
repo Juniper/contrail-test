@@ -60,6 +60,7 @@ class Client(api_client.Client):
         self.network_policy_h = dyn_client.resources.get(api_version='v1', kind='NetworkPolicy')
         self.deployment_h = dyn_client.resources.get(api_version='v1', kind='Deployment')
         self.service_h = dyn_client.resources.get(api_version='v1', kind='Service')
+        self.daemonset_h = dyn_client.resources.get(api_version='v1', kind='DaemonSet')
     # end __init__
 
     def get_template(self, obj_type):
@@ -87,7 +88,7 @@ class Client(api_client.Client):
         returns instance of class V1Namespace
         '''
         body = self.get_template('namespace')
-        if isloation is True:
+        if isolation is True:
             body['metadata']['annotations'] = {'opencontrail.org/isolation': 'true'}
         if ip_fabric_forwarding is True:
             body['metadata']['annotations'] = {'opencontrail.org/ip_fabric_forwarding': 'true'}
@@ -179,6 +180,12 @@ class Client(api_client.Client):
         '''
         return self.pod_h.get(name=name, namespace=namespace)
     # end read_pod
+
+    def read_pods_namespace(self, namespace='default'):
+        '''
+        Get all pods in a given namespace
+        '''
+        return self.pod_h.get(namespace=namespace)
 
     def read_pod_status(self, name, namespace='default', exact=True, export=True):
         '''
@@ -311,4 +318,13 @@ class Client(api_client.Client):
                        namespace,
                        name):
         self.logger.info('Deleting service : %s' % (name))
-        return self.service_h.delete(name=name, namespace=namespace) 
+        return self.service_h.delete(name=name, namespace=namespace)
+
+    def read_daemon_sets(self, namespace=''):
+        '''
+        Returns daemon sets from the mentioned namespace. 
+        '''
+        if namespace:
+            return self.daemonset_h.get()
+        return self.daemonset_h.get(namespace=namespace)
+
