@@ -1,22 +1,22 @@
 CONTRAIL_SERVICES_CONTAINER_MAP = {
-    'api-server': ['config_api', 'contrail-config-api'],
-    'schema': ['config_schema', 'contrail-schema-transformer'],
-    'svc-monitor': ['config_svcmonitor', 'contrail-svcmonitor', 'config_svc_monitor'],
-    'device-manager': ['config_devicemgr', 'contrail-devicemgr', 'device_manager'],
+    'api-server': ['config_api', 'contrail-config-api', 'config-api'],
+    'schema': ['config_schema', 'contrail-schema-transformer', 'config-schema'],
+    'svc-monitor': ['config_svcmonitor', 'contrail-svcmonitor', 'config_svc_monitor', 'config-svcmonitor'],
+    'device-manager': ['config_devicemgr', 'contrail-devicemgr', 'device_manager', 'config-devicemgr'],
     'control': ['control_control', 'k8s_contrail-control'],
-    'dns': ['control_dns', 'contrail-dns'],
-    'named': ['control_named', 'contrail-named'],
+    'dns': ['control_dns', 'contrail-dns', 'control-dns'],
+    'named': ['control_named', 'contrail-named', 'control-named'],
     'analytics-api': ['analytics_api', 'contrail-analytics-api'],
-    'alarm-gen': ['analytics_alarm-gen', 'contrail-alarm-gen', 'analytics_alarmgen'],
-    'query-engine': ['analytics_query-engine', 'contrail-query-engine', 'analytics_queryengine'],
-    'topology': ['analytics_topology', 'contrail-topology'],
-    'collector': ['analytics_collector', 'contrail-collector'],
-    'snmp-collector': ['analytics_snmp-collector', 'contrail-snmp-collector', 'analytics_snmp_collector'],
+    'alarm-gen': ['analytics_alarm-gen', 'contrail-alarm-gen', 'analytics_alarmgen', 'analytics-alarm-gen'],
+    'query-engine': ['analytics_query-engine', 'contrail-query-engine', 'analytics_queryengine', 'contrail-analytics-query-engine'],
+    'topology': ['analytics_topology', 'contrail-topology', 'analytics-topology'],
+    'collector': ['analytics_collector', 'contrail-collector', 'analytics-collector'],
+    'snmp-collector': ['analytics_snmp-collector', 'contrail-snmp-collector', 'analytics_snmp_collector', 'contrail-analytics-snmp-collector'],
     'agent': ['contrail-agent', 'vrouter-agent', 'contrail-vrouter-agent', 'vrouter_agent'],
-    'webui': ['webui_web', 'contrail-webui_'],
+    'webui': ['webui_web', 'contrail-webui_', 'controller-webui'],
     'webui-middleware': ['webui_job', 'contrail-webui-middleware'],
     'config-rabbitmq': ['configdatabase_rabbitmq', 'rabbitmq'],
-    'config-zookeeper': ['configdatabase_zookeeper',
+    'config-zookeeper': ['configdatabase_zookeeper', 'config-zookeeper',
                          'contrail-config-zookeeper', 'config_database_zookeeper', 'config_zookeeper'],
     'config-cassandra': ['configdatabase_cassandra', 'contrail-configdb', 'config_database_cassandra', 'config_database'],
     'analytics-kafka': ['analyticsdatabase_kafka', 'contrail-kafka', 'analytics_database_kafka', 'analytics_kafka'],
@@ -43,7 +43,8 @@ CONTRAIL_SERVICES_CONTAINER_MAP = {
                             'analyticsdb-nodemgr', 'analytics_database_nodemgr'],
     'contrail-kube-manager': ['contrail-kube-manager', 'kubemanager'],
     'kube-apiserver':  ['kube-apiserver'],
-    'strongswan':  ['strongswan_strongswan']
+    'strongswan':  ['strongswan_strongswan'],
+    'database': ['contrail-database']
 }
 
 CONTRAIL_PODS_SERVICES_MAP = {
@@ -71,7 +72,7 @@ CONTRAIL_PODS_SERVICES_MAP = {
                             'analyticsdb-nodemgr',
                             'analytics-zookeeper',
                             'analytics-kafka'],
-    'webui' : ['webui', 'webui-middleware', 'redis'],
+    'webui' : ['webui', 'redis'],
     'kubernetes' : ['contrail-kube-manager'],
 }
 
