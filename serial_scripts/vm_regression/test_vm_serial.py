@@ -739,6 +739,19 @@ class TestBasicVMVN0(BaseVnVmTest):
         for cmp_node in compute_ips:
             comp_node_fixt[cmp_node] = self.useFixture(ComputeNodeFixture(
                 self.connections, cmp_node))
+            compute_user = self.inputs.host_data[cmp_node]['username']
+            compute_pwd = self.inputs.host_data[cmp_node]['password']
+            host_data = dict()
+            host_data['host_ip'] = cmp_node
+            host_data['username'] = compute_user
+            host_data['password'] = compute_pwd
+            self.inputs._check_containers(host_data)
+            container_list = host_data['containers'].keys()
+            if 'agent' in container_list:
+                cmd = 'docker cp %s:/%s %s' % (host_data['containers']['agent'], comp_node_fixt[cmp_node].agent_conf_file, comp_node_fixt[cmp_node].agent_conf_file)
+                compute_user = self.inputs.host_data[cmp_node]['username']
+                compute_pwd = self.inputs.host_data[cmp_node]['password']
+                self.inputs.run_cmd_on_server(cmp_node,cmd,compute_user, compute_pwd)
             comp_node_fixt[cmp_node].set_flow_aging_time(
                 flow_cache_timeout)
             comp_node_fixt[cmp_node].get_config_per_vm_flow_limit()
@@ -835,7 +848,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         time.sleep(flow_cache_timeout*2)
         # No need to stop hping
         hping_h.start(wait=False)
-        time.sleep(5)
+        time.sleep(2)
 
         computes = [comp_node_fixt[vm1_fixture.vm_node_ip],
                     comp_node_fixt[vm2_fixture.vm_node_ip]]
