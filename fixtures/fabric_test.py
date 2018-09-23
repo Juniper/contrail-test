@@ -41,6 +41,9 @@ class FabricFixture(vnc_api_test.VncLibFixture):
         else:
             return self.delete()
 
+    def get_name(self):
+        return self.name
+
     def get_object(self):
         return self.vnc_h.read_fabric(id=self.uuid)
 
@@ -146,6 +149,7 @@ class FabricFixture(vnc_api_test.VncLibFixture):
 
     def disassociate_devices(self, devices=None):
         devices = devices or self.devices
+        #import pdb; pdb.set_trace()
         for device in devices:
             self.disassociate_device(device)
 
