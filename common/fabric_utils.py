@@ -47,10 +47,12 @@ class FabricUtils(object):
             return (False, None)
         return (True, fabric)
 
-    def onboard_existing_fabric(self, fabric_dict, wait_for_finish=True):
+    def onboard_existing_fabric(self, fabric_dict, wait_for_finish=True, name=None):
         interfaces = {'physical': [], 'logical': []}
         devices = list()
-        name = get_random_name('fabric')
+        
+        name = get_random_name(name) if name else get_random_name('fabric') 
+
         fq_name = ['default-global-system-config',
                    'existing_fabric_onboard_template']
         payload = {'fabric_fq_name': ["default-global-system-config", name],
@@ -69,8 +71,12 @@ class FabricUtils(object):
         status, fabric = self._get_fabric_fixture(name)
         assert fabric, 'Create fabric seems to have failed'
         self.addCleanup(self.cleanup_fabric, fabric, devices, interfaces)
+        #self.addCleanup(self.cleanup_discover, fabric, devices)
+        #self.addCleanup(self.cleanup_onboard, devices, interfaces)
         if wait_for_finish:
+            #time.sleep(450)
             status = self.wait_for_job_to_finish(':'.join(fq_name), execution_id)
+ 
             assert status, 'job %s to create fabric failed'%execution_id
             for device in fabric.fetch_associated_devices() or []:
                 device_fixture = PhysicalDeviceFixture(connections=self.connections,
@@ -92,6 +98,10 @@ class FabricUtils(object):
 
     def cleanup_fabric(self, fabric, devices=None, interfaces=None,
                        verify=True, wait_for_finish=True):
+
+        #self.logger.info('Disassociating devices from fabric...')
+        #fabric.disassociate_devices()
+
         fq_name = ['default-global-system-config', 'fabric_deletion_template']
         payload = {'fabric_fq_name': fabric.fq_name}
         execution_id = self.vnc_h.execute_job(fq_name, payload)
@@ -142,6 +152,7 @@ class FabricUtils(object):
         execution_id = self.vnc_h.execute_job(fq_name, payload, device_list)
         if wait_for_finish:
             status = self.wait_for_job_to_finish(':'.join(fq_name), execution_id)
+            self.logger.info('cleanup discover status after wait_for_job_to_finish : %s' % status)
             assert status, 'job %s to delete devices %s failed'%(
                    execution_id, device_list)
             for device in devices or []:
@@ -220,13 +231,14 @@ class FabricUtils(object):
         for device, role in roles_dict.iteritems():
             # ToDo: Need to revisit this post R5.0.1
             if role == 'leaf':
-                routing_bridging_role = 'CRB-Access'
+                routing_bridging_role = ['CRB-Access']
             elif role == 'spine':
-                routing_bridging_role = 'CRB-Gateway'
+                #routing_bridging_role = ['CRB-Gateway', 'DC-Gateway']
+                routing_bridging_role = ['CRB-Gateway']
             dev_role_dict = {'device_fq_name': ['default-global-system-config',
                                                 device.name],
                              'physical_role': role,
-                             'routing_bridging_roles': [routing_bridging_role]}
+                             'routing_bridging_roles': routing_bridging_role}
             payload['role_assignments'].append(dev_role_dict)
         execution_id = self.vnc_h.execute_job(fq_name, payload)
         self.logger.info('Started assigning roles for %s'%devices)
@@ -239,7 +251,7 @@ class FabricUtils(object):
             return execution_id, status
         return execution_id, None
 
-    @retry(delay=10, tries=60)
+    @retry(delay=30, tries=90)
     def wait_for_job_to_finish(self, job_name, execution_id, start_time='now-10m'):
         ops_h = self.connections.ops_inspects[self.inputs.collector_ips[0]]
         table = 'ObjectJobExecutionTable'
@@ -250,18 +262,15 @@ class FabricUtils(object):
                                     where_clause=query)
         if response:
             for resp in response:
-#                try:
-                    dct = elem2dict(etree.fromstring(resp['ObjectLog']))
-                    log = dct['log_entry']['JobLogEntry']
-                    if log['name'] == job_name and \
-                       log['execution_id'] == execution_id:
-                       if log['status'].upper() == 'SUCCESS':
-                           self.logger.debug('job %s with exec id %s finished'%(job_name, execution_id))
-                           return True
-                       elif log['status'].upper() == 'FAILURE':
-                           raise Exception('job %s with exec id %s failed'%(job_name, execution_id))
-#                except Exception as e:
-#                    self.logger.debug('Wait for job finish raised %s'%e)
+                dct = elem2dict(etree.fromstring(resp['ObjectLog']))
+                log = dct['log_entry']['JobLogEntry']
+                if log['name'] == job_name and \
+                    log['execution_id'] == execution_id:
+                    if log['status'].upper() == 'SUCCESS':
+                        self.logger.debug('job %s with exec id %s finished'%(job_name, execution_id))
+                        return True
+                    elif log['status'].upper() == 'FAILURE':
+                        raise Exception('job %s with exec id %s failed'%(job_name, execution_id))
             else:
                 self.logger.warn('job %s with exec id %s hasnt completed'%(job_name, execution_id))
         else:
@@ -274,7 +283,8 @@ class FabricUtils(object):
                               connections=self.connections,
                               name=bms_name,
                               **kwargs))
-        status, msg = bms.run_dhclient()
-        assert status, 'DHCP failed to fetch address'
+        if not kwargs.get('static_ip', False):
+            status, msg = bms.run_dhclient()
+            assert status, 'DHCP failed to fetch address'
         bms.verify_on_setup()
         return bms
