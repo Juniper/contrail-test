@@ -28,7 +28,10 @@ class BMSFixture(fixtures.Fixture):
         self.password = kwargs.get('password') or bms_dict['password']
         self.namespace = get_random_name('ns')
         self.bms_ip = kwargs.get('bms_ip')   # BMS VMI IP
+        self.bms_ip_netmask = kwargs.get('bms_ip_netmask', 24)   # BMS VMI IP MASK
+        self.bms_gw_ip = kwargs.get('bms_gw_ip', None)   # BMS VMI IP MASK
         self.bms_mac = kwargs.get('bms_mac') # BMS VMI Mac
+        self.run_dhcp_client = kwargs.get('run_dhcp_client', True) 
         self.vn_fixture = kwargs.get('vn_fixture')
         self.port_fixture = kwargs.get('port_fixture')
         self.lif_fixtures = kwargs.get('lif_fixtures') or []
@@ -39,6 +42,8 @@ class BMSFixture(fixtures.Fixture):
         self.vlan_id = self.port_fixture.vlan_id if self.port_fixture else \
                        kwargs.get('vlan_id')
         self.bms_created = False
+        self.mvlanintf = None
+        self._interface = None
     # end __init__
 
     def create_lif(self):
@@ -68,6 +73,7 @@ class BMSFixture(fixtures.Fixture):
                                  mac_address=self.bms_mac,
                                  security_groups=self.security_groups,
                                  fixed_ips=fixed_ips,
+                                 api_type='contrail',
                                  vlan_id=self.vlan_id,
                              ))
         if not self.bms_ip:
@@ -116,24 +122,34 @@ class BMSFixture(fixtures.Fixture):
     def setup_bms(self):
         self.bms_created = True
         if len(self.interfaces) > 1:
-            interface = self.create_bonding()
+            self._interface = self.create_bonding()
         else:
             host_mac = self.interfaces[0]['host_mac']
-            interface = get_intf_name_from_mac(self.mgmt_ip,
+            self._interface = get_intf_name_from_mac(self.mgmt_ip,
                                                host_mac,
                                                username=self.username,
                                                password=self.password)
+            self.logger.info('BMS interface: %s' % self._interface)
         if self.vlan_id:
-            self.run('vconfig add %s %s'%(interface, self.vlan_id))
-        pvlanintf = '%s.%s'(interface, self.vlan_id) if self.vlan_id\
-                    else interface
+            self.run('vconfig add %s %s'%(self._interface, self.vlan_id))
+            self.run('ip link set %s.%s up'%(self._interface, self.vlan_id))
+        pvlanintf = '%s.%s'%(self._interface, self.vlan_id) if self.vlan_id\
+                    else self._interface
         self.mvlanintf = '%s-mv%s'%(pvlanintf, get_random_string(4))
+        self.logger.info('BMS mvlanintf: %s' % self.mvlanintf)
         macaddr = 'address %s'%self.bms_mac if self.bms_mac else ''
         self.run('ip link add %s link %s %s type macvlan mode bridge'%(
                  self.mvlanintf, pvlanintf, macaddr))
         self.run('ip netns add %s'%self.namespace)
         self.run('ip link set netns %s %s'%(self.namespace, self.mvlanintf))
+        #self.run_namespace('ifconfig %s hw ether %s'%(self.mvlanintf,macaddr))
         self.run_namespace('ip link set dev %s up'%self.mvlanintf)
+
+        if not self.run_dhcp_client:
+            addr = self.bms_ip + '/' + str(self.bms_ip_netmask)
+            self.run_namespace('ip addr add %s dev %s'%(addr,self.mvlanintf))
+            if self.bms_gw_ip is not None:
+                self.run_namespace('ip route add default via %s'%(self.bms_gw_ip))
 
     def cleanup_bms(self):
         if getattr(self, 'mvlanintf', None):
@@ -141,6 +157,8 @@ class BMSFixture(fixtures.Fixture):
         if getattr(self, 'namespace', None):
             self.run('ip netns pids %s | xargs kill -9 ' % (self.namespace))
             self.run('ip netns delete %s' % (self.namespace))
+        if self.vlan_id:
+            self.run('vconfig rem %s.%s'%(self._interface, self.vlan_id))
         if len(self.interfaces) > 1:
             self.delete_bonding()
 
