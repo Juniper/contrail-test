@@ -7,6 +7,7 @@ from vnc_api.vnc_api import NoIdError
 from common import log_orig as contrail_logging
 from tcutils.util import get_random_name, retry
 
+
 class PodFixture(fixtures.Fixture):
     '''
     '''
@@ -422,3 +423,17 @@ class PodFixture(fixtures.Fixture):
             returnVal = self.inputs.get_host_ip(
                 self.connections.orch.get_host_of_vm(self.vm_obj))
         return returnVal
+
+    def read_namespaced_pods(self, namespace='kube-system'):
+        '''
+        Returns all pods in the given namespace
+        '''
+        
+        try:
+            self.obj = self.k8s_client.read_pod(namespace=namespace)
+            self._populate_attr()
+            self.already_exists = True
+            return self.obj
+        except ApiException as e:
+            self.logger.debug('Pod %s not present' % (self.name))
+            return None
