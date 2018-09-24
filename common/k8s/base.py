@@ -1142,3 +1142,65 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             return
     #end delete_in_parallel
 
+    def read_pods_in_namespace(self, namespace='kube-system'):
+        '''
+        Returns all pods in a given namespace
+        '''
+        try:
+            self.obj = self.k8s_client.read_pods_namespace(
+                namespace=namespace)
+            return self.obj
+        except ApiException as e:
+            self.logger.debug('Pod %s not present' % (self.name))
+            return None
+
+    def verify_daemonset_status(self, namespace=''):
+        '''
+        Returns 
+           True, if Desired and available are same for all daemonsets
+           False, otherwise
+        '''
+        if namespace:
+            daemonset_info = self.k8s_client.read_daemonsets(namespace=namespace)
+        else:
+            daemonset_info = self.k8s_client.read_daemonsets()
+        for item in daemonset_info.items:
+            item_status = item.status
+            if item_status.desiredNumberScheduled == item_status.currentNumberScheduled == \
+                item_status.numberReady == item_status.numberAvailable:
+                continue
+            self.logger.error('One or more daemonsets not in expected state')
+            return False
+        self.logger.info('All daemonsets are in expected states')
+        return True
+
+    def get_daemonset_status(self, namespace=''):
+        if namespace:
+            daemonset_info = self.k8s_client.read_daemonsets(namespace=namespace)
+        else:
+            daemonset_info = self.k8s_client.read_daemonsets()
+        daemonset_status = {}
+        for item in daemonset_info.items:
+            daemonset_status[str(item.metadata.name)] = item.status
+        return daemonset_status
+
+    def get_daemonset_info(self, namespace='kube-system'):
+        return self.k8s_client.read_daemonsets(namespace=namespace)
+
+    def verify_pods_status(self, namespace=''):
+        '''
+        Returns
+          True, if all pods are in Running state
+          False, otherwise
+        '''
+        if namespace:
+            pods_info = self.k8s_client.read_pods_namespace(namespace)
+        else:
+            pods_info = self.k8s_client.read_pods_namespace()
+        for pod in pods_info.items:
+            if 'Running' in pod.status.phase:
+                self.logger.info("Pod {} is in Running state".format(pod.metadata.name))
+                continue
+            self.logger.error("Pod {} is not in Running state".format(pod.metadata.name))
+            return False
+        return True
