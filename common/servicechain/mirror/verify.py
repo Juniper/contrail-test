@@ -28,7 +28,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
     def _verify_proto_based_mirror(self, si_fixture, left_vm_fixture,
                                   right_vm_fixture, proto, dest_ip=None,
-                                  replies=True):
+                                  replies=True, fip=False):
         '''
         For icmp and udp traffic
         '''
@@ -42,6 +42,11 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         if self.inputs.pcap_on_vm:
             vm_fix_pcap_pid_files = sessions[0]
             sessions = sessions[1]
+        total_count = 0
+        errmsg = "Ping to right VM ip %s from left VM %s" % (
+               dest_ip, 'failed' if replies else 'passed')
+        result = left_vm_fixture.ping_to_ip(dest_ip)
+        assert result if replies else not result, errmsg
 
         svm = self.get_svms_in_si(si_fixture)
         for svm_name, (session, pcap) in sessions.items():
@@ -49,10 +54,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
                 count = 5
                 if replies:
                     count += 5
-                errmsg = "Ping to right VM ip %s from left VM %s" % (
-                    dest_ip, 'failed' if replies else 'passed')
-                result = left_vm_fixture.ping_to_ip(dest_ip)
-                assert result if replies else not result, errmsg
             elif proto == 'udp':
                 sport = 8001
                 dport = 9001
@@ -66,9 +67,15 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
             if replies and si_fixture.service_mode == 'transparent' and \
                 left_vm_fixture.vm_node_ip != right_vm_fixture.vm_node_ip:
                 count = count * 2
+                if fip:
+		    count = (count * 3)/4  #Because the ping to FIP involves NAT. 
             if proto == 'icmp':
                 if not self.inputs.pcap_on_vm:
-                    assert self.verify_icmp_mirror(svm_name, session, pcap, count)
+                    count = self.stop_tcpdump(session, pcap)
+                    print str(svm_name) + ':' + str(count)
+                    total_count += count
+                    if len(svm) == 1:
+                        assert self.verify_icmp_mirror(svm_name, session, pcap, count)
                 else:
                     svm_list = si_fixture._svm_list
                     self.pcap_on_all_vms_and_verify_mirrored_traffic(src_vm_fix=left_vm_fixture,
@@ -92,7 +99,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
                                      "service VM '%s', tcpdump on VM", mirror_pkt_count, svm_list)
                     return True
 
-        return
+        return True
     # end verify_proto_based_mirror
 
     def verify_svc_mirroring_with_floating_ip(self, *args, **kwargs):
@@ -153,7 +160,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
             get_floating_ip_address()
 
         assert self._verify_proto_based_mirror(si_fixture, left_vm_fixture,
-                    right_vm_fixture, 'icmp', dest_ip=fip)
+                    right_vm_fixture, 'icmp', dest_ip=fip, fip=True)
 
     def verify_svc_mirror_with_deny(self):
         """Validate the service chaining mirroring with deny rule
