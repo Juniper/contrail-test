@@ -112,7 +112,7 @@ class NetworkPolicyFixture(fixtures.Fixture):
         self._populate_attr()
     # end update
     
-    @retry(delay=2, tries=60)
+    @retry(delay=2, tries=15)
     def verify_network_policy_in_k8s(self):
         if self.read():
             self.logger.info("Network policy found in k8s")
@@ -122,7 +122,7 @@ class NetworkPolicyFixture(fixtures.Fixture):
         return True
     # end verify_ingress_in_k8s
     
-    @retry(delay=2, tries=60)
+    @retry(delay=2, tries=15)
     def verify_network_policy_in_kube_manager(self):
         km_h = self.connections.get_kube_manager_h()
         self.np_info = km_h.get_network_policy_info(np_uuid = self.uuid)
@@ -136,7 +136,7 @@ class NetworkPolicyFixture(fixtures.Fixture):
         return True
     # end verify_ingress_in_k8s
 
-    @retry(delay=2, tries=15)
+    @retry(delay=2, tries=10)
     def verify_firewall_policy_in_agent(self):
         km_h = self.connections.get_kube_manager_h()
         for nodeip in self.inputs.compute_ips:
@@ -154,7 +154,7 @@ class NetworkPolicyFixture(fixtures.Fixture):
     #end verify_firewall_policy_in_agent
 
 
-    @retry(delay=2, tries=15)
+    @retry(delay=2, tries=10)
     def verify_default_policies_in_agent(self):
         km_h = self.connections.get_kube_manager_h()
         for nodeip in self.inputs.compute_ips:

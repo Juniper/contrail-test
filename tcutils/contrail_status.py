@@ -261,6 +261,7 @@ def contrail_status(inputs=None, host=None, role=None, service=None,
                     desc = None
                     if inputs.deployer == 'helm' and svc == 'config-rabbitmq':
                         continue
+                    #import pdb;pdb.set_trace()
                     status = get_container_status(
                         inputs.get_container_name(node, svc), containers)
                     if status == 'active':
