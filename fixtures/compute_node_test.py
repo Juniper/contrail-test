@@ -42,6 +42,7 @@ class ComputeNodeFixture(fixtures.Fixture):
         self.logger = self.inputs.logger
         self.already_present = False
         self.ip = node_ip
+        self.container = 'vrouter_vrouter-agent_1'
         for name, ip in self.inputs.compute_info.iteritems():
             if ip == self.ip:
                 self.name = name
@@ -153,13 +154,11 @@ class ComputeNodeFixture(fixtures.Fixture):
         self.logger.debug(
             'Set flow aging time in node %s to %s' %
             (self.ip, flow_cache_timeout))
-        self.read_agent_config()
-        self.config.set(
-            'DEFAULT',
-            'flow_cache_timeout',
-            str(flow_cache_timeout))
-        self.write_agent_config()
-        self.put_file(self.new_agent_conf_file.name, self.agent_conf_file)
+        cache_timeout = 'flow_cache_timeout=' + str(flow_cache_timeout)
+        self.inputs.add_knob_to_container(self.ip, self.container, 'DEFAULT', cache_timeout, restart_container=True, file_name='entrypoint.sh')
+        cmd = 'docker cp %s:/%s %s' %(self.container, self.agent_conf_file, \
+                                        self.agent_conf_file)
+        self.inputs.run_cmd_on_server(self.ip, cmd, self.username, self.password)
         self.get_config_flow_aging_time()
         if self.flow_cache_timeout != flow_cache_timeout:
             self.logger.error(
@@ -179,10 +178,11 @@ class ComputeNodeFixture(fixtures.Fixture):
 
     def set_per_vm_flow_limit(self, max_vm_flows=75):
         self.logger.info('Set flow limit per VM at %s percent.' % max_vm_flows)
-        self.read_agent_config()
-        self.config.set('FLOWS', 'max_vm_flows', str(max_vm_flows))
-        self.write_agent_config()
-        self.put_file(self.new_agent_conf_file.name, self.agent_conf_file)
+        max_flows = 'max_vm_flows=' + str(max_vm_flows)
+        self.inputs.add_knob_to_container(self.ip, self.container, 'FLOWS', max_flows, restart_container=True, file_name='entrypoint.sh')
+        cmd = 'docker cp %s:/%s %s' %(self.container, self.agent_conf_file, \
+                                        self.agent_conf_file)
+        self.inputs.run_cmd_on_server(self.ip, cmd, self.username, self.password)
         self.get_config_per_vm_flow_limit()
         if self.max_vm_flows != float(max_vm_flows):
             self.logger.error(
