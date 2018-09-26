@@ -149,6 +149,7 @@ class VerifySvcChain(ConfigSvcChain):
             fq_name=vn_fq_name.split(':'))
         ri_list = []
         itf_list = []
+        vrf_match_list = []
         itf_nh = None
         for ris in vn1.get_routing_instances():
             ri_fqn = (":").join(ris['to'])
@@ -158,8 +159,9 @@ class VerifySvcChain(ConfigSvcChain):
             svm_node_ip = self.inputs.host_data[svm.vm_node_ip]['host_ip']
             svm_node_name = self.inputs.host_data[svm.vm_node_ip]['name']
             inspect_h1 = self.connections.agent_inspect[svm_node_ip]
+            vrf_match_list = [vn_fq_name, si.si_name]
             for vrf_list in inspect_h1.get_vna_vrf_list()['VRFs']:
-                if vrf_list['name'] in ri_list:
+                if all(x in vrf_list['name'] for x in vrf_match_list):
                     vrf_id = vrf_list['ucindex']
                     break
             errmsg = "RI not created for the SVC"
