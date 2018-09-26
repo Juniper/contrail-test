@@ -196,7 +196,8 @@ class TestSvcRegrIPv6(TestSvcRegr):
 
     @preposttest_wrapper
     def test_svc_in_network_datapath(self):
-        super(TestSvcRegrIPv6,self).test_svc_in_network_datapath()
+        return self.verify_svc_chain(svc_img_name='tiny_in_net', service_mode='in-network',
+                                     create_svms=True)
 
     @preposttest_wrapper
     @skip_because(feature='trans_svc')
