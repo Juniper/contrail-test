@@ -711,7 +711,8 @@ class Client(object):
                       namespace,
                       name):
         self.logger.info('Deleting secret : %s' % (name))
-        return self.v1_h.delete_namespaced_secret(name, namespace)
+        body = client.V1DeleteOptions()
+        return self.v1_h.delete_namespaced_secret(name, namespace, body)
     # end delete_secret
 
 if __name__ == '__main__':
