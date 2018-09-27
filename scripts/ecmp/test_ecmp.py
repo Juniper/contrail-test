@@ -679,7 +679,7 @@ class TestECMPwithFIP_2(GenericTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPT
             self.fvn_vm1, vm_list, stream_list, self.fvn_vm1.vm_ip, self.my_fip)
         self.logger.info('Sending traffic for 10 seconds')
         self.sleep(10)
-        self.verify_flow_records(self.fvn_vm1, self.fvn_vm1.vm_ip, self.my_fip)
+        self.verify_flow_records(self.fvn_vm1, self.fvn_vm1.vm_ip, self.my_fip, stream_list=stream_list)
         return True
 
 
