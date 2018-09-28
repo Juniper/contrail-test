@@ -333,17 +333,18 @@ class TestInputs(object):
                 self.hostname = hostname
             if 'vrouter' in roles:
                 data_ip = self.get_service_ip(host_data['host_ip'], 'vrouter')
-                self.compute_ips.append(host_data['host_ip'])
-                self.compute_names.append(hostname)
-                self.compute_info[hostname] = host_data['host_ip']
-                self.compute_control_ips.append(data_ip)
+                if roles['vrouter'] and roles['vrouter'].get('TSN_EVPN_MODE'):
+                    self.contrail_service_nodes.append(hostname)
+                else:
+                    self.compute_ips.append(host_data['host_ip'])
+                    self.compute_names.append(hostname)
+                    self.compute_info[hostname] = host_data['host_ip']
+                    self.compute_control_ips.append(data_ip)
                 if roles['vrouter']:
                     if roles['vrouter'].get('AGENT_MODE') == 'dpdk':
                         host_data['is_dpdk'] = True
                         self.is_dpdk_cluster = True
                         self.dpdk_ips.append(host_data['host_ip'])
-                    if roles['vrouter'].get('TSN_EVPN_MODE'):
-                        self.contrail_service_nodes.append(hostname)
                 host_data_ip = host_control_ip = data_ip
             if 'control' in roles:
                 service_ip = self.get_service_ip(host_data['host_ip'], 'control')
