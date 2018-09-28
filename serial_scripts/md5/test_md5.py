@@ -161,9 +161,8 @@ class TestMd5testsOnControl(Md5Base, VerifySecGroup, ConfigPolicy):
         else:
             return
 
-    #@test.attr(type=['sanity', 'vcenter_compute', 'vcenter'])
-    @test.attr(type=['sanity'])
-    # ToDo : Shashi to debug why this testcase takes long time to run and reenable it.
+    @test.attr(type=['sanity', 'vcenter_compute', 'vcenter'])
+    # ToDo Complete : Shashi to debug why this testcase takes long time to run and reenable it.
     @preposttest_wrapper
     def test_create_md5_on_control(self):
         """
@@ -191,9 +190,8 @@ class TestMd5testsOnControl(Md5Base, VerifySecGroup, ConfigPolicy):
         assert self.different_keys_md5_config()
     #end different_keys_md5
 
-    #@test.attr(type=['sanity', 'vcenter_compute' 'vcenter'])
-    @test.attr(type=['sanity'])
-    # ToDo : Shashi to debug why this testcase takes long time to run and reenable it.
+    @test.attr(type=['sanity', 'vcenter_compute' 'vcenter'])
+    # ToDo Complete : Shashi to debug why this testcase takes long time to run and reenable it.
     @preposttest_wrapper
     def test_check_per_peer_on_control(self):
         """
