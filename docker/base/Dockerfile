@@ -24,9 +24,6 @@ RUN yum install -y \
     rm -rf /etc/yum.repos.d && \
     mv /etc/yum.repos.d.orig /etc/yum.repos.d
 
-# uncomment this once contrail-fabric-utils requirement is removed
-# RUN yum install -y fabric
-
 # Install Chrome Driver
 RUN wget -c http://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64.zip && \
     unzip chromedriver_linux64.zip && cp ./chromedriver /usr/bin/ && \
