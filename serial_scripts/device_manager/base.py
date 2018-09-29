@@ -74,7 +74,8 @@ class BaseDM(VerifySecGroup):
                             ssh_username=router_params['ssh_username'],
                             ssh_password=router_params['ssh_password'],
                             mgmt_ip=router_params['control_ip'],
-                            connections=self.connections))
+                            connections=self.connections,
+                            dm_managed=True))
                         physical_dev = self.vnc_lib.physical_router_read(id = self.phy_router_fixture[j].phy_device.uuid)
                         physical_dev.set_physical_router_management_ip(router_params['mgmt_ip'])
                         physical_dev.set_physical_router_dataplane_ip(router_params['mgmt_ip'])

@@ -791,7 +791,7 @@ class VerifyIntfMirror(VerifySvcMirror):
             #if the mode is static, the mirroring config changes, so the call to MirrorActionType changes
             if nh_mode == 'static':
                 hosted_node = str(tap.get_virtual_machine_interface_bindings().get_key_value_pair()[0].value)
-                hosted_node_ip = self.inputs.inputs.host_data[hosted_node]['data-ip']
+                hosted_node_ip = self.inputs.host_data[hosted_node]['data-ip']
                 vn_uuid = tap.get_virtual_network_refs()[0]['uuid']
                 vni = vnc.virtual_network_read(id = vn_uuid).virtual_network_network_id
                 staticmirror_nh = StaticMirrorNhType(vtep_dst_ip_address = hosted_node_ip, vni = vni)
