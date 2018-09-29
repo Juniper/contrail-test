@@ -40,7 +40,7 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
         self.vendor = kwargs.get('vendor', 'juniper')
         self.model = kwargs.get('model','mx')
         self.asn = kwargs.get('asn','64512')
-        self.tunnel_ip = kwargs.get('tunnel_ip', self.mgmt_ip)
+        self.tunnel_ip = kwargs.get('tunnel_ip')
         self.ports = kwargs.get('ports', [])
 
         self.bgp_router = None
@@ -85,13 +85,6 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
         self.phy_device = self.vnc_api_h.physical_router_read(id=self.phy_device.uuid)
         self.phy_device.del_bgp_router(bgp_router)
         self.vnc_api_h.physical_router_update(self.phy_device)
-
-    def delete_device(self):
-        self.phy_device = self.vnc_api_h.physical_router_read(id=self.phy_device.uuid)
-        self.phy_device.del_bgp_router(self.bgp_router)
-        self.vnc_api_h.physical_router_update(self.phy_device)
-
-        super(PhysicalRouterFixture, self).delete_device()
 
     def setUp(self):
         super(PhysicalRouterFixture, self).setUp()
@@ -145,11 +138,11 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
                         if entry['state'] != 'Established':
                             result = result and False
                             self.logger.error('!!!Node %s peering info:With Peer %s: %s  peering is not Established. Current State %s ' % (
-                                entry1, self.tunnel_ip, entry['peer'], entry['state']))
+                                entry1, self.tunnel_ip or self.mgmt_ip, entry['peer'], entry['state']))
                         else:
                             self.logger.info(
                                 'Node %s peering info:With Peer %s : %s peering is Current State is %s ' %
-                                (entry1,self.tunnel_ip, entry['peer'], entry['state']))
+                                (entry1,self.tunnel_ip or self.mgmt_ip, entry['peer'], entry['state']))
         return result
 
     def cleanUp(self):
@@ -157,6 +150,7 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
         if self.bgp_router_already_present:
             do_cleanup = False
         if do_cleanup:
+            self.unbind_bgp_router(self.bgp_router)
             if self.inputs.is_gui_based_config():
                 self.webui.delete_bgp_router(self)
             else:

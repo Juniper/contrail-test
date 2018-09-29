@@ -1095,7 +1095,7 @@ def skip_because(*args, **kwargs):
             if "metadata_ssl" in kwargs:
                 check_metadata=0
                 try:
-                    if self.inputs.inputs.metadata_ssl_enable is False:
+                    if self.inputs.metadata_ssl_enable is False:
                         msg = "Skipped as metadata_ssl_enable is not set to True."
                         check_metadata=1
                 except Exception, e:

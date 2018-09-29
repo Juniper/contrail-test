@@ -59,7 +59,8 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
 
         self.created = False
         self.physical_port_fixtures = {}
-        self.csn = kwargs.get('tsn')
+        csn = kwargs.get('tsn') or []
+        self.csn = csn if isinstance(csn, list) else [csn]
         try:
             if self.inputs.verify_thru_gui():
                 connections = kwargs.get('connections', None)
@@ -89,9 +90,10 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         creds = obj.get_physical_router_user_credentials()
         self.ssh_username = creds.username
         self.ssh_password = creds.password
-        csn = obj.get_virtual_router_refs() or []
-        if csn:
-            self.csn = csn[0]['to'][-1]
+        csns = list()
+        for csn in obj.get_virtual_router_refs() or []:
+            csns.append(csn['to'][-1])
+        self.csn = csns
 
     def create_physical_device(self):
         if self.inputs.is_gui_based_config():
@@ -119,7 +121,7 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
                                                    csn=csn)
 
     def delete_device(self):
-        self.vnc_h.delete_physical_router(id=self.name)
+        self.vnc_h.delete_physical_router(self.name)
         self.logger.info('Deleted physical device: %s' %(self.name))
 
     def setUp(self):
@@ -129,10 +131,11 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         try:
             self.read()
             self.logger.info('Physical device %s already present' % (
-                pr_fq_name))
+                self.name))
         except vnc_api_test.NoIdError:
-            self.phy_device = self.create_physical_device()
+            self.create_physical_device()
             self.created = True
+        self.phy_device = self.vnc_h.read_physical_router(self.name)
         if self.inputs:
             self.device_details = self.get_device_details(
                 self.inputs.physical_routers_data)
@@ -159,7 +162,7 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
                 if self.csn:
                     self.delete_csn(self.csn)
                 self.delete_device()
-        assert self.verify_on_cleanup()
+            assert self.verify_on_cleanup()
         super(PhysicalDeviceFixture, self).cleanUp()
 
     def add_virtual_network(self, vn_id):
