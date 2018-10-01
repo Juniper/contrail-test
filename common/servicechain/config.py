@@ -297,14 +297,6 @@ class ConfigSvcChain(fixtures.Fixture):
                 tap_intfs.remove(tap_intf)
         return tap_intfs[0]['name']
 
-    def get_bridge_svm_tapintf(self, svm_name, direction):
-        vrf_name = self.get_svc_bridge_vrf(direction)
-        return self.get_svm_tap_intf_by_vrf(svm_name, vrf_name)
-
-    def get_svc_bridge_vrf(self, direction):
-        vn = 'svc-vn-' + direction
-        vrf = ':'.join(self.inputs.project_fq_name) + ':' + vn + ':' + vn
-
     def get_svm_tap_intf_by_vrf(self, svm_name, vrf_name):
         self.is_svm_active(svm_name)
         svm_obj = self.get_svm_obj(svm_name)
