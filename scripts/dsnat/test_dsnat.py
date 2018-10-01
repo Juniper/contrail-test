@@ -37,7 +37,7 @@ class TestDSNAT(BaseDSNAT):
 
         assert test_vm1.ping_with_certainty(test_vm2.vm_ip)
         #with DSNAT enabled on VN, verify the ping to the external IP
-        cfgm_ip = self.inputs.inputs.get_host_data_ip(self.inputs.cfgm_names[0])
+        cfgm_ip = self.inputs.get_host_data_ip(self.inputs.cfgm_names[0])
         assert test_vm1.ping_with_certainty(cfgm_ip)
 
         self.logger.info("disable fabric SNAT, and verify the ping to the external IP and inter VN")
@@ -148,7 +148,7 @@ class TestDSNAT(BaseDSNAT):
         self.vnc_h.set_security_group(test_vm1.uuid, [secgrp_fixture.uuid])
 
         assert test_vm1.ping_with_certainty(test_vm2.vm_ip, expectation=False)
-        cfgm_ip = self.inputs.inputs.get_host_data_ip(self.inputs.cfgm_names[0])
+        cfgm_ip = self.inputs.get_host_data_ip(self.inputs.cfgm_names[0])
         assert test_vm1.ping_with_certainty(cfgm_ip,expectation=False)
 
         self.logger.info("Apply the default security group and verify ping works again")
@@ -207,7 +207,7 @@ class TestDSNAT(BaseDSNAT):
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip), (
             'Ping failed between VNs with allow-policy')
 
-        cfgm_ip = self.inputs.inputs.get_host_data_ip(self.inputs.cfgm_names[0])
+        cfgm_ip = self.inputs.get_host_data_ip(self.inputs.cfgm_names[0])
         assert vm1_fixture.ping_with_certainty(cfgm_ip), (
             'Ping failed to external IP with allow-policy')
 
@@ -315,7 +315,7 @@ class TestDSNAT(BaseDSNAT):
         policy_fix.policy_fq_name = policy_fix.fq_name
         policy_fix.policy_name = policy_fix.name
 
-        cfgm_ip = self.inputs.inputs.get_host_data_ip(self.inputs.cfgm_names[0])
+        cfgm_ip = self.inputs.get_host_data_ip(self.inputs.cfgm_names[0])
         self.attach_policy_to_vn(policy_fix, fabric_vn)
         assert vm1_fixture.ping_with_certainty(cfgm_ip), (
             'Ping to external IP failed with allow-any-policy')
@@ -372,7 +372,7 @@ class TestDSNAT(BaseDSNAT):
     
         self.logger.info("Create interface router table with external ip prefix,\
             and bind the route table to the VM created on the floating network")
-        cfgm_ip = self.inputs.inputs.get_host_data_ip(self.inputs.cfgm_names[0])
+        cfgm_ip = self.inputs.get_host_data_ip(self.inputs.cfgm_names[0])
         prefixes = []
         prefixes.append(cfgm_ip+'/32')
         intf_route_table_obj = self.vnc_h.create_interface_route_table(\
@@ -430,7 +430,7 @@ class TestDSNAT(BaseDSNAT):
 
         self.logger.info("Verifies the ping to the external IP \
              from floating VN, routes through the fabric IP")
-        cfgm_ip = self.inputs.inputs.get_host_data_ip(self.inputs.cfgm_names[0])
+        cfgm_ip = self.inputs.get_host_data_ip(self.inputs.cfgm_names[0])
         assert fvn_vm1.ping_with_certainty(cfgm_ip)
 
         self.logger.info("Verifies the ping to the external IP \
@@ -473,6 +473,6 @@ class TestDSNAT(BaseDSNAT):
 
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
         self.logger.info('Ping fabric IP with source IP as %s' %vIP)
-        cfgm_ip = self.inputs.inputs.get_host_data_ip(self.inputs.cfgm_names[0])
+        cfgm_ip = self.inputs.get_host_data_ip(self.inputs.cfgm_names[0])
         assert vm1_fixture.ping_with_certainty(other_opt='-I '+vIP, ip=cfgm_ip),\
             ('Ping failed from vIP to fabric IP')

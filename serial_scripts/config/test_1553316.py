@@ -54,7 +54,8 @@ class Test1553316(BaseNeutronTest):
                             ssh_username=router_params['ssh_username'],
                             ssh_password=router_params['ssh_password'],
                             mgmt_ip=router_params['control_ip'],
-                            connections=self.connections))
+                            connections=self.connections,
+                            dm_managed=True))
         physical_dev = self.vnc_lib.physical_router_read(id = self.phy_router_fixture.phy_device.uuid)
         physical_dev.set_physical_router_management_ip(router_params['mgmt_ip'])
         physical_dev._pending_field_updates

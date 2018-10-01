@@ -18,11 +18,9 @@ logging.getLogger('paramiko.transport').setLevel(logging.WARN)
 if __name__ == "__main__":
     init_obj = ContrailTestInit(sys.argv[1])
     for (device, device_dict) in init_obj.physical_routers_data.iteritems():
-        if device_dict['type'] in ['router', 'tor']:
-            fabric_managed = True if device_dict['type'] == 'tor' else False
-            if fabric_managed:
-                continue
-            phy_router_obj = PhysicalRouterFixture(
+        if device_dict.get('role') in ['leaf', 'spine']:
+            continue
+        phy_router_obj = PhysicalRouterFixture(
                 device_dict['name'],
                 device_dict['mgmt_ip'],
                 asn=device_dict['asn'],
@@ -44,8 +42,8 @@ if __name__ == "__main__":
                 domain=init_obj.admin_domain,
                 orchestrator=init_obj.orchestrator
                 )
-            phy_router_obj.setUp()
-            assert phy_router_obj.verify_bgp_peer(), 'BGP peering is not up.'
+        phy_router_obj.setUp()
+        assert phy_router_obj.verify_bgp_peer(), 'BGP peering is not up.'
 
         if device_dict['type'] == 'vcenter_gateway':
                vrouter_obj = VirtualRouterFixture(device_dict['name'],

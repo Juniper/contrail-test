@@ -59,7 +59,7 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
                             ssh_username=router_params['ssh_username'],
                             ssh_password=router_params['ssh_password'],
                             mgmt_ip=router_params['control_ip'],
-                            connections=self.connections))
+                            connections=self.connections, dm_managed=True))
                         physical_dev = self.vnc_lib.physical_router_read(id = self.phy_router_fixture.phy_device.uuid)
                         physical_dev.set_physical_router_management_ip(router_params['mgmt_ip'])
                         physical_dev._pending_field_updates
@@ -217,20 +217,20 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
         #internally, tcp session is restarted when md5 keys are changed,
         #as tcp session may take some time to come up, adding some sleep.
         sleep(10)
-        for node in self.inputs.bgp_control_ips:
+        for node in self.inputs.bgp_ips:
             try:
                 if self.is_mx_present and self.inputs.use_devicemanager_for_md5:
                     cmd = 'netstat -tnp | grep :179 | awk \"{print $6}\"'
                 else:
                     cmd = 'netstat -tnp | grep :179 | '
-                    for ext_router in self.inputs.inputs.ext_routers:
+                    for ext_router in self.inputs.ext_routers:
                         cmd = cmd + 'grep -v %s | ' % ext_router[1]
 
                     cmd = cmd + 'awk \"{print $6}\"'
 
             except Exception as e:
                 cmd = 'netstat -tnp | grep :179 | '
-                for ext_router in self.inputs.inputs.ext_routers:
+                for ext_router in self.inputs.ext_routers:
                     cmd = cmd + 'grep -v %s | ' % ext_router[1]
                 
                 cmd = cmd + 'awk \"{print $6}\"'
