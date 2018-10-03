@@ -50,7 +50,7 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
             uuid = self.vnc_lib.bgp_routers_list()
             self.uuid = str(uuid)
             self.list_uuid = re.findall('u\'uuid\': u\'([a-zA-Z0-9-]+)\'', self.uuid)
-            bgp_fq_name = ['default-domain', 'default-project','ip-fabric', '__default__', self.inputs.inputs.bgp_names[0]]
+            bgp_fq_name = ['default-domain', 'default-project','ip-fabric', '__default__', self.inputs.bgp_names[0]]
             self.only_control_host = self.vnc_lib.bgp_router_read(fq_name=bgp_fq_name).uuid
         else:
             return
@@ -156,7 +156,7 @@ class TestMd5testsOnControl(Md5Base, VerifySecGroup, ConfigPolicy):
             uuid = self.vnc_lib.bgp_routers_list()
             self.uuid = str(uuid)
             self.list_uuid = re.findall('u\'uuid\': u\'([a-zA-Z0-9-]+)\'', self.uuid)
-            bgp_fq_name = ['default-domain', 'default-project','ip-fabric', '__default__', self.inputs.inputs.bgp_names[0]]
+            bgp_fq_name = ['default-domain', 'default-project','ip-fabric', '__default__', self.inputs.bgp_names[0]]
             self.only_control_host = self.vnc_lib.bgp_router_read(fq_name=bgp_fq_name).uuid
         else:
             return

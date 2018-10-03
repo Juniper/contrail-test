@@ -12,7 +12,7 @@ COPY *.repo Dockerfile /etc/yum.repos.d/
 RUN yum install -y \
       yum-plugin-priorities \
       https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
-    yum install -y unzip vim tcpdump ant git ipmitool gcc python-devel \
+    yum install -y unzip vim tcpdump ant git ipmitool gcc python-devel ansible \
       patch sshpass bzip2 wget sudo python-pip python-netaddr python-lxml \
       python-testresources python-testrepository python-junitxml pexpect \
       python-linecache2 python-xmltodict python-eventlet python-ncclient \
@@ -32,5 +32,5 @@ RUN wget -c http://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64
 # pip install python packages
 COPY requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
-
+RUN ansible-galaxy install Juniper.junos
 COPY entrypoint.sh /
