@@ -214,14 +214,11 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             dest_vm_fixture=self.right_vm_fixture, mode='scp', size='222'), errmsg2
         self.logger.info('Will update the policy to allow only udp')
         policy_fixture = ret_dict['policy_fixture']
-        old_data = {
-            'policy': {'entries': policy_fixture.policy_obj['policy']['entries']}}
-        old_entry = policy_fixture.policy_obj['policy']['entries']
-        new_entry = old_entry
-        new_entry['policy_rule'][0]['protocol'] = u'udp'
-        pol_id = policy_fixture.policy_obj['policy']['id']
-        new_data = {'policy': {'entries': new_entry}}
-        policy_fixture.update_policy(pol_id, new_data)
+        policy_id = policy_fixture.get_id()
+        policy_entries = policy_fixture.get_entries()
+        policy_entries.policy_rule[0].protocol=u'udp'
+        p_rules = policy_entries
+        policy_fixture.update_policy(policy_id, p_rules)
         self.sleep(5)
         # TFTP from Left VM to Right VM is expected to pass
         errmsg1 = "TFTP to right VM ip %s from left VM failed; expected to pass" % self.right_vm_fixture.vm_ip
