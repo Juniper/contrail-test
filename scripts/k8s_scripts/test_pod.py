@@ -26,7 +26,7 @@ class TestPod(BaseK8sTest):
         assert pod.verify_on_setup()
     # end test_add_delete_pod
 
-    @test.attr(type=['openshift_1'])
+    @test.attr(type=['openshift_1', 'ci_contrail_go_k8s_sanity'])
     @preposttest_wrapper
     def test_ping_between_two_pods(self):
         '''
