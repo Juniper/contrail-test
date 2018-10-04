@@ -17,11 +17,11 @@ class TestNamespace(BaseK8sTest):
     def parallel_cleanup(self):
         parallelCleanupCandidates = ["PodFixture"]
         self.delete_in_parallel(parallelCleanupCandidates)
-    
-    @test.attr(type=['openshift_1'])
+
+    @test.attr(type=['openshift_1', 'ci_contrail_go_k8s_sanity'])
     @preposttest_wrapper
     def test_namespace_1(self):
-        ''' Create and delete a namespace 
+        ''' Create and delete a namespace
         '''
         namespace = self.useFixture(NamespaceFixture(self.connections))
         assert namespace.verify_on_setup()
