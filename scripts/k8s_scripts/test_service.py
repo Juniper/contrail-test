@@ -260,7 +260,7 @@ class TestServiceExternalIP(BaseK8sTest):
         parallelCleanupCandidates = ["PodFixture"]
         self.delete_in_parallel(parallelCleanupCandidates)
     
-    @test.attr(type=['k8s_sanity'])
+    @test.attr(type=['k8s_sanity', 'ci_contrail_go_k8s_sanity'])
     @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_service_with_external_ip(self):
