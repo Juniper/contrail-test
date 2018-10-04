@@ -64,6 +64,5 @@ class BaseVnVmTest(test_v1.BaseTestCase_v1):
             compute_fixtures[cmp_node].set_flow_aging_time(
                 compute_fixtures[
                     cmp_node].default_values['DEFAULT']['flow_cache_timeout'])
-            compute_fixtures[cmp_node].sup_vrouter_process_restart()
         return True
 

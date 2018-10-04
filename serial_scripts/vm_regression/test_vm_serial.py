@@ -744,7 +744,6 @@ class TestBasicVMVN0(BaseVnVmTest):
             comp_node_fixt[cmp_node].get_config_per_vm_flow_limit()
             comp_node_fixt[cmp_node].set_per_vm_flow_limit(
                 max_vm_flows)
-            comp_node_fixt[cmp_node].sup_vrouter_process_restart()
             if max_system_flows < comp_node_fixt[
                 cmp_node].max_system_flows:
                 max_system_flows = comp_node_fixt[
