@@ -1629,173 +1629,6 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
 
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter')
-    def test_fip_pool_shared_across_project(self):
-        ''' Verify FIP Pool is shared accorss diffrent projects.
-        '''
-        result = True
-        fip_pool_name = get_random_name('small-pool1')
-        fvn_name = get_random_name('floating-vn')
-        fvm_name = get_random_name('floating-vm')
-        fvn_subnets = [get_random_cidr('29')]
-        vm1_name = get_random_name('vm400')
-        vn1_name = get_random_name('vn400')
-        vn1_subnets = [get_random_cidr()]
-        vm2_name = get_random_name('vm500')
-        vn2_name = get_random_name('vn500')
-        vn2_subnets = [get_random_cidr()]
-        vm3_name = get_random_name('vm3')
-        vm4_name = get_random_name('vm4')
-        vm5_name = get_random_name('vm5')
-
-        self.demo_proj_inputs1 = ContrailTestInit(
-            self.input_file, stack_tenant='demo',logger=self.logger
-        )
-        self.demo_proj_connections1 = ContrailConnections(
-            self.demo_proj_inputs1, self.logger)
-        self.connections = ContrailConnections(self.inputs, self.logger)
-        # VN Fixture
-        fvn_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_name=fvn_name,
-                inputs=self.inputs,
-                subnets=fvn_subnets))
-        assert fvn_fixture.verify_on_setup()
-        vn1_fixture = self.useFixture(
-            VNFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_name=vn1_name,
-                inputs=self.inputs,
-                subnets=vn1_subnets))
-        assert vn1_fixture.verify_on_setup()
-        vn2_fixture = self.useFixture(
-            VNFixture(
-                project_name='demo',
-                connections=self.demo_proj_connections1,
-                vn_name=vn2_name,
-                inputs=self.demo_proj_inputs1,
-                subnets=vn2_subnets))
-        assert vn2_fixture.verify_on_setup()
-
-        # VM Fixture
-        vm1_fixture = self.useFixture(
-            VMFixture(
-                project_name=self.inputs.project_name,
-                connections=self.connections,
-                vn_obj=vn1_fixture.obj,
-                vm_name=vm1_name))
-        vm2_fixture = self.useFixture(
-            VMFixture(
-                project_name='demo', connections=self.demo_proj_connections1,
-                vn_obj=vn2_fixture.obj, vm_name=vm2_name))
-        vm3_fixture = self.useFixture(
-            VMFixture(
-                project_name='demo', connections=self.demo_proj_connections1,
-                vn_obj=vn2_fixture.obj, vm_name=vm3_name))
-        vm4_fixture = self.useFixture(
-            VMFixture(
-                project_name='demo', connections=self.demo_proj_connections1,
-                vn_obj=vn2_fixture.obj, vm_name=vm4_name))
-        vm5_fixture = self.useFixture(
-            VMFixture(
-                project_name='demo', connections=self.demo_proj_connections1,
-                vn_obj=vn2_fixture.obj, vm_name=vm5_name))
-
-        # fvm_fixture= self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections,
-        #        vn_obj= fvn_fixture.obj, vm_name= fvm_name))
-        assert vm1_fixture.verify_on_setup()
-        assert vm2_fixture.verify_on_setup()
-        assert vm3_fixture.verify_on_setup()
-        assert vm4_fixture.verify_on_setup()
-        assert vm5_fixture.verify_on_setup()
-        #assert fvm_fixture.verify_on_setup()
-
-        # Floating Ip Fixture
-        fip_fixture = self.useFixture(
-            FloatingIPFixture(
-                project_name=self.inputs.project_name,
-                inputs=self.inputs,
-                connections=self.connections,
-                pool_name=fip_pool_name,
-                vn_id=fvn_fixture.vn_id))
-        assert fip_fixture.verify_on_setup()
-
-        # Adding further projects to floating IP.
-        self.logger.info('Adding project demo to FIP pool %s' %
-                         (fip_pool_name))
-        project_obj = fip_fixture.assoc_project('demo')
-
-        # Asscociating FIP to VMs under demo project and exaust 4 fips available from the /29 subnet
-        self.logger.info(
-            'Allocating FIP to VM %s in Demo project from VN %s under admin project' %
-            (vm2_name, fvn_name))
-        fip_id1 = fip_fixture.create_and_assoc_fip(
-            fvn_fixture.vn_id, vm2_fixture.vm_id, project_obj)
-        assert fip_fixture.verify_fip(fip_id1, vm2_fixture, fvn_fixture)
-        self.addCleanup(fip_fixture.disassoc_and_delete_fip, fip_id1)
-
-        self.logger.info(
-            'Allocating FIP to VM %s in Demo project from VN %s under admin project' %
-            (vm3_name, fvn_name))
-        fip_id2 = fip_fixture.create_and_assoc_fip(
-            fvn_fixture.vn_id, vm3_fixture.vm_id, project_obj)
-        assert fip_fixture.verify_fip(fip_id2, vm3_fixture, fvn_fixture)
-        self.addCleanup(fip_fixture.disassoc_and_delete_fip, fip_id2)
-
-        self.logger.info(
-            'Allocating FIP to VM %s in Demo project from VN %s under admin project' %
-            (vm4_name, fvn_name))
-        fip_id3 = fip_fixture.create_and_assoc_fip(
-            fvn_fixture.vn_id, vm4_fixture.vm_id, project_obj)
-        assert fip_fixture.verify_fip(fip_id3, vm4_fixture, fvn_fixture)
-        self.addCleanup(fip_fixture.disassoc_and_delete_fip, fip_id3)
-
-        self.logger.info(
-            'Allocating FIP to VM %s in Demo project from VN %s under admin project' %
-            (vm5_name, fvn_name))
-        fip_id4 = fip_fixture.create_and_assoc_fip(
-            fvn_fixture.vn_id, vm5_fixture.vm_id, project_obj)
-        assert fip_fixture.verify_fip(fip_id4, vm5_fixture, fvn_fixture)
-
-        self.logger.info(
-            'FIP  pool is exhausted now. Trying to add FIP to VM under admin project. Should FAIL')
-        fip_id5 = fip_fixture.create_and_assoc_fip(
-            fvn_fixture.vn_id, vm1_fixture.vm_id)
-        if fip_id5:
-            self.logger.error(
-                'FIP should not get created/asscocited as pool is already exhusted')
-            result = result and False
-        self.logger.info(
-            'Releasing FIP to VM %s in Demo project from VN %s under admin project' %
-            (vm2_name, fvn_name))
-        fip_fixture.disassoc_and_delete_fip(fip_id4)
-
-        if result :
-            self.logger.info(
-                'Allocating FIP to VM %s in admin  project from VN %s under admin project' %
-                (vm1_name, fvn_name))
-            fip_id6 = fip_fixture.create_and_assoc_fip(
-                fvn_fixture.vn_id, vm1_fixture.vm_id)
-            assert fip_fixture.verify_fip(fip_id6, vm1_fixture, fvn_fixture)
-
-            fip_fixture.disassoc_and_delete_fip(fip_id6)
-
-        # Removing further projects from floating IP pool. For cleanup
-        self.logger.info('Removing project demo to FIP pool %s' %
-                         (fip_pool_name))
-        project_obj = fip_fixture.deassoc_project('demo')
-
-        if not result:
-            self.logger.error(
-                'Test Failed:Verify FIP Pool is shared accorss diffrent projects')
-            assert result
-        return True
-    # end test_fip_pool_shared_across_project
-
-    @preposttest_wrapper
-    @skip_because(orchestrator = 'vcenter')
     def test_communication_across__diff_proj(self):
         ''' Test communication across diffrent projects using Floating IP.
         '''
@@ -1905,10 +1738,10 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
         assert fip_fixture.verify_on_setup()
 
         # Adding further projects to floating IP.
-        self.logger.info('Adding project demo to FIP pool %s' %
+        self.logger.info('Adding both the projects to the FIP pool %s' %
                          (fip_pool_name))
-        project_obj = fip_fixture.assoc_project(projects[0])
-
+        for project in projects:
+            project_obj = fip_fixture.assoc_project(project)
         self.logger.info(
             'Allocating FIP to VM %s in project %s from VN %s in project %s ' %
             (vm2_fixture.vm_name, projects[1], vn_names[0], projects[0]))
@@ -1923,7 +1756,8 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
         # Removing further projects from floating IP pool. For cleanup
         self.logger.info('Removing project %s from FIP pool %s' %
                          (projects[0], fip_pool_name))
-        project_obj = fip_fixture.deassoc_project(projects[0])
+        for project in projects:
+            project_obj = fip_fixture.deassoc_project(project)
 
         if not result:
             self.logger.error(
