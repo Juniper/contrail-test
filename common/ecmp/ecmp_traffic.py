@@ -134,8 +134,8 @@ class ECMPTraffic(VerifySvcChain):
                     tapintf = self.connections.orch.get_vm_tap_interface(\
                                       svm_fixture.tap_intf[src_vn.vn_fq_name])
                 else:
-                    direction = 'left'
-                    tapintf = self.get_bridge_svm_tapintf(svm_name, direction)
+                    tapintf = self.connections.orch.get_vm_tap_interface(svm_fixture.tap_intf[si_fix.left_vn_fq_name])
+                    filters = ''
                 if self.inputs.pcap_on_vm:
                     tcpdump_files = start_tcpdump_for_vm_intf(
                         None, [svm_list[svm_index]], None, filters=filters, pcap_on_vm=True, vm_intf='eth1', svm=True)
@@ -170,7 +170,7 @@ class ECMPTraffic(VerifySvcChain):
                     #tapintf = svm_fixture.tap_intf[src_vn.vn_fq_name]['name']
                 else:
                     direction = 'left'
-                    tapintf = self.get_bridge_svm_tapintf(svm_name, direction)
+                    tapintf = self.connections.orch.get_vm_tap_interface(svm_fixture.tap_intf[si_fix.left_vn_fq_name])
                 if not self.inputs.pcap_on_vm:
                     session = ssh(
                         host['host_ip'], host['username'], host['password'])
