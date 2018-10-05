@@ -1905,10 +1905,10 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
         assert fip_fixture.verify_on_setup()
 
         # Adding further projects to floating IP.
-        self.logger.info('Adding project demo to FIP pool %s' %
+        self.logger.info('Adding both the projects to the FIP pool %s' %
                          (fip_pool_name))
-        project_obj = fip_fixture.assoc_project(projects[0])
-
+        for project in projects:
+            project_obj = fip_fixture.assoc_project(project)
         self.logger.info(
             'Allocating FIP to VM %s in project %s from VN %s in project %s ' %
             (vm2_fixture.vm_name, projects[1], vn_names[0], projects[0]))
@@ -1923,7 +1923,8 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
         # Removing further projects from floating IP pool. For cleanup
         self.logger.info('Removing project %s from FIP pool %s' %
                          (projects[0], fip_pool_name))
-        project_obj = fip_fixture.deassoc_project(projects[0])
+        for project in projects:
+            project_obj = fip_fixture.deassoc_project(project)
 
         if not result:
             self.logger.error(
