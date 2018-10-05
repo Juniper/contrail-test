@@ -27,27 +27,84 @@ from common.fabric_utils import FabricUtils
 from lif_fixture import LogicalInterfaceFixture
 from bms_fixture import BMSFixture
 from vm_test import VMFixture
+from tcutils.util import Singleton
 
+class FabricSingleton(FabricUtils):
+    __metaclass__ = Singleton
+    def __init__(self, connections):
+        super(FabricSingleton, self).__init__(connections)
+        self.invoked = False
+
+    def create_fabric(self):
+        self.invoked = True
+        fabric_dict = self.inputs.fabrics[0]
+        self.fabric, self.devices, self.interfaces = \
+            self.onboard_existing_fabric(fabric_dict, cleanup=False)
+        assert self.interfaces, 'Failed to onboard existing fabric %s'%fabric_dict
+        self.assign_roles(self.fabric, self.devices)
+
+    def cleanup_fabric(self):
+        del self.__class__._instances[self.__class__]
+        if self.invoked and getattr(self, 'fabric', None):
+            super(FabricSingleton, self).cleanup_fabric(self.fabric,
+                self.devices, self.interfaces)
 
 class BaseFabricTest(BaseNeutronTest, FabricUtils):
-
     @classmethod
     def setUpClass(cls):
         super(BaseFabricTest, cls).setUpClass()
         cls.vnc_h = cls.connections.orch.vnc_h
-        cls.interfaces = {'physical': [], 'logical': []}
-        cls.bms = dict()
+        cls.bms = dict(); cls.spines = list(); cls.leafs = list()
+        cls.default_sg = cls.get_default_sg()
+        cls.allow_default_sg_to_allow_all_on_project(cls.inputs.project_name)
     # end setUpClass
 
-    def create_lif(self, pif_fixture, unit=0, vlan_id=None, interface_type=None):
-        lif_name = pif_fixture.name + '.' + str(unit)
-        lif = self.useFixture(LogicalInterfaceFixture(name=lif_name,
-                              pif_fqname=pif_fixture.fq_name,
-                              connections=self.connections,
-                              vlan_id=vlan_id,
-                              interface_type=interface_type))
-        self.interfaces['logical'].append(lif)
-        return lif
+    def setUp(self):
+        super(BaseFabricTest, self).setUp()
+        obj = FabricSingleton(self.connections)
+        if not obj.invoked:
+            obj.create_fabric()
+        assert obj.fabric and obj.devices and obj.interfaces, "Onboarding fabric failed"
+        self.fabric = obj.fabric
+        self.devices = obj.devices
+        self.interfaces = obj.interfaces
+        for device in self.devices:
+            role = self.get_role_from_inputs(device.name)
+            if role == 'spine':
+                self.spines.append(device)
+            elif role == 'leaf':
+                self.leafs.append(device)
+
+    def is_test_applicable(self):
+        if not self.inputs.fabrics or not self.inputs.physical_routers_data \
+           or not self.inputs.bms_data:
+            return (False, 'skipping not a fabric environment')
+        return (True, None)
+
+    @classmethod
+    def tearDownClass(cls):
+        obj = FabricSingleton(cls.connections)
+        try:
+            obj.cleanup_fabric()
+        finally:
+            super(BaseFabricTest, cls).tearDownClass()
+
+    def create_lif(self, bms_name, vlan_id=None):
+        bms_dict = self.inputs.bms_data[bms_name]
+        lif_fixtures = []
+        for interface in bms_dict['interfaces']:
+            tor = interface['tor']
+            tor_port = interface['tor_port']
+            lif = tor_port+'.'+str(vlan_id)
+            pif_fqname = ['default-global-system-config', tor,
+                          tor_port.replace(':', '__')]
+            lif_fixtures.append(self.useFixture(
+                LogicalInterfaceFixture(name=lif_name,
+                                        pif_fqname=pif_fqname,
+                                        connections=self.connections,
+                                        vlan_id=vlan_id)))
+        self.interfaces['logical'].extend(lif_fixtures)
+        return lif_fixtures
 
     def _my_ip(self, fixture):
         if type(fixture) == VMFixture:
@@ -63,6 +120,40 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
             for ip in list_of_ips - set([self._my_ip(fixture)]):
                 fixture.clear_arp()
                 assert fixture.ping_with_certainty(ip, expectation=expectation)
+
+    def clear_arps(self, bms_fixtures):
+        for bms_fixture in bms_fixtures:
+            bms_fixture.clear_arp(all_entries=True)
+    # end clear_arps
+
+    def validate_arp(self, bms_fixture, ip_address=None,
+                     mac_address=None, expected_mac=None,
+                     expected_ip=None, expectation=True):
+        ''' Method to validate IP/MAC
+            Given a IP and expected MAC of the IP,
+            or given a MAC and expected IP, this method validates it
+            against the arp table in the BMS and returns True/False
+        '''
+        (ip, mac) = bms_fixture.get_arp_entry(ip_address=ip_address,
+                                              mac_address=mac_address)
+        search_term = ip_address or mac_address
+        if expected_mac :
+            result = False
+            if expected_mac == mac:
+                result = True
+            assert result == expectation, (
+                'Validating Arp entry with expectation %s, Failed' % (
+                    expectation))
+        if expected_ip :
+            result = False
+            if expected_ip == ip:
+                result = True
+            assert result == expectation, (
+                'Validating Arp entry with expectation %s, Failed' % (
+                    expectation))
+        self.logger.info('BMS %s:ARP check using %s : Got (%s, %s)' % (
+            bms_fixture.name, search_term, ip, mac))
+    # end validate_arp
 
 class BaseEvpnType5Test(BaseFabricTest):
 
