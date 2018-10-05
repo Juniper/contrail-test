@@ -244,6 +244,10 @@ class VMFixture(fixtures.Fixture):
             self.image_name)
 
     @property
+    def name(self):
+        return self.vm_name
+
+    @property
     def uuid(self):
         return self.get_uuid()
 

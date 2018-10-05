@@ -43,6 +43,7 @@ class SecurityGroupFixture(ContrailFixture):
             self.webui = WebuiTest(self.connections, self.inputs)
 
     def read(self):
+        self.secgrp_id = self.secgrp_id or self.get_sg_id()
         if self.secgrp_id:
             obj = self.orch.get_security_group(self.secgrp_id)
             self.secgrp_fq_name = obj.get_fq_name()
