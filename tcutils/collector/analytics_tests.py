@@ -540,7 +540,7 @@ class AnalyticsVerification(fixtures.Fixture):
             peers = []
             collector = self.get_collector_of_gen(
                 self.inputs.collector_ips[0], compute_host, 'contrail-vrouter-agent', 'Compute')
-            collector_ip = self.inputs.host_data[collector]['host_ip']
+            collector_ip = self.inputs.get_service_ip(collector, 'analytics')
             self.ops_compute_obj = self.ops_inspect[
                 collector_ip].get_ops_vrouter(vrouter=compute_host)
             xmpp_peer_list = self.ops_compute_obj.get_attr(
@@ -578,7 +578,7 @@ class AnalyticsVerification(fixtures.Fixture):
             return False
         collector = self.get_collector_of_gen(
             self.inputs.collector_ips[0], vrouter, 'contrail-vrouter-agent', 'Compute')
-        collector_ip=self.inputs.get_host_ip(name=collector)
+        collector_ip = self.inputs.get_service_ip(collector, 'analytics') 
         self.vrouter_ops_obj = self.ops_inspect[
             collector_ip].get_ops_vrouter(vrouter=vrouter)
         # Verifying vm in vrouter uve
@@ -641,7 +641,7 @@ class AnalyticsVerification(fixtures.Fixture):
             return False
         collector = self.get_collector_of_gen(
             self.inputs.collector_ips[0], vrouter, 'contrail-vrouter-agent', 'Compute')
-        collector_ip=self.inputs.get_host_ip(name=collector)
+        collector_ip = self.inputs.get_service_ip(collector, 'analytics') 
         self.vrouter_ops_obj = self.ops_inspect[
             collector_ip].get_ops_vrouter(vrouter=vrouter)
         # Verifying vm in vrouter uve
@@ -698,7 +698,7 @@ class AnalyticsVerification(fixtures.Fixture):
         '''flowType=active_flows,aged_flows,total_flows'''
         collector = self.get_collector_of_gen(
             self.inputs.collector_ips[0], vrouter, 'contrail-vrouter-agent', 'Compute')
-        collector_ip = self.inputs.host_data[collector]['host_ip']
+        collector_ip = self.inputs.get_service_ip(collector, 'analytics')
         self.vrouter_ops_obj = self.ops_inspect[
             collector_ip].get_ops_vrouter(vrouter=vrouter)
         return self.vrouter_ops_obj.get_attr('Stats', 'flow_rate')['active_flows']
@@ -717,7 +717,7 @@ class AnalyticsVerification(fixtures.Fixture):
         for compute_host in self.compute_hosts:
             collector = self.get_collector_of_gen(
                 self.inputs.collector_ips[0], compute_host, 'contrail-vrouter-agent', 'Compute')
-            collector_ip = self.inputs.host_data[collector]['host_ip']
+            collector_ip = self.inputs.get_service_ip(collector, 'analytics') 
             self.vrouter_ops_obj = self.ops_inspect[
                 collector_ip].get_ops_vrouter(vrouter=compute_host)
             if self.vrouter_ops_obj:
@@ -735,7 +735,7 @@ class AnalyticsVerification(fixtures.Fixture):
         for compute_host in self.compute_hosts:
             collector = self.get_collector_of_gen(
                 self.inputs.collector_ips[0], compute_host, 'contrail-vrouter-agent', 'Compute')
-            collector_ip = self.inputs.host_data[collector]['host_ip']
+            collector_ip = self.inputs.get_service_ip(collector, 'analytics')
             self.vrouter_ops_obj = self.ops_inspect[
                 collector_ip].get_ops_vrouter(vrouter=compute_host)
             out = self.vrouter_ops_obj.get_attr('Stats', 'drop_stats')
@@ -769,7 +769,7 @@ class AnalyticsVerification(fixtures.Fixture):
         '''
         collector = self.get_collector_of_gen(
             self.inputs.collector_ips[0], vrouter, 'contrail-vrouter-agent', 'Compute')
-        collector_ip = self.inputs.host_data[collector]['host_ip']
+        collector_ip = self.inputs.get_service_ip(collector, 'analytics')
         self.vrouter_ops_obj = self.ops_inspect[
             collector_ip].get_ops_vrouter(vrouter=vrouter)
         # self.vrouter_ops_obj=self.ops_inspect.get_ops_vrouter(vrouter=vrouter)
@@ -795,7 +795,7 @@ class AnalyticsVerification(fixtures.Fixture):
             self.logger.info("Active xmpp peer in %s vrouter uve is %s" %
                              (agent, act_xmpp_uve))
             # self.inputs.host_data['nodea19']['host_ip']
-            agent_ip = self.inputs.host_data[agent]['host_ip']
+            agent_ip = self.inputs.get_service_ip(agent, 'vrouter')
             inspect_h = self.agent_inspect[agent_ip]
             xmpp_peer_from_agent_inspect = inspect_h.get_vna_xmpp_connection_status(
             )
