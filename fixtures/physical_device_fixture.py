@@ -95,6 +95,9 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
             csns.append(csn['to'][-1])
         self.csn = csns
 
+    def get_uuid(self):
+        return self.uuid
+
     def create_physical_device(self):
         if self.inputs.is_gui_based_config():
             self.webui.create_physical_router(self)
