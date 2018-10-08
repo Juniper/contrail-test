@@ -99,7 +99,14 @@ class TestEvpnType5VxLANRoutingBasic(BaseEvpnType5Test, VerifyEVPNType5):
         self.logger.info("Traffic Tx-Pkts: %d  Rx-Pkts: %d" % (traffic_result[0],traffic_result[1]))
         assert traffic_result[0] == traffic_result[1]
 
-
+    def is_test_applicable(self):
+        result, msg = super(TestEvpnType5VxLANRoutingBasic, self).is_test_applicable()
+        if result:
+            msg = 'No spines in the provided fabric topology'
+            for device in self.inputs.physical_routers_data.iterkeys():
+                if self.get_role_from_inputs(device) == 'spine':
+                    return (True, None)
+        return False, msg
 
     @preposttest_wrapper
     def test_evpn_type_5_vxlan_traffic_between_vn(self):
@@ -113,17 +120,8 @@ class TestEvpnType5VxLANRoutingBasic(BaseEvpnType5Test, VerifyEVPNType5):
             Verify traffic between accross Virtual Networks
 
         '''
-        # Fabric onboarding...
-        spine_router_uuids = list()
-        self.default_sg = self.get_default_sg()
-        fabric_dict = self.inputs.fabrics[0]
-        fabric, devices, interfaces = self.onboard_existing_fabric(fabric_dict, name='evpn_type5_fabric')
-        assert interfaces, 'Failed to onboard existing fabric %s'%fabric_dict
-
-        self.assign_roles(fabric, devices)
-
         self.logger.info("Deleting Auto LR ...")
-        fabric_name = fabric.get_name()
+        fabric_name = self.fabric.get_name()
         self.delete_auto_lr(fabric_name=fabric_name)
 
         self.logger.info("Sleeping for 60 secs..after auto LR deletion...")
@@ -134,14 +132,9 @@ class TestEvpnType5VxLANRoutingBasic(BaseEvpnType5Test, VerifyEVPNType5):
         lr1_fix.add_interface(bms_vn_fixture.vn_id)
         vn1_fixture = self.setup_fixtures['vn_fixtures']['vn1']
         vn2_fixture = self.setup_fixtures['vn_fixtures']['vn2']
-        for device in devices:
-            self.logger.info("Device Roles: %s" % device.get_role())
-            if self.get_role_from_inputs(device.name) == 'spine':
-                spine_router_uuids.append(device.get_uuid())
 
-        assert spine_router_uuids, "NOT Able to find Spine Router UUID..Please check fabric phy device fixtures"
-        for spine_router_uuid in spine_router_uuids:
-            self.setup_fixtures['lr_fixtures']['lr1'].add_physical_router(spine_router_uuid) 
+        for spine in self.spines:
+            self.setup_fixtures['lr_fixtures']['lr1'].add_physical_router(spine.uuid)
         self.logger.debug("Sleeping for 60 secs..after extending LR to Physical Router ...")
         time.sleep(60)
 
@@ -154,8 +147,7 @@ class TestEvpnType5VxLANRoutingBasic(BaseEvpnType5Test, VerifyEVPNType5):
                 for each_vn in self.vm[each_vm]['vn']:
                     if each_vn in self.lrs[each_lr]['vn_list']:
                         self.lrs[each_lr]['node_ip_list'].add(vm_fix.vm_node_ip)
-        
-        #import pdb; pdb.set_trace()
+
         # verify on setup
         for each_lr in self.setup_fixtures['lr_fixtures']:
             lr_fix = self.setup_fixtures['lr_fixtures'][each_lr] 
@@ -178,9 +170,9 @@ class TestEvpnType5VxLANRoutingBasic(BaseEvpnType5Test, VerifyEVPNType5):
         self.logger.info("Traffic Tx-Pkts: %d  Rx-Pkts: %d" % (traffic_result[0],traffic_result[1]))
         assert traffic_result[0] == traffic_result[1], "Traffic between VN-3 and VN-4 on Logical Router: lr2 Failed"
 
-        #bms_mac=self.inputs.bms_data[bms]['interfaces'][0]['host_mac'],
+        # ToDo: Revisit static ip scenario.
+        # For now all the BMS devices will be configured with the same static ip
         bms_fixtures = []
-
         for bms in self.inputs.bms_data.keys():
             bms_fixtures.append(self.create_existing_bms(bms_name=bms,
                                  vn_fixture=bms_vn_fixture, 
@@ -205,5 +197,3 @@ class TestEvpnType5VxLANRoutingBasic(BaseEvpnType5Test, VerifyEVPNType5):
         for bms_fix in bms_fixtures:
             assert bms_fix.ping_with_certainty(vm11_ip), "Traffic from BMS to VM-11 Failed"
             assert bms_fix.ping_with_certainty(vm21_ip), "Traffic from BMS to VM-21 Failed"
-
-

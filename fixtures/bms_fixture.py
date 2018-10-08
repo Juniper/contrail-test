@@ -81,14 +81,14 @@ class BMSFixture(fixtures.Fixture):
         if not self.bms_mac:
             self.bms_mac = self.port_fixture.mac_address
 
-    def associate_lif(self):
-        for lif_fixture in self.lif_fixtures:
+    def associate_lif(self, lifs=None):
+        for lif_fixture in lifs or self.lif_fixtures:
             lif_fixture.add_virtual_machine_interface(self.port_fixture.uuid)
 
-    def disassociate_lif(self):
-        for lif_fixture in self.lif_fixtures:
+    def disassociate_lif(self, lifs=None):
+        for lif_fixture in lifs or self.lif_fixtures:
             lif_fixture.delete_virtual_machine_interface(
-            self.port_fixture.uuid)
+                self.port_fixture.uuid)
 
     def run(self, cmd, **kwargs):
         output = run_cmd_on_server(cmd, self.mgmt_ip,
@@ -230,7 +230,7 @@ class BMSFixture(fixtures.Fixture):
         return info
     # end get_interface_info
 
-    @retry(delay=5, tries=5)
+    @retry(delay=5, tries=10)
     def run_dhclient(self, timeout=60):
         output = self.run_namespace('timeout %s dhclient -v %s'%(
                               timeout, self.mvlanintf))

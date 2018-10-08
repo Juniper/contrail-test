@@ -101,6 +101,8 @@ class ProjectFixture(fixtures.Fixture):
     def read(self):
         # Incase of kubernetes, read the project from vnc api
         # In other cases, it can be got from self.auth
+        if not getattr(self, '_cleanups', None):
+            self._clear_cleanups()
         if self.auth:
             self.uuid = self.auth.get_project_id(self.project_name,
                                                  self.domain_id)

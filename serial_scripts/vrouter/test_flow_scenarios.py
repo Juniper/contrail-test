@@ -568,7 +568,7 @@ send(a, count=10000, inter=0, iface='eth0')
         #status.wait_till_contrail_cluster_stable(compute_ips)
 
         # Now validate that later pings between vms work
-        self.do_ping_test(vm1_fixture, vm1_fixture.vm_ip, vm2_fixture.vm_ip)
+        self.do_ping_test(vm1_fixture, vm2_fixture.vm_ip)
     # end test_with_fuzz_bug_1504710
 
     @preposttest_wrapper

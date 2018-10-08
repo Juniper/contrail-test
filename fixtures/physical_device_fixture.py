@@ -79,6 +79,8 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
     # end _get_ip_fabric_ri_obj
 
     def read(self):
+        if not getattr(self, '_cleanups', None):
+            self._clear_cleanups()
         obj = self.vnc_h.read_physical_router(self.name)
         self.uuid = obj.uuid
         self.mgmt_ip = obj.physical_router_management_ip
