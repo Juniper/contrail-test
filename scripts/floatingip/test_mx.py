@@ -330,7 +330,8 @@ class TestSanity_MX(base.FloatingIpBaseTest):
 
         self.logger.info(
             'Testing HTTP...Trying to access www-int.juniper.net')
-        run_cmd = "wget http://www-int.juniper.net"
+        run_cmd = "wget https://core.juniper.net/home/"
+
         vm1_fixture.run_cmd_on_vm(cmds=[run_cmd])
         output = vm1_fixture.return_output_values_list[0]
         if 'saved' not in output:
@@ -375,7 +376,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
     def test_fip_with_vm_in_2_vns(self):
         ''' Test to validate that awhen  VM is associated two VN and and diffrent floating IP allocated to them.
         '''
-        fip_pool_name = self.inputs.fip_pool_name
+        fip_pool_name = 'some_pool1'
         fip_subnets = [self.inputs.fip_pool]
         fip_pool_internal = 'some_pool2'
         fvn_name = self.inputs.public_vn
@@ -563,7 +564,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         flow_rec1_result = False
         flow_rec1_direction = False
         flow_rec1_nat = False
-        for iter in range(25):
+        for iter in range(10):
             self.logger.debug('%%%%%%%% Iteration %s %%%%%%%%%%' % iter)
             flow_rec1 = None
             flow_rec1 = inspect_h1.get_vna_fetchallflowrecords()
@@ -594,6 +595,11 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         self.logger.info(
             'Checking connectivity outside VNS cluster through FIP')
         self.logger.info("Now trying to ping %s" % (self.inputs.public_host))
+
+        cmd = 'ifmetric eth1 200'
+        vm1_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=True, timeout=30)
+        time.sleep(40)
+
         if not vm1_fixture.ping_with_certainty(self.inputs.public_host):
             result = result and False
 
@@ -601,13 +607,13 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         flow_rec2_result = False
         flow_rec2_direction = False
         flow_rec2_nat = False
-        for iter in range(25):
+        for iter in range(10):
             self.logger.debug('%%%%%%%% Iteration %s %%%%%%%%%%' % iter)
             flow_rec2 = None
             flow_rec2 = inspect_h1.get_vna_fetchallflowrecords()
             for rec in flow_rec2:
                 if ((rec['sip'] == list_of_ips[0]) and (
-                        rec['dip'] == '10.206.255.2') and (rec['protocol'] == '1')):
+                        rec['dip'] == self.inputs.public_host) and (rec['protocol'] == '1')):
                     flow_rec2_result = True
                     self.logger.info('Verifying NAT in flow records')
                     if rec['nat'] == 'enabled':
