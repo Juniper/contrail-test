@@ -160,8 +160,8 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
             self.inputs.restart_service('contrail-vrouter', [compute_ip],
                                         container='agent')
         sleep(10)
-        assert fvn1_vm1_fixture.verify_on_setup()
-        assert fvn2_vm1_fixture.verify_on_setup()
+        assert fvn1_vm1_fixture.wait_till_vm_is_up()
+        assert fvn2_vm1_fixture.wait_till_vm_is_up()
         if not fvn2_vm1_fixture.ping_with_certainty(fip_fixture2.fip[fip_id2]):
             result = result and False
         if not fvn1_vm1_fixture.ping_with_certainty(fip_fixture1.fip[fip_id1]):
@@ -172,8 +172,8 @@ class FloatingipTestSanity_restart(base.FloatingIpBaseTest):
             self.inputs.restart_service('contrail-control', [bgp_ip],
                                         container='control')
         sleep(10)
-        assert fvn1_vm1_fixture.verify_on_setup()
-        assert fvn2_vm1_fixture.verify_on_setup()
+        assert fvn1_vm1_fixture.wait_till_vm_is_up()
+        assert fvn2_vm1_fixture.wait_till_vm_is_up()
         if not fvn2_vm1_fixture.ping_with_certainty(fip_fixture2.fip[fip_id2]):
             result = result and False
         if not fvn1_vm1_fixture.ping_with_certainty(fip_fixture1.fip[fip_id1]):
