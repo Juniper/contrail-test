@@ -47,18 +47,16 @@ class TestECMPMultipleSC(GenericTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMP
                 rom vm1.
         Maintainer : ganeshahv@juniper.net
         """
-        vn_obj_list = []
-        vm_list = []
-        for i in range(1, 6):
+        for i in range(1, 3):
             vn1_subnets = '10.%s.1.0/24' % i
             vn1_subnet_list= [vn1_subnets]
             vn2_subnets = '20.%s.1.0/24' % i
             vn2_subnet_list= [vn2_subnets]
-            ret_dict = self.verify_svc_chain(max_inst=3,
+            ret_dict = self.verify_svc_chain(max_inst=2,
                                              left_vn_subnets=vn1_subnet_list,
                                              right_vn_subnets=vn2_subnet_list,
                                              service_mode='in-network',
-                                             create_vms=True)
+                                             create_svms=True)
             vm1_fixture = ret_dict['left_vm_fixture']
             vm2_fixture = ret_dict['right_vm_fixture']
             dst_vm_list= [vm2_fixture]
