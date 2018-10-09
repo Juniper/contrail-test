@@ -358,8 +358,8 @@ class TestInputs(object):
                 self.webui_control_ips.append(service_ip)
             if 'analytics' in roles:
                 service_ip = self.get_service_ip(host_data['host_ip'], 'analytics')
-                self.collector_ip = host_data['host_ip']
-                self.collector_ips.append(host_data['host_ip'])
+                self.collector_ip = service_ip
+                self.collector_ips.append(service_ip)
                 self.collector_control_ips.append(service_ip)
                 self.collector_names.append(hostname)
             if 'analytics_database' in roles:
