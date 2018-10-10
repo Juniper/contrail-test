@@ -30,7 +30,8 @@ class HABaseTest(test_v1.BaseTestCase_v1):
         cls.nova_h = cls.connections.nova_h
         cls.orch = cls.connections.orch
         cls.vnc_lib_fixture = cls.connections.vnc_lib_fixture
-        cls.ipmi_list = cls.inputs.hosts_ipmi[0]
+        if hasattr(cls.inputs, "hosts_ipmi"): 
+            cls.ipmi_list = cls.inputs.hosts_ipmi[0]
     #end setUpClass
 
     @classmethod
@@ -292,7 +293,7 @@ class HABaseTest(test_v1.BaseTestCase_v1):
 
         return True
 
-    def ha_stop(self):
+    def ha_stop(self, skip_packet_loss_check=False):
         '''
         ha_stop will stop traffic from VM - VM , VM - floating IP,
         and check if there is any drop of traffic during this run.
@@ -317,19 +318,29 @@ class HABaseTest(test_v1.BaseTestCase_v1):
                     recvpkts = self.sender[proto][i].recv
                 if self.fip == 'True' and proto == 'icmp' :
                     recvpkts_fip = self.sender_fip[proto][i].recv
-                print("Sent: %s:  Proto : %s"%(self.sender[proto][i].sent,proto))
+                self.logger.info("Checking for packet drops")
+                self.logger.info("Sent: %s:  Proto : %s"%(self.sender[proto][i].sent,proto))
                 if proto != 'icmp' :
-                    print("Received: %s Proto : %s"%(self.receiver[proto][i].recv,proto))
+                    self.logger.info("Received: %s Proto : %s"%(self.receiver[proto][i].recv,proto))
+                    err_msg = "Sent and received packet mismatch for {} protocol".format(proto)
+                    if not skip_packet_loss_check:
+                        assert abs(self.sender[proto][i].sent - self.receiver[proto][i].recv) < 2, err_msg
                 else:
-                    print("Received: %s Proto : %s"%(self.sender[proto][i].recv,proto))
+                    self.logger.info("Received: %s Proto : %s"%(self.sender[proto][i].recv,proto))
+                    err_msg = "Sent and received packet mismatch for {} protocol".format(proto)
+                    if not skip_packet_loss_check:
+                        assert abs(self.sender[proto][i].sent - self.sender[proto][i].recv) < 2, err_msg
                 if self.fip == 'True' and proto == 'icmp' :
-                    print("Sent FIP : %s:  Proto : %s"%(self.sender_fip[proto][i].sent,proto))
-                    print("Received FIP : %s Proto : %s"%(self.sender_fip[proto][i].recv,proto))
+                    self.logger.info("Sent FIP : %s:  Proto : %s"%(self.sender_fip[proto][i].sent,proto))
+                    self.logger.info("Received FIP : %s Proto : %s"%(self.sender_fip[proto][i].recv,proto))
+                    err_msg = "Sent and received FIP packet mismatch for {} protocol".format(proto)
+                    if not skip_packet_loss_check:
+                        assert abs(self.sender_fip[proto][i].sent - self.sender_fip[proto][i].recv) < 2 , err_msg
 
         return True
 
 
-    def ha_basic_test(self):
+    def ha_basic_test(self, disable_node=False):
         ''' Tests functioning of the setup by spawning 3 VMs. Verifyies
             that the VM are spawned successfully and deletes them.
         '''
@@ -339,7 +350,21 @@ class HABaseTest(test_v1.BaseTestCase_v1):
 
         self.logger.debug("In ha_basic_test.....")
         for i in range(0,vm_cnt):
-            vms.append(self.useFixture(VMFixture(project_name= self.inputs.project_name, connections= self.connections, vn_objs = [ self.vn1_fixture.obj ], vm_name= get_random_name("ha_new_vm") ,image_name='ubuntu-traffic')))
+            if disable_node:
+                vms.append(self.useFixture(VMFixture(
+                    project_name= self.inputs.project_name,
+                    connections= self.connections,
+                    vn_objs = [ self.vn1_fixture.obj ], 
+                    vm_name= get_random_name("ha_new_vm"),
+                    image_name='ubuntu-traffic',
+                    node_name='disable')))
+            else:
+                vms.append(self.useFixture(VMFixture(
+                    project_name= self.inputs.project_name,
+                    connections= self.connections,
+                    vn_objs = [ self.vn1_fixture.obj ], 
+                    vm_name= get_random_name("ha_new_vm"),
+                    image_name='ubuntu-traffic')))
         for i in range(0,vm_cnt):
             assert vms[i].verify_on_setup()
             if self.inputs.orchestrator =='vcenter':
@@ -616,4 +641,299 @@ class HABaseTest(test_v1.BaseTestCase_v1):
 
         return self.ha_stop()
 
+    @retry(delay=5, tries=3)
+    def _is_container_up(self, host_ip, container_name):
 
+        verify_command = "docker ps -f NAME=%s -f status=running 2>/dev/null | grep -v POD" \
+            % (container_name)
+        output = self.inputs.run_cmd_on_server(
+            server_ip=host_ip,
+            issue_cmd=verify_command,
+            username=self.inputs.inputs.username,
+            password=self.inputs.inputs.password,
+            as_sudo=True)
+        if not output or 'Up' not in output:
+            self.logger.warn('Container is not up on host %s'%(host_ip))
+            return False
+        self.logger.info("Container {} is UP after restart on host {}".format(
+            container_name,
+            host_ip))
+        return True
+
+    def node_failure_check(self, host_ips):
+        '''
+        Finds out nodes on which different service containers are running
+        Reboots every node one after the other
+        Verifies data and VM creation during these node failures
+        '''
+        service_list = ['control', 'keystone', 'analytics-zookeeper', 'agent']
+        self.log.info("Find node IPs on which the below mentioned services are running")
+        self.log.info("{}".format(service_list))
+        for service_name in service_list:
+            self.logger.info("Running hard reboot test for nodes running {} service".format(service_name))
+            hosts_list, container_name = self.get_node_ip_list(service_name, host_ips)
+            reboot_cmd = "reboot -f"
+            if not hosts_list[:-1]:
+                self.logger.error("Not enough HA nodes to do node failure test")
+                assert False, "Not enough HA nodes to do node failure test"
+            if not self.ha_start():
+                self.logger.error("Error in ha_start")
+                return False
+            for host_ip in hosts_list:
+                self.logger.info("Restarting the node {} on which service {} is running".format(
+                    host_ip, service_name))
+                self.inputs.run_cmd_on_server(
+                    server_ip=host_ip,
+                    issue_cmd=reboot_cmd,
+                    username=self.inputs.inputs.username,
+                    password=self.inputs.inputs.password,
+                    pty=True,
+                    as_sudo=True)
+                if host_ip in self.inputs.collector_ips:
+                    self.logger.info("Removing {} from self.collector_ips list".format(
+                        host_ip))
+                    self.logger.debug("self.collector_ips: {}".format(self.inputs.collector_ips))
+                    self.inputs.collector_ips.remove(host_ip)
+                    self.logger.debug("self.collector_ips after removal: {}".format(
+                        self.inputs.collector_ips))
+                    collector_ips_modified = True
+                if host_ip in self.inputs.compute_ips:
+                    self.logger.info("Removing {} from self.inputs.compute_ips".format(host_ip))
+                    self.inputs.compute_ips.remove(host_ip)
+                    compute_ips_modified = True
+                self.logger.info("Calling update_inspect_handles")
+                self.connections.update_inspect_handles()
+                self.logger.info("Test VM creation after rebooting {} service".format(
+                    service_name))
+                assert self.ha_basic_test(),"VM creation failed after {} service went down".format(
+                    service_name)
+                self.logger.info("VM creation test PASSED after rebooting {} service".format(
+                    service_name))
+                self.logger.info("Sleeping for 5 seconds before starting the stopped container")
+                time.sleep(5)
+                if collector_ips_modified:
+                    self.logger.info("Appending {} to self.collector_ips list".format(
+                        host_ip))
+                    self.logger.debug("self.collector_ips: {}".format(self.inputs.collector_ips))
+                    self.inputs.collector_ips.append(host_ip)
+                if compute_ips_modified:
+                    self.logger.info("Appending {} to self.compute_ips list".format(
+                        host_ip))
+                    self.logger.debug("self.compute_ips: {}".format(self.inputs.compute_ips))
+                    self.inputs.compute_ips.append(host_ip)
+                self.logger.info("Moving on to next service...")
+            self.logger.info("No more services left")
+
+    def get_node_ip_list(self, service_name, host_ips):
+        hosts_list = [] # List of hosts running the desired service as a container
+        container_found = False
+        container_name = ''
+        for host_ip in host_ips:
+            self.logger.info("Getting list of running containers")
+            cmd = 'docker ps 2>/dev/null | grep -v "/pause\|/usr/bin/pod" | awk \'{print $NF}\''
+            output = self.inputs.run_cmd_on_server(host_ip, cmd, as_sudo=True)
+            if not output:
+                self.logger.info("No running containers found in host {}".format(host_ip))
+                continue
+            containers = [x.strip('\r') for x in output.split('\n')]
+   
+            try: 
+                for name in CONTRAIL_SERVICES_CONTAINER_MAP[service_name]:
+                    container_name_tmp = next((container for container in containers if name in container), None)
+                    if container_name_tmp:
+                        container_found = True
+                        container_name = container_name_tmp
+                        self.logger.info("Found container. Container name: {}".format(container_name))
+                        break
+            except KeyError,e:
+                self.logger.error("""Entry missing in CONTRAIL_SERVICES_CONTAINER_MAP for
+                    service \"{}\"""".format(service_name))
+                assert False,"""Entry missing in CONTRAIL_SERVICES_CONTAINER_MAP for
+                    service \"{}\"""".format(service_name)
+            if not container_name_tmp:
+                self.logger.debug("{} container not running/found in host {}".format(
+                    service_name,
+                    host_ip))
+            else:
+                hosts_list.append(host_ip)
+                self.logger.info("Found the desired container {} in {}".format(
+                    container_name,
+                    host_ip))
+                self.logger.info("Adding {} to hosts list".format(host_ip))
+                self.logger.info("hosts list: {}".format(hosts_list))
+        self.logger.info("Checked all hosts.")
+        assert container_found, "Desired service container {} not found in any of the hosts".format(
+            service_name)
+        self.logger.info("Found container {} in hosts {}".format(
+            container_name,
+            hosts_list))
+
+        return hosts_list, container_name
+
+    def reboot_service(self, service_name, host_ips, stop_service=False, node_failure=False):
+
+        hosts_list, container_name = self.get_node_ip_list(service_name, host_ips)
+        collector_ips_modified = False
+        compute_ips_modified = False
+
+        if stop_service:
+            if 'agent' in service_name:
+                self.logger.info("Stopping nova compute on this node so that \
+                    this node is not selected for VM creation")
+                issue_cmd_stop = 'docker stop %s -t 10; docker stop nova_compute'% (container_name)
+            else:
+                issue_cmd_stop = 'docker stop %s -t 10' % (container_name)
+            
+            self.logger.debug("Issue command: {}".format(issue_cmd_stop))
+            if not hosts_list[:-1]:
+                self.logger.error("Not enough HA nodes to do container STOP test")
+                assert False, "Not enough HA nodes to do container STOP test"
+            if not self.ha_start():
+                self.logger.error("Error in ha_start")
+                return False
+            
+            for host_ip in hosts_list:
+                self.logger.info('Running %s on %s' %(issue_cmd_stop, host_ip))
+                self.inputs.run_cmd_on_server(
+                    server_ip=host_ip,
+                    issue_cmd=issue_cmd_stop,
+                    username=self.inputs.inputs.username,
+                    password=self.inputs.inputs.password,
+                    pty=True,
+                    as_sudo=True)
+                self.addCleanup(self.start_containers ,container_name, [host_ip])
+                if 'agent' in service_name:
+                    self.addCleanup(self.start_containers ,'nova_compute', [host_ip])
+                
+                if service_name == 'agent':
+                    self.logger.info("Sleeping for 90 seconds after stopping nova\
+                        compute so that hypervisor state goes down")
+                    time.sleep(90)
+                if host_ip in self.inputs.collector_ips:
+                    self.logger.info("Removing {} from self.collector_ips list".format(
+                        host_ip))
+                    self.logger.debug("self.collector_ips: {}".format(self.inputs.collector_ips))
+                    self.inputs.collector_ips.remove(host_ip)
+                    self.logger.debug("self.collector_ips after removal: {}".format(
+                        self.inputs.collector_ips))
+                    collector_ips_modified = True
+                if host_ip in self.inputs.compute_ips:
+                    self.logger.info("Removing {} from self.inputs.compute_ips".format(host_ip))
+                    self.inputs.compute_ips.remove(host_ip)
+                    compute_ips_modified = True
+                self.logger.info("Calling update_inspect_handles")
+                self.connections.update_inspect_handles()
+                self.logger.info("Test VM creation after rebooting {} service".format(
+                    service_name))
+                if 'agent' in service_name:
+                    assert self.ha_basic_test(
+                        disable_node=True),"VM creation failed after {} service was restarted".format(
+                        service_name)
+                else:
+                    assert self.ha_basic_test(),"VM creation failed after {} service was restarted".format(
+                        service_name)
+                self.logger.info("VM creation test PASSED after stopping {} service on node {}".format(
+                    service_name, host_ip))
+                self.logger.info("Sleeping for 5 seconds before starting the stopped container")
+                time.sleep(5)
+ 
+                self.logger.info("Starting the container {} after VM and data verification".format(
+                    container_name))
+                if 'agent' in service_name:
+                    issue_cmd_start = 'docker start %s ; docker start nova_compute' % (container_name)
+                else:
+                    issue_cmd_start = 'docker start %s ' % (container_name)
+
+                self.logger.info('Running %s on %s' %(issue_cmd_start, host_ip))
+                self.inputs.run_cmd_on_server(
+                    server_ip=host_ip,
+                    issue_cmd=issue_cmd_start,
+                    username=self.inputs.inputs.username,
+                    password=self.inputs.inputs.password,
+                    pty=True,
+                    as_sudo=True)
+                if collector_ips_modified:
+                    self.logger.info("Appending {} to self.collector_ips list".format(
+                        host_ip))
+                    self.logger.debug("self.collector_ips: {}".format(self.inputs.collector_ips))
+                    self.inputs.collector_ips.append(host_ip)
+                if compute_ips_modified: 
+                    self.logger.info("Appending {} to self.compute_ips list".format(
+                        host_ip))
+                    self.logger.debug("self.compute_ips: {}".format(self.inputs.compute_ips))
+                    self.inputs.compute_ips.append(host_ip)
+                self.logger.info("Sleeping for 60 seconds before restarting the next container")
+                self.logger.info("Waiting for hypervisor state to change to Up")
+                time.sleep(60)
+                assert self._is_container_up(host_ip, container_name), "Service {} is not up \
+                    after stopping and starting".format(service_name)
+                self.logger.info(
+                    "Service {} is up after stopping and starting".format(service_name))
+            if 'agent' in service_name:
+                if not self.ha_stop(skip_packet_loss_check=True):
+                    self.logger.error("Error in ha_stop")
+                    return False
+            else:
+                if not self.ha_stop():
+                    self.logger.error("Error in ha_stop")
+                    return False
+        else:
+            issue_cmd = 'docker restart %s -t 5' % (container_name)
+            if not self.ha_start():
+                self.logger.error("Error in ha_start")
+                return False
+            for host_ip in hosts_list:
+                self.logger.info('Running %s on %s' %(issue_cmd, host_ip))
+                self.inputs.run_cmd_on_server(
+                    server_ip=host_ip,
+                    issue_cmd=issue_cmd,
+                    username=self.inputs.inputs.username,
+                    password=self.inputs.inputs.password,
+                    pty=True,
+                    as_sudo=True)
+
+                assert self._is_container_up(host_ip, container_name), "Service {} is not up \
+                    after restart".format(service_name)
+                self.logger.info("Service {} is up after restart".format(service_name))
+                self.logger.info("Test VM creation after rebooting {} service".format(
+                    service_name))
+                if 'agent' in service_name:
+                    assert self.ha_basic_test(
+                        disable_node=True),"VM creation failed after {} service was restarted".format(
+                        service_name)
+                else:
+                    assert self.ha_basic_test(),"VM creation failed after {} service was restarted".format(
+                        service_name)
+                
+                self.logger.info("VM creation test PASSED after rebooting {} service".format(
+                    service_name))
+                self.logger.info("Sleeping for 10 seconds before restarting the next container")
+                time.sleep(10)
+            self.logger.info("Running HA stop after restarting {} service".format(
+                service_name))
+            if not self.ha_stop():
+                self.logger.error("Error in ha_stop")
+                return False
+
+        self.logger.info("Sleeping for 5 seconds...")
+        time.sleep(5)
+        if not stop_service:
+            self.logger.info("VM creation and data validations passed after service reboot")
+        else:
+            self.logger.info("VM creation and data validations passed after service stop")
+        return True
+
+    def start_containers(self, container_name, hosts_list):
+        self.logger.info("Starting the container {} after VM and data verification".format(
+                    container_name))
+        issue_cmd_start = 'docker start %s ' % (container_name)
+
+        for host_ip in hosts_list:
+            self.logger.info('Running %s on %s' %(issue_cmd_start, host_ip))
+            self.inputs.run_cmd_on_server(
+                server_ip=host_ip,
+                issue_cmd=issue_cmd_start,
+                username=self.inputs.inputs.username,
+                password=self.inputs.inputs.password,
+                pty=True,
+                as_sudo=True)
