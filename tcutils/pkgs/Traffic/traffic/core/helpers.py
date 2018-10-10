@@ -1,12 +1,14 @@
 """Helper module to start/stop traffic.
 """
 import re
+import exceptions
 from time import sleep
 
 from fabric.api import run
 from fabric.operations import put
 from fabric.context_managers import settings, hide
 from tcutils.fabutils import remote_cmd
+from tcutils.util import retry
 
 try:
     # Running from the source repo "test".
@@ -124,17 +126,28 @@ class Sender(Helper):
         if recv:
             self.recv = int(recv.group(2))
 
+    @retry(delay=5, tries=3)
     def stop(self):
         # Stop send; launches the "sendpkts" script in the VM with --stop
         # option
-        result = self.runcmd("sendpkts --name %s --stop" % self.name)
+        try:
+            result = self.runcmd("sendpkts --name %s --stop" % self.name)
+        except exceptions.TypeError:
+            return False
         sent = re.search("(Sent)=([0-9]+)", result)
         if sent:
             self.sent = int(sent.group(2))
+        else:
+            self.logger.error("sent packets count is None. Retrying...")
+            return False
         recv = re.search("(Received)=([0-9]+)", result)
         if recv:
             self.recv = int(recv.group(2))
+        else:
+            self.logger.error("Received packets count is None. Retrying...")
+            return False
         self.log.info("Finished sending traffic with '%s'", self.pktheader)
+        return True
 
 
 class Receiver(Helper):
