@@ -133,9 +133,7 @@ class NovaHelper(object):
         else:
             return self.hosts_list
 
-    def get_zones(self,refresh=False):
-        if refresh:
-            self._zones = None
+    def get_zones(self):
         return self.zones[:]
 
     def _list_hosts(self):
@@ -160,32 +158,6 @@ class NovaHelper(object):
     def get_handle(self):
         return self.obj
     # end get_handle
-
-    def create_agg(self,name,zone):
-        return self.obj.aggregates.create(name,zone)
-
-    def add_host_to_agg(self,agg_id,hosts):
-        for host in hosts:
-            self.obj.aggregates.add_host(agg_id,host)
-        return
-
-    def del_host_from_agg(self,agg_id,hosts):
-        for host in hosts:
-            self.obj.aggregates.remove_host(agg_id,host)
-        return
- 
-    def delete_agg(self,agg_id):
-        return self.obj.aggregates.delete(agg_id)
-
-    @retry(delay=5, tries=20)
-    def check_if_image_active(self, image_id):
-        ''' Check whether the given image id is in 'active' state '''
-        self.logger.debug('Check whether image by uuid %s is active'%image_id)
-        image = self.obj.images.get(image_id)
-        if image.status.lower() == 'active':
-            return (True, image)
-        self.logger.debug('Image %s is not active.'%image.name)
-        return (False, None)
 
     def find_image(self, image_name):
         return self.glance_h.get_image(image_name=image_name)
@@ -223,26 +195,6 @@ class NovaHelper(object):
             lock.release()
         return flavor
     # end get_flavor
-
-    def get_flavor_list(self):
-        flavor = [] 
-        try:
-            flavor = self.obj.flavors.list()
-        except novaException:
-            self.logger.exception('Exception while listing flavors')
-        return flavor
-    # end get_flavor
-
-
-    def delete_flavor(self, name):
-        flavor = None
-        try:
-            flavor = self.obj.flavors.delete(name)
-        except novaException:
-            self.logger.exception('Exception while deleting flavor')
-        return flavor
-    # end get_flavor
-
 
     def get_vm_if_present(self, vm_name=None, project_id=None, vm_id=None):
         try:
@@ -602,7 +554,8 @@ class NovaHelper(object):
         elif vn_ids:
             nics_list = [{'net-id': x} for x in vn_ids]
 
-        zone = zone + ":" + node_name if node_name else zone
+        if zone:
+            zone = zone + ":" + node_name if node_name else zone
         self.obj.servers.create(name=vm_name, image=image,
                                 security_groups=sg_ids,
                                 flavor=flavor, nics=nics_list,
