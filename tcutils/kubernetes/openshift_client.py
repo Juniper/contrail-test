@@ -87,7 +87,7 @@ class Client(api_client.Client):
         returns instance of class V1Namespace
         '''
         body = self.get_template('namespace')
-        if isloation is True:
+        if isolation is True:
             body['metadata']['annotations'] = {'opencontrail.org/isolation': 'true'}
         if ip_fabric_forwarding is True:
             body['metadata']['annotations'] = {'opencontrail.org/ip_fabric_forwarding': 'true'}
