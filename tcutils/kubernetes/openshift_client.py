@@ -60,6 +60,7 @@ class Client(api_client.Client):
         self.network_policy_h = dyn_client.resources.get(api_version='v1', kind='NetworkPolicy')
         self.deployment_h = dyn_client.resources.get(api_version='v1', kind='Deployment')
         self.service_h = dyn_client.resources.get(api_version='v1', kind='Service')
+        self.daemonset_h = dyn_client.resources.get(api_version='v1', kind='DaemonSet')
     # end __init__
 
     def get_template(self, obj_type):
@@ -312,3 +313,17 @@ class Client(api_client.Client):
                        name):
         self.logger.info('Deleting service : %s' % (name))
         return self.service_h.delete(name=name, namespace=namespace) 
+
+    def read_pods_namespace(self, namespace='default'):
+        '''
+        Get all pods in a given namespace
+        '''
+        return self.pod_h.get(namespace=namespace)
+
+    def read_daemonsets(self, namespace=''):
+        '''
+        Returns daemon sets from the mentioned namespace. 
+        '''
+        if namespace:
+            return self.daemonset_h.get()
+        return self.daemonset_h.get(namespace=namespace)
