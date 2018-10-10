@@ -317,14 +317,21 @@ class HABaseTest(test_v1.BaseTestCase_v1):
                     recvpkts = self.sender[proto][i].recv
                 if self.fip == 'True' and proto == 'icmp' :
                     recvpkts_fip = self.sender_fip[proto][i].recv
-                print("Sent: %s:  Proto : %s"%(self.sender[proto][i].sent,proto))
+                self.logger.info("Checking for packet drops")
+                self.logger.info("Sent: %s:  Proto : %s"%(self.sender[proto][i].sent,proto))
                 if proto != 'icmp' :
-                    print("Received: %s Proto : %s"%(self.receiver[proto][i].recv,proto))
+                    self.logger.info("Received: %s Proto : %s"%(self.receiver[proto][i].recv,proto))
+                    err_msg = "Sent and received packet mismatch for {} protocol".format(proto)
+                    assert self.sender[proto][i].sent == self.receiver[proto][i].recv, err_msg
                 else:
-                    print("Received: %s Proto : %s"%(self.sender[proto][i].recv,proto))
+                    self.logger.info("Received: %s Proto : %s"%(self.sender[proto][i].recv,proto))
+                    err_msg = "Sent and received packet mismatch for {} protocol".format(proto)
+                    assert self.sender[proto][i].sent == self.sender[proto][i].recv, err_msg
                 if self.fip == 'True' and proto == 'icmp' :
-                    print("Sent FIP : %s:  Proto : %s"%(self.sender_fip[proto][i].sent,proto))
-                    print("Received FIP : %s Proto : %s"%(self.sender_fip[proto][i].recv,proto))
+                    self.logger.info("Sent FIP : %s:  Proto : %s"%(self.sender_fip[proto][i].sent,proto))
+                    self.logger.info("Received FIP : %s Proto : %s"%(self.sender_fip[proto][i].recv,proto))
+                    err_msg = "Sent and received FIP packet mismatch for {} protocol".format(proto)
+                    assert self.sender_fip[proto][i].sent == self.sender_fip[proto][i].recv , err_msg
 
         return True
 
@@ -616,4 +623,145 @@ class HABaseTest(test_v1.BaseTestCase_v1):
 
         return self.ha_stop()
 
+    @retry(delay=5, tries=3)
+    def _is_container_up(self, host_ip, container_name):
+
+        verify_command = "docker ps -f NAME=%s -f status=running 2>/dev/null | grep -v POD" \
+            % (container_name)
+        output = self.inputs.run_cmd_on_server(
+            server_ip=host_ip,
+            issue_cmd=verify_command,
+            username=self.inputs.inputs.username,
+            password=self.inputs.inputs.password,
+            as_sudo=True)
+        if not output or 'Up' not in output:
+            self.logger.warn('Container is not up on host %s'%(host_ip))
+            return False
+        self.logger.info("Container {} is UP after restart on host {}".format(
+            container_name,
+            host_ip))
+        return True
+
+    def reboot_service(self, service_name, host_ips, stop_service=False):
+ 
+        hosts_list = [] # List of hosts running the desired service as a container
+
+        for host_ip in host_ips:
+            self.logger.info("Getting list of running containers")
+            container_found = False
+            cmd = 'docker ps 2>/dev/null | grep -v "/pause\|/usr/bin/pod" | awk \'{print $NF}\''
+            output = self.inputs.run_cmd_on_server(host_ip, cmd, as_sudo=True)
+           
+            if not output:
+                self.logger.info("No running containers found in host {}".format(host_ip))
+                return
+            containers = [x.strip('\r') for x in output.split('\n')]
+   
+            try: 
+                for name in CONTRAIL_SERVICES_CONTAINER_MAP[service_name]:
+                    container_name = next((container for container in containers if name in container), None)
+                    if container_name:
+                        container_found = True
+                        self.log.info("Found container. Container name: {}".format(container_name))
+                        break
+            except KeyError,e:
+                self.logger.error("""Entry missing in CONTRAIL_SERVICES_CONTAINER_MAP for
+                    service \"{}\"""".format(service_name))
+                assert False,"""Entry missing in CONTRAIL_SERVICES_CONTAINER_MAP for
+                    service \"{}\"""".format(service_name)
+            if not container_name:
+                self.logger.debug("{} container not running/found in host {}".format(
+                    service_name,
+                    host_ip))
+            else:
+                hosts_list.append(host_ip)
+                self.logger.info("Found the desired container {} in {}".format(
+                    container_name,
+                    host_ip))
+                self.logger.debug("Adding {} to hosts list".format(host_ip))
+                self.logger.debug("hosts list: {}".format(hosts_list))
+            if container_found:
+                break
+        if stop_service:
+            issue_cmd = 'docker stop %s -t 10' % (container_name)
+            if not hosts_list[:-1]:
+                self.log.error("Not enough HA nodes to do container STOP test")
+                assert False, "Not enough HA nodes to do container STOP test"
+            if not self.ha_start():
+                self.log.error("Error in ha_start")
+                return False
+            for host_ip in hosts_list[:-1]:
+                self.logger.info('Running %s on %s' %(issue_cmd, host_ip))
+                self.inputs.run_cmd_on_server(
+                    server_ip=host_ip,
+                    issue_cmd=issue_cmd,
+                    username=self.inputs.inputs.username,
+                    password=self.inputs.inputs.password,
+                    pty=True,
+                    as_sudo=True)
+                self.logger.info("Test VM creation after rebooting {} service".format(
+                    service_name))
+                assert self.ha_basic_test(),"VM creation failed after {} service went down".format(
+                    service_name)
+                self.logger.info("VM creation test PASSED after rebooting {} service".format(
+                    service_name))
+ 
+            self.logger.info("Starting the container {} after VM and data verification".format(
+                container_name))
+            issue_cmd = 'docker start %s ' % (container_name)
+
+            assert self._is_container_up(host_ip, container_name), "Service {} is not up \
+                    after stopping and starting".format(service_name)
+            self.logger.info("Service {} is up after stopping and starting".format(service_name))
+            for host_ip in hosts_list:
+                self.logger.info('Running %s on %s' %(issue_cmd, host_ip))
+                self.inputs.run_cmd_on_server(
+                    server_ip=host_ip,
+                    issue_cmd=issue_cmd,
+                    username=self.inputs.inputs.username,
+                    password=self.inputs.inputs.password,
+                    pty=True,
+                    as_sudo=True)
+            if not self.ha_stop():
+                self.logger.error("Error in ha_stop")
+                return False
+
+        else:
+            issue_cmd = 'docker restart %s -t 5' % (container_name)
+            #Enable the below line after moving to actual HA setup
+            if not self.ha_start():
+                self.logger.error("Error in ha_start")
+                return False
+            for host_ip in hosts_list[:-1]:
+                self.logger.info('Running %s on %s' %(issue_cmd, host_ip))
+                self.inputs.run_cmd_on_server(
+                    server_ip=host_ip,
+                    issue_cmd=issue_cmd,
+                    username=self.inputs.inputs.username,
+                    password=self.inputs.inputs.password,
+                    pty=True,
+                    as_sudo=True)
+
+                assert self._is_container_up(host_ip, container_name), "Service {} is not up \
+                    after restart".format(service_name)
+                self.logger.info("Service {} is up after restart".format(service_name))
+                self.logger.info("Test VM creation after rebooting {} service".format(
+                    service_name))
+                assert self.ha_basic_test(),"VM creation failed after {} service was restarted".format(
+                    service_name)
+                self.logger.info("VM creation test PASSED after rebooting {} service".format(
+                    service_name))
+                self.logger.info("Running HA stop after restarting {} service".format(
+                    service_name))
+                if not self.ha_stop():
+                    self.logger.error("Error in ha_stop")
+                    return False
+
+        self.logger.info("Sleeping for 5 seconds...")
+        time.sleep(5)
+        if not stop_service:
+            self.logger.info("VM creation and data validations passed after service reboot")
+        else:
+            self.logger.info("VM creation and data validations passed after service stop")
+        return True
 
