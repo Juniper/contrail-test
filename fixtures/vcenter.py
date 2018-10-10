@@ -320,7 +320,7 @@ class VcenterOrchestrator(Orchestrator):
             pass
         return self._nfs_ds.name, image + '/' + vmx
 
-    def _load_and_register_template(self, image):
+    def load_and_register_template(self, image):
         host_name, cluster_name  = next(self._computes)
         host = self._find_obj(self._find_obj(self._dc, 'cluster', {'name' : cluster_name}),
                                     'host', {'name' : host_name})
