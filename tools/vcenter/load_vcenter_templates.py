@@ -33,7 +33,13 @@ def main():
                                            init_obj.inputs.vcenter_dc,
                                            logger = log 
                                            )
-        vcenter_orch._nfs_ds.delete_datastore()
+        images = ['ubuntu', 'ubuntu-traffic', 'vcenter_tiny_vm', 'tiny_nat_fw',
+                  'tiny_in_net']
+        for image in images:
+            try:
+                vcenter_orch.load_and_register_template(image)
+            except:
+                log.info('Not able to load template %s' %image)
 
 
 if __name__ == "__main__":

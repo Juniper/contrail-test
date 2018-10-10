@@ -381,11 +381,25 @@ function parse_results {
     python tools/parse_result.py $result_xml $REPORT_DETAILS_FILE
     python tools/parse_result.py $serial_result_xml $REPORT_DETAILS_FILE
 }
-    
+
+function load_vcenter_templates {
+(
+export PYTHONPATH=$PATH:$PWD:$PWD/fixtures;
+python tools/vcenter/load_vcenter_templates.py $TEST_CONFIG_FILE
+)
+}
+
+function create_vcenter_nas_datastore {
+( 
+export PYTHONPATH=$PATH:$PWD:$PWD/fixtures;
+python tools/vcenter/manage_vcenter_datastore.py $TEST_CONFIG_FILE create
+)
+}
+ 
 function delete_vcenter_nas_datastore {
 ( 
 export PYTHONPATH=$PATH:$PWD:$PWD/fixtures;
-python tools/vcenter/delete_vcenter_datastore.py $TEST_CONFIG_FILE
+python tools/vcenter/manage_vcenter_datastore.py $TEST_CONFIG_FILE delete
 )
 }
 
@@ -406,6 +420,10 @@ fi
 check_test_discovery
 
 setup_physical_routers || die "BGP peering is not up."
+#To delete nfs datastore in case of
+create_vcenter_nas_datastore
+#load vcenter templates
+load_vcenter_templates
 
 if [[ -n $JENKINS_TRIGGERED && $JENKINS_TRIGGERED -eq 1 ]]; then
     export REPORT_DETAILS_FILE=report_details_${SCRIPT_TS}_$(date +"%Y_%m_%d_%H_%M_%S").ini
