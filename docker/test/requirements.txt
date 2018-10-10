@@ -1,2 +1,2 @@
 backports.ssl-match-hostname==3.5.0.1
-openshift==0.6.2
+openshift==0.7.2
