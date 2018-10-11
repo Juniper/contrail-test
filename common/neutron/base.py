@@ -187,18 +187,18 @@ class BaseNeutronTest(GenericTestBase):
 
     # end create_external_network
 
+    @classmethod
     def allow_default_sg_to_allow_all_on_project(self, project_name):
 
-        self.project_fixture = self.useFixture(
-            ProjectFixture(
+        self.project_fixture = ProjectFixture(
                 project_name=self.inputs.project_name,
-                connections=self.connections))
+                connections=self.connections)
+        self.project_fixture.read()
         self.logger.info(
             'Default SG to be edited for allow all on project: %s' %
             project_name)
         self.project_fixture.set_sec_group_for_allow_all(
             project_name, 'default')
-
     # end allow_default_sg_to_allow_all_on_project
 
     def verify_snat(self, vm_fixture, expectation=True, timeout=200):

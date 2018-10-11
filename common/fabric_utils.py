@@ -11,32 +11,11 @@ import time
 NODE_PROFILES = ['juniper-mx', 'juniper-qfx10k', 'juniper-qfx5k']
 
 class FabricUtils(object):
-    @classmethod
-    def create_only_fabric(cls, namespaces=None, creds=None):
-        '''
-        :param namespaces : namespaces in below format
-                        eg: {'management': [{'cidr': '1.1.1.0/24',
-                                             'gateway': '1.1.1.254'}],
-                             'loopback': ['10.1.1.0/25'],
-                             'peer': ['172.16.0.0/16'],
-                             'asn': [{'max': 64512, 'min': 64512}],
-                             'ebgp_asn': [{'max': 64512, 'min': 64512}]}
-        :param creds : list of creds in the below format
-                   eg: [{'username': 'root', 'password': 'c0ntrail123',
-                         'vendor': 'Juniper', 'device_family': 'qfx'}]
-        '''
-        fabric = FabricFixture(connections=cls.connections,
-                               namespaces=namespaces,
-                               creds=creds)
-        fabric.setUp()
-        return fabric
-
-    def create_fabric(self, namespaces=None, creds=None):
-        fabric = self.create_only_fabric(namespaces=namespaces,
-                                         creds=creds)
-        self.logger.info('Created fabric %s'%fabric.name)
-        self.addCleanup(self.cleanup_fabric, fabric)
-        return fabric
+    def __init__(self, connections):
+        self.connections = connections
+        self.inputs = connections.inputs
+        self.logger = connections.logger
+        self.vnc_h = connections.orch.vnc_h
 
     @retry(delay=10, tries=12)
     def _get_fabric_fixture(self, name):
@@ -47,7 +26,8 @@ class FabricUtils(object):
             return (False, None)
         return (True, fabric)
 
-    def onboard_existing_fabric(self, fabric_dict, wait_for_finish=True, name=None):
+    def onboard_existing_fabric(self, fabric_dict, wait_for_finish=True,
+                                name=None, cleanup=False):
         interfaces = {'physical': [], 'logical': []}
         devices = list()
         
@@ -70,11 +50,9 @@ class FabricUtils(object):
         execution_id = self.vnc_h.execute_job(fq_name, payload)
         status, fabric = self._get_fabric_fixture(name)
         assert fabric, 'Create fabric seems to have failed'
-        self.addCleanup(self.cleanup_fabric, fabric, devices, interfaces)
-        #self.addCleanup(self.cleanup_discover, fabric, devices)
-        #self.addCleanup(self.cleanup_onboard, devices, interfaces)
+        if cleanup:
+            self.addCleanup(self.cleanup_fabric, fabric, devices, interfaces)
         if wait_for_finish:
-            #time.sleep(450)
             status = self.wait_for_job_to_finish(':'.join(fq_name), execution_id)
  
             assert status, 'job %s to create fabric failed'%execution_id
@@ -98,10 +76,6 @@ class FabricUtils(object):
 
     def cleanup_fabric(self, fabric, devices=None, interfaces=None,
                        verify=True, wait_for_finish=True):
-
-        #self.logger.info('Disassociating devices from fabric...')
-        #fabric.disassociate_devices()
-
         fq_name = ['default-global-system-config', 'fabric_deletion_template']
         payload = {'fabric_fq_name': fabric.fq_name}
         execution_id = self.vnc_h.execute_job(fq_name, payload)

@@ -492,12 +492,12 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         obj.del_interface_route_table(uuid)
     # end del_interface_route_table
 
-    def do_ping_test(self, fixture_obj, sip, dip, expectation=True):
+    def do_ping_test(self, fixture_obj, dip, expectation=True):
         assert fixture_obj.ping_with_certainty(dip, expectation=expectation),\
             'Ping from %s to %s with expectation %s failed!' % (
-                sip, dip, str(expectation))
-        self.logger.info('Ping test from %s to %s with expectation %s passed' % (sip,
-                          dip, str(expectation)))
+                fixture_obj.name, dip, str(expectation))
+        self.logger.info('Ping test from %s to %s with expectation %s passed' % (
+            fixture_obj.name, dip, str(expectation)))
     # end do_ping_test
 
     def apply_policy(self, policy_fixture, vn_fixtures=None):
@@ -572,11 +572,14 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         return secgrp_fixture
     # end create_sg
 
+    @classmethod
     def get_default_sg(self, **kwargs):
         connections = kwargs.get('connections') or self.connections
         option = kwargs.get('option') or 'neutron'
-        return self.useFixture(SecurityGroupFixture(connections,
-                               secgrp_name='default', option=option))
+        sg = SecurityGroupFixture(connections,
+                 secgrp_name='default', option=option)
+        sg.read()
+        return sg
 
     @classmethod
     def check_vms_booted(cls, vms_list, do_assert=True):
