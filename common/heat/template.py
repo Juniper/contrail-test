@@ -441,7 +441,6 @@ src_cidr_svc = {
             "type" : "OS::ContrailV2::InstanceIp",
             "depends_on" : [ "template_VirtualMachineInterface_1" , "template_VirtualNetwork_1" ],
             "properties" : {
-                "config_root": "config-root",
                 "virtual_machine_interface_refs" : [{ "get_resource" : "template_VirtualMachineInterface_1" }],
                 "virtual_network_refs" : [{ "list_join" : [':', { "get_attr" : [ "template_VirtualNetwork_1" , "fq_name" ] } ] }]
             }
@@ -451,7 +450,6 @@ src_cidr_svc = {
             "type" : "OS::ContrailV2::InstanceIp",
             "depends_on" : [ "template_VirtualMachineInterface_2" , "template_VirtualNetwork_2"],
             "properties" : {
-                "config_root": "config-root",
                 "virtual_machine_interface_refs" : [{ "get_resource" : "template_VirtualMachineInterface_2" }],
                 "virtual_network_refs" : [{ "list_join" : [':', { "get_attr" : [ "template_VirtualNetwork_2" , "fq_name" ] } ] }]
             }
@@ -461,7 +459,6 @@ src_cidr_svc = {
             "type" : "OS::ContrailV2::InstanceIp",
             "depends_on" : [ "template_VirtualMachineInterface_3" , "template_VirtualNetwork_3"],
             "properties" : {
-                "config_root": "config-root",
                 "virtual_machine_interface_refs" : [{ "get_resource" : "template_VirtualMachineInterface_3" }],
                 "virtual_network_refs" : [{ "list_join" : [':', { "get_attr" : [ "template_VirtualNetwork_3" , "fq_name" ] } ] }]
             }
@@ -471,7 +468,6 @@ src_cidr_svc = {
             "type" : "OS::ContrailV2::InstanceIp",
             "depends_on" : [ "template_VirtualMachineInterface_4" , "template_VirtualNetwork_2"],
             "properties" : {
-                "config_root": "config-root",
                 "virtual_machine_interface_refs" : [{ "get_resource" : "template_VirtualMachineInterface_4" }],
                 "virtual_network_refs" : [{ "list_join" : [':', { "get_attr" : [ "template_VirtualNetwork_2" , "fq_name" ] } ] }]
             }
@@ -481,7 +477,6 @@ src_cidr_svc = {
             "type" : "OS::ContrailV2::InstanceIp",
             "depends_on" : [ "template_VirtualMachineInterface_5" , "template_VirtualNetwork_3" ],
             "properties" : {
-                "config_root": "config-root",
                 "virtual_machine_interface_refs" : [{ "get_resource" : "template_VirtualMachineInterface_5" }],
                 "virtual_network_refs" : [{ "list_join" : [':', { "get_attr" : [ "template_VirtualNetwork_3" , "fq_name" ] } ] }]
             }
@@ -491,7 +486,6 @@ src_cidr_svc = {
             "type" : "OS::ContrailV2::InstanceIp",
             "depends_on" : [ "template_VirtualMachineInterface_6" , "template_VirtualNetwork_2"],
             "properties" : {
-                "config_root": "config-root",
                 "virtual_machine_interface_refs" : [{ "get_resource" : "template_VirtualMachineInterface_6" }],
                 "virtual_network_refs" : [{ "list_join" : [':', { "get_attr" : [ "template_VirtualNetwork_2" , "fq_name" ] } ] }]
             }
@@ -824,7 +818,6 @@ ecmp_pt = {
          ["template_VirtualMachineInterface_3", "template_VirtualNetwork_3"],
          "type": "OS::ContrailV2::InstanceIp",
          "properties":{
-          "config_root": "config-root",
           "virtual_machine_interface_refs":
           [{"get_resource": "template_VirtualMachineInterface_3"}],
           "virtual_network_refs":
@@ -836,7 +829,6 @@ ecmp_pt = {
          ["template_VirtualMachineInterface_2", "template_VirtualNetwork_2"],
          "type": "OS::ContrailV2::InstanceIp",
          "properties":{
-          "config_root": "config-root",
           "virtual_machine_interface_refs":
           [{"get_resource": "template_VirtualMachineInterface_2"}],
           "virtual_network_refs":
@@ -848,7 +840,6 @@ ecmp_pt = {
          ["template_VirtualMachineInterface_1", "template_VirtualNetwork_1"],
          "type": "OS::ContrailV2::InstanceIp",
          "properties":{
-          "config_root": "config-root",
           "virtual_machine_interface_refs":
           [{"get_resource": "template_VirtualMachineInterface_1"}],
           "virtual_network_refs":
@@ -873,7 +864,6 @@ ecmp_pt = {
          ["template_VirtualMachineInterface_5", "template_VirtualNetwork_3"],
          "type": "OS::ContrailV2::InstanceIp",
          "properties":{
-          "config_root": "config-root",
           "virtual_machine_interface_refs":
           [{"get_resource": "template_VirtualMachineInterface_5"}],
           "virtual_network_refs":
@@ -885,7 +875,6 @@ ecmp_pt = {
          ["template_VirtualMachineInterface_4", "template_VirtualNetwork_2"],
          "type": "OS::ContrailV2::InstanceIp",
          "properties":{
-          "config_root": "config-root",
           "virtual_machine_interface_refs":
           [{"get_resource": "template_VirtualMachineInterface_4"}],
           "virtual_network_refs":
@@ -1044,7 +1033,6 @@ ecmp_pt = {
          ["template_VirtualMachineInterface_22", "template_VirtualNetwork_2"],
          "type": "OS::ContrailV2::InstanceIp",
          "properties":{
-          "config_root": "config-root",
           "virtual_machine_interface_refs":
           [{"get_resource": "template_VirtualMachineInterface_22"}],
           "virtual_network_refs":
@@ -1056,7 +1044,6 @@ ecmp_pt = {
          ["template_VirtualMachineInterface_23", "template_VirtualNetwork_3"],
          "type": "OS::ContrailV2::InstanceIp",
          "properties":{
-          "config_root": "config-root",
           "virtual_machine_interface_refs":
           [{"get_resource": "template_VirtualMachineInterface_23"}],
           "virtual_network_refs":
@@ -1068,7 +1055,6 @@ ecmp_pt = {
          ["template_VirtualMachineInterface_21", "template_VirtualNetwork_1"],
          "type": "OS::ContrailV2::InstanceIp",
          "properties":{
-          "config_root": "config-root",
           "virtual_machine_interface_refs":
           [{"get_resource": "template_VirtualMachineInterface_21"}],
           "virtual_network_refs":
@@ -1618,7 +1604,6 @@ pt_multi_inline = {
          ["template_VirtualMachineInterface_3", "template_svc_vn_right"],
          "type": "OS::ContrailV2::InstanceIp",
          "properties":{
-          "config_root": "config-root",
           "virtual_machine_interface_refs":
           [{"get_resource": "template_VirtualMachineInterface_3"}],
           "virtual_network_refs":
@@ -1630,7 +1615,6 @@ pt_multi_inline = {
          ["template_VirtualMachineInterface_2", "template_svc_vn_left"],
          "type": "OS::ContrailV2::InstanceIp",
          "properties":{
-          "config_root": "config-root",
           "virtual_machine_interface_refs":
           [{"get_resource": "template_VirtualMachineInterface_2"}],
           "virtual_network_refs":
@@ -1642,7 +1626,6 @@ pt_multi_inline = {
          ["template_VirtualMachineInterface_1", "template_svc_vn_mgmt"],
          "type": "OS::ContrailV2::InstanceIp",
          "properties":{
-          "config_root": "config-root",
           "virtual_machine_interface_refs":
           [{"get_resource": "template_VirtualMachineInterface_1"}],
           "virtual_network_refs":
@@ -1667,7 +1650,6 @@ pt_multi_inline = {
          ["template_VirtualMachineInterface_5", "template_VirtualNetwork_3"],
          "type": "OS::ContrailV2::InstanceIp",
          "properties":{
-          "config_root": "config-root",
           "virtual_machine_interface_refs":
           [{"get_resource": "template_VirtualMachineInterface_5"}],
           "virtual_network_refs":
@@ -1679,7 +1661,6 @@ pt_multi_inline = {
          ["template_VirtualMachineInterface_4", "template_VirtualNetwork_2"],
          "type": "OS::ContrailV2::InstanceIp",
          "properties":{
-          "config_root": "config-root",
           "virtual_machine_interface_refs":
           [{"get_resource": "template_VirtualMachineInterface_4"}],
           "virtual_network_refs":
@@ -1737,7 +1718,6 @@ pt_multi_inline = {
          ["template_VirtualMachineInterface_22", "template_VirtualNetwork_2"],
          "type": "OS::ContrailV2::InstanceIp",
          "properties":{
-          "config_root": "config-root",
           "virtual_machine_interface_refs":
           [{"get_resource": "template_VirtualMachineInterface_22"}],
           "virtual_network_refs":
@@ -1749,7 +1729,6 @@ pt_multi_inline = {
          ["template_VirtualMachineInterface_23", "template_VirtualNetwork_3"],
          "type": "OS::ContrailV2::InstanceIp",
          "properties":{
-          "config_root": "config-root",
           "virtual_machine_interface_refs":
           [{"get_resource": "template_VirtualMachineInterface_23"}],
           "virtual_network_refs":
@@ -1761,7 +1740,6 @@ pt_multi_inline = {
          ["template_VirtualMachineInterface_21", "template_VirtualNetwork_1"],
          "type": "OS::ContrailV2::InstanceIp",
          "properties":{
-          "config_root": "config-root",
           "virtual_machine_interface_refs":
           [{"get_resource": "template_VirtualMachineInterface_21"}],
           "virtual_network_refs":
@@ -2513,7 +2491,6 @@ svc_inst_pt_v2 = {
       u'type': u'OS::ContrailV2::InstanceIp',
       u'depends_on': [ 'svm_mgmt_vmi' ],
       u'properties': {
-        u'config_root': 'config-root',
         u'name': { u'get_attr': [ u'random_key_mgmt', u'value' ] },
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_mgmt_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'mgmt_net_id' }],
@@ -2524,7 +2501,6 @@ svc_inst_pt_v2 = {
       u'type': u'OS::ContrailV2::InstanceIp',
       u'depends_on': [ 'svm_left_vmi' ],
       u'properties': {
-        u'config_root': 'config-root',
         u'name': { u'get_attr': [ u'random_key_4', u'value' ] },
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_left_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'left_net_id' }],
@@ -2535,7 +2511,6 @@ svc_inst_pt_v2 = {
       u'type': u'OS::ContrailV2::InstanceIp',
       u'depends_on': [ 'svm_right_vmi' ],
       u'properties': {
-        u'config_root': 'config-root',
         u'name': { u'get_attr': [ u'random_key_5', u'value' ] },
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_right_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'right_net_id' }],
@@ -2721,7 +2696,6 @@ svc_inst_pt_dual_v2 = {
       u'type': u'OS::ContrailV2::InstanceIp',
       u'depends_on': [ 'svm_mgmt_vmi' ],
       u'properties': {
-        u'config_root': 'config-root',
         u'name': { u'get_attr': [ u'random_key_mgmt', u'value' ] },
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_mgmt_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'mgmt_net_id' }],
@@ -2732,7 +2706,6 @@ svc_inst_pt_dual_v2 = {
       u'type': u'OS::ContrailV2::InstanceIp',
       u'depends_on': [ 'svm_left_vmi' ],
       u'properties': {
-        u'config_root': 'config-root',
         u'name': { u'get_attr': [ u'random_key_4', u'value' ] },
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_left_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'left_net_id' }],
@@ -2743,7 +2716,6 @@ svc_inst_pt_dual_v2 = {
       u'type': u'OS::ContrailV2::InstanceIp',
       u'depends_on': [ 'svm_right_vmi' ],
       u'properties': {
-        u'config_root': 'config-root',
         u'name': { u'get_attr': [ u'random_key_5', u'value' ] },
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_right_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'right_net_id' }],
@@ -2754,7 +2726,6 @@ svc_inst_pt_dual_v2 = {
       u'type': u'OS::ContrailV2::InstanceIp',
       u'depends_on': [ 'svm_left_vmi' ],
       u'properties': {
-        u'config_root': 'config-root',
         u'name': { u'get_attr': [ u'random_key_6', u'value' ] },
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_left_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'left_net_id' }],
@@ -2765,7 +2736,6 @@ svc_inst_pt_dual_v2 = {
       u'type': u'OS::ContrailV2::InstanceIp',
       u'depends_on': [ 'svm_right_vmi' ],
       u'properties': {
-        u'config_root': 'config-root',
         u'name': { u'get_attr': [ u'random_key_7', u'value' ] },
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_right_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'right_net_id' }],
@@ -2993,7 +2963,6 @@ pt_svm = {
       u'type': u'OS::ContrailV2::InstanceIp',
       u'depends_on': [ 'svm_left_vmi' ],
       u'properties': {
-        u'config_root': 'config-root',
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_left_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'left_net_id' }],
         u'instance_ip_family': 'v4',
@@ -3003,7 +2972,6 @@ pt_svm = {
       u'type': u'OS::ContrailV2::InstanceIp',
       u'depends_on': [ 'svm_right_vmi' ],
       u'properties': {
-        u'config_root': 'config-root',
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_right_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'right_net_id' }],
         u'instance_ip_family' : 'v4',
@@ -3013,7 +2981,6 @@ pt_svm = {
       u'type': u'OS::ContrailV2::InstanceIp',
       u'depends_on': [ 'svm_mgmt_vmi' ],
       u'properties': {
-        u'config_root': 'config-root',
         u'virtual_machine_interface_refs': [{ u'get_resource': u'svm_mgmt_vmi' }],
         u'virtual_network_refs': [{ u'get_param': u'mgmt_net_id' }],
         u'instance_ip_family' : 'v4',
