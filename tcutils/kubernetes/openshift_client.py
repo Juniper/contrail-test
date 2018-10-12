@@ -31,14 +31,23 @@ class AttributeDict(dict):
     __getattr__ = dict.__getitem__
     __setattr__ = dict.__setitem__
 
+    def __deepcopy__(self, memo):
+        y = {}
+        memo[id(self)] = y
+        for key, value in self.iteritems():
+            y[deepcopy(key, memo)] = deepcopy(value, memo)
+        return y
+
 def convert_to_attrdict(dct):
     if isinstance(dct, dict):
         for key, value in dct.iteritems():
             val = convert_to_attrdict(value)
             if isinstance(val, dict):
-                dct[key] = AttributeDict(val)
-            else:
-                dct[key] = val
+                val = AttributeDict(val)
+            elif isinstance(val, unicode):
+                val = str(val)
+            del dct[key]
+            dct[str(key)] = val
 
     elif isinstance(dct, list):
         for idx,item in enumerate(list(dct)):
@@ -102,7 +111,10 @@ class Client(api_client.Client):
     # end create_namespace
 
     def read_namespace(self, name):
-        return self.namespace_h.get(name=name)
+        resp = self.namespace_h.get(name=name)
+        if resp:
+            resp = AttributeDict(convert_to_attrdict(resp.to_dict()))
+        return resp
 
     def delete_namespace(self, name):
         return self.namespace_h.delete(name=name)
@@ -178,14 +190,20 @@ class Client(api_client.Client):
         export = Type bool | Should this value be exported.  Export strips fields 
                             that a user can not specify. (optional)
         '''
-        return self.pod_h.get(name=name, namespace=namespace)
+        resp = self.pod_h.get(name=name, namespace=namespace)
+        if resp:
+            resp = AttributeDict(convert_to_attrdict(resp.to_dict()))
+        return resp
     # end read_pod
 
     def read_pod_status(self, name, namespace='default', exact=True, export=True):
         '''
         Get the POD status
         '''
-        return self.pod_h.status.get(name, namespace)
+        resp = self.pod_h.status.get(name, namespace)
+        if resp:
+            resp = AttributeDict(convert_to_attrdict(resp.to_dict()))
+        return resp
 
     def update_network_policy(self,
                               policy_name,
@@ -196,12 +214,24 @@ class Client(api_client.Client):
         '''
         Returns V1beta1NetworkPolicy object
         '''
+        body = self.get_template('network_policy')
+        if metadata:
+            body['metadata'] = metadata
+        if namespace:
+            body['metadata']['namespace'] = namespace
+        if name:
+            body['metadata']['name'] = name
+        modified_spec = deepcopy(spec)
+        self._replace_key(modified_spec)
+        body['spec'] = modified_spec
         resp = self.network_policy_h.replace(self,
                               namespace='default',
                               name=None,
                               metadata=None,
                               spec=None,
                               **kwargs)
+        if resp:
+            resp = AttributeDict(convert_to_attrdict(resp.to_dict()))
         return resp
     # end update_network_policy
 
@@ -214,7 +244,6 @@ class Client(api_client.Client):
         '''
         returns instance of class V1Namespace
         '''
-       
         body = self.get_template('network_policy')
         if metadata:
             body['metadata'] = metadata
@@ -222,12 +251,14 @@ class Client(api_client.Client):
             body['metadata']['namespace'] = namespace
         if name:
             body['metadata']['name'] = name
-        modified_spec = deepcopy(spec)
-        self._replace_key(modified_spec)
-        body['spec'] = modified_spec 
+        if spec:
+            modified_spec = deepcopy(spec)
+            self._replace_key(modified_spec)
+            body['spec'] = modified_spec 
         resp = self.network_policy_h.create(body=body,
-                   namespace=namespace,
-                   spec=modified_spec)
+                   namespace=namespace)
+        if resp:
+            resp = AttributeDict(convert_to_attrdict(resp.to_dict()))
         return resp
     # end create_network_policy
 
@@ -261,6 +292,8 @@ class Client(api_client.Client):
             body['metadata']['name']=name
         self.logger.info('Creating Deployment %s' % (name))
         resp = self.deployment_h.create(body=body, namespace=namespace)
+        if resp:
+            resp = AttributeDict(convert_to_attrdict(resp.to_dict()))
         return resp
 
 
@@ -306,6 +339,8 @@ class Client(api_client.Client):
         self.logger.info('Creating Service %s' % (name))
         body['spec'] = modified_spec
         resp = self.service_h.create(body=body, namespace=namespace)
+        if resp:
+            resp = AttributeDict(convert_to_attrdict(resp.to_dict()))
         return resp
 
     def delete_service(self,
@@ -318,12 +353,19 @@ class Client(api_client.Client):
         '''
         Get all pods in a given namespace
         '''
-        return self.pod_h.get(namespace=namespace)
+        resp = self.pod_h.get(namespace=namespace)
+        if resp:
+            resp = AttributeDict(convert_to_attrdict(resp.to_dict()))
+        return resp
 
     def read_daemonsets(self, namespace=''):
         '''
         Returns daemon sets from the mentioned namespace. 
         '''
         if namespace:
-            return self.daemonset_h.get()
-        return self.daemonset_h.get(namespace=namespace)
+            resp = self.daemonset_h.get(namespace=namespace)
+        else:
+            resp = self.daemonset_h.get()
+        if resp:
+            resp = AttributeDict(convert_to_attrdict(resp.to_dict()))
+        return resp
