@@ -735,10 +735,10 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 
         # change policy rules to rules1 and Verify no ICMP traffic b/w VN1 and
         # VN2
-        data = {
-            'policy': {'entries': pol1_fixture.policy_obj['policy']['entries']}}
-        pol_analyzer_fixture.update_policy(
-            pol_analyzer_fixture.policy_obj['policy']['id'], data)
+        policy_analyzer_id = pol_analyzer_fixture.get_id()
+        pol1_fixture_entries = pol1_fixture.get_entries()
+        p_rules = pol1_fixture_entries
+        pol_analyzer_fixture.update_policy(policy_analyzer_id, p_rules)
         errmsg = "Ping b/w VN1 and VN2 success in step3"
         assert left_vm_fixture.ping_with_certainty(
             right_vm_fixture.vm_ip, expectation=False), errmsg
