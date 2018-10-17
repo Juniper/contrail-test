@@ -308,9 +308,11 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
             parent_obj=self.project.project_obj)
         return intf_route_table_obj
 
+    @classmethod
     def get_encap_priority(self):
         return self.vnc_h.get_encap_priority()
 
+    @classmethod
     def set_encap_priority(self, encaps):
         return self.vnc_h.set_encap_priority(encaps)
 
