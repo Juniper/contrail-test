@@ -1,24 +1,7 @@
-import test_v1
-import fixtures
-from common import isolated_creds
-
-import vnc_api_test
-from vnc_api.vnc_api import *
 import random
-import socket
 import time
-from netaddr import *
-from tcutils.util import retry, get_random_mac, get_random_name
 from tcutils.tcpdump_utils import *
-from fabric.api import run
-from floating_ip import *
 from common.base import GenericTestBase
-from common.base import GenericTestBase
-from common.vrouter.base import BaseVrouterTest
-from common.servicechain.config import ConfigSvcChain
-from fabric.context_managers import settings, hide
-from tcutils.util import safe_run, safe_sudo
-from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from router_fixture import LogicalRouterFixture
 import copy
 import re
@@ -35,13 +18,13 @@ class FabricSingleton(FabricUtils):
         super(FabricSingleton, self).__init__(connections)
         self.invoked = False
 
-    def create_fabric(self):
+    def create_fabric(self, rb_roles=None):
         self.invoked = True
         fabric_dict = self.inputs.fabrics[0]
         self.fabric, self.devices, self.interfaces = \
             self.onboard_existing_fabric(fabric_dict, cleanup=False)
         assert self.interfaces, 'Failed to onboard existing fabric %s'%fabric_dict
-        self.assign_roles(self.fabric, self.devices)
+        self.assign_roles(self.fabric, self.devices, rb_roles=rb_roles)
 
     def cleanup_fabric(self):
         del self.__class__._instances[self.__class__]
@@ -57,13 +40,16 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         cls.bms = dict(); cls.spines = list(); cls.leafs = list()
         cls.default_sg = cls.get_default_sg()
         cls.allow_default_sg_to_allow_all_on_project(cls.inputs.project_name)
-    # end setUpClass
+        cls.current_encaps = cls.get_encap_priority()
+        cls.set_encap_priority(['VXLAN', 'MPLSoUDP', 'MPLSoGRE'])
+        cls.vnc_h.enable_vxlan_routing()
+        cls.rb_roles = dict()
 
     def setUp(self):
         super(BaseFabricTest, self).setUp()
         obj = FabricSingleton(self.connections)
         if not obj.invoked:
-            obj.create_fabric()
+            obj.create_fabric(self.rb_roles)
         assert obj.fabric and obj.devices and obj.interfaces, "Onboarding fabric failed"
         self.fabric = obj.fabric
         self.devices = obj.devices
@@ -87,6 +73,9 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         try:
             obj.cleanup_fabric()
         finally:
+            if getattr(cls, 'current_encaps', None):
+                cls.set_encap_priority(cls.current_encaps)
+            cls.vnc_h.disable_vxlan_routing()
             super(BaseFabricTest, cls).tearDownClass()
 
     def create_lif(self, bms_name, vlan_id=None):
@@ -157,10 +146,6 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
 
 class BaseEvpnType5Test(BaseFabricTest):
 
-    def update_encap_priority(self, encaps):
-        self.addCleanup(self.set_encap_priority, encaps=self.get_encap_priority())
-        return self.set_encap_priority(encaps)
-    
     def setup_vns(self, vn=None):
         '''Setup VN
            Input vn format:
@@ -364,10 +349,6 @@ class BaseEvpnType5Test(BaseFabricTest):
 
         '''
         #This step is not required as default encapsulation order itself is vxlan,MPLSoverGRE,MPLSoverUDP
-        self.update_encap_priority(['VXLAN', 'MPLSoUDP', 'MPLSoGRE'])
-
-        self.vnc_h.enable_vxlan_routing()
-
         # VNs creation
         vn_fixtures = self.setup_vns(vn)
 
@@ -399,5 +380,3 @@ class BaseEvpnType5Test(BaseFabricTest):
         lr_fq_name = ['default-domain', 'admin', lr_name]
         self.logger.info('Auto Logical Router fq name %s' %(lr_fq_name))
         self.vnc_h.delete_router(fq_name=lr_fq_name)
-
-

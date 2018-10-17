@@ -4,7 +4,6 @@ import logging
 import fixtures
 from tcutils.util import retry, search_arp_entry, get_random_name, get_intf_name_from_mac, run_cmd_on_server, get_random_string
 from port_fixture import PortFixture
-from lif_fixture import LogicalInterfaceFixture
 
 class BMSFixture(fixtures.Fixture):
     def __init__(self,
@@ -34,31 +33,14 @@ class BMSFixture(fixtures.Fixture):
         self.static_ip = kwargs.get('static_ip', False)
         self.vn_fixture = kwargs.get('vn_fixture')
         self.port_fixture = kwargs.get('port_fixture')
-        self.lif_fixtures = kwargs.get('lif_fixtures') or []
         self.security_groups = kwargs.get('security_groups') #UUID List
-        self.unit = kwargs.get('unit', 0)
         self.vnc_h = connections.orch.vnc_h
         self.vlan_id = self.port_fixture.vlan_id if self.port_fixture else \
-                       kwargs.get('vlan_id')
+                       kwargs.get('vlan_id') or 0
         self.bms_created = False
         self.mvlanintf = None
         self._interface = None
     # end __init__
-
-    def create_lif(self):
-        for interface in self.interfaces:
-            tor = interface['tor']
-            tor_port = interface['tor_port']
-            lif = tor_port+'.'+str(self.unit)
-            pif_fqname = ['default-global-system-config', tor,
-                          tor_port.replace(':', '__')]
-            self.lif_fixtures.append(self.useFixture(LogicalInterfaceFixture(
-                                name=lif,
-                                pif_fqname=pif_fqname,
-                                connections=self.connections,
-                                vlan_id=self.vlan_id,
-                                interface_type=None,
-                           )))
 
     def create_vmi(self):
         fixed_ips = None
@@ -66,6 +48,18 @@ class BMSFixture(fixtures.Fixture):
             fixed_ips = [{'ip_address': self.bms_ip,
                           'subnet_id': self.vn_fixture.vn_subnet_objs[0]['id']
                          }]
+        bms_info = list()
+        for interface in self.interfaces:
+            intf_dict = dict()
+            intf_dict['switch_info'] = interface['tor']
+            intf_dict['port_id'] = interface['tor_port']
+            bms_info.append(intf_dict)
+        binding_profile = {'local_link_information': bms_info}
+        parent_vmi = self.useFixture(PortFixture(
+                         connections=self.connections,
+                         vn_id=self.vn_fixture.uuid,
+                         api_type='contrail',
+                         create_iip=False))
         self.port_fixture = self.useFixture(PortFixture(
                                  connections=self.connections,
                                  vn_id=self.vn_fixture.uuid,
@@ -74,21 +68,14 @@ class BMSFixture(fixtures.Fixture):
                                  fixed_ips=fixed_ips,
                                  api_type='contrail',
                                  vlan_id=self.vlan_id,
+                                 parent_vmi=parent_vmi.vmi_obj,
+                                 binding_profile=binding_profile
                              ))
         if not self.bms_ip:
             self.bms_ip = self.port_fixture.get_ip(
                  self.vn_fixture.vn_subnet_objs[0]['id'])
         if not self.bms_mac:
             self.bms_mac = self.port_fixture.mac_address
-
-    def associate_lif(self, lifs=None):
-        for lif_fixture in lifs or self.lif_fixtures:
-            lif_fixture.add_virtual_machine_interface(self.port_fixture.uuid)
-
-    def disassociate_lif(self, lifs=None):
-        for lif_fixture in lifs or self.lif_fixtures:
-            lif_fixture.delete_virtual_machine_interface(
-                self.port_fixture.uuid)
 
     def run(self, cmd, **kwargs):
         output = run_cmd_on_server(cmd, self.mgmt_ip,
@@ -174,10 +161,6 @@ class BMSFixture(fixtures.Fixture):
             else:
                 self.bms_ip = self.port_fixture.get_ip_addresses[0]
 
-            if not self.lif_fixtures:
-                self.create_lif()
-            self.associate_lif()
-
             host_macs = [intf['host_mac'] for intf in self.interfaces]
             if self.bms_mac in host_macs or not self.mgmt_ip:
                 self.logger.debug('Not setting up Namespaces')
@@ -186,8 +169,10 @@ class BMSFixture(fixtures.Fixture):
                     self.namespace, self.mgmt_ip)) 
             self.setup_bms()
         except:
-            self.cleanUp()
-            raise
+            try:
+                self.cleanUp()
+            finally:
+                raise
     # end setUp
 
     def verify_on_setup(self):

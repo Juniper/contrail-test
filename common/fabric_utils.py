@@ -8,7 +8,7 @@ from lxml import etree
 from tcutils.verification_util import elem2dict
 import time
 
-NODE_PROFILES = ['juniper-mx', 'juniper-qfx10k', 'juniper-qfx5k']
+NODE_PROFILES = ['juniper-mx', 'juniper-qfx10k', 'juniper-qfx5k', 'juniper-qfx5k-lean']
 
 class FabricUtils(object):
     def __init__(self, connections):
@@ -195,8 +195,9 @@ class FabricUtils(object):
             if device['name'] == device_name:
                 return device['role']
 
-    def assign_roles(self, fabric, devices, wait_for_finish=True):
-        ''' eg: {device1Fixture: 'spine', device2Fixture: 'leaf'}'''
+    def assign_roles(self, fabric, devices, rb_roles=None, wait_for_finish=True):
+        ''' eg: rb_roles = {device1: ['CRB-Access'], device2: ['CRB-Gateway', 'DC-Gateway']}'''
+        rb_roles = rb_roles or dict()
         roles_dict = dict()
         for device in devices:
             roles_dict.update({device: self.get_role_from_inputs(device.name)})
@@ -205,10 +206,9 @@ class FabricUtils(object):
         for device, role in roles_dict.iteritems():
             # ToDo: Need to revisit this post R5.0.1
             if role == 'leaf':
-                routing_bridging_role = ['CRB-Access']
+                routing_bridging_role = rb_roles.get(device.name, ['CRB-Access'])
             elif role == 'spine':
-                #routing_bridging_role = ['CRB-Gateway', 'DC-Gateway']
-                routing_bridging_role = ['CRB-Gateway']
+                routing_bridging_role = rb_roles.get(device.name, ['CRB-Gateway'])
             dev_role_dict = {'device_fq_name': ['default-global-system-config',
                                                 device.name],
                              'physical_role': role,

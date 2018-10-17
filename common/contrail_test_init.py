@@ -528,11 +528,12 @@ class TestInputs(object):
         self.fip_pool = test_configs.get('public_subnet')
         self.fip_pool_name = test_configs.get('fip_pool_name')
         self.public_tenant = test_configs.get('public_tenant_name')
+        self.mx_rt = str(test_configs.get('public_rt') or '')
+        self.router_asn = str(test_configs.get('router_asn') or '64512')
+        self.public_subnets = test_configs.get('public_subnets')
         #physical_router needs the following configuration
         #    name,type,mgmt_ip,model,vendor,asn,ssh_username,ssh_password,tunnel_ip,ports
         self.physical_routers_data = test_configs.get('physical_routers',{})
-        self.mx_rt = str(test_configs.get('public_rt') or '')
-        self.router_asn = str(test_configs.get('router_asn') or '64512')
         self.bms_data = test_configs.get('bms',{})
 
         #BMS information connected to TOR's

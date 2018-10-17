@@ -47,6 +47,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
         self.binding_profile = kwargs.get('binding_profile', None)
         self.vlan_id = kwargs.get('vlan_id', None)
         self.parent_vmi = kwargs.get('parent_vmi', None)
+        self.create_iip = kwargs.get('create_iip', True)
         self.uuid = kwargs.get('uuid', None)
         self.vn_obj = None
         self.created = False
@@ -130,17 +131,23 @@ class PortFixture(vnc_api_test.VncLibFixture):
             # TODO
             pass
 
-        if self.vlan_id:
+        if self.vlan_id is not None:
             vmi_props.set_sub_interface_vlan_tag(int(self.vlan_id))
 
         if self.parent_vmi:
             vmi_obj.add_virtual_machine_interface(self.parent_vmi)
 
         if self.binding_profile:
-            bind_kv = vnc_api_test.KeyValuePair(key='profile', value=str(self.binding_profile))
+            bind_kv = vnc_api_test.KeyValuePair(key='profile',
+                      value=json.dumps(self.binding_profile))
             kv_pairs = vmi_obj.get_virtual_machine_interface_bindings() or\
                        vnc_api_test.KeyValuePairs()
             kv_pairs.add_key_value_pair(bind_kv)
+            if 'local_link_information' in self.binding_profile:
+                vnic_kv = vnc_api_test.KeyValuePair(key='vnic_type',
+                          value='baremetal')
+                kv_pairs.add_key_value_pair(vnic_kv)
+                vmi_obj.set_virtual_machine_interface_device_owner("baremetal:None")
             vmi_obj.set_virtual_machine_interface_bindings(kv_pairs)
 
         vmi_obj.set_virtual_machine_interface_properties(vmi_props)
@@ -148,6 +155,8 @@ class PortFixture(vnc_api_test.VncLibFixture):
         self.uuid = vmi_id
 
         self.iip_objs = []
+        if self.create_iip == False:
+            return
         if self.fixed_ips:
             for fixed_ip in self.fixed_ips:
                 iip_id = str(uuid.uuid4())
@@ -186,7 +195,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
 
     def _contrail_delete_port(self):
         vmi_iips = self.vmi_obj.get_instance_ip_back_refs()
-        for vmi_iip in vmi_iips:
+        for vmi_iip in vmi_iips or []:
             vmi_iip_uuid = vmi_iip['uuid']
             self.vnc_api_h.instance_ip_delete(id=vmi_iip_uuid)
         self.vnc_api_h.virtual_machine_interface_delete(id=self.uuid)
