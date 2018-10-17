@@ -532,6 +532,7 @@ class TestInputs(object):
         self.mx_rt = str(test_configs.get('public_rt') or '')
         self.router_asn = str(test_configs.get('router_asn') or '64512')
 
+        self.public_subnets = test_configs.get('public_subnets')
         #physical_router needs the following configuration
         #    name,type,mgmt_ip,model,vendor,asn,ssh_username,ssh_password,tunnel_ip,ports
 

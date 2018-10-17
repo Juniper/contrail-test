@@ -206,13 +206,17 @@ test_configuration:
             username: root
             password: password
         bms2:
-            tor: qfx2
-            tor_port: xe-0/0/2
-            host_mac: bb:cc:dd:ee:ff:gg
+            interfaces:
+                - tor: qfx2
+                  tor_port: xe-0/0/2
+                  host_mac: bb:cc:dd:ee:ff:gg
             mgmt_ip:            # This is more to do with bms LCM tests with single interface
             username: root
             password: password
 
+    public_subnets:
+        - 1.1.1.0/24
+        - 2.2.2.0/24
     fabric:
         - namespaces:
             management:
