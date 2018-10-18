@@ -520,10 +520,12 @@ class VNFixture(fixtures.Fixture):
 
     def create_port(self, net_id, subnet_id=None, ip_address=None,
                     mac_address=None, no_security_group=False,
-                    security_groups=[], extra_dhcp_opts=None, sriov=False):
+                    security_groups=[], extra_dhcp_opts=None, sriov=False, virtio=False):
         if isinstance(self.orchestrator,VcenterOrchestrator) :
             raise Exception('vcenter: ports not supported')
         fixed_ips = [{'subnet_id': subnet_id, 'ip_address': ip_address}]
+        if self.inputs.ns_agilio_vrouter_data:
+            virtio = True
         port_rsp = self.quantum_h.create_port(
             net_id,
             fixed_ips,
@@ -531,7 +533,7 @@ class VNFixture(fixtures.Fixture):
             no_security_group,
             security_groups,
             extra_dhcp_opts,
-            sriov)
+            sriov, virtio)
         self.vn_port_list.append(port_rsp['id'])
         return port_rsp
 
