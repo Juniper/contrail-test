@@ -294,8 +294,11 @@ class ConfigSvcChain(fixtures.Fixture):
             "svm_obj:'%s' compute_ip:'%s' agent_inspect:'%s'", svm_obj.__dict__,
             vm_nodeip, inspect_h.get_vna_tap_interface_by_vm(vm_id=svm_obj.id))
         tap_intfs = inspect_h.get_vna_tap_interface_by_vm(vm_id=svm_obj.id)
+        intf_type = 'tap'
+        if self.inputs.ns_agilio_vrouter_data:
+            intf_type = 'nfp'
         for tap_intf in tap_intfs:
-            if 'tap' not in tap_intf['name']:
+            if intf_type not in tap_intf['name'] :
                 tap_intfs.remove(tap_intf)
         return tap_intfs[0]['name']
 

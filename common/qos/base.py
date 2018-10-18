@@ -141,6 +141,8 @@ class QosTestBase(BaseNeutronTest):
         dst_mac = kwargs.get('dst_mac', "ff:ff:ff:ff:ff:ff")
         ipv6_src = kwargs.get('ipv6_src', None)
         ipv6_dst = kwargs.get('ipv6_dst', None)
+        src_vm_fixture.read()
+        dest_vm_fixture.read()
         src_vm_cidr = src_vm_fixture.vn_objs[0]['network']\
                         ['subnet_ipam'][0]['subnet_cidr']
         dest_vm_cidr = dest_vm_fixture.vn_objs[0]['network']\
