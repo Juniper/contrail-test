@@ -263,7 +263,9 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                     node_name = self.inputs.compute_names[index]
                 elif launch_mode == 'default':
                     node_name=None
-
+                image_name='cirros'
+                if self.inputs.ns_agilio_vrouter_data:
+                    image_name = 'ubuntu-traffic'
                 vm_fixture = self.create_vm(vn_objs=vn_fix_obj_list,
                                             port_ids=vmi_fix_uuid_list,
                                             node_name=node_name, image_name=image_name)
@@ -610,11 +612,15 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                         # Filters as per underlay traffic
                         filters = '\'(src host %s and dst host %s)\'' % (
                             compute_ip, src_vm_fixture.vm_ip)
-                        session, pcap = start_tcpdump_for_intf(compute_ip,
-                                                               compute_user,
-                                                               compute_password,
-                                                               compute_intf,
-                                                               filters = filters)
+                        if self.inputs.pcap_on_vm:
+                            vm_fix_pcap_pid_files = start_tcpdump_for_vm_intf(
+                                None, [src_vm_fixture], None, filters=filters, pcap_on_vm=True)
+                        else:
+                            session, pcap = start_tcpdump_for_intf(compute_ip,
+                                                                   compute_user,
+                                                                   compute_password,
+                                                                   compute_intf,
+                                                                   filters = filters)
                         self.sleep(1)
 
                         # Pinging remote VM from compute
@@ -631,11 +637,13 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                                 compute_ip, src_vm_fixture.vm_ip)
 
                         self.sleep(1)
+                        if self.inputs.pcap_on_vm:
+                            result = verify_tcpdump_count(self, None, 'eth0', vm_fix_pcap_pid_files=vm_fix_pcap_pid_files, exp_count=exp_count, exact_match=False)
+                        else:
+                            stop_tcpdump_for_intf(session, pcap)
 
-                        stop_tcpdump_for_intf(session, pcap)
-
-                        result = verify_tcpdump_count(self, session, pcap,
-                                exp_count=exp_count, grep_string=src_vm_fixture.vm_ip)
+                            result = verify_tcpdump_count(self, session, pcap,
+                                    exp_count=exp_count, grep_string=src_vm_fixture.vm_ip)
                         # Verify tcpdump
                         if result:
                             self.logger.info('Packets are going through '\
@@ -735,11 +743,15 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                         # Filters as per underlay traffic
                         filters = '\'(src host %s and dst host %s)\'' % (
                             src_vm_fixture.vm_ip,compute_ip)
-                        session, pcap = start_tcpdump_for_intf(compute_ip,
-                                                               compute_user,
-                                                               compute_password,
-                                                               compute_intf,
-                                                               filters = filters)
+                        if self.inputs.pcap_on_vm:
+                            vm_fix_pcap_pid_files = start_tcpdump_for_vm_intf(
+                                    None, [src_vm_fixture], None, filters=filters, pcap_on_vm=True)
+                        else:
+                            session, pcap = start_tcpdump_for_intf(compute_ip,
+                                                                   compute_user,
+                                                                   compute_password,
+                                                                   compute_intf,
+                                                                   filters = filters)
                         self.sleep(1)
 
                         # Pinging remote compute from VM
@@ -756,11 +768,13 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                                 src_vm_fixture.vm_ip, compute_ip)
 
                         self.sleep(1)
-
-                        stop_tcpdump_for_intf(session, pcap)
-
-                        result = verify_tcpdump_count(self, session, pcap,
-                                  exp_count=exp_count, grep_string=src_vm_fixture.vm_ip)
+                        if self.inputs.pcap_on_vm:
+                            result = verify_tcpdump_count(self, None, 'eth0', vm_fix_pcap_pid_files=vm_fix_pcap_pid_files, exp_count=exp_count, exact_match=False)
+                        else:
+                            stop_tcpdump_for_intf(session, pcap)
+  
+                            result = verify_tcpdump_count(self, session, pcap,
+                                      exp_count=exp_count, grep_string=src_vm_fixture.vm_ip)
 
                         # Verify tcpdump
                         if result:
@@ -788,6 +802,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                         #assert result, 'Ping from VM: %s to compute node: %s '\
                         #    'is successful, which is not expected' %(
                         #    src_vm_fixture.vm_ip, compute_ip)
+                        import pdb;pdb.set_trace()
                         self.logger.error('Ping from VM: %s to compute node: %s'\
                                          ' is successful, NOT expected'
                                          %(src_vm_fixture.vm_ip, compute_ip))
@@ -876,12 +891,15 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
 
                         filters = '\'(src host %s and dst host %s)\'' %(src_vm_ip,
                                                                         dst_vm_ip)
-
-                        session, pcap = start_tcpdump_for_intf(compute_ip,
-                                                               compute_user,
-                                                               compute_password,
-                                                               compute_intf,
-                                                               filters = filters)
+                        if self.inputs.pcap_on_vm:
+                            vm_fix_pcap_pid_files = start_tcpdump_for_vm_intf(
+                                None, [dst_vm_fixture], None, filters=filters, pcap_on_vm=True)
+                        else:
+                            session, pcap = start_tcpdump_for_intf(compute_ip,
+                                                                   compute_user,
+                                                                   compute_password,
+                                                                   compute_intf,
+                                                                   filters = filters)
                         self.sleep(1)
 
                         result = src_vm_fixture.ping_with_certainty(dst_vm_ip,
@@ -908,12 +926,14 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
                                                      '%s is NOT successful as '\
                                                      'expected' %(src_vm_ip,
                                                                   dst_vm_ip))
+                        if self.inputs.pcap_on_vm:
+                            result = verify_tcpdump_count(self, None, 'eth0', vm_fix_pcap_pid_files=vm_fix_pcap_pid_files, exp_count=exp_count, exact_match=False)
+                        else:
+                            stop_tcpdump_for_intf(session, pcap)
 
-                        stop_tcpdump_for_intf(session, pcap)
-
-                        result = verify_tcpdump_count(self, session, pcap,
-                                                      exp_count=exp_count,
-                                                      grep_string=dst_vm_ip)
+                            result = verify_tcpdump_count(self, session, pcap,
+                                                          exp_count=exp_count,
+                                                          grep_string=dst_vm_ip)
 
                         # Verify tcpdump
                         if expectation:
