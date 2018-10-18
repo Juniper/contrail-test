@@ -202,6 +202,21 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
                   image_name='ubuntu-traffic',
                   port_ids=[], **kwargs):
         cleanup = kwargs.pop('cleanup', True)
+        fixed_ips = kwargs.get('fixed_ips', None)
+        binding_vnic_type = None
+        if self.inputs.ns_agilio_vrouter_data:
+            binding_vnic_type = 'virtio-forwarder'
+            if vn_fixture:
+                vn_uuid = vn_fixture.uuid
+            else:
+                vn_uuid = kwargs['vn_objs'][0]['network']['id']
+            if not port_ids:
+                port_obj = self.useFixture(PortFixture(vn_uuid,
+                                        api_type = "contrail",
+                                        fixed_ips = fixed_ips,
+                                        connections=self.connections, binding_vnic_type=binding_vnic_type))
+                assert port_obj.verify_on_setup()
+                port_ids = [port_obj.uuid]
         vm_fixture = self.create_only_vm(vn_fixture=vn_fixture,
                         vm_name=vm_name,
                         node_name=node_name,
