@@ -4,7 +4,7 @@ from common.connections import ContrailConnections
 from common import isolated_creds
 from vm_test import VMFixture
 from vn_test import VNFixture
-
+from port_fixture import PortFixture
 class BaseVnVmTest(test_v1.BaseTestCase_v1):
 
     @classmethod
@@ -81,12 +81,23 @@ class BaseVnVmTest(test_v1.BaseTestCase_v1):
             vn_obj = vn_fixture.obj
         else:
             vn_obj = None
+        port_ids = kwargs.get('port_ids', None)
+        if self.inputs.ns_agilio_vrouter_data:
+            binding_vnic_type = 'virtio-forwarder'
+            fixed_ips=kwargs.get('fixed_ips')
+            port_obj = self.useFixture(PortFixture(vn_fixture.uuid,
+                                    api_type = "contrail",
+                                    fixed_ips = fixed_ips,
+                                    connections=self.connections, binding_vnic_type=binding_vnic_type))
+            assert port_obj.verify_on_setup()
+            port_ids = [port_obj.uuid]
         return self.useFixture(
                 VMFixture(
                     project_name=self.inputs.project_name,
                     connections=self.connections,
                     vn_obj=vn_obj,
                     image_name=image_name,
+                    port_ids=port_ids,
                     *args, **kwargs
                     ))
 
