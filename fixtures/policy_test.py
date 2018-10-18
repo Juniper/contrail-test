@@ -37,7 +37,7 @@ class PolicyFixture(fixtures.Fixture):
         self.already_present = False
         self.verify_is_run = False
         self.api_flag = api
-        if self.inputs.orchestrator == 'vcenter' or self.inputs.vcenter_gw_setup:
+        if self.inputs.orchestrator == 'vcenter' or self.inputs.vcenter_gw_setup or self.inputs.ns_agilio_vrouter_data:
             self.api_flag = True
         if self.inputs.verify_thru_gui():
             self.browser = self.connections.browser

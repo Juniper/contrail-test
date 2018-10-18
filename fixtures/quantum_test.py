@@ -54,6 +54,9 @@ class QuantumHelper():
             auth_h = self.get_auth_h(**kwargs)
         self.auth_h = auth_h
         self.project_id = get_plain_uuid(auth_h.get_project_id())
+        self.virtio = False
+        if inputs.ns_agilio_vrouter_data:
+            self.virtio = True
     # end __init__
 
     def get_auth_h(self, **kwargs):
@@ -133,7 +136,7 @@ class QuantumHelper():
     def create_port(self, net_id, fixed_ips=[],
                     mac_address=None, no_security_group=False,
                     security_groups=[], extra_dhcp_opts=None,
-                    sriov=False, binding_profile=None):
+                    sriov=False, virtio=False, binding_profile=None):
         port_req_dict = {
             'network_id': net_id,
         }
@@ -150,6 +153,8 @@ class QuantumHelper():
             port_req_dict['fixed_ips'] = fixed_ips
         if sriov:
             port_req_dict['binding:vnic_type'] = 'direct'
+        if virtio or self.virtio:
+            port_req_dict['binding:vnic_type'] = 'virtio-forwarder'
         if binding_profile:
             port_req_dict['binding:profile'] = binding_profile
         try:
@@ -454,8 +459,9 @@ class QuantumHelper():
             self.logger.error(
                 "Neutron Exception while listing policies" + str(e))
         except CommonNetworkClientException as e:
-            self.logger.error(
-                "Neutron Exception while listing policies" + str(e))
+             self.logger.error(
+                 "Neutron Exception while listing policies" + str(e))
+
         return policy_list
     # end list_policys
 
