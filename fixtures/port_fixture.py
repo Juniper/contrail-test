@@ -4,6 +4,8 @@ import json
 import uuid
 from netaddr import EUI
 from vnc_api.vnc_api import NoIdError
+import netaddr
+import ast
 
 class PortFixture(vnc_api_test.VncLibFixture):
 
@@ -58,6 +60,10 @@ class PortFixture(vnc_api_test.VncLibFixture):
         self.vn_obj = None
         self.created = False
         self.af = self.inputs.get_af()
+        self.binding_vnic_type = kwargs.get('binding_vnic_type', None)
+        if self.inputs.ns_agilio_vrouter_data or self.inputs.virtio:
+            self.binding_vnic_type = kwargs.get('binding_vnic_type', 'virtio-forwarder')
+            self.api_type = 'contrail'
      # end __init__
 
     def read(self):
@@ -74,6 +80,16 @@ class PortFixture(vnc_api_test.VncLibFixture):
     def setUp(self):
         super(PortFixture, self).setUp()
         if not self.uuid:
+            self.vn_obj = self.vnc_api_h.virtual_network_read(id=self.vn_id)
+            if self.api_type == 'neutron':
+                self._neutron_create_port()
+            else:
+                self._contrail_create_port()
+            self.created = True
+            #Sandipd:This code was crashing while creating port as part of
+            #vcenter gateway testing.Hence handled the exception as the mac
+            #not needed to be obtained always,its passed as an argument to the fixture
+>>>>>>> 5566ef3... Changes in port fixture for Netronome setup
             try:
                 obj = self.vnc_h.read_virtual_machine_interface(fq_name=self.fq_name)
                 self.uuid = obj.uuid
@@ -168,7 +184,14 @@ class PortFixture(vnc_api_test.VncLibFixture):
                     kv_pairs.add_key_value_pair(pg_kv)
             vmi_obj.set_virtual_machine_interface_bindings(kv_pairs)
 
+        if self.binding_vnic_type:
+            bind_kv = vnc_api_test.KeyValuePair(key='vnic_type', value=self.binding_vnic_type)
+            kv_pairs = vmi_obj.get_virtual_machine_interface_bindings() or\
+                       vnc_api_test.KeyValuePairs()
+            kv_pairs.add_key_value_pair(bind_kv)
+            vmi_obj.set_virtual_machine_interface_bindings(kv_pairs)
         vmi_obj.set_virtual_machine_interface_properties(vmi_props)
+
         self.vmi_obj = self.vnc_api_h.virtual_machine_interface_create(vmi_obj)
         self.uuid = vmi_id
 
@@ -245,7 +268,8 @@ class PortFixture(vnc_api_test.VncLibFixture):
             return False
         if self.binding_profile:
             bindings = vmi.get_bindings()
-            if bindings['profile'] != json.dumps(self.binding_profile):
+            if bindings['profile'] != json.dumps(self.binding_profile
+                    ) and json.dumps(ast.literal_eval(bindings['profile'])) != json.dumps(self.binding_profile):
                 self.logger.warn('VMI binding profile doesnt match.'
                                  'Expected %s actual %s for VMI %s'%(
                                  self.binding_profile, bindings['profile'], self.uuid))
