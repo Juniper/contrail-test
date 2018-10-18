@@ -40,6 +40,7 @@ class AttachPolicyFixture(fixtures.Fixture):
         self.vnc_lib.virtual_network_update(self.vn_obj)
         # Required for verification by VNFixture in vn_test.py
         policy = self.orch.get_policy(self.policy_fixture.policy_fq_name)
+        self.vn_fixture.update_vn_object()
         policy_name_objs = dict((policy_obj['policy']['name'], policy_obj)
                                 for policy_obj in self.vn_fixture.policy_objs)
         if isinstance(policy, NetworkPolicy):
@@ -56,12 +57,19 @@ class AttachPolicyFixture(fixtures.Fixture):
         super(AttachPolicyFixture, self).cleanUp()
         self.vn_obj.del_network_policy(self.policy_obj)
         self.vnc_lib.virtual_network_update(self.vn_obj)
+        self.vn_fixture.update_vn_object()
         # Required for verification by VNFixture in vn_test.py
         policy = self.orch.get_policy(self.policy_fixture.policy_fq_name)
         policy_name_objs = dict((policy_obj['policy']['name'], policy_obj)
                                 for policy_obj in self.vn_fixture.policy_objs)
         if isinstance(policy, NetworkPolicy):
             policy_name = policy.fq_name[-1]
+            if self.inputs.ns_agilio_vrouter_data:
+                policy_name_objs = dict((policy_obj['policy']['fq_name'][-1], policy_obj)
+                                    for policy_obj in self.vn_fixture.policy_objs)
+            else:
+                policy_name_objs = dict((policy_obj.fq_name[-1], policy_obj)
+                                    for policy_obj in self.vn_fixture.policy_objs)
         else:
             policy_name = policy['policy']['name']
         if policy_name in policy_name_objs.keys():
