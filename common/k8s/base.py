@@ -890,6 +890,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         self.inputs.restart_service('contrail-kube-manager', ips,
                                      container='contrail-kube-manager',
                                      verify_service=True)
+        time.sleep(10)#wait time to stabilize the cluster
     # end restart_kube_manager
 
     def restart_vrouter_agent(self, ips=None):
