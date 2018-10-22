@@ -159,7 +159,7 @@ class BMSFixture(fixtures.Fixture):
             if not self.port_fixture:
                 self.create_vmi()
             else:
-                self.bms_ip = self.port_fixture.get_ip_addresses[0]
+                self.bms_ip = self.port_fixture.get_ip_addresses()[0]
 
             host_macs = [intf['host_mac'] for intf in self.interfaces]
             if self.bms_mac in host_macs or not self.mgmt_ip:

@@ -84,7 +84,7 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         for interface in bms_dict['interfaces']:
             tor = interface['tor']
             tor_port = interface['tor_port']
-            lif = tor_port+'.'+str(vlan_id)
+            lif_name = tor_port+'.'+str(vlan_id)
             pif_fqname = ['default-global-system-config', tor,
                           tor_port.replace(':', '__')]
             lif_fixtures.append(self.useFixture(
