@@ -1,6 +1,8 @@
 import test
+from netaddr import *
+import uuid
 from tcutils.wrappers import preposttest_wrapper
-from tcutils.util import skip_because, get_random_cidr
+from tcutils.util import skip_because, get_random_cidr, get_random_name
 from common.contrail_fabric.base import BaseFabricTest
 from common.base import GenericTestBase
 
@@ -65,9 +67,9 @@ class TestFabricOverlayBasic(BaseFabricTest):
             port_fixtures.append(self.setup_vmi(vn_fixture.uuid))
 
         bms1_fixture = self.create_bms(bms_name=bms_data[0],
-            bms_mac=port_fixtures[2].mac_address, vn_fixture=vn_fixture, security_groups=[self.default_sg.uuid])
+            bms_mac=port_fixtures[5].mac_address, port_fixture=port_fixtures[5], vn_fixture=vn_fixture, security_groups=[self.default_sg.uuid])
         bms2_fixture = self.create_bms(bms_name=bms_data[1],
-            bms_mac=port_fixtures[6].mac_address,vn_fixture=vn_fixture, security_groups=[self.default_sg.uuid])
+            bms_mac=port_fixtures[6].mac_address, port_fixture=port_fixtures[6], vn_fixture=vn_fixture, security_groups=[self.default_sg.uuid])
 
         for bms in [bms1_fixture, bms2_fixture]:
             bms_ip = IPAddress(bms.bms_ip)
@@ -122,6 +124,205 @@ class TestFabricOverlayBasic(BaseFabricTest):
         bms1_fixture.associate_lif()
         self.do_ping_test(bms1_fixture, bms2_fixture.bms_ip)
     # end test_add_remove_vmi_from_tor_lif
+     
+    @preposttest_wrapper
+    def test_secgrp_subnet_allow_all(self):
+        bms_fixtures = list()
+        project = self.project
+        sec_grp_name1 = 'sg1' #get_random_name(prefix='sec_grp')
+        sec_grp_name2 = 'sg2' #get_random_name(prefix='sec_grp')
+        vn = self.create_vn()
+        vn_subnets = vn.vn_subnets
+        vn_prefix = vn_subnets[0]['cidr'].split('/')[0]
+        vn_prefix_len = int(vn_subnets[0]['cidr'].split('/')[1])
+        uuid_1 = uuid.uuid1().urn.split(':')[2]
+        uuid_2 = uuid.uuid1().urn.split(':')[2]
+        rule1 = [{'direction': '>',
+                 'protocol': 'any',
+                  'dst_addresses': [{'security_group': 'local', 'subnet': {'ip_prefix': vn_prefix,
+                                         'ip_prefix_len': vn_prefix_len}}],
+                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'src_addresses': [{'subnet': {'ip_prefix': vn_prefix,
+                                         'ip_prefix_len': vn_prefix_len}}],
+                  'rule_uuid': uuid_1,
+                  'ethertype': 'IPv4'
+                  },
+                 {'direction': '>',
+                  'protocol': 'any',
+                  'src_addresses': [{'security_group': 'local', 'subnet': {'ip_prefix': vn_prefix,
+                                         'ip_prefix_len': vn_prefix_len}}],
+                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'dst_addresses': [{'subnet': {'ip_prefix': vn_prefix,
+                                         'ip_prefix_len': vn_prefix_len}}],
+                  'rule_uuid': uuid_2,
+                  'ethertype': 'IPv4'
+                  },
+                 {'direction': '>',
+                 'protocol': 'any',
+                  'dst_addresses': [{'security_group': 'local', 'subnet': None}],
+                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'src_addresses': [{'subnet': {'ip_prefix': '::', 'ip_prefix_len': 0}}],
+                  'ethertype': 'IPv6'
+                  },
+                 {'direction': '>',
+                  'protocol': 'any',
+                  'src_addresses': [{'security_group': 'local', 'subnet': None}],
+                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'dst_addresses': [{'subnet': {'ip_prefix': '::', 'ip_prefix_len': 0}}],
+                  'ethertype': 'IPv6'
+                  }
+                 ]
+        rule2 = [{'direction': '>',
+                 'protocol': 'any',
+                  'dst_addresses': [{'security_group': 'local', 'subnet': {'ip_prefix': '0.0.0.0',
+                                         'ip_prefix_len': '24'}}],
+                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0',
+                                         'ip_prefix_len': '24'}}],
+                  'rule_uuid': uuid_1,
+                  'ethertype': 'IPv4'
+                  },
+                 {'direction': '>',
+                  'protocol': 'any',
+                  'src_addresses': [{'security_group': 'local', 'subnet': {'ip_prefix': vn_prefix,
+                                         'ip_prefix_len': vn_prefix_len}}],
+                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'dst_addresses': [{'subnet': {'ip_prefix': vn_prefix,
+                                         'ip_prefix_len': vn_prefix_len}}],
+                  'rule_uuid': uuid_2,
+                  'ethertype': 'IPv4'
+                  },
+                 {'direction': '>',
+                 'protocol': 'any',
+                  'dst_addresses': [{'security_group': 'local', 'subnet': None}],
+                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'src_addresses': [{'subnet': {'ip_prefix': '::', 'ip_prefix_len': 0}}],
+                  'ethertype': 'IPv6'
+                  },
+                 {'direction': '>',
+                  'protocol': 'any',
+                  'src_addresses': [{'security_group': 'local', 'subnet': None}],
+                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'dst_addresses': [{'subnet': {'ip_prefix': '::', 'ip_prefix_len': 0}}],
+                  'ethertype': 'IPv6'
+                  }
+                 ]
+        sg_test1 = self.create_sec_group(name=sec_grp_name1, entries=rule1)
+        sg_test2 = self.create_sec_group(name=sec_grp_name2, entries=rule2)
+        vm1 = self.create_vm(vn_fixture=vn, image_name='cirros', sg_ids=[sg_test1.uuid])
+        for bms in self.inputs.bms_data.keys():
+            bms_fixtures.append(self.create_bms(bms_name=bms,
+                vn_fixture=vn, security_groups=[sg_test2.uuid]))
+        vm1.wait_till_vm_is_up()
+        self.do_ping_mesh(bms_fixtures+[vm1])
+
+    @preposttest_wrapper
+    def test_secgrp_subnet_deny_all(self):
+        bms_fixtures = list()
+        project = self.project
+        sec_grp_name1 = 'sg1' #get_random_name(prefix='sg') 
+        sec_grp_name2 = 'sg2' #get_random_name(prefix='sg') 
+        vn = self.create_vn()
+        vn_instance = self.create_vn()
+        vn_subnets = vn.vn_subnets
+        vn_prefix = vn_subnets[0]['cidr'].split('/')[0]
+        vn_prefix_len = int(vn_subnets[0]['cidr'].split('/')[1])
+        uuid_1 = uuid.uuid1().urn.split(':')[2]
+        uuid_2 = uuid.uuid1().urn.split(':')[2]
+        rule1 = [{'direction': '>',
+                 'protocol': 'any',
+                  'dst_addresses': [{'security_group': 'local', 'subnet': {'ip_prefix': vn_prefix,
+                                         'ip_prefix_len': vn_prefix_len}}],
+                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'src_addresses': [{'subnet': {'ip_prefix': vn_prefix,
+                                         'ip_prefix_len': vn_prefix_len}}],
+                  'rule_uuid': uuid_1,
+                  'ethertype': 'IPv4'
+                  },
+                 {'direction': '>',
+                  'protocol': 'any',
+                  'src_addresses': [{'security_group': 'local', 'subnet': {'ip_prefix': vn_prefix,
+                                         'ip_prefix_len': vn_prefix_len}}],
+                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'dst_addresses': [{'subnet': {'ip_prefix': vn_prefix,
+                                         'ip_prefix_len': vn_prefix_len}}],
+                  'rule_uuid': uuid_2,
+                  'ethertype': 'IPv4'
+                  },
+                 {'direction': '>',
+                 'protocol': 'any',
+                  'dst_addresses': [{'security_group': 'local', 'subnet': None}],
+                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'src_addresses': [{'subnet': {'ip_prefix': '::', 'ip_prefix_len': 0}}],
+                  'ethertype': 'IPv6'
+                  },
+                 {'direction': '>',
+                  'protocol': 'any',
+                  'src_addresses': [{'security_group': 'local', 'subnet': None}],
+                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'dst_addresses': [{'subnet': {'ip_prefix': '::', 'ip_prefix_len': 0}}],
+                  'ethertype': 'IPv6'
+                  }
+                 ]
+        rule2 = [{'direction': '>',
+                 'protocol': 'any',
+                  'dst_addresses': [{'security_group': 'local', 'subnet': {'ip_prefix': '0.0.0.0',
+                                         'ip_prefix_len': '24'}}],
+                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'src_addresses': [{'subnet': {'ip_prefix': '0.0.0.0',
+                                         'ip_prefix_len': '24'}}],
+                  'rule_uuid': uuid_1,
+                  'ethertype': 'IPv4'
+                  },
+                 {'direction': '>',
+                  'protocol': 'any',
+                  'src_addresses': [{'security_group': 'local', 'subnet': {'ip_prefix': vn_prefix,
+                                         'ip_prefix_len': vn_prefix_len}}],
+                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'dst_addresses': [{'subnet': {'ip_prefix': vn_prefix,
+                                         'ip_prefix_len': vn_prefix_len}}],
+                  'rule_uuid': uuid_2,
+                  'ethertype': 'IPv4'
+                  },
+                 {'direction': '>',
+                 'protocol': 'any',
+                  'dst_addresses': [{'security_group': 'local', 'subnet': None}],
+                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'src_addresses': [{'subnet': {'ip_prefix': '::', 'ip_prefix_len': 0}}],
+                  'ethertype': 'IPv6'
+                  },
+                 {'direction': '>',
+                  'protocol': 'any',
+                  'src_addresses': [{'security_group': 'local', 'subnet': None}],
+                  'src_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'dst_ports': [{'start_port': 0, 'end_port': 65535}],
+                  'dst_addresses': [{'subnet': {'ip_prefix': '::', 'ip_prefix_len': 0}}],
+                  'ethertype': 'IPv6'
+                  }
+                 ]
+        sg_test1 = self.create_sec_group(name=sec_grp_name1, entries=rule1)
+        sg_test2 = self.create_sec_group(name=sec_grp_name2, entries=rule2)
+        vm1 = self.create_vm(vn_fixture=vn_instance, image_name='cirros', sg_ids=[sg_test1.uuid])
+        for bms in self.inputs.bms_data.keys():
+            bms_fixtures.append(self.create_bms(bms_name=bms,
+                vn_fixture=vn_instance, security_groups=[sg_test2.uuid]))
+        vm1.wait_till_vm_is_up()
+        self.do_ping_mesh(bms_fixtures+[vm1], expectation=False)        
 
 class TestVxlanID(GenericTestBase):
     @preposttest_wrapper
