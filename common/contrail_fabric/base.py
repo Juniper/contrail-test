@@ -3,8 +3,10 @@ import time
 from tcutils.tcpdump_utils import *
 from common.base import GenericTestBase
 from router_fixture import LogicalRouterFixture
+from port_fixture import PortFixture
 import copy
 import re
+from security_group import SecurityGroupFixture, get_secgrp_id_from_name
 from common.neutron.base import BaseNeutronTest
 from common.fabric_utils import FabricUtils
 from lif_fixture import LogicalInterfaceFixture
@@ -84,7 +86,7 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         for interface in bms_dict['interfaces']:
             tor = interface['tor']
             tor_port = interface['tor_port']
-            lif = tor_port+'.'+str(vlan_id)
+            lif_name = tor_port+'.'+str(vlan_id)
             pif_fqname = ['default-global-system-config', tor,
                           tor_port.replace(':', '__')]
             lif_fixtures.append(self.useFixture(
@@ -143,6 +145,14 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         self.logger.info('BMS %s:ARP check using %s : Got (%s, %s)' % (
             bms_fixture.name, search_term, ip, mac))
     # end validate_arp
+    def create_sec_group(self, name, secgrpid=None, entries=None):
+        secgrp_fixture = self.useFixture(SecurityGroupFixture(
+            self.connections, self.inputs.domain_name,
+            self.inputs.project_name, secgrp_name=name,
+            uuid=secgrpid, secgrp_entries=entries,option='neutron'))
+        result, msg = secgrp_fixture.verify_on_setup()
+        assert result, msg
+        return secgrp_fixture
 
 class BaseEvpnType5Test(BaseFabricTest):
 
