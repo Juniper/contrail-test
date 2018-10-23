@@ -150,8 +150,8 @@ EOF
     create_repo $OPENSTACK_REPO_TEMPLATE_FILE $OPENSTACK_REPO_FILE
 
     docker_build "docker/test" "contrail-test-test" "$TAG"
+    docker tag contrail-test-test:$TAG $REGISTRY_SERVER/contrail-test-test:$TAG
     if [[ -n $POST ]]; then
-        docker tag contrail-test-test:$TAG $REGISTRY_SERVER/contrail-test-test:$TAG
         docker push $REGISTRY_SERVER/contrail-test-test:$TAG
     fi
 }
@@ -166,9 +166,10 @@ Usage: $0 base
   -h|--help                     Print help message
   --registry-server REGISTRY_SERVER Docker registry hosting the base test container, specify if the image needs to be pushed
   --tag             TAG           Docker container tag, default to sku
+  --post            POST          Upload the test container to the registy-server, if specified
 EOF
     }
-    if ! options=$(getopt -o h -l help,registry-server:,tag: -- "$@"); then
+    if ! options=$(getopt -o h -l help,post,registry-server:,tag: -- "$@"); then
         usage
         exit 1
     fi
@@ -178,6 +179,7 @@ EOF
             -h|--help) usage; exit;;
             --tag) TAG=$2; shift;;
             --registry-server) REGISTRY_SERVER=$2; shift;;
+            --post) POST=1; shift;;
 	esac
 	shift
     done
@@ -189,6 +191,8 @@ EOF
     docker build -t contrail-test-base:$TAG docker/base || exit
     if [[ -n $REGISTRY_SERVER ]]; then
         docker tag contrail-test-base:$TAG $REGISTRY_SERVER/contrail-test-base:$TAG
+    fi
+    if [[ -n $POST ]]; then
         docker push $REGISTRY_SERVER/contrail-test-base:$TAG
     fi
     echo "Built base container contrail-test-base:$TAG"
