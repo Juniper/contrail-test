@@ -705,8 +705,10 @@ class VerifyIntfMirror(VerifySvcMirror):
         result = True
         vnc, tap_intf_obj, parent_tap_intf_obj, vlan = self.config_intf_mirroring(
             src_vm_fixture, analyzer_ip_address, analyzer_name, routing_instance, src_port=src_port, sub_intf=sub_intf, parent_intf=parent_intf, nic_mirror=nic_mirror, header = header, nh_mode = nh_mode, direction = direction, mirror_vm_fixture = mirror_vm_fixture)
-
-        if not self.verify_port_mirroring(src_vm_fixture, dst_vm_fixture, mirror_vm_fixture, vlan=vlan, parent=parent_intf):
+        no_header = False
+        if header == 3:
+            no_header = True
+        if not self.verify_port_mirroring(src_vm_fixture, dst_vm_fixture, mirror_vm_fixture, vlan=vlan, parent=parent_intf, no_header = no_header):
             result = result and False
             if parent:
                 self.logger.error("Traffic mirroring from both the ports expected, failed from one or both")
