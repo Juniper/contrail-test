@@ -150,8 +150,10 @@ EOF
     create_repo $OPENSTACK_REPO_TEMPLATE_FILE $OPENSTACK_REPO_FILE
 
     docker_build "docker/test" "contrail-test-test" "$TAG"
+    if [[ ! -z $REGISTRY_SERVER ]]; then
+      docker tag contrail-test-test:$TAG $REGISTRY_SERVER/contrail-test-test:$TAG
+    fi
     if [[ -n $POST ]]; then
-        docker tag contrail-test-test:$TAG $REGISTRY_SERVER/contrail-test-test:$TAG
         docker push $REGISTRY_SERVER/contrail-test-test:$TAG
     fi
 }
@@ -189,6 +191,8 @@ EOF
     docker build -t contrail-test-base:$TAG docker/base || exit
     if [[ -n $REGISTRY_SERVER ]]; then
         docker tag contrail-test-base:$TAG $REGISTRY_SERVER/contrail-test-base:$TAG
+    fi
+    if [[ -n $POST ]]; then
         docker push $REGISTRY_SERVER/contrail-test-base:$TAG
     fi
     echo "Built base container contrail-test-base:$TAG"
