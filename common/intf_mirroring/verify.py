@@ -297,7 +297,6 @@ class VerifyIntfMirror(VerifySvcMirror):
     # end create_policy_rule
 
     def verify_intf_mirroring(self, compute_nodes, vn_index_list, sub_intf=False, parent_intf=False, nic_mirror=False, header = 1, nh_mode = 'dynamic', direction = 'both'):
-
         """Validate the interface mirroring
            Test steps:
            1. Create vn1/vm1_vn1, vn1/vm2_vn1, vn1/mirror_vm_vn1,  vn2/vm2_vn2, vn2/mirror_vm_vn2, vn3/mirror_vm_vn3
@@ -641,6 +640,7 @@ class VerifyIntfMirror(VerifySvcMirror):
             else:
                 self.logger.info("Nic mirroring works correctly")
     # end config_intf_mirroring
+
     #routine to verify inner header by checking the source and dst ip based in direction mirrored
     def verify_inner_header(self, vm_fix_pcap_pid_files, src_vm_ip, dst_vm_ip, direction = 'both'):
         cmds = 'tshark -r %s -n -d udp.port==8099,juniper' % vm_fix_pcap_pid_files[0][1]
@@ -705,8 +705,10 @@ class VerifyIntfMirror(VerifySvcMirror):
         result = True
         vnc, tap_intf_obj, parent_tap_intf_obj, vlan = self.config_intf_mirroring(
             src_vm_fixture, analyzer_ip_address, analyzer_name, routing_instance, src_port=src_port, sub_intf=sub_intf, parent_intf=parent_intf, nic_mirror=nic_mirror, header = header, nh_mode = nh_mode, direction = direction, mirror_vm_fixture = mirror_vm_fixture)
-
-        if not self.verify_port_mirroring(src_vm_fixture, dst_vm_fixture, mirror_vm_fixture, vlan=vlan, parent=parent_intf):
+        no_header = False
+        if header == 3:
+            no_header = True
+        if not self.verify_port_mirroring(src_vm_fixture, dst_vm_fixture, mirror_vm_fixture, vlan=vlan, parent=parent_intf, no_header = no_header):
             result = result and False
             if parent:
                 self.logger.error("Traffic mirroring from both the ports expected, failed from one or both")
@@ -714,7 +716,6 @@ class VerifyIntfMirror(VerifySvcMirror):
                 self.logger.error("Traffic mirroring from the sub intf port failed")
             else:
                 self.logger.error("Intf mirroring not working")
-
         if (header == 2 or header == 3):
             self.verify_header_details(src_vm_fixture, mirror_vm_fixture, src_vm_fixture.vm_ip, dst_vm_fixture.vm_ip, mirror_vm_fixture.vm_ip, src_vn_fq, direction = direction, header = header)
 
@@ -798,7 +799,8 @@ class VerifyIntfMirror(VerifySvcMirror):
                 staticmirror_nh = StaticMirrorNhType(vtep_dst_ip_address = hosted_node_ip, vni = vni)
                 mirror_to = MirrorActionType(analyzer_name=analyzer_name, encapsulation=None,analyzer_ip_address=analyzer_ip_address, juniper_header = header, nh_mode = nh_mode, static_nh_header = staticmirror_nh, routing_instance=routing_instance,udp_port=udp_port, analyzer_mac_address = analyzer_mac_address)
             else:
-                mirror_to = MirrorActionType(analyzer_name=analyzer_name, encapsulation=None, analyzer_ip_address=analyzer_ip_address, juniper_header = header, routing_instance=routing_instance, udp_port=udp_port, nic_assisted_mirroring = nic_assisted_mirroring, nic_assisted_mirroring_vlan = nic_assisted_mirroring_vlan, analyzer_mac_address = analyzer_mac_address)
+                mirror_to = MirrorActionType(analyzer_name=analyzer_name, encapsulation=None,
+                    analyzer_ip_address=analyzer_ip_address, juniper_header=header, routing_instance=routing_instance, udp_port=udp_port, nic_assisted_mirroring=nic_assisted_mirroring, nic_assisted_mirroring_vlan=nic_assisted_mirroring_vlan, analyzer_mac_address=analyzer_mac_address)
             interface_mirror = InterfaceMirrorType(direction, mirror_to)
             prop_obj.set_interface_mirror(interface_mirror)
             tap.set_virtual_machine_interface_properties(prop_obj)
