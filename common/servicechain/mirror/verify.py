@@ -324,7 +324,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
                 self.logger.warning('No mirroring action seen')
         return result
 
-    def verify_port_mirroring(self, src_vm, dst_vm, mirr_vm, vlan=None, parent=False):
+    def verify_port_mirroring(self, src_vm, dst_vm, mirr_vm, vlan=None, parent=False, no_header = False):
         result = True
         svm = mirr_vm.vm_obj
         if svm.status == 'ACTIVE':
@@ -337,11 +337,14 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
             # Intf mirroring enabled on both sub intf and parent port
             exp_count = 20
         if self.inputs.pcap_on_vm:
+            filters = ''
+            if not no_header:
+                filters='udp port 8099'
             vm_fix_pcap_pid_files = start_tcpdump_for_vm_intf(
-                None, [mirr_vm], None, filters='udp port 8099', pcap_on_vm=True)
+                None, [mirr_vm], None, filters=filters, pcap_on_vm=True, no_header = no_header)
         else:
             session = ssh(host['host_ip'], host['username'], host['password'])
-            pcap = self.start_tcpdump(session, tapintf, vlan=vlan)
+            pcap = self.start_tcpdump(session, tapintf, vlan=vlan, no_header = no_header)
         src_ip = src_vm.vm_ip
         dst_ip = dst_vm.vm_ip
         if vlan:
@@ -915,13 +918,15 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
     def cleanUp(self):
         super(VerifySvcMirror, self).cleanUp()
 
-    def start_tcpdump(self, session, tap_intf, vlan=None,  vm_fixtures=[], pcap_on_vm=False):
+    def start_tcpdump(self, session, tap_intf, vlan=None,  vm_fixtures=[], pcap_on_vm=False, no_header = False):
+        filt_str = ''
+        if not no_header:
+            filt_str = 'udp port 8099'
         if not pcap_on_vm:
             pcap = '/tmp/mirror-%s_%s.pcap' % (tap_intf, get_random_name())
             cmd = 'rm -f %s' % pcap
             execute_cmd(session, cmd, self.logger)
             assert check_pcap_file_exists(session, pcap, expect=False),'pcap file still exists'
-            filt_str = 'udp port 8099'
             if vlan:
                 filt_str = 'greater 1200'
             cmd = "sudo tcpdump -ni %s -U %s -w %s" % (tap_intf, filt_str, pcap)
@@ -931,7 +936,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
             return pcap
         else:
             pcap = '/tmp/%s.pcap' % (get_random_name())
-            cmd_to_tcpdump = [ 'tcpdump -ni %s udp port 8099 -w %s 1>/dev/null 2>/dev/null' % (tap_intf, pcap) ]
+            cmd_to_tcpdump = [ 'tcpdump -ni %s %s -w %s 1>/dev/null 2>/dev/null' % (tap_intf, filt_str, pcap) ]
             pidfile = pcap + '.pid'
             vm_fix_pcap_pid_files =[]
             for vm_fixture in vm_fixtures:
