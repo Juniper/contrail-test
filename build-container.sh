@@ -16,8 +16,9 @@ create_repo () {
     local tmpl=$1
     local repo=$2
     if [[ -f $repo ]]; then
-       echo "Skipping $repo file creation since a file by the same name already exists"
-       return
+       local timestamp=$(date +"%Y%m%d-%H%M%S")
+       echo "Moving old $repo file to $repo.$timestamp"
+       mv "$repo" "$repo.$timestamp"
     fi
     template=$(cat $tmpl)
     content=$(eval "echo \"$template\"")
