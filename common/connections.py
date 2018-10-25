@@ -59,6 +59,7 @@ class ContrailConnections():
                                         'ops_inspect:'+self.project_name+':'+self.username)
         self.cn_inspect = custom_dict(self.get_control_node_inspect_handle,
                                       'cn_inspect')
+        self.k8s_cluster = self.get_k8s_cluster()
         self.k8s_client = self.get_k8s_api_client_handle()
 
         # ToDo: msenthil/sandipd rest of init needs to be better handled
@@ -249,6 +250,17 @@ class ContrailConnections():
                                         inputs=self.inputs)
         return self.ops_inspects[ip]
 
+    def get_k8s_cluster(self):
+        if self.inputs.slave_orchestrator != 'kubernetes':
+            return None
+        if not getattr(self, 'k8s_cluster', None):
+            self.k8s_cluster = None
+            for clus in self.inputs.k8s_clusters:
+                if clus['name'] == self.project_name:
+                    self.k8s_cluster = clus
+                    break
+        return self.k8s_cluster
+
     def get_k8s_api_client_handle(self):
         if self.inputs.orchestrator != 'kubernetes' and self.inputs.slave_orchestrator != 'kubernetes':
             return None
@@ -257,7 +269,16 @@ class ContrailConnections():
                 self.k8s_client = Openshift_client(self.inputs.kube_config_file,
                                                 self.logger)
             else:
-                self.k8s_client = Kubernetes_client(self.inputs.kube_config_file,
+                if self.inputs.slave_orchestrator == 'kubernetes':
+                    if self.k8s_cluster:
+                        self.k8s_client = Kubernetes_client(
+                                                cluster=self.k8s_cluster,
+                                                logger=self.logger)
+                    else:
+                        self.k8s_client = None
+                else:
+                    self.k8s_client = Kubernetes_client(
+                                                self.inputs.kube_config_file,
                                                 self.logger)
         return self.k8s_client
     # end get_k8s_api_client_handle
@@ -275,6 +296,12 @@ class ContrailConnections():
 
     def get_kube_manager_h(self, refresh=False):
         if not getattr(self, '_kube_manager_inspect', None) or refresh:
+            if self.k8s_cluster:
+                self._kube_manager_inspect = KubeManagerInspect(
+                                        self.k8s_cluster['master_public_ip'],
+                                        logger=self.logger)
+                return self._kube_manager_inspect
+
             for km_ip in self.inputs.kube_manager_ips:
                 #contrail-status would increase run time hence netstat approach
                 cmd = 'netstat -antp | grep :%s | grep LISTEN' % self.inputs.k8s_port

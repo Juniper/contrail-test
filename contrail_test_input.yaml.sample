@@ -217,6 +217,28 @@ test_configuration:
     public_subnets:
         - 1.1.1.0/24
         - 2.2.2.0/24
+
+    k8s_nested:
+        clusters:
+            - name: sp
+              master: spm
+              slave1: sps1
+              slave2: sps2
+              network:
+                name: spnet
+                prefix: 1.1.1.0/24
+                fabric_snat: True
+              fip_pool:
+            - name: fs
+              master: fsm
+              slave1: fss1
+              slave2: fss2
+              network:
+                name: fsnet
+                prefix: 2.2.2.0/24
+                fabric_snat: True
+              fip_pool:
+
     fabric:
         - namespaces:
             management:

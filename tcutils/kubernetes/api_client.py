@@ -8,9 +8,19 @@ from kubernetes.stream import stream
 
 class Client(object):
 
-    def __init__(self, config_file='/etc/kubernetes/admin.conf', logger=None):
-        self.api_client = config.new_client_from_config(config_file)
-        self.api_client.configuration.assert_hostname = False
+    def __init__(self, config_file='/etc/kubernetes/admin.conf', logger=None, cluster=None):
+        if cluster:
+            config_file = cluster['kube_config_file']
+        cfg = client.Configuration()
+        config.load_kube_config(config_file=config_file,
+                                client_configuration=cfg)
+        cfg.assert_hostname = False
+        if cluster:
+            (proto, _, port) = cfg.host.split(':')
+            host = proto + '://' + cluster['master_public_ip'] + ':' + port
+            cfg.host = host
+            cfg.verify_ssl = False
+        self.api_client = client.ApiClient(cfg)
         self.v1_h = client.CoreV1Api(self.api_client)
         self.v1_h.read_namespace('default')
         self.v1_beta_h = client.ExtensionsV1beta1Api(self.api_client)
