@@ -19,7 +19,7 @@ class TestIngressTLS(BaseK8sTest):
         self.delete_in_parallel(parallelCleanupCandidates)
     
     @test.attr(type=['k8s_sanity']) 
-    @skip_because(mx_gw = False)
+    @skip_because(mx_gw = False, slave_orchestrator='kubernetes')
     @preposttest_wrapper
     def test_ingress_tls_1(self):
         ''' Create a service with 2 pods running nginx

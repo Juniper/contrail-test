@@ -28,10 +28,17 @@ class NetworkPolicyFixture(fixtures.Fixture):
         self.agent_inspect = connections.agent_inspect
         self.connections = connections
         self.inputs = connections.inputs
-        self.k8s_default_network_policies = ['default-policy-management:k8s-allowall',
-                                             'default-policy-management:k8s-Ingress',
-                                             'default-policy-management:k8s-denyall']
-        self.k8s_defaut_aps = "default-policy-management:k8s"
+        if self.inputs.slave_orchestrator == 'kubernetes':
+            prefix = 'default-policy-management:%s' % self.connections.project_name
+            self.k8s_default_network_policies = [prefix + '-allowall',
+                                            prefix + '-Ingress',
+                                            prefix + '-denyall']
+            self.k8s_defaut_aps = prefix
+        else:
+            self.k8s_default_network_policies = ['default-policy-management:k8s-allowall',
+                                                'default-policy-management:k8s-Ingress',
+                                                'default-policy-management:k8s-denyall']
+            self.k8s_defaut_aps = "default-policy-management:k8s"
         
         self.already_exists = None
 

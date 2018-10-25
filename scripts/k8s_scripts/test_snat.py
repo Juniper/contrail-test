@@ -1,6 +1,6 @@
 from common.k8s.base import BaseK8sTest
 from tcutils.wrappers import preposttest_wrapper
-from tcutils.util import get_random_name
+from tcutils.util import get_random_name, skip_because
 import test
 import time
 
@@ -9,7 +9,10 @@ class TestSNAT(BaseK8sTest):
     @classmethod
     def setUpClass(cls):
         super(TestSNAT, cls).setUpClass()
-        cls.ip_to_ping = cls.inputs.bgp_control_ips[0]
+        if cls.inputs.slave_orchestrator == 'kubernetes':
+            cls.ip_to_ping = cls.inputs.k8s_clusters[0]['master_ip']
+        else:
+            cls.ip_to_ping = cls.inputs.bgp_control_ips[0]
 
     @classmethod
     def tearDownClass(cls):
@@ -95,6 +98,7 @@ class TestSNAT(BaseK8sTest):
         assert client1[0].ping_to_ip(client3[0].pod_ip, expectation=False)
     #end test_pod_publicreachability_with_snat_enabled
 
+    @skip_because(slave_orchestrator='kubernetes')
     @preposttest_wrapper
     def test_snat_forwarding_disabled_by_default(self):
         """
@@ -124,6 +128,7 @@ class TestSNAT(BaseK8sTest):
         assert pod1_in_ns1.ping_to_ip(self.ip_to_ping)
     #end test_snat_forwarding_disabled_by_default
     
+    @skip_because(slave_orchestrator='kubernetes')
     @preposttest_wrapper
     def test_ping_with_jumbo_frame(self):
         """

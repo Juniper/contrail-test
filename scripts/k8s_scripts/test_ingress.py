@@ -34,10 +34,7 @@ class TestIngressClusterIp(BaseK8sTest):
             
         Validate that Ingress get a IP from Public FIP pool which might/might not be accessible.
         Validate that service and its loadbalancing work
-        '''
-        K8S_PUB_VN_NAME = '__public__'
-        K8S_PUB_FIP_POOL_NAME = '__fip_pool_public__'
-        
+        '''        
         app = 'http_test'
         labels = {'app':app}
         namespace = self.setup_namespace(name='default')
@@ -50,17 +47,6 @@ class TestIngressClusterIp(BaseK8sTest):
 
         pod2 = self.setup_nginx_pod(namespace=namespace.name, 
                                           labels=labels)
-        vn_fixture = self.useFixture(VNFixture(project_name=self.inputs.project_name,
-                                               vn_name=K8S_PUB_VN_NAME,
-                                               connections=self.connections,
-                                               inputs=self.inputs,
-                                               option="contrail"))
-        fip_pool_fixture = self.useFixture(FloatingIPFixture(
-                                            project_name=self.inputs.project_name,
-                                            inputs=self.inputs,
-                                            connections=self.connections,
-                                            pool_name=K8S_PUB_FIP_POOL_NAME,
-                                            vn_id=vn_fixture.vn_id))
         ingress = self.setup_simple_nginx_ingress(service.name,
                                                   namespace=namespace.name)
         assert ingress.verify_on_setup()

@@ -157,11 +157,11 @@ class TestCustomIsolation(BaseK8sTest):
         service_ns2, ingress_ns2 = None, None
         vn_for_namespace = self.setup_vn(vn_name = "TestVNNamespace")
         vn_dict_for_namespace = {"domain": vn_for_namespace.domain_name,
-                   "project" : vn_for_namespace.project_name[0],
+                   "project" : vn_for_namespace.project_name,
                    "name": vn_for_namespace.vn_name}
         vn_for_pod = self.setup_vn(vn_name = "TestVNPod")
         vn_dict_for_pod = {"domain": vn_for_pod.domain_name,
-                   "project" : vn_for_pod.project_name[0],
+                   "project" : vn_for_pod.project_name,
                    "name": vn_for_pod.vn_name}
         namespace1_name = get_random_name("ns1")
         namespace2_name = get_random_name("ns2")
@@ -274,9 +274,13 @@ class TestCustomIsolation(BaseK8sTest):
         #check 2
         #Creating the policy between custom VN ans default service VN
         policy_name='allow-btw-custom-ns-and-service'
-        k8s_default_service_vn_name = "k8s-default-service-network"
-        k8s_default_service_vn_fq_name = self.inputs.project_fq_name + \
-                                            [k8s_default_service_vn_name]
+        if self.inputs.slave_orchestrator == 'kubernetes':
+            k8s_default_service_vn_name = self.connections.project_name + '-default-service-network'
+        else:
+            k8s_default_service_vn_name = "k8s-default-service-network"
+        k8s_default_service_vn_fq_name = [self.connections.domain_name,
+                                        self.connections.project_name,
+                                        k8s_default_service_vn_name]
         k8s_default_service_vn_obj = self.vnc_lib.virtual_network_read(
                                     fq_name = k8s_default_service_vn_fq_name)
         k8s_service_vn_fixt = VNFixture(connections = self.connections,
@@ -286,7 +290,8 @@ class TestCustomIsolation(BaseK8sTest):
         k8s_service_vn_fixt.setUp()
         vn_service_policy = self.setup_policy_between_vns(client2[7],
                                                           k8s_service_vn_fixt,
-                                                          api="contrail")
+                                                          api="contrail",
+                                                          connections=self.connections)
         assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
                                       test_pod=client2[2])
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
