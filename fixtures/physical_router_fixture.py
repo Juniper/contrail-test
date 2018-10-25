@@ -114,11 +114,12 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
             password=self.ssh_password,
             logger=self.logger)
 
-    @retry(delay=15, tries=10)
+    @retry(delay=25, tries=20)
     def verify_bgp_peer(self):
         """
         Check the configured control node has any peer and if so the state is Established.
         """
+
 
         result = True
         for entry1 in self.inputs.bgp_ips:
@@ -138,11 +139,11 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
                         if entry['state'] != 'Established':
                             result = result and False
                             self.logger.error('!!!Node %s peering info:With Peer %s: %s  peering is not Established. Current State %s ' % (
-                                entry1, self.tunnel_ip or self.mgmt_ip, entry['peer'], entry['state']))
+                                entry['local_address'], self.tunnel_ip or self.mgmt_ip, entry['peer'], entry['state']))
                         else:
                             self.logger.info(
                                 'Node %s peering info:With Peer %s : %s peering is Current State is %s ' %
-                                (entry1,self.tunnel_ip or self.mgmt_ip, entry['peer'], entry['state']))
+                                (entry['local_address'],self.tunnel_ip or self.mgmt_ip, entry['peer'], entry['state']))
         return result
 
     def cleanUp(self):
