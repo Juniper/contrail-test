@@ -22,21 +22,16 @@ from common.base import GenericTestBase
 from vn_test import VNFixture
 import gevent
 
-K8S_SERVICE_IPAM = ['default-domain', 'default', 'service-ipam']
-K8S_PUBLIC_VN_NAME = '__public__'
-K8S_PUBLIC_FIP_POOL_NAME = '__fip_pool_public__'
-
-
 class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
 
     @classmethod
     def setUpClass(cls):
         super(BaseK8sTest, cls).setUpClass()
-        cls.connections = ContrailConnections(cls.inputs,
+        """ cls.connections = ContrailConnections(cls.inputs,
                                               project_name=cls.inputs.admin_tenant,
                                               username=cls.inputs.admin_username,
                                               password=cls.inputs.admin_password,
-                                              logger=cls.logger)
+                                              logger=cls.logger) """
         cls.vnc_lib_fixture = cls.connections.vnc_lib_fixture
         cls.vnc_lib = cls.connections.vnc_lib
         cls.vnc_h = cls.vnc_lib_fixture.vnc_h
@@ -45,22 +40,40 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         cls.analytics_obj = cls.connections.analytics_obj
         cls.api_s_inspect = cls.connections.api_server_inspect
         cls.logger = cls.connections.logger
-        cls.k8s_client = cls.connections.k8s_client
         cls.setup_namespace_isolation = False
         cls.setup_custom_isolation = False
         cls.public_vn = create_public_vn.PublicVn(connections=cls.connections,
-                                                  public_vn=K8S_PUBLIC_VN_NAME,
+                                                  public_vn=cls.inputs.public_vn,
                                                   public_tenant=cls.inputs.admin_tenant,
                                                   logger=cls.logger,
-                                                  fip_pool_name=K8S_PUBLIC_FIP_POOL_NAME,
+                                                  fip_pool_name=cls.inputs.fip_pool_name,
                                                   api_option='contrail')
-
+        cls.cluster_connections = []
+        if cls.inputs.slave_orchestrator == 'kubernetes':
+            for cluster in cls.inputs.k8s_clusters:
+                cls.cluster_connections.append(ContrailConnections(
+                    cls.inputs,
+                    project_name=cluster['name'],
+                    username=cls.inputs.admin_username,
+                    password=cls.inputs.admin_password,
+                    logger=cls.logger))
+        # Hack: sunil/venky to relook when enabling nested multi-cluster tests
+        cls._connections = cls.connections
+        del cls.connections
+        cls.connections = cls.get_connections
     # end setUpClass
 
     @classmethod
     def tearDownClass(cls):
         super(BaseK8sTest, cls).tearDownClass()
     # end tearDownClass
+
+    @property
+    def get_connections(self):
+        if self.cluster_connections:
+            return self.cluster_connections[0]
+        else:
+            return self._connections
 
     def setup_http_service(self,
                            name=None,
@@ -1028,11 +1041,10 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                  inputs = None,
                  vn_name = None,
                  option = "contrail"):
-        project_name = self.inputs.project_name,
         connections = self.connections
         inputs = self.inputs
         vn_name = vn_name or get_random_name('vn_test')
-        return self.useFixture(VNFixture(project_name=project_name,
+        return self.useFixture(VNFixture(
                                         connections=connections,
                                         inputs=inputs,
                                         vn_name=vn_name,

@@ -494,9 +494,11 @@ class TestInputs(object):
         self.external_vip = orchestrator_configs.get('external_vip') or self.internal_vip
 
         #kubernetes specific configs
-        self.k8s_cluster_name = contrail_configs.get('KUBERNETES_CLUSTER_NAME') or "k8s"
         if self.orchestrator == 'kubernetes':
+            self.k8s_cluster_name = contrail_configs.get('KUBERNETES_CLUSTER_NAME') or "k8s"
             self.admin_tenant = self.k8s_cluster_name + '-default'
+        elif self.slave_orchestrator == 'kubernetes':
+            self.k8s_clusters = test_configs['k8s_nested']['clusters']
 
         # test specific configs
         self.auth_url = test_configs.get('auth_url') or os.getenv('OS_AUTH_URL',
@@ -574,7 +576,7 @@ class TestInputs(object):
             self.config_amqp_ips = self.cfgm_ips
         self.many_computes = (len(self.compute_ips) > 10) or False
         self._set_auth_vars()
-        if self.orchestrator == 'kubernetes':
+        if self.orchestrator == 'kubernetes' or self.slave_orchestrator == 'kubernetes':
             self.tenant_isolation = False
         self.image_web_server = test_configs.get('image_web_server') or \
                                 os.getenv('IMAGE_WEB_SERVER') or '10.204.216.50'
@@ -901,10 +903,18 @@ class ContrailTestInit(object):
         # address_family = read_config_option(self.config,
         #                      'Basic', 'AddressFamily', 'dual')
         self.address_family = 'v4'
-        if self.orchestrator == 'kubernetes' or self.slave_orchestrator == 'kubernetes':
+        if self.orchestrator == 'kubernetes':
             if not os.path.exists(self.kube_config_file):
                  self.copy_file_from_server(self.k8s_master_ip,
                         self.kube_config_file, self.kube_config_file)
+        if self.slave_orchestrator == 'kubernetes':
+            for cluster in self.k8s_clusters:
+                master_ip = self.get_host_ip(cluster['master'])
+                cluster['master_public_ip'] = master_ip
+                cluster['kube_config_file'] = '/etc/kubernetes/' + cluster['name'] + '.conf'
+                if not os.path.exists(cluster['kube_config_file']):
+                    self.copy_file_from_server(master_ip,
+                        self.kube_config_file, cluster['kube_config_file'])
     # end __init__
 
     def is_ci_setup(self):

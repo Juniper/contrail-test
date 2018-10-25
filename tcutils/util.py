@@ -1092,6 +1092,12 @@ def skip_because(*args, **kwargs):
                             "%d bms nodes, but only %d found" % (mins, nodes)))
                     raise testtools.TestCase.skipException(msg)
 
+            if "slave_orchestrator" in kwargs:
+                if kwargs['slave_orchestrator'] == self.inputs.slave_orchestrator:
+                    skip = True
+                    msg = "Skipped as test not supported in nested %s" % self.inputs.slave_orchestrator
+                    raise testtools.TestCase.skipException(msg)
+
             if "min_nodes" in kwargs:
                 nodes = len(self.connections.orch.get_hosts())
                 mins = kwargs["min_nodes"]

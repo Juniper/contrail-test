@@ -3,8 +3,6 @@ from k8s.network_policy import NetworkPolicyFixture
 from tcutils.wrappers import preposttest_wrapper
 from test import BaseTestCase
 
-from k8s.namespace import NamespaceFixture
-from k8s.pod import PodFixture
 import test
 import time
 
@@ -217,133 +215,83 @@ class TestNetworkPolicyRestart(BaseK8sTest):
     @classmethod
     def setUpClass(cls):
         super(TestNetworkPolicyRestart, cls).setUpClass()
-        try:
-            cls.ns1 = NamespaceFixture(connections=cls.connections, name="new-default")
-            cls.ns1.setUp()
-            cls.ns2 = NamespaceFixture(connections=cls.connections, name="non-default")
-            cls.ns2.setUp()
-            cls.ns3 = NamespaceFixture(connections=cls.connections, name="temp-ns")
-            cls.ns3.setUp()
-            #cls.ns1.set_labels({'project': cls.ns1.name})
-            cls.ns1.set_labels({'site': cls.ns1.name})
-            cls.ns2.set_labels({'site': cls.ns2.name})
-            cls.ns3.set_labels({'new_site': cls.ns3.name})
-            web_label_ns1, web_label_ns2 = 'webns1', 'webns2'
-            client1_label_ns1, client1_label_ns2, client1_label_ns3 = 'client1_ns1', 'client1_ns2', 'client1_ns3'
-            client2_label_ns1, client2_label_ns2, client2_label_ns3 = 'client2_ns1', 'client2_ns2', 'client2_ns3'
-            client3_label_ns3 = 'client3_ns3'
-            nginx_spec_1 = {'containers': [{'image': 'nginx',
-                                            'ports': [{'container_port': 80}]}]}
-            nginx_spec_2 = {'containers': [{'image': 'nginx',
-                                            'ports': [{'container_port': 80}]}]}
-            nginx_metadata_ns1 = {'labels': {'app': web_label_ns1}}
-            nginx_metadata_ns2 = {'labels': {'app': web_label_ns2}}
-            cls.web_pod_ns1 = PodFixture(connections=cls.connections,
-                                         namespace=cls.ns1.name,
-                                         metadata=nginx_metadata_ns1,
-                                         spec=nginx_spec_1)
-            cls.web_pod_ns1.setUp()
-            cls.web_pod_ns2 = PodFixture(connections=cls.connections,
-                                         namespace=cls.ns2.name,
-                                         metadata=nginx_metadata_ns2,
-                                         spec=nginx_spec_2)
-            cls.web_pod_ns2.setUp()
-            busybox_spec_1 = {'containers': [{'image': 'busybox','command': ['sleep', '1000000'],
-                                              'image_pull_policy': 'IfNotPresent',}],
-                                        'restart_policy': 'Always'}
-            busybox_spec_2 = dict(busybox_spec_1)
-            busybox_spec_3 = dict(busybox_spec_1)
-            busybox_spec_4 = dict(busybox_spec_1)
-            busybox_spec_5 = dict(busybox_spec_1)
-            busybox_spec_6 = dict(busybox_spec_1)
-            busybox_spec_7 = dict(busybox_spec_1)
-            busybox_metadata_c1_ns1 = {'labels': {'app': client1_label_ns1}}
-            busybox_metadata_c1_ns2 = {'labels': {'app': client1_label_ns2}}
-            busybox_metadata_c1_ns3 = {'labels': {'app': client1_label_ns3}}
-            busybox_metadata_c2_ns1 = {'labels': {'app': client2_label_ns1}}
-            busybox_metadata_c2_ns2 = {'labels': {'app': client2_label_ns2}}
-            busybox_metadata_c2_ns3 = {'labels': {'app': client2_label_ns3}}
-            busybox_metadata_c3_ns3 = {'labels': {'app': client3_label_ns3}}
-            cls.client1_pod_ns1 = PodFixture(connections=cls.connections,
-                                            namespace=cls.ns1.name,
-                                            metadata=busybox_metadata_c1_ns1,
-                                            spec=busybox_spec_1)
-            cls.client1_pod_ns1.setUp()
-            cls.client2_pod_ns1 = PodFixture(connections=cls.connections,
-                                             namespace=cls.ns1.name,
-                                             metadata=busybox_metadata_c2_ns1,
-                                             spec=busybox_spec_2)
-            cls.client2_pod_ns1.setUp()
-            cls.client1_pod_ns2 = PodFixture(connections=cls.connections,
-                                             namespace=cls.ns2.name,
-                                             metadata=busybox_metadata_c1_ns2,
-                                             spec=busybox_spec_3)
-            cls.client1_pod_ns2.setUp()
-            cls.client2_pod_ns2 = PodFixture(connections=cls.connections,
-                                             namespace=cls.ns2.name,
-                                             metadata=busybox_metadata_c2_ns2,
-                                             spec=busybox_spec_4)
-            cls.client2_pod_ns2.setUp()
-            cls.client1_pod_ns3 = PodFixture(connections=cls.connections,
-                                             namespace=cls.ns3.name,
-                                             metadata=busybox_metadata_c1_ns3,
-                                             spec=busybox_spec_5)
-            cls.client1_pod_ns3.setUp()
-            cls.client2_pod_ns3 = PodFixture(connections=cls.connections,
-                                             namespace=cls.ns3.name,
-                                             metadata=busybox_metadata_c2_ns3,
-                                             spec=busybox_spec_6)
-            cls.client2_pod_ns3.setUp()
-            cls.client3_pod_ns3 = PodFixture(connections=cls.connections,
-                                             namespace=cls.ns3.name,
-                                             metadata=busybox_metadata_c3_ns3,
-                                             spec=busybox_spec_7)
-            cls.client3_pod_ns3.setUp()
-            assert cls.ns1.verify_on_setup()
-            assert cls.ns2.verify_on_setup()
-            assert cls.ns3.verify_on_setup()
-            assert cls.web_pod_ns1.verify_on_setup()
-            assert cls.web_pod_ns2.verify_on_setup()
-            assert cls.client1_pod_ns1.verify_on_setup()
-            assert cls.client1_pod_ns2.verify_on_setup()
-            assert cls.client1_pod_ns3.verify_on_setup()
-            assert cls.client2_pod_ns1.verify_on_setup()
-            assert cls.client2_pod_ns2.verify_on_setup()
-            assert cls.client2_pod_ns3.verify_on_setup()
-            assert cls.client3_pod_ns3.verify_on_setup()
-        except:
-            cls.tearDownClass()
-            raise
 
     @classmethod
     def tearDownClass(cls):
-        cleanup_list = list()
-        if getattr(cls, 'web_pod_ns1', None):
-            cleanup_list.append(gevent.spawn(cls.web_pod_ns1.cleanUp))
-        if getattr(cls, 'web_pod_ns2', None):
-            cleanup_list.append(gevent.spawn(cls.web_pod_ns2.cleanUp))
-        if getattr(cls, 'client1_pod_ns1', None):
-            cleanup_list.append(gevent.spawn(cls.client1_pod_ns1.cleanUp))
-        if getattr(cls, 'client2_pod_ns1', None):
-            cleanup_list.append(gevent.spawn(cls.client2_pod_ns1.cleanUp))
-        if getattr(cls, 'client1_pod_ns2', None):
-            cleanup_list.append(gevent.spawn(cls.client1_pod_ns2.cleanUp))
-        if getattr(cls, 'client2_pod_ns2', None):
-            cleanup_list.append(gevent.spawn(cls.client2_pod_ns2.cleanUp))
-        if getattr(cls, 'client1_pod_ns3', None):
-            cleanup_list.append(gevent.spawn(cls.client1_pod_ns3.cleanUp))
-        if getattr(cls, 'client2_pod_ns3', None):
-            cleanup_list.append(gevent.spawn(cls.client2_pod_ns3.cleanUp))
-        if getattr(cls, 'client3_pod_ns3', None):
-            cleanup_list.append(gevent.spawn(cls.client3_pod_ns3.cleanUp))
-        gevent.joinall(cleanup_list)
-        if getattr(cls, 'ns1', None):
-            cls.ns1.cleanUp()
-        if getattr(cls, 'ns2', None):
-            cls.ns2.cleanUp()
-        if getattr(cls, 'ns3', None):
-            cls.ns3.cleanUp()
         super(TestNetworkPolicyRestart, cls).tearDownClass()
+
+    def setup_common_namespaces_pods(self):
+        self.ns1 = self.setup_namespace(name="new-default")
+        self.ns2 = self.setup_namespace(name="non-default")
+        self.ns3 = self.setup_namespace(name="temp-ns")
+        self.ns1.set_labels({'site': self.ns1.name})
+        self.ns2.set_labels({'site': self.ns2.name})
+        self.ns3.set_labels({'new_site': self.ns3.name})
+        web_label_ns1, web_label_ns2 = 'webns1', 'webns2'
+        client1_label_ns1, client1_label_ns2, client1_label_ns3 = 'client1_ns1', 'client1_ns2', 'client1_ns3'
+        client2_label_ns1, client2_label_ns2, client2_label_ns3 = 'client2_ns1', 'client2_ns2', 'client2_ns3'
+        client3_label_ns3 = 'client3_ns3'
+        nginx_spec_1 = {'containers': [{'image': 'nginx',
+                                        'ports': [{'container_port': 80}]}]}
+        nginx_spec_2 = {'containers': [{'image': 'nginx',
+                                        'ports': [{'container_port': 80}]}]}
+        nginx_metadata_ns1 = {'labels': {'app': web_label_ns1}}
+        nginx_metadata_ns2 = {'labels': {'app': web_label_ns2}}
+        self.web_pod_ns1 = self.setup_pod(namespace=self.ns1.name,
+                                        metadata=nginx_metadata_ns1,
+                                        spec=nginx_spec_1)
+        self.web_pod_ns2 = self.setup_pod(namespace=self.ns2.name,
+                                        metadata=nginx_metadata_ns2,
+                                        spec=nginx_spec_2)
+        busybox_spec_1 = {'containers': [{'image': 'busybox','command': ['sleep', '1000000'],
+                                            'image_pull_policy': 'IfNotPresent',}],
+                                    'restart_policy': 'Always'}
+        busybox_spec_2 = dict(busybox_spec_1)
+        busybox_spec_3 = dict(busybox_spec_1)
+        busybox_spec_4 = dict(busybox_spec_1)
+        busybox_spec_5 = dict(busybox_spec_1)
+        busybox_spec_6 = dict(busybox_spec_1)
+        busybox_spec_7 = dict(busybox_spec_1)
+        busybox_metadata_c1_ns1 = {'labels': {'app': client1_label_ns1}}
+        busybox_metadata_c1_ns2 = {'labels': {'app': client1_label_ns2}}
+        busybox_metadata_c1_ns3 = {'labels': {'app': client1_label_ns3}}
+        busybox_metadata_c2_ns1 = {'labels': {'app': client2_label_ns1}}
+        busybox_metadata_c2_ns2 = {'labels': {'app': client2_label_ns2}}
+        busybox_metadata_c2_ns3 = {'labels': {'app': client2_label_ns3}}
+        busybox_metadata_c3_ns3 = {'labels': {'app': client3_label_ns3}}
+        self.client1_pod_ns1 = self.setup_pod(namespace=self.ns1.name,
+                                        metadata=busybox_metadata_c1_ns1,
+                                        spec=busybox_spec_1)
+        self.client2_pod_ns1 = self.setup_pod(namespace=self.ns1.name,
+                                            metadata=busybox_metadata_c2_ns1,
+                                            spec=busybox_spec_2)
+        self.client1_pod_ns2 = self.setup_pod(namespace=self.ns2.name,
+                                            metadata=busybox_metadata_c1_ns2,
+                                            spec=busybox_spec_3)
+        self.client2_pod_ns2 = self.setup_pod(namespace=self.ns2.name,
+                                            metadata=busybox_metadata_c2_ns2,
+                                            spec=busybox_spec_4)
+        self.client1_pod_ns3 = self.setup_pod(namespace=self.ns3.name,
+                                            metadata=busybox_metadata_c1_ns3,
+                                            spec=busybox_spec_5)
+        self.client2_pod_ns3 = self.setup_pod(namespace=self.ns3.name,
+                                            metadata=busybox_metadata_c2_ns3,
+                                            spec=busybox_spec_6)
+        self.client3_pod_ns3 = self.setup_pod(namespace=self.ns3.name,
+                                            metadata=busybox_metadata_c3_ns3,
+                                            spec=busybox_spec_7)
+        assert self.ns1.verify_on_setup()
+        assert self.ns2.verify_on_setup()
+        assert self.ns3.verify_on_setup()
+        assert self.web_pod_ns1.verify_on_setup()
+        assert self.web_pod_ns2.verify_on_setup()
+        assert self.client1_pod_ns1.verify_on_setup()
+        assert self.client1_pod_ns2.verify_on_setup()
+        assert self.client1_pod_ns3.verify_on_setup()
+        assert self.client2_pod_ns1.verify_on_setup()
+        assert self.client2_pod_ns2.verify_on_setup()
+        assert self.client2_pod_ns3.verify_on_setup()
+        assert self.client3_pod_ns3.verify_on_setup()
 
     def verify_policy_pre_modification_common(self, pod_list_ns1, pod_list_ns2, pod_list_ns3):
         '''
@@ -489,6 +437,7 @@ class TestNetworkPolicyRestart(BaseK8sTest):
         4. Edit the k8s network policy
         5. Verify that all policy rules are followed
         """
+        self.setup_common_namespaces_pods()
         pod_list_ns1 = [self.client1_pod_ns1, self.client2_pod_ns1, self.web_pod_ns1, self.ns1]
         pod_list_ns2 = [self.client1_pod_ns2, self.client2_pod_ns2, self.web_pod_ns2, self.ns2]
         pod_list_ns3 = [self.client1_pod_ns3, self.client2_pod_ns3, self.client3_pod_ns3, self.ns3]
@@ -520,6 +469,7 @@ class TestNetworkPolicyRestart(BaseK8sTest):
         4. Edit the k8s network policy
         5. Verify that all policy rules are followed
         """
+        self.setup_common_namespaces_pods()
         pod_list_ns1 = [self.client1_pod_ns1, self.client2_pod_ns1, self.web_pod_ns1, self.ns1]
         pod_list_ns2 = [self.client1_pod_ns2, self.client2_pod_ns2, self.web_pod_ns2, self.ns2]
         pod_list_ns3 = [self.client1_pod_ns3, self.client2_pod_ns3, self.client3_pod_ns3, self.ns3]
@@ -550,6 +500,7 @@ class TestNetworkPolicyRestart(BaseK8sTest):
         4. Edit the k8s network policy
         5. Verify that all policy rules are followed
         """
+        self.setup_common_namespaces_pods()
         pod_list_ns1 = [self.client1_pod_ns1, self.client2_pod_ns1, self.web_pod_ns1, self.ns1]
         pod_list_ns2 = [self.client1_pod_ns2, self.client2_pod_ns2, self.web_pod_ns2, self.ns2]
         pod_list_ns3 = [self.client1_pod_ns3, self.client2_pod_ns3, self.client3_pod_ns3, self.ns3]
@@ -580,6 +531,7 @@ class TestNetworkPolicyRestart(BaseK8sTest):
         4. Edit the k8s network policy
         5. Verify that all policy rules are followed
         """
+        self.setup_common_namespaces_pods()
         pod_list_ns1 = [self.client1_pod_ns1, self.client2_pod_ns1, self.web_pod_ns1, self.ns1]
         pod_list_ns2 = [self.client1_pod_ns2, self.client2_pod_ns2, self.web_pod_ns2, self.ns2]
         pod_list_ns3 = [self.client1_pod_ns3, self.client2_pod_ns3, self.client3_pod_ns3, self.ns3]
@@ -609,6 +561,7 @@ class TestNetworkPolicyRestart(BaseK8sTest):
         4. Edit the k8s network policy
         5. Verify that all policy rules are followed
         """
+        self.setup_common_namespaces_pods()
         pod_list_ns1 = [self.client1_pod_ns1, self.client2_pod_ns1, self.web_pod_ns1, self.ns1]
         pod_list_ns2 = [self.client1_pod_ns2, self.client2_pod_ns2, self.web_pod_ns2, self.ns2]
         pod_list_ns3 = [self.client1_pod_ns3, self.client2_pod_ns3, self.client3_pod_ns3, self.ns3]
@@ -643,6 +596,7 @@ class TestNetworkPolicyRestart(BaseK8sTest):
         4. Edit the k8s network policy
         5. Verify that all policy rules are followed
         """
+        self.setup_common_namespaces_pods()
         pod_list_ns1 = [self.client1_pod_ns1, self.client2_pod_ns1, self.web_pod_ns1, self.ns1]
         pod_list_ns2 = [self.client1_pod_ns2, self.client2_pod_ns2, self.web_pod_ns2, self.ns2]
         pod_list_ns3 = [self.client1_pod_ns3, self.client2_pod_ns3, self.client3_pod_ns3, self.ns3]
@@ -675,6 +629,7 @@ class TestNetworkPolicyRestart(BaseK8sTest):
         4. Edit the k8s network policy
         5. Verify that all policy rules are followed
         """
+        self.setup_common_namespaces_pods()
         pod_list_ns1 = [self.client1_pod_ns1, self.client2_pod_ns1, self.web_pod_ns1, self.ns1]
         pod_list_ns2 = [self.client1_pod_ns2, self.client2_pod_ns2, self.web_pod_ns2, self.ns2]
         pod_list_ns3 = [self.client1_pod_ns3, self.client2_pod_ns3, self.client3_pod_ns3, self.ns3]
