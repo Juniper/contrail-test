@@ -278,7 +278,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         return True
     # end test_vm_add_delete
 
-    @test.attr(type=['suite1', 'vcenter','vrouter_gw', 'vcenter_compute'])
+    @test.attr(type=['suite1', 'upgrade', 'vcenter','vrouter_gw', 'vcenter_compute'])
     @preposttest_wrapper
     def test_ping_within_vn(self):
         '''
@@ -294,22 +294,27 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
 	vn1_vm3_name = get_random_name('vm3')
         vn1_fixture = self.create_vn(vn_name=vn1_name,orch=self.orchestrator)
         vn1_fixture.read()
-        vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm1_name,orch=self.orchestrator)
-        vm2_fixture = self.create_vm(vn_ids=[vn1_fixture.uuid], vm_name=vn1_vm2_name)
-        vm3_fixture = self.create_vm(vn_ids=[vn1_fixture.uuid], vm_name=vn1_vm3_name)
+        vm1_fixture = self.create_vm(vn_fixture=vn1_fixture,
+            image_name='cirros', vm_name=vn1_vm1_name, orch=self.orchestrator)
+        vm2_fixture = self.create_vm(vn_ids=[vn1_fixture.uuid],
+            image_name='cirros', vm_name=vn1_vm2_name)
+        vm3_fixture = self.create_vm(vn_ids=[vn1_fixture.uuid],
+            image_name='cirros', vm_name=vn1_vm3_name)
         assert vm1_fixture.wait_till_vm_is_up()
         assert vm2_fixture.wait_till_vm_is_up()
         assert vm3_fixture.wait_till_vm_is_up()
 
-        assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
-            "Ping from %s to %s failed" % (vn1_vm1_name, vn1_vm2_name)
-        assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
-            "Ping from %s to %s failed" % (vn1_vm2_name, vn1_vm1_name)
-        assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm3_fixture),\
-            "Ping from %s to %s failed" % (vn1_vm1_name, vn1_vm3_name)
-        assert vm3_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
-            "Ping from %s to %s failed" % (vn1_vm3_name, vn1_vm1_name)
-
+        def validate():
+            assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
+                "Ping from %s to %s failed" % (vn1_vm1_name, vn1_vm2_name)
+            assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
+                "Ping from %s to %s failed" % (vn1_vm2_name, vn1_vm1_name)
+            assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm3_fixture),\
+                "Ping from %s to %s failed" % (vn1_vm1_name, vn1_vm3_name)
+            assert vm3_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
+                "Ping from %s to %s failed" % (vn1_vm3_name, vn1_vm1_name)
+        validate()
+        self.validate_post_upgrade = validate
         return True
     # end test_ping_within_vn
 

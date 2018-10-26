@@ -522,6 +522,7 @@ class TestInputs(object):
         self.verify_horizon = test_configs.get('verify_horizon', False)
         self.use_devicemanager_for_md5 = test_configs.get('use_devicemanager_for_md5', False)
         self.verify_on_setup = False if test_configs.get('verify_on_setup') is False else True
+        self.upgrade = test_configs.get('upgrade') or False
         self.stop_on_fail = test_configs.get('stop_on_fail') or False
         self.public_host = test_configs.get('public_host') or '10.204.216.50'
         self.public_host_url = test_configs.get('public_host_url') or 'ntp.juniper.net'

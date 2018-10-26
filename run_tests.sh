@@ -1,7 +1,36 @@
 #!/usr/bin/env bash
 
+declare -a pids
+trap resume_pids 10 1 2 3 6
 source tools/common.sh
 
+function wait_till_process_state
+{
+    local pid=$1
+    local state=$2
+    while true;
+    do
+        if [[ -f /proc/$pid/status ]]; then
+            if [[ $state == *dead* ]]; then
+                sleep 30
+                continue
+            else
+                if [[ $(cat /proc/$pid/status | grep State) != *${state}* ]]; then
+                    sleep 30
+                    continue
+                fi
+            fi
+        fi
+        break
+    done
+}
+function resume_pids
+{
+    for pid in ${pids[@]}; do
+        kill -18 $pid
+        wait_till_process_state $! dead
+    done
+}
 function die
 {
     local message=$1
@@ -19,6 +48,7 @@ function usage {
   echo "  -n, --no-site-packages   Isolate the virtualenv from the global Python environment"
   echo "  -f, --force              Force a clean re-build of the virtual environment. Useful when dependencies have been added."
   echo "  -u, --update             Update the virtual environment with any newer package versions"
+  echo "  --upgrade                Execute upgrade tests"
   echo "  -U, --upload             Upload test logs"
   echo "  -s, --sanity             Only run sanity tests"
   echo "  -t, --parallel           Run testr in parallel"
@@ -48,6 +78,7 @@ force=0
 wrapper=""
 config_file=""
 update=0
+upgrade=0
 upload=0
 logging=0
 logging_config=logging.conf
@@ -58,7 +89,7 @@ failure_threshold=''
 contrail_fab_path='/opt/contrail/utils'
 export SCRIPT_TS=${SCRIPT_TS:-$(date +"%Y_%m_%d_%H_%M_%S")}
 
-if ! options=$(getopt -o pVNnfuUsthdC:lLmF:T:c: -l test-failure-threshold:,prepare,virtual-env,no-virtual-env,no-site-packages,force,update,upload,sanity,parallel,help,debug,config:,logging,logging-config,send-mail,features:,tags:,concurrency:,contrail-fab-path: -- "$@")
+if ! options=$(getopt -o pVNnfuUsthdC:lLmF:T:c: -l test-failure-threshold:,prepare,virtual-env,no-virtual-env,no-site-packages,force,upgrade,update,upload,sanity,parallel,help,debug,config:,logging,logging-config,send-mail,features:,tags:,concurrency:,contrail-fab-path: -- "$@")
 then
     # parse error
     usage
@@ -76,6 +107,7 @@ while [ $# -gt 0 ]; do
     -n|--no-site-packages) no_site_packages=1;;
     -f|--force) force=1;;
     -u|--update) update=1;;
+    --upgrade) upgrade=1; debug=1; tags="upgrade";;
     -U|--upload) upload=1;;
     -d|--debug) debug=1;;
     -C|--config) config_file=$2; shift;;
@@ -147,7 +179,7 @@ function run_tests_serial {
   fi
   if [ $debug -eq 1 ]; then
       if [ "$testrargs" = "" ]; then
-           testrargs="discover $OS_TEST_PATH"
+          testrargs="discover $OS_TEST_PATH"
           ${wrapper} python -m subunit.run $testrargs | ${wrapper} subunit2junitxml -f -o $serial_result_xml
       else
           run_tagged_tests_in_debug_mode
@@ -169,16 +201,24 @@ function run_tagged_tests_in_debug_mode {
     IFS=$'\n' read -d '' -r -a lines < mylist
     count=1
     for i in "${lines[@]}"
-      do
+    do
         result_xml='result'$count'.xml'
         ((count++))
-        ${wrapper} python -m subunit.run $i| ${wrapper} subunit2junitxml -f -o $result_xml
-      done
+        if [ $upgrade -eq 1]; then
+            (exec ${wrapper} python -m subunit.run $i| ${wrapper} subunit2junitxml -f -o $result_xml) &
+            pids[$i]=$!
+            wait_till_process_state $! stop
+        else
+            ${wrapper} python -m subunit.run $i| ${wrapper} subunit2junitxml -f -o $result_xml
+        fi
+    done
+    if [ $upgrade -eq 1]; then
+        wait
+    fi
 }
 
 function list_tagged_tests {
     testr list-tests | grep $testrargs > mylist
-
 }
 
 function get_result_xml {
