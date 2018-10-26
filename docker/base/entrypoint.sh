@@ -1,5 +1,10 @@
 #!/bin/bash -x
 
+trap resume_pid 10
+function resume_pid {
+    kill -10 $PID
+}
+
 function usage {
     cat <<EOF
 Usage: $0 [OPTIONS]
@@ -121,8 +126,11 @@ else
             rv_run_test=$?
             ;;
         upgrade)
-            $run_tests -T upgrade --send-mail -U $EXTRA_RUN_TEST_ARGS
+            (exec $run_tests -T upgrade --send-mail -U $EXTRA_RUN_TEST_ARGS) &
             rv_run_test=$?
+            PID=$!
+            wait
+            wait
             ;;
         webui_sanity)
             python webui_tests_suite.py
@@ -134,10 +142,6 @@ else
             ;;
         devstack_sanity)
             python devstack_sanity_tests_with_setup.py
-            rv_run_test=$?
-            ;;
-        upgrade_only)
-            python upgrade/upgrade_only.py
             rv_run_test=$?
             ;;
         *)
