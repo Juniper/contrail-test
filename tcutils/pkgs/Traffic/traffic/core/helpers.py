@@ -71,11 +71,11 @@ class Helper(object):
                          gateway_password=self.lhost.password, with_sudo=True,
                          gateway='%s@%s' % (self.lhost.user, self.lhost.ip), raw=True,
                          password=self.rhost.password, logger=self.log)
-                if ("Connection timed out" in output or
+                if (output is None or "Connection timed out" in output or
                         "Connection refused" in output) and retry:
                     self.log.debug(
                         "SSH timeout, sshd might not be up yet. will retry after 5 secs.")
-                    sleep(5)
+                    sleep(10)
                     retry -= 1
                     continue
                 elif "Connection timed out" in output:
