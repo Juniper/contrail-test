@@ -64,7 +64,7 @@ class Helper(object):
         self.log.debug('On host %s exec: %s'%(self.rhost.ip, cmd))
         with hide('everything'):
             self.log.debug("Executing: %s", cmd)
-            retry = 6
+            retry = 10
             while True:
                 host_string = '%s@%s' % (self.rhost.user, self.rhost.ip)
                 output = remote_cmd(host_string=host_string, cmd=cmd,
@@ -75,7 +75,7 @@ class Helper(object):
                         "Connection refused" in output) and retry:
                     self.log.debug(
                         "SSH timeout, sshd might not be up yet. will retry after 5 secs.")
-                    sleep(5)
+                    sleep(20)
                     retry -= 1
                     continue
                 elif "Connection timed out" in output:
