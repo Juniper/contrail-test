@@ -1,5 +1,5 @@
 from common.neutron.base import BaseNeutronTest
-from tcutils.util import get_random_name
+from tcutils.util import get_random_name, retry
 from vn_test import VNFixture
 from vm_test import VMFixture
 from project_test import ProjectFixture
@@ -369,18 +369,21 @@ class BaseFirewallTest(BaseNeutronTest):
 
     def stop_traffic(self, traffic_obj, expectation=True):
         sent, recv = traffic_obj.stop()
+        if sent is None:
+            return False
         msg = "transferred between %s and %s, proto %s sport %s and dport %s"%(
                traffic_obj.src_ip, traffic_obj.dst_ip, traffic_obj.proto,
                traffic_obj.sport, traffic_obj.dport)
         if not expectation:
             assert sent or traffic_obj.proto == 'tcp', "Packets not %s"%msg
-            assert not recv, "Packets %s"%msg
+            assert recv < 5, "Packets %s"%msg
         else:
             assert sent and recv, "Packets not %s"%msg
             if recv*100/float(sent) < 90:
                 assert False, "Packets not %s"%msg
         return True
 
+    @retry(delay=60, tries=1)
     def verify_traffic(self, src_vm_fixture, dst_vm_fixture, proto, sport=0,
                        dport=0, src_vn_fqname=None, dst_vn_fqname=None,
                        af=None, fip_ip=None, expectation=True):
@@ -388,7 +391,7 @@ class BaseFirewallTest(BaseNeutronTest):
                                   sport, dport, src_vn_fqname=src_vn_fqname,
                                   dst_vn_fqname=dst_vn_fqname, af=af,
                                   fip_ip=fip_ip)
-        #self.sleep(10)
+        self.sleep(5)
         return self.stop_traffic(traffic_obj, expectation)
 
     def _verify_traffic(self, vm1, vm2, vm3, exp=True, dport=None):
