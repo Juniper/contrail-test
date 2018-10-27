@@ -1040,9 +1040,10 @@ class TestFirewallDraft_1(BaseFirewallTest_1):
     def _test_draft_mode(self, SCOPE1, SCOPE2):
         # Revert the created draft objects
         self.enable_security_draft_mode(SCOPE1, SCOPE2)
-        self._create_objects(SCOPE1, SCOPE2)
         self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2, retry=3)
         self.addCleanup(self.discard, SCOPE1, SCOPE2)
+        self._create_objects(SCOPE1, SCOPE2)
+        self.addCleanup(self.commit, SCOPE1, SCOPE2)
         fixture_states = {
             'created': [self.ag, self.scope1_sg, self.sg_icmp,
                         self.fwr_icmp, self.fwr_hr_tcp, self.fwr_hr_udp,
@@ -1063,8 +1064,6 @@ class TestFirewallDraft_1(BaseFirewallTest_1):
                             sport=1111, dport=8005)
         # Disable draft mode
         self._create_objects(SCOPE1, SCOPE2)
-        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2, retry=3)
-        self.addCleanup(self.discard, SCOPE1, SCOPE2)
         fixture_states = {
             'created': [self.ag, self.scope1_sg, self.sg_icmp,
                         self.fwr_icmp, self.fwr_hr_tcp, self.fwr_hr_udp,

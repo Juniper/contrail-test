@@ -58,33 +58,17 @@ class Helper(object):
     def runcmd(self, cmd):
         """Run remote command."""
         output = None
-#        keyfile = self.get_sshkey()
-#        ssh_cmd = 'ssh -o StrictHostKeyChecking=no -i %s %s@%s \"%s\"' % (
-#                  keyfile, self.rhost.user, self.rhost.ip, cmd)
         self.log.debug('On host %s exec: %s'%(self.rhost.ip, cmd))
         with hide('everything'):
             self.log.debug("Executing: %s", cmd)
             retry = 6
-            while True:
-                host_string = '%s@%s' % (self.rhost.user, self.rhost.ip)
-                output = remote_cmd(host_string=host_string, cmd=cmd,
+            host_string = '%s@%s' % (self.rhost.user, self.rhost.ip)
+            output = remote_cmd(host_string=host_string, cmd=cmd,
                          gateway_password=self.lhost.password, with_sudo=True,
                          gateway='%s@%s' % (self.lhost.user, self.lhost.ip), raw=True,
-                         password=self.rhost.password, logger=self.log)
-                if ("Connection timed out" in output or
-                        "Connection refused" in output) and retry:
-                    self.log.debug(
-                        "SSH timeout, sshd might not be up yet. will retry after 5 secs.")
-                    sleep(5)
-                    retry -= 1
-                    continue
-                elif "Connection timed out" in output:
-                    raise SSHError(output)
-                else:
-                    break
+                         password=self.rhost.password, logger=self.log, tries=retry)
         self.log.debug(output)
         return output
-
 
 class Sender(Helper):
 
