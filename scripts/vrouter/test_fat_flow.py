@@ -313,7 +313,7 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
             assert vm1_fixture.add_ip_on_vm(vIP)
             assert client_fixtures[0].ping_with_certainty(vIP), 'Ping to vIP failure'
 
-        assert self.vrrp_mas_chk(vrrp_master, vn1_fixture, vIP)
+        assert self.vrrp_mas_chk(dst_vm=vrrp_master, vn=vn1_fixture, ip=vIP)
 
         for vm in client_fixtures:
             for port in sport:
@@ -336,7 +336,7 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
         self.logger.info(
             '%s should become the new VRRP master' % vm2_fixture.vm_name)
         vrrp_master = vm2_fixture
-        assert self.vrrp_mas_chk(vrrp_master, vn1_fixture, vIP)
+        assert self.vrrp_mas_chk(dst_vm=vrrp_master, vn=vn1_fixture, ip=vIP)
 
         for vm in client_fixtures:
             for port in sport:

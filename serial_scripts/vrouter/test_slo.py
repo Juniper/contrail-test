@@ -51,7 +51,7 @@ class SecurityLogging(SloBase):
         #<TBD for tcp>proto_list = [1, 17, 6]
         proto_list = [1, 17]
         self.enable_logging_on_compute(self.client_fixture.vm_node_ip,
-            log_type=AGENT_LOG)
+            log_type=AGENT_LOG, session_type='slo')
         #Clear local ips after agent restart
         self.client_fixture.clear_local_ips()
         self.server_fixture.clear_local_ips()
@@ -99,7 +99,7 @@ class SecurityLogging(SloBase):
             self.connections.read_vrouter_config_encap()[0]]
         proto_list = [1, 17]
         self.enable_logging_on_compute(self.client_fixture.vm_node_ip,
-            log_type=AGENT_LOG)
+            log_type=AGENT_LOG, session_type='slo')
         #Clear local ips after agent restart
         self.client_fixture.clear_local_ips()
         self.server_fixture.clear_local_ips()

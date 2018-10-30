@@ -199,8 +199,7 @@ class DisablePolicyEcmp(BaseVrouterTest):
             assert vm1_fixture.add_ip_on_vm(vIP)
             assert client_fixture.ping_with_certainty(vIP), 'Ping to vIP failure'
 
-
-        assert self.vrrp_mas_chk(vrrp_master, vn1_fixture, vIP)
+        assert self.vrrp_mas_chk(dst_vm=vrrp_master, vn=vn1_fixture, ip=vIP)
 
         assert self.send_nc_traffic(client_fixture, vrrp_master,
             sport, dport, proto, ip=vIP)
@@ -220,7 +219,7 @@ class DisablePolicyEcmp(BaseVrouterTest):
         self.logger.info(
             '%s should become the new VRRP master' % vm2_fixture.vm_name)
         vrrp_master = vm2_fixture
-        assert self.vrrp_mas_chk(vrrp_master, vn1_fixture, vIP)
+        assert self.vrrp_mas_chk(dst_vm=vrrp_master, vn=vn1_fixture, ip=vIP)
 
         assert self.send_nc_traffic(client_fixture, vrrp_master,
             sport, dport, proto, ip=vIP)
@@ -236,7 +235,8 @@ class DisablePolicyEcmp(BaseVrouterTest):
         assert self.send_nc_traffic(client_fixture, vrrp_master,
             sport, dport, proto, ip=vIP)
 
-        for fixture in compute_fixtures:
+        for fixture in [self.compute_fixtures_dict[client_fixture.vm_node_ip],
+            self.compute_fixtures_dict[vrrp_master.vm_node_ip]]:
             vrf_id = fixture.get_vrf_id(vrrp_master.vn_fq_names[0])
             self.verify_flow_on_compute(fixture, client_fixture.vm_ip,
                         vIP, vrf_id, vrf_id, sport, dport, proto,
@@ -718,6 +718,7 @@ class DisablePolicyEcmpIpv6(DisablePolicyEcmp):
     def test_ecmp_with_static_routes(self):
         self.inputs.set_af('dual')
         super(DisablePolicyEcmpIpv6, self).test_ecmp_with_static_routes()
+        self.inputs.set_af(AF_TEST)
 
 class DisablePolicyIpv6(DisablePolicy):
     @classmethod

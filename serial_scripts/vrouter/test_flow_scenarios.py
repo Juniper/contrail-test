@@ -146,15 +146,14 @@ class FlowExportRate(ExtendedFlowTestsBase):
     def test_default_flow_export_rate(self):
         '''
         Between two vms, send traffic at 1K unique pps
-        vrouter should export flows at only around 100 flows/sec to
-         collector
+        vrouter should not export flows to collector
         '''
         destport = '22'
         baseport = '1000'
         # inter-packet interval of 1k usec results in 1k pps
         interval = 'u1000'
         count = 100000
-        export_rate = 100
+        export_rate = 0
         # Traffic will be for 100 sec
         assert self._test_flow_export(self.vn1_vm1_fixture,
                                  self.vn1_vm2_fixture,
