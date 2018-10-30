@@ -29,7 +29,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.static_route = static_route or { 'management':None,
                                               'left' : None,
                                               'right': None}
-        self.port_tuples_props = port_tuples_props
+        self.port_tuples_props = port_tuples_props or []
 
         self.connections = connections
         self.orch = connections.orch

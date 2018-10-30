@@ -133,16 +133,6 @@ class TestApiPolicyFixture01(BasePolicyTest):
             policy_fixt1.policy_obj.name,
             'associaton policy data on vn is missing from quantum')
 
-        policy_in_quantum = self.quantum_h.get_policy_if_present(
-            policy_name=pol.name, project_name=self.inputs.project_name)
-        if not policy_in_quantum:
-            self.logger.info("policy %s is not present in the quantum server" %
-                             pol.name)
-            self.assertIsNotNone(policy_in_quantum,
-                                 "policy is not present on quantum server")
-        assert self.verify_policy_in_api_quantum_server(pol, policy_in_quantum)
-        self.logger.info("policy %s is verified on API Server" % policy_name)
-
         # delete vn
         vn_delete = self.vnc_lib.virtual_network_delete(id=str(vn_id))
         if vn_delete:

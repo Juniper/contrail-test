@@ -51,7 +51,7 @@ class SecurityLogging(SloBase):
         underlay_proto = 0
         proto_list = [1, 17, 6]
         self.enable_logging_on_compute(self.client_fixture.vm_node_ip,
-            log_type=AGENT_LOG)
+            log_type=AGENT_LOG, session_type='slo')
         #Clear local ips after agent restart
         self.client_fixture.clear_local_ips()
         self.server_fixture.clear_local_ips()
@@ -63,11 +63,10 @@ class SecurityLogging(SloBase):
                 underlay_proto=underlay_proto, slo_rate=slo_rate)
             self.logger.info("SLO: Expected Session logs found in agent log for "
                 "protocol %s" % (self.proto))
-
         #
         #SLO logged session verification in syslog
         self.enable_logging_on_compute(self.client_fixture.vm_node_ip,
-            log_type=SYS_LOG)
+            log_type=SYS_LOG, session_type='slo')
         #Clear local ips after agent restart
         self.client_fixture.clear_local_ips()
         self.server_fixture.clear_local_ips()
@@ -113,9 +112,9 @@ class SecurityLogging(SloBase):
             self.connections.read_vrouter_config_encap()[0]]
         proto_list = [1, 17, 6]
         self.enable_logging_on_compute(self.client_fixture.vm_node_ip,
-            log_type=AGENT_LOG)
+            log_type=AGENT_LOG, session_type='slo')
         self.enable_logging_on_compute(self.server_fixture.vm_node_ip,
-            log_type=AGENT_LOG)
+            log_type=AGENT_LOG, session_type='slo')
         #Clear local ips after agent restart
         self.client_fixture.clear_local_ips()
         self.server_fixture.clear_local_ips()
@@ -160,7 +159,7 @@ class SecurityLogging(SloBase):
         underlay_proto = 0
         proto = 1
         self.enable_logging_on_compute(self.client_fixture.vm_node_ip,
-            log_type=AGENT_LOG)
+            log_type=AGENT_LOG, session_type='slo')
         #Clear local ips after agent restart
         self.client_fixture.clear_local_ips()
         self.server_fixture.clear_local_ips()
@@ -186,7 +185,7 @@ class SecurityLogging(SloBase):
             self.verify_vms([server2_fixture])
 
             self.enable_logging_on_compute(server2_fixture.vm_node_ip,
-                log_type=AGENT_LOG)
+                log_type=AGENT_LOG, session_type='slo')
             #Clear local ips after agent restart
             server2_fixture.clear_local_ips()
 
@@ -242,9 +241,9 @@ class SecurityLoggingFw(SloBase, SessionLoggingFwBase):
             self.connections.read_vrouter_config_encap()[0]]
         proto_list = [17]
         self.enable_logging_on_compute(self.client_fixture.vm_node_ip,
-            log_type=AGENT_LOG)
+            log_type=AGENT_LOG, session_type='slo')
         self.enable_logging_on_compute(self.server_fixture.vm_node_ip,
-            log_type=AGENT_LOG)
+            log_type=AGENT_LOG, session_type='slo')
         #Clear local ips after agent restart
         self.client_fixture.clear_local_ips()
         self.server_fixture.clear_local_ips()
@@ -301,9 +300,9 @@ class SecurityLoggingFw(SloBase, SessionLoggingFwBase):
             self.connections.read_vrouter_config_encap()[0]]
         proto_list = [17]
         self.enable_logging_on_compute(self.client_fixture.vm_node_ip,
-            log_type=AGENT_LOG)
+            log_type=AGENT_LOG, session_type='slo')
         self.enable_logging_on_compute(self.server_fixture.vm_node_ip,
-            log_type=AGENT_LOG)
+            log_type=AGENT_LOG, session_type='slo')
         #Clear local ips after agent restart
         self.client_fixture.clear_local_ips()
         self.server_fixture.clear_local_ips()

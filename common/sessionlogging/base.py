@@ -142,16 +142,17 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
         self.verify_vms(self.client_fixtures + self.server_fixtures)
 
     def enable_logging_on_compute(self, node_ip, log_type,
-            restart_on_cleanup=True):
+            restart_on_cleanup=True, session_type='sampled'):
         ''' Enable local logging on compute node
             log_type: can be agent/syslog
+            session_type: slo/sampled
         '''
-        container_name = 'agent'
-        conf_file = '/etc/contrail/contrail-vrouter-agent.conf'
         service_name = 'contrail-vrouter-agent'
+        container_name = self.inputs.get_container_name(node_ip, 'agent')
+        conf_file = 'entrypoint.sh'
         #Take backup of original conf file to revert back later
-        conf_file_backup = '/tmp/'+ get_random_name(conf_file.split('/')[-1])
-        cmd = 'cp %s %s' % (conf_file, conf_file_backup)
+        conf_file_backup = '/tmp/'+ get_random_name(container_name+conf_file)
+        cmd = 'docker cp %s:%s %s' % (container_name, conf_file, conf_file_backup)
         status = self.inputs.run_cmd_on_server(node_ip, cmd,
             container=container_name)
 
@@ -160,19 +161,25 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             conf_file_backup, service_name, node_ip, container_name,
             restart_on_cleanup)
 
-        oper = 'set'
         section = 'DEFAULT'
-        self.update_contrail_conf(service_name, oper, section,
-            'log_flow', 1, node_ip, container_name)
-        self.update_contrail_conf(service_name, oper, section,
-            'log_local', 1, node_ip, container_name)
-        self.update_contrail_conf(service_name, oper, section,
-            'log_level', 'SYS_INFO', node_ip, container_name)
-
+        self.add_knob_to_container(node_ip, container_name,
+            level=section, knob=['log_level=SYS_INFO'],
+            file_name=conf_file, restart_container=False)
         if log_type == 'syslog':
-            self.update_contrail_conf(service_name, oper, section,
-                'use_syslog', 1, node_ip, container_name)
+            session_dst='syslog'
+        else:
+            session_dst='file'
 
+        if session_type == 'sampled':
+            self.add_knob_to_container(node_ip, container_name,
+                level='SESSION', knob=['sample_destination=%s' % (
+                session_dst)],
+                file_name=conf_file, restart_container=False)
+        elif session_type == 'slo':
+            self.add_knob_to_container(node_ip, container_name,
+                level='SESSION', knob=['slo_destination=%s' % (
+                session_dst)],
+                file_name=conf_file, restart_container=False)
         self.inputs.restart_service(service_name, [node_ip],
             container=container_name, verify_service=True)
     #end enable_logging_on_compute
@@ -184,7 +191,8 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             conf_file_backup: full path of backup config file from where it will be restored
             service_name: service name
         '''
-        cmd = "mv %s %s" % (conf_file_backup, conf_file)
+        cmd = 'docker cp %s %s:/%s;rm -f %s' % (conf_file_backup, container,
+            conf_file, conf_file_backup)
         output = self.inputs.run_cmd_on_server(
             node_ip,
             cmd,
@@ -294,7 +302,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             client_vmi_fqname,
             client_fixture.vn_fq_name, FIREWALL_RULE_ID_DEFAULT,
             server_fixture.vn_fq_name, is_client_session, 0,
-            client_fixture.vm_node_ip,
+            self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'],
             client_fixture.vm_ip, service_port, proto,
             INT_RE, pkt_count2, INT_RE, pkt_count2,
             server_fixture.vm_ip, client_port,
@@ -303,7 +311,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             INT_RE, pkt_count2, UUID_RE, tcp_flags, INT_RE,#Reverse flow info
             'pass', UUID_RE, nw_ace_uuid, INT_RE,
             client_fixture.vm_id,
-            server_fixture.vm_node_ip, underlay_proto)
+            self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'], underlay_proto)
 
         #Verify Client session
         result, output = self.search_session_in_agent_log(
@@ -320,7 +328,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             server_vmi_fqname,
             server_fixture.vn_fq_name, FIREWALL_RULE_ID_DEFAULT,
             client_fixture.vn_fq_name, is_client_session, 0,
-            server_fixture.vm_node_ip,
+            self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'],
             server_fixture.vm_ip, srv_session_s_port, proto,
             INT_RE, pkt_count2, INT_RE, pkt_count2,
             client_fixture.vm_ip, srv_session_c_port,
@@ -329,7 +337,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             INT_RE, pkt_count2, UUID_RE, tcp_flags, INT_RE,
             'pass', UUID_RE, nw_ace_uuid, INT_RE,
             server_fixture.vm_id,
-            client_fixture.vm_node_ip, underlay_proto)
+            self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'], underlay_proto)
 
         #Verify Server session
         result, output = self.search_session_in_agent_log(
@@ -346,7 +354,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             client_vmi_fqname,
             client_fixture.vn_fq_name, FIREWALL_RULE_ID_DEFAULT,
             server_fixture.vn_fq_name, 1, 0,
-            client_fixture.vm_node_ip,
+            self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'],
             client_fixture.vm_ip, service_port, proto,
             INT_RE, INT_RE, INT_RE, INT_RE,
             server_fixture.vm_ip, client_port,
@@ -355,7 +363,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             UUID_RE, INT_RE, INT_RE, INT_RE, pkt_count,
             'pass', UUID_RE, nw_ace_uuid,
             client_fixture.vm_id,
-            server_fixture.vm_node_ip, underlay_proto)
+            self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'], underlay_proto)
 
         result, output = self.search_session_in_agent_log(
             client_fixture.vm_node_ip,
@@ -366,7 +374,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
                 client_vmi_fqname,
                 client_fixture.vn_fq_name, FIREWALL_RULE_ID_DEFAULT,
                 server_fixture.vn_fq_name, 1, 0,
-                client_fixture.vm_node_ip,
+                self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'],
                 client_fixture.vm_ip, service_port, proto,
                 INT_RE, INT_RE, INT_RE, INT_RE,
                 server_fixture.vm_ip, client_port,
@@ -377,7 +385,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
                 INT_RE, INT_RE, pkt_count,
                 'pass', UUID_RE, nw_ace_uuid, INT_RE,
                 client_fixture.vm_id,
-                server_fixture.vm_node_ip, underlay_proto)
+                self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'], underlay_proto)
 
             result_tcp, output = self.search_session_in_agent_log(
                 client_fixture.vm_node_ip,
@@ -394,7 +402,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             server_vmi_fqname,
             server_fixture.vn_fq_name, FIREWALL_RULE_ID_DEFAULT,
             client_fixture.vn_fq_name, 0, 0,
-            server_fixture.vm_node_ip,
+            self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'],
             server_fixture.vm_ip, srv_session_s_port, proto,
             INT_RE, INT_RE, INT_RE, INT_RE,
             client_fixture.vm_ip, srv_session_c_port,
@@ -403,7 +411,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             UUID_RE, INT_RE, INT_RE, INT_RE, pkt_count,
             'pass', UUID_RE, nw_ace_uuid,
             server_fixture.vm_id,
-            client_fixture.vm_node_ip, underlay_proto)
+            self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'], underlay_proto)
 
         result, output = self.search_session_in_agent_log(
             server_fixture.vm_node_ip,
@@ -414,7 +422,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
                 server_vmi_fqname,
                 server_fixture.vn_fq_name, FIREWALL_RULE_ID_DEFAULT,
                 client_fixture.vn_fq_name, 0, 0,
-                server_fixture.vm_node_ip,
+                self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'],
                 server_fixture.vm_ip, srv_session_s_port, proto,
                 INT_RE, INT_RE, INT_RE, INT_RE,
                 client_fixture.vm_ip, srv_session_c_port,
@@ -425,7 +433,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
                 INT_RE, INT_RE, pkt_count,
                 'pass', UUID_RE, nw_ace_uuid, INT_RE,
                 server_fixture.vm_id,
-                client_fixture.vm_node_ip, underlay_proto)
+                self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'], underlay_proto)
 
             result_tcp, output = self.search_session_in_agent_log(
                 server_fixture.vm_node_ip,
@@ -468,7 +476,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             client_vmi_fqname,
             client_fixture.vn_fq_name, FIREWALL_RULE_ID_DEFAULT,
             server_fixture.vn_fq_name, is_client_session, 0,
-            client_fixture.vm_node_ip,
+            self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'],
             client_fixture.vm_ip, service_port, proto,
             INT_RE, pkt_count2, INT_RE, pkt_count2,
             server_fixture.vm_ip, client_port,
@@ -477,7 +485,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             INT_RE, pkt_count2, UUID_RE, tcp_flags, INT_RE,
             'pass', UUID_RE, nw_ace_uuid, INT_RE,
             client_fixture.vm_id,
-            server_fixture.vm_node_ip, underlay_proto)
+            self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'], underlay_proto)
 
         #Verify client session
         result, output = self.search_session_in_syslog(
@@ -494,7 +502,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             server_vmi_fqname,
             server_fixture.vn_fq_name, FIREWALL_RULE_ID_DEFAULT,
             client_fixture.vn_fq_name, is_client_session, 0,
-            server_fixture.vm_node_ip,
+            self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'],
             server_fixture.vm_ip, srv_session_s_port, proto,
             INT_RE, pkt_count2, INT_RE, pkt_count2,
             client_fixture.vm_ip, srv_session_c_port,
@@ -503,7 +511,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             INT_RE, pkt_count2, UUID_RE, tcp_flags, INT_RE,
             'pass', UUID_RE, nw_ace_uuid, INT_RE,
             server_fixture.vm_id,
-            client_fixture.vm_node_ip, underlay_proto)
+            self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'], underlay_proto)
 
         #Verify server session
         result, output = self.search_session_in_syslog(
@@ -521,7 +529,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             client_vmi_fqname,
             client_fixture.vn_fq_name, FIREWALL_RULE_ID_DEFAULT,
             server_fixture.vn_fq_name, 1, 0,
-            client_fixture.vm_node_ip,
+            self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'],
             client_fixture.vm_ip, service_port, proto,
             INT_RE, INT_RE, INT_RE, INT_RE,
             server_fixture.vm_ip, client_port,
@@ -530,7 +538,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             UUID_RE, INT_RE, INT_RE, INT_RE, pkt_count,
             'pass', UUID_RE, nw_ace_uuid,
             client_fixture.vm_id,
-            server_fixture.vm_node_ip, underlay_proto)
+            self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'], underlay_proto)
 
         result, output = self.search_session_in_syslog(
             client_fixture.vm_node_ip,
@@ -541,7 +549,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
                 client_vmi_fqname,
                 client_fixture.vn_fq_name, FIREWALL_RULE_ID_DEFAULT,
                 server_fixture.vn_fq_name, 1, 0,
-                client_fixture.vm_node_ip,
+                self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'],
                 client_fixture.vm_ip, service_port, proto,
                 INT_RE, INT_RE, INT_RE, INT_RE,
                 server_fixture.vm_ip, client_port,
@@ -552,7 +560,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
                 INT_RE, INT_RE, pkt_count,
                 'pass', UUID_RE, nw_ace_uuid, INT_RE,
                 client_fixture.vm_id,
-                server_fixture.vm_node_ip, underlay_proto)
+                self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'], underlay_proto)
 
             result_tcp, output = self.search_session_in_syslog(
                 client_fixture.vm_node_ip,
@@ -569,7 +577,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             server_vmi_fqname,
             server_fixture.vn_fq_name, FIREWALL_RULE_ID_DEFAULT,
             client_fixture.vn_fq_name, 0, 0,
-            server_fixture.vm_node_ip,
+            self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'],
             server_fixture.vm_ip, srv_session_s_port, proto,
             INT_RE, INT_RE, INT_RE, INT_RE,
             client_fixture.vm_ip, srv_session_c_port,
@@ -578,7 +586,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             UUID_RE, INT_RE, INT_RE, INT_RE, pkt_count,
             'pass', UUID_RE, nw_ace_uuid,
             server_fixture.vm_id,
-            client_fixture.vm_node_ip, underlay_proto)
+            self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'], underlay_proto)
 
         result, output = self.search_session_in_syslog(
             server_fixture.vm_node_ip,
@@ -589,7 +597,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
                 server_vmi_fqname,
                 server_fixture.vn_fq_name, FIREWALL_RULE_ID_DEFAULT,
                 client_fixture.vn_fq_name, 0, 0,
-                server_fixture.vm_node_ip,
+                self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'],
                 server_fixture.vm_ip, srv_session_s_port, proto,
                 INT_RE, INT_RE, INT_RE, INT_RE,
                 client_fixture.vm_ip, srv_session_c_port,
@@ -600,7 +608,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
                 INT_RE, INT_RE, pkt_count,
                 'pass', UUID_RE, nw_ace_uuid, INT_RE,
                 server_fixture.vm_id,
-                client_fixture.vm_node_ip, underlay_proto)
+                self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'], underlay_proto)
 
             result_tcp, output = self.search_session_in_syslog(
                 server_fixture.vm_node_ip,
@@ -747,7 +755,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             client_vmi_fqname,
             client_fixture.vn_fq_name, FIREWALL_RULE_ID_DEFAULT,
             server_fixture.vn_fq_name, is_client_session, 0,
-            client_fixture.vm_node_ip,
+            self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'],
             client_fixture.vm_ip, service_port, proto,
             INT_RE, pkt_count2, INT_RE, pkt_count2,
             server_fixture.vm_ip, client_port,
@@ -756,7 +764,8 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             INT_RE, pkt_count2, UUID_RE, tcp_flags, INT_RE,#Reverse flow info
             'pass', sg_rule_id_egress, nw_ace_uuid, INT_RE,
             client_fixture.vm_id,
-            server_fixture.vm_node_ip, underlay_proto)
+            self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'],
+            underlay_proto)
 
         self.sleep(1)
         #Verify No. of Client sessions
@@ -775,7 +784,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             server_vmi_fqname,
             server_fixture.vn_fq_name, FIREWALL_RULE_ID_DEFAULT,
             client_fixture.vn_fq_name, is_client_session, 0,
-            server_fixture.vm_node_ip,
+            self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'],
             server_fixture.vm_ip, srv_session_s_port, proto,
             INT_RE, pkt_count2, INT_RE, pkt_count2,
             client_fixture.vm_ip, srv_session_c_port,
@@ -784,7 +793,8 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             INT_RE, pkt_count2, UUID_RE, tcp_flags, INT_RE,
             'pass', sg_rule_id_ingress, nw_ace_uuid, INT_RE,
             server_fixture.vm_id,
-            client_fixture.vm_node_ip, underlay_proto)
+            self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'],
+            underlay_proto)
 
         #Verify No. of Server sessions
         result, output = self.verify_no_of_sessions_in_agent_log(
@@ -803,7 +813,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             client_vmi_fqname,
             client_fixture.vn_fq_name, FIREWALL_RULE_ID_DEFAULT,
             server_fixture.vn_fq_name, 1, 0,
-            client_fixture.vm_node_ip,
+            self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'],
             client_fixture.vm_ip, service_port, proto,
             0, 0, 0, 0,
             server_fixture.vm_ip, client_port,
@@ -812,7 +822,8 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             UUID_RE, INT_RE, INT_RE, INT_RE, pkt_count,#Reverse flow
             'pass', sg_rule_id_egress, nw_ace_uuid,
             client_fixture.vm_id,
-            server_fixture.vm_node_ip, underlay_proto)
+            self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'],
+            underlay_proto)
 
         result, output = self.search_session_in_agent_log(
             client_fixture.vm_node_ip,
@@ -823,7 +834,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
                 client_vmi_fqname,
                 client_fixture.vn_fq_name, FIREWALL_RULE_ID_DEFAULT,
                 server_fixture.vn_fq_name, 1, 0,
-                client_fixture.vm_node_ip,
+                self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'],
                 client_fixture.vm_ip, service_port, proto,
                 INT_RE, INT_RE, INT_RE, INT_RE,
                 server_fixture.vm_ip, client_port,
@@ -834,7 +845,8 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
                 UUID_RE, tcp_flags, INT_RE, INT_RE, INT_RE, pkt_count,#Reverse flow
                 'pass', sg_rule_id_egress, nw_ace_uuid, INT_RE,
                 client_fixture.vm_id,
-                server_fixture.vm_node_ip, underlay_proto)
+                self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'],
+                underlay_proto)
 
             result_tcp, output = self.search_session_in_agent_log(
                 client_fixture.vm_node_ip,
@@ -851,7 +863,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             server_vmi_fqname,
             server_fixture.vn_fq_name, FIREWALL_RULE_ID_DEFAULT,
             client_fixture.vn_fq_name, 0, 0,
-            server_fixture.vm_node_ip,
+            self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'],
             server_fixture.vm_ip, srv_session_s_port, proto,
             0, 0, 0, 0,
             client_fixture.vm_ip, srv_session_c_port,
@@ -860,7 +872,8 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             UUID_RE, INT_RE, INT_RE, INT_RE, pkt_count,
             'pass', sg_rule_id_ingress, nw_ace_uuid,
             server_fixture.vm_id,
-            client_fixture.vm_node_ip, underlay_proto)
+            self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'],
+            underlay_proto)
 
         result, output = self.search_session_in_agent_log(
             server_fixture.vm_node_ip,
@@ -871,7 +884,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
                 server_vmi_fqname,
                 server_fixture.vn_fq_name, FIREWALL_RULE_ID_DEFAULT,
                 client_fixture.vn_fq_name, 0, 0,
-                server_fixture.vm_node_ip,
+                self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'],
                 server_fixture.vm_ip, srv_session_s_port, proto,
                 INT_RE, INT_RE, INT_RE, INT_RE,
                 client_fixture.vm_ip, srv_session_c_port,
@@ -882,7 +895,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
                 INT_RE, INT_RE, pkt_count,
                 'pass', sg_rule_id_ingress, nw_ace_uuid, INT_RE,
                 server_fixture.vm_id,
-                client_fixture.vm_node_ip, underlay_proto)
+                self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'], underlay_proto)
 
             result_tcp, output = self.search_session_in_agent_log(
                 server_fixture.vm_node_ip,
@@ -949,7 +962,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             client_fixture.vn_fq_name, tag_fq_name, tag_id,
             fwp_rule,
             server_fixture.vn_fq_name, is_client_session, 0,
-            client_fixture.vm_node_ip,
+            self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'],
             client_fixture.vm_ip, service_port, proto,
             INT_RE, pkt_count2, INT_RE, pkt_count2,
             server_fixture.vm_ip, client_port,
@@ -958,7 +971,8 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             INT_RE, pkt_count2, UUID_RE, tcp_flags, INT_RE,#Reverse flow info
             'pass', sg_rule_id_egress, nw_ace_uuid, INT_RE,
             client_fixture.vm_id,
-            server_fixture.vm_node_ip, underlay_proto)
+            self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'],
+            underlay_proto)
 
         self.sleep(1)
         #Verify No. of Client sessions
@@ -978,7 +992,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             server_fixture.vn_fq_name, tag_fq_name, tag_id,
             fwp_rule,
             client_fixture.vn_fq_name, is_client_session, 0,
-            server_fixture.vm_node_ip,
+            self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'],
             server_fixture.vm_ip, srv_session_s_port, proto,
             INT_RE, pkt_count2, INT_RE, pkt_count2,
             client_fixture.vm_ip, srv_session_c_port,
@@ -987,7 +1001,8 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             INT_RE, pkt_count2, UUID_RE, tcp_flags, INT_RE,
             'pass', sg_rule_id_ingress, nw_ace_uuid, INT_RE,
             server_fixture.vm_id,
-            client_fixture.vm_node_ip, underlay_proto)
+            self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'],
+            underlay_proto)
 
         #Verify No. of Server sessions
         result, output = self.verify_no_of_sessions_in_agent_log(
@@ -1007,7 +1022,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             client_fixture.vn_fq_name, tag_fq_name, tag_id,
             fwp_rule,
             server_fixture.vn_fq_name, 1, 0,
-            client_fixture.vm_node_ip,
+            self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'],
             client_fixture.vm_ip, service_port, proto,
             0, 0, 0, 0,
             server_fixture.vm_ip, client_port,
@@ -1016,7 +1031,8 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             UUID_RE, INT_RE, INT_RE, INT_RE, pkt_count,#Reverse flow
             'pass', sg_rule_id_egress, nw_ace_uuid,
             client_fixture.vm_id,
-            server_fixture.vm_node_ip, underlay_proto)
+            self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'],
+            underlay_proto)
 
         teardown_session_count = 1 if exp_clnt_session_count else 0
         result, output = self.verify_no_of_sessions_in_agent_log(
@@ -1033,7 +1049,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             server_fixture.vn_fq_name, tag_fq_name, tag_id,
             fwp_rule,
             client_fixture.vn_fq_name, 0, 0,
-            server_fixture.vm_node_ip,
+            self.inputs.host_data[server_fixture.vm_node_ip]['host_data_ip'],
             server_fixture.vm_ip, srv_session_s_port, proto,
             0, 0, 0, 0,
             client_fixture.vm_ip, srv_session_c_port,
@@ -1042,7 +1058,8 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
             UUID_RE, INT_RE, INT_RE, INT_RE, pkt_count,
             'pass', sg_rule_id_ingress, nw_ace_uuid,
             server_fixture.vm_id,
-            client_fixture.vm_node_ip, underlay_proto)
+            self.inputs.host_data[client_fixture.vm_node_ip]['host_data_ip'],
+            underlay_proto)
 
         teardown_session_count = 1 if exp_srv_session_count else 0
         result, output = self.verify_no_of_sessions_in_agent_log(
