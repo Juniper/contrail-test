@@ -625,7 +625,7 @@ def check_5tuple_in_rules(rule, rules):
     return (match, rules.index(r))
 # end check_5tuple_in_rules
 
-def _create_n_policy_n_rules(self, number_of_policy, valid_rules, number_of_dummy_rules, option='quantum', verify=True):
+def _create_n_policy_n_rules(self, number_of_policy, valid_rules, number_of_dummy_rules, option='api', verify=True):
     ''' Create n number of policy & n number of rules
     created policy will be policy1,policy2,policy3...policyn so on
     Sample rules_list:
@@ -645,31 +645,23 @@ def _create_n_policy_n_rules(self, number_of_policy, valid_rules, number_of_dumm
         },
             ]
     '''
+    option='api'
     x = 80
     y = 80
     rules_list = []
     policy_name = 'policy'
     self.logger.debug('Creating %d dummy rules' % (number_of_dummy_rules))
     total_policy = number_of_policy
+    rules = [
+        {
+            'direction': '<>', 'simple_action': 'deny',
+            'protocol': 'udp', 'src_ports': (x, x),
+            'dst_ports': (y, y),
+            'source_network': 'any',
+            'dest_network': 'any',
+        },
+    ]
     while len(rules_list) < number_of_dummy_rules:
-        if option == 'quantum':
-            rules = [
-                {
-                    'direction': '<>', 'simple_action': 'deny',
-                    'protocol': 'udp', 'src_ports': (x, x),
-                    'dst_ports': (y, y),
-                    'source_network': 'any',
-                    'dest_network': 'any',
-                },
-            ]
-        else:
-            rules = [
-                PolicyRuleType(
-                    direction='<>', protocol='udp', dst_addresses=[AddressType(virtual_network='any')],
-                    src_addresses=[AddressType(virtual_network='any')], dst_ports=[PortType(x, x)],
-                    action_list=ActionListType(simple_action='deny'),
-                    src_ports=[PortType(y, y)]),
-            ]
         rules_list.append(rules[0])
         x += 1
         y += 1
@@ -689,20 +681,10 @@ def _create_n_policy_n_rules(self, number_of_policy, valid_rules, number_of_dumm
                 rules_list[j]['src_ports'] = (rules_list[j]['src_ports'][0]+(number_of_dummy_rules + 5) , rules_list[j]['src_ports'][1]+(number_of_dummy_rules + 5))
                 rules_list[j]['dst_ports'] = (rules_list[j]['dst_ports'][0]+(number_of_dummy_rules + 5) , rules_list[j]['dst_ports'][1]+(number_of_dummy_rules + 5))
         try:
-            if option == 'quantum':
-                policy_fixture = self.useFixture(
-                    PolicyFixture(policy_name=policy_name + str(i),
-                                  rules_list=rules_list, inputs=self.inputs,
-                                  connections=self.connections))
-            else:
-                proj_fixt = self.useFixture(
-                    ProjectTestFixtureGen(self.vnc_lib, project_name=self.inputs.project_name))
-                policy_fixture = self.useFixture(
-                    NetworkPolicyTestFixtureGen(
-                        self.vnc_lib, network_policy_name=policy_name +
-                        str(i),
-                        parent_fixt=proj_fixt, network_policy_entries=PolicyEntriesType(rules_list)))
-
+            policy_fixture = self.useFixture(
+                PolicyFixture(policy_name=policy_name + str(i),
+                              rules_list=rules_list, inputs=self.inputs,
+                              connections=self.connections))
         except Exception as e:
             self.logger.error(
                 'Exception %s occured while creating %d policy with %d rules' %
@@ -710,18 +692,10 @@ def _create_n_policy_n_rules(self, number_of_policy, valid_rules, number_of_dumm
             self.assertTrue(
                 False, 'Exception occured while creating %d policy with %d rules' %
                 (total_policy, len(rules_list)))
-        if option == 'quantum':
-            policy_objs_list.append(policy_fixture.policy_obj)
-            if verify == True:
-                policy_fixture.verify_policy_in_api_server()
-        else:
-            policy_objs_list.append(policy_fixture._obj)
-            policy_read = self.vnc_lib.network_policy_read(
-                id=str(policy_fixture._obj.uuid))
-            if not policy_read:
-                self.logger.error("Policy %s read on API server failed" %
-                                  policy_name + str(i))
-                return {'result': False, 'msg': "Policy %s read failed on API server" % policy_name + str(i)}
+
+        policy_objs_list.append(policy_fixture.policy_obj)
+        if verify == True:
+            policy_fixture.verify_policy_in_api_server()
 
     # end for
     return policy_objs_list

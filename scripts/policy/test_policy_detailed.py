@@ -390,7 +390,7 @@ class TestDetailedPolicy3(BasePolicyTest):
     def test_scale_policy_with_ping(self):
         """ Test focus is on the scale of VM/VN created.have policy attached to all VN's and ping from one VM to all.
         """
-        topology_class_name = sdn_policy_traffic_test_topo.sdn_20vn_20vm_config
+        topology_class_name = sdn_policy_traffic_test_topo.sdn_10vn_10vm_config
         self.logger.info(
             "Scenario for the test used is: %s" %
             (topology_class_name))

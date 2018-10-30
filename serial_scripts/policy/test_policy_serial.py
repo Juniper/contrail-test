@@ -1163,21 +1163,21 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         self.logger.info("TEST STEP -4: modify policy")
         starting_policy_name = policy
         starting_policy_fixture = config_topo['policy'][policy]
-        starting_policy_id = starting_policy_fixture.policy_obj['policy']['id']
+        starting_policy_id = starting_policy_fixture.get_id()
         #import pdb; pdb.set_trace()
         for policy in topo.policy_test_order:
             if update_mode == 'replace':
                 # set new policy for test_vn to policy
                 test_policy_fq_names = []
                 name = config_topo['policy'][
-                    policy].policy_obj['policy']['fq_name']
+                    policy].policy_fq_name
                 test_policy_fq_names.append(name)
                 test_vn_fix.bind_policies(test_policy_fq_names, test_vn_id)
             elif update_mode == 'modify':
                 new_policy_entries = config_topo['policy'][
-                    policy].policy_obj['policy']['entries']
-                data = {'policy': {'entries': new_policy_entries}}
-                starting_policy_fixture.update_policy(starting_policy_id, data)
+                    policy].get_entries()
+                starting_policy_fixture.update_policy(starting_policy_id,
+                    new_policy_entries)
                 new_rules = topo.rules[policy]
                 # policy= current_policy_name     #policy name is still old one
                 # update new rules in reference topology
@@ -1553,14 +1553,13 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         self.logger.info("TEST STEP -4: modify policy")
         starting_policy_name = policy
         starting_policy_fixture = config_topo['policy'][policy]
-        starting_policy_id = starting_policy_fixture.policy_obj['policy']['id']
+        starting_policy_id = starting_policy_fixture.get_id()
         for policy in topo.policy_test_order:
             # set new policy for test_vn to rules of policy
             new_policy_entries = config_topo['policy'][
-                policy].policy_obj['policy']['entries']
-            data = {'policy': {'entries': new_policy_entries}}
+                policy].get_entries()
             update_status = starting_policy_fixture.update_policy(
-                starting_policy_id, data)
+                starting_policy_id, new_policy_entries)
             new_rules = topo.rules[policy]
             # policy= current_policy_name     #policy name is still old one
             # update new rules in reference topology
@@ -2243,7 +2242,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
             # 2. set new policy for test_vn to policy
             test_policy_fq_names = []
             name = config_topo['policy'][
-                policy].policy_obj['policy']['fq_name']
+                policy].policy_fq_name
             test_policy_fq_names.append(name)
             state = "policy for " + test_vn + " updated to " + policy
             test_vn_fix.bind_policies(test_policy_fq_names, test_vn_id)
