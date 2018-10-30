@@ -86,7 +86,7 @@ class sdn_4vn_xvm_config ():
         self.vn_policy=  {'vnet1': ['policy0'], 'vnet2': ['policy0'],'vnet3':['policy0'],'vnet4':['policy0']}
 
         self.vn_of_vm= {'vm1': 'vnet1', 'vm2': 'vnet1', 'vm3': 'vnet1', 'vm4': 'vnet2', 'vm5': 'vnet2',
-                        'vm6': 'vnet3', 'vm7': 'vnet3', 'vm8': 'vnet3', 'vm9': 'vnet4', 'vm10': 'vnet4','vm11':'vnet4','vm12':'vnet3'}
+                        'vm6': 'vnet3', 'vm7': 'vnet3', 'vm8': 'vnet3', 'vm9': 'vnet4', 'vm10': 'vnet4'}
 
         #Define the vm to compute node mapping to pin a vm to a particular
         #compute node or else leave empty.
@@ -94,10 +94,10 @@ class sdn_4vn_xvm_config ():
         if compute_node_list is not None:
             if len(compute_node_list) == 2:
                 self.vm_node_map = {'vm1':'CN0', 'vm2':'CN0', 'vm3':'CN1', 'vm4':'CN0', 'vm5':'CN1',
-                                    'vm6':'CN0', 'vm7':'CN0', 'vm8':'CN1', 'vm9':'CN0', 'vm10':'CN1','vm11':'CN0','vm12':'CN1'}
+                                    'vm6':'CN0', 'vm7':'CN0', 'vm8':'CN1', 'vm9':'CN0', 'vm10':'CN1'}
             elif len(compute_node_list) > 2:
                self.vm_node_map = {'vm1':'CN0', 'vm2':'CN0', 'vm3':'CN2', 'vm4':'CN0', 'vm5':'CN1', 'vm6':'CN0',
-                                   'vm7':'CN0', 'vm8':'CN2', 'vm9':'CN0', 'vm10':'CN1', 'vm11':'CN0','vm12':'CN1'}
+                                   'vm7':'CN0', 'vm8':'CN2', 'vm9':'CN0', 'vm10':'CN1'}
 
         #Logic to create a vm to Compute node mapping.
         if self.vm_node_map:
@@ -155,7 +155,6 @@ class sdn_4vn_xvm_config ():
         for key in self.vn_of_vm:
            self.sg_of_vm[key] = []
         self.sg_of_vm['vm6'] = [self.sg_list[4]]; self.sg_of_vm['vm9'] = [self.sg_list[4]]; self.sg_of_vm['vm10'] = [self.sg_list[4]];
-        self.sg_of_vm['vm11'] = [self.sg_list[4]]; self.sg_of_vm['vm12'] = [self.sg_list[4]];
         ##Define the security group rules
         import uuid
         uuid_1= uuid.uuid1().urn.split(':')[2]
@@ -191,9 +190,7 @@ class sdn_4vn_xvm_config ():
                                {'src_vm':'vm6', 'dst_vm':'vm8', 'proto':'udp', 'sport':8000, 'dport':9000, 'exp':'fail'},# intra VN, inter compute, diff. SG
                                {'src_vm':'vm6', 'dst_vm':'vm5', 'proto':'udp', 'sport':8000, 'dport':9000, 'exp':'fail'},# inter VN, inter compute, diff. SG
                                {'src_vm':'vm6', 'dst_vm':'vm4', 'proto':'udp', 'sport':8000, 'dport':9000, 'exp':'fail'},# inter VN, intra compute, diff. SG
-                               {'src_vm':'vm9', 'dst_vm':'vm11','proto':'udp','sport':8000,'dport':9000,'exp':'pass'},# intra VN, intra compute, same non-default SG
                                {'src_vm':'vm9', 'dst_vm':'vm10','proto':'udp','sport':8000,'dport':9000,'exp':'pass'},# intra VN, inter compute, same non-default SG
-                               {'src_vm':'vm9', 'dst_vm':'vm12','proto':'udp','sport':8000,'dport':9000,'exp':'pass'},# inter VN, inter compute, same non-default SG
                                {'src_vm':'vm9', 'dst_vm':'vm6', 'proto':'udp','sport':8000,'dport':9000,'exp':'pass'}]# inter VN, intra compute, same non-default SG
 
         # end __init__

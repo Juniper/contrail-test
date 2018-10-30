@@ -366,7 +366,8 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
 
         self.orch.vnc_h.add_link_local_service(service_name,
              '169.254.1.2', '8084', cfgm_intro_port,
-             ipfabric_service_dns_name=cfgm_host_new_name)
+             ipfabric_service_dns_name=cfgm_host_new_name,
+             ipfabric_service_ip=cfgm_control_ip)
         self.addCleanup(self.orch.vnc_h.delete_link_local_service,
                         service_name)
         assert vm1_fixture.wait_till_vm_is_up()
