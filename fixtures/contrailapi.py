@@ -83,6 +83,7 @@ class ContrailVncApi(object):
     def assoc_floating_ip(self, fip_id, vm_id, **kwargs):
         fip_obj = self._vnc.floating_ip_read(id=fip_id)
         try:
+          if vm_id:
             vm_obj = self._vnc.virtual_machine_read(id=vm_id)
         except Exception as e:
             self._log.debug(
