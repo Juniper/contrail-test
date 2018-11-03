@@ -708,7 +708,7 @@ class VerifyIntfMirror(VerifySvcMirror):
         no_header = False
         if header == 3:
             no_header = True
-        if not self.verify_port_mirroring(src_vm_fixture, dst_vm_fixture, mirror_vm_fixture, vlan=vlan, parent=parent_intf, no_header = no_header):
+        if not self.verify_port_mirroring(src_vm_fixture, dst_vm_fixture, mirror_vm_fixture, vlan=vlan, parent=parent_intf, direction = direction, no_header = no_header):
             result = result and False
             if parent:
                 self.logger.error("Traffic mirroring from both the ports expected, failed from one or both")
