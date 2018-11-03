@@ -324,7 +324,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
                 self.logger.warning('No mirroring action seen')
         return result
 
-    def verify_port_mirroring(self, src_vm, dst_vm, mirr_vm, vlan=None, parent=False, no_header = False):
+    def verify_port_mirroring(self, src_vm, dst_vm, mirr_vm, vlan=None, parent=False, direction = 'both', no_header = False):
         result = True
         svm = mirr_vm.vm_obj
         if svm.status == 'ACTIVE':
@@ -333,6 +333,8 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
             tapintf = self.get_svm_tapintf(svm_name)
         # Intf mirroring enabled on either sub intf or parent port
         exp_count = 10
+        if direction != 'both':
+            exp_count = 5
         if parent:
             # Intf mirroring enabled on both sub intf and parent port
             exp_count = 20
