@@ -295,6 +295,7 @@ class TestInputs(object):
             if 'openstack_control' in roles and not 'openstack' in roles:
                 roles.update({'openstack': {}})
             host_data['roles'] = roles
+            host_data['static_routes'] = values.get('static_routes',[])
             host_data['username'] = username
             host_data['password'] = password
             self.host_data[host_data['host_ip']] = host_data
@@ -535,7 +536,16 @@ class TestInputs(object):
         #    name,type,mgmt_ip,model,vendor,asn,ssh_username,ssh_password,tunnel_ip,ports
         self.physical_routers_data = test_configs.get('physical_routers',{})
         self.bms_data = test_configs.get('bms',{})
+        self.bms_lcm_config = test_configs.get('bms_lcm_config',{})
 
+        self.kolla_configs = self.config.get('kolla_config') or {}
+        self.kolla_globals = self.kolla_configs.get('kolla_globals') or {}
+        self.enable_ironic = self.kolla_globals.get("enable_ironic",True)
+        if self.enable_ironic == 'no':
+           self.enable_ironic = False
+        elif self.enable_ironic == 'yes':
+           self.enable_ironic = True
+        self.ironic_api_config = test_configs.get('ironic_api_config',{})
         #BMS information connected to TOR's
         self.tor_hosts_data = test_configs.get('tor_hosts',{})
 
@@ -547,13 +557,13 @@ class TestInputs(object):
             self.fabric_gw_info.append((gw_name, address))
         if 'traffic_generator' in test_configs:
             traffic_gen = test_configs['traffic_generator']
-	    self.ixia_linux_host_ip = traffic_gen.get('ixia_linux_host_ip')
-	    self.ixia_host_ip = traffic_gen.get('ixia_host_ip')
-	    self.spirent_linux_host_ip = traffic_gen.get('spirent_linux_host_ip')
-	    self.ixia_linux_username = traffic_gen.get('ixia_linux_username')
-	    self.ixia_linux_password = traffic_gen.get('ixia_linux_password')
-	    self.spirent_linux_username = traffic_gen.get('spirent_linux_username')
-	    self.spirent_linux_password = traffic_gen.get('spirent_linux_password')
+            self.ixia_linux_host_ip = traffic_gen.get('ixia_linux_host_ip')
+            self.ixia_host_ip = traffic_gen.get('ixia_host_ip')
+            self.spirent_linux_host_ip = traffic_gen.get('spirent_linux_host_ip')
+            self.ixia_linux_username = traffic_gen.get('ixia_linux_username')
+            self.ixia_linux_password = traffic_gen.get('ixia_linux_password')
+            self.spirent_linux_username = traffic_gen.get('spirent_linux_username')
+            self.spirent_linux_password = traffic_gen.get('spirent_linux_password')
         if 'device_manager' in test_configs:
             self.dm_mx = test_configs['device_manager']
         if 'ns_agilio_vrouter' in test_configs:
@@ -1120,6 +1130,8 @@ class ContrailTestInit(object):
                'contrail-kube-manager': 'contrail-kube-manager',
                'kube-apiserver': 'kube-apiserver',
                'strongswan': 'strongswan',
+               'ironic_pxe': 'ironic_pxe',
+               'ironic_conductor': 'ironic_conductor',
               }
         if service:
             return dct.get(service)
