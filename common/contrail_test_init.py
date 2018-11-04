@@ -295,6 +295,7 @@ class TestInputs(object):
             if 'openstack_control' in roles and not 'openstack' in roles:
                 roles.update({'openstack': {}})
             host_data['roles'] = roles
+            host_data['static_routes'] = values.get('static_routes',[])
             host_data['username'] = username
             host_data['password'] = password
             self.host_data[host_data['host_ip']] = host_data
@@ -535,6 +536,7 @@ class TestInputs(object):
         #    name,type,mgmt_ip,model,vendor,asn,ssh_username,ssh_password,tunnel_ip,ports
         self.physical_routers_data = test_configs.get('physical_routers',{})
         self.bms_data = test_configs.get('bms',{})
+        self.bms_lcm_config = test_configs.get('bms_lcm_config',{})
 
         #BMS information connected to TOR's
         self.tor_hosts_data = test_configs.get('tor_hosts',{})
@@ -1120,6 +1122,8 @@ class ContrailTestInit(object):
                'contrail-kube-manager': 'contrail-kube-manager',
                'kube-apiserver': 'kube-apiserver',
                'strongswan': 'strongswan',
+               'ironic_pxe': 'ironic_pxe',
+               'ironic_conductor': 'ironic_conductor',
               }
         if service:
             return dct.get(service)

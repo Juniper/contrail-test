@@ -79,6 +79,7 @@ class QuantumHelper():
             sriov_enable = False,
             sriov_vlan = None,
             sriov_provider_network = None,
+            dns_nameservers_list = [],
             disable_gateway=False):
         """Create network given a name and a list of subnets.
         """
@@ -100,7 +101,7 @@ class QuantumHelper():
             if vn_subnets:
                 for subnet in vn_subnets:
                     net_rsp = self.create_subnet(
-                        subnet, net_id, ipam_fq_name, enable_dhcp, disable_gateway)
+                        subnet, net_id, ipam_fq_name, enable_dhcp, disable_gateway,dns_nameservers_list)
             # end for
             return self.obj.show_network(network=net_id)
         except CommonNetworkClientException as e:
@@ -108,13 +109,15 @@ class QuantumHelper():
                 'Neutron Exception while creating network %s' % (vn_name))
             raise
 
-    def create_subnet(self, subnet, net_id, ipam_fq_name=None, enable_dhcp=True, disable_gateway=False):
+    def create_subnet(self, subnet, net_id, ipam_fq_name=None, enable_dhcp=True, disable_gateway=False,dns_nameservers_list=[]):
         subnet_req = subnet
         subnet_req['network_id'] = net_id
         subnet_req['enable_dhcp'] = enable_dhcp
         subnet_req['ip_version'] = '6' if is_v6(subnet['cidr']) else '4'
         subnet_req['cidr'] = unicode(subnet_req['cidr'])
         subnet_req['ipam_fq_name'] = ipam_fq_name
+        if dns_nameservers_list:
+           subnet_req['dns_nameservers'] = dns_nameservers_list
         if disable_gateway:
            subnet_req['gateway_ip'] = None
         try:
