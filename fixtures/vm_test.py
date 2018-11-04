@@ -59,6 +59,7 @@ class VMFixture(fixtures.Fixture):
     def __init__(self, connections, vm_name=None, vn_obj=None,
                  vn_objs=[],
                  image_name='ubuntu', subnets=[],
+                 instance_type="virtual-server",
                  flavor=None,
                  node_name=None, sg_ids=[], count=1, userdata=None,
                  port_ids=[], fixed_ips=[], zone=None, vn_ids=[], uuid=None,*args,**kwargs):
@@ -88,6 +89,7 @@ class VMFixture(fixtures.Fixture):
         self.project_name = connections.project_name
         self.project_id = connections.project_id
         self.domain_name = connections.domain_name
+        self.instance_type = instance_type
         self.vm_name = vm_name or get_random_name(self.project_name)
         self.vm_id = uuid
         self.vm_obj = None
@@ -603,6 +605,10 @@ class VMFixture(fixtures.Fixture):
         self.verify_vm_launched()
         if len(self.vm_ips) < 1:
             return False
+
+        if self.instance_type == "baremetal":
+           self.logger.debug("Skipping VM %s verification for BMS_LCM setup"%(self.vm_name))
+           return True
 
         self.verify_vm_flag = True
         if self.inputs.verify_thru_gui():
