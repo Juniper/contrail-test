@@ -12,7 +12,7 @@ from bms_fixture import BMSFixture
 from vm_test import VMFixture
 from tcutils.util import Singleton
 
-class FabricSingleton(FabricUtils):
+class FabricSingleton(FabricUtils, GenericTestBase):
     __metaclass__ = Singleton
     def __init__(self, connections):
         super(FabricSingleton, self).__init__(connections)
@@ -26,9 +26,36 @@ class FabricSingleton(FabricUtils):
         assert self.interfaces, 'Failed to onboard existing fabric %s'%fabric_dict
         self.assign_roles(self.fabric, self.devices, rb_roles=rb_roles)
 
-    def cleanup_fabric(self):
+    def create_ironic_provision_vn(self, admin_connections):
+        bms_lcm_config = self.inputs.bms_lcm_config
+        ironic_net_name = bms_lcm_config["ironic_provision_vn"]["name"]
+        ironic_cidr = bms_lcm_config["ironic_provision_vn"]["subnet"]
+
+        services_ip = [self.inputs.internal_vip] if self.inputs.internal_vip\
+            else self.inputs.openstack_ips
+        self.ironic_vn = self.create_only_vn(
+            connections=admin_connections,
+            name=ironic_net_name,
+            vn_subnets=[ironic_cidr],
+            router_external=True, shared=True,
+            dns_nameservers_list=services_ip)
+        self.inputs.restart_container(self.inputs.openstack_ips,
+            'ironic_conductor')
+        for device in self.devices:
+            device.add_virtual_network(self.ironic_vn.uuid)
+        self.update_nova_quota()
+
+    def update_nova_quota(self):
+        self.connections.nova_h.update_quota(self.connections.project_id,
+            ram=-1, cores=-1)
+	time.sleep(120)
+    def cleanup(self):
         del self.__class__._instances[self.__class__]
         if self.invoked and getattr(self, 'fabric', None):
+            if getattr(self, 'ironic_vn', None):
+                for device in self.devices:
+                    device.delete_virtual_network(self.ironic_vn.uuid)
+                self.ironic_vn.cleanUp()
             super(FabricSingleton, self).cleanup_fabric(self.fabric,
                 self.devices, self.interfaces)
 
@@ -50,6 +77,8 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         obj = FabricSingleton(self.connections)
         if not obj.invoked:
             obj.create_fabric(self.rb_roles)
+            if self.inputs.is_ironic_enabled:
+                obj.create_ironic_provision_vn(self.admin_connections)
         assert obj.fabric and obj.devices and obj.interfaces, "Onboarding fabric failed"
         self.fabric = obj.fabric
         self.devices = obj.devices
@@ -71,7 +100,7 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
     def tearDownClass(cls):
         obj = FabricSingleton(cls.connections)
         try:
-            obj.cleanup_fabric()
+            obj.cleanup()
         finally:
             if getattr(cls, 'current_encaps', None):
                 cls.set_encap_priority(cls.current_encaps)
