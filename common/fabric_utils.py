@@ -31,7 +31,8 @@ class FabricUtils(object):
         interfaces = {'physical': [], 'logical': []}
         devices = list()
         
-        name = get_random_name(name) if name else get_random_name('fabric') 
+        if name is None:
+           name = get_random_name(name) if name else get_random_name('fabric') 
 
         fq_name = ['default-global-system-config',
                    'existing_fabric_onboard_template']
@@ -208,7 +209,8 @@ class FabricUtils(object):
             if role == 'leaf':
                 routing_bridging_role = rb_roles.get(device.name, ['CRB-Access'])
             elif role == 'spine':
-                routing_bridging_role = rb_roles.get(device.name, ['CRB-Gateway'])
+                #routing_bridging_role = rb_roles.get(device.name, ['CRB-Gateway'])
+                routing_bridging_role = ['DC-Gateway','Route-Reflector']
             dev_role_dict = {'device_fq_name': ['default-global-system-config',
                                                 device.name],
                              'physical_role': role,
