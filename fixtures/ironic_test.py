@@ -1,5 +1,6 @@
 import os
 import openstack
+from ironicclient import exc as ironic_exc
 from common.openstack_libs import ironic_client as client
 
 class IronicHelper(object):
@@ -37,7 +38,108 @@ class IronicHelper(object):
         self.obj = client.get_client('1',
                        session=self.auth_h.get_session(scope='project'),
                        os_region_name=self.region_name)
+        self.obj.http_client.api_version_select_state='user'
+        self.obj.http_client.os_ironic_api_version="1.31"
     # end setUp
 
     def get_auth_h(self, **kwargs):
         return openstack.OpenstackAuth(**kwargs)
+
+    def delete_ironic_node(self,node_id):
+
+        self.obj.node.delete(node_id)
+
+    def create_ironic_port(self,port,mac_address,node_uuid,portgroup_uuid,pxe_enabled):
+        self.obj.port.create(local_link_connection=port,\
+            address=mac_address,node_uuid=node_uuid,\
+                portgroup_uuid=portgroup_uuid,pxe_enabled=pxe_enabled)
+
+    def create_ironic_portgroup(self,node_id,pg_name,mac_addr):
+
+        try:
+          pg_obj = self.obj.portgroup.get(pg_name)
+        except ironic_exc.NotFound:
+          pg_obj = None
+        if not pg_obj:
+          try:
+             pg_obj = self.obj.portgroup.create(mode="802.3ad",name=pg_name,\
+                                       address=mac_addr,\
+                                       node_uuid=node_id)
+          except ironic_exc.Conflict,ex:
+             self.logger.info(ex.message) # TO_FIX: handle so that this is not hit
+          except Exception,ex:
+             self.logger.info("ERROR: exception in creating PG")
+             return
+
+        self.portgroup_uuid = pg_obj.uuid
+
+    def create_ironic_node(self,ironic_node_name,port_list,driver_info,properties):
+
+        port_group_name                   = ironic_node_name + "_pg"
+
+        node_obj = self.obj.node.create(name=ironic_node_name,driver='pxe_ipmitool',\
+                                        driver_info=driver_info,properties=properties)
+
+        self.portgroup_uuid = None
+        if len(port_list) > 1:
+           pg_obj = self.create_ironic_portgroup(node_obj.uuid,port_group_name,\
+                                           port_list[0]['mac_addr'])
+           if pg_obj:
+              self.portgroup_uuid = pg_obj.uuid
+        for i,port in enumerate(port_list):
+            port_dl = {}
+            port_dl['switch_info'] = port['switch_info']
+            port_dl['port_id']     = port['port_id']
+            port_dl['switch_id']   = port['switch_id']
+            self.create_ironic_port(port=port_dl,node_uuid=node_obj.uuid,\
+                               mac_address=port['mac_addr'],
+                               portgroup_uuid=self.portgroup_uuid,pxe_enabled=port['pxe_enabled'])
+        return node_obj
+
+    def set_ironic_node_state(self,node_id,new_state):
+
+        if new_state == "available":
+           self.obj.node.set_provision_state(node_id,"manage")
+           self.obj.node.set_provision_state(node_id,"provide")
+
+    def create(self):
+        (self.vm_username, self.vm_password) = self.orch.get_image_account(
+            self.image_name)
+        if self.vm_id:
+            return self.read()
+        self.vn_ids = [self.orch.get_vn_id(x) for x in self.vn_objs]
+        self.vm_obj = self.orch.get_vm_if_present(self.vm_name,
+                                                  project_id=self.project_id)
+        self.vm_objs = self.orch.get_vm_list(name_pattern=self.vm_name,
+                                             project_id=self.project_id)
+        if self.vm_obj:
+            self.vm_id = self.vm_obj.id
+            with self.printlock:
+                self.logger.debug('VM %s already present, not creating it'
+                                  % (self.vm_name))
+            self.set_image_details(self.vm_obj)
+        else:
+            if self.inputs.is_gui_based_config():
+                self.webui.create_vm(self)
+            else:
+                objs = self.orch.create_vm(
+                    project_uuid=self.project_id,
+                    image_name=self.image_name,
+                    flavor=self.flavor,
+                    vm_name=self.vm_name,
+                    vn_objs=self.vn_objs,
+                    node_name=self.node_name,
+                    zone=self.zone,
+                    sg_ids=self.sg_ids,
+                    count=self.count,
+                    userdata=self.userdata,
+                    port_ids=self.port_ids,
+                    fixed_ips=self.fixed_ips)
+                self.created = True
+                self.vm_obj = objs[0]
+                self.vm_objs = objs
+                self.vm_id = self.vm_objs[0].id
+
+    # end setUp
+
+
