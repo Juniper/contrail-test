@@ -28,7 +28,6 @@ class TestNamespace(BaseK8sTest):
 
     # end test_namespace_1
 
-    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_many_add_delete_ns(self):
         '''

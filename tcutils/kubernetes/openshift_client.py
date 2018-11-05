@@ -106,6 +106,17 @@ class Client(api_client.Client):
                 ResourceInstance instance
         '''
         body = self.get_template('namespace')
+<<<<<<< HEAD
+        body['metadata']['annotations'] = {}
+        if isolation is True:
+            body['metadata']['annotations']['opencontrail.org/isolation'] = 'true'
+        if ip_fabric_forwarding is True:
+            body['metadata']['annotations']['opencontrail.org/ip_fabric_forwarding'] = 'true'
+        if ip_fabric_snat is True:
+            body['metadata']['annotations']['opencontrail.org/ip_fabric_snat'] = 'true'
+        if network_fqname is not None:
+            body['metadata']['annotations']['opencontrail.org/network'] = '%s'%network_fqname
+=======
         if isolation is True:
             body['metadata']['annotations'] = {'opencontrail.org/isolation': 'true'}
         if ip_fabric_forwarding is True:
@@ -114,6 +125,7 @@ class Client(api_client.Client):
             body['metadata']['annotations'] = {'opencontrail.org/ip_fabric_snat': 'true'}
         if network_fqname is not None:
             body['metadata']['annotations'] = {'opencontrail.org/network': '%s'%network_fqname}
+>>>>>>> 1991c282133770551b953c96d9ba7f2cc475e696
         body['metadata']['name'] = name
         resp = self.namespace_h.create(body=body)
         if resp:
@@ -168,7 +180,12 @@ class Client(api_client.Client):
             body['metadata']['name'] = name
         if spec:
             for container in spec['containers']:
+<<<<<<< HEAD
+                if 'name' not in container:
+                    container['name'] = name
+=======
                 container['name'] = name
+>>>>>>> 1991c282133770551b953c96d9ba7f2cc475e696
             modified_spec = deepcopy(spec)
             self._replace_key(modified_spec)
         else:
@@ -274,6 +291,16 @@ class Client(api_client.Client):
         return resp
     # end create_network_policy
 
+<<<<<<< HEAD
+    def read_network_policy(self, name, namespace='default'):
+        resp = self.network_policy_h.get(name=name,
+                   namespace=namespace)
+        if resp:
+            resp = AttributeDict(convert_to_attrdict(resp.to_dict()))
+        return resp
+
+=======
+>>>>>>> 1991c282133770551b953c96d9ba7f2cc475e696
     def delete_network_policy(self,
                               namespace,
                               name):
@@ -281,6 +308,17 @@ class Client(api_client.Client):
         return self.network_policy_h.delete(name=name, namespace=namespace)
     # end delete_network_policy
 
+<<<<<<< HEAD
+    def read_deployment(self, name, namespace='default'):
+    
+        resp = self.deployment_h.get(name=name, namespace=namespace)
+        if resp:
+            resp = AttributeDict(convert_to_attrdict(resp.to_dict()))
+        return resp
+    # end read_deployment
+
+=======
+>>>>>>> 1991c282133770551b953c96d9ba7f2cc475e696
     def create_deployment(self,
                           namespace='default',
                           name=None,
@@ -294,14 +332,27 @@ class Client(api_client.Client):
         if spec is None:
             spec = {}
         else:
+<<<<<<< HEAD
+            spec['selector'] = {}
+            spec['selector']['matchLabels'] = spec['template']['metadata']['labels']
+=======
+>>>>>>> 1991c282133770551b953c96d9ba7f2cc475e696
             modified_spec = deepcopy(spec)
             self._replace_key(modified_spec)
         body = self.get_template('deployment')
         body['metadata'] = metadata
+<<<<<<< HEAD
+        body['spec'] = modified_spec
+        if name:
+            for container in  modified_spec['template']['spec']['containers']:
+                if 'name' not in container:
+                    container['name'] = name
+=======
         body['spec']['template']['spec']['containers'] = modified_spec['template']['spec']['containers']
         if name:
             for container in  modified_spec['template']['spec']['containers']:
                 container['name'] = name
+>>>>>>> 1991c282133770551b953c96d9ba7f2cc475e696
             body['metadata']['name']=name
         self.logger.info('Creating Deployment %s' % (name))
         resp = self.deployment_h.create(body=body, namespace=namespace)
@@ -313,7 +364,11 @@ class Client(api_client.Client):
     def delete_deployment(self, namespace,name):
         self.logger.info('Deleting Deployment : %s' % (name))
         return self.deployment_h.delete(name=name, namespace=namespace)
+<<<<<<< HEAD
+    # end delete_deployment
+=======
     # end delete_network_policy
+>>>>>>> 1991c282133770551b953c96d9ba7f2cc475e696
 
     def create_service(self,
                        namespace='default',
