@@ -4,3 +4,9 @@ baseurl=http://dl.google.com/linux/chrome/rpm/stable/x86_64
 enabled=1
 gpgcheck=1
 gpgkey=https://dl-ssl.google.com/linux/linux_signing_key.pub
+
+[google-chrome-local]
+name=google-chrome-local
+baseurl=http://10.84.5.120/cs-shared/local-repos/rpm/google-chrome-local/
+enabled=1
+gpgcheck=0
