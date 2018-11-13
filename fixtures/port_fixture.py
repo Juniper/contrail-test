@@ -1,9 +1,9 @@
 import vnc_api_test
-from tcutils.util import retry
+from tcutils.util import retry, get_random_name
 import json
 import uuid
 from netaddr import EUI
-import netaddr
+from vnc_api.vnc_api import NoIdError
 
 class PortFixture(vnc_api_test.VncLibFixture):
 
@@ -36,6 +36,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
     def __init__(self, *args, **kwargs):
         super(PortFixture, self).__init__(self, *args, **kwargs)
         self.vn_id = args[0] if args else kwargs.get('vn_id', None)
+        self.name = kwargs.get('name') or get_random_name('vmi')
         self.fixed_ips = kwargs.get('fixed_ips', [])
         self.mac_address = kwargs.get('mac_address', [])
         self.security_groups = kwargs.get('security_groups', [])
@@ -49,6 +50,9 @@ class PortFixture(vnc_api_test.VncLibFixture):
         self.parent_vmi = kwargs.get('parent_vmi', None)
         self.create_iip = kwargs.get('create_iip', True)
         self.uuid = kwargs.get('uuid', None)
+        self.device_owner = kwargs.get('device_owner', None)
+        project_name = self.project_obj.name if self.project_obj else self.project_name
+        self.fq_name = [self.domain, project_name, self.name]
         self.vn_obj = None
         self.created = False
      # end __init__
@@ -67,23 +71,23 @@ class PortFixture(vnc_api_test.VncLibFixture):
     def setUp(self):
         super(PortFixture, self).setUp()
         if not self.uuid:
-            self.vn_obj = self.vnc_api_h.virtual_network_read(id=self.vn_id)
-
-            if self.api_type == 'neutron':
-                self._neutron_create_port()
-            else:
-                self._contrail_create_port()
-            self.created = True
-            #Sandipd:This code was crashing while creating port as part of
-            #vcenter gateway testing.Hence handled the exception as the mac
-            #not needed to be obtained always,its passed as an argument to the fixture
             try:
-                self.neutron_handle = self.get_neutron_handle()
-                self.obj = self.neutron_handle.get_port(self.uuid)
-                self.mac_address = self.obj['mac_address']
-            except Exception as e:
-                pass
-            self.logger.debug('Created port %s' % (self.uuid))
+                obj = self.vnc_h.read_virtual_machine_interface(fq_name=self.fq_name)
+                self.uuid = obj.uuid
+            except NoIdError:
+                self.vn_obj = self.vnc_api_h.virtual_network_read(id=self.vn_id)
+                if self.api_type == 'neutron':
+                    self._neutron_create_port()
+                else:
+                    self._contrail_create_port()
+                self.created = True
+                try:
+                    self.neutron_handle = self.get_neutron_handle()
+                    self.obj = self.neutron_handle.get_port(self.uuid)
+                    self.mac_address = self.obj['mac_address']
+                except Exception as e:
+                    pass
+                self.logger.debug('Created port %s' % (self.uuid))
         self.read()
 
     def _neutron_create_port(self):
@@ -91,6 +95,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
             self.neutron_handle = self.get_neutron_handle()
         neutron_obj = self.neutron_handle.create_port(
             self.vn_id,
+            name=self.name,
             fixed_ips=self.fixed_ips,
             mac_address=self.mac_address,
             security_groups=self.security_groups,
@@ -101,11 +106,10 @@ class PortFixture(vnc_api_test.VncLibFixture):
 
     def _contrail_create_port(self):
         vmi_props = vnc_api_test.VirtualMachineInterfacePropertiesType()
-
         if not self.project_obj:
             self.project_obj = self.vnc_api_h.project_read(id=self.project_id)
         vmi_id = str(uuid.uuid4())
-        vmi_obj = vnc_api_test.VirtualMachineInterface(name=vmi_id,
+        vmi_obj = vnc_api_test.VirtualMachineInterface(name=self.name,
             parent_obj=self.project_obj)
         if self.mac_address:
             mac_address_obj = vnc_api_test.MacAddressesType()
@@ -136,6 +140,9 @@ class PortFixture(vnc_api_test.VncLibFixture):
 
         if self.parent_vmi:
             vmi_obj.add_virtual_machine_interface(self.parent_vmi)
+
+        if self.device_owner:
+            vmi_obj.set_virtual_machine_interface_device_owner(self.device_owner)
 
         if self.binding_profile:
             bind_kv = vnc_api_test.KeyValuePair(key='profile',
@@ -181,13 +188,16 @@ class PortFixture(vnc_api_test.VncLibFixture):
             self.vnc_api_h.instance_ip_create(iip_obj)
     # end _contrail_create_port
 
-    def cleanUp(self):
-        if self.created:
-            if self.api_type == 'neutron':
-                self._neutron_delete_port()
-            else:
-                self._contrail_delete_port()
-            self.logger.info('Deleted port %s' % (self.uuid))
+    def cleanUp(self, force=False):
+        if self.created or force:
+            try: 
+                if self.api_type == 'neutron':
+                    self._neutron_delete_port()
+                else:
+                    self._contrail_delete_port()
+                self.logger.info('Deleted port %s' % (self.uuid))
+            except NoIdError:
+                pass
         super(PortFixture, self).cleanUp()
 
     def _neutron_delete_port(self):
