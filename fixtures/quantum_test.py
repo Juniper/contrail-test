@@ -130,13 +130,15 @@ class QuantumHelper():
             return None
     # end _create_subnet
 
-    def create_port(self, net_id, fixed_ips=[],
+    def create_port(self, net_id, fixed_ips=[], name=None,
                     mac_address=None, no_security_group=False,
                     security_groups=[], extra_dhcp_opts=None,
                     sriov=False, binding_profile=None):
         port_req_dict = {
             'network_id': net_id,
         }
+        if name:
+            port_req_dict['name'] = name
         if mac_address:
             port_req_dict['mac_address'] = mac_address
         if no_security_group:

@@ -1399,9 +1399,8 @@ class VNFixture(fixtures.Fixture):
         else:
             if not self.orchestrator.delete_vn(self.obj):
                 self.logger.warn("Deleting VN %s failed..Will retry" %
-                                 (self.vn_name))
+                                     (self.vn_name))
                 return False
-        # endif
         return True
     # end _delete_vn
 

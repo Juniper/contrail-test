@@ -3097,20 +3097,23 @@ class ContrailVncApi(object):
         vmi.set_virtual_machine_interface_properties(prop_obj)
         self._vnc.virtual_machine_interface_update(vmi)
 
-    def create_router(self, name, project_obj,vni=None):
+    def create_router(self, name, project_obj=None, vni=None,
+                      is_public=False, parent_fq_name=None):
         vni = str(vni) if vni else None
-        obj = LogicalRouter(name=name, parent_obj=project_obj, display_name=name,
-                                               vxlan_network_identifier=vni)
+        parent_fq_name = project_obj.fq_name if project_obj else parent_fq_name
+        fq_name = parent_fq_name + [name]
+        obj = LogicalRouter(name=name, parent_type='project',
+                            fq_name=fq_name,
+                            logical_router_gateway_external=is_public,
+                            vxlan_network_identifier=vni)
         self._vnc.logical_router_create(obj)
         return obj
 
-    def delete_router(self, router_obj=None, fq_name=[]):
+    def delete_router(self, router_obj=None, **kwargs):
         if router_obj:
             self._vnc.logical_router_delete(id=router_obj.uuid)
-        elif fq_name:
-            self._vnc.logical_router_delete(fq_name=fq_name)
         else:
-            return False
+            self._vnc.logical_router_delete(**kwargs)
 
     def enable_vxlan_routing(self, project_name=None):
         '''Used to change the existing encapsulation priorities to new values'''
@@ -3154,19 +3157,17 @@ class ContrailVncApi(object):
         self._vnc.route_target_create(rt_obj)
         return rt_obj
 
-    def extend_lr_to_physical_router(self, lr_id, router_id):
+    def extend_lr_to_physical_router(self, lr_id, router):
         ''' Logical router extended to given physical router'''
         lr_obj = self._vnc.logical_router_read(id=lr_id)
-        phy_router_ref_list = lr_obj.get_physical_router_refs()
-        phy_router_obj = self._vnc.physical_router_read(id=router_id)
+        phy_router_obj = self.read_physical_router(id=router)
         lr_obj.add_physical_router(phy_router_obj)
         return self._vnc.logical_router_update(lr_obj)
 
-    def remove_physical_router_from_lr(self, lr_id, router_id):
+    def remove_physical_router_from_lr(self, lr_id, router):
         ''' Given physical router is removed from logical router'''
         lr_obj = self._vnc.logical_router_read(id=lr_id)
-        phy_router_ref_list = lr_obj.get_physical_router_refs()
-        phy_router_obj = self._vnc.physical_router_read(id=router_id)
+        phy_router_obj = self.read_physical_router(id=router)
         lr_obj.del_physical_router(phy_router_obj)
         return self._vnc.logical_router_update(lr_obj)
 

@@ -23,7 +23,7 @@ class TestFabricDcGw(BaseFabricTest):
         for device_name, device_dict in self.inputs.physical_routers_data.items():
             if device_dict['role'] == 'spine':
 #                self.rb_roles[device['name']] = ['CRB-Gateway', 'DC-Gateway']
-                self.rb_roles[device_name] = ['DC-Gateway']
+                self.rb_roles[device_name] = ['DC-Gateway','Route-Reflector']
         super(TestFabricDcGw, self).setUp()
 
     @preposttest_wrapper
@@ -52,22 +52,18 @@ class TestFabricDcGw(BaseFabricTest):
             assert fixture.ping_with_certainty(self.inputs.public_host)
 
     @preposttest_wrapper
-    def test_public_ip_on_instance(self):
-        fip_ips = dict()
+    def test_instance_on_public_network(self):
         bms_fixtures = list()
-        public_vn = self.create_vn(vn_subnets=self.inputs.public_subnets[:1])
-
-        for spine in self.spines:
-            spine.add_virtual_network(public_vn.uuid)
-            self.addCleanup(spine.delete_virtual_network, public_vn.uuid)
-        vm = self.create_vm(vn_fixture=public_vn, image_name='cirros')
-
+        vn = self.create_vn(vn_subnets=self.inputs.public_subnets[:1])
+        lr_fixtures = self.create_logical_router([vn], is_public_lr=True)
+        vm = self.create_vm(vn_fixture=vn, image_name='cirros')
         for bms in self.inputs.bms_data.keys():
-            bms_fixture = self.create_bms(bms_name=bms, vn_fixture=public_vn,
-                security_groups=[self.default_sg.uuid])
-            bms_fixtures.append(bms_fixture)
-
+            bms_fixtures.append(self.create_bms(
+                bms_name=bms,
+                vn_fixture=vn,
+                security_groups=[self.default_sg.uuid]))
         self.check_vms_booted([vm])
+
         for fixture in bms_fixtures + [vm]:
             msg = 'ping from %s to %s failed'%(fixture.name,
                                                self.inputs.public_host)
