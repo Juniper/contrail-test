@@ -1,6 +1,7 @@
 import random
 import time
 from tcutils.tcpdump_utils import *
+from vm_regression.base import BaseVnVmTest
 from common.base import GenericTestBase
 from router_fixture import LogicalRouterFixture
 import copy
@@ -10,7 +11,10 @@ from common.fabric_utils import FabricUtils
 from lif_fixture import LogicalInterfaceFixture
 from bms_fixture import BMSFixture
 from vm_test import VMFixture
+from physical_device_fixture import PhysicalDeviceFixture
+from vn_test import VNFixture
 from tcutils.util import Singleton
+
 
 class FabricSingleton(FabricUtils):
     __metaclass__ = Singleton
@@ -31,6 +35,7 @@ class FabricSingleton(FabricUtils):
         if self.invoked and getattr(self, 'fabric', None):
             super(FabricSingleton, self).cleanup_fabric(self.fabric,
                 self.devices, self.interfaces)
+
 
 class BaseFabricTest(BaseNeutronTest, FabricUtils):
     @classmethod
@@ -66,6 +71,9 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
            or not self.inputs.bms_data:
             return (False, 'skipping not a fabric environment')
         return (True, None)
+
+    def tearDown(self):
+        super(BaseFabricTest, self).tearDown()
 
     @classmethod
     def tearDownClass(cls):

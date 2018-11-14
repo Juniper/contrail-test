@@ -540,11 +540,6 @@ class TestInputs(object):
 
         self.kolla_configs = self.config.get('kolla_config') or {}
         self.kolla_globals = self.kolla_configs.get('kolla_globals') or {}
-        self.enable_ironic = self.kolla_globals.get("enable_ironic",True)
-        if self.enable_ironic == 'no':
-           self.enable_ironic = False
-        elif self.enable_ironic == 'yes':
-           self.enable_ironic = True
         self.ironic_api_config = test_configs.get('ironic_api_config',{})
         #BMS information connected to TOR's
         self.tor_hosts_data = test_configs.get('tor_hosts',{})

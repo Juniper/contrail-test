@@ -132,10 +132,6 @@ else
             python upgrade/upgrade_only.py
             rv_run_test=$?
             ;;
-        fabric_underlay)
-            $run_tests -F fabric_underlay --send-mail -U $EXTRA_RUN_TEST_ARGS
-            rv_run_test=$?
-            ;;
         *)
             $run_tests -F $FEATURE --send-mail -t $EXTRA_RUN_TEST_ARGS
             rv_run_test=$?

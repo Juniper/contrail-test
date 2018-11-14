@@ -17,6 +17,12 @@ instances:
   bms1:
     provider: bms
     ip: 10.0.0.4
+    static_routes: # for ironic tftp node and qfx reachability: to be added on Control and CSN/TSN node
+        - ip route add 11.11.11.11/32 via 192.169.3.254
+        - ip route add 12.12.12.12/32 via 192.169.3.254
+        - ip route add 77.77.77.77/32 via 192.169.3.254
+        - ip route add 192.169.0.0/16 via 192.169.3.254
+        - ip route add 10.1.1.0/24 via 192.169.3.254
     roles:
       config_database:
       config:
@@ -244,6 +250,102 @@ test_configuration:
               password: password
               vendor: Juniper
               device_family: qfx
+    bms_lcm_config:
+      tftp:
+        config_url: http://10.204.217.158/images/ironic_images/config.json
+        mtu: 1300
+      ironic_provision_vn:
+        name: ironic-provision
+        subnet: 10.1.1.0/24
+      nova_quota:
+        ram: 512000
+        cores: 20
+      availability_zone: nova-baremetal
+      availability_host: nodea17-ironic
+      deploy_kernel: trusty-ird2.kernel
+      deploy_ramdisk: trusty-ird2.ramdisk
+      bms_image: ub_bm_cloudinit2.qcow2
+      bms_vm_username: contrail
+      bms_vm_password: c0ntrail123
+      vm:
+        glance_image: ubuntu-traffic
+        username: ubuntu
+        password: ubuntu
+    bms:
+      node1:
+          mgmt_ip:
+          username:
+          password:
+          bms_type: single_interface
+          driver_info:
+            ipmi_address: IPMI_ADDRESS
+            ipmi_password: IPMI_PASSWORD
+            ipmi_username: IPMI_USERNAME
+            ipmi_terminal_port: 4100
+          properties:
+            memory_mb: 32000
+            cpu_arch: x86_64
+            local_gb: 70
+            cpus: 4
+            capabilities: boot_option:local
+          interfaces:
+            - host_mac: interface_0_mac
+              tor: tor_switch_hostname 
+              tor_port: tor_port to which bms is connected
+      node2:
+          mgmt_ip:
+          username:
+          password:
+          bms_type: multi_homing
+          driver_info:
+            ipmi_address: IPMI_ADDRESS
+            ipmi_password: IPMI_PASSWORD
+            ipmi_username: IPMI_USERNAME
+            ipmi_terminal_port: 4200
+          properties:
+            memory_mb: 32000
+            cpu_arch: x86_64
+            local_gb: 70
+            cpus: 4
+            capabilities: boot_option:local
+          interfaces:
+            - host_mac: interface_0_mac
+              tor: tor_switch_hostname
+              tor_port: tor_port to which bms is connected
+              switch_id: "11:11:11:11:11:11"
+              pxe_enabled: True
+            - host_mac: interface_1_mac
+              tor: tor_switch_hostname
+              tor_port: tor_port to which bms is connected
+              switch_id: "11:11:11:11:11:11"
+              pxe_enabled: False
+     node3:
+          mgmt_ip:
+          username:
+          password:
+          bms_type: link_aggregation
+          driver_info:
+            ipmi_address: IPMI_ADDRESS
+            ipmi_password: IPMI_PASSWORD
+            ipmi_username: IPMI_USERNAME
+            ipmi_terminal_port: 4300
+          properties:
+            memory_mb: 32000
+            cpu_arch: x86_64
+            local_gb: 70
+            cpus: 4
+            capabilities: boot_option:local
+          interfaces:
+            - host_mac: interface_0_mac
+              tor: tor_switch_hostname
+              switch_id: "11:11:11:11:11:11"
+              tor_port: tor_port to which bms is connected
+              pxe_enabled: True
+            - host_mac: interface_1_mac
+              tor: tor_switch_hostname
+              switch_id: "11:11:11:11:11:11"
+              tor_port: tor_port to which bms is connected
+              pxe_enabled: False
     web_server:
         server:
         username:

@@ -36,7 +36,7 @@ class IronicHelper(object):
         return openstack.OpenstackAuth(**kwargs)
 
     def setUp(self):
-        if not self.inputs.enable_ironic:
+        if not self.inputs.host_data[self.inputs.openstack_names[0]]['containers'].get('ironic_conductor'):
            return
         self.obj = client.get_client('1',
                        session=self.auth_h.get_session(scope='project'),

@@ -2,7 +2,6 @@ import traffic_tests
 from vn_test import *
 from vm_test import *
 from vm_regression.base import BaseVnVmTest
-from common.fabric_utils import FabricUtils
 from bms_fixture import BMSFixture
 from floating_ip import *
 from policy_test import *
@@ -21,12 +20,11 @@ from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import get_subnet_broadcast
 from tcutils.util import skip_because
 import test
-from common.fabric_utils import FabricUtils
-from physical_device_fixture import PhysicalDeviceFixture
+from common.contrail_fabric.base import BaseFabricTest
 from physical_router_fixture import PhysicalRouterFixture
-from fabric_test import FabricFixture
+from physical_device_fixture import PhysicalDeviceFixture
 
-class TestBasicBMSVMVN(BaseVnVmTest):
+class TestBasicBMSVMVN(BaseFabricTest):
 
     @classmethod
     def setUpClass(cls):
@@ -36,9 +34,47 @@ class TestBasicBMSVMVN(BaseVnVmTest):
     def tearDownClass(cls):
         super(TestBasicBMSVMVN, cls).tearDownClass()
 
+    def setUp(self):
+       super(TestBasicBMSVMVN, self).setUp()
+       self.create_ironic_provision_vn()
+
     def runTest(self):
         pass
+
+    def tearDown(self):
+       super(TestBasicBMSVMVN, self).tearDown()
+
     #end runTes
+
+    def create_ironic_provision_vn(self):
+
+        '''
+        Description: Create ironic-provision VN and attach to MX and QFXs
+        Maintainer: vageesant@juniper.net
+        '''
+
+        for host_data in self.inputs.host_data.iteritems():
+          for static_route in host_data[1]['static_routes']:
+            self.inputs.run_cmd_on_server(host_data[1]['host_ip'],static_route)
+
+        bms_lcm_config = self.inputs.bms_lcm_config
+        self.vn1_name = bms_lcm_config["ironic_provision_vn"]["name"]
+        self.vn1_net = [bms_lcm_config["ironic_provision_vn"]["subnet"]]
+
+        self.inputs.project_name = "admin"
+        self.ironic_vn_fixture = self.useFixture(VNFixture(
+            project_name=self.inputs.project_name, connections=self.connections,
+            vn_name=self.vn1_name, inputs=self.inputs, subnets=self.vn1_net, router_external=True, shared = True,dns_nameservers_list=[self.inputs.internal_vip]))
+        self.ironic_vn_fixture.setUp()
+
+        self.inputs.restart_container([self.inputs.openstack_ip],'ironic_conductor')
+
+        for device in self.fabric.fetch_associated_devices():
+            device_fixture = PhysicalDeviceFixture(connections=self.connections,
+                                                       name=device)
+            device_fixture.read()
+            device_fixture.add_virtual_network(self.ironic_vn_fixture.vn_id)
+            self.addCleanup(device_fixture.delete_virtual_network, self.ironic_vn_fixture.vn_id)
 
     def reconfigure_block_size_tftp(self):
 
@@ -86,56 +122,12 @@ class TestBasicBMSVMVN(BaseVnVmTest):
         self.connections.nova_h.obj.quotas.update(re.sub("-","",project_id),ram=ram_quota)
         self.connections.nova_h.obj.quotas.update(re.sub("-","",project_id),cores=cores)
 
-    def fabric_onboarding(self):
-        fabric_dict = self.inputs.fabrics[0]
-        fabric_name = fabric_dict['namespaces']['name']
-        fabric_utils = FabricUtils(self.connections)
-        fabric, devices, interfaces = fabric_utils.onboard_existing_fabric(fabric_dict, name=fabric_name,cleanup=False)
-        assert interfaces, 'Failed to onboard existing fabric %s'%fabric_dict
-        fabric_utils.assign_roles(fabric, devices)
-
-    @test.attr(type=['bms_lcm'])
-    @preposttest_wrapper
-    def test_fabric_bringup(self):
-        for host_data in self.inputs.host_data.iteritems():
-          for static_route in host_data[1]['static_routes']:
-            self.inputs.run_cmd_on_server(host_data[1]['host_ip'],static_route)
-        self.fabric_onboarding()
-
     def bms_delete_nodes(self,bms_name=None,all_bms=False):
         node_list = self.connections.ironic_h.obj.node.list()
         for node in node_list:
             self.connections.ironic_h.obj.node.delete(node.uuid)
 
-    @test.attr(type=['bms_lcm'])
     @preposttest_wrapper
-    def test_ironic_provision_vn_create(self):
-        '''
-        Description: Create ironic-provision VN and attach to MX and QFXs
-        Maintainer: vageesant@juniper.net
-        '''
-        bms_lcm_config = self.inputs.bms_lcm_config
-        self.vn1_name = bms_lcm_config["ironic_provision_vn"]["name"]
-        self.vn1_net = [bms_lcm_config["ironic_provision_vn"]["subnet"]]
-
-        self.inputs.project_name = "admin"
-        self.vn1_fixture = self.useFixture(VNFixture(
-            project_name=self.inputs.project_name, connections=self.admin_connections,
-            vn_name=self.vn1_name, inputs=self.inputs, subnets=self.vn1_net, router_external=True, shared = True,clean_up=False,dns_nameservers_list=[self.inputs.internal_vip]))
-        self.vn1_fixture.setUp()
-
-        self.inputs.restart_container([self.inputs.openstack_ip],'ironic_conductor')
-
-        fabric_name = self.inputs.fabrics[0]['namespaces']['name']
-        fabric_utils = FabricUtils(self.connections)
-        status,fabric = fabric_utils._get_fabric_fixture(fabric_name)
-
-        for device in fabric.fetch_associated_devices():
-            device_fixture = PhysicalDeviceFixture(connections=self.connections,
-                                                       name=device)
-            device_fixture.read()
-            device_fixture.add_virtual_network(self.vn1_fixture.vn_id)
-
     def bms_node_add_delete(self,bms_type=None):
         '''
           Description: Create BMS ironic node
@@ -192,9 +184,8 @@ class TestBasicBMSVMVN(BaseVnVmTest):
         #self.bms_fixture.delete_ironic_node()
         #print self.bms_fixture.ironic_h.obj.node.list()
 
-    @test.attr(type=['bms_lcm'])
     @preposttest_wrapper
-    def test_test_bms_single_interface(self):
+    def test_bms_single_interface(self):
         '''
         Description: Test BMS LCM scenario for single interface BMS node
         Test Steps:
@@ -213,9 +204,8 @@ class TestBasicBMSVMVN(BaseVnVmTest):
         self.reconfigure_block_size_tftp()
         self.bms_vm_add_delete(bms_count=1)
 
-    @test.attr(type=['bms_lcm'])
     @preposttest_wrapper
-    def test_test_bms_multi_homing(self):
+    def test_bms_multi_homing(self):
         '''
         Description: Test BMS LCM scenario for multi homing - BMS node with two interface.interface1 in qfx1 and interface2 in qfx2
         Test Steps:
@@ -234,9 +224,8 @@ class TestBasicBMSVMVN(BaseVnVmTest):
         self.reconfigure_block_size_tftp()
         self.bms_vm_add_delete(bms_count=1)
 
-    @test.attr(type=['bms_lcm'])
     @preposttest_wrapper
-    def test_test_bms_lag(self):
+    def test_bms_lag(self):
         '''
         Description: Test BMS LCM scenario for LAG - Link Aggregation - BMS node with two interface.interface1 and interface2 both in the same qfx
         Test Steps:
@@ -255,9 +244,8 @@ class TestBasicBMSVMVN(BaseVnVmTest):
         self.reconfigure_block_size_tftp()
         self.bms_vm_add_delete(bms_count=1)
 
-    @test.attr(type=['bms_lcm'])
     @preposttest_wrapper
-    def test_test_bms_all(self):
+    def test_bms_all(self):
         '''
         Description: SuperSet testcase for Single Interface BMS,LAG Scenario and Multi-homing scenario
         Test Steps:
@@ -297,7 +285,7 @@ class TestBasicBMSVMVN(BaseVnVmTest):
         assert vn_fixture.verify_on_setup()
         vn_obj = vn_fixture.obj
 
-        vm_fixture = self.create_vm(vn_fixture=vn_fixture,image_name=vm_image,zone="nova",vm_name=get_random_name('vm_add_delete'))
+        vm_fixture = self.create_vm(vn_fixture=vn_fixture,image_name='ubuntu-traffic',zone="nova",vm_name=get_random_name('vm_add_delete'))
 
         bms_fixtures_list = []
         for i in xrange(bms_count):
