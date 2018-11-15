@@ -320,7 +320,7 @@ class VcenterOrchestrator(Orchestrator):
             pass
         return self._nfs_ds.name, image + '/' + vmx
 
-    def _load_and_register_template(self, image):
+    def load_and_register_template(self, image):
         host_name, cluster_name  = next(self._computes)
         host = self._find_obj(self._find_obj(self._dc, 'cluster', {'name' : cluster_name}),
                                     'host', {'name' : host_name})
@@ -344,7 +344,7 @@ class VcenterOrchestrator(Orchestrator):
 
         tmpl = self._find_obj(self._dc, "vm", {'name' : image_name})
         if not tmpl:
-            self._load_and_register_template(image_name)
+            self.load_and_register_template(image_name)
             tmpl = self._find_obj(self._dc, "vm", {'name' : image_name})
             if not tmpl:
                 raise Exception("template not found")
