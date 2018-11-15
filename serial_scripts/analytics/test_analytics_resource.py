@@ -37,7 +37,6 @@ class AnalyticsTestSanityWithMin(
 
     @classmethod
     def tearDownClass(cls):
-        cls.res.cleanUp()
         super(AnalyticsTestSanityWithMin, cls).tearDownClass()
     # end tearDownClass
 
@@ -239,7 +238,6 @@ class AnalyticsTestSanityWithResource(
 
     @classmethod
     def tearDownClass(cls):
-        cls.res.cleanUp()
         super(AnalyticsTestSanityWithResource, cls).tearDownClass()
     # end tearDownClass
 
