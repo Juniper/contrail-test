@@ -3030,6 +3030,37 @@ class ContrailVncApi(object):
         device_obj.add_virtual_router(vr_obj)
         return self._vnc.physical_router_update(device_obj)
 
+    def add_si_ports_to_physical_router(self,device,service_ports):
+        '''
+           :param device: uuid or name of the device
+           :param serivice_ports: service ports to device 
+        '''
+        kwargs = dict()
+        if is_uuid(device):
+            kwargs['id'] = device
+        else:
+            kwargs['name'] = device
+        junos_service_ports = JunosServicePorts()
+        junos_service_ports.set_service_port(service_ports)
+        device_obj = self.read_physical_router(**kwargs)
+        device_obj.set_physical_router_junos_service_ports(junos_service_ports)
+        return self._vnc.physical_router_update(device_obj)
+
+    def delete_si_ports_to_physical_router(self,device):
+        '''
+           :param device: uuid or name of the device
+           :param serivice_ports: service ports to device 
+        '''
+        kwargs = dict()
+        if is_uuid(device):
+            kwargs['id'] = device
+        else:
+            kwargs['name'] = device
+        junos_service_ports = JunosServicePorts()
+        device_obj = self.read_physical_router(**kwargs)
+        device_obj.set_physical_router_junos_service_ports(junos_service_ports)
+        return self._vnc.physical_router_update(device_obj)
+
     def execute_job(self, template_fqname, payload_dict, devices=None):
         '''
             :param template_fqname : fqname of Job template

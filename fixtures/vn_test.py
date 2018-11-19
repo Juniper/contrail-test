@@ -95,7 +95,6 @@ class VNFixture(fixtures.Fixture):
         self.forwarding_mode = forwarding_mode
         self.vxlan_id = vxlan_id
         self.shared = shared
-        self.router_external = router_external
         self.clean_up = clean_up
         self.lock = threading.Lock()
         self.created = False
@@ -115,6 +114,7 @@ class VNFixture(fixtures.Fixture):
         self.enable_dhcp = enable_dhcp
         self.sriov_enable = sriov_enable
         self.sriov_vlan = sriov_vlan
+        self.router_external = router_external
         self.sriov_provider_network = sriov_provider_network
         self.dhcp_option_list = dhcp_option_list
         self.ecmp_hash = ecmp_hash
@@ -135,9 +135,6 @@ class VNFixture(fixtures.Fixture):
         self.layer2_control_word = kwargs.get('layer2_control_word', None)
         self.address_allocation_mode= kwargs.get('address_allocation_mode', None)
         self.ip_fabric = kwargs.get('ip_fabric', None)
-
-
-
         self.vnc_lib_fixture = connections.vnc_lib_fixture
     # end __init__
 

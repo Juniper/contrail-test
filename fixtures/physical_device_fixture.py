@@ -124,6 +124,16 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         for csn in csns:
             self.vnc_h.delete_csn_from_physical_router(device=self.name,
                                                    csn=csn)
+    def add_si_port_to_router(self,service_ports):
+        self.vnc_h.add_si_ports_to_physical_router(device=self.name,
+                                              service_ports=service_ports)
+        self.logger.info('Adding service port %s to Physical device %s' % (
+                                              service_ports,self.uuid))
+
+    def delete_si_port_to_router(self):
+        self.vnc_h.delete_si_ports_to_physical_router(device=self.name)
+        self.logger.info('Deleted service port to Physical device %s ' % (
+                                                   self.uuid))
 
     def delete_device(self):
         self.vnc_h.delete_physical_router(self.name)
