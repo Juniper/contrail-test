@@ -141,7 +141,7 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
 
     @classmethod
     def create_only_vn(cls, vn_name=None, vn_subnets=None, vxlan_id=None,
-                   enable_dhcp=True, **kwargs):
+                   enable_dhcp=True, router_external=False, **kwargs):
         '''Classmethod to do only VN creation
         '''
         if not vn_name:
@@ -155,17 +155,19 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
                       subnets=vn_subnets,
                       vxlan_id=vxlan_id,
                       enable_dhcp=enable_dhcp,
+                      router_external=router_external,
                       **kwargs)
         vn_fixture.setUp()
         return vn_fixture
     # end create_only_vn
 
     def create_vn(self, vn_name=None, vn_subnets=None, vxlan_id=None,
-        enable_dhcp=True, cleanup=True, **kwargs):
+        enable_dhcp=True, cleanup=True,router_external=False, **kwargs):
         vn_fixture = self.create_only_vn(vn_name=vn_name,
                                      vn_subnets=vn_subnets,
                                      vxlan_id=vxlan_id,
                                      enable_dhcp=enable_dhcp,
+                                     router_external=router_external,
                                      **kwargs)
         if cleanup:
             self.addCleanup(vn_fixture.cleanUp)

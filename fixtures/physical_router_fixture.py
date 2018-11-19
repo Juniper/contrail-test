@@ -42,7 +42,6 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
         self.asn = kwargs.get('asn','64512')
         self.tunnel_ip = kwargs.get('tunnel_ip')
         self.ports = kwargs.get('ports', [])
-
         self.bgp_router = None
         self.bgp_router_already_present = False
         self.dm_managed = kwargs.get('dm_managed', False)

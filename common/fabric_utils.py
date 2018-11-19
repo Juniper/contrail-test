@@ -195,6 +195,19 @@ class FabricUtils(object):
             if device['name'] == device_name:
                 return device['role']
 
+    def get_mode_from_inputs(self, device_name):
+        for device in self.inputs.physical_routers_data.itervalues():
+            if device['name'] == device_name:
+                return device['mode']
+
+    def get_si_port_from_inputs(self, device_name):
+        for device in self.inputs.physical_routers_data.itervalues():
+            if device['name'] == device_name:
+                if device.get('si_port'):
+                   return [device['si_port']]
+                else:
+                   return None 
+
     def assign_roles(self, fabric, devices, rb_roles=None, wait_for_finish=True):
         ''' eg: rb_roles = {device1: ['CRB-Access'], device2: ['CRB-Gateway', 'DC-Gateway']}'''
         rb_roles = rb_roles or dict()

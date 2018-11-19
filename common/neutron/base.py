@@ -250,13 +250,10 @@ class BaseNeutronTest(GenericTestBase):
         self.logger.info('Creating FIP from %s' % fip_fixture.pool_name)
         return vnc_h.create_floating_ip(fip_fixture.fip_pool_obj, fip_fixture.project_obj)
 
-    def assoc_fip(self, fip_id, vm_id, vmi_id=None, **kwargs):
+    def assoc_fip(self, fip_id, vm_id=None, vmi_id=None, **kwargs):
         connections = kwargs.get('connections') or self.connections
         vnc_h = connections.orch.vnc_h
-        if vmi_id:
-            return vnc_h.assoc_floating_ip(fip_id, vm_id, vmi_id=vmi_id)
-        else:
-            return vnc_h.assoc_floating_ip(fip_id, vm_id)
+        return vnc_h.assoc_floating_ip(fip_id, vm_id, vmi_id=vmi_id)
 
     def assoc_fixed_ip_to_fip(self, fip_id, fixed_ip, **kwargs):
         connections = kwargs.get('connections') or self.connections
@@ -273,11 +270,14 @@ class BaseNeutronTest(GenericTestBase):
         vnc_h = connections.orch.vnc_h
         vnc_h.delete_floating_ip(fip_id)
 
-    def create_and_assoc_fip(self, fip_fixture, vm_fixture,
+    def create_and_assoc_fip(self, fip_fixture, vm_fixture=None,
                              vmi_id=None, fixed_ip=None, **kwargs):
         (fip_ip, fip_id) = self.create_fip(fip_fixture, **kwargs)
         self.addCleanup(self.del_fip, fip_id, **kwargs)
-        self.assoc_fip(fip_id, vm_fixture.uuid, vmi_id=vmi_id, **kwargs)
+        if vm_fixture:
+            self.assoc_fip(fip_id, vm_fixture.uuid, vmi_id=vmi_id, **kwargs)
+        else :
+            self.assoc_fip(fip_id, vmi_id=vmi_id, **kwargs)
         self.addCleanup(self.disassoc_fip, fip_id, **kwargs)
         if fixed_ip:
             self.assoc_fixed_ip_to_fip(fip_id, fixed_ip, **kwargs)
