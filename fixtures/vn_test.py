@@ -467,25 +467,25 @@ class VNFixture(fixtures.Fixture):
         # end if
 
         # Configure route target
-        if self.rt_number is not None:
+        if self.rt_number:
             self.add_route_target()
             self.vn_with_route_target.append(self.uuid)
 
         # Configure forwarding mode
-        if self.forwarding_mode is not None:
+        if self.forwarding_mode:
             self.add_forwarding_mode(
                 self.project_obj.fq_name, self.vn_name, self.forwarding_mode)
 
         # Configure vxlan_id
-        if self.vxlan_id is not None:
+        if self.vxlan_id:
             self.set_vxlan_id()
 
         # Configure address_allocation_mode
-        if self.address_allocation_mode is not None:
+        if self.address_allocation_mode:
             self.set_address_allocation_mode()
 
         # Configure ecmp_hash
-        if self.ecmp_hash is not None:
+        if self.ecmp_hash:
             self.set_ecmp_hash()
 
         # Populate the VN Subnet details
@@ -493,7 +493,7 @@ class VNFixture(fixtures.Fixture):
             self.vn_subnet_objs = self.quantum_h.get_subnets_of_vn(self.uuid)
 
         # Configure IP Fabric provider network
-        if self.ip_fabric is not None:
+        if self.ip_fabric:
             ip_fab_vn_fq_name_str = "default-domain:default-project:ip-fabric"
             ip_fab_vn_obj = self.vnc_lib_h.virtual_network_read(fq_name_str=
                                                         ip_fab_vn_fq_name_str)

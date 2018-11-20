@@ -149,7 +149,7 @@ class VMFixture(fixtures.Fixture):
         self.refresh = False
         self._vmi_ids = {}
         self.cfgm_ip = self.inputs.cfgm_ip
-        self.collector_ip = self.inputs.collector_ip
+        self.collector_ip = self.inputs.collector_ips[0]
     # end __init__
 
     def read(self,refresh=False):
