@@ -535,7 +535,9 @@ class TestInputs(object):
         #    name,type,mgmt_ip,model,vendor,asn,ssh_username,ssh_password,tunnel_ip,ports
         self.physical_routers_data = test_configs.get('physical_routers',{})
         self.bms_data = test_configs.get('bms',{})
+        self.bms_lcm_config = test_configs.get('bms_lcm_config',{})
 
+        self.ironic_api_config = test_configs.get('ironic_api_config',{})
         #BMS information connected to TOR's
         self.tor_hosts_data = test_configs.get('tor_hosts',{})
 
@@ -547,13 +549,13 @@ class TestInputs(object):
             self.fabric_gw_info.append((gw_name, address))
         if 'traffic_generator' in test_configs:
             traffic_gen = test_configs['traffic_generator']
-	    self.ixia_linux_host_ip = traffic_gen.get('ixia_linux_host_ip')
-	    self.ixia_host_ip = traffic_gen.get('ixia_host_ip')
-	    self.spirent_linux_host_ip = traffic_gen.get('spirent_linux_host_ip')
-	    self.ixia_linux_username = traffic_gen.get('ixia_linux_username')
-	    self.ixia_linux_password = traffic_gen.get('ixia_linux_password')
-	    self.spirent_linux_username = traffic_gen.get('spirent_linux_username')
-	    self.spirent_linux_password = traffic_gen.get('spirent_linux_password')
+            self.ixia_linux_host_ip = traffic_gen.get('ixia_linux_host_ip')
+            self.ixia_host_ip = traffic_gen.get('ixia_host_ip')
+            self.spirent_linux_host_ip = traffic_gen.get('spirent_linux_host_ip')
+            self.ixia_linux_username = traffic_gen.get('ixia_linux_username')
+            self.ixia_linux_password = traffic_gen.get('ixia_linux_password')
+            self.spirent_linux_username = traffic_gen.get('spirent_linux_username')
+            self.spirent_linux_password = traffic_gen.get('spirent_linux_password')
         if 'device_manager' in test_configs:
             self.dm_mx = test_configs['device_manager']
         if 'ns_agilio_vrouter' in test_configs:
@@ -647,6 +649,12 @@ class TestInputs(object):
         output = self.run_cmd_on_server(host, cmd, as_sudo=True)
         containers = [x.strip('\r') for x in output.split('\n')]
         return containers
+
+    @property
+    def is_ironic_enabled(self):
+        if self.host_data[self.openstack_ip]['containers'].get('ironic_conductor'):
+            return True
+        return False
 
     @property
     def is_dp_encryption_enabled(self):
@@ -1120,6 +1128,8 @@ class ContrailTestInit(object):
                'contrail-kube-manager': 'contrail-kube-manager',
                'kube-apiserver': 'kube-apiserver',
                'strongswan': 'strongswan',
+               'ironic_pxe': 'ironic_pxe',
+               'ironic_conductor': 'ironic_conductor',
               }
         if service:
             return dct.get(service)
