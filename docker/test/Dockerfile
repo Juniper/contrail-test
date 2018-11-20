@@ -18,6 +18,7 @@ RUN if [ ! -z "$INSTALL_PACKAGE" ]; then yum localinstall -y /$INSTALL_PACKAGE; 
     yum install -y \
       python-ceilometerclient python-cinderclient python-barbicanclient \
       python-glanceclient python-heatclient python-novaclient \
+      python-ironicclient \
       python-contrail contrail-test python-setuptools && \
     yum --setopt=obsoletes=0 install -y python-neutronclient && \
     yum clean all -y && rm -rf /var/cache/yum && \

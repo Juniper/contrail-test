@@ -49,6 +49,7 @@ class ContrailConnections():
         self.nova_h = None
         self.quantum_h = None
         self.vnc_lib_fixture = None
+        self.ironic_h = None
         self.api_server_inspects = custom_dict(self.get_api_inspect_handle,
                         'api_inspect:'+self.project_name+':'+self.username)
         self.dnsagent_inspect = custom_dict(self.get_dns_agent_inspect_handle,
@@ -85,6 +86,7 @@ class ContrailConnections():
                                               logger=self.logger,
                                               auth_h=self.auth
                                              )
+            self.ironic_h = self.orch.get_ironic_handler()
             self.nova_h = self.orch.get_compute_handler()
             self.quantum_h = self.orch.get_network_handler()
             self.glance_h = self.orch.get_image_handler()

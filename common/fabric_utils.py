@@ -31,7 +31,7 @@ class FabricUtils(object):
         interfaces = {'physical': [], 'logical': []}
         devices = list()
         
-        name = get_random_name(name) if name else get_random_name('fabric') 
+        name = get_random_name(name) if name else get_random_name('fabric')
 
         fq_name = ['default-global-system-config',
                    'existing_fabric_onboard_template']
