@@ -219,7 +219,6 @@ class BMSFixture(fixtures.Fixture):
         output = self.run_namespace('timeout %s dhclient -v %s'%(
                               timeout, self.mvlanintf))
         self.logger.debug('Dhcp transaction : %s' % (output))
-
         if not 'bound to' in output:
             self.logger.warn('DHCP did not complete !!')
             return (False, output)

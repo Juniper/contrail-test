@@ -154,6 +154,16 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         assert result, msg
         return secgrp_fixture
 
+    def create_logical_router(self, vn_fixtures, **kwargs):
+        vn_ids = [vn.uuid for vn in vn_fixtures]
+        self.logger.info('Creating Logical Router with VN uuids: %s'%(vn_ids))
+        lr = self.useFixture(LogicalRouterFixture(
+            connections=self.connections,
+            connected_networks=vn_ids, **kwargs))
+        for spine in self.spines:
+            lr.add_physical_router(spine.uuid)
+        return lr
+
 class BaseEvpnType5Test(BaseFabricTest):
 
     def setup_vns(self, vn=None):
@@ -384,9 +394,3 @@ class BaseEvpnType5Test(BaseFabricTest):
             'lr_fixtures':lr_fixtures,
         }
         return ret_dict
-
-    def delete_auto_lr(self, fabric_name):
-        lr_name = fabric_name + '-CRB-gateway-logical-router'
-        lr_fq_name = ['default-domain', 'admin', lr_name]
-        self.logger.info('Auto Logical Router fq name %s' %(lr_fq_name))
-        self.vnc_h.delete_router(fq_name=lr_fq_name)
