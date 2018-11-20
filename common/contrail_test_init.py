@@ -445,6 +445,7 @@ class TestInputs(object):
         test_configs = self.config.get('test_configuration') or {}
         self.orchestrator = deployment_configs.get('orchestrator') or 'openstack'
         self.slave_orchestrator = deployment_configs.get('slave_orchestrator',None)
+        ha_test_config = self.config.get('ha_test_config') or {}
         if self.deployer == 'openshift':
             kube_config_file = OPENSHIFT_CONFIG_FILE
         else:
@@ -470,6 +471,9 @@ class TestInputs(object):
         self.config_amqp_port = contrail_configs.get('RABBITMQ_NODE_PORT', 5673)
         self.xmpp_auth_enable = contrail_configs.get('XMPP_SSL_ENABLE')
         self.xmpp_dns_auth_enable = contrail_configs.get('XMPP_SSL_ENABLE')
+
+        # HA related configs
+        self.packet_loss_threshold = ha_test_config.get('packet_loss_threshold') or 2
 
         # openstack related configs
         keystone_configs = orchestrator_configs.get('keystone') or {}
