@@ -194,6 +194,79 @@ test_configuration:
             role: spine
 
     bms:
+      node1:
+          mgmt_ip:
+          username:
+          password:
+          driver_info:
+            ipmi_address: 10.1.1.10
+            ipmi_password: ADMIN
+            ipmi_username: ADMIN
+            ipmi_terminal_port: 4100
+          properties:
+            memory_mb: 32000
+            cpu_arch: x86_64
+            local_gb: 70
+            cpus: 4
+            capabilities: boot_option:local
+          interfaces:
+            - host_mac: aa:bb:bb:cc:dd:ee
+              tor: qfx1
+              tor_port: ge-0/0/22
+              switch_id: "11:11:11:11:11:11"
+              pxe_enabled: True
+      nodeg16:
+          mgmt_ip:
+          username:
+          password:
+          driver_info:
+            ipmi_address: 10.1.1.200
+            ipmi_password: ADMIN
+            ipmi_username: ADMIN
+            ipmi_terminal_port: 4200
+          properties:
+            memory_mb: 32000
+            cpu_arch: x86_64
+            local_gb: 70
+            cpus: 4
+            capabilities: boot_option:local
+          interfaces:
+            - host_mac: aa:bb:cc:dd:ee:ef
+              tor: qfx1
+              tor_port: ge-0/0/16
+              switch_id: "11:11:11:11:11:11"
+              pxe_enabled: True
+            - host_mac: aa:bb:cc:dd:ee:ff
+              tor: qfx2
+              tor_port: ge-0/0/16
+              switch_id: "11:11:11:11:11:11"
+              pxe_enabled: False
+      nodeg7:
+          mgmt_ip:
+          username:
+          password:
+          driver_info:
+            ipmi_address: 10.10.10.200
+            ipmi_password: ADMIN
+            ipmi_terminal_port: 4300
+          properties:
+            memory_mb: 32000
+            cpu_arch: x86_64
+            local_gb: 70
+            cpus: 4
+            capabilities: boot_option:local
+          interfaces:
+            - host_mac: aa:bb:cc:dd:cc:aa
+              tor: qfx1
+              switch_id: "11:11:11:11:11:11"
+              tor_port: ge-0/0/27
+              pxe_enabled: True
+            - host_mac: aa:ba:aa:cc:dd:ee
+              tor: qfx2
+              switch_id: "11:11:11:11:11:11"
+              tor_port: ge-0/0/7
+              pxe_enabled: False
+
         bms1:
             interfaces:
                 - tor: qfx1
@@ -244,6 +317,13 @@ test_configuration:
               password: password
               vendor: Juniper
               device_family: qfx
+    bms_lcm_config:
+      ironic_provision_vn:
+        name: ironic-provision
+        subnet: 10.1.1.0/24
+      deploy_kernel: trusty-ird2.kernel
+      deploy_ramdisk: trusty-ird2.ramdisk
+      bms_image: ub_bm_cloudinit2.qcow2
     web_server:
         server:
         username:
@@ -256,3 +336,22 @@ test_configuration:
         port:
         to:
         sender:
+control_data:
+  bms1:
+     ip: 10.4.9.10
+     ctrldata_ip: 192.169.3.1
+     prefix: 24
+     gw: 192.169.3.254
+     device: eno1
+  nodeg2:
+     ip: 10.4.9.11
+     ctrldata_ip: 192.169.3.2
+     prefix: 24
+     gw: 192.169.3.254
+     device: enp1s0f1
+  nodeg3:
+     ip: 10.4.9.12
+     ctrldata_ip: 192.169.3.3
+     prefix: 24
+     gw: 192.169.3.254
+     device: enp1s0f1
