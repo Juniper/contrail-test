@@ -146,8 +146,8 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         '''
         if not vn_name:
             vn_name = get_random_name('vn')
-        project_name = kwargs.pop('project_name', None) or cls.connections.project_name
         connections = kwargs.pop('connections', None) or cls.connections
+        project_name = kwargs.pop('project_name', None) or connections.project_name
         vn_fixture = VNFixture(project_name=project_name,
                       connections=connections,
                       inputs=connections.inputs,

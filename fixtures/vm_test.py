@@ -59,6 +59,7 @@ class VMFixture(fixtures.Fixture):
     def __init__(self, connections, vm_name=None, vn_obj=None,
                  vn_objs=[],
                  image_name='ubuntu', subnets=[],
+                 instance_type="virtual-server",
                  flavor=None,
                  node_name=None, sg_ids=[], count=1, userdata=None,
                  port_ids=[], fixed_ips=[], zone=None, vn_ids=[], uuid=None,*args,**kwargs):
@@ -88,6 +89,7 @@ class VMFixture(fixtures.Fixture):
         self.project_name = connections.project_name
         self.project_id = connections.project_id
         self.domain_name = connections.domain_name
+        self.instance_type = instance_type
         self.vm_name = vm_name or get_random_name(self.project_name)
         self.vm_id = uuid
         self.vm_obj = None
@@ -604,24 +606,31 @@ class VMFixture(fixtures.Fixture):
         if len(self.vm_ips) < 1:
             return False
 
+
         self.verify_vm_flag = True
         if self.inputs.verify_thru_gui():
-            self.webui.verify_vm(self)
+           self.webui.verify_vm(self)
         result = self.verify_vm_in_api_server()
         if not result:
-            self.logger.error('VM %s verification in API Server failed'
+           self.logger.error('VM %s verification in API Server failed'
                               % (self.vm_name))
-            return result
+           return result
+
+        if self.instance_type == "baremetal":
+           self.logger.debug("Skipping VM %s verification for BMS_LCM setup in agent,vrouter,opserver"%(self.vm_name))
+           self.verify_is_run = True
+           return result
+
         result = self.verify_vm_in_agent()
         if not result:
-            self.logger.error('VM %s verification in Agent failed'
+           self.logger.error('VM %s verification in Agent failed'
                               % (self.vm_name))
-            return result
+           return result
         result = self.verify_vm_in_vrouter()
         if not result:
-            self.logger.error('VM %s verification in Vrouter failed'
+           self.logger.error('VM %s verification in Vrouter failed'
                               % (self.vm_name))
-            return result
+           return result
         result = self.verify_vm_in_control_nodes()
         if not result:
             self.logger.error('Route verification for VM %s in Controlnodes'
@@ -629,9 +638,9 @@ class VMFixture(fixtures.Fixture):
             return result
         result = self.verify_vm_in_opserver()
         if not result:
-            self.logger.error('VM %s verification in Opserver failed'
+           self.logger.error('VM %s verification in Opserver failed'
                               % (self.vm_name))
-            return result
+           return result
 
         self.verify_is_run = True
         return result
@@ -1989,6 +1998,8 @@ class VMFixture(fixtures.Fixture):
              if check_orch:
                  assert self.verify_vm_not_in_orchestrator(), ('VM %s is still'
                     'seen in orchestrator' % (self.vm_name))
+             if self.instance_type == "baremetal":
+                 return True
              assert self.verify_vm_not_in_agent(), ('VM %s is still seen in '
                 'one or more agents' % (self.vm_name))
              assert self.verify_vm_not_in_control_nodes(), ('VM %s is still '
