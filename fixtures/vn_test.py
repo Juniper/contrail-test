@@ -47,7 +47,7 @@ class VNFixture(fixtures.Fixture):
                  forwarding_mode=None, vxlan_id=None, shared=False,
                  router_external=False, clean_up=True,
                  af=None, empty_vn=False, enable_dhcp=True,
-                 dhcp_option_list=None, disable_gateway=False,
+                 dhcp_option_list=None, disable_gateway=False,dns_nameservers_list=None,
                  uuid=None, sriov_enable=False, sriov_vlan=None,
                  sriov_provider_network=None,ecmp_hash=None,*args,**kwargs):
         self.connections = connections
@@ -119,6 +119,7 @@ class VNFixture(fixtures.Fixture):
         self.dhcp_option_list = dhcp_option_list
         self.ecmp_hash = ecmp_hash
         self.disable_gateway = disable_gateway
+        self.dns_nameservers_list = dns_nameservers_list
         self.vn_port_list=[]
         self.vn_with_route_target = []
         self.ri_ref = None
@@ -307,7 +308,8 @@ class VNFixture(fixtures.Fixture):
                                                 sriov_enable=self.sriov_enable,
                                                 sriov_vlan=self.sriov_vlan,
                                                 sriov_provider_network=self.sriov_provider_network,
-                                                disable_gateway=self.disable_gateway)
+                                                disable_gateway=self.disable_gateway,
+                                                dns_nameservers_list=self.dns_nameservers_list)
                 if self.obj:
                     self.logger.info('Created VN %s' %(self.vn_name))
                     self.created = True #Introducing this flag to make sure if
@@ -504,7 +506,7 @@ class VNFixture(fixtures.Fixture):
     def create_subnet(self, vn_subnet, ipam_fq_name=None):
         if isinstance(self.orchestrator,VcenterOrchestrator) :
             raise Exception('vcenter: subnets not supported')
-        self.quantum_h.create_subnet(vn_subnet, self.uuid, ipam_fq_name)
+        self.quantum_h.create_subnet(vn_subnet, self.uuid, ipam_fq_name,dns_nameservers=self.dns_nameservers_list)
         self.vn_subnets.append(vn_subnet)
         self.vn_subnet_objs = self.get_subnets()
 

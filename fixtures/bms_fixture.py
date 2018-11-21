@@ -9,6 +9,7 @@ class BMSFixture(fixtures.Fixture):
     def __init__(self,
                  connections,
                  name,
+                 is_ironic_node=False,
                  interfaces=None,
                  username=None,
                  password=None,
@@ -20,6 +21,7 @@ class BMSFixture(fixtures.Fixture):
         self.inputs = connections.inputs
         self.logger = connections.logger
         self.name = name
+        self.is_ironic_node = is_ironic_node
         bms_dict = self.inputs.bms_data[name]
         self.interfaces = kwargs.get('interfaces') or bms_dict['interfaces']
         self.mgmt_ip = kwargs.get('mgmt_ip') or bms_dict['mgmt_ip'] # Host IP, optional
@@ -40,7 +42,43 @@ class BMSFixture(fixtures.Fixture):
         self.bms_created = False
         self.mvlanintf = None
         self._interface = None
+        self.ironic_node_obj = None
+        self.ironic_node_id = None
     # end __init__
+    def read_ironic_node_obj(self):
+        try:
+          if not self.ironic_node_id:
+            self.ironic_node_obj = self.connections.ironic_h.obj.node.get(self.name)
+            self.ironic_node_id = self.ironic_node_obj.uuid
+          else:
+            self.ironic_node_obj = self.connections.ironic_h.obj.node.get(self.name)
+        except Exception,e:
+            self.ironic_node_obj = None
+
+    def create_bms_node(self,ironic_node_name,port_list,driver_info,properties):
+        if not self.ironic_node_obj:
+           self.read_ironic_node_obj()
+        if self.ironic_node_obj:
+           self.logger.info("Ironic node: %s already present, not creating it"%self.name)
+           self.logger.info("node-id:%s"%self.ironic_node_obj.uuid)
+           return self.ironic_node_obj
+        else:
+           self.logger.info("Creating Ironic node: %s "%self.name)
+           return self.connections.ironic_h.create_ironic_node(ironic_node_name,port_list,driver_info,properties)
+
+    def set_bms_node_state(self,new_state):
+        if not self.ironic_node_id:
+           self.read_ironic_node_obj()
+        self.connections.ironic_h.set_ironic_node_state(self.ironic_node_obj.uuid,new_state)
+
+    def delete_bms_node(self):
+        if not self.ironic_node_obj.uuid:
+           self.read()
+        if not self.ironic_node_obj:
+           self.logger.info("BMS Ironic node %s not present, skipping delete "%self.name)
+           return
+        self.delete_ironic_node()
+
 
     def create_vmi(self):
         fixed_ips = None
@@ -155,6 +193,8 @@ class BMSFixture(fixtures.Fixture):
 
     def setUp(self):
         super(BMSFixture, self).setUp()
+        if self.is_ironic_node:
+           return
         try:
             if not self.port_fixture:
                 self.create_vmi()
