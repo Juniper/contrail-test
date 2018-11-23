@@ -277,6 +277,18 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
             l.append(p)
         return l
 
+    def is_dhcp_offered(self,mac_addr):
+        path = 'Snh_DhcpInfo'
+        mac = mac_addr.lower()
+        xpath="//Dhcpv4Hdr[chaddr[starts-with(text(),'%s')] and dhcp_options[contains(text(),'Offer')]]"%mac.replace(":"," ")
+        dhcp_stats_list = self.dict_get(path)
+        dhcp_entries = EtreeToDict(xpath).get_all_entry(dhcp_stats_list)
+
+        if len(dhcp_entries):
+           return True
+        else:
+           return False
+
     def delete_all_flows(self):
         '''Delete flows with following introspect url - http://10.204.216.15:8085/Snh_DeleteAllFlowRecords?.
         '''
