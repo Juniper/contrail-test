@@ -99,6 +99,10 @@ class IronicHelper(object):
                                portgroup_uuid=self.portgroup_uuid,pxe_enabled=port['pxe_enabled'])
         return node_obj
 
+    def set_node_power_state(self,node_id,state,soft=false):
+
+        self.obj.node.set_power_state(node_id,state,soft)
+
     def set_ironic_node_state(self,node_id,new_state):
 
         if new_state == "available":
