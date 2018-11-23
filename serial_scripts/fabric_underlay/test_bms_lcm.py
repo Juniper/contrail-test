@@ -1,10 +1,13 @@
+import re
 import time
 import test
+from common import log_orig as contrail_logging
 from bms_fixture import BMSFixture
 from tcutils.wrappers import preposttest_wrapper
 from common.contrail_fabric.base import BaseFabricTest
 from physical_router_fixture import PhysicalRouterFixture
 from physical_device_fixture import PhysicalDeviceFixture
+from tcutils.tcpdump_utils import start_tcpdump_for_intf,stop_tcpdump_for_intf,read_tcpdump
 
 class TestBmsLcm(BaseFabricTest):
     def setUp(self):
@@ -95,7 +98,7 @@ class TestBmsLcm(BaseFabricTest):
 
         if len(bms_nodes_filtered) == 0:
            self.logger.debug("No Valid BMS Node available for the scenario: %s"%bms_type)
-           return
+           return bms_nodes_filtered
 
         self.bms_fixture = self.useFixture(BMSFixture(self.connections,bms_nodes_filtered[0]['node_name'],is_ironic_node=True))
         base_kernel_uuid  = self.bms_fixture.connections.nova_h.get_image(base_kernel_image)['id']
@@ -124,6 +127,7 @@ class TestBmsLcm(BaseFabricTest):
         self.logger.debug(self.bms_fixture.connections.ironic_h.obj.node.list())
         #self.bms_fixture.delete_ironic_node()
         #print self.bms_fixture.ironic_h.obj.node.list()
+        return bms_nodes_filtered
 
     @preposttest_wrapper
     def test_bms_single_interface(self):
@@ -137,9 +141,9 @@ class TestBmsLcm(BaseFabricTest):
         Maintainer: vageesant@juniper.net
         '''
         self.bms_delete_nodes()
-        self.bms_node_add_delete(bms_type="single_interface")
+        bms_nodes_filtered = self.bms_node_add_delete(bms_type="single_interface")
         time.sleep(60)
-        self.bms_vm_add_delete(bms_count=1)
+        self.bms_vm_add_delete(bms_count=1,bms_nodes_filtered=bms_nodes_filtered)
 
     @preposttest_wrapper
     def test_bms_multi_homing(self):
@@ -153,9 +157,9 @@ class TestBmsLcm(BaseFabricTest):
         Maintainer: vageesant@juniper.net
         '''
         self.bms_delete_nodes()
-        self.bms_node_add_delete(bms_type="multi_homing")
+        bms_nodes_filtered = self.bms_node_add_delete(bms_type="multi_homing")
         time.sleep(60)
-        self.bms_vm_add_delete(bms_count=1)
+        self.bms_vm_add_delete(bms_count=1,bms_nodes_filtered=bms_nodes_filtered)
 
     @preposttest_wrapper
     def test_bms_lag(self):
@@ -169,9 +173,9 @@ class TestBmsLcm(BaseFabricTest):
         Maintainer: vageesant@juniper.net
         '''
         self.bms_delete_nodes()
-        self.bms_node_add_delete(bms_type="link_aggregation")
+        bms_nodes_filtered = self.bms_node_add_delete(bms_type="link_aggregation")
         time.sleep(60)
-        self.bms_vm_add_delete(bms_count=1)
+        self.bms_vm_add_delete(bms_count=1,bms_nodes_filtered=bms_nodes_filtered)
 
     @preposttest_wrapper
     def test_bms_all(self):
@@ -185,11 +189,12 @@ class TestBmsLcm(BaseFabricTest):
         Maintainer: vageesant@juniper.net
         '''
         self.bms_delete_nodes()
-        self.bms_node_add_delete("all")
+        bms_nodes_filtered = self.bms_node_add_delete("all")
         time.sleep(60)
-        self.bms_vm_add_delete(bms_count=3)
+        self.bms_vm_add_delete(bms_count=3,bms_nodes_filtered=bms_nodes_filtered)
 
-    def bms_vm_add_delete(self,bms_count=1):
+
+    def bms_vm_add_delete(self,bms_count=1,bms_nodes_filtered=[]):
         '''
         Not run as separate test.
         Will be called by test_bms_single_interface or  test_bms_multi_homing or test_bms_lag
@@ -213,6 +218,21 @@ class TestBmsLcm(BaseFabricTest):
 
         vm_fixture = self.create_vm(vn_fixture=vn_fixture,
                                     image_name="ubuntu-traffic")
+        service_nodes = self.inputs.contrail_service_nodes
+        service_host_ip = self.inputs.host_data[service_nodes[0]]['host_ip']
+        service_host_username = self.inputs.host_data[service_nodes[0]]['username']
+        service_host_password = self.inputs.host_data[service_nodes[0]]['password']
+
+       
+        mac_node_dict = {}
+        for node in bms_nodes_filtered:
+            for interface in node['interfaces']:
+                if interface['pxe_enabled'] :
+                   mac_node_dict[interface['host_mac']] = node['node_name']
+
+        print mac_node_dict,mac_node_dict.keys()
+
+
         bms_fixtures_list = []
         for i in xrange(bms_count):
             bms_fixtures_list.append(self.create_vm(vn_fixture=vn_fixture,
@@ -222,7 +242,32 @@ class TestBmsLcm(BaseFabricTest):
                 instance_type="baremetal"))
 
         assert vm_fixture.wait_till_vm_is_up()
-        self.sleep(180)
+        session,pcap = start_tcpdump_for_intf(service_host_ip,service_host_username,service_host_password,'any',"port 4789 or port 67 or port 68 or port 69",self.logger)
+        time.sleep(120)
+        stop_tcpdump_for_intf(session,pcap,self.logger)
+        tcpdump_output = read_tcpdump(self,session,pcap)
+        self.logger.debug("tcpdump output:" + tcpdump_output)
+
+        dhcp_missing_mac_list = []
+        for mac in mac_node_dict.keys():
+            ret = re.search('(^.*%s)'%mac,tcpdump_output,re.M)
+            if ret:
+               print "DHCP request from %s seen"%mac
+               self.logger.debug("DHCP request from %s seen"%mac)
+            else:
+               print "DHCP request from %s NOT seen"%mac
+               dhcp_missing_mac_list.append(mac)
+               self.logger.debug("DHCP request from %s NOT seen"%mac)
+
+        ## BMS LCM node request dhcp before ansible configuration is done.
+        ## https://bugs.launchpad.net/juniperopenstack/+bug/1790911
+        openstack_ip = self.inputs.openstack_ips[0]
+        for mac in dhcp_missing_mac_list:
+            print "Work-around for PR 1790911: Rebooting node: %s"%mac_node_dict[mac]
+            self.logger.debug("Work-around for PR 1790911: Rebooting node: %s"%mac_node_dict[mac])
+            cmd = 'source /var/lib/kolla/config_files/admin-openrc.sh;openstack baremetal node reboot %s'%mac_node_dict[mac]
+            self.inputs.run_cmd_on_server(openstack_ip,cmd,container="kolla_toolbox")
+        ## PR 1790911 work-around.
         for bms_fixture in bms_fixtures_list:
             assert bms_fixture.verify_on_setup()
 
