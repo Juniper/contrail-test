@@ -61,7 +61,7 @@ class FlowTestBase(BaseVrouterTest):
                 sessions_exported += record['sample_count']
         if not sessions_exported:
             self.logger.debug("No sessions exported from the vrouter %s"\
-                " in last %s seconds" % (node_ip, last))
+                " for start time %s, end time %s" % (node_ip, start_time, end_time))
 
         return sessions_exported
 
