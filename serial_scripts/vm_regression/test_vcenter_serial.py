@@ -102,7 +102,8 @@ class TestVcenterSerial(BaseVnVmTest):
         for compute_vm in self.inputs.compute_ips:
             self.inputs.run_cmd_on_server(compute_vm, 'ifconfig ens192 up')
         cluster_status, error_nodes = ContrailStatusChecker().wait_till_contrail_cluster_stable()
-
+        vm1_fixture.wait_till_vm_is_up()
+        vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
             "Ping from %s to %s failed" % (vn1_vm1_name, vn1_vm2_name)
         assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\

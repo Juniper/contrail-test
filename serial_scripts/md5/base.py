@@ -153,7 +153,9 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
                 'simple_action': 'pass',
             },
         ]
-
+        image_name = 'cirros'
+        if self.inputs.orchestrator == 'vcenter':
+            image_name = 'vcenter_tiny_vm'
         self.logger.info("Configure the policy with allow any")
         self.multi_vn_fixture = self.useFixture(MultipleVNFixture(
             connections=self.connections, inputs=self.inputs, subnet_count=2,
@@ -165,7 +167,7 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
 
         self.multi_vm_fixture = self.useFixture(MultipleVMFixture(
             project_name=self.inputs.project_name, connections=self.connections,
-            vm_count_per_vn=1, vn_objs=vns, image_name='cirros',
+            vm_count_per_vn=1, vn_objs=vns, image_name=image_name,
             flavor='m1.tiny'))
         vms = self.multi_vm_fixture.get_all_fixture()
         (self.vm1_name, self.vm1_fix) = vms[0]
