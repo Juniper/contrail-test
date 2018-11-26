@@ -178,6 +178,7 @@ class VMFixture(fixtures.Fixture):
             self.vn_fq_name = self.vn_fq_names[0]
             self.vm_ip_dict = self.get_vm_ip_dict()
             self.vm_ips = self.get_vm_ips()
+            self.vm_node_ip = True
             try:
                 #Avoid crashing in vcenter scenario where nova not present
                 self.image_id = self.vm_obj.image['id']
@@ -308,14 +309,21 @@ class VMFixture(fixtures.Fixture):
 
     @property
     def vm_node_ip(self):
-        if not getattr(self, '_vm_node_ip', None):
+        if  not getattr(self, '_vm_node_ip', None):
             self._vm_node_ip = self.inputs.get_host_ip(self.get_host_of_vm())
         return self._vm_node_ip
 
-    def get_host_of_vm(self, vm_obj=None):
+    #need to set vm_node_ip after vcenter vmotion
+    @vm_node_ip.setter
+    def vm_node_ip(self, refresh=False):
+        if refresh:
+            self._vm_node_ip = self.inputs.get_host_ip(self.get_host_of_vm(refresh=True))
+        return self._vm_node_ip
+
+    def get_host_of_vm(self, vm_obj=None, refresh=False):
         vm_obj = vm_obj or self.vm_obj
         attr = '_host_' + vm_obj.name
-        if not getattr(self, attr, None):
+        if refresh or not getattr(self, attr, None):
             setattr(self, attr, self.orch.get_host_of_vm(vm_obj))
         return getattr(self, attr, None)
 
@@ -2765,6 +2773,7 @@ class VMFixture(fixtures.Fixture):
 
     def migrate(self, compute):
         self.orch.migrate_vm(self.vm_obj, compute)
+        self.read(True)
 
     def start_tcpdump(self, interface=None, filters=''):
         ''' This is similar to start_tcpdump_for_vm_intf() in tcpdump_utils.py
