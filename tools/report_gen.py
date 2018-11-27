@@ -183,8 +183,10 @@ class ContrailReportInit(TestInputs):
                             'containers', {}).get('nova')
                 if container:
                     break
-            build_sku=get_build_sku(openstack_ip,self.host_data[openstack_ip]['password'],
-                                    container=container)
+            build_sku=get_build_sku(openstack_ip,
+                openstack_node_password=self.host_data[openstack_ip]['password'],
+                user=self.host_data[openstack_ip]['username'],
+                container=container)
         if (build_id.count('.') > 3):
             build_id=re.match(r'([0-9\.-]*)\.',build_id).group(1)
         return [build_id.rstrip('\n'), build_sku]
