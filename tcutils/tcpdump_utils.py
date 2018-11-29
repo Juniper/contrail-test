@@ -173,7 +173,8 @@ def verify_tcpdump_count(obj, session, pcap, exp_count=None, mac=None, raw_count
         obj.logger.info(
             "%s packets are found in tcpdump output as expected",
             count)
-        stop_tcpdump_for_vm_intf(obj, session, pcap)
+        if not vm_fix_pcap_pid_files:
+            stop_tcpdump_for_vm_intf(obj, session, pcap)
     return result
 
 def search_in_pcap(session, pcap, search_string):
