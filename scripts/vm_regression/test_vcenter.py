@@ -4,12 +4,15 @@ from multiple_vn_vm_test import *
 from tcutils.wrappers import preposttest_wrapper
 from common import isolated_creds
 from common.connections import *
-import time
+import time,random
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import *
 from base import *
 from vcenter import *
 import test
+from collections import defaultdict
+
+
 
 class TestVcenter(BaseVnVmTest):
     @classmethod
@@ -85,11 +88,12 @@ class TestVcenter(BaseVnVmTest):
 
         vm1_fixture.orch.delete_networks_from_vm(vm1_fixture.vm_obj, [vn1_fixture.obj])
         sleep(2)
-        assert vm1_fixture.verify_cleared_from_setup(check_orch=False)
         assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture, expectation=False),\
             "Ping from %s to %s is expected to fail" % (vm2_fixture.vm_name, vm1_fixture.vm_name)
         vm1_fixture.orch.add_networks_to_vm(vm1_fixture.vm_obj, [vn1_fixture.obj])
         sleep(2)
+        vm1_fixture.orch.poweroff_vm(vm1_fixture.vm_obj)
+        vm1_fixture.orch.poweron_vm(vm1_fixture.vm_obj)
         assert vm1_fixture.wait_till_vm_is_up(refresh=True)
         assert vm1_fixture.verify_on_setup(refresh=True)
         assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
@@ -97,6 +101,8 @@ class TestVcenter(BaseVnVmTest):
         assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture),\
             "Ping from %s to %s failed" % (vm2_fixture.vm_name, vm1_fixture.vm_name)
         return True
+
+
 
     @test.attr(type=['vcenter'])
     @preposttest_wrapper
@@ -125,7 +131,7 @@ class TestVcenter(BaseVnVmTest):
         assert vm2_fixture.ping_with_certainty(dst_vm_fixture=vm1_fixture, expectation=False),\
             "Ping from %s to %s is expected to fail" % (vm2_fixture.vm_name, vm1_fixture.vm_name)
         vm1_fixture.orch.change_network_to_vm(vm1_fixture.vm_obj,vn2_fixture.vn_name) 
-        vm1_fixture.read(refresh=True)  
+        vm1_fixture.read(refresh=True)
         vm1_fixture.orch.poweroff_vm(vm1_fixture.vm_obj)
         vm1_fixture.orch.poweron_vm(vm1_fixture.vm_obj)
         assert vm1_fixture.verify_on_setup(refresh=True)
@@ -260,7 +266,7 @@ class TestVcenter2(BaseVnVmTest):
         Description: Migrate VM between ESX servers
         Test steps:
                1. Create a VN
-               2. launch two VMs on diff ESX servers
+               2. launch 10 VMs on diff ESX servers
                3. ping between the vm
                4. Migrate VM to a diff ESX server
                5. ping between the vm
@@ -269,26 +275,33 @@ class TestVcenter2(BaseVnVmTest):
         '''
         self.orch.set_migration(True)
         esxs = self.orch.get_hosts()
+        esx_dict = defaultdict(list)
+        no_of_vms = 6
         vn_fixture = self.create_vn(vn_name=get_random_name('vn_mig'))
         assert vn_fixture.verify_on_setup()
-
-        vm1_fixture = self.create_vm(vn_fixture=vn_fixture,
-                                     vm_name=get_random_name('vm_mig'),
-                                     node_name=esxs[0])
-        vm2_fixture = self.create_vm(vn_fixture=vn_fixture,
-                                     vm_name=get_random_name('vm_mig'),
-                                     node_name=esxs[1])
-        assert vm1_fixture.wait_till_vm_is_up()
-        assert vm2_fixture.wait_till_vm_is_up()
-        assert vm1_fixture.ping_with_certainty(dst_vm_fixture=\
-                       vm2_fixture), "Ping from %s to %s failed" % \
-                       (vm1_fixture.vm_name, vm2_fixture.vn_name)
-
-        vm2_fixture.migrate(esxs[0])
-        vm2_fixture.verify_on_setup()
-        assert vm1_fixture.ping_with_certainty(dst_vm_fixture=\
-                       vm2_fixture), "Ping from %s to %s failed" % \
-                       (vm1_fixture.vm_name, vm2_fixture.vn_name)
+        vm_fixture = {}
+        for i in range(no_of_vms):
+            vm_fixture[i] = self.create_vm(vn_fixture=vn_fixture,
+                                     vm_name=get_random_name('vm_mig_' + str(i) +'_'),
+                                     image_name = 'vcenter_tiny_vm')
+        for i in range(no_of_vms):
+            assert vm_fixture[i].wait_till_vm_is_up()
+        for i in range(no_of_vms):
+            assert vm_fixture[0].ping_with_certainty(dst_vm_fixture=\
+                           vm_fixture[i]), "Ping from %s to %s failed" % \
+                           (vm_fixture[0].vm_name, vm_fixture[i].vn_name)
+            esx_dict[vm_fixture[i].vm_obj.host].append(vm_fixture[i])
+        for esx in esxs:
+            for vm_fix in esx_dict[esx]:
+                mig_esx = random.choice([x for x in esxs if x!= esx])
+                vm_fix.migrate(mig_esx)
+                self.logger.info('Migrated %s from %s to %s'%(vm_fix.vm_name, esx, mig_esx))
+        for i in range(no_of_vms):
+            assert vm_fixture[i].wait_till_vm_is_up()
+            assert vm_fixture[i].verify_on_setup()
+            assert vm_fixture[0].ping_with_certainty(dst_vm_fixture=\
+                           vm_fixture[i]), "Ping from %s to %s failed" % \
+                           (vm_fixture[0].vm_name, vm_fixture[i].vn_name)
         return True
 
 class TestVcenter3(BaseVnVmTest):
