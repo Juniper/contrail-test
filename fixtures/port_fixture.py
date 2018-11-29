@@ -55,6 +55,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
         self.fq_name = [self.domain, project_name, self.name]
         self.vn_obj = None
         self.created = False
+        self.af = self.inputs.get_af()
      # end __init__
 
     def read(self):
@@ -186,6 +187,13 @@ class PortFixture(vnc_api_test.VncLibFixture):
             iip_obj.add_virtual_machine_interface(vmi_obj)
             iip_obj.add_virtual_network(self.vn_obj)
             self.vnc_api_h.instance_ip_create(iip_obj)
+            if self.af in ['v6', 'dual']:
+                iip_id2 = str(uuid.uuid4())
+                iip_obj2 = vnc_api_test.InstanceIp(name=iip_id2, instance_ip_family='v6')
+                iip_obj2.uuid = iip_id2
+                iip_obj2.add_virtual_machine_interface(vmi_obj)
+                iip_obj2.add_virtual_network(self.vn_obj)
+                self.vnc_api_h.instance_ip_create(iip_obj2)
     # end _contrail_create_port
 
     def cleanUp(self, force=False):
