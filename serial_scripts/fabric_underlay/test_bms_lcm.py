@@ -247,8 +247,7 @@ class TestBmsLcm(BaseFabricTest):
         
         dhcp_missing_mac_list = []
         for service_node in service_nodes:
-            service_host_ip = service_node['host_ip']
-            dhcp_inspect = AgentInspect(service_host_ip)
+            dhcp_inspect = AgentInspect(service_node)
 
             for mac in mac_node_dict.keys():
                 ret = dhcp_inspect.is_dhcp_offered(mac)
