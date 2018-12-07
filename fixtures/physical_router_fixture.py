@@ -151,8 +151,8 @@ class PhysicalRouterFixture(PhysicalDeviceFixture):
         if self.bgp_router_already_present:
             do_cleanup = False
         if do_cleanup:
-            self.unbind_bgp_router(self.bgp_router)
             if self.inputs.is_gui_based_config():
+                self.unbind_bgp_router(self.bgp_router)
                 self.webui.delete_bgp_router(self)
             else:
                 self.delete_bgp_router()
