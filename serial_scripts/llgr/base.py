@@ -11,7 +11,9 @@ from common.connections import ContrailConnections
 from common.neutron.base import BaseNeutronTest
 from tcutils.control.cn_introspect_utils import ControlNodeInspect 
 from common.device_connection import NetconfConnection
-from control_node import CNFixture
+from physical_router_fixture import PhysicalRouterFixture
+#from control_node import CNFixture
+from control_node import *
 import time
 
 class TestLlgrBase(BaseNeutronTest):
@@ -25,75 +27,108 @@ class TestLlgrBase(BaseNeutronTest):
         super(TestLlgrBase, cls).setUpClass()
         cls.cn_introspect = ControlNodeInspect(cls.inputs.bgp_ips[0])
         cls.host_list = cls.connections.orch.get_hosts()
-        if len(cls.host_list) > 1 and len(cls.inputs.bgp_ips) > 1 :
-            cls.set_xmpp_peering(compute_ip=cls.inputs.host_data[cls.host_list[0]]['host_control_ip'] , 
-                                 ctrl_node=cls.inputs.bgp_ips[0],mode='disable')
-            cls.set_xmpp_peering(compute_ip=cls.inputs.host_data[cls.host_list[1]]['host_control_ip'] , 
-                                 ctrl_node=cls.inputs.bgp_ips[1],mode='disable')
-        if cls.inputs.ext_routers:
-            cls.mx1_ip = cls.inputs.ext_routers[0][1]
-            # TODO remove the hard coding once we get this parameters populated from testbed
-            cls.mx_user = 'root'
-            cls.mx_password = 'Embe1mpls'
-            cls.mx1_handle = NetconfConnection(host = cls.mx1_ip,username=cls.mx_user,password=cls.mx_password)
-            cls.mx1_handle.connect()
+        cls.vnc_h = cls.connections.orch.vnc_h
+        cls.mx_loopback_ip = cls.inputs.public_host 
+        cls.mx_loopback_ip6 = cls.inputs.public_host_v6
+        device = cls.inputs.physical_routers_data
+        if not device:
+            self.logger.error("Not able to get device info from inputs")  
+            return False
+        cls.device_name = device.items()[0][0]
+        cls.router_params = device[cls.device_name]
+        cls.mx1_ip = cls.router_params['mgmt_ip']
+        cls.mx_user = cls.router_params['ssh_username']
+        cls.mx_password = cls.router_params['ssh_password'] 
+        cls.mx_peer_ip = cls.router_params['tunnel_ip']
+        cls.mx1_handle = NetconfConnection(host = cls.mx1_ip,username=cls.mx_user,password=cls.mx_password)
+        cls.mx1_handle.connect()
+        cls.phy_router_fixture = None
         time.sleep(20)
     # end setUp
 
     @classmethod
     def tearDownClass(cls):
-        '''
-            It will remove topology where agent is connected to only one of the control node
-        '''
-        cls.set_bgp_peering(mode='enable')
-        cls.set_gr_llgr(mode='disable')
-        cls.set_xmpp_peering(compute_ip=cls.inputs.host_data[cls.host_list[0]]['host_control_ip'] , 
-                                           mode='enable')
-        cls.set_xmpp_peering(compute_ip=cls.inputs.host_data[cls.host_list[1]]['host_control_ip'] , 
-                                           mode='enable')
         super(TestLlgrBase, cls).tearDownClass()
     # end cleanUp
 
-    @classmethod
+    def setUp(self):
+        super(TestLlgrBase, self).setUp()
+        if len(self.host_list) > 1 and len(self.inputs.bgp_ips) > 1 :
+            self.set_xmpp_peering(compute_ip=self.inputs.host_data[self.host_list[0]]['host_control_ip'] , 
+                                 ctrl_node=self.inputs.bgp_ips[0],mode='disable')
+            self.set_xmpp_peering(compute_ip=self.inputs.host_data[self.host_list[1]]['host_control_ip'] , 
+                                 ctrl_node=self.inputs.bgp_ips[1],mode='disable')
+        if self.create_bgp_router() is None:
+            self.logger.error("Not able to create BGP router")
+            return False
+
+    def tearDown(self):
+        self.set_bgp_peering(mode='enable')
+        self.set_gr_llgr(mode='disable')
+        self.set_xmpp_peering(compute_ip=self.inputs.host_data[self.host_list[0]]['host_control_ip'] , 
+                                           mode='enable')
+        self.set_xmpp_peering(compute_ip=self.inputs.host_data[self.host_list[1]]['host_control_ip'] , 
+                                           mode='enable')
+        super(TestLlgrBase,self).tearDown()
+
     def set_gr_llgr(self, **kwargs):
         '''
            Enable/Disable GR / LLGR configuration with gr/llgr timeout values as parameters
         '''
-        gr_timeout = kwargs['gr']
-        llgr_timeout = kwargs['llgr']
+        gr_timeout = kwargs['gr'] if 'gr' in kwargs else 0
+        llgr_timeout = kwargs['llgr'] if 'llgr' in kwargs else 0
         gr_enable = True if kwargs['mode'] == 'enable' else False
         eor_timeout = '60'
         router_asn = '64512' if gr_enable == True else self.inputs.router_asn
-        cntrl_fix = self.useFixture(CNFixture(
-                                       connections=self.connections,
-                                       router_name=self.inputs.ext_routers[0][0],
-                                       router_ip=self.mx1_ip,
-                                       router_type='mx',
-                                       inputs=self.inputs))
-        cntrl_fix.set_graceful_restart(gr_restart_time=gr_timeout,
-                                     llgr_restart_time = llgr_timeout, 
-                                     eor_timeout = eor_timeout, 
-                                     gr_enable = gr_enable, 
-                                     router_asn = router_asn,
-                                     bgp_helper_enable = True, 
-                                     xmpp_helper_enable = False)
+        bgp_hlp = False if kwargs.has_key('bgp_hlp') and kwargs['bgp_hlp'] == 'disable' else True
+        xmpp_hlp = True if kwargs.has_key('xmpp_hlp') and kwargs['xmpp_hlp'] == 'enable' else False
+        if gr_enable == True:
+            self.vnc_h.enable_graceful_restart(gr_restart_time=gr_timeout,
+                                          llgr_restart_time = llgr_timeout, 
+                                          eor_timeout = eor_timeout, 
+                                          bgp_helper_enable = bgp_hlp, 
+                                          xmpp_helper_enable = xmpp_hlp)
+        else:
+            self.vnc_h.disable_graceful_restart()
         return True
 
-    @classmethod
     def set_bgp_peering(self,**kwargs):
         ''' 
            Stop and start of BGP peer communication so that GR/LLGR timers are triggered
         '''
         mode = kwargs['mode']
+        port = 179 if not kwargs.has_key('port') else kwargs['port']
         if mode == 'disable':
-            cmd = 'iptables -A OUTPUT -p tcp --destination-port 179 -j DROP; \
-                     iptables -A INPUT -p tcp --destination-port 179 -j DROP'
+            cmd = 'iptables -A OUTPUT -p tcp --destination-port %s -j DROP; \
+                     iptables -A INPUT -p tcp --destination-port %s -j DROP;\
+                     iptables -A OUTPUT -p tcp --source-port %s -j DROP;\
+                     iptables -A INPUT -p tcp --source-port %s -j DROP' %(port,port,port,port)
         else:
-            cmd = 'iptables -D OUTPUT -p tcp --destination-port 179 -j DROP; \
-                      iptables -D INPUT -p tcp --destination-port 179 -j DROP'
+            cmd = 'iptables -D OUTPUT -p tcp --destination-port %s -j DROP; \
+                  iptables -D INPUT -p tcp --destination-port %s -j DROP; \
+                  iptables -D OUTPUT -p tcp --source-port %s -j DROP; \
+                  iptables -D INPUT -p tcp --source-port %s -j DROP'%(port,port,port,port)
         self.logger.debug('%s bgp peering : %s' %(mode,cmd))
-        self.inputs.run_cmd_on_server(self.inputs.bgp_ips[0],cmd)
+        for host in self.inputs.bgp_ips:
+            self.inputs.run_cmd_on_server(host,cmd)
         return True
+
+    def create_bgp_router(self):
+        if self.phy_router_fixture is None:
+            self.phy_router_fixture = self.useFixture(PhysicalRouterFixture(
+                                         self.router_params['name'],
+                                         self.router_params['mgmt_ip'],
+                                         model=self.router_params['mode'],
+                                         vendor=self.router_params['vendor'],
+                                         asn=self.router_params['asn'],
+                                         ssh_username=self.router_params['ssh_username'],
+                                         ssh_password=self.router_params['ssh_password'],
+                                         mgmt_ip=self.router_params['mgmt_ip'],
+                                         tunnel_ip=self.router_params['tunnel_ip'],
+                                         connections=self.connections,
+                                         dm_managed=False,
+                                         logger=self.logger))
+        return self.phy_router_fixture
 
     def verify_traffic_loss(self,**kwargs):
         vm1_fixture = kwargs['vm_fixture'] 
@@ -118,6 +153,7 @@ class TestLlgrBase(BaseNeutronTest):
             ret = True
         return (ret,pkts_trans,pkts_recv)
 
+    @retry(tries=20, delay=6)
     def verify_gr_llgr_flags(self,**kwargs):
         '''
            Validate Stale / LLgrStale flags after GR/LLGR timer is triggered
@@ -136,43 +172,47 @@ class TestLlgrBase(BaseNeutronTest):
             return False
         self.logger.debug('prefix flags %s' %(rtbl['flags']))
         if flags != rtbl['flags'] :
-            self.logger.error("Not able to find route flags for prefix %s:%s"%flags,rtbl['flags'])
+            self.logger.error("Not able to find route flags for prefix %s:%s"%(flags,rtbl['flags']))
             return False
         return True
 
-    @classmethod
     def set_xmpp_peering(self,**kwargs):
         ''' 
             Enabling / Disabling XMPP peer communication 
         '''
         compute_ip = kwargs['compute_ip']
         mode = kwargs['mode']
-        control_ips = []
+        control_ips = [] 
         if mode == 'disable':
             ctrl_host = kwargs['ctrl_node']
-            ctrl_ip = self.inputs.host_data[ctrl_host]['host_data_ip']
-            ctrl_ip = ctrl_ip + ":"+'5269'
+            ctrl_ip = self.inputs.host_data[ctrl_host]['host_data_ip'] or self.inputs.host_data[ctrl_host]['host_ip']
             self.configure_server_list(compute_ip, 'contrail-vrouter-agent',
                              'CONTROL-NODE', 'servers' , [ctrl_ip], container = "agent")
         else : 
-            control_ips = [self.inputs.host_data[x]['host_data_ip']+":"+'5269' for x in self.inputs.bgp_ips]
+            for ip in self.inputs.bgp_ips:
+                control_ip = self.inputs.host_data[ip]['host_data_ip'] or self.inputs.host_data[ip]['host_ip']
+                control_ips.append(control_ip)
             self.configure_server_list(compute_ip, 'contrail-vrouter-agent',
                            'CONTROL-NODE', 'servers' , control_ips , container = "agent")
+        time.sleep(10)
         return True
    
-    @classmethod
     def set_headless_mode(self,**kwargs):
         ''' 
            Enabling/Disabling headless mode in agent 
         '''
         mode = kwargs['mode']
         if mode == 'enable':
-            cmd = '/usr/bin/openstack-config --set /etc/contrail/contrail-vrouter-agent.conf DEFAULT headless_mode true'
+            cmds = ['/usr/bin/openstack-config --set /etc/contrail/contrail-vrouter-agent.conf RESTART restore_enable true',
+                   '/usr/bin/openstack-config --set /etc/contrail/contrail-vrouter-agent.conf RESTART backup_enable true']
         else:
-            cmd = '/usr/bin/openstack-config --del /etc/contrail/contrail-vrouter-agent.conf DEFAULT headless_mode'
+            cmds = ['/usr/bin/openstack-config --set /etc/contrail/contrail-vrouter-agent.conf RESTART restore_enable False',
+                  '/usr/bin/openstack-config --set /etc/contrail/contrail-vrouter-agent.conf RESTART backup_enable False']
+
         for host in self.host_list:
-            self.logger.debug('enable headless mode %s : %s' %(host,cmd))
-            self.inputs.run_cmd_on_server(host,cmd,container='agent')
+            self.logger.debug('enable headless mode %s : %s' %(host,cmds))
+            for cmd in cmds:
+                self.inputs.run_cmd_on_server(host,cmd,container='agent')
         self.inputs.restart_service('contrail-vrouter-agent',self.host_list)
         return True 
 
@@ -182,7 +222,7 @@ class TestLlgrBase(BaseNeutronTest):
         '''
         pcap_file = kwargs['pcap_file']
         host = kwargs['host']
-        control_ip = self.inputs.host_data[host]['control-ip']
+        control_ip = self.inputs.host_data[host]['host_control_ip'] or self.inputs.host_data[host]['host_ip']
         # Graceful Restart (64), length: 18
         #        Restart Flags: [none], Restart Time 35s
         #          AFI IPv4 (1), SAFI labeled VPN Unicast (128), Forwarding state preserved: yes
@@ -193,7 +233,7 @@ class TestLlgrBase(BaseNeutronTest):
         # 4023  notification bit is set
         # 8080 forwarding state is set
         # 23 is 35 sec of gr time
-        cmd = 'tcpdump -r %s -vvv -n | grep Open  -A28 | grep %s -A28 | grep \'Restart Flags\' -A5 | grep 0x0000'%(pcap_file,control_ip)
+        cmd = 'tcpdump -r %s -vvv -n | grep Open  -A28 | grep %s -A28 | grep \'Restart Flags\' -A8 | grep 0x0000'%(pcap_file,control_ip)
         res = self.inputs.run_cmd_on_server(host,cmd)
         self.logger.debug('results %s' %(res))
         res = res.split(':')
@@ -214,13 +254,13 @@ class TestLlgrBase(BaseNeutronTest):
         '''
         pcap_file = kwargs['pcap_file']
         host = kwargs['host']
-        control_ip = self.inputs.host_data[host]['control-ip']
+        control_ip = self.inputs.host_data[host]['host_control_ip'] or self.inputs.host_data[host]['host_ip']
         # Unknown (71), length: 28
         # no decoder for Capability 71
         # 0x0000:  0001 8080 0000 3c00 1946 8000 003c 0001
         # 8080 forwarding state is set
         # c0 is 65 sec of llgr time
-        cmd = 'tcpdump -r %s -vvv -n | grep Open  -A28 | grep %s -A28 | grep \'Unknown (71)\' -A3 | grep 0x0000'%(pcap_file,control_ip)
+        cmd = 'tcpdump -r %s -vvv -n | grep Open  -A32 | grep %s -A32 | grep \'Unknown (71)\' -A8 | grep 0x0000'%(pcap_file,control_ip)
         res = self.inputs.run_cmd_on_server(host,cmd)
         self.logger.debug('results %s' %(res))
         res = res.split(':')
@@ -229,13 +269,12 @@ class TestLlgrBase(BaseNeutronTest):
             self.logger.error("not able to get flags %s"%flags)
             return False
         flags = [x for x in flags if x != '']
-        self.logger.info("flags set properly %s"%flags[0])
+        self.logger.info("flags set properly %s"%flags)
         if flags[3] != '3c00' and flags[1] != '8080':
             self.logger.error("flags not set properly %s"%flags[0])
             return False
         return True
 
-    @classmethod
     def configure_server_list(self, client_ip, client_process,
                                section, option, server_list, container):
         '''
@@ -244,28 +283,38 @@ class TestLlgrBase(BaseNeutronTest):
         change is effective.
         '''
         client_conf_file = client_process + ".conf"
-        server_string =  " ".join(server_list)
+        server_string =  ",".join(server_list)
         cmd_set = "openstack-config --set /etc/contrail/" + client_conf_file
         cmd = cmd_set + " " + section + " " + option + ' "%s"' % server_string
+        cmd = "sed -i 's/CONTROLLER_NODES.*$/CONTROLLER_NODES=%s/g' /etc/contrail/common.env" % server_string 
         self.inputs.run_cmd_on_server(client_ip, cmd,
                             self.inputs.host_data[client_ip]['username']\
                             , self.inputs.host_data[client_ip]['password'],
-                            container = container)
-        if "nodemgr" in client_process:
-            nodetype = client_process.rstrip("-nodemgr")
-            client_process = "contrail-nodemgr --nodetype=%s" % nodetype
-        else:
-            client_process = "/usr/bin/" + client_process
-        pid_cmd = 'pgrep -f -o "%s"' % client_process
-        pid = int(self.inputs.run_cmd_on_server(client_ip, pid_cmd,
+                            )
+        cmd = "sed -i 's/CONTROL_NODES.*$/CONTROL_NODES=%s/g' /etc/contrail/common.env" % server_string 
+        self.inputs.run_cmd_on_server(client_ip, cmd,
                             self.inputs.host_data[client_ip]['username']\
                             , self.inputs.host_data[client_ip]['password'],
-                            container = container))
-        sighup_cmd = "kill -SIGHUP %d " % pid
-        self.inputs.run_cmd_on_server(client_ip, sighup_cmd,
+                            )
+
+        cmd = "sed -i 's/CONTROLLER_NODES.*$/CONTROLLER_NODES=%s/g' /etc/contrail/common_vrouter.env" % server_string 
+        self.inputs.run_cmd_on_server(client_ip, cmd,
                             self.inputs.host_data[client_ip]['username']\
                             , self.inputs.host_data[client_ip]['password'],
-                            container = container)
+                            )
+
+        cmd = "sed -i 's/CONTROL_NODES.*$/CONTROL_NODES=%s/g' /etc/contrail/common_vrouter.env" % server_string 
+        self.inputs.run_cmd_on_server(client_ip, cmd,
+                            self.inputs.host_data[client_ip]['username']\
+                            , self.inputs.host_data[client_ip]['password'],
+                            )
+
+        cmd = 'cd /etc/contrail/vrouter/ ; docker-compose down ; docker-compose up -d'
+        self.inputs.run_cmd_on_server(client_ip, cmd,
+                            self.inputs.host_data[client_ip]['username']\
+                            , self.inputs.host_data[client_ip]['password'],
+                            )
+        return True
 
     def is_test_applicable(self):
         # check for atleast 2 compute nodes
@@ -275,9 +324,12 @@ class TestLlgrBase(BaseNeutronTest):
         if len(self.inputs.bgp_ips) < 2 :
             return (False, "compute nodes are not sufficient")
         # check for 1 mx 
-        if len(self.inputs.ext_routers) < 1:
-            self.logger.error("MX routers are not sufficient : %s"%len(self.inputs.ext_routers))
+        if len(self.inputs.physical_routers_data) < 1:
+            self.logger.error("MX routers are not sufficient : %s"%len(self.inputs.physical_routers_data))
             return (False ,"MX routers are not sufficient")
         return (True,None)
 
 
+    def get_interface(self,ip):
+        cmd = "ip -o -4 addr show | grep %s | awk \'{print $2}\'" % ip
+        return self.inputs.run_cmd_on_server(ip,cmd)

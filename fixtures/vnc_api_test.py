@@ -488,4 +488,5 @@ class VncLibFixture(fixtures.Fixture):
         gv_obj = self.vnc_api_h.global_vrouter_config_read(fq_name=fq_name)
         value = gv_obj.get_enable_security_logging()
         return value
+
 # end VncLibFixture

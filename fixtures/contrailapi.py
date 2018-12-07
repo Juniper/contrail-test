@@ -3234,6 +3234,28 @@ class ContrailVncApi(object):
         lr_obj.del_virtual_machine_interface(vmi_obj)
         return self._vnc.logical_router_update(lr_obj)
 
+    def enable_graceful_restart(self, gr_restart_time='60', eor_timeout='60',
+                             llgr_restart_time='180',
+                             bgp_helper_enable=False,
+                             xmpp_helper_enable=False):
+        gsc_obj = self._vnc.global_system_config_read(
+                  fq_name=['default-global-system-config'])
+        gr_params = GracefulRestartParametersType()
+        gr_params.set_restart_time(int(gr_restart_time))
+        gr_params.set_long_lived_restart_time(int(llgr_restart_time))
+        gr_params.set_end_of_rib_timeout(int(eor_timeout))
+        gr_params.set_enable(True)
+        gr_params.set_bgp_helper_enable(bgp_helper_enable)
+        gr_params.set_xmpp_helper_enable(xmpp_helper_enable)
+        gsc_obj.set_graceful_restart_parameters(gr_params)
+        self._vnc.global_system_config_update(gsc_obj)
+
+    def disable_graceful_restart(self):
+        gsc_obj = self._vnc.global_system_config_read(
+            fq_name=['default-global-system-config'])
+        gr_params = GracefulRestartParametersType(enable=False)
+        gsc_obj.set_graceful_restart_parameters(gr_params)
+        self._vnc.global_system_config_update(gsc_obj)
 
 class LBFeatureHandles:
     __metaclass__ = Singleton

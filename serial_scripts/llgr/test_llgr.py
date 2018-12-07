@@ -32,6 +32,46 @@ import test
    Restore the failure 
    Check for BGP open message for notification bit and restart
    capabilities advertised by controller to MX
+
+   Following paramters should be given in instances.yaml under
+   test_configuration:
+   public_host : '121.1.1.1'
+   public_host_v6 : '2002::1'
+     physical_routers:
+      5b4-mx240-1-re0:
+          asn: 64512
+          mgmt_ip: 10.87.64.246
+          mode: mx
+          name: 5b4-mx240-1-re0
+          ssh_password: Embe1mpls
+          ssh_username: root
+          tunnel_ip : 6.6.6.10
+          vendor: juniper
+          rt : 2500
+          type: tor
+
+   And on router following configuration needs to be set on mx router
+   set groups ixia_flow protocols bgp group llgr_contrail type internal
+   set groups ixia_flow protocols bgp group llgr_contrail traceoptions file bgp.log
+   set groups ixia_flow protocols bgp group llgr_contrail traceoptions flag all
+   set groups ixia_flow protocols bgp group llgr_contrail local-address 6.6.6.10
+   set groups ixia_flow protocols bgp group llgr_contrail hold-time 20
+   set groups ixia_flow protocols bgp group llgr_contrail keep all
+   set groups ixia_flow protocols bgp group llgr_contrail family inet-vpn unicast graceful-restart long-lived restarter stale-time 60
+   set groups ixia_flow protocols bgp group llgr_contrail family inet6-vpn unicast graceful-restart long-lived restarter stale-time 60
+   set groups ixia_flow protocols bgp group llgr_contrail family evpn signaling
+   set groups ixia_flow protocols bgp group llgr_contrail family route-target graceful-restart long-lived restarter stale-time 60
+   set groups ixia_flow protocols bgp group llgr_contrail vpn-apply-export
+   set groups ixia_flow protocols bgp group llgr_contrail graceful-restart restart-time 30
+   set groups ixia_flow protocols bgp group llgr_contrail graceful-restart stale-routes-time 30
+   set groups ixia_flow protocols bgp group llgr_contrail neighbor 5.5.5.129 peer-as 64512
+   set groups ixia_flow protocols bgp group llgr_contrail neighbor 5.5.5.130 peer-as 64512
+   set groups ixia_flow protocols bgp group llgr_contrail neighbor 5.5.5.131 peer-as 64512
+   set groups ixia_flow routing-instances llgr-port1 instance-type vrf
+   set groups ixia_flow routing-instances llgr-port1 interface lo0.4
+   set groups ixia_flow routing-instances llgr-port1 route-distinguisher 64512:2500
+   set groups ixia_flow routing-instances llgr-port1 vrf-target target:64512:2500
+   set groups ixia_flow routing-instances llgr-port1 vrf-table-label
 '''
 
 class TestLlgr(TestLlgrBase):
@@ -39,8 +79,6 @@ class TestLlgr(TestLlgrBase):
     @classmethod
     def setUpClass(cls):
         super(TestLlgr, cls).setUpClass()
-        cls.mx_loopback_ip = '121.1.1.1'
-        cls.mx_loopback_ip6 = '2002::1'
         cls.result_file = 'ping_stats'
         cls.result6_file = 'ping6_stats'
         cls.pid_file = '/tmp/llgr.pid'
@@ -64,15 +102,25 @@ class TestLlgr(TestLlgrBase):
            Check Traffic to MX goes fine when BGP session is down during GR configuration 
         '''
         self.set_gr_llgr(gr=35,llgr=0,mode='enable')
+
         #self.set_gr_llgr(mode='disable')
         if not self.create_vm_start_ping(ping_count=30):
             self.logger.error("Error in creating VM")
             return False
 
+        control_ip = self.inputs.host_data[self.inputs.bgp_ips[0]]['host_control_ip'] or \
+                       self.inputs.host_data[self.inputs.bgp_ips[0]]['host_ip']
+
+        intf = self.get_interface(control_ip)
+
+        if intf is None:
+            self.logger.error("Error in getting interface")
+            return False
+
         session , pcap_file = start_tcpdump_for_intf(self.inputs.bgp_ips[0], 
                               self.inputs.host_data[self.inputs.bgp_ips[0]]['username'], 
                               self.inputs.host_data[self.inputs.bgp_ips[0]]['password'],
-                              'bond0', filters='-vvv port bgp') 
+                              intf, filters='-vvv port bgp') 
 
         self.set_bgp_peering(mode='disable')
 
@@ -115,10 +163,19 @@ class TestLlgr(TestLlgrBase):
             self.logger.error("Error in creating VM")
             return False
 
+        control_ip = self.inputs.host_data[self.inputs.bgp_ips[0]]['host_control_ip'] or \
+                       self.inputs.host_data[self.inputs.bgp_ips[0]]['host_ip']
+
+        intf = self.get_interface(control_ip)
+
+        if intf is None:
+            self.logger.error("Error in getting interface")
+            return False
+
         session , pcap_file = start_tcpdump_for_intf(self.inputs.bgp_ips[0], 
                               self.inputs.host_data[self.inputs.bgp_ips[0]]['username'], 
                               self.inputs.host_data[self.inputs.bgp_ips[0]]['password'],
-                              'bond0', filters='-vvv port bgp') 
+                              intf, filters='-vvv port bgp') 
 
         self.set_bgp_peering(mode='disable')
 
@@ -164,10 +221,19 @@ class TestLlgr(TestLlgrBase):
             self.logger.error("Error in creating VM")
             return False
 
+        control_ip = self.inputs.host_data[self.inputs.bgp_ips[0]]['host_control_ip'] or \
+                       self.inputs.host_data[self.inputs.bgp_ips[0]]['host_ip']
+
+        intf = self.get_interface(control_ip)
+
+        if intf is None:
+            self.logger.error("Error in getting interface")
+            return False
+
         session , pcap_file = start_tcpdump_for_intf(self.inputs.bgp_ips[0], 
                               self.inputs.host_data[self.inputs.bgp_ips[0]]['username'], 
                               self.inputs.host_data[self.inputs.bgp_ips[0]]['password'],
-                              'bond0', filters='-vvv port bgp') 
+                              intf, filters='-vvv port bgp') 
 
         self.set_bgp_peering(mode='disable')
 
@@ -209,10 +275,19 @@ class TestLlgr(TestLlgrBase):
             self.logger.error("Error in creating VM")
             return False
 
+        control_ip = self.inputs.host_data[self.inputs.bgp_ips[0]]['host_control_ip'] or \
+                       self.inputs.host_data[self.inputs.bgp_ips[0]]['host_ip']
+
+        intf = self.get_interface(control_ip)
+
+        if intf is None:
+            self.logger.error("Error in getting interface")
+            return False
+
         session , pcap_file = start_tcpdump_for_intf(self.inputs.bgp_ips[0], 
                               self.inputs.host_data[self.inputs.bgp_ips[0]]['username'], 
                               self.inputs.host_data[self.inputs.bgp_ips[0]]['password'],
-                              'bond0', filters='-vvv port bgp') 
+                              intf, filters='-vvv port bgp') 
 
         # restart rpd 
         self.mx1_handle.restart('routing immediately')
@@ -252,10 +327,19 @@ class TestLlgr(TestLlgrBase):
             self.logger.error("Error in creating VM")
             return False
 
+        control_ip = self.inputs.host_data[self.inputs.bgp_ips[0]]['host_control_ip'] or \
+                       self.inputs.host_data[self.inputs.bgp_ips[0]]['host_ip']
+
+        intf = self.get_interface(control_ip)
+
+        if intf is None:
+            self.logger.error("Error in getting interface")
+            return False
+
         session , pcap_file = start_tcpdump_for_intf(self.inputs.bgp_ips[0], 
                               self.inputs.host_data[self.inputs.bgp_ips[0]]['username'], 
                               self.inputs.host_data[self.inputs.bgp_ips[0]]['password'],
-                              'bond0', filters='-vvv port bgp') 
+                              intf, filters='-vvv port bgp') 
 
         # restart rpd 
         self.mx1_handle.restart('routing gracefully')
@@ -294,10 +378,19 @@ class TestLlgr(TestLlgrBase):
             self.logger.error("Error in creating VM")
             return False
 
+        control_ip = self.inputs.host_data[self.inputs.bgp_ips[0]]['host_control_ip'] or \
+                       self.inputs.host_data[self.inputs.bgp_ips[0]]['host_ip']
+
+        intf = self.get_interface(control_ip)
+
+        if intf is None:
+            self.logger.error("Error in getting interface")
+            return False
+
         session , pcap_file = start_tcpdump_for_intf(self.inputs.bgp_ips[0], 
                               self.inputs.host_data[self.inputs.bgp_ips[0]]['username'], 
                               self.inputs.host_data[self.inputs.bgp_ips[0]]['password'],
-                              'bond0', filters='-vvv port bgp') 
+                              intf, filters='-vvv port bgp') 
 
         self.mx1_handle.restart('routing immediately')
 
@@ -335,10 +428,19 @@ class TestLlgr(TestLlgrBase):
             self.logger.error("Error in creating VM")
             return False
 
+        control_ip = self.inputs.host_data[self.inputs.bgp_ips[0]]['host_control_ip'] or \
+                       self.inputs.host_data[self.inputs.bgp_ips[0]]['host_ip']
+
+        intf = self.get_interface(control_ip)
+
+        if intf is None:
+            self.logger.error("Error in getting interface")
+            return False
+
         session , pcap_file = start_tcpdump_for_intf(self.inputs.bgp_ips[0], 
                               self.inputs.host_data[self.inputs.bgp_ips[0]]['username'], 
                               self.inputs.host_data[self.inputs.bgp_ips[0]]['password'],
-                              'bond0', filters='-vvv port bgp') 
+                              intf, filters='-vvv port bgp') 
 
         self.mx1_handle.restart('routing gracefully')
 
