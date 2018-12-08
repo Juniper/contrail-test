@@ -351,6 +351,11 @@ class TestInputs(object):
                 self.webui_ip = host_data['host_ip']
                 self.webui_ips.append(host_data['host_ip'])
                 self.webui_control_ips.append(service_ip)
+            #TODO: sunil: handle new role for policy-generator
+            #if 'security_apps' in roles:
+            #    service_ip = self.get_service_ip(host_data['host_ip'], 'security_apps')
+            #    self.security_apps_ips.append(host_data['host_ip'])
+            #    self.security_apps_control_ips.append(service_ip)
             if 'analytics' in roles:
                 service_ip = self.get_service_ip(host_data['host_ip'], 'analytics')
                 self.collector_ip = service_ip
@@ -467,6 +472,7 @@ class TestInputs(object):
         self.agent_port = '8085'
         self.api_server_ip = contrail_configs.get('CONFIG_API_VIP')
         self.analytics_api_ip = contrail_configs.get('ANALYTICS_API_VIP')
+        self.policy_generator_port = contrail_configs.get('POLICY_GENERATOR_PORT') or 9093
         self.config_amqp_ips = contrail_configs.get('RABBITMQ_NODES')
         self.config_amqp_port = contrail_configs.get('RABBITMQ_NODE_PORT', 5673)
         self.xmpp_auth_enable = contrail_configs.get('XMPP_SSL_ENABLE')
