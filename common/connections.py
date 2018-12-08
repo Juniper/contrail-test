@@ -8,6 +8,7 @@ from tcutils.agent.vna_introspect_utils import *
 from tcutils.collector.opserver_introspect_utils import *
 from tcutils.collector.analytics_tests import *
 from tcutils.go.go_server_utils import *
+from tcutils.collector.policy_generator_tests import PolicyGeneratorClient
 
 from tcutils.kubernetes.k8s_introspect_utils import KubeManagerInspect
 from vnc_api.vnc_api import *
@@ -185,6 +186,11 @@ class ContrailConnections():
         self.vnc_lib = self.vnc_lib_fixture.get_handle()
         return self.vnc_lib
 
+    def get_policy_generator_handle(self):
+        if not self.inputs.policy_generator_ips:
+            return None
+        return PolicyGeneratorClient(inputs=self.inputs, logger=self.logger)
+
     def get_go_client_handle(self):
         if not self.inputs.command_server_ip:
             return None
@@ -314,6 +320,12 @@ class ContrailConnections():
                     break
         return self._kube_manager_inspect
     # end get_kube_manager_h
+
+    @property
+    def policy_generator_handle(self):
+        if not getattr(self, '_policygen', None):
+            self._policygen = self.get_policy_generator_handle()
+        return self._policygen
 
     @property
     def go_api_handle(self):
