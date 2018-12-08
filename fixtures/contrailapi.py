@@ -1816,6 +1816,22 @@ class ContrailVncApi(object):
             (tag_type, obj.name))
         return self._vnc.unset_tag(obj, tag_type)
 
+    def get_tags(self, obj=None, object_type=None, uuid=None):
+        ''' get tags associated to an object
+            :param obj : object to which tag has to be set (optional)
+            :param object_type : object_type to which tag has to be set (optional)
+            :param uuid : uuid of object to which tag has to be set (optional)
+             either of obj or (object_type and uuid) has to be specified
+        '''
+        if not obj:
+            obj = self._get_obj(object_type, uuid)
+        self._log.debug('fetching tags for obj %s' % obj.name)
+        tag_refs = obj.get_tag_refs()
+        if tag_refs:
+            return [self._vnc.tag_read(id=tag['uuid']) for tag in tag_refs]
+        else:
+            return []
+
     def read_virtual_router(self, compute_name):
         fq_name = ['default-global-system-config', compute_name]
         return self._vnc.virtual_router_read(fq_name=fq_name)
@@ -2246,6 +2262,15 @@ class ContrailVncApi(object):
         fq_name = ['default-global-system-config',
                    'default-global-vrouter-config']
         return self._vnc.global_vrouter_config_read(fq_name=fq_name)
+
+    def get_flow_export_rate(self):
+        gv_obj = self.read_global_vrouter_config()
+        return gv_obj.get_flow_export_rate()
+
+    def set_flow_export_rate(self, rate):
+        gv_obj = self.read_global_vrouter_config()
+        gv_obj.set_flow_export_rate(rate)
+        self._vnc.global_vrouter_config_update(gv_obj)
 
     def add_link_local_service(self, name, ip, port, ipfabric_service_port,
                                ipfabric_service_ip=None,
