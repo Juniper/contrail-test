@@ -32,6 +32,7 @@ import testtools
 from fabfile import *
 from fabutils import *
 import ast
+from winrm.protocol import Protocol
 
 sku_dict = {'2014.1': 'icehouse', '2014.2': 'juno', '2015.1': 'kilo', '12': 'liberty', '13': 'mitaka',
             '14': 'newton', '15': 'ocata'}
@@ -782,8 +783,8 @@ def run_cmd_on_server(issue_cmd, server_ip, username,
                       container=None,
                       detach=None,
                       pidfile=None,
-                      shell_prefix='/bin/bash -c '
-                      ):
+                      shell_prefix='/bin/bash -c ',
+                      windows=False):
     '''
     container : name or id of the container to run the cmd( str)
     '''
@@ -813,10 +814,35 @@ def run_cmd_on_server(issue_cmd, server_ip, username,
                 else:
                     updated_cmd = 'docker exec %s %s' % (container_args,issue_cmd)
             logger.debug('[%s]: Running cmd : %s' % (server_ip, updated_cmd))
-            output = _run(updated_cmd, pty=pty)
-            logger.debug('Output : %s' % (output))
-            return output
+            if not windows:
+                output = _run(updated_cmd, pty=pty)
+            else:
+		output = _run_cmd_on_windows(
+		    cmd=updated_cmd,
+		    target_ip=server_ip,
+		    username=username,
+		    password=password,
+		    logger=logger)
 # end run_cmd_on_server
+
+def _run_cmd_on_windows(cmd, target_ip, username='Administrator', password='Contrail123!',
+    transport='ntlm', server_cert_validation='ignore', logger=None):
+
+    logger = logger or contrail_logging.getLogger(__name__)
+    p = Protocol(
+ 	    endpoint='http://{}:5985/wsman'.format(target_ip),
+            transport=transport,
+	    username=username,
+            password=password, 
+	    server_cert_validation=server_cert_validation)
+    shell_id = p.open_shell()
+    updated_cmd = 'powershell.exe ' + str(cmd)
+    command_id = p.run_command(shell_id, updated_cmd)
+    output, std_err, status_code = p.get_command_output(shell_id, command_id)
+    logger.debug('Output : %s' % (output))
+    p.cleanup_command(shell_id, command_id)
+    p.close_shell(shell_id)
+    return output.strip()
 
 class Lock:
 
@@ -1227,6 +1253,17 @@ def get_ips_of_host(host, nic=None, **kwargs):
     output = run_cmd_on_server(cmd, host, **kwargs)
     cidrs = output.split('\n') if output else []
     return [str(IPNetwork(cidr).ip) for cidr in cidrs]
+
+def get_ips_of_windows_host(host, nic=None, **kwargs):
+    cmd = 'ipconfig /all'
+    ip_list = []
+    output = _run_cmd_on_windows(cmd, host)
+    for line in output.split('\r\n'):
+	if 'IPv4 Address' in line:
+	    if re.match('\s*IPv4 Address.*\:\s*(.*)\s*',line):
+		ip = re.match('\s*IPv4 Address.*\:\s*(.*)\s*',line).group(1)
+		ip_list.append(ip.replace('(Preferred) ',''))
+    return ip_list
 #end get_ips_of_host
 
 def get_intf_name_from_mac(host, mac_address, **kwargs):
