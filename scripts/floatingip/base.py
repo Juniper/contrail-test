@@ -18,7 +18,7 @@ class FloatingIpBaseTest(test_v1.BaseTestCase_v1):
         cls.cn_inspect = cls.connections.cn_inspect
         cls.analytics_obj = cls.connections.analytics_obj
         cls.orch = cls.connections.orch
-        if cls.inputs.admin_username:
+        if cls.inputs.tenant_isolation:
             public_creds = cls.admin_isolated_creds
         else:
             public_creds = cls.isolated_creds

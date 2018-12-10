@@ -112,7 +112,6 @@ class TestBasicPolicy(BasePolicyTest):
             vn2_fixture, rules)
         assert vn1_fixture.verify_on_setup()
         assert vn2_fixture.verify_on_setup()
-
         vm1_fixture = self.create_vm(vn1_fixture)
         vm2_fixture = self.create_vm(vn2_fixture)
         vm1_fixture.wait_till_vm_is_up()
