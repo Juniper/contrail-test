@@ -8,6 +8,7 @@ import fixtures
 import tcutils.wrappers
 from base import BasePolicyTest
 import time
+from windows import *
 from vn_test import VNFixture
 from vm_test import VMFixture
 from ipam_test import IPAMFixture
@@ -622,7 +623,7 @@ class TestPolicyAcl(BasePolicyTest):
 
         # create VM
         self.setup_vm()
-
+        
         ret = self.VM11_fixture.ping_with_certainty(expectation=False,
                                     dst_vm_fixture=self.VM21_fixture)
         if ret == True :
@@ -724,7 +725,6 @@ class TestPolicyAcl(BasePolicyTest):
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
-
         # attach policy to VN
         VN1_policy_fixture = self.useFixture(
             VN_Policy_Fixture(
@@ -743,12 +743,16 @@ class TestPolicyAcl(BasePolicyTest):
                 vn_obj={self.VN2_fixture.vn_name : self.VN2_fixture},
                 vn_policys=['policy21'],
                 project_name=self.project.project_name))
-
         # create VM
         self.setup_vm()
-
-        ret = self.VM11_fixture.ping_with_certainty(expectation=False,
+        if self.inputs.orchestrator !='windows':
+           ret = self.VM11_fixture.ping_with_certainty(expectation=False,
                                     dst_vm_fixture=self.VM21_fixture)
+           
+        else:
+           ret = self.VM11_fixture.ping_with_certainty(expectation=False,
+                                    ip=self.VM21_fixture.get_vm_ips()[0],
+                                    container = self.VM11_fixture.vm_name)
 
         if ret == True :
             cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (

@@ -81,7 +81,6 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
 
     if username == 'root':
         with_sudo = False
-
     shell = '/bin/bash -l -c'
 
     if username == 'cirros':

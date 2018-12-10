@@ -281,6 +281,9 @@ class VerificationOpsSrv (VerificationUtilBase):
         try:
             c_dict = self.dict_get(
                 'analytics/uves/database-node/' + db + '?flat')
+	    if not c_dict:
+		c_dict = self.dict_get(
+		    'analytics/uves/database-node/' + db + '.local?flat')
             res = OpDbResult(c_dict)
         except Exception as e:
             print e
