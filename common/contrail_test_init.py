@@ -300,6 +300,8 @@ class TestInputs(object):
             self.host_data[host_data['host_ip']] = host_data
             hostname = self.run_cmd_on_server(host_data['host_ip'], 'hostname')
             host_fqname = self.run_cmd_on_server(host_data['host_ip'], 'hostname -f')
+            if self.slave_orchestrator == 'kubernetes' and 'novalocal' in hostname:
+                hostname = hostname.split('.')[0]
             self.host_names.append(hostname)
             self.host_ips.append(host_data['host_ip'])
             host_data['name'] = hostname

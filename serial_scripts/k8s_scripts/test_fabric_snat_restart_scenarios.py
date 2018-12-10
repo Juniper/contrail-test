@@ -4,7 +4,7 @@
 """
 from common.k8s.base import BaseK8sTest
 from tcutils.wrappers import preposttest_wrapper
-from tcutils.util import get_random_name
+from tcutils.util import get_random_name, skip_because
 import test
 import time
 from tcutils.contrail_status_check import ContrailStatusChecker
@@ -14,7 +14,10 @@ class TestFabricSNATRestarts(BaseK8sTest):
     @classmethod
     def setUpClass(cls):
         super(TestFabricSNATRestarts, cls).setUpClass()
-        cls.ip_to_ping = cls.inputs.bgp_control_ips[0]
+        if cls.inputs.slave_orchestrator == 'kubernetes':
+            cls.ip_to_ping = cls.inputs.k8s_clusters[0]['master_ip']
+        else:
+            cls.ip_to_ping = cls.inputs.bgp_control_ips[0]
 
     @classmethod
     def tearDownClass(cls):
@@ -150,6 +153,7 @@ class TestFabricSNATRestarts(BaseK8sTest):
     #end test_snat_pod_restart
 
     @test.attr(type=['k8s_sanity'])
+    @skip_because(slave_orchestrator='kubernetes')
     @preposttest_wrapper
     def test_snat_with_docker_restart(self):
         """

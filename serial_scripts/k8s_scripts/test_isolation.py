@@ -198,11 +198,11 @@ class TestCustomIsolationSerial(BaseK8sTest):
         service_ns2 = None
         vn_for_namespace = self.setup_vn(vn_name = "TestVNNamespace")
         vn_dict_for_namespace = {"domain": vn_for_namespace.domain_name,
-                   "project" : vn_for_namespace.project_name[0],
+                   "project" : vn_for_namespace.project_name,
                    "name": vn_for_namespace.vn_name}
         vn_for_pod = self.setup_vn(vn_name = "TestVNPod")
         vn_dict_for_pod = {"domain": vn_for_pod.domain_name,
-                   "project" : vn_for_pod.project_name[0],
+                   "project" : vn_for_pod.project_name,
                    "name": vn_for_pod.vn_name}
         namespace1_name = get_random_name("ns1")
         namespace2_name = get_random_name("ns2")

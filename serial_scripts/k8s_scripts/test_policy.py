@@ -5,7 +5,7 @@ from test import BaseTestCase
 
 from k8s.namespace import NamespaceFixture
 from k8s.pod import PodFixture
-from tcutils.util import Singleton
+from tcutils.util import Singleton, skip_because
 import test
 import time
 
@@ -628,6 +628,7 @@ class TestNetworkPolicyRestart(BaseK8sTest):
     #end test_policy_pod_restart
 
     @test.attr(type=['k8s_sanity'])
+    @skip_because(slave_orchestrator='kubernetes')
     @preposttest_wrapper
     def test_policy_docker_restart(self):
         """
@@ -662,6 +663,7 @@ class TestNetworkPolicyRestart(BaseK8sTest):
     #end test_policy_docker_restart
 
     @test.attr(type=['k8s_sanity'])
+    @skip_because(slave_orchestrator='kubernetes')
     @preposttest_wrapper
     def test_policy_kubelet_restart_on_slave(self):
         """

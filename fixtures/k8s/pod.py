@@ -417,6 +417,7 @@ class PodFixture(fixtures.Fixture):
     def get_compute_for_pod_in_nested(self, project_id, vm_name):
         returnVal = None
         if self.inputs.slave_orchestrator == 'kubernetes':
+            vm_name = vm_name.split('.')[0]
             self.vm_obj = self.connections.orch.get_vm_if_present(vm_name,
                                                                   project_id=project_id)
             returnVal = self.inputs.get_host_ip(

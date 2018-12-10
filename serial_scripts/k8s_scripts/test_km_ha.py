@@ -2,6 +2,7 @@ from common.k8s.base import BaseK8sTest
 from k8s.pod import PodFixture
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.contrail_status_check import ContrailStatusChecker
+from tcutils.util import skip_because
 import test
 
 class TestKubeManagerHA(BaseK8sTest):
@@ -107,6 +108,7 @@ class TestKubeManagerHA(BaseK8sTest):
     # end test_single_node_failover
 
     @test.attr(type=['k8s_sanity'])
+    @skip_because(slave_orchestrator='kubernetes')
     @preposttest_wrapper
     def test_km_active_backup(self):
         '''

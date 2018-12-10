@@ -179,6 +179,7 @@ class TestService(BaseK8sTest):
         self.common_checks_for_nodeport_service(svc, pds)
 
     @test.attr(type=['k8s_sanity'])
+    @skip_because(slave_orchestrator='kubernetes')
     @preposttest_wrapper
     def test_kube_manager_restart_with_nodeport_services(self):
         (svc,pds) = self.common_setup_for_nodeport()
