@@ -26,6 +26,7 @@ class NotPossibleToSubnet(Exception):
     pass
 from openstack import OpenstackOrchestrator
 from vcenter import VcenterOrchestrator
+from windows import WindowsOrchestrator
 
 #@contrail_fix_ext ()
 class VNFixture(fixtures.Fixture):
@@ -91,7 +92,10 @@ class VNFixture(fixtures.Fixture):
             self.webui = WebuiTest(self.connections, self.inputs)
         self.router_asn = router_asn
         self.rt_number = rt_number
-        self.option = option
+	if isinstance(self.orchestrator,WindowsOrchestrator):
+	    self.option = 'contrail'
+	else:
+            self.option = option
         self.forwarding_mode = forwarding_mode
         self.vxlan_id = vxlan_id
         self.shared = shared
@@ -136,7 +140,6 @@ class VNFixture(fixtures.Fixture):
         self.layer2_control_word = kwargs.get('layer2_control_word', None)
         self.address_allocation_mode= kwargs.get('address_allocation_mode', None)
         self.ip_fabric = kwargs.get('ip_fabric', None)
-
 
 
         self.vnc_lib_fixture = connections.vnc_lib_fixture

@@ -116,6 +116,7 @@ class VNCApiInspect (VerificationUtilBase):
         if domain == 'Default':
             domain = 'default-domain'
         d = self.try_cache('domain', [domain], refresh)
+	dd = None
         if not d:
             # cache miss
             doms = self.dict_get('domains')
@@ -497,7 +498,6 @@ class VNCApiInspect (VerificationUtilBase):
             vmi_objs = self.get_cs_vmi_of_vm(vm_id, refresh)
             if vmi_obj:
                 try:
-                    #import pdb; pdb.set_trace ()
                     for vmi_obj in vmi_objs:
                         pp.append(self.dict_get(vmi_obj.fip_link()))
                     if pp:
