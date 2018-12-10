@@ -123,9 +123,46 @@ class BMSFixture(fixtures.Fixture):
                           cmd, self.mgmt_ip, output))
         return output
 
+    def get_mvi_interface(self):
+        self.logger.info('BMS interface: %s' % self.mvlanintf)
+        return self.mvlanintf
+
+
     def run_namespace(self, cmd, **kwargs):
         cmd = 'ip netns exec %s %s'%(self.namespace, cmd)
         return self.run(cmd, **kwargs)
+
+    def config_mroute(self,interface,address,mask):
+        self.run_namespace('ifconfig %s multicast' %(interface))
+        self.run_namespace('route -n add -net %s  netmask %s dev %s' %(address,mask,interface))
+
+    def run_python_code(self, code, as_sudo=True, as_daemon=False, pidfile=None, stdout_path=None, stderr_path=None):
+
+        folder = tempfile.mkdtemp()
+
+        filename_short = 'program.py'
+        filename = '%s/%s' % (folder, filename_short)
+        fh = open(filename, 'w')
+        fh.write(code)
+        fh.close()
+
+        dest_login = '%s@%s' % (self.username,self.mgmt_ip)
+        dest_path = dest_login + ":/tmp"
+        remote_copy(filename, dest_path, dest_password=self.password, with_sudo=True)
+
+
+        if as_daemon:
+            pidfile = pidfile or "/tmp/pidfile_%s.pid" % (get_random_name())
+            pidfilename = pidfile.split('/')[-1]
+            stdout_path = stdout_path or "/tmp/%s_stdout.log" % pidfilename
+            stderr_path = stderr_path or "/tmp/%s_stderr.log" % pidfilename
+            cmd = "python /tmp/%s 1>%s 2>%s" % (filename_short,stdout_path,stderr_path)
+            outputs = self.run_namespace( cmd, as_sudo=as_sudo, as_daemon=as_daemon, pidfile=pidfile)
+        else:
+            cmd = "python /tmp/%s" % (filename_short)
+            outputs = self.run_namespace( cmd, as_sudo=as_sudo, as_daemon=as_daemon)
+
+
 
     def delete_bonding(self):
         self.run('ip link delete bond0')
@@ -164,11 +201,13 @@ class BMSFixture(fixtures.Fixture):
         pvlanintf = '%s.%s'%(self._interface, self.vlan_id) if self.vlan_id\
                     else self._interface
         self.run('ip link set dev %s up'%pvlanintf)
-        self.mvlanintf = '%s-mv%s'%(pvlanintf, get_random_string(4))
+        self.mvlanintf = '%smv%s'%(pvlanintf, get_random_string(1))
         self.logger.info('BMS mvlanintf: %s' % self.mvlanintf)
         macaddr = 'address %s'%self.bms_mac if self.bms_mac else ''
         self.run('ip link add %s link %s %s type macvlan mode bridge'%(
                  self.mvlanintf, pvlanintf, macaddr))
+        self.run('ip link add %s link %s type macvlan mode bridge'%(
+                  self.mvlanintf, pvlanintf))
         self.run('ip netns add %s'%self.namespace)
         self.run('ip link set netns %s %s'%(self.namespace, self.mvlanintf))
         self.run_namespace('ip link set dev %s up'%self.mvlanintf)
