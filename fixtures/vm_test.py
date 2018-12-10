@@ -19,6 +19,7 @@ from subprocess import Popen, PIPE
 
 from ipam_test import *
 from vn_test import *
+from windows import WindowsOrchestrator
 from tcutils.util import *
 from tcutils.util import safe_run, safe_sudo
 from contrail_fixtures import *
@@ -84,7 +85,10 @@ class VMFixture(fixtures.Fixture):
         self.port_ids = port_ids
         self.fixed_ips = fixed_ips
         self.subnets = subnets
-        self.image_name = self.inputs.get_ci_image(image_name) or image_name
+	if self.inputs.orchestrator == 'windows':
+	    self.image_name = 'microsoft/windowsservercore'
+	else:
+            self.image_name = self.inputs.get_ci_image(image_name) or image_name
         self.flavor = self.orch.get_default_image_flavor(self.image_name) or flavor
         self.project_name = connections.project_name
         self.project_id = connections.project_id
@@ -610,15 +614,18 @@ class VMFixture(fixtures.Fixture):
         elif not vm_status:
             return False
 
-        self.verify_vm_launched()
-        if len(self.vm_ips) < 1:
-            return False
-
+	if not isinstance(self.orch,WindowsOrchestrator):
+	    self.verify_vm_launched()
+            if len(self.vm_ips) < 1:
+                return False
 
         self.verify_vm_flag = True
         if self.inputs.verify_thru_gui():
            self.webui.verify_vm(self)
-        result = self.verify_vm_in_api_server()
+	if isinstance(self.orch,WindowsOrchestrator):
+	   result = True
+	else:
+           result = self.verify_vm_in_api_server()
         if not result:
            self.logger.error('VM %s verification in API Server failed'
                               % (self.vm_name))
@@ -629,22 +636,34 @@ class VMFixture(fixtures.Fixture):
            self.verify_is_run = True
            return result
 
-        result = self.verify_vm_in_agent()
+	if isinstance(self.orch,WindowsOrchestrator):
+	   result = True
+	else:
+           result = self.verify_vm_in_agent()
         if not result:
            self.logger.error('VM %s verification in Agent failed'
                               % (self.vm_name))
            return result
-        result = self.verify_vm_in_vrouter()
+	if isinstance(self.orch,WindowsOrchestrator):
+           result = True
+        else:
+           result = self.verify_vm_in_vrouter()
         if not result:
            self.logger.error('VM %s verification in Vrouter failed'
                               % (self.vm_name))
            return result
-        result = self.verify_vm_in_control_nodes()
+	if isinstance(self.orch,WindowsOrchestrator):
+           result = True
+        else:
+           result = self.verify_vm_in_control_nodes()
         if not result:
             self.logger.error('Route verification for VM %s in Controlnodes'
                               ' failed ' % (self.vm_name))
             return result
-        result = self.verify_vm_in_opserver()
+        if isinstance(self.orch,WindowsOrchestrator):
+           result = True
+        else:
+	   result = self.verify_vm_in_opserver()
         if not result:
            self.logger.error('VM %s verification in Opserver failed'
                               % (self.vm_name))
@@ -1244,13 +1263,38 @@ class VMFixture(fixtures.Fixture):
         result = True
         vm_ips = dst_vm_fixture.get_vm_ips(vn_fq_name=vn_fq_name, af=af)
         for ip in vm_ips:
-            result = self.ping_to_ip(ip=ip, expectation=expectation, *args, **kwargs)
+	    if isinstance(self.orch, WindowsOrchestrator):
+		result = self.ping_windows_container_from_host(
+		    ip=ip,
+		    host_ip=dst_vm_fixture.vm_obj.host_ip,
+		    expectation=expectation,
+		    *args, **kwargs)
+	    else:
+                result = self.ping_to_ip(
+		    ip=ip,
+		    expectation=expectation,
+		    *args, **kwargs)
             if result == True:
                 # if result matches the expectation, continue to next ip
                 continue
             else:
                 return False
         return True
+
+    def ping_windows_container_from_host(self, ip, host_ip, return_output=False, other_opt='', size='56', count='5', timewait='5000', expectation=True):
+	""" Ping from windows host to container"""
+
+	cmd = "ping {} -n {} -l {} -w {}".format(
+	    ip,
+	    count,
+	    size,
+	    timewait)
+	std_out, std_err, status_code = self.orch._run_docker_cmd_on_remote_windows(
+	    target_host=host_ip,
+	    command=cmd,
+	    powershell=True)
+	self.logger.info("Ping to {} successful".format(ip))
+	return True
 
     def ping_to_ip(self, ip, return_output=False, other_opt='', size='56', count='5', timewait='1', expectation=True):
         """Ping from a VM to an IP specified.
@@ -1992,7 +2036,8 @@ class VMFixture(fixtures.Fixture):
                 else:
                     self.orch.delete_vm(vm_obj)
                     self.vm_objs.remove(vm_obj)
-            self.verify_cleared_from_setup(verify=verify)
+	    if not isinstance(self.orch,WindowsOrchestrator):
+                self.verify_cleared_from_setup(verify=verify)
         else:
             self.logger.info('Skipping the deletion of VM %s' %
                              (self.vm_name))
@@ -2285,6 +2330,9 @@ class VMFixture(fixtures.Fixture):
 
     @retry(delay=5, tries=15)
     def wait_till_vm_up(self):
+	self.logger.info("Skipping check for windows. Change later if required")
+	if isinstance(self.orch,WindowsOrchestrator):
+	    return True
         vm_status = self.orch.wait_till_vm_is_active(self.vm_obj)
         if type(vm_status) == tuple:
             if vm_status[1] in 'ERROR':

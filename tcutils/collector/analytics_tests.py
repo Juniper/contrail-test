@@ -4672,7 +4672,7 @@ class AnalyticsVerification(fixtures.Fixture):
         result = True
         try:
             for collector in self.inputs.collector_ips:
-                for db in self.inputs.database_names:       
+                for db in self.inputs.database_names:
                     self.logger.info("Verifying through collector %s for db node %s"%(collector,db))
                     dct = self.ops_inspect[collector].get_ops_db(db)
                     uve = dct.get_attr('Node','process_info',\
