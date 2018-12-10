@@ -93,7 +93,6 @@ class TestInputs(object):
         self.dpdk_data = {}
         self.mysql_token = None
         self.pcap_on_vm = False
-
         self.parse_yml_file()
         if self.fip_pool:
             update_reserve_cidr(self.fip_pool)
@@ -286,8 +285,12 @@ class TestInputs(object):
         self.hypervisors = {}
         self.is_dpdk_cluster = False
         provider_configs = (self.config.get('provider_config') or {}).get('bms') or {}
+        provider_configs_win = (self.config.get('provider_config') or {}).get('bms_win') or {}
         username = provider_configs.get('ssh_user') or 'root'
         password = provider_configs.get('ssh_pwd') or 'c0ntrail123'
+        if provider_configs_win:
+            username_win = provider_configs_win.get('ssh_user') or 'root'
+            password_win = provider_configs_win.get('ssh_pwd') or 'c0ntrail123'
         for host, values  in (self.config.get('instances') or {}).iteritems():
             roles = values.get('roles') or {}
             host_data = dict()
@@ -295,8 +298,12 @@ class TestInputs(object):
             if 'openstack_control' in roles and not 'openstack' in roles:
                 roles.update({'openstack': {}})
             host_data['roles'] = roles
-            host_data['username'] = username
-            host_data['password'] = password
+            if values['provider'] == 'bms_win':
+                host_data['username'] = username_win
+                host_data['password'] = password_win
+            else:
+                host_data['username'] = username
+                host_data['password'] = password
             self.host_data[host_data['host_ip']] = host_data
             hostname = self.run_cmd_on_server(host_data['host_ip'], 'hostname')
             host_fqname = self.run_cmd_on_server(host_data['host_ip'], 'hostname -f')
@@ -839,7 +846,8 @@ class TestInputs(object):
 
     def run_cmd_on_server(self, server_ip, issue_cmd, username=None,
                           password=None, pty=True, as_sudo=True, as_daemon=False,
-                          container=None, detach=None, shell_prefix='/bin/bash -c ',):
+                          container=None, detach=None, shell_prefix='/bin/bash -c ',
+                          windows=False):
         '''
         container : name or id of the container
         '''
