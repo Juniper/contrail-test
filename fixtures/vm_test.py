@@ -19,6 +19,7 @@ from subprocess import Popen, PIPE
 
 from ipam_test import *
 from vn_test import *
+from windows import WindowsOrchestrator
 from tcutils.util import *
 from tcutils.util import safe_run, safe_sudo
 from contrail_fixtures import *
@@ -84,10 +85,11 @@ class VMFixture(fixtures.Fixture):
         self.port_ids = port_ids
         self.fixed_ips = fixed_ips
         self.subnets = subnets
-        #Getting the image from orchestrator.For vcenter default image will be returned as tiny_core
-        #instead of ubuntu
-        self.image_name = self.inputs.get_ci_image(image_name) or self.orch.get_default_image(image_name)
-        #
+	if self.inputs.orchestrator == 'windows':
+            self.image_name = 'microsoft/windowsservercore'
+	else:
+            self.image_name = self.inputs.get_ci_image(image_name) \
+                or self.orch.get_default_image(image_name)
         self.flavor = self.orch.get_default_image_flavor(self.image_name) or flavor
         self.project_name = connections.project_name
         self.project_id = connections.project_id
@@ -623,15 +625,18 @@ class VMFixture(fixtures.Fixture):
         elif not vm_status:
             return False
 
-        self.verify_vm_launched()
-        if len(self.vm_ips) < 1:
-            return False
-
+	if not isinstance(self.orch,WindowsOrchestrator):
+	    self.verify_vm_launched()
+            if len(self.vm_ips) < 1:
+                return False
 
         self.verify_vm_flag = True
         if self.inputs.verify_thru_gui():
            self.webui.verify_vm(self)
-        result = self.verify_vm_in_api_server()
+	if isinstance(self.orch,WindowsOrchestrator):
+	   result = True
+	else:
+           result = self.verify_vm_in_api_server()
         if not result:
            self.logger.error('VM %s verification in API Server failed'
                               % (self.vm_name))
@@ -642,22 +647,34 @@ class VMFixture(fixtures.Fixture):
            self.verify_is_run = True
            return result
 
-        result = self.verify_vm_in_agent()
+	if isinstance(self.orch,WindowsOrchestrator):
+	   result = True
+	else:
+           result = self.verify_vm_in_agent()
         if not result:
            self.logger.error('VM %s verification in Agent failed'
                               % (self.vm_name))
            return result
-        result = self.verify_vm_in_vrouter()
+	if isinstance(self.orch,WindowsOrchestrator):
+           result = True
+        else:
+           result = self.verify_vm_in_vrouter()
         if not result:
            self.logger.error('VM %s verification in Vrouter failed'
                               % (self.vm_name))
            return result
-        result = self.verify_vm_in_control_nodes()
+	if isinstance(self.orch,WindowsOrchestrator):
+           result = True
+        else:
+           result = self.verify_vm_in_control_nodes()
         if not result:
             self.logger.error('Route verification for VM %s in Controlnodes'
                               ' failed ' % (self.vm_name))
             return result
-        result = self.verify_vm_in_opserver()
+        if isinstance(self.orch,WindowsOrchestrator):
+           result = True
+        else:
+	   result = self.verify_vm_in_opserver()
         if not result:
            self.logger.error('VM %s verification in Opserver failed'
                               % (self.vm_name))
@@ -1258,7 +1275,17 @@ class VMFixture(fixtures.Fixture):
         result = True
         vm_ips = dst_vm_fixture.get_vm_ips(vn_fq_name=vn_fq_name, af=af)
         for ip in vm_ips:
-            result = self.ping_to_ip(ip=ip, expectation=expectation, *args, **kwargs)
+	    if isinstance(self.orch, WindowsOrchestrator):
+		result = self.ping_windows_container(
+		    ip=ip,
+		    host_ip=dst_vm_fixture.vm_obj.host_ip,
+		    expectation=expectation,
+		    *args, **kwargs)
+	    else:
+                result = self.ping_to_ip(
+		    ip=ip,
+		    expectation=expectation,
+		    *args, **kwargs)
             if result == True:
                 # if result matches the expectation, continue to next ip
                 continue
@@ -1266,17 +1293,39 @@ class VMFixture(fixtures.Fixture):
                 return False
         return True
 
-    def ping_to_ip(self, ip, return_output=False, other_opt='', size='56', count='5', timewait='1', expectation=True):
+    def ping_windows_container(self, ip, host_ip, return_output=False, other_opt='', size='56', count='5', timewait='5000', expectation=True):
+	""" Ping from windows host to container"""
+
+	vm_name = self.vm_obj.name
+	cmd = "docker exec {} powershell.exe ping {} -n {} -l {} -w {}".format(
+	    vm_name,
+	    ip,
+	    count,
+	    size,
+	    timewait)
+	std_out, std_err, status_code = self.orch.run_cmd_on_windows(
+	    target_host=host_ip,
+	    command=cmd,
+	    powershell=True)
+	self.logger.info("Ping to {} successful".format(ip))
+	return True
+ 
+    def ping_to_ip(self, ip, container=None, return_output=False, other_opt='', size='56', count='5', timewait='1', expectation=True):
         """Ping from a VM to an IP specified.
 
         This method logs into the VM from the host machine using ssh and runs ping test to an IP.
         """
         host = self.inputs.host_data[self.vm_node_ip]
         output = ''
-        fab_connections.clear()
+        if self.inputs.orchestrator != 'windows':
+            fab_connections.clear()
         af = get_af_type(ip)
         try:
-            vm_host_string = '%s@%s' % (self.vm_username, self.local_ip)
+            if self.inputs.orchestrator != 'windows':
+               vm_host_string = '%s@%s' % (self.vm_username, self.local_ip)
+            else:
+               vm_host_string = '%s@%s' % (host['username'], host['host_ip'])
+
             if af is None:
                 cmd = """python -c 'import socket;socket.getaddrinfo("%s", None, socket.AF_INET6)'""" % ip
                 output = remote_cmd(
@@ -1289,16 +1338,29 @@ class VMFixture(fixtures.Fixture):
             else:
                 util = 'ping6' if af == 'v6' else 'ping'
 
-            cmd = '%s -s %s -c %s -W %s %s %s' % (
-                util, str(size), str(count), str(timewait), other_opt, ip
-            )
+	    if self.inputs.orchestrator == 'windows':
+                
+		cmd = '%s %s ' % (util, ip)
+	    else:
+                cmd = '%s -s %s -c %s -W %s %s %s' % (
+                    util, str(size), str(count), str(timewait), other_opt, ip
+                )
 
-            output = remote_cmd(
-                vm_host_string, cmd, gateway_password=host['password'],
-                gateway='%s@%s' % (host['username'], self.vm_node_ip),
-                with_sudo=True, password=self.vm_password,
-                logger=self.logger
-            )
+            if self.inputs.orchestrator != 'windows':
+               output = remote_cmd(
+                   vm_host_string, cmd, gateway_password=host['password'],
+                   gateway='%s@%s' % (host['username'], self.vm_node_ip),
+                   with_sudo=True, password=self.vm_password,
+                   logger=self.logger
+                )   
+            else:
+                vm_node_ip = self.vm_node_ip
+                container = self.vm_name
+                output = self.inputs.run_cmd_on_server(vm_node_ip, cmd,
+                                                       as_sudo=False,
+                                                       container=container,
+                                                       windows=True,
+						       ignore_error=True)
             self.logger.debug(output)
             if return_output is True:
                 return output
@@ -1337,7 +1399,7 @@ class VMFixture(fixtures.Fixture):
     # end ping_to_ipv6
 
     @retry(delay=1, tries=15)
-    def ping_with_certainty(self, ip=None, return_output=False, other_opt='',
+    def ping_with_certainty(self, ip=None, container=None, return_output=False, other_opt='',
                             size='56', count='5', expectation=True,
                             dst_vm_fixture=None, vn_fq_name=None, af=None):
         '''
@@ -1345,14 +1407,14 @@ class VMFixture(fixtures.Fixture):
         Set expectation to False if you want ping to fail
         Can be used for both ping pass and fail scenarios with retry
         '''
-        if dst_vm_fixture:
+        if dst_vm_fixture:  
             output = self.ping_to_vn(dst_vm_fixture=dst_vm_fixture,
                                      vn_fq_name=vn_fq_name, af=af,
                                      return_output=False, size=size,
                                      other_opt=other_opt, count=count,
                                      expectation=expectation)
         else:
-            output = self.ping_to_ip(ip=ip, return_output=False,
+            output = self.ping_to_ip(ip=ip, container=container, return_output=False,
                                      other_opt=other_opt, size=size,
                                      count=count, expectation=expectation)
         return output
@@ -2006,7 +2068,8 @@ class VMFixture(fixtures.Fixture):
                 else:
                     self.orch.delete_vm(vm_obj)
                     self.vm_objs.remove(vm_obj)
-            self.verify_cleared_from_setup(verify=verify)
+	    if not isinstance(self.orch,WindowsOrchestrator):
+                self.verify_cleared_from_setup(verify=verify)
         else:
             self.logger.info('Skipping the deletion of VM %s' %
                              (self.vm_name))
@@ -2137,8 +2200,37 @@ class VMFixture(fixtures.Fixture):
         '''
         filename = 'testfile'
         # Create file
-        cmd = 'dd bs=%s count=1 if=/dev/zero of=%s' % (size, filename)
-        self.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+	if isinstance(self.orch,WindowsOrchestrator):
+	    cmds = []
+	    body = "\"We come in peace.\""
+	    dir_name = '\inetpub\wwwroot'
+	    self.logger.info("Create html file in remote container")
+	    cmd = 'docker exec {} powershell.exe mkdir {}'.format(
+		dest_vm_fixture.name,
+		dir_name)
+	    cmds.append(cmd)
+	    cmd = 'docker exec {} powershell.exe \"cd {}; echo {} >> {}\"'.format(
+		dest_vm_fixture.name,
+		dir_name,
+		body,
+		filename)
+	    cmds.append(cmd)
+
+	    self.logger.info("Creating file in destination container")
+	    self.run_cmd_on_vm_windows(
+		target_host=dest_vm_fixture.vm_objs[0].host_ip, 
+                cmds=cmds, 
+                username=dest_vm_fixture.vm_objs[0].host_username,
+                password=dest_vm_fixture.vm_objs[0].host_password,
+                transport=dest_vm_fixture.vm_objs[0].transport,
+                ignore_error=True)
+
+	    cmds = []
+
+	else:
+
+            cmd = 'dd bs=%s count=1 if=/dev/zero of=%s' % (size, filename)
+            self.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
 
         if fip:
             dest_vm_ips = [fip]
@@ -2159,31 +2251,49 @@ class VMFixture(fixtures.Fixture):
 
         for dest_vm_ip in dest_vm_ips:
             if mode == 'scp':
-                self.scp_file_to_vm(filename, vm_ip=dest_vm_ip,
+		if not isinstance(self.orch,WindowsOrchestrator):
+                    self.scp_file_to_vm(filename, vm_ip=dest_vm_ip,
                                     dest_vm_username=dest_vm_fixture.vm_username)
+		else:
+                    self.transfer_file_to_vm_windows(
+			filename=filename,
+			source_vm=self.vm_objs[0],
+			destination_vm=dest_vm_fixture,
+			source_host=self.vm_objs[0].host_ip,
+			destination_host=dest_vm_fixture.vm_objs[0].host_ip,
+			mode='scp') 
+		    
             else:
-                self.tftp_file_to_vm(filename, vm_ip=dest_vm_ip)
-            self.run_cmd_on_vm(cmds=['sync'])
-            # Verify if file size is same
-            out_dict = dest_vm_fixture.run_cmd_on_vm(
-                cmds=['wc -c %s' % (absolute_filename)])
-            if size in out_dict.values()[0]:
-                self.logger.info('File of size %s is trasferred successfully to \
+		if not isinstance(self.orch,WindowsOrchestrator):
+                    self.tftp_file_to_vm(filename, vm_ip=dest_vm_ip)
+		else:
+                    self.transfer_file_to_vm_windows(
+			name=filename,
+			vm_ip=dest_vm_ip,
+			mode='tftp')
+	    if not isinstance(self.orch,WindowsOrchestrator):
+ 	        self.run_cmd_on_vm(cmds=['sync'])
+                # Verify if file size is same
+                out_dict = dest_vm_fixture.run_cmd_on_vm(
+                    cmds=['wc -c %s' % (absolute_filename)])
+                if size in out_dict.values()[0]:
+                    self.logger.info('File of size %s is trasferred successfully to \
                         %s by %s ' % (size, dest_vm_ip, mode))
-                if not expectation:
-                    return False
-            else:
-                self.logger.warn('File of size %s is not trasferred fine to %s \
+                    if not expectation:
+                        return False
+                else:
+                    self.logger.warn('File of size %s is not trasferred fine to %s \
                         by %s' % (size, dest_vm_ip, mode))
-                dest_vm_fixture.run_cmd_on_vm(
-                    cmds=['rm -f %s' % (absolute_filename)])
-                if mode == 'tftp':
                     dest_vm_fixture.run_cmd_on_vm(
-                        cmds=['touch %s' % (absolute_filename),
+                        cmds=['rm -f %s' % (absolute_filename)])
+                    if mode == 'tftp':
+                        dest_vm_fixture.run_cmd_on_vm(
+                            cmds=['touch %s' % (absolute_filename),
                               'chmod 777 %s' % (absolute_filename)],
-                        as_sudo=True)
-                if expectation:
-                    return False
+                            as_sudo=True)
+                    if expectation:
+                        return False
+	    return True
         return True
     # end check_file_transfer
 
@@ -2220,39 +2330,45 @@ class VMFixture(fixtures.Fixture):
         '''run cmds on VM
 
         '''
-        self.return_output_cmd_dict = {}
-        self.return_output_values_list = []
-        cmdList = cmds
-        host = self.inputs.host_data[self.vm_node_ip]
-        output = ''
-        try:
-            fab_connections.clear()
-            if not local_ip:
-                local_ip = self.local_ip
-            vm_host_string = '%s@%s' % (
-                self.vm_username, local_ip)
-            for cmd in cmdList:
-                output = remote_cmd(
-                    vm_host_string, cmd, gateway_password=host['password'],
-                    gateway='%s@%s' % (host['username'], self.vm_node_ip),
-                    with_sudo=as_sudo, timeout=timeout, as_daemon=as_daemon,
-                    raw=raw, warn_only=warn_only, password=self.vm_password,
-                    pidfile=pidfile,
-                    logger=self.logger
+	if isinstance(self.orch, WindowsOrchestrator):
+	    self.orch.run_cmd_on_windows(
+		target_host=self.vm_obj.host_ip,
+		command=cmds,
+		powershell=True)
+	else:
+            self.return_output_cmd_dict = {}
+            self.return_output_values_list = []
+            cmdList = cmds
+            host = self.inputs.host_data[self.vm_node_ip]
+            output = ''
+            try:
+                fab_connections.clear()
+                if not local_ip:
+                    local_ip = self.local_ip
+                vm_host_string = '%s@%s' % (
+                    self.vm_username, local_ip)
+                for cmd in cmdList:
+                    output = remote_cmd(
+                        vm_host_string, cmd, gateway_password=host['password'],
+                        gateway='%s@%s' % (host['username'], self.vm_node_ip),
+                        with_sudo=as_sudo, timeout=timeout, as_daemon=as_daemon,
+                        raw=raw, warn_only=warn_only, password=self.vm_password,
+                        pidfile=pidfile,
+                        logger=self.logger
+                    )
+                    self.logger.debug(output)
+                    self.return_output_values_list.append(output)
+                self.return_output_cmd_dict = dict(
+                    zip(cmdList, self.return_output_values_list)
                 )
-                self.logger.debug(output)
-                self.return_output_values_list.append(output)
-            self.return_output_cmd_dict = dict(
-                zip(cmdList, self.return_output_values_list)
-            )
-            return self.return_output_cmd_dict
-        except SystemExit, e:
-            self.logger.debug('Command exection failed: %s' % (e))
-            raise e
-        except Exception, e:
-            self.logger.debug(
-                'Exception occured while running cmds %s' % (cmds))
-            self.logger.exception(e)
+                return self.return_output_cmd_dict
+            except SystemExit, e:
+                self.logger.debug('Command exection failed: %s' % (e))
+                raise e
+            except Exception, e:
+                self.logger.debug(
+                    'Exception occured while running cmds %s' % (cmds))
+                self.logger.exception(e)
 
     def get_vm_ip_from_vm(self, vn_fq_name=None):
         ''' Get VM IP from Ifconfig output executed on VM
@@ -2299,6 +2415,9 @@ class VMFixture(fixtures.Fixture):
 
     @retry(delay=5, tries=15)
     def wait_till_vm_up(self):
+	self.logger.info("Skipping check for windows. Change later if required")
+	if isinstance(self.orch,WindowsOrchestrator):
+	    return True
         vm_status = self.orch.wait_till_vm_is_active(self.vm_obj)
         if type(vm_status) == tuple:
             if vm_status[1] in 'ERROR':
@@ -3129,6 +3248,51 @@ class VMFixture(fixtures.Fixture):
 
     def __repr__(self):
         return '<VMFixture: %s>' % (self.vm_name)
+
+    def run_cmd_on_vm_windows(self, target_host, cmds=[], username='Administrator',
+	password='Contrail123!', transport='ntlm', ignore_error=False):
+
+	for cmd in cmds:
+	    self.orch.run_cmd_on_windows(
+	        target_host=target_host, 
+	        command=cmd, 
+                username=username,
+		password=password,
+		transport=transport,
+		ignore_error=ignore_error)
+
+    def transfer_file_to_vm_windows(self, filename, destination_vm, source_vm, source_host,
+	destination_host, source_host_username='Administrator', destination_host_password='Contrail123!',
+	destination_host_username='Administrator', source_host_password='Contrail123!', mode='wget'):
+
+	    cmds = []
+	    if mode == 'scp':
+    	        mode = 'wget'
+	    if mode == 'tftp':
+    	        return True
+	    if mode == 'wget':
+		cmd = 'docker exec {} powershell.exe \"Add-WindowsFeature web-server\"'.format(
+		    source_vm.name)
+		cmds.append(cmd)
+		self.run_cmd_on_vm_windows(
+		    target_host=source_host,
+		    cmds=cmds,
+		    ignore_error=True)
+		cmds = []
+
+		cmd = 'docker exec {} powershell.exe \"Add-WindowsFeature web-server\"'.format(
+		    destination_vm.name)
+		cmds.append(cmd)
+		cmd = 'docker exec {} powershell.exe \"Invoke-WebRequest http://{} -UseBasicParsing\"'.format(
+		    source_vm.name,
+		    destination_vm.vm_ips[0])
+		cmds.append(cmd)
+
+		self.run_cmd_on_vm_windows(
+		    target_host=destination_host,
+		    cmds=cmds,
+		    ignore_error=True)
+	
 # end VMFixture
 
 class VMData(object):

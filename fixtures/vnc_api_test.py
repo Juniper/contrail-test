@@ -9,6 +9,7 @@ from contrailapi import ContrailVncApi
 from tcutils.util import get_dashed_uuid
 from openstack import OpenstackAuth, OpenstackOrchestrator
 from vcenter import VcenterAuth, VcenterOrchestrator
+from windows import WindowsAuth, WindowsOrchestrator
 from common import log_orig as contrail_logging
 from ConfigParser import SafeConfigParser, DuplicateSectionError
 
@@ -158,6 +159,12 @@ class VncLibFixture(fixtures.Fixture):
                                                 self.project_name,
                                                 self.inputs
                                                 )
+	    elif self.orchestrator == 'windows':
+		self.auth_client = WindowsAuth(
+                        	        user=self.username,
+                                	passwd=self.password,
+ 	                                project_name=self.project_name,
+         	                        inputs=self.inputs)
         if self.orch:
             self.vnc_h = self.orch.vnc_h
         else:
