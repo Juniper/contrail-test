@@ -7,6 +7,8 @@ from fabric.api import run, hide, settings
 from time import sleep
 from tcutils.util import get_random_cidr
 from random import randint
+from common.bgpaas.base import BaseBGPaaS
+from contrailapi import ContrailVncApi
 
 
 class RPBase(test_v1.BaseTestCase_v1):
@@ -63,6 +65,10 @@ class RPBase(test_v1.BaseTestCase_v1):
         obj_4 = PrefixMatchType()
         if config_dicts['from_term'] == 'protocol':
             obj_3.set_protocol([config_dicts['sub_from']])
+        if config_dicts.get('from_term_community') and config_dicts['from_term_community'] == 'ext_community_list':
+            obj_3.set_extcommunity_list(config_dicts['sub_from_community'])
+            if config_dicts.get('match_all'):
+                obj_3.set_extcommunity_match_all(config_dicts['match_all'])
         obj_2.set_term_match_condition(obj_3)
         obj_6 = TermActionListType()
         obj_7 = ActionUpdateType()
@@ -72,6 +78,18 @@ class RPBase(test_v1.BaseTestCase_v1):
             obj_9.add_community(config_dicts['sub_to'])
             obj_8.set_add(obj_9)
             obj_7.set_community(obj_8)
+        if config_dicts['to_term'] == 'set_communinty':
+            obj_9.set_community(config_dicts['sub_to'])
+            obj_8.set_set(obj_9)
+            obj_7.set_community(obj_8)
+        if config_dicts['to_term'] == 'add_ext_community':
+            obj_9.add_community(config_dicts['sub_to'])
+            obj_8.set_add(obj_9)
+            obj_7.set_extcommunity(obj_8)
+        if config_dicts['to_term'] == 'set_ext_community':
+            obj_9.set_community([config_dicts['sub_to']])
+            obj_8.set_set(obj_9)
+            obj_7.set_extcommunity(obj_8)
         if config_dicts['to_term'] == 'med':
             obj_7.set_med(config_dicts['sub_to'])
         if config_dicts['to_term'] == 'local-preference':
@@ -82,8 +100,10 @@ class RPBase(test_v1.BaseTestCase_v1):
             obj_16.asn_list = [config_dicts['sub_to']]
             obj_15.set_expand(obj_16)
             obj_7.set_as_path(obj_15)
-
-        obj_6.set_update(obj_7)
+        if config_dicts.get('action'):
+            obj_6.set_action(config_dicts['action'])
+        else:
+            obj_6.set_update(obj_7)
         obj_2.set_term_action_list(obj_6)
         obj_1.add_term(obj_2)
         rp = RoutingPolicy(get_random_name('RP'), config_dicts['vn_fixture'].project_obj)
@@ -131,3 +151,49 @@ class RPBase(test_v1.BaseTestCase_v1):
         else:
             rp.del_service_instance(vn_fixture.si_obj)
             self.vnc_lib.routing_policy_delete(id = rp.uuid)
+
+    def create_interface_static_routes(self):
+        ret_dict = self.config_basic()
+        self.static_table_handle = ContrailVncApi(self.vnc_lib, self.logger)
+        random_cidr = get_random_cidr()
+        self.intf_table_to_right_obj = self.static_table_handle.create_route_table(
+            prefixes=[random_cidr],
+            name=get_random_name('int_table_right'),
+            parent_obj=self.project.project_obj,
+        )
+        id_entry = self.inputs.project_fq_name[0] + ':' + \
+            self.inputs.project_fq_name[1] + ':' + ret_dict['vn_fixture'].vn_name
+        self.static_table_handle.bind_vmi_to_interface_route_table(
+            str(ret_dict['test_vm'].get_vmi_ids()[id_entry]),
+            self.intf_table_to_right_obj)
+        return ret_dict,random_cidr
+    
+    def create_bgpaas_routes(self):
+        ret_dict = {}
+        vn_name = get_random_name('bgpaas_vn')
+        vn_subnets = [get_random_cidr()]
+        ret_dict['vn_fixture'] = self.create_vn(vn_name, vn_subnets)
+        ret_dict['test_vm'] = self.create_vm(ret_dict['vn_fixture'], 'test_vm',
+                                 image_name='ubuntu-traffic')
+        assert ret_dict['test_vm'].wait_till_vm_is_up()
+        bgpaas_vm1 = self.create_vm(ret_dict['vn_fixture'], 'bgpaas_vm1',image_name='vsrx')
+        assert bgpaas_vm1.wait_till_vm_is_up()
+        bgpaas_fixture = self.create_bgpaas(bgpaas_shared=True, autonomous_system=64500, bgpaas_ip_address=bgpaas_vm1.vm_ip)
+        bgpaas_vm1.wait_for_ssh_on_vm()
+        port1 = {}
+        port1['id'] = bgpaas_vm1.vmi_ids[bgpaas_vm1.vn_fq_name]
+        address_families = []
+        address_families = ['inet', 'inet6']
+        autonomous_system = 64500
+        gw_ip = ret_dict['vn_fixture'].get_subnets()[0]['gateway_ip']
+        dns_ip = ret_dict['vn_fixture'].get_subnets()[0]['dns_server_address']
+        neighbors = []
+        neighbors = [gw_ip, dns_ip]
+        self.logger.info('We will configure BGP on the two vSRX')
+        self.config_bgp_on_vsrx(src_vm=ret_dict['test_vm'], dst_vm=bgpaas_vm1, bgp_ip=bgpaas_vm1.vm_ip, lo_ip=bgpaas_vm1.vm_ip,
+                                address_families=address_families, autonomous_system=autonomous_system, neighbors=neighbors, bfd_enabled=False)
+        bgpaas_vm1.wait_for_ssh_on_vm()
+        self.attach_vmi_to_bgpaas(port1['id'], bgpaas_fixture)
+        self.addCleanup(self.detach_vmi_from_bgpaas,port1['id'], bgpaas_fixture)
+        return ret_dict
+        
