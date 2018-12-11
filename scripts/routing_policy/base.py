@@ -63,6 +63,10 @@ class RPBase(test_v1.BaseTestCase_v1):
         obj_4 = PrefixMatchType()
         if config_dicts['from_term'] == 'protocol':
             obj_3.set_protocol([config_dicts['sub_from']])
+        if config_dicts.get('from_term_community') and config_dicts['from_term_community'] == 'ext_community_list':
+            obj_3.set_extcommunity_list(config_dicts['sub_from_community'])
+            if config_dicts.get('match_all'):
+                obj_3.set_extcommunity_match_all(config_dicts['match_all'])
         obj_2.set_term_match_condition(obj_3)
         obj_6 = TermActionListType()
         obj_7 = ActionUpdateType()
@@ -72,6 +76,18 @@ class RPBase(test_v1.BaseTestCase_v1):
             obj_9.add_community(config_dicts['sub_to'])
             obj_8.set_add(obj_9)
             obj_7.set_community(obj_8)
+        if config_dicts['to_term'] == 'set_communinty':
+            obj_9.set_community(config_dicts['sub_to'])
+            obj_8.set_set(obj_9)
+            obj_7.set_community(obj_8)
+        if config_dicts['to_term'] == 'add_ext_community':
+            obj_9.add_community(config_dicts['sub_to'])
+            obj_8.set_add(obj_9)
+            obj_7.set_extcommunity(obj_8)
+        if config_dicts['to_term'] == 'set_ext_community':
+            obj_9.set_community([config_dicts['sub_to']])
+            obj_8.set_set(obj_9)
+            obj_7.set_extcommunity(obj_8)
         if config_dicts['to_term'] == 'med':
             obj_7.set_med(config_dicts['sub_to'])
         if config_dicts['to_term'] == 'local-preference':
@@ -82,8 +98,10 @@ class RPBase(test_v1.BaseTestCase_v1):
             obj_16.asn_list = [config_dicts['sub_to']]
             obj_15.set_expand(obj_16)
             obj_7.set_as_path(obj_15)
-
-        obj_6.set_update(obj_7)
+        if config_dicts.get('action'):
+            obj_6.set_action(config_dicts['action'])
+        else:
+            obj_6.set_update(obj_7)
         obj_2.set_term_action_list(obj_6)
         obj_1.add_term(obj_2)
         rp = RoutingPolicy(get_random_name('RP'), config_dicts['vn_fixture'].project_obj)
