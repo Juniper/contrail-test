@@ -72,6 +72,10 @@ class RPBase(test_v1.BaseTestCase_v1):
             obj_9.add_community(config_dicts['sub_to'])
             obj_8.set_add(obj_9)
             obj_7.set_community(obj_8)
+        if config_dicts['to_term'] == 'ext_community':
+            obj_9.add_community(config_dicts['sub_to'])
+            obj_8.set_add(obj_9)
+            obj_7.set_extcommunity(obj_8)
         if config_dicts['to_term'] == 'med':
             obj_7.set_med(config_dicts['sub_to'])
         if config_dicts['to_term'] == 'local-preference':

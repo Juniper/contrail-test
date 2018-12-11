@@ -46,6 +46,9 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'interface', 'to_term':'community', 'sub_to':'64512:55555'} 
         rp = self.configure_term_routing_policy(config_dicts)
         assert self.verify_policy_in_control(vn_fixture, test_vm, search_value = '55555'), 'Search term not found in introspect'
+        config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'interface', 'to_term':'ext_community', 'sub_to':'target:64512:44444'} 
+        rp = self.configure_term_routing_policy(config_dicts)
+        assert self.verify_policy_in_control(vn_fixture, test_vm, search_value = 'target:64512:44444'), 'Search term not found in introspect'
         assert test_vm.ping_with_certainty(test2_vm.vm_ip)
 
     @test.attr(type=['sanity'])
@@ -77,6 +80,9 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'interface-static', 'to_term':'community', 'sub_to':'64512:55555'}
         rp = self.configure_term_routing_policy(config_dicts)
         assert self.verify_policy_in_control(vn_fixture, test_vm, search_value = '55555', search_ip = random_cidr), 'Search term not found in introspect'
+        config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'interface-static', 'to_term':'ext_community', 'sub_to':'target:64512:44444'} 
+        rp = self.configure_term_routing_policy(config_dicts)
+        assert self.verify_policy_in_control(vn_fixture, test_vm, search_value = 'target:64512:44444',search_ip = random_cidr), 'Search term not found in introspect'
         assert test_vm.ping_with_certainty(test2_vm.vm_ip)  
 
     @preposttest_wrapper
@@ -96,6 +102,9 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         config_dicts = {'vn_fixture':left_vn_fixture, 'from_term':'protocol', 'sub_from':'service-interface', 'to_term':'community', 'sub_to':'64512:55555'}
         rp = self.configure_term_routing_policy(config_dicts)
         assert self.verify_policy_in_control(left_vn_fixture, left_vm_fixture, search_ip = str(self.vnc_lib.routing_instance_read(id = str(self.vnc_lib.virtual_network_read(id = left_vn_fixture.uuid).get_routing_instances()[1]['uuid'])).get_service_chain_information().service_chain_address), search_value = '55555')
+        config_dicts = {'vn_fixture':left_vn_fixture, 'from_term':'protocol', 'sub_from':'service-interface', 'to_term':'ext_community', 'sub_to':'target:64512:44444'} 
+        rp = self.configure_term_routing_policy(config_dicts)
+        assert self.verify_policy_in_control(left_vn_fixture, left_vm_fixture, search_ip = str(self.vnc_lib.routing_instance_read(id = str(self.vnc_lib.virtual_network_read(id = left_vn_fixture.uuid).get_routing_instances()[1]['uuid'])).get_service_chain_information().service_chain_address), search_value = 'target:64512:44444')
         assert left_vm_fixture.ping_with_certainty(right_vm_fixture.vm_ip)
 
     @preposttest_wrapper
@@ -115,6 +124,9 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         config_dicts = {'vn_fixture':left_vn_fixture, 'si_fixture':si_fixture, 'from_term':'protocol', 'sub_from':'service-chain', 'to_term':'community', 'sub_to':'64512:55555'}
         rp = self.configure_term_routing_policy(config_dicts)
         assert self.verify_policy_in_control(left_vn_fixture, left_vm_fixture, search_ip = str(right_vm_fixture.vm_ip), search_value = '55555')
+        config_dicts = {'vn_fixture':left_vn_fixture, 'si_fixture':si_fixture, 'from_term':'protocol', 'sub_from':'service-chain', 'to_term':'ext_community', 'sub_to':'target:64512:44444'}
+        rp = self.configure_term_routing_policy(config_dicts)
+        assert self.verify_policy_in_control(left_vn_fixture, left_vm_fixture, search_ip = str(right_vm_fixture.vm_ip), search_value = 'target:64512:44444')
         assert left_vm_fixture.ping_with_certainty(right_vm_fixture.vm_ip)
 
     @preposttest_wrapper
@@ -155,6 +167,10 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         #will have to wait for bgp hold timer
         sleep(90)
         assert self.verify_policy_in_control(vn_fixture, test_vm, search_ip = str(vn_fixture.get_subnets()[0]['cidr']), search_value = '55555')
+        config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'bgpaas', 'to_term':'ext_community', 'sub_to':'target:64512:44444'}
+        rp = self.configure_term_routing_policy(config_dicts)
+        sleep(90)
+        assert self.verify_policy_in_control(vn_fixture, test_vm, search_ip = str(vn_fixture.get_subnets()[0]['cidr']), search_value = 'target:64512:44444')
 
     @preposttest_wrapper
     def test_rp_interface_matrix(self):
@@ -327,6 +343,9 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'xmpp', 'to_term':'community', 'sub_to':'64512:55555'}
         rp = self.configure_term_routing_policy(config_dicts)
         assert self.verify_policy_in_control(vn_fixture, test_vm, search_value = '55555')
+        config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'xmpp', 'to_term':'ext_community', 'sub_to':'target:64512:55555'}
+        rp = self.configure_term_routing_policy(config_dicts)
+        assert self.verify_policy_in_control(vn_fixture, test_vm, search_value = 'target:64512:55555')
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'xmpp', 'to_term':'med', 'sub_to':'444'}
         rp = self.configure_term_routing_policy(config_dicts)
         assert self.verify_policy_in_control(vn_fixture, test_vm, search_value = '444')
@@ -368,6 +387,9 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'static', 'to_term':'community', 'sub_to':'64512:55555'}
         rp = self.configure_term_routing_policy(config_dicts)
         assert self.verify_policy_in_control(vn_fixture, test_vm, search_ip = random_cidr, search_value = '55555')
+        config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'static', 'to_term':'ext_community', 'sub_to':'target:64512:44444'}
+        rp = self.configure_term_routing_policy(config_dicts)
+        assert self.verify_policy_in_control(vn_fixture, test_vm, search_ip = random_cidr, search_value = 'target:64512:44444')
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'static', 'to_term':'med', 'sub_to':'444'}
         rp = self.configure_term_routing_policy(config_dicts)
         assert self.verify_policy_in_control(vn_fixture, test_vm, search_ip = random_cidr, search_value = '444')
