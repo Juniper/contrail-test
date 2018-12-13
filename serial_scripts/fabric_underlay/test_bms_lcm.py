@@ -240,16 +240,14 @@ class TestBmsLcm(BaseFabricTest):
             time.sleep(10)
 
         assert vm_fixture.wait_till_vm_is_up()
-        
+
         service_nodes = self.inputs.contrail_service_nodes
 
         time.sleep(120)
-        
+
         dhcp_missing_mac_list = []
         for service_node in service_nodes:
-            service_host_ip = service_node['host_ip']
-            dhcp_inspect = AgentInspect(service_host_ip)
-
+            dhcp_inspect = AgentInspect(service_node)
             for mac in mac_node_dict.keys():
                 ret = dhcp_inspect.is_dhcp_offered(mac)
                 if ret:
@@ -263,7 +261,7 @@ class TestBmsLcm(BaseFabricTest):
         ## BMS LCM node request dhcp before ansible configuration is done.
         ## https://bugs.launchpad.net/juniperopenstack/+bug/1790911
         dhcp_missing_mac_list_filtered = OrderedDict(zip(dhcp_missing_mac_list, repeat(None))).keys()
-        nodes_list = self.connections.ironic_h.node.list()
+        nodes_list = self.connections.ironic_h.obj.node.list()
         node_mac_dict = dict(map(lambda x:(x.name,x.uuid),nodes_list))
         for mac in dhcp_missing_mac_list_filtered:
             print "Work-around for PR 1790911: Rebooting node: %s"%mac_node_dict[mac]
