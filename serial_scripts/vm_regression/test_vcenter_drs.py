@@ -45,7 +45,7 @@ class TestVcenterSerial(BaseVnVmTest):
         Pass criteria: Ping between the VMs should work after drs.
         Maintainer : sandipd@juniper.net
         '''
-
+        self.orch.set_migration(True)
         vn1_name = get_random_name('test_vn')
         guest_vms = []
         vn1_fixture = self.create_vn(vn1_name, [get_random_cidr()])
