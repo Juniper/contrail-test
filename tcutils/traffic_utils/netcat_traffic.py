@@ -138,6 +138,9 @@ class Netcat(BaseTraffic):
         elif '\r' in output[cmd]:
             pid_recv = output[cmd].split('\r')[0]
             result = True
+        elif output[cmd]:
+            pid_recv = output[cmd]
+            result = True
         else:
             result = False
 
@@ -180,6 +183,9 @@ class Netcat(BaseTraffic):
             result = True
         elif '\r' in output[cmd]:
             sender_pid = output[cmd].split('\r')[0]
+            result = True
+        elif output[cmd]:
+            sender_pid = output[cmd]
             result = True
         else:
             result = False

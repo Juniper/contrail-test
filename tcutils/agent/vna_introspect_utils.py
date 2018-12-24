@@ -333,7 +333,9 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         '''
         if not index:
             index = ''
-        record_list = self.dict_get('Snh_KFlowReq?flow_idx=%s' % (index))
+        evicted_flag = 1 if show_evicted else 0
+        record_list = self.dict_get('Snh_KFlowReq?flow_idx=%s&show_evicted=%s' % (
+            index, evicted_flag))
         l = []
         if ('KFlowResp' in record_list.getchildren()[0].tag):
             for record in record_list:
@@ -343,7 +345,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
             if 'flow_handle' in record_list.getchildren()[1].tag:
                 l += self._get_vna_kflowresp(record_list, show_evicted)
                 next_index = record_list.getchildren()[1].text
-                while next_index != '0':
+                while not (next_index == '0' or next_index == '0 evicted_set'):
                     (records_set, next_index) = self.get_vna_next_kflowresp(
                                                     next_index, show_evicted)
                     l.extend(records_set)
