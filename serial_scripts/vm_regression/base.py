@@ -17,6 +17,7 @@ class BaseVnVmTest(test_v1.BaseTestCase_v1):
         cls.cn_inspect= cls.connections.cn_inspect
         cls.analytics_obj=cls.connections.analytics_obj
         cls.api_s_inspect = cls.connections.api_server_inspect
+        cls.orch = cls.connections.orch 
     #end setUpClass
 
     @classmethod
