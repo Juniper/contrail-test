@@ -53,8 +53,12 @@ class FabricUtils(object):
         if cleanup:
             self.addCleanup(self.cleanup_fabric, fabric, devices, interfaces)
         if wait_for_finish:
-            status = self.wait_for_job_to_finish(':'.join(fq_name), execution_id)
- 
+            try:
+                status = self.wait_for_job_to_finish(':'.join(fq_name), execution_id)
+            except:
+                raise Exception('job %s with exec id %s failed'%(':'.join(fq_name), execution_id))  
+                self.addCleanup(self.cleanup_fabric, fabric, devices, interfaces)
+
             assert status, 'job %s to create fabric failed'%execution_id
             for device in fabric.fetch_associated_devices() or []:
                 device_fixture = PhysicalDeviceFixture(connections=self.connections,
