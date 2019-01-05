@@ -239,8 +239,8 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             print string_count_dict
             if (dst_ip == ip_broadcast):
                 assert (string_count_dict[vm2_ip] == 0)
-            if (dst_ip == '224.0.0.1' or dst_ip == '255.255.255.255'):
-                assert (string_count_dict[vm2_ip] > 0) or ('DUP!' in ping_output)
+#            if (dst_ip == '224.0.0.1' or dst_ip == '255.255.255.255'):
+#                assert (string_count_dict[vm2_ip] > 0) or ('DUP!' in ping_output)
         return True
     #test_ping_within_vn_two_vms_two_different_subnets
 
