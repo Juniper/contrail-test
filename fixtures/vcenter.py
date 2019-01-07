@@ -15,7 +15,7 @@ from common.vcenter_libs import _vimtype_dict
 from common.vcenter_libs import connect
 from common.vcenter_libs import vim
 from tcutils.config import vcenter_verification
-from pyVmomi import vim, vmodl
+from pyVmomi import vim, vmodl, eam, VmomiSupport, SoapStubAdapter
 
 class FabricException(Exception):
     pass
@@ -221,11 +221,15 @@ class VcenterOrchestrator(Orchestrator):
         view = self._content.viewManager.CreateContainerView(root, [_vimtype_dict[vimtype]], True)
         return [obj for obj in view.view]
 
-    def _get_clusters_hosts(self):
+    def _get_clusters_hosts(self, obj=False):
         dd = {}
         for cluster in self._get_obj_list(self._dc, 'cluster'):
-           hosts = [host.name for host in self._get_obj_list(cluster, 'host')]
-           dd[cluster.name] = hosts
+            if obj:
+                hosts = [host for host in self._get_obj_list(cluster, 'host')]
+                return hosts
+            else:
+                hosts = [host.name for host in self._get_obj_list(cluster, 'host')]
+                dd[cluster.name] = hosts
         self._log.debug('Vcenter clusters & hosts\n%s' % str(dd))
         return dd
 
@@ -396,6 +400,8 @@ class VcenterOrchestrator(Orchestrator):
         for vm in host.vm:
             if vm.summary.config.template:
                 continue
+            if 'ContrailVM' in vm.name:
+                continue
             self._log.debug("Powering off %s" % vm.name)
             _wait_for_task(vm.PowerOff())
         self._log.debug("EnterMaintenence mode on host %s" % name)
@@ -411,9 +417,41 @@ class VcenterOrchestrator(Orchestrator):
         for vm in host.vm:
             if vm.summary.config.template:
                 continue
+            if 'ContrailVM' in vm.name:
+                continue
             self._log.debug("Powering on %s" % vm.name)
             _wait_for_task(vm.PowerOn())
-
+    
+    def enter_standby_mode(self, name):
+        host = self._find_obj(self._dc, 'host', {'name' : name})
+        assert host, "Unable to find host %s" % name
+        if host.summary.runtime.standbyMode == 'in':
+            self._log.debug("Host %s already in standby mode" % name)
+        for vm in host.vm:
+            if vm.summary.config.template:
+                continue
+            if 'ContrailVM' in vm.name:
+                continue
+            self._log.debug("Powering off %s" % vm.name)
+            _wait_for_task(vm.PowerOff())
+        self._log.debug("EnterStandby mode on host %s" % name)
+        _wait_for_task(host.EnterStandbyMode(90))
+    
+    def exit_standby_mode(self, name):
+        host = self._find_obj(self._dc, 'host', {'name' : name})
+        assert host, "Unable to find host %s" % name
+        if host.summary.runtime.standbyMode == 'None':
+            self._log.debug("Host %s not in standby mode" % name)
+        self._log.debug("Exitstandby mode on host %s" % name)
+        _wait_for_task(host.ExitStandbyMode(90))
+        for vm in host.vm:
+            if vm.summary.config.template:
+                continue
+            if 'ContrailVM' in vm.name:
+                continue
+            self._log.debug("Powering on %s" % vm.name)
+            _wait_for_task(vm.PowerOn())
+        
     def add_networks_to_vm(self, vm_obj, vns):
         nets = [self._find_obj(self._dc, 'dvs.PortGroup', {'name':vn_obj.name}) for vn_obj in vns]
         vm_obj.add_networks(nets)
@@ -440,7 +478,7 @@ class VcenterOrchestrator(Orchestrator):
 
     def get_networks_of_vm(self, vm_obj, **kwargs):
          return vm_obj.nets[:]
-
+         
     @retry(tries=10, delay=5)
     def is_vm_deleted(self, vm_obj, **kwargs):
         return self._find_obj(self._dc, 'vm', {'name' : vm_obj.name}) == None
@@ -612,10 +650,132 @@ class VcenterOrchestrator(Orchestrator):
     def poweroff_vm(self,vm_obj):
         vm_obj=vm_obj.vcenter._find_obj(vm_obj.vcenter._dc, 'vm', {'name' : vm_obj.name})
         _wait_for_task(vm_obj.PowerOff())
-    
+ 
     def poweron_vm(self,vm_obj):
         vm_obj=vm_obj.vcenter._find_obj(vm_obj.vcenter._dc, 'vm', {'name' : vm_obj.name})
         _wait_for_task(vm_obj.PowerOn())
+
+    def ConnectEAM(self):
+        ssl = __import__("ssl")
+        context = ssl._create_unverified_context()
+        vpxdStub = self._si._stub
+        hostname = vpxdStub.host.split(":")[0]
+  
+        eamStub = SoapStubAdapter(host=hostname,
+                                          version = "eam.version.version1",
+                                          path = "/eam/sdk",
+                                          poolSize=0,
+                                          sslContext=context)
+        eamStub.cookie = vpxdStub.cookie
+        eamCx = eam.EsxAgentManager("EsxAgentManager", eamStub)
+        return eamCx
+
+    def verify_eam_agency(self, eam_conn, name):
+        agency = self.get_eam_agency(eam_conn, name)
+        if agency:
+            self._inputs.logger.info('Eam agency %s found'%name)
+            return True
+        return False
+
+    def get_eam_agency(self, eam_conn, name):
+        agencies = eam_conn.QueryAgency()
+        if agencies:
+           for agency in agencies:
+               agency_name = agency.QueryConfig().agencyName
+               if agency_name == name:
+                  return agency
+        return None
+
+    def eam_resolve_issue(self, agency):
+        self._inputs.logger.info('Resolving the issues')
+        agency.ResolveAll()
+
+    def get_eam_agency_status(self, agency):
+        status = agency.AgencyQueryRuntime().status
+        return status
+
+    @retry(tries=30, delay=3)
+    def verify_eam_agency_status(self,agency, expected='green'):
+        status = agency.AgencyQueryRuntime().status
+        if status != expected:
+            return False
+        self._inputs.logger.info('Verified eam agency status is changed to %s' %expected)
+        return True
+
+    def get_eam_issues(self, agency):
+        if agency.QueryIssue():
+            return True
+        return False
+
+    def get_contrail_vms(self):
+        vm_list = []
+        vms = self._get_obj_list(self._dc, 'vm')
+        for vmobj in vms:
+            if 'ContrailVM' in vmobj.name:
+                vm_list.append(vmobj)
+        return vm_list
+
+    def verify_contrail_vms_managed_by_eam(self):
+        vm_list = self.get_contrail_vms()
+        for vm in vm_list:
+            managed_by = vm.summary.config.managedBy.type
+            if managed_by != 'agent':
+                return False
+        self._inputs.logger.info('Verified all contrail vms are managed by EAM ')
+        return True
+
+    @retry(tries=15, delay=2)
+    def verify_contrail_vm_state(self, vm_obj, expected='poweredOn'):
+        state = vm_obj.summary.runtime.powerState
+        if state != expected:
+            return False
+        self._inputs.logger.info('contrail-vm %s got %s'%(vm_obj.name,expected))
+        return True
+
+    @retry(tries=15, delay=2)
+    def verify_host_state(self, host, expected=None):
+        if expected == 'exit_maintenance_mode':
+            if host.summary.runtime.inMaintenanceMode:
+                self._inputs.logger.info('Verifying %s is still in maintenance mode'%host.name)
+                return False
+            else:
+                self._inputs.logger.info('Verifying %s is exited from maintenance mode'%host.name)
+                return True
+        if expected == 'exit_stand_by':
+            if host.summary.runtime.standbyMode != 'None':
+                self._inputs.logger.info('Verifying %s is still in stand_by mode'%host.name)
+                return False
+            else:
+                self._inputs.logger.info('Verifying %s is exited from stand_by mode'%host.name)
+                return True
+
+    def manage_contrail_vm(self, vm_obj, operation=None):
+        if operation == 'poweroff':
+            _wait_for_task(vm_obj.PowerOff())
+            self._inputs.logger.info('contrail-vm %s got poweredoff'%vm_obj.name)
+        elif operation == 'poweron':
+            _wait_for_task(vm_obj.PowerOn())
+
+    def get_hosts_obj(self):
+        return self._get_clusters_hosts(obj=True)
+
+    def manage_esxi_host(self, host, operation=None):
+        if operation == 'poweroff':
+            _wait_for_task(host.shutdown())
+        elif operation == 'poweron':
+            _wait_for_task(host.shutdown())
+        elif operation == 'enter_maintenance_mode':
+            self.enter_maintenance_mode(host)
+            self._inputs.logger.info('%s entered maintenace mode'%host)
+        elif operation == 'exit_maintenace_mode':
+            self.exit_maintenance_mode(host)
+            self._inputs.logger.info('%s entered maintenace mode'%host)
+        elif operation == 'enter_standby_mode':
+            self.enter_standby_mode(host)
+            self._inputs.logger.info('%s entered standby mode'%host)
+        elif operation == 'exit_standby_mode':
+            self.exit_standby_mode(host)
+            self._inputs.logger.info('%s entered standby mode'%host)
 
     def set_migration(self, migration=False):
         self.migration = migration
