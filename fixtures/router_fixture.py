@@ -66,8 +66,7 @@ class LogicalRouterFixture(vnc_api_test.VncLibFixture):
         else:
             self.remove_interface(self.vn_ids) 
             self.delete()
-        super(LogicalRouterFixture, self).cleanUp()
-
+    
     def read(self):
         self.logger.debug('Fetching information about Logical Router %s'%self.uuid)
         obj = self.vnc_api_h.logical_router_read(id=self.uuid)
