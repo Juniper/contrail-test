@@ -215,6 +215,8 @@ class TestBmsLcm(BaseFabricTest):
         bms_availability_zone = "nova-baremetal"
         bms_availability_host = ironic_computes[0].host
 
+        service_nodes = self.inputs.contrail_service_nodes
+        self.inputs.restart_service('contrail-vrouter', service_nodes, container='agent')
         vn_fixture = self.create_vn()
         vn_obj = vn_fixture.obj
 
@@ -229,7 +231,6 @@ class TestBmsLcm(BaseFabricTest):
 
         print mac_node_dict,mac_node_dict.keys()
 
-
         bms_fixtures_list = []
         for i in xrange(bms_count):
             bms_fixtures_list.append(self.create_vm(vn_fixture=vn_fixture,
@@ -240,8 +241,6 @@ class TestBmsLcm(BaseFabricTest):
             time.sleep(10)
 
         assert vm_fixture.wait_till_vm_is_up()
-
-        service_nodes = self.inputs.contrail_service_nodes
 
         time.sleep(120)
 
@@ -268,13 +267,21 @@ class TestBmsLcm(BaseFabricTest):
             print "Work-around for PR 1790911: Rebooting node: %s"%mac_node_dict[mac]
             self.logger.debug("Work-around for PR 1790911: Rebooting node: %s"%mac_node_dict[mac])
             node_id = node_mac_dict[mac_node_dict[mac]]
+            self.connections.ironic_h.obj.node.set_boot_device(node_id,"pxe")
             self.connections.ironic_h.set_node_power_state(node_id,"reboot")
         ## PR 1790911 work-around.
 
+        bms_fixtures_up_list = []
+        bms_fixtures_down_list = []
         for bms_fixture in bms_fixtures_list:
-            assert bms_fixture.verify_on_setup()
+            try: 
+              assert bms_fixture.verify_on_setup()
+              bms_fixtures_up_list.append(bms_fixture)
+            except AssertionError:
+              bms_fixtures_down_list.append(bms_fixture)
+              continue
 
-        for bms_fixture in bms_fixtures_list:
+        for bms_fixture in bms_fixtures_up_list:
             for i in xrange(5):
                ping_result = vm_fixture.ping_with_certainty(bms_fixture.vm_ip)
                if ping_result:
@@ -282,6 +289,11 @@ class TestBmsLcm(BaseFabricTest):
             if ping_result:
                 self.logger.debug("Ping to BMS Node %s is successful"%bms_fixture.vm_name)
             else:
-                assert False, 'Unable to reach bms node %s'%bms_fixture.vm_name
+                assert False, 'Unable to reach bms node: %s'%bms_fixture.vm_name
+
+        for bms_fixture in bms_fixtures_down_list:
+            assert False, 'BMS bring up failed for node: %s'%bms_fixture.vm_name
+
+
         assert ping_result
         return True
