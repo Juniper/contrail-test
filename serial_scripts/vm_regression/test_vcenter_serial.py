@@ -164,3 +164,84 @@ class TestVcenterSerial(BaseVnVmTest):
                 compute_vm_ip = esxi_host['contrail_vm']
                 print compute_vm_ip
                 return compute_vm_ip
+
+class TestVcenterEAM(BaseVnVmTest):
+    @classmethod
+    def setUpClass(cls):
+        super(TestVcenterEAM, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TestVcenterEAM, cls).tearDownClass()
+
+    def is_test_applicable(self):
+        if self.inputs.orchestrator != 'vcenter':
+            return(False, 'Skipping Test. Require %s setup' % 'vcenter')
+        return (True, None)
+
+    @test.attr(type=['vcenter'])
+    @preposttest_wrapper
+    def test_vcenter_eam_basic(self):
+        '''1)Check contrail-agency created or not
+           2)check contrail-vms managed by eam
+           3)power off contrail-vm
+           4)check agency issues
+           5)Resolve issue
+           6)check contrail-vm status'''
+
+        eam_conn = self.orch.ConnectEAM()
+        agency_name = 'ContrailVM-Agency'
+        assert self.orch.verify_eam_agency(eam_conn,agency_name),'ContrailVM-agency not found'
+        assert self.orch.verify_contrail_vms_managed_by_eam()
+        agency = self.orch.get_eam_agency(eam_conn, agency_name)
+        contrail_vm = self.orch.get_contrail_vms()[0]
+        self.orch.manage_contrail_vm(contrail_vm,operation='poweroff')
+        assert self.orch.verify_eam_agency_status(agency, expected='red')
+        if self.orch.get_eam_issues(agency):
+            self.orch.eam_resolve_issue(agency)
+            assert self.orch.verify_eam_agency_status(agency),'Issues not got resolved'
+            assert self.orch.verify_contrail_vm_state(contrail_vm),'Eam failed to power on contrail-vm'    
+        else:
+            assert False,'agency Issues not got generated'
+    
+    @preposttest_wrapper
+    def test_vcenter_eam_maintenance_mode(self):
+        '''1)put host in maintenance mode
+           2)Check issues in eam agency
+           3)resolve issue and verify
+           4)check host exited from maintenace mode'''
+
+        eam_conn = self.orch.ConnectEAM()
+        agency_name = 'ContrailVM-Agency'
+        agency = self.orch.get_eam_agency(eam_conn, agency_name)
+        host = self.orch.get_hosts_obj()[0]
+        self.orch.manage_esxi_host(host.name,operation='enter_maintenance_mode')
+        assert self.orch.verify_eam_agency_status(agency, expected='red')
+        if self.orch.get_eam_issues(agency):
+            self.orch.eam_resolve_issue(agency)
+            assert self.orch.verify_eam_agency_status(agency),'Issues not got resolved'
+            assert self.orch.verify_host_state(host,expected='exit_maintenance_mode'),'Eam failed to exit host from maintenace_mode'    
+        else:
+            self.orch.manage_esxi_host(host.name,operation='exit_maintenance_mode')
+            assert False,'agency Issues not got generated'
+
+    @preposttest_wrapper
+    def test_vcenter_eam_standby(self):
+        '''1)put host in standby mode
+           2)Check issues in eam agency
+           3)resolve issue and verify
+           4)check host exited from standby mode'''
+
+        eam_conn = self.orch.ConnectEAM()
+        agency_name = 'ContrailVM-Agency'
+        agency = self.orch.get_eam_agency(eam_conn, agency_name)
+        host = self.orch.get_hosts_obj()[0]
+        self.orch.manage_esxi_host(host.name,operation='enter_standby_mode')
+        assert self.orch.verify_eam_agency_status(agency, expected='red')
+        if self.orch.get_eam_issues(agency):
+            self.orch.eam_resolve_issue(agency)
+            assert self.orch.verify_eam_agency_status(agency),'Issues not got resolved'
+            assert self.orch.verify_host_state(host,expected='exit_standby_mode'),'Eam failed to exit host from standby_mode'    
+        else:
+            self.orch.manage_esxi_host(host.name,operation='exit_standby_mode')
+            assert False,'agency Issues not got generated'
