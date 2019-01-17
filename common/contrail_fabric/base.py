@@ -356,7 +356,7 @@ class BaseEvpnType5Test(BaseFabricTest):
                 vn_uuid_list.append(vn_fixtures[each_vn].uuid)
 
             self.logger.info('Creating Logical Router: %s  with VN uuids: %s'%(each_lr, vn_uuid_list))
-            lr_fix_inputs['connected_networks'] = {'vns': vn_uuid_list}
+            lr_fix_inputs['connected_networks'] = vn_uuid_list
 
             if 'vni' in lrs[each_lr]:
                 lr_fix_inputs['vni'] = lrs[each_lr]['vni']
