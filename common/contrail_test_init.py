@@ -171,17 +171,17 @@ class TestInputs(object):
     # end _set_auth_vars
 
     def get_ctrl_data_ip(self, host):
-        net_list = self.contrail_configs.get('CONTROL_DATA_NET_LIST')
-        if not net_list:
+        ctrldata = self.config.get('control_data')
+        host_name = self.host_data[host]['name']
+        ctrldata_ip = None
+        if ctrldata and ctrldata.get(host_name):
+            ctrldata_ip = ctrldata[host_name]['ctrldata_ip']
+        if not ctrldata_ip:
             return
         if self.host_data[host].get('control_data_ip'):
             return self.host_data[host]['control_data_ip']
-        ips = self.get_ips_of_host(host)
-        for net in net_list.split(","):
-            for ip in ips:
-                if IPAddress(ip) in IPNetwork(net):
-                    self.host_data[host]['control_data_ip'] = ip
-                    return ip
+        self.host_data[host]['control_data_ip'] = ctrldata_ip
+        return ctrldata_ip
     #end get_ctrl_data_listen_ip
 
     def get_ips_of_host(self, host, nic=None):
@@ -236,10 +236,7 @@ class TestInputs(object):
         return host
 
     def get_service_ip(self, host, service='CONTROLLER'):
-        ip = self.get_ctrl_data_ip(host)
-        if not ip:
-           ip = self._get_ip_for_service(host, service)
-        return ip
+        return self._get_ip_for_service(host, service)
 
     def parse_topo(self):
         self.host_names = []
@@ -311,7 +308,7 @@ class TestInputs(object):
             host_data_ip = host_control_ip = host_data['host_ip']
             control_data_ip = self.get_ctrl_data_ip(host_data['host_ip'])
             if control_data_ip:
-                host_data_ip = host_control_ip = control_data_ip
+                host_control_ip = control_data_ip
             qos_queue_per_host, qos_queue_pg_properties_per_host = \
                                     self._process_qos_data_yml(host_data['host_ip'])
             if qos_queue_per_host:
@@ -324,14 +321,14 @@ class TestInputs(object):
                 service_ip = self.get_service_ip(host_data['host_ip'], 'openstack')
                 self.openstack_control_ips.append(service_ip)
                 self.openstack_control_ip = service_ip
-                self.openstack_names.append(hostname)
+                self.openstack_names.append(host_fqname)
             if 'config' in roles:
                 service_ip = self.get_service_ip(host_data['host_ip'], 'config')
                 self.cfgm_ip = service_ip
                 self.cfgm_ips.append(service_ip)
                 self.cfgm_control_ips.append(service_ip)
                 self.cfgm_control_ip = service_ip
-                self.cfgm_names.append(hostname)
+                self.cfgm_names.append(host_fqname)
                 self.hostname = hostname
             if 'vrouter' in roles:
                 data_ip = self.get_service_ip(host_data['host_ip'], 'vrouter')
@@ -339,7 +336,10 @@ class TestInputs(object):
                     self.contrail_service_nodes.append(hostname)
                 else:
                     self.compute_ips.append(host_data['host_ip'])
-                    self.compute_names.append(hostname)
+                    if control_data_ip:
+                        self.compute_names.append(hostname)
+                    else:
+                        self.compute_names.append(host_fqname)
                     self.compute_info[hostname] = host_data['host_ip']
                     self.compute_control_ips.append(data_ip)
                 if roles['vrouter']:
@@ -352,7 +352,10 @@ class TestInputs(object):
                 service_ip = self.get_service_ip(host_data['host_ip'], 'control')
                 self.bgp_ips.append(host_data['host_ip'])
                 self.bgp_control_ips.append(service_ip)
-                self.bgp_names.append(hostname)
+                if control_data_ip:
+                    self.bgp_names.append(hostname)
+                else:
+                    self.bgp_names.append(host_fqname)
                 host_data_ip = host_control_ip = service_ip
             if 'webui' in roles:
                 service_ip = self.get_service_ip(host_data['host_ip'], 'webui')
@@ -364,12 +367,12 @@ class TestInputs(object):
                 self.collector_ip = service_ip
                 self.collector_ips.append(service_ip)
                 self.collector_control_ips.append(service_ip)
-                self.collector_names.append(hostname)
+                self.collector_names.append(host_fqname)
             if 'analytics_database' in roles:
                 service_ip = self.get_service_ip(host_data['host_ip'], 'analytics_database')
                 self.database_ip = host_data['host_ip']
                 self.database_ips.append(host_data['host_ip'])
-                self.database_names.append(hostname)
+                self.database_names.append(host_fqname)
                 self.database_control_ips.append(service_ip)
             if 'kubemanager' in roles:
                 service_ip = self.get_service_ip(host_data['host_ip'], 'kubemanager')
