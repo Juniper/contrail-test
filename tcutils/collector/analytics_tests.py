@@ -422,7 +422,7 @@ class AnalyticsVerification(fixtures.Fixture):
             expected_opserver_instances = self.get_module_instances(
                 expected_opserver_module)
             expected_node_type = 'Analytics'
-            for c_host in self.collector_hosts:
+            for c_host in self.inputs.collector_names:
                 for inst in expected_opserver_instances:
                     is_established = self.verify_connection_status(
                         c_host, expected_opserver_module, expected_node_type, inst)
@@ -435,7 +435,7 @@ class AnalyticsVerification(fixtures.Fixture):
             expected_collector_module = ['contrail-collector', 'contrail-query-engine']
             expected_node_type = 'Analytics'
             expected_instance_id = '0'
-            for c_host in self.collector_hosts:
+            for c_host in self.inputs.collector_names:
                 for module in expected_collector_module:
                     is_established = self.verify_connection_status(
                         c_host, module, expected_node_type, expected_instance_id)

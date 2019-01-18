@@ -8,10 +8,7 @@ class TestSNAT(BaseK8sTest):
     @classmethod
     def setUpClass(cls):
         super(TestSNAT, cls).setUpClass()
-        if cls.inputs.get_ctrl_data_ip(cls.inputs.cfgm_ip):
-            cls.ip_to_ping = cls.inputs.get_ctrl_data_ip(cls.inputs.cfgm_ip)
-        else:
-            cls.ip_to_ping = cls.inputs.cfgm_ip
+        cls.ip_to_ping = cls.inputs.cfgm_control_ips[0]
 
     @classmethod
     def tearDownClass(cls):
