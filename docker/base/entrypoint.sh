@@ -133,7 +133,7 @@ else
             rv_run_test=$?
             ;;
         *)
-            $run_tests -F $FEATURE --send-mail -t $EXTRA_RUN_TEST_ARGS
+            $run_tests -F $FEATURE --send-mail -U -t $EXTRA_RUN_TEST_ARGS
             rv_run_test=$?
             ;;
     esac
