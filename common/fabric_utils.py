@@ -53,8 +53,11 @@ class FabricUtils(object):
         if cleanup:
             self.addCleanup(self.cleanup_fabric, fabric, devices, interfaces)
         if wait_for_finish:
-            status = self.wait_for_job_to_finish(':'.join(fq_name), execution_id)
- 
+            try:
+                status = self.wait_for_job_to_finish(':'.join(fq_name), execution_id)
+            except AssertionError:
+                self.cleanup_fabric(fabric, verify=False)
+                raise
             assert status, 'job %s to create fabric failed'%execution_id
             for device in fabric.fetch_associated_devices() or []:
                 device_fixture = PhysicalDeviceFixture(connections=self.connections,
@@ -244,7 +247,7 @@ class FabricUtils(object):
                         self.logger.debug('job %s with exec id %s finished'%(job_name, execution_id))
                         return True
                     elif log['status'].upper() == 'FAILURE':
-                        raise Exception('job %s with exec id %s failed'%(job_name, execution_id))
+                        assert False, 'job %s with exec id %s failed'%(job_name, execution_id)
             else:
                 self.logger.warn('job %s with exec id %s hasnt completed'%(job_name, execution_id))
         else:
@@ -253,6 +256,7 @@ class FabricUtils(object):
 
     def create_bms(self, bms_name, **kwargs):
         self.logger.info('Creating bms %s'%bms_name)
+        kwargs['fabric_fixture'] = kwargs.get('fabric_fixture') or self.fabric
         bms = self.useFixture(BMSFixture(
                               connections=self.connections,
                               name=bms_name,
