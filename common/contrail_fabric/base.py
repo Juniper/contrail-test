@@ -30,6 +30,8 @@ class FabricSingleton(FabricUtils, GenericTestBase):
 
     def create_ironic_provision_vn(self, admin_connections):
         bms_lcm_config = self.inputs.bms_lcm_config
+        if not bms_lcm_config.get('ironic_provision_vn'):
+            return
         ironic_net_name = bms_lcm_config["ironic_provision_vn"]["name"]
         ironic_cidr = bms_lcm_config["ironic_provision_vn"]["subnet"]
 

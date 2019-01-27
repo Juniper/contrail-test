@@ -35,10 +35,12 @@ class BMSFixture(fixtures.Fixture):
         self.static_ip = kwargs.get('static_ip', False)
         self.vn_fixture = kwargs.get('vn_fixture')
         self.port_fixture = kwargs.get('port_fixture')
+        self.fabric_fixture = kwargs.get('fabric_fixture')
         self.security_groups = kwargs.get('security_groups') #UUID List
         self.vnc_h = connections.orch.vnc_h
         self.vlan_id = self.port_fixture.vlan_id if self.port_fixture else \
                        kwargs.get('vlan_id') or 0
+        self.port_group_name = None
         self.bms_created = False
         self.mvlanintf = None
         self._interface = None
@@ -79,7 +81,6 @@ class BMSFixture(fixtures.Fixture):
            return
         self.delete_ironic_node()
 
-
     def create_vmi(self):
         fixed_ips = None
         if self.bms_ip:
@@ -91,13 +92,9 @@ class BMSFixture(fixtures.Fixture):
             intf_dict = dict()
             intf_dict['switch_info'] = interface['tor']
             intf_dict['port_id'] = interface['tor_port']
+            intf_dict['fabric'] = self.fabric_fixture.name
             bms_info.append(intf_dict)
         binding_profile = {'local_link_information': bms_info}
-        parent_vmi = self.useFixture(PortFixture(
-                         connections=self.connections,
-                         vn_id=self.vn_fixture.uuid,
-                         api_type='contrail',
-                         create_iip=False))
         self.port_fixture = self.useFixture(PortFixture(
                                  connections=self.connections,
                                  vn_id=self.vn_fixture.uuid,
@@ -106,7 +103,6 @@ class BMSFixture(fixtures.Fixture):
                                  fixed_ips=fixed_ips,
                                  api_type='contrail',
                                  vlan_id=self.vlan_id,
-                                 parent_vmi=parent_vmi.vmi_obj,
                                  binding_profile=binding_profile
                              ))
         if not self.bms_ip:
@@ -199,7 +195,7 @@ class BMSFixture(fixtures.Fixture):
                 self.create_vmi()
             else:
                 self.bms_ip = self.port_fixture.get_ip_addresses()[0]
-
+                self.bms_mac = self.port_fixture.mac_address
             host_macs = [intf['host_mac'] for intf in self.interfaces]
             if self.bms_mac in host_macs or not self.mgmt_ip:
                 self.logger.debug('Not setting up Namespaces')
