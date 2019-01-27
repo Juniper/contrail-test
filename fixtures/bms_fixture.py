@@ -110,8 +110,7 @@ class BMSFixture(fixtures.Fixture):
                                  binding_profile=binding_profile
                              ))
         if not self.bms_ip:
-            self.bms_ip = self.port_fixture.get_ip(
-                 self.vn_fixture.vn_subnet_objs[0]['id'])
+            self.bms_ip = self.port_fixture.get_ip_addresses()[0]
         if not self.bms_mac:
             self.bms_mac = self.port_fixture.mac_address
 
@@ -199,8 +198,8 @@ class BMSFixture(fixtures.Fixture):
             if not self.port_fixture:
                 self.create_vmi()
             else:
-                self.bms_ip = self.port_fixture.get_ip_addresses[0]
-
+                self.bms_ip = self.port_fixture.get_ip_addresses()[0]
+                self.bms_mac = self.port_fixture.mac_address
             host_macs = [intf['host_mac'] for intf in self.interfaces]
             if self.bms_mac in host_macs or not self.mgmt_ip:
                 self.logger.debug('Not setting up Namespaces')

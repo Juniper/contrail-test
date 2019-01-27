@@ -247,6 +247,16 @@ class VMFixture(fixtures.Fixture):
             self.image_name)
 
     @property
+    def os_type(self):
+        if not getattr(self, '_os_type', None):
+            self._os_type = 'linux'
+            cmd = 'cat /etc/issue'
+            output = self.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
+            if output and output[cmd] and 'cirros' in output[cmd]:
+                self._os_type = 'cirros'
+        return self._os_type
+
+    @property
     def name(self):
         return self.vm_name
 
@@ -2760,6 +2770,8 @@ class VMFixture(fixtures.Fixture):
             cmd = 'arp -d %s' % (ip_address)
         elif all_entries:
             cmd = 'ip -s -s neigh flush all'
+            if self.os_type == 'cirros':
+                cmd = 'ip link set arp off dev eth0; ip link set arp on dev eth0'
         output = self.run_cmd_on_vm([cmd])
         return output
     # end clear_arp

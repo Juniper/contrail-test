@@ -198,14 +198,159 @@ class LogicalRouterFixture(vnc_api_test.VncLibFixture):
         self.logger.info('Deleting LogicalRouter %s(%s)'%(self.name, self.uuid))
         self.vnc_h.delete_router(id=self.uuid)
 
+    @retry(6, 10)
+    def verify_auto_lr_vn_created_in_api_server(self):
+        self.api_h = self.connections.api_server_inspect
+        if self.api_h.get_cs_vn(self.parent_fq_name[0],
+                                self.parent_fq_name[1],
+                                self.get_auto_lr_vn_name(),
+                                refresh=True):
+            self.logger.warn('auto lr internal vn(%s) is created in api server'
+                                    %self.get_auto_lr_vn_name())
+            return True
+        self.logger.debug('auto lr internal vn(%s) is not created yet in api server..'%self.get_auto_lr_vn_name())
+        return False
+
+    @retry(6, 10)
+    def verify_auto_lr_vn_deleted_in_api_server(self):
+        self.api_h = self.connections.api_server_inspect
+        if self.api_h.get_cs_vn(self.parent_fq_name[0],
+                                self.parent_fq_name[1],
+                                self.get_auto_lr_vn_name(),
+                                refresh=True):
+            self.logger.warn('auto lr internal vn(%s) is not deleted yet'
+                                    %self.get_auto_lr_vn_name())
+            return False
+        self.logger.debug('auto lr internal vn(%s) got deleted'%self.get_auto_lr_vn_name())
+
+
+    @retry(6, 10)
+    def verify_auto_lr_vn_created_in_cn(self):
+        for ctrl_node in self.inputs.bgp_ips:
+            cn_inspect = self.connections.cn_inspect[ctrl_node]
+            ri = cn_inspect.get_cn_routing_instance(self.get_auto_lr_vn_name())
+            #self.logger.info(str(ri))
+            if ri:
+                self.logger.warn('auto lr internal vn(%s) is created in control node'
+                                    %self.get_auto_lr_vn_name())
+                return True
+        self.logger.debug('auto lr internal vn(%s) is not created in control node..'%self.get_auto_lr_vn_name())
+        return False
+
+    @retry(6, 10)
+    def verify_auto_lr_vn_deleted_in_cn(self):
+        for ctrl_node in self.inputs.bgp_ips:
+            cn_inspect = self.connections.cn_inspect[ctrl_node]
+            ri = cn_inspect.get_cn_routing_instance(self.get_auto_lr_vn_name())
+            #self.logger.info(str(ri))
+            if ri:
+                self.logger.warn('auto lr internal vn(%s) is still exists in control node'
+                                    %self.get_auto_lr_vn_name())
+                return False
+        self.logger.debug('auto lr internal vn(%s) is not exists  in control node..'%self.get_auto_lr_vn_name())
+        return True
+
+
+    @retry(6, 10)
+    def verify_auto_lr_vn_created_in_agent(self, node_ip_list=None ):
+        self.logger.info('Node IP List: %s'%str(node_ip_list))
+        if not node_ip_list:
+            node_ip_list = []
+        return_value = True
+        for each_node in node_ip_list:
+            inspect_h = self.connections.agent_inspect[each_node]
+            vrf_id = inspect_h.get_vna_vrf_id(self.get_auto_lr_vn_fq_name())
+            if vrf_id:
+                self.logger.warn('auto lr internal vn(%s) is available on vrouter agent(%s)'
+                                    % (self.get_auto_lr_vn_name(),each_node ))
+            else:
+                self.logger.warn('auto lr internal vn(%s) is not available on vrouter agent(%s)'
+                                    % (self.get_auto_lr_vn_name(),each_node ))
+                return_value = False
+        return return_value
+
+    @retry(6, 10)
+    def verify_auto_lr_vn_deleted_in_agent(self, node_ip_list=None ):
+        if not node_ip_list:
+            node_ip_list = []
+        return_value = True
+        for each_node in node_ip_list:
+            inspect_h = self.connections.agent_inspect[each_node]
+            vrf_id = inspect_h.get_vna_vrf_id(self.get_auto_lr_vn_fq_name())
+            if vrf_id:
+                self.logger.warn('auto lr internal vn(%s) is still available on vrouter agent(%s)'
+                                    % (self.get_auto_lr_vn_name(),each_node ))
+                return_value = False
+
+            else:
+                self.logger.warn('auto lr internal vn(%s) is not available on vrouter agent(%s)'
+                                    % (self.get_auto_lr_vn_name(),each_node ))
+
+        return return_value
+
+
+    def verify_on_cleanup(self, node_ip_list=None):
+        self.verify_auto_lr_vn_deleted_in_api_server()
+        self.verify_auto_lr_vn_deleted_in_cn()
+        if node_ip_list:
+            self.verify_auto_lr_vn_deleted_in_agent(node_ip_list)
+        self.logger.info('LR(%s): verify_on_cleanup passed'%self.uuid)
+        return True
+
+    def verify_on_setup(self, node_ip_list=None):
+        self.verify_auto_lr_vn_created_in_api_server()
+        self.verify_auto_lr_vn_created_in_cn()
+        self.logger.info('Node IP List: %s'%str(node_ip_list))
+        if node_ip_list:
+            self.verify_auto_lr_vn_created_in_agent(node_ip_list)
+        self.logger.info('LR(%s): verify_on_setup passed'%self.uuid)
+        self.verify_is_run = True
+        return True
+
+    def get_auto_lr_vn_name(self):
+        return '__contrail_lr_internal_vn_'+self.uuid+'__'
+
+    def get_auto_lr_vn_fq_name(self):
+        fq_name_list = []
+        fq_name_list.append(self.domain)
+        fq_name_list.append(self.project_name)
+        fq_name_list.append(self.get_auto_lr_vn_name())
+        return ':'.join(fq_name_list)
+
     def get_vn_ids(self, refresh=False):
         return self.vn_ids
+
+    def verify_if_lr_already_present(self, lr_fq_name, project):
+        to_be_created_lr_fq_name = lr_fq_name
+        lr_list = self.get_lr_list_in_project(project.uuid)
+        if not lr_list:
+            return False
+        else:
+            self.logger.info(lr_list)
+            for elem in lr_list['logical-routers']:
+                if(elem['fq_name'] == to_be_created_lr_fq_name):
+                    return True
+        return False
 
     def get_name(self):
         return self.name
 
     def get_lr_fq_name(self):
         return self.lr_fq_name
+
+    def get_lr_list_in_project(self, project_uuid):
+        return self.vnc_api_h.logical_routers_list(parent_id=project_uuid)
+
+    def verify_if_vmi_already_present(self, vmi_fq_name, project):
+        vmi_list = self.vnc_api_h.virtual_machine_interfaces_list(parent_id=project.uuid)
+        if not vmi_list:
+            return False
+        else:
+            self.logger.info(vmi_list)
+            for elem in vmi_list['virtual-machine-interfaces']:
+                if(elem['fq_name'] == vmi_fq_name):
+                    return True
+        return False
 
 def setup_test_infra():
     import logging
