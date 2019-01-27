@@ -108,6 +108,10 @@ class TestEvpnType5VxLANRoutingBasic(BaseEvpnType5Test, VerifyEVPNType5):
                     if each_vn in self.lrs[each_lr]['vn_list']:
                         self.lrs[each_lr]['node_ip_list'].add(
                             vm_fix.vm_node_ip)
+        # verify on setup
+        for each_lr in self.setup_fixtures['lr_fixtures']:
+            lr_fix = self.setup_fixtures['lr_fixtures'][each_lr]
+            lr_fix.verify_on_setup(self.lrs[each_lr]['node_ip_list'])
 
         self.logger.info(
             "Verify Traffic between VN-1 and VN-2 on Logical Router: lr1")
