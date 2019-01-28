@@ -2,8 +2,10 @@
 
 require 'pp'
 
-@cluster = "10.84.26.23"
+@cluster = ENV["IP"]
 @user = ENV["USER"]
+@password = ENV["PASSWORD"]
+@admin_ip = ENV["ADMIN_IP]
 
 def sh (cmd, ignore = false)
     puts cmd
@@ -15,7 +17,7 @@ end
 
 def rsh (ip, cmds, ignore = false)
     cmds.each { |cmd|
-        sh(%{sshpass -p c0ntrail123 ssh -q root@#{ip} "#{cmd}"}, ignore)
+        sh(%{sshpass -p #{@password} ssh -q root@#{ip} "#{cmd}"}, ignore)
     }
 end
 
@@ -24,7 +26,7 @@ def csh (cmds, ignore = false)
 end
 
 def rcp (ip, src, dst = ".", ignore = false)
-    sh("sshpass -p c0ntrail123 scp -q #{src} root@#{ip}:#{dst}", ignore)
+    sh("sshpass -p #{@password} scp -q #{src} root@#{ip}:#{dst}", ignore)
 end
 
 def junos_setup
@@ -50,7 +52,7 @@ end
 
 def load_nodes_from_cluster
     find_nodes = <<EOF
-sshpass -p c0ntrail123 ssh -q root@10.84.26.23 CI_ADMIN/ci-openstack.sh nova list | \grep bgp-scale
+sshpass -p #{@password} ssh -q root@#{@cluster}  CI_ADMIN/ci-openstack.sh nova list | \grep bgp-scale
 EOF
 
     @nodes = { }
@@ -135,7 +137,7 @@ env.ostypes = {
 }
 
 env.ntp_server = 'ntp.juniper.net'
-env.openstack_admin_password = 'c0ntrail123'
+env.openstack_admin_password = #{@password} 
 env.webui_config = True
 env.webui = 'firefox'
 env.devstack = False
@@ -194,7 +196,7 @@ def configure_mx_peer
         next if type !~ /vsrx/
 
         rsh(@nodes["config1"][:public_ip],
-"python /usr/share/contrail-utils/provision_mx.py --router_name #{node[:host]} --router_ip #{node[:private_ip]} --router_asn 64512 --api_server_ip #{@nodes["config1"][:private_ip]} --api_server_port 8082 --oper add --admin_user admin --admin_password c0ntrail123 --admin_tenant_name admin")
+"python /usr/share/contrail-utils/provision_mx.py --router_name #{node[:host]} --router_ip #{node[:private_ip]} --router_asn 64512 --api_server_ip #{@nodes["config1"][:private_ip]} --api_server_port 8082 --oper add --admin_user admin --admin_password #{@password} --admin_tenant_name admin")
     }
 end
 
@@ -203,7 +205,7 @@ cmds=<<EOF
 import subprocess
 from vnc_api.vnc_api import *
 from vnc_api import vnc_api
-_vnc_lib = VncApi("ci-admin", "c0ntrail123", "opencontrail-ci", "10.84.26.251", 8082, '/')
+_vnc_lib = VncApi("ci-admin", #{@password} , "opencontrail-ci", #{@cluster}, 8082, '/')
 p = _vnc_lib.project_read(fq_name = ['default-domain', 'opencontrail-ci'])
 vnp = vnc_api.VirtualNetworkType()
 vnp.forwarding_mode = "l2"
@@ -220,8 +222,8 @@ def run_bgp_scale_test
 git clone -b bgp_scale https://github.com/rombie/contrail-test.git /root/contrail-test
 cd /root/contrail-test/scripts/scale/control-node
 export PYTHONPATH=/root/contrail-test
-sshpass -p c0ntrail123 scp ci-admin@10.84.5.31:/cs-shared/bgp-scale/libtcmalloc.so.4 /usr/lib/.
-sshpass -p c0ntrail123 scp ci-admin@10.84.5.31:/cs-shared/bgp-scale/bgp_stress_test /root/contrail-test/scripts/scale/control-node/.
+sshpass -p #{@password} scp ci-admin@#{@admin_ip}:/cs-shared/bgp-scale/libtcmalloc.so.4 /usr/lib/.
+sshpass -p #{@password} scp ci-admin@#{@admin_ip}:/cs-shared/bgp-scale/bgp_stress_test /root/contrail-test/scripts/scale/control-node/.
 apt-get -y install python-neutronclient python-contrail python-xmltodict python-requests contrail-lib gdb
 mkdir -p /root/bgp
 python flap_agent_scale_test.py -c params.ini
