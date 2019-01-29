@@ -84,7 +84,10 @@ class VMFixture(fixtures.Fixture):
         self.port_ids = port_ids
         self.fixed_ips = fixed_ips
         self.subnets = subnets
-        self.image_name = self.inputs.get_ci_image(image_name) or image_name
+        #Getting the image from orchestrator.For vcenter default image will be returned as tiny_core
+        #instead of ubuntu
+        self.image_name = self.inputs.get_ci_image(image_name) or self.orch.get_default_image(image_name)
+        #
         self.flavor = self.orch.get_default_image_flavor(self.image_name) or flavor
         self.project_name = connections.project_name
         self.project_id = connections.project_id

@@ -139,6 +139,9 @@ class Orchestrator:
    def get_vn_id(self, vn_obj, **kwargs):
        pass
 
+   def get_default_image(self,image_name):
+       return image_name
+
    def get_vn_list(self, **kwargs):
        return self.vnc_h.get_vn_list(**kwargs)
 
