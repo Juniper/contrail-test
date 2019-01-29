@@ -1194,7 +1194,7 @@ class AnalyticsTestSanityWithResource(
             {'vrouter':src_vm_host, 'no_key': ['last 10m']}, {'vmi-uuid':vmi_uuid, 'no_key': ['last 20m']}]
 
 
-        return self.test_cmd_output('contrail-flows', cmd_args_list, check_output=True, as_sudo=True)
+        return self.test_cmd_output('contrail-flows', cmd_args_list, check_output=True)
 
     @preposttest_wrapper
     def test_run_contrail_logs_cli_cmd_with_optional_arg_module(self):
