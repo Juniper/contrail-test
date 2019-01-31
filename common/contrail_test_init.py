@@ -559,7 +559,7 @@ class TestInputs(object):
             self.spirent_linux_password = traffic_gen.get('spirent_linux_password')
         if 'device_manager' in test_configs:
             self.dm_mx = test_configs['device_manager']
-        if 'ns_agilio_vrouter' in test_configs:
+        if 'ns_agilio_vrouter' in test_configs or 'vrouter_mode_dpdk' in test_configs:
             self.pcap_on_vm = True
 
         self._parse_fabric(test_configs.get('fabric'))
