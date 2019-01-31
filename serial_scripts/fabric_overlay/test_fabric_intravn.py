@@ -5,6 +5,7 @@ from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import skip_because, get_random_cidr, get_random_name
 from common.contrail_fabric.base import BaseFabricTest
 from common.base import GenericTestBase
+from netaddr import IPNetwork
 
 class TestFabricOverlayBasic(BaseFabricTest):
     @preposttest_wrapper
@@ -21,38 +22,29 @@ class TestFabricOverlayBasic(BaseFabricTest):
     @skip_because(bms=2)
     @preposttest_wrapper
     def test_with_multiple_subnets(self):
-        ''' Create a VN with two /29 subnets
-            Create 5 VMIs on the VN so that 1st subnet IPs are exhausted
+        ''' Create a VN with two /28 subnets
+            Create 8 VMIs on the VN so that 1st subnet IPs are exhausted
             Add lifs with 6th and 7th VMIs
             Validate that the BMSs get IP from 2nd subnet and ping passes
         '''
-        bms_fixtures = list()
-        vn_subnets = [ get_random_cidr('29'), get_random_cidr('29')]
+        vn_subnets = [get_random_cidr('28'), get_random_cidr('28')]
         vn_fixture = self.create_vn(vn_subnets=vn_subnets, disable_dns=True)
 
+        lr = self.create_logical_router([vn_fixture])
         bms_data = self.inputs.bms_data.keys()
         bms1_fixture = self.create_bms(bms_name=bms_data[0],
             vn_fixture=vn_fixture, security_groups=[self.default_sg.uuid])
-        bms_fixtures.append(bms1_fixture)
-        port_fixtures = []
         vm1 = self.create_vm(vn_fixture=vn_fixture, image_name='cirros')
-
-        for i in range(0, 5):
-            port_fixtures.append(self.setup_vmi(vn_fixture.uuid))
-
+        for i in range(0, 4):
+            port_fixture = self.setup_vmi(vn_fixture.uuid)
+            if port_fixture.get_ip_addresses()[0] in IPNetwork(vn_subnets[1]):
+                self.perform_cleanup(port_fixture)
+                break
         bms2_fixture = self.create_bms(bms_name=bms_data[1],
             vn_fixture=vn_fixture, security_groups=[self.default_sg.uuid])
-        bms_fixtures.append(bms2_fixture)
         vm2 = self.create_vm(vn_fixture=vn_fixture, image_name='cirros')
 
-        bms_ip = IPAddress(bms2_fixture.bms_ip)
-        subnet_cidr = IPNetwork(vn_subnets[1])
-        assert bms_ip in subnet_cidr, (
-            'BMS does not seem to have got IP from second subnet'
-            'BMS IP %s not in %s subnet' % (bms_ip, subnet_cidr))
-
         self.do_ping_mesh(bms_fixtures+[vm1, vm2])
-        self.do_ping_test(bms1_fixture, bms2_fixture.bms_ip)
     # end test_with_multiple_subnets
 
     @preposttest_wrapper
@@ -63,7 +55,8 @@ class TestFabricOverlayBasic(BaseFabricTest):
         vn_fixture = self.create_vn()
         bms_data = self.inputs.bms_data.keys()
 
-        bms1_fixture = self.create_bms(bms_name=bms_data[0], vn_fixture=vn_fixture, security_groups=[self.default_sg.uuid], vlan_id=vlanid)
+        bms1_fixture = self.create_bms(bms_name=bms_data[0], vn_fixture=vn_fixture,
+            security_groups=[self.default_sg.uuid], vlan_id=vlanid)
         vm1_fixture = self.create_vm(vn_fixture=vn_fixture, image_name='cirros')
         vm1_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_with_certainty(bms1_fixture.bms_ip),\
