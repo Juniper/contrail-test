@@ -98,6 +98,10 @@ else
             $run_tests -T ci_contrail_go_k8s_sanity --send-mail -U -t $EXTRA_RUN_TEST_ARGS
             rv_run_test=$?
             ;;
+        ci_contrail_go_kolla_ocata_sanity)
+            $run_tests -T ci_contrail_go_kolla_ocata_sanity --send-mail -U -t $EXTRA_RUN_TEST_ARGS
+            rv_run_test=$?
+            ;;
         vcenter)
             $run_tests -T vcenter --send-mail -U $EXTRA_RUN_TEST_ARGS
             rv_run_test=$?
