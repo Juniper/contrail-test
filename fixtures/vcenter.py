@@ -145,6 +145,12 @@ class VcenterOrchestrator(Orchestrator):
         self.enable_vmotion(self.get_hosts())
         self.migration = False
 
+    def get_default_image(self,image_name):
+        if (image_name == 'ubuntu'):
+             return 'vcenter_tiny_vm'
+        else:
+            return image_name
+
     def is_feature_supported(self, feature):
         unsupported_features = ['multi-subnet', 'multi-tenant', 'multi-ipam', 'service-instance', 'ipv6']
         return feature not in unsupported_features
