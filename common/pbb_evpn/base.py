@@ -595,6 +595,7 @@ class PbbEvpnTestBase(BaseVrouterTest):
         scapy_obj.start()
         return scapy_obj
 
+    @retry(delay=2, tries=5)
     def verify_mac_learning(self, vmi_fixture, bd_fixture,
                             pbb_compute_node_ips, cmac=None,
                             expectation=True):
