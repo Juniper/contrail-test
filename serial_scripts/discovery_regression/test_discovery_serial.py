@@ -63,6 +63,8 @@ class TestDiscoverySerial(base.BaseDiscoveryTest):
             self.inputs.start_service('contrail-control', [ip])
         for elem in svc_lst:
             ip = self.inputs.host_data[elem[0]]['host_ip']
+            self.logger.debug("# Waiting for 45 seconds to wait for server to come up #")
+            sleep(45)
             svc_status = self.ds_obj.get_service_status(self.inputs.cfgm_ip, elem, 'up', 6)
             if svc_status:
                 self.logger.info(
