@@ -291,7 +291,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         vn1_name = get_random_name('vn30')
         vn1_vm1_name = get_random_name('vm1')
         vn1_vm2_name = get_random_name('vm2')
-	vn1_vm3_name = get_random_name('vm3')
+        vn1_vm3_name = get_random_name('vm3')
         vn1_fixture = self.create_vn(vn_name=vn1_name,orch=self.orchestrator)
         vn1_fixture.read()
         vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm1_name,orch=self.orchestrator)
