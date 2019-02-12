@@ -90,6 +90,7 @@ class ContrailConnections():
             self.nova_h = self.orch.get_compute_handler()
             self.quantum_h = self.orch.get_network_handler()
             self.glance_h = self.orch.get_image_handler()
+            self.swift_h = self.orch.get_swift_image_handler()
         elif self.inputs.orchestrator == 'vcenter' and self.inputs.slave_orchestrator == 'vro':
             self.orch = VroWorkflows(user=self.inputs.vcenter_username,
                             pwd= self.inputs.vcenter_password,
