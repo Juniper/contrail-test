@@ -79,6 +79,8 @@ contrail_configuration:
     METADATA_PROXY_SECRET:
 
 orchestrator_configuration:
+    enable_ironic:
+    enable_swift:
     keystone:
         version:
         username:
