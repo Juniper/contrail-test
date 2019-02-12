@@ -93,12 +93,11 @@ GENERATORS = {'Compute' : ['contrail-vrouter-agent',
                             'contrail-vrouter-nodemgr'
                             ],
               'Analytics' : [
-                            'contrail-query-engine',
                             'contrail-analytics-nodemgr',
                             'contrail-collector',
                             'contrail-analytics-api'
                             ], 
-            'Database' : ['contrail-database-nodemgr'],
+            'Database' : ['contrail-query-engine', 'contrail-database-nodemgr'],
             'Config' : ['contrail-api',
                         'contrail-svc-monitor',
                         'contrail-config-nodemgr',
@@ -433,12 +432,12 @@ class AnalyticsVerification(fixtures.Fixture):
                         result = result and False
             # Verifying collector:moduleid
             expected_collector_module = ['contrail-collector', 'contrail-query-engine']
-            expected_node_type = 'Analytics'
+            expected_node_type = ['Analytics', 'Database']
             expected_instance_id = '0'
             for c_host in self.inputs.collector_names:
-                for module in expected_collector_module:
+                for module in range(len(expected_collector_module)):
                     is_established = self.verify_connection_status(
-                        c_host, module, expected_node_type, expected_instance_id)
+                        c_host, expected_collector_module[module], expected_node_type[module], expected_instance_id)
                     # collector=self.output['collector_name']
                     if is_established:
                         result = result and True
@@ -4432,18 +4431,16 @@ class AnalyticsVerification(fixtures.Fixture):
                      'cassandra':'9042',
                     }
         module_connection_dict = {'contrail-collector':[
-                                                    'collector',\
-                                                    'cassandra'\
+                                                    'Collector',\
+                                                    'Cassandra'\
                                                     ],\
 
                                   'contrail-analytics-api':[\
-                                                    'collector',\
+                                                    'Collector',\
                                                     ],\
-                                  'contrail-query-engine':[\
-                                                    'collector',\
-                                                    'cassandra',\
+                                  'contrail-analytics-nodemgr':[\
+                                                    'Collector',\
                                                     ]\
-                                                    
                                  }
         for collector in self.inputs.collector_names:
             result1 = True                                    
@@ -4589,14 +4586,14 @@ class AnalyticsVerification(fixtures.Fixture):
                 for ip in self.inputs.collector_control_ips:
                     server = "%s:%s"%(ip,port_dict['collector'])
                     result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-query-engine',\
+                            'contrail-analytics-nodemgr',\
                            [server],node = collector)
                 assert result   
             except Exception as e:    
                 for ip in self.inputs.collector_control_ips:
                     server = "%s:%s"%('127.0.0.1',port_dict['collector'])
                     result = result or self.verify_connection_infos(ops_inspect,\
-                            'contrail-query-engine',\
+                            'contrail-analytics-nodemgr',\
                            [server],node = collector)
                 assert result   
             result = False    
