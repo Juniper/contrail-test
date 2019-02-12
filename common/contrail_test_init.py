@@ -321,6 +321,13 @@ class TestInputs(object):
                 self.hostname = hostname
             if 'vrouter' in roles:
                 data_ip = self.get_service_ip(host_data['host_ip'], 'vrouter')
+                #For single-interface , setting hostname to hostfqname to make vcenter
+                #scenario work 
+                if data_ip != host_data['host_ip']:
+                    host_data['name'] = hostname
+                else:
+                    host_data['name'] = host_fqname
+                #
                 if roles['vrouter'] and roles['vrouter'].get('TSN_EVPN_MODE'):
                     self.contrail_service_nodes.append(hostname)
                 else:
