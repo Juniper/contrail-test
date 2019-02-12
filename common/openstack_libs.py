@@ -65,3 +65,11 @@ try:
     from barbicanclient import client as barbican_client
 except:
     barbican_client = None
+
+try:
+    from swiftclient import client as swift_client
+    from swiftclient import exceptions as swift_exception
+except:
+    swift_client = None
+    swift_exception = None
+

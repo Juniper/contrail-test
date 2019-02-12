@@ -4,6 +4,7 @@ from orchestrator import Orchestrator, OrchestratorAuth
 import ironic_test
 import nova_test
 import glance_test
+import swift_test
 import quantum_test
 from keystone_tests import KeystoneCommands
 from common.openstack_libs import ks_exceptions
@@ -19,6 +20,7 @@ class OpenstackOrchestrator(Orchestrator):
        self.quantum_h = None
        self.nova_h = None
        self.glance_h = None
+       self.swift_h = None
        self.ironic_h = None
        self.vnc_lib = vnclib
        self.region_name = region_name or inputs.region_name if inputs else None
@@ -76,6 +78,17 @@ class OpenstackOrchestrator(Orchestrator):
                                    region_name=self.region_name)
           self.glance_h.setUp()
        return self.glance_h
+
+   def get_swift_image_handler(self):
+       if not self.swift_h:
+           self.swift_h = swift_test.SwiftHelper(inputs=self.inputs,
+                                    auth_h=self.auth_h,
+                                    region_name=self.region_name)
+           try:
+               self.swift_h.setUp()
+           except:
+               return None
+       return self.swift_h
 
    def get_image_account(self, image_name):
        return self.nova_h.get_image_account(image_name)
