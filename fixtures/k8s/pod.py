@@ -304,7 +304,7 @@ class PodFixture(fixtures.Fixture):
 
         self.tap_intfs = inspect_h.get_vna_tap_interface_by_vm(vm_id=self.uuid)
         if not self.tap_intfs:
-            self.logger.warn('No tap intf seen for pod %s in %s' % (self.uuid))
+            self.logger.warn('No tap intf seen for pod %s' % (self.uuid))
             return False
         agent_vmi_ids = [x['uuid'] for x in self.tap_intfs]
         if set(agent_vmi_ids) != set(self.vmi_uuids):
