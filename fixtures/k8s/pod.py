@@ -249,7 +249,9 @@ class PodFixture(fixtures.Fixture):
         try:
             self.api_vm_obj = self.vnc_lib.virtual_machine_read(id=self.uuid,
                 fields = ['virtual_machine_interface_back_refs'])
+            print "self.api_vm_obj: %s" % str(self.api_vm_obj)
             api_vmi_refs = self.api_vm_obj.get_virtual_machine_interface_back_refs()
+            print "api_vmi_refs: %s" % str(api_vmi_refs)
             for vmi_ref in api_vmi_refs:
                 x = self.vnc_lib.virtual_machine_interface_read(
                     id=vmi_ref['uuid'])
