@@ -43,7 +43,11 @@ def start_tcpdump_and_verify_pkts(obj, vm_fix, vn_fq_name, filters='-v', pcap_on
         return verify_tcpdump_count(obj, session, pcap, exp_count=exp_count, mac=mac,raw_count=raw_count,
             exact_match=exact_match, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files, svm=svm, grep_string=grep_string)
 
-def start_tcpdump_for_vm_intf(obj, vm_fix, vn_fq_name, filters='-v', pcap_on_vm=False, vm_intf='eth0', svm=False):
+def start_tcpdump_for_vm_intf(obj, vm_fix, vn_fq_name, filters='-v', pcap_on_vm=False, vm_intf='eth0', svm=False, no_header = False):
+    filt_str = ''
+    if not no_header:
+        filt_str = 'udp port 8099'
+
     if not pcap_on_vm:
         compute_ip = vm_fix.vm_node_ip
         compute_user = obj.inputs.host_data[compute_ip]['username']
