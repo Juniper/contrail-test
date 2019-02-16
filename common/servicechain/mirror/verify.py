@@ -344,7 +344,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
             if not no_header:
                 filters='udp port 8099'
             vm_fix_pcap_pid_files = start_tcpdump_for_vm_intf(
-                None, [mirr_vm], None, filters=filters, pcap_on_vm=True, no_header = no_header)
+                None, [mirr_vm], None, filters=filters, pcap_on_vm=True)
         else:
             session = ssh(host['host_ip'], host['username'], host['password'])
             pcap = self.start_tcpdump(session, tapintf, vlan=vlan, no_header = no_header)
