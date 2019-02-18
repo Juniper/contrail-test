@@ -234,6 +234,7 @@ class TestInputs(object):
         self.openstack_ips = []
         self.openstack_control_ips = []
         self.openstack_names = []
+        self.collector_ip = ''
         self.collector_ips = []
         self.collector_control_ips = []
         self.collector_names = []

@@ -1119,6 +1119,10 @@ class VNFixture(fixtures.Fixture):
     def verify_vn_in_opserver(self):
         '''Verify vn in the opserver'''
 
+        if not self.analytics_obj.has_opserver():
+            self.logger.debug("OpServer is not enabled, skipping the test")
+            return True
+
         self.logger.debug("Verifying the vn in opserver")
         res = self.analytics_obj.verify_vn_link(self.vn_fq_name)
         self.op_verification_flag = res

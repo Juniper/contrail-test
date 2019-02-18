@@ -1775,6 +1775,9 @@ class VMFixture(fixtures.Fixture):
     def verify_vm_in_opserver(self):
         ''' Verify VM objects in Opserver.
         '''
+        if not self.analytics_obj.has_opserver():
+            self.logger.debug("OpServer is not enabled, skipping the test")
+            return True
         self.logger.debug("Verifying the vm in opserver")
         result = True
         self.vm_in_op_flag = True
