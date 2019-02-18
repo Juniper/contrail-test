@@ -173,6 +173,12 @@ class AnalyticsVerification(fixtures.Fixture):
         else:
             return None
 
+    # Checks if OpServer is enabled
+    def has_opserver(self):
+        if not self.collector_hosts:
+            return False
+        return True
+
     @retry_for_value(delay=2, tries=5)
     def get_ops_generator_from_ops_introspect(self, collector, generator, moduleid, node_type, instanceid):
         obj = self.ops_inspect[collector].get_ops_generator(
@@ -1358,6 +1364,10 @@ class AnalyticsVerification(fixtures.Fixture):
 
     def verify_vm_not_in_opserver(self, uuid, compute, vn_fq_name):
         '''Verify that vm not in opserver after the vm is deleted'''
+
+        if not self.has_opserver():
+            self.logger.debug("OpServer is not enabled, skipping the test")
+            return True
 
         assert self.verify_vm_list_not_in_vrouter_uve(
             vrouter=compute, vm_uuid=uuid)
