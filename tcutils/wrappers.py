@@ -1,6 +1,6 @@
 """ Module wrrapers that can be used in the tests."""
 
-import traceback, os
+import traceback, os, signal
 from functools import wraps
 from testtools.testcase import TestSkipped
 import cgitb
@@ -76,6 +76,16 @@ def preposttest_wrapper(function):
             log.info('Initial checks done. Running the testcase now')
             log.info('')
             result = function(self, *args, **kwargs)
+            if self.inputs.upgrade:
+                pid = os.getpid()
+                log.info('UPGRADE: %s[%s]: Stopping self',
+                    function.__name__, pid)
+                log.info('-' * 80)
+                os.kill(pid, signal.SIGSTOP)
+                log.info('UPGRADE: %s[%s]: Resuming validation post upgrade',
+                    function.__name__, pid)
+                log.info('-' * 80)
+                self.validate_post_upgrade()
         except KeyboardInterrupt:
             raise
         except (TestSkipped, v4OnlyTestException), msg:

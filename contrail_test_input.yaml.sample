@@ -125,6 +125,7 @@ test_configuration:
     fip_pool_name:
     verify_on_setup:
     stop_on_fail:
+    upgrade:
     public_host:
     ext_routers:
         rtr1: 1.1.1.1
