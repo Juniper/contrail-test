@@ -173,6 +173,12 @@ class AnalyticsVerification(fixtures.Fixture):
         else:
             return None
 
+    # Checks if OpServer is enabled
+    def has_opserver(self):
+        if not self.collector_hosts:
+            return False
+        return True
+
     @retry_for_value(delay=2, tries=5)
     def get_ops_generator_from_ops_introspect(self, collector, generator, moduleid, node_type, instanceid):
         obj = self.ops_inspect[collector].get_ops_generator(
