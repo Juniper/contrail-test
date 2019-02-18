@@ -1267,6 +1267,11 @@ class AnalyticsVerification(fixtures.Fixture):
     def verify_vn_link(self, vn_fq_name):
         '''Verifies that vn is listed in http://nodea18.englab.juniper.net:8081/analytics/virtual-networks when created'''
 
+        if not self.collector_hosts:
+            self.logger.info('OpServer not enabled, not validating if VN %s is found' % (
+                vn_fq_name))
+            return True
+
         # vn='default-domain:'+self.inputs.project_name+':'+vn
         result = False
         for ip in self.inputs.collector_ips:
