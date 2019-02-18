@@ -154,7 +154,8 @@ class VMFixture(fixtures.Fixture):
         self.refresh = False
         self._vmi_ids = {}
         self.cfgm_ip = self.inputs.cfgm_ip
-        self.collector_ip = self.inputs.collector_ip
+        if self.analytics_obj.has_opserver():
+            self.collector_ip = self.inputs.collector_ip
     # end __init__
 
     def read(self,refresh=False):
@@ -1775,6 +1776,9 @@ class VMFixture(fixtures.Fixture):
     def verify_vm_in_opserver(self):
         ''' Verify VM objects in Opserver.
         '''
+        if not self.analytics_obj.has_opserver():
+            self.logger.debug("OpServer is not enabled, skipping the test")
+            return True
         self.logger.debug("Verifying the vm in opserver")
         result = True
         self.vm_in_op_flag = True
