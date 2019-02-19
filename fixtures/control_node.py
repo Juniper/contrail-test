@@ -265,6 +265,7 @@ class CNFixture(fixtures.Fixture):
         else:
             self.logger.info('Skipping the deletion of the Control Node %s ' %
                              (self.router_ip))
+        self.unset_cluster_id()
         super(CNFixture, self).cleanUp()
     # end cleanUp
 
@@ -287,3 +288,31 @@ class CNFixture(fixtures.Fixture):
         gr_params.set_xmpp_helper_enable(xmpp_helper_enable)
         gsc_obj.set_graceful_restart_parameters(gr_params)
         vnc_lib.global_system_config_update(gsc_obj)
+
+    def set_cluster_id(self,cluster_id):
+        fq_name = ['default-domain', 'default-project', 'ip-fabric', '__default__',self.router_name]
+        vnc = self.vnc_lib_h
+        try:
+            ctrl_node = vnc.bgp_router_read(fq_name = fq_name)
+            params = ctrl_node.get_bgp_router_parameters()
+            params.set_cluster_id(int(cluster_id))
+            ctrl_node.set_bgp_router_parameters(params)
+            vnc.bgp_router_update(ctrl_node)
+            return True
+        except Exception as e:
+            print e
+            return False
+    
+    def unset_cluster_id(self):
+        fq_name = ['default-domain', 'default-project', 'ip-fabric', '__default__',self.router_name]
+        vnc = self.vnc_lib_h
+        try:
+            ctrl_node = vnc.bgp_router_read(fq_name = fq_name)
+            params = ctrl_node.get_bgp_router_parameters()
+            if params.get_cluster_id:
+                self.logger.info("Removing cluster id from ctrl node")
+                params.set_cluster_id(None)
+                ctrl_node.set_bgp_router_parameters(params)
+                vnc.bgp_router_update(ctrl_node)
+        except Exception as e:
+            print e
