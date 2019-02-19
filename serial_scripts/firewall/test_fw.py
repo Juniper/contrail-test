@@ -410,17 +410,26 @@ class TestFirewallBasic(BaseFirewallTest):
         self.fwp_hr.remove_firewall_rules(rules)
         self._verify_traffic(self.vms['eng_web'], self.vms['eng_logic'],
                              self.vms['eng_db'])
-        self._verify_ping(self.vms['hr_web'], self.vms['hr_logic'], self.vms['hr_db'])
-        self._verify_traffic(self.vms['hr_web'], self.vms['hr_logic'],
-                             self.vms['hr_db'])
+        self._verify_ping(self.vms['hr_web'], self.vms['hr_logic'])
+        self._verify_ping(self.vms['hr_logic'], self.vms['hr_db'])
+        self._verify_ping(self.vms['hr_web'], self.vms['hr_db'], exp=False)
+        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'], 'tcp',
+             sport=1111, dport=8006)
+        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'], 'udp',
+             sport=1111, dport=8006)
         #Both EP1 and EP2 as same AG
-        fwr.update(source=ep1, destination=ep1)
+        fwr.update(source=ep2, destination=ep2)
+        self._verify_ping(self.vms['hr_web'], self.vms['hr_db'])
+        self._verify_ping(self.vms['hr_logic'], self.vms['hr_db'], exp=False)
         self._verify_traffic(self.vms['hr_web'], self.vms['hr_logic'],
                              self.vms['hr_db'], exp=False)
         # Add labels
+        fwr.update(source=ep1, destination=ep1)
         self.add_labels(self.ag, [web_label, db_label])
-        self._verify_traffic(self.vms['hr_web'], self.vms['hr_logic'],
-                             self.vms['hr_db'])
+        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'], 'tcp',
+             sport=1111, dport=8002)
+        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'], 'udp',
+             sport=1111, dport=8002)
         self._verify_traffic(self.vms['eng_web'], self.vms['eng_logic'],
                              self.vms['eng_db'])
 
