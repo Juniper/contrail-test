@@ -1269,3 +1269,6 @@ class SafeList(list):
         except IndexError:
             return default
 
+def ipv4_to_decimal(ip):
+    octet1,octet2,octet3,octet4 = ip.split('.')
+    return int(octet1)*16777216 + int(octet2)*65536 + int(octet3)*256 + int(octet4)
