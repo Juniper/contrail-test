@@ -738,7 +738,7 @@ class NovaHelper(object):
         for host in self.inputs.compute_names:
             if host_name == host:
                 return host_name
-            if host in host_name.split('.'):
+            if host_name in host.split('.'):
                 return host
         else:
             return host_name
