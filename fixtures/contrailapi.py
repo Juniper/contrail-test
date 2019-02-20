@@ -641,15 +641,26 @@ class ContrailVncApi(object):
            fat_flow_config: dictionary of format {'proto':<string>,'port':<int>,
             'ignore_address': <string, source/destination>}
         '''
+        source_subnet = None
+        destination_subnet = None
         ignore_address = fat_flow_config.get('ignore_address', None)
-        if ignore_address:
-            proto_type = ProtocolType(
-                protocol=fat_flow_config['proto'],
-                port=fat_flow_config['port'],
-                ignore_address=ignore_address)
-        else:
-            proto_type = ProtocolType(protocol=fat_flow_config['proto'],
-                                      port=fat_flow_config['port'])
+        source_prefix = fat_flow_config.get('source_prefix', None)
+        destination_prefix = fat_flow_config.get('destination_prefix', None)
+        source_aggregate_prefix_length = fat_flow_config.get('source_aggregate_prefix_length', None)
+        destination_aggregate_prefix_length = fat_flow_config.get('destination_aggregate_prefix_length', None)
+
+        if source_prefix:
+            source_subnet = SubnetType(source_prefix[0], source_prefix[1])
+        if destination_prefix:
+            destination_subnet = SubnetType(destination_prefix[0], destination_prefix[1])
+        proto_type = ProtocolType(
+            protocol=fat_flow_config['proto'],
+            port=fat_flow_config['port'],
+            ignore_address=ignore_address,
+            source_prefix=source_subnet,
+            destination_prefix=destination_subnet,
+            destination_aggregate_prefix_length=destination_aggregate_prefix_length,
+            source_aggregate_prefix_length=source_aggregate_prefix_length)
 
         vmi_obj = self._vnc.virtual_machine_interface_read(id=vmi_id)
         fat_config = vmi_obj.get_virtual_machine_interface_fat_flow_protocols()
@@ -665,6 +676,28 @@ class ContrailVncApi(object):
 
         return True
     # end add_fat_flow_to_vmi
+
+    def delete_all_fat_flow_config_from_vmi(self, vmi_id):
+        '''
+        Removes the first matching Fat flow configuration
+        vmi_id: vmi id
+        fat_flow_config: dictionary of format {'proto':<string>,'port':<int>}
+        '''
+        vmi_obj = self._vnc.virtual_machine_interface_read(id=vmi_id)
+        fat_config_get = vmi_obj.get_virtual_machine_interface_fat_flow_protocols()
+        if fat_config_get:
+            for config in fat_config_get.fat_flow_protocol:
+                    fat_config_get.fat_flow_protocol.remove(config)
+                    vmi_obj.set_virtual_machine_interface_fat_flow_protocols(
+                        fat_config_get)
+                    self._vnc.virtual_machine_interface_update(vmi_obj)
+                    self._log.info(
+                        "Fat flow config removed from VMI %s: %s" %
+                        (vmi_id, vars(config)))
+                    break
+
+        return True
+    # delete_all_fat_flow_config_from_vmi
 
     def remove_fat_flow_on_vmi(self, vmi_id, fat_flow_config):
         '''
