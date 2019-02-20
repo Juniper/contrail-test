@@ -2946,7 +2946,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         vm2_name = get_random_name('vm2')
         vn_name = get_random_name('vn222')
         scp_test_file_sizes = ['1303'] if self.inputs.is_ci_setup() else \
-                              ['64', '1202', '2210', '10000']
+                              ['2210', '10000']
         file = 'somefile'
         y = 'ls -lrt %s' % file
         cmd_to_check_file = [y]
@@ -2990,7 +2990,6 @@ class TestBasicVMVNx(BaseVnVmTest):
         return transfer_result
     # end test_vm_file_trf_scp_tests
 
-    @test.attr(type=['sanity', 'vcenter','vrouter_gw', 'vcenter_compute'])
     @preposttest_wrapper
     def test_vm_file_trf_tftp_tests(self):
         '''
@@ -3251,13 +3250,9 @@ class TestBasicIPv6VMVNx(TestBasicVMVNx):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
 
-    @test.attr(type=['sanity', 'quick_sanity', 'vcenter_compute'])
-    @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
         super(TestBasicIPv6VMVNx, self).test_vm_file_trf_scp_tests()
 
-    @test.attr(type=['sanity', 'quick_sanity', 'vcenter_compute'])
-    @preposttest_wrapper
     def test_vm_file_trf_tftp_tests(self):
         super(TestBasicIPv6VMVNx, self).test_vm_file_trf_tftp_tests()
 
