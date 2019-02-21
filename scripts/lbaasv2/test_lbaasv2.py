@@ -194,7 +194,6 @@ class TestLBaaSV2(BaseLBaaSTest):
         rr_listener.apply_sg_to_vip_vmi([default_sg.get_sg_id()])
         for server in lb_pool_servers:
             server.remove_security_group(vip_sg.get_uuid())
-            server.add_security_group(default_sg.get_sg_id())
         assert client_vm1_fixture.ping_with_certainty(rr_listener.fip_ip)
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
