@@ -147,7 +147,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         return True
 
 
-    @test.attr(type=['sanity', 'suite1', 'ci_sanity', 'vcenter_compute'])
+    @test.attr(type=['sanity', 'suite1', 'ci_sanity', 'vcenter_compute', 'ci_contrail_go_kolla_ocata_sanity'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6',
         hypervisor='docker',msg='Bug 1461423:Need privileged access')
@@ -295,11 +295,11 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         vn1_fixture = self.create_vn(vn_name=vn1_name,orch=self.orchestrator)
         vn1_fixture.read()
         vm1_fixture = self.create_vm(vn_fixture=vn1_fixture,
-            image_name='cirros', vm_name=vn1_vm1_name, orch=self.orchestrator)
+            image_name='ubuntu', vm_name=vn1_vm1_name, orch=self.orchestrator)
         vm2_fixture = self.create_vm(vn_ids=[vn1_fixture.uuid],
-            image_name='cirros', vm_name=vn1_vm2_name)
+            image_name='ubuntu', vm_name=vn1_vm2_name)
         vm3_fixture = self.create_vm(vn_ids=[vn1_fixture.uuid],
-            image_name='cirros', vm_name=vn1_vm3_name)
+            image_name='ubuntu', vm_name=vn1_vm3_name)
         assert vm1_fixture.wait_till_vm_is_up()
         assert vm2_fixture.wait_till_vm_is_up()
         assert vm3_fixture.wait_till_vm_is_up()
