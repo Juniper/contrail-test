@@ -48,8 +48,8 @@ class TestVcenterSerial(BaseVnVmTest):
         vn1_vm2_name = get_random_name('vm2_plugin')
         vn1_fixture = self.create_vn(vn1_name, [get_random_cidr()])
         assert vn1_fixture.verify_on_setup()
-        vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm1_name)
-        vm2_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm2_name)
+        vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm1_name, image_name='vcenter_tiny_vm')
+        vm2_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm2_name, image_name='vcenter_tiny_vm')
         assert vm1_fixture.wait_till_vm_is_up(refresh=True)
         assert vm2_fixture.wait_till_vm_is_up(refresh=True)
         assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
@@ -88,8 +88,8 @@ class TestVcenterSerial(BaseVnVmTest):
         vn1_vm1_name = get_random_name('vm1_reboot')
         vn1_vm2_name = get_random_name('vm2_reboot')
         vn1_fixture = self.create_vn(vn1_name, [get_random_cidr()])
-        vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm1_name)
-        vm2_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm2_name)
+        vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm1_name, image_name='vcenter_tiny_vm')
+        vm2_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm2_name, image_name='vcenter_tiny_vm')
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
         self.vm_host1 = vm1_fixture.vm_obj.host
@@ -111,8 +111,8 @@ class TestVcenterSerial(BaseVnVmTest):
        
         vn1_vm1_name = get_random_name('vm1_after_reboot')
         vn1_vm2_name = get_random_name('vm2_after_reboot')
-        vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm1_name)
-        vm2_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm2_name)
+        vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm1_name, image_name='vcenter_tiny_vm')
+        vm2_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm2_name, image_name='vcenter_tiny_vm')
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
@@ -138,8 +138,8 @@ class TestVcenterSerial(BaseVnVmTest):
         vn1_vm1_name = get_random_name('vm1')
         vn1_vm2_name = get_random_name('vm2')
         vn1_fixture = self.create_vn(vn1_name, [get_random_cidr()])
-        vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm1_name)
-        vm2_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm2_name)
+        vm1_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm1_name, image_name='vcenter_tiny_vm')
+        vm2_fixture = self.create_vm(vn_fixture=vn1_fixture, vm_name=vn1_vm2_name, image_name='vcenter_tiny_vm')
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
