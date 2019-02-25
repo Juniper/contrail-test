@@ -14,6 +14,7 @@ from policy_test import PolicyFixture
 from port_fixture import PortFixture
 from floating_ip import FloatingIPFixture
 from interface_route_table_fixture import InterfaceRouteTableFixture
+from firewall_rule import FirewallRuleFixture
 from tcutils.util import get_random_name, retry, get_random_cidr
 from fabric.context_managers import settings
 from fabric.api import run
@@ -775,3 +776,7 @@ EOS
         return True
     # end service_keepalived
 
+    def create_fwaas_rule(self, *args, **kwargs):
+        connections = kwargs.pop('connections', None) or self.connections
+        return self.useFixture(FirewallRuleFixture(*args,
+               api_type='neutron', connections=connections, **kwargs))

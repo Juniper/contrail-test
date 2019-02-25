@@ -441,7 +441,7 @@ class TestInputs(object):
         self.vcenter_dc = self.vcenter_server = self.vcenter_port = None
         self.vcenter_username = self.vcenter_password = None
         self.vcenter_compute = None
-
+        self.input_file='/contrail-test-local/contrail_test_input.yml'
         with open(self.input_file, 'r') as fd:
             self.config = yaml.load(fd)
         deployment_configs = self.config.get('deployment', {})

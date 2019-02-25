@@ -25,13 +25,13 @@ class FirewallRuleFixture(vnc_api_test.VncLibFixture):
          'any': False,
          'address_group': ag_fq_name,
          'tags': ['deployment=prod', 'global:site=us'],
+         'firewall_group_id': 'abcd-efgh-ijkl'
         }
     '''
     def __init__(self, *args, **kwargs):
         super(FirewallRuleFixture, self).__init__(*args, **kwargs)
         self.name = kwargs.get('name')
         self.uuid = kwargs.get('uuid')
-        self.action = kwargs.get('action') or 'pass'
         self.direction = kwargs.get('direction') or '<>'
         self.protocol = kwargs.get('protocol')
         self.sports = kwargs.get('sports')
@@ -42,6 +42,10 @@ class FirewallRuleFixture(vnc_api_test.VncLibFixture):
         self.destination = kwargs.get('destination') or {'any': True} #endpoint_2
         self.scope = kwargs.get('scope') or 'local'
         self.service_groups = kwargs.get('service_groups') or list()
+        self.api_type = kwargs.get('api_type', 'contrail')
+        self.action = kwargs.get('action') or 'pass'
+        self.enabled = kwargs.get('enabled', 'True')
+        self.shared = kwargs.get('shared', 'False')
         self.created = False
         self.verify_is_run = False
 
@@ -75,12 +79,33 @@ class FirewallRuleFixture(vnc_api_test.VncLibFixture):
         self.name = obj.name
         self.fq_name = obj.get_fq_name()
         self.parent_type = obj.parent_type
-        self.rules = list()
         self.scope = 'local' if obj.parent_type == 'project' else 'global'
         for sg in obj.get_service_group_refs() or []:
             self.service_groups.append(sg['uuid'])
 
     def create(self):
+        if self.api_type == 'contrail':
+            self.create_vnc_api()
+        else:
+            self.create_orch()
+        if not self.created:
+            self.read()
+
+    def create_orch(self):
+        if not self.uuid:
+            # Add a check if the firewall rule already exists
+            self.uuid = self.orch.create_fwr_rule(self.name,
+                protocol=self.protocol,
+                sport=list(self.sports)[0] if self.sports else None,
+                dport=list(self.dports)[0] if self.dports else None,
+                source=self.source,
+                destination=self.destination,
+                action=self.action,
+                enabled=self.enabled,
+                shared=self.shared)
+            self.created = True
+                 
+    def create_vnc_api(self):
         if not self.uuid:
             try:
                 obj = self.vnc_h.read_firewall_rule(fq_name=self.fq_name)
@@ -102,8 +127,6 @@ class FirewallRuleFixture(vnc_api_test.VncLibFixture):
                 self.created = True
                 self.logger.info('Created Firewall Rule %s(%s)'%(self.name,
                                                                 self.uuid))
-        if not self.created:
-            self.read()
 
     def add_service_groups(self, service_groups):
         self.vnc_h.add_service_group(self.uuid, service_groups)

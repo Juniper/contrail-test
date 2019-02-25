@@ -1172,4 +1172,50 @@ class QuantumHelper():
             self.logger.error('List health-monitors failed')
             return None
 
+    def create_fwaas_firewall_rule(self, fwr_name, protocol=None, action=None,
+                                   shared=None, enabled=None, sport=None,
+                                   dport=None, source=None, destination=None):
+        """Create a firewall rule given a name.
+        param: name: Name for firewall rule
+        param: protocol, {TCP, UDP, ICMP }
+        param: sports, Source port number or range [1, 65535]
+        param: dport, Destination port number or range [1, 65535]
+        param: src_ip, Source IP address or CIDR
+        param: dest_ip, Destination IP address or CIDR
+        param: action,  Action to be performed {ALLOW, DENY}. Default: DENY
+        param: enabled, enable/disable this rule in the firewall policy. Default: True
+        """
+        try:
+            firewall_rule ={}
+            firewall_rule['name']= fwr_name
+            if protocol:
+                firewall_rule['protocol'] = protocol
+            if action:
+                action = 'allow' if action == 'pass' else action
+                firewall_rule['action'] = action
+            if shared:
+                firewall_rule['shared'] = shared
+            if enabled:
+                firewall_rule['enabled'] = enabled
+            if sport:
+                firewall_rule['source_port'] = sport
+            if dport:
+                firewall_rule['destination_port'] = dport
+            if source:
+                if 'subnet' in source:
+                    firewall_rule['source_ip_address'] = source['subnet']
+                if 'firewall_group_id' in source:
+                    firewall_rule['source_firewall_group_id'] = source['firewall_group_id']
+            if destination:
+                if 'subnet' in destination:
+                    firewall_rule['destination_ip_address'] = destination['subnet']
+                if 'firewall_group_id' in destination:
+                    firewall_rule['destination_firewall_group_id'] = destination['firewall_group_id']
+            fwr_rsp = self.obj.create_fwaas_firewall_rule({'firewall_rule': firewall_rule})
+            self.logger.debug('Response for create_fwass_fwr : ' + repr(fwr_rsp))
+            return fwr_rsp['firewall_rule']['id']
+        except CommonNetworkClientException as e:
+            self.logger.exception(
+                'Neutron Exception while creating firewall rule %s' % (fwr_name))
+            raise
 # end QuantumHelper

@@ -171,6 +171,9 @@ class OpenstackOrchestrator(Orchestrator):
    def put_key_file_to_host(self, host_ip):
        self.nova_h.put_key_file_to_host(host_ip)
 
+   def create_fwr_rule(self, name, *args, **kwargs):
+       return self.quantum_h.create_fwaas_firewall_rule(name, *args, **kwargs)
+
    def create_vn(self, name, subnets, option='orch', **kwargs):
        return self.quantum_h.create_network(name, subnets, **kwargs)
 

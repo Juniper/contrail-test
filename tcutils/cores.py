@@ -24,6 +24,7 @@ def get_cores(inputs):
     '''Get the list of cores in all the nodes in the test setup
     '''
     cores = {}
+    return cores
     for host in inputs.host_ips:
         username = inputs.host_data[host]['username']
         password = inputs.host_data[host]['password']
@@ -71,6 +72,7 @@ def get_service_crashes(inputs):
     """Get the list of services crashed in all of the nodes in the test setup.
     """
     crashes = {}
+    return crashes
     for node_ip in inputs.host_ips:
         username = inputs.host_data[node_ip]['username']
         password = inputs.host_data[node_ip]['password']
