@@ -4429,6 +4429,7 @@ class AnalyticsVerification(fixtures.Fixture):
         port_dict = {
                      'collector':'8086',
                      'cassandra':'9042',
+                     'redis':'6379',
                     }
         module_connection_dict = {'contrail-collector':[
                                                     'Collector',\
@@ -4480,7 +4481,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 assert result   
             except Exception as e:
                for ip in self.inputs.collector_control_ips:
-                   server = "%s:%s"%('127.0.0.1',port_dict['collector'])
+                   server = "%s:%s"%('127.0.0.1',port_dict['redis'])
                    result = result or self.verify_connection_infos(ops_inspect,\
                             'contrail-collector',\
                           [server],node = collector)
