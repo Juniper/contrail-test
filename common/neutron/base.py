@@ -774,4 +774,3 @@ EOS
         vm.run_cmd_on_vm(cmds=[keepalive_chk_cmd], as_sudo=True)
         return True
     # end service_keepalived
-

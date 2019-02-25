@@ -1431,7 +1431,8 @@ class ContrailVncApi(object):
             source=None,
             destination=None,
             match=None,
-            service_groups=None):
+            service_groups=None,
+            **kwargs):
         ''' Update a firewall policy rule
             :param uuid : uuid of the policy rule
             :param action : pass or deny
