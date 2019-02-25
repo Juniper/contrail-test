@@ -143,7 +143,21 @@ class VcenterOrchestrator(Orchestrator):
         self._create_keypair()
         self._nfs_ds = NFSDatastore(self._inputs, self)
         self.enable_vmotion(self.get_hosts())
+        self.disable_admission_control()
         self.migration = False
+
+    def disable_admission_control(self):
+        for cluster in self._get_obj_list(self._dc, 'cluster'):
+            if cluster.configuration.dasConfig.enabled and \
+                 cluster.configuration.drsConfig.enabled:
+                if cluster.configuration.dasConfig.admissionControlEnabled:
+                    cluster_spec = vim.cluster.ConfigSpec()
+                    config_spec = vim.cluster.DasConfigInfo()
+                    config_spec.admissionControlEnabled = False
+                    cluster_spec.dasConfig = config_spec
+                    task = cluster.ReconfigureCluster_Task(cluster_spec, True)
+                    _wait_for_task(task)
+                
 
     def get_default_image(self,image_name):
         if (image_name == 'ubuntu'):
