@@ -183,10 +183,10 @@ class TestEvpnType5VxLANRoutingBasic(BaseEvpnType5Test, VerifyEVPNType5):
         '''
         my_lrs = {'lr1': {'vn_list': ['vn1', 'vn2'], 'vni': 70001},
                   }
-        my_vn = {'count': 2,            # VN count
-                 'vn1': {'subnet': '21.0.0.0/24'},
-                 'vn2': {'subnet': '22.0.0.0/24'},
-                 }
+        my_vn = {'count': 2,
+                'vn1': {'subnet': get_random_cidr(af='v4')},
+                'vn2': {'subnet': get_random_cidr(af='v4')},
+                }
         my_vmi = {'count': 2,  # VMI Count
                   'vmi11': {'vn': 'vn1'},  # VMI details
                   'vmi21': {'vn': 'vn2'},  # VMI details
