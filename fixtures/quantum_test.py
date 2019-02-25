@@ -1172,4 +1172,221 @@ class QuantumHelper():
             self.logger.error('List health-monitors failed')
             return None
 
+    def read_firewall_group(self, id, **kwargs):
+        return self.obj.show_fwaas_firewall_group(id, **kwargs)['firewall_group']
+
+    def list_firewall_groups(self, **kwargs):
+        return self.obj.list_fwaas_firewall_groups(**kwargs)['firewall_groups']
+
+    def delete_firewall_group(self, id):
+        return self.obj.delete_fwaas_firewall_group(id)
+
+    def update_firewall_group(self, uuid, name=None, admin_state=None,
+                              shared=None, **kwargs):
+        group = dict()
+        if name:
+            group['name'] = name
+        if admin_state is not None:
+            group['admin_state_up'] = admin_state
+        if shared is not None:
+            group['shared'] = shared
+        if 'ingress_policy_id' in kwargs:
+            group['ingress_firewall_policy_id'] = kwargs['ingress_policy_id']
+        if 'egress_policy_id' in kwargs:
+            group['egress_firewall_policy_id'] = kwargs['egress_policy_id']
+        if 'ports' in kwargs:
+            group['ports'] = kwargs['ports'] or None
+        self.obj.update_fwaas_firewall_group(uuid, {'firewall_group': group})
+
+    def create_firewall_group(self, name, admin_state=None,
+                              shared=None, ingress_policy_id=None,
+                              egress_policy_id=None, ports=None, **kwargs):
+        group = dict()
+        group['name'] = name
+        if admin_state is not None:
+            group['admin_state_up'] = admin_state
+        if shared is not None:
+            group['shared'] = shared
+        if ingress_policy_id:
+            group['ingress_firewall_policy_id'] = ingress_policy_id
+        if egress_policy_id:
+            group['egress_firewall_policy_id'] = egress_policy_id
+        if ports:
+            group['ports'] = ports
+        response = self.obj.create_fwaas_firewall_group({'firewall_group': group})
+        return response['firewall_group']['id']
+
+    def read_firewall_policy(self, id, **kwargs):
+        return self.obj.show_fwaas_firewall_policy(id, **kwargs)['firewall_policy']
+
+    def list_firewall_policies(self, **kwargs):
+        return self.obj.list_fwaas_firewall_policies(**kwargs)['firewall_policies']
+
+    def delete_firewall_policy(self, id):
+        return self.obj.delete_fwaas_firewall_policy(id)
+
+    def update_firewall_policy(self, uuid, name=None, rules=None,
+                               shared=False, audited=None):
+        policy = dict()
+        if name:
+            policy['name'] = name
+        if rules is not None:
+            policy['firewall_rules'] = rules
+        if shared is not None:
+            policy['shared'] = shared
+        if audited is not None:
+            policy['audited'] = audited
+        self.obj.update_fwaas_firewall_policy(uuid,
+            {'firewall_policy': policy})
+
+    def create_firewall_policy(self, name, rules=None,
+                               shared=False, audited=None, **kwargs):
+        policy = dict()
+        policy['name'] = name
+        if rules:
+            rule_uuids = [rule['uuid'] for rule in rules]
+            policy['firewall_rules'] = rule_uuids
+        if shared is not None:
+            policy['shared'] = shared
+        if audited is not None:
+            policy['audited'] = audited
+        response = self.obj.create_fwaas_firewall_policy({'firewall_policy':
+                                                        policy})
+        self.logger.debug('Response for create_firewall_policy : %s'%response)
+        return response['firewall_policy']['id']
+
+    def add_firewall_rules(self, uuid, rules):
+        for rule in rules:
+            self.add_firewall_rule(uuid, rule['uuid'])
+
+    def add_firewall_rule(self, policy_id, rule_id,
+                          insert_after=None,
+                          insert_before=None):
+        body = {'firewall_rule_id': rule_id,
+                'insert_after': insert_after,
+                'insert_before': insert_before}
+        self.obj.insert_rule_fwaas_firewall_policy(policy_id,
+            {'firewall_policy': body})
+
+    def remove_firewall_rules(self, uuid, rules):
+        for rule in rules:
+            self.remove_firewall_rule(uuid, rule['uuid'])
+
+    def remove_firewall_rule(self, policy_id, rule_id):
+        self.obj.remove_rule_fwaas_firewall_policy(policy_id,
+            {'firewall_policy': {'firewall_rule_id': rule_id}})
+
+    def read_firewall_rule(self, id, **kwargs):
+        return self.obj.show_fwaas_firewall_rule(id, **kwargs)['firewall_rule']
+
+    def list_firewall_rules(self, **kwargs):
+        return self.obj.list_fwaas_firewall_rules(**kwargs)['firewall_rules']
+
+    def delete_firewall_rule(self, id):
+        return self.obj.delete_fwaas_firewall_rule(id)
+
+    def update_firewall_rule(self, uuid, name=None, protocol=None,
+                             action=None, shared=None, enabled=None,
+                             ip_version=None, **kwargs):
+        """Update a firewall rule given a id.
+        param: uuid: UUID of the firewall rule
+        param: name: Name for firewall rule
+        param: protocol, {TCP, UDP, ICMP }
+        param: action,  Action to be performed {allow, deny, reject}.
+        param: shared, rule in the firewall policy. Default: True
+        param: enabled, enable/disable this rule in the firewall policy.
+        param: ip_version, IPv4 (4) or IPv6 (6)
+        param: sports, Source port number or range [1, 65535]
+        param: dports, Destination port number or range [1, 65535]
+        param: source, Source IP address or CIDR
+        param: destination, Destination IP address or CIDR
+        """
+        firewall_rule = dict()
+        if name:
+            firewall_rule['name'] = name
+        if protocol is not None:
+            firewall_rule['protocol'] = protocol
+        if action is not None:
+            action = 'allow' if action == 'pass' else action
+            firewall_rule['action'] = action
+        if shared is not None:
+            firewall_rule['shared'] = shared
+        if enabled is not None:
+            firewall_rule['enabled'] = enabled
+        if ip_version:
+            firewall_rule['ip_version'] = ip_version
+        if 'sports' in kwargs:
+            sports = ':'.join(kwargs['sports']) if kwargs['sports'] else None
+            firewall_rule['source_port'] = sports
+        if 'dports' in kwargs:
+            dports = ':'.join(kwargs['dports']) if kwargs['dports'] else None
+            firewall_rule['destination_port'] = dports
+        if 'source' in kwargs:
+            source = kwargs.get('source')
+            if 'subnet' in source:
+                firewall_rule['source_ip_address'] = source['subnet']
+            if 'firewall_group_id' in source:
+                firewall_rule['source_firewall_group_id'] = \
+                    source['firewall_group_id']
+        if 'destination' in kwargs:
+            destination = kwargs.get('destination')
+            if 'subnet' in destination:
+                firewall_rule['destination_ip_address'] = destination['subnet']
+            if 'firewall_group_id' in destination:
+                firewall_rule['destination_firewall_group_id'] = \
+                    destination['firewall_group_id']
+        self.obj.update_fwaas_firewall_rule(uuid,
+            {'firewall_rule': firewall_rule})
+
+    def create_firewall_rule(self, name, protocol=None, action=None,
+                             shared=None, enabled=None, ip_version=None,
+                             sports=None, dports=None, source=None,
+                             destination=None, **kwargs):
+        """Create a firewall rule given a name.
+        param: name: Name for firewall rule
+        param: protocol, {TCP, UDP, ICMP }
+        param: action,  Action to be performed {allow, deny, reject}
+        param: shared, rule in the firewall policy
+        param: enabled, enable/disable this rule in the firewall policy
+        param: ip_version, IPv4 (4) or IPv6 (6)
+        param: sports, Source port number or range [1, 65535]
+        param: dports, Destination port number or range [1, 65535]
+        param: source, dict of subnet and/or firewall_group_id keys
+        param: destination, dict of subnet and/or firewall_group_id keys
+        """
+        firewall_rule = dict()
+        firewall_rule['name'] = name
+        if protocol:
+            firewall_rule['protocol'] = protocol
+        if action:
+            action = 'allow' if action == 'pass' else action
+            firewall_rule['action'] = action
+        if shared:
+            firewall_rule['shared'] = shared
+        if enabled:
+            firewall_rule['enabled'] = enabled
+        if sports:
+            sports = ':'.join(sports)
+            firewall_rule['source_port'] = sports
+        if dports:
+            dports = ':'.join(dports)
+            firewall_rule['destination_port'] = dports
+        if ip_version:
+            firewall_rule['ip_version'] = ip_version
+        if source:
+            if 'subnet' in source:
+                firewall_rule['source_ip_address'] = source['subnet']
+            if 'firewall_group_id' in source:
+                firewall_rule['source_firewall_group_id'] = \
+                    source['firewall_group_id']
+        if destination:
+            if 'subnet' in destination:
+                firewall_rule['destination_ip_address'] = destination['subnet']
+            if 'firewall_group_id' in destination:
+                firewall_rule['destination_firewall_group_id'] = \
+                   destination['firewall_group_id']
+        fwr_rsp = self.obj.create_fwaas_firewall_rule({'firewall_rule':
+                                                        firewall_rule})
+        self.logger.debug('Response for create_firewall_rule: %s'%fwr_rsp)
+        return fwr_rsp['firewall_rule']['id']
 # end QuantumHelper

@@ -6,6 +6,7 @@ from project_test import ProjectFixture
 from port_fixture import PortFixture
 from firewall_rule import FirewallRuleFixture
 from firewall_policy import FirewallPolicyFixture
+from firewall_group import FirewallGroupFixture
 from application_policy_set import ApplicationPolicySetFixture
 from address_group import AddressGroupFixture
 from service_group import ServiceGroupFixture
@@ -25,6 +26,7 @@ class BaseFirewallTest(BaseNeutronTest):
         cls.project_name = cls.inputs.project_name
         cls.domain_name = cls.inputs.domain_name
         cls.vnc_h = cls.connections.orch.vnc_h
+        cls.api_type = 'contrail'
         try:
             cls.create_common_objects()
         except:
@@ -307,10 +309,11 @@ class BaseFirewallTest(BaseNeutronTest):
         self.logger.info('Unset tag type %s from %s'%(tag.tag_type_name,
                          obj.uuid if obj else uuid))
 
-    def create_fw_policy(self, scope, rules=None, **kwargs):
+    def create_fw_policy(self, scope=None, rules=None, **kwargs):
         connections = kwargs.pop('connections', None) or self.connections
         return self.useFixture(FirewallPolicyFixture(scope=scope,
-               rules=rules, connections=connections, **kwargs))
+               rules=rules, connections=connections, api_type=self.api_type,
+               **kwargs))
 
     def add_fw_rule(self, fwp_fixture, rule_uuid, seq_no):
         return fwp_fixture.add_firewall_rules([{'uuid': rule_uuid,
@@ -319,10 +322,47 @@ class BaseFirewallTest(BaseNeutronTest):
     def remove_fw_rule(self, fwp_fixture, rule_uuid):
         return fwp_fixture.remove_firewall_rule(rule_uuid)
 
-    def create_fw_rule(self, scope, **kwargs):
+    def create_fw_rule(self, scope=None, **kwargs):
         connections = kwargs.pop('connections', None) or self.connections
         return self.useFixture(FirewallRuleFixture(scope=scope,
-               connections=connections, **kwargs))
+               connections=connections, api_type=self.api_type, **kwargs))
+
+    def _get_vmi_uuid(self, fixture):
+        if type(fixture) == VMFixture:
+            return fixture.get_vmi_ids().values()[0]
+        elif type(fixture) == PortFixture:
+            return fixture.uuid
+
+    def get_ip_address(self, fixture):
+        if type(fixture) == VMFixture:
+            return fixture.get_vm_ips()[0]
+        elif type(fixture) == PortFixture:
+            return fixture.get_ip_addresses()[0]
+
+    @property
+    def default_fwg(self):
+        if not getattr(self, '_default_fwg', None):
+            self._default_fwg = self.create_fw_group(name='default')
+        return self._default_fwg
+
+    def create_fw_group(self, vm_fixtures=None, port_fixtures=None,
+                        ingress_policy=None, egress_policy=None, **kwargs):
+        connections = kwargs.pop('connections', None) or self.connections
+        ingress_policy_id = ingress_policy.uuid if ingress_policy else None
+        egress_policy_id = egress_policy.uuid if egress_policy else None
+        ports = [self._get_vmi_uuid(fixture) for fixture in 
+                 (vm_fixtures or list()) + (port_fixtures or list())]
+        # A port can only be associated to only one FW-Group
+        # By default default FWG will have all ports associated
+        # so disassociate from default FWG before associating to new FWG
+        if ports and kwargs.get('name') != 'default':
+            self.default_fwg.delete_ports(ports)
+        fixture = self.useFixture(FirewallGroupFixture(connections=self.connections,
+                               ingress_policy_id=ingress_policy_id,
+                               egress_policy_id=egress_policy_id,
+                               ports=ports, **kwargs))
+        fixture.verify_on_setup()
+        return fixture
 
     def create_aps(self, scope='local', policies=None, application=None, **kwargs):
         '''
@@ -394,20 +434,20 @@ class BaseFirewallTest(BaseNeutronTest):
         self.sleep(5)
         return self.stop_traffic(traffic_obj, expectation)
 
-    def _verify_traffic(self, vm1, vm2, vm3, exp=True, dport=None):
+    def _verify_traffic(self, vm1, vm2, vm3, exp=True, dport=None, sport=1111):
         dport = dport or random.randint(8000, 8010)
         #Validate tcp 8000 web to logic
-        self.verify_traffic(vm1, vm2, 'tcp', sport=1111, dport=dport, expectation=exp)
+        self.verify_traffic(vm1, vm2, 'tcp', sport=sport, dport=dport, expectation=exp)
         #Validate udp and other tcp ports are blocked
         if exp:
-            self.verify_traffic(vm1, vm2, 'udp', sport=1111, dport=dport, expectation=not exp)
-            self.verify_traffic(vm1, vm2, 'tcp', sport=dport, dport=1111, expectation=not exp)
+            self.verify_traffic(vm1, vm2, 'udp', sport=sport, dport=dport, expectation=not exp)
+            self.verify_traffic(vm1, vm2, 'tcp', sport=dport, dport=sport, expectation=not exp)
         #Validate udp 8000 web to logic
-        self.verify_traffic(vm2, vm3, 'udp', sport=1111, dport=dport, expectation=exp)
+        self.verify_traffic(vm2, vm3, 'udp', sport=sport, dport=dport, expectation=exp)
         #Validate tcp and other udp ports are blocked
         if exp:
-            self.verify_traffic(vm2, vm3, 'tcp', sport=1111, dport=dport, expectation=not exp)
-            self.verify_traffic(vm2, vm3, 'udp', sport=dport, dport=1111, expectation=not exp)
+            self.verify_traffic(vm2, vm3, 'tcp', sport=sport, dport=dport, expectation=not exp)
+            self.verify_traffic(vm2, vm3, 'udp', sport=dport, dport=sport, expectation=not exp)
             self._verify_ping(vm1, vm2, vm3, exp=exp)
 
     def _verify_ping(self, vm1, vm2, vm3=None, af=None, exp=True):
