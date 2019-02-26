@@ -271,6 +271,7 @@ class TestInputs(object):
         provider_configs = (self.config.get('provider_config') or {}).get('bms') or {}
         username = provider_configs.get('ssh_user') or 'root'
         password = provider_configs.get('ssh_pwd') or 'c0ntrail123'
+        domainsuffix = provider_configs.get('domainsuffix') or 'englab.juniper.net'
         for host, values  in (self.config.get('instances') or {}).iteritems():
             roles = values.get('roles') or {}
             host_data = dict()
@@ -326,7 +327,8 @@ class TestInputs(object):
                 if data_ip != host_data['host_ip']:
                     host_data['name'] = hostname
                 else:
-                    host_data['name'] = host_fqname
+                    #not able to get host_fqname from singleinterface vcenter contrailvm
+                    host_data['name'] = '.'.join([hostname,domainsuffix])
                 #
                 if roles['vrouter'] and roles['vrouter'].get('TSN_EVPN_MODE'):
                     self.contrail_service_nodes.append(hostname)
@@ -334,6 +336,11 @@ class TestInputs(object):
                     self.compute_ips.append(host_data['host_ip'])
                     if data_ip != host_data['host_ip']:
                         self.compute_names.append(hostname)
+                    #not able to get host_fqname from singleinterface vcenter contrailvm
+                    elif self.orchestrator == 'vcenter':
+                        hostname_suffix = '.'.join([hostname,domainsuffix])
+                        self.compute_names.append(hostname_suffix)
+                        self.host_data[hostname_suffix] = host_data
                     else:
                         self.compute_names.append(host_fqname)
                     self.compute_info[hostname] = host_data['host_ip']
