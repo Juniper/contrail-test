@@ -335,6 +335,7 @@ class NovaHelper(object):
                 put(abs_path, filename)
                 return filename
         elif re.match(r'^(http|https)://', image_url):
+            local('mkdir -p %s'%folder)
             self.execute_cmd_with_proxy("wget %s -O %s" % (image_url, filename), do_local=do_local)
             return filename
 
