@@ -302,6 +302,7 @@ class TestInputs(object):
                 self.openstack_ip = host_data['host_ip']
                 self.openstack_ips.append(host_data['host_ip'])
                 service_ip = self.get_service_ip(host_data['host_ip'], 'openstack')
+                self.host_data[service_ip] = host_data
                 self.openstack_control_ips.append(service_ip)
                 self.openstack_control_ip = service_ip
                 if service_ip != host_data['host_ip']:
@@ -310,6 +311,7 @@ class TestInputs(object):
                     self.openstack_names.append(host_fqname)
             if 'config' in roles:
                 service_ip = self.get_service_ip(host_data['host_ip'], 'config')
+                self.host_data[service_ip] = host_data
                 self.cfgm_ip = service_ip
                 self.cfgm_ips.append(service_ip)
                 self.cfgm_control_ips.append(service_ip)
@@ -355,11 +357,13 @@ class TestInputs(object):
                 host_data_ip = host_control_ip = service_ip
             if 'webui' in roles:
                 service_ip = self.get_service_ip(host_data['host_ip'], 'webui')
+                self.host_data[service_ip] = host_data
                 self.webui_ip = host_data['host_ip']
                 self.webui_ips.append(host_data['host_ip'])
                 self.webui_control_ips.append(service_ip)
             if 'analytics' in roles:
                 service_ip = self.get_service_ip(host_data['host_ip'], 'analytics')
+                self.host_data[service_ip] = host_data
                 self.collector_ip = service_ip
                 self.collector_ips.append(service_ip)
                 self.collector_control_ips.append(service_ip)
@@ -369,6 +373,7 @@ class TestInputs(object):
                     self.collector_names.append(host_fqname)
             if 'analytics_database' in roles:
                 service_ip = self.get_service_ip(host_data['host_ip'], 'analytics_database')
+                self.host_data[service_ip] = host_data
                 self.database_ip = host_data['host_ip']
                 self.database_ips.append(host_data['host_ip'])
                 if service_ip != host_data['host_ip']:
@@ -378,6 +383,7 @@ class TestInputs(object):
                 self.database_control_ips.append(service_ip)
             if 'kubemanager' in roles:
                 service_ip = self.get_service_ip(host_data['host_ip'], 'kubemanager')
+                self.host_data[service_ip] = host_data
                 self.kube_manager_ips.append(host_data['host_ip'])
                 self.kube_manager_control_ips.append(service_ip)
             if 'k8s_master' in roles:
