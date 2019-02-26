@@ -94,14 +94,14 @@ class TestVcenterSerial(BaseVnVmTest):
         vm2_fixture.wait_till_vm_is_up()
         self.vm_host1 = vm1_fixture.vm_obj.host
         self.vm_host2 = vm2_fixture.vm_obj.host
-        cluster_status, error_nodes = ContrailStatusChecker().wait_till_contrail_cluster_stable()
+        cluster_status, error_nodes = ContrailStatusChecker(self.inputs).wait_till_contrail_cluster_stable()
         assert cluster_status, 'Cluster is not stable...'
         for compute_vm in self.inputs.compute_ips:
             self.inputs.run_cmd_on_server(compute_vm, 'reboot')
         sleep(60)
         for compute_vm in self.inputs.compute_ips:
             self.inputs.run_cmd_on_server(compute_vm, 'ifconfig ens192 up')
-        cluster_status, error_nodes = ContrailStatusChecker().wait_till_contrail_cluster_stable()
+        cluster_status, error_nodes = ContrailStatusChecker(self.inputs).wait_till_contrail_cluster_stable()
         vm1_fixture.wait_till_vm_is_up()
         vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
@@ -150,7 +150,7 @@ class TestVcenterSerial(BaseVnVmTest):
         self.inputs.restart_service('contrail-vrouter-agent', contrail_vms,
                                  container='agent',
                                  verify_service=True)
-        cluster_status, error_nodes = ContrailStatusChecker().wait_till_contrail_cluster_stable()
+        cluster_status, error_nodes = ContrailStatusChecker(self.inputs).wait_till_contrail_cluster_stable()
         assert cluster_status, 'Cluster is not stable after restart...'
         assert vm1_fixture.ping_with_certainty(dst_vm_fixture=vm2_fixture),\
             "Ping from %s to %s failed" % (vn1_vm1_name, vn1_vm2_name)
