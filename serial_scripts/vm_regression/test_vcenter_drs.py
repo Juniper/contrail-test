@@ -61,7 +61,8 @@ class TestVcenterSerial(BaseVnVmTest):
                 "Ping from %s to %s failed" % (src_vm.vm_name, vm.vm_name)
         vc_orch = self.connections.orch
         assert if_failed(self.inputs,self.logger)
-        assert verify_trigger(self.inputs,'maintenance_mode',self.logger) 
+        assert verify_trigger(self.inputs,'maintenance_mode',self.logger)
+        src_vm.read(True)
         for vm in guest_vms:
             assert src_vm.ping_with_certainty(dst_vm_fixture=vm),\
                 "Ping from %s to %s failed" % (src_vm.vm_name, vm.vm_name)
@@ -208,7 +209,7 @@ def GetVMHosts(content):
     host_view = content.viewManager.CreateContainerView(content.rootFolder,
                                                         [vim.HostSystem],
                                                         True)
-    obj = [host for host in host_view.view]
+    obj = [host for host in host_view.view if host in hosts]
     host_view.Destroy()
     return obj
 
@@ -302,8 +303,6 @@ def print_ips(inputs):
 
     global content, hosts, hostPgDict,dc_name
     content = si.RetrieveContent()
-    hosts = GetVMHosts(content)
-    hostPgDict = GetHostsPortgroups(hosts)
     dc_name = inputs.inputs.vcenter_dc
 
     children = content.rootFolder.childEntity
@@ -408,7 +407,6 @@ def if_any_change(vm_list1,vm_list2,logger):
    
 def verify_trigger(inputs,trigger,logger):
     inputs = inputs
-    hosts = GetVMHosts(content)
     for host in hosts:
        vm_list1 = print_ips(inputs)
        enter_maintenance_mode(host) 

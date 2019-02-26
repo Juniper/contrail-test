@@ -244,7 +244,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         return True
     #test_ping_within_vn_two_vms_two_different_subnets
 
-    @test.attr(type=['vcenter', 'suite1'])
+    @test.attr(type=[ 'suite1'])
     @preposttest_wrapper
     def test_vn_add_delete(self):
         '''
@@ -259,7 +259,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         return True
     #end test_vn_add_delete
 
-    @test.attr(type=['vcenter', 'suite1'])
+    @test.attr(type=[ 'suite1'])
     @preposttest_wrapper
     def test_vm_add_delete(self):
         '''
@@ -278,7 +278,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         return True
     # end test_vm_add_delete
 
-    @test.attr(type=['suite1', 'upgrade', 'vcenter','vrouter_gw', 'vcenter_compute', 'ci_contrail_go_kolla_ocata_sanity'])
+    @test.attr(type=['suite1', 'upgrade','vrouter_gw', 'vcenter_compute', 'ci_contrail_go_kolla_ocata_sanity'])
     @preposttest_wrapper
     def test_ping_within_vn(self):
         '''
