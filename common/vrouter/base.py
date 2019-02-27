@@ -13,8 +13,14 @@ from security_group import get_secgrp_id_from_name, SecurityGroupFixture
 from tcutils.agent.vrouter_lib import *
 from policy_test import PolicyFixture
 from vn_policy_test import VN_Policy_Fixture
+from port_fixture import PortFixture
+import ipaddress
+from common.servicechain.config import ConfigSvcChain
+from common.servicechain.verify import VerifySvcChain
+from svc_hc_fixture import HealthCheckFixture
+from common.servicechain.mirror.verify import VerifySvcMirror
 
-class BaseVrouterTest(BaseNeutronTest):
+class BaseVrouterTest(BaseNeutronTest, VerifySvcMirror):
 
     @classmethod
     def setUpClass(cls):
@@ -142,8 +148,11 @@ class BaseVrouterTest(BaseNeutronTest):
     def create_vns(self, count=1, *args, **kwargs):
         vn_fixtures = []
         for i in xrange(count):
-            vn_subnets = get_random_cidrs(self.inputs.get_af())
-            vn_fixtures.append(self.create_vn(vn_subnets=vn_subnets, *args, **kwargs))
+            if 'vn_subnets' not in kwargs.keys():
+                vn_subnets = get_random_cidrs(self.inputs.get_af())
+                vn_fixtures.append(self.create_vn(vn_subnets=vn_subnets, *args, **kwargs))
+            else:
+                vn_fixtures.append(self.create_vn(*args, **kwargs))
 
         return vn_fixtures
 
@@ -151,14 +160,31 @@ class BaseVrouterTest(BaseNeutronTest):
         for vn_fixture in vn_fixtures:
             assert vn_fixture.verify_on_setup()
 
-    def create_vms(self, vn_fixture, count=1, image_name='ubuntu', *args, **kwargs):
+    def create_vms(self, vn_fixture, count=1, image_name='ubuntu',
+            fixed_ips_list=None, node_list=None, *args, **kwargs):
         vm_fixtures = []
+        node_name = None
+        host = False
+        compute_hosts = self.orch.get_hosts()
         for i in xrange(count):
+            if node_list:
+                node_count = len(node_list)
+                node_id  = i % node_count
+                node_name = node_list[node_id]
+                if 'node_name' not in kwargs.keys():
+                    kwargs['node_name'] = node_name
+                    host = True
+            fixed_ips=None
+            if fixed_ips_list:
+                fixed_ips=fixed_ips_list[i]
             vm_fixtures.append(self.create_vm(
                             vn_fixture,
                             image_name=image_name,
+                            fixed_ips=fixed_ips,
                             *args, **kwargs
                             ))
+            if host:
+                del kwargs['node_name']
 
         return vm_fixtures
 
@@ -236,6 +262,485 @@ class BaseVrouterTest(BaseNeutronTest):
             vmi_obj = self.vnc_h.remove_fat_flow_on_vmi(vmi_id, fat_flow_config)
 
         return True
+
+
+    def get_cidr_mask_vmi_id(self, fix, ipv6=False):
+        cidr, cidr6, mask, mask6, subnet_ipv4, subnet_ipv6 = None, None, None, None, None, None
+        subnets =  fix.vn_subnets
+        vn_subnets = fix.get_subnets()
+        for subnet in vn_subnets:
+             if subnet.get('ip_version') == 4:
+                 subnet_ipv4_id = subnet.get('id')
+             elif subnet.get('ip_version') == 6:
+                 subnet_ipv6_id = subnet.get('id')
+        for subnet in subnets:
+            subnet1  = subnet.get('cidr').split('/')
+            if subnet.get('ip_version') == '6':
+                cidr6 = subnet1[0]
+                mask6 = subnet1[1]
+            else:
+                cidr = subnet1[0]
+                mask = subnet1[1]
+        cidr_mask_ipv6 = None
+        cidr_mask_ipv4 = (cidr, mask, subnet_ipv4_id)
+        if ipv6:
+            cidr_mask_ipv6 = (cidr6, mask6, subnet_ipv6_id)
+
+        cidr_mask = { 'v4': cidr_mask_ipv4, 'v6': cidr_mask_ipv6 }
+        return cidr_mask
+    # end get_cidr_mask_vmi_id
+
+    def fat_flow_with_prefix_aggr(self, prefix_length=29, prefix_length6=125,
+        inter_node=False, inter_vn=False, dual=False, traffic_recvr=False,
+        unidirectional_traffic=True, ignore_address=None,
+        proto='udp', port=55, portv6=56, svc_chain=False, only_v6=False,
+        af='v4', icmp_error=False, hc=None, vn_policy=True, policy_deny=False,
+        svm_inter_node=False, resources=True, scale=False):
+        '''
+        Method to configure fat flow with prefix aggr with various options
+        traffic_recvr : if enabled, traffic is also started from the server (bidirectional)
+        dual : configures fat flow for both IPv4 and IPv6, use only_v6 flag to configure
+        only for IPv6
+        For aggrSrc/AggrDst: Match rule is reversed if traffic is from fabric to VM, or VM to faric
+        i.e. AggrSrc is matched with dst ip, and AggrDst is match with src ip
+        For VM to VM: Match rule is not swapped.
+        AggrSrc/AggrDst rule are applied only for prefixes which are configured in the aggr fat flow config.
+        i.e. Aggr Src 20.1.1.0 29 is configured, then fat flow gets created only when src ip belongs to 20.1.1.0
+        '''
+
+        afs = ['v4', 'v6'] if 'dual' in self.inputs.get_af() else [self.inputs.get_af()]
+        if only_v6:
+            afs = ['v6']
+
+        if resources: # Need to create new fixture objs if resources flag is set
+            # if not set, no need to create fresh resources, useful for config changes only
+            self.vn_fixtures = None
+            self.client1_fix = None
+            self.client2_fix = None
+            self.server_fixtures = None
+            self.policy_fixture_vn1_vn2 = None
+            self.svc_chain_info = None
+            self.hc_fixture = None
+            ff_on_si_vmis = None
+
+        scale_src = scale
+
+        if policy_deny:
+            vn_policy = True
+
+        fat_flow = True # Default is enabled, global flag to test the scenario without fat flow
+
+        none_in_one = False # When each VM/SVM is on a different node,  applicable for no. of CNs > 2
+
+        svm_inter_node = False
+
+        compute_hosts = self.orch.get_hosts()
+        if inter_node:  # Only for src and dst vm
+            if len(compute_hosts) < 2:
+                raise self.skipTest("Skipping test case,"
+                                        "this test needs atleast 2 compute nodes")
+        if dual:
+            self.inputs.set_af('dual') # Configures fat flow for both IPv4 and IPv6
+        vn_count = 1
+        if inter_vn:
+            vn_count = 2
+        svm_inter_node = svm_inter_node # src vm and svm on same compute, if enabled svm on different compute
+        server_compute = compute_hosts[0] # client vms always launched on host0
+        if inter_node:
+            server_compute = compute_hosts[1]
+        svm_fix = False
+
+        if svc_chain:
+            svm_fix= True
+            if not self.vn_fixtures:
+                self.vn_fixtures = self.create_vns(count=vn_count)
+            vn_fixtures = self.vn_fixtures
+            inter_vn = True
+            dual = False
+            svm_node = compute_hosts[2]
+            svm_node_remote = compute_hosts[2] #scenario 1
+            if svm_inter_node:  # svm is inter wrt to src vm
+                svm_node_remote = compute_hosts[1]  #scenario 2
+            if none_in_one:
+                svm_node = compute_hosts[2]
+                svm_node_remote = compute_hosts[3]
+        else:
+            if vn_policy:
+                if not self.vn_fixtures:
+                    self.vn_fixtures = self.create_vns(count=vn_count)
+                vn_fixtures = self.vn_fixtures
+            else:
+                if not self.vn_fixtures:
+                    self.vn_fixtures = self.create_vns(count=vn_count, rt_number='10000')
+                vn_fixtures = self.vn_fixtures
+
+        self.verify_vns(vn_fixtures)
+        src_vn_fixture = vn_fixtures[0]
+        dst_vn_fixture = vn_fixtures[0]
+
+        if len(vn_fixtures) > 1:
+            dst_vn_fixture = vn_fixtures[1]
+        cidr_mask_dict = self.get_cidr_mask_vmi_id(src_vn_fixture, ipv6=dual)
+        cidr, mask, subnet_ipv4 = cidr_mask_dict.get('v4')
+
+        if dual:
+            cidr6, mask6, subnet_ipv6 = cidr_mask_dict.get('v6')
+        if not self.client1_fix:
+            self.client_fixtures = self.create_vms(vn_fixture= src_vn_fixture,count=1,
+                                          node_name=compute_hosts[0])
+            self.client1_fix = self.client_fixtures[0]
+            assert self.client1_fix.wait_till_vm_is_up()
+
+        if scale_src:
+            node_list = [ compute_hosts[0], compute_hosts[2], compute_hosts[3] ]
+            node_list = [ compute_hosts[0], compute_hosts[2], compute_hosts[3] ]
+            self.scale_clients = self.create_vms(vn_fixture= src_vn_fixture,count=scale_src, node_list=node_list)
+            for client in self.scale_clients:
+                client.read()
+                assert client.wait_till_vm_is_up()
+        client1_fix = self.client1_fix
+        client1_fix.read()
+        calc_no_hosts = 2 ** (32 - prefix_length)
+        client1_vm_ip = client1_fix.get_vm_ips(af='v4')[0]
+        next_subnet_ip = str(ipaddress.IPv4Address
+                             (unicode(client1_vm_ip)) + calc_no_hosts)
+        next_subnet = str(ipaddress.IPv4Address(unicode(cidr)) + calc_no_hosts)
+        fixed_ips = [{'subnet_id' : subnet_ipv4,'ip_address': next_subnet_ip}]
+        fixed_ips = [{'subnet_id' : subnet_ipv4,'ip_address': next_subnet_ip}]
+
+        if self.inputs.get_af() == 'dual':
+             client1_vm_ipv6 = None
+             if client1_fix.get_vm_ips(af='v6'):
+                 client1_vm_ipv6 = client1_fix.get_vm_ips(af='v6')[0]
+
+             calc_no_hosts = 2 ** (128 - prefix_length6)
+             next_subnet_ipv6 = str(ipaddress.IPv6Address
+                                    (unicode(client1_vm_ipv6)) + calc_no_hosts)
+             next_subnetv6 = str(ipaddress.IPv6Address
+                                 (unicode(cidr6)) + calc_no_hosts)
+             fixed_ips.append({'subnet_id' : subnet_ipv6,'ip_address': next_subnet_ipv6})
+        if not self.client2_fix:
+            self.client2_fix = self.create_vm_using_fixed_ips(
+                vn_fixture=src_vn_fixture, fixed_ips=fixed_ips,
+                vm_name='client2_vm')
+        client2_fix = self.client2_fix
+        if not self.server_fixtures:
+            self.server_fixtures = self.create_vms(vn_fixture= dst_vn_fixture,count=1,
+                                        node_name=server_compute)
+            for server in self.server_fixtures:
+                assert server.wait_till_vm_is_up()
+
+        server_fixtures = self.server_fixtures
+        client_fixtures  = [client1_fix, client2_fix]
+        client1_ip = client_fixtures[0].vm_ips[0]
+        client2_ip = client_fixtures[1].vm_ips[0]
+        for server in server_fixtures:
+            server.read()
+        server_ip = server_fixtures[0].vm_ips[0]
+	if vn_policy:
+            policy_name_vn1_vn2 = get_random_name("vn1_vn2_pass")
+            vn1_name = vn_fixtures[0].vn_fq_name.split(':')[2]
+            vn2_name = vn_fixtures[1].vn_fq_name.split(':')[2]
+            rules = []
+            if policy_deny:
+		source_subnet1 = client1_ip + '/32'
+		source_subnet2 = client2_ip + '/32'
+		dst_subnet = server_ip + '/32'
+                self.create_policy_rule(rules, src_subnet=source_subnet2, dst_subnet=dst_subnet, proto=proto, action='deny')
+            if not self.policy_fixture_vn1_vn2:
+                self.create_policy_rule(rules, src_vn=vn1_name, dst_vn=vn2_name, proto=proto)
+                self.policy_fixture_vn1_vn2 = self.config_policy(policy_name_vn1_vn2, rules)
+                policy_fixture_vn1_vn2 = self.policy_fixture_vn1_vn2
+                if not svc_chain: # No need to configure explicit policy
+                    vn1_v2_attach_to_vn1 = self.attach_policy_to_vn(
+                        policy_fixture_vn1_vn2, vn_fixtures[0])
+                    vn1_vn2_attach_to_vn2 = self.attach_policy_to_vn(
+                        policy_fixture_vn1_vn2, vn_fixtures[1])
+
+        expected_src_prefix_list  = { client_fixtures[0]: cidr, client_fixtures[1]: next_subnet}
+        if scale_src:
+            # rpf disabled required when multiple clients reachable over multiple tunnels, snh(0)
+            # needs to be 0, else invalid source issue due to rpf check failure.
+            self.vnc_lib_fixture.set_rpf_mode(vn_fixtures[1].vn_fq_name, 'disable')
+            for client in self.scale_clients:
+                expected_src_prefix_list[client] = cidr
+        if not fat_flow:
+            expected_src_prefix_list  = { client_fixtures[0]: client1_ip, client_fixtures[1]: client2_ip}
+            if scale_src:
+               for client in self.scale_clients:
+                   expected_src_prefix_list[client] = client.vm_ips[0]
+
+        ignore_address_left = 'src'
+        ignore_address_right = 'dst'
+        svm_fixture = None
+        if svc_chain:
+            # For svc_chain = { "svc_aggr": True, "ff_on_si_vmis": True, "svc_ignore_addr": True }
+            svc_aggr = svc_chain.get('svc_aggr', True)
+            svc_mode = svc_chain.get('svc_mode', 'in-network')
+            # For enabling SrcAggr/DstAggr, without this basic fat flow config with ignore src
+            ff_on_si_vmis = svc_chain.get('ff_on_si_vmis', {'left':False, 'right': False})
+            # If enabled, fat flow configs on left vmi and right vmi
+            svmi_config = svc_chain.get('svmi_config', {'left_vmi_config':'AggrDst', 'right_vmi_config': 'AggrSrc'})
+            svc_ignore_addr = svc_chain.get('svc_ignore_addr', True) # For enabling ignore address config on svc VMIs
+            scale = svc_chain.get('instances', 1)
+            st_name = get_random_name("in_net_svc_template_1")
+            si_prefix = get_random_name("in_net_svc_instance") + "_"
+            policy_name = get_random_name("policy_in_network")
+            server_compute = compute_hosts[1] # server vm is always launched on compute 1 when svc chain is enabled
+            hosts = [svm_node]
+            if scale == 2:
+                hosts.append(svm_node_remote)
+            if not self.svc_chain_info:
+                self.svc_chain_info = self.config_svc_chain(
+                    left_vn_fixture=src_vn_fixture,
+                    right_vn_fixture=dst_vn_fixture,
+                    service_mode=svc_mode,
+                    left_vm_fixture=client1_fix,
+                    right_vm_fixture=server_fixtures[0],
+                    create_svms=True,
+                    hosts=hosts, max_inst=scale)
+            svc_chain_info = self.svc_chain_info
+            st_fixture = svc_chain_info['st_fixture']
+            si_fixture = svc_chain_info['si_fixture']
+            flow_timeout = 100
+            self.add_proto_based_flow_aging_time(proto, port, flow_timeout)
+            if ff_on_si_vmis:
+                left_vn_fq_name =  src_vn_fixture.vn_fq_name
+                right_vn_fq_name = dst_vn_fixture.vn_fq_name
+
+                cidr_mask_dict_left = self.get_cidr_mask_vmi_id(src_vn_fixture)
+                cidr_left, mask_left, subnet_left = cidr_mask_dict_left.get('v4')
+
+                cidr_mask_dict_right = self.get_cidr_mask_vmi_id(dst_vn_fixture)
+                cidr_right, mask_right, subnet_right = cidr_mask_dict_right.get('v4')
+
+                if hc:
+                    http_url = 'local-ip'
+                    hc_type = hc.get('hc_type', 'link-local')
+                    if hc_type == 'end-to-end':
+                        # Check for bug 1704716
+                        http_url='ping://' + server_fixtures[0].vm_ip
+                        # for ping use 'ping://', for http, use 'http://'(default)
+                    if not self.hc_fixture:
+                        hc_fixture = self.useFixture(HealthCheckFixture(connections=self.connections,
+                            name=get_random_name(self.inputs.project_name),hc_type=hc_type, delay=3,
+                            probe_type='PING', timeout=5, max_retries=2, http_url=http_url))
+                    hc_fixture = self.hc_fixture
+                    assert hc_fixture.verify_on_setup()
+                    si_index = hc['si_index']
+                    si_intf_type = hc['si_intf_type']
+                    st_fixtures = [st_fixture]
+                    si_fixtures = [si_fixture]
+                    si_fixture = si_fixtures[si_index]
+                    si_fixture.associate_hc(hc_fixture.uuid, si_intf_type)
+                    self.addCleanup(si_fixture.disassociate_hc, hc_fixture.uuid)
+                    assert si_fixture.verify_hc_in_agent()
+                    assert si_fixture.verify_hc_is_active()
+                    for i in range(len(st_fixtures)):
+                        assert st_fixtures[i].verify_on_setup(), 'ST Verification failed'
+                        assert si_fixtures[i].verify_on_setup(), 'SI Verification failed'
+
+                if not svc_aggr:
+                    cidr=None
+                    mask=None
+                    prefix_length=None
+                    if not svc_ignore_addr:
+                        ignore_address=None
+                    cidr_left = None
+                    mask_left = None
+                    cidr_right = None
+                    mask_right = None
+
+                # default config is cidr_left on both left vmi and right vmi
+                left_vmi_config = svmi_config['left_vmi_config']
+                right_vmi_config = svmi_config['right_vmi_config']
+                left_src = None
+                right_src = None
+                if left_vmi_config  == 'AggrDst':
+                    left_src = False
+                if right_vmi_config == 'AggrDst':
+                    right_src = False
+                if left_vmi_config == 'AggrSrc':
+                    left_src = True
+                if right_vmi_config == 'AggrSrc':
+                    right_src = True
+
+                fat_flow_cidr_on_left_vmi = None
+                fat_flow_cidr_on_right_vmi = None
+                if ff_on_si_vmis.get('left'):
+                    fat_flow_cidr_on_left_vmi = cidr_left
+                if ff_on_si_vmis.get('right'):
+                    fat_flow_cidr_on_right_vmi = cidr_left
+                svm_fixtures = svc_chain_info['svm_fixtures']
+                svm_fixtures = svc_chain_info['svm_fixtures']
+                for svm_fixture in svc_chain_info['svm_fixtures']:
+                    # if max_instance > 1 configure the fat flow for both the instances
+                    vmi_ids_dict = svm_fixture.get_vmi_ids()
+                    left_vmi_id = vmi_ids_dict[left_vn_fq_name]
+                    right_vmi_id = vmi_ids_dict[right_vn_fq_name]
+
+                    clean_config = True
+                    repeat = 1
+                    for num in range(repeat):
+                        if clean_config:
+                            self.delete_fat_flow_from_vmi(vmi_ids=[left_vmi_id])
+                            self.delete_fat_flow_from_vmi(vmi_ids=[right_vmi_id])
+
+                        if fat_flow:
+                            self.config_fat_flow_aggr_prefix(vmi=[left_vmi_id], proto=proto,
+                                                             port=port, cidr=fat_flow_cidr_on_left_vmi, mask=mask_left,
+                                                             prefix_length=prefix_length,
+                                                             ignore_address=ignore_address_left, src=left_src)
+                            self.config_fat_flow_aggr_prefix(vmi=[right_vmi_id], proto=proto,
+                                                             port=port, cidr=fat_flow_cidr_on_right_vmi, mask=mask_left,
+                                                             prefix_length=prefix_length,
+                                                             ignore_address=ignore_address_right, src=right_src)
+                        config_change = False
+                        if config_change:
+                            self.config_fat_flow_aggr_prefix(vmi=[left_vmi_id], proto=proto,
+                                                             port=port, cidr=fat_flow_cidr_on_left_vmi, mask=mask_left,
+                                                             prefix_length=prefix_length,
+                                                             ignore_address=None, src=left_src)
+                            self.config_fat_flow_aggr_prefix(vmi=[right_vmi_id], proto=proto,
+                                                             port=port, cidr=fat_flow_cidr_on_right_vmi, mask=mask_left,
+                                                             prefix_length=prefix_length,
+                                                             ignore_address=None, src=right_src)
+                            ignore_address = None
+                # check health status again after configuring fat flow, bug 1704716
+                if hc:
+                    assert si_fixture.verify_hc_in_agent()
+                    assert si_fixture.verify_hc_is_active()
+
+        #Configure Fat flow on server VM
+        server_vmi_id = server_fixtures[0].get_vmi_ids().values()
+        ff_on_vmi = False
+        if not only_v6 and ff_on_vmi or not ff_on_si_vmis:
+            if fat_flow:
+                for vmi_id in [ server_vmi_id ]:
+                    self.config_fat_flow_aggr_prefix(vmi=vmi_id, proto=proto,
+                                                     port=port, cidr=cidr, mask=mask,
+                                                     prefix_length=prefix_length,
+                                                     ignore_address=ignore_address)
+        for af in afs:
+            port = port
+            if af == 'v6':
+                port = portv6
+                for vmi_id in [ server_vmi_id ]:
+                    self.config_fat_flow_aggr_prefix(vmi=vmi_id,
+                        proto=proto, port=port, cidr=cidr6, mask=mask6,
+                        prefix_length=prefix_length6, ignore_address=ignore_address)
+                expected_src_prefix_list  = { client_fixtures[0]: cidr6, client_fixtures[1]: next_subnetv6}
+                if proto == 'icmp': port = 0
+            scale_sessions = 1 # default
+            if scale_src:
+                client_fixtures.extend(self.scale_clients)
+                #scale_sessions = 0 # number of sessions from a src
+                scale_sessions = 3
+            expected_flow_count = 1
+            if svm_fix:
+                ignore_address = ignore_address_left
+                #expected_flow_count = 2 # For both left and right vmi
+            for fix in server_fixtures:
+                self.verify_fat_flow_with_traffic(client_fixtures,fix,
+                                                    proto, port, af=af, expected_src_prefix_list=expected_src_prefix_list,
+                                                    unidirectional_traffic=unidirectional_traffic,
+                                                    ignore_address=ignore_address, icmp_error=icmp_error,
+                                                    svm_fix=svm_fixture, expected_flow_count=expected_flow_count,
+                                                    svc_chain=svc_chain, scale=scale_sessions)
+            clean_config = True
+            if fat_flow and ff_on_si_vmis and clean_config:
+                for svm_fixture in svc_chain_info['svm_fixtures']:
+                    # if max_instance > 1 configure the fat flow for both the instances
+                    vmi_ids_dict = svm_fixture.get_vmi_ids()
+                    left_vmi_id = vmi_ids_dict[left_vn_fq_name]
+                    right_vmi_id = vmi_ids_dict[right_vn_fq_name]
+                    self.delete_fat_flow_from_vmi(vmi_ids=[left_vmi_id])
+                    self.delete_fat_flow_from_vmi(vmi_ids=[right_vmi_id])
+    # end
+
+    def fat_flow_config_on_svms(self, svm_fixtures, fat_flow=False):
+        for svm_fixture in svm_fixtures:
+            # if max_instance > 1 configure the fat flow for both the instances
+            vmi_ids_dict = svm_fixture.get_vmi_ids()
+            left_vmi_id = vmi_ids_dict[left_vn_fq_name]
+            right_vmi_id = vmi_ids_dict[right_vn_fq_name]
+
+            clean_config = True
+            if clean_config:
+                self.delete_fat_flow_from_vmi(vmi_ids=[left_vmi_id])
+                self.delete_fat_flow_from_vmi(vmi_ids=[right_vmi_id])
+
+            if fat_flow:
+                self.config_fat_flow_aggr_prefix(vmi=[left_vmi_id], proto=proto,
+                                                 port=port, cidr=fat_flow_cidr_on_left_vmi, mask=mask_left,
+                                                 prefix_length=prefix_length,
+                                                 ignore_address=ignore_address_left, src=left_src)
+                self.config_fat_flow_aggr_prefix(vmi=[right_vmi_id], proto=proto,
+                                                 port=port, cidr=fat_flow_cidr_on_right_vmi, mask=mask_left,
+                                                 prefix_length=prefix_length,
+                                                 ignore_address=ignore_address_right, src=right_src)
+
+    def delete_fat_flow_from_vmi(self, vmi_ids):
+        '''vmi_ids: list of vmi ids
+           fat_flow_config: dictionary of format {'proto':<string>,'port':<int>,
+            'ignore_address': <string, source/destination>}
+        '''
+        for vmi_id in vmi_ids:
+            self.vnc_h.delete_all_fat_flow_config_from_vmi(vmi_id)
+
+        return True
+
+    def create_policy_rule(self, rules, src_vn=None, dst_vn=None,
+                           src_subnet=None, dst_subnet=None, src_ports=[0, 65535],
+                           dest_ports=[0, 65535], action='pass',
+                           proto='icmp', direction='<>'):
+        rule = {'direction': direction,
+            'protocol': proto,
+            'source_network': src_vn,
+            'src_ports': src_ports,
+            'dest_network': dst_vn,
+            'source_subnet': src_subnet,
+            'dest_subnet': dst_subnet,
+            'dst_ports': dest_ports,
+            'simple_action': action,
+            'action_list': {'simple_action': action}
+            }
+        rules.append(rule)
+    # end create_policy_rule
+
+
+    def config_fat_flow_aggr_prefix(self, vmi, proto=None, port=None, cidr=None, mask=None,
+                                    prefix_length=None, src=None, ignore_address=None):
+        config_dict = {}
+        if ignore_address == 'src':
+            config_dict['ignore_address'] = 'source'
+        elif ignore_address == 'dst':
+            config_dict['ignore_address'] = 'destination'
+
+        config_dict['port'] = port
+        config_dict['proto'] = proto
+        prefix_type = 'destination_prefix'
+        length_type = 'destination_aggregate_prefix_length'
+        if src:
+            prefix_type = 'source_prefix'
+            length_type = 'source_aggregate_prefix_length'
+        config_dict[prefix_type] = [cidr, mask]
+        config_dict[length_type] = prefix_length
+        self.add_fat_flow_to_vmis(vmi, config_dict)
+    # end config_fat_flow_aggr_prefix
+
+    def create_vm_using_fixed_ips(self, vn_fixture,
+            fixed_ips, vm_name='vm1', image_name='ubuntu'):
+        port = self.useFixture(PortFixture(vn_fixture.uuid,
+                                api_type = "contrail",
+                                fixed_ips = fixed_ips,
+                                connections=self.connections))
+        fix = self.create_vm(vn_fixture, vm_name,
+                                     image_name=image_name,
+                                     port_ids=[port.uuid])
+        assert fix.wait_till_vm_is_up()
+        return fix
+    # end create_vm_using_fixed_ips
 
     def add_fat_flow_to_vns(self, vn_fixtures, fat_flow_config):
         '''vn_fixtures: list of vn fixtures
@@ -329,7 +834,6 @@ class BaseVrouterTest(BaseNeutronTest):
             dest_vm_fix, local_port=sport, remote_port=dport,
             nc_options=nc_options, size=size, ip=ip, expectation=exp,
             retry=True, receiver=receiver)
-
         return result
 
     def start_ping(self, src_vm, dst_vm=None, dst_ip=None, wait=False,
@@ -723,7 +1227,6 @@ class BaseVrouterTest(BaseNeutronTest):
                             compute_fixture.ip,
                             source_ip, dest_ip, sport, dest_port, vrf_id,
                             fat_flow_count, ff_count))
-
         assert ff_count == fat_flow_count, ('Fat flow count mismatch on '
             'compute, got:%s, exp:%s' % (ff_count, fat_flow_count))
         assert rf_count == fat_flow_count, ('Fat flow count mismatch on '
@@ -732,49 +1235,104 @@ class BaseVrouterTest(BaseNeutronTest):
     def verify_fat_flow(self, sender_vm_fix_list, dst_vm_fix,
                                proto, dest_port,
                                fat_flow_count=1,
-                               unidirectional_traffic=True, af=None):
+                               unidirectional_traffic=True, af=None,
+                               expected_src_prefix_list=None, expected_dst_prefix_list=None,
+                               ignore_address=None, icmp_error=False, svm_fix=None, svc_chain=None):
         '''
         Verifies FAT flows on all the computes
         '''
+        ff_count = fat_flow_count
         af = af or self.inputs.get_af()
+        if svm_fix: # For SVM, ff verification should happen on the CN where SVM is launched
+            verify_for_left_vmi=True
+            verify_for_right_vmi=True
         dst_compute_fix = self.compute_fixtures_dict[dst_vm_fix.vm_node_ip]
         vrf_id_dst = dst_compute_fix.get_vrf_id(dst_vm_fix.vn_fq_names[0])
+        if svm_fix:
+            dst_compute_fix = self.compute_fixtures_dict[svm_fix.vm_node_ip]
+            vrf_id_dst = None # Ignore vrf_id for SVMI
         for fix in sender_vm_fix_list:
+            fat_flow_count = ff_count
             src_compute_fix = self.compute_fixtures_dict[fix.vm_node_ip]
             vrf_id_src = src_compute_fix.get_vrf_id(fix.vn_fq_names[0])
+            if svm_fix:
+                vrf_id_src = None
+                if proto == 'icmp': dest_port = None
+                fat_flow_count = 2
             #For inter-Node traffic
-            if (dst_vm_fix.vm_node_ip != fix.vm_node_ip):
-                self.verify_fat_flow_on_compute(dst_compute_fix,
-                    fix.get_vm_ips(af=af)[0], dst_vm_fix.get_vm_ips(af=af)[0],
+            if expected_src_prefix_list:
+                src_ip = expected_src_prefix_list[fix]
+            else:
+                src_ip = fix.get_vm_ips(af=af)[0]
+            if expected_dst_prefix_list:
+                dst_ip = expected_dst_prefix_list[fix]
+                dest_port = dest_port
+            else:
+                dst_ip = dst_vm_fix.get_vm_ips(af=af)[0]
+            if ignore_address == 'src':
+                dst_ip = '0.0.0.0' if self.inputs.get_af() == 'v4' else '::'
+            if ignore_address == 'dst':
+                src_ip = '0.0.0.0' if self.inputs.get_af() == 'v4' else '::'
+            ff_fix = dst_vm_fix # Where ff verification happens
+            if svm_fix:
+                svm_compute_fix = self.compute_fixtures_dict[svm_fix.vm_node_ip]
+                ff_fix = svm_fix
+                # when fat flow configured on both left and right svmi
+                if svc_chain['ff_on_si_vmis']['left'] and svc_chain['ff_on_si_vmis']['right']:
+                    fat_flow_count = 2 * fat_flow_count # for left svmi, and right svmi
+            if (ff_fix.vm_node_ip != fix.vm_node_ip):
+                ff_compute_fix = dst_compute_fix # default compute fix is dst_compute_fix
+                # In the case when svm and dst vm are on different node
+                # the verification should happen on the svm's compute node, not dest's compute node
+                # i.e. src and dst on the same compute node, but svm on different compute node.
+                if svm_fix and fix.vm_node_ip == dst_vm_fix.vm_node_ip:
+                # when both src and dst VMs are on the same compute, but svm on different compute
+                    ff_compute_fix = svm_compute_fix
+                    fat_flow_count = 2
+                        # when svm is on different compute, 2 pairs of fat flows to be created
+                self.verify_fat_flow_on_compute(ff_compute_fix,
+                    src_ip, dst_ip,
                     dest_port, proto, vrf_id_dst, fat_flow_count=fat_flow_count)
 
                 #Source compute should never have Fat flow for inter node traffic
+                fat_flow_count=0
                 self.verify_fat_flow_on_compute(src_compute_fix,
-                    fix.get_vm_ips(af=af)[0], dst_vm_fix.get_vm_ips(af=af)[0],
-                    dest_port, proto, vrf_id_src, fat_flow_count=0)
+                    src_ip, dst_ip,
+                    dest_port, proto, vrf_id_src, fat_flow_count=fat_flow_count)
             #For intra-Node traffic
             else:
+                if proto in  ['icmp', 'icmp6'] and svm_fix:
+                    fat_flow_count = 2 # one for left vmi, other for right vmi, src and svm both on same node
+                    unidirectional_traffic = False
                 if unidirectional_traffic:
                     #Source compute should not have Fat flow for unidirectional traffic
+                    fat_flow_count = 0
+                    if icmp_error or proto in ['icmp', 'icmp6']:  fat_flow_count=1
+                    if svm_fix:
+                        fat_flow_count = 1 # One fat flow expected for right vmi
+                        # when AggrSrc( + Ignore Dst) with src prefix is configured on right vmi
+                        # fat flow should not get created if AggrSrc with dest prefix is configured
                     self.verify_fat_flow_on_compute(src_compute_fix,
-                        fix.get_vm_ips(af=af)[0],
-                        dst_vm_fix.get_vm_ips(af=af)[0], dest_port, proto,
-                        vrf_id_src, fat_flow_count=0)
-
-                else:
-                    #Source compute should have Fat flow for bi-directional traffic
-                    self.verify_fat_flow_on_compute(src_compute_fix,
-                        fix.get_vm_ips(af=af)[0],
-                        dst_vm_fix.get_vm_ips(af=af)[0], dest_port, proto,
+                        src_ip,
+                        dst_ip, dest_port, proto,
                         vrf_id_src, fat_flow_count=fat_flow_count)
 
+                else:
+                    ##Source compute should have Fat flow for bi-directional traffic
+                    self.verify_fat_flow_on_compute(src_compute_fix,
+                        src_ip,
+                        dst_ip, dest_port, proto,
+                        vrf_id_src, fat_flow_count=fat_flow_count)
 
         return True
 
     def verify_fat_flow_with_traffic(self, sender_vm_fix_list, dst_vm_fix,
             proto, dest_port=None, traffic=True,
             expected_flow_count=1, fat_flow_count=1, af=None,
-            fat_flow_config=None, sport_list=None, dport_list=None):
+            fat_flow_config=None, sport_list=None, dport_list=None,
+            expected_src_prefix_list=None, expected_dst_prefix_list=None,
+            unidirectional_traffic=True, traffic_recvr=False,
+            ignore_address=None, icmp_error=False, svm_fix=None, svc_chain=None, scale=1):
         '''
         Common method to be used for Fat and non-Fat flow verifications:
             1. Use 2 different source ports from each sender VM to send traffic
@@ -786,9 +1344,15 @@ class BaseVrouterTest(BaseNeutronTest):
                 expected_flow_count: expected non-Fat flow count
                 fat_flow_count: expected Fat flow count
         '''
+        receiver = True
         af = af or self.inputs.get_af()
         #Use 2 different source ports for each sender VM
+        if proto == 'tcp':
+            unidirectional_traffic = False
         sport_list = sport_list or [10000, 10001]
+        sport_list = [10000]
+        if af == 'v6':
+            sport_list = [20000, 20001]
         dport_list = dport_list or [dest_port]
         fat_flow_dport = dest_port or 0
         dst_compute_fix = self.compute_fixtures_dict[dst_vm_fix.vm_node_ip]
@@ -796,29 +1360,64 @@ class BaseVrouterTest(BaseNeutronTest):
             #mask both source and dest port in the flow
             if fat_flow_config['port'] == 0:
                 fat_flow_dport = 0
-
+        if proto == 'icmp':
+            traffic = False
+            for fix in sender_vm_fix_list:
+                for i in range(scale):
+                    ping_h = self.start_ping(fix, dst_ip=dst_vm_fix.get_vm_ips(af=af)[0])
+                dport_list = [0]
+                if af == 'v6':
+                    dport_list = [129]  # For icmp6 port=129
+                    proto = 'icmp6'
+                for sp in sport_list: # random port for icmp, so pass None
+                    index_of_sp = sport_list.index(sp)
+                    sport_list[index_of_sp] = 0
         #Start the traffic from each of the VM in sender_vm_fix_list to dst_vm_fix
+        if traffic_recvr:
+            traffic = False
         if traffic:
             for fix in sender_vm_fix_list:
                 for sport in sport_list:
                     for dport in dport_list:
+                        #if af == 'v6':
+                        if icmp_error:
+                            receiver = False
                         assert self.send_nc_traffic(fix, dst_vm_fix, sport,
-                            dport, proto, ip=dst_vm_fix.get_vm_ips(af=af)[0])
-
+                            dport, proto, ip=dst_vm_fix.get_vm_ips(af=af)[0], receiver=receiver)
+        if traffic_recvr: # For Intra node only, only fat flow expected on Intra compute node
+            for fix in sender_vm_fix_list:
+                for sport in sport_list:
+                    for dport in dport_list:
+                        #if af == 'v6':
+                        assert self.send_nc_traffic(dst_vm_fix, fix, dport,
+                            sport, proto, ip=fix.get_vm_ips(af=af)[0])
         #Verify the non-Fat flows on sender computes for each sender/receiver VMs and ports
+        dest_ip=dst_vm_fix.get_vm_ips(af=af)[0]
+        #dest_port = dport
         for fix in sender_vm_fix_list:
+            source_ip=fix.get_vm_ips(af=af)[0]
             for sport in sport_list:
+                source_port = sport
+                if source_port == 0:
+                    source_port = None
                 for dport in dport_list:
+                    dest_port = dport
                     compute_fix = self.compute_fixtures_dict[fix.vm_node_ip]
+                    vrf_id = compute_fix.get_vrf_id(fix.vn_fq_names[0])
+                    if svm_fix:
+                        vrf_id = None # vrf_id not applicable for SVMI
+                        if dst_vm_fix.vm_node_ip == fix.vm_node_ip: # when src vm and dest vm are on the same node
+                        # and svc_chain enabled, the node to have multiple normal flows for each vrf.
+                            expected_flow_count = 2
                     (ff_count, rf_count) = compute_fix.get_flow_count(
-                                        source_ip=fix.get_vm_ips(af=af)[0],
-                                        dest_ip=dst_vm_fix.get_vm_ips(af=af)[0],
-                                        source_port=sport,
-                                        dest_port=dport,
+                                        source_ip=source_ip,
+                                        dest_ip=dest_ip,
+                                        source_port=source_port,
+                                        dest_port=dest_port,
                                         proto=proto,
-                                        vrf_id=compute_fix.get_vrf_id(
-                                                  fix.vn_fq_names[0])
-                                        )
+                                        vrf_id=vrf_id)
+                    if proto == 'tcp' or traffic_recvr:
+                        expected_flow_count = 0
                     assert ff_count == expected_flow_count, ('Flows count mismatch on '
                         'sender compute, got:%s, expected:%s' % (
                         ff_count, expected_flow_count))
@@ -829,33 +1428,46 @@ class BaseVrouterTest(BaseNeutronTest):
                     #For the case when sender and receiver are on different nodes
                     if dst_vm_fix.vm_node_ip != fix.vm_node_ip:
                         #Flow with source and dest port should not be created on dest node, if Fat flow is expected
-                        if fat_flow_count:
+                        if fat_flow_count and not svm_fix:
                             expected_count_dst = 0
                         else:
                             expected_count_dst = expected_flow_count
+                        if proto == 'tcp': # Due to eviction
+                            expected_flow_count = 0
+                        vrf_id = dst_compute_fix.get_vrf_id(dst_vm_fix.vn_fq_names[0])
+                        if svm_fix:
+                            vrf_id = None # Ignore vrf_id if svm_fix is set
+                            if proto == 'icmp' : # Normal flow expected when dst is on different CN
+                                sport=None
+                                dport=None
                         (ff_count, rf_count) = dst_compute_fix.get_flow_count(
                                         source_ip=fix.get_vm_ips(af=af)[0],
                                         dest_ip=dst_vm_fix.get_vm_ips(af=af)[0],
                                         source_port=sport,
                                         dest_port=dport,
                                         proto=proto,
-                                        vrf_id=dst_compute_fix.get_vrf_id(
-                                                  dst_vm_fix.vn_fq_names[0])
-                                        )
+                                        vrf_id=vrf_id)
                         assert ff_count == expected_count_dst, ('Flows count '
                             'mismatch on dest compute, got:%s, expected:%s' % (
                             ff_count, expected_count_dst))
                         assert rf_count == expected_count_dst, ('Flows count '
                             'mismatch on dest compute, got:%s, expected:%s' % (
                             rf_count, expected_count_dst))
-
         #FAT flow verification
+        if svm_fix: # For SVM, ff verification should happen on the CN where SVM is launched
+            verify_for_left_vmi=True
+            verify_for_right_vmi=True
         assert self.verify_fat_flow(sender_vm_fix_list, dst_vm_fix,
-                               proto, fat_flow_dport, fat_flow_count, af=af)
-
+                               proto, fat_flow_dport, fat_flow_count, af=af,
+                               expected_src_prefix_list=expected_src_prefix_list,
+                               expected_dst_prefix_list=expected_dst_prefix_list,
+                               unidirectional_traffic=unidirectional_traffic,
+                               ignore_address=ignore_address, icmp_error=icmp_error,
+                               svm_fix=svm_fix, svc_chain=svc_chain)
         self.logger.info("Fat flow verification passed for "
             "protocol %s and port %s" % (proto, fat_flow_dport))
         return True
+    # end verify_fat_flow_with_traffic
 
     def verify_fat_flow_with_ignore_addrs(self, sender_vm_fix_list,
             dst_vm_fix_list, fat_flow_config, traffic=True,
