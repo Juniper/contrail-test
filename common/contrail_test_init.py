@@ -255,6 +255,8 @@ class TestInputs(object):
         self.kube_manager_control_ips = []
         self.k8s_master_ip = ""
         self.k8s_slave_ips = []
+        self.policy_generator_ips = []
+        self.policy_generator_control_ips = []
         self.dpdk_ips = []
         self.host_data = {}
         self.tor = {}
@@ -358,6 +360,10 @@ class TestInputs(object):
                 self.webui_ip = host_data['host_ip']
                 self.webui_ips.append(host_data['host_ip'])
                 self.webui_control_ips.append(service_ip)
+            if 'policy_generator' in roles:
+                service_ip = self.get_service_ip(host_data['host_ip'], 'policy_generator')
+                self.policy_generator_ips.append(host_data['host_ip'])
+                self.policy_generator_control_ips.append(service_ip)
             if 'analytics' in roles:
                 service_ip = self.get_service_ip(host_data['host_ip'], 'analytics')
                 self.collector_ip = service_ip
@@ -474,6 +480,7 @@ class TestInputs(object):
         self.agent_port = '8085'
         self.api_server_ip = contrail_configs.get('CONFIG_API_VIP')
         self.analytics_api_ip = contrail_configs.get('ANALYTICS_API_VIP')
+        self.policy_generator_port = contrail_configs.get('POLICY_GENERATOR_PORT') or 9093
         self.config_amqp_ips = contrail_configs.get('RABBITMQ_NODES')
         self.config_amqp_port = contrail_configs.get('RABBITMQ_NODE_PORT', 5673)
         self.xmpp_auth_enable = contrail_configs.get('XMPP_SSL_ENABLE')
