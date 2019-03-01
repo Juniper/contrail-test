@@ -122,26 +122,21 @@ class AnalyticsVerification(fixtures.Fixture):
         
     def get_all_generators(self):
         self.generator_hosts = []
-        self.bgp_hosts = []
-        self.compute_hosts = []
-        self.collector_hosts = []
-
-        for collector_ip in self.inputs.collector_ips:
-            c_host = self.inputs.host_data[collector_ip]['name']
-            self.collector_hosts.append(c_host)
-            if (c_host not in self.generator_hosts):
-                self.generator_hosts.append(c_host)
-
-        for ip in self.inputs.bgp_ips:
-            bgp_host = self.inputs.host_data[ip]['name']
-            self.bgp_hosts.append(bgp_host)
-            if (bgp_host not in self.generator_hosts):
-                self.generator_hosts.append(bgp_host)
-        for ip in self.inputs.compute_ips:
-            compute_host = self.inputs.host_data[ip]['name']
-            self.compute_hosts.append(compute_host)
-            if (compute_host not in self.generator_hosts):
-                self.generator_hosts.append(compute_host)
+        self.bgp_hosts = self.inputs.bgp_names
+        self.compute_hosts = self.inputs.compute_names
+        self.collector_hosts = self.inputs.collector_names
+        
+        for host in self.bgp_hosts:
+            if (host not in self.generator_hosts):
+                self.generator_hosts.append(host)
+                
+        for host in self.compute_hosts:
+            if (host not in self.generator_hosts):
+                self.generator_hosts.append(host)
+                
+        for host in self.collector_hosts:
+            if (host not in self.generator_hosts):
+                self.generator_hosts.append(host)
 
     def get_connection_status(self, collector, generator, moduleid, node_type, instanceid='0'):
         '''Getting connection status with generator:node_type:moduleid:instanceid with collector
