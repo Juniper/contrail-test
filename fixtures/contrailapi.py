@@ -2118,6 +2118,24 @@ class ContrailVncApi(object):
         self._vnc.logical_router_update(router_obj)
         return router_obj
 
+    def update_bgp_router_af(self, name, af):
+        '''
+            Update bgp router address family
+            Param:
+               name - bgp router name
+               af - address family to add
+        '''
+        bgp_fq_name = ['default-domain', 'default-project',
+                           'ip-fabric', '__default__']
+        bgp_fq_name.append(name)
+        bgp_router_obj = self._vnc.bgp_router_read(fq_name=bgp_fq_name)
+        params = bgp_router_obj.get_bgp_router_parameters()
+        address_families = params.get_address_families()
+        address_families.add_family(af)
+        params.set_address_families(address_families)
+        bgp_router_obj.set_bgp_router_parameters(params)
+        self._vnc.bgp_router_update(bgp_router_obj)
+
     def provision_bgp_router(self, name, ip, asn, af):
         '''Provision Fabric Gateway.
            Input is: name, ip, asn and address families of bgp router
