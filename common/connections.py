@@ -89,16 +89,7 @@ class ContrailConnections():
             self.nova_h = self.orch.get_compute_handler()
             self.quantum_h = self.orch.get_network_handler()
             self.glance_h = self.orch.get_image_handler()
-        elif self.inputs.orchestrator == 'vcenter' and self.inputs.slave_orchestrator == 'vro':
-            self.orch = VroWorkflows(user=self.inputs.vcenter_username,
-                            pwd= self.inputs.vcenter_password,
-                            host=self.inputs.vcenter_server,
-                            port=self.inputs.vcenter_port,
-                            dc_name=self.inputs.vcenter_dc,
-                            vnc=self.vnc_lib,
-                            inputs=self.inputs,
-                            logger=self.logger)
-        elif self.inputs.orchestrator == 'vcenter': # vcenter
+        elif self.inputs.orchestrator == 'vcenter': 
             self.orch = VcenterOrchestrator(user=self.inputs.vcenter_username,
                                             pwd= self.inputs.vcenter_password,
                                             host=self.inputs.vcenter_server,
@@ -107,6 +98,15 @@ class ContrailConnections():
                                             vnc=self.vnc_lib,
                                             inputs=self.inputs,
                                             logger=self.logger)
+            if self.inputs.vro_server:
+                self.vro_orch = VroWorkflows(user=self.inputs.vcenter_username,
+                            pwd= self.inputs.vcenter_password,
+                            host=self.inputs.vcenter_server,
+                            port=self.inputs.vcenter_port,
+                            dc_name=self.inputs.vcenter_dc,
+                            vnc=self.vnc_lib,
+                            inputs=self.inputs,
+                            logger=self.logger)
         elif self.inputs.orchestrator == 'kubernetes':
             self.orch = None
         if self.inputs.vcenter_gw_setup: # vcenter_gateway

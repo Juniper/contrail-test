@@ -32,9 +32,12 @@ class VN_Policy_Fixture(fixtures.Fixture):
         self.vn = vn_name
         self.already_present = False
         self.option = options if self.inputs.orchestrator == 'openstack' else 'contrail'
-        if self.inputs.verify_thru_gui():                                                                                    
-            self.browser = self.connections.browser                                                                          
-            self.browser_openstack = self.connections.browser_openstack                                                      
+        if self.inputs.vro_based:
+            self.orch = self.connections.orch
+            self.option = 'vro'
+        if self.inputs.verify_thru_gui():
+            self.browser = self.connections.browser
+            self.browser_openstack = self.connections.browser_openstack
             self.webui = WebuiTest(self.connections, self.inputs)  
     # end __init__
 
@@ -52,7 +55,11 @@ class VN_Policy_Fixture(fixtures.Fixture):
         else:
             if self.policy_obj[self.vn]:
                 self.logger.debug("Setup step: Associating the policy to VN'")
-                if self.option == 'openstack':
+                if self.option == 'vro':
+                    policy_names = [policy.name for policy in self.policy_obj[self.vn]]
+                    self.orch.add_network_policy_to_vn(self.vn,policy_names)
+                    self.logger.info('Associated Policy to %s' % (self.vn))
+                elif self.option == 'openstack':
                     policy_fq_names = [
                         self.quantum_h.get_policy_fq_name(x) for x in self.policy_obj[self.vn]]
                     if self.inputs.is_gui_based_config():
@@ -100,7 +107,11 @@ class VN_Policy_Fixture(fixtures.Fixture):
             policy_of_vn = self.api_s_inspect.get_cs_vn_policys(
                 project=self.project_name, domain=self.domain_name, vn=self.vn, refresh=True)
             if policy_of_vn:
-                if self.option == 'openstack':
+                if self.option == 'vro':
+                    policy_names = [policy.name for policy in self.policy_obj[self.vn]]
+                    self.orch.remove_network_policy_from_vn(self.vn,policy_names)
+                    self.logger.info('Detached Policy from %s' % (self.vn))
+                elif self.option == 'openstack':
                     for policy in policy_of_vn:
                         policy_fq_names.append(self.api_s_inspect.get_cs_policy(
                             project=self.project_name,domain=self.domain_name, policy=policy)['network-policy']['fq_name'])
