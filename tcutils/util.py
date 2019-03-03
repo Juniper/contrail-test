@@ -1121,6 +1121,17 @@ def skip_because(*args, **kwargs):
         return wrapper
     return decorator
 
+def set_attr(*args, **kwargs):
+    def decorator(f):
+        @functools.wraps(f)
+        def wrapper(self, *func_args, **func_kwargs):
+            if 'vro_based' in args:
+                if self.inputs.vro_server:
+                    self.orch = self.connections.orch = self.connections.vro_orch
+                    self.inputs.enable_vro(True)
+            return f(self, *func_args, **func_kwargs)
+        return wrapper
+    return decorator
 
 def get_build_sku(openstack_node_ip, openstack_node_password='c0ntrail123', user='root',
                   container=None):

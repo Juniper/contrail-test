@@ -422,6 +422,23 @@ class TestPolicyAcl(BasePolicyTest):
         self.setup_ipam_vn()
 
         # create policy
+        policy_name = 'policy13'
+        rules = []
+        rules = [{'direction': '<>',
+                  'protocol': 'any',
+                  'dest_network': 'VN3',
+                  'source_network': 'VN1',
+                  'dst_ports': 'any',
+                  'simple_action': 'deny',
+                  'src_ports': 'any'}]
+
+        policy13_fixture = self.useFixture(
+            PolicyFixture(
+                policy_name=policy_name,
+                rules_list=rules,
+                inputs=self.inputs,
+                connections=self.connections))
+
         policy_name = 'policy12'
         rules = []
         rules = [{'direction': '<>',
@@ -456,22 +473,6 @@ class TestPolicyAcl(BasePolicyTest):
                 inputs=self.inputs,
                 connections=self.connections))
 
-        policy_name = 'policy13'
-        rules = []
-        rules = [{'direction': '<>',
-                  'protocol': 'any',
-                  'dest_network': 'VN3',
-                  'source_network': 'VN1',
-                  'dst_ports': 'any',
-                  'simple_action': 'deny',
-                  'src_ports': 'any'}]
-
-        policy13_fixture = self.useFixture(
-            PolicyFixture(
-                policy_name=policy_name,
-                rules_list=rules,
-                inputs=self.inputs,
-                connections=self.connections))
 
         # attach policy to VN
         VN1_policy_fixture = self.useFixture(

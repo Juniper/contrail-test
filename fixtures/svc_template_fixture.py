@@ -88,7 +88,7 @@ class SvcTemplateFixture(fixtures.Fixture):
             self.logger.debug(
                 "Service template: %s already exists", self.st_fq_name)
         except NoIdError:
-            if self.inputs.slave_orchestrator == 'vro':
+            if self.inputs.vro_based:
                 st = {}
                 st['st_name'] = self.st_name
                 st['if_details'] = self.if_details
@@ -130,13 +130,12 @@ class SvcTemplateFixture(fixtures.Fixture):
                     self.uuid = self.vnc_lib_h.service_template_create(svc_template)
                 svc_template = self.vnc_lib_h.service_template_read(
                     fq_name=self.st_fq_name)
-
         return svc_template
     # end _create_st
 
     def _delete_st(self):
         self.logger.debug("Deleting service template: %s", self.st_fq_name)
-        if self.inputs.slave_orchestrator == 'vro':
+        if self.inputs.vro_based:
             self.orch.delete_st(self.st_name)
         else:
             self.vnc_lib_h.service_template_delete(fq_name=self.st_fq_name)
