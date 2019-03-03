@@ -419,9 +419,15 @@ class VMFixture(fixtures.Fixture):
         return self.vm_ip_dict
 
     def add_security_group(self, secgrp):
+        if self.inputs.vro_based:
+            port_id = self.tap_intf[self.vn_fq_name]['name']
+            return self.orch.add_security_group(port_id, secgrp)
         self.orch.add_security_group(vm_id=self.vm_obj.id, sg_id=secgrp)
 
     def remove_security_group(self, secgrp):
+        if self.inputs.vro_based:
+            port_id = self.tap_intf[self.vn_fq_name]['name']
+            return self.orch.remove_security_group(port_id, secgrp)
         self.orch.remove_security_group(vm_id=self.vm_obj.id, sg_id=secgrp)
 
     def verify_security_group(self, secgrp):

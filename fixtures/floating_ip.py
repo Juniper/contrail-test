@@ -74,6 +74,8 @@ class FloatingIPFixture(fixtures.Fixture):
         if not self.is_fip_pool_present(self.pool_name):
             if self.inputs.is_gui_based_config():
                 self.create_floatingip_pool_webui(self.pool_name, self.vn_name)
+            elif self.inputs.vro_based:
+                self.orch.create_fip_pool(self.pool_name, vn=self.vn_id)
             else:
                 self.create_floatingip_pool(self.pool_name, self.vn_id)
         else:
@@ -256,8 +258,12 @@ class FloatingIPFixture(fixtures.Fixture):
         try:
             fip_obj = self.create_floatingip(fip_pool_vn_id, project)
             self.logger.debug('Associating FIP %s to %s' %(fip_obj[0], vm_id))
-            self.assoc_floatingip(fip_obj[1], vm_id, port_id=port_id)
-            return fip_obj[1]
+            if self.inputs.vro_based:
+                self.orch.assoc_floating_ip(fip_obj[0], port_id=port_id)
+                return fip_obj[0]
+            else:
+                self.assoc_floatingip(fip_obj[1], vm_id, port_id=port_id)
+                return fip_obj[1]
         except:
             self.logger.error('Failed to create or asscociate FIP. Error: %s' %
                               (sys.exc_info()[0]))
@@ -472,11 +478,15 @@ class FloatingIPFixture(fixtures.Fixture):
     def get_matching_vrf(self, vrf_objs, vrf_name):
         return [x for x in vrf_objs if x['name'] == vrf_name][0]
 
-    def disassoc_and_delete_fip(self, fip_id):
+    def disassoc_and_delete_fip(self, fip_id, port_id=None):
         ''' Disassociate and then delete the Floating IP .
         Strongly recommeded to call verify_no_fip() after this call
         '''
-        self.disassoc_floatingip(fip_id)
+        if self.inputs.vro_based:
+            self.orch.disassoc_floating_ip(fip_id, port_id)
+            self.orch.delete_floating_ip(fip_id)
+            return
+        self.disassoc_floatingip(fip_id, port_id)
         self.delete_floatingip(fip_id)
 #        time.sleep(10)
     # end disassoc_and_delete_fip
@@ -505,8 +515,11 @@ class FloatingIPFixture(fixtures.Fixture):
         '''
         if project_obj is None:
             project_obj = self.get_project_obj()
-        fip_resp = self.orch.create_floating_ip(pool_vn_id=fip_pool_vn_id,
-                     project_obj=project_obj, pool_obj=self.fip_pool_obj)
+        if self.inputs.vro_based:
+            fip_resp = self.orch.create_floating_ip(self.pool_name)
+        else:
+            fip_resp = self.orch.create_floating_ip(pool_vn_id=fip_pool_vn_id,
+                         project_obj=project_obj, pool_obj=self.fip_pool_obj)
         self.logger.debug('Created Floating IP : %s' % str(fip_resp))
         return fip_resp
     # end create_floatingip
@@ -552,7 +565,7 @@ class FloatingIPFixture(fixtures.Fixture):
         return self.orch.assoc_floating_ip(fip_id, vm_id, port_id=port_id)
     # end assoc_floatingip
 
-    def disassoc_floatingip(self, fip_id):
+    def disassoc_floatingip(self, fip_id, port_id=None):
         return self.orch.disassoc_floating_ip(fip_id)
     # end
 
@@ -613,6 +626,8 @@ class FloatingIPFixture(fixtures.Fixture):
                              (self.pool_name))
             if self.inputs.is_gui_based_config():
                 self.webui.delete_floatingip_pool(self)
+            elif self.inputs.vro_based:
+                self.orch.delete_fip_pool(self.pool_name)
             else:
                 self.delete_floatingip_pool()
             if self.verify_is_run or verify:
