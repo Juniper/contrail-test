@@ -182,7 +182,6 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
                   image_name='ubuntu-traffic',
                   port_ids=[], **kwargs):
         vn_obj = None
-        vn_objs = None
         if vn_fixture:
             vn_obj = vn_fixture.obj
         project_name = kwargs.pop('project_name', None) or cls.connections.project_name
@@ -191,7 +190,6 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
                     project_name=project_name,
                     connections=connections,
                     vn_obj=vn_obj,
-                    vn_objs=vn_objs,
                     vm_name=vm_name,
                     image_name=image_name,
                     flavor=flavor,
