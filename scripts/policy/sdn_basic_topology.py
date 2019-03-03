@@ -67,7 +67,6 @@ class sdn_basic_config ():
             {'direction': '>', 'protocol': 'any',
              'dest_network': self.vnet_list[0], 'source_network': self.vnet_list[0],
              'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': [3, 3]}]
-
         self.rules[self.policy_list[1]] = [
             {'direction': '>', 'protocol': 'any',
              'dest_network': self.vnet_list[0], 'source_network': self.vnet_list[0],

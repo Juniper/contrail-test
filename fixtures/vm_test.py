@@ -419,9 +419,15 @@ class VMFixture(fixtures.Fixture):
         return self.vm_ip_dict
 
     def add_security_group(self, secgrp):
+        if self.inputs.vro_based:
+            port_id = self.tap_intf[self.vn_fq_name]['name']
+            return self.orch.add_security_group(port_id, secgrp)
         self.orch.add_security_group(vm_id=self.vm_obj.id, sg_id=secgrp)
 
     def remove_security_group(self, secgrp):
+        if self.inputs.vro_based:
+            port_id = self.tap_intf[self.vn_fq_name]['name']
+            return self.orch.remove_security_group(port_id, secgrp)
         self.orch.remove_security_group(vm_id=self.vm_obj.id, sg_id=secgrp)
 
     def verify_security_group(self, secgrp):
@@ -644,11 +650,11 @@ class VMFixture(fixtures.Fixture):
             self.logger.error('Route verification for VM %s in Controlnodes'
                               ' failed ' % (self.vm_name))
             return result
-        result = self.verify_vm_in_opserver()
-        if not result:
-           self.logger.error('VM %s verification in Opserver failed'
-                              % (self.vm_name))
-           return result
+        #result = self.verify_vm_in_opserver()
+        #if not result:
+        ##   self.logger.error('VM %s verification in Opserver failed'
+         #                     % (self.vm_name))
+         #  return result
 
         self.verify_is_run = True
         return result
@@ -2016,20 +2022,20 @@ class VMFixture(fixtures.Fixture):
              assert self.verify_vm_flows_removed(), ('One or more flows of VM'
                 ' %s is still seen in Compute node %s' %(self.vm_name,
                                                          self.vm_node_ip))
-             for vn_fq_name in self.vn_fq_names:
-                 try:
-                     self.analytics_obj.verify_vm_not_in_opserver(
-                         self.vm_id,
-                         self.get_host_of_vm(),
-                         vn_fq_name)
-                 except PermissionDenied:
-                     if not self.admin_connections:
-                         raise
-                     admin_analytics_obj = self.admin_connections.analytics_obj
-                     admin_analytics_obj.verify_vm_not_in_opserver(
-                         self.vm_id,
-                         self.get_host_of_vm(),
-                         vn_fq_name)
+             #for vn_fq_name in self.vn_fq_names:
+             #    try:
+             #        self.analytics_obj.verify_vm_not_in_opserver(
+             #            self.vm_id,
+             #            self.get_host_of_vm(),
+             #            vn_fq_name)
+             #    except PermissionDenied:
+             #        if not self.admin_connections:
+             #            raise
+             #        admin_analytics_obj = self.admin_connections.analytics_obj
+             #        admin_analytics_obj.verify_vm_not_in_opserver(
+             #            self.vm_id,
+             #            self.get_host_of_vm(),
+             #            vn_fq_name)
              # Trying a workaround for Bug 452
         # end if
         return True
