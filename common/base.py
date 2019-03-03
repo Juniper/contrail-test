@@ -105,6 +105,14 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
             address_family = cls.address_family or 'v4'
         except AttributeError:
             cls.address_family = 'v4'
+        try:
+            vro_based = cls.vro_based or False
+            if vro_based:
+                if cls.inputs.vro_server:
+                    cls.orch = cls.connections.orch = cls.connections.vro_orch
+                    cls.inputs.enable_vro(True)
+        except:
+            pass
     # end setUpClass
 
     @classmethod
@@ -634,6 +642,16 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
     @classmethod
     def get_af(cls):
         return cls.address_family
+    @classmethod
+    def set_vro(cls, flag=False):
+        cls.vro_based = flag
+
+    @classmethod
+    def is_vro_based(cls):
+        try:
+            return cls.vro_based
+        except:
+            return False
 
     @classmethod
     def safe_cleanup(cls, obj_name):

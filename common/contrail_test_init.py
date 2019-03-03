@@ -433,7 +433,8 @@ class TestInputs(object):
         self.vcenter_dc = self.vcenter_server = self.vcenter_port = None
         self.vcenter_username = self.vcenter_password = None
         self.vcenter_compute = None
-
+        self.vro_based = False
+        
         with open(self.input_file, 'r') as fd:
             self.config = yaml.load(fd)
         deployment_configs = self.config.get('deployment', {})
@@ -608,9 +609,15 @@ class TestInputs(object):
             self.admin_password = self.vcenter_password
             self.admin_tenant = self.stack_tenant 
             self.admin_domain = self.stack_domain
-        if self.slave_orchestrator == 'vro':
-            self.vro_ip = test_configs.get('vro_ip')
-            self.vro_port = test_configs.get('vro_port')
+
+        #vro parsing
+        self.vro_server = test_configs.get('vro_server', None)
+        if self.vro_server:
+            self.vro_ip = str(self.vro_server['ip'])
+            self.vro_username = self.vro_server['username']
+            self.vro_password = self.vro_server['password']
+            self.vro_port = str(self.vro_server['port'])
+                
 
     def get_os_env(self, var, default=''):
         if var in os.environ:
@@ -1546,7 +1553,10 @@ class ContrailTestInit(object):
 
     # end _add_knob_to_container
 
-
+    def enable_vro(self, knob=False):
+        self.vro_based = knob
+    #end enable_vro
+    
 def _parse_args( args_str):
     parser = argparse.ArgumentParser()
     args, remaining_argv = parser.parse_known_args(args_str.split())

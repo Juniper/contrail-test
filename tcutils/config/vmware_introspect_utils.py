@@ -122,7 +122,7 @@ class name:
         d[self.d.tag] = self.d.text
         return d
 
-class hostname:
+class host_uuid:
     def __init__(self,d):
         self.d = d
     def make_dict(self):

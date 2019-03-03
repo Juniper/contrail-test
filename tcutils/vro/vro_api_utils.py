@@ -1,4 +1,5 @@
 import requests, json
+import re
 requests.packages.urllib3.disable_warnings()
 
 class AuthVRO(object):
@@ -79,8 +80,12 @@ class VroUtilBase(object):
     def get_query_url(self, path='workflows', query_string = None):
         #make query for catalog and workflows with query condition
         self.query_string = query_string
-        condition = '/?conditions=name=' + self.query_string
-        return self.base_url + path + condition
+        is_uuid = re.search(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',self.query_string)
+        if is_uuid:
+            condition = '/?conditions=uuid='
+        else:
+            condition = '/?conditions=name='
+        return self.base_url + path + condition + self.query_string
 
     def get_execution_url(self, execution_id=None):
         #make execution query
@@ -96,3 +101,4 @@ class VroUtilBase(object):
 
     def put(self, url, payload):
         return self.drv.put(url, payload)
+    
