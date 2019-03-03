@@ -1452,8 +1452,8 @@ class VNFixture(fixtures.Fixture):
 
     def bind_policies(self, policy_fq_names, vn_id=None, reset=True):
         vn_id = vn_id or self.uuid
-        if  self.inputs.slave_orchestrator == 'vro':
-            self.orch.add_network_policy_to_vn(self.vn_name, policy_fq_names)
+        if  self.inputs.vro_based:
+            self.orchestrator.add_network_policy_to_vn(self.vn_name, policy_fq_names)
         elif  isinstance(self.orchestrator,VcenterOrchestrator) or self.option == 'contrail':
             self.api_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.uuid)
             if reset:
@@ -1501,8 +1501,8 @@ class VNFixture(fixtures.Fixture):
 
     def unbind_policies(self, vn_id=None, policy_fq_names=[]):
         vn_id = vn_id or self.uuid
-        if  self.inputs.slave_orchestrator == 'vro':
-            self.orch.remove_network_policy_from_vn(self.vn_name, policy_fq_names)
+        if  self.inputs.vro_based:
+            self.orchestrator.remove_network_policy_from_vn(self.vn_name, policy_fq_names)
         if isinstance(self.orchestrator,VcenterOrchestrator) or self.option == 'contrail':
             if policy_fq_names == []:
                 self.api_vn_obj.set_network_policy_list([],True)

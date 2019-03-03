@@ -19,7 +19,6 @@ from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import get_subnet_broadcast
 from tcutils.util import skip_because
 import test
-
 class TestBasicVMVN(BaseVnVmTest):
 
     @classmethod
@@ -269,6 +268,9 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         Pass criteria: Creation and deletion of the VM should go thru fine.
         Maintainer : ganeshahv@juniper.net
         '''
+        if self.inputs.vro_server:
+            self.connections.orch = self.connections.vro_orch
+        import pdb;pdb.set_trace()
         vn_fixture = self.create_vn()
         assert vn_fixture.verify_on_setup()
         vn_obj = vn_fixture.obj

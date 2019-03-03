@@ -64,7 +64,7 @@ class SecurityGroupFixture(ContrailFixture):
             self.already_present = False
             if self.inputs.is_gui_based_config():
                 self.webui.create_security_group(self)
-            elif self.inputs.slave_orchestrator == 'vro':
+            elif self.inputs.vro_based:
                 self.secgrp_id = self.orch.create_security_group(self.secgrp_name, 
                                                                  self.secgrp_entries)
             else:
@@ -108,7 +108,7 @@ class SecurityGroupFixture(ContrailFixture):
         if do_cleanup:
             if self.inputs.is_gui_based_config():
                 self.webui.delete_security_group(self)
-            elif self.inputs.slave_orchestrator == 'vro':
+            elif self.inputs.vro_based:
                 self.orch.delete_security_group(self.secgrp_name) 
             else:
                 self.orch.delete_security_group(sg_id=self.secgrp_id, option=self.option)
@@ -133,7 +133,10 @@ class SecurityGroupFixture(ContrailFixture):
             "Replace all the rules of this security group %s with the new rules" %
             self.secgrp_name)
         self.logger.debug(rules)
-        self.orch.set_security_group_rules(sg_id=self.secgrp_id, sg_entries=rules, option=self.option)
+        if self.inputs.vro_based:
+            self.orch.set_sg_rules(self.secgrp_name, rules)
+        else:
+            self.orch.set_security_group_rules(sg_id=self.secgrp_id, sg_entries=rules, option=self.option)
 
     @retry(delay=2, tries=5)
     def verify_secgrp_in_api_server(self):

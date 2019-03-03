@@ -74,6 +74,8 @@ class FloatingIPFixture(fixtures.Fixture):
         if not self.is_fip_pool_present(self.pool_name):
             if self.inputs.is_gui_based_config():
                 self.create_floatingip_pool_webui(self.pool_name, self.vn_name)
+            elif self.inputs.vro_based:
+                self.orch.create_fip_pool(self.pool_name, vn=self.vn_id)
             else:
                 self.create_floatingip_pool(self.pool_name, self.vn_id)
         else:
@@ -254,6 +256,9 @@ class FloatingIPFixture(fixtures.Fixture):
         '''
         fip_pool_vn_id = fip_pool_vn_id or self.vn_id
         try:
+            import pdb;pdb.set_trace()
+            if self.inputs.vro_based:
+                fip_obj = self.orch.create_fip(self.pool_name)
             fip_obj = self.create_floatingip(fip_pool_vn_id, project)
             self.logger.debug('Associating FIP %s to %s' %(fip_obj[0], vm_id))
             self.assoc_floatingip(fip_obj[1], vm_id, port_id=port_id)
@@ -613,6 +618,8 @@ class FloatingIPFixture(fixtures.Fixture):
                              (self.pool_name))
             if self.inputs.is_gui_based_config():
                 self.webui.delete_floatingip_pool(self)
+            elif self.inputs.vro_based:
+                self.orch.delete_fip_pool(self.pool_name)
             else:
                 self.delete_floatingip_pool()
             if self.verify_is_run or verify:

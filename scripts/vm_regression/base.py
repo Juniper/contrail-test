@@ -76,7 +76,7 @@ class BaseVnVmTest(test_v1.BaseTestCase_v1):
                           *args, **kwargs
                           ))
 
-    def create_vm(self, vn_fixture=None, image_name='ubuntu', *args, **kwargs):
+    def create_vm(self, vn_fixture=None, image_name='vcenter_tiny_vm', *args, **kwargs):
         if vn_fixture:
             vn_obj = vn_fixture.obj
         else:

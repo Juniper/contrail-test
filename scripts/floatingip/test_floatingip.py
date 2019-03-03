@@ -1419,8 +1419,9 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
     @classmethod
     def setUpClass(cls):
         super(FloatingipTestSanity2, cls).setUpClass()
-
+    
     @preposttest_wrapper
+    @set_attr("vro_based")
     def test_fip_with_policy(self):
         '''Test interation of FIP with policy .
         '''

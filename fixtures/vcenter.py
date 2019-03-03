@@ -542,12 +542,17 @@ class VcenterOrchestrator(Orchestrator):
     def create_vn(self, name, subnets, **kwargs):
         project_fq_name = ['default-domain','vCenter']
         ipam_fq_name = ['default-domain','vCenter','vCenter-ipam']
-        uuid=self.vnc_h.create_vn_api(name, project_fq_name,subnets,ipam_fq_name,**kwargs)
+        if self.inputs.vro_based:
+            uuid=self.create_vn_vro(name, subnets, **kwargs)
+        else:
+            uuid=self.vnc_h.create_vn_api(name, project_fq_name,subnets,ipam_fq_name,**kwargs)
         if self._find_obj(self._dc, 'dvs.PortGroup', {'name' : name}):
             self._log.info('A portgroup %s created in vcenter' % (name))
         return self.get_vn_obj_if_present(name)
 
     def delete_vn(self, vn_obj, **kwargs):
+        if self.inputs.vro_based:
+            return self.delete_vn_vro(vn_obj.name)
         return self.vnc_h.delete_vn_api(vn_obj)
  
     def get_vn_obj_if_present(self, vn_name, **kwargs):
