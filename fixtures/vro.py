@@ -4,6 +4,8 @@ from tcutils.vro.vro_inspect_utils import VroInspectUtils
 from tcutils.vro.templates import WfTemplate
 from vcenter import VcenterOrchestrator
 from tcutils.util import *
+from copy import copy
+from netaddr import *
 
 class VroWorkflows(VcenterOrchestrator):
     def __init__(self, inputs, user, pwd, host, port, dc_name, vnc,logger=None):
@@ -25,7 +27,9 @@ class VroWorkflows(VcenterOrchestrator):
         self.status = None
         self.output_params = None
         self.header = None
-        self.connection = self._create_connection('vro',self.inputs.cfgm_ips[0])
+        self.connection_name = 'vro'
+        self.connection = self._create_connection(self.connection_name,self.inputs.cfgm_ips[0])
+        self.project = self.inputs.project_name
 
     def getName(self, name):
         return self.wf_template.workflow_name_dict[name]
@@ -34,25 +38,33 @@ class VroWorkflows(VcenterOrchestrator):
         return self.output_params
 
     def get_post_body(self,wf_name, params=None):
-        return self.wf_template.workflow_name_template[wf_name](params)
+        return self.wf_template.workflow_name_template[wf_name](self.wf_template, params)
 
     def get_work_flow_id(self, name):
         return self.wf_util.get_wf_id(name)
 
     def execute(self, wf_id, payload=None):
-        header,output_params =  self.wf_util.execute(wf_id,payload)
-        return header,output_params
+        try:
+            header,output_params =  self.wf_util.execute(wf_id,payload)
+            return header,output_params
+        except:
+            self.logger.info('Failed to execute %s' %wf_id)
 
     def get_wf_object_ids(self,name=None,parent_type = None):
         return self.wf_util.get_parent(name,parent_type)
 
-    def get_object_id(self, output, type=None):
-        object_id = output['value']['sdk-object']['id']
-        object_id = id.split(',')
-        for id in object:
-            if type in id:
-                return id.split(':')[1]
-
+    def get_id(self, res):
+        obj_type = res['type'].split(':')[-1]
+        id_types = res['value']['sdk-object']['id'].split(',')
+        for type in id_types:
+            if obj_type in type:
+                return type.split(':')[-1]
+    
+    def get_wf_output(self, location):
+        result = self.wf_util.get_wf_output(location)
+        if result:
+            return [self.get_id(result)]
+    
     @retry(delay=3, tries=5)
     def verify_wf_status(self, wf_name, obj_name, location):
         wf_path = location + 'state'
@@ -63,21 +75,38 @@ class VroWorkflows(VcenterOrchestrator):
         self.logger.info('%s Workflow %s status %s'%(wf_name,obj_name,result))
         return True
 
+    def get_sg_rules(self, sg_name):
+        rules = self.wf_util.get_obj_entry_from_catalog('SecurityGroup', sg_name, 'entriesView')
+        #all rules u get as a single string
+        #form rules by splitting the string
+        rules = rules.split()
+        no_of_rules = len(rules)/6
+        sg_rules = []
+        for i in range(no_of_rules):
+            min = 6*i
+            max = 6*(i+1)
+            rule = '0: protocol ' + ' '.join(rules[min:min+2]) + ' ports ' + ' '.join(rules[min+2:min+4]) + ' ports ' +  ' '.join(rules[min+4:max])
+            sg_rules.append(rule)
+        return sg_rules
+            
+        
     #WORKFLOWS
 
     #Connection Workflows
 
     def _create_connection(self, name, controller, port='8082'):
-        conn_id = self.get_wf_object_ids(name,'Connection')
-        if conn_id:
-            return conn_id
-        wf_name = 'create_connection'
-        wf_id = self.get_work_flow_id(self.getName(wf_name))
-        params = {'name': name, 'controller_ip': controller, 'port':port}
-        payload = self.get_post_body(wf_name, params)
-        header,output_params = self.execute(wf_id, payload)
-        assert self.verify_wf_status(wf_name, name, header['location'])
-        return self.get_wf_object_ids(name,'Connection')
+        try:
+            conn_id = self.get_wf_object_ids(name,'Connection')
+            if conn_id:
+                return conn_id
+        except:
+            wf_name = 'create_connection'
+            wf_id = self.get_work_flow_id(self.getName(wf_name))
+            params = {'name': name, 'controller_ip': controller, 'port':port}
+            payload = self.get_post_body(wf_name, params)
+            header,output_params = self.execute(wf_id, payload)
+            assert self.verify_wf_status(wf_name, name, header['location'])
+            return self.get_wf_object_ids(name,'Connection')
 
     def _delete_connection(self, conn_name='vro'):
         wf_name = 'delete_connection'
@@ -99,7 +128,8 @@ class VroWorkflows(VcenterOrchestrator):
         create_pol.update(params)
         payload = self.get_post_body(wf_name, params)
         header,output_params = self.execute(create_pol['wf_id'], payload)
-        assert self.verify_wf_status(wf_name,name,header['location'])
+        result = self.verify_wf_status(wf_name,name,header['location'])
+        assert result,'Create policy failed'
         if rules:
             self.add_policy_rules(create_pol,rules)
 
@@ -107,29 +137,59 @@ class VroWorkflows(VcenterOrchestrator):
         wf_name = 'add_policy_rules'
         wf_id = self.get_work_flow_id(self.getName(wf_name))
         pol_id = self.get_wf_object_ids(create_pol['policy_name'],'NetworkPolicy')
-        for rule in rules:
+        rules_list = copy(rules)
+        for rule in rules_list:
+            params = {}
             params = rule
             params['NetworkPolicy'] = pol_id
             if rule.get('source_network'):
-                network_id = self.get_wf_object_ids(
-                        rule['source_network'],'VirtualNetwork')
-                params['source_network'] = network_id
+                if rule['source_network'] == 'any':
+                    params['source_network'] = 'any'
+                else:
+                    rule['source_network'] = rule['source_network'].split(':')[-1]
+                    network_id = self.get_wf_object_ids(
+                            rule['source_network'],'VirtualNetwork')
+                    params['source_network'] = network_id
                 params['src_address_type'] = 'Network'
             if rule.get('dest_network'):
-                network_id = self.get_wf_object_ids(
-                        rule['dest_network'],'VirtualNetwork')
-                params['dest_network'] = network_id
+                if rule['dest_network'] == 'any':
+                    params['dest_network'] = 'any'
+                else:
+                    rule['dest_network'] = rule['dest_network'].split(':')[-1]
+                    network_id = self.get_wf_object_ids(
+                            rule['dest_network'],'VirtualNetwork')
+                    params['dest_network'] = network_id
                 params['dest_address_type'] = 'Network'
             if rule.get('src_ports'):
                 if type(rule['src_ports']) == list and len(rule['src_ports']) > 1:
-                    params['src_ports'] = str(rule['src_ports'][0]) + '-' + str(rule['src_ports'][0])
-                #else:
-                #    params['src_ports'] = rule['src_ports']
+                    params['src_ports'] = str(rule['src_ports'][0]) + '-' + str(rule['src_ports'][1])
+            else:
+                    params['src_ports'] = 'any'
             if rule.get('dst_ports'):
                 if type(rule['dst_ports']) == list and len(rule['dst_ports']) > 1:
-                    params['dst_ports'] = str(rule['dst_ports'][0]) + '-' + str(rule['dst_ports'][0])
-                #else:
-                #    params['dst_ports'] = rule['dst_ports']
+                    params['dst_ports'] = str(rule['dst_ports'][0]) + '-' + str(rule['dst_ports'][1])
+            else:
+                params['dst_ports'] = 'any'
+            if rule.get('source_policy'):
+                pol_id = self.get_wf_object_ids(
+                        rule['source_policy'],'NetworkPolicy')
+                params['source_policy'] = pol_id
+                params['src_address_type'] = 'Policy'
+            if rule.get('dest_policy'):
+                pol_id = self.get_wf_object_ids(
+                        rule['dest_policy'],'NetworkPolicy')
+                params['dest_policy'] = pol_id
+                params['dest_address_type'] = 'Policy'
+            if rule.get('action_list'):
+                if rule['action_list'].get('simple_action'):
+                    params['simple_action'] = rule['action_list']['simple_action']
+                if rule['action_list'].get('apply_service'):
+                    params['ServiceInstance'] = []
+                    for si in rule['action_list']['apply_service']:
+                        si_name = si.split(':')[-1]
+                        si_id = self.get_wf_object_ids(si_name,'ServiceInstance')
+                        params['ServiceInstance'].append({'sdk-object': {'id': si_id,
+                                                'type': 'Contrail:ServiceInstance'}})
             payload = self.get_post_body(wf_name, params)
             header,output_params = self.execute(wf_id, payload)
             assert self.verify_wf_status(wf_name, create_pol['policy_name'], header['location'])
@@ -152,152 +212,198 @@ class VroWorkflows(VcenterOrchestrator):
         #need to handle if there are more than one policy
         wf_name = 'add_policy_to_vn'
         for policy in policy_names:
-            policy_name = policy.split(':')[-1]
+            if type(policy) == list:
+                policy_name = policy[-1]
+            else:
+                policy_name = policy
             params = {}
             wf_id = self.get_work_flow_id(self.getName(wf_name))
-            vn_id = self.get_wf_object_ids(policy_name,'VirtualNetwork')
-            pol_id = self.get_wf_object_ids(vn_name,'NetworkPolicy')
-            params['VirtualNetwork'] = pol_id
+            vn_id = self.get_wf_object_ids(vn_name,'VirtualNetwork')
+            pol_id = self.get_wf_object_ids(policy_name,'NetworkPolicy')
+            params['VirtualNetwork'] = vn_id
             params['NetworkPolicy'] = pol_id
             payload = self.get_post_body(wf_name, params)
             header,output_params = self.execute(wf_id, payload)
-            assert self.verify_wf_status(wf_name,name,header['location'])
+            assert self.verify_wf_status(wf_name,policy_name,header['location'])
 
     def remove_network_policy_from_vn(self,vn_name, policy_names):
         wf_name = 'remove_policy_from_vn'
         for policy in policy_names:
-            policy_name = policy.split(':')[-1]
+            if type(policy) == list:
+                policy_name = policy[-1]
+            else:
+                policy_name = policy
             params = {}
             wf_id = self.get_work_flow_id(self.getName(wf_name))
-            pol_id = self.get_wf_object_ids(name,'NetworkPolicy')
+            vn_id = self.get_wf_object_ids(vn_name,'VirtualNetwork')
+            pol_id = self.get_wf_object_ids(policy_name,'NetworkPolicy')
+            params['VirtualNetwork'] = vn_id
             params['NetworkPolicy'] = pol_id
             payload = self.get_post_body(wf_name, params)
             header,output_params = self.execute(wf_id, payload)
-            assert self.verify_wf_status(wf_name,name,header['location'])
+            assert self.verify_wf_status(wf_name,policy_name,header['location'])
 
     def edit_virtual_network(self):
         pass
+    
+    def create_vn_vro(self, vn_name, subnets=None, **kwargs):
+        wf_name = 'create_vn'
+        vn = kwargs
+        params = {'vn_name': vn_name}
+        params['Project'] = self.get_wf_object_ids(self.project,'Project')
+        vn['wf_id'] = self.get_work_flow_id(self.getName(wf_name))
+        vn['wf_name'] = wf_name
+        vn.update(params)
+        payload = self.get_post_body(wf_name, params)
+        header,output_params = self.execute(vn['wf_id'], payload)
+        assert self.verify_wf_status(wf_name,vn_name,header['location'])
+        if subnets:
+            self.add_subnet_to_vn(vn,subnets)
+            
+    def add_subnet_to_vn(self,vn, subnets):
+        wf_name = 'add_subnet_to_vn'
+        params={}
+        if vn.get('ipam_fq_name'):
+            if type(vn['ipam_fq_name']) is string:
+                ipam = vn['ipam_fq_name'].split(':')[-1]
+            elif type(vn['ipam_fq_name']) is list:
+                ipam = vn['ipam_fq_name'][-1]
+        else:
+            ipam = 'vCenter-ipam'
+        params['NetworkIpam'] = self.get_wf_object_ids(ipam,'NetworkIpam')
+        params['VirtualNetwork'] = self.get_wf_object_ids(vn['vn_name'],'VirtualNetwork')
+        wf_id = self.get_work_flow_id(self.getName(wf_name))
+        #if vn.get('enable_dhcp') == False :
+            #params['enable_dhcp'] = 'No'
+        for subnet in subnets:
+            params['subnet'] = subnet['cidr']
+            params['gateway'] = IPNetwork(params['subnet'])[1].__str__()
+            payload = self.get_post_body(wf_name, params)
+            header,output_params = self.execute(wf_id, payload)
+            assert self.verify_wf_status(wf_name,subnet['cidr'],header['location'])
+    
+    def add_tag_to_vn(self,vn_name,tag):
+        pass
+    
+    def delete_tag_from_vn(self,vn_name,tag):
+        pass
+            
+    def delete_vn_vro(self, vn_name):
+        wf_name = 'delete_vn'
+        vn_id = self.get_wf_object_ids(vn_name,'VirtualNetwork')
+        params = {'VirtualNetwork': vn_id}
+        wf_id = self.get_work_flow_id(self.getName(wf_name))
+        payload = self.get_post_body(wf_name, params)
+        header,output_params = self.execute(wf_id, payload)
+        assert self.verify_wf_status(wf_name,vn_name,header['location'])
+        return True
 
     #port workflows
-    def add_fip_to_port(self, port_uuid, fip_uuid):
-        add_fip_to_port = {}
+    def assoc_floating_ip(self, fip_id, port_id):
         wf_name = 'add_fip_to_port'
         params = {}
         wf_id = self.get_work_flow_id(self.getName(wf_name))
-        fip_id = self.get_wf_object_ids(fip,'FloatingIp')
-        port_id = self.get_wf_object_ids(port,'Port')
-        params['FloatingIp'] = fip_id
-        params['Port'] = port_id
-        add_fip_to_port = params
+        fip = self.get_wf_object_ids(fip_id,'FloatingIp')
+        port = self.get_wf_object_ids(port_id,'Port')
+        params['FloatingIp'] = fip
+        params['Port'] = port   
         payload = self.get_post_body(wf_name, params)
         header,output = self.execute(wf_id, payload)
-        assert self.verify_wf_status(wf_name, header['location'])
-        if output:
-            add_fip_to_port['output'] = output
+        assert self.verify_wf_status(wf_name, port_id, header['location'])
 
-    def remove_fip_from_port(self, port_uuid, fip_uuid):
-        remove_fip_from_port = {}
+    def disassoc_floating_ip(self, fip_id, port_id):
         wf_name = 'remove_fip_from_port'
         params = {}
         wf_id = self.get_work_flow_id(self.getName(wf_name))
-        fip_id = self.get_wf_object_ids(fip,'FloatingIp')
-        port_id = self.get_wf_object_ids(port,'Port')
-        params['FloatingIp'] = fip_id
-        params['Port'] = port_id
-        remove_fip_to_port = params
+        fip = self.get_wf_object_ids(fip_id,'FloatingIp')
+        port = self.get_wf_object_ids(port_id,'Port')
+        params['FloatingIp'] = fip
+        params['Port'] = port
         payload = self.get_post_body(wf_name, params)
         header,output = self.execute(wf_id, payload)
-        assert self.verify_wf_status(header['location'])
-        if output:
-            remove_fip_to_port['output'] = output
+        assert self.verify_wf_status(wf_name, port_id, header['location'])
 
-    def add_sg_to_port(self, port_uuid, sg):
+    def add_security_group(self, port_uuid, sg):
         wf_name = 'add_sg_to_port'
         params = {}
         wf_id = self.get_work_flow_id(self.getName(wf_name))
-        port_id = self.get_wf_object_ids(policy_name,'Port')
-        sg_id = self.get_wf_object_ids(vn_name,'SecurityGroup')
+        port_id = self.get_wf_object_ids(port_uuid,'Port')
+        sg_id = self.get_wf_object_ids(sg,'SecurityGroup')
         params['Port'] = port_id
         params['SecurityGroup'] = sg_id
         payload = self.get_post_body(wf_name, params)
         header,output_params = self.execute(wf_id, payload)
-        assert self.verify_wf_status(wf_name,name,header['location'])
+        assert self.verify_wf_status(wf_name, port_uuid, header['location'])
 
-    def remove_sg_from_port(self, port_uuid, sg):
+    def remove_security_group(self, port_uuid, sg):
         wf_name = 'remove_sg_from_port'
         params = {}
         wf_id = self.get_work_flow_id(self.getName(wf_name))
-        port_id = self.get_wf_object_ids(policy_name,'Port')
-        sg_id = self.get_wf_object_ids(vn_name,'SecurityGroup')
+        port_id = self.get_wf_object_ids(port_uuid,'Port')
+        sg_id = self.get_wf_object_ids(sg,'SecurityGroup')
         params['Port'] = port_id
         params['SecurityGroup'] = sg_id
         payload = self.get_post_body(wf_name, params)
         header,output_params = self.execute(wf_id, payload)
-        assert self.verify_wf_status(wf_name,name,header['location'])
+        assert self.verify_wf_status(wf_name, port_uuid, header['location'])
+    
+    def add_tag_to_port(self,port, type, tag):
+        pass
+    
+    def remove_tag_from_port(self,port, tag):
+        pass
+    
+    def add_shc_to_port(self):
+        pass
+    
+    def remove_shc_from_port(self):
+        pass
 
     #FIP workflows
-    def create_fip(self, pool_name, project='vCenter'):
+    def create_floating_ip(self, pool_name, project='vCenter'):
         wf_name = 'create_fip'
-        fip = {}
         params = {}
         wf_id = self.get_work_flow_id(self.getName(wf_name))
         fip_pool_id = self.get_wf_object_ids(pool_name,'FloatingIpPool')
         project_id = self.get_wf_object_ids(project,'Project')
         params['FloatingIpPool'] = fip_pool_id
         params['Project'] = project_id
-        fip = params
         payload = self.get_post_body(wf_name, params)
         header,output = self.execute(wf_id, payload)
-        assert self.verify_wf_status(header['location'])
-        if output:
-            fip_pool['output'] = output
+        assert self.verify_wf_status(wf_name, pool_name, header['location'])
+        output = self.get_wf_output(header['location'])
+        return output
 
-    def delete_fip(self, fip_id):
+    def delete_floating_ip(self, fip_id):
         wf_name = 'delete_fip'
-        fip = {}
         params = {}
-        if not fip:
-            #fetch fip
-            pass
         wf_id = self.get_work_flow_id(self.getName(wf_name))
-        fip_id = self.get_wf_object_ids(fip_id,'FloatingIp')
-        params['FloatingIp'] = fip_id
-        fip = params
+        fip = self.get_wf_object_ids(fip_id,'FloatingIp')
+        params['FloatingIp'] = fip
         payload = self.get_post_body(wf_name, params)
         header,output = self.execute(wf_id, payload)
-        assert self.verify_wf_status(header['location'])
-        if output:
-            fip_pool['output'] = output
-        pass
+        assert self.verify_wf_status(wf_name, fip_id, header['location'])
 
     #FIP_pool workflows
-    def create_fip_pool(self, pool_name, vn_name):
+    def create_fip_pool(self, pool_name, vn):
         wf_name = 'create_fip_pool'
-        fip_pool = {}
-        params = {'fip_pool_name': pool_name}
+        params = {'pool_name': pool_name}
         wf_id = self.get_work_flow_id(self.getName(wf_name))
-        network_id = self.get_wf_object_ids(vn_name,'VirtualNetwork')
+        network_id = self.get_wf_object_ids(vn,'VirtualNetwork')
         params['VirtualNetwork'] = network_id
-        fip_pool = params
         payload = self.get_post_body(wf_name, params)
         header,output = self.execute(wf_id, payload)
-        assert self.verify_wf_status(header['location'])
-        if output:
-            fip_pool['output'] = output
+        assert self.verify_wf_status(wf_name,pool_name,header['location'])
 
     def delete_fip_pool(self, pool_name):
         wf_name = 'delete_fip_pool'
-        fip_pool = {}
         params = {'fip_pool_name': pool_name}
         wf_id = self.get_work_flow_id(self.getName(wf_name))
-        fip_pool_id = self.get_wf_object_ids(vn_name,'FloatingIpPool')
+        fip_pool_id = self.get_wf_object_ids(pool_name,'FloatingIpPool')
         params['FloatingIpPool'] = fip_pool_id
-        fip_pool = params
         payload = self.get_post_body(wf_name, params)
         header,output = self.execute(wf_id, payload)
-        assert self.verify_wf_status(header['location'])
-        if output:
-            fip_pool['output'] = output
+        assert self.verify_wf_status(wf_name,pool_name,header['location'])
 
     def edit_fip_pool(self):
         pass
@@ -307,23 +413,46 @@ class VroWorkflows(VcenterOrchestrator):
     def create_security_group(self, sg_name, rules, project='vCenter'):
         wf_name = 'create_sg'
         create_sg = {}
-        params = {'sg_name': name}
+        params = {'sg_name': sg_name}
         params['Project'] = self.get_wf_object_ids(project,'Project')
         create_sg['wf_id'] = self.get_work_flow_id(self.getName(wf_name))
         create_sg['wf_name'] = wf_name
         create_sg.update(params)
         payload = self.get_post_body(wf_name, params)
         header,output_params = self.execute(create_sg['wf_id'], payload)
-        assert self.verify_wf_status(header['location'])
+        sg_id = self.verify_wf_status(wf_name,sg_name,header['location'])
+        assert sg_id,'Create security group failed'
         if rules:
-            self.add_sg_rules(create_sg, rules)
-        if output_params:
-            sg_id = self.get_object_id(output_params, 'SecurityGroup')
+            self.add_rule_to_sg(sg_name, rules)
+        return sg_id
 
     def edit_sg(self):
         pass
+    
+    def edit_sg_rule(self,sg_name, sg_rules):
+        wf_name = 'edit_sg_rule'
+        self.add_edit_sg_rules(wf_name, sg_name, sg_rules)
+    
+    def set_sg_rules(self, sg_name, sg_rules):
+        #remove existing rules and set new rules
+        wf_name = 'remove_rule_from_sg'
+        rules = self.get_sg_rules(sg_name)
+        wf_id = self.get_work_flow_id(self.getName(wf_name))
+        sg_id = self.get_wf_object_ids(sg_name,'SecurityGroup')
+        for rule in rules:
+            params = {}
+            params['SecurityGroup'] = sg_id
+            params['rule'] = rule
+            payload = self.get_post_body(wf_name, params)
+            header,output_params = self.execute(wf_id, payload)
+            self.verify_wf_status(wf_name, sg_name, header['location'])
+        self.add_rule_to_sg(sg_name, sg_rules)
+             
+    def add_rule_to_sg(self,sg_name, sg_rules):
+        wf_name = 'add_rule_to_sg'
+        self.add_edit_sg_rules(wf_name, sg_name, sg_rules)
 
-    def add_rule_to_sg(self,create_sg, sg_rules):
+    def add_edit_sg_rules(self,wf_name, sg_name, sg_rules):
         #ether_type:{'IPv4','IPv6'}
         #direction:{ingress,egress}
         #address_type:{'CIDR','Security Group'}
@@ -331,16 +460,16 @@ class VroWorkflows(VcenterOrchestrator):
         #ports:{'any','range(10-20)'
         #if ingress:_security
             #src_add:cidr,securitygroup
-            #dst_add:local
+            #dst_add:local    
             #take src_ports
         #if eggress:
             #src_add:local
             #dst_add:cidr,sg
             #ports:dst_port
-        wf_name = 'add_sg_rules'
+        wf_name = wf_name
         wf_id = self.get_work_flow_id(self.getName(wf_name))
-        sg_id = self.get_wf_object_ids(create_sg['sg_name'],'SecurityGroup')
-        for rule in rules:
+        sg_id = self.get_wf_object_ids(sg_name,'SecurityGroup')
+        for rule in sg_rules:
             params = {}
             params['protocol'] = rule['protocol']
             params['SecurityGroup'] = sg_id
@@ -348,14 +477,14 @@ class VroWorkflows(VcenterOrchestrator):
                 params['security_group'] = self.get_wf_object_ids(rule['security_group'],'SecurityGroup')
             if rule['src_addresses'][0].get('security_group') == 'local':
                 params['direction'] = 'egress'
-                if type(rule['src_ports']) == list and len(rule['src_ports']) > 1:
+                if type(rule['src_ports']) == list and len(rule['src_ports']) >= 1:
                     min = rule['dst_ports'][0]['start_port']
                     max = rule['dst_ports'][0]['end_port']
                     max = '65535' if max == -1 else max
                     params['ports'] = str(min) + '-' + str(max)
             else:
                 params['direction'] = 'ingress'
-                if type(rule['dst_ports']) == list and len(rule['dst_ports']) > 1:
+                if type(rule['dst_ports']) == list and len(rule['dst_ports']) >= 1:
                     min = rule['dst_ports'][0]['start_port']
                     max = rule['dst_ports'][0]['end_port']
                     max = '65535' if max == -1 else max
@@ -367,7 +496,7 @@ class VroWorkflows(VcenterOrchestrator):
                         params['address_cidr'] = addr['subnet']['ip_prefix'] + '/' + str(addr['subnet']['ip_prefix_len'])
                         payload = self.get_post_body(wf_name, params)
                         header,output_params = self.execute(wf_id, payload)
-                        assert self.verify_wf_status(header['location'])
+                        assert self.verify_wf_status(wf_name, sg_name, header['location'])
                     #need to add addressType = SecurityGroup
             else:
                 for addr in rule['src_addresses']:
@@ -376,7 +505,7 @@ class VroWorkflows(VcenterOrchestrator):
                         params['address_cidr'] = addr['subnet']['ip_prefix'] + '/' + str(addr['subnet']['ip_prefix_len'])
                         payload = self.get_post_body(wf_name, params)
                         header,output_params = self.execute(wf_id, payload)
-                        assert self.verify_wf_status(header['location'])
+                        assert self.verify_wf_status(wf_name, sg_name, header['location'])
 
     def remove_rule_from_sg(self):
         pass
@@ -389,7 +518,7 @@ class VroWorkflows(VcenterOrchestrator):
         params['SecurityGroup'] = sg_id
         payload = self.get_post_body(wf_name, params)
         header,output_params = self.execute(wf_id, payload)
-        self.verify_wf_status(header['location'])
+        self.verify_wf_status(wf_name,sg_name,header['location'])
 
     #Service Template workflows
     def create_st(self, st):
@@ -405,7 +534,7 @@ class VroWorkflows(VcenterOrchestrator):
         params['Connection'] = self.get_wf_object_ids(self.connection_name,'Connection')
         payload = self.get_post_body(wf_name, params)
         header,output_params = self.execute(wf_id, payload)
-        self.verify_wf_status(header['location'])
+        self.verify_wf_status(wf_name,st['st_name'],header['location'])
 
     def delete_st(self, st_name):
         wf_name = 'delete_st'
@@ -415,58 +544,84 @@ class VroWorkflows(VcenterOrchestrator):
         params['ServiceTemplate'] = st_id
         payload = self.get_post_body(wf_name, params)
         header,output_params = self.execute(wf_id, payload)
-        self.verify_wf_status(header['location'])
+        self.verify_wf_status(wf_name,st_name,header['location'])
 
     #Service Instance Workflows
 
     def create_si(self, si_name, st_name, if_details, project='vCenter'):
         wf_name = 'create_si'
+        params = {}
         wf_id = self.get_work_flow_id(self.getName(wf_name))
         project_id = self.get_wf_object_ids(project,'Project')
-        st_id = self.get_wf_object_ids(st_name,'ServiceTemplate')
+        st_id = self.get_wf_object_ids(st_name.name,'ServiceTemplate')
         params['Project'] = project_id
         params['ServiceTemplate'] = st_id
         params['si_name'] = si_name
-        for itf in self.if_details:
-                virtual_network = None
+        for itf in if_details.keys():
                 if itf == 'left':
-                    params['LeftVirtualNetwork'] = left_vn_name
+                    left_vn_name = if_details['left']['vn_name'].split(':')[-1]
+                    left_vn_id = self.get_wf_object_ids(left_vn_name,'VirtualNetwork')
+                    params['LeftVirtualNetwork'] = left_vn_id
+                    
                 elif itf == 'right':
-                    params['RightVirtualNetwork'] = right_vn_name
+                    right_vn_name = if_details['right']['vn_name'].split(':')[-1]
+                    right_vn_id = self.get_wf_object_ids(right_vn_name,'VirtualNetwork')
+                    params['RightVirtualNetwork'] = right_vn_id
                 elif itf == 'management':
-                    params['MgmtVirtualNetwork'] = mgmt_vn_name
+                    mgmt_vn_name = if_details['management']['vn_name'].split(':')[-1]
+                    mgmt_vn_id = self.get_wf_object_ids(mgmt_vn_name,'VirtualNetwork')
+                    params['MgmtVirtualNetwork'] = mgmt_vn_id
         payload = self.get_post_body(wf_name, params)
         header,output_params = self.execute(wf_id, payload)
-        assert self.verify_wf_status(header['location'])
+        self.verify_wf_status(wf_name,si_name,header['location'])
 
     def delete_si(self, si_name):
         wf_name = 'delete_si'
+        params = {}
         wf_id = self.get_work_flow_id(self.getName(wf_name))
         si_id = self.get_wf_object_ids(si_name,'ServiceInstance')
         params['ServiceInstance'] = si_id
         payload = self.get_post_body(wf_name, params)
         header,output_params = self.execute(wf_id, payload)
-        assert self.verify_wf_status(header['location'])
+        self.verify_wf_status(wf_name,si_name,header['location'])
 
-    def add_port_tuple(self, si_name, pt_details):
+    def add_port_tuple(self, si_name, if_details, pt_details):
         wf_name = 'add_port_tuple'
+        params = {}
         wf_id = self.get_work_flow_id(self.getName(wf_name))
         si_id = self.get_wf_object_ids(si_name,'ServiceInstance')
         params['pt_name'] = pt_details['name']
         params['ServiceInstance'] = si_id
-        for itf in self.if_details:
+        si_id_only = si_id.split(',')[-1]
+        for itf in pt_details:
                 if itf == 'left':
-                    params['LeftInterface'] = left_vn_name
+                    left_vn_name = if_details['left']['vn_name'].split(':')[-1]
+                    left_vn_id = self.get_wf_object_ids(left_vn_name,'VirtualNetwork')
+                    left_vn_id = left_vn_id.split(',')[-1]
+                    left_intf = pt_details['left']
+                    left_intf_id = self.get_wf_object_ids(left_intf,'Port')
+                    params['LeftInterface'] = ','.join([left_intf_id,si_id_only,left_vn_id])
                 elif itf == 'right':
-                    params['RightInterface'] = right_vn_name
+                    right_vn_name = if_details['right']['vn_name'].split(':')[-1]
+                    right_vn_id = self.get_wf_object_ids(right_vn_name,'VirtualNetwork')
+                    right_vn_id = right_vn_id.split(',')[-1]
+                    right_intf = pt_details['right']
+                    right_intf_id = self.get_wf_object_ids(right_intf,'Port')
+                    params['RightInterface'] = ','.join([right_intf_id,si_id_only,right_vn_id])
                 elif itf == 'management':
-                    params['MgmtInterface'] = mgmt_vn_name
+                    mgmt_vn_name = if_details['management']['vn_name'].split(':')[-1]
+                    mgmt_vn_id = self.get_wf_object_ids(mgmt_vn_name,'VirtualNetwork')
+                    mgmt_vn_id = mgmt_vn_id.split(',')[-1]
+                    mgmt_intf = pt_details['management']
+                    mgmt_intf_id = self.get_wf_object_ids(mgmt_intf,'Port')
+                    params['MgmtInterface'] = ','.join([mgmt_intf_id,si_id_only,mgmt_vn_id])
         payload = self.get_post_body(wf_name, params)
         header,output_params = self.execute(wf_id, payload)
-        assert self.verify_wf_status(header['location'])
+        self.verify_wf_status(wf_name,params['pt_name'],header['location'])
 
     def remove_port_tuple(self, si_name, pt_details):
         wf_name = 'remove_port_tuple'
+        params = {}
         wf_id = self.get_work_flow_id(self.getName(wf_name))
         pt_id = self.get_wf_object_ids(pt_details['name'],'PortTuple')
         si_id = self.get_wf_object_ids(si_name,'ServiceInstance')
@@ -474,7 +629,123 @@ class VroWorkflows(VcenterOrchestrator):
         params['ServiceInstance'] = si_id
         payload = self.get_post_body(wf_name, params)
         header,output_params = self.execute(wf_id, payload)
-        assert self.verify_wf_status(header['location'])
+        self.verify_wf_status(wf_name,pt_details['name'],header['location'])
+    
+    #contrail security 
+    def create_ag(self, ag, scope='global', project = 'vCenter'):
+        params['ag_name'] = ag
+        if scope == 'local':
+            wf_name = 'create_project_ag'
+            params['Project'] = self.get_wf_object_ids(project,'Project')
+        else:
+            wf_name = 'create_local_ag'
+            params['Connection'] = self.get_wf_object_ids(self.connection_name,'Connection')
+        wf_id = self.get_work_flow_id(self.getName(wf_name))
+        payload = self.get_post_body(wf_name, params)
+        header,output_params = self.execute(wf_id, payload)
+        self.verify_wf_status(wf_name,name,header['location'])
+            
+    def add_label_to_ag(self,):
+        pass
+    
+    def add_subnet_to_ag():
+        pass
+    
+    #def create_global_ag():
+    #    pass
+    
+    #def create_project_ag():
+    #    pass
+    
+    def delete_ag():
+        pass
+    
+    def remove_label_from_ag():
+        pass
+    
+    def remove_subnet_from_ag():
+        pass
+    
+    def create_global_aps():
+        pass
+    
+    def create_project_aps():
+        pass
+    
+    def add_fwp_to_aps():
+        pass
+    
+    def add_tag_to_aps():
+        pass
+    
+    def delete_aps():
+        pass
+    
+    def remove_fwp_from_aps():
+        pass
+    
+    def remove_tag_from_aps():
+        pass
+    
+    def create_global_fwp():
+        pass
+    
+    def create_project_fwp():
+        pass
+    
+    def add_rule_to_fwp():
+        pass
+    
+    def remove_rule_from_fwp():
+        pass
+    
+    def delete_fwp():
+        pass
+    
+    def create_project_fw_rule():
+        pass
+    
+    def create_global_fw_rule():
+        pass
+    
+    def delete_fw_rule():
+        pass
+    
+    def edit_fw_rule():
+        pass
+    
+    def create_global_svg():
+        pass
+    
+    def create_project_svg():
+        pass
+    
+    def add_service_to_svg():
+        pass
+    
+    def edit_service_of_svg():
+        pass
+    
+    def remove_service_from_svg():
+        pass
+    
+    def delete_svg():
+        pass
+    
+    def create_global_tag():
+        pass
+    
+    def create_project_tag():
+        pass
+    
+    def delete_tag():
+        pass
+    
+    def create_tag_type():
+        pass
+    
+    def delete_tag_type():
+        pass
 
 class Inputs():
     def __init__(self):
