@@ -9,7 +9,7 @@ from vm_test import VMFixture
 import os
 import sys
 import test
-from tcutils.util import get_random_name, get_random_cidrs
+from tcutils.util import get_random_name, get_random_cidrs, set_attr
 
 class SecurityGroupBasicRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
@@ -20,12 +20,12 @@ class SecurityGroupBasicRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolic
 
     def runTest(self):
         pass
-
+        
     @test.attr(type=['sanity','ci_sanity','vcenter', 'suite1', 'cb_sanity'])
     @preposttest_wrapper
     def test_sec_group_basic(self):
         """
-	Description: Test basic SG features
+        Description: Test basic SG features
             1. Security group create and delete
             2. Create security group with custom rules and then update it for tcp
             3. Launch VM with custom created security group and verify
@@ -78,16 +78,35 @@ class SecurityGroupBasicRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolic
             inputs=self.inputs, subnets=vn_net))
         assert vn_fixture.verify_on_setup()
         img_name = self.inputs.get_ci_image() or 'ubuntu-traffic'
-        vm1_fixture = self.useFixture(VMFixture(
-            project_name=self.inputs.project_name, connections=self.connections,
-            vn_obj=vn_fixture.obj, image_name=img_name, flavor='contrail_flavor_small',
-            sg_ids=[secgrp_id]))
-        vm2_fixture = self.useFixture(VMFixture(
-            project_name=self.inputs.project_name, connections=self.connections,
-            vn_obj=vn_fixture.obj, image_name=img_name, flavor='contrail_flavor_small',
-            sg_ids=[secgrp_id]))
-        assert vm1_fixture.verify_on_setup()
-        assert vm1_fixture.wait_till_vm_is_up()
+        
+        #cannot use set_security_group in vro ,so remove default sg before adding new sg
+        if self.inputs.vro_based:
+            vm1_fixture = self.useFixture(VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_obj=vn_fixture.obj, image_name=img_name, flavor='contrail_flavor_small'))
+            vm2_fixture = self.useFixture(VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_obj=vn_fixture.obj, image_name=img_name, flavor='contrail_flavor_small'))
+            assert vm1_fixture.verify_on_setup()
+            assert vm1_fixture.wait_till_vm_is_up()
+            assert vm2_fixture.verify_on_setup()
+            assert vm2_fixture.wait_till_vm_is_up()
+            vm1_fixture.remove_security_group(secgrp='default')
+            vm2_fixture.remove_security_group(secgrp='default')
+            vm1_fixture.add_security_group(secgrp_id)
+            vm2_fixture.add_security_group(secgrp_id)
+        else: 
+            vm1_fixture = self.useFixture(VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_obj=vn_fixture.obj, image_name=img_name, flavor='contrail_flavor_small',sg_ids=[secgrp_id]))
+            vm2_fixture = self.useFixture(VMFixture(
+                project_name=self.inputs.project_name, connections=self.connections,
+                vn_obj=vn_fixture.obj, image_name=img_name, flavor='contrail_flavor_small',sg_ids=[secgrp_id]))
+            assert vm1_fixture.verify_on_setup()
+            assert vm1_fixture.wait_till_vm_is_up()
+            assert vm2_fixture.verify_on_setup()
+            assert vm2_fixture.wait_till_vm_is_up()
+
         result, msg = vm1_fixture.verify_security_group(secgrp_name)
         assert result, msg
 
@@ -103,7 +122,6 @@ class SecurityGroupBasicRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolic
         vm1_fixture.add_security_group(secgrp=secgrp_id)
         result, msg = vm1_fixture.verify_security_group(secgrp_name)
         assert result, msg
-
         #Try to delete security group with back ref
         self.logger.info(
             "Try deleting the security group %s with back ref.", secgrp_name)
@@ -126,9 +144,6 @@ class SecurityGroupBasicRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolic
                 errmsg = "Security group deleted, when it is attached to a VM."
                 self.logger.error(errmsg)
                 assert False, errmsg
-
-        assert vm2_fixture.verify_on_setup()
-        assert vm2_fixture.wait_till_vm_is_up()
 
         #Ping test, should fail
         assert vm1_fixture.ping_with_certainty(ip=vm2_fixture.vm_ip,

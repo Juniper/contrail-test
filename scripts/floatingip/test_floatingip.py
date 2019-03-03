@@ -1420,7 +1420,14 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
     def setUpClass(cls):
         super(FloatingipTestSanity2, cls).setUpClass()
 
+    def is_test_applicable(self):
+        if self.inputs.orchestrator == 'vcenter' and not self.inputs.vro_based:
+            return(False, 'Skipping Test Vro server not preset on vcenter setup')
+        return (True, None)
+    
+    @test.attr(type=['vcenter','vro'])
     @preposttest_wrapper
+    @set_attr("vro_based")
     def test_fip_with_policy(self):
         '''Test interation of FIP with policy .
         '''
@@ -1456,6 +1463,7 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
                 connections=self.connections,
                 vn_obj=fvn1_fixture.obj,
                 vm_name=fvn1_vm1_name,
+                image_name = 'ubuntu',
                 node_name=self.compute_2))
 
         fvn2_fixture = self.useFixture(
@@ -1471,6 +1479,7 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
                 connections=self.connections,
                 vn_obj=fvn2_fixture.obj,
                 vm_name=fvn2_vm1_name,
+                image_name = 'ubuntu',
                 node_name=self.compute_1))
         vn1_fixture = self.useFixture(
             VNFixture(
@@ -1493,6 +1502,7 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
                 connections=self.connections,
                 vn_obj=vn1_fixture.obj,
                 vm_name=vn1_vm1_name,
+                image_name = 'ubuntu',
                 node_name=self.compute_1))
 
         vn2_vm1_fixture = self.useFixture(
@@ -1501,6 +1511,7 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
                 connections=self.connections,
                 vn_obj=vn2_fixture.obj,
                 vm_name=vn2_vm1_name,
+                image_name = 'ubuntu',
                 node_name=self.compute_2))
 
         assert fvn1_fixture.verify_on_setup()
@@ -1570,15 +1581,19 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
                 pool_name=fip_pool_name,
                 vn_id=fvn1_fixture.vn_id))
         assert fip_fixture1.verify_on_setup()
-
+        port_id=vn1_vm1_fixture.tap_intf[vn1_fixture.vn_fq_name]['name']
         fip_id1 = fip_fixture1.create_and_assoc_fip(
-            fvn1_fixture.vn_id, vn1_vm1_fixture.vm_id)
-        self.addCleanup(fip_fixture1.disassoc_and_delete_fip, fip_id1)
+            fvn1_fixture.vn_id, vn1_vm1_fixture.vm_id,
+            port_id=port_id)
+        self.addCleanup(fip_fixture1.disassoc_and_delete_fip, fip_id1,
+                        port_id=port_id)
         assert fip_fixture1.verify_fip(fip_id1, vn1_vm1_fixture, fvn1_fixture)
-
+        port_id=vn2_vm1_fixture.tap_intf[vn2_fixture.vn_fq_name]['name']
         fip_id2 = fip_fixture1.create_and_assoc_fip(
-            fvn1_fixture.vn_id, vn2_vm1_fixture.vm_id)
-        self.addCleanup(fip_fixture1.disassoc_and_delete_fip, fip_id2)
+            fvn1_fixture.vn_id, vn2_vm1_fixture.vm_id,
+            port_id=port_id)
+        self.addCleanup(fip_fixture1.disassoc_and_delete_fip, fip_id2,
+                        port_id=port_id)
         assert fip_fixture1.verify_fip(fip_id2, vn2_vm1_fixture, fvn1_fixture)
 
         self.logger.info(
