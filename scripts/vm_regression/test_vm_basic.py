@@ -147,7 +147,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         return True
 
 
-    @test.attr(type=['sanity', 'suite1', 'ci_sanity', 'vcenter_compute'])
+    @test.attr(type=['sanity', 'suite1', 'ci_sanity', 'vcenter_compute', 'ci_contrail_go_kolla_ocata_sanity'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6',
         hypervisor='docker',msg='Bug 1461423:Need privileged access')
