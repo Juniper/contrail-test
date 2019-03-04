@@ -58,6 +58,7 @@ class TestBmsLcm(BaseFabricTest):
     def bms_delete_nodes(self,bms_name=None,all_bms=False):
         node_list = self.connections.ironic_h.obj.node.list()
         for node in node_list:
+            self.connections.ironic_h.obj.node.set_maintenance(node.uuid,True)
             self.connections.ironic_h.obj.node.delete(node.uuid)
 
     def bms_node_add_delete(self,bms_type=None):
@@ -131,8 +132,8 @@ class TestBmsLcm(BaseFabricTest):
         #print self.bms_fixture.ironic_h.obj.node.list()
         return bms_nodes_filtered
 
-    @preposttest_wrapper
-    def test_bms_single_interface(self):
+
+    def skip_test_bms_single_interface(self):
         '''
         Description: Test BMS LCM scenario for single interface BMS node
         Test Steps:
@@ -147,8 +148,8 @@ class TestBmsLcm(BaseFabricTest):
         time.sleep(60)
         self.bms_vm_add_delete(bms_count=1,bms_nodes_filtered=bms_nodes_filtered)
 
-    @preposttest_wrapper
-    def test_bms_multi_homing(self):
+
+    def skip_test_bms_multi_homing(self):
         '''
         Description: Test BMS LCM scenario for multi homing - BMS node with two interface.interface1 in qfx1 and interface2 in qfx2
         Test Steps:
@@ -163,8 +164,8 @@ class TestBmsLcm(BaseFabricTest):
         time.sleep(60)
         self.bms_vm_add_delete(bms_count=1,bms_nodes_filtered=bms_nodes_filtered)
 
-    @preposttest_wrapper
-    def test_bms_lag(self):
+
+    def skip_test_bms_lag(self):
         '''
         Description: Test BMS LCM scenario for LAG - Link Aggregation - BMS node with two interface.interface1 and interface2 both in the same qfx
         Test Steps:
@@ -194,7 +195,6 @@ class TestBmsLcm(BaseFabricTest):
         bms_nodes_filtered = self.bms_node_add_delete("all")
         time.sleep(60)
         self.bms_vm_add_delete(bms_count=3,bms_nodes_filtered=bms_nodes_filtered)
-
 
     def bms_vm_add_delete(self,bms_count=1,bms_nodes_filtered=[]):
         '''
@@ -242,39 +242,47 @@ class TestBmsLcm(BaseFabricTest):
 
         assert vm_fixture.wait_till_vm_is_up()
 
-        time.sleep(120)
+        for i in xrange(5):
+            time.sleep(120)
+            dhcp_missing_mac_list = []
+            for service_node in service_nodes:
+                dhcp_inspect = AgentInspect(service_node)
+                for mac in mac_node_dict.keys():
+                    ret = dhcp_inspect.is_dhcp_offered(mac)
+                    if ret:
+                       print "DHCP Offer for %s seen"%mac
+                       self.logger.debug("DHCP request from %s seen"%mac)
+                    else:
+                       print "DHCP Offer for %s NOT seen"%mac
+                       dhcp_missing_mac_list.append(mac)
+                       self.logger.debug("DHCP request from %s NOT seen"%mac)
 
-        dhcp_missing_mac_list = []
-        for service_node in service_nodes:
-            dhcp_inspect = AgentInspect(service_node)
+            if len(dhcp_missing_mac_list) == 0:
+               break
+            ## BMS LCM node request dhcp before ansible configuration is done.
+            ## https://bugs.launchpad.net/juniperopenstack/+bug/1790911
+            dhcp_missing_mac_list_filtered = OrderedDict(zip(dhcp_missing_mac_list, repeat(None))).keys()
+            nodes_list = self.connections.ironic_h.obj.node.list()
+            node_mac_dict = dict(map(lambda x:(x.name,x.uuid),nodes_list))
+            for mac in dhcp_missing_mac_list_filtered:
+               print "Work-around for PR 1790911: Rebooting node: %s"%mac_node_dict[mac]
+               self.logger.debug("Work-around for PR 1790911: Rebooting node: %s"%mac_node_dict[mac])
+               node_id = node_mac_dict[mac_node_dict[mac]]
+               self.connections.ironic_h.obj.node.set_boot_device(node_id,"pxe")
+               #cmd="docker exec -it kolla_toolbox bash -c 'source /var/lib/kolla/config_files/admin-openrc.sh;openstack baremetal node reboot %s'"%node_id
+               #self.connections.inputs.run_cmd_on_server( self.connections.inputs.openstack_ips[0], cmd)
+               self.connections.ironic_h.set_node_power_state(node_id,"reboot")
+               time.sleep(10)
 
-            for mac in mac_node_dict.keys():
-                ret = dhcp_inspect.is_dhcp_offered(mac)
-                if ret:
-                   print "DHCP Offer for %s seen"%mac
-                   self.logger.debug("DHCP request from %s seen"%mac)
-                else:
-                   print "DHCP Offer for %s NOT seen"%mac
-                   dhcp_missing_mac_list.append(mac)
-                   self.logger.debug("DHCP request from %s NOT seen"%mac)
-
-        ## BMS LCM node request dhcp before ansible configuration is done.
-        ## https://bugs.launchpad.net/juniperopenstack/+bug/1790911
-        dhcp_missing_mac_list_filtered = OrderedDict(zip(dhcp_missing_mac_list, repeat(None))).keys()
-        nodes_list = self.connections.ironic_h.obj.node.list()
-        node_mac_dict = dict(map(lambda x:(x.name,x.uuid),nodes_list))
-        for mac in dhcp_missing_mac_list_filtered:
-            print "Work-around for PR 1790911: Rebooting node: %s"%mac_node_dict[mac]
-            self.logger.debug("Work-around for PR 1790911: Rebooting node: %s"%mac_node_dict[mac])
-            node_id = node_mac_dict[mac_node_dict[mac]]
-            self.connections.ironic_h.obj.node.set_boot_device(node_id,"pxe")
-            self.connections.ironic_h.set_node_power_state(node_id,"reboot")
         ## PR 1790911 work-around.
+
+        time.sleep(300)
+
 
         bms_fixtures_up_list = []
         bms_fixtures_down_list = []
         for bms_fixture in bms_fixtures_list:
-            try: 
+            try:
               assert bms_fixture.verify_on_setup()
               bms_fixtures_up_list.append(bms_fixture)
             except AssertionError:
@@ -293,7 +301,6 @@ class TestBmsLcm(BaseFabricTest):
 
         for bms_fixture in bms_fixtures_down_list:
             assert False, 'BMS bring up failed for node: %s'%bms_fixture.vm_name
-
 
         assert ping_result
         return True
