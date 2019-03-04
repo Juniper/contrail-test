@@ -278,7 +278,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         return True
     # end test_vm_add_delete
 
-    @test.attr(type=['suite1', 'upgrade','vrouter_gw', 'vcenter_compute', 'ci_contrail_go_kolla_ocata_sanity'])
+    @test.attr(type=['suite1', 'upgrade','vrouter_gw', 'vcenter_compute'])
     @preposttest_wrapper
     def test_ping_within_vn(self):
         '''
