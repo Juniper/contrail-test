@@ -84,6 +84,8 @@ class VncLibFixture(fixtures.Fixture):
         self.auth_url = self.inputs.auth_url if self.inputs else \
                         os.getenv('OS_AUTH_URL') or \
                         'http://%s:5000/v2.0'%self.auth_server_ip
+        self.auth_protocol = self.inputs.auth_protocol if self.inputs else \
+                        kwargs.get('auth_protocol', 'http')
         self.project_id = kwargs.get('project_id', None)
         self.certfile = kwargs.get('certfile', None)
         self.keyfile = kwargs.get('keyfile', None)
@@ -118,6 +120,11 @@ class VncLibFixture(fixtures.Fixture):
         except DuplicateSectionError:
             pass
         config.set('global', 'insecure', str(insecure))
+        try:
+            config.add_section('auth')
+        except DuplicateSectionError:
+            pass
+        config.set('auth', 'insecure', str(insecure))
         with open(_VNC_API_LIB_INI_, 'w') as fd:
             config.write(fd)
 
@@ -137,6 +144,7 @@ class VncLibFixture(fixtures.Fixture):
                               api_server_url=self.api_server_url,
                               auth_host=self.auth_server_ip,
                               auth_port=self.auth_port,
+                              auth_protocol=self.auth_protocol,
                               api_server_use_ssl=self.use_ssl,
                               auth_url=self.authn_url)
             if self.orchestrator == 'openstack':
