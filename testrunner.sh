@@ -221,6 +221,10 @@ docker_run () {
         fi
     fi
 
+    if [[ $use_host_networking ]]; then
+        arg_shell="$arg_shell --network host "
+    fi
+
     # Keep the container
     if [[ $rm ]]; then
         arg_rm=" --rm=true "
@@ -323,7 +327,8 @@ Run Contrail test suite in docker container
 $GREEN  -p, --run-path RUNPATH          $NO_COLOR Directory path on the host, in which contrail-test save all the
                                             results and other data. Default: $HOME/contrail-test-runs/
 $GREEN  -s, --shell                     $NO_COLOR Do not run tests, but leave a shell, this is useful for debugging.
-$GREEN  -S, --scenarios SCENARIOS                     $NO_COLOR list of scenarios that need to run as part rally tests. If empty ,
+$GREEN  -H, --use-host-networking       $NO_COLOR Launch test docker container in host networking mode
+$GREEN  -S, --scenarios SCENARIOS       $NO_COLOR list of scenarios that need to run as part rally tests. If empty ,
                                             runs all the tests under ./rally/scenarios
 $GREEN  -i, --use-ci-image              $NO_COLOR Use ci image, by default it will use the image name "$DEFAULT_CI_IMAGE",
                                                   One may override this by setting the environment variable \$CI_IMAGE
@@ -352,13 +357,14 @@ ${GREEN}Possitional Parameters:
 EOF
     }
 
-    while getopts "ibhf:p:sS:k:K:nrT:P:m:j:c:z:" flag; do
+    while getopts "ibhf:p:sHS:k:K:nrT:P:m:j:c:z:" flag; do
         case "$flag" in
             z) tempest_dir=$OPTARG;;
             P) params_file=$OPTARG;;
             f) feature=$OPTARG;;
             p) run_path=$OPTARG;;
             s) shell=1;;
+            H) use_host_networking=1;;
             S) scenarios=$OPTARG;;
             i) use_ci_image=1;;
             k) ssh_key_file=$OPTARG;;
@@ -584,6 +590,7 @@ for arg in "$@"; do
         "--feature") set -- "$@" "-f" ;;
         "--log-path") set -- "$@" "-p" ;;
         "--shell") set == "$@" "-s";;
+        "--use-host-networking") set == "$@" "-H" ;;
         "--scenarios") set == "$@" "-S";;
         "--ssh-key") set == "$@" "-k";;
         "--ssh-public-key") set == "$@" "-K";;
