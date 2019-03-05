@@ -38,6 +38,8 @@ class IsolatedCreds(fixtures.Fixture):
             self.project_name = self.inputs.stack_tenant
             self.username = self.inputs.stack_user
             self.password = self.inputs.stack_password
+	elif self.inputs.orchestrator == 'windows':
+	    self.project_name = self.inputs.stack_tenant
         if self.inputs.vcenter_gw_setup:#Fixing tenant as vCenter for vcenter gw setup
             self.project_name = 'vCenter'
             self.username = self.inputs.stack_user
@@ -145,6 +147,7 @@ class AdminIsolatedCreds(fixtures.Fixture):
         project_fixture.set_user_creds(username, password)
         project_name = project_fixture.project_name
         if self.inputs.orchestrator == 'vcenter'  or \
+	   self.inputs.orchestrator == 'windows' or \
            not self.inputs.tenant_isolation:
             return
         if 'v3' in self.inputs.auth_url:
@@ -195,7 +198,8 @@ class AdminIsolatedCreds(fixtures.Fixture):
         project_fixture.cleanUp()
     
     def create_domain(self, domain_name):
-        if self.inputs.orchestrator  == 'vcenter' or self.inputs.vcenter_gw_setup:
+        if self.inputs.orchestrator  == 'vcenter' or self.inputs.vcenter_gw_setup \
+	    or self.inputs.orchestrator == 'windows':
             return
         if 'v3' in self.inputs.auth_url:
             try:

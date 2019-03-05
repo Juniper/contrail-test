@@ -16,6 +16,7 @@ from tcutils.vdns.dns_introspect_utils import DnsAgentInspect
 from tcutils.util import custom_dict, get_plain_uuid
 from openstack import OpenstackAuth, OpenstackOrchestrator
 from vcenter import VcenterAuth, VcenterOrchestrator
+from windows import WindowsAuth, WindowsOrchestrator
 from vro import VroWorkflows
 from common.contrail_test_init import ContrailTestInit
 from vcenter_gateway import VcenterGatewayOrch
@@ -111,6 +112,11 @@ class ContrailConnections():
                                             logger=self.logger)
         elif self.inputs.orchestrator == 'kubernetes':
             self.orch = None
+	elif self.inputs.orchestrator == 'windows':
+	    self.orch = WindowsOrchestrator(
+		inputs=self.inputs,
+		vnc=self.vnc_lib,
+                logger=self.logger)
         if self.inputs.vcenter_gw_setup: # vcenter_gateway
             self.slave_orch = VcenterGatewayOrch(user=self.inputs.vcenter_username,
                                             pwd=self.inputs.vcenter_password,
@@ -148,6 +154,12 @@ class ContrailConnections():
             elif self.inputs.orchestrator == 'vcenter':
                 env[attr] = VcenterAuth(username, password,
                                        project_name, self.inputs)
+	    elif self.inputs.orchestrator == 'windows':
+		env[attr] = WindowsAuth(
+				user=username,
+				passwd=password,
+                                project_name=project_name,
+				inputs=self.inputs)
 #            elif self.inputs.orchestrator == 'kubernetes':
 #                env[attr] = self.get_k8s_api_client_handle()
         return env.get(attr)
