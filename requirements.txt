@@ -25,3 +25,4 @@ ipaddress==1.0.18
 urllib3==1.20
 websocket-client==0.40.0
 netifaces
+pywinrm==0.2.2

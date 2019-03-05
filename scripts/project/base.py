@@ -46,6 +46,8 @@ class BaseProjectTest(test.BaseTestCase):
                self.inputs.tenant_isolation) :
             return (False, 'Need admin credentials and access to '
                 'create projects')
+	if self.inputs.orchestrator == 'windows':
+           return(False, 'Windows cluster do not support this TC. Only admin project available')
         return (True, None)
     # end is_test_applicable
 

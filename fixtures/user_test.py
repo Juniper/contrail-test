@@ -20,6 +20,10 @@ class UserFixture(fixtures.Fixture):
             # No concept of user in vcenter, However we satisfy the test infra
             # with dummy fixture objects
             return
+	if self.inputs.orchestrator == 'windows':
+            # No concept of user in vcenter, However we satisfy the test infra
+            # with dummy fixture objects
+            return
         self.created = False
         self.username = username 
         self.password = password 
@@ -34,10 +38,16 @@ class UserFixture(fixtures.Fixture):
         if self.inputs.orchestrator == 'vcenter':
             # No concept of user in vcenter
             return
+	if self.inputs.orchestrator == 'windows':
+            # No concept of user in vcenter
+            return
         self.auth.add_user_to_project(user, tenant, role)
 
     def remove_user_from_tenant(self, tenant, user, role):
         if self.inputs.orchestrator == 'vcenter':
+            # No concept of user in vcenter
+            return
+	if self.inputs.orchestrator == 'windows':
             # No concept of user in vcenter
             return
         self.auth.remove_user_from_project(user, role, tenant)
@@ -45,6 +55,9 @@ class UserFixture(fixtures.Fixture):
     def setUp(self):
         super(UserFixture, self).setUp()
         if self.inputs.orchestrator == 'vcenter':
+            # No concept of user in vcenter
+            return
+	if self.inputs.orchestrator == 'windows':
             # No concept of user in vcenter
             return
         if self.auth.get_user_id(self.username):
@@ -64,6 +77,9 @@ class UserFixture(fixtures.Fixture):
 
     def cleanUp(self):
         if self.inputs.orchestrator == 'vcenter':
+            # No concept of user in vcenter
+            return
+	if self.inputs.orchestrator == 'windows':
             # No concept of user in vcenter
             return
         do_cleanup = True
@@ -86,6 +102,9 @@ class UserFixture(fixtures.Fixture):
 
     def verify_on_setup(self):
         if self.inputs.orchestrator == 'vcenter':
+            # No concept of user in vcenter
+            return True
+	if self.inputs.orchestrator == 'windows':
             # No concept of user in vcenter
             return True
         result = True

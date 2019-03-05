@@ -13,6 +13,7 @@ from tcutils.util import retry
 from time import sleep
 from openstack import OpenstackAuth
 from vcenter import VcenterAuth
+from windows import WindowsAuth
 from cfgm_common.exceptions import NoIdError
 
 
@@ -57,6 +58,12 @@ class ProjectFixture(fixtures.Fixture):
                 self.auth = VcenterAuth(self.inputs.admin_username,
                               self.inputs.admin_password,
                               self.inputs.admin_tenant, self.inputs)
+	    elif self.inputs.orchestrator == 'windows':
+		self.auth = WindowsAuth(
+                                user=self.inputs.admin_username,
+                                passwd=self.inputs.admin_password,
+                                project_name=self.project_name,
+                                inputs=self.inputs)
             else:
                 # Kubernetes 
                 # Set no auth for now

@@ -38,6 +38,7 @@ ORCH_DEFAULT_DOMAIN = {
     'openstack' : 'Default',
     'kubernetes': 'default-domain',
     'vcenter': 'default-domain',
+    'windows': 'default-domain'
 }
 DEFAULT_CERT = '/etc/contrail/ssl/certs/server.pem'
 DEFAULT_PRIV_KEY = '/etc/contrail/ssl/private/server-privkey.pem'
@@ -175,6 +176,13 @@ class TestInputs(object):
             return self.host_data[host]['ips']
         username = self.host_data[host]['username']
         password = self.host_data[host]['password']
+	if 'win_cnm_plugin' in self.host_data[host]['roles']:
+	    ips = get_ips_of_windows_host(host, nic=nic,
+                          username=username,
+                          password=password,
+                          as_sudo=True,
+                          logger=self.logger)
+	else:
         ips = get_ips_of_host(host, nic=nic,
                           username=username,
                           password=password,
@@ -285,8 +293,12 @@ class TestInputs(object):
         self.hypervisors = {}
         self.is_dpdk_cluster = False
         provider_configs = (self.config.get('provider_config') or {}).get('bms') or {}
+	provider_configs_win = (self.config.get('provider_config') or {}).get('bms_win') or {}
         username = provider_configs.get('ssh_user') or 'root'
         password = provider_configs.get('ssh_pwd') or 'c0ntrail123'
+	if provider_configs_win:
+            username_win = provider_configs_win.get('ssh_user') or 'root'
+            password_win = provider_configs_win.get('ssh_pwd') or 'c0ntrail123'
         domainsuffix = provider_configs.get('domainsuffix') or 'englab.juniper.net'
         for host, values  in (self.config.get('instances') or {}).iteritems():
             roles = values.get('roles') or {}
@@ -295,12 +307,24 @@ class TestInputs(object):
             if 'openstack_control' in roles and not 'openstack' in roles:
                 roles.update({'openstack': {}})
             host_data['roles'] = roles
-            host_data['username'] = username
-            host_data['password'] = password
             host_data['service_name'] = dict()
+	    if values['provider'] == 'bms_win':
+                host_data['username'] = username_win
+                host_data['password'] = password_win
+                hostname = self.run_cmd_on_server(
+                    server_ip=host_data['host_ip'],
+		    issue_cmd='hostname',
+ 		    username=username_win,
+		    password=password_win,
+		    windows=True)
+                host_fqname = hostname
+                host_data['windows'] = True
+            else:
+                host_data['username'] = username
+                host_data['password'] = password
+                hostname = self.run_cmd_on_server(host_data['host_ip'], 'hostname')
+                host_fqname = self.run_cmd_on_server(host_data['host_ip'], 'hostname -f')
             self.host_data[host_data['host_ip']] = host_data
-            hostname = self.run_cmd_on_server(host_data['host_ip'], 'hostname')
-            host_fqname = self.run_cmd_on_server(host_data['host_ip'], 'hostname -f')
             if self.slave_orchestrator == 'kubernetes' and 'novalocal' in hostname:
                 hostname = hostname.split('.')[0]
             self.host_names.append(hostname)
@@ -629,6 +653,9 @@ class TestInputs(object):
         self._set_auth_vars()
         if self.orchestrator == 'kubernetes' or self.slave_orchestrator == 'kubernetes':
             self.tenant_isolation = False
+	if self.orchestrator == 'windows':
+            self.tenant_isolation = False
+            self.user_isolation = False
         self.image_web_server = test_configs.get('image_web_server') or \
                                 os.getenv('IMAGE_WEB_SERVER') or '10.204.216.50'
         # Report Gen related parsers
@@ -730,6 +757,11 @@ class TestInputs(object):
         host_dict['containers'] = {}
         if  host_dict.get('type', None) == 'esxi':
             return
+	if 'windows' in host_dict:
+	    if host_dict['windows']:
+		self.logger.info("{} is a windows compute node".format(
+		    host_dict['host_ip']))
+     	        return
         cmd = 'docker ps 2>/dev/null | grep -v "/pause\|/usr/bin/pod" | awk \'{print $NF}\''
         output = self.run_cmd_on_server(host_dict['host_ip'], cmd, as_sudo=True)
         # If not a docker cluster, return
@@ -898,7 +930,8 @@ class TestInputs(object):
 
     def run_cmd_on_server(self, server_ip, issue_cmd, username=None,
                           password=None, pty=True, as_sudo=True, as_daemon=False,
-                          container=None, detach=None, shell_prefix='/bin/bash -c ',):
+                          container=None, detach=None, shell_prefix='/bin/bash -c ',
+			  windows=False, ignore_error=False):
         '''
         container : name or id of the container
         '''
@@ -926,7 +959,9 @@ class TestInputs(object):
                           container=container,
                           detach=detach,
                           as_daemon=as_daemon,
-                          shell_prefix=shell_prefix)
+                          shell_prefix=shell_prefix,
+			  windows=windows,
+			  ignore_error=ignore_error)
         return output
     # end run_cmd_on_server
 
