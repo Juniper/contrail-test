@@ -32,6 +32,7 @@ import testtools
 from fabfile import *
 from fabutils import *
 import ast
+from winrm import Session
 
 sku_dict = {'2014.1': 'icehouse', '2014.2': 'juno', '2015.1': 'kilo', '12': 'liberty', '13': 'mitaka',
             '14': 'newton', '15': 'ocata'}
@@ -160,6 +161,10 @@ def copy_fabfile_to_agent():
         if not exists(dst):
             put(src, dst)
         env.fab_copied_to_hosts.append(env.host_string)
+
+def run_cmd_on_docker(host_string, ip, cmd, password=None, timeout=120):
+    
+    (username, host_ip) = host_string.split('@')
 
 def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
                          gateway_password=None, with_sudo=False, timeout=120,
@@ -782,8 +787,9 @@ def run_cmd_on_server(issue_cmd, server_ip, username,
                       container=None,
                       detach=None,
                       pidfile=None,
-                      shell_prefix='/bin/bash -c '
-                      ):
+                      shell_prefix='/bin/bash -c ',
+		      windows=False,
+		      ignore_error=False):
     '''
     container : name or id of the container to run the cmd( str)
     '''
@@ -803,9 +809,14 @@ def run_cmd_on_server(issue_cmd, server_ip, username,
                 _run = sudo
                 container_args = ''
                 container_args += ' -d ' if detach else ''
-                container_args += ' --privileged '
-                container_args += ' -it ' if pty else ''
+		if not windows:
+                    container_args += ' --privileged '
+                    container_args += ' -it ' if pty else ''
                 container_args += container
+		if windows:
+		    container_args += ' powershell.exe '
+                if windows:
+		    shell_prefix = None
                 if shell_prefix:
                     updated_cmd = 'docker exec %s %s \'%s\'' % (container_args,
                                                         shell_prefix,
@@ -813,10 +824,35 @@ def run_cmd_on_server(issue_cmd, server_ip, username,
                 else:
                     updated_cmd = 'docker exec %s %s' % (container_args,issue_cmd)
             logger.debug('[%s]: Running cmd : %s' % (server_ip, updated_cmd))
-            output = _run(updated_cmd, pty=pty)
+	    if not windows:
+                output = _run(updated_cmd, pty=pty)
+            else:
+		output = _run_cmd_on_windows(
+		    cmd=updated_cmd,
+		    target_ip=server_ip,
+		    username=username,
+		    password=password,
+		    logger=logger)
             logger.debug('Output : %s' % (output))
             return output
 # end run_cmd_on_server
+
+def _run_cmd_on_windows(cmd, target_ip, username='Administrator', password='Contrail123!',
+    transport='ntlm', server_cert_validation='ignore', logger=None, ignore_error=False):
+
+    logger = logger or contrail_logging.getLogger(__name__)
+    s = Session(
+                target_ip,
+                auth=(username, password),
+                transport=transport)
+    cmd_list = cmd.split(' ')
+    result = s.run_cmd(cmd_list[0], cmd_list[1:])
+        
+    if not ignore_error and result.status_code != 0:
+        assert False, ("Error while executing command {} on windows compute {}."
+            "Error is {}".format(cmd, target_ip, result.std_err))
+    print(result.std_out, result.status_code)
+    return result.std_out.strip()
 
 class Lock:
 
@@ -1228,6 +1264,17 @@ def get_ips_of_host(host, nic=None, **kwargs):
     cidrs = output.split('\n') if output else []
     return [str(IPNetwork(cidr).ip) for cidr in cidrs]
 #end get_ips_of_host
+
+def get_ips_of_windows_host(host, nic=None, **kwargs):
+    cmd = 'ipconfig /all'
+    ip_list = []
+    output = _run_cmd_on_windows(cmd, host)
+    for line in output.split('\r\n'):
+	if 'IPv4 Address' in line:
+	    if re.match('\s*IPv4 Address.*\:\s*(.*)\s*',line):
+		ip = re.match('\s*IPv4 Address.*\:\s*(.*)\s*',line).group(1)
+		ip_list.append(ip.replace('(Preferred) ',''))
+    return ip_list
 
 def get_intf_name_from_mac(host, mac_address, **kwargs):
     cmd = "ip link | grep -B1 %s"%mac_address
