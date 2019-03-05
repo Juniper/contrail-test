@@ -1236,6 +1236,13 @@ def get_intf_name_from_mac(host, mac_address, **kwargs):
         return None
     return output.split(':')[1].strip()
 
+def get_hostname_by_ip(host, ip, **kwargs):
+    cmd = "getent hosts %s | head -n 1 | awk '{print $2}'"%ip
+    output = run_cmd_on_server(cmd, host, **kwargs)
+    if not output:
+        return None
+    return output
+
 def execute_ansible_playbook(self, playbook, **kwargs):
     ev = ''
     for key,value in kwargs.iteritems():
