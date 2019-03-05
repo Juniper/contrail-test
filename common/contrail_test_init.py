@@ -344,6 +344,7 @@ class TestInputs(object):
                         hostname_suffix = '.'.join([hostname,domainsuffix])
                         self.compute_names.append(hostname_suffix)
                         self.host_data[hostname_suffix] = host_data
+                        self.compute_info[hostname_suffix] = host_data['host_ip']
                     else:
                         self.compute_names.append(host_fqname)
                     self.compute_info[hostname] = host_data['host_ip']

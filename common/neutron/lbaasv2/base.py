@@ -26,7 +26,7 @@ class BaseLBaaSTest(BaseNeutronTest, test_v1.BaseTestCase_v1):
         vm_fix_list = []
         for num in range(no_of_vm):
             vm_fix = self.create_vm(vn_fixture,
-                flavor='contrail_flavor_small', image_name='ubuntu')
+                flavor='contrail_flavor_small', image_name='ubuntu-traffic')
             vm_fix_list.append(vm_fix)
         for vm in vm_fix_list:
             assert vm.wait_till_vm_is_up()
