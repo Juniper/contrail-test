@@ -346,8 +346,8 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
         result = True
         query = 'vn=' + src_vn + ' AND remote_vn=' + dst_vn + ' AND protocol=17'
         granularity =10
-        vm_node_ip = self.res.vn1_vm1_fixture.vm_node_ip
-        vm_host = self.res.vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
+        vm_node_ip = self.res.vn1_vm1_fixture.vm_node_data_ip
+        vm_host = self.inputs.host_data[vm_node_ip]['service_name'][vm_node_ip]
         ip = self.inputs.collector_ips[0]
         self.logger.info("Verifying SessionSeriesTable through opserver %s" %(ip))
         #query client session samples
@@ -470,8 +470,8 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
     
     def verify_session_sampling_teardown(self, start_time, src_vn, dst_vn):
         result = True
-        vm_node_ip = self.res.vn1_vm1_fixture.vm_node_ip
-        vm_host = self.res.vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
+        vm_node_ip = self.res.vn1_vm1_fixture.vm_node_data_ip
+        vm_host = self.inputs.host_data[vm_node_ip]['service_name'][vm_node_ip]
         query = 'vn=' + src_vn + ' AND remote_vn=' + dst_vn + ' AND protocol=1'
         self.logger.info('Verify session samples and teardown pkts')
         ip = self.inputs.collector_ips[0]

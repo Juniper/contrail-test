@@ -63,8 +63,10 @@ class AnalyticsTestSanityWithMin(
         other_vrouter_ip = self.res.vn1_vm2_fixture.vm_node_data_ip
         vrouter_ip = self.res.vn1_vm1_fixture.vm_node_data_ip
 
-        src_vm_host = self.res.vn1_vm1_fixture.get_host_of_vm()
-        dst_vm_host = self.res.vn1_vm2_fixture.get_host_of_vm()
+        src_vm_node_ip = self.res.vn1_vm1_fixture.vm_node_data_ip
+        dst_vm_node_ip = self.res.vn1_vm2_fixture.vm_node_data_ip
+        src_vm_host = self.inputs.host_data[src_vm_node_ip]['service_name'][src_vm_node_ip]
+        dst_vm_host = self.inputs.host_data[dst_vm_node_ip]['service_name'][dst_vm_node_ip]
 
         src_vm_host_ip = self.res.vn1_vm1_fixture.vm_node_ip
         dst_vm_host_ip = self.res.vn1_vm2_fixture.vm_node_ip
@@ -175,7 +177,8 @@ class AnalyticsTestSanityWithMin(
 
         src_vn = self.res.vn1_vm1_fixture.vn_fq_names[0]
         dst_vn = self.res.vn1_vm2_fixture.vn_fq_names[0]
-        src_vm_host = self.res.vn1_vm1_fixture.get_host_of_vm()
+        src_vm_node_ip = self.res.vn1_vm1_fixture.vm_node_data_ip
+        src_vm_host = self.inputs.host_data[src_vm_node_ip]['service_name'][src_vm_node_ip]
 
         cmd_args_list = [
 
@@ -561,7 +564,8 @@ class AnalyticsTestSanityWithResource(
                 vm_fixture.orch.get_host_of_vm(
                     vm_fixture.vm_obj)]['host_ip']
             vn_of_vm = vm_fixture.vn_fq_name
-            vm_host = vm_fixture.inputs.host_data[vm_node_ip]['name']
+            vm_node_ip = vm_fixture.vm_node_data_ip
+            vm_host = self.inputs.host_data[vm_node_ip]['service_name'][vm_node_ip]
             interface_name = vm_fixture.agent_inspect[
                 vm_node_ip].get_vna_tap_interface_by_vm(vm_id=vm_uuid)[0]['config_name']
             self.logger.info(
@@ -711,10 +715,8 @@ class AnalyticsTestSanityWithResource(
         print sender.sent, receiver.recv
         time.sleep(1)
 
-        vm_node_ip = self.res.vn1_vm1_fixture.inputs.host_data[
-            self.res. vn1_vm1_fixture.orch.get_host_of_vm(
-                self.res.vn1_vm1_fixture.vm_obj)]['host_ip']
-        vm_host = self.res.vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
+        vm_node_ip = self.res.vn1_vm1_fixture.vm_node_data_ip
+        vm_host = self.inputs.host_data[vm_node_ip]['service_name'][vm_node_ip]
         time.sleep(30)
         # Verifying flow series table
         src_vn = 'default-domain' + ':' + \
@@ -907,10 +909,8 @@ class AnalyticsTestSanityWithResource(
 
         assert "sender.sent == receiver.recv", "UDP traffic to ip:%s failed" % self.res.vn2_vm2_fixture.vm_ip
         # Verifying the vrouter uve for the active flow
-        vm_node_ip = self.res.vn1_vm1_fixture.inputs.host_data[
-            self.res.vn1_vm1_fixture.orch.get_host_of_vm(
-                self.res.vn1_vm1_fixture.vm_obj)]['host_ip']
-        vm_host = self.res.vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
+        vm_node_ip = self.res.vn1_vm1_fixture.vm_node_data_ip
+        vm_host = self.inputs.host_data[vm_node_ip]['service_name'][vm_node_ip]
         self.logger.info(
             "Waiting for the %s vrouter uve to be updated with active flows" %
             (vm_host))
@@ -1148,10 +1148,8 @@ class AnalyticsTestSanityWithResource(
             receiver.stop()
             print sender.sent, receiver.recv
             time.sleep(1)
-        vm_node_ip = self.res.vn1_vm1_fixture.inputs.host_data[
-            self.res.vn1_vm1_fixture.orch.get_host_of_vm(
-                self.res.vn1_vm1_fixture.vm_obj)]['host_ip']
-        vm_host = self.res.vn1_vm1_fixture.inputs.host_data[vm_node_ip]['name']
+        vm_node_ip = self.res.vn1_vm1_fixture.vm_node_data_ip
+        vm_host = self.inputs.host_data[vm_node_ip]['service_name'][vm_node_ip]
         time.sleep(300)
         # Verifying flow series table
         src_vn = 'default-domain' + ':' + \
