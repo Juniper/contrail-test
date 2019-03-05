@@ -302,9 +302,12 @@ class VMFixture(fixtures.Fixture):
     def vm_ip(self):
         return self.vm_ips[0] if self.vm_ips else None
 
+    @retry(delay=1, tries=5)
     def verify_vm_launched(self):
         self.vm_launch_flag = True
+        self.read(refresh=True)
         for vm_obj in self.vm_objs:
+            self.logger.info('VM name : %s' % vm_obj.name)
             if not self.orch.get_vm_detail(vm_obj):
                 self.logger.error('VM %s is not launched yet' % vm_obj.id)
                 self.vm_launch_flag = False

@@ -164,7 +164,7 @@ class TestDetailedPolicy2(BasePolicyTest):
         msg = []
         vn1_name = 'vn1'
         vn2_name = 'vn2'
-        vn1_subnets = ['10.1.1.0/24']
+        vn1_subnets = [get_random_cidr(af='v4')]
         vn2_subnets = ['20.1.1.0/24']
         number_of_policy = 150
         number_of_dummy_rules = 10
