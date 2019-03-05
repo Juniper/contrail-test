@@ -224,6 +224,19 @@ class TestInputs(object):
     def get_service_ip(self, host, service='CONTROLLER'):
         return self._get_ip_for_service(host, service)
 
+    def get_service_name(self, host, service_ip):
+        host_data = self.host_data[host]
+        if service_ip not in host_data.get('service_name'):
+            service_name = get_hostname_by_ip(host,
+                service_ip,
+                username=host_data['username'],
+                password=host_data['password'],
+                as_sudo=True,
+                logger=self.logger)
+            host_data['service_name'][service_ip] = service_name or \
+                                                    host_data['name']
+        return host_data['service_name'][service_ip]
+
     def parse_topo(self):
         self.host_names = []
         self.cfgm_ip = ''
@@ -284,6 +297,7 @@ class TestInputs(object):
             host_data['roles'] = roles
             host_data['username'] = username
             host_data['password'] = password
+            host_data['service_name'] = dict()
             self.host_data[host_data['host_ip']] = host_data
             hostname = self.run_cmd_on_server(host_data['host_ip'], 'hostname')
             host_fqname = self.run_cmd_on_server(host_data['host_ip'], 'hostname -f')
@@ -310,7 +324,8 @@ class TestInputs(object):
                 self.openstack_control_ips.append(service_ip)
                 self.openstack_control_ip = service_ip
                 if service_ip != host_data['host_ip']:
-                    self.openstack_names.append(hostname)
+                    service_name = self.get_service_name(host_data['host_ip'], service_ip)
+                    self.openstack_names.append(service_name)
                 else:
                     self.openstack_names.append(host_fqname)
             if 'config' in roles:
@@ -321,7 +336,8 @@ class TestInputs(object):
                 self.cfgm_control_ips.append(service_ip)
                 self.cfgm_control_ip = service_ip
                 if service_ip != host_data['host_ip']:
-                    self.cfgm_names.append(hostname)
+                    service_name = self.get_service_name(host_data['host_ip'], service_ip)
+                    self.cfgm_names.append(service_name)
                 else:
                     self.cfgm_names.append(host_fqname)
                 self.hostname = hostname
@@ -340,7 +356,8 @@ class TestInputs(object):
                 else:
                     self.compute_ips.append(host_data['host_ip'])
                     if data_ip != host_data['host_ip']:
-                        self.compute_names.append(hostname)
+                        service_name = self.get_service_name(host_data['host_ip'], data_ip)
+                        self.compute_names.append(service_name)
                     #not able to get host_fqname from singleinterface vcenter contrailvm
                     elif self.orchestrator == 'vcenter':
                         hostname_suffix = '.'.join([hostname,domainsuffix])
@@ -361,7 +378,8 @@ class TestInputs(object):
                 self.bgp_ips.append(host_data['host_ip'])
                 self.bgp_control_ips.append(service_ip)
                 if service_ip != host_data['host_ip']:
-                    self.bgp_names.append(hostname)
+                    service_name = self.get_service_name(host_data['host_ip'], service_ip)
+                    self.bgp_names.append(service_name)
                 else:
                     self.bgp_names.append(host_fqname)
                 host_data_ip = host_control_ip = service_ip
@@ -382,16 +400,18 @@ class TestInputs(object):
                 self.collector_ips.append(service_ip)
                 self.collector_control_ips.append(service_ip)
                 if service_ip != host_data['host_ip']:
-                    self.collector_names.append(hostname)
+                    service_name = self.get_service_name(host_data['host_ip'], service_ip)
+                    self.collector_names.append(service_name)
                 else:
                     self.collector_names.append(host_fqname)
             if 'analytics_database' in roles:
-                service_ip = self.get_service_ip(host_data['host_ip'], 'analytics_database')
+                service_ip = self.get_service_ip(host_data['host_ip'], 'analyticsdb')
                 self.host_data[service_ip] = host_data
                 self.database_ip = host_data['host_ip']
                 self.database_ips.append(host_data['host_ip'])
                 if service_ip != host_data['host_ip']:
-                   self.database_names.append(hostname)
+                    service_name = self.get_service_name(host_data['host_ip'], service_ip)
+                    self.database_names.append(service_name)
                 else:
                     self.database_names.append(host_fqname)
                 self.database_control_ips.append(service_ip)
