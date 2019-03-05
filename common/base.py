@@ -47,9 +47,12 @@ class _GenericTestBaseMethods():
 
     def perform_cleanup(self, obj, remove_cleanup=True):
         if getattr(obj, 'cleanUp', None):
+            obj.cleanUp()
+            if hasattr(obj, '_cleanups') and obj._cleanups is None \
+                and hasattr(obj, '_clear_cleanups'):
+                obj._clear_cleanups()
             if remove_cleanup:
                 self.remove_from_cleanups(obj.cleanUp)
-            obj.cleanUp()
     # end perform_cleanup
 
     def alloc_ips(self, vn_fixture, count=1):
