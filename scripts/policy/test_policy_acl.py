@@ -16,6 +16,7 @@ from vn_policy_test import VN_Policy_Fixture
 from test import attr
 from netaddr import IPNetwork
 from common.policy import policy_test_utils
+from windows import *
 
 af_test = 'dual'
 
@@ -746,10 +747,14 @@ class TestPolicyAcl(BasePolicyTest):
 
         # create VM
         self.setup_vm()
-
-        ret = self.VM11_fixture.ping_with_certainty(expectation=False,
+	if self.inputs.orchestrator !='windows':
+            ret = self.VM11_fixture.ping_with_certainty(expectation=False,
                                     dst_vm_fixture=self.VM21_fixture)
 
+	else:
+           ret = self.VM11_fixture.ping_with_certainty(expectation=False,
+                                    ip=self.VM21_fixture.get_vm_ips()[0],
+                                    container = self.VM11_fixture.vm_name)
         if ret == True :
             cmd = "flow -l | grep %s -A1 | grep %s -A1 " % (
                    self.VM11_fixture.vm_ip, self.VM21_fixture.vm_ip)
