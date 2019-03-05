@@ -13,6 +13,7 @@ import sys
 from quantum_test import NetworkClientException
 from tcutils.test_lib.contrail_utils import get_interested_computes
 from cfgm_common.exceptions import PermissionDenied, RefsExistError
+from windows import WindowsOrchestrator
 try:
     from webui_test import *
 except ImportError:
@@ -91,7 +92,10 @@ class VNFixture(fixtures.Fixture):
             self.webui = WebuiTest(self.connections, self.inputs)
         self.router_asn = router_asn
         self.rt_number = rt_number
-        self.option = option
+	if isinstance(self.orchestrator,WindowsOrchestrator):
+	    self.option = 'contrail'
+	else:
+            self.option = option
         self.forwarding_mode = forwarding_mode
         self.vxlan_id = vxlan_id
         self.shared = shared

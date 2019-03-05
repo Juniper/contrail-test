@@ -116,6 +116,7 @@ class VNCApiInspect (VerificationUtilBase):
         if domain == 'Default':
             domain = 'default-domain'
         d = self.try_cache('domain', [domain], refresh)
+	dd = None
         if not d:
             # cache miss
             doms = self.dict_get('domains')
