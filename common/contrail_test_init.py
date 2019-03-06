@@ -358,6 +358,7 @@ class TestInputs(object):
                     if data_ip != host_data['host_ip']:
                         service_name = self.get_service_name(host_data['host_ip'], data_ip)
                         self.compute_names.append(service_name)
+                        self.compute_info[service_name] = host_data['host_ip']
                     #not able to get host_fqname from singleinterface vcenter contrailvm
                     elif self.orchestrator == 'vcenter':
                         hostname_suffix = '.'.join([hostname,domainsuffix])
