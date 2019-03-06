@@ -1115,7 +1115,7 @@ class VMFixture(fixtures.Fixture):
     def reset_state(self, state):
         self.vm_obj.reset_state(state)
 
-    @retry(delay=2, tries=5)
+    @retry(delay=1, tries=5)
     def ping_vm_from_host(self, vn_fq_name, timeout=2):
         ''' Ping the VM metadata IP from the host
         '''
@@ -1577,7 +1577,7 @@ class VMFixture(fixtures.Fixture):
         return bgp_ips
     # end get_ctrl_nodes_in_rt_group
 
-    @retry(delay=5, tries=20)
+    @retry(delay=2, tries=15)
     def verify_vm_in_control_nodes(self):
         ''' Validate routes are created in Control-nodes for this VM
 
