@@ -214,7 +214,7 @@ class TestLBaaSV2(BaseLBaaSTest):
 
         fip_fix = self.useFixture(VNFixture(connections=self.connections, router_external=True))
         client_vm1_fixture = self.create_vm(fip_fix,
-                flavor='contrail_flavor_small', image_name='ubuntu')
+                flavor='contrail_flavor_small', image_name='ubuntu-traffic')
 
         vn_vm_fix = self.create_vn_and_its_vms(no_of_vm=3)
 
@@ -247,7 +247,7 @@ class TestLBaaSV2(BaseLBaaSTest):
 
         fip_fix1 = self.useFixture(VNFixture(connections=self.connections, router_external=True))
         client_vm2_fixture = self.create_vm(fip_fix1,
-                flavor='contrail_flavor_small', image_name='ubuntu')
+                flavor='contrail_flavor_small', image_name='ubuntu-traffic')
         assert client_vm2_fixture.wait_till_vm_is_up()
 
         ##Disassociate FIP and associate new FIP

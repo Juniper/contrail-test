@@ -45,10 +45,10 @@ class TestVcenter(BaseVnVmTest):
         vn_fixture = self.create_vn(vn_name=vn_name, subnets=[vn_sub], enable_dhcp=False)
         assert vn_fixture.verify_on_setup()
 
-        vm1 = self.create_vm(vn_fixture=vn_fixture, vm_name=get_random_name('vm'))
+        vm1 = self.create_vm(vn_fixture=vn_fixture, vm_name=get_random_name('vm'), image_name = 'ubuntu-traffic')
         vm1.vm_obj.assign_ip('eth0', '12.11.10.101', '12.11.10.1', '255.255.255.0')
         assert vm1.wait_till_vm_is_up()
-        vm2 = self.create_vm(vn_fixture=vn_fixture, vm_name=get_random_name('vm'))
+        vm2 = self.create_vm(vn_fixture=vn_fixture, vm_name=get_random_name('vm'), image_name = 'ubuntu-traffic')
         vm2.vm_obj.assign_ip('eth0', '12.11.10.102', '12.11.10.1', '255.255.255.0')
         assert vm2.wait_till_vm_is_up()
 
