@@ -15,6 +15,7 @@ from tcutils.util import skip_because
 from tcutils.util import get_an_ip
 from tcutils.util import get_random_cidr
 from tcutils.util import get_random_name
+from tcutils.util import get_random_mac
 import time
 
 
@@ -142,8 +143,7 @@ class TestEvpnType5VxLANRoutingBasic(BaseEvpnType5Test, VerifyEVPNType5):
                                                 vn_fixture=bms_vn_fixture,
                                                 unit=100,
                                                 bms_ip=bms_ip,
-                                                bms_mac='00:11:22:33:' +
-                                                str(offset) + ':44',
+                                                bms_mac=get_random_mac(),
                                                 bms_ip_netmask='24',
                                                 bms_gw_ip='100.0.0.1',
                                                 static_ip=True,
@@ -216,7 +216,7 @@ class TestEvpnType5VxLANRoutingBasic(BaseEvpnType5Test, VerifyEVPNType5):
                                             vn_fixture=vn2_fixture,
                                             unit=100,
                                             bms_ip=bms_ip,
-                                            bms_mac='00:11:22:33:44:55',
+                                            bms_mac=get_random_mac(),
                                             bms_ip_netmask='24',
                                             bms_gw_ip=vn2_fixture.get_subnets()[
                                                 0]['gateway_ip'],
@@ -288,7 +288,7 @@ class TestEvpnType5VxLANRoutingBasic(BaseEvpnType5Test, VerifyEVPNType5):
                                             vn_fixture=vn2_fixture,
                                             unit=100,
                                             bms_ip=bms_ip,
-                                            bms_mac='00:11:22:33:44:55',
+                                            bms_mac=get_random_mac(),
                                             bms_ip_netmask='24',
                                             bms_gw_ip=vn2_fixture.get_subnets()[
                                                 0]['gateway_ip'],
@@ -369,7 +369,7 @@ class TestEvpnType5VxLANRoutingBasic(BaseEvpnType5Test, VerifyEVPNType5):
                                             vn_fixture=vn2_fixture,
                                             unit=100,
                                             bms_ip=bms_ip,
-                                            bms_mac='00:11:22:33:44:55',
+                                            bms_mac=get_random_mac(),
                                             bms_ip_netmask='24',
                                             bms_gw_ip=vn2_fixture.get_subnets()[
                                                 0]['gateway_ip'],
@@ -450,7 +450,7 @@ class TestEvpnType5VxLANRoutingBasic(BaseEvpnType5Test, VerifyEVPNType5):
                                             vn_fixture=vn2_fixture,
                                             unit=100,
                                             bms_ip=bms_ip,
-                                            bms_mac='00:11:22:33:44:55',
+                                            bms_mac=get_random_mac(),
                                             bms_ip_netmask='24',
                                             bms_gw_ip=vn2_fixture.get_subnets()[
                                                 0]['gateway_ip'],
