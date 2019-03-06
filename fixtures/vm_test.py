@@ -1577,7 +1577,7 @@ class VMFixture(fixtures.Fixture):
         return bgp_ips
     # end get_ctrl_nodes_in_rt_group
 
-    @retry(delay=5, tries=20)
+    @retry(delay=2, tries=15)
     def verify_vm_in_control_nodes(self):
         ''' Validate routes are created in Control-nodes for this VM
 
