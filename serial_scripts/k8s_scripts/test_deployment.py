@@ -51,7 +51,7 @@ class TestDeployment(BaseK8sTest):
         assert self.validate_nginx_lb(s_pod_fixtures, service.cluster_ip,
                                       test_pod=client_pod)
         self.perform_cleanup(dep)
-        self.sleep(2)
+        self.sleep(35)
         '''After restart of the Kube Manager recreate the deployment obect 
            With additional pod replicas''' 
         dep = self.setup_nginx_deployment(name=depname,
