@@ -2928,7 +2928,7 @@ class TestBasicVMVNx(BaseVnVmTest):
     def tearDownClass(cls):
         super(TestBasicVMVNx, cls).tearDownClass()
 
-    @test.attr(type=['sanity','quick_sanity','ci_sanity','vrouter_gw', 'vcenter_compute'])
+    @test.attr(type=['quick_sanity','ci_sanity','vrouter_gw', 'vcenter_compute'])
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
         '''
@@ -2946,7 +2946,7 @@ class TestBasicVMVNx(BaseVnVmTest):
         vm2_name = get_random_name('vm2')
         vn_name = get_random_name('vn222')
         scp_test_file_sizes = ['1303'] if self.inputs.is_ci_setup() else \
-                              ['2210', '10000']
+                              ['1355', '3000']
         file = 'somefile'
         y = 'ls -lrt %s' % file
         cmd_to_check_file = [y]
@@ -3249,7 +3249,8 @@ class TestBasicIPv6VMVNx(TestBasicVMVNx):
         if not self.connections.orch.is_feature_supported('ipv6'):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
-
+    
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
         super(TestBasicIPv6VMVNx, self).test_vm_file_trf_scp_tests()
