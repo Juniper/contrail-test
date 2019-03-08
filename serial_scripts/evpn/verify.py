@@ -1050,7 +1050,7 @@ class VerifyEvpnCases():
             dest_vm_ip = match.group(1)
         valid_ip = re.search('13.1.1.(.*)', output)
         assert valid_ip, 'failed to get ip from 13.1.1.0 subnet as configured in dhcp vm'
-        file_sizes = ['3000', '2000000']
+        file_sizes = ['1350', '3000']
         for size in file_sizes:
             self.logger.info("-" * 80)
             self.logger.info("FILE SIZE = %sB" % size)
