@@ -1248,6 +1248,7 @@ class ContrailTestInit(object):
         for host in hosts or self.host_ips:
             username = self.host_data[host]['username']
             password = self.host_data[host]['password']
+            host_ip = self.host_data[host]['host_ip']
             for container in containers:
                 cntr = self.get_container_name(host, container)
                 if not cntr:
@@ -1257,12 +1258,12 @@ class ContrailTestInit(object):
                 issue_cmd = 'docker %s %s %s' % (event, cntr, timeout)
                 self.logger.info('Running %s on %s' %
                                  (issue_cmd, self.host_data[host]['name']))
-                self.run_cmd_on_server(host, issue_cmd, username, password, pty=True, as_sudo=True)
+                self.run_cmd_on_server(host_ip, issue_cmd, username, password, pty=True, as_sudo=True)
                 if verify_service:
                     if 'stop' in event:
-                        service_status = self.verify_service_down(host, container)[0]
+                        service_status = self.verify_service_down(host_ip, container)[0]
                     else:
-                        service_status = self.verify_service_state(host, container)[0]
+                        service_status = self.verify_service_state(host_ip, container)[0]
                     assert service_status
     #end _action_on_container
 

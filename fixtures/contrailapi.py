@@ -2724,6 +2724,42 @@ class ContrailVncApi(object):
             self._vnc.virtual_machine_interface_read(
                 id=vmi['uuid']) for vmi in vmis]
 
+    def create_virtual_port_group(self, fq_name):
+        obj = VirtualPortGroup(fq_name[-1], fq_name=fq_name,
+                               parent_type='fabric')
+        self._log.debug('Creating VPG %s'%fq_name)
+        return self._vnc.virtual_port_group_create(obj)
+
+    def read_virtual_port_group(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Reading VPG %s' % kwargs)
+        return self._vnc.virtual_port_group_read(**kwargs)
+
+    def delete_virtual_port_group(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting VPG %s' % kwargs)
+        return self._vnc.virtual_port_group_delete(**kwargs)
+
+    def associate_physical_interface(self, vpg_uuid, pif_obj):
+        self._log.debug('Associate VPG %s and PIF %s'%(vpg_uuid, pif_obj.uuid))
+        obj = self.read_virtual_port_group(id=vpg_uuid)
+        obj.add_physical_interface(pif_obj)
+        return self._vnc.virtual_port_group_update(obj)
+
+    def disassociate_physical_interface(self, vpg_uuid, pif_obj):
+        self._log.debug('Disassoc VPG %s and PIF %s'%(vpg_uuid, pif_obj.uuid))
+        obj = self.read_virtual_port_group(id=vpg_uuid)
+        obj.del_physical_interface(pif_obj)
+        return self._vnc.virtual_port_group_update(obj)
+
     def create_fabric(self, name, creds=None):
         fqname = ['default-global-system-config', name]
         parent_type = 'global-system-config'

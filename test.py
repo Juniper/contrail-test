@@ -36,6 +36,9 @@ def attr(*args, **kwargs):
 std_logging.getLogger('urllib3.connectionpool').setLevel(std_logging.WARN)
 std_logging.getLogger('paramiko.transport').setLevel(std_logging.WARN)
 std_logging.getLogger('keystoneclient.session').setLevel(std_logging.WARN)
+std_logging.getLogger('keystoneauth.identity.v3.base').setLevel(std_logging.WARN)
+std_logging.getLogger('keystoneauth.session').setLevel(std_logging.WARN)
+std_logging.getLogger('novaclient.v2.client').setLevel(std_logging.WARN)
 std_logging.getLogger('keystoneclient.httpclient').setLevel(std_logging.WARN)
 std_logging.getLogger('neutronclient.client').setLevel(std_logging.WARN)
 #
