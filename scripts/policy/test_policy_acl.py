@@ -16,6 +16,7 @@ from vn_policy_test import VN_Policy_Fixture
 from test import attr
 from netaddr import IPNetwork
 from common.policy import policy_test_utils
+from tcutils.util import get_random_cidr
 
 af_test = 'dual'
 
@@ -56,7 +57,7 @@ class TestPolicyAcl(BasePolicyTest):
                 connections=self.connections,
                 vn_name='VN1',
                 inputs=self.inputs,
-                subnets=['10.1.1.0/24'],
+                subnets=[get_random_cidr(af='v4')],
                 ipam_fq_name=self.ipam1_obj.fq_name,orch=self.orchestrator))
         
         self.VN1_fixture.read()
@@ -67,7 +68,7 @@ class TestPolicyAcl(BasePolicyTest):
                 connections=self.connections,
                 vn_name='VN2',
                 inputs=self.inputs,
-                subnets=['10.2.1.0/24'],
+                subnets=[get_random_cidr(af='v4')],
                 ipam_fq_name=self.ipam2_obj.fq_name))
 
         self.VN3_fixture = self.useFixture(
@@ -76,7 +77,7 @@ class TestPolicyAcl(BasePolicyTest):
                 connections=self.connections,
                 vn_name='VN3',
                 inputs=self.inputs,
-                subnets=['10.3.1.0/24'],
+                subnets=[get_random_cidr(af='v4')],
                 ipam_fq_name=self.ipam3_obj.fq_name))
 
         for vn_fixture in [self.VN1_fixture, self.VN2_fixture, self.VN3_fixture]:

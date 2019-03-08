@@ -1,5 +1,5 @@
 '''*******AUTO-GENERATED TOPOLOGY*********'''
-from tcutils.util import get_random_name
+from tcutils.util import get_random_name,get_random_cidr
 
 class sdn_basic_config ():
 
@@ -20,10 +20,10 @@ class sdn_basic_config ():
         if self.project == 'vCenter':
             # For vcenter, only one subnet per VN is supported
             self.vn_nets = {
-                self.vnet_list[0]: ['10.1.1.0/24'],
-                self.vnet_list[1]: ['12.1.1.0/24'],
-                self.vnet_list[2]: ['14.1.1.0/24'],
-                self.vnet_list[3]: ['16.1.1.0/24']
+                self.vnet_list[0]: [get_random_cidr(af='v4')],
+                self.vnet_list[1]: [get_random_cidr(af='v4')],
+                self.vnet_list[2]: [get_random_cidr(af='v4')],
+                self.vnet_list[3]: [get_random_cidr(af='v4')]
             }
         else:
             self.vn_nets = {
