@@ -3,22 +3,24 @@ import fixtures
 from vnc_api.vnc_api import NoIdError
 from vnc_api.gen.cfixture import ContrailFixture
 from vnc_api.gen.resource_xsd import PolicyEntriesType
-from vnc_api.gen.resource_test import SecurityGroupTestFixtureGen,\
+from vnc_api.gen.resource_test import SecurityGroupTestFixtureGen, \
     ProjectTestFixtureGen, DomainTestFixtureGen
 
 from tcutils.util import retry
+
 try:
     from webui_test import *
 except ImportError:
     pass
 from tcutils.util import get_random_name
 
+
 class SecurityGroupFixture(ContrailFixture):
 
     def __init__(
-        self, connections, domain_name=None, project_name=None, secgrp_name=None,
-	    uuid=None, secgrp_entries=None,option='orch'):
-	#option <'orch' or 'contrail'>
+            self, connections, domain_name=None, project_name=None, secgrp_name=None,
+            uuid=None, secgrp_entries=None, option='orch'):
+        # option <'orch' or 'contrail'>
         self.connections = connections
         self.inputs = connections.inputs
         self.logger = connections.logger
@@ -57,22 +59,22 @@ class SecurityGroupFixture(ContrailFixture):
         self.secgrp_id = self.secgrp_id or self.get_sg_id()
         if self.secgrp_id:
             self.read()
-            self.logger.debug('SG %s(%s) already present, not creating SG'%
-                            (self.secgrp_name, self.secgrp_id))
+            self.logger.debug('SG %s(%s) already present, not creating SG' %
+                              (self.secgrp_name, self.secgrp_id))
         else:
-            self.logger.info("Creating Security group: %s"%self.secgrp_fq_name)
+            self.logger.info("Creating Security group: %s" % self.secgrp_fq_name)
             self.already_present = False
             if self.inputs.is_gui_based_config():
                 self.webui.create_security_group(self)
             elif self.inputs.slave_orchestrator == 'vro':
-                self.secgrp_id = self.orch.create_security_group(self.secgrp_name, 
+                self.secgrp_id = self.orch.create_security_group(self.secgrp_name,
                                                                  self.secgrp_entries)
             else:
                 self.secgrp_id = self.orch.create_security_group(
-                                                 sg_name=self.secgrp_name,
-                                                 parent_fqname=self.project_fq_name,
-                                                 sg_entries=self.secgrp_entries,
-                                                 option=self.option)
+                    sg_name=self.secgrp_name,
+                    parent_fqname=self.project_fq_name,
+                    sg_entries=self.secgrp_entries,
+                    option=self.option)
 
     @property
     def uuid(self):
@@ -85,7 +87,7 @@ class SecurityGroupFixture(ContrailFixture):
         return self.secgrp_fq_name
 
     def delete_all_rules(self, sg_id=None):
-        #deletes all the rules of the sg sg_id
+        # deletes all the rules of the sg sg_id
         sg_id = sg_id or self.secgrp_id
         self.orch.delete_security_group_rules(sg_id=sg_id, project_id=self.project_id, option=self.option)
 
@@ -109,7 +111,7 @@ class SecurityGroupFixture(ContrailFixture):
             if self.inputs.is_gui_based_config():
                 self.webui.delete_security_group(self)
             elif self.inputs.slave_orchestrator == 'vro':
-                self.orch.delete_security_group(self.secgrp_name) 
+                self.orch.delete_security_group(self.secgrp_name)
             else:
                 self.orch.delete_security_group(sg_id=self.secgrp_id, option=self.option)
             if self.verify_is_run or verify:
@@ -117,7 +119,7 @@ class SecurityGroupFixture(ContrailFixture):
                 assert result, msg
         else:
             self.logger.debug('Skipping deletion of security_group %s' %
-                             (self.secgrp_fq_name))
+                              (self.secgrp_fq_name))
 
     def add_rule(self, rule):
         """Add a rule to this security group."""
@@ -127,7 +129,7 @@ class SecurityGroupFixture(ContrailFixture):
         """Remove a rule from this security group."""
         pass
 
-    def replace_rules(self, rules,exp='pass'):
+    def replace_rules(self, rules, exp='pass'):
         """Replace all the rules of this security group with the  rules list."""
         self.logger.debug(
             "Replace all the rules of this security group %s with the new rules" %
@@ -138,7 +140,7 @@ class SecurityGroupFixture(ContrailFixture):
     @retry(delay=2, tries=5)
     def verify_secgrp_in_api_server(self):
         """Validate security group information in API-Server."""
-	#verify if sg present in api
+        # verify if sg present in api
         self.api_s_secgrp_obj = self.api_s_inspect.get_cs_secgrp(
             domain=self.domain_name, project=self.project_name,
             secgrp=self.secgrp_name, refresh=True)
@@ -150,7 +152,7 @@ class SecurityGroupFixture(ContrailFixture):
             self.logger.info(
                 "Security group %s found in the API Server", self.secgrp_name)
 
-	#verify if sg acls present in api
+        # verify if sg acls present in api
         self.api_s_acls = self.api_s_inspect.get_secgrp_acls_href(
             domain=self.domain_name, project=self.project_name,
             secgrp=self.secgrp_name, refresh=True)
@@ -161,7 +163,7 @@ class SecurityGroupFixture(ContrailFixture):
         else:
             self.logger.info(
                 "Validated that ACLs for Security group %s are present in API"
-                " Server" %( self.secgrp_name))
+                " Server" % (self.secgrp_name))
 
         return True, None
 
@@ -184,13 +186,13 @@ class SecurityGroupFixture(ContrailFixture):
         if not retval:
             errmsg = "Security group: %s not found in control node." % self.secgrp_fq_name
             return False, errmsg
-	
+
         return True, None
 
     @retry(delay=2, tries=5)
     def verify_secgrp_not_in_api_server(self):
         """Validate security group information in API-Server."""
-	#verify if sg is removed from api
+        # verify if sg is removed from api
         self.api_s_secgrp_obj = self.api_s_inspect.get_cs_secgrp(
             domain=self.domain_name, project=self.project_name,
             secgrp=self.secgrp_name, refresh=True)
@@ -202,14 +204,14 @@ class SecurityGroupFixture(ContrailFixture):
             self.logger.info(
                 "Security group %s removed from the API Server", self.secgrp_name)
 
-	#verify if sg acls removed from api
+        # verify if sg acls removed from api
         self.api_s_acls = self.api_s_inspect.get_secgrp_acls_href(
             domain=self.domain_name, project=self.project_name,
             secgrp=self.secgrp_name, refresh=True)
         if self.api_s_acls:
             errmsg = "ACLs for Security group %s still found in the API Server" % self.secgrp_name
             self.logger.warn(errmsg)
-            self.logger.debug("ACLs found for SG %s are: %s" %(self.secgrp_name, self.api_s_acls))
+            self.logger.debug("ACLs found for SG %s are: %s" % (self.secgrp_name, self.api_s_acls))
             return False, errmsg
         else:
             self.logger.debug(
@@ -228,7 +230,7 @@ class SecurityGroupFixture(ContrailFixture):
             self.logger.info("Security group: %s deleted successfully." %
                              self.secgrp_fq_name)
 
-	errmsg = "Security group: %s still not removed" % self.secgrp_fq_name
+        errmsg = "Security group: %s still not removed" % self.secgrp_fq_name
         retval, msg = self.verify_secgrp_not_in_api_server()
         if not retval:
             return False, errmsg
@@ -251,47 +253,46 @@ class SecurityGroupFixture(ContrailFixture):
     def verify_secgrp_in_control_nodes(self):
         """Validate security group information in control nodes."""
 
-	    #verify if sg present in control nodes
+        # verify if sg present in control nodes
         for cn in self.inputs.bgp_ips:
             cn_secgrp_obj = self.cn_inspect[cn].get_cn_sec_grp(
                 domain=self.domain_name,
                 project=self.project_name,
                 secgrp=self.secgrp_name)
-	    if not cn_secgrp_obj:
+            if not cn_secgrp_obj:
                 self.logger.warn(
                     'Security group %s not present in Control-node %s' %
                     (self.secgrp_name, cn))
-		return False
+                return False
             else:
                 self.logger.info(
                     "Validated that Security group %s is found in control node %s" % (
-                    self.secgrp_name, cn))
+                        self.secgrp_name, cn))
 
-	    #verify if sg acls present in control nodes
+            # verify if sg acls present in control nodes
             cn_secgrp_obj = self.cn_inspect[cn].get_cn_sec_grp_acls(
                 domain=self.domain_name,
                 project=self.project_name,
                 secgrp=self.secgrp_name)
             if not cn_secgrp_obj:
                 self.logger.warn(
-                        'security group %s ACLs not present in Control-node %s' %
-                        (self.secgrp_name, cn))
+                    'security group %s ACLs not present in Control-node %s' %
+                    (self.secgrp_name, cn))
                 return False
             else:
                 self.logger.debug(
                     "Security group %s ACLs found in the control node %s" % (self.secgrp_name, cn))
 
-
         self.logger.info('Validated SG %s in Control nodes' % (
             self.secgrp_name))
         return True
-    # end verify_secgrp_in_control_nodes
 
+    # end verify_secgrp_in_control_nodes
 
     @retry(delay=2, tries=15)
     def verify_secgrp_not_in_control_nodes(self):
         """Validate security group not present in control nodes."""
-        #verify if sg present in control nodes
+        # verify if sg present in control nodes
         for cn in self.inputs.bgp_ips:
             cn_secgrp_obj = self.cn_inspect[cn].get_cn_sec_grp(
                 domain=self.domain_name,
@@ -299,23 +300,23 @@ class SecurityGroupFixture(ContrailFixture):
                 secgrp=self.secgrp_name)
             if cn_secgrp_obj:
                 self.logger.debug(
-                        'Security group %s present in Control-node %s' %
-                        (self.secgrp_name, cn))
+                    'Security group %s present in Control-node %s' %
+                    (self.secgrp_name, cn))
                 return False
-	    else:
+            else:
                 self.logger.info(
-                        'security group %s removed from Control-node %s' %
-                        (self.secgrp_name, cn))
+                    'security group %s removed from Control-node %s' %
+                    (self.secgrp_name, cn))
 
-            #verify if sg acls removed from control nodes
+            # verify if sg acls removed from control nodes
             cn_secgrp_obj = self.cn_inspect[cn].get_cn_sec_grp_acls(
                 domain=self.domain_name,
                 project=self.project_name,
                 secgrp=self.secgrp_name)
             if cn_secgrp_obj:
                 self.logger.warn(
-                        'security group %s ACLs still present in Control-node %s' %
-                        (self.secgrp_name, cn))
+                    'security group %s ACLs still present in Control-node %s' %
+                    (self.secgrp_name, cn))
                 return False
             else:
                 self.logger.debug(
@@ -325,7 +326,8 @@ class SecurityGroupFixture(ContrailFixture):
             self.secgrp_name))
         return True
 
-def get_secgrp_id_from_name(connections,secgrp_fq_name):
+
+def get_secgrp_id_from_name(connections, secgrp_fq_name):
     fq_name_list = secgrp_fq_name.split(':')
     try:
         secgroup = connections.vnc_lib.security_group_read(
@@ -335,7 +337,8 @@ def get_secgrp_id_from_name(connections,secgrp_fq_name):
         return False
     return secgrp_id
 
-def list_sg_rules(connections,sg_id, direction=None, eth_type=None, proto=None):
+
+def list_sg_rules(connections, sg_id, direction=None, eth_type=None, proto=None):
     '''
         List SG rules with specific filters.
         Optional param:
@@ -343,25 +346,27 @@ def list_sg_rules(connections,sg_id, direction=None, eth_type=None, proto=None):
             eth_type - can be IPv4, IPv6
             proto - in string format: any, tcp, udp etc.
     '''
-    sg_info = show_secgrp(connections,sg_id)
+    sg_info = show_secgrp(connections, sg_id)
     rule_list = sg_info['security_group']['security_group_rules']
 
     if direction is not None:
-        rule_list= list(filter(lambda x: x['direction'] == direction,
-            rule_list))
+        rule_list = list(filter(lambda x: x['direction'] == direction,
+                                rule_list))
     if eth_type is not None:
-        rule_list= list(filter(lambda x: x['ethertype'] == eth_type,
-            rule_list))
+        rule_list = list(filter(lambda x: x['ethertype'] == eth_type,
+                                rule_list))
     if proto is not None:
-        rule_list= list(filter(lambda x: x['protocol'] == proto,
-            rule_list))
+        rule_list = list(filter(lambda x: x['protocol'] == proto,
+                                rule_list))
 
     return rule_list
 
-def show_secgrp(connections,sg_id):
+
+def show_secgrp(connections, sg_id):
     sg_info = connections.quantum_h.show_security_group(sg_id)
 
     return sg_info
+
 
 def set_default_sg_rules(connections, sg_id, remote_sg=None):
     '''
@@ -369,34 +374,34 @@ def set_default_sg_rules(connections, sg_id, remote_sg=None):
     if remote_sg is None, set default SG as remote
     '''
     default_sg_name = ':'.join([connections.inputs.domain_name,
-                            connections.inputs.project_name,
-                            'default'])
+                                connections.inputs.project_name,
+                                'default'])
     secgrp_fq_name = remote_sg or default_sg_name
 
     default_rules = [
-            {
+        {
             'protocol': 'any',
-             'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
-             'src_addresses': [{'security_group': 'local'}],
-             'ethertype': 'IPv4'
-             },
-            {
+            'dst_addresses': [{'subnet': {'ip_prefix': '0.0.0.0', 'ip_prefix_len': 0}}],
+            'src_addresses': [{'security_group': 'local'}],
+            'ethertype': 'IPv4'
+        },
+        {
             'protocol': 'any',
-             'dst_addresses': [{'subnet': {'ip_prefix': '0::', 'ip_prefix_len': 0}}],
-             'src_addresses': [{'security_group': 'local'}],
-             'ethertype': 'IPv6'
-             },
-            {
-             'protocol': 'any',
-             'src_addresses': [{'security_group':secgrp_fq_name}],
-             'dst_addresses': [{'security_group': 'local'}],
-             'ethertype': 'IPv4'
-             },
-            {
-             'protocol': 'any',
-             'src_addresses': [{'security_group':secgrp_fq_name}],
-             'dst_addresses': [{'security_group': 'local'}],
-             'ethertype': 'IPv6'
-             }]
+            'dst_addresses': [{'subnet': {'ip_prefix': '0::', 'ip_prefix_len': 0}}],
+            'src_addresses': [{'security_group': 'local'}],
+            'ethertype': 'IPv6'
+        },
+        {
+            'protocol': 'any',
+            'src_addresses': [{'security_group': secgrp_fq_name}],
+            'dst_addresses': [{'security_group': 'local'}],
+            'ethertype': 'IPv4'
+        },
+        {
+            'protocol': 'any',
+            'src_addresses': [{'security_group': secgrp_fq_name}],
+            'dst_addresses': [{'security_group': 'local'}],
+            'ethertype': 'IPv6'
+        }]
     return connections.orch.set_security_group_rules(sg_id,
-        sg_entries=default_rules, option='contrail')
+                                                     sg_entries=default_rules, option='contrail')

@@ -822,7 +822,7 @@ def get_kernel_routes_light(self):
 
 def get_localhost_ip():
     local_host = socket.gethostname()
-    from test_flap_agent_scale import *
+    from test_flap_agent_scale import TestBGPScale
     return TestBGPScale.inputs.host_data[local_host]['host_control_ip']
 #    cmd = 'resolveip -s `hostname`'
 #    cmd = "ip addr show | \grep 192.168.200 | awk '{print $2}' | cut -d '/' -f 1"
