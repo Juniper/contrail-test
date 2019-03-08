@@ -261,8 +261,7 @@ class FabricUtils(object):
                               connections=self.connections,
                               name=bms_name,
                               **kwargs))
-        if not kwargs.get('static_ip', False):
-            status, msg = bms.run_dhclient()
-            assert status, 'DHCP failed to fetch address'
+        status, msg = bms.run_dhclient()
+        assert status, 'DHCP failed to fetch address'
         bms.verify_on_setup()
         return bms

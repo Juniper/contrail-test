@@ -2791,8 +2791,8 @@ class VMFixture(fixtures.Fixture):
         elif all_entries:
             cmd = 'ip -s -s neigh flush all'
             if self.os_type == 'cirros':
-                cmd = 'ip link set arp off dev eth0; ip link set arp on dev eth0'
-        output = self.run_cmd_on_vm([cmd])
+                cmd = 'ip link set arp off dev eth0; sudo ip link set arp on dev eth0'
+        output = self.run_cmd_on_vm([cmd], as_sudo=True)
         return output
     # end clear_arp
 
