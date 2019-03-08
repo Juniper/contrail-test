@@ -47,7 +47,6 @@ class LogicalRouterFixture(vnc_api_test.VncLibFixture):
         self.vni = kwargs.get('vni', None)
         self.route_targets = kwargs.get('route_targets', [])
         self.rt_list = set()
-        self.logger.info('VNI to be configured on Logical Router %s'%self.vni)
         self.physical_routers = kwargs.get('physical_routers', [])
         self.parent_fq_name = [self.domain, self.project_name]
         self.lr_fq_name = self.parent_fq_name + [self.name]

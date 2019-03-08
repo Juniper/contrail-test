@@ -22,7 +22,7 @@ class FabricFixture(vnc_api_test.VncLibFixture):
         super(FabricFixture, self).__init__(*args, **kwargs)
         self.name = kwargs.get('name') or get_random_name('fabric')
         self.uuid = kwargs.get('uuid')
-        self.namespaces = kwargs.get('namespaces')
+        self.namespaces = kwargs.get('namespaces') or dict()
         self.creds = kwargs.get('creds')
         self.created = False
         self.verify_is_run = False

@@ -46,6 +46,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
             self.api_type = 'contrail'
         self.project_obj = kwargs.get('project_obj', None)
         self.binding_profile = kwargs.get('binding_profile', None)
+        self.port_group_name = kwargs.get('port_group_name', None)
         self.vlan_id = kwargs.get('vlan_id', None)
         self.parent_vmi = kwargs.get('parent_vmi', None)
         self.create_iip = kwargs.get('create_iip', True)
@@ -156,6 +157,10 @@ class PortFixture(vnc_api_test.VncLibFixture):
                           value='baremetal')
                 kv_pairs.add_key_value_pair(vnic_kv)
                 vmi_obj.set_virtual_machine_interface_device_owner("baremetal:None")
+                if self.port_group_name:
+                    pg_kv = vnc_api_test.KeyValuePair(key='vpg',
+                        value=self.port_group_name)
+                    kv_pairs.add_key_value_pair(pg_kv)
             vmi_obj.set_virtual_machine_interface_bindings(kv_pairs)
 
         vmi_obj.set_virtual_machine_interface_properties(vmi_props)
@@ -263,6 +268,41 @@ class PortFixture(vnc_api_test.VncLibFixture):
         igmp_enable = vmi_obj.get_igmp_enable()
         return igmp_enable
 
+    def get_vpg_fqname(self):
+        vmi_obj = self.vnc_h.read_virtual_machine_interface(id=self.uuid,
+            fields='virtual_port_group_back_refs')
+        vpg = vmi_obj.get_virtual_port_group_back_refs()
+        if not vpg:
+            return None
+        return vpg[0]['to']
+
+    def update_bms(self, binding_profile, port_group_name=None):
+        vmi_obj = self.vnc_h.read_virtual_machine_interface(id=self.uuid)
+        bind_kv = vnc_api_test.KeyValuePair(key='profile',
+                  value=json.dumps(binding_profile))
+        kv_pairs = vmi_obj.get_virtual_machine_interface_bindings() or\
+                   vnc_api_test.KeyValuePairs()
+        kv_pairs.add_key_value_pair(bind_kv)
+        if 'local_link_information' in self.binding_profile:
+            vnic_kv = vnc_api_test.KeyValuePair(key='vnic_type',
+                      value='baremetal')
+            kv_pairs.add_key_value_pair(vnic_kv)
+            if port_group_name:
+                pg_kv = vnc_api_test.KeyValuePair(key='vpg',
+                    value=port_group_name)
+                kv_pairs.add_key_value_pair(pg_kv)
+            vmi_obj.set_virtual_machine_interface_device_owner("baremetal:None")
+        vmi_obj.set_virtual_machine_interface_bindings(kv_pairs)
+        self.vnc_h.virtual_machine_interface_update(vmi_obj)
+
+    def update_vlan_id(self, vlan_id):
+        vmi_obj = self.vnc_h.read_virtual_machine_interface(id=self.uuid)
+        vmi_props = vmi_obj.get_virtual_machine_interface_properties() \
+            or vnc_api_test.VirtualMachineInterfacePropertiesType()
+        vmi_props.set_sub_interface_vlan_tag(vlan_id)
+        vmi_obj.set_virtual_machine_interface_properties(vmi_props)
+        self.vnc_h.virtual_machine_interface_update(vmi_obj)
+        self.vlan_id = vlan_id
 
     def verify_port_in_control_node_ifmap(self):
         pass

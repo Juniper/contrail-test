@@ -2783,14 +2783,15 @@ class VMFixture(fixtures.Fixture):
         return self.nova_h.wait_till_vm_is_up(self.vm_obj)
 
     def clear_arp(self, all_entries=True, ip_address=None, mac_address=None):
+        if self.os_type == 'cirros':
+            #cmd = 'ip link set arp off dev eth0; sudo ip link set arp on dev eth0'
+            return
         if ip_address or mac_address:
             (output, ip, mac) = self.get_arp_entry(ip_address, mac_address)
             cmd = 'arp -d %s' % (ip_address)
         elif all_entries:
             cmd = 'ip -s -s neigh flush all'
-            if self.os_type == 'cirros':
-                cmd = 'ip link set arp off dev eth0; ip link set arp on dev eth0'
-        output = self.run_cmd_on_vm([cmd])
+        output = self.run_cmd_on_vm([cmd], as_sudo=True)
         return output
     # end clear_arp
 

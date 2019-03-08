@@ -591,8 +591,8 @@ def update_reserve_cidr(cidr):
     env = dict(RESERVED_CIDRS=','.join(current).strip(','))
     os.environ.update(env)
 
-SUBNET_MASK = {'v4': {'min': 8, 'max': 29, 'default': 24},
-               'v6': {'min': 64, 'max': 125, 'default': 64}}
+SUBNET_MASK = {'v4': {'min': 8, 'max': 29, 'default': 26},
+               'v6': {'min': 64, 'max': 125, 'default': 96}}
 
 
 def is_valid_subnet_mask(plen, af='v4'):
@@ -920,8 +920,8 @@ def get_host_domain_name(host):
 # end get_host_domain_name
 
 
-def get_random_vxlan_id():
-    return random.randint(1, 16777215)
+def get_random_vxlan_id(min=1, max=16777215):
+    return random.randint(min, max)
 
 
 def get_random_asn():
@@ -1117,6 +1117,10 @@ def skip_because(*args, **kwargs):
                 if check_metadata == 1:
                     raise testtools.TestCase.skipException(msg)
 
+            if 'function' in kwargs:
+                retval, msg = getattr(self, kwargs.pop('function'))(*args, **kwargs)
+                if not retval:
+                    raise testtools.TestCase.skipException(msg)
             return f(self, *func_args, **func_kwargs)
         return wrapper
     return decorator

@@ -1,7 +1,9 @@
 import re
+import copy
 import time
 import logging
 import fixtures
+import string
 from tcutils.util import retry, search_arp_entry, get_random_name, get_intf_name_from_mac, run_cmd_on_server, get_random_string
 from port_fixture import PortFixture
 
@@ -10,10 +12,6 @@ class BMSFixture(fixtures.Fixture):
                  connections,
                  name,
                  is_ironic_node=False,
-                 interfaces=None,
-                 username=None,
-                 password=None,
-                 mgmt_ip=None,
                  **kwargs
                  ):
         ''' Either VN or Port Fixture is mandatory '''
@@ -32,7 +30,7 @@ class BMSFixture(fixtures.Fixture):
         self.bms_ip_netmask = kwargs.get('bms_ip_netmask', 24)   # BMS VMI IP MASK
         self.bms_gw_ip = kwargs.get('bms_gw_ip', None)   # BMS VMI IP MASK
         self.bms_mac = kwargs.get('bms_mac') # BMS VMI Mac
-        self.static_ip = kwargs.get('static_ip', False)
+        self.static_ip = kwargs.get('static_ip', bool(not self.inputs.get_csn()))
         self.vn_fixture = kwargs.get('vn_fixture')
         self.port_fixture = kwargs.get('port_fixture')
         self.fabric_fixture = kwargs.get('fabric_fixture')
@@ -40,13 +38,17 @@ class BMSFixture(fixtures.Fixture):
         self.vnc_h = connections.orch.vnc_h
         self.vlan_id = self.port_fixture.vlan_id if self.port_fixture else \
                        kwargs.get('vlan_id') or 0
-        self.port_group_name = None
+        self._port_group_name = kwargs.get('port_group_name', None)
+        self.bond_name = kwargs.get('bond_name') or 'bond%s'%get_random_string(2,
+                         chars=string.ascii_letters)
         self.bms_created = False
+        self.bond_created = False
         self.mvlanintf = None
         self._interface = None
         self.ironic_node_obj = None
         self.ironic_node_id = None
     # end __init__
+
     def read_ironic_node_obj(self):
         try:
           if not self.ironic_node_id:
@@ -81,21 +83,22 @@ class BMSFixture(fixtures.Fixture):
            return
         self.delete_ironic_node()
 
-    def create_vmi(self):
+    def create_vmi(self, interfaces=None):
+        interfaces = interfaces or self.interfaces
         fixed_ips = None
         if self.bms_ip:
             fixed_ips = [{'ip_address': self.bms_ip,
                           'subnet_id': self.vn_fixture.vn_subnet_objs[0]['id']
                          }]
         bms_info = list()
-        for interface in self.interfaces:
+        for interface in interfaces:
             intf_dict = dict()
             intf_dict['switch_info'] = interface['tor']
             intf_dict['port_id'] = interface['tor_port']
             intf_dict['fabric'] = self.fabric_fixture.name
             bms_info.append(intf_dict)
         binding_profile = {'local_link_information': bms_info}
-        self.port_fixture = self.useFixture(PortFixture(
+        self.port_fixture = PortFixture(
                                  connections=self.connections,
                                  vn_id=self.vn_fixture.uuid,
                                  mac_address=self.bms_mac,
@@ -103,12 +106,106 @@ class BMSFixture(fixtures.Fixture):
                                  fixed_ips=fixed_ips,
                                  api_type='contrail',
                                  vlan_id=self.vlan_id,
-                                 binding_profile=binding_profile
-                             ))
+                                 binding_profile=binding_profile,
+                                 port_group_name=self._port_group_name
+                             )
+        self.port_fixture.setUp()
         if not self.bms_ip:
             self.bms_ip = self.port_fixture.get_ip_addresses()[0]
         if not self.bms_mac:
             self.bms_mac = self.port_fixture.mac_address
+
+    @retry(delay=10, tries=30)
+    def is_lacp_up(self, interfaces=None, expectation=True):
+        interfaces = interfaces or self.interfaces
+        status = self.is_bonding_up(interfaces, verify_lacp=True)
+        if not status:
+            self.logger.warn("Bond interfaces status on "
+                             "%s is not as expected"%self.name)
+            return False
+        return True
+
+    def is_bonding_up(self, interfaces, verify_lacp=False, expectation=True):
+        output = self.run("cat /proc/net/bonding/%s"%self.bond_name)
+        pattern = "Permanent HW addr: ([:0-9a-z]*).*?partner lacp.*?mac address: ([:0-9a-z]*)"
+        match = re.findall(pattern, output, re.M | re.I | re.S)
+        if not match:
+            if expectation:
+                self.logger.debug("Bond interface is down")
+                return False
+            return True
+        mac_map = dict(match)
+        for interface in interfaces or self.interfaces:
+            mac = interface['host_mac']
+            if mac not in mac_map:
+                self.logger.debug("Interface %s of BMS %s is not bonded"%(
+                    mac, self.name))
+                return False
+            if verify_lacp:
+                if mac_map[mac] == "00:00:00:00:00:00" and expectation:
+                    self.logger.debug("Lacp on interface %s of BMS %s is down"%(
+                        mac, self.name))
+                    return False
+                elif mac_map[mac] != "00:00:00:00:00:00" and not expectation:
+                    self.logger.debug("Lacp on interface %s of BMS %s is still up"%(
+                        mac, self.name))
+                    return False
+        self.logger.debug("Bond interfaces are up")
+        return True
+
+    @property
+    def port_group_name(self):
+        if not self._port_group_name and self.port_fixture:
+            vpg_fqname = self.get_vpg_fqname()
+            if vpg_fqname:
+                self._port_group_name = vpg_fqname[-1]
+        return self._port_group_name
+
+    def get_vpg_fqname(self):
+        return self.port_fixture.get_vpg_fqname()
+
+    def detach_physical_interface(self, interfaces):
+        to_create_vmis = list()
+        for interface in self.interfaces:
+            for detach_vmi in interfaces:
+                if interface['tor'] == detach_vmi['tor'] and \
+                   interface['tor_port'] == detach_vmi['tor_port']:
+                    to_detach = True
+                    break
+            else:
+                to_create_vmis.append(interface)
+        self.update_vmi(to_create_vmis, self.port_group_name)
+
+    def attach_physical_interface(self, interfaces):
+        to_create_vmis = copy.deepcopy(self.interfaces)
+        to_create_vmis.extend(interfaces)
+        self.update_vmi(to_create_vmis, self.port_group_name)
+
+    def update_vmi(self, interfaces, port_group_name, fabric=None):
+        bms_info = list()
+        for interface in interfaces:
+            intf_dict = dict()
+            intf_dict['switch_info'] = interface['tor']
+            intf_dict['port_id'] = interface['tor_port']
+            intf_dict['fabric'] = fabric or self.fabric_fixture.name
+            bms_info.append(intf_dict)
+        binding_profile = {'local_link_information': bms_info or None}
+        self.port_fixture.update_bms(binding_profile,
+            port_group_name=port_group_name)
+        self.interfaces = interfaces
+
+    def update_vlan_id(self, vlan_id):
+        self.port_fixture.update_vlan_id(vlan_id)
+        self.cleanup_bms()
+        self.vlan_id = vlan_id
+        self.setup_bms()
+
+    def delete_vmi(self):
+        if self.port_fixture:
+            self.port_fixture.cleanUp()
+        self.bms_ip = None
+        self.bms_mac = None
+        self.port_fixture = None
 
     def run(self, cmd, **kwargs):
         output = run_cmd_on_server(cmd, self.mgmt_ip,
@@ -123,44 +220,70 @@ class BMSFixture(fixtures.Fixture):
         cmd = 'ip netns exec %s %s'%(self.namespace, cmd)
         return self.run(cmd, **kwargs)
 
-    def delete_bonding(self):
-        self.run('ip link delete bond0')
+    def delete_bonding(self, interfaces=None):
+        for interface in interfaces or self.interfaces:
+            physical_intf = get_intf_name_from_mac(self.mgmt_ip,
+                                                   interface['host_mac'],
+                                                   username=self.username,
+                                                   password=self.password)
+            self.run('ip link set %s down'%(physical_intf))
+            self.run('ip link set %s nomaster'%(physical_intf))
+        self.run('ip link delete %s'%self.bond_name)
 
-    def create_bonding(self):
-        self.delete_bonding()
-        bond_intf = 'bond0'
-        self.run('ip link add %s type bond mode 802.3ad'%bond_intf)
-        self.run('modprobe -r bonding; modprobe bonding mode=802.3ad')
-        self.run('ip link add %s type bond'%bond_intf)
-        self.run('ip link set %s up'%bond_intf)
-        for interface in self.interfaces:
+    def remove_interface_from_bonding(self, interfaces):
+        self.add_remove_interface_from_bonding(interfaces, remove=True)
+
+    def add_interface_to_bonding(self, interfaces):
+        self.add_remove_interface_from_bonding(interfaces)
+
+    def add_remove_interface_from_bonding(self, interfaces, remove=False):
+        for interface in interfaces:
            physical_intf = get_intf_name_from_mac(self.mgmt_ip,
                                                   interface['host_mac'],
                                                   username=self.username,
                                                   password=self.password)
-           self.run('ip link set %s down'%(physical_intf))
-           self.run('ip link set %s master %s'%(physical_intf, bond_intf))
-           self.run('ip link set %s up'%(physical_intf))
-        return bond_intf
+           if remove:
+               self.run('ip link set %s down'%(physical_intf))
+               self.run('ip link set %s nomaster'%(physical_intf))
+           else:
+               self.run('ip link set %s down'%(physical_intf))
+               self.run('ip link set %s master %s'%(physical_intf, self.bond_name))
+               self.run('ip link set %s up'%(physical_intf))
 
-    def setup_bms(self):
+    def create_bonding(self, interfaces=None):
+        interfaces = interfaces or self.interfaces
+        if self.is_bonding_up(interfaces):
+            return self.bond_name
+        self.delete_bonding(interfaces=interfaces)
+        self.bond_created = True
+        self.run('ip link add %s type bond mode 802.3ad'%self.bond_name)
+        self.run('modprobe bonding mode=802.3ad lacp_rate=fast')
+        self.run('ip link add %s type bond'%self.bond_name)
+        self.run('ip link set %s up'%self.bond_name)
+        self.add_interface_to_bonding(interfaces)
+        return self.bond_name
+
+    def setup_bms(self, interfaces=None):
+        interfaces = interfaces or self.interfaces
         self.bms_created = True
-        if len(self.interfaces) > 1:
-            self._interface = self.create_bonding()
+        if len(interfaces) > 1:
+            self._interface = self.create_bonding(interfaces)
         else:
-            host_mac = self.interfaces[0]['host_mac']
+            host_mac = interfaces[0]['host_mac']
             self._interface = get_intf_name_from_mac(self.mgmt_ip,
                                                host_mac,
                                                username=self.username,
                                                password=self.password)
             self.logger.info('BMS interface: %s' % self._interface)
+        self.run('ip link set dev %s up'%(self._interface))
         if self.vlan_id:
             self.run('vconfig add %s %s'%(self._interface, self.vlan_id))
-            self.run('ip link set %s.%s up'%(self._interface, self.vlan_id))
+            self.run('ip link set dev %s.%s up'%(self._interface, self.vlan_id))
         pvlanintf = '%s.%s'%(self._interface, self.vlan_id) if self.vlan_id\
                     else self._interface
         self.run('ip link set dev %s up'%pvlanintf)
-        self.mvlanintf = '%s-mv%s'%(pvlanintf, get_random_string(4))
+        self.mvlanintf = '%s-%s'%(pvlanintf,
+            get_random_string(2, chars=string.ascii_letters))
         self.logger.info('BMS mvlanintf: %s' % self.mvlanintf)
         macaddr = 'address %s'%self.bms_mac if self.bms_mac else ''
         self.run('ip link add %s link %s %s type macvlan mode bridge'%(
@@ -169,13 +292,15 @@ class BMSFixture(fixtures.Fixture):
         self.run('ip link set netns %s %s'%(self.namespace, self.mvlanintf))
         self.run_namespace('ip link set dev %s up'%self.mvlanintf)
 
-        if self.static_ip:
-            addr = self.bms_ip + '/' + str(self.bms_ip_netmask)
-            self.run_namespace('ip addr add %s dev %s'%(addr,self.mvlanintf))
-            if self.bms_gw_ip is not None:
-                self.run_namespace('ip route add default via %s'%(self.bms_gw_ip))
+    def assign_static_ip(self, bms_ip, bms_gw_ip=None):
+        self.run_namespace('ip addr flush dev %s'%(self.mvlanintf))
+        addr = bms_ip + '/' + str(self.bms_ip_netmask)
+        self.run_namespace('ip addr add %s dev %s'%(addr, self.mvlanintf))
+        if bms_gw_ip is not None:
+            self.run_namespace('ip route add default via %s'%(bms_gw_ip))
 
-    def cleanup_bms(self):
+    def cleanup_bms(self, interfaces=None):
+        interfaces = interfaces or self.interfaces
         if getattr(self, 'mvlanintf', None):
             self.run('ip link delete %s'%self.mvlanintf)
         if getattr(self, 'namespace', None):
@@ -183,7 +308,7 @@ class BMSFixture(fixtures.Fixture):
             self.run('ip netns delete %s' % (self.namespace))
         if self.vlan_id:
             self.run('vconfig rem %s.%s'%(self._interface, self.vlan_id))
-        if len(self.interfaces) > 1:
+        if len(interfaces) > 1 and self.bond_created:
             self.delete_bonding()
 
     def setUp(self):
@@ -211,6 +336,7 @@ class BMSFixture(fixtures.Fixture):
     # end setUp
 
     def verify_on_setup(self):
+        assert self.fabric_fixture.name in self.port_fixture.get_vpg_fqname()
         info = self.get_interface_info()
         if info['hwaddr'].lower() != self.bms_mac.lower():
             msg = 'BMS Mac address doesnt match. Got %s. Exp %s'%(
@@ -225,6 +351,7 @@ class BMSFixture(fixtures.Fixture):
             self.namespace, self.name)) 
         if self.bms_created:
             self.cleanup_bms()
+        self.delete_vmi()
         super(BMSFixture, self).cleanUp()
     # end cleanUp
 
@@ -251,12 +378,20 @@ class BMSFixture(fixtures.Fixture):
     # end get_interface_info
 
     @retry(delay=5, tries=10)
-    def run_dhclient(self, timeout=60):
+    def run_dhclient(self, timeout=60, expectation=True):
+        if self.static_ip:
+            self.logger.debug("Configuring static ip as requested")
+            self.assign_static_ip(self.bms_ip, self.bms_gw_ip)
+            return (True, None)
+        self.run('pkill -9 dhclient')
         output = self.run_namespace('timeout %s dhclient -v %s'%(
                               timeout, self.mvlanintf))
         self.logger.debug('Dhcp transaction : %s' % (output))
-        if not 'bound to' in output:
+        if not 'bound to' in output and expectation:
             self.logger.warn('DHCP did not complete !!')
+            return (False, output)
+        elif 'bound to' in output and not expectation:
+            self.logger.warn('DHCP should have failed')
             return (False, output)
         return (True, output)
     # end run_dhclient
@@ -267,35 +402,37 @@ class BMSFixture(fixtures.Fixture):
         self.logger.debug('arping to %s returned %s' % (ip, output))
         return (output.succeeded, output)
 
-    def ping(self, ip, other_opt='', size='56', count='5'):
+    def ping(self, ip, other_opt='', size='56', count='5', expectation=True):
         src_ip = self.bms_ip
         cmd = 'ping -s %s -c %s %s %s' % (
             str(size), str(count), other_opt, ip)
         output = self.run_namespace(cmd)
-        expected_result = ' 0% packet loss'
+        if expectation:
+            expected_result = ' 0% packet loss'
+        else:
+            expected_result = '100% packet loss'
         try:
             if expected_result not in output:
-                self.logger.warn("Ping to IP %s from host %s failed" %
-                                 (ip, src_ip))
+                self.logger.warn("Ping to IP %s from host %s(%s) should have %s"
+                %(ip, src_ip, self.name, "passed" if expectation else "failed"))
                 return False
             else:
-                self.logger.info('Ping to IP %s from host %s passed' %
-                                 (ip, src_ip))
+                self.logger.info('Ping to IP %s from host %s(%s) %s as expected'
+                %(ip, src_ip, self.name, "passed" if expectation else "failed"))
             return True
         except Exception as e:
-            self.logger.warn("Got exception in ping from host ns ip %s: :%s" % (
+            self.logger.warn("Got exception in ping from host ns ip %s: %s" % (
                 src_ip, e))
             return False
-        return False
     # end ping
 
     @retry(delay=1, tries=10)
     def ping_with_certainty(self, ip, other_opt='', size='56', count='5',
                             expectation=True):
-        retval = self.ping(ip, other_opt=other_opt,
-                           size=size,
-                           count=count)
-        return ( retval== expectation )
+        return self.ping(ip, other_opt=other_opt,
+                         size=size,
+                         count=count,
+                         expectation=expectation)
     # end ping_with_certainty
 
     def get_arp_entry(self, ip_address=None, mac_address=None):
