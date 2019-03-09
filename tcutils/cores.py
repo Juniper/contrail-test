@@ -43,11 +43,14 @@ def get_cores_node(node_ip, user, password, logger=None):
             with settings(
                 host_string='%s@%s' % (user, node_ip), password=password,
                     warn_only=True, abort_on_prompts=False):
+                logger.info('checking cores on %s', node_ip)
                 if exists(CORE_DIR):
+                    logger.info('checking cores exists')
                     with cd(CORE_DIR):
-                        (ret_val, core) = _run("ls core.* 2>/dev/null")
+                        (ret_val, core) = _run("ls core.* 2>/dev/null", logger)
         except Exception as e:
             logger.exception(e)
+    logger.info('done checking cores on %s', node_ip)
     return core
 
 
@@ -74,25 +77,27 @@ def get_service_crashes(inputs):
     for node_ip in inputs.host_ips:
         username = inputs.host_data[node_ip]['username']
         password = inputs.host_data[node_ip]['password']
-        service_crash = get_service_crashes_node(node_ip, username, password)
+        service_crash = get_service_crashes_node(node_ip, username, password, logger=inputs.logger)
         if service_crash:
             crashes.update({node_ip: service_crash})
     return crashes
                  
 
 @retry(tries=10, delay=3)
-def _run(cmd):
+def _run(cmd, logger):
+    logger.info('_run')
     try:
         output = run(cmd)
     except ChannelException, e:
         # Handle too many concurrent sessions
         if 'Administratively prohibited' in str(e):
+            logger.info('too many concurrent sessions')
             sleep(random.randint(1,5))
             return (False, None)
     return (True, output)
 # end _run
 
-def get_service_crashes_node(node_ip, user, password):
+def get_service_crashes_node(node_ip, user, password, logger):
     """Get the list of services crashed in one of the nodes in the test setup.
     """
     crash = None
@@ -101,7 +106,8 @@ def get_service_crashes_node(node_ip, user, password):
         with settings(
             host_string='%s@%s' % (user, node_ip), password=password,
                 warn_only=True, abort_on_prompts=False):
-            (ret_val, crash) = _run("contrail-status")
+            logger.info('get crashes %s', node_ip)
+            (ret_val, crash) = _run("contrail-status", logger)
     if crash and "Failed service list" in crash:
         for line in crash.split("\n"):
             if "Failed service list" in line:
@@ -115,6 +121,6 @@ def get_service_crashes_node(node_ip, user, password):
             if (status == "inactive" or
                     status == "failed"):
                 services.append(service)
-
+    logger.info('done get crashes %s', node_ip)
     return services
 # end get_service_crashes_node
