@@ -219,9 +219,9 @@ class BasePolicyGenTest(BaseFirewallTest):
                                 svc in det['services']):
                                 self.logger.error('unexpected traffic seen')
                                 msg = "flow:%s %s:%s - %s:%s" % (
-                                    traffic_obj.proto,
-                                    traffic_obj.src_ip, traffic_obj.sport,
-                                    traffic_obj.dst_ip, traffic_obj.dport)
+                                    traff.proto,
+                                    traf.src_ip, traf.sport,
+                                    traf.dst_ip, traf.dport)
                                 self.logger.error(msg)
                                 self.logger.error(det)
                                 return False

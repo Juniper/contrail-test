@@ -256,8 +256,8 @@ class TestPolicyGen(BasePolicyGenTest):
                       {'name':'application', 'value':'application=hr',
                             'op':MatchOp.EQUAL}],
                      [{'name':'remote_tier',
-                        'value':self.tags['global']['tier']['web'].tag_id,
-                            'op':MatchOp.NOT_EQUAL},
+                        'value':self.tags['global']['tier']['db'].tag_id,
+                            'op':MatchOp.EQUAL},
                       {'name':'application', 'value':'application=eng',
                             'op':MatchOp.EQUAL}]]}
         result = self.policy_gen.generate_policy(query_params)
@@ -320,11 +320,8 @@ class TestPolicyGenUntagged(BasePolicyGenTest):
         self.sleep(10)
         self.stop_traffic(traffic_obj1)
         self.stop_traffic(traffic_obj2)
-        # TODO check application tag is mandatory
-        #query_params1 = {'start_time': 'now-10s', 'end_time': 'now', 'tags': ['tier']}
         query_params1 = {'start_time': 'now-10s', 'end_time': 'now', 'tags': ['application', 'tier']}
         result1 = self.policy_gen.generate_policy(query_params1)
-        #query_params2 = {'start_time': 'now-10s', 'end_time': 'now', 'tags': ['deployment', 'site']}
         query_params2 = {'start_time': 'now-20s', 'end_time': 'now', 'tags': ['application', 'deployment', 'site']}
         result2 = self.policy_gen.generate_policy(query_params2)
         assert self.verify_generated_rules(result1, query=query_params1,
