@@ -172,7 +172,7 @@ class TestBasicRTFilterRestart(BaseRtFilterTest):
                 self.add_rt_filter_family()
                 self.logger.info(
                     '*Will re-enable RT_filter Address family between control-nodes and MX*')
-                sleep(10)
+                sleep(35)
                 peers3 = self.cn_inspect[active_ctrl_node].get_cn_rtarget_group(
                     user_def_rt)['peers_interested']
                 self.logger.info(
