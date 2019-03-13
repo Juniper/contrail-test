@@ -65,9 +65,17 @@ class AnalyticsTestSanityWithMin(
 
         src_vm_node_ip = self.res.vn1_vm1_fixture.vm_node_data_ip
         dst_vm_node_ip = self.res.vn1_vm2_fixture.vm_node_data_ip
-        src_vm_host = self.inputs.host_data[src_vm_node_ip]['service_name'][src_vm_node_ip]
-        dst_vm_host = self.inputs.host_data[dst_vm_node_ip]['service_name'][dst_vm_node_ip]
+        src_svc_name = self.inputs.host_data[src_vm_node_ip]['service_name']
+        dst_svc_name = self.inputs.host_data[dst_vm_node_ip]['service_name']
+        if not src_svc_name:
+            src_vm_host = self.inputs.host_data[src_vm_node_ip]['host_ip']
+        else:
+            src_vm_host = self.inputs.host_data[src_vm_node_ip]['service_name'][src_vm_node_ip]
 
+        if not dst_svc_name:
+            dst_vm_host = self.inputs.host_data[dst_vm_node_ip]['host_ip']
+        else:
+            dst_vm_host = self.inputs.host_data[dst_vm_node_ip]['service_name'][dst_vm_node_ip]
         src_vm_host_ip = self.res.vn1_vm1_fixture.vm_node_ip
         dst_vm_host_ip = self.res.vn1_vm2_fixture.vm_node_ip
         src_vm_introspect = self.agent_inspect[src_vm_host_ip]
@@ -174,11 +182,15 @@ class AnalyticsTestSanityWithMin(
            2.Verify the command runs properly and its returning some output
            3.Do not verify the correctness of the output
         '''
-
         src_vn = self.res.vn1_vm1_fixture.vn_fq_names[0]
+
         dst_vn = self.res.vn1_vm2_fixture.vn_fq_names[0]
         src_vm_node_ip = self.res.vn1_vm1_fixture.vm_node_data_ip
-        src_vm_host = self.inputs.host_data[src_vm_node_ip]['service_name'][src_vm_node_ip]
+        src_svc_name = self.inputs.host_data[src_vm_node_ip]['service_name']
+        if not src_svc_name:
+            src_vm_host = self.inputs.host_data[src_vm_node_ip]['host_ip']
+        else:
+            src_vm_host = self.inputs.host_data[src_vm_node_ip]['service_name'][src_vm_node_ip]
 
         cmd_args_list = [
 
