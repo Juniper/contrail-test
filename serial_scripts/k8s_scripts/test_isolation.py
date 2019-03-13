@@ -309,7 +309,8 @@ class TestCustomIsolationSerial(BaseK8sTest):
         k8s_service_vn_fixt.setUp()
         vn_service_policy = self.setup_policy_between_vns(client2[6],
                                                           k8s_service_vn_fixt,
-                                                          api="contrail")
+                                                          api="contrail",
+                                                          connections=self.connections)
         assert self.validate_nginx_lb([client2[0], client2[1]], client2[3].cluster_ip,
                                       test_pod=client2[2])
         assert self.validate_nginx_lb([client1[0], client1[1]], client1[3].cluster_ip,
