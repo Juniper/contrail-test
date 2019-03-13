@@ -37,7 +37,7 @@ try:
         def tearDownClass(cls):
             super(TestHeat, cls).tearDownClass()
 
-        @test.attr(type=['ci_sanity', 'cb_sanity'])
+        @test.attr(type=['ci_sanity', 'cb_sanity', 'ci_contrail_go_kolla_ocata_sanity'])
         @preposttest_wrapper
         def test_heat_stacks_list(self):
             '''
