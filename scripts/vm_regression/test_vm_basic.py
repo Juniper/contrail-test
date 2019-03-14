@@ -318,7 +318,8 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         return True
     # end test_ping_within_vn
 
-    @test.attr(type=['cb_sanity', 'sanity', 'ci_sanity', 'vcenter', 'suite1', 'vcenter_compute'])
+    @test.attr(type=['cb_sanity', 'sanity', 'ci_sanity', 'vcenter',
+                     'suite1', 'vcenter_compute', 'ci_contrail_go_kolla_ocata_sanity'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_generic_link_local_service(self):
