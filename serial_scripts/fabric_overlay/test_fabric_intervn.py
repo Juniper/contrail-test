@@ -168,7 +168,6 @@ class TestEvpnType5VxLANRoutingBasic(BaseEvpnType5Test, VerifyEVPNType5):
 
         # end test_evpn_type_5_vxlan_traffic_between_vn
 
-    @test.attr(type=['sanity'])
     @preposttest_wrapper
     def test_evpn_type_5_vm_to_bms(self):
         '''
