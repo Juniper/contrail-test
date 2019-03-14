@@ -74,7 +74,7 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         cls.default_sg = cls.get_default_sg()
         cls.allow_default_sg_to_allow_all_on_project(cls.inputs.project_name)
         cls.current_encaps = cls.get_encap_priority()
-        cls.set_encap_priority(['VXLAN', 'MPLSoUDP', 'MPLSoGRE'])
+        cls.set_encap_priority(['VXLAN', 'MPLSoGRE','MPLSoUDP'])
         cls.vnc_h.enable_vxlan_routing()
         cls.rb_roles = dict()
 
