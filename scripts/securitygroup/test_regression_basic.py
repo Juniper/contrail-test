@@ -21,7 +21,7 @@ class SecurityGroupBasicRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolic
     def runTest(self):
         pass
 
-    @test.attr(type=['sanity','ci_sanity','vcenter', 'suite1', 'cb_sanity'])
+    @test.attr(type=['sanity','ci_sanity','vcenter', 'suite1', 'cb_sanity', 'ci_contrail_go_kolla_ocata_sanity'])
     @preposttest_wrapper
     def test_sec_group_basic(self):
         """
