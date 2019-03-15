@@ -344,17 +344,16 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         vm1_fixture = self.create_vm(vn_ids=[vn_fixture.uuid], vm_name=vm1_name)
         assert vm1_fixture.wait_till_vm_is_active()
 
-        cfgm_hostname = self.inputs.host_data[self.inputs.cfgm_ip]['name']
-        cfgm_control_ip = self.inputs.host_data[cfgm_hostname]['host_control_ip']
+        fabric_service_name = self.inputs.bgp_names[0]
+        service_ip = self.inputs.bgp_control_ips[0]
         compute_user = self.inputs.host_data[vm1_fixture.vm_node_ip]['username']
         compute_password = self.inputs.host_data[vm1_fixture.vm_node_ip]['password']
-        cfgm_host_new_name = cfgm_hostname + '-test'
-        cfgm_ip = self.inputs.api_server_ip or self.inputs.cfgm_ip
-        cfgm_intro_port = '8084'
-        service_name = 'cfgmintrospect'
+        host_new_name = fabric_service_name + '-test'
+        introspect_port = '8083'
+        lls_service_name = 'introspect'
 
-        update_hosts_cmd = 'echo "%s %s" >> /etc/hosts' % (cfgm_control_ip,
-            cfgm_host_new_name)
+        update_hosts_cmd = 'echo "%s %s" >> /etc/hosts' % (service_ip,
+            host_new_name)
         self.inputs.run_cmd_on_server(vm1_fixture.vm_node_ip,
                                       update_hosts_cmd,
                                       compute_user,
@@ -369,14 +368,14 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                         compute_password,
                         container='agent')
 
-        self.orch.vnc_h.add_link_local_service(service_name,
-             '169.254.1.2', '8084', cfgm_intro_port,
-             ipfabric_service_dns_name=cfgm_host_new_name,
-             ipfabric_service_ip=cfgm_control_ip)
+        self.orch.vnc_h.add_link_local_service(lls_service_name,
+             '169.254.1.2', '8083', introspect_port,
+             ipfabric_service_dns_name=host_new_name,
+             ipfabric_service_ip=service_ip)
         self.addCleanup(self.orch.vnc_h.delete_link_local_service,
-                        service_name)
+                        lls_service_name)
         assert vm1_fixture.wait_till_vm_is_up()
-        cmd = 'wget http://169.254.1.2:8084'
+        cmd = 'wget http://169.254.1.2:8083'
 
         ret = None
         for i in range(3):
@@ -384,7 +383,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
                 self.logger.info("Retry %s" % (i))
                 ret = vm1_fixture.run_cmd_on_vm(cmds=[cmd])
                 if not ret[cmd]:
-                    raise Exception('wget of http://169.254.1.2:8084 returned None')
+                    raise Exception('wget of http://169.254.1.2:8083 returned None')
             except Exception as e:
                 time.sleep(5)
                 self.logger.exception("Got exception as %s" % (e))
