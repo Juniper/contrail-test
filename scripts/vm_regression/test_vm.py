@@ -2928,7 +2928,7 @@ class TestBasicVMVNx(BaseVnVmTest):
     def tearDownClass(cls):
         super(TestBasicVMVNx, cls).tearDownClass()
 
-    @test.attr(type=['quick_sanity','ci_sanity','vrouter_gw', 'vcenter_compute'])
+    @test.attr(type=['quick_sanity','ci_sanity','vrouter_gw', 'vcenter_compute', 'ci_contrail_go_kolla_ocata_sanity'])
     @preposttest_wrapper
     def test_vm_file_trf_scp_tests(self):
         '''
