@@ -76,8 +76,8 @@ class PolicyFixture(fixtures.Fixture):
             try:
                 self.policy_obj = self.vnc_lib.network_policy_read(fq_name=self.project_fq_name+[unicode(self.policy_name)])
             except:
-                if self.inputs.slave_orchestrator == 'vro':
-                    self.policy_fq_name = self._set_policy_vro(self.policy_name, self.rules_list)
+                if self.inputs.vro_based:
+                    self.policy_fq_name = self.set_policy_vro(self.policy_name, self.rules_list)
                 else:
                     self.policy_fq_name = self._set_policy_api(self.policy_name, self.rules_list)
             else:
@@ -325,7 +325,7 @@ class PolicyFixture(fixtures.Fixture):
         return policy_rsp
     # end  _create_policy
     
-    def _set_policy_vro(self, policy_name, rules_list, policy_obj=None):
+    def set_policy_vro(self, policy_name, rules_list, policy_obj=None):
         '''create policy and rules from vro'''
         self.connections.orch.create_policy(name = policy_name, rules = rules_list)
         self.policy_obj = self.vnc_lib.network_policy_read(
@@ -618,7 +618,7 @@ class PolicyFixture(fixtures.Fixture):
 
     def _delete_policy(self):
         if self.api_flag:
-            if self.inputs.slave_orchestrator == 'vro':
+            if self.inputs.vro_based:
                 self.connections.orch.delete_policy(self.policy_name)
             else:
                 self.vnc_lib.network_policy_delete(id=self.policy_obj.uuid)
@@ -1114,7 +1114,6 @@ class PolicyFixture(fixtures.Fixture):
         self.api_s_policy_obj = self.api_s_inspect.get_cs_policy(
             domain=self.project_fq_name[0], project=self.project_fq_name[1], policy=self.policy_name, refresh=True)
         self.api_s_policy_obj_x = self.api_s_policy_obj['network-policy']
-
         # compare policy_fq_name
         out = policy_test_utils.compare_args(
             'policy_fq_name', self.api_s_policy_obj_x['fq_name'], self.policy_fq_name,
@@ -1136,12 +1135,13 @@ class PolicyFixture(fixtures.Fixture):
             err_msg.append(out)
 
         # compare policy_rules
-        out = policy_test_utils.compare_args(
-            'policy_rules', self.api_s_policy_obj_x[
-                'network_policy_entries']['policy_rule'], rules['policy_rule'],
-                logger=self.logger)
-        if out:
-            err_msg.append(out)
+        if self.inputs.vro_based:
+            out = policy_test_utils.compare_args(
+                'policy_rules', self.api_s_policy_obj_x[
+                    'network_policy_entries']['policy_rule'], rules['policy_rule'],
+                    logger=self.logger)
+            if out:
+                err_msg.append(out)
 
         if err_msg != []:
             result = False

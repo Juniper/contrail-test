@@ -2485,6 +2485,25 @@ class SecurityGroupBasicRegressionTests1_contrail(
     def test_sec_group_basic(self):
         super(SecurityGroupBasicRegressionTests1_contrail, self).test_sec_group_basic()
 
+class SecurityGroupBasicRegressionTests1_contrail_vro(
+        test_regression_basic.SecurityGroupBasicRegressionTests1):
+
+    @classmethod
+    def setUpClass(cls):
+        super(SecurityGroupBasicRegressionTests1_contrail_vro, cls).setUpClass()
+        cls.option = 'contrail'
+    
+    def is_test_applicable(self):
+        if self.inputs.orchestrator == 'vcenter' and not self.inputs.vro_based:
+            return(False, 'Skipping Test Vro server not preset on vcenter setup')
+        return (True, None)
+
+    @test.attr(type=['vcenter','vro'])
+    @set_attr('vro_based')
+    def test_sec_group_basic(self):
+        super(SecurityGroupBasicRegressionTests1_contrail_vro, self).test_sec_group_basic()
+
+
 
 class SecurityGroupRegressionTests2_contrail(SecurityGroupRegressionTests2):
 

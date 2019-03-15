@@ -52,7 +52,7 @@ class TestECMPSanity(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
                               create_svms=True,
                               **self.common_args)
     # end test_ecmp_svc_v2_transparent_with_3_instance
-
+    
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_3_instance(self):
         """
@@ -68,20 +68,11 @@ class TestECMPSanity(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffic
                   from vm1 and vice-versa.
         Maintainer : ganeshahv@juniper.net
         """
-        ret_dict = self.verify_svc_chain(max_inst=3,
+        self.verify_svc_chain(max_inst=3,
                               service_mode='in-network',
                               create_svms=True,
                               **self.common_args)
-        si_fixture = ret_dict['si_fixture']
-        svm_ids = si_fixture.svm_ids
-        self.get_rt_info_tap_intf_list(
-            self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture,
-            svm_ids, si_fixture)
-        dst_vm_list = [self.right_vm_fixture]
-        self.verify_traffic_flow(
-            self.left_vm_fixture, dst_vm_list, si_fixture,
-            self.left_vn_fixture)
-    # end test_ecmp_svc_in_network_with_3_instance
+    #test_ecmp_svc_in_network_with_3_instance
 
     @test.attr(type=['sanity','vcenter'])
     @preposttest_wrapper
@@ -1247,6 +1238,23 @@ class TestECMPSanityIPv6(TestECMPSanity):
     @preposttest_wrapper
     def test_ecmp_svc_in_network_with_static_route_no_policy(self):
         super(TestECMPSanityIPv6,self).test_ecmp_svc_in_network_with_static_route_no_policy()
+
+class TestECMPVro(TestECMPSanity):
+    @classmethod
+    def setUpClass(cls):
+        cls.vro_based = True
+        super(TestECMPVro, cls).setUpClass()
+    
+    def is_test_applicable(self):
+        if self.inputs.orchestrator == 'vcenter' and not self.inputs.vro_based:
+           return(False, 'Skipping Test Vro server not present on vcenter setup')
+        return (True, None)
+
+    @test.attr(type=['vcenter','vro'])
+    @preposttest_wrapper
+    @skip_because(min_nodes=3)
+    def test_ecmp_svc_in_network_with_3_instance(self):
+        super(TestECMPVro,self).test_ecmp_svc_in_network_with_3_instance()
 
 class TestECMPFeatureIPv6(TestECMPFeature):
 
