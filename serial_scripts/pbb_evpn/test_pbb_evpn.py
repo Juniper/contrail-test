@@ -227,8 +227,22 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
                 src_mac=stream['src_cmac'], dst_mac=stream['dst_cmac'],
                 count=stream['count'])
 
+        for vm_fixture in vm_fixtures:
+            src_vm = stream['src']
+            dst_vm = stream['dst']
+            pbb_compute_node_ips = []
+            pbb_compute_node_ips.append(vm_fixtures[src_vm]._vm_node_ip)
+            pbb_compute_node_ips.append(vm_fixtures[dst_vm]._vm_node_ip)
+
         #Verify mac learned
         for stream in traffic.values():
+
+            src_vm = stream['src']
+            dst_vm = stream['dst']
+            pbb_compute_node_ips = []
+            pbb_compute_node_ips.append(vm_fixtures[src_vm]._vm_node_ip)
+            pbb_compute_node_ips.append(vm_fixtures[dst_vm]._vm_node_ip)
+
             src_vmi = vm[stream['src']]['vmi'][0]
             assert self.verify_mac_learning(vmi_fixtures[src_vmi],
                 bd_fixtures[stream['bd']], pbb_compute_node_ips,
@@ -325,15 +339,30 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
 
         #Verify mac learned
         for stream in traffic.values():
+            src_vm = stream['src']
+            dst_vm = stream['dst']
+            pbb_compute_node_ips = []
+            pbb_compute_node_ips.append(vm_fixtures[src_vm]._vm_node_ip)
+            pbb_compute_node_ips.append(vm_fixtures[dst_vm]._vm_node_ip)
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
                 bd_fixtures[stream['bd']],  pbb_compute_node_ips,
                 cmac=stream['src_cmac'])
 
         #Verify mac not learned across BDs
+        src_vm = traffic['stream1']['src']
+        dst_vm = traffic['stream1']['dst']
+        pbb_compute_node_ips = []
+        pbb_compute_node_ips.append(vm_fixtures[src_vm]._vm_node_ip)
+        pbb_compute_node_ips.append(vm_fixtures[dst_vm]._vm_node_ip)
         assert self.verify_mac_learning(vmi_fixtures[traffic['stream1']['src_vmi']],
             bd_fixtures[traffic['stream1']['bd']], pbb_compute_node_ips,
             cmac=traffic['stream2']['src_cmac'], expectation=False)
 
+        src_vm = traffic['stream2']['src']
+        dst_vm = traffic['stream2']['dst']
+        pbb_compute_node_ips = []
+        pbb_compute_node_ips.append(vm_fixtures[src_vm]._vm_node_ip)
+        pbb_compute_node_ips.append(vm_fixtures[dst_vm]._vm_node_ip)
         assert self.verify_mac_learning(vmi_fixtures[traffic['stream2']['src_vmi']],
             bd_fixtures[traffic['stream2']['bd']], pbb_compute_node_ips,
             cmac=traffic['stream1']['src_cmac'], expectation=False)
@@ -348,11 +377,21 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
         sleep(mac_aging_time)
 
         #Verify mac aged out for bd1
+        src_vm = traffic['stream1']['src']
+        dst_vm = traffic['stream1']['dst']
+        pbb_compute_node_ips = []
+        pbb_compute_node_ips.append(vm_fixtures[src_vm]._vm_node_ip)
+        pbb_compute_node_ips.append(vm_fixtures[dst_vm]._vm_node_ip)
         assert self.verify_mac_learning(vmi_fixtures[traffic['stream1']['src_vmi']],
             bd_fixtures[traffic['stream1']['bd']], pbb_compute_node_ips,
             cmac=traffic['stream1']['src_cmac'], expectation=False)
 
         #Verify mac not aged out for bd2
+        src_vm = traffic['stream2']['src']
+        dst_vm = traffic['stream2']['dst']
+        pbb_compute_node_ips = []
+        pbb_compute_node_ips.append(vm_fixtures[src_vm]._vm_node_ip)
+        pbb_compute_node_ips.append(vm_fixtures[dst_vm]._vm_node_ip)
         assert self.verify_mac_learning(vmi_fixtures[traffic['stream2']['src_vmi']],
             bd_fixtures[traffic['stream2']['bd']], pbb_compute_node_ips,
             cmac=traffic['stream2']['src_cmac'])
