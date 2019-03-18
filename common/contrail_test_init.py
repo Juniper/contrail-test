@@ -73,6 +73,7 @@ if "check_output" not in dir(subprocess):  # duck punch it in!
         return output
     subprocess.check_output = f
 
+
 class TestInputs(object):
     '''
        Class that would populate testbedinfo from parsing the
@@ -81,6 +82,7 @@ class TestInputs(object):
        the same with the certain default value assumptions
     '''
     __metaclass__ = Singleton
+
     def __init__(self, input_file, logger=None):
         self.jenkins_trigger = self.get_os_env('JENKINS_TRIGGERED')
         self.os_type = custom_dict(self.get_os_version, 'os_type')
@@ -216,7 +218,7 @@ class TestInputs(object):
                 service_nodes = 'CONTROLLER_NODES'
             if self.contrail_configs.get(service_nodes):
                 cfg_ips = set(self.contrail_configs[service_nodes].split(','))
-		ips = set(self.get_ips_of_host(host))
+                ips = set(self.get_ips_of_host(host))
                 if ips.intersection(cfg_ips):
                     return list(ips.intersection(cfg_ips))[0]
         return host
@@ -301,8 +303,8 @@ class TestInputs(object):
             self.host_data[host_data['host_ip']] = host_data
             hostname = self.run_cmd_on_server(host_data['host_ip'], 'hostname')
             host_fqname = self.run_cmd_on_server(host_data['host_ip'], 'hostname -f')
-            if self.slave_orchestrator == 'kubernetes' and 'novalocal' in hostname:
-                hostname = hostname.split('.')[0]
+            if hostname.endswith('.novalocal'):
+                hostname = hostname.rstrip('.novalocal')
             self.host_names.append(hostname)
             self.host_ips.append(host_data['host_ip'])
             host_data['name'] = hostname
@@ -344,7 +346,7 @@ class TestInputs(object):
             if 'vrouter' in roles:
                 data_ip = self.get_service_ip(host_data['host_ip'], 'vrouter')
                 #For single-interface , setting hostname to hostfqname to make vcenter
-                #scenario work 
+                #scenario work
                 if data_ip != host_data['host_ip']:
                     host_data['name'] = hostname
                 else:
@@ -606,13 +608,13 @@ class TestInputs(object):
             self.fabric_gw_info.append((gw_name, address))
         if 'traffic_generator' in test_configs:
             traffic_gen = test_configs['traffic_generator']
-	    self.ixia_linux_host_ip = traffic_gen.get('ixia_linux_host_ip')
-	    self.ixia_host_ip = traffic_gen.get('ixia_host_ip')
-	    self.spirent_linux_host_ip = traffic_gen.get('spirent_linux_host_ip')
-	    self.ixia_linux_username = traffic_gen.get('ixia_linux_username')
-	    self.ixia_linux_password = traffic_gen.get('ixia_linux_password')
-	    self.spirent_linux_username = traffic_gen.get('spirent_linux_username')
-	    self.spirent_linux_password = traffic_gen.get('spirent_linux_password')
+            self.ixia_linux_host_ip = traffic_gen.get('ixia_linux_host_ip')
+            self.ixia_host_ip = traffic_gen.get('ixia_host_ip')
+            self.spirent_linux_host_ip = traffic_gen.get('spirent_linux_host_ip')
+            self.ixia_linux_username = traffic_gen.get('ixia_linux_username')
+            self.ixia_linux_password = traffic_gen.get('ixia_linux_password')
+            self.spirent_linux_username = traffic_gen.get('spirent_linux_username')
+            self.spirent_linux_password = traffic_gen.get('spirent_linux_password')
             self.ixia_mx_ip = traffic_gen.get('ixia_mx_ip')
             self.spirent_mx_ip = traffic_gen.get('spirent_mx_ip')
             self.ixia_mx_username = traffic_gen.get('ixia_mx_username')
@@ -658,7 +660,7 @@ class TestInputs(object):
                 conf_file = 'vcenter_vars.yaml'
             else:
                 conf_file = 'vcenter_vars.yml'
-            
+
             _parse_vcenter = VcenterParmParse(inputs=self,conf_file=conf_file)
             self.vcenter_dc = _parse_vcenter.vcenter_dc
             self.vcenter_server = _parse_vcenter.vcenter_server
@@ -669,7 +671,7 @@ class TestInputs(object):
             _parse_vcenter.add_esxi_info_to_host_data()
             self.admin_username = self.vcenter_username
             self.admin_password = self.vcenter_password
-            self.admin_tenant = self.stack_tenant 
+            self.admin_tenant = self.stack_tenant
             self.admin_domain = self.stack_domain
 
         #vro parsing
@@ -697,7 +699,7 @@ class TestInputs(object):
             return self.os_type[host_ip]
         username = self.host_data[host_ip]['username']
         password = self.host_data[host_ip]['password']
-        output = self.run_cmd_on_server(host_ip,'uname -a', username, password) 
+        output = self.run_cmd_on_server(host_ip,'uname -a', username, password)
         if 'el6' in output:
             self.os_type[host_ip] = 'centos_el6'
         elif 'fc17' in output:
@@ -902,7 +904,7 @@ class TestInputs(object):
                      self.host_data[self.openstack_ip]['username'],
                      container=self.host_data[self.openstack_ip]['containers'].get('nova'))
             except Exception as e:
-                self.build_sku='vcenter'		
+                self.build_sku='vcenter'
         return self.build_sku
 
     def run_cmd_on_server(self, server_ip, issue_cmd, username=None,
@@ -1049,11 +1051,11 @@ class ContrailTestInit(object):
             expected_state=expected_state,
             keyfile=keyfile, certfile=certfile, cacert=cacert)
     #end verify_service_state
-    
+
     def verify_service_down(self, host, service=None, role=None):
         return ContrailStatusChecker(self).wait_till_service_down(
             host, role, service, tries=6, delay=5)
-        
+
     def verify_non_contrail_service_state(self, host, service,
                                            delay =5, tries =10):
         for i in range(0, tries):
@@ -1073,13 +1075,13 @@ class ContrailTestInit(object):
         self.logger.error(
             'Not all services up , Gave up!')
         return (False, failed_services)
-                    
+
     def non_contrail_service_status(self, host, service):
         hosts = [host] if (isinstance(host, str) or isinstance(host, unicode)) else host
         services = [service] if isinstance(service, str) else service
         status_dict = dict()
         for node in hosts:
-            status_dict[node] = dict() 
+            status_dict[node] = dict()
             for svc in services:
                 cmd = "systemctl status  %s | grep Active| awk '{print $2}'" \
                     % svc
@@ -1091,7 +1093,7 @@ class ContrailTestInit(object):
                 status_dict[node][svc] = output
         return status_dict
     #end non_contrail_service_status
-     
+
     def build_compute_to_control_xmpp_connection_dict(self, connections):
         agent_to_control_dct = {}
         for ip in self.compute_ips:
@@ -1142,7 +1144,7 @@ class ContrailTestInit(object):
                 ssl_args = ' -k %s -c %s -a %s' % (key, cert, ca)
             else:
                 ssl_args = None
-        
+
             status = " active"
             cmd = 'contrail-status'
             if ssl_args:
@@ -1150,7 +1152,7 @@ class ContrailTestInit(object):
             cmd = '%s | grep %s' % (cmd, service_name)
         else:
             cmd = "systemctl status  %s | grep Active| awk '{print $2}'" \
-                    % service_name
+                  % service_name
         self.logger.debug('Running command "%s" on host "%s" and container "%s" '
                          'for service "%s"' %
                          (cmd, self.host_data[host]['name'], container, service_name))
@@ -1558,7 +1560,7 @@ class ContrailTestInit(object):
                         cmd, container=container)
         return eval(output)
     #get_linux_distro
-    
+
     def add_knob_to_container(self, node_ip, container_name, level='DEFAULT',
         knob=None, restart_container=True, file_name='entrypoint.sh'):
         ''' Add/update a configuration knob to container via common.sh or entrypoint.sh
@@ -1574,17 +1576,17 @@ class ContrailTestInit(object):
             E.g: add_knob_to_container('10.204.217.127', 'control_control_1',
             'DEFAULT', 'mvpn_ipv4_enable=1')
         '''
-    
+
         issue_cmd = 'docker cp %s:/%s .' % (container_name, file_name)
         username = self.host_data[node_ip]['username']
         password = self.host_data[node_ip]['password']
-    
+
         self.logger.info('Running %s on %s' % (issue_cmd, node_ip))
         self.run_cmd_on_server(node_ip, issue_cmd, username, password, pty=True,
                                     as_sudo=True)
-    
+
         knob_list = [knob] if isinstance(knob, str) else knob
-    
+
         for knob in knob_list:
             just_knob = knob[:knob.find('=')]
             if level is not None:
@@ -1602,11 +1604,11 @@ class ContrailTestInit(object):
                 issue_cmd = 'sed -i \'/'+just_knob+'=.*/a %s\' %s' % (knob, file_name)
                 issue_cmd = issue_cmd + ';sed -i \'0,/%s=.*/{//d}\' %s' % (
                     just_knob, file_name)
-    
+
             self.logger.info('Running %s on %s' % (issue_cmd, node_ip))
             self.run_cmd_on_server(node_ip, issue_cmd, username, password, pty=True,
                                     as_sudo=True)
-    
+
         issue_cmd = 'docker cp %s %s:/%s' % (file_name, container_name,
             file_name)
         self.logger.info('Running %s on %s' % (issue_cmd, node_ip))
@@ -1632,6 +1634,7 @@ def _parse_args( args_str):
     args = parser.parse_args(remaining_argv)
     return args
 
+
 class VcenterParmParse(object):
     def __init__(self,inputs=None,conf_file=None):
         with open(conf_file, 'r') as fd:
@@ -1651,13 +1654,12 @@ class VcenterParmParse(object):
 
     def add_esxi_info_to_host_data(self):
         self._parse_esxi_info()
-     
 
     @property
     def vcenter_dc(self,server='server1'):
         vc_server_dict = self._parse(server)
         return vc_server_dict['datacentername']
-    
+
     @property
     def vcenter_server(self,server='server1'):
         vc_server_dict = self._parse(server)
@@ -1666,21 +1668,22 @@ class VcenterParmParse(object):
     @property
     def vcenter_port(self,server='server1'):
         return '443'
-    
+
     @property
     def vcenter_username(self,server='server1'):
         vc_server_dict = self._parse(server)
         return vc_server_dict['username']
-    
+
     @property
     def vcenter_password(self,server='server1'):
         vc_server_dict = self._parse(server)
         return vc_server_dict['password']
-    
+
     @property
     def dv_switch(self,server='server1'):
         vc_server_dict = self._parse(server)
         return vc_server_dict['dv_switch']['dv_switch_name']
+
 
 def main(args_str = None):
     if not args_str:
@@ -1688,7 +1691,6 @@ def main(args_str = None):
     script_args = _parse_args(script_args)
     inputs = ContrailTestInit(input_file=script_args.conf_file)
 
+
 if __name__ == '__main__':
     main()
-
-
