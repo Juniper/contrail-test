@@ -268,7 +268,7 @@ function run_tests {
           ${wrapper} testr run --parallel --concurrency $concurrency --subunit $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
           sleep 2
         else
-          ${wrapper} testr run --parallel --subunit --concurrency 4 $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
+          ${wrapper} testr run --parallel --subunit --concurrency 8 $testrargs | ${wrapper} subunit2junitxml -f -o $result_xml
           sleep 2
         fi
   fi
