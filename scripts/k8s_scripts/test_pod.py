@@ -33,9 +33,10 @@ class TestPod(BaseK8sTest):
         '''
         Test ping between 2 PODs
         '''
-        pod1 = self.setup_busybox_pod()
+        namespace = self.setup_namespace()
+        pod1 = self.setup_busybox_pod(namespace=namespace.name)
         assert pod1.verify_on_setup()
-        pod2 = self.setup_busybox_pod()
+        pod2 = self.setup_busybox_pod(namespace=namespace.name)
         assert pod2.verify_on_setup()
         assert pod1.ping_with_certainty(pod2.pod_ip)
     # end test_ping_between_two_pods
