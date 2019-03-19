@@ -125,6 +125,7 @@ class TestSubnets(BaseNeutronTest):
         self.logger.info('resolv.conf in VM has the default DNS Server..OK')
     # end test_dns_nameservers
 
+    @test.attr(type=['ci_contrail_go_kolla_ocata_sanity'])
     @preposttest_wrapper
     def test_gateway(self):
         '''Validate that GW of first address of the subnet cidr is chosen by
@@ -293,6 +294,7 @@ class TestSubnets(BaseNeutronTest):
         self.logger.info('VM got DHCP IP after subnet-dhcp is enabled..OK')
     # end test_enable_dhcp
 
+    @test.attr(type=['ci_contrail_go_kolla_ocata_sanity'])
     @preposttest_wrapper
     def test_ip_allocation_order(self):
         '''Validate the order of IPs allocated in case of multiple subnets
@@ -338,6 +340,7 @@ class TestSubnets(BaseNeutronTest):
                           vm3_fixture.vm_ip)
     # end test_ip_allocation_order
 
+    @test.attr(type=['ci_contrail_go_kolla_ocata_sanity'])
     @preposttest_wrapper
     def test_subnet_rename(self):
         '''Launch a vn and rename the associated subnet
