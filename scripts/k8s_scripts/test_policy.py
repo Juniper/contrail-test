@@ -172,7 +172,7 @@ class TestNetworkPolicy(BaseK8sTest):
         if getattr(cls, '_shared_resources'):
             cls._shared_resources.cleanUp()
 
-    @test.attr(type=['openshift_1', 'ci_contrail_go_k8s_sanity'])
+    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_allow_all_ingress(self):
         """
