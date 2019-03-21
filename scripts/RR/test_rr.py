@@ -34,7 +34,8 @@ class TestBasicRR(BaseRRTest):
     @classmethod
     def tearDownClass(cls):
         super(TestBasicRR, cls).tearDownClass()
-    
+
+    @test.attr(type=['sanity'])    
     @preposttest_wrapper
     def test_basic_RR(self):
         ''' Configure RR in one control node.
@@ -42,11 +43,11 @@ class TestBasicRR(BaseRRTest):
             2. Verify ping between VM's works
         Pass criteria: Step 1 and 2 should pass
         '''
-        if len(set(self.inputs.bgp_ips)) < 2:
+        if len(set(self.inputs.bgp_ips)) < 3:
             self.logger.info(
-                "Skipping Test. At least 2 control node required to run the test")
+                "Skipping Test. At least 3 control node required to run the test")
             raise self.skipTest(
-                "Skipping Test. At least 2 control node required to run the test")
+                "Skipping Test. At least 3 control node required to run the test")
         result = True
         vn1_name = get_random_name('vn1')
         vn1_subnets = ['192.168.1.0/24']
