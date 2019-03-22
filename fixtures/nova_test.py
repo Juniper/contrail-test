@@ -741,6 +741,8 @@ class NovaHelper(object):
                 return host_name
             if host_name in host.split('.'):
                 return host
+            if host_name.split('.')[0] in host.split('.'):
+                return host
         else:
             return host_name
 
