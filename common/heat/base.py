@@ -308,6 +308,8 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         env['parameters']['intf_rt_table_fqdn'] = intf_rt_table_fqdn
         env['parameters']['def_sg_id'] = (':').join(
             self.project_fq_name) + ':default'
+        if 'image' in env['parameters']:
+            self.nova_h.get_image(env['parameters']['env'])
         vn_obj_list = []
         for vn in vn_list:
             vn_obj_list.append(vn.obj)
@@ -461,6 +463,12 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         stack_name = get_random_name(stack_name)
         self.nova_h.get_image(env['parameters']['image'])
         self.nova_h.get_flavor(env['parameters']['flavor'])
+        for k in ['service_template_properties_image_name',
+                    'service_template1_properties_image_name',
+                    'service_template2_properties_image_name',
+                    'svm1_image']:
+            if k in env['parameters']:
+                self.nova_h.get_image(env['parameters'][k])
         svc_pt_hs = self.config_heat_obj(stack_name, template, env)
         stack = svc_pt_hs.heat_client_obj
         op = stack.stacks.get(stack_name).outputs
