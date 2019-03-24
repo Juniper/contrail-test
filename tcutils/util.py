@@ -787,6 +787,14 @@ def run_cmd_on_server(issue_cmd, server_ip, username,
     '''
     container : name or id of the container to run the cmd( str)
     '''
+    def strip_output(output):
+        if not output:
+            return output
+        output_lines = output.split('\n')
+        for line in list(output_lines):
+            if 'sudo: unable to resolve host' in line:
+                output_lines.remove(line)
+        return '\n'.join(output_lines)
     if as_daemon:
         issue_cmd = 'nohup ' + issue_cmd + ' & '
         if pidfile:
@@ -813,7 +821,7 @@ def run_cmd_on_server(issue_cmd, server_ip, username,
                 else:
                     updated_cmd = 'docker exec %s %s' % (container_args,issue_cmd)
             logger.debug('[%s]: Running cmd : %s' % (server_ip, updated_cmd))
-            output = _run(updated_cmd, pty=pty)
+            output = strip_output(_run(updated_cmd, pty=pty))
             logger.debug('Output : %s' % (output))
             return output
 # end run_cmd_on_server
