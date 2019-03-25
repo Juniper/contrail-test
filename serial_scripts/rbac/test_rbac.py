@@ -349,7 +349,8 @@ class TestRbac(BaseRbac):
         assert self.update_vn(connections=self.connections, uuid=vn.uuid,
                prop_kv={'virtual_network_properties.forwarding_mode': 'l2_l3'})
 
-    def test_subfield_match(self):
+    # Specifying subfields in ACL is no longer supported disabling the test
+    def disabled_test_subfield_match(self):
         '''
         Validate rules hierarchy and longest acl rule match
         steps:
@@ -437,7 +438,6 @@ class RbacMode(BaseRbac):
     @classmethod
     def setUpClass(cls):
         super(RbacMode, cls).setUpClass()
-        cls.inputs.api_server_port = '9100'
 
     @preposttest_wrapper
     def test_update_aaa_mode(self):
