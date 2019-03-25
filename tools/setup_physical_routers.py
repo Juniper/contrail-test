@@ -43,7 +43,7 @@ if __name__ == "__main__":
                 orchestrator=init_obj.orchestrator
                 )
         phy_router_obj.setUp()
-        assert phy_router_obj.verify_bgp_peer(), 'BGP peering is not up.'
+        phy_router_obj.verify_bgp_peer()
 
         if device_dict['type'] == 'vcenter_gateway':
                vrouter_obj = VirtualRouterFixture(device_dict['name'],
