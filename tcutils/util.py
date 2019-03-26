@@ -354,7 +354,7 @@ def safe_run(cmd, timeout=30):
 
 
 def sshable(host_string, password=None, gateway=None, gateway_password=None,
-            logger=None, timeout=15):
+            logger=None, timeout=5):
     logger = logger or contrail_logging.getLogger(__name__)
     host_string_split = re.split(r"[@:]", host_string)
     host_port = host_string_split[2] if len(host_string_split) > 2 else '22'
@@ -365,7 +365,6 @@ def sshable(host_string, password=None, gateway=None, gateway_password=None,
             (ret_val, result) = safe_run('(echo > /dev/tcp/%s/%s)' % (host_string_split[1],
                                                                       host_port), timeout=timeout)
             if result.succeeded:
-                time.sleep(5)
                 if safe_run('(echo > /dev/tcp/%s/%s)' % (host_string_split[1], host_port), timeout=timeout)[1].succeeded:
                     return True
                 else:
