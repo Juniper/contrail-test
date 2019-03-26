@@ -9,6 +9,7 @@ from floating_ip import FloatingIPFixture
 from lbaasv2_fixture import LBaasV2Fixture
 from common.servicechain.firewall.verify import VerifySvcFirewall
 from tcutils.util import get_random_name
+from tcutils.config.vnc_introspect_utils import VNCApiInspect
 from cfgm_common.exceptions import PermissionDenied
 from common.openstack_libs import neutron_forbidden
 from vnc_api.vnc_api import VirtualNetworkType
@@ -60,6 +61,7 @@ class BaseRbac(test_v1.BaseTestCase_v1):
                                                  project_name=cls.inputs.project_name,
                                                  domain_name=cls.inputs.domain_name)
             cls.populate_default_rules_in_global_acl()
+            cls.get_api_server_inspects()
         except:
             cls.tearDownClass()
             raise
@@ -73,9 +75,20 @@ class BaseRbac(test_v1.BaseTestCase_v1):
         return self.admin_connections.api_server_inspect.get_aaa_mode()
 
     def set_aaa_mode(self, aaa_mode):
-        for cfgm_ip in self.inputs.cfgm_ips:
-            inspect_h = self.connections.api_server_inspects[cfgm_ip]
+        for inspect_h in self.api_inspects:
             inspect_h.set_aaa_mode(aaa_mode)
+
+    @classmethod
+    def get_api_server_inspects(cls):
+        cls.api_inspects = []
+        for cfgm_ip in cls.inputs.cfgm_ips:
+            cls.api_inspects.append(VNCApiInspect(cfgm_ip,
+                                                inputs=cls.inputs,
+                                                port=cls.inputs.api_server_port,
+                                                protocol=cls.inputs.api_protocol,
+                                                base_url='/',
+                                                insecure=cls.inputs.insecure,
+                                                logger=cls.logger))
 
     @classmethod
     def populate_default_rules_in_global_acl(cls):
