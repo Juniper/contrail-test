@@ -419,10 +419,13 @@ class TestApiPolicyFixture02(BasePolicyTest):
         # 1006, 1184 fixed
         number_of_dummy_rules = 149
         valid_rules = [
-            PolicyRuleType(
-                direction='<>', protocol='icmp', dst_addresses=[AddressType(virtual_network='any')],
-                src_addresses=[AddressType(virtual_network='any')], dst_ports=[PortType(-1, -1)],
-                action_list=ActionListType(simple_action='pass'), src_ports=[PortType(-1, -1)])
+            {
+                'direction': '<>', 'simple_action': 'pass',
+                'protocol': 'icmp', 'src_ports': 'any',
+                'dst_ports': 'any',
+                'source_network': 'any',
+                'dest_network': 'any',
+            },
         ]
         self.logger.info(
             'Creating %d policy and %d rules to test policy scalability' %
