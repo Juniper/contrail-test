@@ -665,6 +665,15 @@ def _create_n_policy_n_rules(self, number_of_policy, valid_rules, number_of_dumm
         rules_list.append(rules[0])
         x += 1
         y += 1
+        rules = [
+            {
+                'direction': '<>', 'simple_action': 'deny',
+                'protocol': 'udp', 'src_ports': (x, x),
+                'dst_ports': (y, y),
+                'source_network': 'any',
+                'dest_network': 'any',
+            },
+        ]
     # end while
         # append valid rule at the end
     self.logger.debug('Appending %d valid rules to end of the rule list' %
