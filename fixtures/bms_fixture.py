@@ -4,6 +4,8 @@ import logging
 import fixtures
 from tcutils.util import retry, search_arp_entry, get_random_name, get_intf_name_from_mac, run_cmd_on_server, get_random_string
 from port_fixture import PortFixture
+from lif_fixture import LogicalInterfaceFixture
+from tcutils.fabutils import *
 
 class BMSFixture(fixtures.Fixture):
     def __init__(self,
@@ -34,9 +36,11 @@ class BMSFixture(fixtures.Fixture):
         self.bms_mac = kwargs.get('bms_mac') # BMS VMI Mac
         self.static_ip = kwargs.get('static_ip', False)
         self.vn_fixture = kwargs.get('vn_fixture')
+        self.lif_fixtures = kwargs.get('lif_fixtures') or []
         self.port_fixture = kwargs.get('port_fixture')
         self.fabric_fixture = kwargs.get('fabric_fixture')
         self.security_groups = kwargs.get('security_groups') #UUID List
+        self.unit = kwargs.get('unit', 0)
         self.vnc_h = connections.orch.vnc_h
         self.vlan_id = self.port_fixture.vlan_id if self.port_fixture else \
                        kwargs.get('vlan_id') or 0
@@ -47,6 +51,22 @@ class BMSFixture(fixtures.Fixture):
         self.ironic_node_obj = None
         self.ironic_node_id = None
     # end __init__
+
+    def create_lif(self):
+        for interface in self.interfaces:
+            tor = interface['tor']
+            tor_port = interface['tor_port']
+            lif = tor_port+'.'+str(self.unit)
+            pif_fqname = ['default-global-system-config', tor,
+                          tor_port.replace(':', '__')]
+            self.lif_fixtures.append(self.useFixture(LogicalInterfaceFixture(
+                                name=lif,
+                                pif_fqname=pif_fqname,
+                                connections=self.connections,
+                                vlan_id=self.vlan_id,
+                                interface_type=None,
+                           )))
+
     def read_ironic_node_obj(self):
         try:
           if not self.ironic_node_id:
@@ -109,6 +129,17 @@ class BMSFixture(fixtures.Fixture):
             self.bms_ip = self.port_fixture.get_ip_addresses()[0]
         if not self.bms_mac:
             self.bms_mac = self.port_fixture.mac_address
+ 
+    def associate_lif(self, lifs=None):
+        for lif_fixture in lifs or self.lif_fixtures:
+            lif_fixture.add_virtual_machine_interface(self.port_fixture.uuid)
+
+    def disassociate_lif(self, lifs=None):
+        for lif_fixture in lifs or self.lif_fixtures:
+            lif_fixture.delete_virtual_machine_interface(
+                self.port_fixture.uuid)
+
+
 
     def run(self, cmd, **kwargs):
         output = run_cmd_on_server(cmd, self.mgmt_ip,
@@ -122,6 +153,41 @@ class BMSFixture(fixtures.Fixture):
     def run_namespace(self, cmd, **kwargs):
         cmd = 'ip netns exec %s %s'%(self.namespace, cmd)
         return self.run(cmd, **kwargs)
+
+    def get_mvi_interface(self):
+        self.logger.info('BMS interface: %s' % self.mvlanintf)
+        return self.mvlanintf
+
+   
+    def config_mroute(self,interface,address,mask):
+        self.run_namespace('ifconfig %s multicast' %(interface))
+        self.run_namespace('route -n add -net %s  netmask %s dev %s' %(address,mask,interface)) 
+ 
+    def run_python_code(self, code, as_sudo=True, as_daemon=False, pidfile=None, stdout_path=None, stderr_path=None):
+
+        folder = tempfile.mkdtemp()
+
+        filename_short = 'program.py'
+        filename = '%s/%s' % (folder, filename_short)
+        fh = open(filename, 'w')
+        fh.write(code)
+        fh.close()
+
+        dest_login = '%s@%s' % (self.username,self.mgmt_ip)
+        dest_path = dest_login + ":/tmp"
+        remote_copy(filename, dest_path, dest_password=self.password, with_sudo=True)
+
+
+        if as_daemon:
+            pidfile = pidfile or "/tmp/pidfile_%s.pid" % (get_random_name())
+            pidfilename = pidfile.split('/')[-1]
+            stdout_path = stdout_path or "/tmp/%s_stdout.log" % pidfilename
+            stderr_path = stderr_path or "/tmp/%s_stderr.log" % pidfilename
+            cmd = "python /tmp/%s 1>%s 2>%s" % (filename_short,stdout_path,stderr_path)
+            outputs = self.run_namespace( cmd, as_sudo=as_sudo, as_daemon=as_daemon, pidfile=pidfile)
+        else:
+            cmd = "python /tmp/%s" % (filename_short)
+            outputs = self.run_namespace( cmd, as_sudo=as_sudo, as_daemon=as_daemon)
 
     def delete_bonding(self):
         self.run('ip link delete bond0')
@@ -160,17 +226,19 @@ class BMSFixture(fixtures.Fixture):
         pvlanintf = '%s.%s'%(self._interface, self.vlan_id) if self.vlan_id\
                     else self._interface
         self.run('ip link set dev %s up'%pvlanintf)
-        self.mvlanintf = '%s-mv%s'%(pvlanintf, get_random_string(4))
+        self.mvlanintf = '%smv%s'%(pvlanintf, get_random_string(1))
         self.logger.info('BMS mvlanintf: %s' % self.mvlanintf)
         macaddr = 'address %s'%self.bms_mac if self.bms_mac else ''
         self.run('ip link add %s link %s %s type macvlan mode bridge'%(
                  self.mvlanintf, pvlanintf, macaddr))
+        self.run('ip link add %s link %s type macvlan mode bridge'%(
+                 self.mvlanintf, pvlanintf))
         self.run('ip netns add %s'%self.namespace)
         self.run('ip link set netns %s %s'%(self.namespace, self.mvlanintf))
         self.run_namespace('ip link set dev %s up'%self.mvlanintf)
 
         if self.static_ip:
-            addr = self.bms_ip + '/' + str(self.bms_ip_netmask)
+            addr = self.static_ip + '/' + str(self.bms_ip_netmask)
             self.run_namespace('ip addr add %s dev %s'%(addr,self.mvlanintf))
             if self.bms_gw_ip is not None:
                 self.run_namespace('ip route add default via %s'%(self.bms_gw_ip))
