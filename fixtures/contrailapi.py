@@ -34,6 +34,22 @@ class ContrailVncApi(object):
             return self._vnc.project_read(project_fq_name)
         if project_id:
             return self._vnc.project_read(id=project_id)
+    
+    def create_multicast_policy(self, name, parent_obj,action, source, group):
+
+        multicast_policy = MulticastPolicy(name,parent_obj)
+        add_source_groups = MulticastSourceGroups()
+        add_source_group = MulticastSourceGroup(source_address=source, group_address=group, action=action)
+        add_source_groups.add_multicast_source_group(add_source_group)
+        multicast_policy.set_multicast_source_groups(add_source_groups)
+        uuid = self._vnc.multicast_policy_create(multicast_policy)
+        return uuid
+
+
+    def delete_multicast_policy(self,uuid):
+        self._vnc.multicast_policy_delete(id=uuid)
+
+
 
     @property
     def vnc_project(self):
