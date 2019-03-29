@@ -5,6 +5,7 @@ import socket
 import requests
 import warnings
 from lxml import etree
+from common import log_orig as contrail_logging
 try:
     from requests.packages.urllib3.exceptions import SubjectAltNameWarning
     warnings.filterwarnings('ignore', category=SubjectAltNameWarning)
@@ -219,13 +220,15 @@ def get_container_status(container, containers):
 
 def contrail_status(inputs=None, host=None, role=None, service=None,
                     debug=False, detail=False, timeout=30,
-                    keyfile=None, certfile=None, cacert=None):
+                    keyfile=None, certfile=None, cacert=None,
+                    logger=None):
     status_dict = dict()
     if not inputs:
         from common import contrail_test_init
         params = os.environ.get('TEST_CONFIG_FILE') or\
             '/contrail-test/contrail_test_input.yaml'
         inputs = contrail_test_init.ContrailTestInit(params)
+    logger = logger or inputs.logger
     certfile = certfile or inputs.introspect_certfile
     keyfile = keyfile or inputs.introspect_keyfile
     cacert = cacert or inputs.introspect_cafile
@@ -239,7 +242,7 @@ def contrail_status(inputs=None, host=None, role=None, service=None,
 
     for node in host or inputs.host_ips:
         containers = inputs.get_active_containers(node)
-        print node
+        logger.info(node)
         status_dict[node] = dict()
         if service:
             for svc in service:
@@ -250,12 +253,13 @@ def contrail_status(inputs=None, host=None, role=None, service=None,
                     status, desc = get_svc_uve_info(node, svc, debug, detail,
                                    timeout, keyfile, certfile, cacert)
                 status_dict[node][svc] = {'status': status, 'description': desc}
-                print '    %s:%s%s'%(svc, status, ' (%s)'%desc if desc else '')
+                logger.info('    %s:%s%s'%(svc, status, ' (%s)'%
+                    desc if desc else ''))
         else:
             for r in role or inputs.get_roles(node):
-                print '  '+r
+                logger.info('  '+r)
                 if r not in CONTRAIL_PODS_SERVICES_MAP:
-                    print 'role '+r+' is not yet supported'
+                    logger.error('role '+r+' is not yet supported')
                     continue
                 for svc in CONTRAIL_PODS_SERVICES_MAP[r]:
                     desc = None
@@ -267,7 +271,8 @@ def contrail_status(inputs=None, host=None, role=None, service=None,
                         status, desc = get_svc_uve_info(node, svc,
                             debug, detail, timeout, keyfile, certfile, cacert)
                     status_dict[node][svc] = {'status': status, 'description': desc}
-                    print '    %s:%s%s'%(svc, status, ' (%s)'%desc if desc else '')
+                    logger.info('    %s:%s%s'%(svc, status, ' (%s)'%
+                        desc if desc else ''))
     return status_dict
 
 def main():
@@ -276,7 +281,8 @@ def main():
     host = sys.argv[2] if len(sys.argv) > 2 else None
     role = sys.argv[3] if len(sys.argv) > 3 else None
     service = sys.argv[4] if len(sys.argv) > 4 else None
-    contrail_status(inputs, host, role, service)
+    logger = contrail_logging.getLogger('contrail_status')
+    contrail_status(inputs, host, role, service, logger=logger)
 
 if __name__ == "__main__":
     main()
