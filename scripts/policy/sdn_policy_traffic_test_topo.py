@@ -102,26 +102,27 @@ class sdn_2vn_2vm_config ():
         self.password = password
         #
         # Define VN's in the project:
-        self.vnet_list = ['vnet0', 'vnet1']
+        self.vnet_list = [get_random_name('vnet0'), get_random_name('vnet1')]
+        
         #
         # Define network info for each VN:
         if self.project == 'vCenter':
             # For vcenter, only one subnet per VN is supported
-            self.vn_nets = {'vnet0': [get_random_cidr(af='v4')],
-                            'vnet1': [get_random_cidr(af='v4')]}
+            self.vn_nets = {self.vnet_list[0]: [get_random_cidr(af='v4')],
+                            self.vnet_list[1]: [get_random_cidr(af='v4')]}
         else:
-            self.vn_nets = {'vnet0': ['10.1.1.0/24', '11.1.1.0/24'],
-                            'vnet1': ['12.1.1.0/24', '13.1.1.0/24']}
+            self.vn_nets = {self.vnet_list[0]: ['10.1.1.0/24', '11.1.1.0/24'],
+                            self.vnet_list[1]: ['12.1.1.0/24', '13.1.1.0/24']}
         #
         # Define network policies
         self.policy_list = ['policy0', 'policy1', 'policy2', 'policy3', 'policy100',
                             'policy10', 'policy11', 'policy12', 'policy13', 'policy1000']
-        self.vn_policy = {'vnet0': ['policy0'], 'vnet1': ['policy100']}
+        self.vn_policy = {self.vnet_list[0]: ['policy0'], self.vnet_list[1]: ['policy100']}
         #
         # Define VM's
         # VM distribution on available compute nodes is handled by nova
         # scheduler or contrail vm naming scheme
-        self.vn_of_vm = {'vmc0': 'vnet0', 'vmc1': 'vnet1'}
+        self.vn_of_vm = {get_random_name('vmc0'): self.vnet_list[0], get_random_name('vmc1'): self.vnet_list[1]}
         #
         # Define network policy rules
         self.rules = {}
@@ -132,55 +133,55 @@ class sdn_2vn_2vm_config ():
                                   'policy3', 'policy10', 'policy11', 'policy12', 'policy13']
         #self.policy_test_order= ['policy1']
         self.rules['policy0'] = [
-            {'direction': '<>', 'protocol': 'tcp', 'dest_network': 'vnet0', 'source_network':
-                'vnet1', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
-            {'direction': '<>', 'protocol': 'udp', 'dest_network': 'vnet0', 'source_network':
-                'vnet1', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
-            {'direction': '<>', 'protocol': 'icmp', 'dest_network': 'vnet0', 'source_network': 'vnet1', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'}]
+            {'direction': '<>', 'protocol': 'tcp', 'dest_network': self.vnet_list[0], 'source_network':
+                self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
+            {'direction': '<>', 'protocol': 'udp', 'dest_network': self.vnet_list[0], 'source_network':
+                self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
+            {'direction': '<>', 'protocol': 'icmp', 'dest_network': self.vnet_list[0], 'source_network': self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'}]
         self.rules['policy1'] = [
-            {'direction': '<>', 'protocol': 'tcp', 'dest_network': 'vnet0', 'source_network':
-                'vnet1', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
-            {'direction': '<>', 'protocol': 'udp', 'dest_network': 'vnet0', 'source_network':
-                'vnet1', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
-            {'direction': '<>', 'protocol': 'icmp', 'dest_network': 'vnet0', 'source_network': 'vnet1', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
+            {'direction': '<>', 'protocol': 'tcp', 'dest_network': self.vnet_list[0], 'source_network':
+                self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
+            {'direction': '<>', 'protocol': 'udp', 'dest_network': self.vnet_list[0], 'source_network':
+                self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
+            {'direction': '<>', 'protocol': 'icmp', 'dest_network': self.vnet_list[0], 'source_network': self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
         self.rules['policy2'] = [
-            {'direction': '<>', 'protocol': 'tcp', 'dest_network': 'vnet0', 'source_network':
-                'vnet1', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
-            {'direction': '<>', 'protocol': 'udp', 'dest_network': 'vnet0', 'source_network':
-                'vnet1', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'},
-            {'direction': '<>', 'protocol': 'icmp', 'dest_network': 'vnet0', 'source_network': 'vnet1', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'}]
+            {'direction': '<>', 'protocol': 'tcp', 'dest_network': self.vnet_list[0], 'source_network':
+                self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
+            {'direction': '<>', 'protocol': 'udp', 'dest_network': self.vnet_list[0], 'source_network':
+                self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'},
+            {'direction': '<>', 'protocol': 'icmp', 'dest_network': self.vnet_list[0], 'source_network': self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'}]
         self.rules['policy3'] = [
-            {'direction': '<>', 'protocol': 'tcp', 'dest_network': 'vnet0', 'source_network':
-                'vnet1', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
-            {'direction': '<>', 'protocol': 'udp', 'dest_network': 'vnet0', 'source_network':
-                'vnet1', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'},
-            {'direction': '<>', 'protocol': 'icmp', 'dest_network': 'vnet0', 'source_network': 'vnet1', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
+            {'direction': '<>', 'protocol': 'tcp', 'dest_network': self.vnet_list[0], 'source_network':
+                self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
+            {'direction': '<>', 'protocol': 'udp', 'dest_network': self.vnet_list[0], 'source_network':
+                self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'},
+            {'direction': '<>', 'protocol': 'icmp', 'dest_network': self.vnet_list[0], 'source_network': self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
         self.rules['policy100'] = [
             {'direction': '<>', 'protocol': 'any', 'dest_network': 'any', 'source_network': 'any', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
         self.rules['policy10'] = [
-            {'direction': '<>', 'protocol': 'udp', 'dest_network': 'vnet0', 'source_network':
-                'vnet1', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'},
-            {'direction': '<>', 'protocol': 'tcp', 'dest_network': 'vnet0', 'source_network':
-                'vnet1', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'},
-            {'direction': '<>', 'protocol': 'icmp', 'dest_network': 'vnet0', 'source_network': 'vnet1', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'}]
+            {'direction': '<>', 'protocol': 'udp', 'dest_network': self.vnet_list[0], 'source_network':
+                self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'},
+            {'direction': '<>', 'protocol': 'tcp', 'dest_network': self.vnet_list[0], 'source_network':
+                self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'},
+            {'direction': '<>', 'protocol': 'icmp', 'dest_network': self.vnet_list[0], 'source_network': self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'}]
         self.rules['policy11'] = [
-            {'direction': '<>', 'protocol': 'udp', 'dest_network': 'vnet0', 'source_network':
-                'vnet1', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'},
-            {'direction': '<>', 'protocol': 'tcp', 'dest_network': 'vnet0', 'source_network':
-                'vnet1', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'},
-            {'direction': '<>', 'protocol': 'icmp', 'dest_network': 'vnet0', 'source_network': 'vnet1', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
+            {'direction': '<>', 'protocol': 'udp', 'dest_network': self.vnet_list[0], 'source_network':
+                self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'},
+            {'direction': '<>', 'protocol': 'tcp', 'dest_network': self.vnet_list[0], 'source_network':
+                self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'},
+            {'direction': '<>', 'protocol': 'icmp', 'dest_network': self.vnet_list[0], 'source_network': self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'}]
         self.rules['policy12'] = [
-            {'direction': '<>', 'protocol': 'tcp', 'dest_network': 'vnet0', 'source_network':
-                'vnet1', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'},
-            {'direction': '<>', 'protocol': 'udp', 'dest_network': 'vnet0', 'source_network':
-                'vnet1', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
-            {'direction': '<>', 'protocol': 'icmp', 'dest_network': 'vnet0', 'source_network': 'vnet1', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'}]
+            {'direction': '<>', 'protocol': 'tcp', 'dest_network': self.vnet_list[0], 'source_network':
+                self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'},
+            {'direction': '<>', 'protocol': 'udp', 'dest_network': self.vnet_list[0], 'source_network':
+                self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
+            {'direction': '<>', 'protocol': 'icmp', 'dest_network': self.vnet_list[0], 'source_network': self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'}]
         self.rules['policy13'] = [
-            {'direction': '<>', 'protocol': 'udp', 'dest_network': 'vnet0', 'source_network':
-                'vnet1', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
-            {'direction': '<>', 'protocol': 'icmp', 'dest_network': 'vnet0', 'source_network':
-                'vnet1', 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
-            {'direction': '<>', 'protocol': 'tcp', 'dest_network': 'vnet0', 'source_network': 'vnet1', 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'}]
+            {'direction': '<>', 'protocol': 'udp', 'dest_network': self.vnet_list[0], 'source_network':
+                self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
+            {'direction': '<>', 'protocol': 'icmp', 'dest_network': self.vnet_list[0], 'source_network':
+                self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'pass', 'src_ports': 'any'},
+            {'direction': '<>', 'protocol': 'tcp', 'dest_network': self.vnet_list[0], 'source_network': self.vnet_list[1], 'dst_ports': 'any', 'simple_action': 'deny', 'src_ports': 'any'}]
         self.rules['policy1000'] = []
         # end __init__
 # end class sdn_2vn_2vm_config
