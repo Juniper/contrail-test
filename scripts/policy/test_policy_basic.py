@@ -30,7 +30,7 @@ class TestBasicPolicy(BasePolicyTest):
     def runTest(self):
         pass
 
-    @test.attr(type=['suite1', 'vcenter'])
+    @test.attr(type=['suite1' ])
     @preposttest_wrapper
     def test_policy(self):
         """ Configure policies based on topology and run policy related verifications.
@@ -264,7 +264,7 @@ class TestBasicPolicyModify(BasePolicyTest):
     def runTest(self):
         pass
 
-    @test.attr(type=['suite1', 'vcenter'])
+    @test.attr(type=['suite1'])
     @preposttest_wrapper
     def test_policy_modify_vn_policy(self):
         """ Configure policies based on topology;
@@ -392,7 +392,7 @@ class TestDetailedPolicy0(BasePolicyTest):
     def setUpClass(cls):
         super(TestDetailedPolicy0, cls).setUpClass()
 
-    @test.attr(type=['vcenter', 'suite1'])
+    @test.attr(type=[ 'suite1'])
     @preposttest_wrapper
     def test_repeated_policy_modify(self):
         """ Configure policies based on topology; Replace VN's existing policy [same policy name but with different rule set] multiple times and verify.
