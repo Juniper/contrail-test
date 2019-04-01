@@ -309,7 +309,7 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         env['parameters']['def_sg_id'] = (':').join(
             self.project_fq_name) + ':default'
         if 'image' in env['parameters']:
-            self.nova_h.get_image(env['parameters']['env'])
+            self.nova_h.get_image(env['parameters']['image'])
         vn_obj_list = []
         for vn in vn_list:
             vn_obj_list.append(vn.obj)
