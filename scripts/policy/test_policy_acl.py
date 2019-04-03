@@ -16,7 +16,7 @@ from vn_policy_test import VN_Policy_Fixture
 from test import attr
 from netaddr import IPNetwork
 from common.policy import policy_test_utils
-from tcutils.util import get_random_cidr
+from tcutils.util import get_random_cidr,get_random_name
 
 af_test = 'dual'
 
@@ -55,7 +55,7 @@ class TestPolicyAcl(BasePolicyTest):
             VNFixture(
                 project_name=self.project.project_name,
                 connections=self.connections,
-                vn_name='VN1',
+                vn_name=get_random_name('VN1'),
                 inputs=self.inputs,
                 subnets=[get_random_cidr(af='v4')],
                 ipam_fq_name=self.ipam1_obj.fq_name,orch=self.orchestrator))
@@ -66,7 +66,7 @@ class TestPolicyAcl(BasePolicyTest):
             VNFixture(
                 project_name=self.project.project_name,
                 connections=self.connections,
-                vn_name='VN2',
+                vn_name=get_random_name('VN2'),
                 inputs=self.inputs,
                 subnets=[get_random_cidr(af='v4')],
                 ipam_fq_name=self.ipam2_obj.fq_name))
@@ -75,7 +75,7 @@ class TestPolicyAcl(BasePolicyTest):
             VNFixture(
                 project_name=self.project.project_name,
                 connections=self.connections,
-                vn_name='VN3',
+                vn_name=get_random_name('VN3'),
                 inputs=self.inputs,
                 subnets=[get_random_cidr(af='v4')],
                 ipam_fq_name=self.ipam3_obj.fq_name))
@@ -90,21 +90,21 @@ class TestPolicyAcl(BasePolicyTest):
             VMFixture(
                 connections=self.connections,
                 vn_obj=self.VN1_fixture.obj,
-                vm_name='VM11',
+                vm_name=get_random_name('VM11'),
                 project_name=self.project.project_name,orch=self.orchestrator))
 
         self.VM21_fixture = self.useFixture(
             VMFixture(
                 connections=self.connections,
                 vn_obj=self.VN2_fixture.obj,
-                vm_name='VM21',
+                vm_name=get_random_name('VM21'),
                 project_name=self.project.project_name))
 
         self.VM31_fixture = self.useFixture(
             VMFixture(
                 connections=self.connections,
                 vn_obj=self.VN3_fixture.obj,
-                vm_name='VM31',
+                vm_name=get_random_name('VM31'),
                 project_name=self.project.project_name))
 
         for vm_fixture in [self.VM11_fixture, self.VM21_fixture, self.VM31_fixture]:
@@ -126,53 +126,54 @@ class TestPolicyAcl(BasePolicyTest):
         self.setup_ipam_vn()
 
         # create policy
-        policy_name = 'policy12'
+        policy_name1 = get_random_name('policy12')
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
-                  'dest_network': 'VN2',
-                  'source_network': 'VN1',
+                  'dest_network': self.VN2_fixture.vn_name,
+                  'source_network': self.VN1_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
 
         policy12_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name1,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections, api=True))
 
-        policy_name = 'policy21'
+        policy_name2 = get_random_name('policy21')
+        policy_name3 = get_random_name('policy13')
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
-                  'dest_policy': 'policy13',
-                  'source_network': 'VN2',
+                  'dest_policy': policy_name3,
+                  'source_network': self.VN2_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
 
         policy21_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name2,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections, api=True))
 
-        policy_name = 'policy13'
+        
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'any',
-                  'dest_network': 'VN3',
-                  'source_network': 'VN1',
+                  'dest_network': self.VN3_fixture.vn_name,
+                  'source_network': self.VN1_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'deny',
                   'src_ports': 'any'}]
 
         policy13_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name3,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections, api=True))
@@ -186,7 +187,7 @@ class TestPolicyAcl(BasePolicyTest):
                            [policy12_fixture.policy_obj, \
                             policy13_fixture.policy_obj]},
                 vn_obj={self.VN1_fixture.vn_name : self.VN1_fixture},
-                vn_policys=['policy12','policy13'],
+                vn_policys=[policy_name1,policy_name3],
                 project_name=self.project.project_name,options='contrail'))
         VN2_policy_fixture = self.useFixture(
             VN_Policy_Fixture(
@@ -194,7 +195,7 @@ class TestPolicyAcl(BasePolicyTest):
                 vn_name=self.VN2_fixture.vn_name,
                 policy_obj={self.VN2_fixture.vn_name : [policy21_fixture.policy_obj]},
                 vn_obj={self.VN2_fixture.vn_name : self.VN2_fixture},
-                vn_policys=['policy21'],
+                vn_policys=[policy_name2],
                 project_name=self.project.project_name))
 
         # create VM
@@ -223,53 +224,53 @@ class TestPolicyAcl(BasePolicyTest):
         self.setup_ipam_vn()
 
         # create policy
-        policy_name = 'policy12'
+        policy_name1 = get_random_name('policy12')
+        policy_name2= get_random_name('policy21')
+        policy_name3 = get_random_name('policy13')
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
-                  'dest_network': 'VN2',
-                  'source_policy': 'policy13',
+                  'dest_network': self.VN1_fixture.vn_name,
+                  'source_policy': policy_name3,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
 
         policy12_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name1,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
 
-        policy_name = 'policy21'
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
-                  'dest_network': 'VN1',
-                  'source_network': 'VN2',
+                  'dest_network': self.VN1_fixture.vn_name,
+                  'source_network': self.VN2_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
 
         policy21_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name2,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
 
-        policy_name = 'policy13'
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'any',
-                  'dest_network': 'VN3',
-                  'source_network': 'VN1',
+                  'dest_network': self.VN3_fixture.vn_name,
+                  'source_network': self.VN1_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'deny',
                   'src_ports': 'any'}]
 
         policy13_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name3,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
@@ -283,7 +284,7 @@ class TestPolicyAcl(BasePolicyTest):
                            [policy12_fixture.policy_obj, \
                             policy13_fixture.policy_obj]},
                 vn_obj={self.VN1_fixture.vn_name : self.VN1_fixture},
-                vn_policys=['policy12','policy13'],
+                vn_policys=[policy_name1,policy_name3],
                 project_name=self.project.project_name))
 
         VN2_policy_fixture = self.useFixture(
@@ -293,7 +294,7 @@ class TestPolicyAcl(BasePolicyTest):
                 policy_obj={self.VN2_fixture.vn_name : \
                            [policy21_fixture.policy_obj]},
                 vn_obj={self.VN2_fixture.vn_name : self.VN2_fixture},
-                vn_policys=['policy21'],
+                vn_policys=[policy_name2],
                 project_name=self.project.project_name))
 
         # create VM
@@ -322,28 +323,29 @@ class TestPolicyAcl(BasePolicyTest):
         self.setup_ipam_vn()
 
         # create policy
-        policy_name = 'policy12'
+        policy_name1= get_random_name('policy12')
+        policy_name2= get_random_name('policy21')
+        policy_name3 = get_random_name('policy13')
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
-                  'dest_network': 'VN2',
-                  'source_network': 'VN1',
+                  'dest_network': self.VN2_fixture.vn_name,
+                  'source_network': self.VN1_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
 
         policy12_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name1,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
 
-        policy_name = 'policy21'
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
-                  'dest_policy': 'policy13',
+                  'dest_policy': policy_name3,
                   'source_network': 'any',
                   'dst_ports': 'any',
                   'simple_action': 'pass',
@@ -351,24 +353,23 @@ class TestPolicyAcl(BasePolicyTest):
 
         policy21_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name2,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
 
-        policy_name = 'policy13'
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'any',
-                  'dest_network': 'VN3',
-                  'source_network': 'VN1',
+                  'dest_network': self.VN3_fixture.vn_name,
+                  'source_network': self.VN1_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'deny',
                   'src_ports': 'any'}]
 
         policy13_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name3,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
@@ -382,7 +383,7 @@ class TestPolicyAcl(BasePolicyTest):
                            [policy12_fixture.policy_obj, \
                             policy13_fixture.policy_obj]},
                 vn_obj={self.VN1_fixture.vn_name : self.VN1_fixture},
-                vn_policys=['policy12','policy13'],
+                vn_policys=[policy_name1,policy_name3],
                 project_name=self.project.project_name))
 
         VN2_policy_fixture = self.useFixture(
@@ -392,7 +393,7 @@ class TestPolicyAcl(BasePolicyTest):
                 policy_obj={self.VN2_fixture.vn_name : \
                            [policy21_fixture.policy_obj]},
                 vn_obj={self.VN2_fixture.vn_name : self.VN2_fixture},
-                vn_policys=['policy21'],
+                vn_policys=[policy_name2],
                 project_name=self.project.project_name))
 
         # create VM
@@ -422,53 +423,53 @@ class TestPolicyAcl(BasePolicyTest):
         self.setup_ipam_vn()
 
         # create policy
-        policy_name = 'policy13'
+        policy_name1= get_random_name('policy12')
+        policy_name2= get_random_name('policy21')
+        policy_name3 = get_random_name('policy13')
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'any',
-                  'dest_network': 'VN3',
-                  'source_network': 'VN1',
+                  'dest_network': self.VN3_fixture.vn_name,
+                  'source_network': self.VN1_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'deny',
                   'src_ports': 'any'}]
 
         policy13_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name3,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
 
-        policy_name = 'policy12'
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
                   'dest_network': 'any',
-                  'source_policy': 'policy13',
+                  'source_policy': policy_name3,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
 
         policy12_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name1,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
 
-        policy_name = 'policy21'
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
-                  'dest_network': 'VN1',
-                  'source_network': 'VN2',
+                  'dest_network': self.VN1_fixture.vn_name,
+                  'source_network': self.VN2_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
 
         policy21_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name2,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
@@ -483,7 +484,7 @@ class TestPolicyAcl(BasePolicyTest):
                            [policy12_fixture.policy_obj, \
                             policy13_fixture.policy_obj]},
                 vn_obj={self.VN1_fixture.vn_name : self.VN1_fixture},
-                vn_policys=['policy12','policy13'],
+                vn_policys=[policy_name1,policy_name3],
                 project_name=self.project.project_name))
 
         VN2_policy_fixture = self.useFixture(
@@ -493,7 +494,7 @@ class TestPolicyAcl(BasePolicyTest):
                 policy_obj={self.VN2_fixture.vn_name : \
                            [policy21_fixture.policy_obj]},
                 vn_obj={self.VN2_fixture.vn_name : self.VN2_fixture},
-                vn_policys=['policy21'],
+                vn_policys=[policy_name2],
                 project_name=self.project.project_name))
 
         # create VM
@@ -528,20 +529,22 @@ class TestPolicyAcl(BasePolicyTest):
             VN2_subnet_v6 = None
 
         # create policy
-        policy_name = 'policy12'
+        policy_name1= get_random_name('policy12')
+        policy_name2= get_random_name('policy21')
+        policy_name3 = get_random_name('policy13')
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
                   'dest_subnet': VN2_subnet_v4,
-                  'source_policy': 'policy13',
+                  'source_policy': policy_name3,
                   'dst_ports': 'any',
                   'simple_action': 'deny',
                   'src_ports': 'any'
                  },
                  {'direction': '<>',
                   'protocol': 'any',
-                  'dest_network': 'VN2',
-                  'source_network': 'VN1',
+                  'dest_network': self.VN2_fixture.vn_name,
+                  'source_network': self.VN1_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
@@ -551,16 +554,15 @@ class TestPolicyAcl(BasePolicyTest):
 
         policy12_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name1,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
 
-        policy_name = 'policy21'
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
-                  'dest_policy': 'policy13',
+                  'dest_policy': policy_name3,
                   'source_subnet': VN2_subnet_v4,
                   'dst_ports': 'any',
                   'simple_action': 'deny',
@@ -568,8 +570,8 @@ class TestPolicyAcl(BasePolicyTest):
                  },
                  {'direction': '<>',
                   'protocol': 'any',
-                  'dest_network': 'VN1',
-                  'source_network': 'VN2',
+                  'dest_network': self.VN1_fixture.vn_name,
+                  'source_network': self.VN2_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
@@ -579,24 +581,23 @@ class TestPolicyAcl(BasePolicyTest):
 
         policy21_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name2,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
 
-        policy_name = 'policy13'
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'any',
-                  'dest_network': 'VN3',
-                  'source_network': 'VN1',
+                  'dest_network': self.VN3_fixture.vn_name,
+                  'source_network': self.VN1_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'deny',
                   'src_ports': 'any'}]
 
         policy13_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name3,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
@@ -610,7 +611,7 @@ class TestPolicyAcl(BasePolicyTest):
                            [policy12_fixture.policy_obj, \
                             policy13_fixture.policy_obj]},
                 vn_obj={self.VN1_fixture.vn_name : self.VN1_fixture},
-                vn_policys=['policy12','policy13'],
+                vn_policys=[policy_name1,policy_name3],
                 project_name=self.project.project_name))
 
         VN2_policy_fixture = self.useFixture(
@@ -619,7 +620,7 @@ class TestPolicyAcl(BasePolicyTest):
                 vn_name=self.VN2_fixture.vn_name,
                 policy_obj={self.VN2_fixture.vn_name : [policy21_fixture.policy_obj]},
                 vn_obj={self.VN2_fixture.vn_name : self.VN2_fixture},
-                vn_policys=['policy21'],
+                vn_policys=[policy_name2],
                 project_name=self.project.project_name))
 
         # create VM
@@ -671,20 +672,20 @@ class TestPolicyAcl(BasePolicyTest):
             VN2_subnet_v6 = None
 
         # create policy
-        policy_name = 'policy12'
+        policy_name1 = get_random_name('policy12')
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
                   'dest_subnet': VN2_subnet_v4,
-                  'source_network': 'VN1',
+                  'source_network': self.VN1_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'deny',
                   'src_ports': 'any'
                  },
                  {'direction': '<>',
                   'protocol': 'any',
-                  'dest_network': 'VN2',
-                  'source_network': 'VN1',
+                  'dest_network': self.VN2_fixture.vn_name,
+                  'source_network': self.VN1_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
@@ -694,25 +695,25 @@ class TestPolicyAcl(BasePolicyTest):
 
         policy12_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name1,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
 
-        policy_name = 'policy21'
+        policy_name2 = get_random_name('policy21')
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
                   'dest_subnet': VN1_subnet_v4,
-                  'source_network': 'VN2',
+                  'source_network': self.VN2_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'deny',
                   'src_ports': 'any'
                  },
                  {'direction': '<>',
                   'protocol': 'any',
-                  'dest_network': 'VN1',
-                  'source_network': 'VN2',
+                  'dest_network': self.VN1_fixture.vn_name,
+                  'source_network': self.VN2_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
@@ -722,7 +723,7 @@ class TestPolicyAcl(BasePolicyTest):
 
         policy21_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name2,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
@@ -734,7 +735,7 @@ class TestPolicyAcl(BasePolicyTest):
                 vn_name=self.VN1_fixture.vn_name,
                 policy_obj={self.VN1_fixture.vn_name : [policy12_fixture.policy_obj]},
                 vn_obj={self.VN1_fixture.vn_name : self.VN1_fixture},
-                vn_policys=['policy12'],
+                vn_policys=[policy_name1],
                 project_name=self.project.project_name))
 
         VN2_policy_fixture = self.useFixture(
@@ -743,7 +744,7 @@ class TestPolicyAcl(BasePolicyTest):
                 vn_name=self.VN2_fixture.vn_name,
                 policy_obj={self.VN2_fixture.vn_name : [policy21_fixture.policy_obj]},
                 vn_obj={self.VN2_fixture.vn_name : self.VN2_fixture},
-                vn_policys=['policy21'],
+                vn_policys=[policy_name2],
                 project_name=self.project.project_name))
 
         # create VM
@@ -797,12 +798,12 @@ class TestPolicyAcl(BasePolicyTest):
             VN3_subnet_v6 = None
 
         # create policy
-        policy_name = 'policy123'
+        policy_name123 = get_random_name('policy123')
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
                   'dest_subnet': VN2_subnet_v4,
-                  'source_network': 'VN1',
+                  'source_network': self.VN1_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'deny',
                   'src_ports': 'any'
@@ -810,23 +811,23 @@ class TestPolicyAcl(BasePolicyTest):
                  {'direction': '<>',
                   'protocol': 'icmp',
                   'dest_subnet': VN3_subnet_v4,
-                  'source_network': 'VN1',
+                  'source_network': self.VN1_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'deny',
                   'src_ports': 'any'
                  },
                  {'direction': '<>',
                   'protocol': 'any',
-                  'dest_network': 'VN2',
-                  'source_network': 'VN1',
+                  'dest_network': self.VN2_fixture.vn_name,
+                  'source_network': self.VN1_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'
                  },
                  {'direction': '<>',
                   'protocol': 'any',
-                  'dest_network': 'VN3',
-                  'source_network': 'VN1',
+                  'dest_network': self.VN3_fixture.vn_name,
+                  'source_network': self.VN1_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
@@ -837,25 +838,25 @@ class TestPolicyAcl(BasePolicyTest):
 
         policy123_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name123,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
 
-        policy_name = 'policy21'
+        policy_name21 = get_random_name('policy21')
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
                   'dest_subnet': VN1_subnet_v4,
-                  'source_network': 'VN2',
+                  'source_network': self.VN2_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'deny',
                   'src_ports': 'any'
                  },
                  {'direction': '<>',
                   'protocol': 'any',
-                  'dest_network': 'VN1',
-                  'source_network': 'VN2',
+                  'dest_network': self.VN1_fixture.vn_name,
+                  'source_network': self.VN2_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
@@ -865,25 +866,25 @@ class TestPolicyAcl(BasePolicyTest):
 
         policy21_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name21,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
 
-        policy_name = 'policy31'
+        policy_name31 = get_random_name('policy31')
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
                   'dest_subnet': VN1_subnet_v4,
-                  'source_network': 'VN3',
+                  'source_network': self.VN3_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'deny',
                   'src_ports': 'any'
                  },
                  {'direction': '<>',
                   'protocol': 'any',
-                  'dest_network': 'VN1',
-                  'source_network': 'VN3',
+                  'dest_network': self.VN1_fixture.vn_name,
+                  'source_network': self.VN3_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
@@ -893,7 +894,7 @@ class TestPolicyAcl(BasePolicyTest):
 
         policy31_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name31,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
@@ -905,7 +906,7 @@ class TestPolicyAcl(BasePolicyTest):
                 vn_name=self.VN1_fixture.vn_name,
                 policy_obj={self.VN1_fixture.vn_name : [policy123_fixture.policy_obj]},
                 vn_obj={self.VN1_fixture.vn_name : self.VN1_fixture},
-                vn_policys=['policy123'],
+                vn_policys=[policy_name123],
                 project_name=self.project.project_name))
 
         VN2_policy_fixture = self.useFixture(
@@ -914,7 +915,7 @@ class TestPolicyAcl(BasePolicyTest):
                 vn_name=self.VN2_fixture.vn_name,
                 policy_obj={self.VN2_fixture.vn_name : [policy21_fixture.policy_obj]},
                 vn_obj={self.VN2_fixture.vn_name : self.VN2_fixture},
-                vn_policys=['policy21'],
+                vn_policys=[policy_name21],
                 project_name=self.project.project_name))
 
         VN3_policy_fixture = self.useFixture(
@@ -923,7 +924,7 @@ class TestPolicyAcl(BasePolicyTest):
                 vn_name=self.VN3_fixture.vn_name,
                 policy_obj={self.VN3_fixture.vn_name : [policy31_fixture.policy_obj]},
                 vn_obj={self.VN3_fixture.vn_name : self.VN3_fixture},
-                vn_policys=['policy31'],
+                vn_policys=[policy_name31],
                 project_name=self.project.project_name))
 
         # create VM
@@ -995,7 +996,7 @@ class TestPolicyAcl(BasePolicyTest):
             VN2_subnet_v6 = None
 
         # create policy
-        policy_name = 'policy12'
+        policy_name12 = get_random_name('policy12')
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
@@ -1007,8 +1008,8 @@ class TestPolicyAcl(BasePolicyTest):
                  },
                  {'direction': '<>',
                   'protocol': 'any',
-                  'dest_network': 'VN2',
-                  'source_network': 'VN1',
+                  'dest_network': self.VN2_fixture.vn_name,
+                  'source_network': self.VN1_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
@@ -1018,12 +1019,12 @@ class TestPolicyAcl(BasePolicyTest):
 
         policy12_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name12,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
 
-        policy_name = 'policy21'
+        policy_name21 = get_random_name('policy21')
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
@@ -1035,8 +1036,8 @@ class TestPolicyAcl(BasePolicyTest):
                  },
                  {'direction': '<>',
                   'protocol': 'any',
-                  'dest_network': 'VN1',
-                  'source_network': 'VN2',
+                  'dest_network': self.VN1_fixture.vn_name,
+                  'source_network': self.VN2_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
@@ -1046,7 +1047,7 @@ class TestPolicyAcl(BasePolicyTest):
 
         policy21_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name21,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
@@ -1058,7 +1059,7 @@ class TestPolicyAcl(BasePolicyTest):
                 vn_name=self.VN1_fixture.vn_name,
                 policy_obj={self.VN1_fixture.vn_name : [policy12_fixture.policy_obj]},
                 vn_obj={self.VN1_fixture.vn_name : self.VN1_fixture},
-                vn_policys=['policy12'],
+                vn_policys=[policy_name12],
                 project_name=self.project.project_name))
 
         VN2_policy_fixture = self.useFixture(
@@ -1067,7 +1068,7 @@ class TestPolicyAcl(BasePolicyTest):
                 vn_name=self.VN2_fixture.vn_name,
                 policy_obj={self.VN2_fixture.vn_name : [policy21_fixture.policy_obj]},
                 vn_obj={self.VN2_fixture.vn_name : self.VN2_fixture},
-                vn_policys=['policy21'],
+                vn_policys=[policy_name21],
                 project_name=self.project.project_name))
 
         # create VM
@@ -1119,7 +1120,7 @@ class TestPolicyAcl(BasePolicyTest):
             VMFixture(
                 connections=self.connections,
                 vn_obj=self.VN1_fixture.obj,
-                vm_name='VM12',
+                vm_name=get_random_name('VM12'),
                 project_name=self.project.project_name))
         assert self.VM12_fixture.verify_on_setup()
         self.VM12_fixture.wait_till_vm_is_up()
@@ -1159,7 +1160,7 @@ class TestPolicyAcl(BasePolicyTest):
             vm21_ipv6 = None
 
         # create policy
-        policy_name = 'policy1112'
+        policy_name1112 = get_random_name('policy1112')
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
@@ -1171,8 +1172,8 @@ class TestPolicyAcl(BasePolicyTest):
                  },
                  {'direction': '<>',
                   'protocol': 'any',
-                  'dest_network': 'VN1',
-                  'source_network': 'VN1',
+                  'dest_network': self.VN1_fixture.vn_name,
+                  'source_network': self.VN1_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
@@ -1183,12 +1184,12 @@ class TestPolicyAcl(BasePolicyTest):
 
         policy1112_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name1112,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
 
-        policy_name = 'policy1211'
+        policy_name1211 = get_random_name('policy1211')
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
@@ -1200,8 +1201,8 @@ class TestPolicyAcl(BasePolicyTest):
                  },
                  {'direction': '<>',
                   'protocol': 'any',
-                  'dest_network': 'VN1',
-                  'source_network': 'VN1',
+                  'dest_network': self.VN1_fixture.vn_name,
+                  'source_network': self.VN1_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
@@ -1212,12 +1213,12 @@ class TestPolicyAcl(BasePolicyTest):
 
         policy1211_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name1211,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
 
-        policy_name = 'policy1121'
+        policy_name1121 = get_random_name('policy1121')
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
@@ -1229,8 +1230,8 @@ class TestPolicyAcl(BasePolicyTest):
                  },
                  {'direction': '<>',
                   'protocol': 'any',
-                  'dest_network': 'VN2',
-                  'source_network': 'VN1',
+                  'dest_network': self.VN2_fixture.vn_name,
+                  'source_network': self.VN1_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
@@ -1241,12 +1242,12 @@ class TestPolicyAcl(BasePolicyTest):
 
         policy1121_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name1121,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
 
-        policy_name = 'policy2111'
+        policy_name2111 = get_random_name('policy2111')
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
@@ -1258,8 +1259,8 @@ class TestPolicyAcl(BasePolicyTest):
                  },
                  {'direction': '<>',
                   'protocol': 'any',
-                  'dest_network': 'VN1',
-                  'source_network': 'VN2',
+                  'dest_network': self.VN1_fixture.vn_name,
+                  'source_network': self.VN2_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
@@ -1270,7 +1271,7 @@ class TestPolicyAcl(BasePolicyTest):
 
         policy2111_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name2111,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
@@ -1285,7 +1286,7 @@ class TestPolicyAcl(BasePolicyTest):
                             policy1211_fixture.policy_obj, \
                             policy1121_fixture.policy_obj]},
                 vn_obj={self.VN1_fixture.vn_name : self.VN1_fixture},
-                vn_policys=['policy1112','policy1211','policy1121'],
+                vn_policys=[policy_name1112,policy_name1211,policy_name1121],
                 project_name=self.project.project_name))
 
         VN2_policy_fixture = self.useFixture(
@@ -1295,7 +1296,7 @@ class TestPolicyAcl(BasePolicyTest):
                 policy_obj={self.VN2_fixture.vn_name : \
                            [policy2111_fixture.policy_obj]},
                 vn_obj={self.VN2_fixture.vn_name : self.VN2_fixture},
-                vn_policys=['policy2111'],
+                vn_policys=[policy_name2111],
                 project_name=self.project.project_name))
 
         #Test traffic with the policies having cidr as src and dst,
@@ -1369,7 +1370,7 @@ class TestPolicyAcl(BasePolicyTest):
         VN1_subnet = self.VN1_fixture.get_cidrs()[0]
         VN2_subnet = self.VN2_fixture.get_cidrs()[0]
         # create policy
-        policy_name = 'policy12'
+        policy_name12 = get_random_name('policy12')
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
@@ -1381,15 +1382,15 @@ class TestPolicyAcl(BasePolicyTest):
                  },
                  {'direction': '<>',
                   'protocol': 'tcp',
-                  'dest_network': 'VN2',
-                  'source_network': 'VN1',
+                  'dest_network': self.VN2_fixture.vn_name,
+                  'source_network': self.VN1_fixture.vn_name,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
                   'src_ports': 'any'}]
 
         policy12_fixture = self.useFixture(
             PolicyFixture(
-                policy_name=policy_name,
+                policy_name=policy_name12,
                 rules_list=rules,
                 inputs=self.inputs,
                 connections=self.connections))
@@ -1401,7 +1402,7 @@ class TestPolicyAcl(BasePolicyTest):
                 vn_name=self.VN1_fixture.vn_name,
                 policy_obj={self.VN1_fixture.vn_name : [policy12_fixture.policy_obj]},
                 vn_obj={self.VN1_fixture.vn_name : self.VN1_fixture},
-                vn_policys=['policy12'],
+                vn_policys=[policy_name12],
                 project_name=self.project.project_name))
 
         VN2_policy_fixture = self.useFixture(
@@ -1410,7 +1411,7 @@ class TestPolicyAcl(BasePolicyTest):
                 vn_name=self.VN2_fixture.vn_name,
                 policy_obj={self.VN2_fixture.vn_name : [policy12_fixture.policy_obj]},
                 vn_obj={self.VN2_fixture.vn_name : self.VN2_fixture},
-                vn_policys=['policy12'],
+                vn_policys=[policy_name12],
                 project_name=self.project.project_name))
         # create VM
         self.setup_vm()

@@ -1426,8 +1426,8 @@ class FloatingipTestSanity2(base.FloatingIpBaseTest):
         return (True, None)
     
     @test.attr(type=['vcenter','vro'])
-    @preposttest_wrapper
     @set_attr("vro_based")
+    @preposttest_wrapper
     def test_fip_with_policy(self):
         '''Test interation of FIP with policy .
         '''
