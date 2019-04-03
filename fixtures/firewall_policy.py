@@ -16,9 +16,17 @@ class FirewallPolicyFixture(vnc_api_test.VncLibFixture):
         self.uuid = kwargs.get('uuid')
         self.scope = kwargs.get('scope') or 'local'
         self.rules = kwargs.get('rules') or list()
-        self.slo = kwargs.get('slo') or None
+        self.slo = kwargs.get('slo')
+        self.shared = kwargs.get('shared', False)
+        self.audited = kwargs.get('audited')
+        self.api_type = kwargs.get('api_type', 'contrail')
         self.created = False
         self.verify_is_run = False
+        if self.api_type == 'neutron':
+            self.client_h = self.neutron_handle
+            self.scope = 'local'
+        else:
+            self.client_h = self.vnc_h
 
     def setUp(self):
         super(FirewallPolicyFixture, self).setUp()
@@ -40,7 +48,7 @@ class FirewallPolicyFixture(vnc_api_test.VncLibFixture):
         super(FirewallPolicyFixture, self).cleanUp()
 
     def get_object(self):
-        return self.vnc_h.read_firewall_policy(id=self.uuid)
+        return self.client_h.read_firewall_policy(id=self.uuid)
 
     def get_draft(self):
         return self.vnc_h.read_firewall_policy(id=self.uuid, draft=True)
@@ -61,28 +69,52 @@ class FirewallPolicyFixture(vnc_api_test.VncLibFixture):
                 obj = self.vnc_h.read_firewall_policy(fq_name=self.fq_name)
                 self.uuid = obj.uuid
             except NoIdError:
-                self.uuid = self.vnc_h.create_firewall_policy(
+                self.uuid = self.client_h.create_firewall_policy(
                                      parent_type=self.parent_type,
                                      fq_name=self.fq_name,
-                                     rules=self.rules, slo=self.slo)
+                                     slo=self.slo,
+                                     name=self.name,
+                                     rules=self.rules,
+                                     shared=self.shared,
+                                     audited=self.audited)
                 self.created = True
                 self.logger.info('Created Firewall Policy %s(%s)'%(self.name,
                                                                   self.uuid))
         if not self.created:
             self.read()
 
+    def update(self, rules=None, shared=None, audited=None):
+        self.client_h.update_firewall_policy(
+                             uuid=self.uuid,
+                             rules=rules,
+                             shared=shared,
+                             audited=audited)
+        if shared:
+            self.shared = shared
+        if audited:
+            self.audited = audited
+        if rules:
+            self.rules = rules
+
     def add_firewall_rules(self, rules):
-        self.vnc_h.add_firewall_rules(self.uuid, rules)
+        self.client_h.add_firewall_rules(self.uuid, rules)
         self.rules.extend(rules)
 
     def remove_firewall_rules(self, rules):
-        self.vnc_h.remove_firewall_rules(self.uuid, rules)
+        self.client_h.remove_firewall_rules(self.uuid, rules)
         uuids = set(rule['uuid'] for rule in rules)
         self.rules = [rule for rule in self.rules if rule['uuid'] not in uuids]
+
+    def insert_firewall_rule(self, rule_uuid, insert_after=None,
+                             insert_before=None):
+        # if both insert_after and insert_before are specified
+        # insert_before takes precedence
+        self.neutron_handle.add_firewall_rule(self.uuid, rule_uuid,
+            insert_after=insert_after, insert_before=insert_before)
 
     def delete(self):
         self.logger.info('Deleting Firewall Policy %s(%s)'%(self.name, self.uuid))
         try:
-            self.vnc_h.delete_firewall_policy(id=self.uuid)
+            self.client_h.delete_firewall_policy(id=self.uuid)
         except NoIdError:
             pass

@@ -470,7 +470,6 @@ class TestInputs(object):
         self.vcenter_username = self.vcenter_password = None
         self.vcenter_compute = None
         self.vro_based = False
-        
         with open(self.input_file, 'r') as fd:
             self.config = yaml.load(fd)
         deployment_configs = self.config.get('deployment', {})
