@@ -357,6 +357,7 @@ class TestSubnets(BaseNeutronTest):
 
     # end test_subnet_rename
 
+    @test.attr(type=['ci_contrail_go_kolla_ocata_sanity'])
     @preposttest_wrapper
     def test_bug_1630829(self):
         ''' Create an IPAM ipam1 and create a VN with a subnet from ipam1
