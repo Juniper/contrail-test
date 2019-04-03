@@ -2432,6 +2432,7 @@ class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
         flow_timeout = 180
 
         # verify flow created
+        sleep(10)
         for i in xrange(0,3):
             flow_rec1 = inspect_h1.get_vna_fetchflowrecord(
                 nh=src_vm_fix.tap_intf[vn_fq_name]['flow_key_idx'],
