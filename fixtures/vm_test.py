@@ -675,7 +675,7 @@ class VMFixture(fixtures.Fixture):
            self.logger.error('VM %s verification in Opserver failed'
                               % (self.vm_name))
            return result
-
+        self.verify_is_run = True
         return result
     # end verify_on_setup
 
@@ -691,6 +691,7 @@ class VMFixture(fixtures.Fixture):
             self.logger.error('VM %s verification in Agent failed'
                               % (self.vm_name))
             result = result and False
+        self.verify_is_run = True
         return result
     # end mini_verify_on_setup
 
