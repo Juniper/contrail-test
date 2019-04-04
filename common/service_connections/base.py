@@ -60,9 +60,9 @@ class BaseServiceConnectionsTest(GenericTestBase):
         if client_role == "agent":
             node_ip = self.inputs.compute_control_ips[0]
             container = "agent"
-        elif client_role == "control":
+        elif client_role in ["control", "dns"]:
             node_ip = self.inputs.bgp_control_ips[0]
-            container = "control"
+            container = client_role
         elif client_role == "config":
             node_ip = self.inputs.cfgm_control_ips[0]
             container = "api-server"
@@ -189,7 +189,7 @@ class BaseServiceConnectionsTest(GenericTestBase):
             index = self.find_index(database_uve_dict, client_process)
             connection_info = database_uve_dict['NodeStatus']\
                             ['process_status'][index]['connection_infos']
-        elif service_name == "rabbitmq" and client_role == "control":
+        elif service_name == "rabbitmq" and client_role in ["control", "dns"]:
             connection_info = None
             if client_process == "contrail-control":
                 rabbitmq_server_address = self.cn_inspect[client_ip].\
@@ -248,13 +248,13 @@ class BaseServiceConnectionsTest(GenericTestBase):
                                                        container = "agent")
                 self.configure_server_list(ip, client_process,
                         section, option, server_list, container = "agent")
-        elif client_role == "control":
+        elif client_role in ["control", "dns"]:
             for ip in self.inputs.bgp_ips:
                 server_list = self.get_new_server_list(operation, ip,
                                                        cmd, server_ip, index,
-                                                       container = "control")
+                                                       container = client_role)
                 self.configure_server_list(ip, client_process,
-                        section, option, server_list, container = "control")
+                        section, option, server_list, container = client_role)
         elif client_role == "config":
             for ip in self.inputs.cfgm_ips:
                 server_list = self.get_new_server_list(operation, ip,

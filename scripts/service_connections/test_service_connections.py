@@ -48,10 +48,10 @@ class TestServiceConnections(BaseServiceConnectionsTest):
            subset of values configured in client .conf file
         '''
         valid_rabbitmq_servers = self.get_all_configured_servers("rabbitmq",
-                                                "control", "contrail-dns")[0]
+                                                "dns", "contrail-dns")[0]
         for node in self.inputs.bgp_control_ips:
             rabbitmq_server = self.get_all_in_use_servers("rabbitmq" ,\
-                                                "control", "contrail-dns",\
+                                                "dns", "contrail-dns",\
                                                  node)
             if rabbitmq_server and rabbitmq_server in valid_rabbitmq_servers:
                 self.logger.info("contrail-dns running on '%s' connected to"

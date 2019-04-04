@@ -162,15 +162,15 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         self.skip_if_setup_incompatible("control", 1, "openstack", 2)
         result = True
         in_use_server = self.get_all_in_use_servers("rabbitmq" ,
-                                        "control", "contrail-dns",
+                                        "dns", "contrail-dns",
                                         self.inputs.bgp_control_ips[0])
         self.add_remove_server("remove", in_use_server, "CONFIGDB",
-                        "rabbitmq_server_list", "control", "contrail-dns")
+                        "rabbitmq_server_list", "dns", "contrail-dns")
         self.addCleanup(self.add_remove_server, "add", in_use_server, "CONFIGDB",
-                        "rabbitmq_server_list", "control", "contrail-dns")
+                        "rabbitmq_server_list", "dns", "contrail-dns")
         for node in self.inputs.bgp_control_ips:
             new_in_use_server = self.get_all_in_use_servers(
-                                            "rabbitmq", "control",
+                                            "rabbitmq", "dns",
                                             "contrail-dns", node)
             if in_use_server == new_in_use_server:
                 self.logger.error("Connection unexpected. Either the server "
