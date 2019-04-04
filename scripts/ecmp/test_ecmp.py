@@ -877,7 +877,7 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
     # end test_svc_fate_sharing_basic_with_transparent
 
     @preposttest_wrapper
-    @skip_because(min_nodes=2)
+    @skip_because(min_nodes=2, address_family='v6')
     def test_svc_fate_sharing_basic_with_transparent_in_net_nat(self):
         """
         Description: Validate fate sharing in a multi inline service chain with 2 SIs, 1 SVM each  with in-network-nat.
@@ -986,7 +986,7 @@ class TestMultiInlineSVC(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTra
     # end test_svc_fate_sharing_in_2_multi_inline_svc_chains_transparent_in_net_transparent
 
     @preposttest_wrapper
-    @skip_because(min_nodes=2)
+    @skip_because(min_nodes=2, address_family='v6')
     def test_svc_fate_sharing_in_2_multi_inline_svc_chains_transparent_in_net_in_net_nat(self):
         """
         Description: Validate fate sharing in 2 multi inline service chains with 2 SIs, 1 SVM each.
