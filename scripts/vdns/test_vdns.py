@@ -687,18 +687,18 @@ class TestvDNS0(BasevDNSTest):
         assert cn_fixturemx.verify_on_setup()
         # DNS methos configued is default, DNS should resolve for external DNS
         # lookups.
-        cmd = 'nslookup juniper.net'
+        cmd = 'nslookup salesforce.com'
         vm_fix.run_cmd_on_vm(cmds=[cmd])
         result = vm_fix.return_output_cmd_dict[cmd]
         import re
-        m_obj = re.search(r"(juniper.net)", result)
+        m_obj = re.search(r"(salesforce.com)", result)
         if not m_obj:
             self.assertTrue(
                 False, 'record search is failed,please check syntax of the regular expression/NSlookup is failed')
         print m_obj.group(1)
         # Ipam DNS mentod is set to default, so DNS resolution to external
         # world needs to be resolved.
-        self.assertTrue(vm_fix.ping_with_certainty(ip='juniper.net'),
+        self.assertTrue(vm_fix.ping_with_certainty(ip='salesforce.com'),
                         "DNS name resolution failed when vdns set to default DNS method")
         # Modify Ipam with DNS Method to none.
         ipam_mgmt_obj = IpamType(ipam_dns_method='none')
@@ -780,8 +780,11 @@ class TestvDNS0(BasevDNSTest):
             self.logger.error("Failed to Transmit packet")
             assert False, "Failed to Transmit packet"
         sender.stop()
+        sleep(2)
         stop_tcpdump_for_vm_intf(self, session, pcap)
-        assert verify_tcpdump_count(self, session, pcap)
+        sleep(2)
+        # grep in pcap file with source port (1234) 
+        assert verify_tcpdump_count(self, session, pcap, grep_string="1234", exp_count=10)
 
 class TestvDNS1(BasevDNSTest):
 
@@ -904,7 +907,9 @@ class TestvDNS1(BasevDNSTest):
         vm_fixture = {}
         ipam_fixt = {}
 
-        for dns_name in dns_server_name_list:
+        dns_server_name_list1 = [ 'vdns501', 'vdns505', 'vdns516']
+
+        for dns_name in dns_server_name_list1:
             dns_server = IpamDnsAddressType(
                 virtual_dns_server_name=vdns_fix[dns_name].vdns_fq_name)
             ipam_mgmt_obj = IpamType(
@@ -925,8 +930,11 @@ class TestvDNS1(BasevDNSTest):
             vm_ip_dns_list[dns_name] = vm_fixture[dns_name].vm_ip
         # perform NS lookup for each level
         import re
-        for dns in dns_server_name_list:
-            for dns_name in dns_server_name_list:
+        sleep(300)
+        sleep(300)
+
+        for dns in dns_server_name_list1:
+            for dns_name in dns_server_name_list1:
                 cmd = 'nslookup ' + \
                     vm_dns_list[dns_name] + '.' + domain_name_list[dns_name]
                 self.logger.info(
