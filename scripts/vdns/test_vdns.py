@@ -687,18 +687,18 @@ class TestvDNS0(BasevDNSTest):
         assert cn_fixturemx.verify_on_setup()
         # DNS methos configued is default, DNS should resolve for external DNS
         # lookups.
-        cmd = 'nslookup juniper.net'
+        cmd = 'nslookup salesforce.com'
         vm_fix.run_cmd_on_vm(cmds=[cmd])
         result = vm_fix.return_output_cmd_dict[cmd]
         import re
-        m_obj = re.search(r"(juniper.net)", result)
+        m_obj = re.search(r"(salesforce.com)", result)
         if not m_obj:
             self.assertTrue(
                 False, 'record search is failed,please check syntax of the regular expression/NSlookup is failed')
         print m_obj.group(1)
         # Ipam DNS mentod is set to default, so DNS resolution to external
         # world needs to be resolved.
-        self.assertTrue(vm_fix.ping_with_certainty(ip='juniper.net'),
+        self.assertTrue(vm_fix.ping_with_certainty(ip='salesforce.com'),
                         "DNS name resolution failed when vdns set to default DNS method")
         # Modify Ipam with DNS Method to none.
         ipam_mgmt_obj = IpamType(ipam_dns_method='none')
