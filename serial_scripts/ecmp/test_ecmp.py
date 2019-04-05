@@ -75,8 +75,9 @@ class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         super(TestECMPRestart, cls).tearDownClass()
 
     @preposttest_wrapper
-    def test_ecmp_svc_in_network_nat_scale_max_instances(self):
+    def disabled_test_ecmp_svc_in_network_nat_scale_max_instances(self):
         """
+         Disabled: svc-montior no longer supports scaling of service instances.
          Description: Validate ECMP with service chaining in-network-nat mode datapath by incrementing the max instances
                     from 4 in steps of 4 till 16
          Test steps:
@@ -156,7 +157,7 @@ class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                                         container='agent')
 
         # Wait for service stability
-        cs_checker = ContrailStatusChecker()
+        cs_checker = ContrailStatusChecker(self.inputs)
         cluster_status, error_nodes = cs_checker.wait_till_contrail_cluster_stable(
                                           self.inputs.compute_ips)
         assert cluster_status, 'Hash of error nodes and services : %s' % (
