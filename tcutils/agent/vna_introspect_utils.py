@@ -16,8 +16,12 @@ class AgentInspect (VerificationUtilBase):
 
     def __init__(self, ip, port=8085, logger=LOG, inputs=None):
         port = int(port)
-        super(AgentInspect, self).__init__(ip, port, XmlDrv, logger=logger,
-            args=inputs)
+        if inputs:
+            super(AgentInspect, self).__init__(ip, port, XmlDrv, logger=logger,
+                args=inputs, protocol=inputs._protocol)
+        else:
+            super(AgentInspect, self).__init__(ip, port, XmlDrv, logger=logger,
+                args=inputs)
 
     def get_vna_domain(self, domain='default-domain'):
         pass

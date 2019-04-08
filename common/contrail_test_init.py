@@ -40,7 +40,7 @@ ORCH_DEFAULT_DOMAIN = {
     'vcenter': 'default-domain',
 }
 DEFAULT_CERT = '/etc/contrail/ssl/certs/server.pem'
-DEFAULT_PRIV_KEY = '/etc/contrail/ssl/private/server-privkey.pem'
+DEFAULT_PRIV_KEY = '/etc/contrail/ssl/private/ca-key.pem'
 DEFAULT_CA = '/etc/contrail/ssl/certs/ca-cert.pem'
 
 DEFAULT_CI_IMAGE = os.getenv('DEFAULT_CI_IMAGE', 'cirros')
@@ -470,6 +470,7 @@ class TestInputs(object):
         self.vcenter_username = self.vcenter_password = None
         self.vcenter_compute = None
         self.vro_based = False
+        
         with open(self.input_file, 'r') as fd:
             self.config = yaml.load(fd)
         deployment_configs = self.config.get('deployment', {})
@@ -940,6 +941,12 @@ class ContrailTestInit(object):
         self.connections = None
         self.logger = logger or contrail_logging.getLogger(__name__)
         self.inputs = TestInputs(input_file, self.logger)
+        if self.inputs.contrail_configs['SSL_ENABLE']:
+            self.inputs.certbundle = DEFAULT_CA
+            self.inputs.introspect_certfile = DEFAULT_CA
+            self.inputs.introspect_keyfile = DEFAULT_PRIV_KEY
+            self.inputs.api_protocol = True
+            self._protocol = 'https'
         self.stack_user = stack_user or self.stack_user
         self.stack_password = stack_password or self.stack_password
         self.stack_domain = stack_domain or self.stack_domain

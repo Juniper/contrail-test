@@ -203,7 +203,9 @@ class ContrailConnections():
         cfgm_ip = self.inputs.command_server_ip or self.inputs.api_server_ip
         if cfgm_ip:
             host = cfgm_ip
-        api_protocol = 'https' if self.inputs.command_server_ip else self.inputs.api_protocol
+        api_protocol = 'https' if self.inputs.command_server_ip or self.inputs._protocol else self.inputs.api_protocol
+        if self.inputs.api_protocol:
+            api_protocol = 'https'
         api_server_port = self.inputs.go_server_port if self.inputs.command_server_ip \
                           else self.inputs.api_server_port
         insecure = True if self.inputs.command_server_ip else self.inputs.insecure
@@ -221,21 +223,24 @@ class ContrailConnections():
         if host not in self.cn_inspect:
             self.cn_inspect[host] = ControlNodeInspect(host,
                                         self.inputs.bgp_port,
-                                        logger=self.logger)
+                                        logger=self.logger,
+                                        args=self.inputs)
         return self.cn_inspect[host]
 
     def get_dns_agent_inspect_handle(self, host):
         if host not in self.dnsagent_inspect:
             self.dnsagent_inspect[host] = DnsAgentInspect(host,
                                               self.inputs.dns_port,
-                                              logger=self.logger)
+                                              logger=self.logger,
+                                              args=self.inputs)
         return self.dnsagent_inspect[host]
 
     def get_vrouter_agent_inspect_handle(self, host):
         if host not in self.agent_inspect:
             self.agent_inspect[host] = AgentInspect(host,
                                            port=self.inputs.agent_port,
-                                           logger=self.logger)
+                                           logger=self.logger,
+                                           inputs=self.inputs)
         return self.agent_inspect[host]
 
     def get_opserver_inspect_handle(self, host):
@@ -246,7 +251,7 @@ class ContrailConnections():
             ip = collector_ip
         port = self.inputs.go_server_port if self.inputs.command_server_ip \
                else self.inputs.analytics_api_port
-        protocol = 'https' if self.inputs.command_server_ip else 'http'
+        protocol = 'https' if self.inputs.command_server_ip or self.inputs._protocol else 'http'
         insecure = True if self.inputs.command_server_ip else self.inputs.insecure
         if ip not in self.ops_inspects:
             self.ops_inspects[ip] = VerificationOpsSrv(ip,
