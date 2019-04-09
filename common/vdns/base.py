@@ -372,6 +372,15 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
                 self.logger.error(
                     'File of size %sB not transferred via scp ' % size)
             assert transfer_result, 'File not transferred via scp'
+
+        
+        sleep(20)
+
+        for vm_name in vm_list:
+            assert vm_fixture[vm_name].wait_till_vm_is_up()
+
+
+
         # Verify after controlnode/dns/agent/named process restart ping vm's by
         # using name.
         for vm_name in vm_list:
