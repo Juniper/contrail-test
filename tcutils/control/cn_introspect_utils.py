@@ -11,9 +11,10 @@ LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
 class ControlNodeInspect (VerificationUtilBase):
 
-    def __init__(self, ip, port=8083, logger=LOG, args=None):
+    def __init__(self, ip, port=8083, logger=LOG, args=None, protocol='http'):
+        
         super(ControlNodeInspect, self).__init__(ip, port, XmlDrv,
-                                                 logger=logger, args=args)
+                 logger=logger, args=args, protocol=protocol)
 
     def _join(self, *args):
         """Joins the args with ':'"""
@@ -351,9 +352,7 @@ class ControlNodeInspect (VerificationUtilBase):
 
 if __name__ == '__main__':
     cn = ControlNodeInspect('10.204.216.58')
-    import pdb; pdb.set_trace()
     v = cn.get_cn_ri_membership('default-domain:admin:net1:net1')
-    import pdb; pdb.set_trace()
     cn = ControlNodeInspect('10.84.14.9')
     print "ipam", cn.get_cn_config_ipam()
     print "policy", cn.get_cn_config_policy()
