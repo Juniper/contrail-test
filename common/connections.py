@@ -221,21 +221,27 @@ class ContrailConnections():
         if host not in self.cn_inspect:
             self.cn_inspect[host] = ControlNodeInspect(host,
                                         self.inputs.bgp_port,
-                                        logger=self.logger)
+                                        logger=self.logger,
+                                        args=self.inputs,
+                                        protocol=self.inputs.protocol)
         return self.cn_inspect[host]
 
     def get_dns_agent_inspect_handle(self, host):
         if host not in self.dnsagent_inspect:
             self.dnsagent_inspect[host] = DnsAgentInspect(host,
                                               self.inputs.dns_port,
-                                              logger=self.logger)
+                                              logger=self.logger,
+                                              args=self.inputs,
+                                              protocol=self.inputs.protocol)
         return self.dnsagent_inspect[host]
 
     def get_vrouter_agent_inspect_handle(self, host):
         if host not in self.agent_inspect:
             self.agent_inspect[host] = AgentInspect(host,
                                            port=self.inputs.agent_port,
-                                           logger=self.logger)
+                                           logger=self.logger,
+                                           inputs=self.inputs,
+                                           protocol=self.inputs.protocol)
         return self.agent_inspect[host]
 
     def get_opserver_inspect_handle(self, host):
@@ -246,7 +252,7 @@ class ContrailConnections():
             ip = collector_ip
         port = self.inputs.go_server_port if self.inputs.command_server_ip \
                else self.inputs.analytics_api_port
-        protocol = 'https' if self.inputs.command_server_ip else 'http'
+        protocol = 'https' if self.inputs.command_server_ip or self.inputs.protocol else 'http'
         insecure = True if self.inputs.command_server_ip else self.inputs.insecure
         if ip not in self.ops_inspects:
             self.ops_inspects[ip] = VerificationOpsSrv(ip,
@@ -298,7 +304,9 @@ class ContrailConnections():
                 cmd = 'netstat -antp | grep :8088 | grep LISTEN'
                 if 'LISTEN' in self.inputs.run_cmd_on_server(cfgm_ip, cmd, container='svc-monitor'):
                     self._svc_mon_inspect = SvcMonInspect(cfgm_ip,
-                                           logger=self.logger)
+                                           logger=self.logger,
+                                           args=self.inputs,
+                                           protocol=self.inputs.protocol)
                     break
         return self._svc_mon_inspect
 
@@ -307,7 +315,9 @@ class ContrailConnections():
             if self.k8s_cluster:
                 self._kube_manager_inspect = KubeManagerInspect(
                                         self.k8s_cluster['master_public_ip'],
-                                        logger=self.logger)
+                                        logger=self.logger,
+                                        args=self.inputs,
+                                        protocol=self.inputs.protocol)
                 return self._kube_manager_inspect
 
             for km_ip in self.inputs.kube_manager_ips:
