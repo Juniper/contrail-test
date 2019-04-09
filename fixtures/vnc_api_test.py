@@ -94,6 +94,12 @@ class VncLibFixture(fixtures.Fixture):
                         if self.inputs else False
         self.use_ssl = kwargs.get('use_ssl') or \
             self.inputs.api_protocol == 'https' if self.inputs else False
+        self.apicertfile = kwargs.get('apicertfile') or \
+            self.inputs.apicertfile if self.inputs else None
+        self.apikeyfile = kwargs.get('apikeyfile') or \
+            self.inputs.apikeyfile if self.inputs else None
+        self.apicafile = kwargs.get('apicafile') or \
+            self.inputs.apicafile if self.inputs else None
         self.authn_url = self.inputs.authn_url if self.inputs else \
                          kwargs.get('authn_url', None)
         if self.connections:
@@ -146,6 +152,9 @@ class VncLibFixture(fixtures.Fixture):
                               auth_port=self.auth_port,
                               auth_protocol=self.auth_protocol,
                               api_server_use_ssl=self.use_ssl,
+                              apicertfile=self.apicertfile,
+                              apikeyfile=self.apikeyfile,
+                              apicafile=self.apicafile,
                               auth_url=self.authn_url)
             if self.orchestrator == 'openstack':
                 self.auth_client = OpenstackAuth(

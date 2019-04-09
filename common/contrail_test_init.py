@@ -116,17 +116,40 @@ class TestInputs(object):
             keycertbundle = utils.getCertKeyCaBundle(keystone_bundle,
                             [self.keystonecertfile, self.keystonekeyfile,
                              self.keystonecafile])
+        protocol = 'https' if self.contrail_configs.get('SSL_ENABLE') else 'http'
+        self.api_protocol = 'https' if self.contrail_configs.get(
+            'CONFIG_API_SSL_ENABLE') else protocol
+        self.analytics_api_protocol = 'http' #Hardcoded until CEM-4334 is resolved
+        self.introspect_protocol = 'https' if self.contrail_configs.get(
+            'INTROSPECT_SSL_ENABLE') else protocol
+        if self.api_protocol == 'https':
+            self.apicertfile = self.contrail_configs.get(
+                'CONFIG_API_SERVER_CERTFILE') or DEFAULT_CERT
+            self.apikeyfile = self.contrail_configs.get(
+                'CONFIG_API_SERVER_KEYFILE') or DEFAULT_PRIV_KEY
+            self.apicafile = self.contrail_configs.get(
+                'CONFIG_API_SERVER_CA_CERTFILE') or DEFAULT_CA
+        if self.introspect_protocol == 'https':
+            self.introspect_certfile = self.contrail_configs.get(
+                'INTROSPECT_CERTFILE') or DEFAULT_CERT
+            self.introspect_keyfile = self.contrail_configs.get(
+                'INTROSPECT_KEYFILE') or DEFAULT_PRIV_KEY
+            self.introspect_cafile = self.contrail_configs.get(
+                'INTROSPECT_CA_CERTFILE') or DEFAULT_CA
+
         apicertbundle = None
-        if not self.api_insecure and self.api_protocol == 'https' and \
-           self.apicertfile and self.apikeyfile and self.apicafile:
+        if not self.api_insecure and self.api_protocol == 'https':
             api_bundle = '/tmp/' + get_random_string() + '.pem'
             apicertbundle = utils.getCertKeyCaBundle(api_bundle,
                             [self.apicertfile, self.apikeyfile,
                              self.apicafile])
         introspect_certbundle = None
-        if not self.introspect_insecure and self.introspect_protocol == 'https' and \
-           self.introspect_cafile:
-            introspect_certbundle = self.introspect_cafile
+        if not self.introspect_insecure and self.introspect_protocol == 'https':
+            introspect_bundle = '/tmp/' + get_random_string() + '.pem'
+            introspect_certbundle = utils.getCertKeyCaBundle(introspect_bundle,
+                [self.introspect_certfile, self.introspect_keyfile,
+                 self.introspect_cafile])
+#            introspect_certbundle = self.introspect_cafile
 
         self.certbundle = None
         if keycertbundle or apicertbundle or introspect_certbundle:
