@@ -4018,7 +4018,11 @@ class AnalyticsVerification(fixtures.Fixture):
     @retry(delay=5, tries=4)
     def verify_collector_connection_introspect(self,ip,port):
         conn=None
-        ops_inspect= VerificationOpsSrvIntrospect(ip,port)
+        ops_inspect= VerificationOpsSrvIntrospect(
+            ip=ip,
+            port=port,
+            inputs=self.inputs,
+            protocol=self.inputs.protocol)
         conn=ops_inspect.get_collector_connectivity()
         try:
            if (conn['status'] =='Established'):
@@ -4060,7 +4064,7 @@ class AnalyticsVerification(fixtures.Fixture):
                                 t_ype=None,
                                 name=None,
                                 description=None,
-                                node = None): 
+                                node = None):
         result = True                                                    
         try:
             obj1 = obj.get_attr('Node','process_status'
