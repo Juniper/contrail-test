@@ -9,9 +9,9 @@ LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
 class KubeManagerInspect(VerificationUtilBase):
 
-    def __init__(self, ip, port=8108, logger=LOG, args=None):
+    def __init__(self, ip, port=8108, logger=LOG, args=None, protocol='http'):
         super(KubeManagerInspect, self).__init__(ip, port, XmlDrv,
-                                                 logger=logger, args=args)
+                                                 logger=logger, args=args, protocol=protocol)
         self.ip = ip
 
     def _join(self, *args):

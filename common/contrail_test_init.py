@@ -40,7 +40,7 @@ ORCH_DEFAULT_DOMAIN = {
     'vcenter': 'default-domain',
 }
 DEFAULT_CERT = '/etc/contrail/ssl/certs/server.pem'
-DEFAULT_PRIV_KEY = '/etc/contrail/ssl/private/server-privkey.pem'
+DEFAULT_PRIV_KEY = '/etc/contrail/ssl/private/ca-key.pem'
 DEFAULT_CA = '/etc/contrail/ssl/certs/ca-cert.pem'
 
 DEFAULT_CI_IMAGE = os.getenv('DEFAULT_CI_IMAGE', 'cirros')
@@ -160,6 +160,21 @@ class TestInputs(object):
         self.database_services = [
             'contrail-database', 'contrail-database-nodemgr']
         self.correct_states = ['active', 'backup']
+        if 'SSL_ENABLE' in self.contrail_configs:
+            if self.contrail_configs['SSL_ENABLE']:
+                self.certbundle = self.contrail_configs.get('ca_cert') or DEFAULT_CA
+                self.introspect_certfile = self.contrail_configs.get('ca_cert') or DEFAULT_CA
+                self.introspect_keyfile = self.contrail_configs.get('ca_key') or DEFAULT_PRIV_KEY
+                self.protocol = 'https'
+                self.introspect_protocol = 'https'
+                self.api_protocol = 'https'
+                ## Change self.inputs.analytics_api_protocol to https after CEM-4664 is resolved
+                self.analytics_api_protocol = 'http'
+        else:
+                self.protocol = 'http'
+                self.introspect_protocol = 'http'
+                self.api_protocol = 'http'
+                self.analytics_api_protocol = 'http'
 
     def _set_auth_vars(self):
         '''

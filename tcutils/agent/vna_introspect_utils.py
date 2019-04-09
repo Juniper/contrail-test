@@ -14,10 +14,10 @@ LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
 class AgentInspect (VerificationUtilBase):
 
-    def __init__(self, ip, port=8085, logger=LOG, inputs=None):
+    def __init__(self, ip, port=8085, logger=LOG, inputs=None, protocol='http'):
         port = int(port)
         super(AgentInspect, self).__init__(ip, port, XmlDrv, logger=logger,
-            args=inputs)
+            args=inputs, protocol=protocol)
 
     def get_vna_domain(self, domain='default-domain'):
         pass
@@ -1377,7 +1377,6 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
 
 if __name__ == '__main__':
     v = AgentInspect('10.204.217.198')
-    import pdb; pdb.set_trace()
     v.get_vna_tap_interface_by_vm('3ce99e5b-2690-11e7-91c4-525400010001')
     v.get_vna_vm('710df53c-25f8-11e7-91c4-525400010001')
     x = v.get_vrouter_route_table('4')

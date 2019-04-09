@@ -92,8 +92,7 @@ class VncLibFixture(fixtures.Fixture):
         self.cacert = kwargs.get('cacert', None)
         self.insecure = kwargs.get('insecure') or self.inputs.insecure \
                         if self.inputs else False
-        self.use_ssl = kwargs.get('use_ssl') or \
-            self.inputs.api_protocol == 'https' if self.inputs else False
+        self.use_ssl = kwargs.get('use_ssl') if self.inputs else False
         self.authn_url = self.inputs.authn_url if self.inputs else \
                          kwargs.get('authn_url', None)
         if self.connections:
