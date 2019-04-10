@@ -286,6 +286,23 @@ class VNCApiInspect (VerificationUtilBase):
             vn_final_policy_list.append(vn_attach_policy_list[policy])
         return vn_final_policy_list
 
+
+    def get_multicast_vn_policys(self, project='admin',  domain='default-domain', vn='default-virtual-network', refresh=False):
+        '''
+        method: get_cs_vn_policys  find a vn associated policys
+        returns None if not found,or  a list of virtual network associated policys
+
+        '''
+        vn_final_policy_list = []
+        vn_attach_policy_list = {}
+        vn_obj = self.get_cs_vn(domain=domain,
+                                project=project, vn=vn, refresh=True)
+
+        return [ref['to'][-1] for ref in vn_obj['virtual-network'].get('multicast_policy_refs') or []]
+
+
+
+
     def get_cs_dns(self, vdns_name, domain='default-domain', refresh=False):
         p = self.try_cache('dns', [domain, vdns_name], refresh)
         if not p:
