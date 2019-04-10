@@ -86,7 +86,10 @@ class TestDetailedPolicy1(BasePolicyTest):
         test_vm2 = topo.vmc_list[1]  # 'vmc1'
         test_vm1_fixture = config_topo['vm'][test_vm1]
         test_vm2_fixture = config_topo['vm'][test_vm2]
-        test_vn = topo.vn_of_vm[test_vm1]  # 'vnet0'
+        test_vn = None
+        for vn in topo.vn_policy:
+            if 'policy0' in topo.vn_policy[vn]:
+                test_vn = vn
         test_vn_fix = config_topo['vn'][test_vn]
         test_vn_id = test_vn_fix.vn_id
         test_proto = 'icmp'
