@@ -76,7 +76,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
                           self.obj['vip_subnet_id'])
         except Exception as e:
             self.network_id = self.network_id
-        fip = self.network_h.list_floatingips(port_id=self.vip_port_id)
+        fip = [x for x in self.network_h.list_floatingips() if x['port_id'] == self.vip_port_id]
         if fip:
             self.fip_id = fip[0]['id']
             self.fip_net_id = fip[0]['floating_network_id']
