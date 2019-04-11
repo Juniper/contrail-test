@@ -185,6 +185,9 @@ class VerifySvcChain(ConfigSvcChain):
                 left_ri = False
                 if 'left' in ri_list:
                     left_ri = '%s:%s' % (vn_fq_name, vn_fq_name.split(':')[2])
+                if si.svc_template.service_template_properties.service_mode == 'transparent':
+                    if not inspect_h1.get_vna_tap_interface({'vn':vn_fq_name}):
+                        ri_list.remove(vn_fq_name + ':' + vn1.name)
 
                 for ri in ri_list:
                     dst_vm_ip = self.cn_inspect[new_controller].get_cn_route_table_entry(

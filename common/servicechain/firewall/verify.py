@@ -239,7 +239,11 @@ class VerifySvcFirewall(VerifySvcChain):
         assert result, msg
         # Svc chain 0
         for si_fix in si_fixtures:
-            for vn_fq_name in [ left_vn_fq_name, right_vn_fq_name]:
+            if si_fix.svc_template.service_template_properties.service_mode == 'in-network-nat':
+                vn_list = [left_vn_fq_name]
+            else:
+                vn_list = [left_vn_fq_name, right_vn_fq_name]
+            for vn_fq_name in vn_list:
                 check_si_as_nh=False
                 if si_fixtures.index(si_fix) == 0 and vn_fq_name == left_vn_fq_name:
                     check_si_as_nh=True
@@ -249,7 +253,11 @@ class VerifySvcFirewall(VerifySvcChain):
         # Svc chain 1
         if si_list1:
             for si_fix in si_fixtures1:
-                for vn_fq_name in [ left_vn_fq_name, right_vn_fq_name]:
+                if si_fix.svc_template.service_template_properties.service_mode == 'in-network-nat':
+                    vn_list = [left_vn_fq_name]
+                else:
+                    vn_list = [left_vn_fq_name, right_vn_fq_name]
+                for vn_fq_name in vn_list:
                     check_si_as_nh=False
                     if si_fixtures1.index(si_fix) == 0 and vn_fq_name == left_vn_fq_name:
                         check_si_as_nh=True
@@ -289,7 +297,11 @@ class VerifySvcFirewall(VerifySvcChain):
             errmsg1 = "Ping to Right VM %s from Left VM still passing" % right_vm_fixture.vm_ip
             # routes should still be present
             for si_fix in si_fixtures:
-                for vn_fq_name in [ left_vn_fq_name, right_vn_fq_name]:
+                if si_fix.svc_template.service_template_properties.service_mode == 'in-network-nat':
+                    vn_list = [left_vn_fq_name]
+                else:
+                    vn_list = [left_vn_fq_name, right_vn_fq_name]
+                for vn_fq_name in vn_list:
                     check_si_as_nh=False
                     if si_fixtures.index(si_fix) == 0 and vn_fq_name == left_vn_fq_name:
                         check_si_as_nh=True
@@ -312,7 +324,11 @@ class VerifySvcFirewall(VerifySvcChain):
         if si_list1:
             left_ri_ecmp = 2
         for si_fix in si_fixtures:
-            for vn_fq_name in [ left_vn_fq_name, right_vn_fq_name]:
+            if si_fix.svc_template.service_template_properties.service_mode == 'in-network-nat':
+                vn_list = [left_vn_fq_name]
+            else:
+                vn_list = [left_vn_fq_name, right_vn_fq_name]
+            for vn_fq_name in vn_list:
                 result, msg = self.validate_route_deletion(
                     vn_fq_name, si_fix, right_vm_fixture, src='left', intf_type='left', protocol='ServiceChain', left_ri_ecmp=left_ri_ecmp)
                 assert result, msg
@@ -340,7 +356,11 @@ class VerifySvcFirewall(VerifySvcChain):
         assert si_fixture.verify_hc_is_active()
 
         for si_fix in si_fixtures:
-            for vn_fq_name in [ left_vn_fq_name, right_vn_fq_name]:
+            if si_fix.svc_template.service_template_properties.service_mode == 'in-network-nat':
+                vn_list = [left_vn_fq_name]
+            else:
+                vn_list = [left_vn_fq_name, right_vn_fq_name]
+            for vn_fq_name in vn_list:
                 check_si_as_nh=False
                 if si_fixtures.index(si_fix) == 0 and vn_fq_name == left_vn_fq_name:
                     check_si_as_nh=True
