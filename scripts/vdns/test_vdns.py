@@ -415,23 +415,6 @@ class TestvDNS0(BasevDNSTest):
         self.verify_dns_record_order(record_order)
         return True
 
-    # until Bug #1866 is resolved this test is going to run for 1000 records.
-    @preposttest_wrapper
-    def test_vdns_zrecord_scaling(self):
-        '''This test tests vdns fixed record scaling
-            1. Create VDNS server object
-            2. Associate VDNS with IPAM
-            3. Launch VN with IPAM and launch VM in VN
-            4. Create 1000 records
-            5. Pic some random records for nslookup verification and it should pass
-        Pass criteria: Step 5 should pass
-        Maintainer: cf-test@juniper.net'''
-
-        record_order = 'random'
-        test_type = 'recordscaling'
-        record_num = 1000
-        self.verify_dns_record_order(record_order, test_type, record_num)
-        return True
 
     @preposttest_wrapper
     def test_vdns_with_fip(self):
@@ -707,7 +690,8 @@ class TestvDNS0(BasevDNSTest):
         self.vnc_lib.network_ipam_update(update_ipam)
         vm_fix.run_cmd_on_vm(cmds=[cmd])
         result1 = vm_fix.return_output_cmd_dict[cmd]
-        m_obj1 = re.search(r"(no\s*servers\s*could\s*be\s*reached)", result1)
+        # changes as per CEM-4607
+        m_obj1 = re.search(r"(salesforce.com)", result1)
         if not m_obj1:
             self.assertTrue(
                 False, 'record search is failed,please check syntax of the regular expression/NSlookup is failed')
