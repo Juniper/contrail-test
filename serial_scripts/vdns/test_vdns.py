@@ -33,6 +33,37 @@ import test
 from common.contrail_test_init import ContrailTestInit
 from tcutils.contrail_status_check import ContrailStatusChecker
 
+
+class TestvDNS0(BasevDNSTest):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestvDNS0, cls).setUpClass()
+
+    def runTest(self):
+        pass
+    #end runTest
+
+    # until Bug #1866 is resolved this test is going to run for 1000 records.
+    @preposttest_wrapper
+    def test_vdns_zrecord_scaling(self):
+        '''This test tests vdns fixed record scaling
+            1. Create VDNS server object
+            2. Associate VDNS with IPAM
+            3. Launch VN with IPAM and launch VM in VN
+            4. Create 1000 records
+            5. Pic some random records for nslookup verification and it should pass
+        Pass criteria: Step 5 should pass
+        Maintainer: cf-test@juniper.net'''
+
+        record_order = 'random'
+        test_type = 'recordscaling'
+        record_num = 1000
+        self.verify_dns_record_order(record_order, test_type, record_num)
+        return True
+
+
+
 class TestvDNSRestart(BasevDNSTest):
 
     @classmethod
@@ -789,6 +820,7 @@ class TestvDNS1(BasevDNSTest):
         '''
 
         ttl = 1000
+        raise self.skipTest("Skipping test case,till CEM-4604 is fixed.")
         project_fixture = self.useFixture(ProjectFixture(
             project_name=self.inputs.project_name, connections=self.connections))
         project_connections = project_fixture.get_project_connections()
@@ -936,6 +968,7 @@ class TestvDNS2(BasevDNSTest):
 
         ttl = 100
         # Number of VDNS servers
+        raise self.skipTest("Skipping test case,till CEM-4604 is fixed.")
         vdns_scale = 1000
         # Number of records per server
         record_num = 1
