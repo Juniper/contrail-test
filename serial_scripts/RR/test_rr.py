@@ -35,20 +35,26 @@ class TestBasicRR(BaseRRTest):
     def tearDownClass(cls):
         super(TestBasicRR, cls).tearDownClass()
 
-    @test.attr(type=['sanity'])    
+    # end test_basic_RR
+    @test.attr(type=['sanity'])
     @preposttest_wrapper
-    def test_basic_RR(self):
-        ''' Configure RR in one control node.
-            1. Verify mesh connections removed
-            2. Verify ping between VM's works
-        Pass criteria: Step 1 and 2 should pass
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
+    def test_process_restart_with_rr_set(self):
+        ''' Test to validate rr works fine 
+        with process restarts
+            1. Pick 2 VN's from resource pool which has one VM each
+            2. Set control node as RR
+            3. Ping from one VM to another VM
+            4. Restart process 'vrouter' and 'control' on setup
+            5. Ping again between VM's after process restart
+        Pass criteria: Step 2,3,4 and 5 should pass
         '''
         if len(set(self.inputs.bgp_ips)) < 3:
             self.logger.info(
                 "Skipping Test. At least 3 control node required to run the test")
             raise self.skipTest(
                 "Skipping Test. At least 3 control node required to run the test")
-        result = True
+
         vn1_name = get_random_name('vn1')
         vn1_subnets = ['192.168.1.0/24']
         vn1_vm1_name = get_random_name('vn1_vm1')
@@ -61,7 +67,6 @@ class TestBasicRR(BaseRRTest):
         assert vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
         assert vm2_fixture.ping_to_ip(vm1_fixture.vm_ip)
-
         # Take the first BGP node
         ctrl_node_name = self.inputs.bgp_names[0]
         ctrl_node_ip = self.inputs.host_data[ctrl_node_name]['control-ip']
@@ -90,69 +95,36 @@ class TestBasicRR(BaseRRTest):
                 self.logger.info("BGP connections are proper")
             else: 
                 self.logger.error("BGP connections are not proper")
-                assert False
-        assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
-        assert vm2_fixture.ping_to_ip(vm1_fixture.vm_ip)
-        return True
 
-    # end test_basic_RR
+        for compute_ip in self.inputs.compute_ips:
+            self.inputs.restart_service('contrail-vrouter-agent', [compute_ip],
+                                        container='agent')
+        for bgp_ip in self.inputs.bgp_ips:
+            self.inputs.restart_service('contrail-control', [bgp_ip],
+                                        container='control')
+        for cfgm_ip in self.inputs.cfgm_ips:
+            self.inputs.restart_service('contrail-api', [cfgm_ip],
+                                        container='api-server')
 
-    @test.attr(type=['sanity'])    
-    @preposttest_wrapper
-    def test_create_vm_after_RR_set(self):
-        ''' Configure RR in one control node.
-            1. Verify mesh connections removed
-            2. Verify ping between VM's works
-        Pass criteria: Step 1 and 2 should pass
-        '''
-        if len(set(self.inputs.bgp_ips)) < 3:
-            self.logger.info(
-                "Skipping Test. At least 3 control node required to run the test")
-            raise self.skipTest(
-                "Skipping Test. At least 3 control node required to run the test")
-        result = True
+        # Wait for cluster to be stable
+        cs_obj = ContrailStatusChecker(self.inputs)
+        clusterstatus, error_nodes = cs_obj.wait_till_contrail_cluster_stable()
+        assert clusterstatus, (
+            'Hash of error nodes and services : %s' % (error_nodes))
 
-        # Take the first BGP node
-        ctrl_node_name = self.inputs.bgp_names[0]
-        ctrl_node_ip = self.inputs.host_data[ctrl_node_name]['control-ip']
-        ctrl_node_host_ip = self.inputs.host_data[ctrl_node_name]['host_ip']
-        #set it as the RR
-        ctrl_fixture = self.useFixture(
-                control_node.CNFixture(
-                          connections=self.connections,
-                          inputs=self.inputs,
-                          router_name=ctrl_node_name,
-                          router_ip=ctrl_node_ip
-                          )) 
-        cluster_id = ipv4_to_decimal(ctrl_node_ip)
-       
-        if ctrl_fixture.set_cluster_id(cluster_id):
-            self.logger.info("cluster id set")
-        else:
-            self.logger.error("cluster id not set")
-            assert False
-        #Calculating connection matrix.The mesh connections should be removed
-        connection_dicts = get_connection_matrix(self.inputs,ctrl_node_name)
-        #Verifying bgp connections.The non-rr nodes should have only one bgp connection to RR
+        assert self.verification_after_process_restart_in_rr()
+        for cfgm_name in self.inputs.cfgm_names:
+            assert self.analytics_obj.verify_cfgm_uve_module_state\
+                        (self.inputs.collector_names[0],
+                        cfgm_name,'contrail-api')
         #RR should have bgp connections to both the non-rrs
         for entry in connection_dicts:
             if verify_peer_in_control_nodes(self.cn_inspect,entry,connection_dicts[entry],self.logger):
-                self.logger.info("BGP connections are proper")
+                self.logger.info("BGP connections are proper after restarts")
             else: 
-                self.logger.error("BGP connections are not proper")
-                assert False
-        vn1_name = get_random_name('vn1')
-        vn1_subnets = ['192.168.1.0/24']
-        vn1_vm1_name = get_random_name('vn1_vm1')
-        vn1_vm2_name = get_random_name('vn1_vm2')
-        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
-        assert vn1_fixture.verify_on_setup()
-        vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name)
-        vm2_fixture = self.create_vm(vn1_fixture, vn1_vm2_name)
+                self.logger.error("BGP connections are not proper after restarts")
         assert vm1_fixture.wait_till_vm_is_up()
         assert vm2_fixture.wait_till_vm_is_up()
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip)
         assert vm2_fixture.ping_to_ip(vm1_fixture.vm_ip)
-        return True
-
-    # end test_basic_RR
+# end test_process_restart_in_policy_between_vns
