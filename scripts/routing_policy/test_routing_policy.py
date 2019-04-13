@@ -436,7 +436,7 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'static', 'to_term':'add_ext_community', 'sub_to':'target:64512:44444'}
         rp = self.configure_term_routing_policy(config_dicts)
         assert self.verify_policy_in_control(vn_fixture, test_vm, search_ip = random_cidr, search_value = 'target:64512:44444')
-        config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'interface', 'to_term':'set_ext_community', 'sub_to':'target:64512:33333'} 
+        config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'static', 'to_term':'set_ext_community', 'sub_to':'target:64512:33333'} 
         rp = self.configure_term_routing_policy(config_dicts)
         assert self.verify_policy_in_control(vn_fixture, test_vm, search_ip = random_cidr, search_value = 'target:64512:33333'), 'Search term not found in introspect'
         config_dicts = {'vn_fixture':vn_fixture, 'from_term':'protocol', 'sub_from':'static', 'to_term':'med', 'sub_to':'444'}
