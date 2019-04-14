@@ -260,9 +260,14 @@ class ControlNodeInspect (VerificationUtilBase):
             return rt
         else:
             parshed_rt = []
-            for entry in rt:
-                if entry['encoding'] == encoding:
-                    parshed_rt.append(entry)
+            try:
+                for entry in rt:
+                    if entry['encoding'] == encoding:
+                        parshed_rt.append(entry)
+            except Exception as e:
+                #Entry came as dictionary
+                if rt['encoding'] == encoding:
+                    parshed_rt.append(rt)    
             return parshed_rt
 
     def policy_update(self, domain='default-domain', *arg):
