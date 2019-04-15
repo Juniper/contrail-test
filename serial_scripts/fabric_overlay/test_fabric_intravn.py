@@ -33,9 +33,10 @@ class TestFabricOverlay(BaseFabricTest):
         vm1.wait_till_vm_is_up()
         self.do_ping_mesh(bms_fixtures+[vm1])
 
+    # Commenting this test till CEM-3959, running the same messes DM
     @skip_because(bms=2)
     @preposttest_wrapper
-    def test_bms_movement_1(self):
+    def itest_bms_movement_1(self):
         first_node = self.inputs.bms_data.keys()[0]
         second_node = self.inputs.bms_data.keys()[1]
         vn = self.create_vn()
@@ -472,7 +473,7 @@ class TestFabricOverlay(BaseFabricTest):
             self.do_ping_mesh([bms1, bms2, vm1])
 
     @preposttest_wrapper
-    def test_restart_rabbitmq(self):
+    def itest_restart_rabbitmq(self):
         vn1 = self.create_vn()
         vm1 = self.create_vm(vn_fixture=vn1, image_name='cirros')
         bms1 = self.create_bms(bms_name=self.inputs.bms_data.keys()[0],
