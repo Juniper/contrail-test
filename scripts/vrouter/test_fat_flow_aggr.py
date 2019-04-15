@@ -45,7 +45,7 @@ class FatFlowAggr(BaseVrouterTest, BaseLBaaSTest):
         Maintainer: Ankitja@juniper.net 
 
         """
-        prefix_length = 25
+        prefix_length = 27
         ipv6 = False
         only_v6 = False
         prefix_length6 = 123
