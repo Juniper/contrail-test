@@ -230,7 +230,7 @@ class TestPolicyAcl(BasePolicyTest):
         rules = []
         rules = [{'direction': '<>',
                   'protocol': 'icmp',
-                  'dest_network': self.VN1_fixture.vn_name,
+                  'dest_network': self.VN2_fixture.vn_name,
                   'source_policy': policy_name3,
                   'dst_ports': 'any',
                   'simple_action': 'pass',
