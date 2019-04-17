@@ -348,7 +348,11 @@ for i in range(0,$numgrp):
 
         params = {}
 
-        src_ip = bms_fixture.static_ip
+        if hasattr(bms_fixture ,'static_ip'):
+            src_ip = bms_fixture.static_ip
+        else:
+            src_ip = '5.1.1.10'
+
         ip = {'dst': maddr ,'src': src_ip}
         params['ip'] = ip
         params['interface'] = interface
@@ -368,7 +372,7 @@ dip = ipaddress.ip_address(dip)
 payload = 'ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ'
 for i in range(0,$numgrp):
     a=IP(dst=str(dip),src='$sip')/UDP(dport=1501,sport=1500)/payload
-    send(a, iface='$int',inter=1.000000,count=10)
+    send(a, iface='$interface',inter=1.000000,count=10)
     dip = dip + 1
            ''')
 
@@ -776,7 +780,7 @@ class Evpnt6MultiVnBase(Evpnt6base):
             bms_ip = vn_ip + 10
             vn_subnets = [vn_subnet] 
 
-            self.vn_fixture = self.create_vn(vn_name=vn_name, vn_subnets=vn_subnets ,vxlan_id=self.vxlan_id, forwarding_mode=mode)
+            self.vn_fixture = self.create_vn(vn_name=vn_name, vn_subnets=vn_subnets ,vxlan_id=self.vxlan_id)
             self.vn_fixture.set_igmp_config()
             time.sleep(10)
             vm_fixture = self.create_vm(vn_fixture=self.vn_fixture ,image_name='ubuntu',vm_name=vm_name)
