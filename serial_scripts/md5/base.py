@@ -196,15 +196,18 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
                 # Verify the connection between all control nodes and MX(if
                 # present)
         host = self.inputs.bgp_ips[0]
-        cn_bgp_entry = self.cn_inspect[host].get_cn_bgp_neigh_entry()
+        cn_bgp_entry1 = self.cn_inspect[host].get_cn_bgp_neigh_entry()
+        cn_bgp_entry = []
         if not is_mx_present:
             if self.inputs.ext_routers:
-                for bgpnodes in cn_bgp_entry:
+                for bgpnodes in cn_bgp_entry1:
                     bgpnode = str(bgpnodes)
-                    for individual_bgp_node in self.inputs.ext_routers:
+                    for individual_bgp_node in self.inputs.inputs.bgp_control_ipp
+s:
                         if individual_bgp_node[0] in bgpnode:
-                            cn_bgp_entry.remove(bgpnodes)
+                            cn_bgp_entry.append(bgpnodes)
         str_bgp_entry = str(cn_bgp_entry)
+
         est = re.findall(' \'state\': \'(\w+)\', \'flap_count', str_bgp_entry)
         for ip in est:
             if not ('Established' in ip):
