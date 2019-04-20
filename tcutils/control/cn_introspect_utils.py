@@ -150,11 +150,16 @@ class ControlNodeInspect (VerificationUtilBase):
         p = self.dict_get(path)
         return EtreeToDict(xpath).get_all_entry(p)
 
-    def get_cn_route_table(self, ri_name):
+    def get_cn_route_table(self, ri_name=None, rt_name=None):
         '''Returns a routing table dictionary of a specifc routing instance,
         includes both the unicast and multicast table.
         '''
-        path = 'Snh_ShowRouteReq?name=%s' % ri_name
+        if ri_name:
+            path = 'Snh_ShowRouteReq?name=%s' % ri_name
+        elif rt_name:
+            path = 'Snh_ShowRouteReq?x=%s' % rt_name
+        else:
+            return None
         xpath = '/ShowRouteResp/tables/list/ShowRouteTable'
         p = self.dict_get(path)
         return EtreeToDict(xpath).get_all_entry(p)

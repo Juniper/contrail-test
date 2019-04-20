@@ -586,6 +586,15 @@ class TestInputs(object):
         self.ext_routers = []
         for rtr_name, address in test_configs.get('ext_routers', {}).iteritems():
             self.ext_routers.append((rtr_name, address))
+        self.local_asbr_info = []
+        for asbr_name, address in test_configs.get('local_asbr', {}).iteritems():
+            self.local_asbr_info.append((asbr_name, address))
+        self.remote_asbr_info = {}
+        remote_asbr_configs = test_configs.get('remote_asbr') or {}
+        for remote_asbr in remote_asbr_configs:
+          self.remote_asbr_info[remote_asbr] = {}
+          for key, value in remote_asbr_configs.get(remote_asbr, {}).iteritems():
+            self.remote_asbr_info[remote_asbr][key] = value
         self.fabric_gw_info = []
         for gw_name, address in test_configs.get('fabric_gw', {}).iteritems():
             self.fabric_gw_info.append((gw_name, address))
