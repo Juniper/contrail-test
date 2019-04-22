@@ -70,7 +70,12 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
     def setUpClass(cls):
         super(BaseFabricTest, cls).setUpClass()
         cls.vnc_h = cls.connections.orch.vnc_h
-        cls.bms = dict(); cls.spines = list(); cls.leafs = list()
+        cls.bms = dict()
+        cls.spines = list()
+        cls.leafs = list()
+        cls.border_leafs = list()
+        cls.erb_leafs = list()
+        cls.pnfs = list()
         cls.default_sg = cls.get_default_sg()
         cls.allow_default_sg_to_allow_all_on_project(cls.inputs.project_name)
         cls.current_encaps = cls.get_encap_priority()
@@ -96,6 +101,12 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
                 self.spines.append(device)
             elif role == 'leaf':
                 self.leafs.append(device)
+            elif role == 'border_leaf':
+                self.border_leafs.append(device)
+            elif role == 'erb_leaf':
+                self.erb_leafs.append(device)
+            elif role == 'pnf':
+                self.pnfs.append(device)
 
     def is_test_applicable(self):
         if not self.inputs.fabrics or not self.inputs.physical_routers_data \

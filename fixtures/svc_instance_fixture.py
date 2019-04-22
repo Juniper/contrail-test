@@ -20,15 +20,21 @@ class SvcInstanceFixture(fixtures.Fixture):
                  if_details,
                  max_inst=1,
                  static_route=None,
-                 availability_zone = None,
+                 availability_zone=None,
                  hc_list=None,
+                 virtualization_type=None,
+                 left_svc_vlan=None,
+                 right_svc_vlan=None,
+                 left_svc_asn_srx=None,
+                 left_svc_asn_qfx=None,
+                 right_svc_asn_qfx=None,
                  port_tuples_props=[]):
         '''
         svc_template : instance of ServiceTemplate
         '''
-        self.static_route = static_route or { 'management':None,
-                                              'left' : None,
-                                              'right': None}
+        self.static_route = static_route or {'management': None,
+                                             'left': None,
+                                             'right': None}
         self.port_tuples_props = port_tuples_props or []
 
         self.connections = connections
@@ -52,14 +58,21 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.already_present = False
         self.if_details = if_details
         self.max_inst = max_inst
+        self.virtualization_type = virtualization_type
+        self.left_svc_vlan = left_svc_vlan
+        self.right_svc_vlan = right_svc_vlan
+        self.left_svc_asn_srx = left_svc_asn_srx
+        self.left_svc_asn_qfx = left_svc_asn_qfx
+        self.right_svc_asn_qfx = right_svc_asn_qfx
         self.si = None
         self.svm_ids = []
         self.cs_svc_vns = []
         self.cs_svc_ris = []
         self.availability_zone = self.inputs.availability_zone or availability_zone
         self.svn_list = ['svc-vn-mgmt', 'svc-vn-left', 'svc-vn-right']
-        self.hc_list = hc_list or [] # List of dicts of eg: [{'uuid': '1', 'intf_type': 'left'},
-                                     #                       {'uuid': '2', 'intf_type': 'right'}]
+        # List of dicts of eg: [{'uuid': '1', 'intf_type': 'left'},
+        self.hc_list = hc_list or []
+        #                       {'uuid': '2', 'intf_type': 'right'}]
         self._vnc = self.connections.orch.vnc_h
         if self.inputs.verify_thru_gui():
             self.browser = connections.browser
@@ -142,7 +155,25 @@ class SvcInstanceFixture(fixtures.Fixture):
                 if_type = ServiceInstanceInterfaceType(
                     virtual_network=virtual_network)
                 si_prop.add_interface_list(if_type)
-
+            if self.virtualization_type:
+                si_prop.set_service_virtualization_type(
+                    self.virtualization_type)
+                kvp_array = []
+                kvp = KeyValuePair("left-svc-vlan", str(self.left_svc_vlan))
+                kvp_array.append(kvp)
+                kvp = KeyValuePair("right-svc-vlan", str(self.right_svc_vlan))
+                kvp_array.append(kvp)
+                left_svc_asns = str(self.left_svc_asn_srx) + \
+                    "," + str(self.left_svc_asn_qfx)
+                right_svc_asns = str(self.left_svc_asn_srx) + \
+                    "," + str(self.right_svc_asn_qfx)
+                kvp = KeyValuePair("left-svc-asns", left_svc_asns)
+                kvp_array.append(kvp)
+                kvp = KeyValuePair("right-svc-asns", right_svc_asns)
+                kvp_array.append(kvp)
+                kvps = KeyValuePairs()
+                kvps.set_key_value_pair(kvp_array)
+                svc_instance.set_annotations(kvps)
             svc_instance.set_service_instance_properties(si_prop)
             svc_instance.set_service_template(self.svc_template)
             if self.inputs.is_gui_based_config():
