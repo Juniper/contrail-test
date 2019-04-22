@@ -9,7 +9,9 @@ from lxml import etree
 from tcutils.verification_util import elem2dict
 import time
 
-NODE_PROFILES = ['juniper-mx', 'juniper-qfx10k', 'juniper-qfx5k', 'juniper-qfx5k-lean']
+NODE_PROFILES = ['juniper-mx', 'juniper-qfx10k',
+                 'juniper-qfx5k', 'juniper-qfx5k-lean', 'juniper-srx']
+
 
 class FabricUtils(object):
     def __init__(self, connections):
@@ -45,9 +47,12 @@ class FabricUtils(object):
                        for cred in fabric_dict['credentials']],
                    'overlay_ibgp_asn': fabric_dict['namespaces']['asn'][0]['min'],
                    'management_subnets': [{"cidr": mgmt["cidr"]}
-                       for mgmt in fabric_dict['namespaces']['management']]
-                  }
-        self.logger.info('Onboarding existing fabric %s %s'%(name, payload))
+                        for mgmt in fabric_dict['namespaces']['management']],
+                   'loopback_subnets': fabric_dict['namespaces']['loopback'],
+                   'pnf_servicechain_subnets': \
+                       fabric_dict['namespaces']['pnf_service_chain']
+                   }
+        self.logger.info('Onboarding existing fabric %s %s' %(name, payload))
         execution_id = self.vnc_h.execute_job(fq_name, payload)
         status, fabric = self._get_fabric_fixture(name)
         assert fabric, 'Create fabric seems to have failed'
@@ -209,7 +214,11 @@ class FabricUtils(object):
         payload = {'fabric_fq_name': fabric.fq_name, 'role_assignments': list()}
         for device, role in roles_dict.iteritems():
             if role == 'leaf':
-                routing_bridging_role = rb_roles.get(device.name, ['CRB-Access'])
+                routing_bridging_role = rb_roles.get(
+                    device.name, ['CRB-Access'])
+            elif role == 'pnf':
+                routing_bridging_role = rb_roles.get(
+                    device.name, ['PNF-Servicechain'])
             elif role == 'spine':
                 routing_bridging_role = rb_roles.get(device.name, ['CRB-Gateway',
                     'Route-Reflector'])

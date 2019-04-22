@@ -199,6 +199,18 @@ test_configuration:
               - dc_gw
               - dci_gw
               - crb_mcast_gw
+              - pnf_service_chain
+        srx1:
+            vendor: juniper
+            name  : srx1
+            mgmt_ip  : 10.0.0.21
+            role: pnf
+            left_qfx: qfx2
+            right_qfx: qfx3
+            left_qfx_intf: xe-0/0/0
+            right_qfx_intf: xe-0/0/0
+            local_left_intf: reth0
+            local_right_intf: reth1
 
     bms:
       node1:
@@ -331,6 +343,8 @@ test_configuration:
                 - 10.1.2.0/25
             loopback:
                 - 1.1.1.0/25
+            pnf_service_chain:
+                - 2.2.2.0/25
             asn:
                 - max: 64512
                   min: 64512
