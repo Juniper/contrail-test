@@ -80,15 +80,6 @@ class PortFixture(vnc_api_test.VncLibFixture):
     def setUp(self):
         super(PortFixture, self).setUp()
         if not self.uuid:
-            self.vn_obj = self.vnc_api_h.virtual_network_read(id=self.vn_id)
-            if self.api_type == 'neutron':
-                self._neutron_create_port()
-            else:
-                self._contrail_create_port()
-            self.created = True
-            #Sandipd:This code was crashing while creating port as part of
-            #vcenter gateway testing.Hence handled the exception as the mac
-            #not needed to be obtained always,its passed as an argument to the fixture
             try:
                 obj = self.vnc_h.read_virtual_machine_interface(fq_name=self.fq_name)
                 self.uuid = obj.uuid
