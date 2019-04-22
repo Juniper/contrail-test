@@ -29,11 +29,11 @@ class BMSFixture(fixtures.Fixture):
         self.password = kwargs.get('password') or bms_dict['password']
         self.namespace = get_random_name('ns')
         self.bms_ip = kwargs.get('bms_ip')   # BMS VMI IP
-        self.bms_ip_netmask = kwargs.get('bms_ip_netmask', 24)   # BMS VMI IP MASK
-        self.bms_gw_ip = kwargs.get('bms_gw_ip', None)   # BMS VMI IP MASK
+        self.bms_ip_netmask = kwargs.get('bms_ip_netmask', 26)   # BMS VMI IP MASK
+        self.vn_fixture = kwargs.get('vn_fixture')
+        self.bms_gw_ip = kwargs.get('bms_gw_ip', self.vn_fixture.get_subnets()[0]['gateway_ip'])   # BMS VMI IP MASK
         self.bms_mac = kwargs.get('bms_mac') # BMS VMI Mac
         self.static_ip = kwargs.get('static_ip', bool(not self.inputs.get_csn()))
-        self.vn_fixture = kwargs.get('vn_fixture')
         self.port_fixture = kwargs.get('port_fixture')
         self.fabric_fixture = kwargs.get('fabric_fixture')
         self.security_groups = kwargs.get('security_groups') #UUID List

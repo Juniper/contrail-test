@@ -27,9 +27,11 @@ class SvcTemplateFixture(fixtures.Fixture):
                  version=2,
                  service_mode='transparent',
                  flavor='contrail_flavor_2cpu',
-                 availability_zone_enable = False,
+                 availability_zone_enable=False,
                  svc_img_name=None,
-                 svc_scaling=None):
+                 svc_scaling=None,
+                 virtualization_type=None,
+                 service_appliance_set=None):
         self.orch = connections.orch
         self.vnc_lib_h = connections.vnc_lib
         self.domain_name = connections.domain_name
@@ -48,6 +50,8 @@ class SvcTemplateFixture(fixtures.Fixture):
         self.logger = self.inputs.logger
         self.connections = connections
         self.availability_zone_enable = None
+        self.virtualization_type = virtualization_type
+        self.service_appliance_set = service_appliance_set
         self.flavor = None
         self.already_present = False
         if version == 1:
@@ -96,9 +100,10 @@ class SvcTemplateFixture(fixtures.Fixture):
                 st['svc_type'] = self.service_type
                 self.orch.create_st(st)
                 svc_template = self.vnc_lib_h.service_template_read(
-                fq_name=self.st_fq_name)
+                    fq_name=self.st_fq_name)
             else:
-                domain = self.connections.vnc_lib_fixture.domain_read(fq_name=self.domain_fq_name)
+                domain = self.connections.vnc_lib_fixture.domain_read(
+                    fq_name=self.domain_fq_name)
                 svc_template = ServiceTemplate(
                     name=self.st_name, parent_obj=domain)
                 svc_properties = ServiceTemplateType()
@@ -111,7 +116,8 @@ class SvcTemplateFixture(fixtures.Fixture):
                     svc_properties.set_service_scaling(self.svc_scaling)
                     self.orch.get_flavor(self.flavor)
                     svc_properties.set_flavor(self.flavor)
-                    svc_properties.set_availability_zone_enable(self.availability_zone_enable)
+                    svc_properties.set_availability_zone_enable(
+                        self.availability_zone_enable)
     #            for itf in self.if_list:
                 for itf_type, val in self.if_details.iteritems():
                     shared_ip = val.get('shared_ip_enable', None)
@@ -122,12 +128,18 @@ class SvcTemplateFixture(fixtures.Fixture):
                         static_route_enable=static_route_enable)
                     if_type.set_service_interface_type(itf_type)
                     svc_properties.add_interface_type(if_type)
-    
+                if self.service_appliance_set:
+                    sas_obj = self.vnc_lib_h.service_appliance_set_read(
+                        id=self.service_appliance_set)
+                    svc_template.set_service_appliance_set(sas_obj)
+                    svc_properties.set_service_virtualization_type(
+                        self.virtualization_type)
                 svc_template.set_service_template_properties(svc_properties)
                 if self.inputs.is_gui_based_config():
                     self.webui.create_svc_template(self)
                 else:
-                    self.uuid = self.vnc_lib_h.service_template_create(svc_template)
+                    self.uuid = self.vnc_lib_h.service_template_create(
+                        svc_template)
                 svc_template = self.vnc_lib_h.service_template_read(
                     fq_name=self.st_fq_name)
         return svc_template
