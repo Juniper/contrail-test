@@ -1,3 +1,4 @@
+import random
 import vnc_api_test
 from tcutils.util import retry, get_random_name
 import json
@@ -181,6 +182,9 @@ class PortFixture(vnc_api_test.VncLibFixture):
                     pg_kv = vnc_api_test.KeyValuePair(key='vpg',
                         value=self.port_group_name)
                     kv_pairs.add_key_value_pair(pg_kv)
+            tor_kv_value = str(random.randint(4000, 4093))
+            tor_kv = vnc_api_test.KeyValuePair(key='tor_port_vlan_id', value=tor_kv_value)
+            kv_pairs.add_key_value_pair(tor_kv)
             vmi_obj.set_virtual_machine_interface_bindings(kv_pairs)
 
         if self.binding_vnic_type:
