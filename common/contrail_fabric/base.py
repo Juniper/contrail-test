@@ -70,7 +70,10 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
     def setUpClass(cls):
         super(BaseFabricTest, cls).setUpClass()
         cls.vnc_h = cls.connections.orch.vnc_h
-        cls.bms = dict(); cls.spines = list(); cls.leafs = list()
+        cls.bms = dict()
+        cls.spines = list()
+        cls.leafs = list()
+        cls.pnfs = list()
         cls.default_sg = cls.get_default_sg()
         cls.allow_default_sg_to_allow_all_on_project(cls.inputs.project_name)
         cls.current_encaps = cls.get_encap_priority()
@@ -96,6 +99,8 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
                 self.spines.append(device)
             elif role == 'leaf':
                 self.leafs.append(device)
+            elif role == 'pnf':
+                self.pnfs.append(device)
 
     def is_test_applicable(self):
         if not self.inputs.fabrics or not self.inputs.physical_routers_data \
@@ -158,6 +163,13 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         else:
            return interfaces_filtered, msg
 
+    def get_associated_prouters(self, bms_name):
+        bms_node = self.inputs.bms_data[bms_name]
+        devices = set()
+        for interface in bms_node['interfaces']:
+             devices.add(interface['tor'])
+        return [device for device in self.devices if device.name in devices]
+
     @classmethod
     def tearDownClass(cls):
         obj = FabricSingleton(cls.connections)
@@ -217,6 +229,7 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         self.logger.info('BMS %s:ARP check using %s : Got (%s, %s)' % (
             bms_fixture.name, search_term, ip, mac))
     # end validate_arp
+
     def create_sec_group(self, name, secgrpid=None, entries=None):
         secgrp_fixture = self.useFixture(SecurityGroupFixture(
             self.connections, self.inputs.domain_name,
@@ -230,7 +243,7 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         return self.useFixture(FabricFixture(connections=self.connections,
                                              **kwargs))
 
-    def create_logical_router(self, vn_fixtures, vni=None, **kwargs):
+    def create_logical_router(self, vn_fixtures, vni=None, devices=None, **kwargs):
         vn_ids = [vn.uuid for vn in vn_fixtures]
         vni = vni or str(get_random_vxlan_id(min=10000))
         self.logger.info('Creating Logical Router with VN uuids: %s, VNI %s'%(
@@ -238,7 +251,7 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         lr = self.useFixture(LogicalRouterFixture(
             connections=self.connections,
             connected_networks=vn_ids, vni=vni, **kwargs))
-        for spine in self.spines:
+        for spine in devices or self.spines:
             if kwargs.get('is_public_lr') == True:
                 if 'dc_gw' not in self.inputs.get_prouter_rb_roles(spine.name):
                     continue

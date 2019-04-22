@@ -3385,6 +3385,76 @@ class ContrailVncApi(object):
         prouter_obj.add_physical_role(role_obj)
         self._vnc.physical_router_update(prouter_obj)
 
+    def create_service_appliance_set(self, sas_name=None,
+            virtualization_type='physical-device'):
+        gsc_obj = self._vnc.global_system_config_read(
+            fq_name=['default-global-system-config'])
+        sas_name = get_random_name('sas')
+        sas_fq_name = ['default-global-system-config', sas_name]
+        sas_obj = ServiceApplianceSet(sas_name, gsc_obj)
+        sas_obj.set_service_appliance_set_virtualization_type(
+            virtualization_type)
+        sas_uuid = self._vnc.service_appliance_set_create(sas_obj)
+        return sas_uuid
+
+    def delete_service_appliance_set(self, sas_uuid):
+        return self._vnc.service_appliance_set_delete(id=sas_uuid)
+
+    def create_service_appliance_pnf(self, sas_id, pnf_device,
+            local_left_intf, local_right_intf, left_qfx, left_qfx_intf,
+            right_qfx, right_qfx_intf, virtualization_type='physical-device'):
+        default_gsc_name = 'default-global-system-config'
+        sa_name = get_random_name('pnf_sa')
+        sas_obj = self._vnc.service_appliance_set_read(id=sas_id)
+        sa_obj = ServiceAppliance(sa_name, sas_obj)
+        kvp_array = []
+        kvp = KeyValuePair("left-attachment-point",
+            ':'.join([default_gsc_name, left_qfx, left_qfx_intf]))
+        kvp_array.append(kvp)
+        kvp = KeyValuePair("right-attachment-point",
+            ':'.join([default_gsc_name, right_qfx, right_qfx_intf]))
+        kvp_array.append(kvp)
+        kvps = KeyValuePairs()
+        kvps.set_key_value_pair(kvp_array)
+        sa_obj.set_service_appliance_properties(kvps)
+        sa_obj.set_service_appliance_virtualization_type(
+            virtualization_type)
+        pnf_left_intf_obj = self._vnc.physical_interface_read(
+            fq_name=[default_gsc_name, pnf_device, local_left_intf])
+        attr = ServiceApplianceInterfaceType(interface_type='left')
+        sa_obj.add_physical_interface(pnf_left_intf_obj, attr)
+        pnf_right_intf_obj = self._vnc.physical_interface_read(
+            fq_name=[default_gsc_name, pnf_device, local_right_intf])
+        attr = ServiceApplianceInterfaceType(interface_type='right')
+        sa_obj.add_physical_interface(pnf_right_intf_obj, attr)
+        sa_uuid = self._vnc.service_appliance_create(sa_obj)
+        return sa_uuid
+
+    def delete_service_appliance(self, sa_uuid):
+        return self._vnc.service_appliance_delete(id=sa_uuid)
+
+    def create_port_tuple_pnf(self, si_id, left_lr, right_lr):
+        pt_name = get_random_name('pnf_pt')
+        si_obj = self._vnc.service_instance_read(id=si_id)
+        pt_obj = PortTuple(pt_name, parent_obj=si_obj)
+        left_lr_obj = self._vnc.logical_router_read(id=left_lr.uuid)
+        right_lr_obj = self._vnc.logical_router_read(id=right_lr.uuid)
+        pt_obj.add_logical_router(left_lr_obj)
+        pt_obj.add_logical_router(right_lr_obj)
+        kvp_array = []
+        kvp = KeyValuePair("left-lr", left_lr.uuid)
+        kvp_array.append(kvp)
+        kvp = KeyValuePair("right-lr", right_lr.uuid)
+        kvp_array.append(kvp)
+        kvps = KeyValuePairs()
+        kvps.set_key_value_pair(kvp_array)
+        pt_obj.set_annotations(kvps)
+        pt_uuid = self._vnc.port_tuple_create(pt_obj)
+        return pt_uuid
+
+    def delete_port_tuple(self, pt_uuid):
+        return self._vnc.port_tuple_delete(id=pt_uuid)
+
 class LBFeatureHandles:
     __metaclass__ = Singleton
 
