@@ -94,7 +94,10 @@ class JsonDrv (object):
 
     def load(self, url, retry=True):
         self.common_log("Requesting: %s" %(url))
-        resp = requests.get(url, headers=self._headers, verify=self.verify, timeout=self._timeout)
+        resp = requests.get(url,
+            headers=self._headers,
+            verify=self.verify,
+            timeout=self._timeout)
         if resp.status_code in [401, 403]:
             if retry:
                 self._auth()
@@ -114,7 +117,11 @@ class JsonDrv (object):
         self.common_log("Posting: %s, payload %s"%(url, payload))
         self._headers.update({'Content-type': 'application/json; charset="UTF-8"'})
         data = json.dumps(payload)
-        resp = requests.put(url, headers=self._headers, verify=self.verify, data=data, timeout=self._timeout)
+        resp = requests.put(url,
+            headers=self._headers,
+            verify=self.verify,
+            data=data,
+            timeout=self._timeout)
         if resp.status_code == 401:
             if retry:
                 self._auth()
@@ -127,7 +134,11 @@ class JsonDrv (object):
         self.common_log("Posting: %s, payload %s"%(url, payload))
         self._headers.update({'Content-type': 'application/json; charset="UTF-8"'})
         data = json.dumps(payload)
-        resp = requests.post(url, headers=self._headers, verify=self.verify, data=data, timeout=self._timeout)
+        resp = requests.post(url,
+            headers=self._headers,
+            verify=self.verify,
+            data=data,
+            timeout=self._timeout)
         if resp.status_code == 401:
             if retry:
                 self._auth()
@@ -163,8 +174,10 @@ class XmlDrv (object):
     def load(self, url, raw_data=False):
         self.common_log("Requesting: %s" %(url))
         try:
-            resp = requests.get(url, cert=self.client_cert,
-                verify=self.verify, timeout=self._timeout)
+            resp = requests.get(url,
+                cert=self.client_cert,
+                verify=self.verify,
+                timeout=self._timeout)
             output = etree.fromstring(resp.text) if not raw_data else resp.text
             self.log_xml(self.more_logger, output)
             return output
