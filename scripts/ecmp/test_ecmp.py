@@ -7,7 +7,7 @@ from vnc_api_test import *
 from vnc_api import vnc_api as my_vnc_api
 from nova_test import *
 from vm_test import *
-from tcutils.util import skip_because
+from tcutils.util import skip_because, get_an_ip
 from tcutils.wrappers import preposttest_wrapper
 from common.servicechain.firewall.verify import VerifySvcFirewall
 from common.ecmp.base import ECMPTestBase
@@ -506,7 +506,7 @@ class TestECMPwithFIP_1(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraf
             'We will create 3 VMs at the destination and make them share the same FIP address')
         self.logger.info('.' * 80)
         my_fip_name = 'fip'
-        my_fip = self.get_random_fip(self.left_vn_fixture)
+        my_fip = get_an_ip(self.left_vn_fixture.vn_subnets[0]['cidr'], offset=20)
 
         vm2_1 = self.create_vm(vn_fixture=self.right_vn_fixture,
                                vm_name='vm2_1')
