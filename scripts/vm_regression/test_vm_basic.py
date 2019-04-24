@@ -295,11 +295,11 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         vn1_fixture = self.create_vn(vn_name=vn1_name,orch=self.orchestrator)
         vn1_fixture.read()
         vm1_fixture = self.create_vm(vn_fixture=vn1_fixture,
-            image_name='cirros', vm_name=vn1_vm1_name, orch=self.orchestrator)
+            image_name='ubuntu', vm_name=vn1_vm1_name, orch=self.orchestrator)
         vm2_fixture = self.create_vm(vn_ids=[vn1_fixture.uuid],
-            image_name='cirros', vm_name=vn1_vm2_name)
+            image_name='ubuntu', vm_name=vn1_vm2_name)
         vm3_fixture = self.create_vm(vn_ids=[vn1_fixture.uuid],
-            image_name='cirros', vm_name=vn1_vm3_name)
+            image_name='ubuntu', vm_name=vn1_vm3_name)
         assert vm1_fixture.wait_till_vm_is_up()
         assert vm2_fixture.wait_till_vm_is_up()
         assert vm3_fixture.wait_till_vm_is_up()

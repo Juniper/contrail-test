@@ -1508,7 +1508,7 @@ class TestBasicVMVN4(BaseVnVmTest):
             result = False
             assert result, msg
         except Exception as e:
-            if "Request Failed" in str(e):
+            if "Request Failed" or "Bad port request" in str(e):
                 self.logger.info("Expected error raised. Error Logs: %s" % e)
             else:
                 self.logger.error("Some unexpected error happened. Error Logs: %s" % e)
