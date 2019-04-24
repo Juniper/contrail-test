@@ -624,6 +624,8 @@ for i in range(0,$numgrp):
 
         cmd = []
         cmd.append('deactivate protocols igmp-snooping')
+        cmd.append('deactivate groups __contrail_overlay_evpn_ucast_gateway__ protocols igmp-snooping')
+
         mx_handle = NetconfConnection(host = mgmt_ip)
         mx_handle.connect()
         time.sleep(30)
@@ -639,6 +641,7 @@ for i in range(0,$numgrp):
 
         cmd = []
         cmd.append('activate protocols igmp-snooping')
+        cmd.append('activate groups __contrail_overlay_evpn_ucast_gateway__ protocols igmp-snooping')
         mx_handle = NetconfConnection(host = mgmt_ip)
         mx_handle.connect()
         time.sleep(30)
@@ -657,6 +660,17 @@ for i in range(0,$numgrp):
                 available.append(device_dict)
         return available
     # end get_available_devices
+
+    def configure_igmp_on_vmi(self,vmi,flag):
+        '''
+            Configure IGMP on VMI:
+        '''
+
+        vmi_obj = self.vnc_lib.virtual_machine_interface_read(id=vmi)
+        vmi_obj.set_igmp_enable(flag)
+        self.vnc_h.virtual_machine_interface_update(vmi_obj)
+        return True
+
 
 
 class Evpnt6TopologyBase(Evpnt6base):

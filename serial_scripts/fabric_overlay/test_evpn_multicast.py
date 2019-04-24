@@ -362,7 +362,7 @@ class TestEvpnt6(Evpnt6TopologyBase):
 
 
  
-        #2 Enable igmp . Test type 6 functionality.
+        #2 Enable igmp at global level. Test type 6 functionality.
         #######################################################################################
 
 
@@ -391,6 +391,41 @@ class TestEvpnt6(Evpnt6TopologyBase):
         self.connections.vnc_lib_fixture.set_global_igmp_config(igmp_enable=False)
         time.sleep(30)
 
+        #3 Enable igmp on VMI level. Test type 6 functionality.
+        #######################################################################################
+
+        self.logger.info('#2 Enable igmp at VMI level. Test type 6 functionality.')
+
+        vmi1= vm_fixtures['vm1'].get_vmi_ids().values()[0]
+        vmi2= vm_fixtures['vm2'].get_vmi_ids().values()[0]
+        vmi3= vm_fixtures['vm3'].get_vmi_ids().values()[0]
+        self.configure_igmp_on_vmi(vmi1,True)
+        self.configure_igmp_on_vmi(vmi2,True)
+        self.configure_igmp_on_vmi(vmi3,True)
+
+        time.sleep(60)
+        time.sleep(60)
+        time.sleep(60)
+
+        traffic = {'stream1': {'src':['bms'],                 # Multicast source
+                             'rcvrs': ['vm1','vm2'],     # Multicast receivers
+                             'non_rcvrs': ['vm3'],        # Non Multicast receivers
+                             'maddr': '225.1.1.1',        # Multicast group address
+                             'mnet': '225.1.1.1/32',        # Multicast group address
+                             'source': '5.1.1.10',        # Multicast group address
+                             'pcount':10,                 # Num of packets
+                             'count':1                   # Num of packets
+                               }
+                  }
+
+        result = result & self.send_verify_mcastv2(vm_fixtures, traffic, igmp,vxlan)
+
+        self.configure_igmp_on_vmi(vmi1,False)
+        self.configure_igmp_on_vmi(vmi2,False)
+        self.configure_igmp_on_vmi(vmi3,False)
+        time.sleep(30)
+        self.connections.vnc_lib_fixture.set_global_igmp_config(igmp_enable=True)
+        time.sleep(30)
 
         return result
 
