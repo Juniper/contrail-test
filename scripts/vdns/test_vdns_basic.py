@@ -46,7 +46,7 @@ class TestvDNSBasic0(BasevDNSTest):
     # This Test test vdns functionality-- On VM launch agent should dynamically update dns records to dns agent.
     # This test verifies the same functionality and should able to refer VM by
     # a name.
-    @skip_because(hypervisor='docker',msg='Bug 1458794:DNS configuration issue in docker container')
+    @skip_because(hypervisor='docker',msg='Bug 1458794:DNS configuration issue in docker container',dpdk_cluster=True)
     @test.attr(type=['sanity', 'vcenter', 'suite1', 'vcenter_compute'])
     @preposttest_wrapper
     def test_vdns_ping_same_vn(self):
