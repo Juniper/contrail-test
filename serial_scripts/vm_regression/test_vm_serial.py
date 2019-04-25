@@ -361,7 +361,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     
     @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
-    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6',dpdk_cluster=True)
     def test_process_restart_in_policy_between_vns(self):
         ''' Test to validate that with policy having rule to check icmp fwding between VMs on different VNs , ping between VMs should pass
         with process restarts
@@ -852,6 +852,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     # end test_max_vm_flows
 
     @test.attr(type=['sanity', 'vcenter_compute', 'vcenter'])
+    @skip_because(dpdk_cluster=True)
     @preposttest_wrapper
     def test_underlay_broadcast_traffic_handling(self):
         ''' Test the underlay brocast traffic handling by vrouter. (Bug-1545229).

@@ -28,7 +28,7 @@ class TestQos(QosTestExtendedBase):
 
     @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
-    @skip_because(hypervisor='docker',msg='Bug 1654955')
+    @skip_because(hypervisor='docker',msg='Bug 1654955',dpdk_cluster=True)
     def test_qos_remark_dscp_on_vmi(self):
         ''' Create a qos config for remarking DSCP 1 to 10
             Have VMs A, B
