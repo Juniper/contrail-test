@@ -66,7 +66,7 @@ class TestDSNAT(BaseDSNAT):
 
 
     @attr(type=['sanity'])
-    @skip_because(min_nodes=2)
+    @skip_because(min_nodes=2,dpdk_cluster=True)
     @preposttest_wrapper
     def test_dsnat_tcp_basic(self):
         '''

@@ -1116,7 +1116,11 @@ def skip_because(*args, **kwargs):
                     skip = True
                     msg = "Skipped as this testcase cannot be executed with %s deployer " % self.inputs.deployer
                     raise testtools.TestCase.skipException(msg)
-
+            if 'dpdk_cluster' in kwargs:
+                if self.inputs.is_dpdk_cluster:
+                    skip = True
+                    msg = "Skipped as test is not supported dpdk_cluster " 
+                    raise testtools.TestCase.skipException(msg)
             return f(self, *func_args, **func_kwargs)
         return wrapper
     return decorator
