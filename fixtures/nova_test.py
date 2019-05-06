@@ -629,7 +629,8 @@ class NovaHelper(object):
         elif vn_ids:
             nics_list = [{'net-id': x} for x in vn_ids]
 
-        zone = zone + ":" + node_name if node_name else zone
+        if zone:
+            zone = zone + ":" + node_name if node_name else zone
         self.obj.servers.create(name=vm_name, image=image,
                                 security_groups=sg_ids,
                                 flavor=flavor, nics=nics_list,

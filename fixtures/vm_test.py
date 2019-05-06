@@ -154,7 +154,7 @@ class VMFixture(fixtures.Fixture):
         self.refresh = False
         self._vmi_ids = {}
         self.cfgm_ip = self.inputs.cfgm_ip
-        self.collector_ip = self.inputs.collector_ip
+        self.collector_ip = self.inputs.collector_ip[0] if isinstance(self.inputs.collector_ip, list) else self.inputs.collector_ip
     # end __init__
 
     def read(self,refresh=False):
@@ -1348,7 +1348,7 @@ class VMFixture(fixtures.Fixture):
         return self.ping_to_ip(*args, **kwargs)
     # end ping_to_ipv6
 
-    @retry(delay=1, tries=10)
+    @retry(delay=1, tries=15)
     def ping_with_certainty(self, ip=None, return_output=False, other_opt='',
                             size='56', count='5', expectation=True,
                             dst_vm_fixture=None, vn_fq_name=None, af=None):
