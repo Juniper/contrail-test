@@ -59,7 +59,6 @@ class VMFixture(fixtures.Fixture):
     def __init__(self, connections, vm_name=None, vn_obj=None,
                  vn_objs=[],
                  image_name='ubuntu', subnets=[],
-                 instance_type="virtual-server",
                  flavor=None,
                  node_name=None, sg_ids=[], count=1, userdata=None,
                  port_ids=[], fixed_ips=[], zone=None, vn_ids=[], uuid=None,*args,**kwargs):
@@ -84,15 +83,11 @@ class VMFixture(fixtures.Fixture):
         self.port_ids = port_ids
         self.fixed_ips = fixed_ips
         self.subnets = subnets
-        #Getting the image from orchestrator.For vcenter default image will be returned as tiny_core
-        #instead of ubuntu
-        self.image_name = self.inputs.get_ci_image(image_name) or self.orch.get_default_image(image_name)
-        #
+        self.image_name = self.inputs.get_ci_image(image_name) or image_name
         self.flavor = self.orch.get_default_image_flavor(self.image_name) or flavor
         self.project_name = connections.project_name
         self.project_id = connections.project_id
         self.domain_name = connections.domain_name
-        self.instance_type = instance_type
         self.vm_name = vm_name or get_random_name(self.project_name)
         self.vm_id = uuid
         self.vm_obj = None
@@ -154,7 +149,7 @@ class VMFixture(fixtures.Fixture):
         self.refresh = False
         self._vmi_ids = {}
         self.cfgm_ip = self.inputs.cfgm_ip
-        self.collector_ip = self.inputs.collector_ip
+        self.collector_ip = self.inputs.collector_ips[0]
     # end __init__
 
     def read(self,refresh=False):
@@ -183,7 +178,6 @@ class VMFixture(fixtures.Fixture):
             self.vn_fq_name = self.vn_fq_names[0]
             self.vm_ip_dict = self.get_vm_ip_dict()
             self.vm_ips = self.get_vm_ips()
-            self.vm_node_ip = True
             try:
                 #Avoid crashing in vcenter scenario where nova not present
                 self.image_id = self.vm_obj.image['id']
@@ -250,16 +244,6 @@ class VMFixture(fixtures.Fixture):
             self.image_name)
 
     @property
-    def os_type(self):
-        if not getattr(self, '_os_type', None):
-            self._os_type = 'linux'
-            cmd = 'cat /etc/issue'
-            output = self.run_cmd_on_vm(cmds=[cmd], as_sudo=True)
-            if output and output[cmd] and 'cirros' in output[cmd]:
-                self._os_type = 'cirros'
-        return self._os_type
-
-    @property
     def name(self):
         return self.vm_name
 
@@ -302,16 +286,9 @@ class VMFixture(fixtures.Fixture):
     def vm_ip(self):
         return self.vm_ips[0] if self.vm_ips else None
 
-    @retry(delay=1, tries=5)
     def verify_vm_launched(self):
         self.vm_launch_flag = True
-        #For vcenter sometimes the vm object not updated
-        #properly.It affects the verification in parallel run.
-        #Hence need to read the vm object before verification
-        if isinstance(self.orch,VcenterOrchestrator):
-            self.read(refresh=True)
         for vm_obj in self.vm_objs:
-            self.logger.info('VM name : %s' % vm_obj.name)
             if not self.orch.get_vm_detail(vm_obj):
                 self.logger.error('VM %s is not launched yet' % vm_obj.id)
                 self.vm_launch_flag = False
@@ -331,21 +308,14 @@ class VMFixture(fixtures.Fixture):
 
     @property
     def vm_node_ip(self):
-        if  not getattr(self, '_vm_node_ip', None):
+        if not getattr(self, '_vm_node_ip', None):
             self._vm_node_ip = self.inputs.get_host_ip(self.get_host_of_vm())
         return self._vm_node_ip
 
-    #need to set vm_node_ip after vcenter vmotion
-    @vm_node_ip.setter
-    def vm_node_ip(self, refresh=False):
-        if refresh:
-            self._vm_node_ip = self.inputs.get_host_ip(self.get_host_of_vm(refresh=True))
-        return self._vm_node_ip
-
-    def get_host_of_vm(self, vm_obj=None, refresh=False):
+    def get_host_of_vm(self, vm_obj=None):
         vm_obj = vm_obj or self.vm_obj
         attr = '_host_' + vm_obj.name
-        if refresh or not getattr(self, attr, None):
+        if not getattr(self, attr, None):
             setattr(self, attr, self.orch.get_host_of_vm(vm_obj))
         return getattr(self, attr, None)
 
@@ -439,15 +409,9 @@ class VMFixture(fixtures.Fixture):
         return self.vm_ip_dict
 
     def add_security_group(self, secgrp):
-        if self.inputs.vro_based:
-            port_id = self.tap_intf[self.vn_fq_name]['name']
-            return self.orch.add_security_group(port_id, secgrp)
         self.orch.add_security_group(vm_id=self.vm_obj.id, sg_id=secgrp)
 
     def remove_security_group(self, secgrp):
-        if self.inputs.vro_based:
-            port_id = self.tap_intf[self.vn_fq_name]['name']
-            return self.orch.remove_security_group(port_id, secgrp)
         self.orch.remove_security_group(vm_id=self.vm_obj.id, sg_id=secgrp)
 
     def verify_security_group(self, secgrp):
@@ -640,31 +604,24 @@ class VMFixture(fixtures.Fixture):
         if len(self.vm_ips) < 1:
             return False
 
-
         self.verify_vm_flag = True
         if self.inputs.verify_thru_gui():
-           self.webui.verify_vm(self)
+            self.webui.verify_vm(self)
         result = self.verify_vm_in_api_server()
         if not result:
-           self.logger.error('VM %s verification in API Server failed'
+            self.logger.error('VM %s verification in API Server failed'
                               % (self.vm_name))
-           return result
-
-        if self.instance_type == "baremetal":
-           self.logger.debug("Skipping VM %s verification for BMS_LCM setup in agent,vrouter,opserver"%(self.vm_name))
-           self.verify_is_run = True
-           return result
-
+            return result
         result = self.verify_vm_in_agent()
         if not result:
-           self.logger.error('VM %s verification in Agent failed'
+            self.logger.error('VM %s verification in Agent failed'
                               % (self.vm_name))
-           return result
+            return result
         result = self.verify_vm_in_vrouter()
         if not result:
-           self.logger.error('VM %s verification in Vrouter failed'
+            self.logger.error('VM %s verification in Vrouter failed'
                               % (self.vm_name))
-           return result
+            return result
         result = self.verify_vm_in_control_nodes()
         if not result:
             self.logger.error('Route verification for VM %s in Controlnodes'
@@ -672,9 +629,10 @@ class VMFixture(fixtures.Fixture):
             return result
         result = self.verify_vm_in_opserver()
         if not result:
-           self.logger.error('VM %s verification in Opserver failed'
+            self.logger.error('VM %s verification in Opserver failed'
                               % (self.vm_name))
-           return result
+            return result
+
         self.verify_is_run = True
         return result
     # end verify_on_setup
@@ -1127,7 +1085,6 @@ class VMFixture(fixtures.Fixture):
     def reset_state(self, state):
         self.vm_obj.reset_state(state)
 
-    @retry(delay=1, tries=5)
     def ping_vm_from_host(self, vn_fq_name, timeout=2):
         ''' Ping the VM metadata IP from the host
         '''
@@ -1348,7 +1305,7 @@ class VMFixture(fixtures.Fixture):
         return self.ping_to_ip(*args, **kwargs)
     # end ping_to_ipv6
 
-    @retry(delay=1, tries=10)
+    @retry(delay=1, tries=15)
     def ping_with_certainty(self, ip=None, return_output=False, other_opt='',
                             size='56', count='5', expectation=True,
                             dst_vm_fixture=None, vn_fq_name=None, af=None):
@@ -1589,7 +1546,7 @@ class VMFixture(fixtures.Fixture):
         return bgp_ips
     # end get_ctrl_nodes_in_rt_group
 
-    @retry(delay=2, tries=15)
+    @retry(delay=5, tries=20)
     def verify_vm_in_control_nodes(self):
         ''' Validate routes are created in Control-nodes for this VM
 
@@ -1787,9 +1744,6 @@ class VMFixture(fixtures.Fixture):
     def verify_vm_in_opserver(self):
         ''' Verify VM objects in Opserver.
         '''
-        if not self.analytics_obj.has_opserver():
-            self.logger.debug("OpServer is not enabled, skipping the test")
-            return True
         self.logger.debug("Verifying the vm in opserver")
         result = True
         self.vm_in_op_flag = True
@@ -2035,8 +1989,6 @@ class VMFixture(fixtures.Fixture):
              if check_orch:
                  assert self.verify_vm_not_in_orchestrator(), ('VM %s is still'
                     'seen in orchestrator' % (self.vm_name))
-             if self.instance_type == "baremetal":
-                 return True
              assert self.verify_vm_not_in_agent(), ('VM %s is still seen in '
                 'one or more agents' % (self.vm_name))
              assert self.verify_vm_not_in_control_nodes(), ('VM %s is still '
@@ -2312,7 +2264,7 @@ class VMFixture(fixtures.Fixture):
         elif type(status) == bool:
             return status
 
-    @retry(delay=5, tries=15)
+    @retry(delay=5, tries=10)
     def wait_till_vm_up(self):
         vm_status = self.orch.wait_till_vm_is_active(self.vm_obj)
         if type(vm_status) == tuple:
@@ -2784,15 +2736,12 @@ class VMFixture(fixtures.Fixture):
         return self.nova_h.wait_till_vm_is_up(self.vm_obj)
 
     def clear_arp(self, all_entries=True, ip_address=None, mac_address=None):
-        if self.os_type == 'cirros':
-            #cmd = 'ip link set arp off dev eth0; sudo ip link set arp on dev eth0'
-            return
         if ip_address or mac_address:
             (output, ip, mac) = self.get_arp_entry(ip_address, mac_address)
             cmd = 'arp -d %s' % (ip_address)
         elif all_entries:
             cmd = 'ip -s -s neigh flush all'
-        output = self.run_cmd_on_vm([cmd], as_sudo=True)
+        output = self.run_cmd_on_vm([cmd])
         return output
     # end clear_arp
 
@@ -2816,7 +2765,6 @@ class VMFixture(fixtures.Fixture):
 
     def migrate(self, compute):
         self.orch.migrate_vm(self.vm_obj, compute)
-        self.read(True)
 
     def start_tcpdump(self, interface=None, filters=''):
         ''' This is similar to start_tcpdump_for_vm_intf() in tcpdump_utils.py

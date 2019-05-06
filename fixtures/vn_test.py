@@ -47,7 +47,7 @@ class VNFixture(fixtures.Fixture):
                  forwarding_mode=None, vxlan_id=None, shared=False,
                  router_external=False, clean_up=True,
                  af=None, empty_vn=False, enable_dhcp=True,
-                 dhcp_option_list=None, disable_gateway=False,dns_nameservers_list=None,
+                 dhcp_option_list=None, disable_gateway=False,
                  uuid=None, sriov_enable=False, sriov_vlan=None,
                  sriov_provider_network=None,ecmp_hash=None,*args,**kwargs):
         self.connections = connections
@@ -119,7 +119,6 @@ class VNFixture(fixtures.Fixture):
         self.dhcp_option_list = dhcp_option_list
         self.ecmp_hash = ecmp_hash
         self.disable_gateway = disable_gateway
-        self.dns_nameservers_list = dns_nameservers_list
         self.vn_port_list=[]
         self.vn_with_route_target = []
         self.ri_ref = None
@@ -227,7 +226,7 @@ class VNFixture(fixtures.Fixture):
                     vrf_id_dict.update({ip:vrf_id})
             self._vrf_ids = vrf_id_dict
         return self._vrf_ids
-	# end get_vrf_ids
+        # end get_vrf_ids
 
     @property
     def vrf_ids(self):
@@ -308,8 +307,7 @@ class VNFixture(fixtures.Fixture):
                                                 sriov_enable=self.sriov_enable,
                                                 sriov_vlan=self.sriov_vlan,
                                                 sriov_provider_network=self.sriov_provider_network,
-                                                disable_gateway=self.disable_gateway,
-                                                dns_nameservers_list=self.dns_nameservers_list)
+                                                disable_gateway=self.disable_gateway)
                 if self.obj:
                     self.logger.info('Created VN %s' %(self.vn_name))
                     self.created = True #Introducing this flag to make sure if
@@ -469,25 +467,25 @@ class VNFixture(fixtures.Fixture):
         # end if
 
         # Configure route target
-        if self.rt_number is not None:
+        if self.rt_number:
             self.add_route_target()
             self.vn_with_route_target.append(self.uuid)
 
         # Configure forwarding mode
-        if self.forwarding_mode is not None:
+        if self.forwarding_mode:
             self.add_forwarding_mode(
                 self.project_obj.fq_name, self.vn_name, self.forwarding_mode)
 
         # Configure vxlan_id
-        if self.vxlan_id is not None:
+        if self.vxlan_id:
             self.set_vxlan_id()
 
         # Configure address_allocation_mode
-        if self.address_allocation_mode is not None:
+        if self.address_allocation_mode:
             self.set_address_allocation_mode()
 
         # Configure ecmp_hash
-        if self.ecmp_hash is not None:
+        if self.ecmp_hash:
             self.set_ecmp_hash()
 
         # Populate the VN Subnet details
@@ -495,7 +493,7 @@ class VNFixture(fixtures.Fixture):
             self.vn_subnet_objs = self.quantum_h.get_subnets_of_vn(self.uuid)
 
         # Configure IP Fabric provider network
-        if self.ip_fabric is not None:
+        if self.ip_fabric:
             ip_fab_vn_fq_name_str = "default-domain:default-project:ip-fabric"
             ip_fab_vn_obj = self.vnc_lib_h.virtual_network_read(fq_name_str=
                                                         ip_fab_vn_fq_name_str)
@@ -506,7 +504,7 @@ class VNFixture(fixtures.Fixture):
     def create_subnet(self, vn_subnet, ipam_fq_name=None):
         if isinstance(self.orchestrator,VcenterOrchestrator) :
             raise Exception('vcenter: subnets not supported')
-        self.quantum_h.create_subnet(vn_subnet, self.uuid, ipam_fq_name,dns_nameservers=self.dns_nameservers_list)
+        self.quantum_h.create_subnet(vn_subnet, self.uuid, ipam_fq_name)
         self.vn_subnets.append(vn_subnet)
         self.vn_subnet_objs = self.get_subnets()
 
@@ -1119,10 +1117,6 @@ class VNFixture(fixtures.Fixture):
     def verify_vn_in_opserver(self):
         '''Verify vn in the opserver'''
 
-        if not self.analytics_obj.has_opserver():
-            self.logger.debug("OpServer is not enabled, skipping the test")
-            return True
-
         self.logger.debug("Verifying the vn in opserver")
         res = self.analytics_obj.verify_vn_link(self.vn_fq_name)
         self.op_verification_flag = res
@@ -1405,8 +1399,9 @@ class VNFixture(fixtures.Fixture):
         else:
             if not self.orchestrator.delete_vn(self.obj):
                 self.logger.warn("Deleting VN %s failed..Will retry" %
-                                     (self.vn_name))
+                                 (self.vn_name))
                 return False
+        # endif
         return True
     # end _delete_vn
 
@@ -1456,10 +1451,8 @@ class VNFixture(fixtures.Fixture):
 
     def bind_policies(self, policy_fq_names, vn_id=None, reset=True):
         vn_id = vn_id or self.uuid
-        if  self.inputs.vro_based:
-            self.api_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.uuid)
-            self.orchestrator.add_network_policy_to_vn(self.vn_name, policy_fq_names)
-            net_rsp = self.vnc_lib_h.virtual_network_update(self.api_vn_obj)
+        if  self.inputs.slave_orchestrator == 'vro':
+            self.orch.add_network_policy_to_vn(self.vn_name, policy_fq_names)
         elif  isinstance(self.orchestrator,VcenterOrchestrator) or self.option == 'contrail':
             self.api_vn_obj = self.vnc_lib_h.virtual_network_read(id=self.uuid)
             if reset:
@@ -1507,8 +1500,8 @@ class VNFixture(fixtures.Fixture):
 
     def unbind_policies(self, vn_id=None, policy_fq_names=[]):
         vn_id = vn_id or self.uuid
-        if  self.inputs.vro_based:
-            self.orchestrator.remove_network_policy_from_vn(self.vn_name, policy_fq_names)
+        if  self.inputs.slave_orchestrator == 'vro':
+            self.orch.remove_network_policy_from_vn(self.vn_name, policy_fq_names)
         if isinstance(self.orchestrator,VcenterOrchestrator) or self.option == 'contrail':
             if policy_fq_names == []:
                 self.api_vn_obj.set_network_policy_list([],True)
@@ -1952,6 +1945,7 @@ class VNFixture(fixtures.Fixture):
         fat_flow_protos = vn_obj.get_virtual_network_fat_flow_protocols()
         return fat_flow_protos
 
+    @retry(delay=3, tries=5)
     def verify_routing_instance_snat(self):
         '''
             Verify the routing instance fabric SNAT flag is same as its virtual network flag
@@ -2074,4 +2068,3 @@ class MultipleVNFixture(fixtures.Fixture):
 
     def get_all_fixture_obj(self):
         return map(lambda (name, fixture): (name, fixture.obj), self._vn_fixtures)
-
