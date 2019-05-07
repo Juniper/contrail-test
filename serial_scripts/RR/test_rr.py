@@ -38,7 +38,7 @@ class TestBasicRR(BaseRRTest):
     # end test_basic_RR
     @test.attr(type=['sanity'])
     @preposttest_wrapper
-    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6',dpdk_cluster = True)
     def test_process_restart_with_rr_set(self):
         ''' Test to validate rr works fine 
         with process restarts
