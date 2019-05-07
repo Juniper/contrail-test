@@ -184,6 +184,7 @@ class VMFixture(fixtures.Fixture):
             self.vm_ip_dict = self.get_vm_ip_dict()
             self.vm_ips = self.get_vm_ips()
             self.vm_node_ip = True
+            self.get_local_ip(refresh)
             try:
                 #Avoid crashing in vcenter scenario where nova not present
                 self.image_id = self.vm_obj.image['id']
