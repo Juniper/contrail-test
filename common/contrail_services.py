@@ -10,6 +10,7 @@ CONTRAIL_SERVICES_CONTAINER_MAP = {
     'query-engine': ['analytics_query-engine', 'contrail-query-engine', 'analytics_queryengine',
                      'analytics_database_query-engine', 'analytics_database_queryengine'],
     'collector': ['analytics_collector', 'contrail-collector'],
+    'agent-dpdk': ['agent-dpdk'],
     'agent': ['contrail-agent', 'vrouter-agent', 'contrail-vrouter-agent', 'vrouter_agent'],
     'webui': ['webui_web', 'contrail-webui_'],
     'webui-middleware': ['webui_job', 'contrail-webui-middleware'],
