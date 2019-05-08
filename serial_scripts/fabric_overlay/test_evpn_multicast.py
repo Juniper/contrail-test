@@ -875,7 +875,7 @@ class TestEvpnt6MultiVn(Evpnt6MultiVnBase):
 
         result = True
         group_count = 1
-        vn_count = 31
+        vn_count = 5
 
         vxlan = random.randrange(400, 405)
         vm_fixtures = self.configure_evpn_mvn_topology(vxlan,vn_count)
