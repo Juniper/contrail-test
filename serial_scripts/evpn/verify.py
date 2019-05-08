@@ -2014,7 +2014,15 @@ class VerifyEvpnCases():
         result = verify_tcpdump_count(self, session, pcap, exp_count=10,mac=self.mac2)
         self.logger.info('Will restart compute  services now')
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter', [compute_ip],
+            if self.inputs.is_dpdk_cluster:
+                self.inputs.stop_service('contrail-vrouter-agent', [compute_ip],
+                                         container='agent')
+                self.inputs.restart_service('contrail-vrouter-agent-dpdk', [compute_ip],
+                                            container='agent-dpdk')
+                self.inputs.start_service('contrail-vrouter-agent', [compute_ip],
+                                          container='agent')
+            else:
+                self.inputs.restart_service('contrail-vrouter', [compute_ip],
                                         container='agent')
         sleep(10)
         self.logger.info(

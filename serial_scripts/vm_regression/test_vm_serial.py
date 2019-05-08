@@ -361,7 +361,7 @@ class TestBasicVMVN0(BaseVnVmTest):
     
     @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
-    @skip_because(orchestrator = 'vcenter',address_family = 'v6',dpdk_cluster=True)
+    @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_process_restart_in_policy_between_vns(self):
         ''' Test to validate that with policy having rule to check icmp fwding between VMs on different VNs , ping between VMs should pass
         with process restarts
@@ -424,7 +424,15 @@ class TestBasicVMVN0(BaseVnVmTest):
         assert vm1_fixture.ping_with_certainty(vm2_fixture.vm_ip)
 
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter-agent', [compute_ip],
+            if self.inputs.is_dpdk_cluster:
+                self.inputs.stop_service('contrail-vrouter-agent', [compute_ip],
+                                         container='agent')
+                self.inputs.restart_service('contrail-vrouter-agent-dpdk', [compute_ip],
+                                            container='agent-dpdk')
+                self.inputs.start_service('contrail-vrouter-agent', [compute_ip],
+                                          container='agent')
+            else:
+                self.inputs.restart_service('contrail-vrouter-agent', [compute_ip],
                                         container='agent')
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control', [bgp_ip],

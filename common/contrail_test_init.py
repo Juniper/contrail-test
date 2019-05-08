@@ -764,6 +764,8 @@ class TestInputs(object):
                 container = next((container for container in containers
                                   if name in container), None)
                 if container:
+                    if 'dpdk' in container and 'dpdk' not  in name:
+                        continue
                     host_dict['containers'][service] = container
                     containers.remove(container)
                     break
@@ -1202,6 +1204,7 @@ class ContrailTestInit(object):
                'contrail-database': 'analytics-cassandra',
                'contrail-database-nodemgr': 'analyticsdb-nodemgr',
                'contrail-vrouter-agent': 'agent',
+               'contrail-vrouter-agent-dpdk': 'agent-dpdk',
                'contrail-vrouter-nodemgr': 'vrouter-nodemgr',
                'contrail-control': 'control',
                'contrail-control-nodemgr': 'control-nodemgr',

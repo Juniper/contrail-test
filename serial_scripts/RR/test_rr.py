@@ -97,8 +97,17 @@ class TestBasicRR(BaseRRTest):
                 self.logger.error("BGP connections are not proper")
 
         for compute_ip in self.inputs.compute_ips:
-            self.inputs.restart_service('contrail-vrouter-agent', [compute_ip],
+            if self.inputs.is_dpdk_cluster:
+                self.inputs.stop_service('contrail-vrouter-agent', [compute_ip],
+                                         container='agent')
+                self.inputs.restart_service('contrail-vrouter-agent-dpdk', [compute_ip],
+                                            container='agent-dpdk')
+                self.inputs.start_service('contrail-vrouter-agent', [compute_ip],
+                                          container='agent')
+            else:
+                self.inputs.restart_service('contrail-vrouter-agent', [compute_ip],
                                         container='agent')
+
         for bgp_ip in self.inputs.bgp_ips:
             self.inputs.restart_service('contrail-control', [bgp_ip],
                                         container='control')
