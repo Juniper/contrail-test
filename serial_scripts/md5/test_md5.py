@@ -56,7 +56,7 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
             return
 
     @preposttest_wrapper
-    def test_create_md5(self):
+    def create_md5(self):
         """
         Description: Verify md5 with allow specific protocol on all ports and policy with allow all between VN's
         """
@@ -65,7 +65,7 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
     #end create_md5
 
     @preposttest_wrapper
-    def test_add_delete_md5(self):
+    def add_delete_md5(self):
         """
         Description: Verify md5 with add,delete and specific protocol on all ports and policy with allow all between VN's
         """
@@ -74,7 +74,7 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
     #end add_delete_md5
 
     @preposttest_wrapper
-    def test_different_keys_md5(self):
+    def different_keys_md5(self):
         """
         Description: Verify md5 with add,delete and specific protocol on all ports and policy with allow all between VN's
         """
@@ -83,7 +83,7 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
     #end different_keys_md5
 
     @preposttest_wrapper
-    def test_check_per_peer(self):
+    def check_per_peer(self):
         """
         Description: Verify per peer md5 and specific protocol on all ports and policy with allow all between VN's
         """
@@ -92,7 +92,7 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
     #end check_per_peer   
 
     @preposttest_wrapper
-    def test_add_delete_per_peer(self):
+    def add_delete_per_peer(self):
         """
         Description: Verify add delete per peer md5 and specific protocol on all ports and policy with allow all between VN's
         """
@@ -101,7 +101,7 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
     #end add_delete_per_peer
 
     @preposttest_wrapper
-    def test_diff_keys_per_peer(self):
+    def diff_keys_per_peer(self):
         """
         Description: Verify different keys per peer md5 and specific protocol on all ports and policy with allow all between VN's
         """
@@ -110,7 +110,7 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
     #end diff_keys_per_peer
        
     @preposttest_wrapper
-    def test_precedence_per_peer(self):
+    def precedence_per_peer(self):
         """
         Description: Verify precedence per peer md5 and specific protocol on all ports and policy with allow all between VN's
         """
@@ -119,7 +119,7 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
     #end precedence_per_peer
     @preposttest_wrapper
 
-    def test_iter_keys_per_peer(self):
+    def iter_keys_per_peer(self):
         """
         Description: Verify iteration of same keys per peer md5 and specific protocol on all ports and policy with allow all between VN's
         """
