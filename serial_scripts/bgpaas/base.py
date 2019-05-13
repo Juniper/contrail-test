@@ -119,6 +119,9 @@ class LocalASBase(test_v1.BaseTestCase_v1):
 
     # update the bgp router with local-as value passed on
     def update_bgp_router(self, bgpaas_vm1, bgpaas_fixture):
+        #toDO skiranh: getting bgp router ref is taken a few extra seconds.
+        #adding sleep temporarily
+        sleep(10)
         bgp_router_uuid = self.vnc_lib.bgp_as_a_service_read(
             id=bgpaas_fixture.uuid).get_bgp_router_refs()[0]['uuid']
         bgp_router = self.vnc_lib.bgp_router_read(id=bgp_router_uuid)
@@ -202,6 +205,9 @@ class LocalASBase(test_v1.BaseTestCase_v1):
             self.detach_vmi_from_bgpaas,
             port2['id'],
             bgpaas2_fixture)
+        #toDO skiranh: getting bgp router ref is taken a few extra seconds.
+        #adding sleep temporarily
+        sleep(10)
         bgp_router1_uuid = self.vnc_lib.bgp_as_a_service_read(
             id=bgpaas1_fixture.uuid).get_bgp_router_refs()[0]['uuid']
         bgp_router1 = self.vnc_lib.bgp_router_read(id=bgp_router1_uuid)
@@ -211,6 +217,9 @@ class LocalASBase(test_v1.BaseTestCase_v1):
         bgp_router1.set_bgp_router_parameters(rparam1)
         self.vnc_lib.bgp_router_update(bgp_router1)
 
+        #toDO skiranh: getting bgp router ref is taken a few extra seconds.
+        #adding sleep temporarily
+        sleep(10)
         bgp_router2_uuid = self.vnc_lib.bgp_as_a_service_read(
             id=bgpaas2_fixture.uuid).get_bgp_router_refs()[0]['uuid']
         bgp_router2 = self.vnc_lib.bgp_router_read(id=bgp_router2_uuid)
