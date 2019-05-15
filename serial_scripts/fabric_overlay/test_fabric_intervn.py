@@ -43,19 +43,23 @@ class TestFabricEvpnType5(BaseFabricTest, VerifyEVPNType5):
            Create untagged BMS instances on respective VNs
            Check ping connectivity across all the instances
         '''
+        self.inputs.set_af('dual')
+        self.addCleanup(self.inputs.set_af, 'v4')
         bms_fixtures = list(); bms_vns = dict()
         vn1 = self.create_vn()
         vn2 = self.create_vn()
-        for bms in self.inputs.bms_data.keys():
+        for bms in self.get_bms_nodes():
             bms_vns[bms] = self.create_vn()
         self.create_logical_router([vn1, vn2]+bms_vns.values())
-        vm1 = self.create_vm(vn_fixture=vn1, image_name='cirros')
-        vm2 = self.create_vm(vn_fixture=vn2, image_name='cirros')
-        for bms in self.inputs.bms_data.keys():
+        vm1 = self.create_vm(vn_fixture=vn1, image_name='ubuntu')
+        vm2 = self.create_vm(vn_fixture=vn2, image_name='ubuntu')
+        vlan = 3
+        for bms in self.get_bms_nodes():
             bms_fixtures.append(self.create_bms(
                 bms_name=bms,
-                vn_fixture=bms_vns[bms],
-                security_groups=[self.default_sg.uuid]))
+                tor_port_vlan_tag=vlan,
+                vn_fixture=bms_vns[bms]))
+            vlan = vlan + 1
         vm1.wait_till_vm_is_up()
         self.do_ping_mesh(bms_fixtures+[vm1, vm2])
 
@@ -72,11 +76,11 @@ class TestFabricEvpnType5(BaseFabricTest, VerifyEVPNType5):
         vlan = 10
         bms_fixtures = list(); bms_vns = dict()
         vn = self.create_vn()
-        for bms in self.inputs.bms_data.keys():
+        for bms in self.get_bms_nodes():
             bms_vns[bms] = self.create_vn()
         vm1 = self.create_vm(vn_fixture=vn, image_name='cirros')
         self.create_logical_router([vn]+bms_vns.values())
-        for bms in self.inputs.bms_data.keys():
+        for bms in self.get_bms_nodes():
             bms_fixtures.append(self.create_bms(
                 bms_name=bms,
                 vn_fixture=bms_vns[bms], vlan_id=vlan))
@@ -84,6 +88,7 @@ class TestFabricEvpnType5(BaseFabricTest, VerifyEVPNType5):
         vm1.wait_till_vm_is_up()
         self.do_ping_mesh(bms_fixtures+[vm1])
 
+    @preposttest_wrapper
     def test_evpn_type_5_vxlan_traffic_between_vn(self):
         '''
             Configure Encapsulation order as VxLAN, MPLSoverGRE, MPLSoverUDP
@@ -104,9 +109,9 @@ class TestFabricEvpnType5(BaseFabricTest, VerifyEVPNType5):
         vm3 = self.create_vm(vn_fixture=vn3)
         vm4 = self.create_vm(vn_fixture=vn4)
         bms1 = self.create_bms(
-                bms_name=random.choice(self.inputs.bms_data.keys()),
-                vn_fixture=vn2,
-                security_groups=[self.default_sg.uuid])
+                bms_name=random.choice(self.get_bms_nodes()),
+                tor_port_vlan_tag=10,
+                vn_fixture=vn2)
         lr1.verify_on_setup()
         lr2.verify_on_setup()
         self.check_vms_booted([vm11, vm12, vm2, vm3, vm4])
@@ -156,17 +161,17 @@ class TestFabricEvpnType5(BaseFabricTest, VerifyEVPNType5):
         vm3 = self.create_vm(vn_fixture=vn3, image_name='cirros',
               node_name=self.inputs.compute_names[1])
         bms1 = self.create_bms(
-                bms_name=random.choice(self.inputs.bms_data.keys()),
-                vn_fixture=vn1,
-                security_groups=[self.default_sg.uuid])
-        lr = self.create_logical_router([vn1, vn2], vni=70001)
+                bms_name=random.choice(self.get_bms_nodes()),
+                tor_port_vlan_tag=10,
+                vn_fixture=vn1)
+        lr = self.create_logical_router([vn1, vn2, vn3], vni=70001)
         lr.verify_on_setup()
         self.check_vms_booted([vm1, vm2, vm3])
         self.do_ping_mesh([vm1, vm2, vm3, bms1])
 
         self.logger.info(
             'Will disassociate VN2 from the LR. Traffic between the BMS and VM should fail')
-        lr.remove_interface([vn2_fixture.vn_id])
+        lr.remove_interface([vn2.vn_id])
         self.logger.debug(
             "Sleeping for 30 secs to allow config change to be pushed to the Spine")
         self.sleep(30)
@@ -201,9 +206,9 @@ class TestFabricEvpnType5(BaseFabricTest, VerifyEVPNType5):
         vm2 = self.create_vm(vn_fixture=vn2, image_name='cirros',
               node_name=self.inputs.compute_names[1])
         bms1 = self.create_bms(
-                bms_name=random.choice(self.inputs.bms_data.keys()),
-                vn_fixture=vn2,
-                security_groups=[self.default_sg.uuid])
+                bms_name=random.choice(self.get_bms_nodes()),
+                tor_port_vlan_tag=10,
+                vn_fixture=vn2)
         lr.verify_on_setup()
         vm1.wait_till_vm_is_up()
         vm2.wait_till_vm_is_up()
@@ -214,9 +219,7 @@ class TestFabricEvpnType5(BaseFabricTest, VerifyEVPNType5):
         self.logger.debug(
             "Sleeping for 30 secs to allow config change to be pushed to the Spine")
         self.sleep(30)
-        self.do_ping_test(vm1, vm2.vm_ip, expectation=False)
-        self.do_ping_test(bms1, vm1.vm_ip, expectation=False)
-        self.do_ping_test(bms1, vm2)
+        self.do_ping_mesh([bms1, vm1, vm2])
         # end test_evpn_type_5_vm_to_bms_remove_vni_from_lr
 
     #Dont think changing RT is supported, Believe RT can only be specified during create and cannot be updated
@@ -242,9 +245,9 @@ class TestFabricEvpnType5(BaseFabricTest, VerifyEVPNType5):
         vm2 = self.create_vm(vn_fixture=vn2, image_name='cirros',
               node_name=self.inputs.compute_names[0])
         bms1 = self.create_bms(
-                bms_name=random.choice(self.inputs.bms_data.keys()),
-                vn_fixture=vn2,
-                security_groups=[self.default_sg.uuid])
+                bms_name=random.choice(self.get_bms_nodes()),
+                tor_port_vlan_tag=10,
+                vn_fixture=vn2)
         lr.verify_on_setup()
         vm1.wait_till_vm_is_up()
         vm2.wait_till_vm_is_up()

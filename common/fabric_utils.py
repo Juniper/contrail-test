@@ -199,12 +199,6 @@ class FabricUtils(object):
             if device['name'] == device_name:
                 return device['role']
 
-    def is_bms_on_node(self, device_name):
-        for name, prop in self.inputs.bms_data.iteritems():
-            for interface in prop.get('interfaces') or []:
-                if interface['tor'] == device_name:
-                    return True
-
     def assign_roles(self, fabric, devices, rb_roles=None, wait_for_finish=True):
         ''' eg: rb_roles = {device1: ['CRB-Access'], device2: ['CRB-Gateway', 'DC-Gateway']}'''
         rb_roles = rb_roles or dict()
@@ -217,9 +211,8 @@ class FabricUtils(object):
             if role == 'leaf':
                 routing_bridging_role = rb_roles.get(device.name, ['CRB-Access'])
             elif role == 'spine':
-                routing_bridging_role = rb_roles.get(device.name, ['CRB-Gateway', 'Route-Reflector'])
-                if self.is_bms_on_node(device.name):
-                    routing_bridging_role.append('CRB-Access')
+                routing_bridging_role = rb_roles.get(device.name, ['CRB-Gateway',
+                    'Route-Reflector'])
             dev_role_dict = {'device_fq_name': ['default-global-system-config',
                                                 device.name],
                              'physical_role': role,
