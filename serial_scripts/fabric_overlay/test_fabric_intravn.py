@@ -1,7 +1,8 @@
 import test
-from netaddr import *
 import uuid
 import copy
+import random
+from netaddr import *
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import skip_because, get_random_cidr, get_random_name
 from common.contrail_fabric.base import BaseFabricTest
@@ -12,11 +13,14 @@ from vnc_api.vnc_api import *
 class TestFabricOverlay(BaseFabricTest):
     @preposttest_wrapper
     def test_fabric_intravn_basic(self):
+        self.inputs.set_af('dual')
+        self.addCleanup(self.inputs.set_af, 'v4')
         bms_fixtures = list()
         vn = self.create_vn()
-        vm1 = self.create_vm(vn_fixture=vn, image_name='cirros')
-        for bms in self.inputs.bms_data.keys():
-            bms_fixtures.append(self.create_bms(bms_name=bms, vn_fixture=vn))
+        vm1 = self.create_vm(vn_fixture=vn, image_name='ubuntu')
+        for bms in self.get_bms_nodes():
+            bms_fixtures.append(self.create_bms(bms_name=bms,
+                vn_fixture=vn, tor_port_vlan_tag=10))
         vm1.wait_till_vm_is_up()
         self.do_ping_mesh(bms_fixtures+[vm1])
 
@@ -24,21 +28,36 @@ class TestFabricOverlay(BaseFabricTest):
     def test_fabric_intravn_tagged(self):
         '''Validate ping between a KVM VM and a tagged BMS
         '''
+        self.inputs.set_af('dual')
+        self.addCleanup(self.inputs.set_af, 'v4')
         bms_fixtures = list()
         vn = self.create_vn()
-        vm1 = self.create_vm(vn_fixture=vn, image_name='cirros')
-        for bms in self.inputs.bms_data.keys():
+        vm1 = self.create_vm(vn_fixture=vn, image_name='ubuntu')
+        for bms in self.get_bms_nodes():
             bms_fixtures.append(self.create_bms(bms_name=bms, vlan_id=10,
                 vn_fixture=vn))
         vm1.wait_till_vm_is_up()
         self.do_ping_mesh(bms_fixtures+[vm1])
 
+    @preposttest_wrapper
+    def test_vdns(self):
+        bms_node = random.choice(self.get_bms_nodes())
+        vdns = self.create_vdns()
+        ipam = self.create_ipam(vdns_fixture=vdns)
+        vn = self.create_vn(ipam_fq_name=ipam.fq_name)
+        vm1 = self.create_vm(vn_fixture=vn, image_name='cirros')
+        bms1 = self.create_bms(bms_name=bms_node,
+            vn_fixture=vn, tor_port_vlan_tag=10)
+        vm1.wait_till_vm_is_up()
+        assert bms1.ping(vm1.vm_name)
+
     # Commenting this test till CEM-3959, running the same messes DM
     @skip_because(bms=2)
     @preposttest_wrapper
     def itest_bms_movement_1(self):
-        first_node = self.inputs.bms_data.keys()[0]
-        second_node = self.inputs.bms_data.keys()[1]
+        bms_nodes = self.get_bms_nodes()
+        first_node = bms_nodes[0]
+        second_node = bms_nodes[1]
         vn = self.create_vn()
         vm1 = self.create_vm(vn_fixture=vn, image_name='cirros')
         node1_bms1 = self.create_bms(bms_name=first_node, vlan_id=10,
@@ -69,6 +88,37 @@ class TestFabricOverlay(BaseFabricTest):
 
     @skip_because(bms=2)
     @preposttest_wrapper
+    def test_bms_movement_2(self):
+        bms_nodes = self.get_bms_nodes()
+        first_node = bms_nodes[0]
+        second_node = bms_nodes[1]
+        vn = self.create_vn()
+        vm1 = self.create_vm(vn_fixture=vn, image_name='cirros')
+        node1_bms1 = self.create_bms(bms_name=first_node, vlan_id=10,
+                         vn_fixture=vn)
+        vm1.wait_till_vm_is_up()
+        self.do_ping_mesh([node1_bms1, vm1])
+
+        vpg_fqname = node1_bms1.port_fixture.get_vpg_fqname()
+        vpg_obj = self.vnc_h.read_virtual_port_group(fq_name=vpg_fqname)
+        vpg_obj.del_virtual_machine_interface(
+            node1_bms1.port_fixture.vmi_obj)
+        self.vnc_h.update_obj(vpg_obj)
+        self.vnc_h.delete_virtual_port_group(fq_name=vpg_fqname)
+
+        node1_bms1.update_vmi(self.inputs.bms_data[second_node]['interfaces'],
+                         port_group_name=None)
+        self.do_ping_test(node1_bms1, vm1.vm_ip, expectation=False)
+        node2_bms1 = self.create_bms(bms_name=second_node, vn_fixture=vn,
+            tor_port_vlan_tag=40, port_fixture=node1_bms1.port_fixture)
+        self.do_ping_test(node2_bms1, vm1.vm_ip)
+        node1_bms1.cleanup_bms()
+        node1_bms2 = self.create_bms(bms_name=first_node, vlan_id=10,
+                         vn_fixture=vn)
+        self.do_ping_mesh([vm1, node1_bms2, node2_bms1])
+
+    @skip_because(bms=2)
+    @preposttest_wrapper
     def test_with_multiple_subnets(self):
         ''' Create a VN with two /28 subnets
             Create 8 VMIs on the VN so that 1st subnet IPs are exhausted
@@ -79,16 +129,17 @@ class TestFabricOverlay(BaseFabricTest):
         vn = self.create_vn(vn_subnets=vn_subnets)
 
         self.create_logical_router([vn])
-        bms_data = self.inputs.bms_data.keys()
+        bms_data = self.get_bms_nodes()
         bms1_fixture = self.create_bms(bms_name=bms_data[0],
-            vn_fixture=vn)
+            tor_port_vlan_tag=10, vn_fixture=vn)
         vm1 = self.create_vm(vn_fixture=vn, image_name='cirros')
         for i in range(0, 4):
             port_fixture = self.setup_vmi(vn.uuid)
             if port_fixture.get_ip_addresses()[0] in IPNetwork(vn_subnets[1]):
                 self.perform_cleanup(port_fixture)
                 break
-        bms2_fixture = self.create_bms(bms_name=bms_data[1], vn_fixture=vn)
+        bms2_fixture = self.create_bms(bms_name=bms_data[1],
+            tor_port_vlan_tag=10, vn_fixture=vn)
         vm2 = self.create_vm(vn_fixture=vn, image_name='cirros')
 
         vm2.wait_till_vm_is_up()
@@ -107,10 +158,12 @@ class TestFabricOverlay(BaseFabricTest):
         Check if BMS connectivity is restored
         '''
         vn = self.create_vn(disable_dns=True)
-        bms_data = self.inputs.bms_data.keys()
+        bms_data = self.get_bms_nodes()
 
-        bms1_fixture = self.create_bms(bms_name=bms_data[0], vn_fixture=vn)
-        bms2_fixture = self.create_bms(bms_name=bms_data[1], vn_fixture=vn)
+        bms1_fixture = self.create_bms(bms_name=bms_data[0],
+            tor_port_vlan_tag=10, vn_fixture=vn)
+        bms2_fixture = self.create_bms(bms_name=bms_data[1],
+            tor_port_vlan_tag=10, vn_fixture=vn)
 
         self.do_ping_test(bms1_fixture, bms2_fixture.bms_ip)
 
@@ -130,16 +183,18 @@ class TestFabricOverlay(BaseFabricTest):
     @skip_because(function='filter_bms_nodes', bms_type='link_aggregation')
     @preposttest_wrapper
     def test_lag_add_remove_interface(self):
-        nodes, ignore = self.filter_bms_nodes('link_aggregation')
-        lag_node = list(nodes)[0]
-        other_nodes = set(self.inputs.bms_data.keys()) - set([lag_node])
+        nodes = self.get_bms_nodes(bms_type='link_aggregation')
+        lag_node = nodes[0]
+        other_nodes = list(set(self.get_bms_nodes()) - set([lag_node]))
         vn = self.create_vn()
         vm1 = self.create_vm(vn_fixture=vn, image_name='cirros')
-        other_bms = list()
-        lag_bms = self.create_bms(bms_name=lag_node, vn_fixture=vn)
-        for node in other_nodes:
-            other_bms.append(self.create_bms(bms_name=node, vn_fixture=vn))
-        instances = [lag_bms] + other_bms + [vm1]
+        lag_bms = self.create_bms(bms_name=lag_node,
+            tor_port_vlan_tag=10, vn_fixture=vn)
+        instances = [lag_bms, vm1]
+        if other_nodes:
+            other_bms = self.create_bms(bms_name=other_nodes[0],
+            tor_port_vlan_tag=10, vn_fixture=vn)
+            instances.append(other_bms)
         vm1.wait_till_vm_is_up()
         self.do_ping_mesh(instances)
 
@@ -174,22 +229,23 @@ class TestFabricOverlay(BaseFabricTest):
     @skip_because(function='filter_bms_nodes', bms_type='multi_homing')
     @preposttest_wrapper
     def test_multihoming_add_remove_interface(self):
-        mh_nodes, ignore = self.filter_bms_nodes('multi_homing')
-        mh_node = list(mh_nodes)[0]
+        mh_nodes = self.get_bms_nodes(bms_type='multi_homing')
+        mh_node = mh_nodes[0]
         # Check if we have BMS which has both lag and mh
-        lag_nodes, ignore = self.filter_bms_nodes('link_aggregation')
-        mh_lag_nodes = mh_nodes.intersection(lag_nodes)
+        lag_nodes = self.get_bms_nodes(bms_type='link_aggregation')
+        mh_lag_nodes = set(mh_nodes).intersection(set(lag_nodes))
         if mh_lag_nodes:
             mh_node = list(mh_lag_nodes)[0]
 
-        other_nodes = set(self.inputs.bms_data.keys()) - set([mh_node])
+        other_nodes = list(set(self.get_bms_nodes()) - set([mh_node]))
         vn = self.create_vn()
         vm1 = self.create_vm(vn_fixture=vn, image_name='cirros')
-        other_bms = list()
         mh_bms = self.create_bms(bms_name=mh_node, vlan_id=10, vn_fixture=vn)
-        for node in other_nodes:
-            other_bms.append(self.create_bms(bms_name=node, vn_fixture=vn))
-        instances = [mh_bms] + other_bms + [vm1]
+        instances = [mh_bms, vm1]
+        if other_nodes:
+            other_bms = self.create_bms(bms_name=other_nodes[0],
+                tor_port_vlan_tag=20, vn_fixture=vn)
+            instances.append(other_bms)
         vm1.wait_till_vm_is_up()
         self.do_ping_mesh(instances)
 
@@ -223,13 +279,12 @@ class TestFabricOverlay(BaseFabricTest):
 
     def _validate_multiple_vlan(self, bms_type):
         if bms_type != 'single_interface':
-            target_nodes, ignore = self.filter_bms_nodes(bms_type)
-            target_node = list(target_nodes)[0]
+            target_node = random.choice(self.get_bms_nodes(bms_type=bms_type))
             interfaces = self.inputs.bms_data[target_node]['interfaces']
         else:
-            target_node = self.inputs.bms_data.keys()[0]
+            target_node = random.choice(self.get_bms_nodes())
             interfaces = self.inputs.bms_data[target_node]['interfaces'][:1]
-        other_nodes = set(self.inputs.bms_data.keys()) - set([target_node])
+        other_nodes = set(self.get_bms_nodes()) - set([target_node])
         vn1 = self.create_vn()
         vn2 = self.create_vn()
         vn3 = self.create_vn()
@@ -250,6 +305,7 @@ class TestFabricOverlay(BaseFabricTest):
         instances.append(bms_2)
         self.do_ping_mesh(instances)
         bms_3 = self.create_bms(bms_name=target_node,
+            tor_port_vlan_tag=40,
             bond_name=bms.bond_name, interfaces=interfaces,
             port_group_name=bms.port_group_name, vn_fixture=vn3)
         instances.append(bms_3)
@@ -271,15 +327,15 @@ class TestFabricOverlay(BaseFabricTest):
 
     @preposttest_wrapper
     def test_update_vlan_id(self):
-        target_node = self.inputs.bms_data.keys()[0]
-        other_nodes = set(self.inputs.bms_data.keys()) - set([target_node])
+        target_node = random.choice(self.get_bms_nodes())
+        other_nodes = set(self.get_bms_nodes()) - set([target_node])
         vn = self.create_vn()
         vm1 = self.create_vm(vn_fixture=vn, image_name='cirros')
         bms = self.create_bms(bms_name=target_node, vlan_id=10, vn_fixture=vn)
         instances = [bms, vm1]
         if other_nodes:
             other_bms = self.create_bms(bms_name=list(other_nodes)[0],
-                vn_fixture=vn)
+                tor_port_vlan_tag=20, vn_fixture=vn)
             instances.append(other_bms)
         vm1.wait_till_vm_is_up()
         self.do_ping_mesh(instances)
@@ -392,17 +448,17 @@ class TestFabricOverlay(BaseFabricTest):
         sg_test1 = self.create_sec_group(name=sec_grp_name1, entries=rule1)
         sg_test2 = self.create_sec_group(name=sec_grp_name2, entries=rule2)
         vm1 = self.create_vm(vn_fixture=vn_instance, image_name='cirros', sg_ids=[sg_test1.uuid])
-        for bms in self.inputs.bms_data.keys():
+        for bms in self.get_bms_nodes():
             bms_fixtures.append(self.create_bms(bms_name=bms,
-                vn_fixture=vn_instance, security_groups=[sg_test2.uuid]))
+                tor_port_vlan_tag=20, vn_fixture=vn_instance,
+                security_groups=[sg_test2.uuid]))
         vm1.wait_till_vm_is_up()
         self.do_ping_mesh(bms_fixtures+[vm1], expectation=False)        
 
     @skip_because(function='filter_bms_nodes', bms_type='link_aggregation')
     @preposttest_wrapper
     def test_bridge_domain_on_leaf_tagged(self):
-        nodes, ignore = self.filter_bms_nodes('link_aggregation')
-        bms = list(nodes)[0]
+        bms = random.choice(self.get_bms_nodes(bms_type='link_aggregation'))
         vn1 = self.create_vn()
         vn2 = self.create_vn()
         self.create_logical_router([vn1, vn2])
@@ -420,17 +476,16 @@ class TestFabricOverlay(BaseFabricTest):
     @skip_because(function='filter_bms_nodes', bms_type='link_aggregation')
     @preposttest_wrapper
     def test_bridge_domain_on_leaf_untagged(self):
-        nodes, ignore = self.filter_bms_nodes('link_aggregation')
-        bms = list(nodes)[0]
+        bms = random.choice(self.get_bms_nodes(bms_type='link_aggregation'))
         vn1 = self.create_vn()
         vn2 = self.create_vn()
         self.create_logical_router([vn1, vn2])
         bms1_intf = self.inputs.bms_data[bms]['interfaces'][:1]
         bms2_intf = self.inputs.bms_data[bms]['interfaces'][1:]
         bms1 = self.create_bms(bms_name=bms, vn_fixture=vn1,
-               interfaces=bms1_intf)
+               tor_port_vlan_tag=10, interfaces=bms1_intf)
         bms2 = self.create_bms(bms_name=bms, vn_fixture=vn2,
-               interfaces=bms2_intf)
+               tor_port_vlan_tag=20, interfaces=bms2_intf)
         self.do_ping_test(bms1, bms2.bms_ip)
         new_ip = str(IPAddress(IPNetwork(vn1.get_cidrs()[0]).value + 8))
         bms2.assign_static_ip(new_ip)
@@ -438,18 +493,19 @@ class TestFabricOverlay(BaseFabricTest):
 
     @preposttest_wrapper
     def test_restart_api_server(self):
+        bms_nodes = self.get_bms_nodes()
         vn1 = self.create_vn()
         vm1 = self.create_vm(vn_fixture=vn1, image_name='cirros')
-        bms1 = self.create_bms(bms_name=self.inputs.bms_data.keys()[0],
-               vn_fixture=vn1)
+        bms1 = self.create_bms(bms_name=bms_nodes[0],
+               tor_port_vlan_tag=10, vn_fixture=vn1)
         vm1.wait_till_vm_is_up()
         self.do_ping_test(bms1, vm1.vm_ip)
         self.inputs.restart_container(self.inputs.cfgm_ips, 'api-server')
         self.sleep(90) #Wait to make sure if any config push happens to complete
         self.do_ping_test(bms1, vm1.vm_ip)
-        if len(self.inputs.bms_data.keys()) > 1:
-            bms2 = self.create_bms(bms_name=self.inputs.bms_data.keys()[1],
-                vn_fixture=vn1)
+        if len(bms_nodes) > 1:
+            bms2 = self.create_bms(bms_name=bms_nodes[1],
+                tor_port_vlan_tag=10, vn_fixture=vn1)
             self.do_ping_mesh([bms1, bms2, vm1])
         #ToDo: Need to add test to stop couple of api-servers and validate DM
         #can work with just one and then start the rest and stop the active
@@ -458,44 +514,47 @@ class TestFabricOverlay(BaseFabricTest):
 
     @preposttest_wrapper
     def test_restart_device_manager(self):
+        bms_nodes = self.get_bms_nodes()
         vn1 = self.create_vn()
         vm1 = self.create_vm(vn_fixture=vn1, image_name='cirros')
-        bms1 = self.create_bms(bms_name=self.inputs.bms_data.keys()[0],
-               vn_fixture=vn1)
+        bms1 = self.create_bms(bms_name=bms_nodes[0],
+               tor_port_vlan_tag=10, vn_fixture=vn1)
         vm1.wait_till_vm_is_up()
         self.do_ping_test(bms1, vm1.vm_ip)
         self.inputs.restart_container(self.inputs.cfgm_ips, 'device-manager')
         self.sleep(90) #Wait to make sure if any config push happens to complete
         self.do_ping_test(bms1, vm1.vm_ip)
-        if len(self.inputs.bms_data.keys()) > 1:
-            bms2 = self.create_bms(bms_name=self.inputs.bms_data.keys()[1],
-                vn_fixture=vn1)
+        if len(bms_nodes) > 1:
+            bms2 = self.create_bms(bms_name=bms_nodes[1],
+                tor_port_vlan_tag=10, vn_fixture=vn1)
             self.do_ping_mesh([bms1, bms2, vm1])
 
     @preposttest_wrapper
     def itest_restart_rabbitmq(self):
+        bms_nodes = self.get_bms_nodes()
         vn1 = self.create_vn()
         vm1 = self.create_vm(vn_fixture=vn1, image_name='cirros')
-        bms1 = self.create_bms(bms_name=self.inputs.bms_data.keys()[0],
-               vn_fixture=vn1)
+        bms1 = self.create_bms(bms_name=bms_nodes[0],
+               tor_port_vlan_tag=10, vn_fixture=vn1)
         vm1.wait_till_vm_is_up()
         self.do_ping_test(bms1, vm1.vm_ip)
         self.inputs.restart_container(self.inputs.cfgm_ips, 'config-rabbitmq')
         self.sleep(90) #Wait to make sure if any config push happens to complete
         self.do_ping_test(bms1, vm1.vm_ip)
-        if len(self.inputs.bms_data.keys()) > 1:
-            bms2 = self.create_bms(bms_name=self.inputs.bms_data.keys()[1],
-                vn_fixture=vn1)
+        if len(bms_nodes) > 1:
+            bms2 = self.create_bms(bms_name=bms_nodes[1],
+                tor_port_vlan_tag=10, vn_fixture=vn1)
             self.do_ping_mesh([bms1, bms2, vm1])
 
     @preposttest_wrapper
     def test_csn_ha(self):
+        bms_nodes = self.get_bms_nodes()
         csns = self.inputs.get_csn()
         self.addCleanup(self.inputs.start_container, csns, 'agent')
         vn1 = self.create_vn()
         vm1 = self.create_vm(vn_fixture=vn1, image_name='cirros')
-        bms1 = self.create_bms(bms_name=self.inputs.bms_data.keys()[0],
-               vn_fixture=vn1)
+        bms1 = self.create_bms(bms_name=bms_nodes[0],
+               tor_port_vlan_tag=10, vn_fixture=vn1)
         vm1.wait_till_vm_is_up()
         self.do_ping_test(bms1, vm1.vm_ip)
         self.inputs.stop_container([csns[0]], 'agent')
@@ -506,19 +565,19 @@ class TestFabricOverlay(BaseFabricTest):
             assert bms1.run_dhclient(expectation=False)
         self.inputs.start_container([csns[0]], 'agent')
         assert bms1.run_dhclient()
-        bms2 = self.create_bms(bms_name=self.inputs.bms_data.keys()[1],
-               vn_fixture=vn1)
-        self.do_ping_mesh([bms1, bms2, vm1])
+        if len(bms_nodes) > 1:
+            bms2 = self.create_bms(bms_name=bms_nodes[1],
+               tor_port_vlan_tag=10, vn_fixture=vn1)
+            self.do_ping_mesh([bms1, bms2, vm1])
 
     def _validate_pre_created_vpg(self, bms_type):
         if bms_type != 'single_interface':
-            target_nodes, ignore = self.filter_bms_nodes(bms_type)
-            target_node = list(target_nodes)[0]
+            target_node = random.choice(self.get_bms_nodes(bms_type=bms_type))
             interfaces = self.inputs.bms_data[target_node]['interfaces']
         else:
-            target_node = self.inputs.bms_data.keys()[0]
+            target_node = random.choice(self.get_bms_nodes())
             interfaces = self.inputs.bms_data[target_node]['interfaces'][:1]
-        other_nodes = set(self.inputs.bms_data.keys()) - set([target_node])
+        other_nodes = set(self.get_bms_nodes()) - set([target_node])
         vn = self.create_vn()
         vn2 = self.create_vn()
         self.create_logical_router([vn, vn2])
@@ -530,7 +589,7 @@ class TestFabricOverlay(BaseFabricTest):
         instances = [bms, vm1]
         if other_nodes:
             other_bms = self.create_bms(bms_name=list(other_nodes)[0],
-                vn_fixture=vn)
+                tor_port_vlan_tag=10, vn_fixture=vn)
             instances.append(other_bms)
         vm1.wait_till_vm_is_up()
         self.do_ping_mesh(instances)
@@ -557,7 +616,7 @@ class TestFabricOverlay(BaseFabricTest):
     @preposttest_wrapper
     def test_negative_cases_2(self):
         vn1 = self.create_vn()
-        bms_name = self.inputs.bms_data.keys()[0]
+        bms_name = random.choice(self.get_bms_nodes())
         interfaces = copy.deepcopy(self.inputs.bms_data[bms_name]['interfaces'])
         try:
             interfaces[0]['tor_port'] = "xe-10/10/50"
@@ -593,8 +652,9 @@ class TestFabricOverlay(BaseFabricTest):
 
     @preposttest_wrapper
     def test_negative_cases_1(self):
+        bms_nodes = self.get_bms_nodes()
         vn1 = self.create_vn()
-        bms_name = self.inputs.bms_data.keys()[0]
+        bms_name = bms_nodes[0]
         bms1 = self.create_bms(bms_name=bms_name,
                vlan_id=11, vn_fixture=vn1)
         vm1 = self.create_vm(vn_fixture=vn1, image_name='cirros')
@@ -646,8 +706,8 @@ class TestFabricOverlay(BaseFabricTest):
             self.logger.info("Got BadRequest exception as expected during "
                              "creation of second bms with different fabric")
 
-        if len(self.inputs.bms_data.keys()) > 1:
-            other_bms = self.inputs.bms_data.keys()[1]
+        if len(bms_nodes) > 1:
+            other_bms = bms_nodes[1]
             interfaces = self.inputs.bms_data[other_bms]['interfaces']
             try:
                 bms1.update_vmi(interfaces, bms1.port_group_name,
@@ -696,6 +756,48 @@ class TestFabricOverlay(BaseFabricTest):
         self.sleep(90)
         self.do_ping_test(bms1, vm1.vm_ip)
         bms1.attach_physical_interface(interfaces)
+
+    @skip_because(function='filter_bms_nodes', role='spine')
+    @preposttest_wrapper
+    def test_bms_on_spine(self):
+        bms_nodes = self.get_bms_nodes(role='spine')
+        leaf_bms = self.get_bms_nodes()[0]
+        spine_bms = bms_nodes[0]
+        devices = list()
+        rb_roles = dict()
+        for spine in self.spines:
+            if self.is_bms_on_node(spine.name):
+                devices.append(spine)
+                rb_roles[spine.name] = ['CRB-Access', 'CRB-Gateway',
+                                        'Route-Reflector']
+        self.addCleanup(self.assign_roles, self.fabric, self.devices)
+        self.assign_roles(self.fabric, devices, rb_roles=rb_roles)
+        vlan = 10
+        bms_fixtures = dict(); bms_vns = dict()
+        vn = self.create_vn()
+        for bms in bms_nodes+[leaf_bms]:
+            bms_vns[bms] = self.create_vn()
+        vm1 = self.create_vm(vn_fixture=vn, image_name='cirros')
+        self.create_logical_router([vn]+bms_vns.values())
+        for bms in bms_nodes+[leaf_bms]:
+            bms_fixtures[bms] = self.create_bms(
+                bms_name=bms,
+                vn_fixture=bms_vns[bms],
+                vlan_id=vlan)
+            if bms == spine_bms:
+                spine_vlan = vlan
+            vlan = vlan + 10
+        vm1.wait_till_vm_is_up()
+        self.do_ping_mesh(bms_fixtures.values()+[vm1])
+        bms_fixtures[spine_bms+'_2_'] = self.create_bms(bms_name=spine_bms,
+            port_group_name=bms_fixtures[spine_bms].port_group_name,
+            bond_name=bms_fixtures[spine_bms].bond_name,
+            vn_fixture=vn, vlan_id=11)
+        bms_fixtures[leaf_bms+'_2_'] = self.create_bms(bms_name=leaf_bms,
+            port_group_name=bms_fixtures[leaf_bms].port_group_name,
+            bond_name=bms_fixtures[leaf_bms].bond_name,
+            vn_fixture=bms_vns[spine_bms], vlan_id=spine_vlan)
+        self.do_ping_mesh(bms_fixtures.values()+[vm1])
 
 class TestVxlanID(GenericTestBase):
     @preposttest_wrapper

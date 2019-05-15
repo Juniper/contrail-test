@@ -49,6 +49,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
         self.port_group_name = kwargs.get('port_group_name', None)
         self.vlan_id = kwargs.get('vlan_id', None)
         self.parent_vmi = kwargs.get('parent_vmi', None)
+        self.tor_port_vlan_tag = kwargs.get('tor_port_vlan_tag', None)
         self.create_iip = kwargs.get('create_iip', True)
         self.uuid = kwargs.get('uuid', None)
         self.device_owner = kwargs.get('device_owner', None)
@@ -152,6 +153,10 @@ class PortFixture(vnc_api_test.VncLibFixture):
             kv_pairs = vmi_obj.get_virtual_machine_interface_bindings() or\
                        vnc_api_test.KeyValuePairs()
             kv_pairs.add_key_value_pair(bind_kv)
+            if self.tor_port_vlan_tag:
+                vlan_kv = vnc_api_test.KeyValuePair(key='tor_port_vlan_id',
+                    value=str(self.tor_port_vlan_tag))
+                kv_pairs.add_key_value_pair(vlan_kv)
             if 'local_link_information' in self.binding_profile:
                 vnic_kv = vnc_api_test.KeyValuePair(key='vnic_type',
                           value='baremetal')

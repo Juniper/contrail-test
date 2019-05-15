@@ -180,6 +180,8 @@ test_configuration:
             spine: qfx2 # Specify spine to identify the
                         # spine the leaf node is connected to
                         # by default, connects to all spines
+            rb_roles:
+              - erb_ucast_gw
 
         qfx2:
             model: qfx10k
@@ -193,6 +195,10 @@ test_configuration:
             type: tor
             dm_managed: True
             role: spine
+            rb_roles:
+              - dc_gw
+              - dci_gw
+              - crb_mcast_gw
 
     bms:
       node1:

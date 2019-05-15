@@ -1551,6 +1551,10 @@ class VNFixture(fixtures.Fixture):
            raise Exception('vcenter: subnets not supported')
         return self.quantum_h.get_subnets_of_vn(self.uuid)
 
+    def get_subnet_id_for_af(self, af):
+        return [subnet['id'] for subnet in self.vn_subnet_objs 
+                if get_af_type(subnet['cidr']) == af]
+
     def add_to_router(self, physical_router_id):
         pr = self.vnc_lib_h.physical_router_read(id=physical_router_id)
         vn_obj = self.vnc_lib_h.virtual_network_read(id = self.uuid)

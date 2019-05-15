@@ -187,7 +187,6 @@ class ControlNodeInspect (VerificationUtilBase):
         '''
         if not table:
             table = 'mvpn.0'
-
         if not ri_name:
             path = 'Snh_ShowRouteReq?x=bgp.mvpn.0'
         else:
@@ -195,8 +194,7 @@ class ControlNodeInspect (VerificationUtilBase):
         xpath = '/ShowRouteResp/tables/list/ShowRouteTable'
         p = self.dict_get(path)
         rt = EtreeToDict(xpath).get_all_entry(p)
-        return rt['routes']
-
+        return rt.get('routes') if rt else []
 
     def get_cn_vpn_table(self, prefix):
         result= True
