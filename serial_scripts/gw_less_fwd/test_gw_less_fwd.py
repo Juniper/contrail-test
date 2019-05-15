@@ -412,7 +412,8 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # Verify AAP route in default routing instance in control node
         self.verify_route_ip_fabric_vn_in_control_node(ret_dict=ret_dict,
-                                                       ip=vIP)
+                                                       ip=vIP,
+                                                       test_fixture=ret_dict['vm_fixtures']['vm2'])
         # Configuring AAP on 2 VMs
         vm_list = [vm_fixtures['vm1'], vm_fixtures['vm2']]
         for vm in vm_list:
@@ -537,7 +538,8 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # Verify FIP route in default routing instance in control node
         self.verify_route_ip_fabric_vn_in_control_node(ret_dict=ret_dict,
-                                                       ip=my_fip)
+                                                       ip=my_fip,
+                                                       test_fixture=ret_dict['vm_fixtures']['vm2'])
 
         # Pinging FIP from VM1
         src_vm_fixture = vm_fixtures['vm1']
@@ -567,7 +569,8 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # Verify FIP route in default routing instance in control node
         self.verify_route_ip_fabric_vn_in_control_node(ret_dict=ret_dict,
-                                                       ip=my_fip)
+                                                       ip=my_fip,
+                                                       test_fixture=ret_dict['vm_fixtures']['vm2'])
 
         result = src_vm_fixture.ping_with_certainty(my_fip, count=2)
 
@@ -602,7 +605,8 @@ class TestGWLessFWD(GWLessFWDTestBase):
         # Verify FIP route is NOT in default routing instance in control node
         self.verify_route_ip_fabric_vn_in_control_node(ret_dict=ret_dict,
                                                        ip=my_fip,
-                                                       expectation=False)
+                                                       expectation=False,
+                                                       test_fixture=ret_dict['vm_fixtures']['vm2'])
 
         result = src_vm_fixture.ping_with_certainty(my_fip, count=2)
 
@@ -636,7 +640,8 @@ class TestGWLessFWD(GWLessFWDTestBase):
         # Verify FIP route is NOT in default routing instance in control node
         self.verify_route_ip_fabric_vn_in_control_node(ret_dict=ret_dict,
                                                        ip=my_fip,
-                                                       expectation=False)
+                                                       expectation=False,
+                                                       test_fixture=ret_dict['vm_fixtures']['vm2'])
 
         result = src_vm_fixture.ping_with_certainty(my_fip, count=2)
 
@@ -1230,7 +1235,8 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # Verify AAP route in default routing instance in control node
         self.verify_route_ip_fabric_vn_in_control_node(ret_dict=ret_dict,
-                                                       ip=vIP)
+                                                       ip=vIP,
+                                                       test_fixture=ret_dict['vm_fixtures']['vm2'])
 
         # Configuring AAP on 2 VMs
         vm_list = [vm_fixtures['vm1'], vm_fixtures['vm2']]
@@ -1382,7 +1388,8 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # Verify FIP route in default routing instance in control node
         self.verify_route_ip_fabric_vn_in_control_node(ret_dict=ret_dict,
-                                                       ip=my_fip)
+                                                       ip=my_fip,
+                                                       test_fixture=ret_dict['vm_fixtures']['vm2'])
 
         # Pinging FIP from VM1
         src_vm_fixture = vm_fixtures['vm1']
@@ -1412,7 +1419,8 @@ class TestGWLessFWD(GWLessFWDTestBase):
 
         # Verify FIP route in default routing instance in control node
         self.verify_route_ip_fabric_vn_in_control_node(ret_dict=ret_dict,
-                                                       ip=my_fip)
+                                                       ip=my_fip,
+                                                       test_fixture=ret_dict['vm_fixtures']['vm2'])
 
         result = src_vm_fixture.ping_with_certainty(my_fip, count=2)
 
@@ -1447,7 +1455,8 @@ class TestGWLessFWD(GWLessFWDTestBase):
         # Verify FIP route is NOT in default routing instance in control node
         self.verify_route_ip_fabric_vn_in_control_node(ret_dict=ret_dict,
                                                        ip=my_fip,
-                                                       expectation=False)
+                                                       expectation=False,
+                                                       test_fixture=ret_dict['vm_fixtures']['vm2'])
 
         result = src_vm_fixture.ping_with_certainty(my_fip, count=2)
 
@@ -1481,7 +1490,8 @@ class TestGWLessFWD(GWLessFWDTestBase):
         # Verify FIP route is NOT in default routing instance in control node
         self.verify_route_ip_fabric_vn_in_control_node(ret_dict=ret_dict,
                                                        ip=my_fip,
-                                                       expectation=False)
+                                                       expectation=False,
+                                                       test_fixture=ret_dict['vm_fixtures']['vm2'])
 
         result = src_vm_fixture.ping_with_certainty(my_fip, count=2)
 
