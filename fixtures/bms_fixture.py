@@ -4,7 +4,7 @@ import time
 import logging
 import fixtures
 import string
-from tcutils.util import retry, search_arp_entry, get_random_name, get_intf_name_from_mac, run_cmd_on_server, get_random_string
+from tcutils.util import retry, search_arp_entry, get_random_name, get_intf_name_from_mac, run_cmd_on_server, get_random_string, get_af_type
 from port_fixture import PortFixture
 import tempfile
 from tcutils.fabutils import *
@@ -29,8 +29,11 @@ class BMSFixture(fixtures.Fixture):
         self.password = kwargs.get('password') or bms_dict['password']
         self.namespace = get_random_name('ns')
         self.bms_ip = kwargs.get('bms_ip')   # BMS VMI IP
+        self.bms_ip6 = kwargs.get('bms_ip6')   # BMS VMI IPv6
         self.bms_ip_netmask = kwargs.get('bms_ip_netmask', 24)   # BMS VMI IP MASK
+        self.bms_ip6_netmask = kwargs.get('bms_ip6_netmask', 96)   # BMS VMI IPv6 MASK
         self.bms_gw_ip = kwargs.get('bms_gw_ip', None)   # BMS VMI IP MASK
+        self.bms_gw_ip6 = kwargs.get('bms_gw_ip6', None)   # BMS VMI IPv6 MASK
         self.bms_mac = kwargs.get('bms_mac') # BMS VMI Mac
         self.static_ip = kwargs.get('static_ip', bool(not self.inputs.get_csn()))
         self.vn_fixture = kwargs.get('vn_fixture')
@@ -40,6 +43,7 @@ class BMSFixture(fixtures.Fixture):
         self.vnc_h = connections.orch.vnc_h
         self.vlan_id = self.port_fixture.vlan_id if self.port_fixture else \
                        kwargs.get('vlan_id') or 0
+        self.tor_port_vlan_tag = kwargs.get('tor_port_vlan_tag')
         self._port_group_name = kwargs.get('port_group_name', None)
         self.bond_name = kwargs.get('bond_name') or 'bond%s'%get_random_string(2,
                          chars=string.ascii_letters)
@@ -87,11 +91,15 @@ class BMSFixture(fixtures.Fixture):
 
     def create_vmi(self, interfaces=None):
         interfaces = interfaces or self.interfaces
-        fixed_ips = None
+        fixed_ips = list()
         if self.bms_ip:
-            fixed_ips = [{'ip_address': self.bms_ip,
-                          'subnet_id': self.vn_fixture.vn_subnet_objs[0]['id']
-                         }]
+            fixed_ips.append({'ip_address': self.bms_ip,
+                'subnet_id': self.vn_fixture.get_subnet_id_for_af('v4')[0]
+                })
+        if self.bms_ip6:
+            fixed_ips.append({'ip_address': self.bms_ip6,
+                'subnet_id': self.vn_fixture.get_subnet_id_for_af('v6')[0]
+                })
         bms_info = list()
         for interface in interfaces:
             intf_dict = dict()
@@ -109,13 +117,10 @@ class BMSFixture(fixtures.Fixture):
                                  api_type='contrail',
                                  vlan_id=self.vlan_id,
                                  binding_profile=binding_profile,
-                                 port_group_name=self._port_group_name
+                                 port_group_name=self._port_group_name,
+                                 tor_port_vlan_tag=self.tor_port_vlan_tag
                              )
         self.port_fixture.setUp()
-        if not self.bms_ip:
-            self.bms_ip = self.port_fixture.get_ip_addresses()[0]
-        if not self.bms_mac:
-            self.bms_mac = self.port_fixture.mac_address
 
     @retry(delay=10, tries=30)
     def is_lacp_up(self, interfaces=None, expectation=True):
@@ -205,9 +210,21 @@ class BMSFixture(fixtures.Fixture):
     def delete_vmi(self):
         if self.port_fixture:
             self.port_fixture.cleanUp()
+            if hasattr(self.port_fixture, '_cleanups') and \
+               self.port_fixture._cleanups is None \
+               and hasattr(self.port_fixture, '_clear_cleanups'):
+                self.port_fixture._clear_cleanups()
         self.bms_ip = None
+        self.bms_ip6 = None
         self.bms_mac = None
         self.port_fixture = None
+
+    def get_bms_ips(self, af=None):
+        if not af:
+            af = self.inputs.get_af()
+        af = ['v4', 'v6'] if 'dual' in af else af
+        return [ip for ip in [self.bms_ip, self.bms_ip6]
+                if (get_af_type(ip) and get_af_type(ip) in af)]
 
     def run(self, cmd, **kwargs):
         output = run_cmd_on_server(cmd, self.mgmt_ip,
@@ -328,12 +345,20 @@ class BMSFixture(fixtures.Fixture):
         self.run('ip link set netns %s %s'%(self.namespace, self.mvlanintf))
         self.run_namespace('ip link set dev %s up'%self.mvlanintf)
 
-    def assign_static_ip(self, bms_ip, bms_gw_ip=None):
-        self.run_namespace('ip addr flush dev %s'%(self.mvlanintf))
-        addr = bms_ip + '/' + str(self.bms_ip_netmask)
-        self.run_namespace('ip addr add %s dev %s'%(addr, self.mvlanintf))
-        if bms_gw_ip is not None:
-            self.run_namespace('ip route add default via %s'%(bms_gw_ip))
+    def assign_static_ip(self, v4_ip=None, v4_gw_ip=None,
+                         v6_ip=None, v6_gw_ip=None):
+        if v4_ip or v6_ip:
+            self.run_namespace('ip addr flush dev %s'%(self.mvlanintf))
+        if v4_ip:
+            addr = v4_ip + '/' + str(self.bms_ip_netmask)
+            self.run_namespace('ip addr add %s dev %s'%(addr, self.mvlanintf))
+        if v4_gw_ip:
+            self.run_namespace('ip route add default via %s'%(v4_gw_ip))
+        if v6_ip:
+            addr = v6_ip + '/' + str(self.bms_ip6_netmask)
+            self.run_namespace('ip addr add %s dev %s'%(addr, self.mvlanintf))
+        if v6_gw_ip:
+            self.run_namespace('ip -6 route add default via %s'%(v6_gw_ip))
 
     def cleanup_bms(self, interfaces=None):
         interfaces = interfaces or self.interfaces
@@ -354,9 +379,26 @@ class BMSFixture(fixtures.Fixture):
         try:
             if not self.port_fixture:
                 self.create_vmi()
-            else:
-                self.bms_ip = self.port_fixture.get_ip_addresses()[0]
+            if not self.bms_ip and not self.bms_ip6:
+                for address in self.port_fixture.get_ip_addresses():
+                    if get_af_type(address) == 'v4':
+                        self.bms_ip = address
+                    elif get_af_type(address) == 'v6':
+                        self.bms_ip6 = address
+            if not self.bms_mac:
                 self.bms_mac = self.port_fixture.mac_address
+            if not self.bms_gw_ip and not self.bms_gw_ip6:
+                for subnet in self.vn_fixture.vn_subnet_objs:
+                    if get_af_type(subnet['gateway_ip']) == 'v4':
+                        self.bms_gw_ip = subnet['gateway_ip']
+                    elif get_af_type(subnet['gateway_ip']) == 'v6':
+                        self.bms_gw_ip6 = subnet['gateway_ip']
+            if not self.bms_ip_netmask and not self.bms_ip6_netmask:
+                for subnet in self.vn_fixture.vn_subnet_objs:
+                    if get_af_type(subnet['cidr']) == 'v4':
+                        self.bms_ip_netmask = subnet['cidr'].split('/')[1]
+                    if get_af_type(subnet['cidr']) == 'v6':
+                        self.bms_ip6_netmask = subnet['cidr'].split('/')[1]
             host_macs = [intf['host_mac'] for intf in self.interfaces]
             if self.bms_mac in host_macs or not self.mgmt_ip:
                 self.logger.debug('Not setting up Namespaces')
@@ -378,9 +420,14 @@ class BMSFixture(fixtures.Fixture):
             msg = 'BMS Mac address doesnt match. Got %s. Exp %s'%(
                    info['hwaddr'], self.bms_mac)
             assert False, msg
-        msg = 'BMS IP address doesnt match. Got %s, Exp %s'%(
+        if self.bms_ip:
+            msg = 'BMS IP address doesnt match. Got %s, Exp %s'%(
                info['inet_addr'], self.bms_ip)
-        assert info['inet_addr'] == self.bms_ip, msg
+            assert info['inet_addr'] == self.bms_ip, msg
+        if self.bms_ip6:
+            msg = 'BMS IP address doesnt match. Got %s, Exp %s'%(
+               info['inet6_addr'], self.bms_ip6)
+            assert info['inet6_addr'] == self.bms_ip6, msg
 
     def cleanUp(self):
         self.logger.info('Deleting namespace %s on BMS host %s' % (
@@ -401,35 +448,57 @@ class BMSFixture(fixtures.Fixture):
         '''
         info = {'up': False,
                 'hwaddr': None,
-                'inet_addr': None}
+                'inet_addr': None,
+                'inet6_addr': None}
         output = self.run_namespace('ip addr show dev %s'%(self.mvlanintf))
         info['hwaddr'] = re.search(r'ether ([:0-9a-z]*)', output,
                                    re.M | re.I).group(1)
         s_obj = re.search(r'inet ([\.0-9]*)', output, re.M | re.I)
         if s_obj:
             info['inet_addr'] = s_obj.group(1)
+        s_obj = re.search(r'inet6 ([\.0-9a-f\:]*)/[0-9]+ scope global',
+            output, re.M | re.I)
+        if s_obj:
+            info['inet6_addr'] = s_obj.group(1)
         if 'UP ' in output:
             info['up'] = True
         return info
     # end get_interface_info
 
+    def _run_dhclient(self, af='v4', timeout=60, expectation=True):
+        af = '-6 ' if af == 'v6' else ''
+        output = self.run_namespace('timeout %s dhclient -v %s %s'%(
+                              timeout, af, self.mvlanintf))
+        self.logger.debug('Dhcp transaction : %s' % (output))
+        if not 'bound to' in output.lower() and expectation:
+            self.logger.warn('DHCP did not complete !!')
+            return (False, output)
+        elif 'bound to' in output.lower() and not expectation:
+            self.logger.warn('DHCP should have failed')
+            return (False, output)
+        return (True, output)
+
     @retry(delay=5, tries=10)
     def run_dhclient(self, timeout=60, expectation=True):
         if self.static_ip:
             self.logger.debug("Configuring static ip as requested")
-            self.assign_static_ip(self.bms_ip, self.bms_gw_ip)
+            self.assign_static_ip(v4_ip=self.bms_ip, v4_gw_ip=self.bms_gw_ip,
+                                  v6_ip=self.bms_ip6, v6_gw_ip=self.bms_gw_ip6)
             return (True, None)
         self.run('pkill -9 dhclient')
-        output = self.run_namespace('timeout %s dhclient -v %s'%(
-                              timeout, self.mvlanintf))
-        self.logger.debug('Dhcp transaction : %s' % (output))
-        if not 'bound to' in output and expectation:
-            self.logger.warn('DHCP did not complete !!')
-            return (False, output)
-        elif 'bound to' in output and not expectation:
-            self.logger.warn('DHCP should have failed')
-            return (False, output)
-        return (True, output)
+        if self.bms_ip:
+            result, output = self._run_dhclient(af='v4',
+                timeout=timeout,
+                expectation=expectation)
+            if not result:
+                return (result, output)
+        if self.bms_ip6:
+            result, output = self._run_dhclient(af='v6',
+                timeout=timeout,
+                expectation=expectation)
+            # Workaround to assign gw ip manually for v6
+            self.assign_static_ip(v6_gw_ip=self.bms_gw_ip6)
+        return (result, output)
     # end run_dhclient
 
     def arping(self, ip):
@@ -439,9 +508,10 @@ class BMSFixture(fixtures.Fixture):
         return (output.succeeded, output)
 
     def ping(self, ip, other_opt='', size='56', count='5', expectation=True):
-        src_ip = self.bms_ip
-        cmd = 'ping -s %s -c %s %s %s' % (
-            str(size), str(count), other_opt, ip)
+        src_ip = self.bms_ip6 if get_af_type(ip) == 'v6' else self.bms_ip
+        ping = 'ping6' if get_af_type(ip) == 'v6' else 'ping'
+        cmd = '%s -s %s -c %s %s %s' % (
+            ping, str(size), str(count), other_opt, ip)
         output = self.run_namespace(cmd)
         if expectation:
             expected_result = ' 0% packet loss'

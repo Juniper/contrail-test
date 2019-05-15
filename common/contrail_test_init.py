@@ -468,6 +468,13 @@ class TestInputs(object):
             roles.append('kubernetes')
         return roles
 
+    def get_prouter_rb_roles(self, name):
+        if not self.physical_routers_data or \
+           not self.physical_routers_data.get(name) or \
+           not self.physical_routers_data[name].get('rb_roles'):
+            return []
+        return self.physical_routers_data[name]['rb_roles']
+
     def _gen_auth_url(self):
         auth_server_ip = self.external_vip or self.openstack_ip
         if self.keystone_version == 'v3':

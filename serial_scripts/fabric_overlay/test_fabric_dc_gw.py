@@ -3,27 +3,31 @@ from common.contrail_fabric.base import BaseFabricTest
 from tcutils.util import skip_because
 import test
 import time
+import random
 
 class TestFabricDcGw(BaseFabricTest):
     def is_test_applicable(self):
         result, msg = super(TestFabricDcGw, self).is_test_applicable()
         if result:
-            msg = 'No spines in the provided fabric topology'
-            for device in self.inputs.physical_routers_data.iterkeys():
-                if self.get_role_from_inputs(device) == 'spine':
+            msg = 'No device with dc_gw rb_role in the provided fabric topology'
+            for device_dict in self.inputs.physical_routers_data.values():
+                if 'dc_gw' in (device_dict.get('rb_roles') or []):
                     break
             else:
                 return False, msg
-            msg = 'No public subnets specified in test inputs yaml'
-            if self.inputs.public_subnets:
+            msg = 'No public subnets or public host specified in test inputs yaml'
+            if self.inputs.public_subnets and self.inputs.public_host:
                 return (True, None)
         return False, msg
 
     def setUp(self):
-        for device_name, device_dict in self.inputs.physical_routers_data.items():
-            if device_dict['role'] == 'spine':
-#                self.rb_roles[device['name']] = ['CRB-Gateway', 'DC-Gateway']
-                self.rb_roles[device_name] = ['DC-Gateway','Route-Reflector']
+        for device, device_dict in self.inputs.physical_routers_data.items():
+            if 'dc_gw' in (device_dict.get('rb_roles') or []):
+                if device_dict['role'] == 'spine':
+                    self.rb_roles[device] = ['DC-Gateway',
+                        'CRB-Gateway', 'Route-Reflector']
+                elif device_dict['role'] == 'leaf':
+                    self.rb_roles[device] = ['DC-Gateway', 'CRB-Access']
         super(TestFabricDcGw, self).setUp()
 
     @preposttest_wrapper
@@ -55,17 +59,62 @@ class TestFabricDcGw(BaseFabricTest):
     def test_instance_on_public_network(self):
         bms_fixtures = list()
         vn = self.create_vn(vn_subnets=self.inputs.public_subnets[:1])
-        lr_fixtures = self.create_logical_router([vn], is_public_lr=True)
+        lr = self.create_logical_router([vn], is_public_lr=True)
         vm = self.create_vm(vn_fixture=vn, image_name='cirros')
-        for bms in self.inputs.bms_data.keys():
+        for bms in self.get_bms_nodes():
             bms_fixtures.append(self.create_bms(
                 bms_name=bms,
-                vn_fixture=vn,
-                security_groups=[self.default_sg.uuid]))
+                tor_port_vlan_tag=10,
+                vn_fixture=vn))
         self.check_vms_booted([vm])
 
         for fixture in bms_fixtures + [vm]:
-            msg = 'ping from %s to %s failed'%(fixture.name,
-                                               self.inputs.public_host)
             assert fixture.ping_with_certainty(self.inputs.public_host)
         self.do_ping_mesh(bms_fixtures + [vm])
+
+    @preposttest_wrapper
+    def test_update_vni(self):
+        vn = self.create_vn(vn_subnets=self.inputs.public_subnets[:1])
+        lr = self.create_logical_router([vn], is_public_lr=True, vni=7777)
+        vm1 = self.create_vm(vn_fixture=vn, image_name='cirros')
+        vm2 = self.create_vm(vn_fixture=vn, image_name='cirros')
+        bms1 = self.create_bms(
+                bms_name=random.choice(self.get_bms_nodes()),
+                tor_port_vlan_tag=10,
+                vn_fixture=vn)
+        self.check_vms_booted([vm1, vm2])
+
+        for fixture in [bms1, vm1, vm2]:
+            assert fixture.ping_with_certainty(self.inputs.public_host)
+        self.do_ping_mesh([bms1, vm1, vm2])
+
+        lr.set_vni(7788)
+        self.sleep(90) # Wait for configs to be pushed to Spines
+        for fixture in [bms1, vm1, vm2]:
+            assert fixture.ping_with_certainty(self.inputs.public_host)
+        self.do_ping_mesh([bms1, vm1, vm2])
+
+    @preposttest_wrapper
+    def test_private_and_public_vn_part_of_lr(self):
+        bms_node = random.choice(self.get_bms_nodes())
+        vn = self.create_vn(vn_subnets=self.inputs.public_subnets[:1])
+        priv_vn = self.create_vn()
+        lr = self.create_logical_router([vn, priv_vn], is_public_lr=True, vni=7777)
+        vm1 = self.create_vm(vn_fixture=vn, image_name='cirros')
+        vm2 = self.create_vm(vn_fixture=priv_vn, image_name='cirros')
+        bms1 = self.create_bms(
+                bms_name=bms_node,
+                vn_fixture=vn,
+                vlan_id=10)
+        bms2 = self.create_bms(
+                bms_name=bms_node,
+                vn_fixture=priv_vn,
+                port_group_name=bms1.port_group_name,
+                bond_name=bms1.bond_name,
+                vlan_id=20)
+        self.check_vms_booted([vm1, vm2])
+        for fixture in [bms1, vm1]:
+            assert fixture.ping_with_certainty(self.inputs.public_host)
+        self.do_ping_mesh([bms1, bms2, vm1, vm2])
+        assert bms2.ping_with_certainty(self.inputs.public_host, expectation=False)
+        assert vm2.ping_with_certainty(self.inputs.public_host, expectation=False)
