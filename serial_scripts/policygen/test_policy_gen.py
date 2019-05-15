@@ -1,10 +1,18 @@
 import time
+import datetime
 from tcutils.wrappers import preposttest_wrapper
 from common.policygen.base import BasePolicyGenTest
 from common.policygen.base import MatchOp
 
-# TODO
-# use timestamp instead of now-Xm
+TRAFFIC_TIME = 5
+WAIT_INTERVAL = 1
+
+def utc_timestamp_usec():
+    epoch = datetime.datetime.utcfromtimestamp(0)
+    now = datetime.datetime.utcnow()
+    delta = now - epoch
+    return (delta.microseconds +
+            (delta.seconds + delta.days * 24 * 3600) * 10 ** 6)
 
 class TestPolicyGen(BasePolicyGenTest):
     @classmethod
@@ -42,8 +50,11 @@ class TestPolicyGen(BasePolicyGenTest):
     @preposttest_wrapper
     def test_no_traffic(self):
         self._assign_tags()
-        self.sleep(30)
-        query_params = {'start_time': 'now-30s', 'end_time': 'now'}
+        self.sleep(WAIT_INTERVAL)
+        start_time = utc_timestamp_usec()
+        self.sleep(TRAFFIC_TIME)
+        end_time = utc_timestamp_usec()
+        query_params = {'start_time': start_time, 'end_time': end_time}
         result = self.policy_gen.generate_policy(query_params)
         untagged = len(self.remove_unwanted_flows(result['untagged-flows']))
         aps = len(result['application-policy-sets'])
@@ -55,10 +66,12 @@ class TestPolicyGen(BasePolicyGenTest):
         self._assign_tags()
         traffic_obj1 = self.start_traffic(self.vms['hr_web'],
                                 self.vms['hr_logic'], 'tcp', 9000, 9100)
-        self.sleep(30)
+        self.sleep(TRAFFIC_TIME)
         self.stop_traffic(traffic_obj1)
-        self.sleep(60 + 10)
-        query_params = {'start_time': 'now-1m', 'end_time': 'now'}
+        start_time = utc_timestamp_usec()
+        self.sleep(TRAFFIC_TIME)
+        end_time = utc_timestamp_usec()
+        query_params = {'start_time': start_time, 'end_time': end_time}
         result = self.policy_gen.generate_policy(query_params)
         assert self.verify_generated_rules(result, query=query_params,
                                             not_expected=[traffic_obj1])
@@ -68,16 +81,20 @@ class TestPolicyGen(BasePolicyGenTest):
         self._assign_tags()
         traffic_obj1 = self.start_traffic(self.vms['hr_web'],
                                 self.vms['hr_logic'],'tcp', 9001, 9101)
-        self.sleep(60)
+        start_time_1 = utc_timestamp_usec()
+        self.sleep(TRAFFIC_TIME)
+        end_time_1 = utc_timestamp_usec()
         self.stop_traffic(traffic_obj1)
-        self.sleep(60)
+        self.sleep(WAIT_INTERVAL)
         traffic_obj2 = self.start_traffic(self.vms['hr_logic'],
                                 self.vms['hr_db'],'tcp', 10001, 11001)
-        self.sleep(60)
+        start_time_2 = utc_timestamp_usec()
+        self.sleep(TRAFFIC_TIME)
+        end_time_2 = utc_timestamp_usec()
         self.stop_traffic(traffic_obj2)
-        query_params = {'start_time': 'now-3m', 'end_time': 'now-2m'}
+        query_params = {'start_time': start_time_1, 'end_time': end_time_1}
         result1 = self.policy_gen.generate_policy(query_params)
-        query_params = {'start_time': 'now-1m', 'end_time': 'now'}
+        query_params = {'start_time': start_time_2, 'end_time': end_time_2}
         result2 = self.policy_gen.generate_policy(query_params)
         assert self.verify_generated_rules(result1, query=query_params,
                     expected=[[traffic_obj1]], not_expected=[traffic_obj2])
@@ -89,13 +106,15 @@ class TestPolicyGen(BasePolicyGenTest):
         self._assign_tags()
         traffic_obj1 = self.start_traffic(self.vms['hr_web'],
                                 self.vms['hr_logic'], 'tcp', 9002, 9102)
-        self.sleep(30)
+        start_time = utc_timestamp_usec()
+        self.sleep(TRAFFIC_TIME)
         self.stop_traffic(traffic_obj1)
         traffic_obj2 = self.start_traffic(self.vms['hr_logic'],
                                 self.vms['hr_db'], 'tcp', 10002, 11002)
-        self.sleep(30)
+        self.sleep(TRAFFIC_TIME)
         self.stop_traffic(traffic_obj2)
-        query_params = {'start_time': 'now-2m', 'end_time': 'now'}
+        end_time = utc_timestamp_usec()
+        query_params = {'start_time': start_time, 'end_time': end_time}
         result = self.policy_gen.generate_policy(query_params)
         assert self.verify_generated_rules(result, query=query_params,
                     expected=[[traffic_obj1], [traffic_obj2]])
@@ -107,11 +126,13 @@ class TestPolicyGen(BasePolicyGenTest):
                                 self.vms['eng_logic'], 'tcp', 9003, 9103)
         traffic_obj2 = self.start_traffic(self.vms['eng_web'],
                                 self.vms['eng_logic'], 'tcp', 10003, 11003)
-        self.sleep(60)
+        start_time = utc_timestamp_usec()
+        self.sleep(TRAFFIC_TIME)
+        end_time = utc_timestamp_usec()
         self.stop_traffic(traffic_obj1)
         self.stop_traffic(traffic_obj2)
-        query_params = {'start_time': 'now-1m',
-                        'end_time': 'now',
+        query_params = {'start_time': start_time,
+                        'end_time': end_time,
                         'consolidate': False}
         result = self.policy_gen.generate_policy(query_params)
         assert self.verify_generated_rules(result, query=query_params,
@@ -124,11 +145,13 @@ class TestPolicyGen(BasePolicyGenTest):
                                 self.vms['eng_logic'], 'tcp', 9004, 9104)
         traffic_obj2 = self.start_traffic(self.vms['eng_web'],
                                 self.vms['eng_logic'], 'tcp', 10004, 11004)
-        self.sleep(60)
+        start_time = utc_timestamp_usec()
+        self.sleep(TRAFFIC_TIME)
+        end_time = utc_timestamp_usec()
         self.stop_traffic(traffic_obj1)
         self.stop_traffic(traffic_obj2)
-        query_params = {'start_time': 'now-1m',
-                        'end_time': 'now',
+        query_params = {'start_time': start_time,
+                        'end_time': end_time,
                         'consolidate': True}
         result = self.policy_gen.generate_policy(query_params)
         assert self.verify_generated_rules(result, query=query_params,
@@ -141,11 +164,13 @@ class TestPolicyGen(BasePolicyGenTest):
                                 self.vms['eng_logic'], 'tcp', 9005, 9105)
         traffic_obj2 = self.start_traffic(self.vms['eng_web'],
                                 self.vms['eng_logic'], 'tcp', 10005, 11005)
-        self.sleep(10)
+        start_time = utc_timestamp_usec()
+        self.sleep(TRAFFIC_TIME)
+        end_time = utc_timestamp_usec()
         self.stop_traffic(traffic_obj1)
         self.stop_traffic(traffic_obj2)
-        query_params = {'start_time': 'now-10s',
-                        'end_time': 'now',
+        query_params = {'start_time': start_time,
+                        'end_time': end_time,
                         'consolidate': True}
         result = self.policy_gen.generate_policy(query_params)
         assert self.verify_generated_rules(result, query=query_params,
@@ -158,11 +183,13 @@ class TestPolicyGen(BasePolicyGenTest):
                                 self.vms['eng_logic'], 'tcp', 9006, 9106)
         traffic_obj2 = self.start_traffic(self.vms['eng_web'],
                                 self.vms['eng_logic'], 'tcp', 10006, 11006)
-        self.sleep(10)
+        start_time = utc_timestamp_usec()
+        self.sleep(TRAFFIC_TIME)
+        end_time = utc_timestamp_usec()
         self.stop_traffic(traffic_obj1)
         self.stop_traffic(traffic_obj2)
-        query_params = {'start_time': 'now-10s',
-                        'end_time': 'now',
+        query_params = {'start_time': start_time,
+                        'end_time': end_time,
                         'consolidate': True}
         result = self.policy_gen.generate_policy(query_params)
         assert self.verify_generated_rules(result, query=query_params,
@@ -177,11 +204,13 @@ class TestPolicyGen(BasePolicyGenTest):
                                 self.vms['hr_db'], 'udp', 10007, 11007)
         traffic_obj3 = self.start_traffic(self.vms['eng_db'],
                                 self.vms['eng_logic'], 'icmp', 0, 0)
-        self.sleep(10)
+        start_time = utc_timestamp_usec()
+        self.sleep(TRAFFIC_TIME)
+        end_time = utc_timestamp_usec()
         self.stop_traffic(traffic_obj1)
         self.stop_traffic(traffic_obj2)
         self.stop_traffic(traffic_obj3)
-        query_params = {'start_time': 'now-10s', 'end_time': 'now'}
+        query_params = {'start_time': start_time, 'end_time': end_time}
         result = self.policy_gen.generate_policy(query_params)
         assert self.verify_generated_rules(result, query=query_params,
                         expected=[[traffic_obj1], [traffic_obj2],
@@ -198,12 +227,14 @@ class TestPolicyGen(BasePolicyGenTest):
                                 self.vms['eng_logic'], 'tcp', 9008, 9108)
         traffic_obj4 = self.start_traffic(self.vms['eng_logic'],
                                 self.vms['eng_db'], 'tcp', 10008, 11008)
-        self.sleep(10)
+        start_time = utc_timestamp_usec()
+        self.sleep(TRAFFIC_TIME)
+        end_time = utc_timestamp_usec()
         self.stop_traffic(traffic_obj1)
         self.stop_traffic(traffic_obj2)
         self.stop_traffic(traffic_obj3)
         self.stop_traffic(traffic_obj4)
-        query_params = {'start_time': 'now-10s', 'end_time': 'now',
+        query_params = {'start_time': start_time, 'end_time': end_time,
                         'aps': [{'application': 'application=hr',
                                     'name': 'myhr'},
                                 {'application': 'application=eng',
@@ -220,12 +251,14 @@ class TestPolicyGen(BasePolicyGenTest):
                                 self.vms['eng_web'], 'tcp', 9010, 9110)
         traffic_obj2 = self.start_traffic(self.vms['eng_logic'],
                                 self.vms['hr_logic'], 'udp', 10011, 11011)
-        self.sleep(10)
+        start_time = utc_timestamp_usec()
+        self.sleep(TRAFFIC_TIME)
+        end_time = utc_timestamp_usec()
         self.stop_traffic(traffic_obj1)
         self.stop_traffic(traffic_obj2)
         hr_tag = ':'.join(self.tags['local']['application']['hr'].fq_name)
         eng_tag = ':'.join(self.tags['local']['application']['eng'].fq_name)
-        query_params = {'start_time': 'now-10s', 'end_time': 'now',
+        query_params = {'start_time': start_time, 'end_time': end_time,
                         'aps': [{'application': hr_tag,
                                     'name': 'myhr'},
                                 {'application': eng_tag,
@@ -245,13 +278,15 @@ class TestPolicyGen(BasePolicyGenTest):
                                 self.vms['eng_logic'], 'udp', 10012, 11012)
         traffic_obj4 = self.start_traffic(self.vms['eng_logic'],
                                 self.vms['eng_db'],'udp', 10012, 11012)
-        self.sleep(10)
+        start_time = utc_timestamp_usec()
+        self.sleep(TRAFFIC_TIME)
+        end_time = utc_timestamp_usec()
         self.stop_traffic(traffic_obj1)
         self.stop_traffic(traffic_obj2)
         self.stop_traffic(traffic_obj3)
         self.stop_traffic(traffic_obj4)
         query_params = {
-            'start_time': 'now-20s', 'end_time': 'now',
+            'start_time': start_time, 'end_time': end_time,
             'where':[[{'name':'tier', 'value':'tier=web', 'op':MatchOp.EQUAL},
                       {'name':'application', 'value':'application=hr',
                             'op':MatchOp.EQUAL}],
@@ -299,12 +334,14 @@ class TestPolicyGenUntagged(BasePolicyGenTest):
                                 self.vms['hr_db'], 'icmp', 0, 0)
         traffic_obj4 = self.start_traffic(self.vms['eng_logic'],
                                 self.vms['eng_db'], 'icmp', 0, 0)
-        self.sleep(10)
+        start_time = utc_timestamp_usec()
+        self.sleep(TRAFFIC_TIME)
+        end_time = utc_timestamp_usec()
         self.stop_traffic(traffic_obj1)
         self.stop_traffic(traffic_obj2)
         self.stop_traffic(traffic_obj3)
         self.stop_traffic(traffic_obj4)
-        query_params = {'start_time': 'now-30s', 'end_time': 'now'}
+        query_params = {'start_time': start_time, 'end_time': end_time}
         result = self.policy_gen.generate_policy(query_params)
         assert self.verify_generated_rules(result, query=query_params,
                         expected_untagged = [traffic_obj1, traffic_obj2,
@@ -317,12 +354,14 @@ class TestPolicyGenUntagged(BasePolicyGenTest):
                                 self.vms['hr_db'], 'tcp', 9930, 9931)
         traffic_obj2 = self.start_traffic(self.vms['eng_logic'],
                                 self.vms['eng_db'], 'udp', 9940, 9941)
-        self.sleep(10)
+        start_time = utc_timestamp_usec()
+        self.sleep(TRAFFIC_TIME)
+        end_time = utc_timestamp_usec()
         self.stop_traffic(traffic_obj1)
         self.stop_traffic(traffic_obj2)
-        query_params1 = {'start_time': 'now-10s', 'end_time': 'now', 'tags': ['application', 'tier']}
+        query_params1 = {'start_time': start_time, 'end_time': end_time, 'tags': ['application', 'tier']}
         result1 = self.policy_gen.generate_policy(query_params1)
-        query_params2 = {'start_time': 'now-20s', 'end_time': 'now', 'tags': ['application', 'deployment', 'site']}
+        query_params2 = {'start_time': start_time, 'end_time': end_time, 'tags': ['application', 'deployment', 'site']}
         result2 = self.policy_gen.generate_policy(query_params2)
         assert self.verify_generated_rules(result1, query=query_params1,
                         expected=[[traffic_obj1]], expected_untagged=[traffic_obj2])
