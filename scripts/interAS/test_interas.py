@@ -11,7 +11,6 @@ from test import attr
 
 class TestInterAS(BaseInterAS):
 
-    @attr(type=['sanity'])
     @preposttest_wrapper
     def test_interAS_labeled_unicast(self):
         '''
@@ -32,3 +31,4 @@ class TestInterAS(BaseInterAS):
         '''
         self.configure_remote_asbr()
         assert self.verify_asbr_connection(local=False)
+
