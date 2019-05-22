@@ -297,8 +297,9 @@ class TestCustomIsolationSerial(BaseK8sTest):
         """
         client1, client2 = self.setup_common_namespaces_pods(prov_service = True)
         policy_name='allow-btw-custom-ns-and-service'
-        k8s_default_service_vn_name = "k8s-default-service-network"
-        k8s_default_service_vn_fq_name = self.inputs.project_fq_name + \
+        project_fq_name = self.connections.inputs.project_fq_name
+        k8s_default_service_vn_name = "%s-default-service-network" % project_fq_name[-1]
+        k8s_default_service_vn_fq_name = project_fq_name + \
                                             [k8s_default_service_vn_name]
         k8s_default_service_vn_obj = self.vnc_lib.virtual_network_read(
                                     fq_name = k8s_default_service_vn_fq_name)
