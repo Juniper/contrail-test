@@ -424,3 +424,16 @@ class PodFixture(fixtures.Fixture):
             returnVal = self.inputs.get_host_ip(
                 self.connections.orch.get_host_of_vm(self.vm_obj))
         return returnVal
+
+    def get_pod_ip(self,nad_name):
+        '''routine is for returning the ip of the pod 
+           corresponding to to given network attachment definition
+        '''
+        pod_status = self.read()
+        net_status = eval(pod_status.metadata.annotations["k8s.v1.cni.cncf.io/network-status"])
+
+        for item in net_status:
+            if item["name"] == nad_name:
+               return item["ips"]
+        assert  False , "FAILED..!!could not find the network attachment definition hence asserting"
+    #get_pod_ip

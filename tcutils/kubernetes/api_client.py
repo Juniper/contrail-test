@@ -5,6 +5,8 @@ from kubernetes.client.rest import ApiException
 from common import log_orig as contrail_logging
 from tcutils.util import get_random_name, retry
 from kubernetes.stream import stream
+from pprint import pprint
+
 
 class Client(object):
 
@@ -21,6 +23,8 @@ class Client(object):
             cfg.host = host
             cfg.verify_ssl = False
         self.api_client = client.ApiClient(cfg)
+        #self.res_v1_beta1_h = client.ApiextensionsV1beta1Api(self.api_client)
+        self.res_v1_obj_h = client.CustomObjectsApi(self.api_client)
         self.v1_h = client.CoreV1Api(self.api_client)
         self.v1_h.read_namespace('default')
         self.v1_beta_h = client.ExtensionsV1beta1Api(self.api_client)
@@ -725,6 +729,82 @@ class Client(object):
         return self.v1_h.delete_namespaced_secret(name, namespace, body)
     # end delete_secret
 
+    def create_custom_resource_object(self,
+                   namespace='default',
+                   name=None, metadata=None,
+                   spec=None,
+                   apiVersion='k8s.cni.cncf.io/v1', \
+                   nad='NetworkAttachmentDefinition',
+                   plural="network-attachment-definitions"):
+        '''Routine to create the custome resource object in k8s environment in our case
+           its NetworkAttachmentDefinition to support multiple interfaces to the POD
+        '''
+        if metadata is None: metadata = {}
+        if spec is None: spec = {}
+        metadata_obj = self._get_metadata(metadata)
+        if name:
+            metadata_obj.name = name
+        if namespace:
+            metadata_obj.namespace = namespace
+        group=apiVersion.split("/")[0]
+        body={
+            'apiVersion': apiVersion,
+            'kind': nad, 
+            'metadata': metadata_obj,
+            'spec': spec }
+
+        version=apiVersion.split("/")[-1]
+        #create a network attachement definition in the given namespace
+        try: 
+           api_response = self.res_v1_obj_h.create_namespaced_custom_object(group, version, \
+                                             namespace, plural, body, pretty="true")
+           self.logger.info('Creating NetworkAttachment %s:%s' % (namespace, name))
+           pprint(api_response)
+        except ApiException as e:
+           print("Exception when calling CustomObjectsApi->create_cluster_custom_object: %s\n" % e)
+        return api_response
+    #end create_custom_resource_object
+
+    def delete_custom_resource_object(self, name=None, 
+                                     namespace='default',
+                                     metadata=None, Spec=None,                   
+                                     apiVersion='k8s.cni.cncf.io/v1',
+                                     plural="network-attachment-definitions",
+                                     grace_period_seconds=0):
+        '''Routine deletes the custome resource object created in k8s plaotform
+        '''
+        body = client.V1DeleteOptions() 
+        group = apiVersion.split("/")[0]
+        version = apiVersion.split("/")[-1]
+        try: 
+           api_response = self.res_v1_obj_h.delete_namespaced_custom_object(group, version, namespace, plural, \
+                                                                          name, \
+                                                                          body, \
+                                                                          grace_period_seconds=grace_period_seconds)
+           self.logger.info('Deleted NetworkAttachment %s:%s' % (namespace, name))
+           pprint(api_response)
+        except ApiException as e:
+           print("Exception when calling CustomObjectsApi->delete_namespaced_custom_object: %s\n" % e)
+        return api_response
+    #delete_custom_resource_object
+
+    def read_custom_resource_object(self, name=None,
+                                     namespace='default',
+                                     apiVersion='k8s.cni.cncf.io/v1',
+                                     plural="network-attachment-definitions"):
+        '''Routine reads the custome resource object created in k8s plaotform
+        '''
+
+        group = apiVersion.split("/")[0]
+        version = apiVersion.split("/")[-1]
+        
+        try: 
+           api_response = self.res_v1_obj_h.get_namespaced_custom_object(group, version, namespace, plural, name)
+           pprint(api_response)
+        except ApiException as e:
+           print("Exception when calling CustomObjectsApi->get_namespaced_custom_object: %s\n" % e)
+        return api_response
+
 if __name__ == '__main__':
     c1 = Client()
     pods = c1.get_pods()
@@ -733,8 +813,6 @@ if __name__ == '__main__':
                               pod.status.phase,
                               pod.status.pod_ip))
 
-    import pdb
-    pdb.set_trace()
     dep = c1.create_deployment(
         metadata={'name': 'test-deployment'},
         spec={
@@ -752,8 +830,6 @@ if __name__ == '__main__':
                 }
             }
         })
-    import pdb; pdb.set_trace()
-
 
 #    ing1 = c1.create_ingress(name='test1',
 #                             default_backend={'service_name': 'my-nginx',
@@ -774,6 +850,3 @@ if __name__ == '__main__':
 #                }
 #            ]
 #        })
-
-    import pdb
-    pdb.set_trace()

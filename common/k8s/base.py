@@ -16,6 +16,7 @@ from k8s.namespace import NamespaceFixture
 from k8s.tls_secret import TLSSecretFixture
 from k8s.deployment import DeploymentFixture
 from k8s.network_policy import NetworkPolicyFixture
+from k8s.network_attachment import NetworkAttachmentFixture
 from common.connections import ContrailConnections
 from common import create_public_vn
 from common.base import GenericTestBase
@@ -903,7 +904,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         self.inputs.restart_service('contrail-kube-manager', ips,
                                      container='contrail-kube-manager',
                                      verify_service=True)
-        time.sleep(10)#wait time to stabilize the cluster
+        time.sleep(30)#wait time to stabilize the cluster
     # end restart_kube_manager
 
     def restart_vrouter_agent(self, ips=None):
@@ -1153,5 +1154,140 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         else:
             self.logger.warn("Nothing to delete parallely")
             return
+
+    def setup_csrx_pod(self,
+                          name=None,
+                          namespace='default',
+                          metadata=None,
+                          spec=None,
+                          csrx_version='18.1R1.9',
+                          labels=None):
+
+        metadata = metadata or {}
+        spec = spec or {}
+        labels = labels or {}
+        name = name or get_random_name('csrx-pod')
+
+        pullsecret = 'secretcsrx'
+        username = self.inputs.host_data[host]['username']
+        password = self.inputs.host_data[host]['password']
+        docker_username = 'JNPR-CSRXFieldUser12'
+        docker_password = 'd2VbRJ8xPhSUAwzo7Lym'
+
+        cmd = "kubectl create secret docker-registry %s " \
+              "--docker-server=hub.juniper.net/security " \
+              "--docker-username=%s --docker-password=%s" %(pullsecret , docker_username ,docker_password)
+        pullsecret = self.inputs.run_cmd_on_server(self.inputs.cfgm_ip, cmd, username, password,
+                                                   as_sudo=True)
+        getsecret = "kubectl get secret"
+        secretkey = self.inputs.run_cmd_on_server(self.inputs.cfm_ip,\
+                                                  getsecret, username, password, as_sudo=True)
+        if pullsecret not in secretkey:
+            self.logger.warn("Pull secret can't be created")
+            return False
+
+        spec["containers"]["securityContext"] = {}
+        spec = spec or {
+            'containers': [
+                {'image':'hub.juniper.net/security/csrx:csrx_version',
+                 'image_pull_policy': 'IfNotPresent',
+                 'stdin': 'true',
+                 'tty': 'false',
+                 }
+            ],
+            'restart_policy': 'Always',
+        }
+        spec["containers"]["securityContext"].update({'privileged': 'true'})
+        spec["imagePullSecrets"].update({'privileged': 'true'})
+
+        return self.setup_pod(name=name,
+                              namespace=namespace,
+                              metadata=metadata,
+                              spec=spec,
+                              labels=labels,
+                              shell='/bin/sh')
+
+    def setup_cirros_pod(self,
+                          name=None,
+                          namespace='default',
+                          metadata=None,
+                          spec=None,
+                          labels=None,
+                          custom_isolation = False,
+                          fq_network_name = {}):
+        metadata = metadata or {}
+        spec = spec or {}
+        labels = labels or {}
+        name = name or get_random_name('cirros')
+        cname = get_random_name('container')
+        spec = spec or  {
+                'containers': [
+                    {'image': 'cirros',
+                      "name": cname
+                    }
+              ]
+        }
+        return self.setup_pod(name=name,
+                              namespace=namespace,
+                              metadata=metadata,
+                              spec=spec,
+                              labels=labels,
+                              shell='/bin/sh',
+                              custom_isolation = custom_isolation,
+                              fq_network_name = fq_network_name)
+
+    def setup_network_attachment(self,
+                                 name=None,
+                                 namespace='default',
+                                 cidr=None,
+                                 ip_fabric_snat=False,                                                                                                                 ip_fabric_forwarding=False,
+                                 **kwargs):
+        name = name or get_random_name('nad')
+        metadata =  {}
+        spec = {}
+        metadata["annotations"]={}
+        spec["config"]={}
+        metadata["name"] = name
+        metadata["annotations"]["opencontrail.org/cidr"] = cidr
+
+        if ip_fabric_forwarding :
+           metadata["annotations"]["opencontrail.org/ip_fabric_forwarding"] = "True"
+
+        if ip_fabric_snat:
+           metadata["annotations"]["opencontrail.org/ip_fabric_snat"] = "True"
+
+        spec = {
+                "config":  '{ "cniVersion": "0.3.0", "type": "contrail-k8s-cni" }'
+        }
+
+        return self.useFixture(NetworkAttachmentFixture(
+                              connections=self.connections,
+                              namespace=namespace,
+                              metadata=metadata,
+                              spec=spec))
+    # end setup_network_attachment
+
+    def verify_network_attachment(self,
+                  name=None,
+                  namespace='default',
+                  cidr=None,
+                  **kwargs):
+        name = name or get_random_name('nad')
+        metadata =  {}
+        spec = {}
+        metadata["annotations"]={}
+        spec["config"]={}
+        metadata["name"] = name
+        metadata["annotations"]["opencontrail.org/cidr"] = cidr
+        metadata["config"]["cniVersion"] =  "0.3.0"
+        metadata["config"].update({"type" : "contrail-k8s-cni"})
+
+        return self.useFixture(NetworkAttachmentFixture(
+            connections=self.connections,
+            namespace=namespace,
+            metadata=metadata,
+            spec=spec,
+            **kwargs))
+
     #end delete_in_parallel
 
