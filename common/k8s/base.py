@@ -53,7 +53,6 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         if cls.inputs.slave_orchestrator == 'kubernetes':
             for cluster in cls.inputs.k8s_clusters:
                 cls.cluster_connections.append(ContrailConnections(
-                    cls.inputs,
                     project_name=cluster['name'],
                     username=cls.inputs.admin_username,
                     password=cls.inputs.admin_password,
@@ -996,7 +995,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
     def configure_snat_for_pod (self, pod):
 
         # Create logical router
-        router_obj = self.create_snat_router("snat_router")
+        router_obj = self.create_snat_router(get_random_name("snat_router"))
 
         # Connect router with virtual network associated to pod
         self.connect_vn_with_router(router_obj, pod.vn_fq_names[0])
@@ -1067,14 +1066,15 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                 project = m.group(1).strip("'\": }").split(",")[0].strip("'\"")
                 cmd = 'sed -i "/^cluster_project/d" /entrypoint.sh'
                 operation = "reset"
+                no_match = False
             else:
                 no_match = True
         if not cp_line or no_match:
             self.logger.debug("Cluster_project not set in this sanity run. "
                         "Setting it to default project for few tests")
-            default_project = self.inputs.admin_tenant
+            project = self.inputs.admin_tenant
             cmd = r'crudini --set /entrypoint.sh KUBERNETES cluster_project \\${KUBERNETES_CLUSTER_PROJECT:-\\"{\'domain\':\'default-domain\'\,\'project\':\'%s\'}\\"}'\
-                  % default_project
+                  % project
             operation = "set"
         for kube_manager in self.inputs.kube_manager_ips:
             self.inputs.run_cmd_on_server(kube_manager, cmd,
@@ -1082,7 +1082,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                                           shell_prefix = None)
         self.restart_kube_manager()
         self.addCleanup(self.revert_cluster_project,
-                         project_name = default_project,
+                         project_name = project,
                          operation = operation)
         return operation
     #end modify_cluster_project
