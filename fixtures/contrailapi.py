@@ -2401,7 +2401,7 @@ class ContrailVncApi(object):
                             'parent_uuid', 'floating_ip_fixed_ip_address'], detail=False)
                     fip_list = fip_dict.get('floating-ips')
                 return fip_list
-        return None
+        return []
     # End list_floatingips
 
     def list_loadbalancers(self, **kwargs):
