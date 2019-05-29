@@ -121,17 +121,16 @@ class NetworkAttachmentFixture(fixtures.Fixture):
 
     @retry(delay=5, tries=12)
     def verify_nad_is_not_in_k8s(self):
-        result = False
         output = self.run_kubectl_cmd_on_master(self.name, namespace=self.namespace)
         pprint (output)
-        if self.name not in output:
+        if 'not found' in output:
             self.logger.info('Network Attachement  %s not found in kubernetes'
                              % (self.name))
             return True
         else:
             self.logger.warn('Network Attachement %s  found in kube manager'
                              % (self.name))
-        return result
+        return False
     # end verify_nad_is_not_in_k8s
 
     @retry(delay=2, tries=10)
