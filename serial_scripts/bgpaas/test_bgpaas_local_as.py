@@ -200,6 +200,9 @@ class TestBGPaaSlocalAS(LocalASBase, BaseBGPaaS):
             local_autonomous_system=local_autonomous_system)
         agent = bgpaas_vm1.vm_node_ip
         present_as = self.get_present_as()
+        # There was a bug recently where having a few seconds before changing global AS caused a crash
+        # adding a little sleep to cover this
+        sleep(10)
         self.change_global_AS(random.randint(1300, 1400))
         # ToDO skiranh: some setups take a lot of time for bgpaas connection to
         # be up, hence the sleep. Need to figure out if this is expected.
