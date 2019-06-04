@@ -11,7 +11,6 @@ from test import attr
 
 class TestInterAS(BaseInterAS):
 
-    @attr(type=['sanity'])
     @preposttest_wrapper
     def test_interAS_labeled_unicast(self):
         '''
