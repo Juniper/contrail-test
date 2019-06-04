@@ -68,7 +68,7 @@ docker_build () {
   build_arg_opts+=" --build-arg REPO_FILE=contrail.repo"
 
   echo "Building test container ${name}:${tag} with opts ${build_arg_opts}"
-  docker build -t ${name}:${tag} ${build_arg_opts} -f $dockerfile $dir || exit
+  docker build -t ${name}:${tag} ${build_arg_opts} -f $dockerfile $dir || exit 1
   echo "Built test container ${name}:${tag}"
 }
 
@@ -189,7 +189,7 @@ EOF
         TAG=latest
     fi
     echo "Building base container"
-    docker build -t contrail-test-base:$TAG docker/base || exit
+    docker build -t contrail-test-base:$TAG docker/base || exit 1
     if [[ -n $REGISTRY_SERVER ]]; then
         docker tag contrail-test-base:$TAG $REGISTRY_SERVER/contrail-test-base:$TAG
     fi
