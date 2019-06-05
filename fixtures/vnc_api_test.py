@@ -274,8 +274,10 @@ class VncLibFixture(fixtures.Fixture):
             return self.neutron_handle
     # end get_neutron_handle
 
-    def get_project_obj(self):
-        if self.connections:
+    def get_project_obj(self, project_fqname=None):
+        if project_fqname:
+            return self.vnc_api_h.project_read(fq_name=project_fqname)
+        elif self.connections:
             project_id = self.connections.project_id
         elif self.get_project_id():
             project_id = self.project_id

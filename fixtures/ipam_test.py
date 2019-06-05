@@ -15,7 +15,8 @@ except ImportError:
 class IPAMFixture(fixtures.Fixture):
 
     def __init__(self, name=None, connections=None,
-                 ipamtype=IpamType("dhcp"), vdns_obj=None, uuid=None):
+                 ipamtype=IpamType("dhcp"), vdns_obj=None, uuid=None,
+                 project_name=None, **kwargs):
         self.name = name
         self.connections = connections
         self.inputs = self.connections.inputs
@@ -25,12 +26,18 @@ class IPAMFixture(fixtures.Fixture):
         self.already_present = False
         self.cn_inspect = self.connections.cn_inspect
         self.agent_inspect = self.connections.agent_inspect
-        self.project_name = self.connections.project_name
         self.vnc = self.connections.get_vnc_lib_h()
         self.vdns_obj = vdns_obj
         self.ipam_id = uuid
         self.verify_is_run = False
         self.ri_name = None
+        self.subnet_method = kwargs.get('subnet_method')
+        self.subnet = kwargs.get('subnet')
+        self.vlan_tag = kwargs.get('vlan_tag')
+        self.dhcp_relay_server = kwargs.get('dhcp_relay_server')
+        self.allocation_pools = kwargs.get('allocation_pools')
+        self.default_gateway = kwargs.get('default_gateway')
+        self.project_name = project_name or self.connections.project_name
         self.fq_name = [self.connections.domain_name, self.project_name, self.name]
         if self.inputs.verify_thru_gui():
             self.browser = self.connections.browser
@@ -78,6 +85,17 @@ class IPAMFixture(fixtures.Fixture):
             self.obj = NetworkIpam(name=self.name, parent_type='project',
                                    fq_name=self.fq_name,
                                    network_ipam_mgmt=self.ipamtype)
+            if self.subnet_method:
+                self.obj.set_ipam_subnet_method(self.subnet_method)
+            if self.subnet:
+                prefix, plen = self.subnet.split('/')
+                subnets = [IpamSubnetType(subnet=SubnetType(ip_prefix=prefix,
+                                              ip_prefix_len=int(plen)),
+                                          default_gateway=self.default_gateway,
+                                          allocation_pools=self.allocation_pools,
+                                          vlan_tag=self.vlan_tag,
+                                          dhcp_relay_server=self.dhcp_relay_server)]
+                self.obj.set_ipam_subnets(IpamSubnets(subnets=subnets))
             if self.inputs.is_gui_based_config():
                 self.webui.create_ipam(self)
             else:

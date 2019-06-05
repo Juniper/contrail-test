@@ -4,7 +4,6 @@ import vnc_api_test
 from pif_fixture import PhysicalInterfaceFixture
 from common.device_connection import ConnectionFactory
 from tcutils.util import retry
-from common.device_connection import NetconfConnection
 try:
     from webui_test import *
 except ImportError:
