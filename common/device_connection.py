@@ -4,6 +4,7 @@ from fabric.operations import get, put, run, local, sudo
 from fabric.context_managers import settings, hide
 from fabric.contrib.files import exists
 from tcutils.verification_util import EtreeToDict
+from tcutils.gevent_lib import *
 
 from jnpr.junos import Device
 from jnpr.junos.utils.config import Config
@@ -11,6 +12,7 @@ from jnpr.junos.exception import LockError
 from jnpr.junos.exception import *
 
 from common import log_orig as contrail_logging
+import gevent
 
 class AbstractConnection(object):
     ''' Abstract connnection class for ssh/netconf etc
@@ -85,10 +87,11 @@ class NetconfConnection(AbstractConnection):
         self.handle = None
         self.logger = kwargs.get('logger', contrail_logging.getLogger(__name__))
         self.config_handle = None
+        self.mode = kwargs.get('mode')
 
     def connect(self):
         self.handle = Device(host=self.host, user=self.username, 
-            password=self.password)
+            password=self.password, mode=self.mode)
         try:
             self.handle.open(gather_facts=False)
             self.config_handle = Config(self.handle)
@@ -99,22 +102,35 @@ class NetconfConnection(AbstractConnection):
     # end connect
 
     def disconnect(self):
-        self.handle.close()
+        with gevent.Timeout(15.0, False):
+            self.handle.close()
 
     def show_version(self):
         return self.handle.show_version()
 
-    def get_config(self):
+    def zeroize(self):
+        with gevent.Timeout(15.0, False):
+            try:
+                self.handle.zeroize()
+            except Exception as e:
+                pass
+
+    def get_config(self, mode='set'):
         configs = self.handle.rpc.get_config(options={'database' : 'committed',
-                                                      'format': 'set'})
+                                                      'format': mode})
         return configs.text
 
     def get_interfaces(self, terse=True):
         output = self.handle.rpc.get_interface_information(terse=terse)
         return EtreeToDict('physical-interface').get_all_entry(output)
 
-    def config(self, stmts=[], commit=True, ignore_errors=False, timeout = 30):
-        for stmt in stmts:
+    def config(self, stmts=[], commit=True, merge=True, overwrite=False,
+               path=None, ignore_errors=False, timeout=30):
+        if path:
+            self.config_handle.load(path=path, overwrite=overwrite,
+                                    timeout=timeout)
+        else:
+          for stmt in stmts:
             try:
                 self.config_handle.load(stmt, format='set', merge=True)
             except ConfigLoadError,e:
@@ -125,7 +141,7 @@ class NetconfConnection(AbstractConnection):
                     raise e
         if commit:
             try:
-                self.config_handle.commit(timeout = timeout)
+                self.config_handle.commit(timeout=timeout)
             except CommitError,e:
                 self.logger.exception(e)
                 return (False,e)
