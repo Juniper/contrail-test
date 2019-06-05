@@ -20,12 +20,16 @@ class FabricSingleton(FabricUtils, GenericTestBase):
         super(FabricSingleton, self).__init__(connections)
         self.invoked = False
 
-    def create_fabric(self, rb_roles=None):
+    def create_fabric(self, rb_roles=None, ztp=False):
         self.invoked = True
         fabric_dict = self.inputs.fabrics[0]
-        self.fabric, self.devices, self.interfaces = \
-            self.onboard_existing_fabric(fabric_dict, cleanup=False)
-        assert self.interfaces, 'Failed to onboard existing fabric %s'%fabric_dict
+        if ztp:
+            self.fabric, self.devices, self.interfaces = \
+                self.onboard_fabric(fabric_dict, cleanup=False)
+        else:
+            self.fabric, self.devices, self.interfaces = \
+                self.onboard_existing_fabric(fabric_dict, cleanup=False)
+        assert self.interfaces, 'Failed to onboard fabric %s'%fabric_dict
         self.assign_roles(self.fabric, self.devices, rb_roles=rb_roles)
 
     def create_ironic_provision_vn(self, admin_connections):
@@ -80,13 +84,14 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         cls.set_encap_priority(['VXLAN', 'MPLSoGRE','MPLSoUDP'])
         cls.vnc_h.enable_vxlan_routing()
         cls.rb_roles = dict()
+        cls.ztp = False
 
     @skip_because(function='is_test_applicable')
     def setUp(self):
         super(BaseFabricTest, self).setUp()
         obj = FabricSingleton(self.connections)
         if not obj.invoked:
-            obj.create_fabric(self.rb_roles)
+            obj.create_fabric(self.rb_roles, self.ztp)
             if self.inputs.is_ironic_enabled:
                 obj.create_ironic_provision_vn(self.admin_connections)
         assert obj.fabric and obj.devices and obj.interfaces, "Onboarding fabric failed"
@@ -103,10 +108,12 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
                 self.pnfs.append(device)
 
     def is_test_applicable(self):
-        if not self.inputs.fabrics or not self.inputs.physical_routers_data \
-           or not self.inputs.bms_data:
-            return (False, 'skipping not a fabric environment')
-        return (True, None)
+        self.invoked = True
+        fabric_dict = self.inputs.fabrics[0]
+        self.fabric, self.devices, self.interfaces = \
+            self.onboard_existing_fabric(fabric_dict, cleanup=False)
+        assert self.interfaces, 'Failed to onboard existing fabric %s'%fabric_dict
+        self.assign_roles(self.fabric, self.devices, rb_roles=rb_roles)
 
     def is_bms_on_node(self, device_name):
         for name, prop in self.inputs.bms_data.iteritems():

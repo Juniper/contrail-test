@@ -9,9 +9,7 @@ from lxml import etree
 from tcutils.verification_util import elem2dict
 import time
 
-NODE_PROFILES = ['juniper-mx', 'juniper-qfx10k',
-                 'juniper-qfx5k', 'juniper-qfx5k-lean', 'juniper-srx']
-
+NODE_PROFILES = ['juniper-mx', 'juniper-qfx10k', 'juniper-qfx5k', 'juniper-qfx5k-lean', 'juniper-qfx10k-lean', 'juniper-srx']
 
 class FabricUtils(object):
     def __init__(self, connections):
@@ -29,11 +27,76 @@ class FabricUtils(object):
             return (False, None)
         return (True, fabric)
 
+    def onboard_fabric(self, fabric_dict, wait_for_finish=True,
+                                name=None, cleanup=False):
+ 
+        interfaces = {'physical': [], 'logical': []}
+        devices = list()
+
+        name = get_random_name(name) if name else get_random_name('fabric')
+
+        fq_name = ['default-global-system-config',
+                   'fabric_onboard_template']
+        if 'image_upgrade_os_version' in fabric_dict['namespaces'].keys():
+            self.logger.info("ZTP with image upgrade")
+            os_version = fabric_dict['namespaces']['image_upgrade_os_version']
+        else:
+            self.logger.info("ZTP without image upgrade")
+            os_version = ''
+        payload = {'fabric_fq_name': ["default-global-system-config", name],
+                   'fabric_display_name': name,
+                   'device_to_ztp': [{"serial_number": dct['serial_number'], \
+                                      "name": dct['name']} \
+                       for dct in self.inputs.physical_routers_data.values() \
+                           if dct.get('serial_number')],
+                   'node_profiles': [{"node_profile_name": profile}
+                       for profile in fabric_dict.get('node_profiles')\
+                                      or NODE_PROFILES],
+                   'device_auth': {"root_password": fabric_dict['credentials'][0]['password']},
+                   'loopback_subnets': fabric_dict['namespaces']['loopback_subnets'],
+                   'management_subnets': fabric_dict['namespaces']['management_subnets'],
+                   'fabric_subnets': fabric_dict['namespaces']['fabric_subnets'],
+                   'overlay_ibgp_asn': fabric_dict['namespaces']['overlay_ibgp_asn'],
+                   'fabric_asn_pool': [{"asn_max": fabric_dict['namespaces']['asn'][0]['max'],
+                                       "asn_min": fabric_dict['namespaces']['asn'][0]['min']}]
+                   }
+        if os_version:
+            payload['os_version'] = os_version
+        self.logger.info('Onboarding new fabric %s %s'%(name, payload))
+        execution_id = self.vnc_h.execute_job(fq_name, payload)
+        status, fabric = self._get_fabric_fixture(name)
+        assert fabric, 'Create fabric seems to have failed'
+        if cleanup:
+            self.addCleanup(self.cleanup_fabric, fabric, devices, interfaces)
+        if wait_for_finish:
+            try:
+                status = self.wait_for_job_to_finish(':'.join(fq_name), execution_id)
+            except AssertionError:
+                self.cleanup_fabric(fabric, verify=False)
+                raise
+            assert status, 'job %s to create fabric failed'%execution_id
+            for device in fabric.fetch_associated_devices() or []:
+                device_fixture = PhysicalDeviceFixture(connections=self.connections,
+                                                       name=device)
+                device_fixture.read()
+                device_fixture.add_csn()
+                devices.append(device_fixture)
+            for device in devices:
+                for port in device.get_physical_ports():
+                    pif = PhysicalInterfaceFixture(uuid=port, connections=self.connections)
+                    pif.read()
+                    interfaces['physical'].append(pif)
+            for pif in interfaces['physical']:
+                for port in pif.get_logical_ports():
+                    lif = LogicalInterfaceFixture(uuid=port, connections=self.connections)
+                    lif.read()
+                    interfaces['logical'].append(lif)
+        return (fabric, devices, interfaces)
+
     def onboard_existing_fabric(self, fabric_dict, wait_for_finish=True,
                                 name=None, cleanup=False):
         interfaces = {'physical': [], 'logical': []}
-        devices = list()
-        
+        devices = list() 
         name = get_random_name(name) if name else get_random_name('fabric')
 
         fq_name = ['default-global-system-config',

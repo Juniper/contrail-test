@@ -1,0 +1,26 @@
+---
+- name: backup running configuration
+  hosts: localhost
+  roles:
+    - Juniper.junos
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: Take backup of runnning-config and save it in /tmp/
+      juniper_junos_config:
+        retrieve: "committed"
+        diff: false
+        check: false
+        commit: false
+        dest: "{{ filepath }}"
+        format: xml
+        timeout: "{{ timeout }}"
+        host: "{{ host }}"
+        user: "{{ username }}"
+        passwd: "{{ password }}"
+        mode: telnet
+      register: response
+    - name: Print the response
+      debug:
+        var: response
