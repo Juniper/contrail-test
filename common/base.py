@@ -318,6 +318,22 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
             router_id,
             vn_fixture.vn_subnet_objs[0]['id'])
 
+    @classmethod
+    def create_only_ipam(cls, **kwargs):
+        '''Classmethod to do only IPAM creation
+        '''
+        if not kwargs.get('name'):
+            kwargs['name'] = get_random_name('ipam')
+        connections = kwargs.pop('connections', None) or cls.connections
+        ipam_fixture = IPAMFixture(
+                         connections=connections,
+                         **kwargs)
+        ipam_fixture.setUp()
+        if kwargs.get('vdns_fixture'):
+            ipam_fixture.update_vdns(kwargs['vdns_fixture'].obj)
+        return ipam_fixture
+    # end create_only_vn
+
     def create_ipam(self, name=None, connections=None, **kwargs):
         connections = connections or self.connections
         name = name or get_random_name('ipam')
