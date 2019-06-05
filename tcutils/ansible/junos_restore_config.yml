@@ -1,0 +1,24 @@
+---
+- name: restore running configuration
+  hosts: localhost
+  roles:
+    - Juniper.junos
+  connection: local
+  gather_facts: no
+ 
+  tasks:
+    - name: Load configuration from a local file and commit
+      juniper_junos_config:
+        load: "override"
+        src: "{{ filepath }}"
+        format: xml
+        filter: 'system/storm-control'
+        timeout: 60
+        host: "{{ host }}"
+        user: "{{ username }}"
+        passwd: "{{ password }}"
+        mode: telnet
+      register: response
+    - name: Print the response
+      debug:
+        var: response
