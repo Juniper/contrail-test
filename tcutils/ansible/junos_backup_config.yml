@@ -1,0 +1,23 @@
+---
+- name: backup running configuration
+  hosts: localhost
+  roles:
+    - Juniper.junos
+  connection: local
+  gather_facts: no
+  
+  tasks:
+    - name: Take backup of runnning-config and save it in tcutils/ansible/backup.cfg
+      juniper_junos_config:
+        retrieve: "committed"
+        dest: "{{ filepath }}"
+        format: set
+        timeout: 60
+        host: "{{ host }}"
+        user: "{{ username }}"
+        passwd: "{{ password }}"
+        mode: telnet
+        register: response
+        - name: Print the response
+          debug:
+            var: response
