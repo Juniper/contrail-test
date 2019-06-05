@@ -3,16 +3,14 @@ import time
 from tcutils.tcpdump_utils import *
 from common.base import GenericTestBase
 from router_fixture import LogicalRouterFixture
-from fabric_test import FabricFixture
-from port_fixture import PortFixture
 import copy
 import re
-from security_group import SecurityGroupFixture, get_secgrp_id_from_name
 from common.neutron.base import BaseNeutronTest
 from common.fabric_utils import FabricUtils
+from lif_fixture import LogicalInterfaceFixture
 from bms_fixture import BMSFixture
 from vm_test import VMFixture
-from tcutils.util import Singleton, skip_because, get_random_vxlan_id
+from tcutils.util import Singleton
 
 class FabricSingleton(FabricUtils, GenericTestBase):
     __metaclass__ = Singleton
@@ -30,8 +28,6 @@ class FabricSingleton(FabricUtils, GenericTestBase):
 
     def create_ironic_provision_vn(self, admin_connections):
         bms_lcm_config = self.inputs.bms_lcm_config
-        if not bms_lcm_config.get('ironic_provision_vn'):
-            return
         ironic_net_name = bms_lcm_config["ironic_provision_vn"]["name"]
         ironic_cidr = bms_lcm_config["ironic_provision_vn"]["subnet"]
 
@@ -70,18 +66,14 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
     def setUpClass(cls):
         super(BaseFabricTest, cls).setUpClass()
         cls.vnc_h = cls.connections.orch.vnc_h
-        cls.bms = dict()
-        cls.spines = list()
-        cls.leafs = list()
-        cls.pnfs = list()
+        cls.bms = dict(); cls.spines = list(); cls.leafs = list()
         cls.default_sg = cls.get_default_sg()
         cls.allow_default_sg_to_allow_all_on_project(cls.inputs.project_name)
         cls.current_encaps = cls.get_encap_priority()
-        cls.set_encap_priority(['VXLAN', 'MPLSoGRE','MPLSoUDP'])
+        cls.set_encap_priority(['VXLAN', 'MPLSoUDP', 'MPLSoGRE'])
         cls.vnc_h.enable_vxlan_routing()
         cls.rb_roles = dict()
 
-    @skip_because(function='is_test_applicable')
     def setUp(self):
         super(BaseFabricTest, self).setUp()
         obj = FabricSingleton(self.connections)
@@ -99,76 +91,12 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
                 self.spines.append(device)
             elif role == 'leaf':
                 self.leafs.append(device)
-            elif role == 'pnf':
-                self.pnfs.append(device)
 
     def is_test_applicable(self):
         if not self.inputs.fabrics or not self.inputs.physical_routers_data \
            or not self.inputs.bms_data:
             return (False, 'skipping not a fabric environment')
         return (True, None)
-
-    def is_bms_on_node(self, device_name):
-        for name, prop in self.inputs.bms_data.iteritems():
-            for interface in prop.get('interfaces') or []:
-                if interface['tor'] == device_name:
-                    return True
-
-    def get_rb_roles(self, device_name):
-        for device in self.inputs.physical_routers_data.itervalues():
-            if device['name'] == device_name:
-                return device.get('rb_roles') or []
-
-    def get_bms_nodes(self, role='leaf', bms_type=None,
-                      no_of_interfaces=0, rb_role=None):
-        bms, dummy = self.filter_bms_nodes(role=role, bms_type=bms_type,
-                         no_of_interfaces=no_of_interfaces, rb_role=rb_role)
-        return bms and list(bms)
-
-    def filter_bms_nodes(self, bms_type=None, no_of_interfaces=0,
-                         role='leaf', rb_role=None):
-        bms_nodes = self.inputs.bms_data
-        regular_nodes = set()
-        multi_homed_nodes = set()
-        lag_nodes = set()
-        interfaces_filtered = set()
-        msg = "Unable to find BMS of type %s with interfaces %s"%(bms_type,
-            no_of_interfaces)
-        for name, details in bms_nodes.iteritems():
-            if role and role not in [self.get_role_from_inputs(interface['tor'])
-               for interface in details['interfaces']]:
-                continue
-            if rb_role and not all([rb_role in self.get_rb_roles(
-               interface['tor']) for interface in details['interfaces']]):
-                continue
-            if len(details['interfaces']) >= no_of_interfaces:
-                interfaces_filtered.add(name)
-            if len(details['interfaces']) == 1:
-                regular_nodes.add(name)
-                continue
-            devices = set()
-            for interface in details['interfaces']:
-                devices.add(interface['tor'])
-            if len(devices) > 1:
-                multi_homed_nodes.add(name)
-            else:
-                lag_nodes.add(name)
-
-        if bms_type == "multi_homing":
-           return multi_homed_nodes.intersection(interfaces_filtered), msg
-        elif bms_type == 'link_aggregation':
-           return lag_nodes.intersection(interfaces_filtered), msg
-        elif bms_type == 'single_interface':
-           return regular_nodes.intersection(interfaces_filtered), msg
-        else:
-           return interfaces_filtered, msg
-
-    def get_associated_prouters(self, bms_name):
-        bms_node = self.inputs.bms_data[bms_name]
-        devices = set()
-        for interface in bms_node['interfaces']:
-             devices.add(interface['tor'])
-        return [device for device in self.devices if device.name in devices]
 
     @classmethod
     def tearDownClass(cls):
@@ -181,18 +109,35 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
             cls.vnc_h.disable_vxlan_routing()
             super(BaseFabricTest, cls).tearDownClass()
 
+    def create_lif(self, bms_name, vlan_id=None):
+        bms_dict = self.inputs.bms_data[bms_name]
+        lif_fixtures = []
+        for interface in bms_dict['interfaces']:
+            tor = interface['tor']
+            tor_port = interface['tor_port']
+            lif = tor_port+'.'+str(vlan_id)
+            pif_fqname = ['default-global-system-config', tor,
+                          tor_port.replace(':', '__')]
+            lif_fixtures.append(self.useFixture(
+                LogicalInterfaceFixture(name=lif_name,
+                                        pif_fqname=pif_fqname,
+                                        connections=self.connections,
+                                        vlan_id=vlan_id)))
+        self.interfaces['logical'].extend(lif_fixtures)
+        return lif_fixtures
+
     def _my_ip(self, fixture):
         if type(fixture) == VMFixture:
-            return fixture.get_vm_ips()
+            return fixture.vm_ip
         elif type(fixture) == BMSFixture:
-            return fixture.get_bms_ips()
+            return fixture.bms_ip
 
     def do_ping_mesh(self, fixtures, expectation=True):
-        list_of_ips = list()
+        list_of_ips = set()
         for fixture in fixtures:
-            list_of_ips.extend(self._my_ip(fixture))
+            list_of_ips.add(self._my_ip(fixture))
         for fixture in fixtures:
-            for ip in set(list_of_ips) - set(self._my_ip(fixture)):
+            for ip in list_of_ips - set([self._my_ip(fixture)]):
                 fixture.clear_arp()
                 assert fixture.ping_with_certainty(ip, expectation=expectation)
 
@@ -230,30 +175,243 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
             bms_fixture.name, search_term, ip, mac))
     # end validate_arp
 
-    def create_sec_group(self, name, secgrpid=None, entries=None):
-        secgrp_fixture = self.useFixture(SecurityGroupFixture(
-            self.connections, self.inputs.domain_name,
-            self.inputs.project_name, secgrp_name=name,
-            uuid=secgrpid, secgrp_entries=entries,option='neutron'))
-        result, msg = secgrp_fixture.verify_on_setup()
-        assert result, msg
-        return secgrp_fixture
-
-    def create_fabric(self, **kwargs):
-        return self.useFixture(FabricFixture(connections=self.connections,
-                                             **kwargs))
-
-    def create_logical_router(self, vn_fixtures, vni=None, devices=None, **kwargs):
+    def create_logical_router(self, vn_fixtures, **kwargs):
         vn_ids = [vn.uuid for vn in vn_fixtures]
-        vni = vni or str(get_random_vxlan_id(min=10000))
-        self.logger.info('Creating Logical Router with VN uuids: %s, VNI %s'%(
-            vn_ids, vni))
+        self.logger.info('Creating Logical Router with VN uuids: %s'%(vn_ids))
         lr = self.useFixture(LogicalRouterFixture(
             connections=self.connections,
-            connected_networks=vn_ids, vni=vni, **kwargs))
-        for spine in devices or self.spines:
-            if kwargs.get('is_public_lr') == True:
-                if 'dc_gw' not in self.inputs.get_prouter_rb_roles(spine.name):
-                    continue
+            connected_networks=vn_ids, **kwargs))
+        for spine in self.spines:
             lr.add_physical_router(spine.uuid)
         return lr
+
+class BaseEvpnType5Test(BaseFabricTest):
+
+    def setup_vns(self, vn=None):
+        '''Setup VN
+           Input vn format:
+                vn = {'count':1,
+                    'vn1':{'subnet':'10.10.10.0/24', 'ip_fabric':True,},
+                    }
+
+                vn = {'count':1,
+                       'vn1':{
+                            'address_allocation_mode':'flat-subnet-only',
+                            'ip_fabric':True,
+                            'ipam_fq_name': 'default-domain:default-project:ipam0'
+                          },
+                    }
+        '''
+        vn_count = vn['count'] if vn else 0
+        vn_fixtures = {} # Hash to store VN fixtures
+        for i in range(0,vn_count):
+            vn_id = 'vn'+str(i+1)
+            address_allocation_mode = vn[vn_id].get(
+                'address_allocation_mode', 'user-defined-subnet-only')
+            if address_allocation_mode == "flat-subnet-only":
+                ipam_fq_name = vn[vn_id].get('ipam_fq_name', None)
+                vn_fixture = self.create_vn(
+                    vn_name=vn_id,
+                    address_allocation_mode = address_allocation_mode,
+                    forwarding_mode ="l3",
+                   ipam_fq_name = ipam_fq_name, option='contrail')
+
+            else:
+                vn_subnet = vn[vn_id].get('subnet',None)
+                vn_fixture = self.create_vn(vn_name=vn_id,
+                                            vn_subnets=[vn_subnet])
+
+            ip_fabric = vn[vn_id].get('ip_fabric',False)
+            if ip_fabric:
+                ip_fab_vn_obj = self.get_ip_fab_vn()
+                assert vn_fixture.set_ip_fabric_provider_nw(ip_fab_vn_obj)
+
+            vn_fixtures[vn_id] = vn_fixture
+
+        return vn_fixtures
+
+    def setup_vmis(self, vn_fixtures, vmi=None):
+        '''Setup VMIs
+        Input vmi format:
+            vmi = {'count':2,
+                   'vmi1':{'vn': 'vn1'},
+                   'vmi2':{'vn': 'vn1'},
+                  }
+        '''
+        if vmi is None:
+            vmi = {}
+        vmi_count = vmi.pop('count', 0)
+        vmi_fixtures = {} # Hash to store VMI fixtures
+        vmi_keys = [each_key for each_key in vmi if re.match(r'vmi\d+',each_key)]
+        for each_vmi in vmi_keys:
+            vmi_id = each_vmi
+            vmi_vn = vmi[vmi_id]['vn']
+            vn_fixture = vn_fixtures[vmi_vn]
+            vmi_fixture = self.setup_vmi(vn_fixture.uuid)
+            if vmi[vmi_id].get('vip'):
+                vIP = vmi[vmi_id]['vip']
+                mode = vmi[vmi_id].get('mode', 'active-standby')
+                self.config_aap(vmi_fixture, vIP, mac=vmi_fixture.mac_address,
+                                aap_mode='active-active', contrail_api=True)
+
+            vmi_fixtures[vmi_id] = vmi_fixture
+
+        return vmi_fixtures
+
+    def setup_vms(self, vn_fixtures, vmi_fixtures, vm=None, **kwargs):
+        '''Setup VMs
+        Input vm format:
+            vm = {'count':2, 'launch_mode':'distribute',
+                  'vm1':{'vn':['vn1'], 'vmi':['vmi1'], 'userdata':{
+                    'vlan': str(vmi['vmi3']['vlan'])} },
+                  'vm2':{'vn':['vn1'], 'vmi':['vmi2'], 'userdata':{
+                    'vlan': str(vmi['vmi4']['vlan'])} }
+                }
+            launch_mode can be distribute or non-distribute
+        '''
+        if vm is None:
+            vm = {}
+        vm_count = vm.pop('count',0)
+        image_name = kwargs.get('image_name','cirros')
+        launch_mode = vm.get('launch_mode','default')
+        vm_fixtures = {} # Hash to store VM fixtures
+
+        compute_nodes = self.orch.get_hosts()
+        compute_nodes_len = len(compute_nodes)
+        index = random.randint(0,compute_nodes_len-1)
+        vm_index = 0        
+        vm_keys = [each_key for each_key in vm if re.match(r'vm\d+',each_key)]
+        for each_vm in vm_keys:
+            vm_id = each_vm
+            vn_list = vm[vm_id]['vn']
+            vmi_list = vm[vm_id]['vmi']
+
+            vn_fix_obj_list =[]
+            vmi_fix_uuid_list =[]
+
+            # Build the VN fixtures objects
+            for vn in vn_list:
+                vn_fix_obj_list.append(vn_fixtures[vn].obj)
+
+           # Build the VMI UUIDs
+            for vmi in vmi_list:
+                vmi_fix_uuid_list.append(vmi_fixtures[vmi].uuid)
+
+            # VM launch mode handling
+            # Distribute mode, generate the new random index
+            # Non Distribute mode, use previously generated index
+            # Default mode, Nova takes care of launching
+            if self.inputs.orchestrator == 'vcenter':
+                index = vm_index%compute_nodes_len
+                node_name = compute_nodes[index]
+                vm_fixture = self.create_vm(vn_objs=vn_fix_obj_list,
+                                        port_ids=vmi_fix_uuid_list,
+                                        node_name=node_name, image_name='ubuntu')
+            else:
+                if launch_mode == 'distribute':
+                    index = vm_index%compute_nodes_len
+                    node_name = self.inputs.compute_names[index]
+                elif launch_mode == 'non-distribute':
+                    node_name = self.inputs.compute_names[index]
+                elif launch_mode == 'default':
+                    node_name=None
+
+                vm_fixture = self.create_vm(vn_objs=vn_fix_obj_list,
+                                            port_ids=vmi_fix_uuid_list,
+                                            node_name=node_name, image_name=image_name)
+            vm_fixtures[vm_id] = vm_fixture
+            vm_index = vm_index + 1 
+
+
+        for vm_fixture in vm_fixtures.values():
+            assert vm_fixture.wait_till_vm_is_up()
+
+        return vm_fixtures
+
+    def setup_lrs(self, lrs, vn_fixtures):
+        '''Setup Logical routers
+        Input LR format:
+            LogicalRouter = {
+                   'lr1':{'vn_list': ['vn1','vn2'], 'vni': '7001'},
+                   'lr2':{'vn_list': ['vn3','vn4'], 'vni': '7002'},
+                  }
+        '''
+        lr_fixtures = {} # Hash to store Logical router fixtures
+         
+        self.logger.info('Creating Logical Routers: %s'%(lrs))
+        for each_lr in lrs:
+            lr_fix_inputs = { 'name':each_lr, 'connections':self.connections }
+            vn_uuid_list = [] 
+            for each_vn in lrs[each_lr]['vn_list']:
+                vn_uuid_list.append(vn_fixtures[each_vn].uuid)
+
+            self.logger.info('Creating Logical Router: %s  with VN uuids: %s'%(each_lr, vn_uuid_list))
+            lr_fix_inputs['connected_networks'] = {'vns': vn_uuid_list}
+
+            if 'vni' in lrs[each_lr]:
+                lr_fix_inputs['vni'] = lrs[each_lr]['vni']
+
+            if 'vni' in lrs[each_lr]:
+                lr_fix_inputs['vni'] = lrs[each_lr]['vni']
+                
+            lr_fixtures[each_lr] = self.useFixture(LogicalRouterFixture(**lr_fix_inputs))
+
+        return lr_fixtures
+
+
+    def setup_evpn_type5(self, vn=None, vmi=None, vm=None, lrs=None, verify=True):
+        '''Setup EVPN Type5 forwarding
+
+            Input parameters looks like:
+                lr = {
+                   'lr1':{'vn_list': ['vn1','vn2'], 'vni': '7001'},
+                   'lr2':{'vn_list': ['vn3','vn4'], 'vni': '7002'},
+                  }
+                #VN parameters:
+                vn = {'count':1,            # VN count
+                     # VN Details
+                    'vn1':{'subnet':'10.10.10.0/24', 'ip_fabric':True},
+                    'vn2':{'subnet':'20.20.20.0/24'},
+                    }
+
+                #VMI parameters:
+                vmi = {'count':2, # VMI Count
+                    'vmi1':{'vn': 'vn1'}, # VMI details
+                    'vmi2':{'vn': 'vn1'}, # VMI details
+                    }
+
+                #VM parameters:
+                vm = {'count':2, # VM Count
+                    # VM Launch mode i.e distribute non-distribute, default
+                    'launch_mode':'distribute',
+                    'vm1':{'vn':['vn1'], 'vmi':['vmi1']}, # VM Details
+                    'vm2':{'vn':['vn1'], 'vmi':['vmi2']}, # VM Details
+                    }
+
+        '''
+        #This step is not required as default encapsulation order itself is vxlan,MPLSoverGRE,MPLSoverUDP
+        # VNs creation
+        vn_fixtures = self.setup_vns(vn)
+
+        # VMIs creation
+        vmi_fixtures = self.setup_vmis(vn_fixtures, vmi)
+
+        # VMs creation
+        vm_fixtures = self.setup_vms(vn_fixtures, vmi_fixtures, vm, image_name='ubuntu')
+
+        #Setup Logical Routers
+        self.logger.info('Logical Router Details %s ' %(lrs))
+        lr_fixtures = self.setup_lrs(copy.deepcopy(lrs), vn_fixtures)
+
+        # Extra sleep for BGP route updates between controller and fabric gw
+        time = 30
+        self.logger.info('Sleeping for %s secs for BGP convergence' %(time))
+        self.sleep(time)
+
+        ret_dict = {
+            'vmi_fixtures':vmi_fixtures,
+            'vn_fixtures':vn_fixtures,
+            'vm_fixtures':vm_fixtures,
+            'lr_fixtures':lr_fixtures,
+        }
+        return ret_dict

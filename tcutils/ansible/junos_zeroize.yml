@@ -1,0 +1,36 @@
+---
+- name: Restore devices running Junos OS to factory-default configuration settings
+  hosts: localhost
+  roles:
+    - Juniper.junos
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: Restore all Routing Engines to factory-default configuration
+      juniper_junos_system:
+        provider:
+          user: "{{ username }}"
+          passwd: "{{ password }}"
+          host: "{{ host }}"
+          timeout: "{{ timeout }}"
+          mode: telnet
+        action: "zeroize"
+      register: result
+
+    - name: Print response
+      debug:
+        var: result
+
+#    - name: Restore all Routing Engines to factory-default configuration
+#      junos_zeroize:
+#        mode: telnet
+#        host: "{{ host }}"
+#        user: "{{ user }}"
+#        passwd: "{{ passwd }}"
+#        zeroize: "zeroize"
+#      register: result
+#
+#    - name: Print response
+#      debug:
+#        var: result

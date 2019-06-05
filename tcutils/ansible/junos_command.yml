@@ -14,5 +14,7 @@
         port: 22
         host: "{{ host }}"
         dest: "{{ json }}"
+        user: "{{ username }}"
+        passwd: "{{ password }}"
         formats: json
         return_output: false
