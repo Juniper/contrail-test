@@ -31,6 +31,7 @@ from tcutils.fabutils import *
 from tcutils.test_lib.contrail_utils import get_interested_computes
 from interface_route_table_fixture import InterfaceRouteTableFixture
 env.disable_known_hosts = True
+from port_fixture import PortFixture
 try:
     from webui_test import *
 except ImportError:
@@ -218,6 +219,21 @@ class VMFixture(fixtures.Fixture):
             if self.inputs.is_gui_based_config():
                 self.webui.create_vm(self)
             else:
+                if self.inputs.ns_agilio_vrouter_data:
+                    binding_vnic_type = 'virtio-forwarder'
+                    if self.vn_objs:
+                        if not self.port_ids:
+                            port_ids = []
+                            for vn_obj in self.vn_objs:
+                                vn_uuid = vn_obj['network']['id']
+                                port_obj = self.useFixture(PortFixture(vn_uuid,
+                                                api_type="contrail",
+                                                fixed_ips=self.fixed_ips,
+                                                connections=self.connections, binding_vnic_type=binding_vnic_type))
+                                assert port_obj.verify_on_setup()
+                                port_ids.append(port_obj.uuid)
+                            self.vn_objs = []
+                            self.port_ids = port_ids
                 objs = self.orch.create_vm(
                     project_uuid=self.project_id,
                     image_name=self.image_name,
