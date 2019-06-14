@@ -318,7 +318,9 @@ class VerifyIntfMirror(VerifySvcMirror):
         analyzer_compute = compute_nodes[2]
 
         analyzer_port = 8099
-        if header == 2 or header == 3 or self.inputs.pcap_on_vm:
+        #changing it to ubuntu to use tshark later
+        #image_name = 'ubuntu' if not sub_intf else 'ubuntu'
+        if header == 2 or header == 3 or self.inputs.pcap_on_vm or self.inputs.ns_agilio_vrouter_data:
             image_name = 'ubuntu'
         else:
             image_name = 'cirros' if not sub_intf else 'ubuntu' 
