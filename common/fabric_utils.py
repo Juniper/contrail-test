@@ -218,6 +218,14 @@ class FabricUtils(object):
                              'physical_role': role,
                              'routing_bridging_roles': routing_bridging_role}
             payload['role_assignments'].append(dev_role_dict)
+        for device_roles in payload['role_assignments']:
+            device = device_roles['device_fq_name']
+            self.vnc_h.associate_physical_role(device,
+                device_roles['physical_role'])
+            if 'ERB-UCAST-Gateway' in device_roles['routing_bridging_roles']:
+                self.vnc_h.associate_rb_role(device, 'erb-ucast-gateway')
+            if 'CRB-MCAST-Gateway' in device_roles['routing_bridging_roles']:
+                self.vnc_h.associate_rb_role(device, 'crb-mcast-gateway')
         execution_id = self.vnc_h.execute_job(fq_name, payload)
         self.logger.info('Started assigning roles for %s'%devices)
         if wait_for_finish:
