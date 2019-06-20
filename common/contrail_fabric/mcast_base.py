@@ -18,38 +18,44 @@ from physical_router_fixture import PhysicalRouterFixture
 from common.contrail_fabric.base import BaseFabricTest
 import ipaddress
 
-
 class Evpnt6base(BaseFabricTest):
 
     def setUp(self):
-
-        for device_name, device_dict in self.inputs.physical_routers_data.items():
-            if device_dict['role'] == 'spine':
-                self.rb_roles[device_name] = ['CRB-Gateway','Route-Reflector','CRB-MCAST-Gateway']
-            if device_dict['role'] == 'leaf':
-                self.rb_roles[device_name] = ['ERB-UCAST-Gateway']
+        for device, device_dict in self.inputs.physical_routers_data.items():
+            if 'crb_mcast_gw' in (device_dict.get('rb_roles') or []) \
+               and device_dict['role'] == 'spine':
+                self.rb_roles[device] = ['CRB-MCAST-Gateway',
+                    'CRB-Gateway', 'Route-Reflector']
+            elif 'erb_ucast_gw' in (device_dict.get('rb_roles') or []) \
+               and device_dict['role'] == 'leaf':
+                self.rb_roles[device] = ['ERB-UCAST-Gateway']
         super(Evpnt6base, self).setUp()
-
-
-        #tors_info_list = self.get_available_devices('tor')
-        #tor_params = tors_info_list[0]
-        #peer_ip=tor_params['peer_ip']
-        #loop_ip=tor_params['loop_ip']
-
-        #cmd='ip route add '+str(loop_ip)+ '/32 dev vhost0 via '+str(peer_ip)
-        #for item in self.inputs.compute_ips:
-        #    self.inputs.run_cmd_on_server(
-        #        item, cmd,
-        #        self.inputs.host_data[item]['username'],
-        #        self.inputs.host_data[item]['password'])
-
-        #cmd='ip route add '+str(loop_ip)+'/32 dev eno2 via '+str(peer_ip)
-        #for openstack_node in self.inputs.openstack_ips:
-        #    self.inputs.run_cmd_on_server(openstack_node, cmd)
-
         self.connections.vnc_lib_fixture.set_vxlan_mode('configured')
         self.addCleanup(self.connections.vnc_lib_fixture.set_vxlan_mode,
             vxlan_mode='automatic')
+
+    def is_test_applicable(self):
+        result, msg = super(Evpnt6base, self).is_test_applicable()
+        if result:
+            msg = 'Need devices with crb_mcast_gw and erb_ucast_gw rb_roles'
+            mcast_gw = ucast_gw = False
+            for device_dict in self.inputs.physical_routers_data.values():
+                if 'crb_mcast_gw' in (device_dict.get('rb_roles') or []) \
+                   and device_dict['role'] == 'spine':
+                    mcast_gw = True
+                elif 'erb_ucast_gw' in (device_dict.get('rb_roles') or []) \
+                   and device_dict['role'] == 'leaf':
+                    ucast_gw = True
+                if mcast_gw and ucast_gw:
+                    if self.get_bms_nodes(rb_role='erb_ucast_gw'):
+                        return (True, None)
+                    else:
+                        msg = "Unable to find bms nodes attached to leafs " \
+                              "with erb_ucast_gw rb_role"
+                        return False, msg
+            else:
+                return False, msg
+        return False, msg
 
     def send_igmp_reportsv2(self, vm_fixtures, traffic, igmp, **kwargs):
         '''
@@ -104,13 +110,13 @@ class Evpnt6base(BaseFabricTest):
         vn_name = vn_fq_name.split(':')[-1]
         ri_name = vn_fq_name + ':' + vn_name
 
-        for cn in self.inputs.bgp_ips:
+        for cn in vm_fixtures['vm1'].get_control_nodes():
             evpn_table_entry = self.cn_inspect[cn].get_cn_mvpn_table(ri_name,'evpn.0')
 
             for evpn_entry in evpn_table_entry:
-                self.logger.info('comparing %s with %s ' %(evpn_route, evpn_entry['prefix']))
+                self.logger.debug('comparing %s with %s ' %(evpn_route, evpn_entry['prefix']))
                 if re.match(evpn_route, evpn_entry['prefix']):
-                    self.logger.info('MATCH FOUND %s with %s ' %(evpn_route, evpn_entry['prefix']))
+                    self.logger.debug('MATCH FOUND %s with %s ' %(evpn_route, evpn_entry['prefix']))
                     result = True
                     break
 
@@ -118,20 +124,19 @@ class Evpnt6base(BaseFabricTest):
         if expectation == result:
             if expectation == False:
                 self.logger.info('EVPN route : %s is not expected.' %(evpn_route))
-                self.logger.info('EVPN route : %s not found in table evpn.0 .' %(evpn_route))
+                self.logger.debug('EVPN route : %s not found in table evpn.0 .' %(evpn_route))
             else:
                 self.logger.info('EVPN route : %s is expected.' %(evpn_route))
-                self.logger.info('EVPN route : %s found in table evpn.0 .' %(evpn_route))
+                self.logger.debug('EVPN route : %s found in table evpn.0 .' %(evpn_route))
             return True
         else:
             if expectation == False:
                 self.logger.warn('EVPN route : %s is not expected.' %(evpn_route))
-                self.logger.warn('EVPN route : %s found in table evpn.0 .' %(evpn_route))
+                self.logger.debug('EVPN route : %s found in table evpn.0 .' %(evpn_route))
             else:
                 self.logger.warn('EVPN route : %s is expected.' %(evpn_route))
-                self.logger.warn('EVPN route : %s not found in table evpn.0 .' %(evpn_route))
+                self.logger.debug('EVPN route : %s not found in table evpn.0 .' %(evpn_route))
             return False
-
 
     def verify_igmp_reports(self, vm_fixtures, traffic, igmp):
         '''
@@ -210,8 +215,6 @@ class Evpnt6base(BaseFabricTest):
             Generate IGMPv3 joins/leaves from multicast receiver VMs
         '''
 
-        params = {}
-        params['igmpv2'] = kwargs.get('igmpv2',{})
         v2 = kwargs.get('igmpv2',{})
         group = v2['gaddr']
         numgrp = v2['numgrp']
@@ -223,13 +226,7 @@ class Evpnt6base(BaseFabricTest):
             ip = {'dst': str(group)}
         elif type == 23:
             dip='224.0.0.2'
-            #dip = str(group)
             ip = {'dst': '224.0.0.2'}
-
-        params['ip'] = ip
-        params['payload'] = "''"
-        params['count'] = numgrp
-
 
         python_code = Template('''
 from scapy.all import *
@@ -323,7 +320,6 @@ for i in range(0,$numgrp):
                     self, vm_fixtures[rcvr], vm_fixtures[rcvr].vn_fq_name,
                     filters=filters)
 
-
         return session, pcap
 
     def send_mcast_streams(self, vm_fixtures, traffic, interface):
@@ -341,27 +337,14 @@ for i in range(0,$numgrp):
             self._generate_multicast_trafficv2(vm_fixtures[src], maddr=stream['maddr'], count=stream['count'], interface=interface)
         return True
 
-    def _generate_multicast_trafficv2(self, bms_fixture,maddr,count,interface):
+    def _generate_multicast_trafficv2(self, fixture, maddr, count, interface):
         '''
             Generate IGMPv3 joins/leaves from multicast receiver VMs
         '''
 
-        params = {}
-
-        if hasattr(bms_fixture ,'static_ip'):
-            src_ip = bms_fixture.static_ip
-        else:
-            src_ip = '5.1.1.10'
-
+        src_ip = self._my_ip(fixture)[0]
         ip = {'dst': maddr ,'src': src_ip}
-        params['ip'] = ip
-        params['interface'] = interface
-        params['payload'] = "''"
-        params['count'] = count
         udp = {'sport':1500, 'dport':1501}
-        params['inner_udp'] = udp
-
-
 
         python_code = Template('''
 from scapy.all import *
@@ -378,7 +361,7 @@ for i in range(0,$numgrp):
 
         python_code = python_code.substitute(dst_ip=maddr,numgrp=count,interface=interface,sip=src_ip)
 
-        bms_fixture.run_python_code(python_code)
+        fixture.run_python_code(python_code)
 
 
     def verify_mcast_streams(self, session, pcap, traffic, igmp):
@@ -473,7 +456,7 @@ for i in range(0,$numgrp):
         self.logger.info('Verifying IGMPv3 report as per configuration')
         result = self.verify_igmp_reports(vm_fixtures, traffic, igmp)
 
-        ctrl_node =  self.inputs.bgp_control_ips[0]
+        ctrl_node = vm_fixtures['vm1'].get_control_nodes()[0]
 
         for stream in traffic.values():
             if stream['rcvrs'] == []:
@@ -494,8 +477,8 @@ for i in range(0,$numgrp):
         # Send multicast traffic
         time.sleep(40)
         self.logger.info('Sending mcast data traffic from mcast source')
-        bms_fixtures = vm_fixtures['bms']
-        interface = bms_fixtures.get_mvi_interface()
+        bms_fixture = vm_fixtures['bms']
+        interface = bms_fixture.get_mvi_interface()
         result = self.send_mcast_streams(vm_fixtures, traffic,interface)
 
         time.sleep(25)
@@ -549,8 +532,8 @@ for i in range(0,$numgrp):
         # Send multicast traffic
         time.sleep(15)
         self.logger.info('Sending mcast data traffic from mcast source')
-        bms_fixtures = vm_fixtures['bms']
-        interface = bms_fixtures.get_mvi_interface()
+        bms_fixture = vm_fixtures['bms']
+        interface = bms_fixture.get_mvi_interface()
         result = self.send_mcast_streams(vm_fixtures, traffic,interface)
 
         time.sleep(25)
@@ -675,28 +658,15 @@ for i in range(0,$numgrp):
 
 class Evpnt6TopologyBase(Evpnt6base):
 
-    @classmethod
-    def setUpClass(cls):
-        super(Evpnt6TopologyBase, cls).setUpClass()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(Evpnt6TopologyBase, cls).tearDownClass()
-
-    def delete_vn(self):
-        self.logger.info('!!!!!!!!!! Detaching VN from fabric!!!!!!!!!!!!!!!!')
-        for leaf in self.leafs:
-            leaf.delete_virtual_network(self.vn1_fixture.uuid)
-
-    def configure_evpn_topology(self,vxlan,**kwargs):
+    def configure_evpn_topology(self, vxlan, **kwargs):
         ''' Configure vxlan_id explicitly with vn's forwarding mode as l2 and send traffic between vm's using this interface and check traffic is coming with
             configured vxlan_id
         '''
 
         result = True
 
-        multinode = kwargs.get('multinode',1)
-        mode = kwargs.get('mode','l2_l3')
+        multinode = kwargs.get('multinode', 1)
+        mode = kwargs.get('mode', 'l2_l3')
         self.vxlan_id = vxlan
 
         host_list = self.connections.nova_h.get_hosts()
@@ -713,57 +683,39 @@ class Evpnt6TopologyBase(Evpnt6base):
         vm2_name = get_random_name('evpnvm2')
         vm3_name = get_random_name('evpnvm3')
 
-        self.vn1_name = get_random_name('vn5')
-        self.vn1_subnets = ["5.1.1.0/24"]
-
-        self.vn1_fixture = self.create_vn(vn_name=self.vn1_name, vn_subnets=self.vn1_subnets ,vxlan_id=self.vxlan_id, forwarding_mode=mode)
+        self.vn1_fixture = self.create_vn(vxlan_id=self.vxlan_id,
+                                          forwarding_mode=mode)
         self.vn1_fixture.set_igmp_config()
-        time.sleep(10)
 
+        bms = self.get_bms_nodes(rb_role='erb_ucast_gw')
 
-        bms =self.inputs.bms_data.keys()
-        bms_fixtures = []
-
-        vm1_fixture = self.create_vm(vn_fixture=self.vn1_fixture ,image_name='ubuntu',vm_name=vm1_name,node_name=compute_1)
-        vm2_fixture = self.create_vm(vn_fixture=self.vn1_fixture ,image_name='ubuntu',vm_name=vm2_name,node_name=compute_2)
-        vm3_fixture = self.create_vm(vn_fixture=self.vn1_fixture ,image_name='ubuntu',vm_name=vm3_name,node_name=compute_3)
+        vm1_fixture = self.create_vm(vn_fixture=self.vn1_fixture,
+            image_name='ubuntu', vm_name=vm1_name, node_name=compute_1)
+        vm2_fixture = self.create_vm(vn_fixture=self.vn1_fixture,
+            image_name='ubuntu', vm_name=vm2_name, node_name=compute_2)
+        vm3_fixture = self.create_vm(vn_fixture=self.vn1_fixture,
+            image_name='ubuntu', vm_name=vm3_name, node_name=compute_3)
 
         # Wait till vm is up
         if mode == 'l2_l3':
-            assert vm1_fixture.verify_on_setup()
-            assert vm2_fixture.verify_on_setup()
-            assert vm3_fixture.verify_on_setup()
+            assert vm1_fixture.wait_till_vm_is_up()
+            assert vm2_fixture.wait_till_vm_is_up()
+            assert vm3_fixture.wait_till_vm_is_up()
 
         vm_fixtures = {'vm1':vm1_fixture,'vm2':vm2_fixture,'vm3':vm3_fixture}
 
-        for leaf in self.leafs:
-            leaf.add_virtual_network(self.vn1_fixture.uuid)
-            self.addCleanup(self.delete_vn)
-        time.sleep(50)
-        bms_fixtures = self.create_bms(bms_name=bms[0], vn_fixture=self.vn1_fixture, vlan_id=self.vxlan_id, static_ip='5.1.1.10', bms_ip='5.1.1.10', fabric_fixture= self.fabric)
+        bms_fixture = self.create_bms(bms_name=bms[0],
+            vn_fixture=self.vn1_fixture,
+            vlan_id=self.vxlan_id)
 
-        time.sleep(40)
+        time.sleep(60)
 
         vn1_fixture = self.vn1_fixture 
-        vm_fixtures = {'vm1':vm1_fixture,'vm2':vm2_fixture,'vm3':vm3_fixture,'bms':bms_fixtures, 'vn1':vn1_fixture}
+        vm_fixtures = {'vm1':vm1_fixture,'vm2':vm2_fixture,'vm3':vm3_fixture,'bms':bms_fixture, 'vn1':vn1_fixture}
 
         return vm_fixtures
 
 class Evpnt6MultiVnBase(Evpnt6base):
-
-    @classmethod
-    def setUpClass(cls):
-        super(Evpnt6MultiVnBase, cls).setUpClass()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(Evpnt6MultiVnBase, cls).tearDownClass()
-
-    def delete_vn(self,vn):
-        self.logger.info('!!!!!!!!!! Detaching VN from fabric!!!!!!!!!!!!!!!!')
-        for leaf in self.leafs:
-            leaf.delete_virtual_network(vn.uuid)
-            time.sleep(3)
 
     def configure_evpn_mvn_topology(self,vxlan,vn_count):
         ''' Configure vxlan_id explicitly with vn's forwarding mode as l2 and send traffic between vm's using this interface and check traffic is coming with
@@ -777,49 +729,42 @@ class Evpnt6MultiVnBase(Evpnt6base):
         compute_3 = host_list[2]
 
         self.vxlan_id = vxlan
-        bms =self.inputs.bms_data.keys()
+        bms =self.get_bms_nodes(rb_role='erb_ucast_gw')
         
         vn_ip = unicode('5.1.1.0', "utf-8")
         vn_ip = ipaddress.ip_address(vn_ip)
         vm_fixtures = {}
         for i in range(1,vn_count):
     
-            bms_name= Template('bms$i')
-            bms_name =bms_name.substitute(i=i)
-            vm_name= Template('vm$i')
-            vm_name =vm_name.substitute(i=i)
-            vn_name= Template('vn$i')
-            vn_name =vn_name.substitute(i=i)
+            bms_name = 'bms'+str(i)
+            vm_name = 'vm'+str(i)
+            vn_name = 'vn'+str(i)
             vn_subnet = str(vn_ip) +'/24'
-            bms_ip = vn_ip + 10
             vn_subnets = [vn_subnet] 
 
             self.vn_fixture = self.create_vn(vn_name=vn_name, vn_subnets=vn_subnets ,vxlan_id=self.vxlan_id)
             self.vn_fixture.set_igmp_config()
-            time.sleep(10)
             vm_fixture = self.create_vm(vn_fixture=self.vn_fixture ,image_name='ubuntu',vm_name=vm_name)
 
-
             # Wait till vm is up
-            assert vm_fixture.verify_on_setup()
+            assert vm_fixture.wait_till_vm_is_up()
             vm_fixtures[vm_name] = vm_fixture
 
-            for leaf in self.leafs:
-                leaf.add_virtual_network(self.vn_fixture.uuid)
-                self.addCleanup(self.delete_vn,self.vn_fixture)
-            time.sleep(20)
-          
             if i == 1:
-                bms_fixtures = self.create_bms(bms_name=bms[0], vn_fixture=self.vn_fixture, vlan_id=self.vxlan_id, bms_ip=str(bms_ip),static_ip=str(bms_ip), unit=self.vxlan_id, fabric_fixture= self.fabric)
+                bms_fixture = self.create_bms(bms_name=bms[0],
+                    vn_fixture=self.vn_fixture,
+                    vlan_id=self.vxlan_id)
             else:
-                bms_fixtures = self.create_bms(bms_name=bms[0], vn_fixture=self.vn_fixture, vlan_id=self.vxlan_id, bms_ip=str(bms_ip),static_ip=str(bms_ip), unit=self.vxlan_id, fabric_fixture= self.fabrici, port_group_name=bms_fixtures.port_group_name)
+                bms_fixture = self.create_bms(bms_name=bms[0],
+                    vn_fixture=self.vn_fixture,
+                    vlan_id=self.vxlan_id,
+                    port_group_name=bms_fixture.port_group_name,
+                    bond_name=bms_fixture.bond_name)
 
-            time.sleep(20)
-
-            vm_fixtures[bms_name] = bms_fixtures
+            vm_fixtures[bms_name] = bms_fixture
 
             vn_ip =  vn_ip + 16777216
             self.vxlan_id = self.vxlan_id + 1
 
-        time.sleep(50)
+        time.sleep(60)
         return vm_fixtures

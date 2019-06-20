@@ -16,6 +16,7 @@ from tcutils.contrail_status_check import ContrailStatusChecker
 from physical_device_fixture import PhysicalDeviceFixture
 from pif_fixture import PhysicalInterfaceFixture
 from lif_fixture import LogicalInterfaceFixture
+from vdns_fixture import VdnsFixture
 
 class _GenericTestBaseMethods():
 
@@ -296,10 +297,19 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
             router_id,
             vn_fixture.vn_subnet_objs[0]['id'])
 
-    def create_ipam(self, name=None, connections=None):
+    def create_ipam(self, name=None, connections=None, **kwargs):
         connections = connections or self.connections
         name = name or get_random_name('ipam')
-        return self.useFixture(IPAMFixture(name, connections))
+        ipam = self.useFixture(IPAMFixture(name, connections=connections))
+        if kwargs.get('vdns_fixture'):
+            ipam.update_vdns(kwargs['vdns_fixture'].obj)
+        return ipam
+
+    def create_vdns(self, name=None, connections=None, **kwargs):
+        connections = connections or self.connections
+        name = name or get_random_name('vdns')
+        return self.useFixture(VdnsFixture(vdns_name=name,
+               connections=connections, **kwargs))
 
     def create_floatingip_pool(self, floating_vn, name=None):
         fip_pool_name = name if name else get_random_name('fip')

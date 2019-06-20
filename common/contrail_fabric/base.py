@@ -103,7 +103,25 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
             return (False, 'skipping not a fabric environment')
         return (True, None)
 
-    def filter_bms_nodes(self, bms_type=None, no_of_interfaces=0):
+    def is_bms_on_node(self, device_name):
+        for name, prop in self.inputs.bms_data.iteritems():
+            for interface in prop.get('interfaces') or []:
+                if interface['tor'] == device_name:
+                    return True
+
+    def get_rb_roles(self, device_name):
+        for device in self.inputs.physical_routers_data.itervalues():
+            if device['name'] == device_name:
+                return device.get('rb_roles') or []
+
+    def get_bms_nodes(self, role='leaf', bms_type=None,
+                      no_of_interfaces=0, rb_role=None):
+        bms, dummy = self.filter_bms_nodes(role=role, bms_type=bms_type,
+                         no_of_interfaces=no_of_interfaces, rb_role=rb_role)
+        return bms and list(bms)
+
+    def filter_bms_nodes(self, bms_type=None, no_of_interfaces=0,
+                         role='leaf', rb_role=None):
         bms_nodes = self.inputs.bms_data
         regular_nodes = set()
         multi_homed_nodes = set()
@@ -112,18 +130,24 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         msg = "Unable to find BMS of type %s with interfaces %s"%(bms_type,
             no_of_interfaces)
         for name, details in bms_nodes.iteritems():
+            if role and role not in [self.get_role_from_inputs(interface['tor'])
+               for interface in details['interfaces']]:
+                continue
+            if rb_role and not all([rb_role in self.get_rb_roles(
+               interface['tor']) for interface in details['interfaces']]):
+                continue
             if len(details['interfaces']) >= no_of_interfaces:
                 interfaces_filtered.add(name)
             if len(details['interfaces']) == 1:
-               regular_nodes.add(name)
-               continue
+                regular_nodes.add(name)
+                continue
             devices = set()
             for interface in details['interfaces']:
                 devices.add(interface['tor'])
             if len(devices) > 1:
-               multi_homed_nodes.add(name)
+                multi_homed_nodes.add(name)
             else:
-               lag_nodes.add(name)
+                lag_nodes.add(name)
 
         if bms_type == "multi_homing":
            return multi_homed_nodes.intersection(interfaces_filtered), msg
@@ -147,16 +171,16 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
 
     def _my_ip(self, fixture):
         if type(fixture) == VMFixture:
-            return fixture.get_vm_ips()[0]
+            return fixture.get_vm_ips()
         elif type(fixture) == BMSFixture:
-            return fixture.bms_ip
+            return fixture.get_bms_ips()
 
     def do_ping_mesh(self, fixtures, expectation=True):
-        list_of_ips = set()
+        list_of_ips = list()
         for fixture in fixtures:
-            list_of_ips.add(self._my_ip(fixture))
+            list_of_ips.extend(self._my_ip(fixture))
         for fixture in fixtures:
-            for ip in list_of_ips - set([self._my_ip(fixture)]):
+            for ip in set(list_of_ips) - set(self._my_ip(fixture)):
                 fixture.clear_arp()
                 assert fixture.ping_with_certainty(ip, expectation=expectation)
 
@@ -215,5 +239,8 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
             connections=self.connections,
             connected_networks=vn_ids, vni=vni, **kwargs))
         for spine in self.spines:
+            if kwargs.get('is_public_lr') == True:
+                if 'dc_gw' not in self.inputs.get_prouter_rb_roles(spine.name):
+                    continue
             lr.add_physical_router(spine.uuid)
         return lr
