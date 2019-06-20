@@ -3365,6 +3365,25 @@ class ContrailVncApi(object):
         lr_obj.del_virtual_machine_interface(vmi_obj)
         return self._vnc.logical_router_update(lr_obj)
 
+    def read_overlay_role(self, role):
+        return self._vnc.overlay_role_read(
+            fq_name=['default-global-system-config', role])
+
+    def read_physical_role(self, role):
+        return self._vnc.physical_role_read(
+            fq_name=['default-global-system-config', role])
+
+    def associate_rb_role(self, prouter, rb_role):
+        prouter_obj = self.read_physical_router(fq_name=prouter)
+        role_obj = self.read_overlay_role(rb_role)
+        prouter_obj.add_overlay_role(role_obj)
+        self._vnc.physical_router_update(prouter_obj)
+
+    def associate_physical_role(self, prouter, role):
+        prouter_obj = self.read_physical_router(fq_name=prouter)
+        role_obj = self.read_physical_role(role)
+        prouter_obj.add_physical_role(role_obj)
+        self._vnc.physical_router_update(prouter_obj)
 
 class LBFeatureHandles:
     __metaclass__ = Singleton
