@@ -160,7 +160,7 @@ class FatFlowSerial(BaseVrouterTest, ConfigSvcChain, VerifySvcChain):
             mgmt_vn_fixture=vn_mgmt,
             left_vn_fixture=vn1_fixture,
             right_vn_fixture=vn2_fixture, svc_mode=svc_mode,
-            svc_img_name='vsrx',
+            svc_img_name='tiny_in_net',
             project=self.inputs.project_name, st_version=1)
         action_list = self.chain_si(
             si_count, si_prefix, self.inputs.project_name)
