@@ -10,6 +10,7 @@ from common.contrail_test_init import ContrailTestInit
 from physical_device_fixture import PhysicalDeviceFixture
 from vcpe_router_fixture import VpeRouterFixture
 from virtual_router_fixture import VirtualRouterFixture
+from common.device_connection import NetconfConnection
 
 logging.getLogger('urllib3.connectionpool').setLevel(logging.WARN)
 logging.getLogger('paramiko.transport').setLevel(logging.WARN)
@@ -18,6 +19,25 @@ logging.getLogger('paramiko.transport').setLevel(logging.WARN)
 if __name__ == "__main__":
     init_obj = ContrailTestInit(sys.argv[1])
     for (device, device_dict) in init_obj.physical_routers_data.iteritems():
+
+        if init_obj.deployer == 'rhosp':
+            cfgm_ips = (init_obj.contrail_configs.get('CONTROL_NODES')).split(',')
+            stmts = ['set protocols bgp group %s type internal' %device_dict['group_name'],
+                    'del protocols bgp group %s' %device_dict['group_name'],
+                    'set protocols bgp group %s type internal' %device_dict['group_name'],
+                    'set protocols bgp group %s local-address %s' %(device_dict['group_name'], device_dict['control_ip']),
+                    'set protocols bgp group %s family inet unicast' %device_dict['group_name'],
+                    'set protocols bgp group %s family inet6 unicast' %device_dict['group_name'],
+                    'set protocols bgp group %s family inet-vpn unicast' %device_dict['group_name'],
+                    'set protocols bgp group %s local-as %s' %(device_dict['group_name'], device_dict['asn']),
+                    'set protocols bgp group %s neighbor %s' %(device_dict['group_name'], cfgm_ips[0]),
+                    'set protocols bgp group %s neighbor %s' %(device_dict['group_name'], cfgm_ips[1]),
+                    'set protocols bgp group %s neighbor %s' %(device_dict['group_name'], cfgm_ips[2])]
+            router_netconf = NetconfConnection(device_dict['mgmt_ip'])
+            router_netconf.connect()
+            router_netconf.config(stmts)
+            router_netconf.disconnect()
+
         if device_dict.get('role') in ['leaf', 'spine']:
             continue
         phy_router_obj = PhysicalRouterFixture(
