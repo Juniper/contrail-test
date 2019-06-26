@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "9f5c4f37_eaa2fafb",
+        "filename": "common/contrail_test_init.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 513,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-06-26T14:44:01Z",
+      "side": 1,
+      "message": "We already have \ndeployment_configs.get(\u0027deployer\u0027, ...) representing the same.\nCan we reuse it?",
+      "revId": "e0e1174d9b6bb20d9495422da26a2732848de5c8",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9f5c4f37_aab08244",
+        "filename": "tools/setup_physical_routers.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-06-26T14:44:01Z",
+      "side": 1,
+      "message": "Just so you know, we may need to move all the tools code in contrail-test on to contrail-tools in the near future.",
+      "revId": "e0e1174d9b6bb20d9495422da26a2732848de5c8",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    }
+  ]
+}
