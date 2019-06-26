@@ -500,6 +500,7 @@ class TestInputs(object):
         self.vcenter_username = self.vcenter_password = None
         self.vcenter_compute = None
         self.vro_based = False
+        self.deployment_type = ''
         with open(self.input_file, 'r') as fd:
             self.config = yaml.load(fd)
         deployment_configs = self.config.get('deployment', {})
@@ -509,6 +510,8 @@ class TestInputs(object):
         self.orchestrator_configs = orchestrator_configs = \
             self.config.get('orchestrator_configuration') or {}
         test_configs = self.config.get('test_configuration') or {}
+        if 'deployment_type' in test_configs:
+            self.deployment_type = test_configs.get('deployment_type')
         self.orchestrator = deployment_configs.get('orchestrator') or 'openstack'
         self.slave_orchestrator = deployment_configs.get('slave_orchestrator',None)
         if self.deployer == 'openshift':
