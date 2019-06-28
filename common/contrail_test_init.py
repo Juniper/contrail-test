@@ -305,6 +305,7 @@ class TestInputs(object):
         self.qos_queue = []
         self.qos_queue_pg_properties = []
         self.ns_agilio_vrouter_data = {}
+        self.virtio = None
         self.esxi_vm_ips = {}
         self.vgw_data = {}
         self.hypervisors = {}
