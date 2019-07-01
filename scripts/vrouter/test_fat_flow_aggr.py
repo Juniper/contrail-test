@@ -145,7 +145,7 @@ class FatFlowAggr(BaseVrouterTest, BaseLBaaSTest):
         if self.inputs.get_af() == 'dual':
             ipv6 = True
             only_v6 = True
-        prefix_length6 = 90
+        prefix_length6 = 124
         self.fat_flow_with_prefix_aggr(prefix_length=prefix_length,
             inter_node=inter_node,inter_vn=inter_vn, proto=proto,
             port=port, vn_policy=vn_policy, policy_deny=policy_deny, 
@@ -174,7 +174,7 @@ class FatFlowAggr(BaseVrouterTest, BaseLBaaSTest):
 
         Maintainer: Ankitja@juniper.net
         """
-        prefix_length = 26
+        prefix_length = 27
         inter_node = False
         inter_vn = True
         ignore_address = 'src'
@@ -187,7 +187,7 @@ class FatFlowAggr(BaseVrouterTest, BaseLBaaSTest):
         if self.inputs.get_af() == 'dual':
             ipv6 = True
             only_v6 = True
-        prefix_length6 = 100
+        prefix_length6 = 125
         self.fat_flow_with_prefix_aggr(prefix_length=prefix_length,
             inter_node=inter_node,inter_vn=inter_vn, proto=proto,
             port=port, vn_policy=vn_policy, policy_deny=policy_deny, ignore_address=ignore_address, 
@@ -195,7 +195,7 @@ class FatFlowAggr(BaseVrouterTest, BaseLBaaSTest):
         return True
 
     @preposttest_wrapper
-    def test_fat_flow_aggr_scaling(self):
+    def itest_fat_flow_aggr_scaling(self):
         """:
         Description: Verify fat flow prefix aggr dest for intra-vn inter-node
         Steps:
