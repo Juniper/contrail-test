@@ -3385,6 +3385,36 @@ class ContrailVncApi(object):
         prouter_obj.add_physical_role(role_obj)
         self._vnc.physical_router_update(prouter_obj)
 
+    def create_control_node_zone(self,name):
+        '''name : name of control node zone'''
+        gsc_obj = self.read_global_system_config()
+        #fq_name = ['default-global-system-config']
+        #gsc_obj = self._vnc.global_vrouter_config_read(fq_name=fq_name)
+        cnz = ControlNodeZone(name=name, parent_obj=gsc_obj)
+        return self._vnc.control_node_zone_create(cnz)   
+
+    def read_control_node_zone(self,**kwargs):
+        return self._vnc.control_node_zone_read(**kwargs)
+
+    def delete_control_node_zone(self,**kwargs):
+        return self._vnc.control_node_zone_delete(**kwargs)
+
+    def attach_zone_to_bgpaas(self,zone_id,zone_attr,**kwargs):
+        '''
+            zone_attr =  "primary" or "secondary"
+        '''
+        bgpaas_obj = self._vnc.bgp_as_a_service_read(**kwargs) 
+        cnz_obj = self._vnc.control_node_zone_read(id=zone_id)
+        attr = BGPaaSControlNodeZoneAttributes(zone_attr)
+        bgpaas_obj.add_control_node_zone(cnz_obj, attr)
+        return self._vnc.bgp_as_a_service_update(bgpaas_obj)
+
+    def detach_zone_from_bgpaas(self,zone_id,**kwargs):
+        bgpaas_obj = self._vnc.bgp_as_a_service_read(**kwargs) 
+        cnz_obj = self._vnc.control_node_zone_read(id=zone_id)
+        bgpaas_obj.del_control_node_zone(cnz_obj)
+        return self._vnc.bgp_as_a_service_update(bgpaas_obj)
+
 class LBFeatureHandles:
     __metaclass__ = Singleton
 

@@ -2,6 +2,7 @@ import test_v1
 from bgpaas_fixture import BGPaaSFixture
 from vn_test import VNFixture
 from vm_test import VMFixture
+from control_node_zone import ControlNodeZoneFixture 
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import *
 from tcutils.tcpdump_utils import *
@@ -22,14 +23,16 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
         cls.orch = cls.connections.orch
         cls.nova_h = cls.connections.nova_h
         cls.vnc_lib = cls.connections.vnc_lib
+        cls.vnc_h = cls.connections.orch.vnc_h
         cls.agent_inspect = cls.connections.agent_inspect
         cls.cn_inspect = cls.connections.cn_inspect
         cls.analytics_obj = cls.connections.analytics_obj
+        cls.host_list = cls.connections.orch.get_hosts()
     # end setUpClass
 
     def create_bgpaas(
             self,
-            bgpaas_shared='false',
+            bgpaas_shared=None,
             autonomous_system='64512',
             bgpaas_ip_address=None,
             address_families=[
@@ -230,11 +233,26 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
         self.logger.info('Configuring BGP on %s ' % bgpaas_vm.vm_name)
         cmd = '''cat > /etc/bird/bird.conf << EOS
 router id %s;
+protocol device {
+        scan time 10;           # Scan interfaces every 10 seconds
+}
+protocol kernel {
+#       learn;                  # Learn all alien routes from the kernel
+        persist;                # Don't remove routes on bird shutdown
+        scan time 20;           # Scan kernel routing table every 20 seconds
+        import all;             # Default is import all
+        export all;             # Default is export none
+#       kernel table 5;         # Kernel table to synchronize with (default: main)
+}
+protocol direct {
+    interface "eth*";
+}
 protocol bgp {
         description "BGPaaS";
         local as %s;
         neighbor %s as %s;
         multihop;
+        export all;
         hold time 90;
         bfd on;
         source address %s;      # What local address we use for the TCP connection
@@ -248,4 +266,130 @@ EOS
         service_restart= "service bird restart"
         op=bgpaas_vm.run_cmd_on_vm(cmds=[service_restart], as_sudo=True)
     # end config_bgp_on_bird
+
+    def create_control_node_zones(self,name):
+        cnz_fixtures = []
+        for zone_id in range(0,len(self.inputs.bgp_names)):
+            zone_name = get_random_name(name)
+            cnz_fixture = self.useFixture(ControlNodeZoneFixture(
+                                       connections=self.connections,
+                                       name=get_random_name(
+                                                 self.project_name), 
+                                       zone_name=zone_name))
+            fq_name = [ "default-domain", "default-project", "ip-fabric", "__default__",self.inputs.bgp_names[zone_id]]
+            cnz_fixture.add_zone_to_bgp_router(fq_name=fq_name)
+            cnz_fixtures.append(cnz_fixture)
+        return cnz_fixtures
+
+    def update_control_node_zones(self,cnzs):
+        for cnz in cnzs:
+            cnz.remove_zone_from_bgp_routers()
+        bgp_rtrs = len(self.inputs.bgp_names)
+        for zone in range(0,bgp_rtrs):
+            fq_name = [ "default-domain", "default-project", "ip-fabric", "__default__", self.inputs.bgp_names[bgp_rtrs-zone-1]]
+            cnzs[zone].add_zone_to_bgp_router(fq_name=fq_name)
+
+#    def update_control_node_zones(self,cnzs,reset=True,fq_names=None):
+#         if reset is True:
+#             for cnz in cnzs:
+#                 cnz.remove_zone_from_bgp_routers()
+#             bgp_rtrs = len(self.inputs.bgp_names)
+#             for zone in range(0,bgp_rtrs):
+#                 fq_name = [ "default-domain", "default-project", "ip-fabric", "__default__", self.inputs.bgp_names[bgp_rtrs-zone-1]]
+#                 cnzs[zone].add_zone_to_bgp_router(fq_name=fq_name)
+#        else :
+#            for cnz in cnzs:
+#                cnz.add_zone_to_bgp_router(fq_name=fq_name)
+
+
+
+    def attach_zones_to_bgpaas(self,cnz_fixtures,bgpaas_fixture,**kwargs):
+        self.zones =  [] 
+        #kwargs['fq_name']= [ "default-domain", "admin", "bgpaas-scale-1.st0"] 
+        fq_name = bgpaas_fixture.fq_name
+        self.vnc_h.attach_zone_to_bgpaas(zone_id=cnz_fixtures[0].uuid,zone_attr='primary',fq_name=fq_name,**kwargs)
+        self.vnc_h.attach_zone_to_bgpaas(zone_id=cnz_fixtures[1].uuid,zone_attr='secondary',fq_name=fq_name,**kwargs)
+        bgpaas_fixture.update_zones_to_bgpaas(primary=cnz_fixtures[0],secondary=cnz_fixtures[1])
+        self.addCleanup(self.vnc_h.detach_zone_from_bgpaas,zone_id=cnz_fixtures[0].uuid,fq_name=fq_name,**kwargs)
+        self.addCleanup(self.vnc_h.detach_zone_from_bgpaas,zone_id=cnz_fixtures[1].uuid,fq_name=fq_name,**kwargs)
+
+    def detach_zones_from_bgpaas(self,cnz_fixture,bgpaas_fixture):
+        bgpaas_fixture.update_zones_to_bgpaas(primary=None,secondary=None)
+        return self.vnc_h.detach_zone_from_bgpaas(zone_id=cnz_fixture.uuid,fq_name=bgpaas_fixture.fq_name)
+
+    def create_and_attach_bgpaas(self,cnz_fixtures,vn,vms,local_as,vip):
+        bgpaas_fixtures = []
+        peer_ips = []
+        cnt = 0
+        bgpaas_fixtures.append(self.create_bgpaas(autonomous_system=local_as))
+        self.attach_zones_to_bgpaas(cnz_fixtures,bgpaas_fixtures[0])
+        self.logger.info('We will configure BGP on the VM')
+        peer_ips.append(vn.get_subnets()[0]['gateway_ip'])
+        peer_ips.append(vn.get_subnets()[0]['dns_server_address'])
+        peer_as = self.connections.vnc_lib_fixture.get_global_asn()
+        for vm in vms:
+            self.config_bgp_on_bird(vm, vm.vm_ip, peer_ips[cnt], local_as, peer_as) 
+            self.attach_vmi_to_bgpaas(vm.vmi_ids[vm.vn_fq_name], bgpaas_fixtures[0]) 
+            self.logger.info('Attaching the VMI %s to the BGPaaS %s object'%
+                                                   (vm.uuid , bgpaas_fixtures[0].uuid)) 
+            self.addCleanup(self.detach_vmi_from_bgpaas,vm.vmi_ids[vm.vn_fq_name],
+                                                                      bgpaas_fixtures[0])
+        #    self.config_aap(vms[i].vmi_ids[vms[i].vn_fq_name], vip, 
+        #                                       mac=vms[i].mac_addr[vms[i].vn_fq_name])
+            vm.run_cmd_on_vm(cmds=['sudo ip addr add %s dev eth0'%vip], as_sudo=True)
+            cnt = cnt+1
+        return bgpaas_fixtures 
+
+    def verify_bgpaas_in_control_nodes_and_agent(self,bgpaas_fixtures,vms,count):
+        result = False
+        for vm in vms:
+            for bgpaas in bgpaas_fixtures: 
+                if bgpaas.pri_zone is not None:
+                    bgp_routers = [rtr.bgp_router_parameters.address for rtr in bgpaas.pri_zone.bgp_router_objs]
+                    if bgpaas.verify_in_control_nodes(control_nodes=bgp_routers,peer_address=vm.vm_ip,count=count):
+                        result = True
+                    break
+                if bgpaas.sec_zone is not None:
+                    bgp_routers = [rtr.bgp_router_parameters.address for rtr in bgpaas.sec_zone.bgp_router_objs]
+                    if bgpaas.verify_in_control_nodes(control_nodes=bgp_routers,peer_address=vm.vm_ip,count=count):
+                        result = True
+                    break 
+            for bgpaas in bgpaas_fixtures: 
+                if not self.verify_control_node_zones_in_agent(vm,bgpaas):
+                    return False
+        return True 
+
+    def flap_bgpaas_peering(self,vms):
+        for vm in vms:
+            vm.run_cmd_on_vm(cmds=['service bird restart'],as_sudo=True) 
+        return         
+  
+    def verify_control_node_zones_in_agent(self,vm,bgpaas):
+        ''' http://<ip>:8085/Snh_ControlNodeZoneSandeshReq
+            verify control node zones to bgp router
+            [{'name': 'default-domain:default-project:ip-fabric:__default__:5b4s2', 
+               'control_node_zone': 'default-global-system-config:test-zone-0', 
+               ')ipv4_address_port': '5.5.5.129:179'}]'''
+        cnz_host_dict = {}
+        cnz_bgp_rtr = {}
+        host = vm.vm_node_ip
+        agent_hdl = self.connections.get_vrouter_agent_inspect_handle(host)
+            #cnz_host_list.append(agent_hdl.get_control_node_zones_in_agent())
+        cnz_host_dict[host] = agent_hdl.get_control_node_zones_in_agent()
+        for cnz_key in cnz_host_dict.keys():
+            for bgp_list in cnz_host_dict[cnz_key]:
+                    for bgp_rtr in bgp_list['bgp_router_list']:
+                        cnz_bgp_rtr[bgp_rtr['control_node_zone'].split(":")[1]] = \
+                                                   bgp_rtr['name'].split(":")[4]
+        if bgpaas.pri_zone.name not in cnz_bgp_rtr.keys():
+            self.logger.error('primary zone %s is not present in agent %s '% \
+                                         (bgpaas.pri_zone.name,cnz_bgp_rtr.keys()))
+            return False
+
+        if bgpaas.sec_zone.name not in cnz_bgp_rtr.keys():
+            self.logger.error('secondary zone %s is not present in agent %s '% \
+                                         (bgpaas.sec_zone.name,cnz_bgp_rtr.keys()))
+            return False
+
+        return True
 

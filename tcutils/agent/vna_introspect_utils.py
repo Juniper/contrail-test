@@ -1375,7 +1375,39 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                 return []
     # end get_aps
 
-if __name__ == '__main__':
+    def get_control_node_zones_in_agent(self,cnz_fq_name=None):
+        ''' http://<ip>:8085/Snh_ControlNodeZoneSandeshReq
+            get control node zones in agent
+            name = default-global-system-config:test-zone-1
+        '''
+        path = 'Snh_ControlNodeZoneSandeshReq?'
+        xpath = './ControlNodeZoneSandeshResp/control_node_zone_list'
+        p = self.dict_get(path)
+        cnzdict = EtreeToDict(xpath).get_all_entry(p)
+        cnzList = cnzdict['control_node_zone_list']
+        if not cnz_fq_name:
+            return cnzList 
+        else :
+            cnz = [x for i , x in enumerate(cnsList) if x['name']==cnz_fq_name]
+            if cnz:
+                return cnz 
+            else :
+                return []
+        
+    def get_bgpaas_service_list_in_agent(self):
+        ''' http://<ip>:8085/Snh_BgpAsAServiceSandeshReq?vmi_uuid=
+            check bgpaas zones associated to vmi'''
+        path = 'Snh_BgpAsAServiceSandeshReq?vmi_uuid=?'
+        xpath = './BgpAsAServiceSandeshResp/bgp_as_a_service_list'
+        p = self.dict_get(path)
+        bgpaasdict = EtreeToDict(xpath).get_all_entry(p)
+        if bgpaasdict :
+            return bgpaasdict
+        else:
+            return [] 
+ 
+
+if  __name__ == '__main__':
     v = AgentInspect('10.204.217.198')
     v.get_vna_tap_interface_by_vm('3ce99e5b-2690-11e7-91c4-525400010001')
     v.get_vna_vm('710df53c-25f8-11e7-91c4-525400010001')
