@@ -44,6 +44,7 @@ class FabricUtils(object):
                                     "password": cred['password']}
                        for cred in fabric_dict['credentials']],
                    'overlay_ibgp_asn': fabric_dict['namespaces']['asn'][0]['min'],
+                   'loopback_subnets': fabric_dict['namespaces']['loopback'],
                    'management_subnets': [{"cidr": mgmt["cidr"]}
                        for mgmt in fabric_dict['namespaces']['management']]
                   }
@@ -226,6 +227,10 @@ class FabricUtils(object):
                 self.vnc_h.associate_rb_role(device, 'erb-ucast-gateway')
             if 'CRB-MCAST-Gateway' in device_roles['routing_bridging_roles']:
                 self.vnc_h.associate_rb_role(device, 'crb-mcast-gateway')
+            if 'AR-Replicator' in device_roles['routing_bridging_roles']:
+                self.vnc_h.associate_rb_role(device, 'ar-replicator')
+            if 'AR-Client' in device_roles['routing_bridging_roles']:
+                self.vnc_h.associate_rb_role(device, 'ar-client')
         execution_id = self.vnc_h.execute_job(fq_name, payload)
         self.logger.info('Started assigning roles for %s'%devices)
         if wait_for_finish:
