@@ -43,6 +43,11 @@ class TestBasicRR(BaseRRTest):
             2. Verify ping between VM's works
         Pass criteria: Step 1 and 2 should pass
         '''
+        if os.environ.get('MX_GW_TEST', 0) != '1':
+            self.logger.info(
+              "Skipping Test. Env variable MX_GW_TEST is not set. Skipping the test")
+            raise self.skipTest(
+              "Skipping Test. Env variable MX_GW_TEST is not set. Skipping the test")
         if len(set(self.inputs.bgp_ips)) < 3:
             self.logger.info(
                 "Skipping Test. At least 3 control node required to run the test")
@@ -105,6 +110,9 @@ class TestBasicRR(BaseRRTest):
             2. Verify ping between VM's works
         Pass criteria: Step 1 and 2 should pass
         '''
+        if os.environ.get('MX_GW_TEST', 0) != '1':
+            self.logger.info("Skipping Test. Env variable MX_GW_TEST is not set. Skipping the test")
+            raise self.skipTest("Skipping Test. Env variable MX_GW_TEST is not set. Skipping the test")
         if len(set(self.inputs.bgp_ips)) < 3:
             self.logger.info(
                 "Skipping Test. At least 3 control node required to run the test")
