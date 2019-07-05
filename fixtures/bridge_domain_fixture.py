@@ -155,6 +155,7 @@ class BDFixture(vnc_api_test.VncLibFixture):
         self.parse_bd_kwargs(**kwargs)
         self.vnc_h.update_bd(uuid=self.bd_uuid, **kwargs)
 
+    @retry(delay=10, tries=3)
     def add_bd_to_vmi(self, vmi_id, vlan_tag, verify=True):
         result = True
         bd_id = self.bd_uuid
