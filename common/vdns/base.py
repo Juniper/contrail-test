@@ -166,6 +166,7 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
                 sleep(2)
             # Get the NS look up record Verify record order
             cmd = 'nslookup test1'
+            sleep(5)
             vm_fixture.run_cmd_on_vm(cmds=[cmd])
             result = vm_fixture.return_output_cmd_dict[cmd]
             result = result.replace("\r", "")
