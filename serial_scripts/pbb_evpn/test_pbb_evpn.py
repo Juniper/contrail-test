@@ -998,9 +998,10 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
                 src_mac=stream['src_cmac'], dst_mac=stream['dst_cmac'],
                 count=stream['count'], interface=interface)
 
-        #Swap the ISIDs
+        # Swap the ISIDs. 
         bd_fixtures['bd1'].update_bd(isid=bd['bd2']['isid'])
         bd_fixtures['bd2'].update_bd(isid=bd['bd1']['isid'])
+        sleep(20)
 
         #Verify C-MACs get deleted
         for stream in traffic.values():
