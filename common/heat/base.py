@@ -452,8 +452,8 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         heat_objs[1].policys.append(policy_fqname.split(':'))
         vn_list[1].bind_policies(heat_objs[0].policys, vn_list[1].uuid)
         vn_list[2].bind_policies(heat_objs[1].policys, vn_list[2].uuid)
-        svc_hs_obj.addCleanup(vn_list[1].unbind_policies, vn_list[1].uuid, [policy_fqname.split(':')])
-        svc_hs_obj.addCleanup(vn_list[2].unbind_policies, vn_list[2].uuid, [policy_fqname.split(':')])
+        self.addCleanup(vn_list[1].unbind_policies, vn_list[1].uuid, [policy_fqname.split(':')])
+        self.addCleanup(vn_list[2].unbind_policies, vn_list[2].uuid, [policy_fqname.split(':')])
         return svc_hs_obj
     # end config_svc_chain
 
