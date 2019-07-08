@@ -365,7 +365,8 @@ class VerifySvcChain(ConfigSvcChain):
             #tapintf = self.get_svm_tapintf(svm_name)
             tapintf = svm.tap_intf.values()[0]['name']
             session = ssh(host['host_ip'], host['username'], host['password'])
-            pcap = self.start_tcpdump(session, tapintf)
+            pcap_vm = self.inputs.pcap_on_vm
+            pcap = self.start_tcpdump(session, tapintf, pcap_on_vm=pcap_vm)
             sessions.update({svm_name: (session, pcap)})
 
         if self.inputs.pcap_on_vm:
