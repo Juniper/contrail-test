@@ -1,0 +1,123 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "05fa0a71_44e43c9c",
+        "filename": "common/contrail_fabric/base.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-07-08T20:46:23Z",
+      "side": 1,
+      "message": "remove the pdb",
+      "revId": "267abe11e25804aca6160f461dc3e5c3cd655174",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f7805db0_35a5c62d",
+        "filename": "common/contrail_fabric/base.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 112,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-07-08T20:46:23Z",
+      "side": 1,
+      "message": "Ideally we need the bms too to validate the config pushed, lets not add this check.",
+      "revId": "267abe11e25804aca6160f461dc3e5c3cd655174",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "dbf30d7d_02f76288",
+        "filename": "serial_scripts/ztp/test_ztp.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-07-08T20:46:23Z",
+      "side": 1,
+      "message": "Please add a basic test with BMS to validate the configs.",
+      "revId": "267abe11e25804aca6160f461dc3e5c3cd655174",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "1dfb31af_7bfbd977",
+        "filename": "serial_scripts/ztp/ztp_base.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-07-08T20:46:23Z",
+      "side": 1,
+      "message": "We can just put it to tmp and not reqd to be fetched from input file",
+      "revId": "267abe11e25804aca6160f461dc3e5c3cd655174",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "69520591_68a482c3",
+        "filename": "serial_scripts/ztp/ztp_base.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-07-08T20:46:23Z",
+      "side": 1,
+      "message": "We dont need to sleep",
+      "revId": "267abe11e25804aca6160f461dc3e5c3cd655174",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "0a814262_9582d853",
+        "filename": "serial_scripts/ztp/ztp_base.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-07-08T20:46:23Z",
+      "side": 1,
+      "message": "Same here",
+      "revId": "267abe11e25804aca6160f461dc3e5c3cd655174",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "a8dfeea5_337046f2",
+        "filename": "serial_scripts/ztp/ztp_base.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 70,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-07-08T20:46:23Z",
+      "side": 1,
+      "message": "Would this suffice https://github.com/Juniper/contrail-test/blob/master/common/base.py#L28",
+      "revId": "267abe11e25804aca6160f461dc3e5c3cd655174",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
