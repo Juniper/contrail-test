@@ -284,11 +284,12 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
         '''
 
         # Provision Fabric Gateway
-        name = self.inputs.fabric_gw_info[0][0]
+        '''name = self.inputs.fabric_gw_info[0][0]
         ip = self.inputs.fabric_gw_info[0][1]
         af = ["inet"]
         self.vnc_h.provision_bgp_router(name, ip, self.inputs.router_asn, af)
         self.addCleanup(self.vnc_h.delete_bgp_router, name)
+        '''
 
         # Default security group to allow all traffic
         self.allow_default_sg_to_allow_all_on_project(self.inputs.project_name)
@@ -334,12 +335,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
         vmi_fixtures = self.setup_vmis(vn_fixtures, vmi)
 
         # VMs creation
-        vm_fixtures = self.setup_vms(vn_fixtures, vmi_fixtures, vm)
-
-        # Extra sleep for BGP route updates between controller and fabric gw
-        time = 30
-        self.logger.info('Sleeping for %s secs for BGP convergence' %(time))
-        self.sleep(time)
+        vm_fixtures = self.setup_vms(vn_fixtures, vmi_fixtures, vm) 
 
         ret_dict = {
             'vmi_fixtures':vmi_fixtures,
@@ -399,7 +395,7 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
 
     @retry(delay=5, tries=3)
     def verify_route_ip_fabric_vn_in_control_node(self, ret_dict = None,
-                                                  ip = None, expectation = True):
+                                                  ip = None, expectation = True, test_fixture = None):
         '''
             Verify whether AAP/FIP route is present in agent
             default routing instance
@@ -407,35 +403,33 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
 
         ri_name = "default-domain:default-project:ip-fabric:__default__"
         #Verify VM routes are present in default routing instance
-        cn_ips = self.inputs.bgp_control_ips
-
-        for cn in cn_ips:
-            cn_routes = self.cn_inspect[cn].get_cn_route_table_entry(
+        cn = self.get_active_control_node(test_fixture)
+        cn_routes = self.cn_inspect[cn].get_cn_route_table_entry(
                 ri_name=ri_name, prefix=ip)
 
-            # Check if IP Fabric forwarding is enabled
-            # If IP Fabric is enabled, VM route should be present
-            # in default routing instance
-            if expectation:
-                if cn_routes:
-                    self.logger.info("Route: %s is found in default routing "\
+        # Check if IP Fabric forwarding is enabled
+        # If IP Fabric is enabled, VM route should be present
+        # in default routing instance
+        if expectation:
+             if cn_routes:
+                 self.logger.info("Route: %s is found in default routing "\
                                     "instance as expected in control node: %s"
                                     % (ip,cn))
-                else:
-                    result = False
-                    assert result, "Route: %s is NOT found in default routing "\
+             else:
+                 result = False
+                 assert result, "Route: %s is NOT found in default routing "\
                         "instance as expected in control node: %s" % (ip, cn)
-            else:
-                if cn_routes:
-                    result = False
-                    assert result, "Route: %s is found in default routing "\
+        else:
+             if cn_routes:
+                  result = False
+                  assert result, "Route: %s is found in default routing "\
                         "instance, NOT expected in control node: %s" % (ip, cn)
-                else:
-                    self.logger.info("Route: %s is NOT found in default routing"\
+             else:
+                  self.logger.info("Route: %s is NOT found in default routing"\
                                     " instance as expected in control node: %s"
                                     % (ip,cn))
 
-            return True
+        return True
 
 
 
@@ -1168,3 +1162,15 @@ class GWLessFWDTestBase(BaseVrouterTest, ConfigSvcChain):
     def tearDownClass(cls):
         super(GWLessFWDTestBase, cls).tearDownClass()
     # end tearDownClass
+
+    def get_active_control_node(self, vm_fixture):
+        active_controller = None
+        inspect_h1 = self.agent_inspect[vm_fixture.vm_node_ip]
+        agent_xmpp_status = inspect_h1.get_vna_xmpp_connection_status()
+        for entry in agent_xmpp_status:
+            if entry['cfg_controller'] == 'Yes':
+                active_controller = entry['controller_ip']
+                new_controller = self.inputs.host_data[
+                    active_controller]['host_ip']
+        self.logger.info('Active control node is %s' % new_controller)
+        return new_controller
