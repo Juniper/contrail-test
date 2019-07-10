@@ -67,9 +67,6 @@ class AttachPolicyFixture(fixtures.Fixture):
             if self.inputs.ns_agilio_vrouter_data:
                 policy_name_objs = dict((policy_obj['policy']['fq_name'][-1], policy_obj)
                                     for policy_obj in self.vn_fixture.policy_objs)
-            else:
-                policy_name_objs = dict((policy_obj.fq_name[-1], policy_obj)
-                                    for policy_obj in self.vn_fixture.policy_objs)
         else:
             policy_name = policy['policy']['name']
         if policy_name in policy_name_objs.keys():
