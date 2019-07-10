@@ -32,6 +32,7 @@ from tcutils.test_lib.contrail_utils import get_interested_computes
 from interface_route_table_fixture import InterfaceRouteTableFixture
 env.disable_known_hosts = True
 from port_fixture import PortFixture
+
 try:
     from webui_test import *
 except ImportError:
@@ -156,6 +157,7 @@ class VMFixture(fixtures.Fixture):
         self._vmi_ids = {}
         self.cfgm_ip = self.inputs.cfgm_ip
         self.collector_ip = self.inputs.collector_ip
+        self.port_fixture_list = []
     # end __init__
 
     def read(self,refresh=False):
@@ -219,21 +221,25 @@ class VMFixture(fixtures.Fixture):
             if self.inputs.is_gui_based_config():
                 self.webui.create_vm(self)
             else:
-                if self.inputs.ns_agilio_vrouter_data:
+                if self.inputs.ns_agilio_vrouter_data: #Netronome
                     binding_vnic_type = 'virtio-forwarder'
                     if self.vn_objs:
                         if not self.port_ids:
                             port_ids = []
                             for vn_obj in self.vn_objs:
                                 vn_uuid = vn_obj['network']['id']
-                                port_obj = self.useFixture(PortFixture(vn_uuid,
+                                port_fix = PortFixture(vn_uuid,
                                                 api_type="contrail",
                                                 fixed_ips=self.fixed_ips,
-                                                connections=self.connections, binding_vnic_type=binding_vnic_type))
-                                assert port_obj.verify_on_setup()
-                                port_ids.append(port_obj.uuid)
+                                                connections=self.connections, binding_vnic_type=binding_vnic_type,
+                                                security_groups=self.sg_ids)
+                                self.port_fixture_list.append(port_fix)
+                                port_fix.setUp()
+                                assert port_fix.verify_on_setup()
+                                port_ids.append(port_fix.uuid)
                             self.vn_objs = []
                             self.port_ids = port_ids
+
                 objs = self.orch.create_vm(
                     project_uuid=self.project_id,
                     image_name=self.image_name,
@@ -2026,7 +2032,8 @@ class VMFixture(fixtures.Fixture):
                     #in case of vcenter vm_obj dont't have option to  detach interface
                     if self.inputs.orchestrator == 'vcenter':
                         break
-                    self.interface_detach(each_port_id)
+                    if not self.inputs.ns_agilio_vrouter_data:
+                        self.interface_detach(each_port_id)
             for vm_obj in list(self.vm_objs):
                 for sec_grp in self.sg_ids:
                     self.logger.info("Removing the security group"
@@ -2038,6 +2045,10 @@ class VMFixture(fixtures.Fixture):
                 else:
                     self.orch.delete_vm(vm_obj)
                     self.vm_objs.remove(vm_obj)
+                    time.sleep(5)
+                if self.inputs.ns_agilio_vrouter_data:
+                    for port_fix in self.port_fixture_list:
+                        port_fix.cleanUp()
             self.verify_cleared_from_setup(verify=verify)
         else:
             self.logger.info('Skipping the deletion of VM %s' %
