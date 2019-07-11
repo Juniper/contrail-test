@@ -43,12 +43,13 @@ class ScapyTraffic:
     scapy_command = scapy_obj.scapy_send_stream_cmd()
     '''
 
-    def __init__(self, src_vm_fixture, interface=None, interval=1, count=1, **kwargs):
+    def __init__(self, src_vm_fixture, interface=None, interval=1, count=1, mode='L2', **kwargs):
         self.src_vm_fixture = src_vm_fixture
         self.interface = interface or self.src_vm_fixture.get_vm_interface_name()
         self.interval = interval
         self.count = count
         self.params = OrderedDict()
+        self.mode = mode
         self.params['Ether'] = kwargs.get('ether',{})
         self.params['Dot1Q'] = kwargs.get('dot1q',{})
         self.params['IP'] = kwargs.get('ip',{})
@@ -82,7 +83,7 @@ class ScapyTraffic:
                 for key,value in dict_values.iteritems():
                     if type(value) is str:
                         var = "%s='%s'" % (key,value)
-                    elif type(value) is list:
+                    elif type(value) is list or type(value) is tuple:
                         var = "%s=%s" % (key,value)
                     else:
                         var = "%s=%d" % (key,value)
@@ -124,7 +125,11 @@ class ScapyTraffic:
 
     def start(self):
         stream = self.scapy_build_stream()
-        cmd = "sendp(%s,iface='%s',inter=%f,count=%d)" %\
+        if self.mode == 'L3':
+            cmd = "send(%s,inter=%f,count=%d)" %\
+                            (stream,self.interval,self.count)
+        else:
+            cmd = "sendp(%s,iface='%s',inter=%f,count=%d)" %\
                             (stream, self.interface,
                             self.interval, self.count)
 
