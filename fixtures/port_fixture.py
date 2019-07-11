@@ -55,6 +55,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
         self.create_iip = kwargs.get('create_iip', True)
         self.uuid = kwargs.get('uuid', None)
         self.device_owner = kwargs.get('device_owner', None)
+        self.max_flows = kwargs.get('max_flows', None)
         project_name = self.project_obj.name if self.project_obj else self.project_name
         self.fq_name = [self.domain, project_name, self.name]
         self.vn_obj = None
@@ -381,6 +382,39 @@ class PortFixture(vnc_api_test.VncLibFixture):
 
     def get_ip_addresses(self):
         return [iip.instance_ip_address for iip in self.iip_objs]
+
+    def set_max_flows(self, max_flows=None):
+        if max_flows is None:
+            max_flows = self.max_flows
+
+        self.logger.info('Setting Max Flows of VMI(%s)-uuid %s to %s' % (
+            self.name, self.uuid, max_flows))
+        vnc_lib = self.vnc_api_h
+        vmi_obj = vnc_lib.virtual_machine_interface_read(id=self.uuid)
+        vmi_properties_obj = vmi_obj.get_virtual_machine_interface_properties() \
+            or vnc_api_test.VirtualMachineInterfacePropertiesType()
+        vmi_properties_obj.set_max_flows(int(max_flows))
+        vmi_obj.set_virtual_machine_interface_properties(vmi_properties_obj)
+        return vnc_lib.virtual_machine_interface_update(vmi_obj)
+
+    def delete_max_flows(self):
+
+        self.logger.info('Deleting Max Flows of VMI(%s)-uuid %s' % (self.name, self.uuid))
+        vnc_lib = self.vnc_api_h
+        vmi_obj = vnc_lib.virtual_machine_interface_read(id=self.uuid)
+        vmi_properties_obj = vmi_obj.get_virtual_machine_interface_properties() \
+            or vnc_api_test.VirtualMachineInterfacePropertiesType()
+        vmi_properties_obj.set_max_flows(int(0))
+        vmi_obj.set_virtual_machine_interface_properties(vmi_properties_obj)
+        return vnc_lib.virtual_machine_interface_update(vmi_obj)
+
+    def get_max_flows(self):
+        vmi_obj = vnc_lib.virtual_machine_interface_read(id=self.uuid)
+        vmi_properties_obj = vmi_obj.get_virtual_machine_interface_properties()
+        if vmi_properties_obj:
+            return vmi_properties_obj['max_flows']
+        else:
+            return None
 
 # end PortFixture
 
