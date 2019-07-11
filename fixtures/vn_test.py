@@ -136,7 +136,7 @@ class VNFixture(fixtures.Fixture):
         self.layer2_control_word = kwargs.get('layer2_control_word', None)
         self.address_allocation_mode= kwargs.get('address_allocation_mode', None)
         self.ip_fabric = kwargs.get('ip_fabric', None)
-
+        self.max_flows = max_flows
 
 
         self.vnc_lib_fixture = connections.vnc_lib_fixture
@@ -500,6 +500,10 @@ class VNFixture(fixtures.Fixture):
             ip_fab_vn_obj = self.vnc_lib_h.virtual_network_read(fq_name_str=
                                                         ip_fab_vn_fq_name_str)
             self.set_ip_fabric_provider_nw(ip_fab_vn_obj)
+
+        # Configure max_flows
+        if self.max_flows is not None:
+            self.set_max_flows()
 
     # end setUp
 
@@ -1969,6 +1973,40 @@ class VNFixture(fixtures.Fixture):
                 self.logger.error("Fabric SNAT has not been set in the routing instance ")
                 return False
         return True
+
+    def set_max_flows(self, max_flows=None):
+        if max_flows is None:
+            max_flows = self.max_flows
+
+        self.logger.info('Setting Max Flows of VN %s to %s' % (
+            self.vn_fq_name, max_flows))
+        vnc_lib = self.vnc_lib_h
+        vn_obj = vnc_lib.virtual_network_read(id=self.uuid)
+        vn_properties_obj = vn_obj.get_virtual_network_properties() \
+            or  VirtualNetworkType()
+        vn_properties_obj.set_max_flows(int(max_flows))
+        vn_obj.set_virtual_network_properties(vn_properties_obj)
+        return vnc_lib.virtual_network_update(vn_obj)
+    # end set_max_flows
+
+    def delete_max_flows(self):
+        self.logger.info('Deleting Max Flows of VN %s' % (
+            self.vn_fq_name))
+        vnc_lib = self.vnc_lib_h
+        vn_obj = vnc_lib.virtual_network_read(id=self.uuid)
+        vn_properties_obj = vn_obj.get_virtual_network_properties() \
+            or  VirtualNetworkType()
+        vn_properties_obj.set_max_flows(int(0))
+        vn_obj.set_virtual_network_properties(vn_properties_obj)
+        return vnc_lib.virtual_network_update(vn_obj)
+    # end delete_max_flows
+
+    def get_max_flows(self):
+        vn_obj = self.vnc_lib_h.virtual_network_read(id=self.uuid)
+        vn_prop_obj = vn_obj.get_virtual_network_properties()
+        return vn_prop_obj['max_flows']
+    # end get_max_flows
+
 
 # end VNFixture
 
