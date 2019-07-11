@@ -18,7 +18,7 @@ RUN yum install -y \
       python-linecache2 python-xmltodict python-eventlet python-ncclient \
       python-Fabric python-tabulate python-netifaces python-scp python-yaml \
       python-crypto python-urllib3 python-requests python-jinja2 subunit-filters \
-      ant-junit libXpm libXrender gtk2 nss GConf2 google-chrome-stable firefox && \
+      ant-junit libXpm libXrender gtk2 nss GConf2 google-chrome-stable firefox openssl && \
     yum clean all -y && \
     rm -rf /var/cache/yum && \
     rm -rf /etc/yum.repos.d && \
