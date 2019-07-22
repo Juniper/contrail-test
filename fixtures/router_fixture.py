@@ -39,6 +39,7 @@ class LogicalRouterFixture(vnc_api_test.VncLibFixture):
         self.is_public_lr = kwargs.get('is_public_lr', False)
         self.connected_networks = kwargs.get('connected_networks', None)
         self.api_type = kwargs.get('api_type', 'contrail')
+        self.vxlan_enabled = kwargs.get('vxlan_enabled', False)
         self.created = False
         self.ports = []; self.vns = []; self.subnets = []
         self.deleted_vn_ids = []
@@ -96,6 +97,7 @@ class LogicalRouterFixture(vnc_api_test.VncLibFixture):
                 obj = self.vnc_h.create_router(self.name,
                                                parent_fq_name=self.parent_fq_name,
                                                is_public=self.is_public_lr,
+                                               vxlan_enabled=self.vxlan_enabled,
                                                vni=self.vni)
                 self.created = True
                 self.uuid = obj.uuid

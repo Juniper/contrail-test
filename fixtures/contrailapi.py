@@ -3229,13 +3229,16 @@ class ContrailVncApi(object):
         self._vnc.virtual_machine_interface_update(vmi)
 
     def create_router(self, name, project_obj=None, vni=None,
-                      is_public=False, parent_fq_name=None):
+                      is_public=False, parent_fq_name=None,
+                      vxlan_enabled=False):
         vni = str(vni) if vni else None
         parent_fq_name = project_obj.fq_name if project_obj else parent_fq_name
         fq_name = parent_fq_name + [name]
+        lr_type = 'vxlan-routing' if vxlan_enabled else 'snat-routing'
         obj = LogicalRouter(name=name, parent_type='project',
                             fq_name=fq_name,
                             logical_router_gateway_external=is_public,
+                            logical_router_type=lr_type,
                             vxlan_network_identifier=vni)
         self._vnc.logical_router_create(obj)
         return obj
