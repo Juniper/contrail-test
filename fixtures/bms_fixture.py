@@ -33,8 +33,7 @@ class BMSFixture(fixtures.Fixture):
         self.bms_ip_netmask = kwargs.get('bms_ip_netmask', None)
         self.bms_ip6_netmask = kwargs.get('bms_ip6_netmask', None)
         self.vn_fixture = kwargs.get('vn_fixture')
-        self.bms_gw_ip = kwargs.get('bms_gw_ip',
-            self.vn_fixture.get_subnets()[0]['gateway_ip'])
+        self.bms_gw_ip = kwargs.get('bms_gw_ip', None)
         self.bms_gw_ip6 = kwargs.get('bms_gw_ip6', None)
         self.bms_mac = kwargs.get('bms_mac') # BMS VMI Mac
         self.static_ip = kwargs.get('static_ip', bool(not self.inputs.get_csn()))

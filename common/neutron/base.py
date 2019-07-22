@@ -277,7 +277,8 @@ class BaseNeutronTest(GenericTestBase):
                              vmi_id=None, fixed_ip=None, **kwargs):
         (fip_ip, fip_id) = self.create_fip(fip_fixture, **kwargs)
         self.addCleanup(self.del_fip, fip_id, **kwargs)
-        self.assoc_fip(fip_id, vm_fixture.uuid, vmi_id=vmi_id, **kwargs)
+        vm_id = vm_fixture.uuid if vm_fixture else None
+        self.assoc_fip(fip_id, vm_id, vmi_id=vmi_id, **kwargs)
         self.addCleanup(self.disassoc_fip, fip_id, **kwargs)
         if fixed_ip:
             self.assoc_fixed_ip_to_fip(fip_id, fixed_ip, **kwargs)
