@@ -38,7 +38,7 @@ if __name__ == "__main__":
             router_netconf.config(stmts)
             router_netconf.disconnect()
 
-        if device_dict.get('role') in ['leaf', 'spine']:
+        if device_dict.get('role') in ['leaf', 'spine', 'pnf']:
             continue
         phy_router_obj = PhysicalRouterFixture(
                 device_dict['name'],

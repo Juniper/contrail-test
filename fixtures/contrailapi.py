@@ -3161,6 +3161,19 @@ class ContrailVncApi(object):
         device_obj.add_virtual_router(vr_obj)
         return self._vnc.physical_router_update(device_obj)
 
+    def add_si_to_prouter(self, device, service_port):
+        kwargs = dict()
+        if is_uuid(device):
+            kwargs['id'] = device
+        else:
+            kwargs['name'] = device
+        device_obj = self.read_physical_router(**kwargs)
+        service_ports = device_obj.get_physical_router_junos_service_ports() \
+                        or JunosServicePorts()
+        service_ports.add_service_port(service_port)
+        device_obj.set_physical_router_junos_service_ports(service_ports)
+        self._vnc.physical_router_update(device_obj)
+
     def execute_job(self, template_fqname, payload_dict, devices=None):
         '''
             :param template_fqname : fqname of Job template
@@ -3229,13 +3242,16 @@ class ContrailVncApi(object):
         self._vnc.virtual_machine_interface_update(vmi)
 
     def create_router(self, name, project_obj=None, vni=None,
-                      is_public=False, parent_fq_name=None):
+                      is_public=False, parent_fq_name=None,
+                      vxlan_enabled=False):
         vni = str(vni) if vni else None
         parent_fq_name = project_obj.fq_name if project_obj else parent_fq_name
         fq_name = parent_fq_name + [name]
+        lr_type = 'vxlan-routing' if vxlan_enabled else 'snat-routing'
         obj = LogicalRouter(name=name, parent_type='project',
                             fq_name=fq_name,
                             logical_router_gateway_external=is_public,
+                            logical_router_type=lr_type,
                             vxlan_network_identifier=vni)
         self._vnc.logical_router_create(obj)
         return obj

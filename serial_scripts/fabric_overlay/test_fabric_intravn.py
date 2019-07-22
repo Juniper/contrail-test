@@ -10,7 +10,8 @@ from common.base import GenericTestBase
 from netaddr import IPNetwork, IPAddress
 from vnc_api.vnc_api import *
 
-class TestFabricOverlay(BaseFabricTest):
+class TestSPStyleFabric(BaseFabricTest):
+    enterprise_style = False
     @preposttest_wrapper
     def test_fabric_intravn_basic(self):
         self.inputs.set_af('dual')
@@ -38,6 +39,121 @@ class TestFabricOverlay(BaseFabricTest):
                 vn_fixture=vn))
         vm1.wait_till_vm_is_up()
         self.do_ping_mesh(bms_fixtures+[vm1])
+
+    def _validate_pre_created_vpg(self, bms_type):
+        if bms_type != 'single_interface':
+            target_node = random.choice(self.get_bms_nodes(bms_type=bms_type))
+            interfaces = self.inputs.bms_data[target_node]['interfaces']
+        else:
+            target_node = random.choice(self.get_bms_nodes())
+            interfaces = self.inputs.bms_data[target_node]['interfaces'][:1]
+        other_nodes = set(self.get_bms_nodes()) - set([target_node])
+        vn = self.create_vn()
+        vn2 = self.create_vn()
+        self.create_logical_router([vn, vn2])
+        vm1 = self.create_vm(vn_fixture=vn, image_name='cirros')
+        vpg = self.create_vpg(interfaces)
+        bms = self.create_bms(bms_name=target_node, interfaces=interfaces,
+                              port_group_name=vpg.name, vlan_id=10,
+                              vn_fixture=vn)
+        instances = [bms, vm1]
+        if other_nodes:
+            other_bms = self.create_bms(bms_name=list(other_nodes)[0],
+                tor_port_vlan_tag=10, vn_fixture=vn)
+            instances.append(other_bms)
+        vm1.wait_till_vm_is_up()
+        self.do_ping_mesh(instances)
+        bms_2 = self.create_bms(bms_name=target_node, vlan_id=20,
+            bond_name=bms.bond_name, interfaces=interfaces,
+            port_group_name=bms.port_group_name, vn_fixture=vn2)
+        instances.append(bms_2)
+        self.do_ping_mesh(instances)
+
+    @skip_because(function='filter_bms_nodes', bms_type='multi_homing')
+    @preposttest_wrapper
+    def test_multihoming_pre_created_vpg(self):
+        self._validate_pre_created_vpg(bms_type='multi_homing')
+
+    @skip_because(function='filter_bms_nodes', bms_type='link_aggregation')
+    @preposttest_wrapper
+    def test_lag_pre_created_vpg(self):
+        self._validate_pre_created_vpg(bms_type='link_aggregation')
+
+    @preposttest_wrapper
+    def test_single_interface_pre_created_vpg(self):
+        self._validate_pre_created_vpg(bms_type='single_interface')
+
+    @skip_because(function='filter_bms_nodes', bms_type='link_aggregation')
+    @preposttest_wrapper
+    def test_bridge_domain_on_leaf_tagged(self):
+        bms = random.choice(self.get_bms_nodes(bms_type='link_aggregation'))
+        vn1 = self.create_vn()
+        vn2 = self.create_vn()
+        self.create_logical_router([vn1, vn2])
+        bms1_intf = self.inputs.bms_data[bms]['interfaces'][:1]
+        bms2_intf = self.inputs.bms_data[bms]['interfaces'][1:]
+        bms1 = self.create_bms(bms_name=bms, vn_fixture=vn1,
+               vlan_id=10, interfaces=bms1_intf)
+        bms2 = self.create_bms(bms_name=bms, vn_fixture=vn2,
+               vlan_id=10, interfaces=bms2_intf)
+        self.do_ping_test(bms1, bms2.bms_ip)
+        new_ip = str(IPAddress(IPNetwork(vn1.get_cidrs()[0]).value + 8))
+        bms2.assign_static_ip(new_ip)
+        self.do_ping_test(bms1, new_ip, expectation=False)
+
+    @skip_because(function='filter_bms_nodes', bms_type='link_aggregation')
+    @preposttest_wrapper
+    def test_different_vlan_same_vn_same_tor(self):
+        bms = random.choice(self.get_bms_nodes(bms_type='link_aggregation'))
+        vn1 = self.create_vn()
+        bms1_intf = self.inputs.bms_data[bms]['interfaces'][:1]
+        bms2_intf = self.inputs.bms_data[bms]['interfaces'][1:]
+        bms1 = self.create_bms(bms_name=bms, vn_fixture=vn1,
+               vlan_id=10, interfaces=bms1_intf)
+        bms2 = self.create_bms(bms_name=bms, vn_fixture=vn1,
+               vlan_id=20, interfaces=bms2_intf)
+        self.do_ping_test(bms1, bms2.bms_ip)
+
+    @skip_because(function='filter_bms_nodes', bms_type='link_aggregation')
+    @preposttest_wrapper
+    def test_both_tagged_and_untagged_same_vn_same_tor(self):
+        bms = random.choice(self.get_bms_nodes(bms_type='link_aggregation'))
+        vn1 = self.create_vn()
+        bms1_intf = self.inputs.bms_data[bms]['interfaces'][:1]
+        bms2_intf = self.inputs.bms_data[bms]['interfaces'][1:]
+        bms1 = self.create_bms(bms_name=bms, vn_fixture=vn1,
+               vlan_id=10, interfaces=bms1_intf)
+        bms2 = self.create_bms(bms_name=bms, vn_fixture=vn1,
+               tor_port_vlan_tag=20, interfaces=bms2_intf)
+        self.do_ping_test(bms1, bms2.bms_ip)
+
+    @preposttest_wrapper
+    def test_restart_device_manager(self):
+        bms_nodes = self.get_bms_nodes()
+        vn1 = self.create_vn()
+        vm1 = self.create_vm(vn_fixture=vn1, image_name='cirros')
+        bms1 = self.create_bms(bms_name=bms_nodes[0],
+               tor_port_vlan_tag=10, vn_fixture=vn1)
+        vm1.wait_till_vm_is_up()
+        self.do_ping_test(bms1, vm1.vm_ip)
+        self.inputs.restart_container(self.inputs.cfgm_ips, 'device-manager')
+        self.sleep(90) #Wait to make sure if any config push happens to complete
+        self.do_ping_test(bms1, vm1.vm_ip)
+        if len(bms_nodes) > 1:
+            bms2 = self.create_bms(bms_name=bms_nodes[1],
+                tor_port_vlan_tag=10, vn_fixture=vn1)
+            self.do_ping_mesh([bms1, bms2, vm1])
+
+class TestFabricOverlay(TestSPStyleFabric):
+    enterprise_style = True
+    def test_different_vlan_same_vn_same_tor(self):
+        raise self.skipTest('Feature not supported with EnterpriseStyle config')
+
+    def test_bridge_domain_on_leaf_tagged(self):
+        raise self.skipTest('Feature not supported with EnterpriseStyle config')
+
+    def test_both_tagged_and_untagged_same_vn_same_tor(self):
+        raise self.skipTest('Feature not supported with EnterpriseStyle config')
 
     @preposttest_wrapper
     def test_vdns(self):
@@ -171,7 +287,7 @@ class TestFabricOverlay(BaseFabricTest):
         self.do_ping_test(bms1_fixture, bms2_fixture.bms_ip, expectation=False)
         bms1_fixture.cleanup_bms()
 
-        bms1_fixture.vlan_id = 20
+        bms1_fixture.vlan_id = 10
         bms1_fixture.setUp()
 
         status, msg = bms1_fixture.run_dhclient()
@@ -244,7 +360,7 @@ class TestFabricOverlay(BaseFabricTest):
         instances = [mh_bms, vm1]
         if other_nodes:
             other_bms = self.create_bms(bms_name=other_nodes[0],
-                tor_port_vlan_tag=20, vn_fixture=vn)
+                vlan_id=10, vn_fixture=vn)
             instances.append(other_bms)
         vm1.wait_till_vm_is_up()
         self.do_ping_mesh(instances)
@@ -295,7 +411,7 @@ class TestFabricOverlay(BaseFabricTest):
         instances = [bms, vm1]
         if other_nodes:
             other_bms = self.create_bms(bms_name=list(other_nodes)[0],
-                vn_fixture=vn1)
+                vlan_id=10, vn_fixture=vn1)
             instances.append(other_bms)
         vm1.wait_till_vm_is_up()
         self.do_ping_mesh(instances)
@@ -457,24 +573,6 @@ class TestFabricOverlay(BaseFabricTest):
 
     @skip_because(function='filter_bms_nodes', bms_type='link_aggregation')
     @preposttest_wrapper
-    def test_bridge_domain_on_leaf_tagged(self):
-        bms = random.choice(self.get_bms_nodes(bms_type='link_aggregation'))
-        vn1 = self.create_vn()
-        vn2 = self.create_vn()
-        self.create_logical_router([vn1, vn2])
-        bms1_intf = self.inputs.bms_data[bms]['interfaces'][:1]
-        bms2_intf = self.inputs.bms_data[bms]['interfaces'][1:]
-        bms1 = self.create_bms(bms_name=bms, vn_fixture=vn1,
-               vlan_id=10, interfaces=bms1_intf)
-        bms2 = self.create_bms(bms_name=bms, vn_fixture=vn2,
-               vlan_id=10, interfaces=bms2_intf)
-        self.do_ping_test(bms1, bms2.bms_ip)
-        new_ip = str(IPAddress(IPNetwork(vn1.get_cidrs()[0]).value + 8))
-        bms2.assign_static_ip(new_ip)
-        self.do_ping_test(bms1, new_ip, expectation=False)
-
-    @skip_because(function='filter_bms_nodes', bms_type='link_aggregation')
-    @preposttest_wrapper
     def test_bridge_domain_on_leaf_untagged(self):
         bms = random.choice(self.get_bms_nodes(bms_type='link_aggregation'))
         vn1 = self.create_vn()
@@ -511,23 +609,6 @@ class TestFabricOverlay(BaseFabricTest):
         #can work with just one and then start the rest and stop the active
         #cfgm. This would need changes to the test infra since the cfgm_ip
         #would become unreachable.
-
-    @preposttest_wrapper
-    def test_restart_device_manager(self):
-        bms_nodes = self.get_bms_nodes()
-        vn1 = self.create_vn()
-        vm1 = self.create_vm(vn_fixture=vn1, image_name='cirros')
-        bms1 = self.create_bms(bms_name=bms_nodes[0],
-               tor_port_vlan_tag=10, vn_fixture=vn1)
-        vm1.wait_till_vm_is_up()
-        self.do_ping_test(bms1, vm1.vm_ip)
-        self.inputs.restart_container(self.inputs.cfgm_ips, 'device-manager')
-        self.sleep(90) #Wait to make sure if any config push happens to complete
-        self.do_ping_test(bms1, vm1.vm_ip)
-        if len(bms_nodes) > 1:
-            bms2 = self.create_bms(bms_name=bms_nodes[1],
-                tor_port_vlan_tag=10, vn_fixture=vn1)
-            self.do_ping_mesh([bms1, bms2, vm1])
 
     @preposttest_wrapper
     def itest_restart_rabbitmq(self):
@@ -569,49 +650,6 @@ class TestFabricOverlay(BaseFabricTest):
             bms2 = self.create_bms(bms_name=bms_nodes[1],
                tor_port_vlan_tag=10, vn_fixture=vn1)
             self.do_ping_mesh([bms1, bms2, vm1])
-
-    def _validate_pre_created_vpg(self, bms_type):
-        if bms_type != 'single_interface':
-            target_node = random.choice(self.get_bms_nodes(bms_type=bms_type))
-            interfaces = self.inputs.bms_data[target_node]['interfaces']
-        else:
-            target_node = random.choice(self.get_bms_nodes())
-            interfaces = self.inputs.bms_data[target_node]['interfaces'][:1]
-        other_nodes = set(self.get_bms_nodes()) - set([target_node])
-        vn = self.create_vn()
-        vn2 = self.create_vn()
-        self.create_logical_router([vn, vn2])
-        vm1 = self.create_vm(vn_fixture=vn, image_name='cirros')
-        vpg = self.create_vpg(interfaces)
-        bms = self.create_bms(bms_name=target_node, interfaces=interfaces,
-                              port_group_name=vpg.name, vlan_id=10,
-                              vn_fixture=vn)
-        instances = [bms, vm1]
-        if other_nodes:
-            other_bms = self.create_bms(bms_name=list(other_nodes)[0],
-                tor_port_vlan_tag=10, vn_fixture=vn)
-            instances.append(other_bms)
-        vm1.wait_till_vm_is_up()
-        self.do_ping_mesh(instances)
-        bms_2 = self.create_bms(bms_name=target_node, vlan_id=20,
-            bond_name=bms.bond_name, interfaces=interfaces,
-            port_group_name=bms.port_group_name, vn_fixture=vn2)
-        instances.append(bms_2)
-        self.do_ping_mesh(instances)
-
-    @skip_because(function='filter_bms_nodes', bms_type='multi_homing')
-    @preposttest_wrapper
-    def test_multihoming_pre_created_vpg(self):
-        self._validate_pre_created_vpg(bms_type='multi_homing')
-
-    @skip_because(function='filter_bms_nodes', bms_type='link_aggregation')
-    @preposttest_wrapper
-    def test_lag_pre_created_vpg(self):
-        self._validate_pre_created_vpg(bms_type='link_aggregation')
-
-    @preposttest_wrapper
-    def test_single_interface_pre_created_vpg(self):
-        self._validate_pre_created_vpg(bms_type='single_interface')
 
     @preposttest_wrapper
     def test_negative_cases_2(self):
