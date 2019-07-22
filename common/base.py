@@ -17,6 +17,8 @@ from physical_device_fixture import PhysicalDeviceFixture
 from pif_fixture import PhysicalInterfaceFixture
 from lif_fixture import LogicalInterfaceFixture
 from vdns_fixture import VdnsFixture
+from firewall_policy import FirewallPolicyFixture
+from firewall_rule import FirewallRuleFixture
 
 class _GenericTestBaseMethods():
 
@@ -621,6 +623,30 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
                  secgrp_name='default', option=option)
         sg.read()
         return sg
+
+    def get_default_firewall_policy(self, **kwargs):
+        connections = kwargs.get('connections') or self.connections
+        fq_name = [connections.domain_name,
+            connections.project_name, 'default']
+        try:
+            return self.vnc_h.read_firewall_policy(fq_name=fq_name)
+        except NoIdError:
+            return None
+
+    def allow_all_on_default_fwaas_policy(self, **kwargs):
+        connections = kwargs.get('connections') or self.connections
+        fwp_obj = self.get_default_firewall_policy(connections=connections)
+        if fwp_obj:
+            fwp = self.useFixture(FirewallPolicyFixture(uuid=fwp_obj.uuid,
+                                  connections=connections))
+            fwr = self.useFixture(FirewallRuleFixture(scope='local',
+                                  connections=connections,
+                                  match='None',
+                                  protocol='any',
+                                  source={'any': True},
+                                  destination={'any': True}))
+            fwp.add_firewall_rules([{'uuid': fwr.uuid, 'seq_no': '999.99'}])
+            self.addCleanup(fwp.remove_firewall_rules, [{'uuid': fwr.uuid}])
 
     @classmethod
     def check_vms_booted(cls, vms_list, do_assert=True):

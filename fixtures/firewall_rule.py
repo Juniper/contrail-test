@@ -16,7 +16,7 @@ class FirewallRuleFixture(vnc_api_test.VncLibFixture):
     :param dports : tuple of start,end port
     :param log : to log flow to analytics (bool: default False)
     :param match : list of match tag-types ['deployment', 'site']
-                   set to "dont" to not match on tag type
+                   set to "None" to not match on tag type
     :param source : dict for endpoint
     :param destination : dict for endpoint
     :param ip_version : '4' or '6' depending upon AddressFamily

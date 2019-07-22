@@ -24,8 +24,9 @@ class TestFabricDcGw(BaseFabricTest):
         for device, device_dict in self.inputs.physical_routers_data.items():
             if 'dc_gw' in (device_dict.get('rb_roles') or []):
                 if device_dict['role'] == 'spine':
-                    self.rb_roles[device] = ['DC-Gateway',
-                        'CRB-Gateway', 'Route-Reflector']
+                    self.rb_roles[device] = ['DC-Gateway', 'Route-Reflector']
+                    if 'qfx' in device_dict.get('model', 'qfx'):
+                        self.rb_roles[device].append('CRB-Gateway')
                 elif device_dict['role'] == 'leaf':
                     self.rb_roles[device] = ['DC-Gateway', 'CRB-Access']
         super(TestFabricDcGw, self).setUp()
@@ -34,21 +35,27 @@ class TestFabricDcGw(BaseFabricTest):
     def itest_floating_ip(self):
         fip_ips = dict()
         bms_fixtures = list()
-        public_vn = self.create_vn(vn_subnets=self.inputs.public_subnets[:1])
+        public_vn = self.create_vn(vn_subnets=self.inputs.public_subnets[:1],
+            router_external=True)
         fip_pool = self.create_fip_pool(public_vn.uuid)
         private_vn = self.create_vn()
 
         for spine in self.spines:
-            spine.add_virtual_network(public_vn.uuid)
-        vm = self.create_vm(vn_fixture=vn, image_name='cirros')
+            prouter_details = self.inputs.physical_routers_data[spine.name]
+            if prouter_details.get('model', '').startswith('mx'):
+                spine.add_service_interface(prouter_details['si_port'])
+                spine.add_virtual_network(public_vn.uuid)
+                self.addCleanup(spine.delete_virtual_network, public_vn.uuid)
+        vm = self.create_vm(vn_fixture=private_vn, image_name='cirros')
 
-        fip_ips[vm.uuid], fip_id = self.create_and_assoc_fip(fip_pool, vm)
         for bms in self.inputs.bms_data.keys():
-            bms_fixture = self.create_bms(bms_name=bms, vn_fixture=vn,
-                security_groups=[self.default_sg.uuid])
+            bms_fixture = self.create_bms(bms_name=bms, vn_fixture=private_vn)
             bms_fixtures.append(bms_fixture)
-            fip_ips[bms_fixture.uuid], fip_id = self.create_and_assoc_fip(
-                fip_pool, vm_fixture=None, vmi_id=bms_fixture.port_fixture.uuid)
+            fip_ips[bms_fixture.port_fixture.uuid], fip_id = \
+                self.create_and_assoc_fip(fip_pool, vm_fixture=None,
+                vmi_id=bms_fixture.port_fixture.uuid)
+        fip_ips[vm.uuid], fip_id = self.create_and_assoc_fip(fip_pool, vm)
+        self.check_vms_booted([vm])
 
         for fixture in bms_fixtures + [vm]:
             msg = 'ping from %s to %s failed'%(fixture.name,
