@@ -687,7 +687,8 @@ class Evpnt6TopologyBase(Evpnt6base):
                                           forwarding_mode=mode)
         self.vn1_fixture.set_igmp_config()
 
-        bms = self.get_bms_nodes(rb_role='erb_ucast_gw')
+        bms_node = kwargs.pop('bms_node', None)
+        bms = [bms_node] if bms_node else self.get_bms_nodes(rb_role='erb_ucast_gw')
 
         vm1_fixture = self.create_vm(vn_fixture=self.vn1_fixture,
             image_name='ubuntu', vm_name=vm1_name, node_name=compute_1)

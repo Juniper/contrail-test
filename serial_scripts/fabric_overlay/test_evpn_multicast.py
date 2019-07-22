@@ -4,10 +4,9 @@ import ipaddress
 from multicast_policy_fixture import MulticastPolicyFixture
 from vn_policy_test import VN_Policy_Fixture
 
-class TestEvpnt6(Evpnt6TopologyBase):
-
-    @preposttest_wrapper
-    def test_evpnt6_multinode_basic(self):
+class TestEvpnt6SPStyle(Evpnt6TopologyBase):
+    enterprise_style = False
+    def _verify_multinode_sanity(self, bms_node=None):
         ''' 
             VM1 ,VM2 and VM3 in different compute nodes.
             Send IGMP join from all 3 . 
@@ -16,7 +15,7 @@ class TestEvpnt6(Evpnt6TopologyBase):
         '''
 
         vxlan = random.randrange(400, 405)
-        vm_fixtures = self.configure_evpn_topology(vxlan)
+        vm_fixtures = self.configure_evpn_topology(vxlan, bms_node=bms_node)
         vm_fixtures['vrf'] = vm_fixtures['vm1']
         bms_fixture = vm_fixtures['bms']
         interface = bms_fixture.get_mvi_interface()
@@ -155,9 +154,23 @@ class TestEvpnt6(Evpnt6TopologyBase):
         # Send and verify IGMP reports and multicast traffic
         assert self.send_verify_mcastv2(vm_fixtures, traffic, igmp,vxlan)
 
-    # End verify_evpnt6_multinode_sanity
+    # End _verify_multinode_sanity
 
+    def test_evpnt6_multinode_basic_crb_access(self):
+        bms_node = self.get_bms_nodes()[0]
+        devices = self.get_associated_prouters(bms_node)
+        self.addCleanup(self.assign_roles, self.fabric, self.devices,
+                        rb_roles=self.rb_roles)
+        self.assign_roles(self.fabric, devices,
+                        rb_roles={device.name: ['CRB-Access']
+                        for device in devices})
+        self._verify_multinode_sanity(bms_node=bms_node)
 
+class TestEvpnt6(TestEvpnt6SPStyle):
+    enterprise_style = True
+    @preposttest_wrapper
+    def test_evpnt6_multinode_basic(self, bms_node=None):
+        self._verify_multinode_sanity()
 
     @preposttest_wrapper
     def test_evpnt6_restart(self):

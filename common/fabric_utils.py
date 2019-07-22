@@ -11,7 +11,9 @@ import time
 
 NODE_PROFILES = ['juniper-mx', 'juniper-qfx10k',
                  'juniper-qfx5k', 'juniper-qfx5k-lean', 'juniper-srx']
-
+VALID_OVERLAY_ROLES = ['dc-gateway', 'crb-access', 'dci-gateway',
+                       'ar-client', 'crb-gateway', 'erb-ucast-gateway',
+                       'crb-mcast-gateway', 'ar-replicator']
 
 class FabricUtils(object):
     def __init__(self, connections):
@@ -30,7 +32,8 @@ class FabricUtils(object):
         return (True, fabric)
 
     def onboard_existing_fabric(self, fabric_dict, wait_for_finish=True,
-                                name=None, cleanup=False):
+                                name=None, cleanup=False,
+                                enterprise_style=True):
         interfaces = {'physical': [], 'logical': []}
         devices = list()
         
@@ -50,6 +53,7 @@ class FabricUtils(object):
                         for mgmt in fabric_dict['namespaces']['management']],
                    'loopback_subnets': fabric_dict['namespaces'].get('loopback',
                         ["10.126.127.128/27"]),
+                   'enterprise_style': enterprise_style,
                    'pnf_servicechain_subnets': \
                        fabric_dict['namespaces']['pnf_service_chain']
                    }
@@ -234,10 +238,9 @@ class FabricUtils(object):
             device = device_roles['device_fq_name']
             self.vnc_h.associate_physical_role(device,
                 device_roles['physical_role'])
-            if 'ERB-UCAST-Gateway' in device_roles['routing_bridging_roles']:
-                self.vnc_h.associate_rb_role(device, 'erb-ucast-gateway')
-            if 'CRB-MCAST-Gateway' in device_roles['routing_bridging_roles']:
-                self.vnc_h.associate_rb_role(device, 'crb-mcast-gateway')
+            for role in device_roles['routing_bridging_roles']:
+                if role.lower() in VALID_OVERLAY_ROLES:
+                    self.vnc_h.associate_rb_role(device, role.lower())
         execution_id = self.vnc_h.execute_job(fq_name, payload)
         self.logger.info('Started assigning roles for %s'%devices)
         if wait_for_finish:
@@ -245,7 +248,7 @@ class FabricUtils(object):
             assert status, 'job %s to assign roles failed'%execution_id
             #ToDo: Adding sleep since assign roles triggers internal playbook
             #which we are not able to track till completion
-            time.sleep(120)
+            time.sleep(60)
             return execution_id, status
         return execution_id, None
 

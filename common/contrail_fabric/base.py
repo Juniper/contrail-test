@@ -20,11 +20,12 @@ class FabricSingleton(FabricUtils, GenericTestBase):
         super(FabricSingleton, self).__init__(connections)
         self.invoked = False
 
-    def create_fabric(self, rb_roles=None):
+    def create_fabric(self, rb_roles=None, enterprise_style=True):
         self.invoked = True
         fabric_dict = self.inputs.fabrics[0]
         self.fabric, self.devices, self.interfaces = \
-            self.onboard_existing_fabric(fabric_dict, cleanup=False)
+            self.onboard_existing_fabric(fabric_dict, cleanup=False,
+                enterprise_style=enterprise_style)
         assert self.interfaces, 'Failed to onboard existing fabric %s'%fabric_dict
         self.assign_roles(self.fabric, self.devices, rb_roles=rb_roles)
 
@@ -66,6 +67,7 @@ class FabricSingleton(FabricUtils, GenericTestBase):
                 self.devices, self.interfaces)
 
 class BaseFabricTest(BaseNeutronTest, FabricUtils):
+    enterprise_style = True
     @classmethod
     def setUpClass(cls):
         super(BaseFabricTest, cls).setUpClass()
@@ -86,7 +88,8 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         super(BaseFabricTest, self).setUp()
         obj = FabricSingleton(self.connections)
         if not obj.invoked:
-            obj.create_fabric(self.rb_roles)
+            obj.create_fabric(self.rb_roles,
+                enterprise_style=self.enterprise_style)
             if self.inputs.is_ironic_enabled:
                 obj.create_ironic_provision_vn(self.admin_connections)
         assert obj.fabric and obj.devices and obj.interfaces, "Onboarding fabric failed"
@@ -250,7 +253,8 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
             vn_ids, vni))
         lr = self.useFixture(LogicalRouterFixture(
             connections=self.connections,
-            connected_networks=vn_ids, vni=vni, **kwargs))
+            connected_networks=vn_ids, vni=vni, vxlan_enabled=True,
+            **kwargs))
         for spine in devices or self.spines:
             if kwargs.get('is_public_lr') == True:
                 if 'dc_gw' not in self.inputs.get_prouter_rb_roles(spine.name):
