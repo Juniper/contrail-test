@@ -16,25 +16,31 @@ class TestL3Pnf(BaseL3PnfTest):
                 self.right_border_leaf = device
         bms_nodes = self.get_bms_nodes(rb_role='erb_ucast_gw')
         left_bms_name = right_bms_name = bms_nodes[0]
+        self.sleep(30) #Need to wait after fabric discovery.
         if len(bms_nodes) > 1:
             right_bms_name = bms_nodes[1]
         left_bms = self.create_bms(bms_name=left_bms_name,
             vlan_id=left_vlan_id, tor_port_vlan_tag=left_tor_vlan,
             vn_fixture=self.left_vn)
+        self.sleep(5) # Add delay 
         right_bms = self.create_bms(bms_name=right_bms_name,
             vlan_id=right_vlan_id, tor_port_vlan_tag=right_tor_vlan,
             vn_fixture=self.right_vn)
+        self.sleep(5)
         self.left_lr = self.create_logical_router([self.left_vn],
             devices=self.get_associated_prouters(left_bms_name)+\
                     [self.left_border_leaf])
+        self.sleep(5)
         self.right_lr = self.create_logical_router([self.right_vn],
             devices=self.get_associated_prouters(right_bms_name)+\
                     [self.right_border_leaf])
+        self.sleep(5)
         self.bms_fixtures = [left_bms, right_bms]
         self.create_l3pnf(self.left_lr, self.right_lr, pnf,
             left_svc_vlan='1000', right_svc_vlan='2000',
             left_svc_asn_srx='65000', left_svc_asn_qfx='65100',
             right_svc_asn_qfx='65200')
+        self.sleep(60) #After configs are pushed need to wait for bgp route propagation.
         self.do_ping_mesh(self.bms_fixtures)
 
     @preposttest_wrapper
