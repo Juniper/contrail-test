@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d79806e9_dac400e7",
+        "filename": "common/contrail_fabric/mcast_base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-07-24T09:18:15Z",
+      "side": 1,
+      "message": "This check might return false for crb-access and test might not run.",
+      "range": {
+        "startLine": 37,
+        "startChar": 8,
+        "endLine": 37,
+        "endChar": 33
+      },
+      "revId": "91c28a30900a0c1b079a992debc2ebd6e6893289",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
