@@ -22,6 +22,30 @@
       "revId": "91c28a30900a0c1b079a992debc2ebd6e6893289",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "fffcbc73_c8394e9d",
+        "filename": "common/contrail_fabric/mcast_base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-07-24T17:02:41Z",
+      "side": 1,
+      "message": "Ideally the crb-access tests has to be a separate testclass rather than piggy backing on to the erb-ucast-gw testclass. The problem is we have to teardown and recreate the fabric for each testclass which increases the runtime so thought of cutting corners.\nThe downside is we are mandating atleast one device with erb-ucast-gw to run the mcast testcases. The testinfra may need to be modified to support reusing the existing fabric. Once that is in place then adding a separate testclass wouldnt hurt. Will look at that sometime next sprint cycle. For now i will add a ToDo: around these to take care of in future. Is this fine?",
+      "parentUuid": "d79806e9_dac400e7",
+      "range": {
+        "startLine": 37,
+        "startChar": 8,
+        "endLine": 37,
+        "endChar": 33
+      },
+      "revId": "91c28a30900a0c1b079a992debc2ebd6e6893289",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
     }
   ]
 }
