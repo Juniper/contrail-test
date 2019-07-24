@@ -2045,8 +2045,10 @@ class VMFixture(fixtures.Fixture):
                 else:
                     self.orch.delete_vm(vm_obj)
                     self.vm_objs.remove(vm_obj)
-                    time.sleep(5)
                 if self.inputs.ns_agilio_vrouter_data:
+                    #hack for port deletion to wait till vm info cleared from api_server
+                    #in case of netronome setup
+                    self.verify_vm_not_in_api_server()
                     for port_fix in self.port_fixture_list:
                         port_fix.cleanUp()
             self.verify_cleared_from_setup(verify=verify)
