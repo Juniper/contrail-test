@@ -510,7 +510,7 @@ class VNFixture(fixtures.Fixture):
     def create_subnet(self, vn_subnet, ipam_fq_name=None):
         if isinstance(self.orchestrator,VcenterOrchestrator) :
             raise Exception('vcenter: subnets not supported')
-        self.quantum_h.create_subnet(vn_subnet, self.uuid, ipam_fq_name,dns_nameservers=self.dns_nameservers_list)
+        self.quantum_h.create_subnet(vn_subnet, self.uuid, ipam_fq_name,dns_nameservers_list=self.dns_nameservers_list)
         self.vn_subnets.append(vn_subnet)
         self.vn_subnet_objs = self.get_subnets()
 
