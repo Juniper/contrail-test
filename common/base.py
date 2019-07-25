@@ -260,12 +260,13 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
     def delete_router(self, router_id=None):
         val = self.quantum_h.delete_router(router_id)
 
-    def create_port(self, net_id, fixed_ips=[],
+    def create_port(self, net_id, fixed_ips=[], name=None,
                     mac_address=None, no_security_group=False,
                     security_groups=[], extra_dhcp_opts=None):
         port_rsp = self.quantum_h.create_port(
             net_id,
             fixed_ips,
+            name,
             mac_address,
             no_security_group,
             security_groups,
