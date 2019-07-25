@@ -364,7 +364,7 @@ class TestSubnets(BaseNeutronTest):
             Use allocation pool while creating subnets
         '''
         ipam_fixture = self.create_ipam()
-        cidr1 = get_random_cidr()
+        cidr1 = get_random_cidr(24)
         alloc_pool1 = {'start': get_an_ip(cidr1, 100),
                        'end': get_an_ip(cidr1, 200)}
         subnet1 = {'cidr': cidr1, 'allocation_pools': [alloc_pool1]}
@@ -375,7 +375,7 @@ class TestSubnets(BaseNeutronTest):
         assert vm1_fixture.verify_on_setup()
         assert vn_fixture.verify_on_setup()
 
-        cidr2 = get_random_cidr()
+        cidr2 = get_random_cidr(24)
         alloc_pool2 = {'start': get_an_ip(cidr2, 100),
                        'end': get_an_ip(cidr2, 200)}
         subnet2 = {'cidr': cidr2, 'allocation_pools': [alloc_pool2]}
