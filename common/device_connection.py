@@ -3,6 +3,7 @@ import logging
 from fabric.operations import get, put, run, local, sudo
 from fabric.context_managers import settings, hide
 from fabric.contrib.files import exists
+from tcutils.verification_util import EtreeToDict
 
 from jnpr.junos import Device
 from jnpr.junos.utils.config import Config
@@ -85,7 +86,6 @@ class NetconfConnection(AbstractConnection):
         self.logger = kwargs.get('logger', contrail_logging.getLogger(__name__))
         self.config_handle = None
 
-        
     def connect(self):
         self.handle = Device(host=self.host, user=self.username, 
             password=self.password)
@@ -103,6 +103,15 @@ class NetconfConnection(AbstractConnection):
 
     def show_version(self):
         return self.handle.show_version()
+
+    def get_config(self):
+        configs = self.handle.rpc.get_config(options={'database' : 'committed',
+                                                      'format': 'set'})
+        return configs.text
+
+    def get_interfaces(self, terse=True):
+        output = self.handle.rpc.get_interface_information(terse=terse)
+        return EtreeToDict('physical-interface').get_all_entry(output)
 
     def config(self, stmts=[], commit=True, ignore_errors=False, timeout = 30):
         for stmt in stmts:

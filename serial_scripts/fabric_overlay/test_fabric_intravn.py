@@ -817,25 +817,140 @@ class TestFabricOverlay(TestSPStyleFabric):
             bms_vns[bms] = self.create_vn()
         vm1 = self.create_vm(vn_fixture=vn, image_name='cirros')
         self.create_logical_router([vn]+bms_vns.values())
+        sc1 = self.create_sc_profile(action='interface-shutdown',
+                                     bandwidth=1, recovery_timeout=180)
+        pp1 = self.create_port_profile(storm_control_profiles=[sc1.uuid])
         for bms in bms_nodes+[leaf_bms]:
+            interfaces = None
+            port_profiles = None
+            if bms == spine_bms:
+                spine_vlan = vlan
+                interfaces = self.inputs.bms_data[bms]['interfaces'][:1]
+                port_profiles = [pp1.uuid]
             bms_fixtures[bms] = self.create_bms(
                 bms_name=bms,
                 vn_fixture=bms_vns[bms],
+                interfaces=interfaces,
+                port_profiles=port_profiles,
                 vlan_id=vlan)
-            if bms == spine_bms:
-                spine_vlan = vlan
             vlan = vlan + 10
         vm1.wait_till_vm_is_up()
         self.do_ping_mesh(bms_fixtures.values()+[vm1])
         bms_fixtures[spine_bms+'_2_'] = self.create_bms(bms_name=spine_bms,
             port_group_name=bms_fixtures[spine_bms].port_group_name,
             bond_name=bms_fixtures[spine_bms].bond_name,
+            interfaces=bms_fixtures[spine_bms].interfaces,
             vn_fixture=vn, vlan_id=11)
         bms_fixtures[leaf_bms+'_2_'] = self.create_bms(bms_name=leaf_bms,
             port_group_name=bms_fixtures[leaf_bms].port_group_name,
             bond_name=bms_fixtures[leaf_bms].bond_name,
             vn_fixture=bms_vns[spine_bms], vlan_id=spine_vlan)
         self.do_ping_mesh(bms_fixtures.values()+[vm1])
+        prouter = self.get_associated_prouters(spine_bms,
+                                 bms_fixtures[spine_bms].interfaces)[0]
+        assert sc1.validate_config_pushed([prouter],
+                                          bms_fixtures[spine_bms].interfaces)
+        assert prouter.validate_interfaces_status(
+               [bms_fixtures[spine_bms].interfaces[0]['tor_port']], status='up')
+        pid = bms_fixtures[spine_bms].send_broadcast_traffic()
+        assert prouter.validate_interfaces_status(
+               [bms_fixtures[spine_bms].interfaces[0]['tor_port']], 'down')
+        bms_fixtures[spine_bms].stop_broadcast_traffic(pid)
+
+    @preposttest_wrapper
+    def test_storm_control_profile_w_traffic(self, rb_role=None):
+        bms_fixtures = list()
+        vn = self.create_vn()
+        bms_nodes = self.get_bms_nodes(rb_role=rb_role)
+        node = bms_nodes[0]
+        interfaces = self.inputs.bms_data[node]['interfaces'][:1]
+        sc1 = self.create_sc_profile(action='interface-shutdown',
+                                     bandwidth=1, recovery_timeout=180)
+        pp1 = self.create_port_profile(storm_control_profiles=[sc1.uuid])
+        bms1 = self.create_bms(bms_name=node, vlan_id=10,
+                               interfaces=interfaces, vn_fixture=vn,
+                               port_profiles=[pp1.uuid])
+        prouter = self.get_associated_prouters(node, interfaces)[0]
+        assert sc1.validate_config_pushed([prouter], interfaces)
+        assert prouter.validate_interfaces_status([interfaces[0]['tor_port']],
+               status='up')
+        pid = bms1.send_broadcast_traffic()
+        assert prouter.validate_interfaces_status([interfaces[0]['tor_port']],
+               status='down')
+        bms1.stop_broadcast_traffic(pid)
+
+    @skip_because(function='filter_bms_nodes', rb_role='erb_ucast_gw')
+    @preposttest_wrapper
+    def test_storm_control_profile_w_traffic_erb(self):
+        rb_roles = dict()
+        devices = list()
+        for leaf in self.leafs:
+            device_dict = self.inputs.physical_routers_data[leaf.name]
+            if 'erb_ucast_gw' in (device_dict.get('rb_roles') or []):
+                rb_roles[leaf.name] = ['ERB-UCAST-Gateway']
+                devices.append(leaf)
+        self.addCleanup(self.assign_roles, self.fabric, self.devices)
+        self.assign_roles(self.fabric, devices, rb_roles=rb_roles)
+        self.test_storm_control_profile_w_traffic(rb_role='erb_ucast_gw')
+
+    @preposttest_wrapper
+    def test_storm_control_profile_basic(self):
+        bms_fixtures = list()
+        vn = self.create_vn()
+        bms_nodes = self.get_bms_nodes()
+        lag_nodes = self.get_bms_nodes(bms_type='link_aggregation')
+        mh_nodes = self.get_bms_nodes(bms_type='multi_homing')
+        sc1 = self.create_sc_profile(action='interface-shutdown',
+                                     bandwidth=1, recovery_timeout=60)
+        pp1 = self.create_port_profile(storm_control_profiles=[sc1.uuid])
+        pp2 = self.create_port_profile()
+        sc2 = self.create_sc_profile(
+            action='interface-shutdown',
+            bandwidth=40, recovery_timeout=60,
+            no_broadcast=True, no_multicast=True,
+            no_registered_multicast=True,
+            no_unregistered_multicast=True,
+            no_unknown_unicast=True)
+        pp2.add_storm_control_profiles([sc2.uuid])
+        self.addCleanup(pp2.delete_storm_control_profiles, [sc2.uuid])
+        if lag_nodes:
+            lag_bms = self.create_bms(bms_name=lag_nodes[0],
+                vn_fixture=vn, tor_port_vlan_tag=10, port_profiles=[pp1.uuid])
+            lag_prouters = self.get_associated_prouters(lag_nodes[0])
+            assert sc1.validate_config_pushed(lag_prouters, lag_bms.interfaces)
+            pp = pp1; sc = sc1; bms = lag_bms; prouters = lag_prouters
+        if mh_nodes:
+            mh_bms = self.create_bms(bms_name=mh_nodes[0],
+                vn_fixture=vn, vlan_id=10, port_profiles=[pp2.uuid])
+            mh_prouters = self.get_associated_prouters(mh_nodes[0])
+            assert sc2.validate_config_pushed(mh_prouters, mh_bms.interfaces)
+            pp = pp2; sc = sc2; bms = mh_bms; prouters = mh_prouters
+        other_nodes = set(bms_nodes) - set(lag_nodes or []) - set(mh_nodes or [])
+#        other_nodes = bms_nodes
+        if other_nodes:
+            node = list(other_nodes)[0]
+            interfaces = self.inputs.bms_data[node]['interfaces'][:1]
+            single_bms = self.create_bms(bms_name=node, vlan_id=10,
+                interfaces=interfaces,
+                vn_fixture=vn)
+            single_bms.port_fixture.add_port_profiles([pp1.uuid])
+            single_prouters = self.get_associated_prouters(node, interfaces)
+            assert sc1.validate_config_pushed(single_prouters, single_bms.interfaces)
+            pp = pp1; sc = sc1; bms = single_bms; prouters = single_prouters
+        if mh_nodes:
+            assert sc2.validate_config_pushed(mh_prouters, mh_bms.interfaces)
+        if lag_nodes:
+            assert sc1.validate_config_pushed(lag_prouters, lag_bms.interfaces)
+        pp.delete_storm_control_profiles([sc.uuid])
+        assert sc.validate_config_pushed(prouters, bms.interfaces, exp=False)
+        pp.add_storm_control_profiles([sc.uuid])
+        assert sc.validate_config_pushed(prouters, bms.interfaces)
+        bms.port_fixture.delete_port_profiles([pp.uuid])
+        assert sc.validate_config_pushed(prouters, bms.interfaces, exp=False)
+        bms.port_fixture.add_port_profiles([pp2.uuid])
+        assert sc2.validate_config_pushed(prouters, bms.interfaces)
+        sc2.update(action=list(), no_broadcast=False)
+        assert sc2.validate_config_pushed(prouters, bms.interfaces)
 
 class TestVxlanID(GenericTestBase):
     @preposttest_wrapper

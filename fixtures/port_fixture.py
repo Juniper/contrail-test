@@ -56,6 +56,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
         self.uuid = kwargs.get('uuid', None)
         self.device_owner = kwargs.get('device_owner', None)
         self.max_flows = kwargs.get('max_flows', None)
+        self.port_profiles = kwargs.get('port_profiles') or list()
         project_name = self.project_obj.name if self.project_obj else self.project_name
         self.fq_name = [self.domain, project_name, self.name]
         self.vn_obj = None
@@ -100,6 +101,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
                     pass
                 self.logger.debug('Created port %s' % (self.uuid))
         self.read()
+        self.add_port_profiles(self.port_profiles)
 
     def _neutron_create_port(self):
         if not self.neutron_handle:
@@ -419,6 +421,16 @@ class PortFixture(vnc_api_test.VncLibFixture):
             return vmi_properties_obj['max_flows']
         else:
             return None
+
+    def add_port_profiles(self, port_profiles):
+        for pp_uuid in port_profiles:
+            self.vnc_h.assoc_port_profile_to_vmi(pp_uuid, self.uuid)
+        self.port_profiles = list(set(self.port_profiles).union(
+                                  set(port_profiles)))
+
+    def delete_port_profiles(self, port_profiles):
+        for pp_uuid in port_profiles:
+            self.vnc_h.disassoc_port_profile_from_vmi(pp_uuid, self.uuid)
 
 # end PortFixture
 
