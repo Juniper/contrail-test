@@ -231,5 +231,7 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         return self.conn_obj
     # end get_connection_obj
 
-    
+    def add_service_interface(self, service_port):
+        self.vnc_h.add_si_to_prouter(self.uuid, service_port)
+
 # end PhysicalDeviceFixture
