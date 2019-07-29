@@ -41,7 +41,7 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
     #end remove_from_cleanups
 
 
-    def test_cmd_output(self, cmd_type, cmd_args_list, check_output=False, form_cmd=True, as_sudo=False, print_output=True):
+    def check_cmd_output(self, cmd_type, cmd_args_list, check_output=False, form_cmd=True, as_sudo=False, print_output=True):
         failed_cmds = []
         passed_cmds = []
         result = True
@@ -60,7 +60,7 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
         self.logger.info('%s commands passed..\n' % passed_cmds)
         self.logger.info('%s commands failed..\n ' % failed_cmds)
         return result
-   # end test_cmd_output
+   # end check_cmd_output
 
     def _form_cmd(self, cmd_type, cmd_args):
         cmd = cmd_type

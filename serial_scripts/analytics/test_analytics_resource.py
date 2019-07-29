@@ -138,7 +138,7 @@ class AnalyticsTestSanityWithMin(
             {'no_key': ['help']}]
 
 
-        return self.test_cmd_output('contrail-flows', cmd_args_list, check_output=True, as_sudo=True, print_output=False)
+        return self.check_cmd_output('contrail-flows', cmd_args_list, check_output=True, as_sudo=True, print_output=False)
 
     @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
@@ -173,7 +173,7 @@ class AnalyticsTestSanityWithMin(
             {'no_key': ['help']}
             ]
 
-        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True, print_output=False)
+        return self.check_cmd_output('contrail-logs', cmd_args_list, check_output=True, print_output=False)
 
     @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
@@ -239,7 +239,7 @@ class AnalyticsTestSanityWithMin(
 
             'contrail-stats --help']
 
-        return self.test_cmd_output('contrail-stats', cmd_args_list, check_output=True, form_cmd=False, print_output=False)
+        return self.check_cmd_output('contrail-stats', cmd_args_list, check_output=True, form_cmd=False, print_output=False)
 # end class AnalyticsTestSanityWithMin
 
 class AnalyticsTestSanityWithResource(
@@ -440,6 +440,7 @@ class AnalyticsTestSanityWithResource(
 #                result = result and False
 
             self.logger.info("Verifying the object logs...")
+            import pdb;pdb.set_trace()
             obj_id_lst = self.analytics_obj.get_uve_key(
                 uve='service-instances')
             obj_id1_lst = self.analytics_obj.get_uve_key(uve='service-chains')
@@ -669,7 +670,7 @@ class AnalyticsTestSanityWithResource(
         # installing traffic package in vm
         self.res.vn1_vm1_fixture.install_pkg("Traffic")
         self.res.vn1_vm2_fixture.install_pkg("Traffic")
-
+        self.setup_flow_export_rate(10)
         self.tx_vm_node_ip = self.res.vn1_vm1_fixture.vm_node_ip
         self.rx_vm_node_ip = self.res.vn1_vm2_fixture.vm_node_ip
         self.tx_local_host = Host(
@@ -746,6 +747,7 @@ class AnalyticsTestSanityWithResource(
             self.logger.info(
                 "Verifying flowSeriesTable through opserver %s" %
                 (ip))
+            import pdb;pdb.set_trace()
             self.res1 = self.analytics_obj.ops_inspect[ip].post_query(
                 'FlowSeriesTable',
                 start_time=start_time,
@@ -755,7 +757,7 @@ class AnalyticsTestSanityWithResource(
                     'sourceip',
                     'destvn',
                     'destip',
-                    'sum(packets)',
+                    'SUM(packets)',
                     'sport',
                     'dport',
                     'T=1'],
@@ -1028,13 +1030,13 @@ class AnalyticsTestSanityWithResource(
                     'sourceip',
                     'destvn',
                     'destip',
-                    'sum(packets)'],
+                    'SUM(packets)'],
                 where_clause=query)
             self.logger.info("Query output: %s" % (self.res1))
             assert self.res1
             if self.res1:
                 r1 = self.res1[0]
-                sum_pkts = r1['sum(packets)']
+                sum_pkts = r1['SUM(packets)']
                 assert (sum_pkts == sender.sent)
             self.logger.info("Flow series Records=\n%s" % (self.res1))
             assert (sum_pkts == agg_pkts)
@@ -1047,6 +1049,7 @@ class AnalyticsTestSanityWithResource(
         ''' Test to validate flow series table
 
         '''
+        self.setup_flow_export_rate(10)
         vn1_name = self.res.vn1_name
         vn1_subnets = self.res.vn1_fixture.get_cidrs(af='v4')
         vn2_name = self.res.vn2_name
@@ -1177,6 +1180,7 @@ class AnalyticsTestSanityWithResource(
             self.logger.info(
                 "Verifying flowSeriesTable through opserver %s" %
                 (ip))
+            import pdb;pdb.set_trace()
             self.res1 = self.analytics_obj.ops_inspect[ip].post_query(
                 'FlowSeriesTable',
                 start_time=start_time,
@@ -1186,14 +1190,14 @@ class AnalyticsTestSanityWithResource(
                     'sourceip',
                     'destvn',
                     'destip',
-                    'sum(packets)',
+                    'SUM(packets)',
                     'sport',
                     'dport',
                     'T=1'],
                 where_clause=query,
                 sort=2,
                 limit=5,
-                sort_fields=['sum(packets)'])
+                sort_fields=['SUM(packets)'])
             assert self.res1
     
     @preposttest_wrapper
@@ -1266,7 +1270,7 @@ class AnalyticsTestSanityWithResource(
         for arg_type in module:
             cmd = {'module':arg_type, 'no_key': ['last 10m']}
             cmd_args_list.append(cmd)
-        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True, print_output=False)
+        return self.check_cmd_output('contrail-logs', cmd_args_list, check_output=True, print_output=False)
 
     @preposttest_wrapper
     def test_run_contrail_logs_cli_cmd_with_optional_arg_object_type(self):
@@ -1274,7 +1278,7 @@ class AnalyticsTestSanityWithResource(
            2.Verify the command runs properly and its returning some output
            3.Do not verify the correctness of the output
         '''
-        object_type = ['service-chain', 'database-node', 'routing-instance', 'xmpp-connection', 'analytics-query',
+        object_type = ['service-chain', 'database-node', 'routing-instance', 'analytics-query',
             'virtual-machine-interface', 'config-user', 'analytics-query-id', 'storage-osd', 'logical-interface',
             'xmpp-peer', 'generator', 'virtual-network', 'analytics-node', 'prouter', 'bgp-peer', 'loadbalancer',
             'user-defined-log-statistic', 'config', 'dns-node', 'storage-cluster', 'control-node', 'physical-interface',
@@ -1303,7 +1307,7 @@ class AnalyticsTestSanityWithResource(
             for cmd in cmds:
                 cmd_args_list.append(cmd)
 
-        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True, print_output=False)
+        return self.check_cmd_output('contrail-logs', cmd_args_list, check_output=True, print_output=False)
 
     @preposttest_wrapper
     def test_run_contrail_logs_cli_cmd_with_optional_arg_message_type(self):
@@ -1326,7 +1330,7 @@ class AnalyticsTestSanityWithResource(
             for cmd in cmds:
                 cmd_args_list.append(cmd)
 
-        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True, print_output=False)
+        return self.check_cmd_output('contrail-logs', cmd_args_list, check_output=True, print_output=False)
 
     @preposttest_wrapper
     def test_run_contrail_logs_cli_cmd_with_optional_arg_level_type(self):
@@ -1342,7 +1346,7 @@ class AnalyticsTestSanityWithResource(
             cmd = { 'level':arg_type, 'no_key':['last 5m', 'verbose'] }
             cmd_args_list.append(cmd)
 
-        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output, print_output=False)
+        return self.check_cmd_output('contrail-logs', cmd_args_list, check_output, print_output=False)
 
     @preposttest_wrapper
     def test_run_contrail_logs_cli_cmd_with_optional_arg_node_type(self):
@@ -1355,7 +1359,7 @@ class AnalyticsTestSanityWithResource(
         for arg_type in node_type:
             cmd = {'node-type':arg_type, 'no_key':['last 5m', 'verbose']}
             cmd_args_list.append(cmd)
-        return self.test_cmd_output('contrail-logs', cmd_args_list, check_output=True, print_output=False)
+        return self.check_cmd_output('contrail-logs', cmd_args_list, check_output=True, print_output=False)
 
     @test.attr(type=['sanity'])
     @preposttest_wrapper
