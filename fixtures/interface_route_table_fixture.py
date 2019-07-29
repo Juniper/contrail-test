@@ -100,6 +100,9 @@ class InterfaceRouteTableFixture(vnc_api_test.VncLibFixture):
         if self.inputs.is_gui_based_config():
             self.webui.delete_intf_route_table(self)
         else:
+            if self.inputs.ns_agilio_vrouter_data:
+                vmi_id = self.obj.get_virtual_machine_interface_back_refs()[0]['uuid']
+                self.vnc_h.unbind_vmi_from_interface_route_table(vmi_id, self.obj)
             self.vnc_h.delete_interface_route_table(self.uuid)
             self.verify_on_cleanup()
     # end delete
