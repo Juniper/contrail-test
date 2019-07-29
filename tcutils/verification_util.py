@@ -240,11 +240,13 @@ class VerificationUtilBase (object):
             path = self.base_url+path
             return self._protocol + "://%s:%s%s" % (self._ip, str(self._port), path)
 
-    def dict_get(self, path='',url='', raw_data=False):
+    def dict_get(self, path='',url='', raw_data=False, retry=True):
         try:
             if path:
                 return self._drv.load(self._mk_url_str(path))
             if url:
+                if isinstance(self._drv,JsonDrv):
+                    return self._drv.load(url,retry=retry)
                 return self._drv.load(url, raw_data=raw_data)
         except urllib2.HTTPError:
             return None
