@@ -3471,6 +3471,115 @@ class ContrailVncApi(object):
     def delete_port_tuple(self, pt_uuid):
         return self._vnc.port_tuple_delete(id=pt_uuid)
 
+    def update_storm_control_profile(self, uuid=None, fq_name=None, **kwargs):
+        obj = self.read_storm_control_profile(id=uuid, fq_name=fq_name)
+        params = obj.get_storm_control_parameters() or StormControlParameters()
+        if 'action' in kwargs:
+            params.set_storm_control_actions(kwargs['action'])
+        if 'recovery_timeout' in kwargs:
+            params.set_recovery_timeout(kwargs['recovery_timeout'])
+        if 'bandwidth' in kwargs:
+            params.set_bandwidth_percent(kwargs['bandwidth'])
+        if 'no_broadcast' in kwargs:
+            params.set_no_broadcast(kwargs['no_broadcast'])
+        if 'no_unknown_unicast' in kwargs:
+            params.set_no_unknown_unicast(kwargs['no_unknown_unicast'])
+        if 'no_multicast' in kwargs:
+            params.set_no_multicast(kwargs['no_multicast'])
+        if 'no_registered_multicast' in kwargs:
+            params.set_no_registered_multicast(kwargs['no_registered_multicast'])
+        if 'no_unregistered_multicast' in kwargs:
+            params.set_no_unregistered_multicast(kwargs['no_unregistered_multicast'])
+        obj.set_storm_control_parameters(params)
+        self._vnc.storm_control_profile_update(obj)
+
+    def create_storm_control_profile(self, fq_name, action=None,
+        recovery_timeout=None, bandwidth=None, no_broadcast=False,
+        no_unknown_unicast=False, no_multicast=False,
+        no_registered_multicast=False, no_unregistered_multicast=False):
+        params = StormControlParameters()
+        if action:
+            params.set_storm_control_actions([action])
+        if recovery_timeout:
+            params.set_recovery_timeout(int(recovery_timeout))
+        if bandwidth:
+            params.set_bandwidth_percent(int(bandwidth))
+        params.set_no_broadcast(no_broadcast)
+        params.set_no_unknown_unicast(no_unknown_unicast)
+        params.set_no_multicast(no_multicast)
+        params.set_no_registered_multicast(no_registered_multicast)
+        params.set_no_unregistered_multicast(no_unregistered_multicast)
+        obj = StormControlProfile(name=fq_name[-1], parent_type='project',
+                                  fq_name=fq_name,
+                                  storm_control_parameters=params)
+        uuid = self._vnc.storm_control_profile_create(obj)
+        return uuid
+
+    def delete_storm_control_profile(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting storm control profile %s' % kwargs)
+        return self._vnc.storm_control_profile_delete(**kwargs)
+
+    def read_storm_control_profile(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Reading storm control profile %s' % kwargs)
+        return self._vnc.storm_control_profile_read(**kwargs)
+
+    def create_port_profile(self, fq_name):
+        obj = PortProfile(name=fq_name[-1], parent_type='project',
+                          fq_name=fq_name)
+        return self._vnc.port_profile_create(obj)
+
+    def delete_port_profile(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting port profile %s' % kwargs)
+        return self._vnc.port_profile_delete(**kwargs)
+
+    def read_port_profile(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting port profile %s' % kwargs)
+        return self._vnc.port_profile_read(**kwargs)
+
+    def assoc_sc_to_port_profile(self, pp_uuid, sc_uuid):
+        sc_obj = self.read_storm_control_profile(id=sc_uuid)
+        obj = self.read_port_profile(id=pp_uuid)
+        obj.add_storm_control_profile(sc_obj)
+        return self._vnc.port_profile_update(obj)
+
+    def disassoc_sc_from_port_profile(self, pp_uuid, sc_uuid):
+        sc_obj = self.read_storm_control_profile(id=sc_uuid)
+        obj = self.read_port_profile(id=pp_uuid)
+        obj.del_storm_control_profile(sc_obj)
+        return self._vnc.port_profile_update(obj)
+
+    def assoc_port_profile_to_vmi(self, pp_uuid, vmi_id):
+        pp_obj = self.read_port_profile(id=pp_uuid)
+        obj = self.read_virtual_machine_interface(id=vmi_id)
+        obj.add_port_profile(pp_obj)
+        return self._vnc.virtual_machine_interface_update(obj)
+
+    def disassoc_port_profile_from_vmi(self, pp_uuid, vmi_id):
+        pp_obj = self.read_port_profile(id=pp_uuid)
+        obj = self.read_virtual_machine_interface(id=vmi_id)
+        obj.del_port_profile(pp_obj)
+        return self._vnc.virtual_machine_interface_update(obj)
+
 class LBFeatureHandles:
     __metaclass__ = Singleton
 

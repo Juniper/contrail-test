@@ -1,9 +1,10 @@
 from netaddr import *
-
+import re
 import vnc_api_test
 from pif_fixture import PhysicalInterfaceFixture
 from common.device_connection import ConnectionFactory
 from tcutils.util import retry
+from common.device_connection import NetconfConnection
 try:
     from webui_test import *
 except ImportError:
@@ -89,9 +90,13 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         self.role = obj.physical_router_role
         self.model = obj.physical_router_product_name
         self.dm_managed = obj.physical_router_vnc_managed
-        creds = obj.get_physical_router_user_credentials()
-        self.ssh_username = creds.username
-        self.ssh_password = creds.password
+#        creds = obj.get_physical_router_user_credentials()
+#        self.ssh_username = creds.username
+#        self.ssh_password = creds.password
+        if self.inputs.physical_routers_data.get(self.name):
+            details = self.inputs.physical_routers_data[self.name]
+            self.ssh_username = details.get('ssh_username')
+            self.ssh_password = details.get('ssh_password')
         csns = list()
         for csn in obj.get_virtual_router_refs() or []:
             csns.append(csn['to'][-1])
@@ -223,6 +228,72 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
             physical_port_fixtures[port] = self.add_physical_port(port)
         return physical_port_fixtures
     # end add_physical_ports
+
+    @property
+    def netconf(self):
+        if not getattr(self, '_netconf', None):
+            self._netconf = self.get_connection_obj('juniper',
+                 host=self.mgmt_ip,
+                 username=self.ssh_username,
+                 password=self.ssh_password)
+        return self._netconf
+
+    def get_config(self):
+        return self.netconf.get_config()
+
+    @retry(tries=12, delay=5)
+    def validate_interfaces_status(self, interfaces, status):
+        found = False
+        intf_list = self.netconf.get_interfaces(terse=True)
+        for intf in intf_list:
+            if intf['name'].strip() in interfaces:
+                if intf['oper-status'].strip().lower() != status.lower():
+                    self.logger.debug('%s is not %s on %s'%(
+                        intf['name'].strip(), status, self.name))
+                    return False
+                found = True
+        return found
+
+    def get_associated_ae_interface(self, interface, prouter_config):
+        ae = re.findall('interfaces %s .* (ae.*)'%interface, prouter_config)
+        assert len(set(ae)) <= 1, 'More than one ae %s associated with %s on %s'%(
+                              ae, interface, self.name)
+        return ae[:1]
+
+    def get_storm_control_config(self, interface, prouter_config):
+        dct = dict()
+        match = re.search('%s .*storm-control (.*)'%interface,
+                                      prouter_config)
+        if not match:
+            return dct
+        sc_name = match.group(1).strip()
+        match = re.search('%s .*action-shutdown'%sc_name, prouter_config)
+        if match:
+            dct['action'] = 'interface-shutdown'
+        match = re.search('%s .* recovery-timeout ([0-9]+)'%interface,
+                          prouter_config)
+        if match:
+            dct['recovery_timeout'] = int(match.group(1))
+        match = re.search('%s .*bandwidth-percentage ([0-9]+)'%sc_name,
+                          prouter_config)
+        if match:
+            dct['bandwidth'] = int(match.group(1))
+        match = re.search('%s .*no-broadcast'%sc_name, prouter_config)
+        if match:
+            dct['no_broadcast'] = True
+        match = re.search('%s .*no-multicast'%sc_name, prouter_config)
+        if match:
+            dct['no_multicast'] = True
+        match = re.search('%s .*no-registered-multicast'%sc_name, prouter_config)
+        if match:
+            dct['no_registered_multicast'] = True
+        match = re.search('%s .*no-unregistered-multicast'%sc_name, prouter_config)
+        if match:
+            dct['no_unregistered_multicast'] = True
+        match = re.search('%s .*no-unknown-unicast'%sc_name, prouter_config)
+        if match:
+            dct['no_unknown_unicast'] = True
+        return dct
 
     def get_connection_obj(self, *args, **kwargs):
         self.conn_obj = ConnectionFactory.get_connection_obj(
