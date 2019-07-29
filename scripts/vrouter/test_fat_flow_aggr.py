@@ -24,7 +24,7 @@ class FatFlowAggr(BaseVrouterTest, BaseLBaaSTest):
     #run only in openstack liberty and up
     def is_test_applicable(self):
         return (True, None)
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity','dev_reg'])
     @preposttest_wrapper
     def test_fat_flow_aggr_dest_icmp_intra_vn_inter_node(self):
         """:
@@ -69,6 +69,7 @@ class FatFlowAggr(BaseVrouterTest, BaseLBaaSTest):
 
     # end test_fat_flow_aggr_dest_len_icmp_intra_vn_inter_node
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_fat_flow_aggr_dest_udp_inter_vn_inter_node(self):
         """:
@@ -110,6 +111,7 @@ class FatFlowAggr(BaseVrouterTest, BaseLBaaSTest):
             dual=ipv6, prefix_length6=prefix_length6, only_v6=only_v6)
         return True
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_fat_flow_aggr_dest_ignore_src_udp_inter_vn_inter_node(self):
         """:
@@ -153,6 +155,7 @@ class FatFlowAggr(BaseVrouterTest, BaseLBaaSTest):
             prefix_length6=prefix_length6, only_v6=only_v6)
         return True
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_fat_flow_aggr_dest_ignore_src_icmp_inter_vn_intra_node(self):
         """:
@@ -246,6 +249,7 @@ class FatFlowAggrIpv6(FatFlowAggr):
     def test_fat_flow_lbaasv2(self):
         raise self.skipTest("Skipping Test. LBaas is NOT supported for IPv6")
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_fat_flow_aggr_dest_icmp_intra_vn_inter_node(self):
         """:
@@ -270,7 +274,7 @@ class FatFlowAggrIpv6(FatFlowAggr):
         self.inputs.set_af('dual')
         super(FatFlowAggrIpv6, self).test_fat_flow_aggr_dest_icmp_intra_vn_inter_node()
 
-    @test.attr(type=['sanity'])
+    @test.attr(type=['sanity','dev_reg'])
     @preposttest_wrapper
     def test_fat_flow_aggr_dest_udp_inter_vn_inter_node(self):
         """ 
@@ -296,6 +300,7 @@ class FatFlowAggrIpv6(FatFlowAggr):
         self.inputs.set_af('dual')
         super(FatFlowAggrIpv6, self).test_fat_flow_aggr_dest_udp_inter_vn_inter_node()
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_fat_flow_aggr_dest_ignore_src_udp_inter_vn_inter_node(self):
         """:
@@ -321,6 +326,7 @@ class FatFlowAggrIpv6(FatFlowAggr):
         self.inputs.set_af('dual')
         super(FatFlowAggrIpv6, self).test_fat_flow_aggr_dest_ignore_src_udp_inter_vn_inter_node()
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_fat_flow_aggr_dest_ignore_src_icmp_inter_vn_intra_node(self):
         """:
