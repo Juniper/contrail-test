@@ -44,6 +44,7 @@ class IPFragments(BaseVrouterTest):
         cls.vm2_fixture.cleanUp()
         cls.vn1_fixture.cleanUp()
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_ip_fragment_in_order(self):
         '''
@@ -82,6 +83,7 @@ class IPFragments(BaseVrouterTest):
             ), "Could not get expected no. of fragments"
     #end test_ip_fragment_in_order
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_ip_fragment_out_of_order_inter_node(self):
         '''
@@ -129,6 +131,7 @@ class IPFragments(BaseVrouterTest):
             ), "Could not get expected no. of fragments"
     #end test_ip_fragment_out_of_order_inter_node
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_ip_fragment_out_of_order_intra_node(self):
         '''
@@ -172,6 +175,7 @@ class IPFragments(BaseVrouterTest):
             ), "Could not get expected no. of fragments"
     #end test_ip_fragment_out_of_order_intra_node
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_ip_fragment_out_of_order1(self):
         '''
@@ -222,6 +226,7 @@ class IPFragments(BaseVrouterTest):
                 " fragments for order %s" % (order))
     #end test_ip_fragment_out_of_order1
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_ip_fragment_out_of_order_icmp(self):
         '''
@@ -259,6 +264,7 @@ class IPFragments(BaseVrouterTest):
             ), "Could not get expected no. of fragments"
     #end test_ip_fragment_out_of_order_icmp
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_ip_fragment_out_of_order_tcp(self):
         '''
@@ -301,6 +307,7 @@ class IPFragments(BaseVrouterTest):
             ), "Could not get expected no. of fragments"
     #end test_ip_fragment_out_of_order_tcp
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_ip_fragment_out_of_order_syn(self):
         '''
@@ -343,6 +350,7 @@ class IPFragments(BaseVrouterTest):
             ), "Could not get expected no. of fragments"
     #end test_ip_fragment_out_of_order_syn
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_ip_fragment_out_of_order_big_payload(self):
         '''
@@ -385,6 +393,7 @@ class IPFragments(BaseVrouterTest):
             ), "Could not get expected no. of fragments"
     #end test_ip_fragment_out_of_order_big_payload
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_ip_fragment_multi_sender(self):
         '''
@@ -439,6 +448,7 @@ class IPFragments(BaseVrouterTest):
             ), "Could not get expected no. of fragments"
     #end test_ip_fragment_multi_sender
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_ip_fragment_overlapping(self):
         '''
@@ -476,6 +486,7 @@ class IPFragments(BaseVrouterTest):
             ), "Could not get expected no. of fragments"
     #end test_ip_fragment_overlapping
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_ip_fragment_duplicate_frags(self):
         '''
@@ -543,6 +554,7 @@ class IPFragments(BaseVrouterTest):
             ), "Could not get expected no. of fragments"
     #end test_ip_fragment_duplicate_frags
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_ip_fragment_mixed(self):
         '''
