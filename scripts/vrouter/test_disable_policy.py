@@ -23,6 +23,7 @@ class DisablePolicyEcmp(BaseVrouterTest):
         super(DisablePolicyEcmp, cls).tearDownClass()
 
     @skip_because(hypervisor='docker',msg='Bug 1461423:Need privileged access')
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_ecmp_with_static_routes(self):
         """
@@ -96,6 +97,7 @@ class DisablePolicyEcmp(BaseVrouterTest):
                             [vm3_fixture, vm4_fixture],
                             static_ip_dict[prefix])
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_ecmp_with_static_routes_intra_node(self):
         """
@@ -134,6 +136,7 @@ class DisablePolicyEcmp(BaseVrouterTest):
         assert self.verify_ecmp_routes([vm2_fixture,vm3_fixture], prefix)
         assert self.verify_traffic_for_ecmp(vm1_fixture, [vm2_fixture,vm3_fixture], static_ip)
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_disable_policy_with_aap(self):
         """
@@ -305,6 +308,7 @@ class DisablePolicyEcmp(BaseVrouterTest):
         assert self.verify_traffic_for_ecmp(vm1_fixture,
                             [vm2_fixture,vm3_fixture], static_ip)
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_disable_enable_policy_with_active_flows(self):
         """
@@ -380,6 +384,7 @@ class DisablePolicyEcmp(BaseVrouterTest):
         (stats, ping_log) = self.stop_ping(ping_h)
         assert stats['loss'] == '0', ('Ping loss seen after disabling policy with active flow')
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_disable_policy_remove_sg(self):
         """
@@ -442,6 +447,7 @@ class DisablePolicyEcmp(BaseVrouterTest):
         (stats, ping_log) = self.stop_ping(ping_h)
         assert stats['loss'] != '0', ('Ping loss not seen after enabling policy with active flow')
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_remove_sg_disable_policy(self):
         """
@@ -511,6 +517,7 @@ class DisablePolicy(BaseVrouterTest, VerifySvcChain):
     def tearDownClass(cls):
         super(DisablePolicy, cls).tearDownClass()
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_disable_policy_sg_inter_vn(self):
         """
@@ -589,6 +596,7 @@ class DisablePolicy(BaseVrouterTest, VerifySvcChain):
             self.send_traffic_verify_flow_dst_compute(src_vm_fixture,
                 vm, proto, ff_exp=ff_exp, rf_exp=rf_exp)
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_disable_policy_with_vn_policy(self):
         """
@@ -715,7 +723,7 @@ class DisablePolicyEcmpIpv6(DisablePolicyEcmp):
         return (True, None)
 
     @skip_because(hypervisor='docker',msg='Bug 1461423:Need privileged access')
-    @test.attr(type=['cb_sanity', 'sanity'])
+    @test.attr(type=['cb_sanity', 'sanity','dev_reg'])
     def test_ecmp_with_static_routes(self):
         self.inputs.set_af('dual')
         super(DisablePolicyEcmpIpv6, self).test_ecmp_with_static_routes()

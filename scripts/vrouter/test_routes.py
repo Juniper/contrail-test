@@ -34,7 +34,7 @@ class TestRoutes(BaseVrouterTest):
         return (True, None)
     # end is_test_applicable
 
-    @test.attr(type=['sanity', 'vcenter_compute'])
+    @test.attr(type=['sanity', 'vcenter_compute', 'dev_reg'])
     @preposttest_wrapper
     def test_rt_table_scenario_1(self):
         '''
@@ -72,6 +72,7 @@ class TestRoutes(BaseVrouterTest):
         self.logger.info('Validate that Vrouter Route table does get cleared')
     # end test_rt_table_scenario_1
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_rt_table_scenario_2(self):
         '''
@@ -161,6 +162,7 @@ class TestRoutes(BaseVrouterTest):
                          'after the route is deleted')
     # end test_rt_table_scenario_2
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_rt_table_scenario_3(self):
         '''
@@ -233,6 +235,7 @@ class TestRoutes(BaseVrouterTest):
         self.logger.info('Vrouter route table bug check worked fine')
     # end test_rt_table_scenario_3
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_rt_table_scenario_4(self):
         '''
