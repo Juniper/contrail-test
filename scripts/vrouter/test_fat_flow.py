@@ -61,6 +61,7 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
             self.verify_fat_flow_with_traffic(client_fixtures,server_fixtures[0],
                                                 proto, port, af=af)
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_fat_flow_intra_vn_intra_node(self):
         """
@@ -95,6 +96,7 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
         self.verify_fat_flow_with_traffic(client_fixtures,server_fixtures[0],
                                             proto, port)
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_fat_flow_icmp_error(self):
         """
@@ -150,6 +152,7 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
             src_ip=client_fixtures[0].vm_ip, dst_ip=server_fixtures[0].vm_ip,
             sport=srcport, dport=port, src_vrf=vrf_id, proto=proto, exp=False)
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_fat_flow_icmp_error_inter_node(self):
         """
@@ -446,6 +449,7 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
             self.remove_fat_flow_on_vmis([port1_obj['id'], port2_obj['id']],
                 fat_config)
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_fat_flow_lbaasv2(self):
         '''Creates Lbaas pool with lb-method ROUND ROBIN, 3 members and vip

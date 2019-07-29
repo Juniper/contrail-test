@@ -74,6 +74,7 @@ class FatFlowSerial(BaseVrouterTest, VerifySvcChain):
 
         self.logger.info("Fat flow got deleted after aging timeout as expected")
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_add_delete_fat_flow_config(self):
         """
@@ -118,6 +119,7 @@ class FatFlowSerial(BaseVrouterTest, VerifySvcChain):
                                             proto, port, fat_flow_count=0)
 
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_fat_flow_with_service_chain(self):
         """
@@ -371,6 +373,7 @@ class FatFlowSerial(BaseVrouterTest, VerifySvcChain):
                     fat_config_on=config)
                 self.remove_fat_flow_on_vmis(vmi_ids, fat_config)
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_fat_flow_ignore_addrs_icmp_error_intra_node(self):
         """
@@ -410,6 +413,7 @@ class FatFlowSerial(BaseVrouterTest, VerifySvcChain):
                 fat_config_on=fat_config_on)
             self.remove_fat_flow_on_vmis(vmi_ids, fat_config)
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_fat_flow_at_vn(self):
         """
@@ -461,6 +465,7 @@ class FatFlowSerial(BaseVrouterTest, VerifySvcChain):
                     dport=dport_list[0])
                 self.delete_fat_flow_from_vns(vns)
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_fat_flow_at_vn_intra_vn(self):
         """
@@ -498,6 +503,7 @@ class FatFlowSerial(BaseVrouterTest, VerifySvcChain):
                 fat_config_on='all')
             self.delete_fat_flow_from_vns(vns)
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_fat_flow_vn_vmi(self):
         """
