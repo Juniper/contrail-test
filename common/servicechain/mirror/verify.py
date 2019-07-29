@@ -71,7 +71,6 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 		    count = (count * 3)/4  #Because the ping to FIP involves NAT. 
             if proto == 'icmp':
                 if not self.inputs.pcap_on_vm:
-                    count = self.stop_tcpdump(session, pcap)
                     print str(svm_name) + ':' + str(count)
                     total_count += count
                     if len(svm) == 1:
