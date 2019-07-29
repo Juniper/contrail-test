@@ -167,10 +167,10 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         else:
            return interfaces_filtered, msg
 
-    def get_associated_prouters(self, bms_name):
+    def get_associated_prouters(self, bms_name, interfaces=None):
         bms_node = self.inputs.bms_data[bms_name]
         devices = set()
-        for interface in bms_node['interfaces']:
+        for interface in interfaces or bms_node['interfaces']:
              devices.add(interface['tor'])
         return [device for device in self.devices if device.name in devices]
 

@@ -8,6 +8,8 @@ from tcutils.util import retry, search_arp_entry, get_random_name, get_intf_name
 from port_fixture import PortFixture
 import tempfile
 from tcutils.fabutils import *
+dir_path = os.path.dirname(os.path.realpath(__file__))
+BROADCAST_SCRIPT = dir_path+'/../tcutils/broadcast.py'
 
 class BMSFixture(fixtures.Fixture):
     def __init__(self,
@@ -43,6 +45,7 @@ class BMSFixture(fixtures.Fixture):
         self.vnc_h = connections.orch.vnc_h
         self.vlan_id = self.port_fixture.vlan_id if self.port_fixture else \
                        kwargs.get('vlan_id') or 0
+        self.port_profiles = kwargs.get('port_profiles') or list()
         self.tor_port_vlan_tag = kwargs.get('tor_port_vlan_tag')
         self._port_group_name = kwargs.get('port_group_name', None)
         self.bond_name = kwargs.get('bond_name') or 'bond%s'%get_random_string(2,
@@ -53,6 +56,7 @@ class BMSFixture(fixtures.Fixture):
         self._interface = None
         self.ironic_node_obj = None
         self.ironic_node_id = None
+        self.copied_files = dict()
     # end __init__
 
     def read_ironic_node_obj(self):
@@ -118,7 +122,8 @@ class BMSFixture(fixtures.Fixture):
                                  vlan_id=self.vlan_id,
                                  binding_profile=binding_profile,
                                  port_group_name=self._port_group_name,
-                                 tor_port_vlan_tag=self.tor_port_vlan_tag
+                                 tor_port_vlan_tag=self.tor_port_vlan_tag,
+                                 port_profiles=self.port_profiles
                              )
         self.port_fixture.setUp()
 
@@ -247,6 +252,34 @@ class BMSFixture(fixtures.Fixture):
         self.run('ifconfig %s multicast' %(self._interface))
         self.run_namespace('route -n add -net %s  netmask %s dev %s' %(address,mask,interface)) 
  
+    def copy_file_to_bms(self, localfile, dstdir=None, force=False):
+        if not force and localfile in self.copied_files and \
+           self.copied_files[localfile] == dstdir:
+            self.logger.debug('File %s already copied'%localfile)
+            return True
+        dest_dir = '%s@%s:%s' % (self.username, self.mgmt_ip, dstdir or '')
+        remote_copy(localfile, dest_dir, dest_password=self.password,
+                    with_sudo=True)
+        self.copied_files[localfile] = dstdir
+    # end copy_file_to_vm
+
+    def send_broadcast_traffic(self, dport=1111):
+        destfile = '/tmp/broadcast.py'
+        random_name = get_random_name()
+        pid_file = '/tmp/broadcast-%s.pid'%random_name
+        stats_file = '/tmp/broadcast-%s.stats'%random_name
+        log_file = '/tmp/broadcast-%s.log'%random_name
+        self.copy_file_to_bms(BROADCAST_SCRIPT, destfile)
+        cmd = 'python %s --dports %s --pid_file %s --stats_file %s'%(
+            destfile, dport, pid_file, stats_file)
+        cmd = cmd + ' 0<&- &> %s'%log_file
+        self.run_namespace(cmd, as_sudo=True)
+        return pid_file
+
+    def stop_broadcast_traffic(self, pid_file):
+        cmd = 'kill $(cat %s)'%(pid_file)
+        self.run_namespace(cmd, as_sudo=True)
+
     def run_python_code(self, code, as_sudo=True, as_daemon=False, pidfile=None, stdout_path=None, stderr_path=None):
 
         folder = tempfile.mkdtemp()
@@ -501,8 +534,9 @@ class BMSFixture(fixtures.Fixture):
         return (result, output)
     # end run_dhclient
 
+    @retry(tries=2, delay=2)
     def arping(self, ip):
-        cmd = 'arping -i %s -c 1 -r %s' % (self.mvlanintf, ip)
+        cmd = 'arping -I %s -c 2 %s' % (self.mvlanintf, ip)
         output = self.run_namespace(cmd)
         self.logger.debug('arping to %s returned %s' % (ip, output))
         return (output.succeeded, output)
