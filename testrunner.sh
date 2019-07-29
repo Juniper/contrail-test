@@ -146,6 +146,7 @@ make_entrypoint_tempest () {
 cat <<EOF
 #!/bin/bash -x
 cd /tempest
+python generate_testbed_env.py
 source testbed_env
 chmod +x tempest_run.sh
 /tempest/tempest_run.sh
