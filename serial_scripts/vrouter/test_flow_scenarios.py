@@ -142,6 +142,7 @@ class FlowExportRate(ExtendedFlowTestsBase):
         return result
     # end _test_flow_export
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_default_flow_export_rate(self):
         '''
@@ -197,6 +198,7 @@ class FlowExportRate(ExtendedFlowTestsBase):
             'verification failed' )
     # end test_custom_flow_export_rate
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_flow_export_disabling(self):
         '''
@@ -225,6 +227,7 @@ class FlowExportRate(ExtendedFlowTestsBase):
             'verification failed' )
     # end test_flow_export_disabling
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_flow_export_after_agent_restart(self):
         '''
@@ -530,6 +533,7 @@ class ExtendedFlowTests(ExtendedFlowTestsBase):
         super(ExtendedFlowTests, cls).tearDownClass()
     # end tearDownClass
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     #@skip_because(bug='1530034')
     def test_with_fuzz_bug_1504710(self):
@@ -570,6 +574,7 @@ send(a, count=10000, inter=0, iface='eth0')
         self.do_ping_test(vm1_fixture, vm2_fixture.vm_ip)
     # end test_with_fuzz_bug_1504710
 
+    @test.attr(type=['dev_reg'])
     @preposttest_wrapper
     def test_flow_update_on_route_update(self):
         '''
