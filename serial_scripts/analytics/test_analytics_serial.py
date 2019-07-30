@@ -73,42 +73,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
                     'ModuleId',
                     'MessageTS'],
                 where_clause=query)
-
-            self.logger.info("Verifying ObjectXmppConnection \
-                                Table through opserver %s.." % (self.inputs.collector_ips[0]))
-            self.res2 = self.analytics_obj.ops_inspect[
-                self.inputs.collector_ips[0]].post_query(
-                'ObjectXmppConnection',
-                start_time=start_time1,
-                end_time='now',
-                select_fields=[
-                    'ObjectId',
-                    'Source',
-                    'ObjectLog',
-                    'SystemLog',
-                    'Messagetype',
-                    'ModuleId',
-                    'MessageTS'],
-                where_clause=query1)
-#            self.logger.info("query output : %s"%(self.res1))
-            if not self.res1:
-                self.logger.info("query output : %s" % (self.res1))
-                st = self.analytics_obj.ops_inspect[
-                    self.inputs.collector_ips[0]]. send_trace_to_database(
-                    node=self.inputs.collector_names[0],
-                    module='QueryEngine',
-                    trace_buffer_name='QeTraceBuf')
-                self.logger.info("status: %s" % (st))
-                result = result and False
-            if not self.res2:
-                self.logger.info("query output : %s" % (self.res2))
-                st = self.analytics_obj.ops_inspect[
-                    self.inputs.collector_ips[0]]. send_trace_to_database(
-                    node=self.inputs.collector_names[0],
-                    module='QueryEngine',
-                    trace_buffer_name='QeTraceBuf')
-                self.logger.info("status: %s" % (st))
-                result = result and False
+            #object xmpp_connection module got removed
             if self.res1:
                 self.logger.info("Verifying logs from ObjectBgpPeer table")
                 result1 = False
