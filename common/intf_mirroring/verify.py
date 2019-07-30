@@ -603,7 +603,10 @@ class VerifyIntfMirror(VerifySvcMirror):
         vlan = None
         tap_intf_objs = src_vm_fixture.get_tap_intf_of_vm()
         for tap_intf_obj in tap_intf_objs:
-            if 'tap' in tap_intf_obj['name']:
+            intf_type = 'tap'
+            if self.inputs.ns_agilio_vrouter_data:
+                intf_type = 'nfp'
+            if intf_type in tap_intf_obj['name']:
                 parent_tap_intf_uuid = tap_intf_obj['uuid']
             else:
                 sub_intf_tap_intf_uuid = tap_intf_obj['uuid']
