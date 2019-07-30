@@ -68,7 +68,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         '''Test to validate collector uve.
         '''
         result=True
-        process_list = ['contrail-query-engine', 'contrail-analytics-api', 'contrail-collector',
+        process_list = ['contrail-analytics-api', 'contrail-collector',
                         'contrail-analytics-nodemgr']
         for process in process_list:
             result = result and self.analytics_obj.verify_collector_uve_module_state\
@@ -90,7 +90,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         '''Test to validate config node uve.
         '''
         result=True
-        process_list = ['contrail-config-nodemgr', 'contrail-svc-monitor', 'ifmap', 'contrail-api',
+        process_list = ['contrail-config-nodemgr', 'contrail-svc-monitor', 'contrail-api',
                         'contrail-schema']
         for process in process_list:
             result = result and self.analytics_obj.verify_cfgm_uve_module_state(self.inputs.collector_names[0],
@@ -332,11 +332,4 @@ class AnalyticsTestSanity3(base.AnalyticsBaseTest):
 
         '''
         assert self.analytics_obj.verify_database_process_running('contrail-database-nodemgr')
-
-    @preposttest_wrapper
-    def test_contrail_database_status(self):
-        ''' Test to verify contrail database status
-
-        '''
-        assert self.analytics_obj.verify_database_process_running('contrail-database')
 
