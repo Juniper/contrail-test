@@ -1,0 +1,118 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "2a447b1b_ed07525c",
+        "filename": "fixtures/port_fixture.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 386,
+      "author": {
+        "id": 78
+      },
+      "writtenOn": "2019-07-31T21:49:39Z",
+      "side": 1,
+      "message": "Same comments for this.",
+      "range": {
+        "startLine": 386,
+        "startChar": 8,
+        "endLine": 386,
+        "endChar": 21
+      },
+      "revId": "21545511b2f9a89c9f7c34ad4a7178410dca76dc",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "d4a1f076_ea78c50a",
+        "filename": "fixtures/port_fixture.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 400,
+      "author": {
+        "id": 78
+      },
+      "writtenOn": "2019-07-31T21:49:39Z",
+      "side": 1,
+      "message": "Same comments for this.",
+      "revId": "21545511b2f9a89c9f7c34ad4a7178410dca76dc",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "cf01c790_72b675dd",
+        "filename": "fixtures/port_fixture.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 411,
+      "author": {
+        "id": 78
+      },
+      "writtenOn": "2019-07-31T21:49:39Z",
+      "side": 1,
+      "message": "Same comments for this.",
+      "revId": "21545511b2f9a89c9f7c34ad4a7178410dca76dc",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "08939495_43e2f11d",
+        "filename": "fixtures/vn_test.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 1977,
+      "author": {
+        "id": 78
+      },
+      "writtenOn": "2019-07-31T21:49:39Z",
+      "side": 1,
+      "message": "we usually add these methods in contrailapi.py. Please check.",
+      "range": {
+        "startLine": 1977,
+        "startChar": 4,
+        "endLine": 1977,
+        "endChar": 7
+      },
+      "revId": "21545511b2f9a89c9f7c34ad4a7178410dca76dc",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "dd40fea6_6b1d4194",
+        "filename": "fixtures/vn_test.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 1992,
+      "author": {
+        "id": 78
+      },
+      "writtenOn": "2019-07-31T21:49:39Z",
+      "side": 1,
+      "message": "Same as above.",
+      "revId": "21545511b2f9a89c9f7c34ad4a7178410dca76dc",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ded9403d_c848e353",
+        "filename": "fixtures/vn_test.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 2004,
+      "author": {
+        "id": 78
+      },
+      "writtenOn": "2019-07-31T21:49:39Z",
+      "side": 1,
+      "message": "Same as above.",
+      "revId": "21545511b2f9a89c9f7c34ad4a7178410dca76dc",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
