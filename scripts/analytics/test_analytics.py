@@ -31,6 +31,59 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
         pass
     #end runTest
 
+    @preposttest_wrapper
+    def test_redis_stunnel_provision(self):
+        ''' Test verify redis & stunnel services
+            In SSL-ENABLED setup:
+            1) Redis service should listen on localhost:6379
+            2) Stunnel service should be active & listen on host-ip:6379
+            In Non SSL setup:
+            1) Redis service should bind to 6379 port to both locahost & host-ip
+            2) Stunnel service should be inactive
+        '''
+        cmd = "ss -ntlp | grep `docker container inspect %s | grep -w Pid | cut -f2  -d ':' | cut -f1 -d ','`"
+        if self.inputs.contrail_configs.get('SSL_ENABLE'):
+            for node in self.inputs.collector_ips:
+                self.logger.info("Checking for Stunnel on %s" % node)
+                err = 'Stunnel container is not running'
+                assert self.inputs.is_container_up(node, 'stunnel'), err
+                self.logger.info("Checking for Redis on %s" % node)
+                err = 'Redis container is not running'
+                assert self.inputs.is_container_up(node, 'redis'), err
+                stunnel_cmd = cmd % self.inputs.host_data[node]['containers']['stunnel']
+                redis_cmd = cmd % self.inputs.host_data[node]['containers']['redis']
+                self.logger.info("Checking for Stunnel sockets on %s" % node)
+                stunnel_socks = self.inputs.run_cmd_on_server(node, stunnel_cmd)
+                self.logger.info(stunnel_socks)
+                self.logger.info("Checking for Redis sockets on %s" % node)
+                redis_socks = self.inputs.run_cmd_on_server(node, redis_cmd)
+                self.logger.info(redis_socks)
+                stunnel_socks = stunnel_socks.split('\n')
+                redis_socks = redis_socks.split('\n')
+                stunnel_exp = '%s:6379' % node
+                redis_exp = '127.0.0.1:6379'
+                err = 'expected only 1 socket %s, but got %s' % (stunnel_exp, stunnel_socks)
+                assert len(stunnel_socks)==1 and stunnel_exp in stunnel_socks[0], err
+                err = 'expected only 1 socket %s, but got %s' % (redis_exp, redis_socks)
+                assert len(redis_socks)==1 and redis_exp in redis_socks[0], err
+        else:
+            for node in self.inputs.collector_ips:
+                self.logger.info("Checking for Stunnel on %s" % node)
+                err = 'Stunnel container is not expected'
+                assert not self.inputs.host_data[node]['containers'].get('stunnel'), err
+                self.logger.info("Checking for Redis on %s" % node)
+                err = 'Redis container is not running'
+                assert self.inputs.is_container_up(node, 'redis'), err
+                redis_cmd = cmd % self.inputs.host_data[node]['containers']['redis']
+                self.logger.info("Checking for Redis sockets on %s" % node)
+                redis_socks = self.inputs.run_cmd_on_server(node, redis_cmd)
+                redis_exp = ['%s:6379' % node, '127.0.0.1:6379']
+                err = 'expected only 2 socket %s, but got %s' % (redis_exp, redis_socks)
+                assert len(redis_socks.split('\n'))==2, err
+                for exp in redis_exp:
+                    assert exp in redis_socks, err
+        return True
+
     @test.attr(type=['cb_sanity', 'ci_sanity', 'sanity', 'vcenter', 'vcenter_compute'])
     @preposttest_wrapper
     def test_contrail_status(self):

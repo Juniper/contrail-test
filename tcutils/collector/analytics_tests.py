@@ -1263,12 +1263,16 @@ class AnalyticsVerification(fixtures.Fixture):
         return result
 
     @retry(delay=3, tries=15)
-    def verify_vn_link(self, vn_fq_name):
+    def verify_vn_link(self, vn_fq_name, skip_opservers=None):
         '''Verifies that vn is listed in http://nodea18.englab.juniper.net:8081/analytics/virtual-networks when created'''
 
         # vn='default-domain:'+self.inputs.project_name+':'+vn
         result = False
+        skip_opservers = skip_opservers if skip_opservers else []
         for ip in self.inputs.collector_ips:
+            if ip in skip_opservers:
+                result = True
+                continue
             self.logger.debug(
                 "Verifying the %s virtual network link  through opserver %s" % (vn_fq_name, ip))
             self.links = self.ops_inspect[ip].get_hrefs_to_all_UVEs_of_a_given_UVE_type(
@@ -2783,11 +2787,11 @@ class AnalyticsVerification(fixtures.Fixture):
         return self.verify_alarms(role='all', alarm_type='disk-usage')
     # end verify_disk_usage_alarm
 
-    def verify_configured_alarm(self,role='virtual-network', alarm_type=None, alarm_name=None, verify_alarm_cleared=False):
+    def verify_configured_alarm(self,role='virtual-network', alarm_type=None, alarm_name=None, verify_alarm_cleared=False, skip_nodes=None):
         service_ip = self.inputs.collector_ips[0]
         return self._verify_alarms_by_type(service=None, service_ip=service_ip,
                     role=role, alarm_type=alarm_type,
-                     verify_alarm_cleared=verify_alarm_cleared, built_in=False, alarm_name=alarm_name)
+                     verify_alarm_cleared=verify_alarm_cleared, built_in=False, alarm_name=alarm_name, skip_nodes=skip_nodes)
     # end  verify_configured_alarm
 
     def _verify_alarms_stop_svc(self, service, service_ip, role, alarm_type, multi_instances=False, soak_timer=15,container='controller'):
@@ -2832,10 +2836,11 @@ class AnalyticsVerification(fixtures.Fixture):
         return result
 
     def _verify_alarms_by_type(self, service, service_ip, role, alarm_type, multi_instances=False,
-            soak_timer=15, verify_alarm_cleared=False, built_in=True, alarm_name=None):
+            soak_timer=15, verify_alarm_cleared=False, built_in=True, alarm_name=None, skip_nodes=None):
         result = True
         soaking = False
         supervisor = False
+        skip_nodes = skip_nodes if skip_nodes else []
         if re.search('supervisor', str(service)) or re.search('nodemgr', str(service)):
             supervisor = True
         if 'process-status' in alarm_type and not supervisor:
@@ -2857,7 +2862,7 @@ class AnalyticsVerification(fixtures.Fixture):
             'contrail-database-nodemgr']
         if service in supervisors:
             alarm_type = ['node-status']
-        collector_ip = self.inputs.collector_ips[0]
+        collector_ip = list(set(self.inputs.collector_ips) - set(skip_nodes))[0]
         if multi_instances and role == 'analytics-node':
             collector_ip = self.inputs.collector_ips[1]
         if role == 'prouter':
