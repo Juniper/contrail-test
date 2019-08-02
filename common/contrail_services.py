@@ -33,6 +33,7 @@ CONTRAIL_SERVICES_CONTAINER_MAP = {
     'neutron': ['neutron', 'neutron-server'],
     'mysql': ['mariadb'],
     'redis': ['webui_redis', 'webui-redis','redis'],
+    'stunnel': ['stunnel'],
     'vrouter-nodemgr': ['vrouter_nodemgr', 'vrouter-nodemgr', 'vrouter_agent_nodemgr'],
     'config-nodemgr': ['config_nodemgr', 'config-nodemgr'],
     'analytics-nodemgr': ['analytics_nodemgr', 'analytics-nodemgr'],
