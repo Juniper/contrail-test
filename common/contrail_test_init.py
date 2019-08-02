@@ -1232,6 +1232,8 @@ class ContrailTestInit(object):
                'strongswan': 'strongswan',
                'ironic_pxe': 'ironic_pxe',
                'ironic_conductor': 'ironic_conductor',
+               'stunnel': 'stunnel',
+               'redis': 'redis',
               }
         if service:
             return dct.get(service)
