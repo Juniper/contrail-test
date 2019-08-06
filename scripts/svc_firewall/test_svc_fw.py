@@ -135,7 +135,53 @@ class TestSvcRegrFeature(BaseSvc_FwTest, VerifySvcFirewall):
         ret_dict = self.verify_svc_chain(service_mode=mode, create_svms=True)
         return self.verify_protocol_port_change(ret_dict, mode='in-network')
 
+class TestSvcRegrIPv6(TestSvcRegr):
 
+    @classmethod
+    def setUpClass(cls):
+        super(TestSvcRegrIPv6, cls).setUpClass()
+        cls.inputs.set_af('v6')
+
+    def is_test_applicable(self):
+        if not self.connections.orch.is_feature_supported('ipv6'):
+            return(False, 'IPv6 tests not supported in this environment ')
+        return (True, None)
+
+    @preposttest_wrapper
+    def test_svc_in_network_datapath(self):
+        return self.verify_svc_chain(svc_img_name='tiny_in_net', service_mode='in-network',
+                                     create_svms=True)
+
+    @preposttest_wrapper
+    @skip_because(feature='trans_svc')
+    def test_svc_v2_transparent_datapath(self):
+        super(TestSvcRegrIPv6,self).test_svc_v2_transparent_datapath()
+
+    @preposttest_wrapper
+    def test_svc_in_net_nat_with_static_routes(self):
+        super(TestSvcRegrIPv6,self).test_svc_in_net_nat_with_static_routes()
+
+    @preposttest_wrapper
+    @skip_because(address_family='v6')
+    def test_svc_in_network_nat_private_to_public(self):
+        super(TestSvcRegrIPv6,self).test_svc_in_network_nat_private_to_public()
+
+class TestSvcRegrFeatureIPv6(TestSvcRegrFeature):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestSvcRegrFeatureIPv6, cls).setUpClass()
+        cls.inputs.set_af('v6')
+
+    def is_test_applicable(self):
+        if not self.connections.orch.is_feature_supported('ipv6'):
+            return(False, 'IPv6 tests not supported in this environment ')
+        return (True, None)
+
+"""
+Mirror tests are disabled since
+1) feature not used in real-world
+2) logic for number of mirror'd pkt is not solid
 class TestSvcRegrwithMirror(BaseSvc_FwTest, VerifySvcFirewall, VerifySvcMirror):
 
     @classmethod
@@ -182,49 +228,6 @@ class TestSvcRegrwithMirror(BaseSvc_FwTest, VerifySvcFirewall, VerifySvcMirror):
 #        """Verify svc span in in-network mode."""
 #        return self.verify_svc_span(in_net=True)
 
-class TestSvcRegrIPv6(TestSvcRegr):
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestSvcRegrIPv6, cls).setUpClass()
-        cls.inputs.set_af('v6')
-
-    def is_test_applicable(self):
-        if not self.connections.orch.is_feature_supported('ipv6'):
-            return(False, 'IPv6 tests not supported in this environment ')
-        return (True, None)
-
-    @preposttest_wrapper
-    def test_svc_in_network_datapath(self):
-        return self.verify_svc_chain(svc_img_name='tiny_in_net', service_mode='in-network',
-                                     create_svms=True)
-
-    @preposttest_wrapper
-    @skip_because(feature='trans_svc')
-    def test_svc_v2_transparent_datapath(self):
-        super(TestSvcRegrIPv6,self).test_svc_v2_transparent_datapath()
-
-    @preposttest_wrapper
-    def test_svc_in_net_nat_with_static_routes(self):
-        super(TestSvcRegrIPv6,self).test_svc_in_net_nat_with_static_routes()
-
-    @preposttest_wrapper
-    @skip_because(address_family='v6')
-    def test_svc_in_network_nat_private_to_public(self):
-        super(TestSvcRegrIPv6,self).test_svc_in_network_nat_private_to_public()
-
-class TestSvcRegrFeatureIPv6(TestSvcRegrFeature):
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestSvcRegrFeatureIPv6, cls).setUpClass()
-        cls.inputs.set_af('v6')
-
-    def is_test_applicable(self):
-        if not self.connections.orch.is_feature_supported('ipv6'):
-            return(False, 'IPv6 tests not supported in this environment ')
-        return (True, None)
-
 class TestSvcRegrwithMirrorIPv6(TestSvcRegrwithMirror):
 
     @classmethod
@@ -250,3 +253,4 @@ class TestSvcRegrwithMirrorIPv6(TestSvcRegrwithMirror):
         return self.verify_firewall_with_mirroring(
             firewall_svc_mode='in-network',
             mirror_svc_mode='in-network')
+ """
