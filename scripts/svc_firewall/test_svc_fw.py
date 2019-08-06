@@ -135,53 +135,6 @@ class TestSvcRegrFeature(BaseSvc_FwTest, VerifySvcFirewall):
         ret_dict = self.verify_svc_chain(service_mode=mode, create_svms=True)
         return self.verify_protocol_port_change(ret_dict, mode='in-network')
 
-
-class TestSvcRegrwithMirror(BaseSvc_FwTest, VerifySvcFirewall, VerifySvcMirror):
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestSvcRegrwithMirror, cls).setUpClass()
-
-    def runTest(self):
-        pass
-    # end runTest
-
-    @preposttest_wrapper
-    def test_firewall_in_network_with_mirroring_transparent_mode(self):
-        """test firewall in in_network with mirroring in transparent mode"""
-        return self.verify_firewall_with_mirroring(
-            firewall_svc_mode='in-network-nat', mirror_svc_mode='transparent')
-
-    @preposttest_wrapper
-    def test_firewall_transparent_with_mirroring_in_network_mode(self):
-        """test firewall in transparent with mirroring in in_network mode"""
-        return self.verify_firewall_with_mirroring(
-            firewall_svc_mode='transparent', mirror_svc_mode='in-network')
-
-    @preposttest_wrapper
-    def test_firewall_transparent_with_mirroring_in_transparent(self):
-        """test firewall in transparent with mirroring in in_network mode"""
-        return self.verify_firewall_with_mirroring(
-            firewall_svc_mode='transparent', mirror_svc_mode='transparent')
-
-    @preposttest_wrapper
-    def test_firewall_in_network_with_mirroring_in_network(self):
-        """test firewall in in-network with mirroring in in_network mode"""
-        return self.verify_firewall_with_mirroring(
-            firewall_svc_mode='in-network-nat', mirror_svc_mode='in-network')
-
-# TODO: Following tests will be valid after the bug#1130 fix
-#      http://10.84.5.133/bugs/show_bug.cgi?id=1130
-#    @preposttest_wrapper
-#    def test_svc_span_transparent_mode(self):
-#        """Verify svc span in transparent mode."""
-#        return self.verify_svc_span()
-#
-#    @preposttest_wrapper
-#    def test_svc_span_in_network_mode(self):
-#        """Verify svc span in in-network mode."""
-#        return self.verify_svc_span(in_net=True)
-
 class TestSvcRegrIPv6(TestSvcRegr):
 
     @classmethod
@@ -225,28 +178,77 @@ class TestSvcRegrFeatureIPv6(TestSvcRegrFeature):
             return(False, 'IPv6 tests not supported in this environment ')
         return (True, None)
 
-class TestSvcRegrwithMirrorIPv6(TestSvcRegrwithMirror):
+# Mirror tests are disabled since
+# 1) feature not used in real-world
+# 2) logic for number of mirror'd pkt is not solid
+# class TestSvcRegrwithMirror(BaseSvc_FwTest, VerifySvcFirewall, VerifySvcMirror):
+#
+#     @classmethod
+#     def setUpClass(cls):
+#         super(TestSvcRegrwithMirror, cls).setUpClass()
+#
+#     def runTest(self):
+#         pass
+#     # end runTest
+#
+#     @preposttest_wrapper
+#     def test_firewall_in_network_with_mirroring_transparent_mode(self):
+#         """test firewall in in_network with mirroring in transparent mode"""
+#         return self.verify_firewall_with_mirroring(
+#             firewall_svc_mode='in-network-nat', mirror_svc_mode='transparent')
+#
+#     @preposttest_wrapper
+#     def test_firewall_transparent_with_mirroring_in_network_mode(self):
+#         """test firewall in transparent with mirroring in in_network mode"""
+#         return self.verify_firewall_with_mirroring(
+#             firewall_svc_mode='transparent', mirror_svc_mode='in-network')
+#
+#     @preposttest_wrapper
+#     def test_firewall_transparent_with_mirroring_in_transparent(self):
+#         """test firewall in transparent with mirroring in in_network mode"""
+#         return self.verify_firewall_with_mirroring(
+#             firewall_svc_mode='transparent', mirror_svc_mode='transparent')
+#
+#     @preposttest_wrapper
+#     def test_firewall_in_network_with_mirroring_in_network(self):
+#         """test firewall in in-network with mirroring in in_network mode"""
+#         return self.verify_firewall_with_mirroring(
+#             firewall_svc_mode='in-network-nat', mirror_svc_mode='in-network')
+#
+# TODO: Following tests will be valid after the bug#1130 fix
+#      http://10.84.5.133/bugs/show_bug.cgi?id=1130
+#    @preposttest_wrapper
+#    def test_svc_span_transparent_mode(self):
+#        """Verify svc span in transparent mode."""
+#        return self.verify_svc_span()
+#
+#    @preposttest_wrapper
+#    def test_svc_span_in_network_mode(self):
+#        """Verify svc span in in-network mode."""
+#        return self.verify_svc_span(in_net=True)
 
-    @classmethod
-    def setUpClass(cls):
-        super(TestSvcRegrwithMirrorIPv6, cls).setUpClass()
-        cls.inputs.set_af('v6')
-
-    def is_test_applicable(self):
-        if not self.connections.orch.is_feature_supported('ipv6'):
-            return(False, 'IPv6 tests not supported in this environment ')
-        return (True, None)
-
-    @preposttest_wrapper
-    def test_firewall_in_network_with_mirroring_transparent_mode(self):
-        """test firewall in in_network with mirroring in transparent mode"""
-        return self.verify_firewall_with_mirroring(
-            firewall_svc_mode='in-network',
-            mirror_svc_mode='transparent')
-
-    @preposttest_wrapper
-    def test_firewall_in_network_with_mirroring_in_network(self):
-        """test firewall in in-network with mirroring in in_network mode"""
-        return self.verify_firewall_with_mirroring(
-            firewall_svc_mode='in-network',
-            mirror_svc_mode='in-network')
+# class TestSvcRegrwithMirrorIPv6(TestSvcRegrwithMirror):
+#
+#     @classmethod
+#     def setUpClass(cls):
+#         super(TestSvcRegrwithMirrorIPv6, cls).setUpClass()
+#         cls.inputs.set_af('v6')
+#
+#     def is_test_applicable(self):
+#         if not self.connections.orch.is_feature_supported('ipv6'):
+#             return(False, 'IPv6 tests not supported in this environment ')
+#         return (True, None)
+#
+#     @preposttest_wrapper
+#     def test_firewall_in_network_with_mirroring_transparent_mode(self):
+#         """test firewall in in_network with mirroring in transparent mode"""
+#         return self.verify_firewall_with_mirroring(
+#             firewall_svc_mode='in-network',
+#             mirror_svc_mode='transparent')
+#
+#     @preposttest_wrapper
+#     def test_firewall_in_network_with_mirroring_in_network(self):
+#         """test firewall in in-network with mirroring in in_network mode"""
+#         return self.verify_firewall_with_mirroring(
+#             firewall_svc_mode='in-network',
+#             mirror_svc_mode='in-network')
