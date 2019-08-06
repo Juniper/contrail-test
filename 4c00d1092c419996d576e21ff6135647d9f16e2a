@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "ddc18aaf_67802b88",
+        "filename": "fixtures/port_profile.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-08-06T18:34:17Z",
+      "side": 1,
+      "message": "the validation code is in fixtures/storm_control_profile.py, this function has to be removed.",
+      "parentUuid": "e0510678_fe144b70",
+      "range": {
+        "startLine": 84,
+        "startChar": 24,
+        "endLine": 84,
+        "endChar": 33
+      },
+      "revId": "4c00d1092c419996d576e21ff6135647d9f16e2a",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "ea7d4252_08843c94",
         "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
         "patchSetId": 3
@@ -48,6 +72,30 @@
     },
     {
       "key": {
+        "uuid": "bf09c792_481bd1e0",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 879,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-08-06T18:34:17Z",
+      "side": 1,
+      "message": "Once the configs are teared down the JunOS is supposed to bring it up so didnt add that validation. Otherwise we need to add sleep for 3 minutes to check the interface been brought up, again increase of runtime was a concern.\n\nWRT to traffic rate, i observed that the application was sending 300M+ of traffic on a 10G interface. If need be we can run multiple process to increase the throughput.",
+      "parentUuid": "ea7d4252_08843c94",
+      "range": {
+        "startLine": 879,
+        "startChar": 23,
+        "endLine": 879,
+        "endChar": 27
+      },
+      "revId": "4c00d1092c419996d576e21ff6135647d9f16e2a",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "93ff53e4_79aa600a",
         "filename": "tcutils/broadcast.py",
         "patchSetId": 3
@@ -59,6 +107,24 @@
       "writtenOn": "2019-08-06T10:41:45Z",
       "side": 1,
       "message": "Suggestion: Scapy will generate broadcast/multicast \u0026 unknown unicast traffic.  Also traffic rate can be controlled to some extent .",
+      "revId": "4c00d1092c419996d576e21ff6135647d9f16e2a",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "47a16d97_67fd814d",
+        "filename": "tcutils/broadcast.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-08-06T18:34:17Z",
+      "side": 1,
+      "message": "There are two reasons to go with native python application rather than scapy.\n1) Scapy comes with its own overhead. Also expect scapy and other dependencies to be installed on the nodes.\n2) A native python application can be run anywhere and the execution time is also fast compared to scapy.",
+      "parentUuid": "93ff53e4_79aa600a",
       "revId": "4c00d1092c419996d576e21ff6135647d9f16e2a",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
