@@ -1,0 +1,67 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "e0510678_fe144b70",
+        "filename": "fixtures/port_profile.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-08-06T10:41:45Z",
+      "side": 1,
+      "message": "pbd need to be removed. Validation code will be added later ?",
+      "range": {
+        "startLine": 84,
+        "startChar": 24,
+        "endLine": 84,
+        "endChar": 33
+      },
+      "revId": "4c00d1092c419996d576e21ff6135647d9f16e2a",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ea7d4252_08843c94",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_intravn.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 879,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-08-06T10:41:45Z",
+      "side": 1,
+      "message": "We might need to ensure interface is up after recovery timeout.\nFor 10g/1g traffic rate will vary.If we are not able to sent at higher speeds interface may not go down.",
+      "range": {
+        "startLine": 879,
+        "startChar": 23,
+        "endLine": 879,
+        "endChar": 27
+      },
+      "revId": "4c00d1092c419996d576e21ff6135647d9f16e2a",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "93ff53e4_79aa600a",
+        "filename": "tcutils/broadcast.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-08-06T10:41:45Z",
+      "side": 1,
+      "message": "Suggestion: Scapy will generate broadcast/multicast \u0026 unknown unicast traffic.  Also traffic rate can be controlled to some extent .",
+      "revId": "4c00d1092c419996d576e21ff6135647d9f16e2a",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
