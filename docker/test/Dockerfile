@@ -1,10 +1,8 @@
 ARG REGISTRY_SERVER=localhost:5000
 ARG BASE_TAG=latest
 FROM $REGISTRY_SERVER/contrail-test-base:$BASE_TAG
-ARG INSTALL_PACKAGE=""
 ARG REPO_FILE="contrail.repo"
 ARG OPENSTACK_VERSION=ocata
-ARG OPENSTACK_SUBVERSION=3
 
 COPY requirements.txt *.rpm /
 
@@ -13,9 +11,7 @@ RUN cp -r /etc/yum.repos.d /etc/yum.repos.d.orig
 # yum will ignore Dockerfile during the build
 COPY *.repo Dockerfile /etc/yum.repos.d/
 
-RUN if [ ! -z "$INSTALL_PACKAGE" ]; then yum localinstall -y /$INSTALL_PACKAGE; \
-    cd /opt/contrail/contrail_packages; ./setup.sh; fi && \
-    yum install -y \
+RUN yum install -y \
       python-ceilometerclient python-cinderclient python-barbicanclient \
       python-glanceclient python-heatclient python-novaclient \
       python-ironicclient \

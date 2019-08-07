@@ -70,13 +70,7 @@ One can also custom build base and test containers
          --tag           TAG           Docker container tag, default to sku
          --base-tag      BASE_TAG      Specify contrail-base-test container tag to use. Defaults to 'latest'.
          --sku           SKU           Openstack version. Defaults to ocata
-         --contrail-repo CONTRAIL_REPO Contrail Repository, optional, if unspecified specify --package-url.
-         --package-url   INSTALL_PKG   Contrail-install-packages package url (scp:// or http:// or https://)
-                                       Optional, if unspecified specify --package-url
-                                       Local repo will be setup based on install package.
-                                       In case of scp, specify the below env variables
-                                       SSHUSER - user name to be used during scp, Default: current user
-                                       SSHPASS - user password to be used during scp
+         --contrail-repo CONTRAIL_REPO Contrail Repository, mandatory.
          --registry-server REGISTRY_SERVER Docker registry hosting the base test container, Defaults to docker.io/opencontrail
          --post          POST          Upload the test container to the registy-server, if specified
     $> ./build-container.sh test --tag ocata-bld-1 --base-tag ocata-bld-1 --sku ocata --package-url http://path/to/contrail-install-packages.rpm --contrail-repo http://path/to/contrail/repo/bld-1 --registry-server opencontrailnightly
