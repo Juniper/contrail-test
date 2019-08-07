@@ -1,5 +1,0 @@
-[centos-openstack]
-name = Centos Openstack repo
-baseurl = ${OPENSTACK_REPO}
-enabled = 1
-gpgcheck = 0

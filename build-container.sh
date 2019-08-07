@@ -1,29 +1,12 @@
 #!/bin/bash
 
-REPO_TEMPLATE_FILE="docker/test/contrail.repo.template"
-REPO_FILE="docker/test/contrail.repo"
-OPENSTACK_REPO_TEMPLATE_FILE="docker/test/openstack.repo.template"
-OPENSTACK_REPO_FILE="docker/test/openstack.repo"
-declare -A SUBVERSIONS=([newton]=5 [ocata]=3 [pike]=1 [queens]=0)
+# TODO: move CONTRAIL_REPO from test-test to test-base to decrease time build
+
 REGISTRY_SERVER="opencontrail"
 SKU=""
-INSTALL_PKG=""
 CONTRAIL_REPO=""
 OPENSTACK_REPO=""
 TAG=""
-
-create_repo () {
-    local tmpl=$1
-    local repo=$2
-    if [[ -f $repo ]]; then
-       local timestamp=$(date +"%Y%m%d-%H%M%S")
-       echo "Moving old $repo file to $repo.$timestamp"
-       mv "$repo" "$repo.$timestamp"
-    fi
-    template=$(cat $tmpl)
-    content=$(eval "echo \"$template\"")
-    echo "$content" > $repo
-}
 
 download_pkg () {
     local pkg=$1
@@ -43,7 +26,7 @@ download_pkg () {
     fi
 }
 
-docker_build () {
+docker_build_test_sku () {
   local dir=${1%/}
   local name=$2
   local tag=$3
@@ -62,10 +45,9 @@ docker_build () {
     build_arg_opts+=" --build-arg REGISTRY_SERVER=${REGISTRY_SERVER}"
     build_arg_opts+=" --build-arg BASE_TAG=${BASE_TAG}"
   fi
-  build_arg_opts+=" --build-arg OPENSTACK_VERSION=${OPENSTACK_VERSION}"
-  build_arg_opts+=" --build-arg OPENSTACK_SUBVERSION=${OPENSTACK_SUBVERSION}"
-  build_arg_opts+=" --build-arg INSTALL_PACKAGE=${INSTALL_PACKAGE}"
-  build_arg_opts+=" --build-arg REPO_FILE=contrail.repo"
+  build_arg_opts+=" --build-arg SKU=${SKU}"
+  build_arg_opts+=" --build-arg CONTRAIL_REPO=${CONTRAIL_REPO}"
+  build_arg_opts+=" --build-arg OPENSTACK_REPO=${OPENSTACK_REPO}"
 
   echo "Building test container ${name}:${tag} with opts ${build_arg_opts}"
   docker build -t ${name}:${tag} ${build_arg_opts} -f $dockerfile $dir || exit 1
@@ -83,14 +65,8 @@ Usage: $0 test [OPTIONS]
   --tag           TAG           Docker container tag, default to sku
   --base-tag      BASE_TAG      Specify contrail-base-test container tag to use. Defaults to 'latest'.
   --sku           SKU           Openstack version. Defaults to ocata
-  --contrail-repo CONTRAIL_REPO Contrail Repository, optional, if unspecified specify --package-url.
-  --openstack-repo OPENSTACK_REPO Openstack Repository, optional, repo to download openstack client packages
-  --package-url   INSTALL_PKG   Contrail-install-packages package url (scp:// or http:// or https://)
-                                Optional, if unspecified specify --package-url
-                                Local repo will be setup based on install package.
-                                In case of scp, specify the below env variables
-                                SSHUSER - user name to be used during scp, Default: current user
-                                SSHPASS - user password to be used during scp
+  --contrail-repo CONTRAIL_REPO Contrail Repository, mandatory
+  --openstack-repo OPENSTACK_REPO Openstack Repository, mandatory
   --registry-server REGISTRY_SERVER Docker registry hosting the base test container, Defaults to docker.io/opencontrail
   --post          POST          Upload the test container to the registy-server, if specified
 EOF
@@ -109,15 +85,14 @@ EOF
             --sku) SKU=$2; shift;;
             --contrail-repo) CONTRAIL_REPO=$2; shift;;
             --openstack-repo) OPENSTACK_REPO=$2; shift;;
-            --package-url) INSTALL_PKG=$2; shift;;
             --registry-server) REGISTRY_SERVER=$2; shift;;
             --post) POST=1; shift;;
-	esac
-	shift
+        esac
+        shift
     done
 
-    if [[ -z $INSTALL_PKG && -z $CONTRAIL_REPO ]]; then
-        echo "Need to specify either --package-url or --contrail-repo"; echo
+    if [[ -z $CONTRAIL_REPO ]]; then
+        echo "Need to specify either --contrail-repo"; echo
         usage
         exit 1
     fi
@@ -136,21 +111,11 @@ EOF
         echo "BASE_TAG(--base-tag) is unspecified, using 'latest'."; echo
         BASE_TAG='latest'
     fi
-    if [[ -n $CONTRAIL_REPO ]]; then
-        create_repo $REPO_TEMPLATE_FILE $REPO_FILE
-        INSTALL_PACKAGE=""
-    else
-        download_pkg $INSTALL_PKG docker/test/
-        INSTALL_PACKAGE="${INSTALL_PKG##*/}"
-    fi
     if [[ -z $OPENSTACK_REPO ]]; then
-        OPENSTACK_VERSION=$SKU
-        #OPENSTACK_SUBVERSION="${SUBVERSIONS[$OPENSTACK_VERSION]}"
-        OPENSTACK_REPO="http://mirror.centos.org/centos/7/cloud/x86_64/openstack-${OPENSTACK_VERSION}"
+        OPENSTACK_REPO="http://mirror.centos.org/centos/7/cloud/x86_64/openstack-${SKU}"
     fi
-    create_repo $OPENSTACK_REPO_TEMPLATE_FILE $OPENSTACK_REPO_FILE
 
-    docker_build "docker/test" "contrail-test-test" "$TAG"
+    docker_build_test_sku "docker/test" "contrail-test-test" "$TAG"
     docker tag contrail-test-test:$TAG $REGISTRY_SERVER/contrail-test-test:$TAG
     if [[ -n $POST ]]; then
         docker push $REGISTRY_SERVER/contrail-test-test:$TAG
@@ -181,8 +146,8 @@ EOF
             --tag) TAG=$2; shift;;
             --registry-server) REGISTRY_SERVER=$2; shift;;
             --post) POST=1; shift;;
-	esac
-	shift
+        esac
+        shift
     done
     if [[ -z $TAG ]]; then
         echo "TAG(--tag) is unspecified. using latest"; echo

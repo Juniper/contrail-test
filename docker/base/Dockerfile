@@ -9,9 +9,8 @@ RUN cp -r /etc/yum.repos.d /etc/yum.repos.d.orig
 COPY *.repo Dockerfile /etc/yum.repos.d/
 
 
-RUN yum install -y \
-      yum-plugin-priorities \
-      https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
+RUN yum install -y yum-plugin-priorities && \
+    yum repolist | grep epel || yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
     yum install -y unzip vim tcpdump ant git ipmitool gcc python-devel ansible \
       patch sshpass bzip2 wget sudo python-pip python-netaddr python-lxml \
       python-testresources python-testrepository python-junitxml pexpect \
