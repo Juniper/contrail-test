@@ -1,4 +1,4 @@
-[centos-openstack]
+[centos-openstack-${SKU}]
 name = Centos Openstack repo
 baseurl = ${OPENSTACK_REPO}
 enabled = 1
