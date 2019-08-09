@@ -4,6 +4,8 @@ from physical_device_fixture import PhysicalDeviceFixture
 from pif_fixture import PhysicalInterfaceFixture
 from lif_fixture import LogicalInterfaceFixture
 from bms_fixture import BMSFixture
+from port_profile import PortProfileFixture
+from storm_control_profile import StormControlProfileFixture
 from tcutils.util import retry, get_random_name
 from lxml import etree
 from tcutils.verification_util import elem2dict
@@ -302,3 +304,11 @@ class FabricUtils(object):
                               pifs=pifs,
                               **kwargs))
         return vpg
+
+    def create_port_profile(self, **kwargs):
+        return self.useFixture(PortProfileFixture(
+                               connections=self.connections, **kwargs))
+
+    def create_sc_profile(self, **kwargs):
+        return self.useFixture(StormControlProfileFixture(
+                               connections=self.connections, **kwargs))
