@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "0f4d1e58_7b12cda3",
+        "filename": "docker/base/Dockerfile",
+        "patchSetId": 3
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-08-09T18:06:53Z",
+      "side": 1,
+      "message": "Since the base is centos:7.4.1708, epel wont be installed so wont this check become unnecessary.",
+      "revId": "f7472e7352b108c47fbb4940850f8466a9f5acc2",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
