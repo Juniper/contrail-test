@@ -16,6 +16,24 @@
       "revId": "f7472e7352b108c47fbb4940850f8466a9f5acc2",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f8db468c_83a13e56",
+        "filename": "docker/base/Dockerfile",
+        "patchSetId": 3
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 382
+      },
+      "writtenOn": "2019-08-11T11:14:03Z",
+      "side": 1,
+      "message": "epel can be present from previous step that copies mirrors definition to /etc/yum.repos.d/\nTherefore this step ensures that epel mirror is present and do not install upstream link.",
+      "parentUuid": "0f4d1e58_7b12cda3",
+      "revId": "f7472e7352b108c47fbb4940850f8466a9f5acc2",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
     }
   ]
 }
