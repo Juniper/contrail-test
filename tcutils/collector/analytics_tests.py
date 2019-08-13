@@ -34,7 +34,7 @@ months_number_to_name = {
 
 uve_dict = {
     'xmpp-peer/': ['state_info', 'peer_stats_info', 'event_info', 
-                    'send_state', 'identifier'],
+                     'identifier'],
     'config-node/': ['module_id', 'system_cpu_info', 
                     'build_info', 'config_node_ip', 'process_info'],
     'control-node/': ['uptime', 'build_info', 'system_cpu_info', 'process_info'],
@@ -43,7 +43,7 @@ uve_dict = {
                         'generator_infos'],
     'generator/': ['client_info', 'ModuleServerState', 'session_stats', 'generator_info'],
     'bgp-peer/': ['state_info', 'peer_stats_info', 'families', 'peer_type', 'local_asn',
-                  'configured_families', 'event_info', 'peer_address', 'peer_asn', 'send_state'],
+                  'configured_families', 'event_info', 'peer_address', 'peer_asn'],
     'vrouter/': ['exception_packets', 'cpu_info', 'uptime', 
                     'total_flows', 'raw_drop_stats', 'raw_xmpp_stats', 
                     'raw_vhost_stats', 'process_info',
