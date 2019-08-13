@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "14d53f9f_b7df493b",
+        "filename": "serial_scripts/fabric_underlay/test_bms_lcm.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 16,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-08-13T16:42:49Z",
+      "side": 1,
+      "message": "When you add a new class for EP style.\nYou may need to follow something similar to\nhttps://github.com/Juniper/contrail-test/blob/53e9409399050ae0786aefa2f70c827efec7899f/serial_scripts/fabric_overlay/test_fabric_intravn.py#L14",
+      "revId": "d1591964cf2327a0d674ef5af2c0d849fcdac54f",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
