@@ -13,6 +13,7 @@ from tcutils.agent.vna_introspect_utils import AgentInspect
 
 class TestBmsLcm(BaseFabricTest):
     def setUp(self):
+        self.enterprise_style=False
         for device_name, device_dict in self.inputs.physical_routers_data.items():
             if device_dict['role'] == 'spine':
                 self.rb_roles[device_name] = ['DC-Gateway','Route-Reflector']
