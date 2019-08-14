@@ -80,7 +80,11 @@ class IronicHelper(object):
 
         port_group_name                   = ironic_node_name + "_pg"
 
-        node_obj = self.obj.node.create(name=ironic_node_name,driver='pxe_ipmitool',\
+        if self.inputs.get_build_sku() in ['queens','ocata']:
+           pxe_driver = "pxe_ipmitool"
+        else:
+           pxe_driver = "ipmi"
+        node_obj = self.obj.node.create(name=ironic_node_name,driver=pxe_driver,\
                                         driver_info=driver_info,properties=properties)
 
         self.portgroup_uuid = None
