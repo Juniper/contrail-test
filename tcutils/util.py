@@ -1121,10 +1121,26 @@ def skip_because(*args, **kwargs):
                 retval, msg = getattr(self, kwargs.pop('function'))(*args, **kwargs)
                 if not retval:
                     raise testtools.TestCase.skipException(msg)
+
             if 'dpdk_cluster' in kwargs:
                 if self.inputs.is_dpdk_cluster:
                     skip = True
                     msg = "Skipped as test is not supported dpdk_cluster " 
+                    raise testtools.TestCase.skipException(msg)
+
+            if 'ssl_enabled' in kwargs:
+                val = self.inputs.contrail_configs.get('SSL_ENABLE', False)
+                if kwargs['ssl_enabled'] == val:
+                    skip = True
+                    msg = "Skipped as test is not supported in ssl_enabled=%s " % val 
+                    raise testtools.TestCase.skipException(msg)
+
+            if "analytics_nodes" in kwargs:
+                nodes = len(self.inputs.collector_ips)
+                mins = kwargs["analytics_nodes"]
+                if nodes < mins:
+                    msg = ' '.join(("Skipped as test requires at least",
+                            "%d analytics-nodes, but only %d found" % (mins, nodes)))
                     raise testtools.TestCase.skipException(msg)
             return f(self, *func_args, **func_kwargs)
         return wrapper
