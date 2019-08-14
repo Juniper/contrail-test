@@ -854,7 +854,7 @@ class LBaasV2Fixture(LBBaseFixture):
         self.listener_name = obj.get('name', None)
         self.vip_protocol = obj.get('protocol', None)
         self.vip_port = obj.get('protocol_port', None)
-        pools = self.network_h.list_lbaas_pools(listener=self.listener_uuid)
+        pools = self.network_h.list_lbaas_pools(listener_id=self.listener_uuid)
         pool_obj = pools[0] if pools else None
         if pool_obj:
             self.pool_uuid = pool_obj['id']
@@ -1094,7 +1094,9 @@ class LBaasV2Fixture(LBBaseFixture):
                    self.vip_ip == frontend['address'] and \
                    (self.vip_protocol.lower() == frontend['protocol']
                    or (self.vip_protocol.lower() == 'terminated_https'
-                   and frontend['protocol'] == 'http')) and \
+                   and frontend['protocol'] == 'http') or 
+                   (self.vip_protocol.lower() == 'https' and 
+                   frontend['protocol'] == 'tcp')) and \
                    self.vip_port == frontend['port']:
                    if self.pool_uuid:
                        if self.pool_uuid != frontend['backend']:
@@ -1107,7 +1109,8 @@ class LBaasV2Fixture(LBBaseFixture):
             retval = False
             for backend in haproxy_dict['backends'] or []:
                 if self.pool_uuid == backend['uuid'] and \
-                    self.pool_protocol.lower() == backend['protocol']:
+                    (self.pool_protocol.lower() == backend['protocol'] or 
+                    self.pool_protocol.lower() == 'https' and backend['protocol'] == 'tcp'):
                     if mappings[self.pool_algorithm] != backend['lb_method']:
                         break
                     act_mem_list = [(member['uuid'], member['address'], member['weight'])
