@@ -13,7 +13,6 @@ from tcutils.agent.vna_introspect_utils import AgentInspect
 
 class TestBmsLcm(BaseFabricTest):
     def setUp(self):
-        self.enterprise_style=False
         for device_name, device_dict in self.inputs.physical_routers_data.items():
             if device_dict['role'] == 'spine':
                 self.rb_roles[device_name] = ['DC-Gateway','Route-Reflector']
@@ -181,22 +180,6 @@ class TestBmsLcm(BaseFabricTest):
         time.sleep(60)
         self.bms_vm_add_delete(bms_count=1,bms_nodes_filtered=bms_nodes_filtered)
 
-    @preposttest_wrapper
-    def test_bms_all(self):
-        '''
-        Description: SuperSet testcase for Single Interface BMS,LAG Scenario and Multi-homing scenario
-        Test Steps:
-           1. Delete all existing BMS nodes and create 3 ironic nodes - one single interface,one multi-homing,one lag
-           2. Update SG to allow ping/traffic between BMS VM and regular VM
-           3. Reconfigure TFTP Block size and ip link MTU
-           4. Bringup one BMS LCM instance and one VM.Verify ping between VM and BMS VM instance works.
-        Maintainer: vageesant@juniper.net
-        '''
-        self.bms_delete_nodes()
-        bms_nodes_filtered = self.bms_node_add_delete("all")
-        time.sleep(60)
-        self.bms_vm_add_delete(bms_count=3,bms_nodes_filtered=bms_nodes_filtered)
-
     def bms_vm_add_delete(self,bms_count=1,bms_nodes_filtered=[]):
         '''
         Not run as separate test.
@@ -305,3 +288,39 @@ class TestBmsLcm(BaseFabricTest):
 
         assert ping_result
         return True
+
+class TestBmsLcmSPStyle(TestBmsLcm):
+    enterprise_style=False
+    @preposttest_wrapper
+    def test_bms_all(self):
+        '''
+        Description: SuperSet testcase for Single Interface BMS,LAG Scenario and Multi-homing scenario
+        Test Steps:
+           1. Delete all existing BMS nodes and create 3 ironic nodes - one single interface,one multi-homing,one lag
+           2. Update SG to allow ping/traffic between BMS VM and regular VM
+           3. Reconfigure TFTP Block size and ip link MTU
+           4. Bringup one BMS LCM instance and one VM.Verify ping between VM and BMS VM instance works.
+        Maintainer: vageesant@juniper.net
+        '''
+        self.bms_delete_nodes()
+        bms_nodes_filtered = self.bms_node_add_delete("all")
+        time.sleep(60)
+        self.bms_vm_add_delete(bms_count=3,bms_nodes_filtered=bms_nodes_filtered)
+
+class TestBmsLcmEPStyle(TestBmsLcm):
+    enterprise_style=True
+    @preposttest_wrapper
+    def test_bms_all(self):
+        '''
+        Description: SuperSet testcase for Single Interface BMS,LAG Scenario and Multi-homing scenario
+        Test Steps:
+           1. Delete all existing BMS nodes and create 3 ironic nodes - one single interface,one multi-homing,one lag
+           2. Update SG to allow ping/traffic between BMS VM and regular VM
+           3. Reconfigure TFTP Block size and ip link MTU
+           4. Bringup one BMS LCM instance and one VM.Verify ping between VM and BMS VM instance works.
+        Maintainer: vageesant@juniper.net
+        '''
+        self.bms_delete_nodes()
+        bms_nodes_filtered = self.bms_node_add_delete("all")
+        time.sleep(60)
+        self.bms_vm_add_delete(bms_count=3,bms_nodes_filtered=bms_nodes_filtered)
