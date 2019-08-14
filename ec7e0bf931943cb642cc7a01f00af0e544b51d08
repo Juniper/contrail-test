@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "34e99c20_6f2e7ba0",
+        "filename": "fixtures/ironic_test.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 83,
+      "author": {
+        "id": 428
+      },
+      "writtenOn": "2019-08-14T17:29:45Z",
+      "side": 1,
+      "message": "I am approving  considering , we might not be running Mitaka and newton anymore .\nIf there is a requirement please add them too ..",
+      "range": {
+        "startLine": 83,
+        "startChar": 0,
+        "endLine": 83,
+        "endChar": 8
+      },
+      "revId": "ec7e0bf931943cb642cc7a01f00af0e544b51d08",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
