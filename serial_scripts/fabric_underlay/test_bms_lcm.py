@@ -270,7 +270,6 @@ class TestBmsLcm(BaseFabricTest):
               assert bms_fixture.verify_on_setup()
               bms_fixtures_up_list.append(bms_fixture)
             except AssertionError:
-              import pdb;pdb.set_trace()
               bms_fixtures_down_list.append(bms_fixture)
               continue
 
