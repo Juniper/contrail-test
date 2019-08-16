@@ -908,8 +908,6 @@ class TestFabricOverlay(TestSPStyleFabric):
             action='interface-shutdown',
             bandwidth=40, recovery_timeout=60,
             no_broadcast=True, no_multicast=True,
-            no_registered_multicast=True,
-            no_unregistered_multicast=True,
             no_unknown_unicast=True)
         pp2.add_storm_control_profiles([sc2.uuid])
         self.addCleanup(pp2.delete_storm_control_profiles, [sc2.uuid])
@@ -947,10 +945,22 @@ class TestFabricOverlay(TestSPStyleFabric):
         assert sc.validate_config_pushed(prouters, bms.interfaces)
         bms.port_fixture.delete_port_profiles([pp.uuid])
         assert sc.validate_config_pushed(prouters, bms.interfaces, exp=False)
-        bms.port_fixture.add_port_profiles([pp2.uuid])
-        assert sc2.validate_config_pushed(prouters, bms.interfaces)
-        sc2.update(action=list(), no_broadcast=False)
-        assert sc2.validate_config_pushed(prouters, bms.interfaces)
+        bms.port_fixture.add_port_profiles([pp.uuid])
+        assert sc.validate_config_pushed(prouters, bms.interfaces)
+        sc.update(action=list(), no_broadcast=False)
+        assert sc.validate_config_pushed(prouters, bms.interfaces)
+        sc.update(no_multicast=False)
+        assert sc.validate_config_pushed(prouters, bms.interfaces)
+        sc.update(no_registered_multicast=True)
+        assert sc.validate_config_pushed(prouters, bms.interfaces)
+        sc.update(no_registered_multicast=False)
+        sc.update(no_unregistered_multicast=True)
+        assert sc.validate_config_pushed(prouters, bms.interfaces)
+        try:
+            sc.update(no_registered_multicast=True)
+            assert False, 'cannot have multiple multicast options specified'
+        except:
+            pass
 
 class TestVxlanID(GenericTestBase):
     @preposttest_wrapper

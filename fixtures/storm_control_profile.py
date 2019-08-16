@@ -113,60 +113,72 @@ class StormControlProfileFixture(vnc_api_test.VncLibFixture):
 
     def _compare_sc_retrieved(self, sc_dct, exp=True, model=None):
         mcast = False
-        if self.action and (exp != (self.action == sc_dct.get('action'))):
+        if exp != ((self.action or None) == sc_dct.get('action')):
             self.logger.debug('SC action didnt match, exp: %s, got %s'%(
                               self.action, sc_dct.get('action')))
             return False
-        if self.bandwidth and (exp != (
-               int(self.bandwidth) == int(sc_dct.get('bandwidth', 0)))):
+        if exp != (int(self.bandwidth or 0) == int(sc_dct.get('bandwidth', 0))):
             self.logger.debug('SC bandwidth didnt match, exp: %s, got %s'%(
                               self.bandwidth, sc_dct.get('bandwidth')))
             return False
-        if self.action and self.recovery_timeout and (exp != (
-               int(self.recovery_timeout) == int(sc_dct.get('recovery_timeout', 0)))):
-            self.logger.debug('SC recovery timeout didnt match, exp: %s, got %s'%(
-                self.recovery_timeout, sc_dct.get('recovery_timeout')))
-            return False
-        if self.no_broadcast and exp != (
-           self.no_broadcast == sc_dct.get('no_broadcast', False)):
-            self.logger.debug('SC no_broadcast didnt match, exp: %s, got %s'%(
-                self.no_broadcast, sc_dct.get('no_broadcast', False)))
-            return False
-        if self.no_unknown_unicast and exp != (
-           self.no_unknown_unicast == sc_dct.get('no_unknown_unicast', False)):
-            self.logger.debug('SC no_unknown_unicast didnt match, exp: %s, got %s'%(
-                self.no_unknown_unicast, sc_dct.get('no_unknown_unicast', False)))
-            return False
-        if self.no_multicast:
-            if exp != (self.no_multicast == sc_dct.get('no_multicast', False)):
+        if exp != (int(self.recovery_timeout or 0) ==
+                   int(sc_dct.get('recovery_timeout', 0))):
+            if self.action:
+                self.logger.debug('SC recovery timeout didnt match, exp: %s, got %s'%(
+                    self.recovery_timeout, sc_dct.get('recovery_timeout')))
+                return False
+        if self.no_broadcast != sc_dct.get('no_broadcast', False):
+            if exp is True:
+                self.logger.debug('SC no_broadcast didnt match, exp: %s, got %s'%(
+                    self.no_broadcast, sc_dct.get('no_broadcast', False)))
+                return False
+        else:
+            if self.no_broadcast is True and exp is False:
+                self.logger.debug('SC no_broadcast didnt match, exp: %s, got %s'%(
+                    self.no_broadcast, sc_dct.get('no_broadcast', False)))
+                return False
+        if self.no_unknown_unicast != sc_dct.get('no_unknown_unicast', False):
+            if exp is True:
+                self.logger.debug('SC no_unknown_unicast didnt match, exp: %s, got %s'%(
+                    self.no_unknown_unicast, sc_dct.get('no_unknown_unicast', False)))
+                return False
+        else:
+            if self.no_unknown_unicast is True and exp is False:
+                self.logger.debug('SC no_unknown_unicast didnt match, exp: %s, got %s'%(
+                    self.no_unknown_unicast, sc_dct.get('no_unknown_unicast', False)))
+                return False
+        if self.no_multicast != sc_dct.get('no_multicast', False):
+            if exp is True:
                 self.logger.debug('SC no_multicast didnt match, exp: %s, got %s'%(
                     self.no_multicast, sc_dct.get('no_multicast', False)))
-                if model and model.startswith('qfx510'):
-                    return False
-            else:
-                mcast = True
+                return False
+        else:
+            if self.no_multicast is True and exp is False:
+                self.logger.debug('SC no_multicast didnt match, exp: %s, got %s'%(
+                    self.no_multicast, sc_dct.get('no_multicast', False)))
+                return False
         if model and model.startswith('qfx510'):
             return True
-        if not mcast and self.no_registered_multicast:
-            if exp != (self.no_registered_multicast == 
-               sc_dct.get('no_registered_multicast', False)):
+        if self.no_registered_multicast != sc_dct.get('no_registered_multicast', False):
+            if exp is True:
                 self.logger.debug('SC no_registered_multicast didnt match, exp: %s, got %s'%(
-                    self.no_registered_multicast,
-                    sc_dct.get('no_registered_multicast', False)))
-            else:
-                mcast = True
-        if not mcast and self.no_unregistered_multicast:
-            if exp != (self.no_unregistered_multicast == 
-               sc_dct.get('no_unregistered_multicast', False)):
+                    self.no_registered_multicast, sc_dct.get('no_registered_multicast', False)))
+                return False
+        else:
+            if self.no_registered_multicast is True and exp is False:
+                self.logger.debug('SC no_registered_multicast didnt match, exp: %s, got %s'%(
+                    self.no_registered_multicast, sc_dct.get('no_registered_multicast', False)))
+                return False
+        if self.no_unregistered_multicast != sc_dct.get('no_unregistered_multicast', False):
+            if exp is True:
                 self.logger.debug('SC no_unregistered_multicast didnt match, exp: %s, got %s'%(
-                    self.no_unregistered_multicast,
-                    sc_dct.get('no_unregistered_multicast', False)))
-            else:
-                mcast = True
-        if not mcast and (self.no_unregistered_multicast or 
-                          self.no_registered_multicast or
-                          self.no_multicast):
-            return False
+                    self.no_unregistered_multicast, sc_dct.get('no_unregistered_multicast', False)))
+                return False
+        else:
+            if self.no_unregistered_multicast is True and exp is False:
+                self.logger.debug('SC no_unregistered_multicast didnt match, exp: %s, got %s'%(
+                    self.no_unregistered_multicast, sc_dct.get('no_unregistered_multicast', False)))
+                return False
         return True
 
     @retry(tries=10, delay=6)
