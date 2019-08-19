@@ -1,0 +1,106 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "77216066_2df34996",
+        "filename": "common/bgpaas/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 278,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-08-19T22:27:32Z",
+      "side": 1,
+      "message": "remove zone_name which is not consumed by the fixture",
+      "revId": "cced4095a3f284c76f418f61071b3cf24566327e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "34c4c4ed_6e323e78",
+        "filename": "common/bgpaas/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 317,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-08-19T22:27:32Z",
+      "side": 1,
+      "message": "Seems the logic is wrong here. We reset both primary and secondary where as the detach happens for either of primary or secondary",
+      "revId": "cced4095a3f284c76f418f61071b3cf24566327e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "1ff282f8_2d885017",
+        "filename": "common/bgpaas/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 343,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-08-19T22:27:32Z",
+      "side": 1,
+      "message": "add retry wrapper here",
+      "revId": "cced4095a3f284c76f418f61071b3cf24566327e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "5594f618_1da1730a",
+        "filename": "fixtures/control_node_zone.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-08-19T22:27:32Z",
+      "side": 1,
+      "message": "Please change this to self.bgp_router_objs[:] else the odd numbered elements wont be deleted",
+      "revId": "cced4095a3f284c76f418f61071b3cf24566327e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "52a3fbd3_cb2e2572",
+        "filename": "scripts/bgpaas/test_bgpaas_zone.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-08-19T22:27:32Z",
+      "side": 1,
+      "message": "Please add is_test_applicable mentioning the test needs atleast 2 control nodes",
+      "revId": "cced4095a3f284c76f418f61071b3cf24566327e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "b2f6dd2d_2a128447",
+        "filename": "scripts/bgpaas/test_bgpaas_zone.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-08-19T22:27:32Z",
+      "side": 1,
+      "message": "Remove sleeps, the verification routines needs to have retries",
+      "revId": "cced4095a3f284c76f418f61071b3cf24566327e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
