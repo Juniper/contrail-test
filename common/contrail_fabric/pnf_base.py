@@ -94,4 +94,4 @@ class BaseL3PnfTest(BaseFabricTest):
         pt_id = self.vnc_h.create_port_tuple_pnf(si_id, left_lr, right_lr)
         self.addCleanup(self.vnc_h.delete_port_tuple, pt_id)
         self.logger.info("waiting for the configs to be pushed")
-        self.sleep(60)
+        self.sleep(30)
