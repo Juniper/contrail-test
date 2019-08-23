@@ -3468,8 +3468,17 @@ class ContrailVncApi(object):
         pt_uuid = self._vnc.port_tuple_create(pt_obj)
         return pt_uuid
 
+
     def delete_port_tuple(self, pt_uuid):
-        return self._vnc.port_tuple_delete(id=pt_uuid)
+        try:
+            self._vnc.port_tuple_delete(id=pt_uuid)
+            return True
+        except NoIdError:
+            self._log.debug('Port tuple is deleted already.')
+            return True
+        except:
+            self._log.debug('Port tuple deletion failed.')
+            return False
 
     def update_storm_control_profile(self, uuid=None, fq_name=None, **kwargs):
         obj = self.read_storm_control_profile(id=uuid, fq_name=fq_name)

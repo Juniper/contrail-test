@@ -4,10 +4,14 @@ import test
 
 class TestL3Pnf(BaseL3PnfTest):
     def _verify_pnf(self, left_vlan_id=None, right_vlan_id=None,
-                    left_tor_vlan=None, right_tor_vlan=None):
+                    left_tor_vlan=None, right_tor_vlan=None, ecmp=None):
+        if ecmp and (len(self.pnfs) < 2):
+            raise self.skipTest("Need minimum 2 PNF nodes for this test.")
+
         self.left_vn = self.create_vn()
         self.right_vn = self.create_vn()
         pnf = self.pnfs[0]
+        self.sleep(30)
         pnf_dict = self.inputs.physical_routers_data[pnf.name]
         for device in self.devices:
             if device.name == pnf_dict['left_qfx']:
@@ -21,21 +25,37 @@ class TestL3Pnf(BaseL3PnfTest):
         left_bms = self.create_bms(bms_name=left_bms_name,
             vlan_id=left_vlan_id, tor_port_vlan_tag=left_tor_vlan,
             vn_fixture=self.left_vn)
+        self.sleep(10)
         right_bms = self.create_bms(bms_name=right_bms_name,
             vlan_id=right_vlan_id, tor_port_vlan_tag=right_tor_vlan,
             vn_fixture=self.right_vn)
+        self.sleep(10)
         self.left_lr = self.create_logical_router([self.left_vn],
             devices=self.get_associated_prouters(left_bms_name)+\
                     [self.left_border_leaf])
         self.right_lr = self.create_logical_router([self.right_vn],
             devices=self.get_associated_prouters(right_bms_name)+\
                     [self.right_border_leaf])
+        self.sleep(10)
         self.bms_fixtures = [left_bms, right_bms]
-        self.create_l3pnf(self.left_lr, self.right_lr, pnf,
+        sid1 = self.create_l3pnf(self.left_lr, self.right_lr, pnf,
             left_svc_vlan='1000', right_svc_vlan='2000',
             left_svc_asn_srx='65000', left_svc_asn_qfx='65100',
             right_svc_asn_qfx='65200')
         self.do_ping_mesh(self.bms_fixtures)
+
+        if ecmp:
+            pnf2 = self.pnfs[1]
+            sid2 = self.create_l3pnf(self.left_lr, self.right_lr, pnf2,
+                left_svc_vlan='1001', right_svc_vlan='2001',
+                left_svc_asn_srx='65001', left_svc_asn_qfx='65100',
+                right_svc_asn_qfx='65200')
+            self.do_ping_mesh(self.bms_fixtures)
+            self.perform_cleanup(sid1)
+            self.sleep(10)
+            self.do_ping_mesh(self.bms_fixtures)
+
+
 
     @preposttest_wrapper
     def test_fabric_pnf_basic(self):
@@ -50,6 +70,21 @@ class TestL3Pnf(BaseL3PnfTest):
            8]. Traffic between the two Instances should go through the PNF device.
         '''
         self._verify_pnf(left_tor_vlan=101, right_tor_vlan=102)
+        #end test_fabric_pnf_basic
+
+    @preposttest_wrapper
+    def test_fabric_pnf_ecmp(self):
+        '''
+           1]. Create 2 VN
+           2]. Add a Instance in each of the VN.
+           3]. Create 2 LRs.
+           4]. Attach a VN to each of the LR.
+           5]. Extend the LR to one Border leaf each and to the ERB-GW.
+           6]. Create a PNF Service Template.
+           7]. Create a PNF Service Instance between the two LRs.
+           8]. Traffic between the two Instances should go through the PNF device.
+        '''
+        self._verify_pnf(left_tor_vlan=101, right_tor_vlan=102,ecmp=True)
         #end test_fabric_pnf_basic
 
     @preposttest_wrapper
