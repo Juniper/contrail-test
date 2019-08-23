@@ -65,6 +65,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.left_svc_asn_qfx = left_svc_asn_qfx
         self.right_svc_asn_qfx = right_svc_asn_qfx
         self.si = None
+        self.deleted = False
         self.svm_ids = []
         self.cs_svc_vns = []
         self.cs_svc_ris = []
@@ -308,19 +309,22 @@ class SvcInstanceFixture(fixtures.Fixture):
         return True
 
     def _delete_si(self):
-        curr_hc_list = list(self.hc_list)
-        for hc in curr_hc_list:
-            self.disassociate_hc(hc['uuid'])
-        self.verify_hc_not_in_agent(curr_hc_list)
-        intf_rt_table_list = list(self.intf_rt_table)
-        for irt in intf_rt_table_list:
-            self.disassociate_static_route_table(irt['uuid'])
-        self.logger.debug("Deleting service instance: %s", self.si_fq_name)
-        if self.inputs.vro_based:
-            self.orch.delete_si(self.si_name)
-        else:
-            self.vnc_lib.service_instance_delete(fq_name=self.si_fq_name)
+        if not self.deleted:
+            curr_hc_list = list(self.hc_list)
+            for hc in curr_hc_list:
+                self.disassociate_hc(hc['uuid'])
+            self.verify_hc_not_in_agent(curr_hc_list)
+            intf_rt_table_list = list(self.intf_rt_table)
+            for irt in intf_rt_table_list:
+                self.disassociate_static_route_table(irt['uuid'])
+            self.logger.debug("Deleting service instance: %s", self.si_fq_name)
+            if self.inputs.vro_based:
+                self.orch.delete_si(self.si_name)
+            else:
+                self.vnc_lib.service_instance_delete(fq_name=self.si_fq_name)
+            self.deleted = True
     # end _delete_si
+
 
     @property
     def svm_list(self):
