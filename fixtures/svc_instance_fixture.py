@@ -322,6 +322,7 @@ class SvcInstanceFixture(fixtures.Fixture):
             self.vnc_lib.service_instance_delete(fq_name=self.si_fq_name)
     # end _delete_si
 
+
     @property
     def svm_list(self):
         vms = getattr(self, '_svm_list', [])
