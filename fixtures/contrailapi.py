@@ -3471,6 +3471,15 @@ class ContrailVncApi(object):
     def delete_port_tuple(self, pt_uuid):
         return self._vnc.port_tuple_delete(id=pt_uuid)
 
+    def delete_hardware_inventory(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting hardware inventory %s' % kwargs)
+        return self._vnc.hardware_inventory_delete(**kwargs)
+
     def update_storm_control_profile(self, uuid=None, fq_name=None, **kwargs):
         obj = self.read_storm_control_profile(id=uuid, fq_name=fq_name)
         params = obj.get_storm_control_parameters() or StormControlParameters()
