@@ -90,6 +90,8 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         self.role = obj.physical_router_role
         self.model = obj.physical_router_product_name
         self.dm_managed = obj.physical_router_vnc_managed
+        self.hw_inventorys = [entry['uuid'] for entry in
+            obj.get_hardware_inventorys() or []]
 #        creds = obj.get_physical_router_user_credentials()
 #        self.ssh_username = creds.username
 #        self.ssh_password = creds.password
@@ -194,6 +196,14 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
         except vnc_api_test.NoIdError:
             self.logger.info('physical router %s got deleted as expected'%self.name)
             return True
+        if self.hw_inventorys:
+            try:
+                self.vnc_h.read_hardware_inventory(id=self.hw_inventorys[0])
+                self.logger.warn('hw inventory for %s is not deleted'%self.name)
+                return False
+            except vnc_api_test.NoIdError:
+                self.logger.info('hw inventory for %s got deleted'%self.name)
+                return True
 
     def get_physical_ports(self):
         obj = self.vnc_h.read_physical_router(self.name)
@@ -306,4 +316,10 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
     def add_service_interface(self, service_port):
         self.vnc_h.add_si_to_prouter(self.uuid, service_port)
 
+    def get_hardware_inventorys(self, refresh=False):
+        if refresh or not self.hw_inventorys:
+            obj = self.vnc_h.read_physical_router(self.name)
+            self.hw_inventorys = [entry['uuid'] for entry in
+                obj.get_hardware_inventorys() or []]
+        return self.hw_inventorys
 # end PhysicalDeviceFixture

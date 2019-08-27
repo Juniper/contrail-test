@@ -119,6 +119,8 @@ class TestSPStyleFabric(BaseFabricTest):
     def test_both_tagged_and_untagged_same_vn_same_tor(self):
         bms = random.choice(self.get_bms_nodes(bms_type='link_aggregation'))
         vn1 = self.create_vn()
+        vn2 = self.create_vn()
+        self.create_logical_router([vn1, vn2])
         bms1_intf = self.inputs.bms_data[bms]['interfaces'][:1]
         bms2_intf = self.inputs.bms_data[bms]['interfaces'][1:]
         bms1 = self.create_bms(bms_name=bms, vn_fixture=vn1,
@@ -126,6 +128,45 @@ class TestSPStyleFabric(BaseFabricTest):
         bms2 = self.create_bms(bms_name=bms, vn_fixture=vn1,
                tor_port_vlan_tag=20, interfaces=bms2_intf)
         self.do_ping_test(bms1, bms2.bms_ip)
+        bms1_2 = self.create_bms(bms_name=bms, vn_fixture=vn2,
+                tor_port_vlan_tag=30, interfaces=bms1_intf,
+                bond_name=bms1.bond_name,
+                port_group_name=bms1.port_group_name)
+        self.do_ping_mesh([bms1, bms2, bms1_2])
+
+    @preposttest_wrapper
+    def test_same_vn_same_vpg_different_vlan(self):
+        bms = random.choice(self.get_bms_nodes())
+        vn1 = self.create_vn()
+        bms1 = self.create_bms(bms_name=bms, vn_fixture=vn1,
+               vlan_id=10)
+        bms2 = self.create_bms(bms_name=bms, vn_fixture=vn1,
+               vlan_id=20, bond_name=bms1.bond_name,
+               port_group_name=bms1.port_group_name)
+        self.do_ping_test(bms1, bms2.bms_ip)
+
+    @skip_because(function='filter_bms_nodes', bms_type='link_aggregation')
+    @preposttest_wrapper
+    def test_same_vn_as_tagged_and_untagged_across_vpg(self):
+        bms = random.choice(self.get_bms_nodes(bms_type='link_aggregation'))
+        vn1 = self.create_vn()
+        bms1_intf = self.inputs.bms_data[bms]['interfaces'][:1]
+        bms2_intf = self.inputs.bms_data[bms]['interfaces'][1:]
+        bms1 = self.create_bms(bms_name=bms, vn_fixture=vn1,
+               vlan_id=10, interfaces=bms1_intf)
+        bms2 = self.create_bms(bms_name=bms, vn_fixture=vn1,
+               tor_port_vlan_tag=10, interfaces=bms2_intf)
+        self.do_ping_test(bms1, bms2.bms_ip)
+        self.perform_cleanup(bms2)
+        msg = 'BMS creation with different tagged and untagged vlans' + \
+              ' should have'
+        try:
+            bms2 = self.create_bms(bms_name=bms, vn_fixture=vn1,
+                   tor_port_vlan_tag=20, interfaces=bms2_intf)
+            assert self.enterprise_style == False, msg + ' failed'
+            self.do_ping_test(bms1, bms2.bms_ip)
+        except BadRequest as e:
+            assert self.enterprise_style == True, msg + ' passed'
 
     @preposttest_wrapper
     def test_restart_device_manager(self):
@@ -153,6 +194,9 @@ class TestFabricOverlay(TestSPStyleFabric):
         raise self.skipTest('Feature not supported with EnterpriseStyle config')
 
     def test_both_tagged_and_untagged_same_vn_same_tor(self):
+        raise self.skipTest('Feature not supported with EnterpriseStyle config')
+
+    def test_same_vn_same_vpg_different_vlan(self):
         raise self.skipTest('Feature not supported with EnterpriseStyle config')
 
     @preposttest_wrapper
@@ -961,6 +1005,21 @@ class TestFabricOverlay(TestSPStyleFabric):
             assert False, 'cannot have multiple multicast options specified'
         except:
             pass
+
+    @preposttest_wrapper
+    def test_hw_inventory(self):
+        for device in self.devices:
+            assert len(device.get_hardware_inventorys()) == 1
+        target_device = random.choice(self.devices)
+        orig_hw_inventory = target_device.get_hardware_inventorys()
+        self.fetch_hardware_inventory(self.fabric, [target_device])
+        curr_hw_inventory = target_device.get_hardware_inventorys(refresh=True)
+        assert orig_hw_inventory == curr_hw_inventory
+        self.vnc_h.delete_hardware_inventory(id=orig_hw_inventory[0])
+        self.fetch_hardware_inventory(self.fabric, [target_device])
+        curr_hw_inventory = target_device.get_hardware_inventorys(refresh=True)
+        assert len(curr_hw_inventory) == 1 and \
+            curr_hw_inventory != orig_hw_inventory
 
 class TestVxlanID(GenericTestBase):
     @preposttest_wrapper
