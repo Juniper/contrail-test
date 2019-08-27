@@ -21,11 +21,11 @@ class TestMaxFlows(BaseMaxFlowsTest, VerifyMaxFlows):
    
     setup_fixtures = {}
 
-    DEFAULT_FLOW_TIMEOUT = 80
+    DEFAULT_FLOW_TIMEOUT = 120
 
     @classmethod
     def setUpClass(cls):
-        super(TestMaxFlows, cls).setUpClass(flow_timeout=80)
+        super(TestMaxFlows, cls).setUpClass(flow_timeout=120)
 
     @classmethod
     def tearDownClass(cls):
@@ -288,7 +288,7 @@ class TestMaxFlows(BaseMaxFlowsTest, VerifyMaxFlows):
         params['mode'] = 'L3'
         scapy_obj = ScapyTraffic(vm_fix, **params)
         scapy_obj.start()
-        sleep_time = int(flow_count/100)
+        sleep_time = int(flow_count/25)
         self.logger.info("Started Traffic...sleeping for %d secs..." % sleep_time )
         time.sleep(sleep_time)
         flow_count = dport_range[1]-dport_range[0]+1
@@ -411,11 +411,11 @@ class TestMaxFlows(BaseMaxFlowsTest, VerifyMaxFlows):
 
         #import pdb; pdb.set_trace()
         # Setting MAX Flows only on VMI 11
-        vmi11_max_flows = 1000
+        vmi11_max_flows = 100
         vmi11_fix.set_max_flows(max_flows=vmi11_max_flows)
-        vmi12_max_flows = 2000
+        vmi12_max_flows = 200
         vmi12_fix.set_max_flows(max_flows=vmi12_max_flows)
-        vmi13_max_flows = 3000
+        vmi13_max_flows = 300
         vmi13_fix.set_max_flows(max_flows=vmi13_max_flows)
         
         # Create VMs
@@ -572,7 +572,7 @@ class TestMaxFlows(BaseMaxFlowsTest, VerifyMaxFlows):
 
         # Modifiy max flows to differnet values 
         # Setting MAX Flows on VMI 11
-        vmi11_max_flows_new = vmi11_max_flows + 500 
+        vmi11_max_flows_new = vmi11_max_flows + 50
         vmi11_fix.set_max_flows(max_flows=vmi11_max_flows_new)
 
         send_flow_count_vm11 = self.send_traffic(
@@ -711,6 +711,7 @@ class TestMaxFlows(BaseMaxFlowsTest, VerifyMaxFlows):
             assert False, "VMI (vm13) level Provisioning is not working"
 
         self.waiting_for_flow_timeout()
+        time.sleep(10)
 
         # Reset the VN level Max flows to default value (0)
         vmi11_fix.set_max_flows(max_flows=0)
@@ -723,6 +724,7 @@ class TestMaxFlows(BaseMaxFlowsTest, VerifyMaxFlows):
                 max_flows=vmi11_max_flows,
                 vm_fix=vm11_fix
                 )
+        time.sleep(10)
         total_flow_count_vm11 = self.get_total_flow_count(
                 source_ip=str(vm11_fix.vm_ip),
                 dest_ip=str(vm13_fix.vm_ip),
@@ -1018,9 +1020,9 @@ class TestMaxFlows(BaseMaxFlowsTest, VerifyMaxFlows):
         vm11_vrouter_fixture.set_per_vm_flow_limit(0.02) 
         #import pdb; pdb.set_trace()
        
-        self.logger.info("Sleeping for 180 secs...")
-        time.sleep(180)
-        self.logger.info("Sleeping for 180 secs...Completed")
+        self.logger.info("Sleeping for 360 secs...")
+        time.sleep(360)
+        self.logger.info("Sleeping for 360 secs...Completed")
 
         self.addCleanup(self.cleanup_test_max_vm_flows_vrouter_config, [vm11_vrouter_fixture])
 
@@ -1399,7 +1401,7 @@ class TestMaxFlows(BaseMaxFlowsTest, VerifyMaxFlows):
 
         assert total_flow_count_vm11 == vmi11_max_flows, "VMI (vm11) level Provisioning is not working"
 
-        vmi11_max_flows_90_percentage = int(vmi11_max_flows*0.9)-10
+        vmi11_max_flows_90_percentage = int(vmi11_max_flows*0.9)-20
 
         flow_timeout = self.DEFAULT_FLOW_TIMEOUT
 
@@ -1427,8 +1429,8 @@ class TestMaxFlows(BaseMaxFlowsTest, VerifyMaxFlows):
         self.logger.info("Total Obtained Flow Count @ vm11: %d"% (total_flow_count_vm11))
         self.logger.info("Total Expected Flow Count @ vm11: %d" % (vmi11_max_flows_90_percentage))
         #import pdb; pdb.set_trace()
-        vmi11_max_flows_90_percentage_high = vmi11_max_flows_90_percentage + 10
-        vmi11_max_flows_90_percentage_low = vmi11_max_flows_90_percentage - 10
+        vmi11_max_flows_90_percentage_high = vmi11_max_flows_90_percentage + 20
+        vmi11_max_flows_90_percentage_low = vmi11_max_flows_90_percentage - 20
         if total_flow_count_vm11 <= vmi11_max_flows_90_percentage_high and total_flow_count_vm11 >= vmi11_max_flows_90_percentage_low:
             self.logger.info("VMI level (vm11) Max Flows Provisioning is working fine")
         else:
@@ -1683,17 +1685,17 @@ class TestMaxFlows(BaseMaxFlowsTest, VerifyMaxFlows):
         self.logger.info("Dropstats value before executing clear command: %d " % (vm11_drop_new_flow_before))
 
         self.inputs.run_cmd_on_server(vm11_fix.vm_node_ip, "dropstats --clear", container='agent')
-        for i in range(1,8):
+        for i in range(1,12):
             time.sleep(5)
             vm11_dropstats = vm11_inspect.get_agent_vrouter_drop_stats()
             vm11_drop_new_flow_after = int(vm11_dropstats['ds_drop_new_flow'])
-            if vm11_drop_new_flow_after == 0:
+            if vm11_drop_new_flow_after <= 10:
                 self.logger.info("New Flow Drops stats value detected after seconds %d" % (5*i))
                 break
         self.logger.info("Dropstats value before doing clear: %d " % (vm11_drop_new_flow_before))
         self.logger.info("Dropstats value after doing clear: %d " % (vm11_drop_new_flow_after))
 
-        if vm11_drop_new_flow_after == 0:
+        if vm11_drop_new_flow_after <= 10:
             self.logger.info("Dropstats(Drop New Flows) is cleared properly, becomes zero(0) after execting 'dropstats --clear'")
         else:
             assert False, "Dropstats(Drop New Flows) is NOT cleared properly, even after executing 'dropstats --clear'"
@@ -2115,7 +2117,7 @@ class TestMaxFlows(BaseMaxFlowsTest, VerifyMaxFlows):
 
         self.logger.info("After VM restart, Sleeping for 180 secs...")
         #self.waiting_for_flow_timeout()
-        time.sleep(180)
+        time.sleep(240)
 
 
  # Verify Max_flows functionality on VMI level
