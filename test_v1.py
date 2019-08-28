@@ -3,6 +3,7 @@ from test import BaseTestCase
 import time
 
 class BaseTestCase_v1(BaseTestCase):
+    isolation = True
     @classmethod
     def setUpClass(cls):
         cls.project = None
@@ -12,7 +13,7 @@ class BaseTestCase_v1(BaseTestCase):
         cls.domain_obj = None
         super(BaseTestCase_v1, cls).setUpClass()
         if 'v3' in cls.inputs.auth_url:
-            if cls.inputs.domain_isolation:
+            if cls.isolation and cls.inputs.domain_isolation:
                 cls.domain_name = cls.__name__
             #If user wants to run tests in his allocated domain
             else:
@@ -29,7 +30,14 @@ class BaseTestCase_v1(BaseTestCase):
             input_file=cls.input_file,
             logger=cls.logger)
 
-        if cls.inputs.tenant_isolation:
+        if cls.isolation is False:
+            cls.admin_isolated_creds = AdminIsolatedCreds(
+                cls.inputs,
+                domain_name=cls.inputs.admin_domain,
+                input_file=cls.input_file,
+                logger=cls.logger)
+            cls.isolated_creds = cls.admin_isolated_creds
+        elif cls.inputs.tenant_isolation:
             cls.admin_isolated_creds = AdminIsolatedCreds(
                 cls.inputs,
                 domain_name=cls.inputs.admin_domain,
@@ -60,10 +68,10 @@ class BaseTestCase_v1(BaseTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        if cls.inputs.tenant_isolation:
+        if cls.isolation and cls.inputs.tenant_isolation:
             cls.admin_isolated_creds.delete_tenant(cls.project)
             cls.admin_isolated_creds.delete_user(cls.isolated_creds.username)
-        if cls.inputs.domain_isolation:
+        if cls.isolation and cls.inputs.domain_isolation:
             cls.admin_isolated_creds.delete_domain(cls.domain_obj)
         super(BaseTestCase_v1, cls).tearDownClass()
     # end tearDownClass
