@@ -22,15 +22,12 @@ import fixtures
 import test
 
 class AnalyticsTestSanity(base.AnalyticsBaseTest):
+    isolation = False
 
     @classmethod
     def setUpClass(cls):
         super(AnalyticsTestSanity, cls).setUpClass()
     
-    def runTest(self):
-        pass
-    #end runTest
-
     @preposttest_wrapper
     def test_redis_stunnel_provision(self):
         ''' Test verify redis & stunnel services
@@ -296,14 +293,14 @@ class AnalyticsTestSanity2(base.AnalyticsBaseTest):
         return True
 
 class AnalyticsTestSanity3(base.AnalyticsBaseTest):
-
+    isolation = False
     @classmethod
     def setUpClass(cls):
         super(AnalyticsTestSanity3, cls).setUpClass()
-    
-    def runTest(self):
-        pass
-    #end runTest
+
+    @classmethod
+    def tearDownClass(cls):
+        super(AnalyticsTestSanity3, cls).tearDownClass()
 
     @test.attr(type=['sanity', 'vcenter', 'vcenter_compute'])
     @preposttest_wrapper
