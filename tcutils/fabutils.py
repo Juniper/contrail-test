@@ -237,7 +237,7 @@ def remote_copy(src, dest, src_password=None, src_gw=None, src_gw_password=None,
                       abort_on_prompts=False):
             update_env_passwords(dest_node, dest_password, dest_gw, dest_gw_password)
             try:
-                put(src_path, dest_path, use_sudo=True)
+                put(src_path, dest_path, use_sudo=with_sudo)
                 return True
             except NetworkError:
                 pass

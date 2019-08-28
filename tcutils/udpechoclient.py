@@ -41,9 +41,9 @@ def daemonize(pidfile, stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'
 def get_addr_port(tup):
     return tup[0], tup[1]
 
-class TcpEchoClient(object):
+class UdpEchoClient(object):
     def __init__(self, servers, dports, slow, retry, count, pid_file, stats_file, sport=None):
-        self.sockets = list()
+        self.sockets = dict()
         self.servers = servers
         self.dports = dports
         self.slow = slow
@@ -55,7 +55,7 @@ class TcpEchoClient(object):
         self.sent = 0
         self.recv = 0
         self.sport = sport
-#        self.write_pid_to_file()
+        self.write_pid_to_file()
 
     def write_pid_to_file(self):
         with open(self.pid_file, 'w', 0) as fd:
@@ -73,39 +73,29 @@ class TcpEchoClient(object):
             self.stats[port] = dict()
             for server in self.servers:
                 family, socktype, proto, canonname, sockaddr = \
-                    socket.getaddrinfo(server, port, 0, socket.SOCK_STREAM, 0, 0)[0]
+                    socket.getaddrinfo(server, port, 0, socket.SOCK_DGRAM, 0, 0)[0]
                 s = socket.socket(family, socktype)
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 if self.sport:
                     s.bind(('', self.sport))
-                while True:
-                    try:
-                        s.connect(sockaddr)
-                        self.stats[port][server] = {'sent': 0, 'recv': 0}
-                        self.sockets.append(s)
-                        break
-                    except socket.error as e:
-                        if self.retry:
-                            time.sleep(5)
-                            continue
-                        raise
+                self.stats[port][server] = {'sent': 0, 'recv': 0}
+                self.sockets[s] = sockaddr
 
     def run(self):
         count = 1
         while True:
-            for s in self.sockets:
+            for s, sockaddr in self.sockets.iteritems():
                 try:
-                    s.send(message)
+                    s.sendto(message, sockaddr)
                 except socket.error as e:
                     if e.args[0] == errno.EAGAIN or e.args[0] == errno.EINTR:
                         continue
                     raise
-                server_address, server_port = get_addr_port(s.getpeername())
-                self.stats[server_port][server_address]['sent'] += 1
-            for s in self.sockets[:]:
+                self.stats[sockaddr[1]][sockaddr[0]]['sent'] += 1
+            for s, sockaddr in self.sockets.items():
                 try:
                     s.settimeout(1)
-                    data = s.recv(1024)
+                    data = s.recvfrom(1024)
                     s.settimeout(None)
                 except socket.timeout:
                     continue
@@ -117,7 +107,7 @@ class TcpEchoClient(object):
                     s.close()
                     self.sockets.remove(s)
                 else:
-                    server_address, server_port = get_addr_port(s.getpeername())
+                    server_address, server_port = get_addr_port(sockaddr)
                     self.stats[server_port][server_address]['recv'] += data.count(message)
             count = count + 1
             if self.count > 0 and count > self.count:
@@ -157,7 +147,7 @@ def parse_cli(args):
 def main():
     pargs = parse_cli(sys.argv[1:])
     daemonize(pargs.pid_file)
-    client = TcpEchoClient(pargs.servers, pargs.dports, pargs.slow,
+    client = UdpEchoClient(pargs.servers, pargs.dports, pargs.slow,
         pargs.retry, pargs.count, pargs.pid_file, pargs.stats_file, pargs.sport)
     signal.signal(signal.SIGUSR1, client.handler)
     signal.signal(signal.SIGTERM, client.handler)
