@@ -113,6 +113,14 @@ class BaseBGPaaS(BaseNeutronTest, BaseHC):
         assert self.set_config_via_netconf(src_vm, dst_vm, cmd_string, timeout=10,
                                            device='junos', hostkey_verify="False"), 'Could not configure BGP thru Netconf'
 
+    def configure_vsrx(self,
+                       srv_vm=None,
+                       dst_vm=None,
+                       cmds = []):
+        cmd_string = (';').join(cmds)
+        ret = self.set_config_via_netconf(srv_vm, dst_vm, cmd_string, timeout=10,
+                                           device='junos', hostkey_verify="False")
+
     def config_2legs_on_vsrx(
             self,
             src_vm=None,
