@@ -403,7 +403,6 @@ class TestAsn4(ASN4Base,BaseBGPaaS,LocalASBase):
 
         if existing_global_asn != new_cluster_global_asn:
            self.set_global_asn(new_cluster_global_asn)
-           self.addCleanup(self.connections.vnc_lib_fixture.set_global_asn, existing_global_asn)
 
         skip_control_node_config = False
         skip_basic_mx_config     = False
@@ -746,6 +745,9 @@ class TestAsn4(ASN4Base,BaseBGPaaS,LocalASBase):
         self.logger.info("          b. Update Cluster 4 Byte AS,RT in MX and AS in BGPaaS")
         self.logger.info("Verification: a. Verify Routes from MX are received and seen in Both BGPaaS.Verify AS_PATH")
         self.logger.info("              b. Verify Routes from both BGPaaS are seen in MX")
+
+        existing_global_asn = self.get_global_asn()
+        self.addCleanup(self.connections.vnc_lib_fixture.set_global_asn, existing_global_asn)
 
         self.configure_control_nodes(control_node_config,mx_config)
         self.deactivate_mx_cluster_configuration(mx_config)
