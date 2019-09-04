@@ -35,7 +35,7 @@ class FabricUtils(object):
 
     def onboard_existing_fabric(self, fabric_dict, wait_for_finish=True,
                                 name=None, cleanup=False,
-                                enterprise_style=True):
+                                enterprise_style=True, dc_asn=64512):
         interfaces = {'physical': [], 'logical': []}
         devices = list()
         
@@ -50,7 +50,7 @@ class FabricUtils(object):
                    'device_auth': [{"username": cred['username'],
                                     "password": cred['password']}
                        for cred in fabric_dict['credentials']],
-                   'overlay_ibgp_asn': fabric_dict['namespaces']['asn'][0]['min'],
+                   'overlay_ibgp_asn': dc_asn,
                    'management_subnets': [{"cidr": mgmt["cidr"]}
                         for mgmt in fabric_dict['namespaces']['management']],
                    'loopback_subnets': fabric_dict['namespaces'].get('loopback',
@@ -283,13 +283,14 @@ class FabricUtils(object):
     def create_bms(self, bms_name, **kwargs):
         self.logger.info('Creating bms %s'%bms_name)
         kwargs['fabric_fixture'] = kwargs.get('fabric_fixture') or self.fabric
+        kwargs['bms_mac'] = kwargs.get('bms_mac')
         bms = self.useFixture(BMSFixture(
                               connections=self.connections,
                               name=bms_name,
                               **kwargs))
         status, msg = bms.run_dhclient()
         assert status, 'DHCP failed to fetch address'
-        bms.verify_on_setup()
+        #bms.verify_on_setup()
         return bms
 
     def create_vpg(self, interfaces=None, **kwargs):
