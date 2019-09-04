@@ -177,17 +177,6 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
                 if not result2:
                     self.logger.warn("EvTcpConnectFail log NOT sent")
 
-            if self.res2:
-                self.logger.info(
-                    "Verifying logs from ObjectXmppConnection table")
-                result6 = False
-                for elem in self.res2:
-                    if re.search('EvTcpConnectFail', str(elem['ObjectLog'])):
-                        self.logger.info("EvTcpConnectFail log sent")
-                        result6 = True
-                if not result6:
-                    self.logger.warn("EvTcpConnectFail log NOT sent")
-
             start_time = self.analytics_obj.getstarttime(
                 self.inputs.bgp_ips[0])
             start_time1 = self.analytics_obj.getstarttime(
@@ -216,34 +205,9 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
                     'MessageTS'],
                 where_clause=query)
 
-            self.logger.info("Verifying ObjectXmppConnection \
-                            Table through opserver %s.." % (self.inputs.collector_ips[0]))
-            self.res2 = self.analytics_obj.ops_inspect[
-                self.inputs.collector_ips[0]].post_query(
-                'ObjectXmppConnection',
-                start_time=start_time1,
-                end_time='now',
-                select_fields=[
-                    'ObjectId',
-                    'Source',
-                    'ObjectLog',
-                    'SystemLog',
-                    'Messagetype',
-                    'ModuleId',
-                    'MessageTS'],
-                where_clause=query1)
 #            self.logger.info("query output : %s"%(self.res1))
             if not self.res1:
                 self.logger.info("query output : %s" % (self.res1))
-                st = self.analytics_obj.ops_inspect[
-                    self.inputs.collector_ips[0]]. send_trace_to_database(
-                    node=self.inputs.collector_names[0],
-                    module='QueryEngine',
-                    trace_buffer_name='QeTraceBuf')
-                self.logger.info("status: %s" % (st))
-                result = result and False
-            if not self.res2:
-                self.logger.info("query output : %s" % (self.res2))
                 st = self.analytics_obj.ops_inspect[
                     self.inputs.collector_ips[0]]. send_trace_to_database(
                     node=self.inputs.collector_names[0],
@@ -273,22 +237,6 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
                 if not result5:
                     self.logger.warn("Established log NOT sent")
 
-            if self.res2:
-                self.logger.info(
-                    "Verifying logs from ObjectXmppConnection table")
-                result7 = False
-                result8 = False
-                for elem in self.res2:
-                    if re.search('EvXmppOpen', str(elem['ObjectLog'])):
-                        self.logger.info("EvXmppOpen log sent")
-                        result7 = True
-                    if re.search('EvTcpConnected', str(elem['ObjectLog'])):
-                        self.logger.info("EvTcpConnected log sent")
-                        result8 = True
-                if not result7:
-                    self.logger.warn("EvXmppOpen log NOT sent")
-                if not result8:
-                    self.logger.warn("EvTcpConnected log NOT sent")
         except Exception as e:
             self.logger.exception("%s" % str(e))
             result = result and False
@@ -298,7 +246,7 @@ class AnalyticsTestSanity(base.AnalyticsBaseTest):
                 container='control')
             time.sleep(4)
             result = result and result1 and result2 and result3 and result4\
-                and result5 and result6 and result7 and result8
+                and result5 
             assert result
             return True
 

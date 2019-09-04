@@ -1265,7 +1265,7 @@ class AnalyticsTestSanityWithResource(
 
         cmd_args_list = []
         for arg_type in module:
-            cmd = {'module':arg_type, 'no_key': ['last 10m']}
+            cmd = {'module':arg_type, 'no_key': ['last 60m']}
             cmd_args_list.append(cmd)
         return self.check_cmd_output('contrail-logs', cmd_args_list, check_output=True, print_output=False)
 
@@ -1322,7 +1322,7 @@ class AnalyticsTestSanityWithResource(
         cmd_args_list = []
         for arg_type in message_type:
             cmds = [
-                { 'message-type':arg_type, 'no_key':['last 10m']}
+                { 'message-type':arg_type, 'no_key':['last 60m']}
                 ]
             for cmd in cmds:
                 cmd_args_list.append(cmd)

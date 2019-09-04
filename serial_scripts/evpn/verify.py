@@ -2027,8 +2027,8 @@ class VerifyEvpnCases():
         sleep(10)
         self.logger.info(
             'Verifying L2 route and other VM verification after restart')
-        assert vn1_vm1_fixture.verify_on_setup(force=True)
-        assert vn1_vm2_fixture.verify_on_setup(force=True)
+        assert vn1_vm1_fixture.verify_on_setup(refresh=True)
+        assert vn1_vm2_fixture.verify_on_setup(refresh=True)
         #send l2 traffic and verify
         self.mac1=vn1_vm1_fixture.mac_addr[vn1_fixture.vn_fq_name]
         self.mac2=vn1_vm2_fixture.mac_addr[vn1_fixture.vn_fq_name]
