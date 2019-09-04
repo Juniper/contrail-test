@@ -52,6 +52,12 @@ class ContrailVncApi(object):
     def delete_multicast_policy(self,uuid):
         self._vnc.multicast_policy_delete(id=uuid)
 
+    def config_dci(self, lr, lr1):
+
+        dci = DataCenterInterconnect(get_random_name(test-dci))
+        dci.add_logical_router(lr)
+        dci.add_logical_router(lr1)
+        self.vnc_lib.data_center_interconnect_create(dci)
 
     @property
     def vnc_project(self):

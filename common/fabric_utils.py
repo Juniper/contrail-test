@@ -34,7 +34,7 @@ class FabricUtils(object):
         return (True, fabric)
 
     def onboard_fabric(self, fabric_dict, wait_for_finish=True,
-                       name=None, cleanup=False, enterprise_style=True):
+                       name=None, cleanup=False, enterprise_style=True, dc_asn=None):
         interfaces = {'physical': [], 'logical': []}
         devices = list()
 
@@ -61,7 +61,7 @@ class FabricUtils(object):
                    'loopback_subnets': fabric_dict['namespaces']['loopback_subnets'],
                    'management_subnets': fabric_dict['namespaces']['management_subnets'],
                    'fabric_subnets': fabric_dict['namespaces']['fabric_subnets'],
-                   'overlay_ibgp_asn': fabric_dict['namespaces']['overlay_ibgp_asn'],
+                   'overlay_ibgp_asn': dc_asn or fabric_dict['namespaces']['asn'][0]['min'],
                    'fabric_asn_pool': [{"asn_max": fabric_dict['namespaces']['asn'][0]['max'],
                                        "asn_min": fabric_dict['namespaces']['asn'][0]['min']}]
                    }

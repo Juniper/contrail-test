@@ -19,7 +19,7 @@ class FabricSingleton(FabricUtils, GenericTestBase):
         self.vnc_h = connections.orch.vnc_h
         self.invoked = False
 
-    def create_fabric(self, rb_roles=None, enterprise_style=True, ztp=False):
+    def create_fabric(self, rb_roles=None, enterprise_style=True, ztp=False, dc_asn=64512):
         self.invoked = True
         fabric_dict = self.inputs.fabrics[0]
         if ztp:
@@ -30,6 +30,14 @@ class FabricSingleton(FabricUtils, GenericTestBase):
             self.fabric, self.devices, self.interfaces = \
                 self.onboard_existing_fabric(fabric_dict, cleanup=False,
                     enterprise_style=enterprise_style)
+            if self.inputs.fabrics[1]:
+                fabric_dict = self.inputs.fabrics[1]
+                self.fabric2, self.devices2, self.interfaces2 = \
+                self.onboard_existing_fabric(fabric_dict, cleanup=False,
+                    enterprise_style=enterprise_style, dc_asn=dc_asn)
+                assert self.interfaces2, 'Failed to onboard existing fabric %s'%fabric_dict
+                self.logger.info("Assigning roles for devices in the fabric2")
+                self.assign_roles(self.fabric2, self.devices2, rb_roles=rb_roles)
         assert self.interfaces, 'Failed to onboard fabric %s'%fabric_dict
 
         self.logger.info("Assigning roles for devices in the fabric")
@@ -128,10 +136,13 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
                 obj.cleanup()
             if self.inputs.is_ironic_enabled:
                 obj.create_ironic_provision_vn(self.admin_connections)
-        assert obj.fabric and obj.devices and obj.interfaces, "Onboarding fabric failed"
+        assert obj.fabric and obj.devices and obj.interfaces and obj.fabric2 and obj.devices2 and obj.interfaces2, "Onboarding fabric failed"
         self.fabric = obj.fabric
         self.devices = obj.devices
         self.interfaces = obj.interfaces
+        self.fabric2 = obj.fabric2
+        self.devices2 = obj.devices2
+        self.interfaces2 = obj.interfaces2
         for device in self.devices:
             role = self.get_role_from_inputs(device.name)
             if role == 'spine':
@@ -159,7 +170,12 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
                 return device.get('rb_roles') or []
 
     def get_bms_nodes(self, role='leaf', bms_type=None,
-                      no_of_interfaces=0, rb_role=None):
+                      no_of_interfaces=0, rb_role=None, devices=None):
+        if devices:
+            for device in devices:
+                for bms_node in self.inputs.inputs.bms_data.values():
+                    if str(device.name) in str(bms_node):
+                        return self.inputs.inputs.bms_data.keys()[self.inputs.inputs.bms_data.values().index(bms_node)]
         bms, dummy = self.filter_bms_nodes(role=role, bms_type=bms_type,
                          no_of_interfaces=no_of_interfaces, rb_role=rb_role)
         return bms and list(bms)
