@@ -37,6 +37,24 @@
     },
     {
       "key": {
+        "uuid": "e4ac7da6_af8f2b3e",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_pnf.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-09-05T10:28:34Z",
+      "side": 1,
+      "message": "For 1, testcode doesnt directly login to the box so can we ignore 1 wrt to this testcase.\nWRT 2, There are two cases where we validate the config pushed.\n* create_bms() - we add sufficient retries(~10minutes) under run_dhclient() routine\n* do_ping_mesh after pnf creation - we wait for 90 seconds after pnf creation for the config to be pushed. hope its enough along with retries under ping_mesh. We could even increase that timer to 120 seconds if need be. ideally, we need to add a routine to verify if the config got pushed to srx either via analytics or via logging in to the device.",
+      "parentUuid": "839ebbd8_4537f2cd",
+      "revId": "1552f5a19dc143d98e030b4b205d456ac2c4681a",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "da18d3fc_3396a7e2",
         "filename": "serial_scripts/fabric_overlay/test_fabric_pnf.py",
         "patchSetId": 1
