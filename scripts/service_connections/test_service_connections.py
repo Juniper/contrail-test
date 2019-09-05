@@ -21,7 +21,7 @@ class TestServiceConnections(BaseServiceConnectionsTest):
         api_servers = self.get_all_configured_servers_for_webui("api")
         op_servers = self.get_all_configured_servers_for_webui("collector")
         dns_servers = self.get_all_configured_servers_for_webui("dns")
-        if set(api_servers) == set(self.inputs.cfgm_control_ips):
+        if set(api_servers) == set(self.inputs.api_server_ip):
             self.logger.info("Webui updated correctly with API Server list")
         else:
             assert False, "Webui updated incorrectly with API Server list"
@@ -193,10 +193,10 @@ class TestServiceConnections(BaseServiceConnectionsTest):
                  'contrail-config-nodemgr' : self.inputs.cfgm_control_ips[0]},
              'analytics':
                 { 'contrail-analytics-api' : self.inputs.collector_control_ips[0],
-                 'contrail-analytics-nodemgr' : self.inputs.collector_control_ips[0],
-                 'contrail-query-engine' : self.inputs.collector_control_ips[0]},
+                 'contrail-analytics-nodemgr' : self.inputs.collector_control_ips[0]},
              'database':
-                {'contrail-database-nodemgr' : self.inputs.database_control_ips[0]}
+                {'contrail-database-nodemgr' : self.inputs.database_control_ips[0],
+                 'contrail-query-engine' : self.inputs.collector_control_ips[0]}
             }
         for client_type, client_process in verification_dict.iteritems():
             for process_name, client_node in client_process.iteritems():
