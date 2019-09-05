@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "65cd0196_a07216b6",
+        "filename": "fixtures/contrailapi.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 3473,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-09-05T10:16:33Z",
+      "side": 1,
+      "message": "Do we still need this change after adding self.perform_cleanup()\nEven if needed can we not handle the default exception in which case we would be skipping a possible bug in contrail-api code.\nIn the sense can we write it as \n        try:\n            self._vnc.port_tuple_delete(id\u003dpt_uuid)\n        except NoIdError:\n            self._log.debug(\u0027Port tuple is deleted already.\u0027)",
+      "revId": "cb9cceae152595fbcdcb3defd58de743bbf7ae8d",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "44da3156_5479f3f8",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_pnf.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-09-05T10:16:33Z",
+      "side": 1,
+      "message": "Can we remove all the sleeps except the one after SI cleanup?",
+      "revId": "cb9cceae152595fbcdcb3defd58de743bbf7ae8d",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
