@@ -1,0 +1,515 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "81a88cb3_29a1f16e",
+        "filename": "serial_scripts/asn4/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 83,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Can this method be used in other context, if so, pls consider moving it to VNFixture class. Otherwise ignore this comment",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "735c72b6_be07cd9d",
+        "filename": "serial_scripts/asn4/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 162,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Can this be parameterized? or may be add a comment on why this ASN value",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "e94a6900_7651a765",
+        "filename": "serial_scripts/asn4/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 206,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "try..finally block can ensure \"disconnect\" method is invoked if \"config\" method throws exception",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "5083e651_3e02c331",
+        "filename": "serial_scripts/asn4/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 210,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Unused?",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "af5b8873_169f5b0c",
+        "filename": "serial_scripts/asn4/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 213,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "same as above",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "37a85855_74a03c4b",
+        "filename": "serial_scripts/asn4/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 221,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "same as above",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "18c34bff_51da472c",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "If unused remove the imports of test, test_v1, tcutils.util.get_random_cidr, tcutils.control.cn_introspect_utils",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "13fdeaea_fcce5980",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "feel free ignore suggestion, I believe this snippet will be 3.x compliant,\nfor entry in cn_bgp_entry:\n  peer_info \u003d {\u0027peer_ip\u0027: entry[\u0027peer_address\u0027], \u0027flap_count\u0027: entry[\u0027flap_count\u0027]}",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "a29b8f65_721849ba",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Unused?",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "e74b66ba_cc7b7fdf",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 54,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Unused?",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "afaa2ac0_551bc534",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 70,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Unused?",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "03d698ca_ec17f70b",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 93,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Better to use self.cn_inspect, the way its coded in get_neighbor_info method",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "9e33d58e_552d8bd3",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 98,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Unused?",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "21a33f35_dcc3ef5d",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 126,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Within PhysicalRouterFixture the attribute \"phy_device\" refers to VNC-API object (see: fixtures/physical_router_fixture.py:80), but here it refers to PhysicalDeviceFixture object.",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "7663c1ac_c715f250",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 138,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Is it not required to delete bgp_router if not bgp_router_already_present?",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "7e7dd5d8_8c003164",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 140,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Unused?",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "dc9d3951_0c4a8ff4",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 167,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Unused?",
+      "range": {
+        "startLine": 167,
+        "startChar": 71,
+        "endLine": 167,
+        "endChar": 78
+      },
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "1f74a9f1_3e7860fe",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 179,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Unused?",
+      "range": {
+        "startLine": 179,
+        "startChar": 56,
+        "endLine": 179,
+        "endChar": 66
+      },
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "5fc7a3b5_e4741137",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 192,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "feel free ignore suggestion, the ASN numbers 65535 \u0026 23456 could be defined as global constants in base.py, will make it easier to change these numbers if need be.",
+      "range": {
+        "startLine": 192,
+        "startChar": 68,
+        "endLine": 192,
+        "endChar": 73
+      },
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "7aa3601c_ba4d929c",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 234,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Remove",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "064f15f1_9bd6c6f9",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 238,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Remove",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "21b8d880_6d5f887d",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 321,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "If never set to True, can be removed",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "31a4aaa7_f8cbd546",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 383,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "This flag is never set? can be removed",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "05453660_d1021540",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 408,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "if variable is never True?, can be removed",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "1ef69493_aba5c54f",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 409,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Unused?",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "1659c7fb_f4bb56b1",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 438,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Consider using GenericTestBase.create_vn from common/base.py, avoids duplication.",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "5445d789_5c17e5f1",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 443,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Dead code, can be removed. If need to retained, then add a comment",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "45c9ca2f_f726b5c2",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 649,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Unused?",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ba9a67fa_138fc917",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 698,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-09-05T12:04:52Z",
+      "side": 1,
+      "message": "Is this naming ok? Will testr see this method as test case?",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
