@@ -25,9 +25,9 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                                             "contrail-vrouter-agent",
                                             self.inputs.compute_control_ips[0])
         self.add_remove_server("remove", in_use_servers[0], "CONTROL-NODE",
-                                "servers", "agent", "contrail-vrouter-agent")
+                                "servers", "agent", "contrail-vrouter-agent", "vrouter_vrouter-agent_1")
         self.addCleanup(self.add_remove_server, "add", in_use_servers[0],
-                "CONTROL-NODE", "servers", "agent", "contrail-vrouter-agent")
+                "CONTROL-NODE", "servers", "agent", "contrail-vrouter-agent", "vrouter_vrouter-agent_1")
         for node in self.inputs.compute_control_ips:
             new_in_use_servers, status, ports = self.get_all_in_use_servers("xmpp",
                                             "agent", "contrail-vrouter-agent",
@@ -251,10 +251,10 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                                         "config", "contrail-config-nodemgr",
                                         self.inputs.cfgm_control_ips[0])
         self.add_remove_server("remove", in_use_servers[0], "COLLECTOR",
-                        "server_list", "config", "contrail-config-nodemgr")
-        self.addCleanup(self.add_remove_server, "add", in_use_servers[0], 
-                        "COLLECTOR", "server_list", "config", 
-                        "contrail-config-nodemgr")
+                        "server_list", "config", "contrail-config-nodemgr", "config_nodemgr_1")
+        self.addCleanup(self.add_remove_server, "add", in_use_servers[0],
+                        "COLLECTOR", "server_list", "config",
+                        "contrail-config-nodemgr", "config_nodemgr_1")
         for node in self.inputs.cfgm_control_ips:
             new_in_use_servers, status, ports = self.get_all_in_use_servers(
                                             "collector", "config",

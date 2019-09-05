@@ -104,7 +104,7 @@ class BaseServiceConnectionsTest(GenericTestBase):
         elif service_name == "api":
             cmd = 'cat /etc/contrail/config.global.js | grep "config.cnfg.server_ip" | cut -d= -f2-'
         elif service_name == "dns":
-            cmd = 'cat /etc/contrail/config.global.js | grep "config.dns.server_ips" | cut -d= -f2-'
+            cmd = 'cat /etc/contrail/config.global.js | grep "config.dns.server_ip" | cut -d= -f2-'
         node_ip = self.inputs.webui_control_ips[0]
         output = self.inputs.run_cmd_on_server(node_ip, cmd,
                             self.inputs.host_data[node_ip]['username']\
@@ -130,7 +130,10 @@ class BaseServiceConnectionsTest(GenericTestBase):
                     "collector", "xmpp", "dns" or "rabbitmq"
         Values to argument "client_role" can be:
                     "agent", "control", "config", "analytics" and "database" '''
-        client_node_name = self.inputs.host_data[client_ip]['name']
+        if client_role in ['config', 'analytics', 'database']:
+            client_node_name = self.inputs.host_data[client_ip]['fqname']
+        else:
+            client_node_name = self.inputs.host_data[client_ip]['name']
         server_addr_list = []
         server_addr_status = []
         server_port = []
@@ -226,7 +229,7 @@ class BaseServiceConnectionsTest(GenericTestBase):
     # end get_all_in_use_servers
     
     def add_remove_server(self, operation, server_ip, section, option,
-                           client_role, client_process, index = 0):
+                           client_role, client_process, container_name, index = 0, verify_service=True):
         ''' This function add or remove an entry from list of servers 
         configured in .conf file of the client.
         It reads .conf file to get the list.
@@ -238,49 +241,51 @@ class BaseServiceConnectionsTest(GenericTestBase):
         Values to argument "client_role" can be:
                 "agent", "control", "config", "analytics" and "database"
         '''
+        config_file = 'entrypoint.sh'
         client_conf_file = client_process + ".conf"
         cmd_set = "openstack-config --get /etc/contrail/" + client_conf_file
         cmd = cmd_set + " " + section + " " + option
+
         if client_role == "agent":
             for ip in self.inputs.compute_ips:
                 server_list = self.get_new_server_list(operation, ip,
                                                        cmd, server_ip, index,
                                                        container = "agent")
                 self.configure_server_list(ip, client_process,
-                        section, option, server_list, container = "agent")
+                        section, option, server_list, config_file, container_name, container = "agent")
         elif client_role in ["control", "dns"]:
             for ip in self.inputs.bgp_ips:
                 server_list = self.get_new_server_list(operation, ip,
                                                        cmd, server_ip, index,
                                                        container = client_role)
                 self.configure_server_list(ip, client_process,
-                        section, option, server_list, container = client_role)
+                        section, option, server_list, config_file, container_name, container = client_role)
         elif client_role == "config":
             for ip in self.inputs.cfgm_ips:
                 server_list = self.get_new_server_list(operation, ip,
                                                        cmd, server_ip, index,
-                                                       container = "api-server")
+                                                       container = 'config-nodemgr')
                 self.configure_server_list(ip, client_process,
-                        section, option, server_list, container = "api-server")
+                        section, option, server_list, config_file, container_name, container = "config-nodemgr")
         elif client_role == "analytics":
             for ip in self.inputs.collector_ips:
                 server_list = self.get_new_server_list(operation, ip,
                                                        cmd, server_ip, index,
                                                        container = "analytics-api")
                 self.configure_server_list(ip, client_process,
-                        section, option, server_list, container = "analytics-api")
+                        section, option, server_list, config_file, container_name, container = "analytics-api")
         elif client_role == "database":
             for ip in self.inputs.database_ips:
                 server_list = self.get_new_server_list(operation, ip,
                                                        cmd, server_ip, index,
                                                        container = "analytics-cassandra")
                 self.configure_server_list(ip, client_process,
-                        section, option, server_list, container = "analytics-cassandra")
+                        section, option, server_list, config_file, container_name, container = "analytics-cassandra")
         status_checker = ContrailStatusChecker(self.inputs)
         result = status_checker.wait_till_contrail_cluster_stable()[0]
         if result == False:
             assert result, "Contrail cluster not up after add/remove of entry"
-    
+
     def get_new_server_list(self, operation, client_ip, cmd, server_ip,
                             index, container = None):
         '''
@@ -314,36 +319,20 @@ class BaseServiceConnectionsTest(GenericTestBase):
         return server_list
     
     def configure_server_list(self, client_ip, client_process,
-                               section, option, server_list, container):
+                               section, option, server_list, config_file, container_name,
+                               container, verify_service=True):
         '''
         This function configures the .conf file with new server_list
         and then send a sighup to the client so that configuration
         change is effective.
         '''
-        client_conf_file = client_process + ".conf"
-        server_string =  " ".join(server_list)
-        cmd_set = "openstack-config --set /etc/contrail/" + client_conf_file
-        cmd = cmd_set + " " + section + " " + option + ' "%s"' % server_string
-        self.inputs.run_cmd_on_server(client_ip, cmd,
-                            self.inputs.host_data[client_ip]['username']\
-                            , self.inputs.host_data[client_ip]['password'],
-                            container = container)
-        if "nodemgr" in client_process:
-            nodetype = client_process.rstrip("-nodemgr")
-            client_process = "contrail-nodemgr --nodetype=%s" % nodetype
-        else:
-            client_process = "/usr/bin/" + client_process
-        pid_cmd = 'pgrep -f -o "%s"' % client_process
-        pid = int(self.inputs.run_cmd_on_server(client_ip, pid_cmd,
-                            self.inputs.host_data[client_ip]['username']\
-                            , self.inputs.host_data[client_ip]['password'],
-                            container = container))
-        sighup_cmd = "kill -SIGHUP %d " % pid
-        self.inputs.run_cmd_on_server(client_ip, sighup_cmd,
-                            self.inputs.host_data[client_ip]['username']\
-                            , self.inputs.host_data[client_ip]['password'],
-                            container = container)
-        
+        ip_list = ''
+        for server in server_list:
+            ip_list += server + ' '
+        self.inputs.add_knob_to_container(client_ip, container_name,
+            level=section, knob=[option + '=' + ip_list.strip(' ')], file_name=config_file, restart_container=verify_service)
+
+
     def find_index(self, uve_dict, client_process):
         ''' Finding the index of client process in the dictionary '''
         index = 0
