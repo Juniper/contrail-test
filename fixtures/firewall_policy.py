@@ -18,7 +18,7 @@ class FirewallPolicyFixture(vnc_api_test.VncLibFixture):
         self.rules = kwargs.get('rules') or list()
         self.slo = kwargs.get('slo')
         self.shared = kwargs.get('shared', False)
-        self.audited = kwargs.get('audited')
+        self.audited = kwargs.get('audited', True)
         self.api_type = kwargs.get('api_type', 'contrail')
         self.created = False
         self.verify_is_run = False
@@ -83,8 +83,9 @@ class FirewallPolicyFixture(vnc_api_test.VncLibFixture):
         if not self.created:
             self.read()
 
-    def update(self, rules=None, shared=None, audited=None):
+    def update(self, name=None, rules=None, shared=None, audited=None):
         self.client_h.update_firewall_policy(
+                             name=name,
                              uuid=self.uuid,
                              rules=rules,
                              shared=shared,

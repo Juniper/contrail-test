@@ -49,7 +49,8 @@ class _GenericTestBaseMethods():
         return ret
     # end set_global_asn
 
-    def perform_cleanup(self, obj, remove_cleanup=True):
+    def perform_cleanup(self, obj, *args, **kwargs):
+        remove_cleanup = kwargs.pop('remove_cleanup', True)
         if getattr(obj, 'cleanUp', None):
             obj.cleanUp()
             if hasattr(obj, '_cleanups') and obj._cleanups is None \
@@ -57,6 +58,13 @@ class _GenericTestBaseMethods():
                 obj._clear_cleanups()
             if remove_cleanup:
                 self.remove_from_cleanups(obj.cleanUp)
+        else:
+            for cleanup in self._cleanups:
+                if obj in cleanup and args == cleanup[1] and kwargs == cleanup[2]:
+                    obj(*args, **kwargs)
+                    if remove_cleanup:
+                        self._cleanups.remove(cleanup)
+                    return
     # end perform_cleanup
 
     def alloc_ips(self, vn_fixture, count=1):
@@ -377,8 +385,8 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
             {
                 'direction': '<>', 'simple_action': 'pass',
                 'protocol': 'any',
-                'source_network': vn1_fixture.vn_name,
-                'dest_network': vn2_fixture.vn_name,
+                'source_network': vn1_fixture.vn_fq_name,
+                'dest_network': vn2_fixture.vn_fq_name,
             },
         ]
         policy_fixture = PolicyFixture(

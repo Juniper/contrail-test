@@ -55,7 +55,7 @@ class TcpEchoClient(object):
         self.sent = 0
         self.recv = 0
         self.sport = sport
-#        self.write_pid_to_file()
+        self.write_pid_to_file()
 
     def write_pid_to_file(self):
         with open(self.pid_file, 'w', 0) as fd:
@@ -156,7 +156,7 @@ def parse_cli(args):
 
 def main():
     pargs = parse_cli(sys.argv[1:])
-    daemonize(pargs.pid_file)
+    #daemonize(pargs.pid_file)
     client = TcpEchoClient(pargs.servers, pargs.dports, pargs.slow,
         pargs.retry, pargs.count, pargs.pid_file, pargs.stats_file, pargs.sport)
     signal.signal(signal.SIGUSR1, client.handler)

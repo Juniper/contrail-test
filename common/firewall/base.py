@@ -76,6 +76,8 @@ class BaseFirewallTest(BaseNeutronTest):
             for tag_types in scopes.itervalues():
                 for obj in tag_types.itervalues():
                     cls.vnc_h.delete_tag(id=obj.uuid)
+        if getattr(cls, 'save_af', None):
+            cls.inputs.set_af(cls.save_af)
 
     @classmethod
     def create_only_tag(cls, tag_type, tag_value, scope='local', **kwargs):
@@ -310,8 +312,9 @@ class BaseFirewallTest(BaseNeutronTest):
 
     def create_fw_policy(self, scope=None, rules=None, **kwargs):
         connections = kwargs.pop('connections', None) or self.connections
+        api_type = kwargs.pop('api_type', self.api_type)
         return self.useFixture(FirewallPolicyFixture(scope=scope,
-               rules=rules, connections=connections, api_type=self.api_type,
+               rules=rules, connections=connections, api_type=api_type,
                **kwargs))
 
     def add_fw_rule(self, fwp_fixture, rule_uuid, seq_no):
@@ -323,8 +326,9 @@ class BaseFirewallTest(BaseNeutronTest):
 
     def create_fw_rule(self, scope=None, **kwargs):
         connections = kwargs.pop('connections', None) or self.connections
+        api_type = kwargs.pop('api_type', self.api_type)
         return self.useFixture(FirewallRuleFixture(scope=scope,
-               connections=connections, api_type=self.api_type, **kwargs))
+               connections=connections, api_type=api_type, **kwargs))
 
     def _get_vmi_uuid(self, fixture):
         if type(fixture) == VMFixture:
@@ -334,7 +338,7 @@ class BaseFirewallTest(BaseNeutronTest):
 
     def get_ip_address(self, fixture):
         if type(fixture) == VMFixture:
-            return fixture.get_vm_ips()[0]
+            return fixture.vm_ip
         elif type(fixture) == PortFixture:
             return fixture.get_ip_addresses()[0]
 
@@ -345,7 +349,8 @@ class BaseFirewallTest(BaseNeutronTest):
         return self._default_fwg
 
     def create_fw_group(self, vm_fixtures=None, port_fixtures=None,
-                        ingress_policy=None, egress_policy=None, **kwargs):
+                        ingress_policy=None, egress_policy=None,
+                        verify=True, **kwargs):
         connections = kwargs.pop('connections', None) or self.connections
         ingress_policy_id = ingress_policy.uuid if ingress_policy else None
         egress_policy_id = egress_policy.uuid if egress_policy else None
@@ -356,11 +361,12 @@ class BaseFirewallTest(BaseNeutronTest):
         # so disassociate from default FWG before associating to new FWG
         if ports and kwargs.get('name') != 'default':
             self.default_fwg.delete_ports(ports)
-        fixture = self.useFixture(FirewallGroupFixture(connections=self.connections,
+        fixture = self.useFixture(FirewallGroupFixture(connections=connections,
                                ingress_policy_id=ingress_policy_id,
                                egress_policy_id=egress_policy_id,
                                ports=ports, **kwargs))
-        fixture.verify_on_setup()
+        if verify:
+            fixture.verify_on_setup()
         return fixture
 
     def create_aps(self, scope='local', policies=None, application=None, **kwargs):

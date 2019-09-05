@@ -479,6 +479,12 @@ class VMFixture(fixtures.Fixture):
             return self.orch.add_security_group(port_id, secgrp)
         self.orch.add_security_group(vm_id=self.vm_obj.id, sg_id=secgrp)
 
+    def disassociate_security_groups(self):
+        for vmi_id in self.vmi_ids.values():
+            vmi_obj = self.vnc_lib_h.virtual_machine_interface_read(id=vmi_id)
+            vmi_obj.set_security_group_list(None)
+            self.vnc_lib_h.virtual_machine_interface_update(vmi_obj)
+
     def remove_security_group(self, secgrp):
         if self.inputs.vro_based:
             port_id = self.tap_intf[self.vn_fq_name]['name']

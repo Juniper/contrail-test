@@ -62,14 +62,16 @@ class SocketTrafficUtil(object):
 
     def start_client(self):
         slow = '--slow' if self.slow else ''
-        cmd = '--servers %s --sport %s --dports %s --retry --count %s %s '\
-              '--pid_file %s --stats_file %s'%(self.dst_ip, self.sport,
-              self.dport, self.count, slow, self.client_pid_file,
-            self.client_stats_file)
+        sport = '--sport %s'%self.sport if self.sport else ''
+        count = '--count %s'%self.count if self.count else ''
+        cmd = '--servers %s %s --dports %s --retry %s %s --pid_file %s'\
+              ' --stats_file %s'%(self.dst_ip, sport,
+              self.dport, count, slow, self.client_pid_file,
+              self.client_stats_file)
         cmd = 'python /tmp/%s %s'%(os.path.basename(self.client_script), cmd)
         cmd = cmd + ' 0<&- &> %s'%self.client_log_file
         self.client_vm.copy_file_to_vm(self.client_script, '/tmp/')
-        self.client_vm.run_cmd_on_vm(cmds=[cmd], as_sudo=True, as_daemon=False)
+        self.client_vm.run_cmd_on_vm(cmds=[cmd], as_sudo=True, as_daemon=True)
         return True
 
     def stop(self):

@@ -1237,7 +1237,7 @@ class QuantumHelper():
         if name:
             policy['name'] = name
         if rules is not None:
-            policy['firewall_rules'] = rules
+            policy['firewall_rules'] = [rule['uuid'] for rule in rules]
         if shared is not None:
             policy['shared'] = shared
         if audited is not None:
@@ -1328,16 +1328,16 @@ class QuantumHelper():
             firewall_rule['destination_port'] = dports
         if 'source' in kwargs:
             source = kwargs.get('source')
-            if 'subnet' in source:
+            if source and 'subnet' in source:
                 firewall_rule['source_ip_address'] = source['subnet']
-            if 'firewall_group_id' in source:
+            if source and 'firewall_group_id' in source:
                 firewall_rule['source_firewall_group_id'] = \
                     source['firewall_group_id']
         if 'destination' in kwargs:
             destination = kwargs.get('destination')
-            if 'subnet' in destination:
+            if destination and 'subnet' in destination:
                 firewall_rule['destination_ip_address'] = destination['subnet']
-            if 'firewall_group_id' in destination:
+            if destination and 'firewall_group_id' in destination:
                 firewall_rule['destination_firewall_group_id'] = \
                     destination['firewall_group_id']
         self.obj.update_fwaas_firewall_rule(uuid,
