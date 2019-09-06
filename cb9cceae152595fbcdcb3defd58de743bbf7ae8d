@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "04e7f770_be119cfc",
+        "filename": "fixtures/contrailapi.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 3473,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-09-06T07:29:09Z",
+      "side": 1,
+      "message": "Done .\nEven with perform_cleanup(), during cleanup port_tuple_delete is called and script is failing due to noIdError.",
+      "parentUuid": "65cd0196_a07216b6",
+      "revId": "cb9cceae152595fbcdcb3defd58de743bbf7ae8d",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "44da3156_5479f3f8",
         "filename": "serial_scripts/fabric_overlay/test_fabric_pnf.py",
         "patchSetId": 3
@@ -33,6 +51,24 @@
       "revId": "cb9cceae152595fbcdcb3defd58de743bbf7ae8d",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f1103eb4_6dc462b6",
+        "filename": "serial_scripts/fabric_overlay/test_fabric_pnf.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-09-06T07:29:09Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "44da3156_5479f3f8",
+      "revId": "cb9cceae152595fbcdcb3defd58de743bbf7ae8d",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     }
   ]
 }
