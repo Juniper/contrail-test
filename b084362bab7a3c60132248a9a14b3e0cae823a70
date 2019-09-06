@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "a2b41b15_91b22c87",
+        "filename": "serial_scripts/asn4/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 83,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "will do it in next change",
+      "parentUuid": "81a88cb3_29a1f16e",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "735c72b6_be07cd9d",
         "filename": "serial_scripts/asn4/base.py",
         "patchSetId": 1
@@ -30,6 +48,24 @@
       "writtenOn": "2019-09-05T12:04:52Z",
       "side": 1,
       "message": "Can this be parameterized? or may be add a comment on why this ASN value",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "cb59b31a_220dc62f",
+        "filename": "serial_scripts/asn4/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 162,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "will do it in next change",
+      "parentUuid": "735c72b6_be07cd9d",
       "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
@@ -70,6 +106,24 @@
     },
     {
       "key": {
+        "uuid": "a4237afa_6b3ca79d",
+        "filename": "serial_scripts/asn4/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 210,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "5083e651_3e02c331",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "af5b8873_169f5b0c",
         "filename": "serial_scripts/asn4/base.py",
         "patchSetId": 1
@@ -84,6 +138,24 @@
       "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "191bb854_45de84c9",
+        "filename": "serial_scripts/asn4/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 213,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "af5b8873_169f5b0c",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     },
     {
       "key": {
@@ -104,6 +176,24 @@
     },
     {
       "key": {
+        "uuid": "5384bba4_76627243",
+        "filename": "serial_scripts/asn4/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 221,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "37a85855_74a03c4b",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "18c34bff_51da472c",
         "filename": "serial_scripts/asn4/test_asn4.py",
         "patchSetId": 1
@@ -118,6 +208,24 @@
       "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "8acf23e9_0cfcd5c2",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "18c34bff_51da472c",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     },
     {
       "key": {
@@ -138,6 +246,24 @@
     },
     {
       "key": {
+        "uuid": "4130e6c8_173aa68a",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "13fdeaea_fcce5980",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "a29b8f65_721849ba",
         "filename": "serial_scripts/asn4/test_asn4.py",
         "patchSetId": 1
@@ -152,6 +278,24 @@
       "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "0b41a6da_a8c744d1",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "a29b8f65_721849ba",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     },
     {
       "key": {
@@ -172,6 +316,24 @@
     },
     {
       "key": {
+        "uuid": "f41778f0_342cd38c",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 54,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "e74b66ba_cc7b7fdf",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "afaa2ac0_551bc534",
         "filename": "serial_scripts/asn4/test_asn4.py",
         "patchSetId": 1
@@ -186,6 +348,24 @@
       "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "309791da_0e465c1f",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 70,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "afaa2ac0_551bc534",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     },
     {
       "key": {
@@ -206,6 +386,24 @@
     },
     {
       "key": {
+        "uuid": "ae1e4044_df569b85",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 93,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "03d698ca_ec17f70b",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "9e33d58e_552d8bd3",
         "filename": "serial_scripts/asn4/test_asn4.py",
         "patchSetId": 1
@@ -217,6 +415,24 @@
       "writtenOn": "2019-09-05T12:04:52Z",
       "side": 1,
       "message": "Unused?",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "1f119c1e_823324ba",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 98,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Will use this function in next change",
+      "parentUuid": "9e33d58e_552d8bd3",
       "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
@@ -274,6 +490,24 @@
     },
     {
       "key": {
+        "uuid": "4daca641_3972bac3",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 140,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "7e7dd5d8_8c003164",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "dc9d3951_0c4a8ff4",
         "filename": "serial_scripts/asn4/test_asn4.py",
         "patchSetId": 1
@@ -294,6 +528,30 @@
       "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "7f97308e_b8116943",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 167,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "dc9d3951_0c4a8ff4",
+      "range": {
+        "startLine": 167,
+        "startChar": 71,
+        "endLine": 167,
+        "endChar": 78
+      },
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     },
     {
       "key": {
@@ -320,6 +578,30 @@
     },
     {
       "key": {
+        "uuid": "d5fa2791_ad9e7c2b",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 179,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "1f74a9f1_3e7860fe",
+      "range": {
+        "startLine": 179,
+        "startChar": 56,
+        "endLine": 179,
+        "endChar": 66
+      },
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "5fc7a3b5_e4741137",
         "filename": "serial_scripts/asn4/test_asn4.py",
         "patchSetId": 1
@@ -331,6 +613,30 @@
       "writtenOn": "2019-09-05T12:04:52Z",
       "side": 1,
       "message": "feel free ignore suggestion, the ASN numbers 65535 \u0026 23456 could be defined as global constants in base.py, will make it easier to change these numbers if need be.",
+      "range": {
+        "startLine": 192,
+        "startChar": 68,
+        "endLine": 192,
+        "endChar": 73
+      },
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "b9620ab9_3f6d20cc",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 192,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Will do in next change",
+      "parentUuid": "5fc7a3b5_e4741137",
       "range": {
         "startLine": 192,
         "startChar": 68,
@@ -360,6 +666,24 @@
     },
     {
       "key": {
+        "uuid": "d482fa92_cf5d0d45",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 234,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "7aa3601c_ba4d929c",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "064f15f1_9bd6c6f9",
         "filename": "serial_scripts/asn4/test_asn4.py",
         "patchSetId": 1
@@ -374,6 +698,24 @@
       "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "eccb80d3_eec4bd8d",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 238,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "064f15f1_9bd6c6f9",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     },
     {
       "key": {
@@ -394,6 +736,24 @@
     },
     {
       "key": {
+        "uuid": "f0598f13_3ba3d27d",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 321,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "21b8d880_6d5f887d",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "31a4aaa7_f8cbd546",
         "filename": "serial_scripts/asn4/test_asn4.py",
         "patchSetId": 1
@@ -408,6 +768,24 @@
       "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "9fe9edcb_cb55916d",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 383,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "31a4aaa7_f8cbd546",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     },
     {
       "key": {
@@ -428,6 +806,24 @@
     },
     {
       "key": {
+        "uuid": "c61c2d41_7eea746c",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 408,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "05453660_d1021540",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "1ef69493_aba5c54f",
         "filename": "serial_scripts/asn4/test_asn4.py",
         "patchSetId": 1
@@ -445,6 +841,24 @@
     },
     {
       "key": {
+        "uuid": "6bce8210_d92b0e38",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 409,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "1ef69493_aba5c54f",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "1659c7fb_f4bb56b1",
         "filename": "serial_scripts/asn4/test_asn4.py",
         "patchSetId": 1
@@ -456,6 +870,24 @@
       "writtenOn": "2019-09-05T12:04:52Z",
       "side": 1,
       "message": "Consider using GenericTestBase.create_vn from common/base.py, avoids duplication.",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "70dbc996_8d53dfda",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 438,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "will do it in next change",
+      "parentUuid": "1659c7fb_f4bb56b1",
       "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
@@ -479,6 +911,24 @@
     },
     {
       "key": {
+        "uuid": "8d269ecc_a2d252b3",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 443,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "will do it in next change",
+      "parentUuid": "5445d789_5c17e5f1",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "45c9ca2f_f726b5c2",
         "filename": "serial_scripts/asn4/test_asn4.py",
         "patchSetId": 1
@@ -490,6 +940,24 @@
       "writtenOn": "2019-09-05T12:04:52Z",
       "side": 1,
       "message": "Unused?",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "d32c43f5_edacb83b",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 649,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "will use in next change",
+      "parentUuid": "45c9ca2f_f726b5c2",
       "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
@@ -510,6 +978,24 @@
       "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "65c581c7_ec8fd9db",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 698,
+      "author": {
+        "id": 174
+      },
+      "writtenOn": "2019-09-06T05:51:32Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "ba9a67fa_138fc917",
+      "revId": "b084362bab7a3c60132248a9a14b3e0cae823a70",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     }
   ]
 }
