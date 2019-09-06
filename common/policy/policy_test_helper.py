@@ -298,8 +298,15 @@ def tx_quantum_rules_to_aces(no_of_rules, fq_vn):
                                'min': str(rule['proto_l'])}
 
     # step 3: expanding rules if bidir rule
+    #         for all pass rule don't expand
     for rule in user_rules_tx:
-        if rule['direction'] == '<>':
+        if (rule['direction'] == '<>' and
+           (rule['proto_l']['max'] != '255' or rule['proto_l']['min'] != '0' or
+           rule['src'] != 'any' or rule['dst'] != 'any' or
+           rule['src_port_l']['max'] != '65535' or
+           rule['src_port_l']['min'] != '0' or
+           rule['dst_port_l']['max'] != '65535' or
+           rule['dst_port_l']['min'] != '0')):
             rule['direction'] = '>'
             pos = user_rules_tx.index(rule)
             new_rule = copy.deepcopy(rule)
