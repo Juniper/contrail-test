@@ -133,7 +133,7 @@ class TestBmsLcm(BaseFabricTest):
         return bms_nodes_filtered
 
 
-    def skip_test_bms_single_interface(self):
+    def skip_test_bms_single_interface(self,skip_delete=False):
         '''
         Description: Test BMS LCM scenario for single interface BMS node
         Test Steps:
@@ -143,13 +143,14 @@ class TestBmsLcm(BaseFabricTest):
            4. Bringup one BMS LCM instance and one VM.Verify ping between VM and BMS VM instance works.
         Maintainer: vageesant@juniper.net
         '''
-        self.bms_delete_nodes()
+        if not skip_delete:
+           self.bms_delete_nodes()
         bms_nodes_filtered = self.bms_node_add_delete(bms_type="single_interface")
         time.sleep(60)
         self.bms_vm_add_delete(bms_count=1,bms_nodes_filtered=bms_nodes_filtered)
 
 
-    def skip_test_bms_multi_homing(self):
+    def skip_test_bms_multi_homing(self,skip_delete=False):
         '''
         Description: Test BMS LCM scenario for multi homing - BMS node with two interface.interface1 in qfx1 and interface2 in qfx2
         Test Steps:
@@ -159,13 +160,14 @@ class TestBmsLcm(BaseFabricTest):
            4. Bringup one BMS LCM instance and one VM.Verify ping between VM and BMS VM instance works.
         Maintainer: vageesant@juniper.net
         '''
-        self.bms_delete_nodes()
+        if not skip_delete:
+           self.bms_delete_nodes()
         bms_nodes_filtered = self.bms_node_add_delete(bms_type="multi_homing")
         time.sleep(60)
         self.bms_vm_add_delete(bms_count=1,bms_nodes_filtered=bms_nodes_filtered)
 
 
-    def skip_test_bms_lag(self):
+    def skip_test_bms_lag(self,skip_delete=False):
         '''
         Description: Test BMS LCM scenario for LAG - Link Aggregation - BMS node with two interface.interface1 and interface2 both in the same qfx
         Test Steps:
@@ -175,7 +177,8 @@ class TestBmsLcm(BaseFabricTest):
            4. Bringup one BMS LCM instance and one VM.Verify ping between VM and BMS VM instance works.
         Maintainer: vageesant@juniper.net
         '''
-        self.bms_delete_nodes()
+        if not skip_delete:
+           self.bms_delete_nodes()
         bms_nodes_filtered = self.bms_node_add_delete(bms_type="link_aggregation")
         time.sleep(60)
         self.bms_vm_add_delete(bms_count=1,bms_nodes_filtered=bms_nodes_filtered)
@@ -201,11 +204,14 @@ class TestBmsLcm(BaseFabricTest):
 
         service_nodes = self.inputs.contrail_service_nodes
         self.inputs.restart_service('contrail-vrouter', service_nodes, container='agent')
-        vn_fixture = self.create_vn()
-        vn_obj = vn_fixture.obj
+        if not self.vn_fixture:
+          self.vn_fixture = self.create_vn()
+        vn_obj = self.vn_fixture.obj
 
-        vm_fixture = self.create_vm(vn_fixture=vn_fixture,
+        if not self.vm_fixture:
+           self.vm_fixture = self.create_vm(vn_fixture=self.vn_fixture,
                                     image_name="ubuntu-traffic")
+           assert self.vm_fixture.wait_till_vm_is_up()
        
         mac_node_dict = {}
         for node in bms_nodes_filtered:
@@ -217,17 +223,16 @@ class TestBmsLcm(BaseFabricTest):
 
         bms_fixtures_list = []
         for i in xrange(bms_count):
-            bms_fixtures_list.append(self.create_vm(vn_fixture=vn_fixture,
+            bms_fixtures_list.append(self.create_vm(vn_fixture=self.vn_fixture,
                 image_name=bms_image,
                 zone=bms_availability_zone,
                 node_name=bms_availability_host,
                 instance_type="baremetal"))
             time.sleep(10)
 
-        assert vm_fixture.wait_till_vm_is_up()
 
         for i in xrange(5):
-            time.sleep(120)
+            time.sleep(200)
             dhcp_missing_mac_list = []
             for service_node in service_nodes:
                 dhcp_inspect = AgentInspect(service_node)
@@ -262,7 +267,6 @@ class TestBmsLcm(BaseFabricTest):
 
         time.sleep(300)
 
-
         bms_fixtures_up_list = []
         bms_fixtures_down_list = []
         for bms_fixture in bms_fixtures_list:
@@ -275,15 +279,21 @@ class TestBmsLcm(BaseFabricTest):
 
         for bms_fixture in bms_fixtures_up_list:
             for i in xrange(5):
-               ping_result = vm_fixture.ping_with_certainty(bms_fixture.vm_ip)
+               ping_result = self.vm_fixture.ping_with_certainty(bms_fixture.vm_ip)
                if ping_result:
                   break
             if ping_result:
                 self.logger.debug("Ping to BMS Node %s is successful"%bms_fixture.vm_name)
             else:
+                node_list = self.connections.ironic_h.obj.node.list()
+                for node in node_list:
+                    self.connections.ironic_h.obj.node.set_maintenance(node.uuid,True)
                 assert False, 'Unable to reach bms node: %s'%bms_fixture.vm_name
 
         for bms_fixture in bms_fixtures_down_list:
+            node_list = self.connections.ironic_h.obj.node.list()
+            for node in node_list:
+                self.connections.ironic_h.obj.node.set_maintenance(node.uuid,True)
             assert False, 'BMS bring up failed for node: %s'%bms_fixture.vm_name
 
         assert ping_result
@@ -292,35 +302,78 @@ class TestBmsLcm(BaseFabricTest):
 class TestBmsLcmSPStyle(TestBmsLcm):
     enterprise_style=False
     @preposttest_wrapper
-    def test_bms_all(self):
+    def test_bms_all_parallel(self):
         '''
-        Description: SuperSet testcase for Single Interface BMS,LAG Scenario and Multi-homing scenario
-        Test Steps:
-           1. Delete all existing BMS nodes and create 3 ironic nodes - one single interface,one multi-homing,one lag
-           2. Update SG to allow ping/traffic between BMS VM and regular VM
-           3. Reconfigure TFTP Block size and ip link MTU
-           4. Bringup one BMS LCM instance and one VM.Verify ping between VM and BMS VM instance works.
+        Description: SP Style: SuperSet testcase for Single Interface BMS,LAG Scenario and Multi-homing scenario
         Maintainer: vageesant@juniper.net
         '''
         self.bms_delete_nodes()
+        self.vm_fixture = None
+        self.vn_fixture = None
         bms_nodes_filtered = self.bms_node_add_delete("all")
         time.sleep(60)
         self.bms_vm_add_delete(bms_count=3,bms_nodes_filtered=bms_nodes_filtered)
 
-class TestBmsLcmEPStyle(TestBmsLcm):
-    enterprise_style=True
     @preposttest_wrapper
-    def test_bms_all(self):
+    def test_bms_all_serial(self):
         '''
-        Description: SuperSet testcase for Single Interface BMS,LAG Scenario and Multi-homing scenario
-        Test Steps:
-           1. Delete all existing BMS nodes and create 3 ironic nodes - one single interface,one multi-homing,one lag
-           2. Update SG to allow ping/traffic between BMS VM and regular VM
-           3. Reconfigure TFTP Block size and ip link MTU
-           4. Bringup one BMS LCM instance and one VM.Verify ping between VM and BMS VM instance works.
+        Description: SP Style Serial SuperSet testcase for Single Interface BMS,LAG Scenario and Multi-homing scenario
         Maintainer: vageesant@juniper.net
         '''
         self.bms_delete_nodes()
+        self.vm_fixture = None
+        self.vn_fixture = None
+        skip_delete = True
+        self.bms_delete_nodes()
+        self.skip_test_bms_single_interface(skip_delete)
+        self.skip_test_bms_multi_homing(skip_delete)
+        self.skip_test_bms_lag(skip_delete)
+
+    def test_bms_serial_one_instance(self):
+        self.vm_fixture = None
+        self.vn_fixture = None
+        skip_delete = False
+        self.bms_delete_nodes()
+        self.skip_test_bms_single_interface(skip_delete)
+        self.skip_test_bms_multi_homing(skip_delete)
+        self.skip_test_bms_lag(skip_delete) 
+
+class TestBmsLcmEPStyle(TestBmsLcm):
+    enterprise_style=True
+    @preposttest_wrapper
+    def test_bms_all_parallel(self):
+        '''
+        Description: EP Style: SuperSet testcase for Single Interface BMS,LAG Scenario and Multi-homing scenario
+        Maintainer: vageesant@juniper.net
+        '''
+        self.bms_delete_nodes()
+        self.vm_fixture = None
+        self.vn_fixture = None
         bms_nodes_filtered = self.bms_node_add_delete("all")
         time.sleep(60)
         self.bms_vm_add_delete(bms_count=3,bms_nodes_filtered=bms_nodes_filtered)
+
+    @preposttest_wrapper
+    def test_bms_all_serial(self):
+        '''
+        Description: EP Style Serial SuperSet testcase for Single Interface BMS,LAG Scenario and Multi-homing scenario
+        Maintainer: vageesant@juniper.net
+        '''
+        self.bms_delete_nodes()
+        self.vm_fixture = None
+        self.vn_fixture = None
+        skip_delete = True
+        self.bms_delete_nodes()
+        self.skip_test_bms_single_interface(skip_delete)
+        self.skip_test_bms_multi_homing(skip_delete)
+        self.skip_test_bms_lag(skip_delete)
+
+    def test_bms_serial_one_instance(self):
+        self.vm_fixture = None
+        self.vn_fixture = None
+        skip_delete = False
+        self.bms_delete_nodes()
+        self.skip_test_bms_single_interface(skip_delete)
+        self.skip_test_bms_multi_homing(skip_delete)
+        self.skip_test_bms_lag(skip_delete) 
+
