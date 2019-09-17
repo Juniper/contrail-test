@@ -617,6 +617,9 @@ class TestInputs(object):
         self.ext_routers = []
         for rtr_name, address in test_configs.get('ext_routers', {}).iteritems():
             self.ext_routers.append((rtr_name, address))
+        self.as4_ext_routers = []
+        for rtr_name, address in test_configs.get('as4_ext_routers', {}).iteritems():
+            self.as4_ext_routers.append((rtr_name, address))
         self.local_asbr_info = []
         for asbr_name, address in test_configs.get('local_asbr', {}).iteritems():
             self.local_asbr_info.append((asbr_name, address))
