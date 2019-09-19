@@ -1,0 +1,242 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d7a05c61_74ec577c",
+        "filename": "common/contrail_fabric/dci_base.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-09-19T07:17:22Z",
+      "side": 1,
+      "message": "Lets not redefine the same class, rather we should add knobs to control DCI or singleFabric using knobs/variables.",
+      "revId": "cc87349c5cbf8df75bb4104af962ba2dafca0e81",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f8bc5171_9fee1725",
+        "filename": "common/contrail_fabric/dci_base.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-09-19T07:17:22Z",
+      "side": 1,
+      "message": "fabrics is a list. so fabrics[0] represent one fabric and fabrics[1] represents the other. We dont need any of the below changes. The testinput file would have both fabrics and based on the DCI knob we will either onboard all the fabrics or just the first one(in case of single fabric scenarios)",
+      "revId": "cc87349c5cbf8df75bb4104af962ba2dafca0e81",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "b9dfd647_4e2a6faa",
+        "filename": "common/contrail_fabric/dci_base.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 51,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-09-19T07:17:22Z",
+      "side": 1,
+      "message": "Please refer dc-gw script for how rb_roles are set. In the SetupClass of the testcase we set the rb_roles irrespective of the fabric.",
+      "revId": "cc87349c5cbf8df75bb4104af962ba2dafca0e81",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "59857636_5caa080f",
+        "filename": "common/contrail_fabric/dci_base.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 144,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-09-19T07:17:22Z",
+      "side": 1,
+      "message": "This needs to check if there are multiple fabrics and also if each fabric have a device with DCI-Gw role. Please refer dc_gw scripts for more info.",
+      "revId": "cc87349c5cbf8df75bb4104af962ba2dafca0e81",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "930e4816_fe4ca9a9",
+        "filename": "common/contrail_fabric/dci_base.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 154,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-09-19T07:17:22Z",
+      "side": 1,
+      "message": "I would suggest to use the create_logical_router wrapper which already takes devices as input so you could pass the DCI-Gw device as a argument to the same.",
+      "revId": "cc87349c5cbf8df75bb4104af962ba2dafca0e81",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "cadb369f_a7df8545",
+        "filename": "common/contrail_fabric/dci_base.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 160,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-09-19T07:17:22Z",
+      "side": 1,
+      "message": "devices[0] is not guaranteed to be DCI-Gw. Please check the dc-gw script on how we figure out the device with Dc-GW role.",
+      "revId": "cc87349c5cbf8df75bb4104af962ba2dafca0e81",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f02b862e_26bb5cdf",
+        "filename": "common/contrail_fabric/dci_base.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 162,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-09-19T07:17:22Z",
+      "side": 1,
+      "message": "Dont do vnc_api calls from the testcase/suite rather the testcase should call the wrappers defined in fixtures/contrailapi.py and the api\u0027s could be defined there so the code maintenance is easier.",
+      "revId": "cc87349c5cbf8df75bb4104af962ba2dafca0e81",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "90d9d276_4f598970",
+        "filename": "common/contrail_fabric/dci_base.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 169,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-09-19T07:17:22Z",
+      "side": 1,
+      "message": "Believe fixtures/bms_fixture.py already does this. And please dont access the dictionary as list since its unordered and the above call would fail on a different cluster.",
+      "revId": "cc87349c5cbf8df75bb4104af962ba2dafca0e81",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "77832575_12ddd7a7",
+        "filename": "common/contrail_fabric/dci_base.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 184,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-09-19T07:17:22Z",
+      "side": 1,
+      "message": "Please dont redefine all the below functions",
+      "revId": "cc87349c5cbf8df75bb4104af962ba2dafca0e81",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "d7756ea0_a84bf2c4",
+        "filename": "common/fabric_utils.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 286,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-09-19T07:17:22Z",
+      "side": 1,
+      "message": "can we remove the above line?",
+      "revId": "cc87349c5cbf8df75bb4104af962ba2dafca0e81",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "bef3a800_a43a9e8d",
+        "filename": "serial_scripts/dci/test_fabric_dci.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-09-19T07:17:22Z",
+      "side": 1,
+      "message": "get_bms_nodes()[0] -\u003e bms is not guaranteed to belong to fabric1 rather you should modify the get_bms_nodes() wrapper to take the fabric as input and get the list of bms belonging to that fabric.\n\nAlso please remove the bms_mac call.",
+      "revId": "cc87349c5cbf8df75bb4104af962ba2dafca0e81",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "01af2624_44ddd482",
+        "filename": "serial_scripts/dci/test_fabric_dci.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-09-19T07:17:22Z",
+      "side": 1,
+      "message": "We dont need this setup_bare_metal which is already taken care of in bms_fixture where in we would create a macvlan interface on top of the physical interface and then netns instance and link the macvlan interface inside the netns.",
+      "revId": "cc87349c5cbf8df75bb4104af962ba2dafca0e81",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "b46268ea_ef74fe58",
+        "filename": "serial_scripts/dci/test_fabric_dci.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-09-19T07:17:22Z",
+      "side": 1,
+      "message": "Would suggest to use ping_with_certainty since it has multiple retries so if the config push takes time then retries would be better.",
+      "revId": "cc87349c5cbf8df75bb4104af962ba2dafca0e81",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "b78083ac_3072f53e",
+        "filename": "serial_scripts/dci/test_fabric_dci.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 71,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-09-19T07:17:22Z",
+      "side": 1,
+      "message": "We need to make sure that the DM is up and trigger an event to create another BMS instance on the same VPG or so. This is a test gap on other DM restart case on other testsuites (InterVn/IntraVN etal) too.",
+      "revId": "cc87349c5cbf8df75bb4104af962ba2dafca0e81",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
