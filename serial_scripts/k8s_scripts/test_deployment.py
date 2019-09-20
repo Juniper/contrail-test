@@ -20,7 +20,7 @@ class TestDeployment(BaseK8sTest):
         parallelCleanupCandidates = ["PodFixture"]
         self.delete_in_parallel(parallelCleanupCandidates)
     
-    @test.attr(type=['k8s_sanity'])
+    @test.attr(type=[''])
     @preposttest_wrapper
     def test_deployment_with_kube_manager_restart(self):
         ''' Create a deployment object with 3 pod replicas and Verify http service works across the pod replicas
