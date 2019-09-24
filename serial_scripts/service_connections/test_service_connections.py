@@ -60,9 +60,9 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                                             "contrail-vrouter-agent",
                                             self.inputs.compute_control_ips[0])
         self.add_remove_server("remove", in_use_servers[0], "DNS",
-                                "servers", "agent", "contrail-vrouter-agent")
+                                "servers", "agent", "contrail-vrouter-agent", "vrouter_vrouter-agent_1")
         self.addCleanup(self.add_remove_server, "add", in_use_servers[0], "DNS",
-                                "servers", "agent", "contrail-vrouter-agent")
+                                "servers", "agent", "contrail-vrouter-agent", "vrouter_vrouter-agent_1")
         for node in self.inputs.compute_control_ips:
             new_in_use_servers, status, ports = self.get_all_in_use_servers("dns",
                                             "agent", "contrail-vrouter-agent",
@@ -95,9 +95,9 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                                         "agent", "contrail-vrouter-agent",
                                         self.inputs.compute_control_ips[0])
         self.add_remove_server("remove", in_use_servers[0], "DEFAULT",
-                            "collectors", "agent", "contrail-vrouter-agent")
+                            "collectors", "agent", "contrail-vrouter-agent", "vrouter_vrouter-agent_1")
         self.addCleanup(self.add_remove_server, "add", in_use_servers[0], "DEFAULT",
-                            "collectors", "agent", "contrail-vrouter-agent")
+                            "collectors", "agent", "contrail-vrouter-agent", "vrouter_vrouter-agent_1")
         for node in self.inputs.compute_control_ips:
             new_in_use_servers, status, ports = self.get_all_in_use_servers(
                                             "collector", "agent",
@@ -130,9 +130,9 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                                         "control", "contrail-control",
                                         self.inputs.bgp_control_ips[0])
         self.add_remove_server("remove", in_use_server, "CONFIGDB",
-                        "rabbitmq_server_list", "control", "contrail-control")
+                        "rabbitmq_server_list", "control", "contrail-control", "control_control_1")
         self.addCleanup(self.add_remove_server, "add", in_use_server, "CONFIGDB",
-                        "rabbitmq_server_list", "control", "contrail-control")
+                        "rabbitmq_server_list", "control", "contrail-control", "control_control_1")
         for node in self.inputs.bgp_control_ips:
             new_in_use_server = self.get_all_in_use_servers(
                                             "rabbitmq", "control",
@@ -165,9 +165,9 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                                         "dns", "contrail-dns",
                                         self.inputs.bgp_control_ips[0])
         self.add_remove_server("remove", in_use_server, "CONFIGDB",
-                        "rabbitmq_server_list", "dns", "contrail-dns")
+                        "rabbitmq_server_list", "dns", "contrail-dns", "control_dns_1")
         self.addCleanup(self.add_remove_server, "add", in_use_server, "CONFIGDB",
-                        "rabbitmq_server_list", "dns", "contrail-dns")
+                        "rabbitmq_server_list", "dns", "contrail-dns", "control_dns_1")
         for node in self.inputs.bgp_control_ips:
             new_in_use_server = self.get_all_in_use_servers(
                                             "rabbitmq", "dns",
@@ -201,9 +201,9 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                                         self.inputs.bgp_control_ips[0])
         for server in in_use_servers:
             self.add_remove_server("remove", server, "CONFIGDB",
-                        "config_db_server_list", "control", "contrail-control")
+                        "config_db_server_list", "control", "contrail-control", "control_control_1")
         self.add_remove_server("add", "254.254.254.254", "CONFIGDB",
-                        "config_db_server_list", "control", "contrail-control",
+                        "config_db_server_list", "control", "contrail-control", "control_control_1",
                         server_port = 9041)
         new_in_use_servers, new_status = self.get_all_in_use_servers("configdb" ,
                                         "control", "contrail-control",
@@ -289,8 +289,8 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                                  container = "control")
         self.addCleanup(self.inputs.start_service, "contrail-control",
                         [in_use_servers[0]], container = "control")
-        self.addCleanup(self.inputs.confirm_service_active, "contrail-control",
-                        in_use_servers[0], container = "control")
+        self.addCleanup(self.inputs.verify_service_state, [in_use_servers[0]],
+                        "xmpp", "control")
         self.sleep(15) # Agent retries to connect to previous Controller 4 times in an interval of 1,2,4,8 seconds
         new_in_use_servers, status, ports = self.get_all_in_use_servers(
                                             "xmpp" ,"agent", 
@@ -325,9 +325,8 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         self.addCleanup(self.inputs.start_service,
                         "contrail-dns",[in_use_servers[0]],
                         container = "dns")
-        self.addCleanup(self.inputs.confirm_service_active, 
-                        "contrail-dns",in_use_servers[0],
-                        container = "dns")
+        self.addCleanup(self.inputs.verify_service_state, [in_use_servers[0]],
+                        "dns", "control")
         self.sleep(15) # Agent retries to connect to previous DNS Server 4 times in an interval of 1,2,4,8 seconds
         new_in_use_servers, status, ports = self.get_all_in_use_servers(
                                             "dns" ,"agent", 
@@ -362,9 +361,8 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         self.addCleanup(self.inputs.start_service,
                         "contrail-collector",[in_use_servers[0]],
                         container = "collector")
-        self.addCleanup(self.inputs.confirm_service_active, 
-                        "contrail-collector",in_use_servers[0],
-                        container = "collector")
+        self.addCleanup(self.inputs.verify_service_state, [in_use_servers[0]],
+                        "collector", "analytics")
         self.sleep(15) # Agent retries to connect to previous Collector 4 times in an interval of 1,2,4,8 seconds
         new_in_use_servers, status, ports = self.get_all_in_use_servers(
                                             "collector" ,"agent", 
@@ -395,9 +393,9 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
                                             self.inputs.bgp_control_ips[0])
         self.inputs.stop_service("rabbitmq-server",[in_use_server])
         self.addCleanup(self.inputs.start_service,
-                        "rabbitmq-server",[in_use_server])
-        self.addCleanup(self.inputs.confirm_service_active, 
-                        "rabbitmq-server",in_use_server)
+                        "rabbitmq-server",[in_use_server], 'control_control_1')
+        self.addCleanup(self.inputs.verify_service_state, [in_use_server],
+                        "rabbitmq", "control")
         new_in_use_server = self.get_all_in_use_servers("rabbitmq" ,
                                             "control", "contrail-control",
                                             self.inputs.bgp_control_ips[0])
@@ -426,8 +424,8 @@ class TestServiceConnectionsSerial(BaseServiceConnectionsTest):
         self.inputs.stop_service("rabbitmq-server",[in_use_server])
         self.addCleanup(self.inputs.start_service,
                         "rabbitmq-server",[in_use_server])
-        self.addCleanup(self.inputs.confirm_service_active, 
-                        "rabbitmq-server",in_use_server)
+        self.addCleanup(self.inputs.verify_service_state, [in_use_server],
+                        "rabbitmq", "control")
         new_in_use_server = self.get_all_in_use_servers("rabbitmq" ,
                                             "control", "contrail-dns",
                                             self.inputs.bgp_control_ips[0])
