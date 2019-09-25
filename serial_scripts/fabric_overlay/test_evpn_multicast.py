@@ -156,6 +156,7 @@ class TestEvpnt6SPStyle(Evpnt6TopologyBase):
 
     # End _verify_multinode_sanity
 
+    @preposttest_wrapper
     def test_evpnt6_multinode_basic_crb_access(self):
         bms_node = self.get_bms_nodes()[0]
         devices = self.get_associated_prouters(bms_node)

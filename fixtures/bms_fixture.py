@@ -442,6 +442,7 @@ class BMSFixture(fixtures.Fixture):
         except:
             try:
                 self.cleanUp()
+                self._clear_cleanups()
             finally:
                 raise
     # end setUp

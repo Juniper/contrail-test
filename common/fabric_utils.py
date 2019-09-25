@@ -206,6 +206,18 @@ class FabricUtils(object):
             return execution_id, status
         return execution_id, None
 
+    def fetch_hardware_inventory(self, devices, wait_for_finish=True):
+        payload = dict()
+        fq_name = ['default-global-system-config', 'hardware_inventory_template']
+        device_list = [device.uuid for device in devices]
+        execution_id = self.vnc_h.execute_job(fq_name, payload, device_list)
+        self.logger.info('Fetching hardware inventory for devices %s'%devices)
+        if wait_for_finish:
+            status = self.wait_for_job_to_finish(':'.join(fq_name), execution_id)
+            assert status, 'job %s to fetch hw inventory failed'%execution_id
+            return execution_id, status
+        return execution_id, None
+
     def get_role_from_inputs(self, device_name):
         for device in self.inputs.physical_routers_data.itervalues():
             if device['name'] == device_name:
