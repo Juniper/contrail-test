@@ -229,7 +229,7 @@ class BaseServiceConnectionsTest(GenericTestBase):
     # end get_all_in_use_servers
     
     def add_remove_server(self, operation, server_ip, section, option,
-                           client_role, client_process, container_name, index = 0, verify_service=True):
+                           client_role, client_process, container_name, index = 0):
         ''' This function add or remove an entry from list of servers 
         configured in .conf file of the client.
         It reads .conf file to get the list.
