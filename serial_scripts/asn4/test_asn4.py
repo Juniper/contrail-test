@@ -1,3 +1,4 @@
+import test
 import uuid
 import re
 from base import ASN4Base
@@ -514,7 +515,6 @@ class TestAsn4(ASN4Base, BaseBGPaaS, LocalASBase):
            elif control_mx_bgp_type == "external":
               as_path = "%s"%(mx_asn[0])
               as4_path = "-"
-        import pdb;pdb.set_trace()
 
         if control_mx_bgp_type == "internal":
             for static_route in mx_static_routes:
@@ -791,7 +791,7 @@ class TestAsn4(ASN4Base, BaseBGPaaS, LocalASBase):
         mx_config['test_bgp_proto_group_name'] = topology_info['test_bgp_proto_group_name']
         mx_config['ri_name'] = topology_info['test_ri_name']
         mx_config["vrf_interface"] = mx_config['mx_vrf_interfaces'][0] + ".0"
-        mx_config["rd"] = mx_control_ip_address[0].split("/")[0] + ":0"
+        mx_config["rd"] = mx_control_ip_address[0].split("/")[0] + ":100"
         mx_config['control_ip'] = mx_tunnel_ip
         mx_config['mx_control_ip_address'] = topology_info['mx_control_ip_address']
         mx_config['mx_name'] = topology_info['mx_name']
@@ -878,6 +878,7 @@ class TestAsn4(ASN4Base, BaseBGPaaS, LocalASBase):
         self.verify_cn_instrospect(vn_fixture, introspect_prefix_info)
 
     @preposttest_wrapper
+    @test.attr(type=['sanity'])
     # @skip_because(mx_gw=False,msg='Need to set MX_GW=True and atleast one Physical Router')
     def test_basic_as4_ibgp(self):
 
@@ -977,7 +978,7 @@ class TestAsn4(ASN4Base, BaseBGPaaS, LocalASBase):
         mx_config['test_bgp_proto_group_name'] = topology_info['test_bgp_proto_group_name']
         mx_config['ri_name'] = topology_info['test_ri_name']
         mx_config["vrf_interface"] = mx_config['mx_vrf_interfaces'][0] + ".0"
-        mx_config["rd"] = mx_control_ip_address[0].split("/")[0] + ":0"
+        mx_config["rd"] = mx_control_ip_address[0].split("/")[0] + ":100"
         mx_config['control_ip'] = mx_tunnel_ip
         mx_config['mx_control_ip_address'] = topology_info['mx_control_ip_address']
         mx_config['mx_name'] = topology_info['mx_name']
