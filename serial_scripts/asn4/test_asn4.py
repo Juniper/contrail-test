@@ -1,3 +1,4 @@
+import test
 import uuid
 import re
 from base import ASN4Base
@@ -878,6 +879,7 @@ class TestAsn4(ASN4Base, BaseBGPaaS, LocalASBase):
         self.verify_cn_instrospect(vn_fixture, introspect_prefix_info)
 
     @preposttest_wrapper
+    @test.attr(type=['sanity'])
     # @skip_because(mx_gw=False,msg='Need to set MX_GW=True and atleast one Physical Router')
     def test_basic_as4_ibgp(self):
 
