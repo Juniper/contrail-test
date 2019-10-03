@@ -434,18 +434,16 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
                     for dport in dport_list:
                         assert self.send_nc_traffic(vm, vrrp_master,
                             sport, dport, proto, ip=vIP)
-
-            if fat_config['ignore_address'] == 'source':
-                fat_src_ip = '0.0.0.0' if self.inputs.get_af() == 'v4' else '::'
-                for vm in client_fixtures:
+                if fat_config['ignore_address'] == 'source':
+                    fat_src_ip = '0.0.0.0' if self.inputs.get_af() == 'v4' else '::'
                     self.verify_fat_flow_on_compute(dst_compute_fix, vm.vm_ip,
                                 fat_src_ip, fat_config['port'], proto, vrf_id_dst,
                                 fat_flow_count=1)
-            if fat_config['ignore_address'] == 'destination':
-                fat_dst_ip = '0.0.0.0' if self.inputs.get_af() == 'v4' else '::'
-                self.verify_fat_flow_on_compute(dst_compute_fix, fat_dst_ip,
-                            vIP, fat_config['port'], proto, vrf_id_dst,
-                            fat_flow_count=1)
+                if fat_config['ignore_address'] == 'destination':
+                    fat_dst_ip = '0.0.0.0' if self.inputs.get_af() == 'v4' else '::'
+                    self.verify_fat_flow_on_compute(dst_compute_fix, fat_dst_ip,
+                                vIP, fat_config['port'], proto, vrf_id_dst,
+                                fat_flow_count=1)
             self.remove_fat_flow_on_vmis([port1_obj['id'], port2_obj['id']],
                 fat_config)
 
