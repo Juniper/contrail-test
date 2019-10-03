@@ -1394,4 +1394,45 @@ class QuantumHelper():
                                                         firewall_rule})
         self.logger.debug('Response for create_firewall_rule: %s'%fwr_rsp)
         return fwr_rsp['firewall_rule']['id']
+
+    def list_trunks(self, **kwargs):
+        return list()
+        return self.obj.list_trunks(**kwargs)['trunks']
+
+    def show_trunk(self, uuid, **kwargs):
+        return self.obj.show_trunk(uuid, **kwargs)['trunk']
+
+    def delete_trunk(self, uuid):
+        return self.obj.delete_trunk(uuid)
+
+    def create_trunk(self, name, parent_port, subports=None, admin_state=None):
+        body = {'name': name, 'port_id': parent_port}
+        if admin_state is not None:
+            body['admin_state_up'] = admin_state
+        if subports is not None:
+            body['sub_ports'] = [{'port_id': subport['uuid'],
+                'segmentation_id': subport['vlan_id'],
+                'segmentation_type': 'vlan'} for subport in subports]
+        return self.obj.create_trunk({'trunk': body})['trunk']['id']
+
+    def update_trunk(self, uuid, admin_state):
+        body = dict()
+        if admin_state is not None:
+            body['admin_state_up'] = admin_state
+        self.obj.update_trunk(uuid, {'trunk': body})
+
+    def trunk_add_subports(self, uuid, subports):
+        sports = [{'port_id': subport['uuid'],
+                   'segmentation_id': subport['vlan_id'],
+                   'segmentation_type': 'vlan'} for subport in subports]
+        self.obj.trunk_add_subports(uuid, {'tenant_id': self.project_id,
+                                           'sub_ports': sports})
+
+    def trunk_remove_subports(self, uuid, subports):
+        sports = [{'port_id': subport['uuid']} for subport in subports]
+        self.obj.trunk_remove_subports(uuid, {'tenant_id': self.project_id,
+                                              'sub_ports': sports})
+
+    def trunk_get_subports(self, uuid):
+        return self.obj.trunk_get_subports(uuid)['sub_ports']
 # end QuantumHelper

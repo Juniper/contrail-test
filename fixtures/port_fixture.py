@@ -44,6 +44,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
         self.security_groups = kwargs.get('security_groups', [])
         self.extra_dhcp_opts = kwargs.get('extra_dhcp_opts', [])
         self.api_type = kwargs.get('api_type', 'neutron')
+        self.no_security_group = kwargs.get('no_security_group', False)
         if self.inputs.orchestrator == 'vcenter':
             self.api_type = 'contrail'
         self.project_obj = kwargs.get('project_obj', None)
@@ -112,6 +113,7 @@ class PortFixture(vnc_api_test.VncLibFixture):
             fixed_ips=self.fixed_ips,
             mac_address=self.mac_address,
             security_groups=self.security_groups,
+            no_security_group=self.no_security_group,
             extra_dhcp_opts=self.extra_dhcp_opts,
             binding_profile=self.binding_profile)
         self.neutron_obj = neutron_obj

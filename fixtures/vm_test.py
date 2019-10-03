@@ -3169,9 +3169,12 @@ class VMFixture(fixtures.Fixture):
             fabric ip is not assigned as FIP ip to the VMI", vn_fq_name)
         return False
 
-    def setup_subintf(self, device=None, vlan=None):
-        cmd = 'vconfig add %s %s; dhclient %s.%s'%(device, vlan, device, vlan)
-        self.run_cmd_on_vm([cmd], timeout=60, as_sudo=True)
+    def setup_subintf(self, device=None, vlan=None, macaddr=None):
+        vlan_cmd = 'vconfig add %s %s;'%(device, vlan)
+        if macaddr:
+            vlan_cmd = vlan_cmd + 'ip link set %s.%s address %s;'%(device, vlan, macaddr)
+        dhcp_cmd = 'pkill -9 dhclient; dhclient %s.%s'%(device, vlan)
+        self.run_cmd_on_vm([vlan_cmd, dhcp_cmd], timeout=60, as_sudo=True)
 
     def __repr__(self):
         return '<VMFixture: %s>' % (self.vm_name)
