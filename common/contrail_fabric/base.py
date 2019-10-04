@@ -3,8 +3,6 @@ import time
 from tcutils.tcpdump_utils import *
 from common.base import GenericTestBase
 from router_fixture import LogicalRouterFixture
-from fabric_test import FabricFixture
-from port_fixture import PortFixture
 import copy
 import re
 from security_group import SecurityGroupFixture, get_secgrp_id_from_name
@@ -18,16 +16,35 @@ class FabricSingleton(FabricUtils, GenericTestBase):
     __metaclass__ = Singleton
     def __init__(self, connections):
         super(FabricSingleton, self).__init__(connections)
+        self.vnc_h = connections.orch.vnc_h
         self.invoked = False
 
-    def create_fabric(self, rb_roles=None, enterprise_style=True):
+    def create_fabric(self, rb_roles=None, enterprise_style=True, ztp=False):
         self.invoked = True
         fabric_dict = self.inputs.fabrics[0]
-        self.fabric, self.devices, self.interfaces = \
-            self.onboard_existing_fabric(fabric_dict, cleanup=False,
-                enterprise_style=enterprise_style)
-        assert self.interfaces, 'Failed to onboard existing fabric %s'%fabric_dict
+        if ztp:
+            self.fabric, self.devices, self.interfaces = \
+                self.onboard_fabric(fabric_dict, cleanup=False,
+                    enterprise_style=enterprise_style)
+        else:
+            self.fabric, self.devices, self.interfaces = \
+                self.onboard_existing_fabric(fabric_dict, cleanup=False,
+                    enterprise_style=enterprise_style)
+        assert self.interfaces, 'Failed to onboard fabric %s'%fabric_dict
+
+        self.logger.info("Assigning roles for devices in the fabric")
         self.assign_roles(self.fabric, self.devices, rb_roles=rb_roles)
+        if ztp:
+            self.logger.info("Create provisioning infra network")
+            self.infra_ipam, self.infra_vn, self.tag_id = \
+                self.create_provisioning_network(self.fabric, fabric_dict)
+            self.logger.info("Import server node profile")
+            self.cards, self.hardwares, self.node_profiles = \
+                self.create_server_node_profile(self.fabric,
+                    fabric_dict, self.infra_vn.vn_name)
+            self.logger.info("Import server topology")
+            self.servers, self.ports = \
+                self.create_server_object(self.fabric, fabric_dict)
 
     def create_ironic_provision_vn(self, admin_connections):
         bms_lcm_config = self.inputs.bms_lcm_config
@@ -63,23 +80,38 @@ class FabricSingleton(FabricUtils, GenericTestBase):
                 for device in self.devices:
                     device.delete_virtual_network(self.ironic_vn.uuid)
                 self.ironic_vn.cleanUp()
+            if getattr(self, 'servers', None):
+                for port in self.ports:
+                    self.vnc_h.delete_port(id=port)
+                for server in self.servers:
+                    self.vnc_h.delete_node(id=server)
+            if getattr(self, 'cards', None):
+                for np in self.node_profiles:
+                    self.vnc_h.delete_node_profile(id=np)
+                for hardware in self.hardwares:
+                    self.vnc_h.delete_hardware(id=hardware)
+                for card in self.cards:
+                    self.vnc_h.delete_card(id=card)
+            if getattr(self, 'infra_vn', None):
+                self.infra_vn.cleanUp()
+                self.infra_ipam.cleanUp()
+                self.vnc_h.delete_tag(id=self.tag_id)
             super(FabricSingleton, self).cleanup_fabric(self.fabric,
                 self.devices, self.interfaces)
 
 class BaseFabricTest(BaseNeutronTest, FabricUtils):
     enterprise_style = True
+    ztp = False
     @classmethod
     def setUpClass(cls):
         super(BaseFabricTest, cls).setUpClass()
         cls.vnc_h = cls.connections.orch.vnc_h
-        cls.bms = dict()
-        cls.spines = list()
-        cls.leafs = list()
-        cls.pnfs = list()
+        cls.bms = dict(); cls.spines = list();
+        cls.leafs = list(); cls.pnfs = list()
         cls.default_sg = cls.get_default_sg()
         cls.allow_default_sg_to_allow_all_on_project(cls.inputs.project_name)
         cls.current_encaps = cls.get_encap_priority()
-        cls.set_encap_priority(['VXLAN', 'MPLSoGRE','MPLSoUDP'])
+        cls.set_encap_priority(['VXLAN', 'MPLSoGRE', 'MPLSoUDP'])
         cls.vnc_h.enable_vxlan_routing()
         cls.rb_roles = dict()
 
@@ -89,8 +121,11 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         self.allow_all_on_default_fwaas_policy()
         obj = FabricSingleton(self.connections)
         if not obj.invoked:
-            obj.create_fabric(self.rb_roles,
-                enterprise_style=self.enterprise_style)
+            try:
+                obj.create_fabric(self.rb_roles,
+                    enterprise_style=self.enterprise_style, ztp=self.ztp)
+            except:
+                obj.cleanup()
             if self.inputs.is_ironic_enabled:
                 obj.create_ironic_provision_vn(self.admin_connections)
         assert obj.fabric and obj.devices and obj.interfaces, "Onboarding fabric failed"
@@ -242,10 +277,6 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         result, msg = secgrp_fixture.verify_on_setup()
         assert result, msg
         return secgrp_fixture
-
-    def create_fabric(self, **kwargs):
-        return self.useFixture(FabricFixture(connections=self.connections,
-                                             **kwargs))
 
     def create_logical_router(self, vn_fixtures, vni=None, devices=None, **kwargs):
         vn_ids = [vn.uuid for vn in vn_fixtures]

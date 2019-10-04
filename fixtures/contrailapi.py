@@ -3593,6 +3593,114 @@ class ContrailVncApi(object):
         obj.del_port_profile(pp_obj)
         return self._vnc.virtual_machine_interface_update(obj)
 
+    def create_port(self, name, server, mac_address, tor_port, tor, switch_id):
+        ll_info = LocalLinkConnection(port_id=tor_port,
+                                      switch_id=switch_id,
+                                      switch_info=tor)
+        bms_port_info = BaremetalPortInfo(pxe_enabled=False,
+                                          address=mac_address,
+                                          local_link_connection=ll_info)
+        obj = Port(name, parent_type='node',
+                   fq_name=['default-global-system-config', server, name],
+                   bms_port_info=bms_port_info)
+        return self._vnc.port_create(obj)
+
+    def delete_port(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting port %s' % kwargs)
+        port_obj = self._vnc.port_read(**kwargs)
+        pifs = port_obj.get_physical_interface_back_refs() or []
+        for pif in pifs:
+            pif_obj = self.read_physical_interface(id=pif['uuid'])
+            pif_obj.del_port(port_obj)
+            self._vnc.physical_interface_update(pif_obj)
+        return self._vnc.port_delete(**kwargs)
+
+    def create_node(self, name):
+        bms_info = BaremetalServerInfo(network_interface='neutron',
+            driver='pxe_ipmitool', name=name, type='baremetal')
+        obj = Node(name, parent_type='global-system-config',
+                   fq_name=['default-global-system-config', name],
+                   node_type='baremetal', bms_info=bms_info,
+                   hostname=name)
+        return self._vnc.node_create(obj)
+
+    def delete_node(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting node %s' % kwargs)
+        return self._vnc.node_delete(**kwargs)
+
+    def add_node_profile(self, node_name, node_profile_name):
+        node_obj = self._vnc.node_read(fq_name=['default-global-system-config',
+                                                node_name])
+        np_fqname = ['default-global-system-config', node_profile_name]
+        np_obj = self._vnc.node_profile_read(fq_name=np_fqname)
+        node_obj.add_node_profile(np_obj)
+        self._vnc.node_update(node_obj)
+
+    def create_card(self, name, label, interfaces):
+        ports = [PortInfoType(name=interface, labels=[label])
+                 for interface in interfaces]
+        obj = Card(name=name, interface_map=InterfaceMapType(port_info=ports))
+        return self._vnc.card_create(obj)
+
+    def create_hardware(self, name):
+        obj = Hardware(name=name)
+        return self._vnc.hardware_create(obj)
+
+    def add_card(self, card_name, hardware_name):
+        card_obj = self._vnc.card_read(fq_name=[card_name])
+        hw_obj = self._vnc.hardware_read(fq_name=[hardware_name])
+        hw_obj.add_card(card_obj)
+        self._vnc.hardware_update(hw_obj)
+
+    def create_node_profile(self, name, vendor, np_type):
+        obj = NodeProfile(name=name, node_profile_type=np_type,
+                          node_profile_vendor=vendor)
+        return self._vnc.node_profile_create(obj)
+
+    def add_hardware(self, hardware_name, node_profile_name):
+        hw_obj = self._vnc.hardware_read(fq_name=[hardware_name])
+        np_fqname = ['default-global-system-config', node_profile_name]
+        np_obj = self._vnc.node_profile_read(fq_name=np_fqname)
+        np_obj.add_hardware(hw_obj)
+        self._vnc.node_profile_update(np_obj)
+
+    def delete_node_profile(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting node profile %s' % kwargs)
+        return self._vnc.node_profile_delete(**kwargs)
+
+    def delete_hardware(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting hardware %s' % kwargs)
+        return self._vnc.hardware_delete(**kwargs)
+
+    def delete_card(self, **kwargs):
+        '''
+            :param fq_name : fqname of the object (list)
+            :param fq_name_str : fqname of the object in string notation
+            :param id : uuid of the object
+        '''
+        self._log.debug('Deleting card %s' % kwargs)
+        return self._vnc.card_delete(**kwargs)
+
 class LBFeatureHandles:
     __metaclass__ = Singleton
 

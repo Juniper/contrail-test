@@ -360,6 +360,19 @@ test_configuration:
               password: password
               vendor: Juniper
               device_family: qfx
+          provisioning_network:
+            ip_subnet: 192.168.168.0/24
+            default_gateway: 192.168.168.1
+            dhcp_relay_server:
+              - 192.168.168.1
+            vlan_tag: 678
+          ztp:
+            5c1s5-node1-server:
+            - name: enp129s0f0
+              mac_address: 90:e2:ba:50:ad:f8
+              tor: 5c1-qfx3
+              tor_port: xe-0/0/39
+              switch_id: e4:fc:82:38:83:40
     bms_lcm_config:
       ironic_provision_vn:
         name: ironic-provision

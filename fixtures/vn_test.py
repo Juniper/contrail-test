@@ -135,6 +135,7 @@ class VNFixture(fixtures.Fixture):
         self.pbb_etree_enable = kwargs.get('pbb_etree_enable', None)
         self.layer2_control_word = kwargs.get('layer2_control_word', None)
         self.address_allocation_mode= kwargs.get('address_allocation_mode', None)
+        self.virtual_network_category = kwargs.get('virtual_network_category', None)
         self.ip_fabric = kwargs.get('ip_fabric', None)
         self.max_flows = max_flows
 
@@ -389,6 +390,7 @@ class VNFixture(fixtures.Fixture):
                     ipam = self.vnc_lib_h.network_ipam_read(
                         fq_name=self.ipam_fq_name)
                     self.api_vn_obj.set_address_allocation_mode('flat-subnet-only')
+                    self.api_vn_obj.set_virtual_network_category(self.virtual_network_category)
                     self.api_vn_obj.add_network_ipam(ipam, VnSubnetsType([]))
 
                     vni_obj_properties = self.api_vn_obj.get_virtual_network_properties(
@@ -440,7 +442,9 @@ class VNFixture(fixtures.Fixture):
         self.create()
 
     def create(self):
-        self.project_obj = self.connections.vnc_lib_fixture.get_project_obj()
+        project_fqname = [self.domain_name, self.project_name]
+        self.project_obj = self.connections.vnc_lib_fixture.get_project_obj(
+            project_fqname)
         if self.uuid:
             return self.read()
         if self.inputs.is_gui_based_config():

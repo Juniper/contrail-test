@@ -831,6 +831,8 @@ class TestInputs(object):
             fabric_dict = dict()
             fabric_dict['namespaces'] = fabric.get('namespaces')
             fabric_dict['credentials'] = fabric.get('credentials')
+            fabric_dict['provisioning_network'] = fabric.get('provisioning_network')
+            fabric_dict['ztp'] = fabric.get('ztp')
             self.fabrics.append(fabric_dict)
 
     def _process_qos_data_yml(self, host_ip):
