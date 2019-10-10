@@ -29,9 +29,6 @@ class ContrailStatusChecker(object):
         failed_services = defaultdict(dict)
         for host in status_dict:
             for service in status_dict[host]:
-                if service == 'dns':
-                    self.inputs.logger.info("Skipping dns service check until bug 1801195 gets fixed")
-                    continue
                 if status_dict[host][service]['status'] != 'active' and \
                    status_dict[host][service]['status'] != 'backup':
                     failed_services[host][service] = dict(status_dict[host][service])
