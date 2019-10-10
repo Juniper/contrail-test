@@ -52,6 +52,17 @@ try:
                 'The following are the stacks currently : %s' % stacks_list)
         # end test_heat_stacks_list
 
+        @test.attr(type=['ci_sanity_WIP'])
+        @preposttest_wrapper
+        def test_vm_creation(self):
+            '''
+            Validate basic heat function, by creating couple VM & ping traffic
+            between them
+            '''
+            vn, _ = self.config_vn(stack_name='vn')
+            _, vm1 = self.config_vm(vn)
+            _, vm2 = self.config_vm(vn)
+            assert vm1.ping_with_certainty(vm2.vm_ip, expectation=True)
 
         def transit_vn_with_left_right_svc(self, left_svcs, right_svcs):
             '''
