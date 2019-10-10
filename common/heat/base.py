@@ -164,6 +164,8 @@ class BaseHeatTest(test_v1.BaseTestCase_v1):
         env['parameters']['vm_name'] = get_random_name(
             env['parameters']['vm_name'])
         env['parameters']['net_id'] = vn.vn_id
+        env['parameters']['image'] = self.inputs.get_ci_image() or \
+                env['parameters']['image']
         vm_hs_obj = self.config_heat_obj(stack_name, template, env)
         vm_fix = self.useFixture(VMFixture(project_name=self.inputs.project_name,
                                            vn_obj=vn.obj, vm_name=str(env['parameters']['vm_name']), connections=self.connections))
