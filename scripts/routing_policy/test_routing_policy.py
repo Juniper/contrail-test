@@ -101,6 +101,55 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         assert self.verify_policy_in_control(left_vn_fixture, left_vm_fixture, search_ip = str(right_vm_fixture.vm_ip), search_value = '55555')
         assert left_vm_fixture.ping_with_certainty(right_vm_fixture.vm_ip)
 
+    @test.attr(type=['sanity'])
+    @preposttest_wrapper
+    def test_rp_secondary_routes(self):
+        '''
+        Maintainer: vageesant@juniper.net
+        Description: CEM-6735 - Enhanced import policy extended to MP-BGP route type
+        To verify: routing-policy to change routing-parameters for secondary routes ( routes from External Devices )
+        1. Create VN and add MXs route-target to VN , to import route from MX into VN.
+        2. Retrieve the local-preference advertised by MX.
+        3. Create routing-policy to change local-preference and attach to VN
+        4. Verify updated routing-policy is applied to secondary routes from MX and local-preference value is set to new value mentioned through routing-policy.
+        '''
+        vm1_name = get_random_name('vm_private')
+        vn1_name = get_random_name('vn_private')
+        vn1_subnets = [get_random_cidr()]
+        self.allow_default_sg_to_allow_all_on_project(self.inputs.project_name)
+        vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
+        mx_rt = self.inputs.mx_rt
+        try:
+           router_asn = self.inputs.bgp_asn
+        except:
+           router_asn = 64512
+        vn1_fixture.add_route_target(routing_instance_name=vn1_fixture.ri_name,
+                                    router_asn=router_asn, route_target_number=mx_rt)
+        vn1_fixture.verify_on_setup()
+        vm1_fixture = self.create_vm(vn1_fixture, vm1_name,
+                                         image_name='ubuntu')
+        vm1_fixture.wait_till_vm_is_up()
+        initial_local_pref = -1
+        new_local_pref     = -1
+        for cn in self.inputs.bgp_control_ips:
+            cn_entries = self.cn_inspect[cn].get_cn_route_table_entry(prefix="0.0.0.0/0",table="inet.0",ri_name=vn1_fixture.ri_name)
+            if cn_entries:
+               initial_local_pref = int(cn_entries[0]['local_preference'])
+        if initial_local_pref == -1:
+           assert False,"Default route 0.0.0.0/0 is not advertised by MX.Check the MX routing-instance configurations."
+        config_dicts = {'vn_fixture':vn1_fixture, 'from_term':'protocol','sub_from':'bgp','to_term':'local-preference','sub_to':initial_local_pref + 10}
+        rp = self.configure_term_routing_policy(config_dicts)
+        time.sleep(10)
+        for cn in self.inputs.bgp_control_ips:
+            cn_entries = self.cn_inspect[cn].get_cn_route_table_entry(prefix="0.0.0.0/0",table="inet.0",ri_name=vn1_fixture.ri_name)
+            if cn_entries:
+               new_local_pref = int(cn_entries[0]['local_preference'])
+        self.logger.info("Old local-preference: %d , New local-preference: %d"%(initial_local_pref,new_local_pref))
+        if new_local_pref != initial_local_pref + 10:
+           assert False,"Error: Routing-Policy not applied on Secondary routes from MX and Local Preference is not updated"
+        self.logger.info("PASS: routing-policy is applied correctly for secondary-routes from MX")
+
+
     @preposttest_wrapper
     def test_rp_bgpaas(self):
         '''
