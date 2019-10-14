@@ -544,6 +544,8 @@ class TestInputs(object):
         self.bgp_port = contrail_configs.get('CONTROL_INTROSPECT_PORT') or '8083'
         self.dns_port = contrail_configs.get('DNS_INTROSPECT_PORT') or '8092'
         self.k8s_port = contrail_configs.get('K8S_INTROSPECT_PORT') or '8108'
+        self.bgp_asn  = contrail_configs.get('BGP_ASN') or 64512
+        self.enable_4byte_as = contrail_configs.get('ENABLE_4BYTE_AS') or False
         self.agent_port = '8085'
         self.api_server_ip = contrail_configs.get('CONFIG_API_VIP')
         self.analytics_api_ip = contrail_configs.get('ANALYTICS_API_VIP')
