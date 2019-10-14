@@ -78,3 +78,93 @@ class TestPodScale(BaseK8sTest):
         assert pod2.verify_on_setup()
         assert pod1.ping_to_ip(pod2.pod_ip, expectation=expectation)
     # end test_pod_with_kube_manager_restart
+
+    @test.attr(type=['openshift_1'])
+    @preposttest_wrapper
+    def test_pod_with_node_reboot_openshiftcontroller(self):
+        '''
+        Verify setup of 2 PODs created in 2 different namespace
+        Test ping between pods
+        Ping should pass
+        Reboot Openshift Controller
+        Re-verify setup of 2 PODs across 2 different namespace
+        Re-verify test ping between pods
+        Ping should pass
+        '''
+        expectation = True
+        namespace1 = self.setup_namespace()
+        pod1 = self.setup_busybox_pod(namespace=namespace1.name)
+        assert pod1.verify_on_setup()
+        namespace2 = self.setup_namespace()
+        pod2 = self.setup_busybox_pod(namespace=namespace2.name)
+        assert pod2.verify_on_setup()
+        assert pod1.ping_to_ip(pod2.pod_ip, expectation=expectation)
+        os_node = self.inputs.k8s_master_ip
+        # Reboot the node
+        self.inputs.reboot(os_node)
+        time.sleep(45)
+        # Verify after reboot
+        assert pod1.verify_on_setup()
+        assert pod2.verify_on_setup()
+        assert pod1.ping_to_ip(pod2.pod_ip, expectation=expectation)
+    # end test_pod_with_node_reboot_openshiftcontroller
+
+    @test.attr(type=['openshift_1'])
+    @preposttest_wrapper
+    def test_pod_with_node_reboot_compute(self):
+        '''
+        Verify setup of 2 PODs created in 2 different namespace
+        Test ping between pods
+        Ping should pass
+        Reboot Compute
+        Re-verify setup of 2 PODs across 2 different namespace
+        Re-verify test ping between pods
+        Ping should pass
+        '''
+        expectation = True
+        namespace1 = self.setup_namespace()
+        pod1 = self.setup_busybox_pod(namespace=namespace1.name)
+        assert pod1.verify_on_setup()
+        namespace2 = self.setup_namespace()
+        pod2 = self.setup_busybox_pod(namespace=namespace2.name)
+        assert pod2.verify_on_setup()
+        assert pod1.ping_to_ip(pod2.pod_ip, expectation=expectation)
+        compute_node  = self.inputs.k8s_slave_ips[0]
+        # Reboot the node
+        self.inputs.reboot(compute_node)
+        time.sleep(70)
+        # Verify after reboot
+        assert pod1.verify_on_setup()
+        assert pod2.verify_on_setup()
+        assert pod1.ping_with_certainty(pod2.pod_ip, expectation=expectation)
+    # end test_pod_with_node_reboot_compute
+
+    @test.attr(type=['openshift_1'])
+    @preposttest_wrapper
+    def test_pod_with_node_reboot_contrailcontroller(self):
+        '''
+        Verify setup of 2 PODs created in 2 different namespace
+        Test ping between pods
+        Ping should pass
+        Reboot Contrail Controller (This test only for HA setup with event on non-test container node)
+        Re-verify setup of 2 PODs across 2 different namespace
+        Re-verify test ping between pods
+        Ping should pass
+        '''
+        expectation = True
+        namespace1 = self.setup_namespace()
+        pod1 = self.setup_busybox_pod(namespace=namespace1.name)
+        assert pod1.verify_on_setup()
+        namespace2 = self.setup_namespace()
+        pod2 = self.setup_busybox_pod(namespace=namespace2.name)
+        assert pod2.verify_on_setup()
+        assert pod1.ping_to_ip(pod2.pod_ip, expectation=expectation)
+        control_node = self.inputs.kube_manager_ips[1]
+        # Reboot the node
+        self.inputs.reboot(control_node)
+        time.sleep(45)
+        # Verify after reboot
+        assert pod1.verify_on_setup()
+        assert pod2.verify_on_setup()
+        assert pod1.ping_to_ip(pod2.pod_ip, expectation=expectation)
+    # end test_pod_with_node_reboot_contrailcontroller
