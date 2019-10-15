@@ -87,6 +87,24 @@
     },
     {
       "key": {
+        "uuid": "1808917a_cc04a344",
+        "filename": "serial_scripts/k8s_scripts/test_pod.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 132,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-15T11:10:51Z",
+      "side": 1,
+      "message": "\u003e Is the intention to reboot the compute where the pods are launched? then use,\n\u003e \n\u003e  - compute_node \u003d self.inputs.k8s_slave_ips[0]\n\u003e  - self.inputs.reboot(compute_node)\n\u003e  + compute1 \u003d pod1.nodename\n\u003e  + compute2 \u003d pod2.nodename\n\u003e  + self.inputs.reboot(compute1)\n\u003e  + self.inputs.reboot(compute2)\n\nInstead of \"nodename\" attribute, need to use either \"host_ip\" or \"compute_ip\" attribute of PodFixture to obtain compute node IP",
+      "parentUuid": "6a5bd884_0b603b3c",
+      "revId": "940b22e519c0dc320d2c522df88b165f8aba2dfd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "51eabff2_09a962e3",
         "filename": "serial_scripts/k8s_scripts/test_pod.py",
         "patchSetId": 1
