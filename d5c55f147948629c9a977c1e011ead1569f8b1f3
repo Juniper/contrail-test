@@ -22,6 +22,30 @@
       "revId": "d5c55f147948629c9a977c1e011ead1569f8b1f3",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ad69adbf_77c77a90",
+        "filename": "scripts/heat/test_heat.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-15T10:24:51Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "6b915706_4987acad",
+      "range": {
+        "startLine": 55,
+        "startChar": 26,
+        "endLine": 55,
+        "endChar": 32
+      },
+      "revId": "d5c55f147948629c9a977c1e011ead1569f8b1f3",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     }
   ]
 }
