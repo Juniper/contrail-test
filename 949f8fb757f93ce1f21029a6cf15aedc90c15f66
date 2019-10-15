@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "efe38a36_50ec6121",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-15T07:36:03Z",
+      "side": 1,
+      "message": "from tcutils.util import skip_because, retry",
+      "revId": "949f8fb757f93ce1f21029a6cf15aedc90c15f66",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "866fc774_eb1dbfd3",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 82,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-15T07:36:03Z",
+      "side": 1,
+      "message": "need to import retry, see above comment",
+      "revId": "949f8fb757f93ce1f21029a6cf15aedc90c15f66",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "3b36f4c6_680ce4d8",
+        "filename": "serial_scripts/asn4/test_asn4.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 87,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-15T07:36:03Z",
+      "side": 1,
+      "message": "Pls use self.connections.get_control_node_inspect_handle(), which handles other parameters like port \u0026 protocol. Avoid directly calling ControlNodeInspect().",
+      "revId": "949f8fb757f93ce1f21029a6cf15aedc90c15f66",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
