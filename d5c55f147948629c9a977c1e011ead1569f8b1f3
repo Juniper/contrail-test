@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6b915706_4987acad",
+        "filename": "scripts/heat/test_heat.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 55,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2019-10-15T09:30:36Z",
+      "side": 1,
+      "message": "this TC is required for CI sanity, add the ci-sanity tag.\nAlso let\u0027s make sure that Vinay \u0026 team has the required template before getting this merged.\nIt would be better to test this on ci-infra.",
+      "range": {
+        "startLine": 55,
+        "startChar": 26,
+        "endLine": 55,
+        "endChar": 32
+      },
+      "revId": "d5c55f147948629c9a977c1e011ead1569f8b1f3",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
