@@ -1,0 +1,140 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "b0dea56f_1465512b",
+        "filename": "serial_scripts/k8s_scripts/test_pod.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 94,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-15T09:25:40Z",
+      "side": 1,
+      "message": "Suggestion, feel free to ignore.\nVariable \"expectation\" never modified, better coding style would be,\nassert pod1.ping_to_ip(pod2.pod_ip)",
+      "revId": "940b22e519c0dc320d2c522df88b165f8aba2dfd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "43b240eb_a105b075",
+        "filename": "serial_scripts/k8s_scripts/test_pod.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 105,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-15T09:25:40Z",
+      "side": 1,
+      "message": "Sleep based waiting, may not account of variability in time taken for reboot or services to come up. Pls consider using method verify_non_contrail_service_state from contrail_test_init.py, like shown below, to wait for the services to become active.\n\nstatus, srvs \u003d self.inputs. verify_non_contrail_service_state(os_node, [\u0027kubelet\u0027, \u0027docket\u0027])\nassert status, \"Services failed %s\" % srvs",
+      "revId": "940b22e519c0dc320d2c522df88b165f8aba2dfd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "aa5519f7_ca2d5089",
+        "filename": "serial_scripts/k8s_scripts/test_pod.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 112,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-15T09:25:40Z",
+      "side": 1,
+      "message": "In kubernetes \u0026 openshift nested mode, slave nodes IP are not populated in input file (TTBOMK), test container runs in undercloud and cannot reach overlay-ip. This test should be skipped in nested-mode env. Add skip clause\n\n+ @skip_because(slave_orchestrator\u003d\u0027kubernetes\u0027)\n  @test.attr(type\u003d[\u0027openshift_1\u0027])\n  ...",
+      "revId": "940b22e519c0dc320d2c522df88b165f8aba2dfd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "11fa940b_1951d6e9",
+        "filename": "serial_scripts/k8s_scripts/test_pod.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 124,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-15T09:25:40Z",
+      "side": 1,
+      "message": "See suggestion above",
+      "revId": "940b22e519c0dc320d2c522df88b165f8aba2dfd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "6a5bd884_0b603b3c",
+        "filename": "serial_scripts/k8s_scripts/test_pod.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 132,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-15T09:25:40Z",
+      "side": 1,
+      "message": "Is the intention to reboot the compute where the pods are launched? then use,\n\n - compute_node \u003d self.inputs.k8s_slave_ips[0]\n - self.inputs.reboot(compute_node)\n + compute1 \u003d pod1.nodename\n + compute2 \u003d pod2.nodename\n + self.inputs.reboot(compute1)\n + self.inputs.reboot(compute2)",
+      "revId": "940b22e519c0dc320d2c522df88b165f8aba2dfd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "51eabff2_09a962e3",
+        "filename": "serial_scripts/k8s_scripts/test_pod.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 135,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-15T09:25:40Z",
+      "side": 1,
+      "message": "See above comment regarding sleep usage",
+      "revId": "940b22e519c0dc320d2c522df88b165f8aba2dfd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "9774cdf9_80a5d171",
+        "filename": "serial_scripts/k8s_scripts/test_pod.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 154,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-15T09:25:40Z",
+      "side": 1,
+      "message": "See suggestion above",
+      "revId": "940b22e519c0dc320d2c522df88b165f8aba2dfd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "4130ed3a_7644732e",
+        "filename": "serial_scripts/k8s_scripts/test_pod.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 165,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-15T09:25:40Z",
+      "side": 1,
+      "message": "See above comment regarding sleep usage",
+      "revId": "940b22e519c0dc320d2c522df88b165f8aba2dfd",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
