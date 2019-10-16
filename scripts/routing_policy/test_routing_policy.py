@@ -113,6 +113,10 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         3. Create routing-policy to change local-preference and attach to VN
         4. Verify updated routing-policy is applied to secondary routes from MX and local-preference value is set to new value mentioned through routing-policy.
         '''
+         if (('MX_GW_TEST' in os.environ) and (
+                os.environ.get('MX_GW_TEST') == '1')):
+                raise self.skipTest(
+                    'Skipping Test. External MX required')
         vm1_name = get_random_name('vm_private')
         vn1_name = get_random_name('vn_private')
         vn1_subnets = [get_random_cidr()]
