@@ -1,0 +1,310 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7ff90faf_5e970b64",
+        "filename": "common/contrail_test_init.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 624,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-17T14:04:43Z",
+      "side": 1,
+      "message": "Better use test_configs.get(\u0027data_sw_ip\u0027) \u0026 test_configs.get(\u0027data_sw_compute_bond_interface\u0027), since according to sample file, type of these attributes are string \u0026 list respectively.",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "43749953_e8ee5f3f",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-17T14:04:43Z",
+      "side": 1,
+      "message": "Add a description, describing the objective \u0026 steps of the test",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "9a8955b0_1951922a",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-17T14:04:43Z",
+      "side": 1,
+      "message": "Better to add a skip_because decorator, see tcutils/utils.py",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "d820cf31_25cfc31f",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-17T14:04:43Z",
+      "side": 1,
+      "message": "What happens if validate_bondVifListStatus and/or validate_bondStatus fail, can test still continue? if not you may want to assert on failure.\n\nSuggestion: It is better to fail the test early that to proceed and fail later, make debugging failures much easier.",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "8924da3c_b7d22bef",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-17T14:04:43Z",
+      "side": 1,
+      "message": "Better to use assert",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "dfcb5e88_ded52214",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-17T14:04:43Z",
+      "side": 1,
+      "message": "Add a description, describing the objective \u0026 steps of the test",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "e71fd653_9588e10c",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-17T14:04:43Z",
+      "side": 1,
+      "message": "Better to add a skip_because decorator, see tcutils/utils.py",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "e365c5e9_000e4e37",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-17T14:04:43Z",
+      "side": 1,
+      "message": "Are lines 53-59 needed? Doesn\u0027t method restart_service already wait for service to come up?",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "dc8a33e4_97a302f2",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-17T14:04:43Z",
+      "side": 1,
+      "message": "What happens if validate_bondVifListStatus and/or validate_bondStatus fail, can test still continue? if not you may want to assert on failure.",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "85d2b1d6_ef8e4593",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-17T14:04:43Z",
+      "side": 1,
+      "message": "Better to use assert",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "47d26034_5cc7a137",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 81,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-17T14:04:43Z",
+      "side": 1,
+      "message": "Add a description, describing the objective \u0026 steps of the test",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "d99052fd_94abc2d8",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-17T14:04:43Z",
+      "side": 1,
+      "message": "Better to add a skip_because decorator, see tcutils/utils.py",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f447e8de_e81d1071",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-17T14:04:43Z",
+      "side": 1,
+      "message": "Are parameters \"data_sw_ip\" \u0026 \"data_sw_compute_bond_interface\" always defined in DPDK env? if not move this test out into separate class which defines \"is_test_applicable\" method, which would check for presence of these attributes.\nPls see https://github.com/Juniper/contrail-test/blob/6869ddae5f19d0640babbe8afb93caacceb0d056/scripts/heat/test_heat.py#L437",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "81aeb96f_e8994447",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 101,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-17T14:04:43Z",
+      "side": 1,
+      "message": "Should push a undo routine here or use try-finally construct, to restore the MX settings incase the test doesn\u0027t complete successfully",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "3ec12ba4_280adbf7",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 107,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-17T14:04:43Z",
+      "side": 1,
+      "message": "What happens if validate_bondVifListStatus and/or validate_bondStatus fail, can test still continue? if not you may want to assert on failure.",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f3ef903c_39c57ab5",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 117,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-17T14:04:43Z",
+      "side": 1,
+      "message": "Shouldn\u0027t the test assert if the alarm wasn\u0027t generated?",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "112c87d2_2141c0c3",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 134,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-17T14:04:43Z",
+      "side": 1,
+      "message": "Better to use assert",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "1fcd2066_6a420b49",
+        "filename": "tcutils/agent/vna_introspect_utils.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 706,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-17T14:04:43Z",
+      "side": 1,
+      "message": "Suggestion, feel free to ignore.\nmethods \"validate_bondVifListStatus\" \u0026 \"validate_bondStatus\" seems to differ in only the first 5 lines and could be folded into a single method by taking additional parameter. Saves maintenance effort.\n\ndef validate_bondStatus(self, to_check, bondStatus\u003d\u0027UP\u0027, slaveStatus\u003d\u0027UP\u0027):\n    if to_check \u003d\u003d \u0027VifList\u0027:\n        vn1 \u003d self.dict_get(\u0027Snh_KInterfaceReq?\u0027)\n        elem \u003d vn1.getchildren()[0]\n        var \u003d elem.xpath(\u0027./list/KInterfaceInfo\u0027)\n    else:\n        vnl \u003d self.dict_get(\u0027Snh_ItfReq??\u0027)\n        elem \u003d vnl.getchildren()[0]\n        elem \u003d elem.getchildren()[0]\n        var \u003d elem.xpath(\u0027./list/ItfSandeshData\u0027)\n...",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
