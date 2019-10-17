@@ -1123,9 +1123,10 @@ def skip_because(*args, **kwargs):
                     raise testtools.TestCase.skipException(msg)
 
             if 'dpdk_cluster' in kwargs:
-                if self.inputs.is_dpdk_cluster:
+                val = kwargs['dpdk_cluster']
+                if self.inputs.is_dpdk_cluster == val:
                     skip = True
-                    msg = "Skipped as test is not supported dpdk_cluster " 
+                    msg = "Skipped as test is not supported if dpdk_cluster=%s " % val 
                     raise testtools.TestCase.skipException(msg)
 
             if 'ssl_enabled' in kwargs:
