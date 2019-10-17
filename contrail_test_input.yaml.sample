@@ -132,6 +132,10 @@ test_configuration:
     fabric_gw:
         sw1: 2.2.2.2
     ns_agilio_vrouter: True
+    data_sw_ip : 10.10.10.10
+    data_sw_compute_bond_interface : [ae3]
+
+
     traffic_generator:
         ixia_linux_host_ip:
         ixia_host_ip:
