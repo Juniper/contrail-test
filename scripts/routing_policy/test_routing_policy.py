@@ -102,6 +102,7 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         assert left_vm_fixture.ping_with_certainty(right_vm_fixture.vm_ip)
 
     @test.attr(type=['sanity'])
+    @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_rp_secondary_routes(self):
         '''
@@ -113,6 +114,7 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         3. Create routing-policy to change local-preference and attach to VN
         4. Verify updated routing-policy is applied to secondary routes from MX and local-preference value is set to new value mentioned through routing-policy.
         '''
+
         vm1_name = get_random_name('vm_private')
         vn1_name = get_random_name('vn_private')
         vn1_subnets = [get_random_cidr()]
