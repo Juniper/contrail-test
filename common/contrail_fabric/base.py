@@ -205,7 +205,7 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
             devices = set()
             for interface in details['interfaces']:
                 devices.add(interface['tor'])
-            if devices.difference(device_names):
+            if device_names and devices.difference(device_names):
                 continue
             if len(details['interfaces']) >= no_of_interfaces:
                 interfaces_filtered.add(name)

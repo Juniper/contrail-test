@@ -269,8 +269,8 @@ class FabricUtils(object):
             return execution_id, status
         return execution_id, None
 
-    def fetch_hardware_inventory(self, devices, wait_for_finish=True):
-        payload = dict()
+    def fetch_hardware_inventory(self, fabric, devices, wait_for_finish=True):
+        payload = {'fabric_fq_name': fabric.fq_name}
         fq_name = ['default-global-system-config', 'hardware_inventory_template']
         device_list = [device.uuid for device in devices]
         execution_id = self.vnc_h.execute_job(fq_name, payload, device_list)

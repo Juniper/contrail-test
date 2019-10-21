@@ -98,7 +98,7 @@ class TestSPStyleFabric(BaseFabricTest):
                vlan_id=10, interfaces=bms2_intf)
         self.do_ping_test(bms1, bms2.bms_ip)
         new_ip = str(IPAddress(IPNetwork(vn1.get_cidrs()[0]).value + 8))
-        bms2.assign_static_ip(new_ip)
+        bms2.assign_static_ip(new_ip, flush=True)
         self.do_ping_test(bms1, new_ip, expectation=False)
 
     @skip_because(function='filter_bms_nodes', bms_type='link_aggregation')
@@ -639,7 +639,7 @@ class TestFabricOverlay(TestSPStyleFabric):
                tor_port_vlan_tag=20, interfaces=bms2_intf)
         self.do_ping_test(bms1, bms2.bms_ip)
         new_ip = str(IPAddress(IPNetwork(vn1.get_cidrs()[0]).value + 8))
-        bms2.assign_static_ip(new_ip)
+        bms2.assign_static_ip(new_ip, flush=True)
         self.do_ping_test(bms1, new_ip, expectation=False)
 
     @preposttest_wrapper

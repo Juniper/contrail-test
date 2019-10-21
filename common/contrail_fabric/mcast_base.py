@@ -600,7 +600,6 @@ for i in range(0,$numgrp):
 
 
     def disable_snooping(self):
-
         tors_info_list = self.get_available_devices('tor')
         tor_params = tors_info_list[0]
         mgmt_ip=tor_params['mgmt_ip']
@@ -617,7 +616,6 @@ for i in range(0,$numgrp):
         mx_handle.disconnect()
 
     def enable_snooping(self):
-
         tors_info_list = self.get_available_devices('tor')
         tor_params = tors_info_list[0]
         mgmt_ip=tor_params['mgmt_ip']
@@ -639,7 +637,7 @@ for i in range(0,$numgrp):
         '''
         available = []
         for (device, device_dict) in self.inputs.physical_routers_data.iteritems():
-            if (device_dict['type'] == device_type) and (device_dict['role'] == role):
+            if (device_dict.get('type') == device_type) and (device_dict['role'] == role):
                 available.append(device_dict)
         return available
     # end get_available_devices
@@ -717,6 +715,14 @@ class Evpnt6TopologyBase(Evpnt6base):
         return vm_fixtures
 
 class Evpnt6MultiVnBase(Evpnt6base):
+
+    def is_test_applicable(self):
+        result, msg = super(Evpnt6base, self).is_test_applicable()
+        if result:
+            msg = 'Need atleast 3 compute nodes'
+            if len(self.connections.orch.get_hosts()) > 2:
+                return True, None
+        return False, msg
 
     def configure_evpn_mvn_topology(self,vxlan,vn_count):
         ''' Configure vxlan_id explicitly with vn's forwarding mode as l2 and send traffic between vm's using this interface and check traffic is coming with
