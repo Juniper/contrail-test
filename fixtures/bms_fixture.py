@@ -527,9 +527,9 @@ class BMSFixture(fixtures.Fixture):
             if not result:
                 return (result, output)
         if self.bms_ip6:
-            result, output = self._run_dhclient(af='v6',
-                timeout=timeout,
-                expectation=expectation)
+#            result, output = self._run_dhclient(af='v6',
+#                timeout=timeout,
+#                expectation=expectation)
             # Workaround to assign gw ip manually for v6
             self.assign_static_ip(v6_gw_ip=self.bms_gw_ip6)
         return (result, output)
