@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "31087df0_1fdd01b7",
+        "filename": "common/contrail_test_init.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 624,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-10-22T07:29:12Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "7ff90faf_5e970b64",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "43749953_e8ee5f3f",
         "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
         "patchSetId": 1
@@ -33,6 +51,24 @@
       "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "43e668cd_a9741e3c",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-10-22T07:29:12Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "43749953_e8ee5f3f",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     },
     {
       "key": {
@@ -53,6 +89,24 @@
     },
     {
       "key": {
+        "uuid": "273e14be_1bc63ca8",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-10-22T07:29:12Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "9a8955b0_1951922a",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "d820cf31_25cfc31f",
         "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
         "patchSetId": 1
@@ -67,6 +121,24 @@
       "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "763b104c_ee6c8789",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-10-22T07:29:12Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "d820cf31_25cfc31f",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     },
     {
       "key": {
@@ -87,6 +159,24 @@
     },
     {
       "key": {
+        "uuid": "f4fe5ecc_4fd589ec",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-10-22T07:29:12Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "8924da3c_b7d22bef",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "dfcb5e88_ded52214",
         "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
         "patchSetId": 1
@@ -101,6 +191,24 @@
       "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "dc5920b6_11b19f0e",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-10-22T07:29:12Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "dfcb5e88_ded52214",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     },
     {
       "key": {
@@ -121,6 +229,24 @@
     },
     {
       "key": {
+        "uuid": "f3b9df0e_5596fc12",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-10-22T07:29:12Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "e71fd653_9588e10c",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "e365c5e9_000e4e37",
         "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
         "patchSetId": 1
@@ -135,6 +261,24 @@
       "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "d3949969_9f5e4d0c",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 53,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-10-22T07:29:12Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "e365c5e9_000e4e37",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     },
     {
       "key": {
@@ -155,6 +299,24 @@
     },
     {
       "key": {
+        "uuid": "a53f6c64_2355345b",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-10-22T07:29:12Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "dc8a33e4_97a302f2",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "85d2b1d6_ef8e4593",
         "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
         "patchSetId": 1
@@ -169,6 +331,24 @@
       "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "996b5300_ef7233d6",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 74,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-10-22T07:29:12Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "85d2b1d6_ef8e4593",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     },
     {
       "key": {
@@ -189,6 +369,24 @@
     },
     {
       "key": {
+        "uuid": "11b7769b_3b02727a",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 81,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-10-22T07:29:12Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "47d26034_5cc7a137",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "d99052fd_94abc2d8",
         "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
         "patchSetId": 1
@@ -206,6 +404,24 @@
     },
     {
       "key": {
+        "uuid": "d05c9fd7_38819902",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-10-22T07:29:12Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "d99052fd_94abc2d8",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "f447e8de_e81d1071",
         "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
         "patchSetId": 1
@@ -217,6 +433,24 @@
       "writtenOn": "2019-10-17T14:04:43Z",
       "side": 1,
       "message": "Are parameters \"data_sw_ip\" \u0026 \"data_sw_compute_bond_interface\" always defined in DPDK env? if not move this test out into separate class which defines \"is_test_applicable\" method, which would check for presence of these attributes.\nPls see https://github.com/Juniper/contrail-test/blob/6869ddae5f19d0640babbe8afb93caacceb0d056/scripts/heat/test_heat.py#L437",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "383909cf_db72bbd0",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-10-22T07:29:12Z",
+      "side": 1,
+      "message": "I have added a check to see if these values are populated or not ,so that i dont need to move this to a different class.",
+      "parentUuid": "f447e8de_e81d1071",
       "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
@@ -240,6 +474,24 @@
     },
     {
       "key": {
+        "uuid": "7b83d12e_b38c22d0",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 101,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-10-22T07:29:12Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "81aeb96f_e8994447",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "3ec12ba4_280adbf7",
         "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
         "patchSetId": 1
@@ -254,6 +506,24 @@
       "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "8ca091f9_4db0d5ab",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 107,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-10-22T07:29:12Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "3ec12ba4_280adbf7",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     },
     {
       "key": {
@@ -274,6 +544,24 @@
     },
     {
       "key": {
+        "uuid": "a1116fc6_5f616cb5",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 117,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-10-22T07:29:12Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "f3ef903c_39c57ab5",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "112c87d2_2141c0c3",
         "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
         "patchSetId": 1
@@ -288,6 +576,24 @@
       "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "eac82e18_fa5606dd",
+        "filename": "serial_scripts/dpdk/test_dpdk_bond_status.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 134,
+      "author": {
+        "id": 577
+      },
+      "writtenOn": "2019-10-22T07:29:12Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "112c87d2_2141c0c3",
+      "revId": "9df42901d88f0f746c285408cb59be4e80d73cc1",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     },
     {
       "key": {
