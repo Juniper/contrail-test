@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "37e0df44_687ee53c",
+        "filename": "scripts/routing_policy/test_routing_policy.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 171,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-10-23T10:15:13Z",
+      "side": 1,
+      "message": "router_asn \u003d self.inputs.bgp_asn",
+      "revId": "a29916661bb44801c9b28657b85f4062ffa1520c",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
