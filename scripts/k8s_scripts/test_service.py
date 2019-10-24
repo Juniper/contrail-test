@@ -245,6 +245,56 @@ class TestService(BaseK8sTest):
             lookup_str, output))
     # end test_kube_dns_lookup
 
+    @test.attr(type=['openshift_1'])
+    @preposttest_wrapper
+    def test_dns_interal_service(self):
+        '''
+        Verify inside POD, cluster internal service gets DNS resolved
+        '''
+
+        app = 'http_test'
+        labels = {'app': app}
+
+        namespace = self.setup_namespace()
+        service = self.setup_http_service(namespace=namespace.name,labels=labels)
+        pod1 = self.setup_nginx_pod(namespace=namespace.name, labels=labels)
+        pod2 = self.setup_nginx_pod(namespace=namespace.name, labels=labels)
+        pod3 = self.setup_busybox_pod(namespace=namespace.name)
+
+        assert self.verify_nginx_pod(pod1)
+        assert self.verify_nginx_pod(pod2)
+        assert pod3.verify_on_setup()
+        assert service.verify_on_setup()
+
+        lookup_str = "nslookup %s.%s.svc.cluster.local" % (service.name, namespace.name)
+        output = pod3.run_cmd(lookup_str)
+        msg = 'DNS resolution failed'
+        assert ('connection timed out' not in output) and ('nslookup: can\'t resolve' not in output), msg
+        self.logger.info('DNS resolution check : %s passed. Output: %s' % (
+            lookup_str, output))
+    # end test_dns_interal_service
+
+    @test.attr(type=['openshift_1'])
+    @preposttest_wrapper
+    def test_dns_external_url(self):
+        '''
+        Verify inside POD, cluster external-url gets DNS resolved
+        '''
+
+        namespace = self.setup_namespace()
+        client_pod = self.setup_busybox_pod(namespace=namespace.name)
+
+        assert client_pod.verify_on_setup()
+
+        lookup_str = "nslookup %s" % (self.inputs.public_host_url)
+        output = client_pod.run_cmd(lookup_str)
+        msg = 'DNS resolution failed'
+        assert ('connection timed out' not in output) and ('nslookup: can\'t resolve' not in output), msg
+        self.logger.info('DNS resolution check : %s passed. Output: %s' % (
+            lookup_str, output))
+    # end test_dns_external_url
+
+
 # Isolated namespace classes follow
 
 class TestServiceExternalIP(BaseK8sTest):
