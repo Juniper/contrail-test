@@ -703,6 +703,91 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         return l
     # end get_vna_xmpp_connection_status
 
+
+    def validate_bondVifListStatus(self,bondStatus="UP",slaveStatus="UP"):
+
+        result = False
+        vnl = self.dict_get('Snh_KInterfaceReq?')
+        elem = vnl.getchildren()[0]
+        var = elem.xpath('./list/KInterfaceInfo')
+        l = []
+        for x in var:
+            p = elem2dict(x)
+            l.append(p)
+
+        for ele in l:
+
+            if "bond" in ele["name"]:
+                self.log.info("Its a bond interface.Name %s" %(ele["name"]))
+                if bondStatus not in ele["status"]:
+                    self.log.error('BOND interface is not active. Bond interface state %s' % (ele["active"]))
+                    return False
+
+                bondList = ele["bond_child_intf_list"]
+                bondList = bondList["list"]
+                NoofbondMembers = len(bondList)
+                count=0
+                for slave in bondList:
+                    self.log.debug('Slave details %s' %(slave))
+                    if slave["child_bond_interface_status"] == slaveStatus:
+                        count = count + 1
+                        self.log.info('Slave interface is UP. Slave interface state %s' % (slave["child_bond_interface_status"]))
+                    else:
+                        self.log.error('Slave interface is not UP. Slave interface state %s' % (slave["child_bond_interface_status"]))
+
+                if (NoofbondMembers == count) and (NoofbondMembers >=1):
+                    self.log.info('All slave members are up.No of members %d' % (count))
+                    result = True
+                else:
+                    self.log.error('All slave interfaces are not UP.')
+                    result = False
+
+        return result
+    # end validate_bondVifListStatus
+
+    def validate_bondStatus(self,bondStatus="Active",slaveStatus="UP"):
+
+        result = False
+        vnl = self.dict_get('Snh_ItfReq??')
+        elem = vnl.getchildren()[0]
+        elem = elem.getchildren()[0]
+        var = elem.xpath('./list/ItfSandeshData')
+        l = []
+        for x in var:
+            p = elem2dict(x)
+            l.append(p)
+
+        for ele in l:
+
+            if "bond" in ele["name"]:
+                self.log.info("Its a bond interface.Name %s" %(ele["name"]))
+                if bondStatus not in ele["active"]:
+                    self.log.error('BOND interface is not active. Bond interface state %s' % (ele["active"]))
+                    return False
+
+                bondList = ele["bond_interface_list"]
+                bondList = bondList["list"]
+                NoofbondMembers = len(bondList)
+                count=0
+                for slave in bondList:
+                    self.log.debug('Slave details %s' %(slave))
+                    if slave["intf_status"] == slaveStatus:
+                        count = count + 1
+                        self.log.info('Slave interface is UP. Slave interface state %s' % (slave["intf_status"]))
+                    else:
+                        self.log.error('Slave interface is not UP. Slave interface state %s' % (slave["intf_status"]))
+
+                if (NoofbondMembers == count) and (NoofbondMembers >=1):
+                    self.log.info('All slave members are up.No of members %d' % (count))
+                    result = True
+                else:
+                    self.log.error('All slave interfaces are not UP.')
+                    result = False
+
+        return result
+    # end validate_bondStatus
+
+
     def get_vna_diag_ping_res(self, src_ip='', src_port='', dst_ip='', dst_port='', proto='', vrf='', size='', count='', intv=''):
         '''
         method: Get the ping response from diag introspect

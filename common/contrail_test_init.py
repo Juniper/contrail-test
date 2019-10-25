@@ -622,6 +622,9 @@ class TestInputs(object):
         #physical_router needs the following configuration
         #    name,type,mgmt_ip,model,vendor,asn,ssh_username,ssh_password,tunnel_ip,ports
 
+        self.data_sw_ip = test_configs.get('data_sw_ip')
+        self.data_sw_compute_bond_interface = test_configs.get('data_sw_compute_bond_interface')
+
         self.physical_routers_data = test_configs.get('physical_routers',{})
         self.bms_data = test_configs.get('bms',{})
         self.bms_lcm_config = test_configs.get('bms_lcm_config',{})
