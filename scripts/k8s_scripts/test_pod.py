@@ -76,7 +76,6 @@ class TestPod(BaseK8sTest):
         assert pod1.ping_to_ip(pod2.pod_ip)
 
     # end test_change_pod_label
-    @test.attr(type=['k8s_sanity'])
     @skip_because(mx_gw = False)
     @preposttest_wrapper
     def test_pod_public_reachability_using_snat(self):
