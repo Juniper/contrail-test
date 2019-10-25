@@ -34,10 +34,9 @@ class FabricUtils(object):
         return (True, fabric)
 
     def onboard_fabric(self, fabric_dict, wait_for_finish=True,
-                       name=None, cleanup=False, enterprise_style=True):
+                       name=None, cleanup=False, enterprise_style=True, dc_asn=None):
         interfaces = {'physical': [], 'logical': []}
         devices = list()
-
         name = get_random_name(name) if name else get_random_name('fabric')
 
         fq_name = ['default-global-system-config',
@@ -61,7 +60,7 @@ class FabricUtils(object):
                    'loopback_subnets': fabric_dict['namespaces']['loopback_subnets'],
                    'management_subnets': fabric_dict['namespaces']['management_subnets'],
                    'fabric_subnets': fabric_dict['namespaces']['fabric_subnets'],
-                   'overlay_ibgp_asn': fabric_dict['namespaces']['overlay_ibgp_asn'],
+                   'overlay_ibgp_asn': dc_asn or fabric_dict['namespaces']['overlay_ibgp_asn'],
                    'fabric_asn_pool': [{"asn_max": fabric_dict['namespaces']['asn'][0]['max'],
                                        "asn_min": fabric_dict['namespaces']['asn'][0]['min']}]
                    }
@@ -101,11 +100,10 @@ class FabricUtils(object):
 
     def onboard_existing_fabric(self, fabric_dict, wait_for_finish=True,
                                 name=None, cleanup=False,
-                                enterprise_style=True):
+                                enterprise_style=True, dc_asn=None):
         interfaces = {'physical': [], 'logical': []}
         devices = list()
         name = get_random_name(name) if name else get_random_name('fabric')
-
         fq_name = ['default-global-system-config',
                    'existing_fabric_onboard_template']
         payload = {'fabric_fq_name': ["default-global-system-config", name],
@@ -115,7 +113,7 @@ class FabricUtils(object):
                    'device_auth': [{"username": cred['username'],
                                     "password": cred['password']}
                        for cred in fabric_dict['credentials']],
-                   'overlay_ibgp_asn': fabric_dict['namespaces']['asn'][0]['min'],
+                   'overlay_ibgp_asn': dc_asn or fabric_dict['namespaces']['asn'][0]['min'],
                    'management_subnets': [{"cidr": mgmt["cidr"]}
                         for mgmt in fabric_dict['namespaces']['management']],
                    'loopback_subnets': fabric_dict['namespaces'].get('loopback',
