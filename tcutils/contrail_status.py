@@ -222,7 +222,7 @@ def get_container_status(container, containers):
 def contrail_status(inputs=None, host=None, role=None, service=None,
                     debug=False, detail=False, timeout=30,
                     keyfile=None, certfile=None, cacert=None,
-                    logger=None):
+                    logger=None, refresh=False):
     status_dict = dict()
     if not inputs:
         from common import contrail_test_init
@@ -242,6 +242,8 @@ def contrail_status(inputs=None, host=None, role=None, service=None,
         service = [service] if isinstance(service, str) else service
 
     for node in host or inputs.host_ips:
+        if refresh:
+            inputs.refresh_containers(node)
         containers = inputs.get_active_containers(node)
         logger.info(node)
         status_dict[node] = dict()

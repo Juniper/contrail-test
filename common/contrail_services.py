@@ -1,4 +1,43 @@
-CONTRAIL_SERVICES_CONTAINER_MAP = {
+_CONTRAIL_SERVICES_OPENSHIFT_CONTAINER_MAP = {
+    # Config
+    'api-server': ['k8s_contrail-controller-config-api'],
+    'schema': ['k8s_contrail-controller-config-schema'],
+    'svc-monitor': ['k8s_contrail-controller-config-svcmonitor'],
+    'device-manager': ['k8s_contrail-controller-config-devicemgr'],
+    'config-rabbitmq': ['k8s_rabbitmq_contrail-configdb'],
+    'config-zookeeper': ['k8s_config-zookeeper'],
+    'config-cassandra': ['k8s_contrail-configdb'],
+    # Control
+    'control': ['k8s_contrail-controller-control_'],
+    'dns': ['k8s_contrail-controller-control-dns_'],
+    'named': ['k8s_contrail-controller-control-named_'],
+    # Analytics
+    'analytics-api':['k8s_contrail-analytics-api'],
+    'query-engine': ['k8s_contrail-analytics-query-engine'],
+    'collector': ['k8s_contrail-analytics-collector'],
+    'analytics-zookeeper': [],
+    'analytics-cassandra': ['k8s_contrail-analyticsdb'],
+    'stunnel': ['stunnel'],
+    # Vrouter
+    'agent-dpdk': [],
+    'agent': ['k8s_contrail-vrouter-agent'],
+    # Node managers
+    'vrouter-nodemgr': ['k8s_contrail-agent-nodemgr'],
+    'config-nodemgr': ['k8s_contrail-controller-config-nodemgr'],
+    'analytics-nodemgr': ['k8s_contrail-analytics-nodemgr'],
+    'control-nodemgr': ['k8s_contrail-controller-control-nodemgr'],
+    'configdb-nodemgr': ['k8s_contrail-config-database-nodemgr'],
+    'analyticsdb-nodemgr': ['k8s_contrail-analyticsdb-nodemgr'],
+    # Openshift master
+    'contrail-kube-manager': ['k8s_contrail-kube-manager'],
+    'kube-apiserver':  ['kube-apiserver'],
+    # Web UI
+    'redis': ['k8s_redis_redis'],
+    'webui': ['k8s_contrail-controller-webui-web'],
+    'webui-middleware': ['k8s_contrail-controller-webui-job'],
+}
+
+_CONTRAIL_SERVICES_CONTAINER_MAP = {
     'api-server': ['config_api', 'contrail-config-api'],
     'schema': ['config_schema', 'contrail-schema-transformer'],
     'svc-monitor': ['config_svcmonitor', 'contrail-svcmonitor', 'config_svc_monitor'],
@@ -106,3 +145,9 @@ ANSIBLE_DEPLOYER_PODS_DIR = {
 ANSIBLE_DEPLOYER_PODS_YML_FILE = {
     "strongswan": "strongswan_compose.yml"
 }
+
+def get_contrail_services_map(inputs):
+    if inputs.deployer == 'openshift':
+        return _CONTRAIL_SERVICES_OPENSHIFT_CONTAINER_MAP
+    else:
+        return _CONTRAIL_SERVICES_CONTAINER_MAP
