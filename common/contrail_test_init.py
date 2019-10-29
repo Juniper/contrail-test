@@ -8,7 +8,7 @@ import getpass
 import ConfigParser
 import ast
 from netaddr import *
-from itertools import ifilterfalse
+from itertools import ifilterfalse, ifilter
 
 import fixtures
 from fabric.api import env, run, local, sudo
@@ -778,6 +778,10 @@ class TestInputs(object):
             return True
         return False
 
+    def refresh_containers(self, host):
+        del self.host_data[host]['containers']
+        self._check_containers(self.host_data[host])
+
     def _check_containers(self, host_dict):
         '''
         Find out which components have containers and set
@@ -793,10 +797,13 @@ class TestInputs(object):
             return
         containers = [x.strip('\r') for x in output.split('\n')]
 
+        pod_containers = ifilter(lambda x: 'k8s_POD' in x, containers)
+        containers = set(containers) - set(pod_containers)
         tmp_containers = ifilterfalse(lambda x: 'nodemgr' in x, containers)
         nodemgr_cntrs = set(containers) - set(tmp_containers)
         containers = set(containers) - set(nodemgr_cntrs)
-        for service, names in CONTRAIL_SERVICES_CONTAINER_MAP.iteritems():
+        orch = 'openshift' if self.deployer == 'openshift' else None
+        for service, names in get_contrail_services_map(orch).iteritems():
             if 'nodemgr' in service:
                 continue
             for name in names:
@@ -809,7 +816,7 @@ class TestInputs(object):
                     containers.remove(container)
                     break
 
-        for service, names in CONTRAIL_SERVICES_CONTAINER_MAP.iteritems():
+        for service, names in get_contrail_services_map(orch).iteritems():
             if 'nodemgr' in service:
                 for name in names:
                     container = next((container for container in nodemgr_cntrs
