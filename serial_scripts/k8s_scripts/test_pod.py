@@ -173,3 +173,96 @@ class TestPodScale(BaseK8sTest):
         assert pod2.verify_on_setup()
         assert pod1.ping_to_ip(pod2.pod_ip, expectation=True)
     # end test_pod_with_node_reboot_contrailcontroller
+
+    @test.attr(type=['openshift_1'])
+    @preposttest_wrapper
+    def test_pod_with_oc_master_restart_controllers(self):
+        '''
+        Verify setup of 2 PODs created in 2 different namespace
+        Test ping between pods
+        Ping should pass
+        Restart Controllers
+        Re-verify setup of 2 PODs across 2 different namespace
+        Re-verify test ping between pods
+        Ping should pass
+        '''
+        namespace1 = self.setup_namespace()
+        pod1 = self.setup_busybox_pod(namespace=namespace1.name)
+        assert pod1.verify_on_setup()
+        namespace2 = self.setup_namespace()
+        pod2 = self.setup_busybox_pod(namespace=namespace2.name)
+        assert pod2.verify_on_setup()
+        assert pod1.ping_to_ip(pod2.pod_ip, expectation=True)
+        os_node = self.inputs.k8s_master_ip
+
+        output = self.inputs.run_cmd_on_server(os_node, '/usr/local/bin/master-restart controllers')
+        assert output == '2',  'master-restart controllers failed'
+        time.sleep(15)
+
+        # Verify after restart
+        assert pod1.verify_on_setup()
+        assert pod2.verify_on_setup()
+        assert pod1.ping_to_ip(pod2.pod_ip, expectation=True)
+    # end test_pod_with_oc_master_restart_controllers
+
+    @test.attr(type=['openshift_1'])
+    @preposttest_wrapper
+    def test_pod_with_oc_master_restart_api(self):
+        '''
+        Verify setup of 2 PODs created in 2 different namespace
+        Test ping between pods
+        Ping should pass
+        Restart api
+        Re-verify setup of 2 PODs across 2 different namespace
+        Re-verify test ping between pods
+        Ping should pass
+        '''
+        namespace1 = self.setup_namespace()
+        pod1 = self.setup_busybox_pod(namespace=namespace1.name)
+        assert pod1.verify_on_setup()
+        namespace2 = self.setup_namespace()
+        pod2 = self.setup_busybox_pod(namespace=namespace2.name)
+        assert pod2.verify_on_setup()
+        assert pod1.ping_to_ip(pod2.pod_ip, expectation=True)
+        os_node = self.inputs.k8s_master_ip
+
+        output = self.inputs.run_cmd_on_server(os_node, '/usr/local/bin/master-restart api')
+        assert output == '2',  'master-restart api failed'
+        time.sleep(15)
+
+        # Verify after restart
+        assert pod1.verify_on_setup()
+        assert pod2.verify_on_setup()
+        assert pod1.ping_to_ip(pod2.pod_ip, expectation=True)
+    # end test_pod_with_oc_master_restart_api
+
+    @test.attr(type=['openshift_1'])
+    @preposttest_wrapper
+    def test_pod_with_oc_master_restart_etcd(self):
+        '''
+        Verify setup of 2 PODs created in 2 different namespace
+        Test ping between pods
+        Ping should pass
+        Restart Etcd
+        Re-verify setup of 2 PODs across 2 different namespace
+        Re-verify test ping between pods
+        Ping should pass
+        '''
+        namespace1 = self.setup_namespace()
+        pod1 = self.setup_busybox_pod(namespace=namespace1.name)
+        assert pod1.verify_on_setup()
+        namespace2 = self.setup_namespace()
+        pod2 = self.setup_busybox_pod(namespace=namespace2.name)
+        assert pod2.verify_on_setup()
+        assert pod1.ping_to_ip(pod2.pod_ip, expectation=True)
+        os_node = self.inputs.k8s_master_ip
+
+        output = self.inputs.run_cmd_on_server(os_node, '/usr/local/bin/master-restart etcd')
+        assert output == '0',  'master-restart etcd failed'
+        time.sleep(15)
+
+        # Verify after restart
+        assert pod1.verify_on_setup()
+        assert pod2.verify_on_setup()
+        assert pod1.ping_to_ip(pod2.pod_ip, expectation=True)
+    # end test_pod_with_oc_master_restart_etcd
