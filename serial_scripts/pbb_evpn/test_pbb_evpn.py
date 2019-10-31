@@ -999,12 +999,21 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
                 count=stream['count'], interface=interface)
 
         # Swap the ISIDs. 
+        sleep(10)
         bd_fixtures['bd1'].update_bd(isid=bd['bd2']['isid'])
+        sleep(10)
         bd_fixtures['bd2'].update_bd(isid=bd['bd1']['isid'])
-        sleep(20)
+        sleep(70)
 
         #Verify C-MACs get deleted
         for stream in traffic.values():
+
+            src_vm = stream['src']
+            dst_vm = stream['dst']
+            pbb_compute_node_ips = []
+            pbb_compute_node_ips.append(vm_fixtures[src_vm]._vm_node_ip)
+            pbb_compute_node_ips.append(vm_fixtures[dst_vm]._vm_node_ip)
+
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
                 bd_fixtures[stream['bd']], pbb_compute_node_ips,
                 cmac=stream['src_cmac'], expectation=False)
@@ -1019,6 +1028,11 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
 
         #Verify C-MACs learnt again
         for stream in traffic.values():
+            src_vm = stream['src']
+            dst_vm = stream['dst']
+            pbb_compute_node_ips = []
+            pbb_compute_node_ips.append(vm_fixtures[src_vm]._vm_node_ip)
+            pbb_compute_node_ips.append(vm_fixtures[dst_vm]._vm_node_ip)
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
                 bd_fixtures[stream['bd']], pbb_compute_node_ips, cmac=stream['src_cmac'])
 
