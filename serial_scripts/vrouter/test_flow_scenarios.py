@@ -108,10 +108,13 @@ class FlowExportRate(ExtendedFlowTestsBase):
         end_time = self.analytics_obj.getstarttime(self.inputs.collector_ip)
         start_time = str(int(end_time) - (60*1000000))
 
+        ip1 = self.inputs.host_data[sender_vm_fixture.vm_node_ip]['host_data_ip']
+        ip2 = self.inputs.host_data[dest_vm_fixture.vm_node_ip]['host_data_ip']
+
         vrouter1_flows_exported = self.get_sessions_exported(
-            self.vn1_vm1_vrouter_fixture.ip, start_time, end_time)
+            ip1, start_time, end_time)
         vrouter2_flows_exported = self.get_sessions_exported(
-            self.vn1_vm2_vrouter_fixture.ip, start_time, end_time)
+            ip2, start_time, end_time)
         self.sleep(40)
         (stats, hping_log) = hping_h.stop()
         vrouter1_flows_expected = 60*export_rate
@@ -177,13 +180,14 @@ class FlowExportRate(ExtendedFlowTestsBase):
          collector
         '''
         vnc_lib_fixture = self.connections.vnc_lib_fixture
-        export_rate = 1000
+        export_rate = 150
         self.setup_flow_export_rate(export_rate)
         destport = '22'
         baseport = '1000'
         # 100us interval is 10k pps...send for 100 secs
-        interval = 'u100'
-        count = 1000000
+        interval = 'u1000'
+        count = 100000
+
         # Traffic will be for 100 sec
         assert self._test_flow_export(self.vn1_vm1_fixture,
                                  self.vn1_vm2_fixture,
@@ -298,7 +302,7 @@ class SimpleTCPFlowEvictionTests(ExtendedFlowTestsBase):
             self.connections,
             self.vn1_vm2_fixture.vm_node_ip))
 
-        for i in range(0, 3):
+        for i in range(0, 1):
             self.logger.debug('Iteration : %s' % (i))
             # Do file transfer
             result = self.vn1_vm1_fixture.nc_file_transfer(
@@ -317,6 +321,7 @@ class SimpleTCPFlowEvictionTests(ExtendedFlowTestsBase):
                     proto='tcp',
                     source_port=sport,
                     dest_port=dport,
+                    show_evicted=False,
                     vrf_id=compute.get_vrf_id(self.vn1_fixture.vn_fq_name)
                 )
                 assert flow_entry is None, ('Flow not evicted ater tcp close.',
@@ -393,9 +398,10 @@ class TCPFlowEvictionTests(ExtendedFlowTestsBase):
                 sport, dport)
             time.sleep(3)
             flow_table = self.vn1_vm1_vrouter_fixture.get_flow_table(
-                show_evicted=True)
+                show_evicted=False)
             (flow_entry, junk) = self.vn1_vm1_vrouter_fixture.get_flow_entry(
                 flow_table=flow_table,
+                show_evicted=False,
                 source_ip=self.vn1_vm1_fixture.vm_ip,
                 dest_ip=self.vn1_vm2_fixture.vm_ip,
                 proto='tcp',
@@ -441,12 +447,14 @@ class TCPFlowEvictionTests(ExtendedFlowTestsBase):
         traffic_obj = BaseTraffic.factory(proto='tcp')
         traffic_obj.start(self.vn1_vm1_fixture, self.vn1_vm2_fixture, 'tcp',
                           sport, dport)
-
+        time.sleep(10)
         traffic_obj.stop()
-        time.sleep(15)
+        time.sleep(25)
         flow_table = self.vn1_vm1_vrouter_fixture.get_flow_table(show_evicted=True)
+        import pdb;pdb.set_trace()
         (flow_entry, junk) = self.vn1_vm1_vrouter_fixture.get_flow_entry(
             flow_table=flow_table,
+            show_evicted=False,
             source_ip=self.vn1_vm1_fixture.vm_ip,
             dest_ip=self.vn1_vm2_fixture.vm_ip,
             proto='tcp',
@@ -454,6 +462,7 @@ class TCPFlowEvictionTests(ExtendedFlowTestsBase):
             dest_port=dport,
             vrf_id=self.vn1_vm1_vrouter_fixture.get_vrf_id(
                 self.vn1_fixture.vn_fq_name))
+
 
         assert flow_entry is None, ('Flow not evicted ater tcp close. Flow: ',
                                     '%s' % (flow_entry.dump))
@@ -478,7 +487,7 @@ class TCPFlowEvictionTests(ExtendedFlowTestsBase):
 
         destport = '22'
         baseport = '1000'
-        interval = 'u1000'
+        interval = 'u10000'
         # Create flows using hping
         hping_h = Hping3(self.vn1_vm1_fixture,
                          self.vn1_vm2_fixture.vm_ip,
@@ -490,7 +499,9 @@ class TCPFlowEvictionTests(ExtendedFlowTestsBase):
         for i in range(0, 5):
             self.logger.info('Iteration : %s' % (i))
             hping_h.start(wait=True)
+            time.sleep(5)
             (stats, hping_log) = hping_h.stop()
+            time.sleep(5)
             self.logger.debug('Hping3 log : %s' % (hping_log))
             assert stats['loss'] == '0', ('Some loss seen in hping3 session'
                                           'Stats : %s, Check logs..' % (stats))
@@ -501,6 +512,7 @@ class TCPFlowEvictionTests(ExtendedFlowTestsBase):
             flow_table = self.vn1_vm1_vrouter_fixture.get_flow_table()
             (ff_count, rf_count) = self.vn1_vm1_vrouter_fixture.get_flow_count(
                 flow_table=flow_table,
+                show_evicted=False,
                 source_ip=self.vn1_vm1_fixture.vm_ip,
                 dest_ip=self.vn1_vm2_fixture.vm_ip,
                 proto='tcp',
