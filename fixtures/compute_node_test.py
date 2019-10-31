@@ -548,6 +548,7 @@ class ComputeNodeFixture(fixtures.Fixture):
             self.logger.debug('Returns multiple flows, %s, matching flow data as\
                            list of tuples', all_flow_list)
             return all_flow_list
+        return (forward_flow, reverse_flow)
     # end get_flow_entry
 
     def delete_all_flows(self):
