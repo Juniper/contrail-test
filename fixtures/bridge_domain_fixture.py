@@ -155,7 +155,7 @@ class BDFixture(vnc_api_test.VncLibFixture):
         self.parse_bd_kwargs(**kwargs)
         self.vnc_h.update_bd(uuid=self.bd_uuid, **kwargs)
 
-    @retry(delay=10, tries=3)
+    @retry(delay=10, tries=5)
     def add_bd_to_vmi(self, vmi_id, vlan_tag, verify=True):
         result = True
         bd_id = self.bd_uuid
@@ -278,7 +278,7 @@ class BDFixture(vnc_api_test.VncLibFixture):
     # end verify_bd_in_api_server
 
 
-    @retry(delay=2, tries=2)
+    @retry(delay=5, tries=3)
     def verify_bd_for_vn_in_agent(self, vmi_uuid):
         """
         Verify Bridge Domain for VN info in agent
@@ -348,7 +348,7 @@ class BDFixture(vnc_api_test.VncLibFixture):
         return True
     #end verify_bd_for_vn_in_agent
 
-    @retry(delay=2, tries=2)
+    @retry(delay=5, tries=3)
     def verify_bd_for_vmi_in_computes(self, vmi_uuid):
         '''
         Verify BD details in VMI in computes:
