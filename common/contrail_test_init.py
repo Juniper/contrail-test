@@ -1397,13 +1397,15 @@ class ContrailTestInit(object):
     # end restart_service
 
     def stop_service(self, service_name, host_ips=None,
-                     container=None):
-        self._action_on_service(service_name, 'stop', host_ips, container)
+                     container=None, verify_service=True):
+        self._action_on_service(service_name, 'stop', host_ips, container,
+            verify_service=verify_service)
     # end stop_service
 
     def start_service(self, service_name, host_ips=None,
-                      container=None):
-        self._action_on_service(service_name, 'start', host_ips, container)
+                      container=None, verify_service=True):
+        self._action_on_service(service_name, 'start', host_ips, container,
+            verify_service=verify_service)
     # end start_service
 
     def run_provision_control(

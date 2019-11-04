@@ -130,7 +130,7 @@ class BaseServiceConnectionsTest(GenericTestBase):
                     "collector", "xmpp", "dns" or "rabbitmq"
         Values to argument "client_role" can be:
                     "agent", "control", "config", "analytics" and "database" '''
-        if client_role in ['config', 'analytics', 'database']:
+        if client_role in ['config', 'analytics', 'database', 'control']:
             client_node_name = self.inputs.host_data[client_ip]['fqname']
         else:
             client_node_name = self.inputs.host_data[client_ip]['name']
