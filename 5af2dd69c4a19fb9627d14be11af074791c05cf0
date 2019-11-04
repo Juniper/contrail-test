@@ -1,0 +1,119 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "0a2ef259_60070140",
+        "filename": "fixtures/quantum_test.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1400,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2019-11-04T18:44:00Z",
+      "side": 1,
+      "message": "didn\u0027t understand this logic?",
+      "range": {
+        "startLine": 1399,
+        "startChar": 8,
+        "endLine": 1400,
+        "endChar": 55
+      },
+      "revId": "5af2dd69c4a19fb9627d14be11af074791c05cf0",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "fb375000_eef6c993",
+        "filename": "scripts/trunkport/test_trunkport.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2019-11-04T18:44:00Z",
+      "side": 1,
+      "message": "can this be a sanity TC?",
+      "range": {
+        "startLine": 12,
+        "startChar": 8,
+        "endLine": 12,
+        "endChar": 28
+      },
+      "revId": "5af2dd69c4a19fb9627d14be11af074791c05cf0",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "6b6bdde3_25f50b9f",
+        "filename": "scripts/trunkport/test_trunkport.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2019-11-04T18:44:00Z",
+      "side": 1,
+      "message": "why trunk1 is created again?",
+      "range": {
+        "startLine": 62,
+        "startChar": 8,
+        "endLine": 62,
+        "endChar": 39
+      },
+      "revId": "5af2dd69c4a19fb9627d14be11af074791c05cf0",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "fd12d6d9_9f6c715d",
+        "filename": "scripts/trunkport/test_trunkport.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 82,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2019-11-04T18:44:00Z",
+      "side": 1,
+      "message": "is this -ve testing? creating trunk for vm1 again?",
+      "range": {
+        "startLine": 82,
+        "startChar": 12,
+        "endLine": 82,
+        "endChar": 43
+      },
+      "revId": "5af2dd69c4a19fb9627d14be11af074791c05cf0",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "6bd2cbd4_a10a8c2d",
+        "filename": "scripts/trunkport/test_trunkport.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2019-11-04T18:44:00Z",
+      "side": 1,
+      "message": "why same variable used again trunk2?",
+      "range": {
+        "startLine": 88,
+        "startChar": 8,
+        "endLine": 88,
+        "endChar": 14
+      },
+      "revId": "5af2dd69c4a19fb9627d14be11af074791c05cf0",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
