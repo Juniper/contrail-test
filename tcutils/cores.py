@@ -97,6 +97,11 @@ def get_service_crashes_node(node_ip, user, password):
     """
     crash = None
     services = []
+    #ToDo: Need to find a better way to validate if any process
+    # died or restarted during the test.
+    # contrail-status is costly and it doesnt check the restart cases
+    # Also the check for failures is dated before R5.0 and its a no-op right now
+    return services
     with hide('everything'):
         with settings(
             host_string='%s@%s' % (user, node_ip), password=password,

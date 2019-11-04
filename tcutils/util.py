@@ -19,6 +19,7 @@ import random
 import fcntl
 import socket
 import struct
+from fabutils import *
 from fabric.exceptions import CommandTimeout, NetworkError
 from fabric.contrib.files import exists
 from fabric.context_managers import settings, hide, cd, lcd
@@ -30,7 +31,6 @@ from testtools.testcase import TestSkipped
 import functools
 import testtools
 from fabfile import *
-from fabutils import *
 import ast
 
 sku_dict = {'2014.1': 'icehouse', '2014.2': 'juno', '2015.1': 'kilo', '12': 'liberty', '13': 'mitaka',
@@ -160,90 +160,6 @@ def copy_fabfile_to_agent():
         if not exists(dst):
             put(src, dst)
         env.fab_copied_to_hosts.append(env.host_string)
-
-def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
-                         gateway_password=None, with_sudo=False, timeout=120,
-                         as_daemon=False, raw=False, cd=None, warn_only=True,
-                         logger=None):
-    """ Run command on remote node through another node (gateway).
-        This is useful to run commands on VMs through compute node
-    Args:
-        host_string: host_string on which the command to run
-        password: Password
-        cmd: command
-        gateway: host_string of the node through which host_string will connect
-        gateway_password: Password of gateway hoststring
-        with_sudo: use Sudo
-        timeout: timeout
-        cd: change directory to provided parameter
-        as_daemon: run in background
-        raw: If raw is True, will return the fab _AttributeString object itself without removing any unwanted output
-    """
-    logger = logger or contrail_logging.getLogger(__name__)
-    fab_connections.clear()
-    kwargs = {}
-    if as_daemon:
-        cmd = 'nohup ' + cmd + ' &'
-        kwargs['pty']=False
-
-    if cd:
-        cmd = 'cd %s; %s' % (cd, cmd)
-
-    (username, host_ip) = host_string.split('@')
-
-    if username == 'root':
-        with_sudo = False
-
-    shell = '/bin/bash -l -c'
-
-    if username == 'cirros':
-        shell = '/bin/sh -l -c'
-
-    _run = safe_sudo if with_sudo else safe_run
-
-    #with hide('everything'), settings(host_string=host_string,
-    with settings(host_string=host_string,
-                                      gateway=gateway,
-                                      warn_only=warn_only,
-                                      shell=shell,
-                                      disable_known_hosts=True,
-                                      abort_on_prompts=False):
-        env.forward_agent = True
-        gateway_hoststring = gateway if re.match(r'\w+@[\d\.]+:\d+', gateway) else gateway + ':22'
-        node_hoststring = host_string if re.match(r'\w+@[\d\.]+:\d+', host_string) else host_string + ':22'
-        if password:
-            env.passwords.update({node_hoststring: password})
-            # If gateway_password is not set, guess same password
-            # (if key is used, it will be tried before password)
-            if not gateway_password:
-                env.passwords.update({gateway_hoststring: password})
-
-        if gateway_password:
-            env.passwords.update({gateway_hoststring: gateway_password})
-            if not password:
-                env.passwords.update({node_hoststring: gateway_password})
-
-        logger.debug(cmd)
-        tries = 1
-        output = None
-        while tries > 0:
-            try:
-                output = _run(cmd, timeout=timeout, **kwargs)
-            except CommandTimeout:
-                pass
-            if (output) and ('Fatal error' in output):
-                tries -= 1
-                time.sleep(5)
-            else:
-                break
-        # end while
-
-        if not raw:
-            real_output = remove_unwanted_output(output)
-        else:
-            real_output = output
-        return real_output
-
 
 def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, as_daemon=False, raw=False,
                         warn_only=True,

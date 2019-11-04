@@ -202,8 +202,6 @@ class BaseVrouterTest(BaseNeutronTest, VerifySvcMirror):
 
     def verify_vms(self, vm_fixtures):
         for vm_fixture in vm_fixtures:
-            assert vm_fixture.verify_on_setup()
-        for vm_fixture in vm_fixtures:
             assert vm_fixture.wait_till_vm_is_up()
 
     def add_static_routes_on_vms(self,prefix, vm_fixtures, ip=None):

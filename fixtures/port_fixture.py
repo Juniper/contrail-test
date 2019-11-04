@@ -93,12 +93,6 @@ class PortFixture(vnc_api_test.VncLibFixture):
                 else:
                     self._contrail_create_port()
                 self.created = True
-                try:
-                    self.neutron_handle = self.get_neutron_handle()
-                    self.obj = self.neutron_handle.get_port(self.uuid)
-                    self.mac_address = self.obj['mac_address']
-                except Exception as e:
-                    pass
                 self.logger.debug('Created port %s' % (self.uuid))
         self.read()
         self.add_port_profiles(self.port_profiles)
@@ -377,15 +371,6 @@ class PortFixture(vnc_api_test.VncLibFixture):
             self.uuid, intf_route_table_uuid)
     # end del_interface_route_table
 
-    def get_ip(self, subnet_id):
-        fixed_ips = self.obj['fixed_ips']
-        ip = [x['ip_address'] for x in fixed_ips if x['subnet_id'] == subnet_id]
-        if ip:
-            return ip[0]
-        else :
-            return None
-    # end get_ip
-
     def get_ip_addresses(self):
         return [iip.instance_ip_address for iip in self.iip_objs]
 
@@ -443,7 +428,6 @@ if __name__ == "__main__":
                                api_type='contrail',
                                project_id=get_dashed_uuid('24c8d6f768c843a2ac83f5a8ff847073'))
 #    port_fixture.setUp()
-    port_fixture.get_ip(subnet_id)
     port_fixture2 = PortFixture(vn_id=vn_id, api_type='contrail', fixed_ips=[
                                 {'subnet_id': subnet_id, 'ip_address': '10.1.1.20'}])
     port_fixture2.setUp()

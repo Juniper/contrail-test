@@ -12,7 +12,7 @@ message = 'Hello'
 def get_addr_port(tup):
     return tup[0], tup[1]
 
-class TcpEchoServer(object):
+class UdpEchoServer(object):
     def __init__(self, start_port, end_port, pid_file, stats_file):
         self.sockets= list()
         self.start_port = start_port
@@ -37,7 +37,7 @@ class TcpEchoServer(object):
     def create(self):
         for port in range(self.start_port, self.end_port+1):
             for family, socktype, proto, canonname, sockaddr in \
-                    socket.getaddrinfo(None, port, 0, socket.SOCK_STREAM, 0, socket.AI_PASSIVE):
+                    socket.getaddrinfo(None, port, 0, socket.SOCK_DGRAM, 0, socket.AI_PASSIVE):
                 sock = socket.socket(family, socktype)
                 if family == socket.AF_INET6:
                     sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
@@ -47,7 +47,6 @@ class TcpEchoServer(object):
                 sock.bind(sockaddr)
                 self.stats[port] = dict()
                 # Listen for incoming connections
-                sock.listen(0)
                 self.sockets.append(sock)
 
     def run(self):
@@ -63,43 +62,37 @@ class TcpEchoServer(object):
                     continue
                 raise
             for s in readable:
-                if s in self.sockets:
-                    connection, client_address = s.accept()
-                    connection.setblocking(0)
-                    self.connections = self.connections + 1
-                    inputs.append(connection)
+                try:
+                    data, sockaddr = s.recvfrom(1024)
+                except Exception as e:
+                    print e
+                    continue
+                if data:
                     server_address, server_port = get_addr_port(s.getsockname())
-                    self.stats[server_port][client_address[0]] = {'sent': 0, 'recv': 0}
-                    message_queues[connection] = Queue.Queue()
+                    client_address, client_port = get_addr_port(sockaddr)
+                    if s not in message_queues:
+                        message_queues[s] = Queue.Queue()
+                        self.stats[server_port][client_address] = {'sent': 0, 'recv': 0}
+                    self.stats[server_port][client_address]['recv'] += data.count(message)
+                    message_queues[s].put((data, sockaddr))
+                    if s not in outputs:
+                        outputs.append(s)
                 else:
-                    try:
-                        data = s.recv(1024)
-                    except Exception as e:
-                        print e
-                        continue
-                    if data:
-                        server_address, server_port = get_addr_port(s.getsockname())
-                        client_address, client_port = get_addr_port(s.getpeername())
-                        self.stats[server_port][client_address]['recv'] += data.count(message)
-                        message_queues[s].put(data)
-                        if s not in outputs:
-                            outputs.append(s)
-                    else:
-                        if s in outputs:
-                            outputs.remove(s)
-                        inputs.remove(s)
-                        s.close()
-                        del message_queues[s]
+                    if s in outputs:
+                        outputs.remove(s)
+                    inputs.remove(s)
+                    s.close()
+                    del message_queues[s]
             for s in writable:
                 try:
-                    next_msg = message_queues[s].get_nowait()
+                    next_msg, sockaddr = message_queues[s].get_nowait()
                 except Queue.Empty:
                     outputs.remove(s)
                 else:
                     try:
-                        s.send(next_msg)
                         server_address, server_port = get_addr_port(s.getsockname())
-                        client_address, client_port = get_addr_port(s.getpeername())
+                        client_address, client_port = get_addr_port(sockaddr)
+                        s.sendto(next_msg, sockaddr)
                         self.stats[server_port][client_address]['sent'] += next_msg.count(message)
                     except Exception as e:
                         print e
@@ -131,7 +124,7 @@ def parse_cli(args):
 
 def main():
     pargs = parse_cli(sys.argv[1:])
-    server = TcpEchoServer(pargs.start_port, pargs.end_port,
+    server = UdpEchoServer(pargs.start_port, pargs.end_port,
         pargs.pid_file, pargs.stats_file)
     signal.signal(signal.SIGUSR1, server.handler)
     signal.signal(signal.SIGTERM, server.handler)
