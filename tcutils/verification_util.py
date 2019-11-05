@@ -1,8 +1,12 @@
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import object
 import os
 import re
 import json
 import pprint
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import requests
 import threading
 import logging as LOG
@@ -248,7 +252,7 @@ class VerificationUtilBase (object):
                 if isinstance(self._drv,JsonDrv):
                     return self._drv.load(url,retry=retry)
                 return self._drv.load(url, raw_data=raw_data)
-        except urllib2.HTTPError:
+        except urllib.error.HTTPError:
             return None
     # end dict_get
 
@@ -258,7 +262,7 @@ class VerificationUtilBase (object):
                 return self._drv.put(self._mk_url_str(path), payload)
             if url:
                 return self._drv.put(url, payload)
-        except urllib2.HTTPError:
+        except urllib.error.HTTPError:
             return None
 
     def post(self, payload, path='', url=''):
@@ -267,7 +271,7 @@ class VerificationUtilBase (object):
                 return self._drv.post(self._mk_url_str(path), payload)
             if url:
                 return self._drv.post(url, payload)
-        except urllib2.HTTPError:
+        except urllib.error.HTTPError:
             return None
 
 def elem2dict(node, alist=False):
@@ -314,9 +318,9 @@ class EtreeToDict(object):
         a_list = []
         for elem in elems.getchildren():
             rval = self._get_one(elem, a_list)
-            if 'element' in rval.keys():
+            if 'element' in list(rval.keys()):
                 a_list.append(rval['element'])
-            elif 'list' in rval.keys():
+            elif 'list' in list(rval.keys()):
                 a_list.append(rval['list'])
             else:
                 a_list.append(rval)
@@ -351,7 +355,7 @@ class EtreeToDict(object):
 
             if elem.tag in self.xml_list:
                 val.update({xp.tag: self._handle_list(xp)})
-            if elem.tag in rval.keys():
+            if elem.tag in list(rval.keys()):
                 val.update({elem.tag: rval[elem.tag]})
             elif 'SandeshData' in elem.tag:
                 val.update({xp.tag: rval})
@@ -385,7 +389,7 @@ class EtreeToDict(object):
         Returns the element looked for/None.
         """
         xp = path.xpath(self.xpath)
-        f = filter(lambda x: x.text == match, xp)
+        f = [x for x in xp if x.text == match]
         if len(f):
             return f[0].text
         return None

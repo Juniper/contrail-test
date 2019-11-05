@@ -1,4 +1,6 @@
 from __future__ import print_function
+from builtins import zip
+from builtins import object
 from vnc_api.vnc_api import *
 from tcutils.util import get_random_name, get_random_cidrs
 
@@ -33,7 +35,7 @@ def get_sg_rule(direction, af='v4', proto='udp'):
 
     return rule
 ################################################################################
-class sdn_4vn_xvm_config ():
+class sdn_4vn_xvm_config(object):
     def __init__(self, domain= 'default-domain', project= 'admin',
             compute_node_list= None, username= None, password= None,
             config_option='openstack', af_test='v4'):
@@ -103,13 +105,13 @@ class sdn_4vn_xvm_config ():
         #Logic to create a vm to Compute node mapping.
         if self.vm_node_map:
             CN = []
-            for cn in self.vm_node_map.keys():
+            for cn in list(self.vm_node_map.keys()):
                 if self.vm_node_map[cn] not in CN:
                     CN.append(self.vm_node_map[cn])
             my_node_dict = {}
             if compute_node_list is not None:
                 if len(compute_node_list) >= len(CN):
-                    my_node_dict = dict(zip(CN, compute_node_list))
+                    my_node_dict = dict(list(zip(CN, compute_node_list)))
 
             if my_node_dict:
                 for key in my_node_dict:
@@ -198,7 +200,7 @@ class sdn_4vn_xvm_config ():
 # end class sdn_4vn_xvm_config
 
 ################################################################################
-class sdn_topo_config ():
+class sdn_topo_config(object):
     def __init__(self, af_test='v4'):
         self.af_test = af_test
 
@@ -294,7 +296,7 @@ class sdn_topo_config ():
 # end class sdn_topo_config
 ################################################################################
 
-class sdn_topo_config_multiproject():
+class sdn_topo_config_multiproject(object):
 
     def __init__(self, domain= 'default-domain', project= 'admin',
             username= None, password= None):
@@ -410,7 +412,7 @@ class sdn_topo_config_multiproject():
 # end class sdn_topo_config_multiproject
 ################################################################################
 
-class sdn_topo_1vn_2vm_config ():
+class sdn_topo_1vn_2vm_config(object):
     def __init__(self, af_test='v4'):
         self.af_test = af_test
 
@@ -488,7 +490,7 @@ class sdn_topo_1vn_2vm_config ():
 
 
 ################################################################################
-class sdn_topo_icmp_error_handling():
+class sdn_topo_icmp_error_handling(object):
     def __init__(self, af_test='v4'):
         self.af_test = af_test
 
@@ -615,13 +617,13 @@ class sdn_topo_icmp_error_handling():
         #Logic to create a vm to Compute node mapping.
         if self.vm_node_map:
             CN = []
-            for cn in self.vm_node_map.keys():
+            for cn in list(self.vm_node_map.keys()):
                 if self.vm_node_map[cn] not in CN:
                     CN.append(self.vm_node_map[cn])
             my_node_dict = {}
             if compute_node_list is not None:
                 if len(compute_node_list) >= len(CN):
-                    my_node_dict = dict(zip(CN, compute_node_list))
+                    my_node_dict = dict(list(zip(CN, compute_node_list)))
 
             if my_node_dict:
                 for key in my_node_dict:
@@ -669,7 +671,7 @@ class sdn_topo_icmp_error_handling():
 
 # end class sdn_topo_icmp_error_handling
 
-class sdn_topo_mx_with_si():
+class sdn_topo_mx_with_si(object):
     def build_topo(self, domain= 'default-domain', project= 'admin',
 			compute_node_list= None, username= None,
 			password= None, public_vn_info=None,config_option='openstack'):
@@ -773,7 +775,7 @@ class sdn_topo_mx_with_si():
         # end build_topo
 
 ################################################################################
-class sdn_topo_flow_to_sg_rule_mapping():
+class sdn_topo_flow_to_sg_rule_mapping(object):
     def __init__(self, af_test='v4'):
         self.af_test = af_test
 
@@ -840,13 +842,13 @@ class sdn_topo_flow_to_sg_rule_mapping():
         #Logic to create a vm to Compute node mapping.
         if self.vm_node_map:
             CN = []
-            for cn in self.vm_node_map.keys():
+            for cn in list(self.vm_node_map.keys()):
                 if self.vm_node_map[cn] not in CN:
                     CN.append(self.vm_node_map[cn])
             my_node_dict = {}
             if compute_node_list is not None:
                 if len(compute_node_list) >= len(CN):
-                    my_node_dict = dict(zip(CN, compute_node_list))
+                    my_node_dict = dict(list(zip(CN, compute_node_list)))
 
             if my_node_dict:
                 for key in my_node_dict:
@@ -960,13 +962,13 @@ class sdn_topo_flow_to_sg_rule_mapping():
         #Logic to create a vm to Compute node mapping.
         if self.vm_node_map:
             CN = []
-            for cn in self.vm_node_map.keys():
+            for cn in list(self.vm_node_map.keys()):
                 if self.vm_node_map[cn] not in CN:
                     CN.append(self.vm_node_map[cn])
             my_node_dict = {}
             if compute_node_list is not None:
                 if len(compute_node_list) >= len(CN):
-                    my_node_dict = dict(zip(CN, compute_node_list))
+                    my_node_dict = dict(list(zip(CN, compute_node_list)))
 
             if my_node_dict:
                 for key in my_node_dict:

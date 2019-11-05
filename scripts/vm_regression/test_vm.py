@@ -1,5 +1,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
+from builtins import str
+from builtins import range
 import traffic_tests
 from vn_test import *
 from vm_test import *
@@ -398,11 +400,11 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
         assert vm_fixture.verify_vms_on_setup()
         assert vm_fixture.verify_vns_on_setup()
 
-        for vmobj in vm_fixture.vm_obj_dict.values():
+        for vmobj in list(vm_fixture.vm_obj_dict.values()):
             cmd = 'ls /tmp/'
             result = False
             ret = vmobj.run_cmd_on_vm(cmds = [cmd])
-            for elem in ret.values():
+            for elem in list(ret.values()):
                 if 'output.txt' in elem:
                     result = True
                     break
@@ -412,9 +414,9 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             self.logger.debug("Printing the output.txt :")
             cmd = 'cat /tmp/output.txt'
             ret = vmobj.run_cmd_on_vm(cmds = [cmd])
-            self.logger.info("%s" %(ret.values()))
+            self.logger.info("%s" %(list(ret.values())))
             result = False
-            for elem in ret.values():
+            for elem in list(ret.values()):
                 if 'Hello World' in elem:
                     result = True
                     break
@@ -1342,7 +1344,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         list_of_ips = vm1_fixture.vm_ips
         cmd = '/sbin/ifconfig -a'
         ret = vm1_fixture.run_cmd_on_vm(cmds=[cmd])
-        for elem in ret.values():
+        for elem in list(ret.values()):
             for ips in list_of_ips:
                 if ips not in elem:
                     self.logger.error(
@@ -2099,7 +2101,7 @@ class TestBasicVMVN6(BaseVnVmTest):
                                 project_name=self.inputs.project_name))
 
 
-        for key,value in overlapping_vns.iteritems():
+        for key,value in overlapping_vns.items():
             try:
                 ovlap_vn_fixture = self.useFixture(VNFixture(
                                             connections=self.connections, 
@@ -2181,8 +2183,7 @@ class TestBasicVMVN6(BaseVnVmTest):
         ipam = vn_fixture.ipam_fq_name
         vn_fixture.create_subnet_af(af=self.inputs.get_af(), ipam_fq_name=ipam)
         vnnow_obj = self.connections.orch.get_vn_obj_if_present(vn_name)
-        subnet_created = list(map(lambda obj: obj['subnet_cidr'],
-                              vnnow_obj['network']['subnet_ipam']))
+        subnet_created = list([obj['subnet_cidr'] for obj in vnnow_obj['network']['subnet_ipam']])
         if set(subnet_created) != set(vn_fixture.get_subnets()):
             self.logger.error('assigned ip block is not allocated to VN')
             result = False
@@ -2982,8 +2983,8 @@ class TestBasicVMVNx(BaseVnVmTest):
         inspect_h1 = self.agent_inspect[vn1_vm1_fixture.vm_node_ip]
         inspect_h2 = self.agent_inspect[fvn_vm1_fixture.vm_node_ip]
         flow_rec1 = None
-        src_port = unicode(client_port)
-        dst_port = unicode(server_port)
+        src_port = str(client_port)
+        dst_port = str(server_port)
         # Verify Ingress Traffic
         self.logger.info('Verifying Ingress Flow Record')
         vn_fq_name = vn1_vm1_fixture.vn_fq_name

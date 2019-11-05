@@ -1,4 +1,5 @@
 from __future__ import print_function
+from builtins import object
 import os
 import sys
 import argparse
@@ -120,7 +121,7 @@ def command(**kwargs):
     return cmd
 
 
-class HeatCli:
+class HeatCli(object):
 
     def __init__(self, heat_client, inputs, token, auth_url, **kwargs):
         self.heat_client = heat_client

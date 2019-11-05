@@ -1,4 +1,8 @@
 from __future__ import print_function
+from builtins import hex
+from builtins import str
+from builtins import range
+from builtins import object
 from time import sleep
 import re
 import os
@@ -17,7 +21,7 @@ from fabric.operations import get, put
 from string import Template
 
 
-class VerifyEvpnCases():
+class VerifyEvpnCases(object):
 
     def verify_dns_disabled(self, encap):
         # Setting up default encapsulation
@@ -1077,7 +1081,7 @@ class VerifyEvpnCases():
             # Verify if file size is same in destination vm
             out_dict = vn_l2_vm2_fixture.run_cmd_on_vm(
                 cmds=['ls -l %s' % (filename)], timeout=60)
-            if size in out_dict.values()[0]:
+            if size in list(out_dict.values())[0]:
                 self.logger.info('File of size %s is trasferred successfully to \
                     %s by scp ' % (size, dest_vm_ip))
             else:

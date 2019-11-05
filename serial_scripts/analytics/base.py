@@ -1,10 +1,14 @@
 from __future__ import print_function
+from builtins import str
+from builtins import range
+from builtins import object
 import test_v1
 from common import isolated_creds
 from vn_test import *
 from vm_test import *
 from policy_test import *
 import fixtures
+from future.utils import with_metaclass
 sys.path.append(os.path.realpath('tcutils/pkgs/Traffic'))
 from traffic.core.stream import Stream
 from traffic.core.profile import create, ContinuousProfile, StandardProfile, BurstProfile, ContinuousSportRange
@@ -65,7 +69,7 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
 
     def _form_cmd(self, cmd_type, cmd_args):
         cmd = cmd_type
-        for k, v in cmd_args.iteritems():
+        for k, v in cmd_args.items():
             if k == 'no_key':
                 for elem in v:
                     cmd = cmd + ' --' +  elem
@@ -580,7 +584,7 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
         return result
     #end verify_session_sampling_teardown
     
-class ResourceFactory:
+class ResourceFactory(object):
     factories = {}
     def createResource(id):
         if id not in ResourceFactory.factories:
@@ -589,10 +593,8 @@ class ResourceFactory:
         return ResourceFactory.factories[id].create()
     createResource = staticmethod(createResource)
 
-class BaseSanityResource(fixtures.Fixture):
+class BaseSanityResource(with_metaclass(Singleton, fixtures.Fixture)):
    
-    __metaclass__ = Singleton
-     
     def setUp(self,inputs,connections):
         super(BaseSanityResource , self).setUp()
         self.inputs = inputs
@@ -637,9 +639,7 @@ class BaseSanityResource(fixtures.Fixture):
     #end verify_common_objects
 
 
-class BaseResource(BaseSanityResource):
-
-    __metaclass__ = Singleton
+class BaseResource(with_metaclass(Singleton, BaseSanityResource)):
 
     def setUp(self,inputs,connections):
         super(BaseResource , self).setUp(inputs, connections)
@@ -762,7 +762,7 @@ class AnalyticsTestSanityWithMinResource(BaseSanityResource):
     def cleanUp(self):
         super(AnalyticsTestSanityWithMinResource , self).cleanUp()
 
-    class Factory:
+    class Factory(object):
         def create(self): return AnalyticsTestSanityWithMinResource()
 
 class AnalyticsTestSanityResource(BaseResource): 
@@ -775,7 +775,7 @@ class AnalyticsTestSanityResource(BaseResource):
         pass
         #super(AnalyticsTestSanityResource, self).cleanUp()
 
-    class Factory:
+    class Factory(object):
         def create(self): return AnalyticsTestSanityResource()
 
 class AnalyticsTestSanity1Resource(BaseResource):
@@ -788,7 +788,7 @@ class AnalyticsTestSanity1Resource(BaseResource):
         pass
         #super(AnalyticsTestSanity1Resource, self).cleanUp()
 
-    class Factory:
+    class Factory(object):
         def create(self): return AnalyticsTestSanity1Resource()
 
 
@@ -802,7 +802,7 @@ class AnalyticsTestSanity2Resource(BaseResource):
         pass
         #super(AnalyticsTestSanity2Resource, self).cleanUp()
 
-    class Factory:
+    class Factory(object):
         def create(self): return AnalyticsTestSanity2Resource()
 
 class AnalyticsTestSanity3Resource(BaseResource):
@@ -815,7 +815,7 @@ class AnalyticsTestSanity3Resource(BaseResource):
         pass
         #super(AnalyticsTestSanity3Resource, self).cleanUp()
 
-    class Factory:
+    class Factory(object):
         def create(self): return AnalyticsTestSanity3Resource()
 
 class AnalyticsTestSanityWithResourceResource(BaseResource):
@@ -826,7 +826,7 @@ class AnalyticsTestSanityWithResourceResource(BaseResource):
     def cleanUp(self):
         super(AnalyticsTestSanityWithResourceResource, self).cleanUp()
 
-    class Factory:
+    class Factory(object):
         def create(self): return AnalyticsTestSanityWithResourceResource()
 #End resource
 

@@ -9,6 +9,9 @@ from __future__ import print_function
 # Copyright (c) 2013, Contrail Systems, Inc. All rights reserved.
 #
 
+from builtins import next
+from builtins import str
+from builtins import object
 import datetime
 import time
 import requests
@@ -230,7 +233,7 @@ class OpServerUtils(object):
     @staticmethod
     def _data_dict_to_str(data_dict, sandesh_type):
         data_str = None
-        for key, value in data_dict.iteritems():
+        for key, value in data_dict.items():
             # Ignore if type is sandesh
             if '@type' == key and value == 'sandesh':
                 continue
@@ -246,7 +249,7 @@ class OpServerUtils(object):
             # Handle struct, list
             if '@type' in value_dict:
                 if value_dict['@type'] == 'struct':
-                    for vdict_key, vdict_value in value_dict.iteritems():
+                    for vdict_key, vdict_value in value_dict.items():
                         if isinstance(vdict_value, dict):
                             if data_str == None:
                                 data_str = ''
@@ -275,7 +278,7 @@ class OpServerUtils(object):
                     # Handle list of complex types
                     else:
                         data_str += '[' + key + ':'
-                        for vlist_key, vlist_value in vlist_dict.iteritems():
+                        for vlist_key, vlist_value in vlist_dict.items():
                             if isinstance(vlist_value, dict):
                                 vlist_value_list = [vlist_value]
                             elif isinstance(vlist_value, list):

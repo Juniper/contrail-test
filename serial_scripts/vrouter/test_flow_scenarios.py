@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 from string import Template
 import time
 

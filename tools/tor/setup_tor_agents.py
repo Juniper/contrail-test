@@ -25,7 +25,7 @@ if __name__ == "__main__":
         print('No tor-agents in the setup, no cert files will be configured')
         sys.exit(0)
 
-    for ta_host_string, ta_list in init_obj.tor_agent_data.iteritems():
+    for ta_host_string, ta_list in init_obj.tor_agent_data.items():
         (user, ip) = ta_host_string.split('@')
         password = init_obj.host_data[ip]['password']
         with settings(host_string=ta_host_string, password=password):

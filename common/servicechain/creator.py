@@ -1,3 +1,5 @@
+from builtins import range
+from builtins import object
 import copy
 import pprint
 import itertools
@@ -5,7 +7,7 @@ import itertools
 from common.servicechain.config import *
 
 
-class ServiceChainCreator():
+class ServiceChainCreator(object):
 
     def __init__(self, tc):
         '''

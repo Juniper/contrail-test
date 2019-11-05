@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import object
 import fixtures
 import testtools
 import os
@@ -12,7 +14,7 @@ from floating_ip import *
 from testresources import OptimisingTestSuite, TestResource
 
 
-class ECMPSolnSetup():
+class ECMPSolnSetup(object):
 
     def get_random_fip(self, vn):
         return vn.vn_subnets[0]['cidr'].replace(".0/24", ".100/24").split('/')[0]
@@ -25,7 +27,7 @@ class ECMPSolnSetup():
         self.dport1 = '9000'
         self.dport2 = '9001'
         self.dport3 = '9002'
-        self.udp_src = unicode(8000)
+        self.udp_src = str(8000)
 
         self.fvn = self.create_vn(vn_name=get_random_name('fvn'))
         self.vn1 = self.create_vn(vn_name=get_random_name('vn1'))

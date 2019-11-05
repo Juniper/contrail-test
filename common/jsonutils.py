@@ -31,13 +31,15 @@ This module provides a few things:
 '''
 
 
+from future import standard_library
+standard_library.install_aliases()
 import datetime
 import functools
 import inspect
 import itertools
 import json
 try:
-    import xmlrpclib
+    import xmlrpc.client
 except ImportError:
     # NOTE(jaypipes): xmlrpclib was renamed to xmlrpc.client in Python3
     #                 however the function and object call signatures
@@ -133,7 +135,7 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
         # It's not clear why xmlrpclib created their own DateTime type, but
         # for our purposes, make it a datetime type which is explicitly
         # handled
-        if isinstance(value, xmlrpclib.DateTime):
+        if isinstance(value, xmlrpc.client.DateTime):
             value = datetime.datetime(*tuple(value.timetuple())[:6])
 
         if convert_datetime and isinstance(value, datetime.datetime):
@@ -141,7 +143,7 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
         elif isinstance(value, gettextutils.Message):
             return value.data
         elif hasattr(value, 'iteritems'):
-            return recursive(dict(value.iteritems()), level=level + 1)
+            return recursive(dict(iter(value.items())), level=level + 1)
         elif hasattr(value, '__iter__'):
             return recursive(list(value))
         elif convert_instances and hasattr(value, '__dict__'):

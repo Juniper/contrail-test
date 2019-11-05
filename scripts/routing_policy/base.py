@@ -1,3 +1,4 @@
+from builtins import str
 import test_v1
 import os
 import re

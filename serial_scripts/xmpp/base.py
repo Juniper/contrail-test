@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 import test_v1
 from vn_test import MultipleVNFixture
 from vnc_api.vnc_api import *

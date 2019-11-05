@@ -1,4 +1,7 @@
 
+from builtins import map
+from builtins import range
+from builtins import object
 import logging
 import fixtures
 import dpkt
@@ -10,7 +13,7 @@ from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from compute_node_test import ComputeNodeFixture
 from common import log_orig as contrail_logging
 
-class TrafficAnalyzer:
+class TrafficAnalyzer(object):
     '''
     This class is used to capture traffic using tcpdump and analyze qos
     related fields of captured packets.
@@ -104,10 +107,10 @@ class TrafficAnalyzer:
             self.logger.debug("The filter pattern is %s" % filter_pattern)
             filter_string = " ".join(filter_pattern)
         elif self.encap_type == "MPLSoGRE" and capture_on_payload == False:
-            src_ip = '0x{:02x}{:02x}{:02x}{:02x}'.format(*map(int,\
-                                        self.src_ip.split('.')))
-            dest_ip = '0x{:02x}{:02x}{:02x}{:02x}'.format(*map(int,\
-                                        self.dest_ip.split('.')))
+            src_ip = '0x{:02x}{:02x}{:02x}{:02x}'.format(*list(map(int,\
+                                        self.src_ip.split('.'))))
+            dest_ip = '0x{:02x}{:02x}{:02x}{:02x}'.format(*list(map(int,\
+                                        self.dest_ip.split('.'))))
             # Below 'if' check is to distinguish packets within the same network
             # and different  networks
             # Packet between different networks don't carry L2 header and thus 

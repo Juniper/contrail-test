@@ -1,4 +1,6 @@
 ''' This module provides utils for Policy tests '''
+from builtins import str
+from builtins import range
 import inspect
 import copy
 import json
@@ -51,7 +53,7 @@ def compare_dict(ref_dict, test_dict_l):
     matching_idx = []
     for idx, rule in enumerate(test_dict_l):
         match = 0
-        for key in filter(lambda x: x != 'ace_id', ref_dict):
+        for key in [x for x in ref_dict if x != 'ace_id']:
             if ref_dict[key] != rule[key]:
                 match = 0
                 break
@@ -266,7 +268,7 @@ def xlate_cn_rules(rules_list):
     new_rule_list = []
     for rule in rules_list:
         new_rule = {}
-        for key, value in rule.items():
+        for key, value in list(rule.items()):
             key = key.replace('-', '_')
             if type(value) == dict:
                 value = replace_key(value)
@@ -304,7 +306,7 @@ def xlate_cn_rules(rules_list):
         new_rule['rule_sequence']['minor'] = int(
             new_rule['rule_sequence']['minor'])
         new_rule['rule_sequence'] = None
-        if 'log' in new_rule['action_list'].keys():
+        if 'log' in list(new_rule['action_list'].keys()):
             new_rule['action_list']['log'] = json.loads(new_rule['action_list']['log'])
             new_rule['action_list']['alert'] = json.loads(new_rule['action_list']['alert'])
         # appending each rule to new list
@@ -317,7 +319,7 @@ def xlate_cn_rules(rules_list):
 
 def replace_key(d):
     new = {}
-    for k, v in d.iteritems():
+    for k, v in d.items():
         if isinstance(v, dict):
             v = replace_key(v)
         new[k.replace('-', '_')] = v
@@ -360,7 +362,7 @@ def get_policy_peer_vns(self, vnet_list, vn_fixture):
     self.logger.debug("vn_policys_peer_vns is: ", vn_policys_peer_vns)
 
     all_vns = []     # Build all vns list to replace any
-    for i, j in vn_fixture.items():
+    for i, j in list(vn_fixture.items()):
         x = j.vn_fq_name
         all_vns.append(x)
 
@@ -464,7 +466,7 @@ def update_rules_with_icmpv6(af, rules_list):
 def replace_cidr_rule_with_ipv6(rule_list, cidr_dict):
     for i, rule in enumerate(rule_list):
         rule_str = str(rule)
-        for key in cidr_dict.keys():
+        for key in list(cidr_dict.keys()):
             rule_str = rule_str.replace(key,cidr_dict[key])
         rule_list[i] = eval(rule_str)
         if rule_list[i]['protocol'] == 'icmp' or rule_list[i]['protocol'] == '1':
@@ -488,7 +490,7 @@ def update_cidr_rules_with_ipv6(af, rules_list, cidr_dict):
         new_rules_list = copy.deepcopy(rules_list)
         rule_list_v6 = []
         for i, rule in enumerate(new_rules_list):
-            for key in cidr_dict.keys():
+            for key in list(cidr_dict.keys()):
                 if key in str(rule):
                     rule_list_v6.append(copy.deepcopy(rule))
                     break

@@ -1,3 +1,4 @@
+from builtins import range
 import os
 import fixtures
 import testtools
@@ -33,7 +34,7 @@ class TestTor(BaseTorTest):
         #    return (False, 'Skipping Test. Env variable MX_GW_TEST is not set')
         if len(self.get_available_devices('tor')) < 2 :
             return (False, 'Skipping Test. Atleast 2 ToRs required in the Test cluster')
-        if len(self.inputs.tor_hosts_data.keys()) == 0 :
+        if len(list(self.inputs.tor_hosts_data.keys())) == 0 :
             return (False, 'Skipping Test. No BMS details seen in the Test cluster')
         return (True, None)
 
@@ -438,11 +439,11 @@ class TestTor(BaseTorTest):
 
         # Add static arps of each other
         bms1_fixture.add_static_arp(vm1_fixture.vm_ip,
-            vm1_fixture.mac_addr.values()[0])
+            list(vm1_fixture.mac_addr.values())[0])
         bms1_fixture.add_static_arp(bms2_ip, bms2_fixture.info['hwaddr'])
         bms2_fixture.add_static_arp(bms1_ip, bms1_fixture.info['hwaddr'])
         bms2_fixture.add_static_arp(vm1_fixture.vm_ip,
-            vm1_fixture.mac_addr.values()[0])
+            list(vm1_fixture.mac_addr.values())[0])
         vm1_fixture.add_static_arp(bms2_ip, bms2_fixture.info['hwaddr'])
         vm1_fixture.add_static_arp(bms1_ip, bms1_fixture.info['hwaddr'])
 
@@ -481,7 +482,7 @@ class TestTor(BaseTorTest):
 
         # Add static arps of each other
         bms1_fixture.add_static_arp(vm1_fixture.vm_ip,
-            vm1_fixture.mac_addr.values()[0])
+            list(vm1_fixture.mac_addr.values())[0])
         vm1_fixture.add_static_arp(bms1_ip, bms1_fixture.info['hwaddr'])
 
         # Clear MACs of the BMSs on the ToRs and check that ping fail
@@ -620,7 +621,7 @@ class TwoToROneRouterBase(BaseTorTest):
         if len(self.get_available_devices('tor')) < 2 :
             return (False, 'Skipping Test. Atleast 2 ToRs required in the '
                 'Test cluster')
-        if len(self.inputs.tor_hosts_data.keys()) == 0 :
+        if len(list(self.inputs.tor_hosts_data.keys())) == 0 :
             return (False, 'Skipping Test. No BMS details seen in the '
                 'Test cluster')
         return (True, None)

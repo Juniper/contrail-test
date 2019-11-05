@@ -1,4 +1,10 @@
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import next
+from builtins import range
+from builtins import object
 import os
 import re
 import sys
@@ -6,7 +12,7 @@ import json
 import time
 import socket
 import getpass
-import ConfigParser
+import configparser
 import ast
 from netaddr import *
 from itertools import ifilterfalse, ifilter
@@ -34,6 +40,7 @@ import random
 from cfgm_common import utils
 import argparse
 import yaml
+from future.utils import with_metaclass
 
 ORCH_DEFAULT_DOMAIN = {
     'openstack' : 'Default',
@@ -75,14 +82,13 @@ if "check_output" not in dir(subprocess):  # duck punch it in!
     subprocess.check_output = f
 
 
-class TestInputs(object):
+class TestInputs(with_metaclass(Singleton, object)):
     '''
        Class that would populate testbedinfo from parsing the
        .ini and .json input files if provided (or)
        check the keystone server to populate
        the same with the certain default value assumptions
     '''
-    __metaclass__ = Singleton
 
     def __init__(self, input_file, logger=None):
         self.jenkins_trigger = self.get_os_env('JENKINS_TRIGGERED')
@@ -329,7 +335,7 @@ class TestInputs(object):
         username = provider_configs.get('ssh_user') or 'root'
         password = provider_configs.get('ssh_pwd') or 'c0ntrail123'
         domainsuffix = provider_configs.get('domainsuffix') or 'englab.juniper.net'
-        for host, values  in (self.config.get('instances') or {}).iteritems():
+        for host, values  in (self.config.get('instances') or {}).items():
             roles = values.get('roles') or {}
             host_data = dict()
             host_data['host_ip'] = values['ip']
@@ -638,22 +644,22 @@ class TestInputs(object):
         self.tor_hosts_data = test_configs.get('tor_hosts',{})
 
         self.ext_routers = []
-        for rtr_name, address in test_configs.get('ext_routers', {}).iteritems():
+        for rtr_name, address in test_configs.get('ext_routers', {}).items():
             self.ext_routers.append((rtr_name, address))
         self.as4_ext_routers = []
-        for rtr_name, address in test_configs.get('as4_ext_routers', {}).iteritems():
+        for rtr_name, address in test_configs.get('as4_ext_routers', {}).items():
             self.as4_ext_routers.append((rtr_name, address))
         self.local_asbr_info = []
-        for asbr_name, address in test_configs.get('local_asbr', {}).iteritems():
+        for asbr_name, address in test_configs.get('local_asbr', {}).items():
             self.local_asbr_info.append((asbr_name, address))
         self.remote_asbr_info = {}
         remote_asbr_configs = test_configs.get('remote_asbr') or {}
         for remote_asbr in remote_asbr_configs:
           self.remote_asbr_info[remote_asbr] = {}
-          for key, value in remote_asbr_configs.get(remote_asbr, {}).iteritems():
+          for key, value in remote_asbr_configs.get(remote_asbr, {}).items():
             self.remote_asbr_info[remote_asbr][key] = value
         self.fabric_gw_info = []
-        for gw_name, address in test_configs.get('fabric_gw', {}).iteritems():
+        for gw_name, address in test_configs.get('fabric_gw', {}).items():
             self.fabric_gw_info.append((gw_name, address))
         if 'traffic_generator' in test_configs:
             traffic_gen = test_configs['traffic_generator']
@@ -881,10 +887,10 @@ class TestInputs(object):
                 logical_queues= vrouter_data_dict['QOS_LOGICAL_QUEUES']
                 logical_queue_list = logical_queues.split(';')
                 logical_queue_list = [x.strip("[] ") for x in logical_queue_list]
-                if "QOS_DEF_HW_QUEUE" in vrouter_data_dict.keys() and \
+                if "QOS_DEF_HW_QUEUE" in list(vrouter_data_dict.keys()) and \
                         len(logical_queue_list) == len(hw_queue_list):
                     logical_queue_list[-1] = logical_queue_list[-1] + ",default"
-                elif "QOS_DEF_HW_QUEUE" in vrouter_data_dict.keys() and \
+                elif "QOS_DEF_HW_QUEUE" in list(vrouter_data_dict.keys()) and \
                         len(logical_queue_list) == (len(hw_queue_list) -1):
                     logical_queue_list.append("default")
                 hw_to_logical_map_list = [{hw_queue_list[x]:logical_queue_list[x].split(",")} for \
@@ -972,7 +978,7 @@ class TestInputs(object):
         '''
         container : name or id of the container
         '''
-        if server_ip in self.host_data.keys():
+        if server_ip in list(self.host_data.keys()):
             if not username:
                 username = self.host_data[server_ip]['username']
             if not password:
@@ -1093,7 +1099,7 @@ class ContrailTestInit(object):
         contrail_svc = []
         non_contrail_svc = []
         if service:
-            services = [service] if isinstance(service, str) else service
+            services = [service] if not isinstance(service, list) else service
             for s in services:
                 svc_container = self.get_container_for_service(s)
                 if svc_container:
@@ -1136,7 +1142,7 @@ class ContrailTestInit(object):
         return (False, failed_services)
 
     def non_contrail_service_status(self, host, service):
-        hosts = [host] if (isinstance(host, str) or isinstance(host, unicode)) else host
+        hosts = [host] if (isinstance(host, str) or isinstance(host, str)) else host
         services = [service] if isinstance(service, str) else service
         status_dict = dict()
         for node in hosts:
@@ -1159,7 +1165,7 @@ class ContrailTestInit(object):
             actual_bgp_peer = []
             inspect_h = connections.agent_inspect[ip]
             agent_xmpp_status = inspect_h.get_vna_xmpp_connection_status()
-            for i in xrange(len(agent_xmpp_status)):
+            for i in range(len(agent_xmpp_status)):
                 actual_bgp_peer.append(agent_xmpp_status[i]['controller_ip'])
             agent_to_control_dct[ip] = actual_bgp_peer
         return agent_to_control_dct
@@ -1168,7 +1174,7 @@ class ContrailTestInit(object):
     def reboot(self, server_ip):
         i = socket.gethostbyaddr(server_ip)[0]
         print("rebooting %s" % i)
-        if server_ip in self.host_data.keys():
+        if server_ip in list(self.host_data.keys()):
             username = self.host_data[server_ip]['username']
             password = self.host_data[server_ip]['password']
         with hide('everything'):
@@ -1273,7 +1279,7 @@ class ContrailTestInit(object):
             return dct.get(service)
         elif container:
             try:
-                return dct.keys()[dct.values().index(container)]
+                return list(dct.keys())[list(dct.values()).index(container)]
             except ValueError:
                 return
 

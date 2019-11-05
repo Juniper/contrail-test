@@ -3,6 +3,7 @@ from __future__ import absolute_import
 # if no tool is passed, then netcat traditional is used for tcp/udp and
 # scapy is used for icmp
 
+from builtins import object
 import os
 import sys
 sys.path.append(os.path.realpath('tcutils/traffic_utils'))
@@ -15,7 +16,7 @@ SUPPORTED_TOOLS = [NETCAT, SCAPY, SOCKET]
 TCP = 'tcp'
 UDP = 'udp'
 
-class BaseTraffic():
+class BaseTraffic(object):
 
     @staticmethod
     def factory(tool=None, proto=None):

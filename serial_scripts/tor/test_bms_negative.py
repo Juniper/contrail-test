@@ -26,7 +26,7 @@ class TestBMSNegative(BaseTorTest):
     def is_test_applicable(self):
         if len(self.get_available_devices('tor')) < 2 :
             return (False, 'Skipping Test. Atleast 2 ToRs required in the Test cluster')
-        if len(self.inputs.tor_hosts_data.keys()) == 0 :
+        if len(list(self.inputs.tor_hosts_data.keys())) == 0 :
             return (False, 'Skipping Test. No BMS details seen in the Test cluster')
         return (True, None)
 

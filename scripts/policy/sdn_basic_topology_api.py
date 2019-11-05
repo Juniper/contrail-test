@@ -1,9 +1,10 @@
 '''*******AUTO-GENERATED TOPOLOGY*********'''
 from __future__ import print_function
+from builtins import object
 from vnc_api.vnc_api import *
 
 
-class sdn_basic_config_api ():
+class sdn_basic_config_api(object):
 
     def __init__(self, domain='default-domain', project='admin', username=None, password=None):
         #
@@ -67,7 +68,7 @@ class sdn_basic_config_api ():
         # end __init__
 
 
-class sdn_multiple_vn_single_policy_config_api ():
+class sdn_multiple_vn_single_policy_config_api(object):
 
     def __init__(self, domain='default-domain', project='admin', username=None, password=None):
         #
@@ -117,7 +118,7 @@ if __name__ == '__main__':
     my_topo = sdn_basic_config_api(domain='default-domain', project='admin')
     x = my_topo.__dict__
     print("\nprinting keys of topology dict:")
-    for key, value in x.iteritems():
+    for key, value in x.items():
         print(key)
     print()
     # print "keys & values:"
