@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from builtins import range
 from tcutils.wrappers import preposttest_wrapper
 from vn_test import MultipleVNFixture
 from vm_test import MultipleVMFixture

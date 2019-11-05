@@ -1,10 +1,13 @@
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
 import fixtures
 from tcutils.commands import execute_cmd
 from tcutils.util import retry
 from fabric.api import run, local
 from fabric.operations import put, get
 from fabric.context_managers import settings, hide
-import ConfigParser
+import configparser
 from datetime import datetime
 import re
 import time
@@ -43,7 +46,7 @@ class ComputeNodeFixture(fixtures.Fixture):
         self.already_present = False
         self.ip = node_ip
         self.container = self.inputs.get_container_name(self.ip, 'agent')
-        for name, ip in self.inputs.compute_info.iteritems():
+        for name, ip in self.inputs.compute_info.items():
             if ip == self.ip:
                 self.name = name
                 break
@@ -99,10 +102,10 @@ class ComputeNodeFixture(fixtures.Fixture):
     def read_agent_config(self):
         self.get_file(self.agent_conf_file,
             self.recd_agent_conf_file)
-        self.config = ConfigParser.SafeConfigParser()
+        self.config = configparser.SafeConfigParser()
         try:
             self.config.read(self.recd_agent_conf_file)
-        except ConfigParser.ParsingError as e:
+        except configparser.ParsingError as e:
             self.logger.error('Hit Parsing Error!!')
             self.logger.error('---------------------')
             self.logger.error(e)
@@ -208,7 +211,7 @@ class ComputeNodeFixture(fixtures.Fixture):
         try:
             self.config.get(section_name, option_name)
             exists = True
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             exists = False
             pass
         if exists:
@@ -476,7 +479,7 @@ class ComputeNodeFixture(fixtures.Fixture):
             reqd_entries['vrf_id'] = vrf_id
 
         for flow_entry_item in flow_table.items:
-            if reqd_entries.viewitems() <= flow_entry_item.viewitems():
+            if reqd_entries.items() <= flow_entry_item.items():
                 forward_flow_count+= 1
                 if flow_entry_item['rflow'] != '-1':
                     reverse_flow_count+= 1
@@ -528,7 +531,7 @@ class ComputeNodeFixture(fixtures.Fixture):
         if all_flows:
             all_flow_list = []
         for flow_entry_item in flow_table.items:
-            if reqd_entries.viewitems() <= flow_entry_item.viewitems():
+            if reqd_entries.items() <= flow_entry_item.items():
                 forward_flow = FlowEntry(flow_entry_item)
                 if flow_entry_item['rflow'] != '-1':
                     reverse_flow_item = [x for x 
@@ -605,7 +608,7 @@ class ComputeNodeFixture(fixtures.Fixture):
         try:
             file_h = open(self.updated_vrouter_conf_file.name, 'w')
             line = 'options vrouter '
-            for (name, value) in params.items():
+            for (name, value) in list(params.items()):
                 line+= '%s=%s' % (name, value)
             file_h.write(line)
             file_h.close()
@@ -621,7 +624,7 @@ class ComputeNodeFixture(fixtures.Fixture):
         ''' params is a dict
             Refer https://github.com/Juniper/contrail-controller/wiki/Vrouter-Module-Parameters
         '''
-        curr_params = dict(self.read_vrouter_module_params().items() + params.items())
+        curr_params = dict(list(self.read_vrouter_module_params().items()) + list(params.items()))
         if not self.write_vrouter_module_params(curr_params):
             self.logger.error('Failed to add %s to %s' % (params,
                 self.vrouter_conf_file))
@@ -635,7 +638,7 @@ class ComputeNodeFixture(fixtures.Fixture):
            Refer wiki contrail-controller/wiki/Vrouter-Module-Parameters
         '''
         curr_params = self.read_vrouter_module_params()
-        for (key,value) in params.iteritems():
+        for (key,value) in params.items():
             curr_params.pop(key, None)
         if not self.write_vrouter_module_params(curr_params):
             self.logger.error('Failed to add %s to %s' % (params,

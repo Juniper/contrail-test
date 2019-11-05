@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+from builtins import str
+from builtins import range
 from common.openstack_libs import ks_client as ksclient
 from vnc_api.vnc_api import *
 import uuid

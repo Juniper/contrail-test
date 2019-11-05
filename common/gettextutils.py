@@ -22,13 +22,15 @@ Usual usage in an openstack.common module:
     from tempest.openstack.common.gettextutils import _
 """
 
+from future import standard_library
+standard_library.install_aliases()
 import copy
 import gettext
 import logging
 import os
 import re
 try:
-    import UserString as _userString
+    import collections as _userString
 except ImportError:
     import collections as _userString
 
@@ -115,7 +117,7 @@ def install(domain, lazy=False):
         else:
             gettext.install(domain,
                             localedir=os.environ.get(localedir),
-                            unicode=True)
+                            str=True)
 
 
 class Message(_userString.UserString, object):
@@ -183,7 +185,7 @@ class Message(_userString.UserString, object):
                     param.locale = value
             return
         if isinstance(self.params, dict):
-            for param in self.params.values():
+            for param in list(self.params.values()):
                 if isinstance(param, Message):
                     param.locale = value
 
@@ -247,7 +249,7 @@ class Message(_userString.UserString, object):
         return new_dict
 
     def __setstate__(self, state):
-        for (k, v) in state.items():
+        for (k, v) in list(state.items()):
             setattr(self, k, v)
 
     # operator overloads

@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 import test_v1
 from common.connections import ContrailConnections
 from tcutils.util import *
@@ -147,8 +149,8 @@ class BaseVrouterTest(BaseNeutronTest, VerifySvcMirror):
 
     def create_vns(self, count=1, *args, **kwargs):
         vn_fixtures = []
-        for i in xrange(count):
-            if 'vn_subnets' not in kwargs.keys():
+        for i in range(count):
+            if 'vn_subnets' not in list(kwargs.keys()):
                 vn_subnets = get_random_cidrs(self.inputs.get_af())
                 vn_fixtures.append(self.create_vn(vn_subnets=vn_subnets, *args, **kwargs))
             else:
@@ -166,12 +168,12 @@ class BaseVrouterTest(BaseNeutronTest, VerifySvcMirror):
         node_name = None
         host = False
         compute_hosts = self.orch.get_hosts()
-        for i in xrange(count):
+        for i in range(count):
             if node_list:
                 node_count = len(node_list)
                 node_id  = i % node_count
                 node_name = node_list[node_id]
-                if 'node_name' not in kwargs.keys():
+                if 'node_name' not in list(kwargs.keys()):
                     kwargs['node_name'] = node_name
                     host = True
             fixed_ips=None
@@ -213,7 +215,7 @@ class BaseVrouterTest(BaseNeutronTest, VerifySvcMirror):
             interface = vm_fixture.get_vm_interface_list(ip=vm_fixture.vm_ip)[0]
             cmd = 'sysctl net.ipv6.conf.%s.accept_dad=0' % (interface)
             vm_fixture.run_cmd_on_vm([cmd], as_sudo=True)
-            vmi_ids = vm_fixture.get_vmi_ids().values()
+            vmi_ids = list(vm_fixture.get_vmi_ids().values())
             for vmi_id in vmi_ids:
                 route_table_name = get_random_name('my_route_table')
                 vm_fixture.provision_static_route(
@@ -237,7 +239,7 @@ class BaseVrouterTest(BaseNeutronTest, VerifySvcMirror):
 
     def disable_policy_for_vms(self, vm_fixtures, disable=True):
         for vm in vm_fixtures:
-            vmi_ids = vm.get_vmi_ids().values()
+            vmi_ids = list(vm.get_vmi_ids().values())
             self.disable_policy_on_vmis(vmi_ids, disable)
 
         return True
@@ -401,8 +403,8 @@ class BaseVrouterTest(BaseNeutronTest, VerifySvcMirror):
         calc_no_hosts = 2 ** (32 - prefix_length)
         client1_vm_ip = client1_fix.get_vm_ips(af='v4')[0]
         next_subnet_ip = str(ipaddress.IPv4Address
-                             (unicode(client1_vm_ip)) + calc_no_hosts)
-        next_subnet = str(ipaddress.IPv4Address(unicode(cidr)) + calc_no_hosts)
+                             (str(client1_vm_ip)) + calc_no_hosts)
+        next_subnet = str(ipaddress.IPv4Address(str(cidr)) + calc_no_hosts)
         fixed_ips = [{'subnet_id' : subnet_ipv4,'ip_address': next_subnet_ip}]
         fixed_ips = [{'subnet_id' : subnet_ipv4,'ip_address': next_subnet_ip}]
 
@@ -413,9 +415,9 @@ class BaseVrouterTest(BaseNeutronTest, VerifySvcMirror):
 
              calc_no_hosts = 2 ** (128 - prefix_length6)
              next_subnet_ipv6 = str(ipaddress.IPv6Address
-                                    (unicode(client1_vm_ipv6)) + calc_no_hosts)
+                                    (str(client1_vm_ipv6)) + calc_no_hosts)
              next_subnetv6 = str(ipaddress.IPv6Address
-                                 (unicode(cidr6)) + calc_no_hosts)
+                                 (str(cidr6)) + calc_no_hosts)
              fixed_ips.append({'subnet_id' : subnet_ipv6,'ip_address': next_subnet_ipv6})
         if not self.client2_fix:
             self.client2_fix = self.create_vm_using_fixed_ips(
@@ -610,7 +612,7 @@ class BaseVrouterTest(BaseNeutronTest, VerifySvcMirror):
                     assert si_fixture.verify_hc_is_active()
 
         #Configure Fat flow on server VM
-        server_vmi_id = server_fixtures[0].get_vmi_ids().values()
+        server_vmi_id = list(server_fixtures[0].get_vmi_ids().values())
         ff_on_vmi = False
         if not only_v6 and ff_on_vmi or not ff_on_si_vmis:
             if fat_flow:
@@ -1727,7 +1729,7 @@ class BaseVrouterTest(BaseNeutronTest, VerifySvcMirror):
         vrf_id = flow_entry.vrf_id
         flow_dest_ip = '%s/32' % (flow_entry.dest_ip)
         if not vn_fixture:
-            tap_intf = vm_fixture.tap_intf.values()[0]['name']
+            tap_intf = list(vm_fixture.tap_intf.values())[0]['name']
             vn_fq_name = vm_fixture.vn_fq_names[0]
         else:
             tap_intf = vm_fixture.tap_intf[vn_fixture.vn_fq_name]['name']

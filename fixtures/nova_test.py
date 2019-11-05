@@ -1,4 +1,9 @@
 from __future__ import print_function
+from builtins import map
+from builtins import next
+from builtins import str
+from builtins import zip
+from builtins import object
 import os
 from common.openstack_libs import nova_client as mynovaclient
 from common.openstack_libs import nova_exception as novaException
@@ -155,8 +160,8 @@ class NovaHelper(object):
             zones = self.obj.availability_zones.list()
         except novaException.Forbidden:
             zones = self.admin_obj.obj.availability_zones.list()
-        zones = filter(lambda x: x.zoneName != 'internal', zones)
-        return map(lambda x: x.zoneName, zones)
+        zones = [x for x in zones if x.zoneName != 'internal']
+        return [x.zoneName for x in zones]
 
     def get_handle(self):
         return self.obj
@@ -471,11 +476,9 @@ class NovaHelper(object):
     def get_nova_services(self, **kwargs):
         try:
             nova_services = self.obj.services.list(**kwargs)
-            nova_services = filter(lambda x: x.state != 'down' and x.status != 'disabled',
-                   nova_services)
+            nova_services = [x for x in nova_services if x.state != 'down' and x.status != 'disabled']
             if self.zone:
-                nova_services = filter(lambda x: x.zone == 'internal' or x.zone == self.zone,
-                       nova_services)
+                nova_services = [x for x in nova_services if x.zone == 'internal' or x.zone == self.zone]
             self.logger.debug('Services list from nova: %s' %
                              nova_services)
             return nova_services
@@ -501,17 +504,17 @@ class NovaHelper(object):
                     self.username, self.password,
                     self.project_name, self.auth_url, self.region_name))
         services_info = services_info.split('\r\n')
-        get_rows = lambda row: map(str.strip, filter(None, row.split('|')))
+        get_rows = lambda row: list(map(str.strip, [_f for _f in row.split('|') if _f]))
         columns = services_info[1].split('|')
-        columns = map(str.strip, filter(None, columns))
-        columns = map(str.lower, columns)
-        columns_no_binary = map(str.lower, columns)
+        columns = list(map(str.strip, [_f for _f in columns if _f]))
+        columns = list(map(str.lower, columns))
+        columns_no_binary = list(map(str.lower, columns))
         columns_no_binary.remove('binary')
-        rows = map(get_rows, services_info[3:-1])
+        rows = list(map(get_rows, services_info[3:-1]))
         nova_class = type('NovaService', (object,), {})
         for row in rows:
-            datadict = dict(zip(columns, row))
-            for fk, fv in kwargs.items():
+            datadict = dict(list(zip(columns, row)))
+            for fk, fv in list(kwargs.items()):
                 if datadict[fk] != fv:
                     break
                 else:
@@ -519,7 +522,7 @@ class NovaHelper(object):
                        datadict['state'] == 'down':
                         break
                     service_obj = nova_class()
-                    for key, value in datadict.items():
+                    for key, value in list(datadict.items()):
                         setattr(service_obj, key, value)
 
                     # Append the service into the list.
@@ -663,10 +666,10 @@ class NovaHelper(object):
         vm_ip_dict = self.get_vm_ip_dict(vm_obj)
         if not vn_name:
             address = list()
-            for ips in vm_ip_dict.itervalues():
+            for ips in vm_ip_dict.values():
                 address.extend(ips)
             return (True, address)
-        if vn_name in vm_ip_dict.keys() and vm_ip_dict[vn_name]:
+        if vn_name in list(vm_ip_dict.keys()) and vm_ip_dict[vn_name]:
             return (True, vm_ip_dict[vn_name])
         self.logger.error('VM does not seem to have got an IP in VN %s' % (vn_name))
         return (False, [])
@@ -679,7 +682,7 @@ class NovaHelper(object):
         ''' Returns a dict of all IPs with key being VN name '''
         vm_obj.get()
         ip_dict={}
-        for key,value in vm_obj.addresses.iteritems():
+        for key,value in vm_obj.addresses.items():
             ip_dict[key] = list()
             for dct in value:
                 ip_dict[key].append(dct['addr'])

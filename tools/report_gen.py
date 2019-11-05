@@ -1,9 +1,12 @@
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
 import os
 import re
 import sys
 import time
-import ConfigParser
+import configparser
 import datetime
 import logging
 
@@ -109,9 +112,9 @@ class ContrailReportInit(TestInputs):
         collector_nodes = [self.get_node_name(x) for x in self.collector_ips]
         cfgm_nodes = [self.get_node_name(x) for x in self.cfgm_ips]
         webui_node = [self.get_node_name(x) for x in self.webui_ips]
-        ext_rtr = unicode(self.ext_routers).strip('[()]')
+        ext_rtr = str(self.ext_routers).strip('[()]')
         phy_dev = []
-        phy_dev = self.physical_routers_data.keys()
+        phy_dev = list(self.physical_routers_data.keys())
         phy_dev.append(ext_rtr)
         if self.orchestrator == 'openstack':
             openstack_nodes = [self.get_node_name(x) for x in self.openstack_ips]
@@ -138,14 +141,14 @@ class ContrailReportInit(TestInputs):
     def write_report_details(self):
         phy_topology = self._get_phy_topology_detail()
         details_h = open(self.report_details_file, 'w')
-        config = ConfigParser.ConfigParser()
+        config = configparser.ConfigParser()
         config.add_section('Test')
         config.set('Test', 'Build', self.build_id)
         config.set('Test', 'Distro_Sku', self.setup_detail)
         config.set('Test', 'timestamp', self.ts)
         config.set('Test', 'Report', self.html_log_link)
         config.set('Test', 'LogsLocation', self.log_link)
-        config.set('Test', 'Cores', self.get_cores())
+        config.set('Test', 'Cores', str(self.get_cores()))
 
         if (self.sm_pkg or self.contrail_pkg or self.puppet_pkg):
             config.set('Test', 'sm_pkg', self.sm_pkg)

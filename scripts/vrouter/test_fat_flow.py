@@ -1,3 +1,4 @@
+from builtins import str
 from tcutils.wrappers import preposttest_wrapper
 from common.vrouter.base import BaseVrouterTest
 import test
@@ -52,7 +53,7 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
         #Configure Fat flow on server VM
         proto = 'udp'
         port = 53
-        server_vmi_id = server_fixtures[0].get_vmi_ids().values()
+        server_vmi_id = list(server_fixtures[0].get_vmi_ids().values())
         fat_flow_config = {'proto':proto,'port':port}
         self.add_fat_flow_to_vmis(server_vmi_id, fat_flow_config)
 
@@ -89,7 +90,7 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
         #Configure Fat flow on server VM
         proto = 'udp'
         port = 53
-        server_vmi_id = server_fixtures[0].get_vmi_ids().values()
+        server_vmi_id = list(server_fixtures[0].get_vmi_ids().values())
         fat_flow_config = {'proto':proto,'port':port}
         self.add_fat_flow_to_vmis(server_vmi_id, fat_flow_config)
 
@@ -127,7 +128,7 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
         proto = 'udp'
         port = 53
         srcport = 10000
-        server_vmi_id = server_fixtures[0].get_vmi_ids().values()
+        server_vmi_id = list(server_fixtures[0].get_vmi_ids().values())
         fat_flow_config = {'proto':proto,'port':port}
         self.add_fat_flow_to_vmis(server_vmi_id, fat_flow_config)
 
@@ -187,7 +188,7 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
         proto = 'udp'
         port = 53
         srcport = 10000
-        server_vmi_id = server_fixtures[0].get_vmi_ids().values()
+        server_vmi_id = list(server_fixtures[0].get_vmi_ids().values())
         fat_flow_config = {'proto':proto,'port':port}
         self.add_fat_flow_to_vmis(server_vmi_id, fat_flow_config)
 
@@ -244,7 +245,7 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
         proto = 'tcp'
         port = 10000
         sport = 9000
-        server_vmi_id = server_fixtures[0].get_vmi_ids().values()
+        server_vmi_id = list(server_fixtures[0].get_vmi_ids().values())
         fat_flow_config = {'proto':proto,'port':port}
         self.add_fat_flow_to_vmis(server_vmi_id, fat_flow_config)
 
@@ -487,7 +488,7 @@ class FatFlow(BaseVrouterTest, BaseLBaaSTest):
         proto = 'tcp'
         fat_flow_config = {'proto':proto,'port':port}
         for vm in lb_pool_servers:
-            vmi_id = vm.get_vmi_ids().values()
+            vmi_id = list(vm.get_vmi_ids().values())
             self.add_fat_flow_to_vmis(vmi_id, fat_flow_config)
 
         for vm in lb_pool_servers:

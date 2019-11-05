@@ -1,3 +1,4 @@
+from builtins import str
 from fabric.operations import get, put, sudo, local
 from fabric.api import run, env
 from fabric.exceptions import CommandTimeout, NetworkError

@@ -1,3 +1,6 @@
+from builtins import str
+from builtins import range
+import sys
 from time import sleep
 from common.servicechain.verify import VerifySvcChain
 from tcutils.tcpdump_utils import *
@@ -139,7 +142,7 @@ class ECMPTraffic(VerifySvcChain):
             # configured "destination_port" alone.
             if hash_var_count == 1 and (not 'destination_port' in ecmp_hash):
                 flow_pattern_ref = flow_pattern[str(DPORT)]
-                if all(flow_pattern_ref  == item for item in flow_pattern.values()):
+                if all(flow_pattern_ref  == item for item in list(flow_pattern.values())):
                     self.logger.info(
                         'Flows are flowing through Single Service Instance: %s, as per config hash: %s' % (flow_pattern_ref, ecmp_hash))
                     self.logger.info('%s' % flow_pattern)
@@ -152,7 +155,7 @@ class ECMPTraffic(VerifySvcChain):
             # ecmp_hash
             else:
                 flow_pattern_ref = flow_pattern[str(DPORT)]
-                if all(flow_pattern_ref  == item for item in flow_pattern.values()):
+                if all(flow_pattern_ref  == item for item in list(flow_pattern.values())):
                     result = False
                     self.logger.error(
                         'Flows are flowing through Single Service Instance:%s, where as it should not as per config hash:%s' % (flow_pattern_ref, ecmp_hash))
@@ -170,7 +173,7 @@ class ECMPTraffic(VerifySvcChain):
         self.logger.info('Checking Flow records')
         vn_fq_name = src_vm.vn_fq_name
         src_vm.wait_till_vm_is_up()
-        items_list = src_vm.tap_intf[vn_fq_name].items()
+        items_list = list(src_vm.tap_intf[vn_fq_name].items())
         for items, values in items_list:
             if items == 'flow_key_idx':
                 nh_id = values

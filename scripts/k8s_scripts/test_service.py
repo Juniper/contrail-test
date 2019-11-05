@@ -1,3 +1,4 @@
+from builtins import range
 from tcutils.util import skip_because
 #import random
 from common.k8s.base import BaseK8sTest

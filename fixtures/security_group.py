@@ -350,14 +350,11 @@ def list_sg_rules(connections,sg_id, direction=None, eth_type=None, proto=None):
     rule_list = sg_info['security_group']['security_group_rules']
 
     if direction is not None:
-        rule_list= list(filter(lambda x: x['direction'] == direction,
-            rule_list))
+        rule_list= list([x for x in rule_list if x['direction'] == direction])
     if eth_type is not None:
-        rule_list= list(filter(lambda x: x['ethertype'] == eth_type,
-            rule_list))
+        rule_list= list([x for x in rule_list if x['ethertype'] == eth_type])
     if proto is not None:
-        rule_list= list(filter(lambda x: x['protocol'] == proto,
-            rule_list))
+        rule_list= list([x for x in rule_list if x['protocol'] == proto])
 
     return rule_list
 

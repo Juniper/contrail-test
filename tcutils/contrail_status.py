@@ -1,7 +1,11 @@
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import object
 import os
 import sys
-import ConfigParser
+import configparser
 import socket
 import requests
 import warnings
@@ -80,9 +84,9 @@ class EtreeToDict(object):
         a_list = []
         for elem in elems.getchildren():
             rval = self._get_one(elem, a_list)
-            if 'element' in rval.keys():
+            if 'element' in list(rval.keys()):
                 a_list.append(rval['element'])
-            elif 'list' in rval.keys():
+            elif 'list' in list(rval.keys()):
                 a_list.append(rval['list'])
             else:
                 a_list.append(rval)
@@ -108,7 +112,7 @@ class EtreeToDict(object):
                 val.update({xp.tag: self._handle_list(elem)})
             else:
                 rval = self._get_one(elem, a_list)
-                if elem.tag in rval.keys():
+                if elem.tag in list(rval.keys()):
                     val.update({elem.tag: rval[elem.tag]})
                 else:
                     val.update({elem.tag: rval})
@@ -135,7 +139,7 @@ class EtreeToDict(object):
         Returns the element looked for/None.
         """
         xp = path.xpath(self.xpath)
-        f = filter(lambda x: x.text == match, xp)
+        f = [x for x in xp if x.text == match]
         if len(f):
             return f[0].text
         return None
@@ -235,11 +239,11 @@ def contrail_status(inputs=None, host=None, role=None, service=None,
     cacert = cacert or inputs.introspect_cafile
 
     if host:
-        host = [host] if isinstance(host, str) else host
+        host = [host] if not isinstance(host, list) else host
     if role:
-        role = [role] if isinstance(role, str) else role
+        role = [role] if not isinstance(role, list) else role
     if service:
-        service = [service] if isinstance(service, str) else service
+        service = [service] if not isinstance(service, list) else service
 
     for node in host or inputs.host_ips:
         if refresh:

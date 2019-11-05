@@ -1,5 +1,6 @@
 """Module to launch any local/remote command."""
 
+from builtins import object
 import os
 import signal
 import tempfile

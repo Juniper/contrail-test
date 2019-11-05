@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 import re
 from vnc_api.vnc_api import *
 from common.device_connection import NetconfConnection
@@ -96,7 +98,7 @@ class MVPNTestBase(BaseVrouterTest):
 
         # Controller IP
         ctrl_ip = self.inputs.bgp_ips[0]
-        local_addr = self.inputs.dm_mx.values()[0]['control_ip']
+        local_addr = list(self.inputs.dm_mx.values())[0]['control_ip']
         ce_int = MX_CONFIG.get('intf')
 
 
@@ -260,14 +262,14 @@ class MVPNTestBase(BaseVrouterTest):
 
         # Configuring mvpn at global level
         name = MX_CONFIG.get('name', 'umesh')
-        ip = self.inputs.dm_mx.values()[0]['control_ip']
+        ip = list(self.inputs.dm_mx.values())[0]['control_ip']
         asn = self.inputs.router_asn
         af = ["route-target", "inet-mvpn", "inet-vpn", "e-vpn", "inet6-vpn"]
         self.vnc_h.add_bgp_router('router', name, ip, asn, af)
         self.addCleanup(self.vnc_h.delete_bgp_router, name)
 
         # MX configuration
-        ip = self.inputs.dm_mx.values()[0]['mgmt_ip']
+        ip = list(self.inputs.dm_mx.values())[0]['mgmt_ip']
         self.provision_mx(ip)
 
         # VNs creation
@@ -311,7 +313,7 @@ class IGMPTestBase(BaseVrouterTest):
         '''
 
         # Send IGMPv3 membership reports from multicast receivers
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             for rcvr in stream['rcvrs']:
                 result = self.send_igmp_report(vm_fixtures[rcvr], igmp)
 
@@ -366,7 +368,7 @@ class IGMPTestBase(BaseVrouterTest):
 
         # Verify other MVPN route types
         else:
-            for stream in traffic.values():
+            for stream in list(traffic.values()):
                 for rcvr in stream['rcvrs']:
                     mx_ip = MX_CONFIG.get('lo0', '1.1.1.1')
                     if igmp['type'] == 0x22:
@@ -577,7 +579,7 @@ class IGMPTestBase(BaseVrouterTest):
         # As IGMP report is sent from these receivers, entries should be present
         # in agent
         result = True
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             for rcvr in stream['rcvrs']:
                 # Verifying IGMP report details in "ip-fabric" VRF at agent
                 vrf_id = 1
@@ -593,7 +595,7 @@ class IGMPTestBase(BaseVrouterTest):
 
                 # Verifying IGMP report details in VM's VRF at agent
                 compute_node_ip = vm_fixtures[rcvr].vm_node_ip
-                vrf_id = vm_fixtures[rcvr].get_vrf_ids()[compute_node_ip].values()[0]
+                vrf_id = list(vm_fixtures[rcvr].get_vrf_ids()[compute_node_ip].values())[0]
                 result = result & self.verify_igmp_report(vm_fixtures[rcvr],
                                     vrf_id, igmp, expectation=True)
 
@@ -607,7 +609,7 @@ class IGMPTestBase(BaseVrouterTest):
         # Verify IGMPv3 membership at agent
         # As IGMP report is not sent from these receivers, entries should
         # not be present in agent
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             for rcvr in stream['non_rcvrs']:
                 # Verifying IGMP report details in "ip-fabric" VRF at agent
                 vrf_id = 1
@@ -623,7 +625,7 @@ class IGMPTestBase(BaseVrouterTest):
 
                 # Verifying IGMP report details in VM's VRF at agent
                 compute_node_ip = vm_fixtures[rcvr].vm_node_ip
-                vrf_id = vm_fixtures[rcvr].get_vrf_ids()[compute_node_ip].values()[0]
+                vrf_id = list(vm_fixtures[rcvr].get_vrf_ids()[compute_node_ip].values())[0]
                 result = result & self.verify_igmp_report(vm_fixtures[rcvr],
                                 vrf_id, igmp, expectation=False)
                 if result:
@@ -699,7 +701,7 @@ class IGMPTestBase(BaseVrouterTest):
         '''
 
         result = True
-        tap_intf = vm_fixture.tap_intf.values()[0]['name']
+        tap_intf = list(vm_fixture.tap_intf.values())[0]['name']
         compute_node_ip = vm_fixture.vm_node_ip
         num_of_grp_records = igmp.get('numgrp', 1)
         for record in range(num_of_grp_records):
@@ -736,7 +738,7 @@ class IGMPTestBase(BaseVrouterTest):
         pcap = {}
 
         # Start tcpdump on receivers and non receivers
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             #src_ip = vm_fixtures[stream['src']].vm_ip
             mcast_subnet = MX_CONFIG.get('mcast_subnet', '30.30.30.0/24')
             src_ip = get_an_ip(mcast_subnet, 1)
@@ -767,7 +769,7 @@ class IGMPTestBase(BaseVrouterTest):
         '''
 
         # Send Multicast Traffic
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             self.send_mcast_stream(vm_fixtures[stream['src']],
                 maddr=stream['maddr'], count=stream['count'])
         return True
@@ -780,7 +782,7 @@ class IGMPTestBase(BaseVrouterTest):
         # Verify Multicast Traffic on receivers. Incase, IGMPv3 exclude is sent
         # multicast data traffic should not receive on the receivers. Only
         # IGMPv3 include should receive multicast data traffic.
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             maddr_traffic = stream['maddr']
             for rcvr in stream['rcvrs']:
                 exp_count = stream['count']
@@ -804,7 +806,7 @@ class IGMPTestBase(BaseVrouterTest):
 
         # Verify Multicast Traffic on non receivers, traffic should not reach
         # these
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             for rcvr in stream['non_rcvrs']:
 
                 verify_tcpdump_count(self, session[rcvr], pcap[rcvr],

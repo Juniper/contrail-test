@@ -1,12 +1,12 @@
+from builtins import object
 import logging
 from abc import ABCMeta, abstractmethod
 
 from contrailapi import ContrailVncApi
+from future.utils import with_metaclass
 
-class Orchestrator:
+class Orchestrator(with_metaclass(ABCMeta, object)):
    """Base class for orchestrator."""
-
-   __metaclass__ = ABCMeta
 
    def __init__(self, inputs, vnc_api_h, logger=None):
        self.inputs = inputs
@@ -192,9 +192,7 @@ class Orchestrator:
    def set_security_group_rules(self, sg_id, **kwargs):
        return self.vnc_h.set_security_group_rules(sg_id, **kwargs)
 
-class OrchestratorAuth:
-   __metaclass__ = ABCMeta
-
+class OrchestratorAuth(with_metaclass(ABCMeta, object)):
    @abstractmethod
    def reauth(self):
        pass

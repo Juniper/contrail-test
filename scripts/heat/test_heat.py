@@ -274,7 +274,7 @@ try:
                 svc_tmpls[mode]['fq_name'] = ':'.join(tmpl.st_fq_name)
             sis = {}
             i = 1
-            for svc, mode in svcs.items():
+            for svc, mode in list(svcs.items()):
                 sis[svc] = self.config_svc_instance(
                     'sil_%d' % i, svc_tmpls[mode]['tmpl'], vn_list)
                 i += 1

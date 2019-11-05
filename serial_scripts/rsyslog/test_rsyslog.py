@@ -4,6 +4,10 @@ from __future__ import absolute_import
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
 import os
 import copy
 import traceback
@@ -18,7 +22,7 @@ from fabric.api import run
 from fabric.context_managers import settings
 import test
 import time
-import commands
+import subprocess
 import re
 from tcutils.rsyslog_utils import restart_collector_to_listen_on_port
 from tcutils.rsyslog_utils import restart_rsyslog_client_to_send_on_port

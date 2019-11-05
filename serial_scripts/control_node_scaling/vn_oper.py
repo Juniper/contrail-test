@@ -1,5 +1,8 @@
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 import argparse
-import ConfigParser
+import configparser
 
 import eventlet
 import os
@@ -194,7 +197,7 @@ class VnCfg(object):
         }
 
         if args.conf_file:
-            config = ConfigParser.SafeConfigParser()
+            config = configparser.SafeConfigParser()
             config.read([args.conf_file])
             defaults.update(dict(config.items("DEFAULTS")))
             if 'KEYSTONE' in config.sections():
