@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 import os
 import time
 import random
@@ -46,17 +48,7 @@ SVC_IMAGE_PROPS = {
     'ubuntu' : { 'management' : False, 'left' : True, 'right' : False }
 }
 
-class ConfigSvcChain(fixtures.Fixture):
-
-    def __init__(self, use_vnc_api=False, connections=None):
-        self.use_vnc_api = use_vnc_api
-        if connections:
-            self.connections = connections
-            self.inputs = connections.inputs
-            self.orch = connections.orch
-            self.vnc_lib = connections.vnc_lib
-            self.logger = connections.logger
-        super(ConfigSvcChain, self).__init__()
+class ConfigSvcChain(object):
 
     def delete_si_st(self, si_fixtures, st_fix):
         for si_fix in si_fixtures:
@@ -882,7 +874,7 @@ class ConfigSvcChain(fixtures.Fixture):
     def config_ecmp_hash_vmi(self, svm_list, ecmp_hash=None):
         """Configure ecmp hash at vmi"""
         for svm in svm_list:
-            for (vn_fq_name, vmi_uuid) in svm.get_vmi_ids().iteritems():
+            for (vn_fq_name, vmi_uuid) in svm.get_vmi_ids().items():
                 if re.match(r".*in_network_vn2.*|.*bridge_vn2.*|.*right_.*", vn_fq_name):
                     self.logger.info('Updating ECMP Hash:%s at vmi:%s' % (ecmp_hash, vmi_uuid))
                     vmi_config = self.vnc_lib.virtual_machine_interface_read(id = str(vmi_uuid))

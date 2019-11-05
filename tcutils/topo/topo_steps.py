@@ -1,6 +1,8 @@
 ''' This module provides utils for setting up sdn topology given the topo inputs'''
 from __future__ import print_function
 from __future__ import absolute_import
+from builtins import str
+from builtins import range
 import os
 import copy
 import fixtures
@@ -863,7 +865,7 @@ def createQos(self, glob_flag=False):
             result = True
             msg = []
             qos_param = qos_params_option[qos_name]
-            if 'qos_config_type' in qos_param.keys():
+            if 'qos_config_type' in list(qos_param.keys()):
                 qos_config_type = qos_param['qos_config_type']
             self.qos_fixture[qos_name] = self.useFixture(
                 QosConfigFixture(
@@ -890,10 +892,10 @@ def allocNassocFIP(self, config_topo=None, assoc=True):
     #                        {'vnet2':{'project1': ['vmc21'], 'project2': ['vmc14']}}
     if not config_topo:
             config_topo = self.config_topo
-    for vn_proj, fvn_vm_map in self.topo.fvn_vm_map.iteritems():
-        for vn_name, map in fvn_vm_map.iteritems():
+    for vn_proj, fvn_vm_map in self.topo.fvn_vm_map.items():
+        for vn_name, map in fvn_vm_map.items():
             # {'project1': ['vmc2', 'vmc3'], 'project2': ['vmc4']},
-            for vm_proj, vm_list in map.iteritems():
+            for vm_proj, vm_list in map.items():
                 for index in range(len(vm_list)):
                     # Get VM fixture from config_topo
                     vm_fixture = config_topo[
@@ -947,8 +949,8 @@ def createAllocateAssociateVnFIPPools(self, config_topo=None, alloc=True):
             config_topo = self.config_topo
         # topology rep: self.fip_pools= {'project1': {'p1-vn1-pool1':
         # {'host_vn': 'vnet1', 'target_projects': ['project1', 'project2']}},
-        for fip_proj, fip_info in self.topo.fip_pools.iteritems():
-            for fip_pool_name, info in fip_info.iteritems():
+        for fip_proj, fip_info in self.topo.fip_pools.items():
+            for fip_pool_name, info in fip_info.items():
                 vn_name = info['host_vn']
                 self.vn_fixture = config_topo[fip_proj]['vn']
                 self.fip_fixture_dict[vn_name] = self.useFixture(

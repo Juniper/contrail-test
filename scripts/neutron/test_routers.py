@@ -198,7 +198,7 @@ class TestRouters(BaseNeutronTest):
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
         router_dict = self.create_router(router_name)
         add_intf_result = self.add_vn_to_router(router_dict['id'], vn1_fixture)
-        assert 'port_id' in add_intf_result.keys(), \
+        assert 'port_id' in list(add_intf_result.keys()), \
             'Router port not created when allocation-pool is set in Subnet'
         router_port_ip = self.quantum_h.get_port_ips(
             add_intf_result['port_id'])[0]
@@ -225,7 +225,7 @@ class TestRouters(BaseNeutronTest):
         vn2_fixture = self.create_vn(vn2_name, vn2_subnets)
         router_dict = self.create_router(router_name)
         add_intf_result = self.add_vn_to_router(router_dict['id'], vn2_fixture)
-        assert 'port_id' in add_intf_result.keys(), \
+        assert 'port_id' in list(add_intf_result.keys()), \
             'Router port not created when allocation-pool is set in Subnet'
         router_port_ip = self.quantum_h.get_port_ips(
             add_intf_result['port_id'])[0]

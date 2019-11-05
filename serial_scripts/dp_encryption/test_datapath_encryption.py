@@ -1,3 +1,4 @@
+from builtins import range
 from tcutils.wrappers import preposttest_wrapper
 from common.dp_encryption.base import BaseDataPathEncryption
 from common.firewall.base import BaseFirewallTest
@@ -28,12 +29,12 @@ class TestDataPathEncryption(BaseDataPathEncryption):
         cls.vn = cls.create_only_vn()
         for compute in cls.inputs.compute_names:
             cls.vms[compute] = cls.create_only_vm(vn_fixture=cls.vn, node_name=compute)
-        assert cls.check_vms_active(cls.vms.itervalues(), do_assert=False)
+        assert cls.check_vms_active(iter(cls.vms.values()), do_assert=False)
 
     @classmethod
     def tearDownClass(cls):
         if getattr(cls, 'vms', None):
-            for obj in cls.vms.itervalues():
+            for obj in cls.vms.values():
                 obj.cleanUp()
         if getattr(cls, 'vn', None):
             cls.vn.cleanUp()
@@ -50,24 +51,24 @@ class TestDataPathEncryption(BaseDataPathEncryption):
         self.validate_tunnels(endpoints=self.inputs.compute_names)
 
         # Wait till VMs are booted up
-        self.check_vms_booted(self.vms.itervalues())
+        self.check_vms_booted(iter(self.vms.values()))
 
         src_vm = self.vms[self.inputs.compute_names[0]]
-        for compute, vm in self.vms.iteritems():
+        for compute, vm in self.vms.items():
             if vm.uuid == src_vm.uuid:
                 continue
             traffic_objs[compute] = self.start_traffic(src_vm, vm, 'tcp', '8000', '9000')
             self.verify_encrypt_traffic(src_vm, vm)
-        for compute, traffic_obj in traffic_objs.iteritems():
+        for compute, traffic_obj in traffic_objs.items():
             self.poll_traffic(traffic_obj)
 
         self.disable_encryption()
         self.validate_tunnels()
-        for compute, vm in self.vms.iteritems():
+        for compute, vm in self.vms.items():
             if vm.uuid == src_vm.uuid:
                 continue
             self.verify_encrypt_traffic(src_vm, vm, encrypt=False)
-        for compute, traffic_obj in traffic_objs.iteritems():
+        for compute, traffic_obj in traffic_objs.items():
             self.stop_traffic(traffic_obj)
 
         if len(self.inputs.compute_names) < 3:
@@ -77,13 +78,13 @@ class TestDataPathEncryption(BaseDataPathEncryption):
         self.add_vrouter_to_encryption(computes)
         self.validate_tunnels(vrouters=computes, endpoints=computes)
         self.validate_tunnels(vrouters=self.inputs.compute_names[3:])
-        for compute, vm in self.vms.iteritems():
+        for compute, vm in self.vms.items():
             if vm.uuid == src_vm.uuid:
                 continue
             traffic_objs[compute] = self.start_traffic(src_vm, vm, 'tcp', '8000', '9000')
             encrypt = True if compute in computes else False
             self.verify_encrypt_traffic(src_vm, vm, encrypt=encrypt)
-        for compute, traffic_obj in traffic_objs.iteritems():
+        for compute, traffic_obj in traffic_objs.items():
             self.poll_traffic(traffic_obj)
 
         self.delete_vrouter_from_encryption(computes[1:2])
@@ -91,21 +92,21 @@ class TestDataPathEncryption(BaseDataPathEncryption):
         self.validate_tunnels(vrouters=computes, endpoints=computes)
         self.validate_tunnels(vrouters=list(set(self.inputs.compute_names)
                                           - set(computes)))
-        for compute, vm in self.vms.iteritems():
+        for compute, vm in self.vms.items():
             if vm.uuid == src_vm.uuid:
                 continue
             encrypt = True if compute in computes else False
             self.verify_encrypt_traffic(src_vm, vm, encrypt=encrypt)
-        for compute, traffic_obj in traffic_objs.iteritems():
+        for compute, traffic_obj in traffic_objs.items():
             self.poll_traffic(traffic_obj)
 
         self.add_vrouter_to_encryption(list(set(self.inputs.compute_names) - set(computes)))
         self.validate_tunnels(endpoints=self.inputs.compute_names)
-        for compute, vm in self.vms.iteritems():
+        for compute, vm in self.vms.items():
             if vm.uuid == src_vm.uuid:
                 continue
             self.verify_encrypt_traffic(src_vm, vm, encrypt=True)
-        for compute, traffic_obj in traffic_objs.iteritems():
+        for compute, traffic_obj in traffic_objs.items():
             self.stop_traffic(traffic_obj)
 
     @preposttest_wrapper
@@ -119,7 +120,7 @@ class TestDataPathEncryption(BaseDataPathEncryption):
         self.validate_tunnels(endpoints=self.inputs.compute_names)
 
         # Wait till VMs are booted up
-        self.check_vms_booted(self.vms.itervalues())
+        self.check_vms_booted(iter(self.vms.values()))
 
         src_vm = self.vms[self.inputs.compute_names[0]]
         dst_vm = self.vms[self.inputs.compute_names[1]]
@@ -136,7 +137,7 @@ class TestDataPathEncryption(BaseDataPathEncryption):
         self.addCleanup(self.set_encap_priority, curr_encap)
 
         self.enable_encryption()
-        self.check_vms_booted(self.vms.itervalues())
+        self.check_vms_booted(iter(self.vms.values()))
 
         # Set encap mode as MPLSoUDP
         self.set_encap_priority(['MPLSoUDP'])
@@ -161,7 +162,7 @@ class TestDataPathEncryption(BaseDataPathEncryption):
         self.validate_tunnels(endpoints=self.inputs.compute_names)
         self.add_linklocal_service(ipfabric_ip=fabric_ip, ipfabric_port='8085')
         # Wait till VMs are booted up
-        self.check_vms_booted(self.vms.itervalues())
+        self.check_vms_booted(iter(self.vms.values()))
         self.validate_linklocal_service(src_vm)
 
 class TestDataPathEncryption2(BaseDataPathEncryption, BaseFirewallTest):
@@ -398,12 +399,12 @@ class TestDataPathEncryptionRestart(BaseDataPathEncryption):
         cls.vn = cls.create_only_vn()
         for compute in cls.inputs.compute_names[:3]:
             cls.vms[compute] = cls.create_only_vm(vn_fixture=cls.vn, node_name=compute)
-        assert cls.check_vms_booted(cls.vms.itervalues(), do_assert=False)
+        assert cls.check_vms_booted(iter(cls.vms.values()), do_assert=False)
 
     @classmethod
     def tearDownClass(cls):
         if getattr(cls, 'vms', None):
-            for obj in cls.vms.itervalues():
+            for obj in cls.vms.values():
                 obj.cleanUp()
         if getattr(cls, 'vn', None):
             cls.vn.cleanUp()
@@ -413,7 +414,7 @@ class TestDataPathEncryptionRestart(BaseDataPathEncryption):
         self.enable_encryption()
         self.validate_tunnels(endpoints=self.inputs.compute_names)
         src_vm = self.vms[self.inputs.compute_names[0]]
-        for compute, vm in self.vms.iteritems():
+        for compute, vm in self.vms.items():
             if vm.uuid == src_vm.uuid:
                 continue
             self.verify_encrypt_traffic(src_vm, vm)
@@ -422,7 +423,7 @@ class TestDataPathEncryptionRestart(BaseDataPathEncryption):
     def test_restart_vrouter_agent(self):
         self.setup_testcase()
         src_vm = self.vms[self.inputs.compute_names[0]]
-        for compute, vm in self.vms.iteritems():
+        for compute, vm in self.vms.items():
             if vm.uuid == src_vm.uuid:
                 continue
             self.inputs.restart_container([compute], 'agent')
@@ -430,7 +431,7 @@ class TestDataPathEncryptionRestart(BaseDataPathEncryption):
 
         if self.inputs.deployer != 'contrail-ansible-deployer':
             return
-        for compute, vm in self.vms.iteritems():
+        for compute, vm in self.vms.items():
             if vm.uuid == src_vm.uuid:
                 continue
             self.inputs.relaunch_container([compute], 'vrouter')
@@ -440,7 +441,7 @@ class TestDataPathEncryptionRestart(BaseDataPathEncryption):
     def test_restart_strongswan(self):
         self.setup_testcase()
         src_vm = self.vms[self.inputs.compute_names[0]]
-        for compute, vm in self.vms.iteritems():
+        for compute, vm in self.vms.items():
             if vm.uuid == src_vm.uuid:
                 continue
             self.inputs.restart_container([compute], 'strongswan')
@@ -448,7 +449,7 @@ class TestDataPathEncryptionRestart(BaseDataPathEncryption):
 
         if self.inputs.deployer != 'contrail-ansible-deployer':
             return
-        for compute, vm in self.vms.iteritems():
+        for compute, vm in self.vms.items():
             if vm.uuid == src_vm.uuid:
                 continue
             self.inputs.relaunch_container([compute], 'strongswan')
@@ -459,7 +460,7 @@ class TestDataPathEncryptionRestart(BaseDataPathEncryption):
         self.setup_testcase()
         src_vm = self.vms[self.inputs.compute_names[0]]
         self.inputs.restart_container([self.inputs.cfgm_ip], 'api-server')
-        for compute, vm in self.vms.iteritems():
+        for compute, vm in self.vms.items():
             if vm.uuid == src_vm.uuid:
                 continue
             self.verify_encrypt_traffic(src_vm, vm)
@@ -467,7 +468,7 @@ class TestDataPathEncryptionRestart(BaseDataPathEncryption):
         if self.inputs.deployer != 'contrail-ansible-deployer':
             return
         self.inputs.relaunch_container([self.inputs.cfgm_ip], 'config')
-        for compute, vm in self.vms.iteritems():
+        for compute, vm in self.vms.items():
             if vm.uuid == src_vm.uuid:
                 continue
             self.verify_encrypt_traffic(src_vm, vm)
@@ -480,7 +481,7 @@ class TestDataPathEncryptionRestart(BaseDataPathEncryption):
         decrypt_up_cmd = 'ifconfig decrypt0 up'
         crypt_down_cmd = 'ifconfig crypt0 down'
         decrypt_down_cmd = 'ifconfig decrypt0 down'
-        for compute, vm in self.vms.iteritems():
+        for compute, vm in self.vms.items():
             if vm.uuid == src_vm.uuid:
                 continue
             self.addCleanup(self.inputs.run_cmd_on_server,

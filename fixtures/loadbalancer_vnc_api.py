@@ -2,6 +2,8 @@
 # Copyright (c) 2016 Juniper Networks, Inc. All rights reserved.
 #
 
+from builtins import str
+from builtins import object
 from vnc_api.vnc_api import *
 import uuid
 from tcutils import util
@@ -25,7 +27,7 @@ class LoadBalancerBase(object):
 
     def _fields(self, resource, fields):
         if fields:
-            return dict(((key, item) for key, item in resource.items()
+            return dict(((key, item) for key, item in list(resource.items())
                          if key in fields))
         return resource
 
@@ -301,7 +303,7 @@ class ServiceLbListenerManager(LoadBalancerBase):
 
     def make_properties(self,**kwargs):
         props = LoadbalancerListenerType()
-        for key,value in kwargs.iteritems():
+        for key,value in kwargs.items():
             if value:
                 setattr(props, key,value)
         return props
@@ -379,7 +381,7 @@ class ServiceLbPoolManager(LoadBalancerBase):
             res['listener_id'] = res['listeners'][0]['id']
 
         props = pool.get_loadbalancer_pool_properties()
-        for key, mapping in self._loadbalancer_pool_type_mapping.iteritems():
+        for key, mapping in self._loadbalancer_pool_type_mapping.items():
             value = getattr(props, key, None)
             if value is not None:
                 res[mapping] = value
@@ -480,7 +482,7 @@ class ServiceLbMemberManager(LoadBalancerBase):
 
     def make_properties(self, **kwargs):
         props = LoadbalancerMemberType()
-        for key, mapping in self._loadbalancer_member_type_mapping.iteritems():
+        for key, mapping in self._loadbalancer_member_type_mapping.items():
             if mapping in kwargs:
                 setattr(props, key, kwargs[mapping])
         return props
@@ -502,7 +504,7 @@ class ServiceLbMemberManager(LoadBalancerBase):
             pass
 
         props = member.get_loadbalancer_member_properties()
-        for key, mapping in self._loadbalancer_member_type_mapping.iteritems():
+        for key, mapping in self._loadbalancer_member_type_mapping.items():
             value = getattr(props, key, None)
             if value is not None:
                 res[mapping] = value
@@ -544,7 +546,7 @@ class ServiceLbMemberManager(LoadBalancerBase):
         """
         member_obj = self._api.loadbalancer_member_read(id=member_id)
         props = member_obj.get_loadbalancer_member_properties()
-        for k,v in props.iteritems():
+        for k,v in props.items():
             if k in kwargs:
                 props[k]=kwargs.get(k)
         props=self.make_properties(props)    
@@ -581,7 +583,7 @@ class ServiceLbHealthMonitorManager(LoadBalancerBase):
 
     def make_properties(self, **kwargs):
         props = LoadbalancerHealthmonitorType()
-        for key, mapping in self._loadbalancer_health_type_mapping.iteritems():
+        for key, mapping in self._loadbalancer_health_type_mapping.items():
             if mapping in kwargs:
                 setattr(props, key, kwargs[mapping])
         return props
@@ -594,7 +596,7 @@ class ServiceLbHealthMonitorManager(LoadBalancerBase):
 
         props = healthmonitor.get_loadbalancer_healthmonitor_properties()
         monitor_type = getattr(props, 'monitor_type')
-        for key, mapping in self._loadbalancer_health_type_mapping.iteritems():
+        for key, mapping in self._loadbalancer_health_type_mapping.items():
             value = getattr(props, key, None)
             if value is not None:
                 if monitor_type not in ('HTTP', 'HTTPS'):
@@ -653,7 +655,7 @@ class ServiceLbHealthMonitorManager(LoadBalancerBase):
                proj_obj=None,**kwargs):
         hm_obj = self.read(id=hm_id)
         props = hm_obj.get_loadbalancer_healthmonitor_properties()
-        for k,v in props.iteritems():
+        for k,v in props.items():
             if k in kwargs:
                 props[k]=kwargs.get(k)
         props = self.make_properties(props)

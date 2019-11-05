@@ -1,4 +1,6 @@
 from __future__ import print_function
+from builtins import str
+from builtins import object
 import os
 import anydbm
 import argparse
@@ -6,7 +8,7 @@ import logging
 
 logging.getLogger('paramiko.transport').setLevel(logging.WARN)
 
-class AnyDBMManager:
+class AnyDBMManager(object):
     '''
     Manage Anydbm db
     '''
@@ -26,7 +28,7 @@ class AnyDBMManager:
     def list_entries(self):
         try:
             db_h = anydbm.open(self.dbfile, 'r')
-            for k,v in db_h.iteritems():
+            for k,v in db_h.items():
                 print(k,v)
         finally:
             db_h.close()

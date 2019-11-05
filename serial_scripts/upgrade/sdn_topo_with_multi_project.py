@@ -2,7 +2,8 @@
 from __future__ import print_function
 
 
-class sdn_topo_with_multi_project ():
+from builtins import object
+class sdn_topo_with_multi_project(object):
 
     def __init__(self, domain='default-domain'):
         print("building dynamic topo")
@@ -217,7 +218,7 @@ if __name__ == '__main__':
         domain='default-domain')
     x = my_topo.__dict__
     print("\nprinting keys of topology dict:")
-    for key, value in x.iteritems():
+    for key, value in x.items():
         print(key)
     print()
     # Use topology_helper to extend/derive data from user-defined topology to help verifications.

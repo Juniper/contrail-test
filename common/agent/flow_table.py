@@ -1,7 +1,8 @@
+from builtins import object
 from tcutils.util import *
 import tabulate
 
-class FlowTable :
+class FlowTable(object) :
     '''Represent flow table in kernel on a compute node
 
        Data is got from queries similar to below:
@@ -24,7 +25,7 @@ class FlowTable :
 
 #end FlowTable
 
-class FlowEntry:
+class FlowEntry(object):
     '''
     Object to represent a flow entry as got from 
         http://nodek1:8085/Snh_KFlowReq?flow_idx=

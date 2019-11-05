@@ -1,4 +1,5 @@
 from __future__ import print_function
+from builtins import object
 import time
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException

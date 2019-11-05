@@ -1,3 +1,4 @@
+from builtins import object
 from common.k8s.base import BaseK8sTest
 from k8s.network_policy import NetworkPolicyFixture
 from tcutils.wrappers import preposttest_wrapper
@@ -11,6 +12,7 @@ import time
 
 import gevent
 from gevent import greenlet
+from future.utils import with_metaclass
 
 class TestNetworkPolicyProjectIsolation(BaseK8sTest):
 
@@ -215,9 +217,7 @@ class TestNetworkPolicyProjectIsolation(BaseK8sTest):
 
 class TestNetworkPolicyRestart(BaseK8sTest):
 
-    class SharedResources (object):
-        __metaclass__ = Singleton
-
+    class SharedResources (with_metaclass(Singleton, object)):
         def __init__ (self, connections):
             self.connections = connections
             self.setUp()

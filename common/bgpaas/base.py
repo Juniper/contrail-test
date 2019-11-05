@@ -1,3 +1,4 @@
+from builtins import str
 import test_v1
 from bgpaas_fixture import BGPaaSFixture
 from vn_test import VNFixture

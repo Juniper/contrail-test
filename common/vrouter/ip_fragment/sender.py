@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
+from __future__ import division
+from builtins import range
+from past.utils import old_div
 from scapy.all import *
 import sys
 import argparse
@@ -62,15 +65,15 @@ if args.overlap:
 
     ip=IP(id=id, dst=args.remoteIP, proto=proto, flags=1)
     icmp = ICMP(type=8, code=0, chksum=0xe3eb)
-    packet=ip/icmp/payload1
+    packet=old_div(old_div(ip,icmp),payload1)
     send(packet)
 
     ip = IP(id=id, dst=args.remoteIP, proto=proto, flags=1, frag=1)
-    packet = ip/payload2
+    packet = old_div(ip,payload2)
     send(packet)
 
     ip = IP(id=id, dst=args.remoteIP, proto=proto, flags=0, frag=2)
-    packet = ip/payload3
+    packet = old_div(ip,payload3)
     send(packet)
 
     exit()
@@ -80,9 +83,9 @@ proto = eval(METHOD_MAP[args.protocol])
 
 if args.tcp_syn:
     # Create SYN packet
-    packet=ip/TCP(sport=8100, dport=8000, flags="S", seq=42)/(payload)
+    packet=old_div(old_div(ip,TCP(sport=8100, dport=8000, flags="S", seq=42)),(payload))
 else:
-    packet=ip/proto/(payload)
+    packet=old_div(old_div(ip,proto),(payload))
 frag = fragment(packet, fragsize=args.fragsize)
 
 if len(frag) != no_of_frags:
@@ -91,7 +94,7 @@ if len(frag) != no_of_frags:
     exit()
 
 #Send the same fragments args.duplicate times
-for i in xrange(args.duplicate):
+for i in range(args.duplicate):
     send(frag[int(args.order[0])])
 
 for c in args.order:

@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from builtins import object
 import test_v1
 from common import isolated_creds
 from vn_test import *
@@ -57,7 +58,7 @@ class WebuiBaseTest(test_v1.BaseTestCase_v1):
     # end UicleanUp
 
 
-class ResourceFactory:
+class ResourceFactory(object):
     factories = {}
 
     def createResource(id):
@@ -96,7 +97,7 @@ class WebuiTestSanityResource (BaseResource):
     def cleanUp(self):
         super(WebuiTestSanityResource, self).cleanUp()
 
-    class Factory:
+    class Factory(object):
 
         def create(self): return WebuiTestSanityResource()
 

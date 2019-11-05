@@ -1,3 +1,4 @@
+from builtins import str
 from vm_test import VMFixture
 from vnc_api.vnc_api import *
 from common import isolated_creds

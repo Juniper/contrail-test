@@ -1,10 +1,12 @@
+from builtins import range
+from builtins import object
 from tcutils.util import *
 from vn_test import *
 from policy_test import *
 from alarm_test import *
 
 
-class VerifyAlarms():
+class VerifyAlarms(object):
 
     def verify_alarm_config(self, exp_list=[], update_list=[], parent_type='project', alarm_type='vn_acl_rule', uve_keys=['virtual-network'], alarm_case='basic'):
         self.parent_type = parent_type

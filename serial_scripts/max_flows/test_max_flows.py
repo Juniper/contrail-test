@@ -1,3 +1,4 @@
+from __future__ import division
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -5,6 +6,9 @@
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 
+from builtins import str
+from builtins import range
+from past.utils import old_div
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.agent import *
 from common.max_flows.verify import VerifyMaxFlows
@@ -288,7 +292,7 @@ class TestMaxFlows(BaseMaxFlowsTest, VerifyMaxFlows):
         params['mode'] = 'L3'
         scapy_obj = ScapyTraffic(vm_fix, **params)
         scapy_obj.start()
-        sleep_time = int(flow_count/25)
+        sleep_time = int(old_div(flow_count,25))
         self.logger.info("Started Traffic...sleeping for %d secs..." % sleep_time )
         time.sleep(sleep_time)
         flow_count = dport_range[1]-dport_range[0]+1
@@ -1415,7 +1419,7 @@ class TestMaxFlows(BaseMaxFlowsTest, VerifyMaxFlows):
             send_flow_count_vm11 = self.send_traffic(
                                          src=str(vm11_fix.vm_ip), 
                                          dst=str(vm12_fix.vm_ip), 
-                                         max_flows=vmi11_max_flows_90_percentage/2, 
+                                         max_flows=old_div(vmi11_max_flows_90_percentage,2), 
                                          vm_fix=vm11_fix
                                          )
         total_flow_count_vm11 = self.get_total_flow_count(
@@ -1576,7 +1580,7 @@ class TestMaxFlows(BaseMaxFlowsTest, VerifyMaxFlows):
         self.waiting_for_flow_timeout()
 
 
-        vmi11_max_flows_exact = (vmi11_max_flows/2)-10
+        vmi11_max_flows_exact = (old_div(vmi11_max_flows,2))-10
         # Verify Max_flows functionality on VMI level 
         #import pdb; pdb.set_trace()
         send_flow_count_vm11 = self.send_traffic(
@@ -1659,8 +1663,8 @@ class TestMaxFlows(BaseMaxFlowsTest, VerifyMaxFlows):
         if vm11_drop_new_flows != 'true':
             assert False, "drop_new_flows flag is NOT set even after max_flows execeeded.."
 
-        expected_drop_high = (vmi11_max_flows/2) + 10
-        expected_drop_low = (vmi11_max_flows/2) - 10
+        expected_drop_high = (old_div(vmi11_max_flows,2)) + 10
+        expected_drop_low = (old_div(vmi11_max_flows,2)) - 10
         for i in range(1,8):
             time.sleep(5)
             vm11_dropstats = vm11_inspect.get_agent_vrouter_drop_stats()

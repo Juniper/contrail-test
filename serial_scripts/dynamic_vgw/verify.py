@@ -1,3 +1,4 @@
+from builtins import object
 from time import sleep
 import os
 from vn_test import *
@@ -5,7 +6,7 @@ from vm_test import *
 from floating_ip import *
 from tcutils.util import get_random_name
 
-class VerifyDynamicVgwCases():
+class VerifyDynamicVgwCases(object):
  
     def verify_dynamic_vgw_compute_ping(self):
 
