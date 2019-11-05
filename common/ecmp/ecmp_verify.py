@@ -1,3 +1,4 @@
+from builtins import object
 import os
 import fixtures
 import testtools
@@ -14,7 +15,7 @@ from vm_test import *
 from tcutils.wrappers import preposttest_wrapper
 
 
-class ECMPVerify():
+class ECMPVerify(object):
 
     def get_rt_info_tap_intf_list(self, src_vn, src_vm, dst_vm, svm_ids,
             si_fixture):

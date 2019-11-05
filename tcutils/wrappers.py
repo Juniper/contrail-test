@@ -2,11 +2,13 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
+from future import standard_library
+standard_library.install_aliases()
 import traceback, os, signal
 from functools import wraps
 from testtools.testcase import TestSkipped
 import cgitb
-import cStringIO
+import io
 from datetime import datetime
 from tcutils.util import v4OnlyTestException
 from tcutils.test_lib.contrail_utils import check_xmpp_is_stable
@@ -14,7 +16,7 @@ from tcutils.test_lib.contrail_utils import check_xmpp_is_stable
 from .cores import *
 
 def detailed_traceback():
-    buf = cStringIO.StringIO()
+    buf = io.StringIO()
     cgitb.Hook(format="text", file=buf).handle(sys.exc_info())
     tb_txt = buf.getvalue()
     buf.close()
@@ -138,7 +140,7 @@ def preposttest_wrapper(function):
                 errmsg.append("Cleanup failed: %s" % cleanup_trace)
 
             if cores:
-                for node, corelist in cores.items():
+                for node, corelist in list(cores.items()):
                     core_count += len(corelist)
                 # Preserve this msg format, it is used by
                 # tcutils.contrailtestrunner
@@ -146,7 +148,7 @@ def preposttest_wrapper(function):
                 log.error(msg)
                 errmsg.append(msg)
             if crashes:
-                for node, crashlist in crashes.items():
+                for node, crashlist in list(crashes.items()):
                     crash_count += len(crashlist)
                 # Preserve this msg format, it is used by
                 # tcutils.contrailtestrunner
@@ -171,7 +173,7 @@ def preposttest_wrapper(function):
                 log.info("END TEST : %s : FAILED[%s]",
                          function.__name__, test_time)
                 log.info('-' * 80)
-                if 'ci_image' in os.environ.keys():
+                if 'ci_image' in list(os.environ.keys()):
                     os.environ['stop_execution_flag'] = 'set'
                 raise TestFailed("\n ".join(errmsg))
             elif testskip:

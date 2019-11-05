@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 from fabric.api import local, settings
 import time
 import re
@@ -422,16 +424,16 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             for pod in barred_pods:
                 if pod.name in output:
                     hit_me_not[pod.name] += 1
-            if hit_me_not and 0 not in hit_me_not.values():
+            if hit_me_not and 0 not in list(hit_me_not.values()):
                 self.logger.warn('HTTP request seem to have hit an unexpected '
                                  ' pod. Stats : %s' % (hit_me_not))
                 return False
 
-            if 0 not in hit.values() and expectation==True:
+            if 0 not in list(hit.values()) and expectation==True:
                 self.logger.info('Responses seen from all pods, lb seems fine.'
                                  'Hits : %s' % (hit))
                 return True
-        if 0 in hit.values():
+        if 0 in list(hit.values()):
             if expectation==False:
                 self.logger.info('As expected, responses not seen from pods'
                                  'Hits : %s' % (hit))
@@ -521,7 +523,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                     ingress_ip_block = None
 
                     from_item_dict = from_item.get('pod_selector') or {}
-                    for k, v in from_item_dict.iteritems():
+                    for k, v in from_item_dict.items():
                         if not ingress_pod_dict:
                             ingress_pod_dict = {'match_labels': {}}
                         ingress_pod_dict['match_labels'].update({k: v})
@@ -529,7 +531,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                             'pod_selector': ingress_pod_dict}
 
                     from_item_dict = from_item.get('namespace_selector') or {}
-                    for k, v in from_item_dict.iteritems():
+                    for k, v in from_item_dict.items():
                         if not ingress_ns_dict:
                             ingress_ns_dict = {'match_labels': {}}
                         ingress_ns_dict['match_labels'].update({k: v})
@@ -537,7 +539,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                             'namespace_selector': ingress_ns_dict}
 
                     from_item_dict = from_item.get('ip_block') or {}
-                    for k, v in from_item_dict.iteritems():
+                    for k, v in from_item_dict.items():
                         if not ingress_ip_block_dict:
                             ingress_ip_block_dict = {'cidr': ""}
                         if k == "cidr":
@@ -580,7 +582,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                     egress_ns_selector = None
                     egress_ip_block = None
                     to_item_dict = to_item.get('pod_selector') or {}
-                    for k, v in to_item_dict.iteritems():
+                    for k, v in to_item_dict.items():
                         if not egress_pod_dict:
                             egress_pod_dict = {'match_labels': {}}
                         egress_pod_dict['match_labels'].update({k: v})
@@ -588,7 +590,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                             'pod_selector': egress_pod_dict}
 
                     to_item_dict = to_item.get('namespace_selector') or {}
-                    for k, v in to_item_dict.iteritems():
+                    for k, v in to_item_dict.items():
                         if not egress_ns_dict:
                             egress_ns_dict = {'match_labels': {}}
                         egress_ns_dict['match_labels'].update({k: v})
@@ -596,7 +598,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
                             'namespace_selector': egress_ns_dict}
 
                     to_item_dict = to_item.get('ip_block') or {}
-                    for k, v in to_item_dict.iteritems():
+                    for k, v in to_item_dict.items():
                         if not egress_ip_block_dict:
                             egress_ip_block_dict = {'cidr': ""}
                         if k == "cidr":
@@ -710,13 +712,13 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
 
         if ingress_pods is not None:
             ingress_pod_dict = {'match_labels': {}}
-            for k, v in ingress_pods.iteritems():
+            for k, v in ingress_pods.items():
                 ingress_pod_dict['match_labels'].update({k: v})
             ingress_pod_selector = {'pod_selector': ingress_pod_dict}
 
         if ingress_namespaces is not None:
             ingress_ns_dict = {'match_labels': {}}
-            for k, v in ingress_namespaces.iteritems():
+            for k, v in ingress_namespaces.items():
                 ingress_ns_dict['match_labels'].update({k: v})
             ingress_ns_selector = {'namespace_selector': ingress_ns_dict}
 
@@ -725,13 +727,13 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
 
         if egress_pods is not None:
             egress_pod_dict = {'match_labels': {}}
-            for k, v in egress_pods.iteritems():
+            for k, v in egress_pods.items():
                 egress_pod_dict['match_labels'].update({k: v})
             egress_pod_selector = {'pod_selector': egress_pod_dict}
 
         if egress_namespaces is not None:
             egress_ns_dict = {'match_labels': {}}
-            for k, v in egress_namespaces.iteritems():
+            for k, v in egress_namespaces.items():
                 egress_ns_dict['match_labels'].update({k: v})
             egress_ns_selector = {'namespace_selector': egress_ns_dict}
 

@@ -1,3 +1,5 @@
+from builtins import zip
+from builtins import object
 "parser to parse the ping output."""
 
 import re
@@ -19,7 +21,7 @@ class PingParser(object):
         output_req.append(match.group(1))
         output_req.append(match.group(2))
         self.parsed_output = dict(
-            zip(output_req[0].split('/'), output_req[1].split('/')))
+            list(zip(output_req[0].split('/'), output_req[1].split('/'))))
         self.parsed_output['unit'] = match.group(3)
 
     def get_ping_latency(self):

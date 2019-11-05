@@ -1,3 +1,4 @@
+from builtins import object
 import os
 from netaddr import *
 import abc
@@ -12,15 +13,15 @@ import vnc_api_test
 from pif_fixture import PhysicalInterfaceFixture
 import physical_device_fixture
 from tcutils.util import retry
+from future.utils import with_metaclass
 try:
     from webui_test import *
 except ImportError:
     pass
 
-class AbstractToR(object):
+class AbstractToR(with_metaclass(abc.ABCMeta, object)):
     ''' Abstract ToR Switch
     '''
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def __init__(self, *args, **kwargs):

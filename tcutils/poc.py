@@ -29,7 +29,7 @@ class TemplateTestCase(type):
                 source = attr[method_name]
                 source_name = method_name.lstrip("_")
 
-                for test_name, args in source.template.items():
+                for test_name, args in list(source.template.items()):
                     parg, kwargs = args
 
                     new_name = "%s_%s" % (source_name, test_name)

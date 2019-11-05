@@ -1,5 +1,10 @@
+from __future__ import division
 
 #from tcutils.vro_api_utils import VroUtilBase
+from builtins import str
+from builtins import range
+from builtins import object
+from past.utils import old_div
 from tcutils.vro.vro_inspect_utils import VroInspectUtils
 from tcutils.vro.templates import WfTemplate
 from vcenter import VcenterOrchestrator
@@ -80,7 +85,7 @@ class VroWorkflows(VcenterOrchestrator):
         #all rules u get as a single string
         #form rules by splitting the string
         rules = rules.split()
-        no_of_rules = len(rules)/6
+        no_of_rules = old_div(len(rules),6)
         sg_rules = []
         for i in range(no_of_rules):
             min = 6*i
@@ -557,7 +562,7 @@ class VroWorkflows(VcenterOrchestrator):
         params['Project'] = project_id
         params['ServiceTemplate'] = st_id
         params['si_name'] = si_name
-        for itf in if_details.keys():
+        for itf in list(if_details.keys()):
                 if itf == 'left':
                     left_vn_name = if_details['left']['vn_name'].split(':')[-1]
                     left_vn_id = self.get_wf_object_ids(left_vn_name,'VirtualNetwork')
@@ -747,7 +752,7 @@ class VroWorkflows(VcenterOrchestrator):
     def delete_tag_type():
         pass
 
-class Inputs():
+class Inputs(object):
     def __init__(self):
         self.user = 'administrator@vsphere.local'
         self.pwd = 'Contrail123!'

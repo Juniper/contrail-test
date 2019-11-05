@@ -1,3 +1,4 @@
+from builtins import str
 import os
 from common import log_orig as contrail_logging
 from orchestrator import Orchestrator, OrchestratorAuth
@@ -139,7 +140,7 @@ class OpenstackOrchestrator(Orchestrator):
 
    def get_networks_of_vm(self, vm_obj, **kwargs):
        vm_obj.get()
-       return vm_obj.networks.keys()
+       return list(vm_obj.networks.keys())
 
    def wait_till_vm_is_active(self, vm_obj, **kwargs):
        return self.nova_h.wait_till_vm_is_active(vm_obj)

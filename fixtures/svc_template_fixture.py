@@ -119,7 +119,7 @@ class SvcTemplateFixture(fixtures.Fixture):
                     svc_properties.set_availability_zone_enable(
                         self.availability_zone_enable)
     #            for itf in self.if_list:
-                for itf_type, val in self.if_details.iteritems():
+                for itf_type, val in self.if_details.items():
                     shared_ip = val.get('shared_ip_enable', None)
                     static_route_enable = val.get('static_route_enable', None)
                     if_type = ServiceTemplateInterfaceType(

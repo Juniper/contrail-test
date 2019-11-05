@@ -1,4 +1,8 @@
 from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from builtins import str
 import time
 import test_v1
 from common.connections import ContrailConnections
@@ -17,7 +21,7 @@ from fabric.operations import get, put
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from . import template
 from . import  env
-import ConfigParser
+import configparser
 import re
 import copy
 

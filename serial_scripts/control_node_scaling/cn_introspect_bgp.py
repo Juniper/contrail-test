@@ -1,6 +1,9 @@
 from __future__ import print_function
 from __future__ import absolute_import
 # generic
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
 import json
 import requests
 import re
@@ -12,7 +15,7 @@ import datetime
 
 # contrail
 
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 from lxml import etree
 import xmltodict
 from .commands import Command
@@ -45,7 +48,7 @@ class ControlNodeInspect (VerificationUtilBase):
         new_table_req = 'Snh_IFMapTableShowReq?table_name=' + table_name.group(1) + '&search_string=' + match
         p = self.dict_get(new_table_req)
         xp = p.xpath('./IFMapTableShowResp/ifmap_db/list/IFMapNodeShowInfo')
-        f = filter(lambda x: x.xpath('./node_name')[0].text == match, xp)
+        f = [x for x in xp if x.xpath('./node_name')[0].text == match]
         if 1 == len(f):
             d = {}
             for e in f[0]:

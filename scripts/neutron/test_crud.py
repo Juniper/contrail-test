@@ -64,7 +64,7 @@ class TestCRUD(BaseNeutronTest):
                 body['tenant_id'] = proj1_id
             # TODO
             # Workaround so that name is present always
-            if 'name' not in body.keys():
+            if 'name' not in list(body.keys()):
                 continue
             body = {'network': body}
             self.log.info("Network Create Request %s" % (body))
@@ -497,7 +497,7 @@ class TestCRUD(BaseNeutronTest):
                 body['tenant_id'] = proj1_id
             # TODO
             # Workaround so that name is present always
-            if 'name' not in body.keys():
+            if 'name' not in list(body.keys()):
                 continue
             body = {'router': body}
             self.log.info("Router create Request %s" % (body))

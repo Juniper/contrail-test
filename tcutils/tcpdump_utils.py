@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 # utils to start and stop tcpdump on VM
+from builtins import object
 from time import sleep
 from common import log_orig as contrail_logging
 

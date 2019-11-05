@@ -1,4 +1,6 @@
 from __future__ import print_function
+from builtins import str
+from builtins import range
 import fixtures
 from ipam_test import *
 from project_test import *
@@ -1058,7 +1060,7 @@ class VNFixture(fixtures.Fixture):
                               ' Skipping VN cleanup check in vrouter')
             return True
         for compute_ip in compute_ips:
-            if not compute_ip in self.vrf_ids.keys():
+            if not compute_ip in list(self.vrf_ids.keys()):
                 continue
             inspect_h = self.agent_inspect[compute_ip]
             vrf_id = self.vrf_ids[compute_ip]
@@ -2081,7 +2083,7 @@ class MultipleVNFixture(fixtures.Fixture):
             network = '%s/%s'%(net, reqd_plen)
 
         subnets = list(IPNetwork(network).subnet(plen))
-        return map(lambda subnet: subnet.__str__(), subnets[:])
+        return [subnet.__str__() for subnet in subnets[:]]
 
     def _find_subnets(self):
         if not self.vn_name_net:
@@ -2095,7 +2097,7 @@ class MultipleVNFixture(fixtures.Fixture):
                 self._vn_subnets.update({'vn%s' % (i + 1): subnets[:]})
                 self.random_networks.extend(subnets)
             return
-        for vn_name, net in self.vn_name_net.items():
+        for vn_name, net in list(self.vn_name_net.items()):
             if type(net) is list:
                 self._vn_subnets.update({vn_name: net})
             else:
@@ -2104,7 +2106,7 @@ class MultipleVNFixture(fixtures.Fixture):
     def setUp(self):
         super(MultipleVNFixture, self).setUp()
         self._vn_fixtures = []
-        for vn_name, subnets in self._vn_subnets.items():
+        for vn_name, subnets in list(self._vn_subnets.items()):
             vn_fixture = self.useFixture(VNFixture(inputs=self.inputs,
                                                    connections=self.connections,
                                                    project_name=self.project_name,
@@ -2122,5 +2124,5 @@ class MultipleVNFixture(fixtures.Fixture):
         return self._vn_subnets
 
     def get_all_fixture_obj(self):
-        return map(lambda name_fixture: (name_fixture[0], name_fixture[1].obj), self._vn_fixtures)
+        return [(name_fixture[0], name_fixture[1].obj) for name_fixture in self._vn_fixtures]
 

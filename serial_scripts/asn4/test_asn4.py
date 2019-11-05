@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+from builtins import str
+from builtins import range
 import test
 import uuid
 import re
@@ -333,7 +335,7 @@ class TestAsn4(ASN4Base, BaseBGPaaS, LocalASBase):
         cluster_group = None
         control_node_asn = control_node_config['control_node_asn']
 
-        for device in self.inputs.physical_routers_data.iteritems():
+        for device in self.inputs.physical_routers_data.items():
             router_name = device[0]
 
             if router_name != mx_config['mx_name']:

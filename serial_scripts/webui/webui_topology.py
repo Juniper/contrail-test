@@ -2,7 +2,8 @@
 from __future__ import print_function
 
 
-class sdn_webui_config ():
+from builtins import object
+class sdn_webui_config(object):
 
     def __init__(
             self,
@@ -781,7 +782,7 @@ if __name__ == '__main__':
     my_topo = sdn_webui_config(domain='default-domain', project='admin')
     x = my_topo.__dict__
     print("\nprinting keys of topology dict:")
-    for key, value in x.iteritems():
+    for key, value in x.items():
         print(key)
     print()
     # print "keys & values:"

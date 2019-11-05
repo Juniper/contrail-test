@@ -1,5 +1,6 @@
 from __future__ import print_function
-class WfTemplate:
+from builtins import object
+class WfTemplate(object):
 
     def get_create_connection_template(self, params):
         create_connection = {'parameters': [{'description': 'Connection name',

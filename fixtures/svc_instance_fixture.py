@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 import fixtures
 from vnc_api.vnc_api import *
 from tcutils.util import retry, get_random_name
@@ -197,7 +199,7 @@ class SvcInstanceFixture(fixtures.Fixture):
     # end _create_si
 
     def associate_static_route_table(self, project, static_rt_dict):
-        for intf in static_rt_dict.keys():
+        for intf in list(static_rt_dict.keys()):
             name = '%s_%s' % (self.si_name, intf)
             prefix = static_rt_dict[intf]
             if prefix:
@@ -328,7 +330,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         if not vms or len(vms) != len(self.svm_ids):
             # Reduce the svm_list to take care of reduce in ecmp instances
             self._svm_list = [vm for vm in vms if vm.get_uuid() in self.svm_ids]
-            self.svms = {k:v for k,v in self.svms.items() if k in self.svm_ids}
+            self.svms = {k:v for k,v in list(self.svms.items()) if k in self.svm_ids}
             # Increase the svm_list to take care of increase in ecmp instances
             for vmid in set(self.svm_ids) - set([vm.get_uuid() for vm in self._svm_list]):
                 vm = VMFixture(self.connections, uuid=vmid)
@@ -501,7 +503,7 @@ class SvcInstanceFixture(fixtures.Fixture):
             "VM interface present in Service VM of SI %s", self.si_name)
 
         self.if_type = vm_if_props['service_interface_type']
-        if (not self.if_type and self.if_type not in self.if_details.keys()):
+        if (not self.if_type and self.if_type not in list(self.if_details.keys())):
             errmsg = "Interface type '%s' is not present in Servcice VM of SI '%s'" % (
                 self.if_type, self.si_name)
             self.logger.warn(errmsg)
@@ -782,7 +784,7 @@ class SvcInstanceFixture(fixtures.Fixture):
         self.port_tuples_uuids.append(pt_uuid)
 #        ports_list = []
 
-        for intf_type, vmi_id in svm_pt_props.iteritems():
+        for intf_type, vmi_id in svm_pt_props.items():
             if intf_type == 'name':
                 continue
             vmi_obj = self.vnc_lib.virtual_machine_interface_read(id=vmi_id)

@@ -1,5 +1,7 @@
 """Module to build and install specific package in a specific host."""
 
+from builtins import str
+from builtins import object
 import os
 import importlib
 import logging as LOG
