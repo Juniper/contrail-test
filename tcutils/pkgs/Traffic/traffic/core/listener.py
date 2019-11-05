@@ -1,5 +1,7 @@
 """Module for creating socket to receive packets.
 """
+from builtins import str
+from builtins import object
 import errno
 import socket
 import signal

@@ -1,4 +1,6 @@
 from __future__ import print_function
+from builtins import str
+from builtins import range
 import os
 import copy
 import traceback
@@ -80,7 +82,7 @@ def comp_rules_from_policy_to_system(self):
 
                             # Get the rules from quantum client
                             policy_detail = self.vnc_lib.network_policy_read(fq_name=[u'default-domain',
-                                                 unicode(project_names[pr]), unicode(policy)])
+                                                 str(project_names[pr]), str(policy)])
 
                             self.logger.debug(
                                 "%s, %s, %s, %s, %s" %

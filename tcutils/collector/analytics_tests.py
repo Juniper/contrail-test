@@ -1,4 +1,5 @@
 from __future__ import print_function
+from __future__ import division
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -6,17 +7,22 @@ from __future__ import print_function
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from past.utils import old_div
 import fixtures
 from tcutils.util import *
 import logging as LOG
 import re
 import json
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import requests
 import time
 import datetime
 import threading
-import Queue
+import queue
 from subprocess import Popen, PIPE
 import shlex
 import pprint
@@ -198,7 +204,7 @@ class AnalyticsVerification(fixtures.Fixture):
     def verify_generator_connection_to_collector(self):
         '''Verify the collector connection with different modules'''
 
-        for k,v in GENERATORS.items():
+        for k,v in list(GENERATORS.items()):
             if (k == 'Compute'):
                 for name in self.inputs.compute_names:
                     for elem in v:
@@ -816,7 +822,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 return False
             expected_tiers = ['UveVirtualNetworkAgent',
                               'UveVirtualNetworkConfig']
-            tiers = self.ops_vnoutput.keys()
+            tiers = list(self.ops_vnoutput.keys())
             missing_tier = set(expected_tiers) - set(tiers)
             if not missing_tier:
                 self.logger.info(
@@ -1383,7 +1389,7 @@ class AnalyticsVerification(fixtures.Fixture):
         for ip in self.inputs.collector_ips:
             self.logger.debug("Verifying through opserver in %s" % (ip))
             self.ops_vm_output = self.ops_inspect[ip].get_ops_vm(vm=uuid)
-            key_list = self.ops_vm_output.keys()
+            key_list = list(self.ops_vm_output.keys())
             # expect_lst=['UveVirtualMachineConfig','UveVirtualMachineAgent']
             expect_lst = ['UveVirtualMachineAgent']
             diff_key = set(expect_lst) ^ set(key_list)
@@ -1532,13 +1538,13 @@ class AnalyticsVerification(fixtures.Fixture):
             self.logger.debug("Verifying for %s bgp-router uve " %
                              (bgp_host))
             for elem in count_agents_dct:
-                if bgp_host in elem.keys():
+                if bgp_host in list(elem.keys()):
                     total_agent_connections = total_agent_connections + int(elem[bgp_host])
 
             for elem in count_bgp_nodes_dct:
                 expected_bgp_peers = str(
                     len(self.inputs.bgp_ips) + len(self.inputs.ext_routers) - 1)
-                if bgp_host in elem.keys():
+                if bgp_host in list(elem.keys()):
                     if (elem[bgp_host] == expected_bgp_peers):
                         self.logger.info("Bgp peers = %s" %
                                          (elem[bgp_host]))
@@ -1575,7 +1581,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 self.logger.debug("Verifying for %s bgp-router uve " %
                                  (bgp_host))
                 for elem in count_agents_dct:
-                    if bgp_host in elem.keys():
+                    if bgp_host in list(elem.keys()):
                         if (elem[bgp_host] >= self.get_bgp_router_uve_count_up_xmpp_peer(ip, bgp_host)):
                             self.logger.debug("xmpp peers = %s" %
                                              (elem[bgp_host]))
@@ -1590,7 +1596,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 expected_bgp_peers = str(
                     len(self.inputs.bgp_ips) + len(self.inputs.ext_routers) - 1)
                 for elem in count_bgp_nodes_dct:
-                    if bgp_host in elem.keys():
+                    if bgp_host in list(elem.keys()):
                         if (elem[bgp_host] >= self.get_bgp_router_uve_count_up_bgp_peer(ip, bgp_host)):
                             self.logger.debug("bgp peers = %s" %
                                              (elem[bgp_host]))
@@ -2617,7 +2623,7 @@ class AnalyticsVerification(fixtures.Fixture):
                     self.logger.debug('Printing df -h before file creation: \n %s \n' % (status))
                     if diff:
                         self.logger.info('Creating a file of size %s GB(%s MB) to fill 91 percent of the disk space on %s' %
-                            (str(mb/1024), str(mb), role))
+                            (str(old_div(mb,1024)), str(mb), role))
                         self.inputs.run_cmd_on_server(svc_ip, dd_cmd)
                     else:
                         self.logger.info('Disk usage is already more than 91 percent, disk usage alarm expected')
@@ -3269,7 +3275,7 @@ class AnalyticsVerification(fixtures.Fixture):
         ret = self.get_all_uves()
         if ret:
             result = self.dict_search_for_values(ret)
-        for key in exceptions_flags.keys():
+        for key in list(exceptions_flags.keys()):
             self.uve_verification_flags.append(exceptions_flags[key])
         if 'False' in str(self.uve_verification_flags):
             result = False
@@ -3327,7 +3333,7 @@ class AnalyticsVerification(fixtures.Fixture):
         ret = self.get_all_tables(uve='tables')
         tables = self.get_table_schema(ret)
         for elem in tables:
-            for k, v in elem.items():
+            for k, v in list(elem.items()):
                 if table_name in k:
                     schema = self.get_schema_from_table(v)
                     break
@@ -3337,11 +3343,11 @@ class AnalyticsVerification(fixtures.Fixture):
                 break
         if message_table:
             mduleid = None
-            for k, v in message_table.items():
+            for k, v in list(message_table.items()):
                 for elem in v:
-                    if 'Source' in elem.keys():
+                    if 'Source' in list(elem.keys()):
                         source = elem['Source']
-                    if 'ModuleId' in elem.keys():
+                    if 'ModuleId' in list(elem.keys()):
                         moduleid = elem['ModuleId']
 
         if source and moduleid:
@@ -3404,7 +3410,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
         if table_name:
             for elem in tables:
-                for k, v in elem.items():
+                for k, v in list(elem.items()):
                     if table_name in k:
                         schema = self.get_schema_from_table(v)
                         break
@@ -3456,7 +3462,7 @@ class AnalyticsVerification(fixtures.Fixture):
                                      (table_name, res2))
         else:
             for el1 in tables:
-                for k, v in el1.items():
+                for k, v in list(el1.items()):
                     table_name = k.split('/')[-1]
                     if table_name not in skip_tables:
                         pass
@@ -3553,7 +3559,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
         if table_name:
             for elem in tables:
-                for k, v in elem.items():
+                for k, v in list(elem.items()):
                     if table_name in k:
                         schema = self.get_schema_from_table(v)
                         schema.remove('T=')
@@ -3579,7 +3585,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
         else:
             for el1 in tables:
-                for k, v in el1.items():
+                for k, v in list(el1.items()):
                     table_name = k.split('/')[-1]
                     if 'StatTable' not in table_name:
                         continue
@@ -3652,7 +3658,7 @@ class AnalyticsVerification(fixtures.Fixture):
     def build_parallel_query_to_object_tables(self, table_name=None, start_time=None, end_time='now', skip_tables=[]):
 
         threads = []
-        self.que = Queue.Queue()
+        self.que = queue.Queue()
         if not start_time:
             self.logger.debug("start_time must be passed...")
             return
@@ -3661,7 +3667,7 @@ class AnalyticsVerification(fixtures.Fixture):
         try:
             for el1 in tables:
                 objects = None
-                for k, v in el1.items():
+                for k, v in list(el1.items()):
                     table_name = k.split('/')[-1]
                     if table_name in skip_tables:
                         pass
@@ -3709,7 +3715,7 @@ class AnalyticsVerification(fixtures.Fixture):
     def get_table_schema(self, d):
 
         tables_lst = []
-        for k, v in d.items():
+        for k, v in list(d.items()):
             src_key = None
             mod_key = None
             schema_key = None
@@ -3735,7 +3741,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
             if column_value_key:
                 try:
-                    for elem in d[k][column_value_key].keys():
+                    for elem in list(d[k][column_value_key].keys()):
                         if 'Source' in elem:
                             src_key = '%s/Source' % column_value_key
                         if 'ModuleId' in elem:
@@ -3780,7 +3786,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
         result = True
         if isinstance(d, dict):
-            for k, v in d.items():
+            for k, v in list(d.items()):
                 for uve in key_list:
                     if uve in k:
                         self.search_key_in_uve(uve, k, v, value_dct)
@@ -3805,7 +3811,7 @@ class AnalyticsVerification(fixtures.Fixture):
         self.logger.debug("Verifying for %s uve" % (uve))
         for elem in v_dct[uve]:
             if elem not in str(dct):
-                for key in exceptions.keys():
+                for key in list(exceptions.keys()):
                     if exceptions[key] in k:
                         exceptions_flags[key] = exceptions_flags[key] or False 
                         continue
@@ -3813,7 +3819,7 @@ class AnalyticsVerification(fixtures.Fixture):
                         self.logger.warn("%s not in %s uve" % (elem, k))
                         self.uve_verification_flags.append('False')
             else:
-                for key in exceptions.keys():
+                for key in list(exceptions.keys()):
                     if exceptions[key] in k:
                         exceptions_flags[key] = True 
 
@@ -4185,7 +4191,7 @@ class AnalyticsVerification(fixtures.Fixture):
             result1 = False                                    
             ops_inspect = self.ops_inspect[self.inputs.\
                         collector_ips[0]].get_ops_config(cfgm)
-            for k,v in module_connection_dict.items():            
+            for k,v in list(module_connection_dict.items()):            
                 result1 = result1 or self.verify_process_status(ops_inspect,\
                                             k)
             assert result1
@@ -4433,7 +4439,7 @@ class AnalyticsVerification(fixtures.Fixture):
             result1 = True                                    
             ops_inspect = self.ops_inspect[self.inputs.\
                         collector_ips[0]].get_ops_collector(collector)
-            for k,v in module_connection_dict.items():
+            for k,v in list(module_connection_dict.items()):
                 result1 = result1 and self.verify_process_status(ops_inspect,\
                                             k)
             assert result1        
@@ -4706,7 +4712,7 @@ class AnalyticsVerification(fixtures.Fixture):
         found = False
         tables = self.get_table_schema(ret)
         for elem in tables:
-            for k, v in elem.items():
+            for k, v in list(elem.items()):
                 if stat_table in k:
                     schema = self.get_schema_from_table(v)
                     schema.remove('CLASS(T=)')

@@ -75,32 +75,32 @@ class BaseTestLbaas(BaseNeutronTest):
                                  % (pool_uuid, compute_ip))
             haproxy_pid[compute_ip] = pid
 
-        self.logger.info("Created net ns: %s" % (netns_list.values()))
+        self.logger.info("Created net ns: %s" % (list(netns_list.values())))
         if len(self.inputs.compute_ips) >= 2:
-            if len(netns_list.values()) == 2:
+            if len(list(netns_list.values())) == 2:
                 self.logger.info('More than 1 compute in setup: Active and Standby nets got'
-                                 ' created on compute nodes: (%s)' % (netns_list.keys()))
+                                 ' created on compute nodes: (%s)' % (list(netns_list.keys())))
             else:
                 errmsg.append("More than 1 compute in setup: "
                               "2 netns did not get created for Active and Standby")
                 result = False
-            if len(haproxy_pid.values()) == 2:
+            if len(list(haproxy_pid.values())) == 2:
                 self.logger.info('More than 1 compute in setup: Active and Standby haproxy running on'
-                                 ' compute node: (%s)' % (haproxy_pid.keys()))
+                                 ' compute node: (%s)' % (list(haproxy_pid.keys())))
             else:
                 errmsg.append("More than 1 compute in setup: "
                               "Haproxy not running in 2 computes for Active and Standby")
                 result = False
         else:
-            if(netns_list.values()):
+            if(list(netns_list.values())):
                 self.logger.info('one compute in setup, sinlge netns got created'
-                                 ' on compute:(%s)' % (netns_list.keys()))
+                                 ' on compute:(%s)' % (list(netns_list.keys())))
             else:
                 errmsg.append("NET NS didnot get created")
                 result = False
-            if(haproxy_pid.values()):
+            if(list(haproxy_pid.values())):
                 self.logger.info('one compute in setup,  haproxy running on'
-                                  ' compute:(%s)' % (haproxy_pid.keys()))
+                                  ' compute:(%s)' % (list(haproxy_pid.keys())))
             else:
                 errmsg.append("haproxy not running on compute node")
                 result = False

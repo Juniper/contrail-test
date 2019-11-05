@@ -116,7 +116,7 @@ class QosQueueFixture(QosBaseFixture):
         agent_qq_reference = agent_qos_queues[self.inputs.compute_ips[0]]
 
         # Check that all values are same across all agents
-        for compute, agent_qq in agent_qos_queues.iteritems():
+        for compute, agent_qq in agent_qos_queues.items():
             self.id[compute] = agent_qq['id']
             (result, mismatches) = compare_dict(agent_qq, agent_qq_reference)
             if not result:
@@ -274,7 +274,7 @@ class QosForwardingClassFixture(QosBaseFixture):
         agent_fc_reference = agent_fcs[self.inputs.compute_ips[0]]
 
         # Check that all values are same across all agents
-        for compute, agent_fc in agent_fcs.iteritems():
+        for compute, agent_fc in agent_fcs.items():
             self.id[compute] = agent_fc['id']
             (result, mismatches) = compare_dict(agent_fc, agent_fc_reference,
                                                 ignore_keys=['id'])
@@ -316,7 +316,7 @@ class QosForwardingClassFixture(QosBaseFixture):
         vrouter_fc_reference = vrouter_fcs[self.inputs.compute_ips[0]]
 
         # Check that all values are same across all agents
-        for compute, vrouter_fc in vrouter_fcs.iteritems():
+        for compute, vrouter_fc in vrouter_fcs.items():
             self.id[compute] = vrouter_fc['id']
             (result, mismatches) = compare_dict(vrouter_fc, vrouter_fc_reference,
                                                 ignore_keys=['id', 'qos_queue'])
@@ -431,7 +431,7 @@ class QosConfigFixture(QosBaseFixture):
         if not mapping_dict:
             return None
         new_map = QosIdForwardingClassPairs()
-        for k, v in mapping_dict.iteritems():
+        for k, v in mapping_dict.items():
             pair = QosIdForwardingClassPair(k, v)
             new_map.add_qos_id_forwarding_class_pair(pair)
         return new_map
@@ -484,21 +484,21 @@ class QosConfigFixture(QosBaseFixture):
         self.logger.debug('Adding FC entries, dscp:%s, dot1p: %s, exp: %s' % (
             dscp_mapping, dot1p_mapping, exp_mapping))
         if dscp_mapping:
-            for k, v in dscp_mapping.iteritems():
+            for k, v in dscp_mapping.items():
                 entry = QosIdForwardingClassPair(k, v)
                 self.qos_config_obj.dscp_entries.add_qos_id_forwarding_class_pair(
                     entry)
                 self.qos_config_obj.set_dscp_entries(
                     self.qos_config_obj.dscp_entries)
         if dot1p_mapping:
-            for k, v in dot1p_mapping.iteritems():
+            for k, v in dot1p_mapping.items():
                 entry = QosIdForwardingClassPair(k, v)
                 self.qos_config_obj.vlan_priority_entries.add_qos_id_forwarding_class_pair(
                     entry)
                 self.qos_config_obj.set_vlan_priority_entries(
                     self.qos_config_obj.vlan_priority_entries)
         if exp_mapping:
-            for k, v in exp_mapping.iteritems():
+            for k, v in exp_mapping.items():
                 entry = QosIdForwardingClassPair(k, v)
                 self.qos_config_obj.mpls_exp_entries.add_qos_id_forwarding_class_pair(
                     entry)
@@ -643,7 +643,7 @@ class QosConfigFixture(QosBaseFixture):
         agent_qc_reference = agent_qcs[self.inputs.compute_ips[0]]
 
         # Check that all values are same across all agents
-        for (compute, agent_qc) in agent_qcs.iteritems():
+        for (compute, agent_qc) in agent_qcs.items():
             self.id[compute] = agent_qc['id']
             (result, mismatches) = compare_dict(agent_qc, agent_qc_reference,
                                                 ignore_keys=['id'])
@@ -670,7 +670,7 @@ class QosConfigFixture(QosBaseFixture):
         vrouter_qc_reference = vrouter_qcs[self.inputs.compute_ips[0]]
 
         # Check that all values are same across all agents
-        for compute, vrouter_qc in vrouter_qcs.iteritems():
+        for compute, vrouter_qc in vrouter_qcs.items():
             self.id[compute] = vrouter_qc['id']
             (result, mismatches) = compare_dict(vrouter_qc, vrouter_qc_reference,
                                                 ignore_keys=['id'])

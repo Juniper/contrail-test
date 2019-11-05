@@ -1,3 +1,4 @@
+from builtins import str
 import test_v1, time
 from vn_test import VNFixture
 from vm_test import VMFixture
@@ -201,19 +202,19 @@ class BaseInterAS(PbbEvpnTestBase, BaseNeutronTest):
             import pdb;pdb.set_trace()
             if enable_fat_flow:
                 fat_flow_config = {'proto': 'icmp', 'port':0}
-                vmi_ids = [vmi.uuid for vmi in vmi_fixtures.values()]
+                vmi_ids = [vmi.uuid for vmi in list(vmi_fixtures.values())]
                 self.add_fat_flow_to_vmis(vmi_ids, fat_flow_config)
 
             if aap:
                 vIP = get_an_ip(vn['vn1']['subnet'], offset=100)
-                for vmi in vmi_fixtures.values():
+                for vmi in list(vmi_fixtures.values()):
                     self.config_aap(vmi.uuid, vIP, \
                       mac=vmi.mac_address, aap_mode='active-active', contrail_api=True)
-                for vm in vm_fixtures.values():
+                for vm in list(vm_fixtures.values()):
                     output = vm.run_cmd_on_vm(
                         ['sudo ifconfig eth0:10 ' + vIP + ' netmask 255.255.255.0'])
                 result = False
-                for vm in vm_fixtures.values():
+                for vm in list(vm_fixtures.values()):
                     result = result or vm.ping_with_certainty\
                       (ip=self.inputs.remote_asbr_info[router]['CE'][0], other_opt="-I "+vIP)
                     if result:
@@ -240,7 +241,7 @@ class BaseInterAS(PbbEvpnTestBase, BaseNeutronTest):
     def verify_ssh(self, src_vm, dest_ip, user='root', password='c0ntrail123'):
         cmd = "sshpass -p " + password + " ssh -o StrictHostKeyChecking=no " + user + "@" + dest_ip + " ls"
         command_output = src_vm.run_cmd_on_vm(cmds=[cmd], timeout=10, as_sudo=True)
-        return True if command_output.values() else False
+        return True if list(command_output.values()) else False
 
     def add_fat_flow_to_vmis(self, vmi_ids, fat_flow_config):
         '''vmi_ids: list of vmi ids

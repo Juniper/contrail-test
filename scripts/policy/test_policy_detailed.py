@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+from builtins import str
+from builtins import range
 from .base import BasePolicyTest
 from tcutils.wrappers import preposttest_wrapper
 import test
@@ -439,7 +441,7 @@ class TestDetailedPolicy3(BasePolicyTest):
         policy = topo.vn_policy[test_vn][0]
         policy_info = "policy in effect is : " + str(topo.rules[policy])
         self.logger.info(policy_info)
-        for vmi in range(1, len(topo.vn_of_vm.items())):
+        for vmi in range(1, len(list(topo.vn_of_vm.items()))):
             test_vm2 = topo.vmc_list[vmi]
             test_vm2_fixture = config_topo['vm'][test_vm2]
             # 2. set expectation to verify..

@@ -6,6 +6,8 @@ from __future__ import print_function
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will
 # try to pick params.ini in PWD
+from builtins import str
+from builtins import range
 import sys
 import os
 from common.openstack_libs import nova_client as mynovaclient
@@ -688,9 +690,9 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
             flow_rec1 = None
             flow_rec2 = None
             flow_rec3 = None
-            dpi1 = unicode(self.res.dport1)
-            dpi2 = unicode(self.res.dport2)
-            dpi3 = unicode(self.res.dport3)
+            dpi1 = str(self.res.dport1)
+            dpi2 = str(self.res.dport2)
+            dpi3 = str(self.res.dport3)
             flow_rec1 = inspect_h100.get_vna_fetchflowrecord(
                 vrf=fvn_vrf_id, sip=fvn_vm1.vm_ip, dip=self.res.my_fip, sport=self.res.udp_src, dport=dpi1, protocol='6')
             flow_rec2 = inspect_h100.get_vna_fetchflowrecord(
@@ -813,11 +815,11 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         receiver = {}
 
         stream1 = Stream(protocol="ip", proto="udp", src=fvn_vm1.vm_ip,
-                         dst=my_fip, sport=unicode(10000), dport=dport1)
+                         dst=my_fip, sport=str(10000), dport=dport1)
         stream2 = Stream(protocol="ip", proto="udp", src=fvn_vm1.vm_ip,
-                         dst=my_fip, sport=unicode(11000), dport=dport1)
+                         dst=my_fip, sport=str(11000), dport=dport1)
         stream3 = Stream(protocol="ip", proto="udp", src=fvn_vm1.vm_ip,
-                         dst=my_fip, sport=unicode(12000), dport=dport1)
+                         dst=my_fip, sport=str(12000), dport=dport1)
         stream_list = [stream1, stream2, stream3]
 
         tx_vm_node_ip = self.inputs.host_data[
@@ -926,15 +928,15 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
             flow_rec1 = None
             flow_rec2 = None
             flow_rec3 = None
-            dpi1 = unicode(self.res.dport1)
-            dpi2 = unicode(self.res.dport2)
-            dpi3 = unicode(self.res.dport3)
+            dpi1 = str(self.res.dport1)
+            dpi2 = str(self.res.dport2)
+            dpi3 = str(self.res.dport3)
             flow_rec1 = inspect_h100.get_vna_fetchflowrecord(
-                vrf=fvn_vrf_id, sip=fvn_vm1.vm_ip, dip=self.res.my_fip, sport=unicode(10000), dport=dpi1, protocol='17')
+                vrf=fvn_vrf_id, sip=fvn_vm1.vm_ip, dip=self.res.my_fip, sport=str(10000), dport=dpi1, protocol='17')
             flow_rec2 = inspect_h100.get_vna_fetchflowrecord(
-                vrf=fvn_vrf_id, sip=fvn_vm1.vm_ip, dip=self.res.my_fip, sport=unicode(11000), dport=dpi1, protocol='17')
+                vrf=fvn_vrf_id, sip=fvn_vm1.vm_ip, dip=self.res.my_fip, sport=str(11000), dport=dpi1, protocol='17')
             flow_rec3 = inspect_h100.get_vna_fetchflowrecord(
-                vrf=fvn_vrf_id, sip=fvn_vm1.vm_ip, dip=self.res.my_fip, sport=unicode(12000), dport=dpi1, protocol='17')
+                vrf=fvn_vrf_id, sip=fvn_vm1.vm_ip, dip=self.res.my_fip, sport=str(12000), dport=dpi1, protocol='17')
             if flow_rec1 is not None:
                 flow_result = True
                 self.logger.info(
@@ -974,11 +976,11 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
             rev_flow_result3 = True
             for dpi in dpi_list:
                 rev_flow_rec1[dpi] = inspect_h100.get_vna_fetchflowrecord(
-                    vrf=vn1_vrf_id, sip=vm1.vm_ip, dip=fvn_vm1.vm_ip, sport=dpi, dport=unicode(10000), protocol='17')
+                    vrf=vn1_vrf_id, sip=vm1.vm_ip, dip=fvn_vm1.vm_ip, sport=dpi, dport=str(10000), protocol='17')
                 rev_flow_rec2[dpi] = inspect_h100.get_vna_fetchflowrecord(
-                    vrf=vn2_vrf_id, sip=vm2.vm_ip, dip=fvn_vm1.vm_ip, sport=dpi, dport=unicode(11000), protocol='17')
+                    vrf=vn2_vrf_id, sip=vm2.vm_ip, dip=fvn_vm1.vm_ip, sport=dpi, dport=str(11000), protocol='17')
                 rev_flow_rec3[dpi] = inspect_h100.get_vna_fetchflowrecord(
-                    vrf=vn3_vrf_id, sip=vm3.vm_ip, dip=fvn_vm1.vm_ip, sport=dpi, dport=unicode(12000), protocol='17')
+                    vrf=vn3_vrf_id, sip=vm3.vm_ip, dip=fvn_vm1.vm_ip, sport=dpi, dport=str(12000), protocol='17')
                 if rev_flow_rec1[dpi]:
                     self.logger.info(
                         'Reverse Flow from %s to %s exists on Agent %s' %
@@ -1193,9 +1195,9 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
             flow_rec1 = None
             flow_rec2 = None
             flow_rec3 = None
-            dpi1 = unicode(self.res.dport1)
-            dpi2 = unicode(self.res.dport2)
-            dpi3 = unicode(self.res.dport3)
+            dpi1 = str(self.res.dport1)
+            dpi2 = str(self.res.dport2)
+            dpi3 = str(self.res.dport3)
             flow_rec1 = inspect_h100.get_vna_fetchflowrecord(
                 vrf=fvn_vrf_id_1, sip=fvn_vm1.vm_ip, dip=self.res.my_fip, sport=self.res.udp_src, dport=dpi1, protocol='17')
             flow_rec2 = inspect_h100.get_vna_fetchflowrecord(
@@ -1416,9 +1418,9 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
             flow_rec1 = None
             flow_rec2 = None
             flow_rec3 = None
-            dpi1 = unicode(self.res.dport1)
-            dpi2 = unicode(self.res.dport2)
-            dpi3 = unicode(self.res.dport3)
+            dpi1 = str(self.res.dport1)
+            dpi2 = str(self.res.dport2)
+            dpi3 = str(self.res.dport3)
             flow_rec1 = inspect_h100.get_vna_fetchflowrecord(
                 vrf=fvn_vrf_id, sip=fvn_vm1.vm_ip, dip=self.res.my_fip, sport=self.res.udp_src, dport=dpi1, protocol='6')
             flow_rec2 = inspect_h100.get_vna_fetchflowrecord(
@@ -1517,7 +1519,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         a_list = []
         dport1 = '9000'
         dport2 = '9001'
-        udp_src = unicode(8000)
+        udp_src = str(8000)
         vm1 = self.useFixture(
             VMFixture(
                 project_name=self.inputs.project_name, connections=self.connections,
@@ -1825,8 +1827,8 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
             inspect_h100 = self.agent_inspect[vm_node_ip]
             flow_rec1 = None
             flow_rec2 = None
-            dpi1 = unicode(dport1)
-            dpi2 = unicode(dport2)
+            dpi1 = str(dport1)
+            dpi2 = str(dport2)
             flow_rec1 = inspect_h100.get_vna_fetchflowrecord(
                 vrf=fvn_vrf_id, sip=fvn_vm1.vm_ip, dip=my_fip, sport=udp_src, dport=dpi1, protocol='6')
             flow_rec2 = inspect_h100.get_vna_fetchflowrecord(

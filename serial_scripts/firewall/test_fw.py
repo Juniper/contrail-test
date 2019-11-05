@@ -951,9 +951,9 @@ class TestFirewallDraftMisc(BaseFirewallTest):
         local_objs = self.create_n_security_objects(scope=SCOPE1)
         global_objs = self.create_n_security_objects(scope=SCOPE2)
         proj_objs = self.create_n_security_objects(scope='local', connections=proj1_conn)
-        objs = sum(local_objs.values() + global_objs.values(), [])
+        objs = sum(list(local_objs.values()) + list(global_objs.values()), [])
         self.validate_draft({'created': objs}, SCOPE1, SCOPE2)
-        objs = sum(proj_objs.values(), [])
+        objs = sum(list(proj_objs.values()), [])
         self.validate_draft({'created': objs}, project_fqname=proj1.project_fq_name)
         fn_and_args = [(self.commit, set(), dict()),
                        (self.commit, (SCOPE1,), dict()),
@@ -967,9 +967,9 @@ class TestFirewallDraftMisc(BaseFirewallTest):
         self.cleanup_n_security_objects(local_objs)
         self.cleanup_n_security_objects(global_objs)
         self.cleanup_n_security_objects(proj_objs)
-        objs = sum(local_objs.values() + global_objs.values(), [])
+        objs = sum(list(local_objs.values()) + list(global_objs.values()), [])
         self.validate_draft({'deleted': objs}, SCOPE1, SCOPE2)
-        objs = sum(proj_objs.values(), [])
+        objs = sum(list(proj_objs.values()), [])
         self.validate_draft({'deleted': objs}, project_fqname=proj1.project_fq_name)
         fn_and_args = [(self.discard, set(), dict()),
                        (self.discard, (SCOPE1,), dict()),
@@ -987,7 +987,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
 
         local_objs = self.create_n_security_objects(scope=SCOPE1)
         global_objs = self.create_n_security_objects(scope=SCOPE2)
-        objs = sum(local_objs.values() + global_objs.values(), [])
+        objs = sum(list(local_objs.values()) + list(global_objs.values()), [])
         self.validate_draft({'created': objs}, SCOPE1, SCOPE2)
         fn_and_args = [(self.commit, set(), dict()),
                        (self.commit, set(), dict())]
@@ -1015,7 +1015,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
         # Do parallel discard in the same scope
         self.cleanup_n_security_objects(local_objs)
         self.cleanup_n_security_objects(global_objs)
-        objs = sum(local_objs.values() + global_objs.values(), [])
+        objs = sum(list(local_objs.values()) + list(global_objs.values()), [])
         self.validate_draft({'deleted': objs}, SCOPE1, SCOPE2)
         fn_and_args = [(self.discard, set(), dict()),
                        (self.discard, set(), dict())]
@@ -1051,7 +1051,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
 
         local_objs = self.create_n_security_objects(scope=SCOPE1)
         global_objs = self.create_n_security_objects(scope=SCOPE2)
-        objs = sum(local_objs.values() + global_objs.values(), [])
+        objs = sum(list(local_objs.values()) + list(global_objs.values()), [])
         self.validate_draft({'created': objs}, SCOPE1, SCOPE2)
         fn_and_args = [(self.commit, set(), dict()),
                        (self.commit, (SCOPE1,), dict())]
@@ -1076,7 +1076,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
 
         local_objs = self.create_n_security_objects(scope=SCOPE1)
         global_objs = self.create_n_security_objects(scope=SCOPE2)
-        objs = sum(local_objs.values() + global_objs.values(), [])
+        objs = sum(list(local_objs.values()) + list(global_objs.values()), [])
         self.validate_draft({'created': objs}, SCOPE1, SCOPE2)
         fn_and_args = [(self.discard, set(), dict()),
                        (self.discard, (SCOPE1,), dict())]
@@ -1106,7 +1106,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
 
         local_objs = self.create_n_security_objects(scope=SCOPE1)
         global_objs = self.create_n_security_objects(scope=SCOPE2)
-        objs = sum(local_objs.values() + global_objs.values(), [])
+        objs = sum(list(local_objs.values()) + list(global_objs.values()), [])
         self.validate_draft({'created': objs}, SCOPE1, SCOPE2)
         fn_and_args = [(self.discard, set(), dict()),
                        (self.discard, (SCOPE1,), dict())]
@@ -1142,7 +1142,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
 
         local_objs = self.create_n_security_objects(scope=SCOPE1)
         global_objs = self.create_n_security_objects(scope=SCOPE2)
-        objs = sum(local_objs.values() + global_objs.values(), [])
+        objs = sum(list(local_objs.values()) + list(global_objs.values()), [])
         self.validate_draft({'created': objs}, SCOPE1, SCOPE2)
         fn_and_args = [(self.discard, set(), dict()),
                        (self.discard, (SCOPE1,), dict())]
@@ -1171,7 +1171,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
 
         local_objs = self.create_n_security_objects(scope=SCOPE1)
         global_objs = self.create_n_security_objects(scope=SCOPE2)
-        objs = sum(local_objs.values() + global_objs.values(), [])
+        objs = sum(list(local_objs.values()) + list(global_objs.values()), [])
         self.validate_draft({'created': objs}, SCOPE1, SCOPE2)
         fn_and_args = [(self.commit, set(), dict()),
                        (self.commit, (SCOPE1,), dict())]
@@ -1207,7 +1207,7 @@ class TestFirewallDraftMisc(BaseFirewallTest):
 
         local_objs = self.create_n_security_objects(scope=SCOPE1)
         global_objs = self.create_n_security_objects(scope=SCOPE2)
-        objs = sum(local_objs.values() + global_objs.values(), [])
+        objs = sum(list(local_objs.values()) + list(global_objs.values()), [])
         self.validate_draft({'created': objs}, SCOPE1, SCOPE2)
         fn_and_args = [(self.commit, set(), dict()),
                        (self.commit, (SCOPE1,), dict())]

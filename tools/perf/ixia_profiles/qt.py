@@ -49,7 +49,7 @@ def printDict(obj, nested_level=0, output=sys.stdout):
     spacing = '   '
     if type(obj) == dict:
         print('%s' % ((nested_level) * spacing), file=output)
-        for k, v in obj.items():
+        for k, v in list(obj.items()):
             if hasattr(v, '__iter__'):
                 print('%s%s:' % ((nested_level + 1) * spacing, k), file=output)
                 printDict(v, nested_level + 1, output)

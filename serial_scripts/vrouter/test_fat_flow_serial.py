@@ -1,3 +1,4 @@
+from builtins import str
 from tcutils.wrappers import preposttest_wrapper
 from common.vrouter.base import BaseVrouterTest
 import test
@@ -51,7 +52,7 @@ class FatFlowSerial(BaseVrouterTest, VerifySvcChain):
         #Configure Fat flow on server VM
         proto = 'udp'
         port = 53
-        server_vmi_id = server_fixtures[0].get_vmi_ids().values()
+        server_vmi_id = list(server_fixtures[0].get_vmi_ids().values())
         fat_flow_config = {'proto':proto,'port':port}
         self.add_fat_flow_to_vmis(server_vmi_id, fat_flow_config)
 
@@ -106,7 +107,7 @@ class FatFlowSerial(BaseVrouterTest, VerifySvcChain):
         #Configure Fat flow on server VM
         proto = 'udp'
         port = 53
-        server_vmi_id = server_fixtures[0].get_vmi_ids().values()
+        server_vmi_id = list(server_fixtures[0].get_vmi_ids().values())
         fat_flow_config = {'proto':proto,'port':port}
         self.add_fat_flow_to_vmis(server_vmi_id, fat_flow_config)
 
@@ -177,7 +178,7 @@ class FatFlowSerial(BaseVrouterTest, VerifySvcChain):
         sport = [str(baseport), str(baseport+1)]
 
         #Configure Fat flow on server VM
-        server_vmi_id = server_fixtures[0].get_vmi_ids().values()
+        server_vmi_id = list(server_fixtures[0].get_vmi_ids().values())
         fat_flow_config = {'proto':proto,'port':dport}
         self.add_fat_flow_to_vmis(server_vmi_id, fat_flow_config)
 
@@ -225,7 +226,7 @@ class FatFlowSerial(BaseVrouterTest, VerifySvcChain):
         #Configure Fat flow on server VM
         proto = 'udp'
         dport_list = [53, 54]
-        server_vmi_id = self.server_fixtures[0].get_vmi_ids().values()
+        server_vmi_id = list(self.server_fixtures[0].get_vmi_ids().values())
         fat_flow_config = {'proto':proto,'port':0}
         self.add_fat_flow_to_vmis(server_vmi_id, fat_flow_config)
 
@@ -242,8 +243,8 @@ class FatFlowSerial(BaseVrouterTest, VerifySvcChain):
         #Remove Fat flow from server VM
         self.remove_fat_flow_on_vmis(server_vmi_id, fat_flow_config)
         #Add Fat flow on client VMs
-        client1_vmi_id = self.client_fixtures[0].get_vmi_ids().values()
-        client2_vmi_id = self.client_fixtures[1].get_vmi_ids().values()
+        client1_vmi_id = list(self.client_fixtures[0].get_vmi_ids().values())
+        client2_vmi_id = list(self.client_fixtures[1].get_vmi_ids().values())
         self.add_fat_flow_to_vmis(client1_vmi_id+client2_vmi_id,
             fat_flow_config)
 
@@ -301,11 +302,11 @@ class FatFlowSerial(BaseVrouterTest, VerifySvcChain):
             if config == 'server':
                 port = dport_list[0]
                 for vm in self.server_fixtures:
-                    vmi_ids.extend(vm.get_vmi_ids().values())
+                    vmi_ids.extend(list(vm.get_vmi_ids().values()))
             elif config == 'client':
                 port = sport_list[0]
                 for vm in self.client_fixtures:
-                    vmi_ids.extend(vm.get_vmi_ids().values())
+                    vmi_ids.extend(list(vm.get_vmi_ids().values()))
             fat_config_list = [
                 {'proto':proto,'port':port, 'ignore_address':'source'},
                 {'proto':proto,'port':port, 'ignore_address':'destination'},
@@ -353,11 +354,11 @@ class FatFlowSerial(BaseVrouterTest, VerifySvcChain):
             if config == 'server':
                 port = dport_list[0]
                 for vm in self.server_fixtures:
-                    vmi_ids.extend(vm.get_vmi_ids().values())
+                    vmi_ids.extend(list(vm.get_vmi_ids().values()))
             elif config == 'client':
                 port = sport_list[0]
                 for vm in self.client_fixtures:
-                    vmi_ids.extend(vm.get_vmi_ids().values())
+                    vmi_ids.extend(list(vm.get_vmi_ids().values()))
             fat_config_list = [
                 {'proto':proto,'port':port, 'ignore_address':'source'},
                 {'proto':proto,'port':port, 'ignore_address':'destination'},
@@ -399,7 +400,7 @@ class FatFlowSerial(BaseVrouterTest, VerifySvcChain):
         vmi_ids = []
         port = dport_list[0]
         for vm in self.server_fixtures:
-            vmi_ids.extend(vm.get_vmi_ids().values())
+            vmi_ids.extend(list(vm.get_vmi_ids().values()))
         fat_config_list = [
             {'proto':proto,'port':port, 'ignore_address':'destination'},
             {'proto':proto,'port':0, 'ignore_address':'destination'},
@@ -528,7 +529,7 @@ class FatFlowSerial(BaseVrouterTest, VerifySvcChain):
         vns = [self.vn2_fixture]
         vmi_ids = []
         for vm in self.server_fixtures:
-            vmi_ids.extend(vm.get_vmi_ids().values())
+            vmi_ids.extend(list(vm.get_vmi_ids().values()))
         fat_config_vn = {
             'proto':proto,'port':0, 'ignore_address':'destination'
             }

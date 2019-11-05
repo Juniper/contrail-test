@@ -1,3 +1,5 @@
+from __future__ import division
+from past.utils import old_div
 from common.flow_tests.base import FlowTestBase
 from common.introspect.base import BaseIntrospectSsl
 from common.firewall.base import BaseFirewallTest
@@ -635,7 +637,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
         srv_session_s_port = self.srv_session_s_port
         proto = self.proto
         if exp_session_count is None:
-            exp_session_count = pkt_count/slo_rate if proto == 1 else 1
+            exp_session_count = old_div(pkt_count,slo_rate) if proto == 1 else 1
 
         eth_type = 'IPv4' if (self.inputs.get_af() == 'v4') else 'IPv6'
         proto_str = 'any'
@@ -726,7 +728,7 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
         srv_session_s_port = self.srv_session_s_port
         proto = self.proto
         if exp_session_count is None:
-            exp_session_count = pkt_count/slo_rate if proto in [1, 58] else 1
+            exp_session_count = old_div(pkt_count,slo_rate) if proto in [1, 58] else 1
 
         eth_type = 'IPv4' if (self.inputs.get_af() == 'v4') else 'IPv6'
         proto_str = 'any'
@@ -924,9 +926,9 @@ class SessionLoggingBase(FlowTestBase, BaseIntrospectSsl):
         srv_session_s_port = self.srv_session_s_port
         proto = self.proto
         if exp_srv_session_count is None:
-            exp_srv_session_count = pkt_count/slo_rate if proto in [1, 58] else 1
+            exp_srv_session_count = old_div(pkt_count,slo_rate) if proto in [1, 58] else 1
         if exp_clnt_session_count is None:
-            exp_clnt_session_count = pkt_count/slo_rate if proto in [1, 58] else 1
+            exp_clnt_session_count = old_div(pkt_count,slo_rate) if proto in [1, 58] else 1
 
         eth_type = 'IPv4' if (self.inputs.get_af() == 'v4') else 'IPv6'
         proto_str = 'any'

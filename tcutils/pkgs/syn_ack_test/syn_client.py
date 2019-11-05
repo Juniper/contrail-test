@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 
 from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from scapy.all import *
 import sys
 
@@ -24,14 +26,14 @@ os.system(
 port=8100
 
 # Create SYN packet
-SYN=ip/TCP(sport=port, dport=8000, flags="S", seq=42)
+SYN=old_div(ip,TCP(sport=port, dport=8000, flags="S", seq=42))
 
 # Send SYN and receive SYN,ACK
 SYNACK=sr1(SYN)
 print(SYNACK)
 
 # Create ACK packet
-ACK=ip/TCP(sport=SYNACK.dport, dport=8000, flags="A", seq=SYNACK.ack, ack=SYNACK.seq + 1)
+ACK=old_div(ip,TCP(sport=SYNACK.dport, dport=8000, flags="A", seq=SYNACK.ack, ack=SYNACK.seq + 1))
 
 # SEND our ACK packet
 send(ACK)
