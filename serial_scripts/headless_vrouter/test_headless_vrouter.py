@@ -94,8 +94,8 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
             topo_objs, config_topo, vm_fip_info = out['data']
 
         # Start Test
-        proj = config_topo.keys()
-        vms = config_topo[proj[0]]['vm'].keys()
+        proj = list(config_topo.keys())
+        vms = list(config_topo[proj[0]]['vm'].keys())
         src_vm = config_topo[proj[0]]['vm'][vms[0]]
         dest_vm = config_topo[proj[0]]['vm'][vms[1]]
         flow_cache_timeout = 180
@@ -323,8 +323,8 @@ class TestHeadlessVrouter(BaseHeadlessVrouterTest):
             topo_objs, config_topo, vm_fip_info = out['data']
 
         # Start Test
-        proj = config_topo.keys()
-        vms = config_topo[proj[0]]['vm'].keys()
+        proj = list(config_topo.keys())
+        vms = list(config_topo[proj[0]]['vm'].keys())
         src_vm = config_topo[proj[0]]['vm'][vms[0]]
         dest_vm = config_topo[proj[0]]['vm'][vms[1]]
         flow_cache_timeout = 180

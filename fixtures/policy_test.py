@@ -1,3 +1,4 @@
+from builtins import str
 import fixtures
 import re
 from project_test import *
@@ -74,7 +75,7 @@ class PolicyFixture(fixtures.Fixture):
                 self.policy_obj)
         else:
             try:
-                self.policy_obj = self.vnc_lib.network_policy_read(fq_name=self.project_fq_name+[unicode(self.policy_name)])
+                self.policy_obj = self.vnc_lib.network_policy_read(fq_name=self.project_fq_name+[str(self.policy_name)])
             except:
                 if self.inputs.vro_based:
                     self.policy_fq_name = self.set_policy_vro(self.policy_name, self.rules_list)
@@ -132,7 +133,7 @@ class PolicyFixture(fixtures.Fixture):
         '''
         def serialize(obj):
             return_dict = {}
-            for k, v in obj.__dict__.iteritems():
+            for k, v in obj.__dict__.items():
                 return_dict[k] = v
             return return_dict
         np_rules = []
@@ -329,7 +330,7 @@ class PolicyFixture(fixtures.Fixture):
         '''create policy and rules from vro'''
         self.connections.orch.create_policy(name = policy_name, rules = rules_list)
         self.policy_obj = self.vnc_lib.network_policy_read(
-                fq_name=self.project_fq_name+[unicode(self.policy_name)])
+                fq_name=self.project_fq_name+[str(self.policy_name)])
         self._populate_attr()
         return self.policy_fq_name
     #end _set_policy_vro
@@ -721,7 +722,7 @@ class PolicyFixture(fixtures.Fixture):
         user_rules_tx = []
         configd_rules = len(user_rules_tx)
         for rule in rules:
-            user_rule_tx = dict((translator[k], v) for (k, v) in rule.items())
+            user_rule_tx = dict((translator[k], v) for (k, v) in list(rule.items()))
             user_rules_tx.append(user_rule_tx)
         for rule in user_rules_tx:
             # port value mapping

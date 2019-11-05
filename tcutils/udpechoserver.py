@@ -1,9 +1,14 @@
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from builtins import object
 import argparse
 import select
 import socket
 import sys
-import Queue
+import queue
 import signal
 import os
 import errno
@@ -30,8 +35,8 @@ class UdpEchoServer(object):
 
     def write_stats_to_file(self):
         with open(self.stats_file, 'w', 0) as fd:
-            for dport, connections in self.stats.iteritems():
-                for sip, stats in connections.iteritems():
+            for dport, connections in self.stats.items():
+                for sip, stats in connections.items():
                     fd.write('dport: %s - src ip: %s - sent: %s - recv: %s%s'%(
                         dport, sip, stats['sent'], stats['recv'], os.linesep))
 
@@ -72,7 +77,7 @@ class UdpEchoServer(object):
                     server_address, server_port = get_addr_port(s.getsockname())
                     client_address, client_port = get_addr_port(sockaddr)
                     if s not in message_queues:
-                        message_queues[s] = Queue.Queue()
+                        message_queues[s] = queue.Queue()
                         self.stats[server_port][client_address] = {'sent': 0, 'recv': 0}
                     self.stats[server_port][client_address]['recv'] += data.count(message)
                     message_queues[s].put((data, sockaddr))
@@ -87,7 +92,7 @@ class UdpEchoServer(object):
             for s in writable:
                 try:
                     next_msg, sockaddr = message_queues[s].get_nowait()
-                except Queue.Empty:
+                except queue.Empty:
                     outputs.remove(s)
                 else:
                     try:

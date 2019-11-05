@@ -1,5 +1,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
+from builtins import str
+from builtins import range
 from vn_test import VNFixture
 from policy_test import PolicyFixture
 from vm_test import VMFixture
@@ -1517,7 +1519,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         policy = topo.vn_policy[test_vn][0]
         policy_info = "policy in effect is : " + str(topo.rules[policy])
         num_rules = len(topo.rules[policy])
-        for dest_vn, dest_vm_fixture in dest_vn_vm_dict.items():
+        for dest_vn, dest_vm_fixture in list(dest_vn_vm_dict.items()):
             matching_rule_action[dest_vn] = 'deny'  # init to deny
             for i in range(num_rules):
                 vn = topo.rules[policy][i]['dest_network']
@@ -1532,7 +1534,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         }
         stopStatus = {}
         expectedResult = {}
-        for dest_vn, dest_vm_fixture in dest_vn_vm_dict.items():
+        for dest_vn, dest_vm_fixture in list(dest_vn_vm_dict.items()):
             expectedResult[dest_vn] = True if matching_rule_action[
                 dest_vn] == 'pass' else False
             traffic_obj[dest_vn] = self.useFixture(
@@ -1576,7 +1578,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         # 5. Stop Traffic & validate received packets..
         self.logger.info("Proceed to stop traffic..")
         self.logger.info("-" * 80)
-        for dest_vn, dest_vm_fixture in dest_vn_vm_dict.items():
+        for dest_vn, dest_vm_fixture in list(dest_vn_vm_dict.items()):
             stopStatus[dest_vn] = traffic_obj[dest_vn].stopTraffic()
             # Check the status only if the stream is unaffected by policy
             # change
@@ -1771,7 +1773,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
         total_streams['icmp'] = 1
         total_streams['udp'] = 1
         total_streams['tcp'] = 1
-        traffic_proto_l = proto_list.keys()
+        traffic_proto_l = list(proto_list.keys())
         expectedResult = {}
         start_time = self.analytics_obj.getstarttime(
             self.inputs.compute_ips[0])
@@ -1854,7 +1856,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
                         port_range = chk_policy[i]['src_ports']
                         start_port = port_range[0]
                         end_port = port_range[1]
-                        num = range(min, start_port) + range(end_port, max)
+                        num = list(range(min, start_port)) + list(range(end_port, max))
                         new_port = random.choice(num)
                         intra_vn_ntw['src_port'] = new_port
                         intra_vn_ntw['src_ntw'] = chk_policy[
@@ -1865,7 +1867,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
                         port_range = chk_policy[i]['dst_ports']
                         start_port = port_range[0]
                         end_port = port_range[1]
-                        num = range(min, start_port) + range(end_port, max)
+                        num = list(range(min, start_port)) + list(range(end_port, max))
                         new_port = random.choice(num)
                         intra_vn_ntw['dst_port'] = new_port
                         intra_vn_ntw['src_ntw'] = chk_policy[
@@ -1916,7 +1918,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
                         port_range = chk_policy[i]['src_ports']
                         start_port = port_range[0]
                         end_port = port_range[1]
-                        num = range(min, start_port) + range(end_port, max)
+                        num = list(range(min, start_port)) + list(range(end_port, max))
                         new_port = random.choice(num)
                         inter_vn_ntw['src_port'] = new_port
                         inter_vn_ntw['src_ntw'] = chk_policy[
@@ -1927,7 +1929,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
                         port_range = chk_policy[i]['dst_ports']
                         start_port = port_range[0]
                         end_port = port_range[1]
-                        num = range(min, start_port) + range(end_port, max)
+                        num = list(range(min, start_port)) + list(range(end_port, max))
                         new_port = random.choice(num)
                         inter_vn_ntw['dst_port'] = new_port
                         inter_vn_ntw['src_ntw'] = chk_policy[

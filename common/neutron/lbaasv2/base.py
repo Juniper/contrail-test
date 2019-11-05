@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 import test_v1, time
 from lbaasv2_fixture import LBaasV2Fixture
 from tcutils.util import *

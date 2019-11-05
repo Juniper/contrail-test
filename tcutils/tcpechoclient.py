@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import object
 import argparse
 import socket
 import sys
@@ -34,8 +36,8 @@ class TcpEchoClient(object):
 
     def write_stats_to_file(self):
         with open(self.stats_file, 'w', 0) as fd:
-            for dport, connections in self.stats.iteritems():
-                for dip, stats in connections.iteritems():
+            for dport, connections in self.stats.items():
+                for dip, stats in connections.items():
                     fd.write('dport: %s - dst ip: %s - sent: %s - recv: %s%s'%(
                         dport, dip, stats['sent'], stats['recv'], os.linesep))
 

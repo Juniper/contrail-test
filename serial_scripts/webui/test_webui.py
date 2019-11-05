@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from __future__ import division
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -6,6 +7,8 @@ from __future__ import absolute_import
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
+from builtins import str
+from past.utils import old_div
 import os
 import time
 import fixtures
@@ -2349,10 +2352,10 @@ class WebuiTestSanity(base.WebuiBaseTest):
         global mirror_enabled_already
         self.webui.logger.debug("Step 1 : Edit the port by adding the values \
                                under advanced option")
-        port_params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
+        port_params_list = [list(topo.vn_nets.values())[0][0]] + list(topo.port_advanced_option.values())
         fixed_ip = self.webui_common.get_ui_value('Ports', 'Fixed IPs',
                                                  name=topo.port_list[0])
-        fixed_ip[0]['value'] = [fixed_ip[0].values()[0]] + \
+        fixed_ip[0]['value'] = [list(fixed_ip[0].values())[0]] + \
                                [topo.port_advanced_option['subnet_ip']]
         result = self.webui.edit_port('advanced_option', 'Ports',
                      topo.port_list[0], port_admin_state='Down', params_list=port_params_list)
@@ -2401,7 +2404,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         result = True
         self.webui.logger.debug("Step 1 : Edit the port by adding the values \
                                under advanced option")
-        port_params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
+        port_params_list = [list(topo.vn_nets.values())[0][0]] + list(topo.port_advanced_option.values())
         port_params_list.append(topo.vnet_list[0])
         result = self.webui.edit_port('advanced_option', 'Ports',
                      topo.port_list[0], params_list=port_params_list, subnet=False,
@@ -2443,8 +2446,8 @@ class WebuiTestSanity(base.WebuiBaseTest):
         '''
         self.webui.logger.debug("Step 1 : Add the DHCP options")
         expected_dhcp_value = [{'key': 'DHCP_Options', 'value': topo.dhcp_option_code +
-                               " " +  topo.dhcp_option_value + " " + str(int
-                               (topo.dhcp_option_value)/8)}]
+                               " " +  topo.dhcp_option_value + " " + str(old_div(int
+                               (topo.dhcp_option_value),8))}]
         dhcp_option_list = [topo.dhcp_option_code, topo.dhcp_option_value]
         result = self.webui.edit_port('dhcp', 'Ports', topo.port_list[0],
                                      dhcp_option=dhcp_option_list)
@@ -2467,7 +2470,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         '''
         self.webui.logger.debug("Step 1 : Add the Fat Flow Protocol")
         fat_flow_list = []
-        for key, value in topo.fat_flow_values.items():
+        for key, value in list(topo.fat_flow_values.items()):
             if key == 'ICMP':
                 value = '0'
             fat_flow_list.append(key.lower() + ' ' + value)
@@ -2494,7 +2497,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         '''
         self.webui.logger.debug("Step 1 : Edit the port by adding the values \
                                under advanced option")
-        port_params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
+        port_params_list = [list(topo.vn_nets.values())[0][0]] + list(topo.port_advanced_option.values())
         port_params_list[8] = topo.invalid_ip_mask
         port_params_list[6] = topo.invalid_mac
         port_params_list.append(topo.vnet_list[0])
@@ -2522,7 +2525,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         self.webui.logger.debug("Step 1 : Edit the port by adding the values \
                                under advanced option")
         global mirror_enabled_already
-        port_params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
+        port_params_list = [list(topo.vn_nets.values())[0][0]] + list(topo.port_advanced_option.values())
         port_params_list[5] = topo.invalid_ip_mask
         port_params_list[2] = topo.invalid_mac
         port_params_list[10] = topo.invalid_port
@@ -2555,7 +2558,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
         self.webui.logger.debug("Step 1 : Edit the port by adding the values \
                                under advanced option")
         global mirror_enabled_already
-        port_params_list = [topo.vn_nets.values()[0][0]] + topo.port_advanced_option.values()
+        port_params_list = [list(topo.vn_nets.values())[0][0]] + list(topo.port_advanced_option.values())
         port_params_list[7] = topo.invalid_ip_mask
         port_params_list[3] = topo.invalid_mac
         port_params_list.append(topo.vnet_list[0])
@@ -2611,7 +2614,7 @@ class WebuiTestSanity(base.WebuiBaseTest):
             result = result and False
         self.webui.logger.debug('Step 2 : Verify the Sub-Interface details in both WebUI \
                                and API')
-        expected_result = [{'key': 'Parent_Port', 'value': uuid_port[0].values()[0]},
+        expected_result = [{'key': 'Parent_Port', 'value': list(uuid_port[0].values())[0]},
                            {'key': 'Sub_Interface_VLAN', 'value': topo.vlan_id}]
         if not self.webui.verify_port_api_data([topo.sub_interface_name], action='edit',
                                               expected_result=expected_result):

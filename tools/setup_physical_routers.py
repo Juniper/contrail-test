@@ -1,7 +1,9 @@
+from future import standard_library
+standard_library.install_aliases()
 import os
 import sys
 import json
-import ConfigParser
+import configparser
 import ast
 import logging
 
@@ -18,7 +20,7 @@ logging.getLogger('paramiko.transport').setLevel(logging.WARN)
 
 if __name__ == "__main__":
     init_obj = ContrailTestInit(sys.argv[1])
-    for (device, device_dict) in init_obj.physical_routers_data.iteritems():
+    for (device, device_dict) in init_obj.physical_routers_data.items():
 
         if init_obj.deployer == 'rhosp':
             cfgm_ips = (init_obj.contrail_configs.get('CONTROL_NODES')).split(',')

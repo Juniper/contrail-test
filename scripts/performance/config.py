@@ -1,3 +1,6 @@
+from builtins import str
+from builtins import range
+from builtins import object
 import os
 import fixtures
 import testtools
@@ -10,7 +13,7 @@ from policy.config import AttachPolicyFixture
 from time import sleep
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 
-class ConfigPerformance():
+class ConfigPerformance(object):
 
     def config_vm(self, vn_fix, vm_name, node_name=None, image_name='ubuntu-netperf', flavor='contrail_flavor_large'):
         vm_fixture = self.useFixture(VMFixture(
@@ -64,7 +67,7 @@ class ConfigPerformance():
             self.logger.info('Created.UUID is %s'%(config_id))
             self.addCleanup(self.connections.delete_vrouter_encap)
 
-            encap_list_to_be_configured = [unicode(encap1),unicode(encap2),unicode(encap3)]
+            encap_list_to_be_configured = [str(encap1),str(encap2),str(encap3)]
             encap_list_configured=self.connections.read_vrouter_config_encap()
             if encap_list_to_be_configured != encap_list_configured:
 

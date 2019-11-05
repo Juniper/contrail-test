@@ -1,4 +1,5 @@
 from __future__ import print_function
+from builtins import str
 import logging as LOG
 from lxml import etree
 import re
@@ -32,7 +33,7 @@ class ControlNodeInspect (VerificationUtilBase):
             # sometime ./xpath dosen't work; work around
             # should debug to find the root cause.
             xp = p.xpath('/IFMapTableShowResp/ifmap_db/list/IFMapNodeShowInfo')
-        f = filter(lambda x: x.xpath('./node_name')[0].text == match, xp)
+        f = [x for x in xp if x.xpath('./node_name')[0].text == match]
         if 1 == len(f):
             d = {}
             for e in f[0]:

@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 from tcutils.wrappers import preposttest_wrapper
 from compute_node_test import ComputeNodeFixture
 import test
@@ -77,13 +79,13 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
         pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Send Traffic
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             self.send_l2_traffic(vm_fixtures[stream['src']],
                 src_mac=stream['src_cmac'], dst_mac=stream['dst_cmac'],
                 count=stream['count'])
 
         #Verify mac learned
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             sleep(5)
             src_vmi = vm[stream['src']]['vmi'][0]
             assert self.verify_mac_learning(vmi_fixtures[src_vmi],
@@ -118,12 +120,12 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
 
         # Before pinging, wait till interface is found on VM
         interface = 'eth0.%s' %(VLAN_ID1)
-        for src_vm_fixture in vm_fixtures.values():
+        for src_vm_fixture in list(vm_fixtures.values()):
             assert src_vm_fixture.wait_till_interface_created(interface)
 
         # Pinging all the VMIs
-        for src_vm_fixture in vm_fixtures.values():
-            for vmi_fixture in vmi_fixtures.values():
+        for src_vm_fixture in list(vm_fixtures.values()):
+            for vmi_fixture in list(vmi_fixtures.values()):
                 vmi_ip = vmi_fixture.get_ip_addresses()[0]
                 try:
                     socket.inet_aton(vmi_ip)
@@ -132,7 +134,7 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
                 assert src_vm_fixture.ping_with_certainty(vmi_ip, count=2)
 
         # Send Traffic
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             interface = vm_fixtures[stream['src']].get_vm_interface_name() + '.' + \
                 str(vmi[stream['src_vmi']]['vlan'])
             self.send_l2_traffic(vm_fixtures[stream['src']],
@@ -145,7 +147,7 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
                 cmac=stream['src_cmac'])
 
         #Send reverse traffic to verify if mac learned earlier could be used further
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             interface = vm_fixtures[stream['dst']].get_vm_interface_name() + '.' + \
                 str(vmi[stream['dst_vmi']]['vlan'])
             self.send_l2_traffic(vm_fixtures[stream['dst']],
@@ -222,7 +224,7 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
         pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Send Traffic
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             self.send_l2_traffic(vm_fixtures[stream['src']],
                 src_mac=stream['src_cmac'], dst_mac=stream['dst_cmac'],
                 count=stream['count'])
@@ -230,7 +232,7 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
 
         #Verify mac learned
 
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
 
             src_vm = stream['src']
             dst_vm = stream['dst']
@@ -320,12 +322,12 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
 
         # Traffic
         # Pinging all the VMIs as per defined streams in traffic
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             vmi_ip = vmi_fixtures[stream['dst_vmi']].get_ip_addresses()[0]
             assert vm_fixtures[stream['src']].ping_with_certainty(vmi_ip)
 
         # Send Traffic
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             interface = vm_fixtures[stream['src']].get_vm_interface_name() + '.' + \
                 str(vmi[stream['src_vmi']]['vlan'])
             self.send_l2_traffic(vm_fixtures[stream['src']],
@@ -333,7 +335,7 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
                 count=stream['count'], interface=interface)
 
         #Verify mac learned
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             src_vm = stream['src']
             dst_vm = stream['dst']
             pbb_compute_node_ips = []
@@ -429,8 +431,8 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
         pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Pinging all the VMIs
-        for src_vm_fixture in vm_fixtures.values():
-            for vmi_fixture in vmi_fixtures.values():
+        for src_vm_fixture in list(vm_fixtures.values()):
+            for vmi_fixture in list(vmi_fixtures.values()):
                 vmi_ip = vmi_fixture.get_ip_addresses()[0]
                 try:
                     socket.inet_aton(vmi_ip)
@@ -439,7 +441,7 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
                 assert src_vm_fixture.ping_with_certainty(vmi_ip)
 
         # Send Traffic
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             interface = vm_fixtures[stream['src']].get_vm_interface_name() + '.' + \
                 str(vmi[stream['src_vmi']]['vlan'])
             self.send_l2_traffic(vm_fixtures[stream['src']],
@@ -456,7 +458,7 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
             % (MAC_AGING_DEFAULT))
         sleep(MAC_AGING_DEFAULT)
         #Verify mac aged out
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
                 bd_fixtures[stream['bd']],  pbb_compute_node_ips,
                 cmac=stream['src_cmac'], expectation=False)
@@ -486,8 +488,8 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
         pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Pinging all the VMIs
-        for src_vm_fixture in vm_fixtures.values():
-            for vmi_fixture in vmi_fixtures.values():
+        for src_vm_fixture in list(vm_fixtures.values()):
+            for vmi_fixture in list(vmi_fixtures.values()):
                 vmi_ip = vmi_fixture.get_ip_addresses()[0]
                 try:
                     socket.inet_aton(vmi_ip)
@@ -496,7 +498,7 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
                 assert src_vm_fixture.ping_with_certainty(vmi_ip)
 
         # Send Traffic
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             interface = vm_fixtures[stream['src']].get_vm_interface_name() + '.' + \
                 str(vmi[stream['src_vmi']]['vlan'])
             self.send_l2_traffic(vm_fixtures[stream['src']],
@@ -513,7 +515,7 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
         bd_fixtures['bd1'].update_bd(mac_aging_time=mac_aging_time)
 
         #Send reverse traffic and verify mac learning after aging time update
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             interface = vm_fixtures[stream['dst']].get_vm_interface_name() + '.' + \
                 str(vmi[stream['dst_vmi']]['vlan'])
             self.send_l2_traffic(vm_fixtures[stream['dst']],
@@ -532,7 +534,7 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
         sleep(mac_aging_time)
 
         #Verify mac aged out
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             #For forward traffic
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
                 bd_fixtures[stream['bd']], pbb_compute_node_ips,
@@ -569,8 +571,8 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
         pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Pinging all the VMIs
-        for src_vm_fixture in vm_fixtures.values():
-            for vmi_fixture in vmi_fixtures.values():
+        for src_vm_fixture in list(vm_fixtures.values()):
+            for vmi_fixture in list(vmi_fixtures.values()):
                 vmi_ip = vmi_fixture.get_ip_addresses()[0]
                 try:
                     socket.inet_aton(vmi_ip)
@@ -579,7 +581,7 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
                 assert src_vm_fixture.ping_with_certainty(vmi_ip)
 
         # Send Traffic
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             interface = vm_fixtures[stream['src']].get_vm_interface_name() + '.' + \
                 str(vmi[stream['src_vmi']]['vlan'])
             self.send_l2_traffic(vm_fixtures[stream['src']],
@@ -597,7 +599,7 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
         sleep(MAC_AGING_DEFAULT)
 
         #Verify mac not aged out
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
                 bd_fixtures[stream['bd']], pbb_compute_node_ips,
                 cmac=stream['src_cmac'])
@@ -613,7 +615,7 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
         sleep(mac_aging_time)
 
         #Verify mac aged out
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
                 bd_fixtures[stream['bd']], pbb_compute_node_ips,
                 cmac=stream['src_cmac'], expectation=False)
@@ -654,8 +656,8 @@ class TestPbbEvpnMacMove(PbbEvpnTestBase):
         pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Pinging all the VMIs
-        for src_vm_fixture in vm_fixtures.values():
-            for vmi_fixture in vmi_fixtures.values():
+        for src_vm_fixture in list(vm_fixtures.values()):
+            for vmi_fixture in list(vmi_fixtures.values()):
                 vmi_ip = vmi_fixture.get_ip_addresses()[0]
                 try:
                     socket.inet_aton(vmi_ip)
@@ -664,7 +666,7 @@ class TestPbbEvpnMacMove(PbbEvpnTestBase):
                 assert src_vm_fixture.ping_with_certainty(vmi_ip)
 
         # Send Traffic
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             interface = vm_fixtures[stream['src']].get_vm_interface_name() + '.' + \
                 str(vmi[stream['src_vmi']]['vlan'])
             self.send_l2_traffic(vm_fixtures[stream['src']],
@@ -679,14 +681,14 @@ class TestPbbEvpnMacMove(PbbEvpnTestBase):
         #Mac move
         #Send the reverse traffic using earlier learnt C-MAC as src C-MAC from remote VMI,
         #to get the C-MAC moved and verify it further
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             interface = vm_fixtures[stream['dst']].get_vm_interface_name() + '.' + \
                 str(vmi[stream['dst_vmi']]['vlan'])
             self.send_l2_traffic(vm_fixtures[stream['dst']],
                 src_mac=stream['src_cmac'], dst_mac=stream['dst_cmac'],
                 count=stream['count'], interface=interface)
 
-            for i in xrange(0,5):
+            for i in range(0,5):
                 #Verify mac movement
                 result = self.verify_mac_learning(vmi_fixtures[stream['dst_vmi']],
                     bd_fixtures[stream['bd']], pbb_compute_node_ips,
@@ -734,8 +736,8 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Pinging all the VMIs
-        for src_vm_fixture in vm_fixtures.values():
-            for vmi_fixture in vmi_fixtures.values():
+        for src_vm_fixture in list(vm_fixtures.values()):
+            for vmi_fixture in list(vmi_fixtures.values()):
                 vmi_ip = vmi_fixture.get_ip_addresses()[0]
                 try:
                     socket.inet_aton(vmi_ip)
@@ -747,7 +749,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         bd_fixtures['bd1'].update_bd(mac_learning_enabled=False)
 
         # Send Traffic
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             interface = vm_fixtures[stream['src']].get_vm_interface_name() + '.' + \
                 str(vmi[stream['src_vmi']]['vlan'])
             self.send_l2_traffic(vm_fixtures[stream['src']],
@@ -763,7 +765,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         bd_fixtures['bd1'].update_bd(mac_learning_enabled=True)
 
         # Send Traffic
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             interface = vm_fixtures[stream['src']].get_vm_interface_name() + '.' + \
                 str(vmi[stream['src_vmi']]['vlan'])
             self.send_l2_traffic(vm_fixtures[stream['src']],
@@ -803,8 +805,8 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Pinging all the VMIs
-        for src_vm_fixture in vm_fixtures.values():
-            for vmi_fixture in vmi_fixtures.values():
+        for src_vm_fixture in list(vm_fixtures.values()):
+            for vmi_fixture in list(vmi_fixtures.values()):
                 vmi_ip = vmi_fixture.get_ip_addresses()[0]
                 try:
                     socket.inet_aton(vmi_ip)
@@ -813,7 +815,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
                 assert src_vm_fixture.ping_with_certainty(vmi_ip)
 
         # Send Traffic
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             interface = vm_fixtures[stream['src']].get_vm_interface_name() + '.' + \
                 str(vmi[stream['src_vmi']]['vlan'])
             self.send_l2_traffic(vm_fixtures[stream['src']],
@@ -830,14 +832,14 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         new_isid = bd_fixtures['bd1'].isid + 1
         bd_fixtures['bd1'].update_bd(isid=new_isid)
 
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             #Verify already learnt C-MAC is deleted
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
                 bd_fixtures[stream['bd']], pbb_compute_node_ips,
                 cmac=stream['src_cmac'], expectation=False)
 
         #Send reverse traffic after ISID change
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             interface = vm_fixtures[stream['dst']].get_vm_interface_name() + '.' + \
                 str(vmi[stream['dst_vmi']]['vlan'])
             self.send_l2_traffic(vm_fixtures[stream['dst']],
@@ -933,7 +935,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
 
         #Verify bridge domain, along with vlan-tag can be added to VMI
         vlan_tag = 100
-        for bd, vmi_list in bd_vmi_mapping.iteritems():
+        for bd, vmi_list in bd_vmi_mapping.items():
             bd_fixture = bd_fixtures[bd]
             for vmi in vmi_list:
                 vmi_fixture = vmi_fixtures[vmi]
@@ -986,12 +988,12 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
 
         # Traffic
         # Pinging all the VMIs as per defined streams in traffic
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             vmi_ip = vmi_fixtures[stream['dst_vmi']].get_ip_addresses()[0]
             assert vm_fixtures[stream['src']].ping_with_certainty(vmi_ip)
 
         # Send Traffic
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             interface = vm_fixtures[stream['src']].get_vm_interface_name() + '.' + \
                 str(vmi[stream['src_vmi']]['vlan'])
             self.send_l2_traffic(vm_fixtures[stream['src']],
@@ -1006,7 +1008,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         sleep(70)
 
         #Verify C-MACs get deleted
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
 
             src_vm = stream['src']
             dst_vm = stream['dst']
@@ -1019,7 +1021,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
                 cmac=stream['src_cmac'], expectation=False)
 
         # Send Traffic again
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             interface = vm_fixtures[stream['src']].get_vm_interface_name() + '.' + \
                 str(vmi[stream['src_vmi']]['vlan'])
             self.send_l2_traffic(vm_fixtures[stream['src']],
@@ -1027,7 +1029,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
                 count=stream['count'], interface=interface)
 
         #Verify C-MACs learnt again
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             src_vm = stream['src']
             dst_vm = stream['dst']
             pbb_compute_node_ips = []
@@ -1067,8 +1069,8 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         pbb_compute_node_ips = ret_dict['pbb_compute_node_ips']
 
         # Pinging all the VMIs
-        for src_vm_fixture in vm_fixtures.values():
-            for vmi_fixture in vmi_fixtures.values():
+        for src_vm_fixture in list(vm_fixtures.values()):
+            for vmi_fixture in list(vmi_fixtures.values()):
                 vmi_ip = vmi_fixture.get_ip_addresses()[0]
                 try:
                     socket.inet_aton(vmi_ip)
@@ -1078,7 +1080,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
 
         #Verification for adding BD with ISID 0 to VMI should fail
         vlan_tag = 0
-        for bd_name, vmi_list in bd_vmi_mapping.iteritems():
+        for bd_name, vmi_list in bd_vmi_mapping.items():
             bd_fixture = bd_fixtures[bd_name]
             for vmi_name in vmi_list:
                 vmi_fixture = vmi_fixtures[vmi_name]
@@ -1089,7 +1091,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         bd_fixtures[test_bd].update_bd(isid=1)
 
         # Send Traffic
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             interface = vm_fixtures[stream['src']].get_vm_interface_name() + '.' + \
                 str(vmi[stream['src_vmi']]['vlan'])
             self.send_l2_traffic(vm_fixtures[stream['src']],
@@ -1106,7 +1108,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         bd_fixtures[test_bd].update_bd(isid=5)
 
         #Verify mac flushed out
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             assert self.verify_mac_learning(vmi_fixtures[stream['src_vmi']],
                 bd_fixtures[stream['bd']], pbb_compute_node_ips,
                 cmac=stream['src_cmac'], expectation=False)

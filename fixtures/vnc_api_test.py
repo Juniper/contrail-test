@@ -1,3 +1,6 @@
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
 import fixtures
 import os
 import uuid
@@ -10,7 +13,7 @@ from tcutils.util import get_dashed_uuid
 from openstack import OpenstackAuth, OpenstackOrchestrator
 from vcenter import VcenterAuth, VcenterOrchestrator
 from common import log_orig as contrail_logging
-from ConfigParser import SafeConfigParser, DuplicateSectionError
+from configparser import SafeConfigParser, DuplicateSectionError
 
 _VNC_API_LIB_INI_ = '/etc/contrail/vnc_api_lib.ini'
 

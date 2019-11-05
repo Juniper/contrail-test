@@ -1,4 +1,8 @@
 from __future__ import print_function
+from builtins import next
+from builtins import str
+from builtins import range
+from builtins import object
 import time
 import random
 import uuid
@@ -17,6 +21,7 @@ from common.vcenter_libs import connect
 from common.vcenter_libs import vim
 from tcutils.config import vcenter_verification
 from pyVmomi import vim, vmodl, eam, VmomiSupport, SoapStubAdapter
+from future.utils import with_metaclass
 
 class FabricException(Exception):
     pass
@@ -42,7 +47,7 @@ def _wait_for_task (task):
     return
 
 def _match_obj(obj, param):
-    attr = param.keys()[0]
+    attr = list(param.keys())[0]
     attrs = [attr]
     if '.' in attr:
         attrs = attr.split('.')
@@ -51,12 +56,10 @@ def _match_obj(obj, param):
                 break
             obj = getattr(obj, attrs[i])
     attr = attrs[-1]
-    return hasattr(obj, attr) and getattr(obj, attr) == param.values()[0]
+    return hasattr(obj, attr) and getattr(obj, attr) == list(param.values())[0]
 
 
-class NFSDatastore:
-
-    __metaclass__ = Singleton
+class NFSDatastore(with_metaclass(Singleton, object)):
 
     def __init__(self, inputs, vc):
         self.name = 'nfs-ds'
@@ -102,9 +105,7 @@ class NFSDatastore:
             host.configManager.datastoreSystem.RemoveDatastore(self.nas_ds)  
                     
 
-class VcenterPvtVlanMgr:
-
-    __metaclass__ = Singleton
+class VcenterPvtVlanMgr(with_metaclass(Singleton, object)):
 
     def __init__(self, dvs):
         self._vlans = [(vlan.primaryVlanId, vlan.secondaryVlanId) for vlan in dvs.config.pvlanConfig if vlan.pvlanType == 'isolated']
@@ -115,9 +116,7 @@ class VcenterPvtVlanMgr:
     def free_vlan(self, vlan):
         self._vlans.append(vlan)
 
-class VcenterVlanMgr(VcenterPvtVlanMgr):
-
-    __metaclass__ = Singleton
+class VcenterVlanMgr(with_metaclass(Singleton, VcenterPvtVlanMgr)):
 
     def __init__(self, dvs):
         self._vlans = list(range(1,4096)) 
@@ -259,11 +258,11 @@ class VcenterOrchestrator(Orchestrator):
     def get_hosts(self, zone=None):
         if zone:
             return self._clusters_hosts[zone][:]
-        return [host for hosts in self._clusters_hosts.values() for host in hosts]
+        return [host for hosts in list(self._clusters_hosts.values()) for host in hosts]
 
     def get_zones(self):
         zones=[]
-        for k,v in self._clusters_hosts.items():
+        for k,v in list(self._clusters_hosts.items()):
             if v:
                 zones.append(k)  
         return zones
@@ -296,7 +295,7 @@ class VcenterOrchestrator(Orchestrator):
     @threadsafe_generator
     def _get_computes(self):
         while True:
-            hosts = [(server, cluster) for cluster, servers in self._clusters_hosts.items() for server in servers]
+            hosts = [(server, cluster) for cluster, servers in list(self._clusters_hosts.items()) for server in servers]
             for host in hosts:
                  yield host
 
@@ -548,7 +547,7 @@ class VcenterOrchestrator(Orchestrator):
         if vn_name:
             ret = vm_obj.ips.get(vn_name, None)
         else:
-            ret = vm_obj.ips.values()
+            ret = list(vm_obj.ips.values())
         return [ret]
 
     def migrate_vm(self, vm_obj, host):
@@ -863,7 +862,7 @@ class IPv6Subnet(Subnets):
         range = str(ip) + '#' + '255'
         return range
 
-class VcenterVN:
+class VcenterVN(object):
 
     @staticmethod
     def create_in_vcenter(vcenter, name, vlan, prefix, dhcp=True):
@@ -963,11 +962,11 @@ class VcenterVN:
            return False
 
     def get(self):
-        fq_name = [u'default-domain',u'vCenter',unicode(self.name)]
+        fq_name = [u'default-domain',u'vCenter',str(self.name)]
         if not self._get_vnc_vn_id(fq_name):
             raise Exception("Unable to query VN %s from vnc" % self.name)
 
-class VcenterVM:
+class VcenterVM(object):
 
     @staticmethod
     def create_from_vmobj(vcenter, vmobj):
@@ -1210,7 +1209,7 @@ class VcenterAuth(OrchestratorAuth):
     def get_project_id(self, project_name=None, domain_id=None):
        if not project_name:
            project_name = self.project_name
-       fq_name = [unicode(self.domain), unicode(project_name)]
+       fq_name = [str(self.domain), str(project_name)]
        obj = self.vnc.project_read(fq_name=fq_name)
        if obj:
            return obj.get_uuid()
