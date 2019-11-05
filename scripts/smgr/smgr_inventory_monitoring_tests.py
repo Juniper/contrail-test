@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from builtins import range
 from fabric.api import local
 from fabric.api import settings, run
 from tcutils.test_lib.test_utils import assertEqual

@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 from time import sleep
 from vn_test import *
 from vm_test import *
@@ -21,7 +23,7 @@ import ipaddress
 class Evpnt6base(BaseFabricTest):
 
     def setUp(self):
-        for device, device_dict in self.inputs.physical_routers_data.items():
+        for device, device_dict in list(self.inputs.physical_routers_data.items()):
             if 'crb_mcast_gw' in (device_dict.get('rb_roles') or []) \
                and device_dict['role'] == 'spine':
                 self.rb_roles[device] = ['CRB-MCAST-Gateway',
@@ -39,7 +41,7 @@ class Evpnt6base(BaseFabricTest):
         if result:
             msg = 'Need devices with crb_mcast_gw and erb_ucast_gw rb_roles'
             mcast_gw = ucast_gw = False
-            for device_dict in self.inputs.physical_routers_data.values():
+            for device_dict in list(self.inputs.physical_routers_data.values()):
                 if 'crb_mcast_gw' in (device_dict.get('rb_roles') or []) \
                    and device_dict['role'] == 'spine':
                     mcast_gw = True
@@ -67,7 +69,7 @@ class Evpnt6base(BaseFabricTest):
         '''
 
         # Send IGMPv3 membership reports from multicast receivers
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             for rcvr in stream['rcvrs']:
                 result = self.send_igmp_reportv2(vm_fixtures[rcvr], igmp)
         return True
@@ -154,12 +156,12 @@ class Evpnt6base(BaseFabricTest):
         # As IGMP report is sent from these receivers, entries should be present
         # in agent
         result = True
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             for rcvr in stream['rcvrs']:
 
                 ## Verifying IGMP report details in VM's VRF at agent
                 compute_node_ip = vm_fixtures[rcvr].vm_node_ip
-                vrf_id = vm_fixtures[rcvr].get_vrf_ids()[compute_node_ip].values()[0]
+                vrf_id = list(vm_fixtures[rcvr].get_vrf_ids()[compute_node_ip].values())[0]
                 result = result & self.verify_igmp_report(vm_fixtures[rcvr],
                                     vrf_id, igmp, expectation=True)
 
@@ -173,13 +175,13 @@ class Evpnt6base(BaseFabricTest):
         # Verify IGMPv3 membership at agent
         # As IGMP report is not sent from these receivers, entries should
         # not be present in agent
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             for rcvr in stream['non_rcvrs']:
 
 
                 # Verifying IGMP report details in VM's VRF at agent
                 compute_node_ip = vm_fixtures[rcvr].vm_node_ip
-                vrf_id = vm_fixtures[rcvr].get_vrf_ids()[compute_node_ip].values()[0]
+                vrf_id = list(vm_fixtures[rcvr].get_vrf_ids()[compute_node_ip].values())[0]
                 result = result & self.verify_igmp_report(vm_fixtures[rcvr],
                                 vrf_id, igmp, expectation=False)
                 if result:
@@ -263,7 +265,7 @@ for i in range(0,$numgrp):
         '''
 
         result = True
-        tap_intf = vm_fixture.tap_intf.values()[0]['name']
+        tap_intf = list(vm_fixture.tap_intf.values())[0]['name']
         compute_node_ip = vm_fixture.vm_node_ip
         num_of_grp_records = igmp.get('numgrp', 1)
         for record in range(num_of_grp_records):
@@ -300,7 +302,7 @@ for i in range(0,$numgrp):
         pcap = {}
 
         # Start tcpdump on receivers and non receivers
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             src_ip = stream['source']
             dst_ip = stream['maddr']
             net = stream['mnet']
@@ -332,7 +334,7 @@ for i in range(0,$numgrp):
 
         # Send Multicast Traffic
 
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             src = stream['src'][0]
             self._generate_multicast_trafficv2(vm_fixtures[src], maddr=stream['maddr'], count=stream['count'], interface=interface)
         return True
@@ -374,7 +376,7 @@ for i in range(0,$numgrp):
         # Verify Multicast Traffic on receivers. Incase, IGMPv3 exclude is sent
         # multicast data traffic should not receive on the receivers. Only
         # IGMPv3 include should receive multicast data traffic.
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             maddr_traffic = stream['maddr']
             for rcvr in stream['rcvrs']:
                 exp_count = stream['pcount'] * stream['count']
@@ -383,7 +385,7 @@ for i in range(0,$numgrp):
                                      exp_count=exp_count, grep_string="UDP")
         # Verify Multicast Traffic on non receivers, traffic should not reach
         # these
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             for rcvr in stream['non_rcvrs']:
 
                 result = result & verify_tcpdump_count(self, session[rcvr], pcap[rcvr],
@@ -458,7 +460,7 @@ for i in range(0,$numgrp):
 
         ctrl_node = vm_fixtures['vm1'].get_control_nodes()[0]
 
-        for stream in traffic.values():
+        for stream in list(traffic.values()):
             if stream['rcvrs'] == []:
                 result = self.verify_evpn_routes(6,vxlan_id,ctrl_node,vm_fixtures, igmp, expectation=False)
             else:
@@ -636,7 +638,7 @@ for i in range(0,$numgrp):
         ''' device_type is one of router/tor
         '''
         available = []
-        for (device, device_dict) in self.inputs.physical_routers_data.iteritems():
+        for (device, device_dict) in self.inputs.physical_routers_data.items():
             if (device_dict.get('type') == device_type) and (device_dict['role'] == role):
                 available.append(device_dict)
         return available
@@ -738,7 +740,7 @@ class Evpnt6MultiVnBase(Evpnt6base):
         self.vxlan_id = vxlan
         bms =self.get_bms_nodes(rb_role='erb_ucast_gw')
         
-        vn_ip = unicode('5.1.1.0', "utf-8")
+        vn_ip = str('5.1.1.0', "utf-8")
         vn_ip = ipaddress.ip_address(vn_ip)
         vm_fixtures = {}
         for i in range(1,vn_count):

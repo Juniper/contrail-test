@@ -1,3 +1,4 @@
+from builtins import object
 import test_v1
 from common.connections import ContrailConnections
 from common.contrail_test_init import ContrailTestInit
@@ -24,7 +25,7 @@ class BackupRestoreBaseTest(test_v1.BaseTestCase_v1):
         super(BackupRestoreBaseTest, cls).tearDownClass()
     #end tearDownClass
     
-class ResourceFactory:
+class ResourceFactory(object):
     factories = {}
     def createResource(id):
         if id not in ResourceFactory.factories:
@@ -42,7 +43,7 @@ class TestBackupRestoreResource(BaseResource):
     def cleanUp(self):
         super(TestBackupRestoreResource, self).cleanUp()
 
-    class Factory:
+    class Factory(object):
         def create(self): return TestBackupRestoreResource()
 
     def runTest(self):

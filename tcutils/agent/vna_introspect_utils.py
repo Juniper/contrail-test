@@ -1,5 +1,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
+from builtins import str
+from builtins import range
 import cgitb
 cgitb.enable(format='text')
 
@@ -153,8 +155,7 @@ class AgentInspect (VerificationUtilBase):
                                         for pl in cdata[0]:
                                             ace[c.tag][pl.tag] = pl.text
                                 elif c.tag in ('action_l', ):
-                                    ace[c.tag] = map(lambda x: x.text,
-                                                     c.xpath('./list/ActionStr/action'))
+                                    ace[c.tag] = [x.text for x in c.xpath('./list/ActionStr/action')]
                                 else:
                                     ace[c.tag] = c.text
                     else:
@@ -209,8 +210,7 @@ class AgentInspect (VerificationUtilBase):
                                         for pl in ace_id_data[0]:
                                             ace[c.tag][pl.tag] = pl.text
                                 elif c.tag in ('action_l', ):
-                                    ace[c.tag] = map(lambda x: x.text,
-                                                     c.xpath('./list/ActionStr/action'))
+                                    ace[c.tag] = [x.text for x in c.xpath('./list/ActionStr/action')]
                                 else:
                                     ace[c.tag] = c.text
                     elif e.tag == 'aceid_cnt_list':
@@ -300,8 +300,8 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         '''This proc typically work in pair with get_vna_fetchflowrecord. It parse the output of get_vna_fetchflowrecord and verify for the given item output is matching with the user expected one.'''
         result = False
         for itr in flow_rec:
-            if itr.keys() == [item]:
-                if expected in itr.values()[0]:
+            if list(itr.keys()) == [item]:
+                if expected in list(itr.values())[0]:
                     result = True
         return result
 
@@ -440,9 +440,9 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
             vrf = vrflist.xpath('./VrfListResp')[0]
         else:
             vrf = vrflist
-        avn = filter(lambda x:  ':'.join((domain, project,
-                                          vn_name)) in x.xpath('./name')[0].text, vrf.xpath(
-            './vrf_list/list/VrfSandeshData'))
+        avn = [x for x in vrf.xpath(
+            './vrf_list/list/VrfSandeshData') if ':'.join((domain, project,
+                                          vn_name)) in x.xpath('./name')[0].text]
         p = VnaVrfListResult({'vrf_list': []})
         for v in avn:
             pp = VnaVrfRouteResult()
@@ -607,7 +607,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         ret_list = []
         filter_str = ''
         filter_dict = filter_dict or {}
-        for k,v in filter_dict.iteritems():
+        for k,v in filter_dict.items():
             filter_str = filter_str + '%s:%s' %(k,v)
         p = None
         vnl = self.dict_get('Snh_PageReq?x=begin:-1,end:-1,table:db.interface.0'
@@ -615,7 +615,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         intf_list = vnl.xpath('./ItfResp/itf_list/list/ItfSandeshData') or \
                 vnl.xpath('./itf_list/list/ItfSandeshData')
         if _type:
-            avn = filter(lambda x:  self._itf_fltr(x, _type, value), intf_list)
+            avn = [x for x in intf_list if self._itf_fltr(x, _type, value)]
         else:
             avn = intf_list
 #        if 1 == len (avn):
@@ -834,13 +834,13 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
             result = False
         else:
             for i in range(0, len(ping_count['PingSummaryResp']) - 1):
-                if ping_count['PingSummaryResp'][i].keys()[0] == 'request_sent':
+                if list(ping_count['PingSummaryResp'][i].keys())[0] == 'request_sent':
                     req_sent = int(
-                        ping_count['PingSummaryResp'][i].values()[0])
-                elif ping_count['PingSummaryResp'][i].keys()[0] == 'response_received':
-                    req_rcv = int(ping_count['PingSummaryResp'][i].values()[0])
-                elif ping_count['PingSummaryResp'][i].keys()[0] == 'pkt_loss':
-                    loss = int(ping_count['PingSummaryResp'][i].values()[0])
+                        list(ping_count['PingSummaryResp'][i].values())[0])
+                elif list(ping_count['PingSummaryResp'][i].keys())[0] == 'response_received':
+                    req_rcv = int(list(ping_count['PingSummaryResp'][i].values())[0])
+                elif list(ping_count['PingSummaryResp'][i].keys())[0] == 'pkt_loss':
+                    loss = int(list(ping_count['PingSummaryResp'][i].values())[0])
             print("%s %s %s" % (req_sent, req_rcv, loss))
             print("%s" % (count))
 
@@ -1238,7 +1238,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
               'rid': '0',
               'vrf_id': '4'}]
         '''
-        filter_dict = dict((k,v) for k,v in  kwargs.iteritems() if v is not None)
+        filter_dict = dict((k,v) for k,v in  kwargs.items() if v is not None)
         filter_set = set(filter_dict.items())
         xml_obj = self.dict_get('Snh_KRouteReq?x=%s' % (vrf_id))
         xpath_str = './KRouteResp'
@@ -1255,7 +1255,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                 p = elem2dict(route)
 
                 # Remove any unhashable values in p
-                p = dict((k,v) for k,v in p.iteritems() if v)
+                p = dict((k,v) for k,v in p.items() if v)
 
                 if filter_set.issubset(set(p.items())):
                     if get_nh_details:
@@ -1361,7 +1361,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         for rsp in rsp_list:
             intf_list = rsp.xpath('./KInterfaceResp/if_list/list/KInterfaceInfo') or \
                     rsp.xpath('./if_list/list/KInterfaceInfo')
-            avn = filter(lambda x:  self._kitf_fltr(x, _type, value), intf_list)
+            avn = [x for x in intf_list if self._kitf_fltr(x, _type, value)]
 
             for intf in avn:
                 intf_dict = elem2dict(intf)

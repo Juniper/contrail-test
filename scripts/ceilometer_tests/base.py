@@ -1,3 +1,4 @@
+from builtins import object
 import test_v1
 from common import isolated_creds
 from vn_test import *
@@ -51,7 +52,7 @@ class CeilometerBaseTest(test_v1.BaseTestCase_v1):
                 break
     #end remove_from_cleanups
 
-class ResourceFactory:
+class ResourceFactory(object):
     factories = {}
     def createResource(id):
         if id not in ResourceFactory.factories:
@@ -138,7 +139,7 @@ class CeilometerTestResource (BaseResource):
     def cleanUp(self):
         super(CeilometerTestResource, self).cleanUp()
 
-    class Factory:
+    class Factory(object):
         def create(self): return CeilometerTestResource()
 
 

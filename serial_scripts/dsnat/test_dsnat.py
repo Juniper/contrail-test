@@ -1,3 +1,7 @@
+from __future__ import division
+from builtins import str
+from builtins import range
+from past.utils import old_div
 from tcutils.wrappers import preposttest_wrapper
 from common.dsnat.base import BaseDSNAT
 from common.neutron.base import BaseNeutronTest
@@ -20,7 +24,7 @@ class TestDSNAT(BaseDSNAT):
            send UDP traffic from VM to fabric IP and verify the PAT happened, 
                and the port been used in the range
         '''
-        port_range = range(65000, 65010)
+        port_range = list(range(65000, 65010))
         self.logger.info("configure port translation pool in global vrouter config for both\
             TCP and UDP in the range of %d to %d" %(port_range[0], port_range[-1]))
         pp = []
@@ -75,7 +79,7 @@ class TestDSNAT(BaseDSNAT):
             Verify the Port address translation happened and the 
                port being used in the range of configured
         '''
-        port_range = range(65000, 65010)
+        port_range = list(range(65000, 65010))
         pp = []
         pp.append(self.define_port_translation_pool(protocol='tcp',
                     start_port=port_range[0],
@@ -157,7 +161,7 @@ class TestDSNAT(BaseDSNAT):
            modify the port translation pool in the global vrouter config
            and verify the traffic
         '''
-        port_range = range(65000, 65010)
+        port_range = list(range(65000, 65010))
         self.logger.info("configure port translation pool in global vrouter config for both\
             TCP and UDP in the range of %d to %d" %(port_range[0], port_range[-1]))
         pp = []
@@ -205,7 +209,7 @@ class TestDSNAT(BaseDSNAT):
         if len(nat_port_used) > len(port_range) or set(nat_port_used) != set(port_range):
             assert False, ('NAT port allocated, %s, more than the configured'  %nat_port_used)
 
-        port_count = len(port_range)/2
+        port_count = old_div(len(port_range),2)
         self.logger.info('Reduce the port translation pool range or count for UDP to %d' %port_count)
         pp[0] = (self.define_port_translation_pool(protocol='udp',
              port_count=str(port_count)))
@@ -224,9 +228,9 @@ class TestDSNAT(BaseDSNAT):
 
         self.logger.info("Increase port range, shouldn't affect the existing flows")
         nat_port_used = self.get_nat_port_used_for_flow(vm1_fixture, '17', traffic['port'])
-        if len(nat_port_used) != port_count/5:
+        if len(nat_port_used) != old_div(port_count,5):
             assert False, ('After increasing port range, expected flows to be\
-                same as , %d, but actual flows are %d' %(port_count/5, len(nat_port_used)))
+                same as , %d, but actual flows are %d' %(old_div(port_count,5), len(nat_port_used)))
         ## Repeat UDP traffic multiple times, to exhaust the pool and verify the flow
         for i in range(port_count):
             self.run_iperf_between_vm_host(vm1_fixture, vm2_fixture.vm_node_ip, vm2_fixture.vm_node_data_ip, **traffic)
@@ -247,7 +251,7 @@ class TestDSNAT(BaseDSNAT):
            send UDP traffic from VM to fabirc IP and verify ports been used in the 
                combined range
         '''
-        port_range1 = range(65000, 65010)
+        port_range1 = list(range(65000, 65010))
         self.logger.info("configure port translation pool in global vrouter config for both\
             TCP and UDP in the range of %d to %d" %(port_range1[0], port_range1[-1]))
         pp = []
@@ -296,7 +300,7 @@ class TestDSNAT(BaseDSNAT):
         if len(nat_port_used) > len(port_range1) or set(nat_port_used) != set(port_range1):
             assert False, ('NAT port allocated, %s, more than the configured'  %nat_port_used)
 
-        port_range2 = range(65100, 65110)
+        port_range2 = list(range(65100, 65110))
         pp.append(self.define_port_translation_pool(protocol='udp',
                     start_port=port_range2[0],
                     end_port=port_range2[-1]))

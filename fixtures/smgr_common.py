@@ -1,4 +1,8 @@
 from __future__ import print_function
+from past.builtins import cmp
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
 import fixtures
 from contrail_fixtures import *
 import sys
@@ -10,7 +14,7 @@ import tempfile
 import os
 import re
 import fabric
-import ConfigParser
+import configparser
 import argparse
 import sys
 from datetime import datetime as dt
@@ -539,7 +543,7 @@ class SmgrFixture(fixtures.Fixture):
 
     def read_ini_file(self, config_ini):
         try:
-            config = ConfigParser.SafeConfigParser()
+            config = configparser.SafeConfigParser()
             config.read([config_ini])
             smgr_config = dict(config.items("SERVER-MANAGER"))
             return smgr_config

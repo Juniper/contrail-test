@@ -1,4 +1,5 @@
 from __future__ import print_function
+from builtins import str
 import fixtures
 from ipam_test import *
 from vn_test import *

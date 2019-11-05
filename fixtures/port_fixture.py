@@ -1,3 +1,4 @@
+from builtins import str
 import vnc_api_test
 from tcutils.util import retry, get_random_name
 import json

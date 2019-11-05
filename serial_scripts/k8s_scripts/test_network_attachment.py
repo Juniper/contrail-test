@@ -1,3 +1,5 @@
+from past.builtins import cmp
+from builtins import str
 from common.k8s.base import BaseK8sTest
 from tcutils.wrappers import preposttest_wrapper
 import test

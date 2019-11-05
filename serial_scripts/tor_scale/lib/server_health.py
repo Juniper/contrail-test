@@ -1,4 +1,6 @@
 ''' This module provides utils for setting up scale config'''
+from builtins import range
+from builtins import object
 from vnc_api_test import *
 import psutil
 import ast

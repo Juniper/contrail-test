@@ -1,9 +1,11 @@
 '''*******AUTO-GENERATED TOPOLOGY*********'''
 from __future__ import print_function
+from builtins import range
+from builtins import object
 from tcutils.util import get_random_name,get_random_cidr
 
 
-class sdn_single_vm_multiple_policy_config ():
+class sdn_single_vm_multiple_policy_config(object):
 
     def __init__(self, domain='default-domain', project='admin', username=None, password=None):
         #

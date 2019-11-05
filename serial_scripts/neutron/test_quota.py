@@ -1,3 +1,4 @@
+from builtins import range
 import random
 from vn_test import MultipleVNFixture
 from floating_ip import FloatingIPFixture
@@ -54,7 +55,7 @@ class TestQuotaUpdate(BaseNeutronTest):
             fip_count=10,
             port_count=5)
 
-        for item in resource_dict.keys():
+        for item in list(resource_dict.keys()):
             if item != 'vn_fix':
                 if None in resource_dict[item]:
                     result = False
@@ -69,7 +70,7 @@ class TestQuotaUpdate(BaseNeutronTest):
             self.admin_connections,
             vn_fix,
             sg_objs[0])
-        for item in response_dict.keys():
+        for item in list(response_dict.keys()):
             if response_dict[item]:
                 result = False
                 self.logger.error("Quota limit not followed for %s " % (item))
@@ -111,7 +112,7 @@ class TestQuotaUpdate(BaseNeutronTest):
             fip_count=10,
             port_count=5)
 
-        for item in resource_dict.keys():
+        for item in list(resource_dict.keys()):
             if item != 'vn_fix':
                 if None in resource_dict[item]:
                     result = False
@@ -127,7 +128,7 @@ class TestQuotaUpdate(BaseNeutronTest):
             proj_connection,
             vn_fix,
             sg_objs[0])
-        for item in response_dict.keys():
+        for item in list(response_dict.keys()):
             if response_dict[item]:
                 result = False
                 self.logger.error("Quota limit not followed for %s " % (item))

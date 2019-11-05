@@ -1,4 +1,6 @@
 from __future__ import print_function
+from builtins import range
+from builtins import object
 import time
 import atexit
 import requests
@@ -63,7 +65,7 @@ def _wait_for_task (task):
     return
 
 def _match_obj(obj, param):
-    attr = param.keys()[0]
+    attr = list(param.keys())[0]
     attrs = [attr]
     if '.' in attr:
         attrs = attr.split('.')
@@ -72,7 +74,7 @@ def _match_obj(obj, param):
                 break
             obj = getattr(obj, attrs[i])
     attr = attrs[-1]
-    return hasattr(obj, attr) and getattr(obj, attr) == param.values()[0]
+    return hasattr(obj, attr) and getattr(obj, attr) == list(param.values())[0]
 
 def get_vcenter_connection(inputs):
     SI = None
@@ -141,7 +143,7 @@ def get_contrail_vm_by_vm_uuid(inputs,uuid):
             ip = contrail_vm.split('@')[1]
             return inputs.host_data[ip]['name']
 
-class Inputs:
+class Inputs(object):
     def __init__(self):
         self.vcenter_server='10.204.217.189'
         self.vcenter_username='administrator@vsphere.local'

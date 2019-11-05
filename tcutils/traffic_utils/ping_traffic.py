@@ -1,3 +1,4 @@
+from builtins import object
 import re
 import string
 import logging
@@ -5,7 +6,7 @@ from tcutils.util import get_random_name, retry, is_v6
 
 result_file = '/tmp/ping'
 
-class Ping:
+class Ping(object):
     ''' Helper to generate ping traffic
 
         Mandatory args:
@@ -104,7 +105,7 @@ class Ping:
             result_data['sent'] = reg_result.group(1)
             result_data['received'] = reg_result.group(2)
             result_data['loss'] = reg_result.group(3)
-        if 'None' in  result_data.values():
+        if 'None' in  list(result_data.values()):
             self.logger.warn('Parsing of ping had problems. Got stats: %s'
                 'Please check debug logs'  %(result_data))
             self.logger.debug(result_content)
@@ -175,7 +176,7 @@ class Ping:
                 result_data['rtt_mdev'] = rtt_result.group(4)
             else:
                 result_data['rtt_mdev'] = 'N/A'
-        if None in result_data.values():
+        if None in list(result_data.values()):
             self.logger.warn('Parsing of ping had problems. Got stats: %s'
                 'Please check debug logs'  %(result_data))
             self.logger.debug(result_content)
@@ -191,7 +192,7 @@ class Ping:
             All values are string or boolean
         '''
         ret_val = ''
-        for (k,v) in kwargs.items():
+        for (k,v) in list(kwargs.items()):
             key = '-%s' % (k)
             if type(v) == bool:
                 if v:
@@ -208,7 +209,7 @@ class Ping:
         result = self.sender_vm_fixture.run_cmd_on_vm(
             cmds=['kill -2 `cat %s`' %(self.pid_file)],
             raw=True)
-        status = result.values()[0]
+        status = list(result.values())[0]
         if result.succeeded:
             self.logger.debug('ping is active on %s, PID: %s' % (
                               self.sender_vm_fixture,

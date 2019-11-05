@@ -1,5 +1,14 @@
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
+from future import standard_library
+standard_library.install_aliases()
+from builtins import map
+from builtins import next
+from builtins import str
+from builtins import range
+from past.utils import old_div
+from builtins import object
 import math
 import subprocess
 import os
@@ -28,7 +37,7 @@ from fabric.context_managers import settings, hide, cd, lcd
 from fabric.state import connections as fab_connections
 from paramiko.ssh_exception import ChannelException
 #from tcutils.util import retry
-import ConfigParser
+import configparser
 from testtools.testcase import TestSkipped
 import functools
 import testtools
@@ -70,7 +79,7 @@ def retry(tries=5, delay=3):
                     final = True
             if type(result) is dict:
                 rv = result['result']
-                if 'final' in result.keys() and result['final']:
+                if 'final' in list(result.keys()) and result['final']:
                     final = True
             while mtries > 0:
                 if rv is True:  # Done on success
@@ -156,7 +165,7 @@ def _escape_some_chars(text):
 def copy_fabfile_to_agent():
     src = 'tcutils/fabfile.py'
     dst = '~/fabfile.py'
-    if 'fab_copied_to_hosts' not in env.keys():
+    if 'fab_copied_to_hosts' not in list(env.keys()):
         env.fab_copied_to_hosts = list()
     if not env.host_string in env.fab_copied_to_hosts:
         if not exists(dst):
@@ -344,7 +353,7 @@ def retry_for_value(tries=5, delay=3):
 # end retry_for_value
 
 
-class threadsafe_iterator:
+class threadsafe_iterator(object):
 
     """Takes an iterator/generator and makes it thread-safe by
     serializing call to the `next` method of given iterator/generator.
@@ -357,7 +366,7 @@ class threadsafe_iterator:
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         with self.lock:
             return next(self.it)
 # end threadsafe_iterator
@@ -424,7 +433,7 @@ def get_random_name(prefix=None, constant_prefix='ctest'):
     return ret_val
 
 def get_unique_random_name(*args, **kwargs):
-    if 'unique_random_name' not in env.keys():
+    if 'unique_random_name' not in list(env.keys()):
         env['unique_random_name'] = list()
     while True:
         name = get_random_name(*args, **kwargs)
@@ -621,10 +630,10 @@ def get_random_string_list(max_list_length, prefix='', length=8):
 
 
 def get_random_mac():
-    return ':'.join(map(lambda x: "%02x" % x, [0x00, 0x16, 0x3E,
+    return ':'.join(["%02x" % x for x in [0x00, 0x16, 0x3E,
                                                random.randint(0x00, 0x7F), random.randint(
                                                    0x00, 0xFF),
-                                               random.randint(0x00, 0xFF)]))
+                                               random.randint(0x00, 0xFF)]])
 
 
 def search_arp_entry(arp_output, ip_address=None, mac_address=None):
@@ -735,7 +744,7 @@ def run_cmd_on_server(issue_cmd, server_ip, username,
             return output
 # end run_cmd_on_server
 
-class Lock:
+class Lock(object):
 
     def __init__(self, filename):
         self.filename = filename
@@ -765,7 +774,7 @@ def read_config_option(config, section, option, default_option):
         return default_option
     try:
         val = config.get(section, option)
-    except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
+    except (configparser.NoOptionError, configparser.NoSectionError):
         return default_option
     if val.lower() == 'true':
         val = True
@@ -988,7 +997,7 @@ def skip_because(*args, **kwargs):
                     #create the dict in format- {host-ip:hypervisor-type}
                     self.inputs.hypervisors = {x.host_ip: x.hypervisor_type.lower()
                                                    for x in hypervisors}
-                if kwargs["hypervisor"].lower() in self.inputs.hypervisors.values():
+                if kwargs["hypervisor"].lower() in list(self.inputs.hypervisors.values()):
                     skip = True
                     msg = "Skipped as currently test not supported on %s hypervisor." % kwargs["hypervisor"]
                     if "msg" in kwargs:
@@ -1002,7 +1011,7 @@ def skip_because(*args, **kwargs):
                     raise testtools.TestCase.skipException(msg)
 
             if "bms" in kwargs:
-                nodes = len(self.inputs.bms_data.keys())
+                nodes = len(list(self.inputs.bms_data.keys()))
                 mins = kwargs["bms"]
                 if nodes < mins:
                     msg = ' '.join(("Skipped as test requires at least",
@@ -1105,7 +1114,7 @@ def is_almost_same(val1, val2, threshold_percent=10, num_type=int):
     val1 = num_type(val1)
     val2 = num_type(val2)
     if val1:
-        if (abs(float(val1-val2))/val1)*100 < threshold_percent:
+        if (old_div(abs(float(val1-val2)),val1))*100 < threshold_percent:
             return True
         else:
             return False
@@ -1120,9 +1129,9 @@ def compare_dict(dict1, dict2, ignore_keys=[]):
     ''' Compares two dicts.
         Returns a tuple (True/False, set of items which dont match)
     '''
-    d1_new = dict((k, v) for k,v in dict1.iteritems() \
+    d1_new = dict((k, v) for k,v in dict1.items() \
         if k not in ignore_keys)
-    d2_new = dict((k, v) for k,v in dict2.iteritems() \
+    d2_new = dict((k, v) for k,v in dict2.items() \
         if k not in ignore_keys)
     return (d1_new == d2_new, set(d1_new) ^ set(d2_new))
 # end compare_dict
@@ -1199,7 +1208,7 @@ def get_hostname_by_ip(host, ip, **kwargs):
 
 def execute_ansible_playbook(playbook, playbook_timeout=None, **kwargs):
     ev = ''
-    for key,value in kwargs.iteritems():
+    for key,value in kwargs.items():
         ev = ev + ' -e "%s=%s"'%(key, value)
     cmd = 'ansible-playbook %s %s'%(ev, playbook)
     if playbook_timeout:
