@@ -15,6 +15,7 @@
 
 from __future__ import print_function
 
+from builtins import object
 import logging as std_logging
 import os
 

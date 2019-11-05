@@ -1,5 +1,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
+from builtins import range
+from builtins import object
 import sys
 import os
 import select
@@ -40,7 +42,7 @@ class SshConnect(threading.Thread):
         self.remoteCmdExecuterObj._ssh = self.ssh
 
 
-class remoteCmdExecuter:
+class remoteCmdExecuter(object):
 
     def __init__(self):
         pass

@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 import os
 import time
 import random
@@ -844,7 +846,7 @@ class ConfigSvcChain(fixtures.Fixture):
     def config_ecmp_hash_vmi(self, svm_list, ecmp_hash=None):
         """Configure ecmp hash at vmi"""
         for svm in svm_list:
-            for (vn_fq_name, vmi_uuid) in svm.get_vmi_ids().iteritems():
+            for (vn_fq_name, vmi_uuid) in svm.get_vmi_ids().items():
                 if re.match(r".*in_network_vn2.*|.*bridge_vn2.*|.*right_.*", vn_fq_name):
                     self.logger.info('Updating ECMP Hash:%s at vmi:%s' % (ecmp_hash, vmi_uuid))
                     vmi_config = self.vnc_lib.virtual_machine_interface_read(id = str(vmi_uuid))

@@ -1,3 +1,4 @@
+from builtins import object
 import functools
 import os
 import time
@@ -128,6 +129,9 @@ class BaseTestCase(TagsHack,
 
     def cleanUp(self):
         super(BaseTestCase, self).cleanUp()
+
+    def runTest(self):
+        pass
 
     def addDetail(self, logfile, text):
         if type(text) is str:

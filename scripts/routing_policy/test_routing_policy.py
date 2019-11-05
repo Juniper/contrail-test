@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from builtins import str
 from tcutils.wrappers import preposttest_wrapper
 from common.servicechain.firewall.verify import VerifySvcFirewall
 from common.svc_health_check.base import BaseHC

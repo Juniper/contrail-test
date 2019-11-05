@@ -1,3 +1,5 @@
+from builtins import zip
+from builtins import str
 import vnc_api_test
 from compute_node_test import ComputeNodeFixture
 from tcutils.util import get_random_name, retry
@@ -1115,7 +1117,7 @@ class LBaasV2Fixture(LBBaseFixture):
                         break
                     act_mem_list = [(member['uuid'], member['address'], member['weight'])
                                     for member in backend['members']]
-                    exp_mem_list = zip(self.member_ids, self.member_ips, self.member_weight)
+                    exp_mem_list = list(zip(self.member_ids, self.member_ips, self.member_weight))
                     if sorted(act_mem_list) != sorted(exp_mem_list):
                         break
                     if self.hmon_id and (str(self.hm_timeout) != backend['timeout'] or
@@ -1202,7 +1204,7 @@ def main():
     obj.verify_on_setup()
     obj.create_member(address=get_random_ip(subnet))
     obj.verify_on_setup()
-    obj.delete_hmon(obj.hmons.keys()[0])
+    obj.delete_hmon(list(obj.hmons.keys())[0])
     obj.verify_on_setup()
     obj.create_hmon({'delay': 5, 'max_retries': 5, 'probe_type': 'PING', 'timeout': 10})
     obj.verify_on_setup()

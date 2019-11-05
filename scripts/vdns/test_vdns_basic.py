@@ -5,6 +5,7 @@
 # You can do 'python -m testtools.run -l vdns_tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
+from builtins import str
 import os
 import unittest
 import fixtures

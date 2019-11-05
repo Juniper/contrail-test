@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 import sys
 from time import sleep
 from datetime import datetime
@@ -206,7 +208,7 @@ class ECMPTraffic(VerifySvcChain):
             # configured "destination_port" alone.
             if hash_var_count == 1 and (not 'destination_port' in ecmp_hash):
                 flow_pattern_ref = flow_pattern['9000']
-                if all(flow_pattern_ref  == item for item in flow_pattern.values()):
+                if all(flow_pattern_ref  == item for item in list(flow_pattern.values())):
                     self.logger.info(
                         'Flows are flowing through Single Service Instance: %s, as per config hash: %s' % (flow_pattern_ref, ecmp_hash))
                     self.logger.info('%s' % flow_pattern)
@@ -220,7 +222,7 @@ class ECMPTraffic(VerifySvcChain):
             # ecmp_hash
             else:
                 flow_pattern_ref = flow_pattern['9000']
-                if all(flow_pattern_ref  == item for item in flow_pattern.values()):
+                if all(flow_pattern_ref  == item for item in list(flow_pattern.values())):
                     result = False
                     self.logger.error(
                         'Flows are flowing through Single Service Instance:%s, where as it should not as per config hash:%s' % (flow_pattern_ref, ecmp_hash))
@@ -238,7 +240,7 @@ class ECMPTraffic(VerifySvcChain):
 
         self.logger.info('Checking Flow records')
         vn_fq_name = src_vm.vn_fq_name
-        items_list = src_vm.tap_intf[vn_fq_name].items()
+        items_list = list(src_vm.tap_intf[vn_fq_name].items())
         for items, values in items_list:
             if items == 'flow_key_idx':
                 nh_id = values
@@ -251,8 +253,8 @@ class ECMPTraffic(VerifySvcChain):
             for stream in stream_list:
                 src_ip = stream.l3.src
                 dst_ip = stream.l3.dst
-                src_port = unicode(stream.l4.sport)
-                dest_port = unicode(stream.l4.dport)
+                src_port = str(stream.l4.sport)
+                dest_port = str(stream.l4.dport)
                 protocol = proto_map[stream.l3.proto]
                 flow_rec = inspect_h.get_vna_fetchflowrecord(
                     nh=nh_id, sip=src_ip, dip=dst_ip, sport=src_port, dport=dest_port, protocol=protocol)
@@ -260,8 +262,8 @@ class ECMPTraffic(VerifySvcChain):
                     flow_result = False
         else:
             for i in range(0,flow_count):
-                src_port = unicode(8000)
-                dest_port =unicode(9000+i)
+                src_port = str(8000)
+                dest_port =str(9000+i)
                 flow_rec = inspect_h.get_vna_fetchflowrecord(
                     nh=nh_id, sip=src_ip, dip=dst_ip, sport=src_port, dport=dest_port, protocol=protocol)
                 if flow_rec is None:

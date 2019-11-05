@@ -1,3 +1,4 @@
+from builtins import range
 import test
 from common.k8s.base import BaseK8sTest
 from k8s.namespace import NamespaceFixture

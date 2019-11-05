@@ -1,3 +1,4 @@
+from builtins import object
 from fabric_test import FabricFixture
 from virtual_port_group import VPGFixture
 from physical_device_fixture import PhysicalDeviceFixture
@@ -41,7 +42,7 @@ class FabricUtils(object):
 
         fq_name = ['default-global-system-config',
                    'fabric_onboard_template']
-        if 'image_upgrade_os_version' in fabric_dict['namespaces'].keys():
+        if 'image_upgrade_os_version' in list(fabric_dict['namespaces'].keys()):
             self.logger.info("ZTP with image upgrade")
             os_version = fabric_dict['namespaces']['image_upgrade_os_version']
         else:
@@ -51,7 +52,7 @@ class FabricUtils(object):
                    'fabric_display_name': name,
                    'device_to_ztp': [{"serial_number": dct['serial_number'], \
                                       "hostname": dct['name']} \
-                       for dct in self.inputs.physical_routers_data.values() \
+                       for dct in list(self.inputs.physical_routers_data.values()) \
                            if dct.get('serial_number')],
                    'node_profiles': [{"node_profile_name": profile}
                        for profile in fabric_dict.get('node_profiles')\
@@ -282,12 +283,12 @@ class FabricUtils(object):
         return execution_id, None
 
     def get_prouter_dict(self, device_name):
-        for device in self.inputs.physical_routers_data.itervalues():
+        for device in self.inputs.physical_routers_data.values():
             if device['name'] == device_name:
                 return device
 
     def get_role_from_inputs(self, device_name):
-        for device in self.inputs.physical_routers_data.itervalues():
+        for device in self.inputs.physical_routers_data.values():
             if device['name'] == device_name:
                 return device['role']
 
@@ -323,7 +324,7 @@ class FabricUtils(object):
     def create_server_object(self, fabric, fabric_dict):
         servers = list()
         ports = list()
-        for name, intfs in fabric_dict['ztp'].items():
+        for name, intfs in list(fabric_dict['ztp'].items()):
             servers.append(self.vnc_h.create_node(name))
             for port in intfs:
                 ports.append(self.vnc_h.create_port(name=port['name'],
@@ -335,7 +336,7 @@ class FabricUtils(object):
 
     def create_server_node_profile(self, fabric, fabric_dict, label):
         cards = list(); hardwares = list(); node_profiles = list()
-        for name, ports in fabric_dict['ztp'].items():
+        for name, ports in list(fabric_dict['ztp'].items()):
             vendor = 'Dell'
             cards.append(self.vnc_h.create_card(name+'-card', label,
                 [port['name'] for port in ports]))
@@ -356,7 +357,7 @@ class FabricUtils(object):
             roles_dict.update({device: self.get_role_from_inputs(device.name)})
         fq_name = ['default-global-system-config', 'role_assignment_template']
         payload = {'fabric_fq_name': fabric.fq_name, 'role_assignments': list()}
-        for device, role in roles_dict.iteritems():
+        for device, role in roles_dict.items():
             if role == 'leaf':
                 routing_bridging_role = rb_roles.get(
                     device.name, ['CRB-Access'])

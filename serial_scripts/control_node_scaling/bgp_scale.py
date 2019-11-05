@@ -1,5 +1,9 @@
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
+from builtins import str
+from builtins import range
+from past.utils import old_div
 import time
 import sys
 import os
@@ -156,7 +160,7 @@ def get_total_prefix_expectations(ninstances, import_targets_per_instance, nagen
     ntargets = 1
     if ninstances > 1:
         if import_targets_per_instance > 1:
-            ntargets = int(ninstances / import_targets_per_instance)
+            ntargets = int(old_div(ninstances, import_targets_per_instance))
 
     #
     # Compute num prefixes per instance per agent. Note that if the
@@ -1701,7 +1705,7 @@ def get_ops_per_second(delta_seconds, expected_prefixes):
     # Compute prefix install (or delete) per second
     #
     if delta_seconds > 0:
-        return_val = expected_prefixes / delta_seconds
+        return_val = old_div(expected_prefixes, delta_seconds)
         return return_val
     else:
         return expected_prefixes
@@ -1723,14 +1727,14 @@ def get_delta_time(t1, units=''):
     # The has GOT to be a better way..
     #
     if units == 'minutes':
-        return_val = int(((t2 - t1).seconds) / 60)
+        return_val = int(old_div(((t2 - t1).seconds), 60))
 
     elif units == 'seconds':
         return_val = (t2 - t1).seconds
 
     elif units == 'microseconds':
         return_val = "%s.%s" % (
-            int(((t2 - t1).seconds) / 60), ((t2 - t1).microseconds))
+            int(old_div(((t2 - t1).seconds), 60)), ((t2 - t1).microseconds))
 
     return (return_val, t2)
 

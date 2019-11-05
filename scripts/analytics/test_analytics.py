@@ -276,7 +276,7 @@ class AnalyticsTestSanity2(base.AnalyticsBaseTest):
         except Exception as e:
             self.logger.exception("Got exception as %s"%(e))
 
-        for vmobj in vm_fixture.vm_obj_dict.values():
+        for vmobj in list(vm_fixture.vm_obj_dict.values()):
             vm_host_ip=vmobj.vm_node_ip
             if vm_host_ip not in compute_ip:
                 compute_ip.append(vm_host_ip)

@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 import time
 from netaddr import * 
 from random import randint
@@ -33,7 +35,7 @@ class BaseTorTest(BaseNeutronTest):
         ''' device_type is one of router/tor
         '''
         available = []
-        for (device, device_dict) in self.inputs.physical_routers_data.iteritems():
+        for (device, device_dict) in self.inputs.physical_routers_data.items():
             if device_dict['type'] == device_type :
                 available.append(device_dict)
         return available
@@ -41,7 +43,7 @@ class BaseTorTest(BaseNeutronTest):
 
     def get_available_endpoints(self, device_ip):
         endpoints = []
-        for (ip, ep_list) in self.inputs.tor_hosts_data.iteritems():
+        for (ip, ep_list) in self.inputs.tor_hosts_data.items():
             if device_ip == ip:
                 return ep_list 
         return endpoints

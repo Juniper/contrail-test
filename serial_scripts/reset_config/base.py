@@ -1,3 +1,4 @@
+from builtins import object
 import test_v1
 from common.connections import ContrailConnections
 from common.contrail_test_init import ContrailTestInit
@@ -19,7 +20,7 @@ class ResetConfigBaseTest(test_v1.BaseTestCase_v1):
         cls.res = ResourceFactory.createResource(resource_class)
     #end setUpClass
     
-class ResourceFactory:
+class ResourceFactory(object):
     factories = {}
     def createResource(id):
         if id not in ResourceFactory.factories:
@@ -34,7 +35,7 @@ class TestResetConfigResource(BaseResource):
     def setUp(self,inputs,connections, logger):
         super(TestResetConfigResource, self).setUp(inputs,connections, logger)
 
-    class Factory:
+    class Factory(object):
         def create(self): return TestResetConfigResource()
 
     def runTest(self):

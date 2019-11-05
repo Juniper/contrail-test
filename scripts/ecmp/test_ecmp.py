@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 import sys
 import os
 from vn_test import *
@@ -279,13 +281,13 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
             vm.install_pkg("Traffic")
         old_stream1 = Stream(
             proto="icmp", src=self.left_vm_fixture.vm_ip,
-            dst=self.right_vm_fixture.vm_ip, sport=unicode(10000), dport=unicode(11000))
+            dst=self.right_vm_fixture.vm_ip, sport=str(10000), dport=str(11000))
         old_stream2 = Stream(
             proto="udp", src=self.left_vm_fixture.vm_ip,
-            dst=self.right_vm_fixture.vm_ip, sport=unicode(10000), dport=unicode(11000))
+            dst=self.right_vm_fixture.vm_ip, sport=str(10000), dport=str(11000))
         old_stream3 = Stream(
             proto="tcp", src=self.left_vm_fixture.vm_ip,
-            dst=self.right_vm_fixture.vm_ip, sport=unicode(10000), dport=unicode(11000))
+            dst=self.right_vm_fixture.vm_ip, sport=str(10000), dport=str(11000))
         old_stream_list = [old_stream1, old_stream2, old_stream3]
 
         dst_vm_list = [self.right_vm_fixture]
@@ -335,13 +337,13 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
 
         stream1 = Stream(
             proto="icmp", src=self.left_vm_fixture.vm_ip,
-            dst=self.right_vm_fixture.vm_ip, sport=unicode(8000), dport=unicode(9000))
+            dst=self.right_vm_fixture.vm_ip, sport=str(8000), dport=str(9000))
         stream2 = Stream(
             proto="udp", src=self.left_vm_fixture.vm_ip,
-            dst=self.right_vm_fixture.vm_ip, sport=unicode(8000), dport=unicode(9000))
+            dst=self.right_vm_fixture.vm_ip, sport=str(8000), dport=str(9000))
         stream3 = Stream(
             proto="tcp", src=self.left_vm_fixture.vm_ip,
-            dst=self.right_vm_fixture.vm_ip, sport=unicode(8000), dport=unicode(9000))
+            dst=self.right_vm_fixture.vm_ip, sport=str(8000), dport=str(9000))
         stream_list = [stream1, stream2, stream3]
 
         dst_vm_list = [self.right_vm_fixture]
@@ -404,13 +406,13 @@ class TestECMPFeature(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
 
         stream1 = Stream(
             proto="udp", src=self.left_vm_fixture.vm_ip,
-            dst=self.right_vm_fixture.vm_ip, sport=unicode(8000), dport=unicode(9000))
+            dst=self.right_vm_fixture.vm_ip, sport=str(8000), dport=str(9000))
         stream2 = Stream(
             proto="udp", src=self.left_vm_fixture.vm_ip,
-            dst=dest_vm2.vm_ip, sport=unicode(8000), dport=unicode(9000))
+            dst=dest_vm2.vm_ip, sport=str(8000), dport=str(9000))
         stream3 = Stream(
             proto="udp", src=self.left_vm_fixture.vm_ip,
-            dst=dest_vm3.vm_ip, sport=unicode(8000), dport=unicode(9000))
+            dst=dest_vm3.vm_ip, sport=str(8000), dport=str(9000))
 
         stream_list = [stream1, stream2, stream3]
 
@@ -625,11 +627,11 @@ class TestECMPwithFIP_2(GenericTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPT
         self.setup_common_objects()
         vm_list = [self.vm1, self.vm2, self.vm3]
         stream1 = Stream(proto="udp", src=self.fvn_vm1.vm_ip,
-                         dst=self.my_fip, sport=unicode(8000), dport=self.dport1)
+                         dst=self.my_fip, sport=str(8000), dport=self.dport1)
         stream2 = Stream(proto="udp", src=self.fvn_vm1.vm_ip,
-                         dst=self.my_fip, sport=unicode(11000), dport=self.dport1)
+                         dst=self.my_fip, sport=str(11000), dport=self.dport1)
         stream3 = Stream(proto="udp", src=self.fvn_vm1.vm_ip,
-                         dst=self.my_fip, sport=unicode(12000), dport=self.dport1)
+                         dst=self.my_fip, sport=str(12000), dport=self.dport1)
         stream_list = [stream1, stream2, stream3]
 
         self.sender, self.receiver = self.start_traffic(

@@ -1,4 +1,5 @@
 from __future__ import print_function
+from builtins import str
 import vnc_api_test
 from compute_node_test import ComputeNodeFixture
 from tcutils.util import get_random_name, retry
@@ -158,11 +159,11 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
             self.hmons[hmon] = self.network_h.get_health_monitor(hmon)
         custom_attr_list = self.obj.get('custom_attributes', [])
         for attr_dict in custom_attr_list and custom_attr_list[0]:
-            self.custom_attr.update({k:v for k,v in attr_dict.iteritems()})
+            self.custom_attr.update({k:v for k,v in attr_dict.items()})
         self.logger.info('LB %s, members %s, vip %s, fip %s, protocol %s, port '
                          '%s healthmonitors %s'%(self.name, self.member_ips,
                          self.vip_ip, self.fip_ip, self.protocol,
-                         self.port, self.hmons.keys()))
+                         self.port, list(self.hmons.keys())))
 
     def create(self):
         try:
@@ -194,7 +195,7 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
             self.create_fip_on_vip()
         self.logger.info('LoadBalancer: %s, members: %s, vip: %s, fip:%s '
                          'hmons: %s'%(self.name, self.member_ips, self.vip_ip,
-                         self.fip_ip, self.hmons.keys()))
+                         self.fip_ip, list(self.hmons.keys())))
 
     def create_fip_on_vip(self, fip_net_id=None, fip_id=None):
         if not self.is_vip_active:
@@ -221,7 +222,7 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
 
     def create_hmon(self, hmon_dict):
         if hmon_dict.get('id', None):
-            if hmon_dict['id'] not in self.hmons.keys():
+            if hmon_dict['id'] not in list(self.hmons.keys()):
                 hmon_obj = self.network_h.get_health_monitor(hmon_dict['id'])
             else:
                 hmon_obj = self.hmons[hmon_dict['id']]
@@ -373,7 +374,7 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
         self.logger.info('Deleting LoadBalancer %s(%s)'%(self.name, self.uuid))
         for member_id in list(self.member_ids):
             self.delete_member(member_id)
-        for hmon_id in self.hmons.keys():
+        for hmon_id in list(self.hmons.keys()):
             self.delete_hmon(hmon_id)
         if self.is_fip_active:
             self.delete_fip_on_vip()
@@ -462,7 +463,7 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
     @retry(delay=6, tries=10)
     def verify_hm_not_in_api_server(self):
         self.api_h = self.connections.api_server_inspect
-        for hmon_id in self.hmons.keys():
+        for hmon_id in list(self.hmons.keys()):
             hmon = self.api_h.get_lb_healthmonitor(hmon_id, refresh=True)
             if hmon:
                 self.logger.warn("LB health monitor %s still present"%(hmon_id))
@@ -518,7 +519,7 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
         if self.hmons:
             if sorted(self.hmons.keys()) != sorted(pool.hmons()):
                 self.logger.warn("LB %s health monitors dont match, expected %s"
-                                 " got %s"%(self.uuid, self.hmons.keys(),
+                                 " got %s"%(self.uuid, list(self.hmons.keys()),
                                             pool.members()))
                 return False
         if self.custom_attr:
@@ -584,7 +585,7 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
     @retry(delay=6, tries=10)
     def verify_hm_in_api_server(self):
         self.api_h = self.connections.api_server_inspect
-        for hm_id, hm_obj in self.hmons.iteritems():
+        for hm_id, hm_obj in self.hmons.items():
             hm = self.api_h.get_lb_healthmonitor(hm_id)
             if not hm:
                 self.logger.warn("Health Monitor %s not found"%hm_id)
@@ -844,7 +845,7 @@ class LBaasFixture(vnc_api_test.VncLibFixture):
 
     def is_custom_attr_in_haproxy_conf(self, vrouter):
         haproxy_cfg = '/var/lib/contrail/loadbalancer/%s/haproxy.conf'%self.uuid
-        for key,value in self.custom_attr.iteritems():
+        for key,value in self.custom_attr.items():
             cmd = custom_attributes_dict[key]
             if cmd.startswith('option '):
                 value = '' if value == 'True' else 'no'
@@ -1038,7 +1039,7 @@ if __name__ == "__main__":
     obj.verify_on_setup()
     obj.create_member(address=get_random_ip(subnet))
     obj.verify_on_setup()
-    obj.delete_hmon(obj.hmons.keys()[0])
+    obj.delete_hmon(list(obj.hmons.keys())[0])
     obj.verify_on_setup()
     obj.create_hmon({'delay': 5, 'max_retries': 5, 'probe_type': 'PING', 'timeout': 10})
     obj.verify_on_setup()

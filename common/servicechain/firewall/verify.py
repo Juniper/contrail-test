@@ -1,3 +1,4 @@
+from builtins import range
 import os
 import re
 from common.servicechain.verify import VerifySvcChain
@@ -378,7 +379,7 @@ class VerifySvcFirewall(VerifySvcChain):
 
     def get_mgmt_local_ip(self, si_fixture, svm_index=0):
         local_ips = si_fixture.svm_list[svm_index].get_local_ips()
-        for vn_name in local_ips.keys():
+        for vn_name in list(local_ips.keys()):
             if 'mgmt' in vn_name:
                 return local_ips[vn_name]
     # get_mgmt_local_ip
@@ -962,7 +963,7 @@ class VerifySvcFirewall(VerifySvcChain):
         sessions = self.tcpdump_on_all_analyzer(mirror_si_fixture)
         errmsg = "Ping to right VM ip %s from left VM failed" % vm2_fixture.vm_ip
         assert vm1_fixture.ping_to_ip(vm2_fixture.vm_ip), errmsg
-        for svm_name, (session, pcap) in sessions.items():
+        for svm_name, (session, pcap) in list(sessions.items()):
             if vm1_fixture.vm_node_ip == vm2_fixture.vm_node_ip:
                 if firewall_svc_mode == 'transparent':
                     count = 20
@@ -1022,7 +1023,7 @@ class VerifySvcFirewall(VerifySvcChain):
         ecmp_hash_at_agent = ecmp_hashing_fileds.split(',')
 
         # Removing the empty elements
-        ecmp_hash_at_agent = filter(None, ecmp_hash_at_agent)
+        ecmp_hash_at_agent = [_f for _f in ecmp_hash_at_agent if _f]
 
         # Compare ECMP hash configured value with value programmed at agent
         if set(ecmp_hash_at_agent) == set(ecmp_hash_config):
