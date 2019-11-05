@@ -1,4 +1,7 @@
 from __future__ import print_function
+from __future__ import division
+from builtins import range
+from past.utils import old_div
 import os
 import signal
 import re
@@ -265,7 +268,7 @@ class HABaseTest(test_v1.BaseTestCase_v1):
             self.send_host[proto] = []
             self.recv_host[proto] = []
             j = self.vm_num - 1
-            for i in range(0,((self.vm_num/2))):
+            for i in range(0,((old_div(self.vm_num,2)))):
                 if self.fip == 'True' and proto == 'icmp' :
                      self.stream_fip = Stream(protocol="ip", sport=self.sport, dport=self.dport, proto=proto, src=self.vm_fixture[i].vm_ip, dst=self.public_ip)
                 self.stream = Stream(protocol="ip", sport=self.sport, dport=self.dport, proto=proto, src=self.vm_fixture[i].vm_ip, dst=self.vm_fixture[j].vm_ip)
@@ -301,7 +304,7 @@ class HABaseTest(test_v1.BaseTestCase_v1):
 #       stop traffic
         j = self.vm_num - 1
         for proto in self.proto_list:
-            for i in range(0,((self.vm_num/2))):
+            for i in range(0,((old_div(self.vm_num,2)))):
                 self.sender[proto][i].stop()
                 if self.fip == 'True' and proto == 'icmp' :
                     self.sender_fip[proto][i].stop()

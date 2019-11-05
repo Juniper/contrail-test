@@ -29,7 +29,7 @@ class TestFabricEvpnType5(BaseFabricTest, VerifyEVPNType5):
                             self).is_test_applicable()
         if result:
             msg = 'No spines in the provided fabric topology'
-            for device in self.inputs.physical_routers_data.iterkeys():
+            for device in self.inputs.physical_routers_data.keys():
                 if self.get_role_from_inputs(device) == 'spine':
                     return (True, None)
         return False, msg
@@ -51,7 +51,7 @@ class TestFabricEvpnType5(BaseFabricTest, VerifyEVPNType5):
         vn2 = self.create_vn()
         for bms in self.get_bms_nodes():
             bms_vns[bms] = self.create_vn()
-        self.create_logical_router([vn1, vn2]+bms_vns.values())
+        self.create_logical_router([vn1, vn2]+list(bms_vns.values()))
         vm1 = self.create_vm(vn_fixture=vn1, image_name='ubuntu')
         vm2 = self.create_vm(vn_fixture=vn2, image_name='ubuntu')
         vlan = 3
@@ -80,7 +80,7 @@ class TestFabricEvpnType5(BaseFabricTest, VerifyEVPNType5):
         for bms in self.get_bms_nodes():
             bms_vns[bms] = self.create_vn()
         vm1 = self.create_vm(vn_fixture=vn, image_name='cirros')
-        self.create_logical_router([vn]+bms_vns.values())
+        self.create_logical_router([vn]+list(bms_vns.values()))
         for bms in self.get_bms_nodes():
             bms_fixtures.append(self.create_bms(
                 bms_name=bms,

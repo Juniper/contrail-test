@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 from tcutils.wrappers import preposttest_wrapper
 from common.contrail_fabric.mcast_base import *
 import ipaddress
@@ -380,9 +382,9 @@ class TestEvpnt6(TestEvpnt6SPStyle):
 
         self.logger.info('#2 Enable igmp at VMI level. Test type 6 functionality.')
 
-        vmi1= vm_fixtures['vm1'].get_vmi_ids().values()[0]
-        vmi2= vm_fixtures['vm2'].get_vmi_ids().values()[0]
-        vmi3= vm_fixtures['vm3'].get_vmi_ids().values()[0]
+        vmi1= list(vm_fixtures['vm1'].get_vmi_ids().values())[0]
+        vmi2= list(vm_fixtures['vm2'].get_vmi_ids().values())[0]
+        vmi3= list(vm_fixtures['vm3'].get_vmi_ids().values())[0]
         self.configure_igmp_on_vmi(vmi1,True)
         self.configure_igmp_on_vmi(vmi2,True)
         self.configure_igmp_on_vmi(vmi3,True)
@@ -859,7 +861,7 @@ class TestEvpnt6MultiVn(Evpnt6MultiVnBase):
               'gaddr': '225.1.1.1'       # Multicast group address
                }
 
-        vn_ip = unicode('5.1.1.0', "utf-8")
+        vn_ip = str('5.1.1.0', "utf-8")
         vn_ip = ipaddress.ip_address(vn_ip)
         for i in range(1,vn_count):
 

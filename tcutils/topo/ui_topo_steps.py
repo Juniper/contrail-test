@@ -348,7 +348,7 @@ def attachIntfTabToPort(self):
         return True
     result = True
     self.logger.info("Setup step: Editing Port to attach Interface table")
-    ports = self.topo.port_intf_params.keys()
+    ports = list(self.topo.port_intf_params.keys())
     for port in ports:
         if port in self.topo.port_list:
             intf_name = self.topo.port_intf_params[port]

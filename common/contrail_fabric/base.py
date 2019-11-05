@@ -1,3 +1,4 @@
+from builtins import str
 import random
 import time
 from tcutils.tcpdump_utils import *
@@ -11,9 +12,9 @@ from common.fabric_utils import FabricUtils
 from bms_fixture import BMSFixture
 from vm_test import VMFixture
 from tcutils.util import Singleton, skip_because, get_random_vxlan_id
+from future.utils import with_metaclass
 
-class FabricSingleton(FabricUtils, GenericTestBase):
-    __metaclass__ = Singleton
+class FabricSingleton(with_metaclass(Singleton, type('NewBase', (FabricUtils, GenericTestBase), {}))):
     def __init__(self, connections):
         super(FabricSingleton, self).__init__(connections)
         self.vnc_h = connections.orch.vnc_h
@@ -166,13 +167,13 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         return (True, None)
 
     def is_bms_on_node(self, device_name):
-        for name, prop in self.inputs.bms_data.iteritems():
+        for name, prop in self.inputs.bms_data.items():
             for interface in prop.get('interfaces') or []:
                 if interface['tor'] == device_name:
                     return True
 
     def get_rb_roles(self, device_name):
-        for device in self.inputs.physical_routers_data.itervalues():
+        for device in self.inputs.physical_routers_data.values():
             if device['name'] == device_name:
                 return device.get('rb_roles') or []
 
@@ -195,7 +196,7 @@ class BaseFabricTest(BaseNeutronTest, FabricUtils):
         interfaces_filtered = set()
         msg = "Unable to find BMS of type %s with interfaces %s"%(bms_type,
             no_of_interfaces)
-        for name, details in bms_nodes.iteritems():
+        for name, details in bms_nodes.items():
             if role and role not in [self.get_role_from_inputs(interface['tor'])
                for interface in details['interfaces']]:
                 continue

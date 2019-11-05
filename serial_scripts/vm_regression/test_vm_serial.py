@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+from builtins import str
+from builtins import range
 import traffic_tests
 from vn_test import *
 from vm_test import *
@@ -335,7 +337,7 @@ class TestBasicVMVN0(BaseVnVmTest):
             self.logger.exception("Got exception as %s" % (e))
 
         compute_ip = []
-        for vmobj in vm_fixture.vm_obj_dict.values():
+        for vmobj in list(vm_fixture.vm_obj_dict.values()):
             vm_host_ip = vmobj.vm_node_ip
             if vm_host_ip not in compute_ip:
                 compute_ip.append(vm_host_ip)
@@ -344,7 +346,7 @@ class TestBasicVMVN0(BaseVnVmTest):
         self.inputs.restart_service('openstack-nova-scheduler', compute_ip,
                                     container='nova-scheduler')
         sleep(30)
-        for vmobj in vm_fixture.vm_obj_dict.values():
+        for vmobj in list(vm_fixture.vm_obj_dict.values()):
             assert vmobj.verify_on_setup()
         return True
     # end test_nova_com_sch_restart_with_multiple_vn_vm
@@ -504,14 +506,14 @@ class TestBasicVMVN0(BaseVnVmTest):
         except Exception as e:
             self.logger.exception("Got exception as %s" % (e))
         compute_ip = []
-        for vmobj in vm_fixture.vm_obj_dict.values():
+        for vmobj in list(vm_fixture.vm_obj_dict.values()):
             vm_host_ip = vmobj.vm_node_ip
             if vm_host_ip not in compute_ip:
                 compute_ip.append(vm_host_ip)
         self.inputs.restart_service('contrail-vrouter-agent', compute_ip,
 									container='agent')
         sleep(50)
-        for vmobj in vm_fixture.vm_obj_dict.values():
+        for vmobj in list(vm_fixture.vm_obj_dict.values()):
             assert vmobj.verify_on_setup()
         return True
     #end test_process_restart_with_multiple_vn_vm
@@ -552,7 +554,7 @@ class TestBasicVMVN0(BaseVnVmTest):
             'contrail-svc-monitor': 'cfgm'
         }
 
-        for service, role in service_list.iteritems():
+        for service, role in service_list.items():
             cmd = 'service %s status |  awk \"{print $4}\" | cut -f 1 -d\',\'' % service
             self.logger.info("service:%s, role:%s" % (service, role))
             if role == 'cfgm':
@@ -1053,7 +1055,7 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             self.logger.debug("Retry %s" % (i))
             ret = vm1_fixture.run_cmd_on_vm(cmds=[cmd])
             self.logger.debug("ret : %s" % (ret))
-            for elem in ret.values():
+            for elem in list(ret.values()):
                 if 'output.txt' in elem:
                     result = True
                     break
@@ -1068,8 +1070,8 @@ echo "Hello World.  The time is now $(date -R)!" | tee /tmp/output.txt
             self.logger.debug("Printing the output.txt :")
             cmd = 'cat /tmp/output.txt'
             ret = vm1_fixture.run_cmd_on_vm(cmds=[cmd])
-            self.logger.info("%s" % (ret.values()))
-            for elem in ret.values():
+            self.logger.info("%s" % (list(ret.values())))
+            for elem in list(ret.values()):
                 if 'Hello World' in elem:
                     result = True
                 else:

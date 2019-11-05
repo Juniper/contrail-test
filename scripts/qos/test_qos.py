@@ -1,3 +1,4 @@
+from builtins import str
 from tcutils.wrappers import preposttest_wrapper
 from compute_node_test import ComputeNodeFixture
 import test
@@ -40,12 +41,12 @@ class TestQos(QosTestExtendedBase):
         fc_fixtures = self.setup_fcs(fcs)
         dscp_map = {1: fc_id[0]}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map)
-        vm1_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
+        vm1_vmi_id = list(self.vn1_vm1_fixture.get_vmi_ids().values())[0]
         self.setup_qos_config_on_vmi(qos_fixture, vm1_vmi_id)
         assert self.validate_packet_qos_marking(
             src_vm_fixture=self.vn1_vm1_fixture,
             dest_vm_fixture=self.vn1_vm2_fixture,
-            dscp=dscp_map.keys()[0],
+            dscp=list(dscp_map.keys())[0],
             expected_dscp=fcs[0]['dscp'],
             expected_dot1p=fcs[0]['dot1p'],
             src_port='10000',
@@ -65,13 +66,13 @@ class TestQos(QosTestExtendedBase):
         fc_fixtures = self.setup_fcs(fcs)
         dscp_map = {1: fc_id[0]}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map)
-        vm1_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
+        vm1_vmi_id = list(self.vn1_vm1_fixture.get_vmi_ids().values())[0]
         self.setup_qos_config_on_vmi(qos_fixture, vm1_vmi_id)
         assert self.validate_packet_qos_marking(
             src_vm_fixture=self.vn1_vm1_fixture,
             dest_vm_fixture=self.vn1_vm2_fixture,
             traffic_generator='scapy',
-            dscp=dscp_map.keys()[0],
+            dscp=list(dscp_map.keys())[0],
             expected_dscp=fcs[0]['dscp'],
             expected_dot1p=fcs[0]['dot1p'],
             src_compute_fixture=self.vn1_vm1_compute_fixture,
@@ -98,7 +99,7 @@ class TestQos(QosTestExtendedBase):
         fc_fixtures = self.setup_fcs(fcs)
         dot1p_map = {2: fc_id[0]}
         qos_fixture = self.setup_qos_config(dot1p_map=dot1p_map)
-        vm1_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
+        vm1_vmi_id = list(self.vn1_vm1_fixture.get_vmi_ids().values())[0]
         self.setup_qos_config_on_vmi(qos_fixture, vm1_vmi_id)
         assert self.validate_packet_qos_marking(
             src_vm_fixture=self.vn1_vm1_fixture,
@@ -107,7 +108,7 @@ class TestQos(QosTestExtendedBase):
             expected_dscp=fcs[0]['dscp'],
             expected_dot1p=fcs[0]['dot1p'],
             src_compute_fixture=self.vn1_vm1_compute_fixture,
-            dot1p=dot1p_map.keys()[0],
+            dot1p=list(dot1p_map.keys())[0],
             src_mac=self.vn1_vm1_fixture.mac_addr[
                 self.vn1_fixture.vn_fq_name],
             dst_mac=self.vn1_vm2_fixture.mac_addr[
@@ -131,7 +132,7 @@ class TestQos(QosTestExtendedBase):
         assert self.validate_packet_qos_marking(
             src_vm_fixture=self.vn1_vm1_fixture,
             dest_vm_fixture=self.vn1_vm2_fixture,
-            dscp=dscp_map.keys()[0],
+            dscp=list(dscp_map.keys())[0],
             expected_dscp=fcs[0]['dscp'],
             expected_dot1p=fcs[0]['dot1p'],
             src_port='10000',
@@ -156,7 +157,7 @@ class TestQos(QosTestExtendedBase):
             src_vm_fixture=self.vn1_vm1_fixture,
             dest_vm_fixture=self.vn1_vm2_fixture,
             traffic_generator='scapy',
-            dscp=dscp_map.keys()[0],
+            dscp=list(dscp_map.keys())[0],
             expected_dscp=fcs[0]['dscp'],
             expected_dot1p=fcs[0]['dot1p'],
             expected_exp=fcs[0]['exp'],
@@ -191,7 +192,7 @@ class TestQos(QosTestExtendedBase):
             expected_dot1p=fcs[0]['dot1p'],
             expected_exp=fcs[0]['exp'],
             src_compute_fixture=self.vn1_vm1_compute_fixture,
-            dot1p=dot1p_map.keys()[0],
+            dot1p=list(dot1p_map.keys())[0],
             src_mac=self.vn1_vm1_fixture.mac_addr[
                 self.vn1_fixture.vn_fq_name],
             encap = "MPLS_any")
@@ -218,14 +219,14 @@ class TestQos(QosTestExtendedBase):
         dscp_map1 = {1: fc_ids[0]}
         dscp_map2 = {1: fc_ids[1]}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map1)
-        vm1_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
+        vm1_vmi_id = list(self.vn1_vm1_fixture.get_vmi_ids().values())[0]
         self.setup_qos_config_on_vmi(qos_fixture, vm1_vmi_id)
         # Change the FC for the qos-config entry
         qos_fixture.set_entries(dscp_mapping=dscp_map2)
         validate_method_args = {
             'src_vm_fixture': self.vn1_vm1_fixture,
             'dest_vm_fixture': self.vn1_vm2_fixture,
-            'dscp': dscp_map1.keys()[0],
+            'dscp': list(dscp_map1.keys())[0],
             'expected_dscp': fcs[1]['dscp'],
             'expected_dot1p': fcs[1]['dot1p'],
             'src_port': '10000',
@@ -270,7 +271,7 @@ class TestQos(QosTestExtendedBase):
         validate_method_args = {
             'src_vm_fixture': self.vn1_vm1_fixture,
             'dest_vm_fixture': self.vn1_vm2_fixture,
-            'dot1p': dot1p_map1.keys()[0],
+            'dot1p': list(dot1p_map1.keys())[0],
             'expected_dscp': fcs[1]['dscp'],
             'expected_dot1p': fcs[1]['dot1p'],
             'traffic_generator': 'scapy',
@@ -296,7 +297,7 @@ class TestQos(QosTestExtendedBase):
         assert self.validate_packet_qos_marking(**validate_method_args)
         # Add entry in Dot1P map tablee
         qos_fixture.add_entries(dot1p_mapping=dot1p_map4)
-        validate_method_args['dot1p'] = dot1p_map4.keys()[0]
+        validate_method_args['dot1p'] = list(dot1p_map4.keys())[0]
         validate_method_args['expected_dscp'] = fcs[0]['dscp']
         validate_method_args['expected_dot1p'] = fcs[0]['dot1p']
         assert self.validate_packet_qos_marking(**validate_method_args)
@@ -322,12 +323,12 @@ class TestQos(QosTestExtendedBase):
         dscp_map = {30: fc_ids[1]}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map,
                                             default_fc_id = fc_ids[0])
-        vm1_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
+        vm1_vmi_id = list(self.vn1_vm1_fixture.get_vmi_ids().values())[0]
         self.setup_qos_config_on_vmi(qos_fixture, vm1_vmi_id)
         validate_method_args = {
             'src_vm_fixture': self.vn1_vm1_fixture,
             'dest_vm_fixture': self.vn1_vm2_fixture,
-            'dscp': dscp_map.keys()[0],
+            'dscp': list(dscp_map.keys())[0],
             'expected_dscp': fcs[1]['dscp'],
             'expected_dot1p': fcs[1]['dot1p'],
             'src_compute_fixture': self.vn1_vm1_compute_fixture}
@@ -360,7 +361,7 @@ class TestQos(QosTestExtendedBase):
         dscp_map = {30: fc_ids[1]}
         qos_fixture = self.setup_qos_config(dscp_map=dscp_map,
                                             default_fc_id=fc_ids[0])
-        vm1_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
+        vm1_vmi_id = list(self.vn1_vm1_fixture.get_vmi_ids().values())[0]
         self.setup_qos_config_on_vmi(qos_fixture, vm1_vmi_id)
         validate_method_args = {
             'src_vm_fixture': self.vn1_vm1_fixture,
@@ -374,7 +375,7 @@ class TestQos(QosTestExtendedBase):
         validate_method_args['expected_dscp'] = fcs[2]['dscp']
         validate_method_args['expected_dot1p'] = fcs[2]['dot1p']
         assert self.validate_packet_qos_marking(**validate_method_args)
-        validate_method_args['dscp'] = dscp_map.keys()[0]
+        validate_method_args['dscp'] = list(dscp_map.keys())[0]
         validate_method_args['expected_dscp'] = fcs[1]['dscp']
         validate_method_args['expected_dot1p'] = fcs[1]['dot1p']
         assert self.validate_packet_qos_marking(**validate_method_args)
@@ -399,12 +400,12 @@ class TestQos(QosTestExtendedBase):
         qos_fixture1 = self.setup_qos_config(dscp_map=dscp_map_vmi)
         qos_fixture2 = self.setup_qos_config(dscp_map=dscp_map_vhost,
                                              qos_config_type='vhost')
-        vn1_vm1_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
+        vn1_vm1_vmi_id = list(self.vn1_vm1_fixture.get_vmi_ids().values())[0]
         self.setup_qos_config_on_vmi(qos_fixture1, vn1_vm1_vmi_id)
         validate_method_args = {
             'src_vm_fixture': self.vn1_vm1_fixture,
             'dest_vm_fixture': self.vn1_vm2_fixture,
-            'dscp': dscp_map_vmi.keys()[0],
+            'dscp': list(dscp_map_vmi.keys())[0],
             'expected_dscp': fcs[0]['dscp'],
             'expected_dot1p': fcs[0]['dot1p'],
             'src_compute_fixture': self.vn1_vm1_compute_fixture}
@@ -596,7 +597,7 @@ class TestQosPolicy(TestQosPolicyBase):
         validate_method_args = {
             'src_vm_fixture': self.vn1_vm1_fixture,
             'dest_vm_fixture': self.vn2_vm1_fixture,
-            'dscp': dscp_map1.keys()[9],
+            'dscp': list(dscp_map1.keys())[9],
             'expected_dscp': fcs[0]['dscp'],
             'expected_exp': fcs[0]['exp'],
             'expected_dot1p': fcs[0]['dot1p'],
@@ -626,7 +627,7 @@ class TestQosPolicy(TestQosPolicyBase):
         # Adding more entries in qos-config
         qos_fixture.add_entries(dscp_mapping=dscp_map4)
         assert self.validate_packet_qos_marking(**validate_method_args)
-        validate_method_args['dscp'] = dscp_map4.keys()[9]
+        validate_method_args['dscp'] = list(dscp_map4.keys())[9]
         validate_method_args['expected_dscp'] = fcs[0]['dscp']
         validate_method_args['expected_exp'] = fcs[0]['exp']
         validate_method_args['expected_dot1p'] = fcs[0]['dot1p']
@@ -655,14 +656,14 @@ class TestQosPolicy(TestQosPolicyBase):
         qos_fixture1 = self.setup_qos_config(dscp_map=dscp_map_vmi)
         qos_fixture2 = self.setup_qos_config(dscp_map=dscp_map_vn)
         qos_fixture3 = self.setup_qos_config(dscp_map=dscp_map_policy)
-        vn1_vm_vmi_id = self.vn1_vm1_fixture.get_vmi_ids().values()[0]
+        vn1_vm_vmi_id = list(self.vn1_vm1_fixture.get_vmi_ids().values())[0]
         self.setup_qos_config_on_vmi(qos_fixture1, vn1_vm_vmi_id)
         self.setup_qos_config_on_vn(qos_fixture2, self.vn1_fixture.uuid)
         self.update_policy_qos_config(self.policy_fixture, qos_fixture3)
         validate_method_args = {
             'src_vm_fixture': self.vn1_vm1_fixture,
             'dest_vm_fixture': self.vn2_vm1_fixture,
-            'dscp': dscp_map_vmi.keys()[0],
+            'dscp': list(dscp_map_vmi.keys())[0],
             'expected_dscp': fcs[0]['dscp'],
             'expected_exp': fcs[0]['exp'],
             'expected_dot1p': fcs[0]['dot1p'],
@@ -709,7 +710,7 @@ class TestQosPolicy(TestQosPolicyBase):
         validate_method_args = {
             'src_vm_fixture': self.vn1_vm1_fixture,
             'dest_vm_fixture': self.vn2_vm1_fixture,
-            'dscp': dscp_map.keys()[9],
+            'dscp': list(dscp_map.keys())[9],
             'expected_dscp': 0,
             'expected_exp': 0,
             'expected_dot1p': 0,
@@ -783,7 +784,7 @@ class TestQosSVC(TestQosSVCBase):
         assert self.validate_packet_qos_marking(
             src_vm_fixture=self.vn1_vm1_fixture,
             dest_vm_fixture=self.vn2_vm1_fixture,
-            dscp=dscp_map.keys()[9],
+            dscp=list(dscp_map.keys())[9],
             expected_dscp=fcs[0]['dscp'],
             expected_exp=fcs[0]['exp'],
             expected_dot1p=fcs[0]['dot1p'],
@@ -825,7 +826,7 @@ class TestQosSVC(TestQosSVCBase):
         validate_method_args = {
             'src_vm_fixture': self.vn1_vm1_fixture,
             'dest_vm_fixture': self.vn2_vm1_fixture,
-            'dscp': dscp_map.keys()[9],
+            'dscp': list(dscp_map.keys())[9],
             'expected_dscp': fcs[0]['dscp'],
             'expected_exp': fcs[0]['exp'],
             'expected_dot1p': fcs[0]['dot1p'],

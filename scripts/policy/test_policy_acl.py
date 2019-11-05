@@ -4,6 +4,7 @@ from __future__ import absolute_import
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
+from builtins import str
 import os
 import fixtures
 import tcutils.wrappers

@@ -1,5 +1,6 @@
 """Module to launch any local command."""
 
+from builtins import object
 import copy
 import os
 import signal

@@ -1,4 +1,6 @@
 from __future__ import print_function
+from builtins import str
+from builtins import range
 import os
 import time
 import fixtures
@@ -85,7 +87,7 @@ class AnalyticsTestSanityWithMin(
         src_vm_ip =  self.res.vn1_vm1_fixture.get_vm_ips()[0]
         dst_vm_ip = self.res.vn1_vm2_fixture.get_vm_ips()[0]
         vm_ips = [src_vm_ip, dst_vm_ip]
-        vmi_uuid = self.res.vn1_vm1_fixture.get_vmi_ids().values()[0]
+        vmi_uuid = list(self.res.vn1_vm1_fixture.get_vmi_ids().values())[0]
 	vmi_objs = self.res.vn1_vm1_fixture.get_vmi_objs()
         vmi_fq_name_list = vmi_objs[self.inputs.cfgm_ip][0]['virtual-machine-interface']['fq_name']
         vmi_fq_name = ":".join(vmi_fq_name_list)
@@ -148,7 +150,7 @@ class AnalyticsTestSanityWithMin(
            2.Verify the command runs properly and its returning some output
            3.Do not verify the correctness of the output
         '''
-        vmi_uuid = self.res.vn1_vm1_fixture.get_vmi_ids().values()[0]
+        vmi_uuid = list(self.res.vn1_vm1_fixture.get_vmi_ids().values())[0]
         vm_id = self.res.vn1_vm1_fixture.get_uuid()
         cfgm = self.res.inputs.cfgm_names[0]
         collector = self.res.inputs.collector_names[0]

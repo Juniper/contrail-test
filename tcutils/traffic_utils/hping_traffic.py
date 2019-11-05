@@ -1,3 +1,4 @@
+from builtins import object
 import re
 import string
 import logging
@@ -5,7 +6,7 @@ from tcutils.util import get_random_name, retry
 
 result_file = '/tmp/hping'
 
-class Hping3:
+class Hping3(object):
     ''' Helper to generate hping traffic
 
         Mandatory args:
@@ -129,7 +130,7 @@ class Hping3:
             result_data['rtt_min'] = rtt_result.group(1)
             result_data['rtt_avg'] = rtt_result.group(2)
             result_data['rtt_max'] = rtt_result.group(3)
-        if 'None' in  result_data.values():
+        if 'None' in  list(result_data.values()):
             self.logger.warn('Parsing of hping3 had problems. Got stats: %s'
                 'Please check debug logs'  %(result_data))
             self.logger.debug(result_content)
@@ -145,7 +146,7 @@ class Hping3:
             All values are string or boolean
         '''
         ret_val = ''
-        for (k,v) in kwargs.items():
+        for (k,v) in list(kwargs.items()):
             key = string.replace(k, '_', '-')
             key = '--%s' % (key)
             if type(v) == bool:
@@ -163,7 +164,7 @@ class Hping3:
         result = self.sender_vm_fixture.run_cmd_on_vm(
             cmds=['ps -p `cat %s`' %(self.pid_file)],
             raw=True)
-        status = result.values()[0]
+        status = list(result.values())[0]
         if status.succeeded:
             self.logger.debug('hping3 is active on %s, PID: %s' % (
                               self.sender_vm_fixture,

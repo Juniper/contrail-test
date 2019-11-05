@@ -1,4 +1,6 @@
-class MultiProjectTopo ():
+from builtins import zip
+from builtins import object
+class MultiProjectTopo(object):
 
     def __init__(self, domain='default-domain', compute_node_list=None):
         self.project_list = ['project1', 'project2']
@@ -37,13 +39,13 @@ class MultiProjectTopo ():
         # Logic to create a vm to Compute node mapping.
         if self.vm_node_map:
             CN = []
-            for cn in self.vm_node_map.keys():
+            for cn in list(self.vm_node_map.keys()):
                 if self.vm_node_map[cn] not in CN:
                     CN.append(self.vm_node_map[cn])
             my_node_dict = {}
             if compute_node_list is not None:
                 if len(compute_node_list) >= len(CN):
-                    my_node_dict = dict(zip(CN, compute_node_list))
+                    my_node_dict = dict(list(zip(CN, compute_node_list)))
 
             if my_node_dict:
                 for key in my_node_dict:

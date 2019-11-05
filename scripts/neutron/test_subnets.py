@@ -56,7 +56,7 @@ class TestSubnets(BaseNeutronTest):
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name)
         assert vm1_fixture.wait_till_vm_is_up()
         output = vm1_fixture.run_cmd_on_vm(['route -n'])
-        route_output = output.values()[0]
+        route_output = list(output.values())[0]
         assert dest_ip in route_output, 'Route pushed from DHCP is not '\
             'present in Route table of the VM'
         self.logger.info('Route pushed from DHCP is present in route-table '
@@ -70,7 +70,7 @@ class TestSubnets(BaseNeutronTest):
         vm1_fixture.reboot()
         assert vm1_fixture.wait_till_vm_is_up()
         output = vm1_fixture.run_cmd_on_vm(['route -n'])
-        route_output = output.values()[0]
+        route_output = list(output.values())[0]
         assert dest_ip not in route_output, 'Route pushed from DHCP is still '\
             'present in Route table of the VM'
         self.logger.info('Route table in VM does not have the host routes..OK')
@@ -100,7 +100,7 @@ class TestSubnets(BaseNeutronTest):
         vm1_fixture = self.create_vm(vn1_fixture, vn1_vm1_name)
         assert vm1_fixture.wait_till_vm_is_up()
         output = vm1_fixture.run_cmd_on_vm(['cat /etc/resolv.conf'])
-        resolv_output = output.values()[0]
+        resolv_output = list(output.values())[0]
         assert dns1_ip in resolv_output, 'DNS Server IP %s not seen in '\
             'resolv.conf of the VM' % (dns1_ip)
         assert dns2_ip in resolv_output, 'DNS Server IP %s not seen in '\
@@ -115,7 +115,7 @@ class TestSubnets(BaseNeutronTest):
         time.sleep(5)
         assert vm1_fixture.wait_till_vm_is_up()
         output = vm1_fixture.run_cmd_on_vm(['cat /etc/resolv.conf'])
-        dns_output = output.values()[0]
+        dns_output = list(output.values())[0]
         assert dns1_ip not in dns_output, 'DNS Server IP %s still seen '\
             ' in resolv.conf of the VM' % (dns1_ip)
         assert dns2_ip not in dns_output, 'DNS Server IP %s still seen '\
@@ -143,7 +143,7 @@ class TestSubnets(BaseNeutronTest):
                                      image_name='cirros')
         assert vm1_fixture.wait_till_vm_is_up()
         output = vm1_fixture.run_cmd_on_vm(['route -n'])
-        route_output = output.values()[0]
+        route_output = list(output.values())[0]
         assert vn1_gateway in route_output, 'First address of CIDR %s : %s'\
             'is NOT set as gateway on the VM' % (
                 vn1_subnet_cidr, vn1_gateway)
@@ -287,7 +287,7 @@ class TestSubnets(BaseNeutronTest):
         time.sleep(5)
         assert vm1_fixture.wait_till_vm_is_up(), 'VM is not up on reboot!'
         result_output = vm1_fixture.run_cmd_on_vm(['ifconfig -a'])
-        output = result_output.values()[0]
+        output = list(result_output.values())[0]
         assert vm1_fixture.vm_ip in output,\
             'VM did not get an IP %s after enabling DHCP' % (vm1_fixture.vm_ip)
         self.logger.info('VM got DHCP IP after subnet-dhcp is enabled..OK')

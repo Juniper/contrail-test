@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+from __future__ import division
+from past.utils import old_div
 from tcutils.wrappers import preposttest_wrapper
 import os
 import sys
@@ -138,7 +140,7 @@ class SmgrRegressionTests(ServerManagerTest):
         hl_server_list=[]
         for node in nodes:
             count=count+1
-            if count > (len(nodes)/2):
+            if count > (old_div(len(nodes),2)):
                 continue
             else:
                 hl_server_list.append(node)
@@ -151,7 +153,7 @@ class SmgrRegressionTests(ServerManagerTest):
         rk_server_list=[]
         for node in nodes:
             count=count+1
-            if count <= (len(nodes)/2):
+            if count <= (old_div(len(nodes),2)):
                 continue
             else:
                 rk_server_list.append(node)
@@ -293,7 +295,7 @@ class SmgrRegressionTests(ServerManagerTest):
         dc1_server_list=[]
         for node in nodes:
             count=count+1
-            if count > (len(nodes)/2):
+            if count > (old_div(len(nodes),2)):
                 continue
             else:
                 dc1_server_list.append(node)
@@ -309,7 +311,7 @@ class SmgrRegressionTests(ServerManagerTest):
         dc2_server_list=[]
         for node in nodes:
             count=count+1
-            if count <= (len(nodes)/2):
+            if count <= (old_div(len(nodes),2)):
                 continue
             else:
                 dc2_server_list.append(node)

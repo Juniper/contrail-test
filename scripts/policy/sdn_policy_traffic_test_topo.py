@@ -1,6 +1,9 @@
 from __future__ import print_function
+from builtins import str
+from builtins import range
+from builtins import object
 from tcutils.util import get_random_cidr,get_random_name
-class sdn_1vn_2vm_config ():
+class sdn_1vn_2vm_config(object):
 
     def __init__(self, domain='default-domain', project='admin', username=None, password=None):
         #
@@ -91,7 +94,7 @@ class sdn_1vn_2vm_config ():
 #
 
 
-class sdn_2vn_2vm_config ():
+class sdn_2vn_2vm_config(object):
 
     def __init__(self, domain='default-domain', project='admin', username=None, password=None):
         #
@@ -189,7 +192,7 @@ class sdn_2vn_2vm_config ():
 #
 
 
-class sdn_3vn_4vm_config ():
+class sdn_3vn_4vm_config(object):
 
     def __init__(self, domain='default-domain', project='admin', username=None, password=None):
         #
@@ -249,7 +252,7 @@ class sdn_3vn_4vm_config ():
 #
 
 
-class sdn_3vn_3vm_config ():
+class sdn_3vn_3vm_config(object):
 
     def __init__(self, domain='default-domain', project='admin', username=None, password=None):
         #
@@ -298,7 +301,7 @@ class sdn_3vn_3vm_config ():
 #
 
 
-class sdn_2vn_xvm_config ():
+class sdn_2vn_xvm_config(object):
 
     def __init__(self):
         print("building dynamic topo")
@@ -359,7 +362,7 @@ class sdn_2vn_xvm_config ():
 '''*******AUTO-GENERATED TOPOLOGY*********'''
 
 
-class sdn_10vn_10vm_config ():
+class sdn_10vn_10vm_config(object):
 
     def __init__(self, domain='default-domain', project='admin', username=None, password=None):
         #

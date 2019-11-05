@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 import test_v1, time
 from vn_test import VNFixture
 from vm_test import VMFixture
@@ -128,9 +130,9 @@ class BaseDSNAT(BaseNeutronTest, ConfigPolicy):
             configured_port = defaultdict()
             for port_pool in pp:
                 protocol = '17' if port_pool.get_protocol() == 'udp' else '6'
-                if protocol not in configured_port.keys():
+                if protocol not in list(configured_port.keys()):
                     configured_port[protocol] = defaultdict()
-                if 'port_list' not in configured_port[protocol].keys():
+                if 'port_list' not in list(configured_port[protocol].keys()):
                     configured_port[protocol]['port_list'] = []
                 if port_pool.port_range and port_pool.port_range.start_port > 0:
                     start_port = port_pool.port_range.start_port
@@ -139,10 +141,10 @@ class BaseDSNAT(BaseNeutronTest, ConfigPolicy):
                       [str(port) for port in range(start_port, end_port+1)]
                 if port_pool.port_count:
                     configured_port[protocol]['port_count'] = port_pool.port_count
-            for protocol in configured_port.keys():
-                if ('port_list' in configured_port[protocol].keys() and \
+            for protocol in list(configured_port.keys()):
+                if ('port_list' in list(configured_port[protocol].keys()) and \
                     configured_port[protocol]['port_list'] != port_config[protocol]['bound_port_list']) or \
-                    ('port_count' in configured_port[protocol].keys() and \
+                    ('port_count' in list(configured_port[protocol].keys()) and \
                     int(configured_port[protocol]['port_count']) != len(port_config[protocol]['bound_port_list'])):
                     self.logger.error('Configured port pool isnt same as allocated ports, %s, on compute node, %s'
                         %(port_config[protocol]['bound_port_list'], compute))
@@ -225,7 +227,7 @@ class BaseDSNAT(BaseNeutronTest, ConfigPolicy):
     def configure_aap_for_port_list(self, vn, vm_list):
         vIP = get_an_ip(vn.vn_subnets[0]['cidr'], offset=10)
         for vm in vm_list:
-            port = self.vnc_h.virtual_machine_interface_read(id=vm.vmi_ids.values()[0])
+            port = self.vnc_h.virtual_machine_interface_read(id=list(vm.vmi_ids.values())[0])
             mac_address = port.virtual_machine_interface_mac_addresses.mac_address[0]
             self.config_aap(
                 port.uuid, vIP, mac=mac_address, aap_mode='active-active', contrail_api=True)

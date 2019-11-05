@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import object
 import argparse
 import socket
 import sys
@@ -54,8 +56,8 @@ class UdpEchoClient(object):
 
     def write_stats_to_file(self):
         with open(self.stats_file, 'w', 0) as fd:
-            for dport, connections in self.stats.iteritems():
-                for dip, stats in connections.iteritems():
+            for dport, connections in self.stats.items():
+                for dip, stats in connections.items():
                     fd.write('dport: %s - sent: %s%s'%(
                         dport, stats['sent'], os.linesep))
 
@@ -73,7 +75,7 @@ class UdpEchoClient(object):
     def run(self):
         count = 1
         while True:
-            for s, sockaddr in self.sockets.iteritems():
+            for s, sockaddr in self.sockets.items():
                 try:
                     s.sendto(message, sockaddr)
                 except socket.error as e:

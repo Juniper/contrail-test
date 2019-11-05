@@ -1,3 +1,4 @@
+from builtins import range
 import re
 from common.base import GenericTestBase
 from common.connections import ContrailConnections
@@ -36,7 +37,7 @@ class BaseVnVmTest(GenericTestBase):
     def get_default_gateway_interface(self,vm_fixture):
         cmd = "route"+ r" -" +"n"    
         output = vm_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=False)
-        output = output.values()[0].split('\r')
+        output = list(output.values())[0].split('\r')
         output = output[1:]
         for elem in output:
             elem = elem.rstrip()
@@ -48,7 +49,7 @@ class BaseVnVmTest(GenericTestBase):
         intf_list = []
         cmd = "route"+ r" -" +"n"    
         output = vm_fixture.run_cmd_on_vm(cmds=[cmd], as_sudo=False)
-        output = output.values()[0].split('\r')
+        output = list(output.values())[0].split('\r')
         output = output[2:]
         for elem in output:
             elem = elem.rstrip()

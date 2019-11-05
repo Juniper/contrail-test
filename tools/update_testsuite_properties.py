@@ -1,12 +1,14 @@
+from future import standard_library
+standard_library.install_aliases()
 from email.mime.text import MIMEText
 import smtplib
 import subprocess
-import ConfigParser
+import configparser
 import xml.etree.ElementTree as ET
 import sys
 
 def update_xml(config_file, xmlfile):
-    config = ConfigParser.ConfigParser()
+    config = configparser.ConfigParser()
     config.read(config_file)
     build_id = config.get('Test', 'Build')
     timestamp = config.get('Test', 'timestamp')
@@ -23,7 +25,7 @@ def update_xml(config_file, xmlfile):
         prop_elem.set('name','LogsLocation')
         prop_elem.set('value', logs_location)
         properties_elem.append(prop_elem)
-    except ConfigParser.NoOptionError as e:
+    except configparser.NoOptionError as e:
         pass
     try:
         core_location = config.get('Test', 'CoreLocation')
@@ -31,7 +33,7 @@ def update_xml(config_file, xmlfile):
         prop_elem.set('name','CoreLocation')
         prop_elem.set('value', core_location)
         properties_elem.append(prop_elem)
-    except ConfigParser.NoOptionError as e:
+    except configparser.NoOptionError as e:
         pass
     
     prop_elem = ET.Element('property')
@@ -55,7 +57,7 @@ def update_xml(config_file, xmlfile):
         prop_elem.set('name','sm_pkg')
         prop_elem.set('value', sm_pkg)
         properties_elem.append(prop_elem)
-    except ConfigParser.NoOptionError as e:
+    except configparser.NoOptionError as e:
         pass
 
     try:
@@ -64,7 +66,7 @@ def update_xml(config_file, xmlfile):
         prop_elem.set('name','contrail_pkg')
         prop_elem.set('value', contrail_pkg)
         properties_elem.append(prop_elem)
-    except ConfigParser.NoOptionError as e:
+    except configparser.NoOptionError as e:
         pass
 
     try:
@@ -73,7 +75,7 @@ def update_xml(config_file, xmlfile):
         prop_elem.set('name','puppet_pkg')
         prop_elem.set('value', puppet_pkg)
         properties_elem.append(prop_elem)
-    except ConfigParser.NoOptionError as e:
+    except configparser.NoOptionError as e:
         pass
    
     ts_root.append(properties_elem)
@@ -84,7 +86,7 @@ def update_xml(config_file, xmlfile):
         prop_elem.set('name','cores')
         prop_elem.set('value', cores)
         properties_elem.append(prop_elem)
-    except ConfigParser.NoOptionError as e:
+    except configparser.NoOptionError as e:
         pass
     try:
         prop_elem = ET.Element('property')
@@ -93,7 +95,7 @@ def update_xml(config_file, xmlfile):
         bgp_stress_test = "<br />".join(bgp_stress_test.split("\n"))
         prop_elem.set('value', bgp_stress_test) 
         properties_elem.append(prop_elem)
-    except ConfigParser.NoOptionError as e:
+    except configparser.NoOptionError as e:
         pass
     result_tree.write(xmlfile)
 # end 
