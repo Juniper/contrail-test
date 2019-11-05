@@ -1,10 +1,11 @@
 '''*******AUTO-GENERATED TOPOLOGY*********'''
+from __future__ import print_function
 
 
 class sdn_basic_policy_topo_with_3_project ():
 
     def __init__(self, domain='default-domain'):
-        print "building dynamic topo"
+        print("building dynamic topo")
         self.project_list = ['project1', 'project2', 'project3', 'admin']
     # end __init__
 
@@ -271,7 +272,7 @@ class sdn_basic_policy_topo_with_3_project ():
 class sdn_basic_policy_topo_with_fip ():
 
     def __init__(self, domain='default-domain', compute_node_list=None):
-        print "building dynamic topo"
+        print("building dynamic topo")
         self.project_list = ['project1', 'project2', 'project3', 'admin']
 
         # Define the vm to compute node mapping to pin a vm to a particular
@@ -449,15 +450,14 @@ class sdn_basic_policy_topo_with_fip ():
    # end sdn_basic_policy_topo_with_fip
 
 if __name__ == '__main__':
-    print "Currently topology limited to one domain/project.."
-    print "Based on need, can be extended to cover config for multiple domain/projects"
-    print "Running unit test for this module ..."
+    print("Currently topology limited to one domain/project..")
+    print("Based on need, can be extended to cover config for multiple domain/projects")
+    print("Running unit test for this module ...")
     my_topo = sdn_basic_policy_topo_with_3_project(domain='default-domain')
     x = my_topo.__dict__
-    print "\nprinting keys of topology dict:"
+    print("\nprinting keys of topology dict:")
     for key, value in x.iteritems():
-        print key
-    print
+        print(key)
     # print "keys & values:"
     # for key, value in x.iteritems(): print key, "-->", value
     # Use topology_helper to extend/derive data from user-defined topology to help verifications.
@@ -467,5 +467,5 @@ if __name__ == '__main__':
     topo_h = topo_helper.topology_helper(my_topo)
     #vmc_list= topo_h.get_vmc_list()
     policy_vn = topo_h.get_policy_vn()
-    print "printing derived topo data - vn's associated to a policy: \n", policy_vn
+    print("printing derived topo data - vn's associated to a policy: \n", policy_vn)
 #

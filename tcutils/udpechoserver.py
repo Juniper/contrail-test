@@ -1,3 +1,4 @@
+from __future__ import print_function
 import argparse
 import select
 import socket
@@ -65,7 +66,7 @@ class UdpEchoServer(object):
                 try:
                     data, sockaddr = s.recvfrom(1024)
                 except Exception as e:
-                    print e
+                    print(e)
                     continue
                 if data:
                     server_address, server_port = get_addr_port(s.getsockname())
@@ -95,7 +96,7 @@ class UdpEchoServer(object):
                         s.sendto(next_msg, sockaddr)
                         self.stats[server_port][client_address]['sent'] += next_msg.count(message)
                     except Exception as e:
-                        print e
+                        print(e)
             for s in exceptional:
                 inputs.remove(s)
                 if s in outputs:

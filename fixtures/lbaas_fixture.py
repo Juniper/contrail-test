@@ -1,3 +1,4 @@
+from __future__ import print_function
 import vnc_api_test
 from compute_node_test import ComputeNodeFixture
 from tcutils.util import get_random_name, retry
@@ -983,7 +984,7 @@ def tracefunc(frame, event, arg, indent=[0]):
       if event == "call":
           indent[0] += 2
           if frame.f_code.co_name.startswith('verify_'):
-              print "-" * indent[0] + "> call function", frame.f_code.co_name
+              print("-" * indent[0] + "> call function", frame.f_code.co_name)
       elif event == "return":
 #          if frame.f_code.co_name.startswith('verify_'):
 #              print "<" + "-" * indent[0], "exit function", frame.f_code.co_name, frame.f_code.co_names

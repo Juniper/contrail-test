@@ -368,7 +368,7 @@ class BaseDM(VerifySecGroup):
         generator = iter_iprange('111.1.1.0', '111.255.255.0', step=256)
         for i in range(1,2000):
             vn_scale_name = "test_%s_vn" % i
-            vn_scale_net = (str(generator.next())+str('/24')).split()
+            vn_scale_net = (str(next(generator))+str('/24')).split()
             vn_scale_fixture = self.useFixture(VNFixture(
                 project_name=self.inputs.project_name, connections=self.connections, option='contrail',
                 vn_name=vn_scale_name, inputs=self.inputs, subnets=vn_scale_net, router_external=True))

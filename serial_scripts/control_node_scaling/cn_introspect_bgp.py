@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import absolute_import
 # generic
 import json
 import requests
@@ -13,7 +15,7 @@ import datetime
 import urllib2
 from lxml import etree
 import xmltodict
-from commands import Command
+from .commands import Command
 from tcutils.verification_util import *
 
 
@@ -32,7 +34,7 @@ class ControlNodeInspect (VerificationUtilBase):
             response = self.dict_get(path)
             if response != None:
                 break
-            print "Retry http get for %s after a second" % (path)
+            print("Retry http get for %s after a second" % (path))
             time.sleep(1)
         return response
 
@@ -313,7 +315,7 @@ class ControlNodeInspect (VerificationUtilBase):
             http_get = self.http_get(path)
             if http_get != None:
                 break
-            print "Retry http get for %s after a second" % (path)
+            print("Retry http get for %s after a second" % (path))
             time.sleep(1)
 
         # Get element

@@ -1,7 +1,8 @@
+from __future__ import absolute_import
 import logging as LOG
 
 from tcutils.verification_util import *
-from vnc_api_results import *
+from .vnc_api_results import *
 from tcutils.util import retry,istrue
 
 LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)

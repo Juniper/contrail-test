@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import sys
 import ConfigParser
@@ -50,7 +51,7 @@ class IntrospectUtil(object):
             return etree.fromstring(resp.text)
         else:
             if self._debug:
-                print 'URL: %s : HTTP error: %s' % (url, str(resp.status_code))
+                print('URL: %s : HTTP error: %s' % (url, str(resp.status_code)))
             return None
     #end _load
 
@@ -62,7 +63,7 @@ class IntrospectUtil(object):
             return EtreeToDict(xpath).get_all_entry(p)
         else:
             if self._debug:
-                print 'UVE: %s : not found' % (path)
+                print('UVE: %s : not found' % (path))
             return None
     #end get_uve
 #end class IntrospectUtil
@@ -147,7 +148,7 @@ def get_http_server_port(svc_name, debug):
         return ServiceHttpPortMap[svc_name]
     else:
         if debug:
-            print '{0}: Introspect port not found'.format(svc_name)
+            print('{0}: Introspect port not found'.format(svc_name))
         return -1
 
 def get_svc_uve_status(host, svc_name, debug, timeout, keyfile, certfile, cacert):
@@ -161,18 +162,18 @@ def get_svc_uve_status(host, svc_name, debug, timeout, keyfile, certfile, cacert
     node_status = svc_introspect.get_uve('NodeStatus')
     if node_status is None:
         if debug:
-            print '{0}: NodeStatusUVE not found'.format(svc_name)
+            print('{0}: NodeStatusUVE not found'.format(svc_name))
         return None, None
     node_status = [item for item in node_status if 'process_status' in item]
     if not len(node_status):
         if debug:
-            print '{0}: ProcessStatus not present in NodeStatusUVE'.format(
-                svc_name)
+            print('{0}: ProcessStatus not present in NodeStatusUVE'.format(
+                svc_name))
         return None, None
     process_status_info = node_status[0]['process_status']
     if len(process_status_info) == 0:
         if debug:
-            print '{0}: Empty ProcessStatus in NodeStatusUVE'.format(svc_name)
+            print('{0}: Empty ProcessStatus in NodeStatusUVE'.format(svc_name))
         return None, None
     description = process_status_info[0]['description']
     for connection_info in process_status_info[0].get('connection_infos', []):
@@ -188,13 +189,13 @@ def get_svc_uve_info(host, svc_name, debug, detail, timeout, keyfile, certfile, 
         svc_uve_status, svc_uve_description = \
             get_svc_uve_status(host, svc_name, debug, timeout, keyfile,\
                                certfile, cacert)
-    except requests.ConnectionError, e:
+    except requests.ConnectionError as e:
         if debug:
-            print 'Socket Connection error : %s' % (str(e))
+            print('Socket Connection error : %s' % (str(e)))
         svc_uve_status = "connection-error"
     except (requests.Timeout, socket.timeout) as te:
         if debug:
-            print 'Timeout error : %s' % (str(te))
+            print('Timeout error : %s' % (str(te)))
         svc_uve_status = "connection-timeout"
 
     if svc_uve_status is not None:

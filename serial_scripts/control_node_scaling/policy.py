@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import sys
 import errno
@@ -92,19 +93,19 @@ class PolicyCmd(object):
 
     def create_policy(self):
         if self._vn_fq_list == []:
-            print "Error: VN list or Service list is empty"
+            print("Error: VN list or Service list is empty")
             return
 
         mirror = None
         policy_flag = 'transparent'
 
-        print "Create and attach policy %s" % (self._args.policy_name)
+        print("Create and attach policy %s" % (self._args.policy_name))
         project = self._vnc_lib.project_read(fq_name=self._proj_fq_name)
         try:
             vn_obj_list = [self._vnc_lib.virtual_network_read(vn)
                            for vn in self._vn_fq_list]
         except NoIdError:
-            print "Error: VN(s) %s not found" % (self._args.vn_list)
+            print("Error: VN(s) %s not found" % (self._args.vn_list))
             return
 
         addr_list = [AddressType(virtual_network=vn.get_fq_name_str())
@@ -152,11 +153,11 @@ class PolicyCmd(object):
     # end create_policy
 
     def delete_policy(self):
-        print "Deleting policy %s" % (self._args.policy_name)
+        print("Deleting policy %s" % (self._args.policy_name))
         try:
             np = self._vnc_lib.network_policy_read(self._policy_fq_name)
         except NoIdError:
-            print "Error: Policy %s not found for delete" % (self._args.policy_name)
+            print("Error: Policy %s not found for delete" % (self._args.policy_name))
             return
 
         for network in (np.get_virtual_network_back_refs() or []):
@@ -168,7 +169,7 @@ class PolicyCmd(object):
                         vn_obj.del_network_policy(np)
                         self._vnc_lib.virtual_network_update(vn_obj)
             except NoIdError:
-                print "Error: VN %s not found for delete" % (network['to'])
+                print("Error: VN %s not found for delete" % (network['to']))
 
         self._vnc_lib.network_policy_delete(fq_name=self._policy_fq_name)
     # delete_policy

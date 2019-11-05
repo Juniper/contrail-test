@@ -371,7 +371,7 @@ class PodFixture(fixtures.Fixture):
         cmd = "ping -c %s %s %s" % (count, pkt_size, ip)
         try:
             output = self.run_cmd_on_pod(cmd, container=container)
-        except Exception, e:
+        except Exception as e:
             self.logger.exception(
                 'Exception occured while trying ping from pod')
             return False

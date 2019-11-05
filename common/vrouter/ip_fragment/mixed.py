@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 from scapy.all import *
 import sys
 import argparse
@@ -22,7 +23,7 @@ os.system(
             args.localIP)
 
 id = int(args.id)
-print "using IP id %s" % (id)
+print("using IP id %s" % (id))
 ip1=IP(id=id, dst=args.remoteIP)
 ip2=IP(id=id+1, dst=args.remoteIP)
 

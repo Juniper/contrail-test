@@ -103,7 +103,7 @@ class VMFixture(fixtures.Fixture):
         if self.inputs.is_ci_setup():
             cidrs = []
             for vn_obj in self.vn_objs:
-                if vn_obj['network'].has_key('subnet_ipam'):
+                if 'subnet_ipam' in vn_obj['network']:
                     cidrs.extend(list(map(lambda obj: obj['subnet_cidr'],
                                           vn_obj['network']['subnet_ipam'])))
             if cidrs and get_af_from_cidrs(cidrs) != 'v4':
@@ -491,7 +491,7 @@ class VMFixture(fixtures.Fixture):
         cs_vmi_objs = self.get_vmi_obj_from_api_server(refresh=True)[1]
         for cs_vmi_obj in cs_vmi_objs:
             vmi = cs_vmi_obj['virtual-machine-interface']
-            if vmi.has_key('security_group_refs'):
+            if 'security_group_refs' in vmi:
                 sec_grps = vmi['security_group_refs']
                 for sec_grp in sec_grps:
                     if secgrp == sec_grp['to'][-1]:
@@ -566,7 +566,7 @@ class VMFixture(fixtures.Fixture):
                 uuid = rule['rule_uuid']
             for acl in acls_list:
                 for r in acl['entries']:
-                    if r.has_key('uuid'):
+                    if 'uuid' in r:
                         if r['uuid'] == uuid:
                             result = True
                             break
@@ -751,7 +751,7 @@ class VMFixture(fixtures.Fixture):
                     vmi_id=tmp_vmi_id)[0]
                 vrf_entry = tap_intf[vn_fq_name]['fip_list'][0]['vrf_name']
             return vrf_entry
-        except IndexError, e:
+        except IndexError as e:
             self.logger.warn('Unable to get VRFEntry in agent %s for VM %s,',
                              'VN %s' % (self.vm_node_ip, self.vm_name, vn_fq_name))
             return None
@@ -772,7 +772,7 @@ class VMFixture(fixtures.Fixture):
                     if vn_fq_name in fip['vrf_name']:
                         fip_addr_vm = fip['ip_addr']
                         return fip_addr_vm
-        except IndexError, e:
+        except IndexError as e:
             self.logger.warn('Unable to get Floating IP from agent %s ',
                              'for VM %s,VN %s' % (self.vm_node_ip, self.vm_name, vn_fq_name))
             return None
@@ -1345,7 +1345,7 @@ class VMFixture(fixtures.Fixture):
             self.logger.debug(output)
             if return_output is True:
                 return output
-        except Exception, e:
+        except Exception as e:
             self.logger.exception(
                 'Exception occured while trying ping from VM')
             return False
@@ -2121,7 +2121,7 @@ class VMFixture(fixtures.Fixture):
                         i = 'timeout %d atftp -p -r %s -l %s %s' % (timeout,
                                                           file, file, vm_ip)
                     self.run_cmd_on_vm(cmds=[i], timeout=timeout + 10)
-        except Exception, e:
+        except Exception as e:
             self.logger.exception(
                 'Exception occured while trying to tftp the file')
     # end tftp_file_to_vm
@@ -2147,7 +2147,7 @@ class VMFixture(fixtures.Fixture):
             cmd_outputs = self.run_cmd_on_vm(
                 cmds=[i], timeout=timeout + 10)
             self.logger.debug(cmd_outputs)
-        except Exception, e:
+        except Exception as e:
             self.logger.exception(
                 'Exception occured while trying to scp the file\n%s' % e)
     # end scp_file_to_vm
@@ -2258,7 +2258,7 @@ class VMFixture(fixtures.Fixture):
                         logger=self.logger)
                     self.run_cmd_on_vm(cmds=['chmod 600 id_rsa'])
 
-        except Exception, e:
+        except Exception as e:
             self.logger.exception(
                 'Exception occured while trying to get the rsa file to the \
                  VM from the agent')
@@ -2294,10 +2294,10 @@ class VMFixture(fixtures.Fixture):
                 zip(cmdList, self.return_output_values_list)
             )
             return self.return_output_cmd_dict
-        except SystemExit, e:
+        except SystemExit as e:
             self.logger.debug('Command exection failed: %s' % (e))
             raise e
-        except Exception, e:
+        except Exception as e:
             self.logger.debug(
                 'Exception occured while running cmds %s' % (cmds))
             self.logger.exception(e)
@@ -2675,7 +2675,7 @@ class VMFixture(fixtures.Fixture):
                 logger=self.logger
             )
             self.logger.debug(output)
-        except Exception, e:
+        except Exception as e:
             self.logger.exception(
                 'Exception occured while starting webservice on VM')
             return False
@@ -2695,7 +2695,7 @@ class VMFixture(fixtures.Fixture):
                 logger=self.logger
             )
             self.logger.debug(output)
-        except Exception, e:
+        except Exception as e:
             self.logger.exception(
                 'Exception occured while starting webservice on VM')
             return False
@@ -3221,7 +3221,7 @@ class MultipleVMFixture(fixtures.Fixture):
                 vm_fixture = self.useFixture(VMFixture(image_name=image,
                                                        project_name=project, flavor=flavor, connections=self.connections,
                                                        vn_obj=vn_obj, vm_name=vm_name))
-            except Exception, err:
+            except Exception as err:
                 self.logger.error(err)
                 self.logger.debug(traceback.format_exc())
                 break

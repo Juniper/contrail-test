@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #
 # To run tests, you can do 'python -m testtools.run tests'. To run specific tests,
 # You can do 'python -m testtools.run -l tests'
@@ -13,7 +14,7 @@ import time
 from vn_test import VNFixture
 from vm_test import VMFixture
 from test import attr
-from base import TestLlgrBase
+from .base import TestLlgrBase
 from tcutils.tcpdump_utils import start_tcpdump_for_intf,\
      stop_tcpdump_for_intf, verify_tcpdump_count
 

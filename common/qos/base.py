@@ -337,7 +337,7 @@ class QosTestBase(BaseNeutronTest):
             ip = ether.data
             try:
                 actual_dscp = int(bin(ip.tos >> 2), 2)
-            except AttributeError, e:
+            except AttributeError as e:
                 self.logger.error(e)
                 return False
             if expected_dscp == actual_dscp:

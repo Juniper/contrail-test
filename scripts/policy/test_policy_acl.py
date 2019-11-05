@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #
 # To run tests, you can do 'python -m testtools.run tests'. To run specific tests,
 # You can do 'python -m testtools.run -l tests'
@@ -6,7 +7,7 @@
 import os
 import fixtures
 import tcutils.wrappers
-from base import BasePolicyTest
+from .base import BasePolicyTest
 import time
 from vn_test import VNFixture
 from vm_test import VMFixture

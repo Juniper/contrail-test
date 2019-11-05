@@ -2,6 +2,7 @@
 	1. Customized for adding core count in the test report.
    Can be extended when required.
 """
+from __future__ import print_function
 import re
 import sys
 import datetime
@@ -73,8 +74,8 @@ class ContrailHTMLTestRunner(HTMLTestRunner):
         test(result)
         self.stopTime = datetime.datetime.now()
         self.generateReport(test, result)
-        print >>sys.stderr, '\nTime Elapsed: %s' % (
-            self.stopTime - self.startTime)
+        print('\nTime Elapsed: %s' % (
+            self.stopTime - self.startTime), file=sys.stderr)
         return result
 
     def getReportAttributes(self, result):

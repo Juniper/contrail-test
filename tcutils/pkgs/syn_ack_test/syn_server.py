@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+from __future__ import print_function
 from scapy.all import *
 from time import sleep
 import sys
@@ -26,4 +27,4 @@ sleep(182)
 SYNACK = ip/TCP(sport=SYN.dport, dport=SYN.sport, flags="SA", seq=1001, ack=SYN.seq + 1)
 sr1(SYNACK)
 
-print "SUCCESS"
+print("SUCCESS")

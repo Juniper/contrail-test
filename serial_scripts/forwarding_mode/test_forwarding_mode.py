@@ -1,8 +1,9 @@
+from __future__ import absolute_import
 from vn_test import *
 from vm_test import *
 from vnc_api_test import *
 from tcutils.wrappers import preposttest_wrapper
-from base import BaseForwardingMode
+from .base import BaseForwardingMode
 from common import isolated_creds
 import time
 import test

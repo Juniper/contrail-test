@@ -73,9 +73,9 @@ def _OpResultListParse(dct, match):
             dret = {}
             isMatcher = True
             for k, v in elem.items():
-                if v.has_key('#text'):
+                if '#text' in v:
                     dret[k] = v["#text"]
-                    if v.has_key('@aggtype'):
+                    if '@aggtype' in v:
                         if v['@aggtype'] == 'listkey':
                             if v['#text'] == match:
                                 isMatch = True

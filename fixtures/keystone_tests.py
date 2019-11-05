@@ -288,7 +288,7 @@ class KeystoneCommands():
         try:
             self.keystone.users.delete(user)
             return True
-        except ks_exceptions.ClientException, e:
+        except ks_exceptions.ClientException as e:
             # TODO Remove this workaround 
             if 'Unable to add token to revocation list' in str(e):
                 self.logger.warn('Exception %s while deleting user' % (

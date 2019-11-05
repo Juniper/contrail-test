@@ -130,7 +130,7 @@ class SecurityGroupBasicRegressionTests1(BaseSGTest, VerifySecGroup, ConfigPolic
                 sg_fixture.quantum_h.delete_security_group(sg_fixture.secgrp_id)
             else:
                 sg_fixture.cleanUp()
-        except Exception, msg:
+        except Exception as msg:
             self.logger.info(msg)
             self.logger.info(
                 "Not able to delete the security group with back ref as expected")

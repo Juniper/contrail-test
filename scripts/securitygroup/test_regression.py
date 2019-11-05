@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import unittest
 from tcutils.wrappers import preposttest_wrapper
 from vnc_api.vnc_api import NoIdError
@@ -23,7 +24,7 @@ from time import sleep
 from tcutils.util import get_random_name
 from base_traffic import *
 from tcutils.util import skip_because
-import test_regression_basic
+from . import test_regression_basic
 from common.securitygroup.sdn_sg_test_topo import get_sg_rule
 
 AF_TEST = 'v6'

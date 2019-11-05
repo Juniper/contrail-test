@@ -1,4 +1,5 @@
-from base import BaseDockerTest
+from __future__ import absolute_import
+from .base import BaseDockerTest
 from tcutils.util import get_random_name
 from tcutils.wrappers import preposttest_wrapper
 

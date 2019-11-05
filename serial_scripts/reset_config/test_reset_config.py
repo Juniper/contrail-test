@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #Define environment variable FABRIC_UTILS_PATH and provide path to fabric_utils before running
 import time
 import os
@@ -11,7 +12,7 @@ from fabric.api import run
 from fabric.state import connections
 import test
 from upgrade.verify import VerifyFeatureTestCases
-from base import ResetConfigBaseTest
+from .base import ResetConfigBaseTest
 
 class TestResetConfig(ResetConfigBaseTest,VerifyFeatureTestCases):
     ''' Reset all the configurations '''

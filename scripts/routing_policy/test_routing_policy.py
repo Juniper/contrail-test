@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from tcutils.wrappers import preposttest_wrapper
 from common.servicechain.firewall.verify import VerifySvcFirewall
 from common.svc_health_check.base import BaseHC
@@ -10,7 +11,7 @@ from common.neutron.base import BaseNeutronTest
 from tcutils.util import *
 from tcutils.tcpdump_utils import *
 from contrailapi import ContrailVncApi
-from base import RPBase
+from .base import RPBase
 from tcutils.util import get_random_cidr
 from random import randint
 

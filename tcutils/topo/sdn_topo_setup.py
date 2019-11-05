@@ -1,8 +1,9 @@
+from __future__ import absolute_import
 import os
 import copy
 import fixtures
 import testtools
-import topo_steps
+from . import topo_steps
 from common.contrail_test_init import ContrailTestInit
 from vn_test import *
 from vn_policy_test import *
@@ -15,7 +16,7 @@ from floating_ip import *
 from policy_test import *
 from contrail_fixtures import *
 from tcutils.agent.vna_introspect_utils import *
-from topo_helper import *
+from .topo_helper import *
 from vnc_api import vnc_api
 from vnc_api.gen.resource_test import *
 try:

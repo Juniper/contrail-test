@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from serial_scripts.system_test.flow_tests.base import BaseFlowTest
 from tcutils.topo.topo_helper import *
 from tcutils.wrappers import preposttest_wrapper
@@ -5,9 +6,9 @@ import time
 import datetime
 import threading
 import socket
-import flow_test_utils
+from . import flow_test_utils
 from compute_node_test import ComputeNodeFixture
-import flow_scale_topo
+from . import flow_scale_topo
 from tcutils.test_lib.test_utils import assertEqual, get_ip_list_from_prefix
 import math
 from tcutils.topo.sdn_topo_setup import *

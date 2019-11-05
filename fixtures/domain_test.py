@@ -52,7 +52,7 @@ class DomainFixture(fixtures.Fixture):
             else:
                 kwargs['id'] = self.uuid
             domain_obj = self.vnc_lib_h.domain_read(**kwargs)
-        except NoIdError, e:
+        except NoIdError as e:
             self.logger.exception('UUID %s not found, unable to read Domain' % (
                 self.uuid))
             raise e

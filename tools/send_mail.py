@@ -1,3 +1,4 @@
+from __future__ import print_function
 from email.mime.text import MIMEText
 import smtplib
 import subprocess
@@ -26,7 +27,7 @@ def send_mail(config_file, file_to_send, report_details):
         mailSender = mailserver_configs.get('sender') or 'contrailbuild@juniper.net'
 
     if not (smtpServer and mailSender and mailTo):
-        print "Not all mail server details are available. Skipping mail send."
+        print("Not all mail server details are available. Skipping mail send.")
         return False
 
     report_config = ConfigParser.ConfigParser()
@@ -38,7 +39,7 @@ def send_mail(config_file, file_to_send, report_details):
         logScenario = report_config.get('Test', 'logScenario')
 
     if not mailTo or not smtpServer:
-        print 'Mail destination not configured. Skipping'
+        print('Mail destination not configured. Skipping')
         return True
     fp = open(file_to_send, 'rb')
     msg = MIMEText(fp.read(), 'html')
@@ -52,15 +53,15 @@ def send_mail(config_file, file_to_send, report_details):
     s = None
     try:
         s = smtplib.SMTP(smtpServer, smtpPort)
-    except Exception, e:
-        print "Unable to connect to Mail Server"
+    except Exception as e:
+        print("Unable to connect to Mail Server")
         return False
     s.ehlo()
     try:
         s.sendmail(mailSender, mailTo.split(","), msg.as_string())
         s.quit()
-    except smtplib.SMTPException, e:
-        print 'Error while sending mail'
+    except smtplib.SMTPException as e:
+        print('Error while sending mail')
         return False
     return True
 # end send_mail

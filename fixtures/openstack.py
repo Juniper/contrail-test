@@ -311,7 +311,7 @@ class OpenstackOrchestrator(Orchestrator):
                proto = rule['protocol']
            if 'ethertype' in rule:
                ethertype = rule['ethertype']
-           if rule['src_addresses'][0].has_key('security_group'):
+           if 'security_group' in rule['src_addresses'][0]:
                if rule['src_addresses'][0]['security_group'] == 'local':
                    direction = 'egress'
                    port_range_min = rule['src_ports'][0]['start_port']
@@ -319,7 +319,7 @@ class OpenstackOrchestrator(Orchestrator):
                else:
                    if rule['dst_addresses'][0]['security_group'] != None:
                        remote_group_id = self.get_security_group(sg_id=rule['src_addresses'][0]['security_group'].split(':')).uuid
-           if rule['dst_addresses'][0].has_key('security_group'):
+           if 'security_group' in rule['dst_addresses'][0]:
                if rule['dst_addresses'][0]['security_group'] == 'local':
                    direction = 'ingress'
                    port_range_min = rule['dst_ports'][0]['start_port']
@@ -333,7 +333,7 @@ class OpenstackOrchestrator(Orchestrator):
            if direction == 'ingress':
                try:
                    for addr in rule['src_addresses']:
-                       if addr.has_key('subnet') and  addr['subnet'] != None:
+                       if 'subnet' in addr and  addr['subnet'] != None:
                            remote_ip_prefix = addr['subnet']['ip_prefix'] + '/' + str(addr['subnet']['ip_prefix_len'])
                            ret = self.quantum_h.create_security_group_rule(
                                                 sg_id,direction=direction,
@@ -349,7 +349,7 @@ class OpenstackOrchestrator(Orchestrator):
            if direction == 'egress':
                try:
                    for addr in rule['dst_addresses']:
-                       if addr.has_key('subnet') and addr['subnet'] != None:
+                       if 'subnet' in addr and addr['subnet'] != None:
                            remote_ip_prefix = addr['subnet']['ip_prefix'] + '/' + str(addr['subnet']['ip_prefix_len'])
                            ret = self.quantum_h.create_security_group_rule(
                                                 sg_id,direction=direction,

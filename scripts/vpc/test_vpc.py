@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import os
 import unittest
 import fixtures
@@ -11,7 +12,7 @@ from vpc_fip_fixture import VPCFIPFixture
 from vn_test import *
 from ec2_base import EC2Base
 from testresources import ResourcedTestCase
-from vpc_resource import VPCTestSetupResource
+from .vpc_resource import VPCTestSetupResource
 from vm_test import VMFixture
 from project_test import ProjectFixture
 from error_string_code import *
@@ -23,7 +24,7 @@ from tcutils.pkgs.Traffic.traffic.core.profile import create,\
             ContinuousProfile, StandardProfile, BurstProfile
 from tcutils.pkgs.Traffic.traffic.core.helpers import Host
 from tcutils.pkgs.Traffic.traffic.core.helpers import Sender, Receiver
-import base
+from . import base
 import test
 
 class VpcSanityTests(base.VpcBaseTest):

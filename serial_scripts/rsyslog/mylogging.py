@@ -1,5 +1,6 @@
 #!/usr/bin/python2.7
 
+from __future__ import print_function
 import syslog
 import random
 import time
@@ -90,7 +91,7 @@ FuncCallDict = {
 
 NumberOfArgs = len(sys.argv)
 if NumberOfArgs != 2:
-    print help_string
+    print(help_string)
     sys.exit(2)
 
 FunctionName = sys.argv[1]

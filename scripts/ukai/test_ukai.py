@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from vn_test import *
 from vm_test import *
 from floating_ip import *
@@ -10,9 +11,9 @@ from traffic.core.stream import Stream
 from traffic.core.profile import create, ContinuousProfile
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
-from base_ukai import UKAIProc
+from .base_ukai import UKAIProc
 from test import BaseTestCase
-from base_ukai import *
+from .base_ukai import *
 from common import isolated_creds
 import inspect
 import time
@@ -21,7 +22,7 @@ from tcutils.util import get_subnet_broadcast
 from policy_test import*
 from project_test import*
 from tcutils import*
-import env
+from . import env
 import test
 import pdb
 

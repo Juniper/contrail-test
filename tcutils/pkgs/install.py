@@ -131,7 +131,7 @@ class Installer(BuildInstallBase):
                     self.log.debug(str(output))
                     self.log.debug(
                         "Copied the distro from compute '%s' to VM '%s'", host, self.pkgdst.host)
-        except Exception, errmsg:
+        except Exception as errmsg:
             self.logger.exception(
                 "Exception: %s occured when copying %s" % (errmsg, pkg))
         finally:

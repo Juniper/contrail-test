@@ -1,3 +1,4 @@
+from __future__ import print_function
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -53,7 +54,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
         self.agent_vn_obj = {}
 
     def __del__(self):
-        print "Deleting test_with_setup now"
+        print("Deleting test_with_setup now")
         ECMPSolnSetupResource.finishedWith(self.res)
 
     def setUp(self):
@@ -64,7 +65,7 @@ class TestECMP(testtools.TestCase, ResourcedTestCase, fixtures.TestWithFixtures)
             self.input_file = 'params.ini'
 
     def tearDown(self):
-        print "Tearing down test"
+        print("Tearing down test")
         super(TestECMP, self).tearDown()
         ECMPSolnSetupResource.finishedWith(self.res)
 

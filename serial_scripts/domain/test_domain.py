@@ -1,4 +1,5 @@
-from base import BaseDomainTest
+from __future__ import absolute_import
+from .base import BaseDomainTest
 from tcutils.wrappers import preposttest_wrapper
 import test
 from policy_test import *

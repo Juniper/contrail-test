@@ -1,6 +1,7 @@
-from base import BaseAlarmConfigTest
+from __future__ import absolute_import
+from .base import BaseAlarmConfigTest
 from alarm_test import *
-from verify import VerifyAlarms
+from .verify import VerifyAlarms
 from tcutils.wrappers import preposttest_wrapper
 import test
 

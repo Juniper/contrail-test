@@ -1,3 +1,4 @@
+from __future__ import print_function
 import logging as LOG
 from lxml import etree
 import re
@@ -41,7 +42,7 @@ class KubeManagerInspect(VerificationUtilBase):
             podsInstances = EtreeToDict(xpath).get_all_entry(p)
             pod_list = podsInstances.get('pods', [])
         except Exception as e:
-            print e
+            print(e)
         finally:
             return pod_list
 
@@ -66,7 +67,7 @@ class KubeManagerInspect(VerificationUtilBase):
             xpath = './VirtualMachineDatabaseListResp/vms/list/VirtualMachineInstance' 
             podsInfo = EtreeToDict(xpath).get_all_entry(p)
         except Exception as e:
-            print e
+            print(e)
         finally:
             return podsInfo
 
@@ -94,7 +95,7 @@ class KubeManagerInspect(VerificationUtilBase):
             nsInstances = EtreeToDict(xpath).get_all_entry(p)
             ns_list = nsInstances.get('namespaces', [])
         except Exception as e:
-            print e
+            print(e)
         finally:
             return ns_list
     
@@ -116,7 +117,7 @@ class KubeManagerInspect(VerificationUtilBase):
             xpath = './NamespaceDatabaseListResp/namespaces/list/NamespaceInstance' 
             nsInfo = EtreeToDict(xpath).get_all_entry(p)
         except Exception as e:
-            print e
+            print(e)
         finally:
             return nsInfo
     
@@ -142,7 +143,7 @@ class KubeManagerInspect(VerificationUtilBase):
             xpath = './LoadbalancerDatabaseListResp/lbs/list/LoadbalancerInstance' 
             lbInfo = EtreeToDict(xpath).get_all_entry(p)
         except Exception as e:
-            print e
+            print(e)
         finally:
             return lbInfo
 
@@ -168,7 +169,7 @@ class KubeManagerInspect(VerificationUtilBase):
             xpath = './NetworkPolicyDatabaseListResp/network_policies/list/NetworkPolicyInstance' 
             npInstance = EtreeToDict(xpath).get_all_entry(p)
         except Exception as e:
-            print e
+            print(e)
         finally:
             return npInstance
         

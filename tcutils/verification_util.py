@@ -181,10 +181,10 @@ class XmlDrv (object):
             output = etree.fromstring(resp.text) if not raw_data else resp.text
             self.log_xml(self.more_logger, output)
             return output
-        except requests.exceptions.SSLError, e:
+        except requests.exceptions.SSLError as e:
             self.log.error("SSL error: %s" % (e))
             return None
-        except requests.ConnectionError, e:
+        except requests.ConnectionError as e:
             self.log.error("Socket Connection error: %s", str(e))
             return None
         except Exception as e:
@@ -298,7 +298,7 @@ class Result (dict):
             for p in plist:
                 d = d[p]
             return d
-        except (KeyError, IndexError), e:
+        except (KeyError, IndexError) as e:
             return None
 
 class EtreeToDict(object):

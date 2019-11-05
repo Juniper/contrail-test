@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -12,8 +13,8 @@ import testtools
 import re
 import test
 from tcutils.wrappers import preposttest_wrapper
-import base
-from webui_topology import *
+from . import base
+from .webui_topology import *
 topo = sdn_webui_config()
 global count, mirror_enabled_already
 count = 1
