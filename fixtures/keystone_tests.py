@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import object
 import os
 import re
 from common.openstack_libs import ks_identity
@@ -7,7 +9,7 @@ from common.openstack_libs import ks_exceptions
 from common import log_orig as contrail_logging
 from tcutils.util import retry, get_dashed_uuid
 
-class KeystoneCommands():
+class KeystoneCommands(object):
 
     '''Handle all tenant managements'''
 

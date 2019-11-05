@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from builtins import str
 import unittest
 from tcutils.wrappers import preposttest_wrapper
 from vnc_api.vnc_api import NoIdError
@@ -33,7 +34,7 @@ class TestMd5tests(Md5Base, VerifySecGroup, ConfigPolicy):
         super(TestMd5tests, cls).tearDownClass()
 
     def is_test_applicable(self):
-        if not self.inputs.dm_mx.values():
+        if not list(self.inputs.dm_mx.values()):
            return (False, 'Physical routers data needs to be set in testbed.py to run this script')
         if len(self.inputs.ext_routers) < 1:            
             return (False, 'Atleast 1 mx is needed for different md5 keys checking')

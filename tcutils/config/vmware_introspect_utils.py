@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from builtins import object
 import logging as LOG
 
 from tcutils.verification_util import *
@@ -91,12 +92,12 @@ class VRouterDetails(Result):
             for vm in element['VirtualMachineInterfaces']['list']:
                 self.virtual_machines.append(VirtualMachinesInVcenter(net,vm)) 
 
-class VirtualNetworks():
+class VirtualNetworks(object):
     '''Represents one virtual network in the vcenter'''
     def __init__(self,vn):
         self.name = vn
 
-class VirtualMachinesInVcenter():
+class VirtualMachinesInVcenter(object):
     '''Represents one vm in the vcenter introspect page'''
     def __init__(self,elems=[]):
         self.virtual_machine = {}
@@ -107,7 +108,7 @@ class VirtualMachinesInVcenter():
             dct = dct.make_dict()
             self.virtual_machine.update(dct)
 
-class uuid:
+class uuid(object):
     def __init__(self,d):
         self.d = d
     def make_dict(self):
@@ -115,7 +116,7 @@ class uuid:
         d[self.d.tag] = self.d.text
         return d
 
-class name:
+class name(object):
     def __init__(self,d):
         self.d = d
     def make_dict(self):
@@ -123,7 +124,7 @@ class name:
         d[self.d.tag] = self.d.text
         return d
 
-class host_uuid:
+class host_uuid(object):
     def __init__(self,d):
         self.d = d
     def make_dict(self):
@@ -131,7 +132,7 @@ class host_uuid:
         d[self.d.tag] = self.d.text
         return d
 
-class vrouter_uuid:
+class vrouter_uuid(object):
     def __init__(self,d):
         self.d = d
     def make_dict(self):
@@ -139,7 +140,7 @@ class vrouter_uuid:
         d[self.d.tag] = self.d.text
         return d
 
-class interfaces:
+class interfaces(object):
     def __init__(self,d):
         self.d = d
     def make_dict(self):
@@ -157,13 +158,13 @@ class interfaces:
         interfaces['interfaces'] = intfs 
         return interfaces 
     
-class VirtualMachinesInterface:
+class VirtualMachinesInterface(object):
     def __init__(self,d):
         self.d = d
     def make_dict(self):
         pass
 
-class Master():
+class Master(object):
     '''Represent vcenter plugin master'''
     def __init__(self,element):
         self.return_list = []
@@ -175,7 +176,7 @@ class Master():
     def master(self):
         return [ele.master() for ele in self.return_list]
 
-class PluginSessions():
+class PluginSessions(object):
     '''Represent vcenter plugin pluginsessions'''
     def __init__(self,element):
         self.return_list = []
@@ -187,7 +188,7 @@ class PluginSessions():
     def pluginsessions(self):
         return [ele.pluginsessions() for ele in self.return_list]
 
-class VRouterStats():
+class VRouterStats(object):
     '''Represent vcenter plugin vRouterStats'''
     def __init__(self,element):
         self.return_list = []
@@ -207,7 +208,7 @@ class VRouterStats():
     def vrouterstats(self):
         return [ele.vrouterstats() for ele in self.return_list]
 
-class ApiServerInfo():
+class ApiServerInfo(object):
     '''Represent vcenter plugin ApiServerInfo'''
     def __init__(self,element):
         self.return_list = []
@@ -227,7 +228,7 @@ class ApiServerInfo():
     def apiserverinfo(self):
         return [ele.apiserverinfo() for ele in self.return_list]
 
-class VCenterServerInfo():
+class VCenterServerInfo(object):
     '''Represent vcenter plugin VCenterServerInfo'''
     def __init__(self,element):
         self.return_list = []
@@ -297,7 +298,7 @@ class VMWarePluginResult(Result):
 
 if __name__ == '__main__':
     va = VMWareInspect('10.204.216.183')
-    class Inputs:
+    class Inputs(object):
         def __init__(self):
             self.cfgm_ips = ['10.204.216.61','10.204.216.62','10.204.216.63'] 
     r = get_vm_details(va,'test_vm1')

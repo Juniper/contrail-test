@@ -1,5 +1,9 @@
 """Module to send packets.
 """
+from __future__ import division
+from builtins import range
+from builtins import object
+from past.utils import old_div
 import os
 import socket
 import signal
@@ -77,13 +81,13 @@ class CreatePkt(object):
             if not self.pkt:
                 self.pkt = l3_hdr
             else:
-                self.pkt = self.pkt / l3_hdr
+                self.pkt = old_div(self.pkt, l3_hdr)
         if l4_hdr:
             log.debug("L4 Header: %s", repr(l4_hdr))
-            self.pkt = self.pkt / l4_hdr
+            self.pkt = old_div(self.pkt, l4_hdr)
         if self.payload:
             log.debug("Payload: %s", self.payload)
-            self.pkt = self.pkt / self.payload
+            self.pkt = old_div(self.pkt, self.payload)
 
     def _create_pkts(self):
         pkts = [self.pkt]

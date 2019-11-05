@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import object
 import os
 from tcutils.util import *
 from common import log_orig as contrail_logging
@@ -22,7 +24,7 @@ class NetworkClientException(CommonNetworkClientException):
         return repr(self.message)
 
 
-class QuantumHelper():
+class QuantumHelper(object):
 
     '''
        Wrapper around neutron client library
@@ -117,7 +119,7 @@ class QuantumHelper():
         subnet_req['network_id'] = net_id
         subnet_req['enable_dhcp'] = enable_dhcp
         subnet_req['ip_version'] = '6' if is_v6(subnet['cidr']) else '4'
-        subnet_req['cidr'] = unicode(subnet_req['cidr'])
+        subnet_req['cidr'] = str(subnet_req['cidr'])
         subnet_req['ipam_fq_name'] = ipam_fq_name
         if dns_nameservers_list:
            subnet_req['dns_nameservers'] = dns_nameservers_list

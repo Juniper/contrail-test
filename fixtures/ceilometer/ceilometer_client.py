@@ -1,4 +1,5 @@
 from __future__ import print_function
+from builtins import object
 import os
 import openstack
 from common.openstack_libs import ceilo_client as client
@@ -84,7 +85,7 @@ class CeilometerClient(object):
         self.cclient = client.Client(VERSION, endpoint=ceilometer_url, token=auth_token, **kwargs)
         return self.cclient
 
-class Meter:
+class Meter(object):
     """Represents one Ceilometer meter."""
 
     def __init__(self, meter):
@@ -122,7 +123,7 @@ class Meter:
     def unit(self):
         return self.meter.unit
     
-class Resource:
+class Resource(object):
 
     """Represents one Ceilometer resource."""
     
@@ -145,7 +146,7 @@ class Resource:
     def source(self):
         return self.resource.source
 
-class Sample:
+class Sample(object):
     """Represents one Ceilometer sample."""
 
     def __init__(self,sample):
@@ -183,7 +184,7 @@ class Sample:
     def counter_type(self):
         return self.sample.counter_type
 
-class Statistic:
+class Statistic(object):
     """Represents one Ceilometer statistic."""
     def __init__(self,stat):
         self.stat = stat

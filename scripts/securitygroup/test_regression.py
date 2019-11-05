@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from builtins import range
 import unittest
 from tcutils.wrappers import preposttest_wrapper
 from vnc_api.vnc_api import NoIdError
@@ -1071,7 +1072,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
         output = src_vm_fix.run_cmd_on_vm(
             cmds=['''netstat -anr  |grep ^0.0.0.0 | awk '{ print $2 }' '''],
             as_sudo=True)
-        gw = output.values()[0].split('\r\n')[-1]
+        gw = list(output.values())[0].split('\r\n')[-1]
 
         filters = '\'(icmp and ((src host %s and dst host %s) or (src host %s and dst host %s)))\'' % (
             gw, src_vm_fix.vm_ip, src_vm_fix.vm_ip, dst_vm_fix.vm_ip)
@@ -1335,7 +1336,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
             src_vm_fix, dst_vm_fix, 'udp', port, port, recvr=False)
 
         icmp_code = 0
-        for icmp_type in xrange(0, 3):
+        for icmp_type in range(0, 3):
                 # start tcpdump on src VM
             filters = '\'(icmp[0] = %s and icmp[1] = %s)\'' % (
                 icmp_type, icmp_code)
@@ -1350,7 +1351,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         # type 3 , code (0,3)
         icmp_type = 3
-        for icmp_code in xrange(0, 3):
+        for icmp_code in range(0, 3):
             # start tcpdump on src VM
             filters = '\'(icmp[0] = %s and icmp[1] = %s)\'' % (
                 icmp_type, icmp_code)
@@ -1365,7 +1366,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         # type 3 , code (4,15)
         icmp_type = 3
-        for icmp_code in xrange(4, 16):
+        for icmp_code in range(4, 16):
             # start tcpdump on src VM
             filters = '\'(icmp[0] = %s and icmp[1] = %s)\'' % (
                 icmp_type, icmp_code)
@@ -1380,7 +1381,7 @@ class SecurityGroupRegressionTests7(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         # type (4,11), code 0
         icmp_code = 0
-        for icmp_type in xrange(4, 12):
+        for icmp_type in range(4, 12):
             # start tcpdump on src VM
             filters = '\'(icmp[0] = %s and icmp[1] = %s)\'' % (
                 icmp_type, icmp_code)
@@ -2434,7 +2435,7 @@ class SecurityGroupSynAckTest(BaseSGTest, VerifySecGroup, ConfigPolicy):
 
         # verify flow created
         sleep(10)
-        for i in xrange(0,3):
+        for i in range(0,3):
             flow_rec1 = inspect_h1.get_vna_fetchflowrecord(
                 nh=src_vm_fix.tap_intf[vn_fq_name]['flow_key_idx'],
                 sip=src_vm_fix.vm_ip,

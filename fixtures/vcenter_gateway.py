@@ -1,4 +1,6 @@
 from __future__ import print_function
+from builtins import str
+from builtins import object
 from vcenter import *
 from vnc_api.vnc_api import  *
 from lif_fixture import LogicalInterfaceFixture
@@ -282,7 +284,7 @@ class ContrailPlugApi(object):
         return [VcenterGateway(gw) for gw in self._inputs.vcenter_gateway]
 
 
-class VcenterGateway:
+class VcenterGateway(object):
     """Represents one vcenter gateway."""
 
     def __init__(self,gateway):

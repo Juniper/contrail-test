@@ -1,5 +1,6 @@
 """ Module to check and collect information about cores during the test."""
 
+from builtins import str
 import sys
 import traceback
 import unittest
@@ -55,8 +56,8 @@ def find_new(initials, finals):
     """Finds if new cores/crashes in any of the nodes in test setup.
     """
     new = {}
-    for node, final in finals.items():
-        if node in initials.keys():
+    for node, final in list(finals.items()):
+        if node in list(initials.keys()):
             initial = initials[node]
             diff = list(set(final).difference(set(initial)))
             if not diff:

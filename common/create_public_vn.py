@@ -1,3 +1,4 @@
+from builtins import object
 import project_test
 from common.contrail_test_init import ContrailTestInit
 from common.connections import ContrailConnections
@@ -12,11 +13,10 @@ from common import isolated_creds
 from tcutils.util import Singleton
 
 from common import log_orig as contrail_logging
+from future.utils import with_metaclass
 
 
-class PublicVn():
-    __metaclass__ = Singleton
-
+class PublicVn(with_metaclass(Singleton, object)):
     def __init__(self, connections,
                        isolated_creds_obj=None,
                        public_vn=None,

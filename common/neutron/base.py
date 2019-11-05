@@ -1,3 +1,7 @@
+from future import standard_library
+standard_library.install_aliases()
+from builtins import next
+from builtins import str
 import re
 import time
 import test_v1
@@ -19,7 +23,7 @@ from fabric.context_managers import settings
 from fabric.api import run
 from fabric.operations import get, put
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
-import ConfigParser
+import configparser
 from tcutils.contrail_status_check import *
 from tcutils.util import is_v6, is_v4
 from contrailapi import ContrailVncApi
@@ -95,7 +99,7 @@ class BaseNeutronTest(GenericTestBase):
 
         for api_conf in api_file_list:
             api_conf_h = open(api_conf, 'a')
-            config = ConfigParser.ConfigParser()
+            config = configparser.ConfigParser()
             config.add_section('QUOTA')
             config.set('QUOTA', 'subnet', subnet)
             config.set('QUOTA', 'virtual_network', virtual_network)

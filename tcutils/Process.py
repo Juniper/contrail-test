@@ -1,9 +1,13 @@
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
 from multiprocessing import TimeoutError, Pool
-from copy_reg import pickle
+from copyreg import pickle
 import threading
 import marshal
-import thread
+import _thread
 import types
 import sys
 from common import log_orig as logging
@@ -46,14 +50,14 @@ pickle(types.MethodType, _pickle_method, _unpickle_method)
 lock = dict()
 def get_lock(key):
     global lock
-    if key not in lock.keys():
+    if key not in list(lock.keys()):
         lock[key] = threading.Lock()
     return lock[key]
 def _pickle_lock(lock):
     return _unpickle_lock, (lock.__hash__(),)
 def _unpickle_lock(key):
     return get_lock(key)
-pickle(thread.LockType, _pickle_lock, _unpickle_lock)
+pickle(_thread.LockType, _pickle_lock, _unpickle_lock)
 
 def _pickle_file(fobj):
     return _unpickle_file, (fobj.name, fobj.mode)
@@ -71,9 +75,9 @@ pickle(types.FileType, _pickle_file, _unpickle_file)
 def _pickle_func(func):
     fn_glob = dict()
     modules = dict()
-    supported_types = [v for k, v in types.__dict__.iteritems()
+    supported_types = [v for k, v in types.__dict__.items()
                        if k.endswith('Type')]
-    for k,v in func.__globals__.iteritems():
+    for k,v in func.__globals__.items():
          if type(v) in supported_types:
              fn_glob[k] = v
          if type(v) == types.ModuleType:
@@ -86,7 +90,7 @@ def _pickle_func(func):
 def _unpickle_func(code_string, fn_glob, modules, func_name,
                    func_defaults, func_closure, func_dict):
     code = marshal.loads(code_string)
-    for k,v in modules.iteritems():
+    for k,v in modules.items():
          fn_glob.update({k: __import__(v)})
     fn = types.FunctionType(code, fn_glob, func_name,
                       func_defaults, func_closure)

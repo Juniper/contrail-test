@@ -1,9 +1,14 @@
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from builtins import object
 import argparse
 import select
 import socket
 import sys
-import Queue
+import queue
 import signal
 import os
 import errno
@@ -30,8 +35,8 @@ class TcpEchoServer(object):
 
     def write_stats_to_file(self):
         with open(self.stats_file, 'w', 0) as fd:
-            for dport, connections in self.stats.iteritems():
-                for sip, stats in connections.iteritems():
+            for dport, connections in self.stats.items():
+                for sip, stats in connections.items():
                     fd.write('dport: %s - src ip: %s - sent: %s - recv: %s%s'%(
                         dport, sip, stats['sent'], stats['recv'], os.linesep))
 
@@ -71,7 +76,7 @@ class TcpEchoServer(object):
                     inputs.append(connection)
                     server_address, server_port = get_addr_port(s.getsockname())
                     self.stats[server_port][client_address[0]] = {'sent': 0, 'recv': 0}
-                    message_queues[connection] = Queue.Queue()
+                    message_queues[connection] = queue.Queue()
                 else:
                     try:
                         data = s.recv(1024)
@@ -94,7 +99,7 @@ class TcpEchoServer(object):
             for s in writable:
                 try:
                     next_msg = message_queues[s].get_nowait()
-                except Queue.Empty:
+                except queue.Empty:
                     outputs.remove(s)
                 else:
                     try:

@@ -1,3 +1,4 @@
+from builtins import range
 from common.neutron.base import BaseNeutronTest
 from tcutils.util import get_random_name, retry
 from vn_test import VNFixture
@@ -67,14 +68,14 @@ class BaseFirewallTest(BaseNeutronTest):
     @classmethod
     def cleanup_common_objects(cls):
         if getattr(cls, 'vms', None):
-            for obj in cls.vms.itervalues():
+            for obj in cls.vms.values():
                 obj.cleanUp()
         if getattr(cls, 'vns', None):
-            for obj in cls.vns.itervalues():
+            for obj in cls.vns.values():
                 obj.cleanUp()
-        for scopes in cls.tags.itervalues():
-            for tag_types in scopes.itervalues():
-                for obj in tag_types.itervalues():
+        for scopes in cls.tags.values():
+            for tag_types in scopes.values():
+                for obj in tag_types.values():
                     cls.vnc_h.delete_tag(id=obj.uuid)
 
     @classmethod
@@ -219,7 +220,7 @@ class BaseFirewallTest(BaseNeutronTest):
            (fixtures_draft_states and not drafts):
             assert False, "exp %s and got %s"%(fixtures_draft_states, drafts)
         # Compare fqname against states created, updated, deleted
-        for state, fixtures in fixtures_draft_states.iteritems():
+        for state, fixtures in fixtures_draft_states.items():
             for fixture in fixtures:
                 fqname = list(fixture.fq_name)
                 if len(fqname) == 2:
@@ -231,7 +232,7 @@ class BaseFirewallTest(BaseNeutronTest):
                 draft_obj = fixture.get_draft()
                 assert draft_obj.draft_mode_state == state
                 drafts[obj_type].remove(fqname)
-        for obj_type, objs in drafts.iteritems():
+        for obj_type, objs in drafts.items():
             assert not objs, "Unexpected drafts %s"%drafts
         self.logger.debug('Validated drafts %s'%copy_of_drafts)
 
@@ -328,7 +329,7 @@ class BaseFirewallTest(BaseNeutronTest):
 
     def _get_vmi_uuid(self, fixture):
         if type(fixture) == VMFixture:
-            return fixture.get_vmi_ids().values()[0]
+            return list(fixture.get_vmi_ids().values())[0]
         elif type(fixture) == PortFixture:
             return fixture.uuid
 
@@ -441,7 +442,7 @@ class BaseFirewallTest(BaseNeutronTest):
         return objs_dict
 
     def cleanup_n_security_objects(self, objs_dict, remove_cleanup=False):
-        for obj_type, objs in objs_dict.iteritems():
+        for obj_type, objs in objs_dict.items():
             for obj in objs:
                 self.perform_cleanup(obj, remove_cleanup=False)
 
@@ -470,7 +471,7 @@ class FirewallBasic(BaseFirewallTest):
                                                         image_name='cirros-traffic')
         cls.policys['hr_eng'] = cls.setup_only_policy_between_vns(cls.vns['hr'],
                                                                  cls.vns['eng'])
-        assert cls.check_vms_active(cls.vms.itervalues(), do_assert=False)
+        assert cls.check_vms_active(iter(cls.vms.values()), do_assert=False)
 
     @classmethod
     def tearDownClass(cls):
@@ -562,11 +563,11 @@ class FirewallBasic(BaseFirewallTest):
                                       application=hr_app_tag)
         self.aps_eng = self.create_aps(SCOPE2, policies=[{'uuid': self.fwp_eng.uuid, 'seq_no': 20}],
                                        application=eng_app_tag)
-        for vm, obj in self.vms.iteritems():
+        for vm, obj in self.vms.items():
             if vm.startswith('eng'):
                 self.add_labels(obj, [self.ag_label])
 
-        assert self.check_vms_booted(self.vms.itervalues(), do_assert=False)
+        assert self.check_vms_booted(iter(self.vms.values()), do_assert=False)
 
 class BaseFirewallTest_1(BaseFirewallTest):
     @classmethod
@@ -595,7 +596,7 @@ class BaseFirewallTest_1(BaseFirewallTest):
             for vm in ['web', 'logic', 'db']:
                 cls.vms[vn+'_'+vm] = cls.create_only_vm(vn_fixture=cls.vns[vn],
                                      **kwargs)
-        assert cls.check_vms_active(cls.vms.itervalues(), do_assert=False)
+        assert cls.check_vms_active(iter(cls.vms.values()), do_assert=False)
 
     def _create_objects(self, SCOPE1='local', SCOPE2='global'):
         '''
@@ -668,11 +669,11 @@ class BaseFirewallTest_1(BaseFirewallTest):
                     {'uuid': self.fwp_icmp.uuid, 'seq_no': 30}]
         self.aps_hr = self.create_aps(SCOPE1, policies=policies,
                                       application=hr_app_tag)
-        for vm, obj in self.vms.iteritems():
+        for vm, obj in self.vms.items():
             if vm.startswith('hr'):
                 self.add_labels(obj, [self.ag_label])
 
-        assert self.check_vms_booted(self.vms.itervalues(), do_assert=False)
+        assert self.check_vms_booted(iter(self.vms.values()), do_assert=False)
 
 
 class FirewallDraftBasic(BaseFirewallTest_1):

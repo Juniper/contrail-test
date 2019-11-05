@@ -49,20 +49,18 @@ class CsDomainResult (Result):
         return self.xpath('domain', 'uuid')
 
     def project_list(self):
-        return map(lambda x: ':'.join(x['to']),
-                   self.xpath('domain', 'projects'))
+        return [':'.join(x['to']) for x in self.xpath('domain', 'projects')]
 
     def project(self, name):
         if not self.xpath('domain', 'projects'):
             return list()
-        return filter(lambda x: x['to'] == [self.name(), name],
-                      self.xpath('domain', 'projects'))
+        return [x for x in self.xpath('domain', 'projects') if x['to'] == [self.name(), name]]
 
     def st_list(self):
         return self.xpath('domain', 'service_templates')
 
     def st(self, st):
-        return filter(lambda x: x['to'][-1] == st, self.st_list())
+        return [x for x in self.st_list() if x['to'][-1] == st]
 
     def vdns_list(self):
         return self.xpath('domain', 'virtual_DNSs')
@@ -70,7 +68,7 @@ class CsDomainResult (Result):
     def vdns(self, vdns_name):
         vdns_li = self.vdns_list()
         if vdns_li:
-            return filter(lambda x: x['to'][-1] == vdns_name, vdns_li)
+            return [x for x in vdns_li if x['to'][-1] == vdns_name]
 
 
 class CsProjectResult (Result):
@@ -146,14 +144,14 @@ class CsProjectResult (Result):
         return self.xpath('project', 'network_policys')
 
     def policy(self, policy):
-        return filter(lambda x: x['to'][-1] == policy, self.policy_list())
+        return [x for x in self.policy_list() if x['to'][-1] == policy]
 
     def vn_list(self):
         return self.xpath('project', 'virtual_networks')
 
     def vn(self, vn):
         if self.vn_list():
-            return filter(lambda x: x['to'][-1] == vn, self.vn_list())
+            return [x for x in self.vn_list() if x['to'][-1] == vn]
         return []
 
     def fip_list(self):
@@ -164,7 +162,7 @@ class CsProjectResult (Result):
         return p
 
     def fip(self, fip_fq_name=[]):
-        return filter(lambda x: x['to'] == fip_fq_name, self.fip_list())
+        return [x for x in self.fip_list() if x['to'] == fip_fq_name]
 
     def secgrp_list(self):
         return self.xpath('project', 'security_groups')
@@ -172,7 +170,7 @@ class CsProjectResult (Result):
     def secgrp(self, secgrp):
         secgrp_list = self.secgrp_list()
         if secgrp_list:
-            return filter(lambda x: x['to'][-1] == secgrp, secgrp_list)
+            return [x for x in secgrp_list if x['to'][-1] == secgrp]
 
     def si_list(self):
         return self.xpath('project', 'service_instances')
@@ -180,7 +178,7 @@ class CsProjectResult (Result):
     def si(self, si):
         si_list = self.si_list()
         if si_list:
-            return filter(lambda x: x['to'][-1] == si, si_list)
+            return [x for x in si_list if x['to'][-1] == si]
 
     def alarm_list(self):
         result = self.xpath('project', 'alarms')
@@ -189,7 +187,7 @@ class CsProjectResult (Result):
         return result
 
     def alarm(self,alarm):
-        return filter(lambda x: x['to'][-1] == alarm, self.alarm_list())
+        return [x for x in self.alarm_list() if x['to'][-1] == alarm]
 
 class CsAlarmResult(Result):
 
@@ -410,12 +408,11 @@ class CsVNResult (Result):
         return self.xpath('virtual-network', 'floating_ip_pools')
 
     def fip(self, fip):
-        return filter(lambda x: x['to'][-1] == fip, self.fip_list())
+        return [x for x in self.fip_list() if x['to'][-1] == fip]
 
     def vm_link_list(self):
-        return map(lambda x: self.sub(x['href'], x['to'][0]),
-                   self.xpath('virtual-network',
-                              'virtual_machine_interface_back_refs'))
+        return [self.sub(x['href'], x['to'][0]) for x in self.xpath('virtual-network',
+                              'virtual_machine_interface_back_refs')]
 
     def rts(self):
         if 'route_target_list' in self.xpath('virtual-network'):

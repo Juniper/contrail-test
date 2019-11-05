@@ -1,3 +1,4 @@
+from builtins import object
 import os
 import openstack
 from ironicclient import exc as ironic_exc

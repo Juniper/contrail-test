@@ -1,10 +1,12 @@
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
 import sys
 from fabric.api import env, run , local
 from fabric.operations import get, put
 from fabric.context_managers import settings, hide
 import os
-import ConfigParser
+import configparser
 import subprocess
 import yaml
 from tcutils.util import read_config_option
@@ -38,7 +40,7 @@ def get_os_env(var, default=''):
 def upload_to_webserver(config_file, report_config_file, elem):
     jenkins_trigger = get_os_env('JENKINS_TRIGGERED')
     if config_file.endswith('.ini'):
-        config = ConfigParser.ConfigParser()
+        config = configparser.ConfigParser()
         config.read(config_file)
         web_server = read_config_option(config, 'WebServer', 'host', None)
         web_server_report_path = read_config_option(config, 'WebServer',
@@ -66,7 +68,7 @@ def upload_to_webserver(config_file, report_config_file, elem):
             web_server_username and web_server_password):
        print("Not all webserver details are available. Skipping upload.")
        return False
-    report_config = ConfigParser.ConfigParser()
+    report_config = configparser.ConfigParser()
     report_config.read(report_config_file)
     ts = report_config.get('Test', 'timestamp')
     log_scenario = report_config.get('Test', 'logScenario')

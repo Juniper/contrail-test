@@ -1,5 +1,6 @@
 """Policy config utilities."""
 
+from builtins import object
 import random
 
 import fixtures
@@ -47,7 +48,7 @@ class AttachPolicyFixture(fixtures.Fixture):
             policy_name = policy.fq_name[-1]
         else:
             policy_name = policy['policy']['name']
-        if policy_name not in policy_name_objs.keys():
+        if policy_name not in list(policy_name_objs.keys()):
             pobjs = self.vn_fixture.convert_policy_objs_vnc_to_neutron([policy])
             self.vn_fixture.policy_objs.extend(pobjs)
 
@@ -69,11 +70,11 @@ class AttachPolicyFixture(fixtures.Fixture):
                                     for policy_obj in self.vn_fixture.policy_objs)
         else:
             policy_name = policy['policy']['name']
-        if policy_name in policy_name_objs.keys():
+        if policy_name in list(policy_name_objs.keys()):
             self.vn_fixture.policy_objs.remove(policy_name_objs[policy_name])
 
 
-class ConfigPolicy():
+class ConfigPolicy(object):
 
     def remove_from_cleanups(self, fix):
         for cleanup in self._cleanups:
