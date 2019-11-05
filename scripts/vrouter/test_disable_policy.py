@@ -1,5 +1,6 @@
 #Testcases for disabling policy on VMIs:
 #PR https://bugs.launchpad.net/juniperopenstack/+bug/1558920 and PR https://bugs.launchpad.net/juniperopenstack/+bug/1566650
+from builtins import str
 from tcutils.wrappers import preposttest_wrapper
 from common.vrouter.base import BaseVrouterTest
 import test

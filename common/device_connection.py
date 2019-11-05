@@ -1,3 +1,4 @@
+from builtins import object
 import abc
 import logging
 from fabric.operations import get, put, run, local, sudo
@@ -13,11 +14,11 @@ from jnpr.junos.exception import *
 
 from common import log_orig as contrail_logging
 import gevent
+from future.utils import with_metaclass
 
-class AbstractConnection(object):
+class AbstractConnection(with_metaclass(abc.ABCMeta, object)):
     ''' Abstract connnection class for ssh/netconf etc
     '''
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def __init__(self, *args, **kwargs):

@@ -1,3 +1,4 @@
+from builtins import str
 import test_v1
 from vn_test import MultipleVNFixture
 from vm_test import MultipleVMFixture

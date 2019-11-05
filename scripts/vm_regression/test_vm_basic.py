@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+from builtins import str
+from builtins import range
 import traffic_tests
 from vn_test import *
 from vm_test import *

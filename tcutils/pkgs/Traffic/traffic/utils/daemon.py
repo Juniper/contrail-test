@@ -1,5 +1,7 @@
 """Module to make any python script a a daemon.
 """
+from builtins import str
+from builtins import object
 import os
 import sys
 import time

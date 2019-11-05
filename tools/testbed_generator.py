@@ -16,7 +16,7 @@ dns_port = '8092'
 agent_port = '8085'
 
 def get_neutron_username(params):
-    plugin_cfgs = [v['yaml_additional_config'] for k, v in params.iteritems()
+    plugin_cfgs = [v['yaml_additional_config'] for k, v in params.items()
                    if type(v) is dict and 'yaml_additional_config' in v]
 
     for plugin_cfg in plugin_cfgs:
@@ -57,7 +57,7 @@ def parse_astute_6(params):
 
 def parse_astute_7(params):
     astute_dict = defaultdict(list)
-    for name, node_dict in params['network_metadata']['nodes'].iteritems():
+    for name, node_dict in params['network_metadata']['nodes'].items():
         host_dict = {'data_ip': node_dict['network_roles']['neutron/mesh'],
                      'host_name': name,
                      'mgmt_ip': node_dict['network_roles']['management']
@@ -171,7 +171,7 @@ def create_testbed_file(pargs, astute_dict, openrc_dict):
                 host_name = gen_host_name(host_dict['host_name'])
                 env_roledefs['collector'].append(host_name)
 
-    for k,v in env_roledefs.iteritems():
+    for k,v in env_roledefs.items():
         env_roledefs[k] = list(set(v))
     env_keystone.update({'keystone_ip': openrc_dict['auth_ip']})
     env_keystone.update({'auth_protocol': openrc_dict['auth_protocol']})

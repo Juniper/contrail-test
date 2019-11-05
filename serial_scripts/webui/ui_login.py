@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from builtins import object
 from selenium import webdriver
 from pyvirtualdisplay import Display
 from .webui_common import *
@@ -8,7 +9,7 @@ import time
 from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 
 
-class UILogin:
+class UILogin(object):
     browser = None
     browser_openstack = None
     os_url = None

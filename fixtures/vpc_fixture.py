@@ -103,7 +103,7 @@ class VPCFixture(fixtures.Fixture):
         found = False
 
         for key in keys:
-            key = [k for k in filter(None, key.split(' ')) if k != '|']
+            key = [k for k in [_f for _f in key.split(' ') if _f] if k != '|']
             if key[0] == tenant:
                 found = True
                 self.logger.info('Exported ec2 keys for %s' % tenant)
@@ -146,7 +146,7 @@ class VPCFixture(fixtures.Fixture):
                     self.auth_url), capture=True).split('\n')
 
         for user in users:
-            user = [k for k in filter(None, user.split(' ')) if k != '|']
+            user = [k for k in [_f for _f in user.split(' ') if _f] if k != '|']
             if user[0] == 'id':
                 self.user_id = user[1]
                 break
@@ -163,7 +163,7 @@ class VPCFixture(fixtures.Fixture):
             capture=True).split('\n')
 
         for role in roles:
-            role = [k for k in filter(None, role.split(' ')) if k != '|']
+            role = [k for k in [_f for _f in role.split(' ') if _f] if k != '|']
             if role[0] == 'id':
                 self.role_id = role[1]
                 break
@@ -179,7 +179,7 @@ class VPCFixture(fixtures.Fixture):
                     self.auth_url,tenantName), capture=True).split('\n')
 
         for tenant in tenants:
-            tenant = [k for k in filter(None, tenant.split(' ')) if k != '|']
+            tenant = [k for k in [_f for _f in tenant.split(' ') if _f] if k != '|']
             if tenant[0] == 'id':
                 self.tenant_id = tenant[1]
                 break
@@ -248,7 +248,7 @@ class VPCFixture(fixtures.Fixture):
     def verify_vpc(self):
         verify_vpc_output = self._shell_with_ec2_env(
             'euca-describe-vpcs %s' % (self.vpc_id), True).split('\n')[2].split(' ')
-        verify_vpc_output = filter(None, verify_vpc_output)
+        verify_vpc_output = [_f for _f in verify_vpc_output if _f]
 
         if verify_vpc_output[1] == self.cidr and verify_vpc_output[0] == self.vpc_id:
             self.logger.info('VPC %s verified' % self.vpc_id)
@@ -442,7 +442,7 @@ class VPCFixture(fixtures.Fixture):
         foundIp = False
 
         for ip in out:
-            ip = filter(None, ip.split(' '))
+            ip = [_f for _f in ip.split(' ') if _f]
             if ip[0] == self.floating_ip:
                 self.fip_allcation_id = ip[2]
                 foundIp = True

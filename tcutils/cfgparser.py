@@ -1,6 +1,8 @@
 '''Parse config files which are ConfigParser complaint'''
 
-from ConfigParser import SafeConfigParser
+from future import standard_library
+standard_library.install_aliases()
+from configparser import SafeConfigParser
 
 
 def string_to_list(tstr, force=False):

@@ -6,6 +6,11 @@ from __future__ import print_function
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import zip
+from builtins import range
 import os
 from time import sleep
 
@@ -22,7 +27,7 @@ from policy_test import *
 from contrail_fixtures import *
 from tcutils.util import *
 import threading
-import Queue
+import queue
 
 
 class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
@@ -46,7 +51,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
         self.image_name = image_name
         self.flavor = flavor
         self.nova_h = self.connections.nova_h
-        self.q = Queue.Queue()
+        self.q = queue.Queue()
         self.vn_threads = []
         self.vm_threads = []
         self.userdata = userdata
@@ -71,7 +76,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
                   "only to maximum of %s subnets" % (network, max_subnets))
 
         subnets = list(IPNetwork(network).subnet(plen))
-        return map(lambda subnet: subnet.__str__(), subnets[:])
+        return [subnet.__str__() for subnet in subnets[:]]
 
     def calculateSubnet(self):
         self.subnet_list = []
@@ -102,7 +107,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
                 raise
         count = 0
 
-        self.vn_obj_dict = dict(zip(self.vn_keylist, self.vn_valuelist))
+        self.vn_obj_dict = dict(list(zip(self.vn_keylist, self.vn_valuelist)))
 
     def createMultipleVM(self):
 
@@ -129,10 +134,10 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
                     self.vm_keylist.append(vm_name)
                     self.vm_valuelist.append(vm_fixture)
                 self.vm_obj_dict = dict(
-                    zip(self.vm_keylist, self.vm_valuelist))
+                    list(zip(self.vm_keylist, self.vm_valuelist)))
                 self.vm_per_vn_list.append(self.vm_obj_dict)
             self.vm_per_vn_dict = dict(
-                zip(self.vn_keylist, self.vm_per_vn_list))
+                list(zip(self.vn_keylist, self.vm_per_vn_list)))
         except Exception as e:
             print(e)
         for thread in self.vm_threads:
@@ -146,7 +151,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
         try:
             result = True
             verify_threads = []
-            for vn_name, vn_obj in self.vn_obj_dict.items():
+            for vn_name, vn_obj in list(self.vn_obj_dict.items()):
                 t = threading.Thread(target=vn_obj.verify_on_setup, args=())
                 verify_threads.append(t)
             for thread in verify_threads:
@@ -155,7 +160,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
                 thread.start()
             for thread in verify_threads:
                 thread.join(10)
-            for vn_name, vn_obj in self.vn_obj_dict.items():
+            for vn_name, vn_obj in list(self.vn_obj_dict.items()):
                 if not vn_obj.verify_result:
                     result = result and False
         except Exception as e:
@@ -233,12 +238,12 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
         time.sleep(10)
 
         try:
-            for vn_name, vn_obj in self.vn_obj_dict.items():
+            for vn_name, vn_obj in list(self.vn_obj_dict.items()):
                 vn_obj.cleanUp()
         except Exception as e:
             print(e)
         try:
-            for vn_name, vn_obj in self.vn_obj_dict.items():
+            for vn_name, vn_obj in list(self.vn_obj_dict.items()):
                 assert vn_obj.verify_not_in_result
         except Exception as e:
             print(e)

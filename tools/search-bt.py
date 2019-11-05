@@ -1,4 +1,6 @@
 from __future__ import print_function
+from builtins import range
+from builtins import object
 import os
 import re
 import sys
@@ -17,7 +19,7 @@ SKIP_FILES = ['ifmap', '.swp', 'traceback']
 MAX_BTS = 1000
 
 
-class BTTracker:
+class BTTracker(object):
     '''Search for tracebacks in /var/log/contrail
 
     path: Optional Folder to save the collected traceback data

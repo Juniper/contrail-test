@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 from tcutils.test_lib.test_utils import assertEqual
 
 def system_vna_verify_policy(self, policy_fixt, topo, state):
@@ -19,11 +21,11 @@ def all_policy_verify(
     Verify & assert on fail'''
     self.logger.debug("Starting Verifications after %s" % (state))
     # calling policy fixture verifications
-    for policy_name, policy_fixt in config_topo['policy'].items():
+    for policy_name, policy_fixt in list(config_topo['policy'].items()):
         ret = policy_fixt.verify_on_setup()
         assertEqual(ret['result'], True, ret['msg'])
     # calling vn-policy verification
-    for vn_name, vn_fixt in config_topo['vn'].items():
+    for vn_name, vn_fixt in list(config_topo['vn'].items()):
         ret = vn_fixt.verify_vn_policy_in_api_server()
         assertEqual(ret['result'], True, ret['msg'])
     if fixture_only == 'no':
@@ -76,17 +78,17 @@ def get_comp_node_by_vn(self, vn_fq_name):
         sing_comp_node_vn_list[compute_ip]= vn_list
     #Get the compute node list for each vn
     vn_comp_node_list={}
-    vn_list=sing_comp_node_vn_list.values()
+    vn_list=list(sing_comp_node_vn_list.values())
     for i in range(len(vn_list)) :
         compute_ips=[]
         for j in range(len(vn_list[i])):
-            for compute_ip in sing_comp_node_vn_list.keys() :
+            for compute_ip in list(sing_comp_node_vn_list.keys()) :
                 if vn_list[i][j] in sing_comp_node_vn_list[compute_ip] :
                    compute_ips.append(compute_ip)
             vn_comp_node_list[vn_list[i][j]]=compute_ips
     #Compare the vn  from the compute nodes
     vn_comp_nodes ={}
-    for vn_list in vn_comp_node_list.keys() :
+    for vn_list in list(vn_comp_node_list.keys()) :
         if vn_list == vn :
            vn_comp_nodes[vn_list]= vn_comp_node_list[vn_list]
     return vn_comp_nodes[vn]
