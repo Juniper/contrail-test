@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import object
 import re
 import test_v1
 from netaddr import *
@@ -22,7 +24,7 @@ from firewall_policy import FirewallPolicyFixture
 from firewall_rule import FirewallRuleFixture
 from tcutils.traffic_utils.base_traffic import BaseTraffic, SOCKET
 
-class _GenericTestBaseMethods():
+class _GenericTestBaseMethods(object):
 
     def sleep(self, value):
         self.logger.debug('Sleeping for %s seconds..' % (value))

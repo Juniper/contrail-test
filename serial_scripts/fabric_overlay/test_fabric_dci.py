@@ -11,7 +11,7 @@ class TestFabricDCI(BaseFabricTest):
         if result is False:
             return False, msg
         msg = 'No device with dci_gw rb_role in the provided fabric topology'
-        for device_dict in self.inputs.physical_routers_data.values():
+        for device_dict in list(self.inputs.physical_routers_data.values()):
             if 'dci_gw' in (device_dict.get('rb_roles') or []):
                 break
         else:
@@ -21,7 +21,7 @@ class TestFabricDCI(BaseFabricTest):
         return True, msg
 
     def setUp(self):
-        for device, device_dict in self.inputs.physical_routers_data.items():
+        for device, device_dict in list(self.inputs.physical_routers_data.items()):
             if 'dci_gw' in (device_dict.get('rb_roles') or []):
                 if device_dict['role'] == 'spine':
                     self.rb_roles[device] = ['DCI-Gateway', 'DC-Gateway', 'Route-Reflector']

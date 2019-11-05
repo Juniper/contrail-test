@@ -67,8 +67,8 @@ class VroInspectUtils(VroUtilBase):
         
     def get_id(self,wf_details):
         for i  in wf_details['link'][0]['attributes']:
-            if 'id' in i.values() or  'dunesId' in i.values():
-                name,value = i.values()
+            if 'id' in list(i.values()) or  'dunesId' in list(i.values()):
+                name,value = list(i.values())
                 return value
         return ''
     def get_wf_status(self,path=None):

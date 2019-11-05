@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 import test_v1
 from vn_test import MultipleVNFixture
 from common.device_connection import NetconfConnection
@@ -48,8 +50,8 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
         #this check is present in is_test_applicable
         if check_dm:   
             if self.inputs.use_devicemanager_for_md5:
-                for i in range(len(self.inputs.dm_mx.values())):
-                    router_params = self.inputs.dm_mx.values()[i]
+                for i in range(len(list(self.inputs.dm_mx.values()))):
+                    router_params = list(self.inputs.dm_mx.values())[i]
                     if router_params['model'] == 'mx':
                         self.phy_router_fixture = self.useFixture(PhysicalRouterFixture(
                             router_params['name'], router_params['control_ip'],
@@ -66,8 +68,8 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
                         self.vnc_lib.physical_router_update(physical_dev)
         else:
             if self.inputs.ext_routers:
-                for i in range(len(self.inputs.physical_routers_data.values())):
-                    router_params = self.inputs.physical_routers_data.values()[i]
+                for i in range(len(list(self.inputs.physical_routers_data.values()))):
+                    router_params = list(self.inputs.physical_routers_data.values())[i]
                     if router_params['model'] == 'mx':
                         cmd = []
                         cmd.append('set groups md5_tests routing-options router-id %s' % router_params['mgmt_ip'])
@@ -269,7 +271,7 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
     @classmethod
     def remove_mx_group_config(cls):
         if cls.inputs.ext_routers:
-            router_params = cls.inputs.physical_routers_data.values()[0]
+            router_params = list(cls.inputs.physical_routers_data.values())[0]
             cmd = []
             cmd.append('delete groups md5_tests')
             cmd.append('delete apply-groups md5_tests')

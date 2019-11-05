@@ -1,8 +1,10 @@
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
 from email.mime.text import MIMEText
 import smtplib
 import subprocess
-import ConfigParser
+import configparser
 import sys
 import os
 import yaml
@@ -10,7 +12,7 @@ from tcutils.util import read_config_option
 
 def send_mail(config_file, file_to_send, report_details):
     if config_file.endswith('.ini'):
-        config = ConfigParser.ConfigParser()
+        config = configparser.ConfigParser()
         config.read(config_file)
         smtpServer = read_config_option(config, 'Mail', 'server', None)
         smtpPort = read_config_option(config, 'Mail', 'port', '25')
@@ -30,7 +32,7 @@ def send_mail(config_file, file_to_send, report_details):
         print("Not all mail server details are available. Skipping mail send.")
         return False
 
-    report_config = ConfigParser.ConfigParser()
+    report_config = configparser.ConfigParser()
     report_config.read(report_details)
     distro_sku = report_config.get('Test','Distro_Sku')
     if 'EMAIL_SUBJECT' in os.environ and os.environ['EMAIL_SUBJECT'] != '':

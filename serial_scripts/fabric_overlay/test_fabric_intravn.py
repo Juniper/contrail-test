@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 import test
 import uuid
 import copy
@@ -869,7 +871,7 @@ class TestFabricOverlay(TestSPStyleFabric):
         for bms in bms_nodes+[leaf_bms]:
             bms_vns[bms] = self.create_vn()
         vm1 = self.create_vm(vn_fixture=vn, image_name='cirros')
-        self.create_logical_router([vn]+bms_vns.values())
+        self.create_logical_router([vn]+list(bms_vns.values()))
         sc1 = self.create_sc_profile(action='interface-shutdown',
                                      bandwidth=1, recovery_timeout=180)
         pp1 = self.create_port_profile(storm_control_profiles=[sc1.uuid])
@@ -888,7 +890,7 @@ class TestFabricOverlay(TestSPStyleFabric):
                 vlan_id=vlan)
             vlan = vlan + 10
         vm1.wait_till_vm_is_up()
-        self.do_ping_mesh(bms_fixtures.values()+[vm1])
+        self.do_ping_mesh(list(bms_fixtures.values())+[vm1])
         bms_fixtures[spine_bms+'_2_'] = self.create_bms(bms_name=spine_bms,
             port_group_name=bms_fixtures[spine_bms].port_group_name,
             bond_name=bms_fixtures[spine_bms].bond_name,
@@ -898,7 +900,7 @@ class TestFabricOverlay(TestSPStyleFabric):
             port_group_name=bms_fixtures[leaf_bms].port_group_name,
             bond_name=bms_fixtures[leaf_bms].bond_name,
             vn_fixture=bms_vns[spine_bms], vlan_id=spine_vlan)
-        self.do_ping_mesh(bms_fixtures.values()+[vm1])
+        self.do_ping_mesh(list(bms_fixtures.values())+[vm1])
         prouter = self.get_associated_prouters(spine_bms,
                                  bms_fixtures[spine_bms].interfaces)[0]
         assert sc1.validate_config_pushed([prouter],

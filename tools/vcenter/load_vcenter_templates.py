@@ -1,3 +1,4 @@
+from builtins import object
 import argparse
 import os
 import sys

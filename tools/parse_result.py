@@ -1,7 +1,10 @@
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
 import sys
 from lxml import etree as ET
-import ConfigParser
+import configparser
 
 def filter_by_tests(doc, value_list = ["process-returncode"]):
     elem = doc.xpath("/testsuite/testcase[@name='process-returncode']")
@@ -63,7 +66,7 @@ def add_logfile_link(doc, log_location):
 # end add_logfile_link
 
 def _get_log_location(report_file):
-    config = ConfigParser.ConfigParser()
+    config = configparser.ConfigParser()
     config.read(report_file)
     log_location = config.get('Test', 'logslocation')
     return log_location

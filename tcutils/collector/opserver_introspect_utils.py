@@ -1,10 +1,12 @@
 from __future__ import print_function
 from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
 import sys
 vizdtestdir = sys.path[0]
 sys.path.insert(1, vizdtestdir + '/../../')
 
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import xmltodict
 import json
 import requests

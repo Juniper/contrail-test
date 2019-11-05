@@ -1,5 +1,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
+from builtins import str
+from builtins import range
 import logging as LOG
 
 from tcutils.verification_util import *
@@ -65,7 +67,7 @@ class VNCApiInspect (VerificationUtilBase):
 
     def try_cache_by_id(self, otype, uuid, refresh):
         if not (refresh or self.get_force_refresh()):
-            for p in self._cache[otype].values():
+            for p in list(self._cache[otype].values()):
                 if p.uuid() == uuid:
                     return p
         return None
@@ -80,8 +82,7 @@ class VNCApiInspect (VerificationUtilBase):
         if not d:
             # cache miss
             bds = self.dict_get('bridge-domains')
-            mybd = filter(lambda x: x['fq_name'][-1] == bd_name,
-                           bds['bridge-domains'])
+            mybd = [x for x in bds['bridge-domains'] if x['fq_name'][-1] == bd_name]
             if mybd:
                 dd = self.dict_get(mybd[-1]['href'])
             # cache set
@@ -101,8 +102,7 @@ class VNCApiInspect (VerificationUtilBase):
             slo = self.dict_get('security-logging-object/%s' % (slo_uuid))
         elif slo_name is not None:
             slos = self.dict_get('security-logging-objects')
-            myslo = filter(lambda x: x['fq_name'][-1] == slo_name,
-                           slos['security-logging-objects'])
+            myslo = [x for x in slos['security-logging-objects'] if x['fq_name'][-1] == slo_name]
             if myslo:
                 slo = self.dict_get(myslo[-1]['href'])
         if slo:
@@ -121,8 +121,7 @@ class VNCApiInspect (VerificationUtilBase):
         if not d:
             # cache miss
             doms = self.dict_get('domains')
-            mydom = filter(lambda x: x['fq_name'][-1] == domain,
-                           doms['domains'])
+            mydom = [x for x in doms['domains'] if x['fq_name'][-1] == domain]
             if mydom:
                 dd = self.dict_get(mydom[-1]['href'])
             # cache set
@@ -166,8 +165,7 @@ class VNCApiInspect (VerificationUtilBase):
             # cache miss
             proj = self.get_cs_project(domain, project, refresh)
             if proj:
-                myipam = filter(lambda x: x['to'] == [domain, project, ipam],
-                                proj['project']['network_ipams'])
+                myipam = [x for x in proj['project']['network_ipams'] if x['to'] == [domain, project, ipam]]
                 if 1 == len(myipam):
                     pp = self.dict_get(myipam[0]['href'])
             if pp:
@@ -282,7 +280,7 @@ class VNCApiInspect (VerificationUtilBase):
         for i in range(len(vn_pol)):
             vn_attach_policy_list[vn_pol[i]['attr']['sequence']
                                   ['major']] = (str(vn_pol[i]['to'][-1]))
-        policy_major_no_list = vn_attach_policy_list.keys()
+        policy_major_no_list = list(vn_attach_policy_list.keys())
         order_policys = sorted(policy_major_no_list)
         for policy in order_policys:
             vn_final_policy_list.append(vn_attach_policy_list[policy])

@@ -1,3 +1,4 @@
+from builtins import str
 import yaml
 import time
 from common import log_orig as contrail_logging
@@ -38,17 +39,17 @@ class AttributeDict(dict):
     def __deepcopy__(self, memo):
         y = {}
         memo[id(self)] = y
-        for key, value in self.iteritems():
+        for key, value in self.items():
             y[deepcopy(key, memo)] = deepcopy(value, memo)
         return y
 
 def convert_to_attrdict(dct):
     if isinstance(dct, dict):
-        for key, value in dct.iteritems():
+        for key, value in dct.items():
             val = convert_to_attrdict(value)
             if isinstance(val, dict):
                 val = AttributeDict(val)
-            elif isinstance(val, unicode):
+            elif isinstance(val, str):
                 val = str(val)
             del dct[key]
             dct[str(key)] = val
@@ -85,7 +86,7 @@ class Client(api_client.Client):
 
     def _replace_key(self, dct):
         if isinstance(dct, dict):
-            for key, value in dct.iteritems():
+            for key, value in dct.items():
                 if key in key_mapping:
                     dct[key_mapping[key]] = self._replace_key(value)
                     del dct[key]

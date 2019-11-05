@@ -27,13 +27,11 @@ from contrail_fixtures import *
 from tcutils.wrappers import prepost_wrapper
 from tcutils.poc import (TemplateTestCase, template, Call)
 from test_arguments import *
+from future.utils import with_metaclass
 
 
-class TestSanityFixture(testtools.TestCase, fixtures.TestWithFixtures):
+class TestSanityFixture(with_metaclass(TemplateTestCase, type('NewBase', (testtools.TestCase, fixtures.TestWithFixtures), {}))):
 
-    __metaclass__ = TemplateTestCase
-
-#    @classmethod
     def setUp(self):
         super(TestSanityFixture, self).setUp()
         if 'PARAMS_FILE' in os.environ:

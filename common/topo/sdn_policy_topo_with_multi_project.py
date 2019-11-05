@@ -2,7 +2,9 @@
 from __future__ import print_function
 
 
-class sdn_basic_policy_topo_with_3_project ():
+from builtins import zip
+from builtins import object
+class sdn_basic_policy_topo_with_3_project(object):
 
     def __init__(self, domain='default-domain'):
         print("building dynamic topo")
@@ -269,7 +271,7 @@ class sdn_basic_policy_topo_with_3_project ():
     # end sdn_basic_policy_topo_with_3_project
 
 
-class sdn_basic_policy_topo_with_fip ():
+class sdn_basic_policy_topo_with_fip(object):
 
     def __init__(self, domain='default-domain', compute_node_list=None):
         print("building dynamic topo")
@@ -284,13 +286,13 @@ class sdn_basic_policy_topo_with_fip ():
         # Logic to create a vm to Compute node mapping.
         if self.vm_node_map:
             CN = []
-            for cn in self.vm_node_map.keys():
+            for cn in list(self.vm_node_map.keys()):
                 if self.vm_node_map[cn] not in CN:
                     CN.append(self.vm_node_map[cn])
             my_node_dict = {}
             if compute_node_list is not None:
                 if len(compute_node_list) >= len(CN):
-                    my_node_dict = dict(zip(CN, compute_node_list))
+                    my_node_dict = dict(list(zip(CN, compute_node_list)))
 
             if my_node_dict:
                 for key in my_node_dict:
@@ -456,7 +458,7 @@ if __name__ == '__main__':
     my_topo = sdn_basic_policy_topo_with_3_project(domain='default-domain')
     x = my_topo.__dict__
     print("\nprinting keys of topology dict:")
-    for key, value in x.iteritems():
+    for key, value in x.items():
         print(key)
     # print "keys & values:"
     # for key, value in x.iteritems(): print key, "-->", value

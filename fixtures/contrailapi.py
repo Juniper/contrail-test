@@ -1,10 +1,13 @@
 from __future__ import print_function
+from builtins import str
+from builtins import object
 import uuid
 import logging
 
 from tcutils.util import *
 from vnc_api.vnc_api import *
 from loadbalancer_vnc_api import *
+from future.utils import with_metaclass
 
 
 class ContrailVncApi(object):
@@ -390,7 +393,7 @@ class ContrailVncApi(object):
         if not mapping_dict:
             return None
         new_map = QosIdForwardingClassPairs()
-        for k, v in mapping_dict.iteritems():
+        for k, v in mapping_dict.items():
             pair = QosIdForwardingClassPair(k, v)
             new_map.add_qos_id_forwarding_class_pair(pair)
         return new_map
@@ -403,20 +406,20 @@ class ContrailVncApi(object):
             'dot1p: %s, exp: %s' %
             (qos_config_obj.uuid, dscp_mapping, dot1p_mapping, exp_mapping))
         if dscp_mapping:
-            for k, v in dscp_mapping.iteritems():
+            for k, v in dscp_mapping.items():
                 entry = QosIdForwardingClassPair(k, v)
                 qos_config_obj.dscp_entries.add_qos_id_forwarding_class_pair(
                     entry)
                 qos_config_obj.set_dscp_entries(qos_config_obj.dscp_entries)
         if dot1p_mapping:
-            for k, v in dot1p_mapping.iteritems():
+            for k, v in dot1p_mapping.items():
                 entry = QosIdForwardingClassPair(k, v)
                 qos_config_obj.vlan_priority_entries.add_qos_id_forwarding_class_pair(
                     entry)
                 qos_config_obj.set_vlan_priority_entries(
                     qos_config_obj.vlan_priority_entries)
         if exp_mapping:
-            for k, v in exp_mapping.iteritems():
+            for k, v in exp_mapping.items():
                 entry = QosIdForwardingClassPair(k, v)
                 qos_config_obj.mpls_exp_entries.add_qos_id_forwarding_class_pair(
                     entry)
@@ -1227,7 +1230,7 @@ class ContrailVncApi(object):
         '''
         hc_obj = self._vnc.service_health_check_read(id=hc_uuid)
         curr_prop = hc_obj.get_service_health_check_properties()
-        for k, v in kwargs.iteritems():
+        for k, v in kwargs.items():
             setattr(curr_prop, k, v)
         hc_obj.set_service_health_check_properties(curr_prop)
         return self._vnc.service_health_check_update(hc_obj)
@@ -3721,9 +3724,7 @@ class ContrailVncApi(object):
         self._log.debug('Deleting card %s' % kwargs)
         return self._vnc.card_delete(**kwargs)
 
-class LBFeatureHandles:
-    __metaclass__ = Singleton
-
+class LBFeatureHandles(with_metaclass(Singleton, object)):
     def __init__(self, vnc, log):
         self._vnc = vnc
         self._log = log

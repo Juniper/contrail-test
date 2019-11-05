@@ -1,7 +1,8 @@
+from builtins import object
 import time
 from common.firewall.base import BaseFirewallTest
 
-class MatchOp:
+class MatchOp(object):
     # operator for use in where-clause, copies from opserver_util.py
     EQUAL=1
     NOT_EQUAL=2
@@ -59,9 +60,9 @@ class BasePolicyGenTest(BaseFirewallTest):
                 cls.vm_vn_map[vm_fix.vm_name] = cls.vns[vn]
         cls.policys['hr_eng'] = cls.setup_only_policy_between_vns(
                                         cls.vns['hr'], cls.vns['eng'])
-        assert cls.check_vms_active(cls.vms.itervalues(), do_assert=False)
+        assert cls.check_vms_active(iter(cls.vms.values()), do_assert=False)
         time.sleep(60)
-        assert cls.check_vms_booted(cls.vms.itervalues(), do_assert=False)
+        assert cls.check_vms_booted(iter(cls.vms.values()), do_assert=False)
         cls.restore_rate = cls.vnc_h.get_flow_export_rate()
         cls.vnc_h.set_flow_export_rate(10)
 
@@ -73,7 +74,7 @@ class BasePolicyGenTest(BaseFirewallTest):
         flows = [flow for flow in flows
                     if '169.254' not in flow['local_ip'] and
                        '169.254' not in flow['remote_ip']]
-        metadata_ips = set([vn.get_an_ip() for vn in self.vns.values()])
+        metadata_ips = set([vn.get_an_ip() for vn in list(self.vns.values())])
         flows = [flow for flow in flows
                     if flow['local_ip'] not in metadata_ips and
                        flow['remote_ip'] not in metadata_ips]
@@ -231,7 +232,7 @@ class BasePolicyGenTest(BaseFirewallTest):
         ''' verify that appplication-policy-set contains rules for
             traffic expected to be reported by policy-generator
         '''
-        class found:
+        class found(object):
             pass
         for traffics in grouped_traffics:
             if not traffics:

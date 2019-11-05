@@ -1,3 +1,7 @@
+from builtins import zip
+from builtins import str
+from builtins import range
+from builtins import object
 import re
 import time
 import shlex
@@ -104,8 +108,7 @@ class VMFixture(fixtures.Fixture):
             cidrs = []
             for vn_obj in self.vn_objs:
                 if 'subnet_ipam' in vn_obj['network']:
-                    cidrs.extend(list(map(lambda obj: obj['subnet_cidr'],
-                                          vn_obj['network']['subnet_ipam'])))
+                    cidrs.extend(list([obj['subnet_cidr'] for obj in vn_obj['network']['subnet_ipam']]))
             if cidrs and get_af_from_cidrs(cidrs) != 'v4':
                 raise v4OnlyTestException('Disabling v6 tests for CI')
         self.vn_names = [self.orch.get_vn_name(x) for x in self.vn_objs]
@@ -800,7 +803,7 @@ class VMFixture(fixtures.Fixture):
             self.vm_in_api_flag = self.vm_in_api_flag and False
             return False
 
-        for ips in self.get_vm_ip_dict().values():
+        for ips in list(self.get_vm_ip_dict().values()):
             if len((set(ips).intersection(set(self.vm_ips)))) < 1:
                 with self.printlock:
                     self.logger.warn('Instance IP %s from API Server is '
@@ -891,14 +894,14 @@ class VMFixture(fixtures.Fixture):
 
     def get_agent_label(self):
         if not getattr(self, 'agent_label', None):
-            for (vn_fq_name, vmi) in self.get_vmi_ids().iteritems():
+            for (vn_fq_name, vmi) in self.get_vmi_ids().items():
                 self.agent_label[
                     vn_fq_name] = self.get_tap_intf_of_vmi(vmi)['label']
         return self.agent_label
 
     def get_local_ips(self, refresh=False):
         if refresh or not getattr(self, 'local_ips', None):
-            for (vn_fq_name, vmi) in self.get_vmi_ids().iteritems():
+            for (vn_fq_name, vmi) in self.get_vmi_ids().items():
                 try:
                     self.local_ips[vn_fq_name] = self.get_tap_intf_of_vmi(
                         vmi)['mdata_ip_addr']
@@ -920,7 +923,7 @@ class VMFixture(fixtures.Fixture):
         return getattr(self, '_local_ip', '')
 
     def get_local_ip_vm_intf_name(self, vm_intf_name):
-        for (vn_fq_name, local_ip) in self.get_local_ips().iteritems():
+        for (vn_fq_name, local_ip) in self.get_local_ips().items():
             mac_addr = self.mac_addr[vn_fq_name]
             if vm_intf_name == self.get_vm_interface_name(mac_addr):
                 return local_ip
@@ -1438,7 +1441,7 @@ class VMFixture(fixtures.Fixture):
             self.verify_vm_not_in_agent_flag = \
                 self.verify_vm_not_in_agent_flag and False
             result = result and False
-        for k, v in vrfs.items():
+        for k, v in list(vrfs.items()):
             inspect_h = self.agent_inspect[k]
             for vn_fq_name in self.vn_fq_names:
                 if vn_fq_name in v:
@@ -1693,7 +1696,7 @@ class VMFixture(fixtures.Fixture):
                             vn_fq_name] + ',' + vm_ip
                         # Computing the ethernet tag for prefix here,
                         # format is  EncapTyepe-IP(0Always):0-VXLAN-MAC,IP
-                        if vn_fq_name in self.agent_vxlan_id.keys():
+                        if vn_fq_name in list(self.agent_vxlan_id.keys()):
                             ethernet_tag = "2-0:0" + '-' +\
                                            self.agent_vxlan_id[vn_fq_name]
                         else:
@@ -2216,7 +2219,7 @@ class VMFixture(fixtures.Fixture):
             # Verify if file size is same
             out_dict = dest_vm_fixture.run_cmd_on_vm(
                 cmds=['wc -c %s' % (absolute_filename)])
-            if size in out_dict.values()[0]:
+            if size in list(out_dict.values())[0]:
                 self.logger.info('File of size %s is trasferred successfully to \
                         %s by %s ' % (size, dest_vm_ip, mode))
                 if not expectation:
@@ -2291,7 +2294,7 @@ class VMFixture(fixtures.Fixture):
                 self.logger.debug(output)
                 self.return_output_values_list.append(output)
             self.return_output_cmd_dict = dict(
-                zip(cmdList, self.return_output_values_list)
+                list(zip(cmdList, self.return_output_values_list))
             )
             return self.return_output_cmd_dict
         except SystemExit as e:
@@ -2431,7 +2434,7 @@ class VMFixture(fixtures.Fixture):
                 self.logger.warn('scp file to VM failed')
             out_dict = dest_vm_fixture.run_cmd_on_vm(
                 cmds=['ls -l %s' % (filename)])
-            if size in out_dict.values()[0]:
+            if size in list(out_dict.values())[0]:
                 self.logger.info('File of size %s is trasferred successfully to \
                                   %s ' % (size, dest_vm_fixture.vm_name))
                 return True
@@ -2474,7 +2477,7 @@ class VMFixture(fixtures.Fixture):
         out_dict = self.run_cmd_on_vm(
             cmds=['ls -l %s' % (filename)])
 
-        result = size in out_dict.values()[0]
+        result = size in list(out_dict.values())[0]
 
         if (result == expectation):
             return True
@@ -2588,7 +2591,7 @@ class VMFixture(fixtures.Fixture):
         vm_ipv6 = None
         cmd = "ifconfig %s| awk '/inet6/'" % (intf)
         self.run_cmd_on_vm(cmds=[cmd])
-        if cmd in self.return_output_cmd_dict.keys():
+        if cmd in list(self.return_output_cmd_dict.keys()):
             output = self.return_output_cmd_dict[cmd]
             if (addr_type == 'link'):
                 match = re.search('inet6 addr:(.+?) Scope:Link', output)
@@ -2738,7 +2741,7 @@ class VMFixture(fixtures.Fixture):
         for vn_fq_name in self.vn_fq_names:
             (domain, project, vn) = vn_fq_name.split(':')
             vnic_type = self.get_vmi_type(self.cs_vmi_obj[vn_fq_name])
-            if vnic_type != unicode('direct'):
+            if vnic_type != str('direct'):
                 vna_tap_id = inspect_h.get_vna_tap_interface_by_vmi(
                     vmi_id=self.cs_vmi_obj[vn_fq_name][
                         'virtual-machine-interface']['uuid'])
@@ -2818,17 +2821,17 @@ class VMFixture(fixtures.Fixture):
 
     def get_arp_entry(self, ip_address=None, mac_address=None):
         out_dict = self.run_cmd_on_vm(["arp -an"])
-        if ip_address and not search_arp_entry(out_dict.values()[0], ip_address, mac_address)[0]:
+        if ip_address and not search_arp_entry(list(out_dict.values())[0], ip_address, mac_address)[0]:
             cmd = 'ping %s -c 2' %ip_address
             self.run_cmd_on_vm([cmd])
             out_dict = self.run_cmd_on_vm(["arp -an"])
-        return search_arp_entry(out_dict.values()[0], ip_address, mac_address)
+        return search_arp_entry(list(out_dict.values())[0], ip_address, mac_address)
     # end get_arp_entry
 
     def get_gateway_ip(self):
         cmd = '''netstat -anr  |grep ^0.0.0.0 | awk '{ print $2 }' '''
         out_dict = self.run_cmd_on_vm([cmd])
-        return out_dict.values()[0].rstrip('\r')
+        return list(out_dict.values())[0].rstrip('\r')
     # end get_gateway_ip
 
     def get_gateway_mac(self):
@@ -2843,7 +2846,7 @@ class VMFixture(fixtures.Fixture):
             But used here too, for ease of use
         '''
         if not interface:
-            interface = self.tap_intf.values()[0]['name']
+            interface = list(self.tap_intf.values())[0]['name']
         compute_ip = self.vm_node_ip
         compute_user = self.inputs.host_data[compute_ip]['username']
         compute_password = self.inputs.host_data[compute_ip]['password']
@@ -2872,8 +2875,8 @@ class VMFixture(fixtures.Fixture):
             ether 42:7b:49:5e:cf:12  txqueuelen 0  (Ethernet)
         '''
         if not mac_address:
-            mac_address = self.mac_addr.values()[0]
-        if mac_address in self._vm_interface.keys():
+            mac_address = list(self.mac_addr.values())[0]
+        if mac_address in list(self._vm_interface.keys()):
             return self._vm_interface[mac_address]
         ubuntu_cmd = 'ifconfig | grep "%s" | awk \'{print $1}\' | head -1' %(
             mac_address)
@@ -2882,7 +2885,7 @@ class VMFixture(fixtures.Fixture):
         cmd = 'test -f /etc/redhat-release && %s || %s' % (redhat_cmd,
                                                            ubuntu_cmd)
         output = self.run_cmd_on_vm([cmd])
-        name = output.values()[0]
+        name = list(output.values())[0]
         self._vm_interface[mac_address] = name
         return name
     # end get_vm_interface_name
@@ -2921,12 +2924,12 @@ class VMFixture(fixtures.Fixture):
 
     def arping(self, ip, interface=None):
         if not interface:
-            interface_mac = self.mac_addr.values()[0]
+            interface_mac = list(self.mac_addr.values())[0]
             interface = self.get_vm_interface_name(interface_mac)
 
         cmd = 'arping -i %s -c 1 -r %s' % (interface, ip)
         outputs = self.run_cmd_on_vm([cmd], as_sudo=True)
-        my_output = outputs.values()[0]
+        my_output = list(outputs.values())[0]
         self.logger.debug('On VM %s, arping to %s on %s returned :%s' % (
             self.vm_name, ip, interface, my_output))
         formatted_output = remove_unwanted_output(my_output)
@@ -2935,11 +2938,11 @@ class VMFixture(fixtures.Fixture):
 
     def run_dhclient(self, interface=None):
         if not interface:
-            interface_mac = self.mac_addr.values()[0]
+            interface_mac = list(self.mac_addr.values())[0]
             interface = self.get_vm_interface_name(interface_mac)
         cmds = ['dhclient -r %s ; dhclient %s' % (interface, interface)]
         outputs = self.run_cmd_on_vm(cmds, as_sudo=True, timeout=10)
-        my_output = outputs.values()[0]
+        my_output = list(outputs.values())[0]
         self.logger.debug('On VM %s, dhcp on %s returned :%s' % (
             self.vm_name, interface, my_output))
         formatted_output = remove_unwanted_output(my_output)
@@ -2993,7 +2996,7 @@ class VMFixture(fixtures.Fixture):
                         % (filename_short)],
                         as_sudo=as_sudo, as_daemon=as_daemon)
         shutil.rmtree(folder)
-        return outputs.values()[0]
+        return list(outputs.values())[0]
     # end run_python_code
 
     def get_vmi_type(self, vm_obj):
@@ -3143,7 +3146,7 @@ class VMFixture(fixtures.Fixture):
     # end add_route_in_vm
 
     def disable_interface_policy(self, value=True, vmi_ids=[]):
-        vmi_ids = vmi_ids or self.vmi_ids.values()
+        vmi_ids = vmi_ids or list(self.vmi_ids.values())
         for vmi_id in vmi_ids:
             vmi_obj = self.vnc_lib_h.virtual_machine_interface_read(id=vmi_id)
             vmi_obj.set_virtual_machine_interface_disable_policy(bool(value))

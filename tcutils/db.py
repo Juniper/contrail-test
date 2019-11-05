@@ -1,5 +1,6 @@
 from __future__ import print_function
 from __future__ import absolute_import
+from builtins import object
 import os
 import shelve
 from . import filelock
@@ -83,7 +84,7 @@ class TestDB(object):
 
     @read
     def list_vdns(self):
-        return self.db['vdns'].keys()
+        return list(self.db['vdns'].keys())
 
     @write
     def add_vdns_to_ipam(self, vdns_fqname, ipam_fqname):
@@ -136,7 +137,7 @@ class TestDB(object):
 
     @read
     def list_projects(self):
-        return self.db['projects'].keys()
+        return list(self.db['projects'].keys())
 
     def get_ipam_dict(self, fqname):
         project_fqname = ':'.join(fqname.split(':')[:-1])
@@ -174,7 +175,7 @@ class TestDB(object):
         proj = self.get_project_dict(fqname_to_str(proj_fqname))
         if 'ipams' not in proj:
             return []
-        return proj['ipams'].keys()
+        return list(proj['ipams'].keys())
 
     def get_vn_dict(self, fqname):
         project_fqname = ':'.join(fqname.split(':')[:-1])
@@ -227,7 +228,7 @@ class TestDB(object):
         proj = self.get_project_dict(fqname_to_str(proj_fqname))
         if 'virtual-networks' not in proj:
             return []
-        return proj['virtual-networks'].keys()
+        return list(proj['virtual-networks'].keys())
 
     def get_vm_dict(self, name, project_fqname):
         project = self.get_project_dict(project_fqname)
@@ -279,7 +280,7 @@ class TestDB(object):
     @read
     def get_creds_of_vm(self, vm_id, proj_fqname):
         proj = self.get_project_dict(fqname_to_str(proj_fqname))
-        for vm_name in proj['virtual-machines'].keys():
+        for vm_name in list(proj['virtual-machines'].keys()):
             vm = self.get_vm_dict(vm_name, fqname_to_str(proj_fqname))
             if vm_id == vm['uuid']:
                 return (vm['username'], vm['password'])
@@ -290,7 +291,7 @@ class TestDB(object):
         proj = self.get_project_dict(fqname_to_str(proj_fqname))
         if 'virtual-machines' not in proj:
             return []
-        return proj['virtual-machines'].keys()
+        return list(proj['virtual-machines'].keys())
 
     @read
     def list_vms_in_vn(self, vn_id, proj_fqname):
@@ -298,7 +299,7 @@ class TestDB(object):
         proj = self.get_project_dict(fqname_to_str(proj_fqname))
         if not proj.get('virtual-machines', None):
             return vms
-        for vm_name in proj['virtual-machines'].keys():
+        for vm_name in list(proj['virtual-machines'].keys()):
             if vn_id in proj['virtual-machines'][vm_name]['vns']:
                 vm_dict = self.get_vm_dict(vm_name, fqname_to_str(proj_fqname))
                 vms.append(vm_dict['uuid'])
@@ -336,7 +337,7 @@ class TestDB(object):
 
     @read
     def list_fip_pools(self):
-        return self.db['fip-pool'].keys()
+        return list(self.db['fip-pool'].keys())
 
     @read
     def get_fips(self, fqname):
@@ -360,7 +361,7 @@ class TestDB(object):
 
     @read
     def find_fip_pool_id(self, fip_id):
-        for fqname, value in self.db['fip-pool'].iteritems():
+        for fqname, value in self.db['fip-pool'].items():
             if fip_id in value['fip_ids']:
                 return value['uuid']
 
@@ -396,7 +397,7 @@ class TestDB(object):
 
     @read
     def list_logical_routers(self):
-        return self.db['logical_router'].keys()
+        return list(self.db['logical_router'].keys())
 
     @read
     def get_vns_of_lr(self, fqname):
@@ -518,7 +519,7 @@ class TestDB(object):
 
     @read
     def list_load_balancer(self):
-        return self.db['load_balancer'].keys()
+        return list(self.db['load_balancer'].keys())
 
     @read
     def dump(self):
