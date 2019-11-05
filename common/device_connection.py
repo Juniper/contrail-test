@@ -133,7 +133,7 @@ class NetconfConnection(AbstractConnection):
           for stmt in stmts:
             try:
                 self.config_handle.load(stmt, format='set', merge=True)
-            except ConfigLoadError,e:
+            except ConfigLoadError as e:
                 if ignore_errors:
                     self.logger.debug('Exception %s ignored' % (e))
                     self.logger.exception(e)
@@ -142,7 +142,7 @@ class NetconfConnection(AbstractConnection):
         if commit:
             try:
                 self.config_handle.commit(timeout=timeout)
-            except CommitError,e:
+            except CommitError as e:
                 self.logger.exception(e)
                 return (False,e)
         return (True, None)

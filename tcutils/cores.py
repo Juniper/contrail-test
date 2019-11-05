@@ -84,7 +84,7 @@ def get_service_crashes(inputs):
 def _run(cmd):
     try:
         output = run(cmd)
-    except ChannelException, e:
+    except ChannelException as e:
         # Handle too many concurrent sessions
         if 'Administratively prohibited' in str(e):
             sleep(random.randint(1,5))

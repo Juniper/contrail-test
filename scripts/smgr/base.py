@@ -1,3 +1,4 @@
+from __future__ import print_function
 import test_v1
 import fixtures
 import sys
@@ -35,7 +36,7 @@ class ServerManagerTest(test_v1.BaseTestCase_v1):
 		test_local=False,logger = self.logger)
         self.logger.info("Adding Server  to smgr DB")
         self.smgr_fixture.svrmgr_add_all()
-        print ".................................................completed init..............."
+        print(".................................................completed init...............")
  
     # end setUpClass
 

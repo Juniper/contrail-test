@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -6,8 +7,8 @@
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 
 from tcutils.wrappers import preposttest_wrapper
-from verify import VerifySriovCases
-import base
+from .verify import VerifySriovCases
+from . import base
 import test
 
 class TestSriov(base.BaseSriovTest, VerifySriovCases):

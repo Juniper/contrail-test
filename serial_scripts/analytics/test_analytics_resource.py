@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import time
 import fixtures
@@ -105,7 +106,7 @@ class AnalyticsTestSanityWithMin(
                 if proto == '1' and action == 'pass' and src_ip in vm_ips and dst_ip in vm_ips:
                     flows.append(flow)
 
-            self.logger.info(pprint.pprint(my_flows)); print vm_ips
+            self.logger.info(pprint.pprint(my_flows)); print(vm_ips)
             try:
                 src_flow = flows[0]
                 dst_flow = flows[1]
@@ -113,7 +114,7 @@ class AnalyticsTestSanityWithMin(
             except (IndexError, KeyError):
                 time.sleep(2)
                 timer = timer + 1
-                print timer
+                print(timer)
                 if timer > 30:
                     self.logger.error("Flow not found")
                     return False
@@ -724,7 +725,7 @@ class AnalyticsTestSanityWithResource(
         time.sleep(30)
         sender.stop()
         receiver.stop()
-        print sender.sent, receiver.recv
+        print(sender.sent, receiver.recv)
         time.sleep(1)
 
         vm_node_ip = self.res.vn1_vm1_fixture.vm_node_data_ip
@@ -917,7 +918,7 @@ class AnalyticsTestSanityWithResource(
         #result = result and self.verify_vna_stats()
         sender.stop()
         receiver.stop()
-        print sender.sent, receiver.recv
+        print(sender.sent, receiver.recv)
 
         assert "sender.sent == receiver.recv", "UDP traffic to ip:%s failed" % self.res.vn2_vm2_fixture.vm_ip
         # Verifying the vrouter uve for the active flow
@@ -1127,8 +1128,8 @@ class AnalyticsTestSanityWithResource(
             dport = 9000
             count = count * (i + 1)
             dport = dport + i
-            print 'count=%s' % (count)
-            print 'dport=%s' % (dport)
+            print('count=%s' % (count))
+            print('dport=%s' % (dport))
 
             self.logger.info("Creating streams...")
             stream = Stream(
@@ -1159,7 +1160,7 @@ class AnalyticsTestSanityWithResource(
             sender.start()
             sender.stop()
             receiver.stop()
-            print sender.sent, receiver.recv
+            print(sender.sent, receiver.recv)
             time.sleep(1)
         vm_node_ip = self.res.vn1_vm1_fixture.vm_node_data_ip
         vm_host = self.inputs.host_data[vm_node_ip]['service_name'][vm_node_ip]

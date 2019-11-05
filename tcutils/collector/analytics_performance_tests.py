@@ -1,3 +1,4 @@
+from __future__ import print_function
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -404,7 +405,7 @@ def main():
     obj = AnalyticsTestPerformance()
 #    obj.get_ip_list_from_prefix('192.0.2.16/29')
     for ip in obj.get_ip_list_from_prefix('192.0.2.16/29'):
-        print ip
+        print(ip)
 
 if __name__ == "__main__":
     main()

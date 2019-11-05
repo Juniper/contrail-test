@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -14,7 +15,7 @@ import fixtures
 import testtools
 import socket
 import test
-import base
+from . import base
 from common.contrail_test_init import ContrailTestInit
 from vn_test import *
 from quantum_test import *

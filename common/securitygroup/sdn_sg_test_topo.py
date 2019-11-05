@@ -1,3 +1,4 @@
+from __future__ import print_function
 from vnc_api.vnc_api import *
 from tcutils.util import get_random_name, get_random_cidrs
 
@@ -203,7 +204,7 @@ class sdn_topo_config ():
 
 	#2 VN and 4 VM
     def build_topo_sg_stateful(self, domain= 'default-domain', project= 'admin', compute_node_list= None, username= None, password= None,config_option='openstack'):
-        print "building dynamic topo"
+        print("building dynamic topo")
         ##
         # Domain and project defaults: Do not change until support for non-default is tested!
         self.domain= domain; self.project= project; self.username= username; self.password= password
@@ -297,7 +298,7 @@ class sdn_topo_config_multiproject():
 
     def __init__(self, domain= 'default-domain', project= 'admin',
             username= None, password= None):
-        print "building dynamic topo"
+        print("building dynamic topo")
 	project1 = 'project1'
         project2 = 'admin'
         user1 = username or 'user1'
@@ -493,7 +494,7 @@ class sdn_topo_icmp_error_handling():
 
         #2 VN and 3 VM
     def build_topo(self, domain= 'default-domain', project= 'admin', compute_node_list= None, username= None, password= None,config_option='openstack'):
-        print "building dynamic topo"
+        print("building dynamic topo")
         ##
         # Domain and project defaults: Do not change until support for non-default is tested!
         self.domain= domain; self.project= project; self.username= username; self.password= password
@@ -573,7 +574,7 @@ class sdn_topo_icmp_error_handling():
 
     #1VN 2 VM
     def build_topo2(self, domain= 'default-domain', project= 'admin', compute_node_list= None, username= None, password= None,config_option='openstack'):
-        print "building dynamic topo"
+        print("building dynamic topo")
         ##
         # Domain and project defaults: Do not change until support for non-default is tested!
         self.domain= domain; self.project= project; self.username= username; self.password= password
@@ -672,7 +673,7 @@ class sdn_topo_mx_with_si():
     def build_topo(self, domain= 'default-domain', project= 'admin',
 			compute_node_list= None, username= None,
 			password= None, public_vn_info=None,config_option='openstack'):
-        print "building dynamic topo"
+        print("building dynamic topo")
         ##
         # Domain and project defaults: Do not change until support for non-default is tested!
         self.domain= domain; self.project= project; self.username= username; self.password= password
@@ -782,7 +783,7 @@ class sdn_topo_flow_to_sg_rule_mapping():
                      password= None,no_of_vm=2,
                      config_option='openstack'):
         #no_of_vm must be 2 or 3
-        print "building dynamic topo"
+        print("building dynamic topo")
         ##
         # Domain and project defaults: Do not change until support for non-default is tested!
         self.domain= domain; self.project= project; self.username= username; self.password= password
@@ -904,7 +905,7 @@ class sdn_topo_flow_to_sg_rule_mapping():
                       password= None,no_of_vm=2,
                       config_option='openstack'):
         #no_of_vm must be 2 or 3
-        print "building dynamic topo"
+        print("building dynamic topo")
         ##
         # Domain and project defaults: Do not change until support for non-default is tested!
         self.domain= domain; self.project= project; self.username= username; self.password= password

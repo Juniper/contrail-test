@@ -1,4 +1,5 @@
-from base import HABaseTest 
+from __future__ import absolute_import
+from .base import HABaseTest 
 import time
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.util import skip_because

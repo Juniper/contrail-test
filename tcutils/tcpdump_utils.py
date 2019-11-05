@@ -1,8 +1,9 @@
+from __future__ import absolute_import
 # utils to start and stop tcpdump on VM
 from time import sleep
 from common import log_orig as contrail_logging
 
-from util import retry
+from .util import retry
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import get_random_name
 

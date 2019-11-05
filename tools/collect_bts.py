@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import re
 import sys
@@ -52,7 +53,7 @@ if __name__ == "__main__":
             if container_str:
                 cmd = cmd + ' -l %s' % (container_str)
             output = init_obj.run_cmd_on_server(host_ip, cmd)
-            print output
+            print(output)
 
             # Copy the resulting log files
             if 'Done looking for' in output:

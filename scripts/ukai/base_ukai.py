@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import test_v1
 from vn_test import *
 from vm_test import *
@@ -9,11 +11,11 @@ import re
 from common import *
 from tools import *
 from nova_test import *
-from env import *
+from .env import *
 import os
 from common.openstack_libs import ks_client
 from project_test import *
-from test_ukai import *
+from .test_ukai import *
 
 #class UKAIProc(fixtures.Fixture):
 
@@ -255,10 +257,10 @@ class UKAIProc(test_v1.BaseTestCase_v1):
                cmd = 'ukai client image create  --name "%s" --description "%s" --url "%s" --disk_format "%s" --container_format "%s" --min_disk "%s" --min_ram "%s"' \
                       %(name, name, build_path, disk_format, container_format, min_disk, min_ram)
                cmd = env_admin+cmd
-               print "cmd %s" %(cmd)
+               print("cmd %s" %(cmd))
                output = self.inputs.run_cmd_on_server(gc_host, cmd, username = gc_user_name , password = gc_user_pwd)
 
-          print "check the image is added on the server"
+          print("check the image is added on the server")
           time.sleep (30)
           image = NovaHelper(inputs=self.inputs, project_name='admin')        
           if image.find_image(name):
@@ -270,7 +272,7 @@ class UKAIProc(test_v1.BaseTestCase_v1):
               result = False
               assert result,msg   
           
-          print "Return image Id" 
+          print("Return image Id") 
           cmd = 'ukai client image list |grep %s' %(name)
           cmd = env_admin+cmd
           output = self.inputs.run_cmd_on_server(gc_host, cmd, username = gc_user_name , password = gc_user_pwd)
@@ -302,12 +304,12 @@ class UKAIProc(test_v1.BaseTestCase_v1):
           #project_connections = projectObj.get_project_connections()
 
 
-          print "Delete image"
+          print("Delete image")
           cmd = 'ukai client image delete %s' %(name)
           cmd = env_admin+cmd
           output = self.inputs.run_cmd_on_server(gc_host, cmd, username = gc_user_name , password = gc_user_pwd)
           time.sleep (5)
-          print "check image is deleted from the server"
+          print("check image is deleted from the server")
           image = NovaHelper(inputs=self.inputs, project_name='admin')
           if image.find_image(name):
               msg= "FAIL: VM Image is not deleted from the server"
@@ -350,11 +352,11 @@ class UKAIProc(test_v1.BaseTestCase_v1):
              project_name = 'admin'
              env_cli = env_admin
 
-          print "Creating policy with %s, %s, %s, %s" %(name, action, direction, protocol)
+          print("Creating policy with %s, %s, %s, %s" %(name, action, direction, protocol))
           cmd = 'ukai client network_policy create  --name %s --entries  \'[{"action_list": {"apply_service": [],"simple_action": "%s"},\
                  "direction": "%s","protocol": "%s"}]\''%(name, action, direction, protocol)
           cmd = env_cli+cmd
-          print "cmd %s" %(cmd)
+          print("cmd %s" %(cmd))
           
           output = self.inputs.run_cmd_on_server(gc_host, cmd, username = gc_user_name , password = gc_user_pwd)
           time.sleep(30)
@@ -396,10 +398,10 @@ class UKAIProc(test_v1.BaseTestCase_v1):
              project_name = 'admin'
              env_cli = env_admin
  
-          print "Del policy  %s" %(name)
+          print("Del policy  %s" %(name))
           cmd = 'ukai client network_policy delete  %s' %(name)
           cmd = env_cli+cmd
-          print "cmd %s" %(cmd)
+          print("cmd %s" %(cmd))
 
           output = self.inputs.run_cmd_on_server(gc_host, cmd, username = gc_user_name , password = gc_user_pwd)
           time.sleep(5)
@@ -455,7 +457,7 @@ class UKAIProc(test_v1.BaseTestCase_v1):
           cmd = env_cli+cmd
           output = self.inputs.run_cmd_on_server(gc_host, cmd, username = gc_user_name , password = gc_user_pwd)
 
-          print "get SG Id"
+          print("get SG Id")
           cmd = 'ukai client security_group list |grep %s' %(name)
           cmd = env_cli+cmd
           output = self.inputs.run_cmd_on_server(gc_host, cmd, username = gc_user_name , password = gc_user_pwd)
@@ -504,7 +506,7 @@ class UKAIProc(test_v1.BaseTestCase_v1):
           cmd = env_cli+cmd
           output = self.inputs.run_cmd_on_server(gc_host, cmd, username = gc_user_name , password = gc_user_pwd)
           time.sleep(5)
-          print "check SG is deleted"
+          print("check SG is deleted")
           cmd = 'ukai client security_group list |grep %s' %(name)
           cmd = env_cli+cmd
           output = self.inputs.run_cmd_on_server(gc_host, cmd, username = gc_user_name , password = gc_user_pwd)
@@ -582,8 +584,8 @@ class UKAIProc(test_v1.BaseTestCase_v1):
              project_name = 'admin'
              env_cli = env_admin
 
-          print "Creating a network with %s, %s, %s" %(name, cidr, prefix_len)
-          print "Get policy Id"
+          print("Creating a network with %s, %s, %s" %(name, cidr, prefix_len))
+          print("Get policy Id")
           if policy != 'None':
                 cmd = ' ukai client network_policy list|grep %s' %(policy)
                 cmd = env_cli+cmd
@@ -593,15 +595,15 @@ class UKAIProc(test_v1.BaseTestCase_v1):
           if policy != 'None':
                 cmd = 'ukai client network create   --name %s  --cidr %s --local_prefix_len %s --policies \'["%s"]\'' %(name, cidr, prefix_len, policy_id)
                 cmd = env_cli+cmd
-                print "cmd %s" %(cmd)
+                print("cmd %s" %(cmd))
                 output = self.inputs.run_cmd_on_server(gc_host, cmd, username = gc_user_name , password = gc_user_pwd)         
           else: 
                 cmd = 'ukai client network create   --name %s  --cidr %s --local_prefix_len %s' %(name, cidr, prefix_len)
                 cmd = env_cli+cmd
-                print "cmd %s" %(cmd)
+                print("cmd %s" %(cmd))
                 output = self.inputs.run_cmd_on_server(gc_host, cmd, username = gc_user_name , password = gc_user_pwd)
    
-          print "get VN Id"
+          print("get VN Id")
           cmd = 'ukai client network list |grep %s' %(name)
           cmd = env_cli+cmd
           output = self.inputs.run_cmd_on_server(gc_host, cmd, username = gc_user_name , password = gc_user_pwd)
@@ -641,7 +643,7 @@ class UKAIProc(test_v1.BaseTestCase_v1):
         
           cmd = 'ukai client network delete  %s ' %(name)
           cmd = env_cli+cmd
-          print "cmd %s" %(cmd)
+          print("cmd %s" %(cmd))
           output = self.inputs.run_cmd_on_server(gc_host, cmd, username = gc_user_name , password = gc_user_pwd)
   
           #check VN is deleted
@@ -690,7 +692,7 @@ class UKAIProc(test_v1.BaseTestCase_v1):
              env_cli = env_admin
 
           
-          print "Update the VN with policy"
+          print("Update the VN with policy")
           if policy != 'None':
                cmd = ' ukai client network_policy list|grep %s' %(policy)
                cmd = env_cli+cmd
@@ -700,7 +702,7 @@ class UKAIProc(test_v1.BaseTestCase_v1):
           if policy != 'None':
                cmd = 'ukai client network set --policies \'["%s"]\' %s' %(policy_id, name)
                cmd = env_cli+cmd
-               print "cmd %s" %(cmd)
+               print("cmd %s" %(cmd))
                output = self.inputs.run_cmd_on_server(gc_host, cmd, username = gc_user_name , password = gc_user_pwd)
 
 
@@ -749,17 +751,17 @@ class UKAIProc(test_v1.BaseTestCase_v1):
            time.sleep(20)
            response, servers = keystone.get(ukai_url + "v1.0/servers")
            if not response.ok:
-              print response.reason
+              print(response.reason)
               os.exit()
 
            for server in servers['servers']:
-                print server['name']
+                print(server['name'])
                 response, local_servers = keystone.get("%sv1.0/servers/%s/local_servers" % (ukai_url, server['id']))
                 if not response.ok:
-                     print response.reason
+                     print(response.reason)
 
                 for local_server in local_servers['local_servers']:
-                     print local_server['status'], local_server['instance_id']
+                     print(local_server['status'], local_server['instance_id'])
                      if local_server ['server']['name'] == name:
                         if local_server ['location']['address'] == "99.1.1.13":
                            uuid = local_server['instance_id']
@@ -804,13 +806,13 @@ class UKAIProc(test_v1.BaseTestCase_v1):
            time.sleep(5)
            response, servers = keystone.get(ukai_url + "v1.0/servers")
            if not response.ok:
-              print response.reason
+              print(response.reason)
               servers = []
               os.exit()
 
            if servers['servers']:
               for server in servers['servers']:
-                   print server['name']
+                   print(server['name'])
                    if server['name'] is name:
                       msg = "FAIL: VM is not deleted"
                       result = False

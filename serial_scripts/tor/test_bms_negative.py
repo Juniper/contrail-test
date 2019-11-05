@@ -1,7 +1,7 @@
 try:
     from common.openstack_libs import neutron_exception
     BadCall = neutron_exception.BadRequest
-except Exception,e:
+except Exception as e:
     # In Icehouse, python-neutronclient does not have BadRequest yet
     from common.openstack_libs import neutron_client_exception as BadCall
 
@@ -46,7 +46,7 @@ class TestBMSNegative(BaseTorTest):
             self.logger.error('Port with lif attached was allowed to be '
                 'deleted!!')
             result = result and True
-        except BadCall, e:
+        except BadCall as e:
             self.logger.info('Port with lif attached was not allowed to be '
                 'deleted...OK')
 

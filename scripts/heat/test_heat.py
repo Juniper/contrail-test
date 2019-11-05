@@ -1,3 +1,4 @@
+from __future__ import print_function
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -450,4 +451,4 @@ try:
             super(TestHeatIPv6, self).test_transit_vn_sym_1_innet()
 
 except ImportError:
-    print 'Missing Heat Client. Will skip tests'
+    print('Missing Heat Client. Will skip tests')

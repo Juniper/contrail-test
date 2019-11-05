@@ -1,3 +1,4 @@
+from __future__ import print_function
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -2405,7 +2406,7 @@ class AnalyticsVerification(fixtures.Fixture):
             if not self._verify_alarms_by_type(None, service_ip, role, alarm_type, multi_instances=False,
                     soak_timer=15):
                 result = result and False
-        except Exception, e:
+        except Exception as e:
             self.logger.exception('Exception occured while verifying alarms %s' % (alarm_type))
         finally:
             for tagent in tor_agents:
@@ -2480,7 +2481,7 @@ class AnalyticsVerification(fixtures.Fixture):
                         conf_file_backup,container='control')
             if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances=False, soak_timer=15):
                 result = result and False
-        except Exception, e:
+        except Exception as e:
             self.logger.exception('Exception occured while verifying alarms %s' % (alarm_type))
             result = result and False
         finally:
@@ -2542,7 +2543,7 @@ class AnalyticsVerification(fixtures.Fixture):
             else:
                 if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances=False, soak_timer=15):
                     result = result and False
-        except Exception, e:
+        except Exception as e:
             self.logger.exception('Exception occured while verifying alarms %s' % (alarm_type))
             result = result and False
         finally:
@@ -2633,7 +2634,7 @@ class AnalyticsVerification(fixtures.Fixture):
                 if not self._verify_alarms_by_type(None, svc_ip, role, alarm_type, multi_instances=False,
                         soak_timer=15):
                     result = result and False
-        except Exception, e:
+        except Exception as e:
             self.logger.exception('Exception occured while verifying alarms %s' % (alarm_type))
             result = result and False
         finally:
@@ -2789,7 +2790,7 @@ class AnalyticsVerification(fixtures.Fixture):
             self.logger.info("Process %s stopped" % (service))
             if not self._verify_alarms_by_type(service, service_ip, role, alarm_type, multi_instances, soak_timer):
                 result = result and False
-        except Exception, e:
+        except Exception as e:
             self.logger.exception('Exception occured while verifying alarms %s' % (alarm_type))
             result = result and False
         finally:
@@ -2931,7 +2932,7 @@ class AnalyticsVerification(fixtures.Fixture):
                     pprint.pprint(role_alarms)
                     pass
                 role_alarms = None
-        except Exception, e:
+        except Exception as e:
             self.logger.exception('Exception occured while checking for alarms')
             result = result and False
         return result
@@ -3149,7 +3150,7 @@ class AnalyticsVerification(fixtures.Fixture):
                                                 return None
                                         else:
                                             self.logger.info("json operands are null for %s " % (service))
-                                            print type_alarms
+                                            print(type_alarms)
                                             return type_alarms
 
         if not clear:
@@ -4742,6 +4743,6 @@ class AnalyticsVerification(fixtures.Fixture):
 
 if __name__ == '__main__':
 
-    print 'Need to add'
+    print('Need to add')
 
     # end runTest6

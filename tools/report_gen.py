@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import re
 import sys
@@ -84,8 +85,8 @@ class ContrailReportInit(TestInputs):
                     run('mkdir -p %s' % (self.web_server_path))
                     output = put(elem, self.web_server_path)
                     put('logs', self.web_server_path)
-        except Exception, e:
-            print 'Error occured while uploading the png files to the Web Server ', e
+        except Exception as e:
+            print('Error occured while uploading the png files to the Web Server ', e)
             pass
     # end upload_png_files
 
@@ -202,7 +203,7 @@ class ContrailReportInit(TestInputs):
             self.distro = self.run_cmd_on_server(self.cfgm_ips[0], cmd, container='controller')
             self.distro = self.distro.replace(')', '')
             self.distro = self.distro.replace('(', '')
-        except NetworkError, e:
+        except NetworkError as e:
             self.distro = ''
         return self.distro
     # end get_distro

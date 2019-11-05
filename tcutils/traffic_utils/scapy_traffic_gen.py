@@ -1,3 +1,4 @@
+from __future__ import print_function
 import logging as LOG
 
 from collections import OrderedDict
@@ -175,4 +176,4 @@ if __name__ == "__main__":
                                    'tos':0x14}
                             )
     pkt_stream = scapy_obj.scapy_build_stream()
-    print pkt_stream
+    print(pkt_stream)

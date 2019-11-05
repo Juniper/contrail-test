@@ -1142,7 +1142,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         parallel_cleanup_list = list()
         for fn in self._cleanups[:]:
             try:
-                if fn[0].im_self.__class__.__name__ in fixture_type_list:
+                if fn[0].__self__.__class__.__name__ in fixture_type_list:
                     index = self._cleanups.index(fn)
                     parallel_cleanup_list.append(fn)
                     self._cleanups.pop(index)

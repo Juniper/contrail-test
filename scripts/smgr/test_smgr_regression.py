@@ -1,14 +1,15 @@
+from __future__ import absolute_import
 from tcutils.wrappers import preposttest_wrapper
 import os
 import sys
-from base import ServerManagerTest
+from .base import ServerManagerTest
 import test
 import fixtures
 import unittest
 import testtools
 from common.contrail_test_init import ContrailTestInit
 from smgr_common import SmgrFixture
-import smgr_upgrade_tests, smgr_inventory_monitoring_tests
+from . import smgr_upgrade_tests, smgr_inventory_monitoring_tests
 from fabric.api import settings, run
 import time
 import pdb

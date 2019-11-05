@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -27,9 +28,9 @@ from tcutils.util import *
 from fabric.api import run
 from fabric.state import connections
 from common.securitygroup.config import ConfigSecGroup
-import base 
+from . import base 
 import test
-from verify import VerifyFeatureTestCases
+from .verify import VerifyFeatureTestCases
 class UpgradeTestSanityWithResource(base.UpgradeBaseTest,VerifyFeatureTestCases):
     
     @classmethod

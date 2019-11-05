@@ -22,7 +22,7 @@ class ResetConfigBaseTest(test_v1.BaseTestCase_v1):
 class ResourceFactory:
     factories = {}
     def createResource(id):
-        if not ResourceFactory.factories.has_key(id):
+        if id not in ResourceFactory.factories:
             ResourceFactory.factories[id] = \
               eval(id + '.Factory()')
         return ResourceFactory.factories[id].create()

@@ -1,10 +1,11 @@
+from __future__ import absolute_import
 #
 # To run tests, you can do 'python -m testtools.run tests'. To run specific tests,
 # You can do 'python -m testtools.run -l tests'
 # Set the env variable PARAMS_FILE to point to your ini file. Else it will try to pick params.ini in PWD
 #
 import fixtures
-from base import BaseHeadlessVrouterTest
+from .base import BaseHeadlessVrouterTest
 from tcutils.topo import topo_helper
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.topo.sdn_topo_setup import sdnTopoSetupFixture
@@ -22,8 +23,8 @@ from traffic.core.stream import Stream
 from traffic.core.profile import create, ContinuousProfile
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
-import headless_vr_utils
-import test_headless_vrouter_topo
+from . import headless_vr_utils
+from . import test_headless_vrouter_topo
 from compute_node_test import *
 
 class TestHeadlessVrouter(BaseHeadlessVrouterTest):

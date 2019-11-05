@@ -1,7 +1,9 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import logging as LOG
 
 from tcutils.verification_util import *
-from vnc_api_results import *
+from .vnc_api_results import *
 
 LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 
@@ -415,7 +417,7 @@ class VNCApiInspect (VerificationUtilBase):
         # cache miss
         pp = None
         proj = self.get_cs_project(domain, project, refresh)
-        if proj and proj['project'].has_key('floating_ip_pool_refs'):
+        if proj and 'floating_ip_pool_refs' in proj['project']:
             myfip = proj.fip_list(fip_pool_name)
             if 1 == len(myfip):
                 pp = self.dict_get(myfip[0]['href'])
@@ -916,19 +918,19 @@ if __name__ == '__main__':
     polr = va.get_cs_policy()
     vnr = va.get_cs_vn(project='demo', vn='fe')
     vmvr = va.get_cs_instance_ip_of_vm("becd5f61-c446-4963-af5a-886138ce026f")
-    print r.project_list(), r.uuid(), r.name(), pr.fq_name(), ir.fq_name()
-    print polr.fq_name(), vnr.fq_name()
+    print(r.project_list(), r.uuid(), r.name(), pr.fq_name(), ir.fq_name())
+    print(polr.fq_name(), vnr.fq_name())
     import pprint
     pprint.pprint(vmvr)
     if vmvr:
-        print polr.fq_name(), vnr.vm_link_list(), vmvr.ip()
+        print(polr.fq_name(), vnr.vm_link_list(), vmvr.ip())
     fipr = va.get_cs_floating_ip_of_vm("bae09ef8-fcad-4aae-a36e-0969410daf8e")
     if fipr:
-        print fipr.ip()
-    print va.get_cs_routing_instances('3236c96e-38cf-40d9-94dd-7ec5495192f1')
-    print va.get_cs_route_targets_of_ri('97e53a4e-0d10-4c88-aec9-0ebb3e4471f6')
+        print(fipr.ip())
+    print(va.get_cs_routing_instances('3236c96e-38cf-40d9-94dd-7ec5495192f1'))
+    print(va.get_cs_route_targets_of_ri('97e53a4e-0d10-4c88-aec9-0ebb3e4471f6'))
     va = VNCApiInspect('10.84.11.2')
-    print va.get_cs_route_targets('6a454d59-aadb-4140-907f-1bd8b378a7ce')
+    print(va.get_cs_route_targets('6a454d59-aadb-4140-907f-1bd8b378a7ce'))
     # print va.get_cs_domain ('red-domain'),  va.get_cs_domain ('ted-domain')
     # print va.get_cs_project ('ted-domain', 'ted-eng')
     # print va.get_cs_ipam ('ted-domain', 'ted-eng', 'default-network-ipam')

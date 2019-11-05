@@ -1,9 +1,10 @@
+from __future__ import absolute_import
 from fabric.api import local
 from fabric.api import settings, run
 from tcutils.test_lib.test_utils import assertEqual
 import os
 import time
-from base import ServerManagerTest
+from .base import ServerManagerTest
 import test
 import fixtures
 from smgr_common import SmgrFixture

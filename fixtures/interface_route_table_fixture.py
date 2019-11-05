@@ -42,7 +42,7 @@ class InterfaceRouteTableFixture(vnc_api_test.VncLibFixture):
                 fq_name=fq_name)
             self.uuid = intf_rtb_obj.uuid
             return self.read()
-        except NoIdError, e:
+        except NoIdError as e:
             pass
         if self.inputs.is_gui_based_config():
             intf_rtb_obj = self.webui.create_intf_route_table(self)
@@ -73,7 +73,7 @@ class InterfaceRouteTableFixture(vnc_api_test.VncLibFixture):
                 id=self.uuid)
             self.logger.info('Reading existing InterfaceRouteTable with UUID '
                              '%s' % (self.uuid))
-        except NoIdError, e:
+        except NoIdError as e:
             self.logger.exception('UUID %s not found, unable to read '
                                   'InterfaceRouteTable' % (self.uuid))
             raise e

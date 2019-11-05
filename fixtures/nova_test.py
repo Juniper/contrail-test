@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 from common.openstack_libs import nova_client as mynovaclient
 from common.openstack_libs import nova_exception as novaException
@@ -66,7 +67,7 @@ class NovaHelper(object):
         self.images_info = parse_cfg_file('configs/images.cfg')
         self.flavor_info = parse_cfg_file('configs/flavors.cfg')
         self.hypervisor_type = os.environ.get('HYPERVISOR_TYPE') \
-                                if os.environ.has_key('HYPERVISOR_TYPE') \
+                                if 'HYPERVISOR_TYPE' in os.environ \
                                 else None
         self._nova_services_list = None
         self.hosts_list = []
@@ -128,7 +129,7 @@ class NovaHelper(object):
         # Populate hosts_dict
         self.logger.debug('Hosts: %s' %(self.hosts_dict))
 
-        if zone and self.hosts_dict and self.hosts_dict.has_key(zone):
+        if zone and self.hosts_dict and zone in self.hosts_dict:
             return self.hosts_dict[zone][:]
         else:
             return self.hosts_list
@@ -284,11 +285,11 @@ class NovaHelper(object):
                                     vcpus=flavor_info['vcpus'],
                                     ram=flavor_info['ram'],
                                     disk=flavor_info['disk'])
-                if flavor_info.has_key('server_type'):
+                if 'server_type' in flavor_info:
                    flavor_obj.set_keys({"server_type":flavor_info["server_type"]})
-                if flavor_info.has_key('arch'):
+                if 'arch' in flavor_info:
                    flavor_obj.set_keys({"arch":flavor_info["arch"]})
-                if flavor_info.has_key('capabilities'):
+                if 'capabilities' in flavor_info:
                    capabilities = flavor_info['capabilities']
                    capability = capabilities.split("=")
                    flavor_obj.set_keys({capability[0]:capability[1]})
@@ -303,7 +304,7 @@ class NovaHelper(object):
                 except novaException.Forbidden:
                     flavor = self.admin_obj.obj.flavors.find(name=name)
                 flavor.set_keys({'hw:mem_page_size': 'any'})
-        except Exception, e:
+        except Exception as e:
             self.logger.exception('Exception adding flavor %s' % (name))
             raise e
     # end _install_flavor
@@ -329,7 +330,7 @@ class NovaHelper(object):
         params = self._parse_image_params(image_info['params'])
         image = image_info['name']
         image_type = image_info['type']
-        if image_info.has_key('kernel_image'):
+        if 'kernel_image' in image_info:
            kernel_id  = self.get_image(image_info['kernel_image'])['id']
            ramdisk_id = self.get_image(image_info['ramdisk_image'])['id']
            params['kernel_id'] = kernel_id
@@ -660,7 +661,7 @@ class NovaHelper(object):
         with timeout(seconds=wait_time):
             try:
                 vm_obj.get()
-            except TimeoutError, e:
+            except TimeoutError as e:
                 self.logger.error('Timed out while getting VM %s detail' % (
                     vm_obj.name))
     # end get_vm_obj
@@ -676,7 +677,7 @@ class NovaHelper(object):
             else:
                 return True
         except novaException.ClientException:
-            print 'Fatal Nova Exception'
+            print('Fatal Nova Exception')
             self.logger.exception('Exception while getting vm detail')
             return False
     # end def

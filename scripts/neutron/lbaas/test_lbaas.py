@@ -216,7 +216,7 @@ class TestLbaas(BaseTestLbaas):
         self.logger.info("Try to delete the pool is use")
         try:
             self.quantum_h.delete_lb_pool(lb_pool['id'])
-        except NeutronClientException, e:
+        except NeutronClientException as e:
             self.logger.debug("Execption: (%s) raised while deleting the pool, as we"
                              " tried to delete the pool in use" % (e))
             errmsg = 'Request Failed: internal server error while processing your request'
@@ -556,7 +556,7 @@ class TestLbaas(BaseTestLbaas):
         self.logger.info("deleting the healthmonitor %s" % healthmonitor['id'])
         try:
             self.quantum_h.delete_health_monitor(healthmonitor['id'])
-        except NeutronClientException, e:
+        except NeutronClientException as e:
             self.logger.debug("Execption: (%s) raised while deleting the HM, as we"
                              " tried to delete the HM in use" % (e))
             errmsg = 'Request Failed: internal server error while processing your request'

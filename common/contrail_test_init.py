@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import re
 import sys
@@ -880,7 +881,7 @@ class TestInputs(object):
                 hw_to_logical_map_list = [{hw_queue_list[x]:logical_queue_list[x].split(",")} for \
                                      x in range(0,len(hw_queue_list))]
                 qos_queue_per_host = [host_ip , hw_to_logical_map_list]
-        except KeyError, e:
+        except KeyError as e:
             pass
         try:
             if vrouter_data_dict['PRIORITY_ID']:
@@ -899,7 +900,7 @@ class TestInputs(object):
                                         x in range(0,len(priority_id_list))]
                 qos_queue_pg_properties_per_host = [host_ip ,
                                                      pg_properties_list]
-        except KeyError, e:
+        except KeyError as e:
             pass
         return (qos_queue_per_host, qos_queue_pg_properties_per_host)
 
@@ -1035,7 +1036,7 @@ class ContrailTestInit(object):
     # end __init__
 
     def is_ci_setup(self):
-        if os.environ.has_key('ci_image'):
+        if 'ci_image' in os.environ:
             return True
         else:
             return False
@@ -1157,7 +1158,7 @@ class ContrailTestInit(object):
 
     def reboot(self, server_ip):
         i = socket.gethostbyaddr(server_ip)[0]
-        print "rebooting %s" % i
+        print("rebooting %s" % i)
         if server_ip in self.host_data.keys():
             username = self.host_data[server_ip]['username']
             password = self.host_data[server_ip]['password']
@@ -1522,8 +1523,8 @@ class ContrailTestInit(object):
         #command_to_push.append("set routing-instances %s routing-options static route 0.0.0.0/0 next-hop %s" %(ri_name, ri_gateway))
         # command_to_push.append("commit")
 
-        print "Final commad will be pushed to MX"
-        print "%s" % command_to_push
+        print("Final commad will be pushed to MX")
+        print("%s" % command_to_push)
 
         # for command in command_to_push:
         #    output = self.run_cmd_on_server(mx_ip,command,mx_user,mx_password)
@@ -1547,8 +1548,8 @@ class ContrailTestInit(object):
         command_to_push.append("delete protocols bgp group %s" % (bgp_group))
         command_to_push.append("commit")
 
-        print "Final commad will be pushed to MX"
-        print "%s" % command_to_push
+        print("Final commad will be pushed to MX")
+        print("%s" % command_to_push)
 
         for command in command_to_push:
             output = self.run_cmd_on_server(
@@ -1595,7 +1596,7 @@ class ContrailTestInit(object):
             else
                 Returns 'cirros' image name
         '''
-        if not os.environ.has_key('ci_image'):
+        if 'ci_image' not in os.environ:
             return None
         if image_name in CI_IMAGES:
             return image_name

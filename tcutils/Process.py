@@ -1,3 +1,4 @@
+from __future__ import print_function
 from multiprocessing import TimeoutError, Pool
 from copy_reg import pickle
 import threading
@@ -27,9 +28,9 @@ def wrapper(func):
     return inner
 
 def _pickle_method(method):
-    func_name = method.im_func.__name__
-    obj = method.im_self
-    cls = method.im_class
+    func_name = method.__func__.__name__
+    obj = method.__self__
+    cls = method.__self__.__class__
     return _unpickle_method, (func_name, obj, cls)
 def _unpickle_method(func_name, obj, cls):
     for cls in cls.mro():
@@ -72,15 +73,15 @@ def _pickle_func(func):
     modules = dict()
     supported_types = [v for k, v in types.__dict__.iteritems()
                        if k.endswith('Type')]
-    for k,v in func.func_globals.iteritems():
+    for k,v in func.__globals__.iteritems():
          if type(v) in supported_types:
              fn_glob[k] = v
          if type(v) == types.ModuleType:
              modules.update({k: v.__name__})
              del fn_glob[k]
-    return _unpickle_func, (marshal.dumps(func.func_code), fn_glob, modules,
-                            func.func_name, func.func_defaults,
-                            func.func_closure, func.func_dict)
+    return _unpickle_func, (marshal.dumps(func.__code__), fn_glob, modules,
+                            func.__name__, func.__defaults__,
+                            func.__closure__, func.__dict__)
 
 def _unpickle_func(code_string, fn_glob, modules, func_name,
                    func_defaults, func_closure, func_dict):
@@ -117,10 +118,10 @@ def multi_process(target, *args, **kwargs):
             res.append(result.get(timeout=timeout))
         except TimeoutError as e:
             LOG.logger.error('Task overrun %d secs and timedout'%timeout)
-            print 'Task overrun %d secs and timedout'%timeout
+            print('Task overrun %d secs and timedout'%timeout)
         except Exception as e:
             LOG.logger.error('Exception in a task: %s %s'%(type(e).__name__, str(e)))
-            print 'Exception in a task:', type(e).__name__, str(e)
+            print('Exception in a task:', type(e).__name__, str(e))
     pool.terminate() # Terminate the pool to delete the task overrun processes
     pool.join()
     if len(res) != n_instances:

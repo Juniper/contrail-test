@@ -1,3 +1,4 @@
+from __future__ import print_function
 import time
 import random
 import uuid
@@ -1181,12 +1182,12 @@ class VcenterVM:
             try:
                 vcenter.run_a_command(vm_id,user,password,cmd_path,args)
             except Exception as e:
-                print e
+                print(e)
             args = 'dhclient %s'%(intf)
             try:
                 vcenter.run_a_command(vm_id,user,password,cmd_path,args)
             except Exception as e:
-                print e
+                print(e)
         time.sleep(20)
 
 class VcenterAuth(OrchestratorAuth):

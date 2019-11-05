@@ -1,3 +1,4 @@
+from __future__ import print_function
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -97,7 +98,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
                 self.vn_keylist.append(vn_name)
                 self.vn_valuelist.append(vn_obj)
             except Exception as e:
-                print e
+                print(e)
                 raise
         count = 0
 
@@ -133,7 +134,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
             self.vm_per_vn_dict = dict(
                 zip(self.vn_keylist, self.vm_per_vn_list))
         except Exception as e:
-            print e
+            print(e)
         for thread in self.vm_threads:
             time.sleep(1)
             thread.start()
@@ -158,7 +159,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
                 if not vn_obj.verify_result:
                     result = result and False
         except Exception as e:
-            print e
+            print(e)
             result = result and False
         finally:
             return result
@@ -180,7 +181,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
                 if not vm_fix.verify_vm_flag:
                     result = result and False
         except Exception as e:
-            print e
+            print(e)
             result = result and False
         finally:
             return result
@@ -202,7 +203,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
                 if not vm_fix.verify_vm_flag:
                     result = result and False
         except Exception as e:
-            print e
+            print(e)
             result = result and False
         finally:
             return result
@@ -218,7 +219,7 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
         vn_thread_to_delete = []
         try:
             for vm_fix in self.vm_valuelist:
-                print 'deleteing vm'
+                print('deleteing vm')
                 t = threading.Thread(target=vm_fix.cleanUp, args=())
                 vm_thread_to_delete.append(t)
             if vm_thread_to_delete:
@@ -228,17 +229,17 @@ class create_multiple_vn_and_multiple_vm_fixture(fixtures.Fixture):
             for vm_thread in vm_thread_to_delete:
                 vm_thread.join()
         except Exception as e:
-            print e
+            print(e)
         time.sleep(10)
 
         try:
             for vn_name, vn_obj in self.vn_obj_dict.items():
                 vn_obj.cleanUp()
         except Exception as e:
-            print e
+            print(e)
         try:
             for vn_name, vn_obj in self.vn_obj_dict.items():
                 assert vn_obj.verify_not_in_result
         except Exception as e:
-            print e
+            print(e)
         super(create_multiple_vn_and_multiple_vm_fixture, self).cleanUp()

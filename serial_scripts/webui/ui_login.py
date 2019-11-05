@@ -1,6 +1,7 @@
+from __future__ import absolute_import
 from selenium import webdriver
 from pyvirtualdisplay import Display
-from webui_common import *
+from .webui_common import *
 from selenium.common.exceptions import WebDriverException
 import os
 import time

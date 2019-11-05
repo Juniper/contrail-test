@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from fixtures import Fixture
 from user_test import UserFixture
 from multiple_vn_vm_test import *
@@ -7,7 +8,7 @@ from common.connections import *
 import time,random
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import *
-from base import *
+from .base import *
 from vcenter import *
 import test
 from collections import defaultdict

@@ -1,3 +1,4 @@
+from __future__ import print_function
 from fabric.operations import sudo, run, get, put, env
 import paramiko
 import time
@@ -74,10 +75,10 @@ def wait_for_ssh(timeout=5):
         # failed. So, better run a ssh cmd here itself before proceeding
         client.exec_command('ls > /dev/null')
         client.close()
-    except Exception, e:
+    except Exception as e:
         client.close()
         return "False"
-    print "True"
+    print("True")
     return "True"
 # end wait_for_ssh
 
@@ -91,13 +92,13 @@ def verify_socket_connection(port=22):
         s.settimeout(2)
         s.connect((host, int(port)))
         s.shutdown(2)
-        print "Port %s reachable for host %s" % (str(port), host)
-        print "True"
+        print("Port %s reachable for host %s" % (str(port), host))
+        print("True")
         return "True"
     except socket.error as e:
-        print "Error on connect: %s" % e
-        print "Port %s NOT reachable for host %s" % (host, str(port))
-        print "False"
+        print("Error on connect: %s" % e)
+        print("Port %s NOT reachable for host %s" % (host, str(port)))
+        print("False")
         return "False"
     s.close()
 # end verify_socket_connection

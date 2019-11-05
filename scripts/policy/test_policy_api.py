@@ -1,4 +1,5 @@
-from base import BasePolicyTest
+from __future__ import absolute_import
+from .base import BasePolicyTest
 
 from vn_test import *
 from vm_test import *
@@ -267,7 +268,7 @@ class TestApiPolicyFixture01(BasePolicyTest):
         topology_class_name = None
         #
         # Get config for test from topology
-        import sdn_basic_topology_api
+        from . import sdn_basic_topology_api
         result = True
         msg = []
         if not topology_class_name:
@@ -527,7 +528,7 @@ class TestApiPolicyFixture02(BasePolicyTest):
         topology_class_name = None
         #
         # Get config for test from topology
-        import sdn_basic_topology_api
+        from . import sdn_basic_topology_api
         result = True
         msg = []
         #topology_class_name= eval("self.topology")

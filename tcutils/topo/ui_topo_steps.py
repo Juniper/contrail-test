@@ -1,8 +1,9 @@
 ''' This module provides utils for setting up sdn topology given the ui topo inputs'''
+from __future__ import absolute_import
 import os
 import copy
 import fixtures
-import topo_steps
+from . import topo_steps
 from common.contrail_test_init import ContrailTestInit
 from common.connections import ContrailConnections
 from contrail_fixtures import *

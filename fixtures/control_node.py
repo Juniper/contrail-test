@@ -1,3 +1,4 @@
+from __future__ import print_function
 import fixtures
 from ipam_test import *
 from vn_test import *
@@ -300,7 +301,7 @@ class CNFixture(fixtures.Fixture):
             vnc.bgp_router_update(ctrl_node)
             return True
         except Exception as e:
-            print e
+            print(e)
             return False
     
     def unset_cluster_id(self):
@@ -315,4 +316,4 @@ class CNFixture(fixtures.Fixture):
                 ctrl_node.set_bgp_router_parameters(params)
                 vnc.bgp_router_update(ctrl_node)
         except Exception as e:
-            print e
+            print(e)

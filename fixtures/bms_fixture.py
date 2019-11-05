@@ -66,7 +66,7 @@ class BMSFixture(fixtures.Fixture):
             self.ironic_node_id = self.ironic_node_obj.uuid
           else:
             self.ironic_node_obj = self.connections.ironic_h.obj.node.get(self.name)
-        except Exception,e:
+        except Exception as e:
             self.ironic_node_obj = None
 
     def create_bms_node(self,ironic_node_name,port_list,driver_info,properties):

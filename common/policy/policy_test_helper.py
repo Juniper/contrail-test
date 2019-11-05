@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import copy
 import traceback
@@ -315,7 +316,7 @@ def tx_quantum_rules_to_aces(no_of_rules, fq_vn):
             new_rule['src_port_l'], new_rule['dst_port_l'] = new_rule[
                 'dst_port_l'], new_rule['src_port_l']
 
-            if new_rule.has_key('action_l') and new_rule['action_l'][0].has_key('apply_service'):
+            if 'action_l' in new_rule and 'apply_service' in new_rule['action_l'][0]:
                 if rule['src'] == fq_vn:
                     new_rule['action_l'][0]['apply_service'] = []
                 if rule['dst'] == fq_vn:
@@ -367,7 +368,7 @@ def comp_user_rules_to_system_rules(
         got_vm_name = inspect_h.get_vna_tap_interface_by_vm(
             str(all_vms[vm].id))
         if got_vm_name:
-            print "checking for vn %s in compute %s" % (vn, compNode)
+            print("checking for vn %s in compute %s" % (vn, compNode))
             vn_fq_name = inspect_h.get_vna_vn(
                 vn_name=vn, project=project_name)['name']
             vna_acl = inspect_h.get_vna_acl_by_vn(vn_fq_name)

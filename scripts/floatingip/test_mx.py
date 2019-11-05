@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import absolute_import
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -14,7 +16,7 @@ import fixtures
 import testtools
 import socket
 import test
-import base
+from . import base
 from common.contrail_test_init import ContrailTestInit
 from vn_test import *
 from quantum_test import *
@@ -469,7 +471,7 @@ class TestSanity_MX(base.FloatingIpBaseTest):
         cmd_to_output1 = [j]
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output1)
         output1 = vm1_fixture.return_output_cmd_dict[j]
-        print output1
+        print(output1)
 
         for ips in list_of_ips:
             if ips not in output1:

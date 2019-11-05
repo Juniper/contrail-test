@@ -201,7 +201,7 @@ class QFXFixture(ToRFixture, AbstractToR):
         stmts.append('delete protocols ovsdb')
         try:
             self.tor_session.config(stmts, ignore_errors=True)
-        except ConfigLoadError,e:
+        except ConfigLoadError as e:
             self.logger.debug('No ovsdb config present to delete..ok')
 
     def config_ovsdb(self):

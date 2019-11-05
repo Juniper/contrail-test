@@ -1,3 +1,4 @@
+from __future__ import print_function
 import fixtures
 import testtools
 import os
@@ -52,7 +53,7 @@ class SolnSetup(fixtures.Fixture):
                     'subnet'] = self.inputs.vgw_data[0][key][vgw]['ipam-subnets']
                 self.vgw_vn_list[self.inputs.vgw_data[0]
                                  [key][vgw]['vn']]['host'] = key
-                if self.inputs.vgw_data[0][key][vgw].has_key('gateway-routes'):
+                if 'gateway-routes' in self.inputs.vgw_data[0][key][vgw]:
                     self.vgw_vn_list[self.inputs.vgw_data[0][key][vgw]['vn']][
                         'route'] = self.inputs.vgw_data[0][key][vgw]['gateway-routes']
 
@@ -70,7 +71,7 @@ class SolnSetup(fixtures.Fixture):
             project_name=self.inputs.project_name, connections=self.connections, inputs=self.inputs, vn_name='VN-Private', subnets=['10.10.10.0/24']))
 
     def tearDown(self):
-        print "Tearing down resources"
+        print("Tearing down resources")
         super(SolnSetup, self).cleanUp()
 
     def dirtied(self):
@@ -86,7 +87,7 @@ class _SolnSetupResource(TestResource):
     # end make
 
     def clean(self, base_setup):
-        print "Am cleaning up here"
+        print("Am cleaning up here")
 #        super(_SolnSetupResource,self).clean()
         base_setup.tearDown()
     # end

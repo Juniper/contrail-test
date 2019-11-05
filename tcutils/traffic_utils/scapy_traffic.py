@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import os
 import sys
 
@@ -7,7 +8,7 @@ from traffic.core.helpers import Host, Sender, Receiver
 from traffic.core.profile import StandardProfile,\
     ContinuousProfile
 from tcutils.util import get_random_name
-from base_traffic import *
+from .base_traffic import *
 
 class Scapy(BaseTraffic):
 

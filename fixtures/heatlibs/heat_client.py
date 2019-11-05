@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import sys
 import argparse
@@ -146,20 +147,20 @@ class HeatCli:
         self.stack_name = kwargs['stack_name']
         if not self.wait_for_task('create', self.heat_client, self.stack_name):
             self.logger.error("Stack create failed..")
-            print 'Stack create FAILED'
+            print('Stack create FAILED')
         self.id = get_stack_id(self.heat_client, self.stack_name)
         self.outputs = get_stack_outputs(
             self.heat_client, self.stack_name)
-        print 'Stack create SUCCESS'
+        print('Stack create SUCCESS')
 
     def delete_stack(self, project, stack_id, **kwargs):
         cmd = 'heat -d --os-project-name ' + project + ' --os-auth-token ' + self.token + \
             ' --os-auth-url ' + self.auth_url + ' stack-delete ' + stack_id
         self.execute_command(cmd)
         if not self.wait_for_delete(self.heat_client, stack_id):
-            print 'Stack delete FAILED'
+            print('Stack delete FAILED')
         else:
-            print 'Stack delete SUCCESS'
+            print('Stack delete SUCCESS')
              
 
     def update_stack(self):
