@@ -13,6 +13,7 @@ from traffic.core.profile import create, ContinuousProfile, ContinuousSportRange
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
+from fabric.state import connections as fab_connections
 from common.servicechain.verify import VerifySvcChain
 from tcutils.tcpdump_utils import *
 
@@ -20,6 +21,7 @@ from tcutils.tcpdump_utils import *
 class ECMPTraffic(VerifySvcChain):
 
     def verify_traffic_flow(self, src_vm, dst_vm_list, si_fix, src_vn, src_ip=None, dst_ip=None, ecmp_hash=None, flow_count=3):
+        fab_connections.clear()
         src_ip = src_vm.vm_ip
         if dst_ip == None:
             dst_ip = dst_vm_list[0].vm_ip

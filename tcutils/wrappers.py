@@ -87,7 +87,7 @@ def preposttest_wrapper(function):
                 log.info('-' * 80)
                 self.validate_post_upgrade()
         except KeyboardInterrupt:
-            pass
+            raise
         except (TestSkipped, v4OnlyTestException), msg:
             testskip = True
             log.info(msg)
@@ -99,8 +99,8 @@ def preposttest_wrapper(function):
             if self.inputs.stop_on_fail:
                 print test_fail_trace
                 print "Failure occured; Stopping test for debugging."
-                import remote_pdb;
-                remote_pdb.set_trace()
+                import pdb
+                pdb.set_trace()
         finally:
             cleanupfail = None
             cleanup_trace = ''

@@ -9,8 +9,6 @@ from time import sleep
 
 NETCAT = 'netcat'
 SCAPY = 'scapy'
-SOCKET = 'socket'
-SUPPORTED_TOOLS = [NETCAT, SCAPY, SOCKET]
 TCP = 'tcp'
 UDP = 'udp'
 
@@ -20,7 +18,7 @@ class BaseTraffic():
     @staticmethod
     def factory(tool=None, proto=None):
 
-        if tool and tool not in SUPPORTED_TOOLS:
+        if tool and not (tool == NETCAT or tool == SCAPY):
             # tool not supported, return False
             return False
 
@@ -35,6 +33,3 @@ class BaseTraffic():
         elif tool == SCAPY:
             from scapy_traffic import Scapy 
             return Scapy()
-        elif tool == SOCKET:
-            from socket_traffic import SocketTrafficUtil
-            return SocketTrafficUtil()

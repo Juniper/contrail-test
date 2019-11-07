@@ -200,7 +200,7 @@ class TestInputs(object):
             return self.host_data[host]['ips']
         username = self.host_data[host]['username']
         password = self.host_data[host]['password']
-        ips = get_ips_of_host(self.get_host_ip(host), nic=nic,
+        ips = get_ips_of_host(host, nic=nic,
                           username=username,
                           password=password,
                           as_sudo=True,
@@ -212,17 +212,17 @@ class TestInputs(object):
     def _get_ip_for_service(self, host, service):
         host_dict = self.host_data[host]
         if service.lower() == 'vrouter':
-            ip = self.get_ips_of_host(host, 'vhost0')[0]
-            self.host_data[host]['control_data_ip'] = ip
-            return ip
+            return self.get_ips_of_host(host, 'vhost0')[0]
         elif service.lower() == 'control':
-            ip_list = self.contrail_configs.get('CONTROL_NODES') or \
-                self.contrail_configs.get('CONTROLLER_NODES') or ''
-            ips = self.get_ips_of_host(host)
-            for ip in ip_list.split(','):
-                if ip in ips:
-                    self.host_data[host]['control_data_ip'] = ip
-                    return ip
+            ip_list = self.contrail_configs.get('CONTROL_NODES')
+            if not ip_list:
+                return
+            else:
+                ips = self.get_ips_of_host(host)
+                for ip in ip_list.split(','):
+                    if ip in ips:
+                        self.host_data[host]['control_data_ip'] = ip
+                        return ip
         elif service.lower() == 'openstack':
             nic = host_dict['roles']['openstack'].get('network_interface') \
                   if host_dict['roles']['openstack'] else \
@@ -1093,8 +1093,8 @@ class ContrailTestInit(object):
             if failed_services:
                 self.logger.debug('Not all services up. '
                    'Sleeping for %s seconds. iteration: %s' %(delay, i))
-                if i+1 < tries:
-                    time.sleep(delay)
+                time.sleep(delay)
+                continue
             else:
                 return (True, status_dict)
         self.logger.error(

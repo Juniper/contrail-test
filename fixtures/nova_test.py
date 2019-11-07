@@ -245,8 +245,6 @@ class NovaHelper(object):
 
 
     def get_vm_if_present(self, vm_name=None, project_id=None, vm_id=None):
-        if vm_id:
-            return self.get_vm_by_id(vm_id)
         try:
             vm_list = self.obj.servers.list(search_opts={"all_tenants": True})
         except novaException.Forbidden:
@@ -259,7 +257,7 @@ class NovaHelper(object):
         for vm in vm_list:
             if project_id and vm.tenant_id != self.strip(project_id):
                 continue
-            if (vm_name and vm.name == vm_name):
+            if (vm_name and vm.name == vm_name) or (vm_id and vm.id == vm_id):
                 return vm
         return None
     # end get_vm_if_present
@@ -681,7 +679,7 @@ class NovaHelper(object):
             return False
     # end def
 
-    @retry(tries=10, delay=5)
+    @retry(tries=1, delay=60)
     def _get_vm_ip(self, vm_obj, vn_name=None):
         ''' Returns a list of IPs for the VM in VN.
 
@@ -758,7 +756,7 @@ class NovaHelper(object):
                     if hypervisor.hypervisor_type == 'QEMU' or \
                         hypervisor.hypervisor_type == 'docker':
                         host_name = vm_obj.__dict__['OS-EXT-SRV-ATTR:host']
-                        return host_name and self.get_host_name(host_name)
+                        return self.get_host_name(host_name)
                     if 'VMware' in hypervisor.hypervisor_type:
                         host_name = vcenter_libs.get_contrail_vm_by_vm_uuid(self.inputs,vm_obj.id)
                         return host_name
@@ -766,8 +764,6 @@ class NovaHelper(object):
                 if vm_obj.__dict__['OS-EXT-STS:vm_state'] == "error":
                     self.logger.error('VM %s has failed to come up' %vm_obj.name)
                     self.logger.error('Fault seen in nova show <vm-uuid> is:  %s' %vm_obj.__dict__['fault'])
-                    assert False, 'Fault seen in nova show %s is:  %s' %(
-                        vm_obj.id, vm_obj.__dict__['fault'])
                 else:
                     self.logger.error('VM %s has failed to come up' %vm_obj.name)
                 self.logger.error('Nova failed to get host of the VM')
