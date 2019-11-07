@@ -1,4 +1,3 @@
-from __future__ import print_function
 import os
 import re
 import sys
@@ -64,9 +63,9 @@ class BTTracker:
             self._read_ignore_tbs_input_file()
 
         self._remove_result_files()
-        print('Traceback details will be in %s' % (self.tb_file))
-        print('Ignored Traceback details will be in %s' % (self.ignored_tb_file))
-        print('Traceback parse errors will be in %s' % (self.parse_failure_file))
+        print 'Traceback details will be in %s' % (self.tb_file)
+        print 'Ignored Traceback details will be in %s' % (self.ignored_tb_file)
+        print 'Traceback parse errors will be in %s' % (self.parse_failure_file)
 
     def _read_ignore_tbs_input_file(self):
         if not self.ignore_tbs_input_file:
@@ -290,9 +289,9 @@ class BTTracker:
                     else:
                         self.file_write(self.ignored_tb_file, entry)
                     if len(result) > MAX_BTS:
-                        print('Too many backtraces...giving up')
+                        print 'Too many backtraces...giving up'
                         sys.exit()
-        print('Done looking for tracebacks')
+        print 'Done looking for tracebacks'
         return result
     # end search
 

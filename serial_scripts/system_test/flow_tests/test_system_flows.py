@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from serial_scripts.system_test.flow_tests.base import BaseFlowTest
 from floating_ip import *
 from tcutils.topo.topo_helper import *
@@ -8,13 +7,13 @@ import time
 import datetime
 import threading
 import socket
-from . import flow_test_utils
+import flow_test_utils
 from compute_node_test import ComputeNodeFixture
-from . import system_test_topo
-from . import sdn_flow_test_topo_multiple_projects
+import system_test_topo
+import sdn_flow_test_topo_multiple_projects
 from tcutils.test_lib.test_utils import assertEqual, get_ip_list_from_prefix
 import math
-from .system_flows_config import config_topo_single_proj
+from system_flows_config import config_topo_single_proj
 
 
 class TestFlowSingleProj(BaseFlowTest, flow_test_utils.VerifySvcMirror):
@@ -155,7 +154,7 @@ class TestFlowSingleProj(BaseFlowTest, flow_test_utils.VerifySvcMirror):
         # so NAT flow is calculated at 70% of the average flow setup rate
         # defined.
         RelVer = build_version.split('-')[1]
-        from . import ReleaseToFlowSetupRateMapping
+        import ReleaseToFlowSetupRateMapping
         #from ReleaseToFlowSetupRateMapping import *
         try:
             DefinedSetupRate = ReleaseToFlowSetupRateMapping.expected_flow_setup_rate['policy'][RelVer]

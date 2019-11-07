@@ -1,4 +1,3 @@
-from __future__ import print_function
 # Converts log files(typically in contrail-test/logs/ folder) 
 # to css-based html files
 # 
@@ -41,7 +40,7 @@ skip_files = ['introspect.log']
 for filename in glob.glob('%s/*.log' % (logdir)):
     if filename in skip_files:
         continue
-    print(filename)
+    print filename
     create_css_file(logdir)
     write_html_file(filename)
 

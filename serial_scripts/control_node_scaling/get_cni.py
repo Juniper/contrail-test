@@ -1,12 +1,10 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import time
 import sys
 import os
 import re
-from .commands import Command
-from .cn_introspect_bgp import ControlNodeInspect
-from .ssh_interactive_commnds import *
+from commands import Command
+from cn_introspect_bgp import ControlNodeInspect
+from ssh_interactive_commnds import *
 from netaddr import *
 from datetime import datetime
 from pytz import timezone
@@ -68,7 +66,7 @@ if __name__ == '__main__':
     # Testing...
 
     npeers = cn.get_cn_bgp_neighbor_stats_element('count', 'xmpp', 'up')
-    print("no instance specified,  num xmpp peers:", npeers)
+    print "no instance specified,  num xmpp peers:", npeers
 
     #it = 'default-domain:demo:c42_t41_block42_n1:c42_t41_block42_n1'
     #npeers = cn.get_cn_bgp_neighbor_stats_element('count', 'xmpp', 'up', it)
@@ -104,7 +102,7 @@ if __name__ == '__main__':
                 instance_name, family, 'infeasible_paths')
             status, pending_updates = cn.get_cn_routing_instance_table_element(
                 instance_name, family, 'pending_updates')
-            print("INST NAME:%s num peers:%s nprefixes:%s paths:%s primary_paths:%s secondary_paths:%s infeasible_paths:%s pending updates:%s" % (instance_name, npeers, nprefixes, paths, primary_paths, secondary_paths, infeasible_paths, pending_updates))
+            print "INST NAME:%s num peers:%s nprefixes:%s paths:%s primary_paths:%s secondary_paths:%s infeasible_paths:%s pending updates:%s" % (instance_name, npeers, nprefixes, paths, primary_paths, secondary_paths, infeasible_paths, pending_updates)
 
     # End test cleanup
     fd.close()

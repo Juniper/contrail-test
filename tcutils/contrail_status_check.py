@@ -3,11 +3,10 @@
 #   'Node': '10.204.217.11',
 #   'Service': 'contrail-schema'}]
 
-from __future__ import absolute_import
 import re
 import time
 import sys
-from .contrail_status import contrail_status
+from contrail_status import contrail_status
 from collections import defaultdict
 
 class ContrailStatusChecker(object):

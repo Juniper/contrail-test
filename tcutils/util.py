@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import math
 import subprocess
 import os
@@ -21,7 +19,7 @@ import random
 import fcntl
 import socket
 import struct
-from .fabutils import *
+from fabutils import *
 from fabric.exceptions import CommandTimeout, NetworkError
 from fabric.contrib.files import exists
 from fabric.context_managers import settings, hide, cd, lcd
@@ -32,7 +30,7 @@ import ConfigParser
 from testtools.testcase import TestSkipped
 import functools
 import testtools
-from .fabfile import *
+from fabfile import *
 import ast
 
 sku_dict = {'2014.1': 'icehouse', '2014.2': 'juno', '2015.1': 'kilo', '12': 'liberty', '13': 'mitaka',
@@ -116,7 +114,7 @@ def web_invoke(httplink, logger = None):
     try:
         cmd = 'curl ' + httplink
         output = subprocess.check_output(cmd, shell=True)
-    except Exception as e:
+    except Exception, e:
         output = None
         logger.debug(e)
         return output
@@ -237,7 +235,7 @@ def wait_for_ssh_on_node(host_string, password=None, logger=None):
     try:
         with settings(host_string=host_string, password=password):
             fab_connections.connect(host_string)
-    except Exception as e:
+    except Exception, e:
         # There can be different kinds of exceptions. Catch all
         logger.debug('Host: %s, password: %s Unable to connect yet. Got: %s' % (
             host_string, password, e))
@@ -249,7 +247,7 @@ def wait_for_ssh_on_node(host_string, password=None, logger=None):
 def safe_sudo(cmd, timeout=30, pty=True):
     try:
         output = sudo(cmd, timeout=timeout, pty=pty)
-    except ChannelException as e:
+    except ChannelException, e:
         # Handle too many concurrent sessions
         if 'Administratively prohibited' in str(e):
             time.sleep(random.randint(1, 5))
@@ -262,7 +260,7 @@ def safe_sudo(cmd, timeout=30, pty=True):
 def safe_run(cmd, timeout=30):
     try:
         output = run(cmd, timeout=timeout)
-    except ChannelException as e:
+    except ChannelException, e:
         # Handle too many concurrent sessions
         if 'Administratively prohibited' in str(e):
             time.sleep(random.randint(1, 5))
@@ -293,7 +291,7 @@ def sshable(host_string, password=None, gateway=None, gateway_password=None,
                 logger.debug("Error on ssh to %s, result: %s %s" % (host_string,
                     result, result.__dict__))
                 return False
-        except CommandTimeout as e:
+        except CommandTimeout, e:
             logger.debug('Could not ssh to %s ' % (host_string))
             return False
 
@@ -359,7 +357,7 @@ class threadsafe_iterator:
 
     def next(self):
         with self.lock:
-            return next(self.it)
+            return self.it.next()
 # end threadsafe_iterator
 
 
@@ -1029,7 +1027,7 @@ def skip_because(*args, **kwargs):
                     if self.inputs.metadata_ssl_enable is False:
                         msg = "Skipped as metadata_ssl_enable is not set to True."
                         check_metadata=1
-                except Exception as e:
+                except Exception, e:
                     msg = "Skipped as metadata_ssl_enable is not defined in testbed file."
                     check_metadata=1
                 if check_metadata == 1:
@@ -1093,7 +1091,7 @@ def get_build_sku(openstack_node_ip, openstack_node_password='c0ntrail123', user
                                               password=openstack_node_password):
                 output = sudo(cmd)
                 build_sku = sku_dict[re.findall("[0-9]+",output)[0]]
-        except NetworkError as e:
+        except NetworkError, e:
             pass
         return build_sku
 

@@ -1,4 +1,3 @@
-from __future__ import print_function
 import test_v1
 from common import isolated_creds
 from vn_test import *
@@ -181,8 +180,8 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
         for i in range(3):
             sport = sport 
             dport = dport + i
-            print('count=%s' % (count))
-            print('dport=%s' % (dport))
+            print 'count=%s' % (count)
+            print 'dport=%s' % (dport)
 
             self.logger.info("Creating streams...")
             stream = Stream(
@@ -214,7 +213,7 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
             sender.start()
             sender.stop()
             receiver.stop()
-            print(sender.sent, receiver.recv)
+            print sender.sent, receiver.recv
             time.sleep(1)
     #end setup_create_streams
             
@@ -583,7 +582,7 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
 class ResourceFactory:
     factories = {}
     def createResource(id):
-        if id not in ResourceFactory.factories:
+        if not ResourceFactory.factories.has_key(id):
             ResourceFactory.factories[id] = \
               eval(id + '.Factory()')
         return ResourceFactory.factories[id].create()

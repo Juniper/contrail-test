@@ -1,4 +1,3 @@
-from __future__ import print_function
 from fabric.api import local, run
 from fabric.context_managers import shell_env, settings
 import time
@@ -17,8 +16,8 @@ class EC2Base(object):
         self.openstack_ip = self.inputs.openstack_ip
         self.os_username = self.inputs.host_data[self.openstack_ip]['username']
         self.os_password = self.inputs.host_data[self.openstack_ip]['password']
-        print("------------", self.username, self.password, self.tenant)
-        print("+++++++++++", inputs.stack_user, inputs.stack_password)
+        print "------------", self.username, self.password, self.tenant
+        print "+++++++++++", inputs.stack_user, inputs.stack_password
         self.auth_url = self.inputs.auth_url
 
         if not self._set_ec2_keys(tenant):

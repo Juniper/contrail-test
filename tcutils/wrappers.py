@@ -1,6 +1,4 @@
 """ Module wrrapers that can be used in the tests."""
-from __future__ import print_function
-from __future__ import absolute_import
 
 import traceback, os, signal
 from functools import wraps
@@ -11,7 +9,7 @@ from datetime import datetime
 from tcutils.util import v4OnlyTestException
 from tcutils.test_lib.contrail_utils import check_xmpp_is_stable
 
-from .cores import *
+from cores import *
 
 def detailed_traceback():
     buf = cStringIO.StringIO()
@@ -90,17 +88,17 @@ def preposttest_wrapper(function):
                 self.validate_post_upgrade()
         except KeyboardInterrupt:
             pass
-        except (TestSkipped, v4OnlyTestException) as msg:
+        except (TestSkipped, v4OnlyTestException), msg:
             testskip = True
             log.info(msg)
             result = True
             raise
-        except Exception as testfail:
+        except Exception, testfail:
             test_fail_trace = detailed_traceback()
             # Stop the test in the fail state for debugging purpose
             if self.inputs.stop_on_fail:
-                print(test_fail_trace)
-                print("Failure occured; Stopping test for debugging.")
+                print test_fail_trace
+                print "Failure occured; Stopping test for debugging."
                 import remote_pdb;
                 remote_pdb.set_trace()
         finally:
@@ -114,7 +112,7 @@ def preposttest_wrapper(function):
                     cleanup(*args, **kwargs)
                 except KeyboardInterrupt:
                     raise
-                except Exception as cleanupfail:
+                except Exception, cleanupfail:
                     #result.addError(self, sys.exc_info())
                     cet, cei, ctb = sys.exc_info()
                     formatted_traceback = ''.join(traceback.format_tb(ctb))

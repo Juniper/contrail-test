@@ -1,4 +1,3 @@
-from __future__ import print_function
 from common.neutron.base import BaseNeutronTest
 from tcutils.util import get_random_name, retry
 from tcutils.traffic_utils.base_traffic import BaseTraffic, SCAPY
@@ -197,7 +196,7 @@ class BaseDataPathEncryption(BaseNeutronTest):
         before_src, before_dst = self.get_crypt_stats(src_vrouter, dst_vrouter)
         self.verify_traffic(src_vm, dst_vm, proto, **kwargs)
         after_src, after_dst = self.get_crypt_stats(src_vrouter, dst_vrouter)
-        print(before_src, before_dst, after_src, after_dst)
+        print before_src, before_dst, after_src, after_dst
         if encrypt:
             assert (before_src != after_src) and (before_dst != after_dst)
         else:
@@ -220,6 +219,6 @@ class BaseDataPathEncryption(BaseNeutronTest):
         elif "200 OK" not in output and expectation:
             assert False, 'Traffic should have been allowed'
         after_src, after_dst = self.get_crypt_stats(src_vrouter, dst_vrouter)
-        print(before_src, before_dst, after_src, after_dst)
+        print before_src, before_dst, after_src, after_dst
         msg = 'non tunneled traffic shouldnt be encrypted'
         assert (before_src == after_src) and (before_dst == after_dst), msg

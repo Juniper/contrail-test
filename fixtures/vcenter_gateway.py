@@ -1,4 +1,3 @@
-from __future__ import print_function
 from vcenter import *
 from vnc_api.vnc_api import  *
 from lif_fixture import LogicalInterfaceFixture

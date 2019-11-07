@@ -1,7 +1,6 @@
-from __future__ import absolute_import
 import os
 import sys
-from .base import ServerManagerTest
+from base import ServerManagerTest
 import test
 import fixtures
 from smgr_common import SmgrFixture

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import argparse
 import random
 import socket
@@ -15,7 +14,7 @@ import logging as std_logging
 from neutronclient.neutron import client as neutron_client
 from vnc_api.vnc_api import *
 from common.connections import ContrailConnections
-from . import convertor
+import convertor
 from common import log_orig as logging
 import test
 from serial_scripts.tor_scale.lib.config import ConfigScale

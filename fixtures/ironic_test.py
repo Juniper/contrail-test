@@ -68,9 +68,9 @@ class IronicHelper(object):
              pg_obj = self.obj.portgroup.create(mode="802.3ad",name=pg_name,\
                                        address=mac_addr,\
                                        node_uuid=node_id)
-          except ironic_exc.Conflict as ex:
+          except ironic_exc.Conflict,ex:
              self.logger.info(ex.message) # TO_FIX: handle so that this is not hit
-          except Exception as ex:
+          except Exception,ex:
              self.logger.info("ERROR: exception in creating PG")
              return
 

@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 
-from __future__ import print_function
 from scapy.all import *
 import sys
 
@@ -28,7 +27,7 @@ SYN=ip/TCP(sport=port, dport=8000, flags="S", seq=42)
 
 # Send SYN and receive SYN,ACK
 SYNACK=sr1(SYN)
-print(SYNACK)
+print SYNACK
 
 # Create ACK packet
 ACK=ip/TCP(sport=SYNACK.dport, dport=8000, flags="A", seq=SYNACK.ack, ack=SYNACK.seq + 1)
@@ -36,4 +35,4 @@ ACK=ip/TCP(sport=SYNACK.dport, dport=8000, flags="A", seq=SYNACK.ack, ack=SYNACK
 # SEND our ACK packet
 send(ACK)
 
-print("SUCCESS")
+print "SUCCESS"

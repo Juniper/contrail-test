@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import traffic_tests
 from vn_test import *
 from vm_test import *
@@ -13,7 +11,7 @@ from traffic.core.stream import Stream
 from traffic.core.profile import create, ContinuousProfile
 from traffic.core.helpers import Host
 from traffic.core.helpers import Sender, Receiver
-from .base import BaseVnVmTest
+from base import BaseVnVmTest
 from common import isolated_creds
 import inspect
 import time
@@ -22,7 +20,7 @@ from tcutils.util import get_subnet_broadcast, is_ip_mine, skip_because
 import test
 from tcutils.tcpdump_utils import *
 
-from . import test_vm_basic
+import test_vm_basic
 
 class TestBasicVMVN0(BaseVnVmTest):
 
@@ -819,7 +817,7 @@ class TestBasicVMVN1(BaseVnVmTest):
             cmd_to_output = ['cat /tmp/out.log']
             vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
             output = vm1_fixture.return_output_cmd_dict[i]
-            print(output)
+            print output
             if 'DF' in output or 'echo reply' not in output:
                 result = False
         return result
@@ -1174,7 +1172,7 @@ class TestBasicVMVN3(BaseVnVmTest):
                     "Status of stop traffic for proto %s and packet size of %sB is %s" %
                     (proto, packet_size, stopStatus[proto]))
             self.logger.info("-" * 80)
-            print(result)
+            print result
             self.logger.info('Sleeping for 10s')
             sleep(10)
         self.assertEqual(result, True, msg)
@@ -1291,7 +1289,7 @@ class TestBasicVMVN4(BaseVnVmTest):
                     "Status of stop traffic for proto %s and packet size of %sB is %s" %
                     (proto, packet_size, stopStatus[proto]))
             self.logger.info("-" * 80)
-            print(result)
+            print result
             sleep(1)
         self.assertEqual(result, True, msg)
 
@@ -1397,7 +1395,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         cmd_to_output = [i]
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
         output = vm1_fixture.return_output_cmd_dict[i]
-        print(output)
+        print output
         result = True
         if not '100%' in output:
             self.logger.error(
@@ -1410,7 +1408,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         cmd_to_output = [j]
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output, as_sudo=True)
         output1 = vm1_fixture.return_output_cmd_dict[j]
-        print(output1)
+        print output1
         if not ' 0%' in output1:
             self.logger.error(
                 'Arping to the other VMs address should have passed')
@@ -1643,7 +1641,7 @@ class TestBasicVMVN5(BaseVnVmTest):
         cmd_to_output1 = [j]
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_output1)
         output1 = vm1_fixture.return_output_cmd_dict[j]
-        print(output1)
+        print output1
 
         for ips in list_of_ips:
             if ips not in output1:
@@ -1932,7 +1930,7 @@ class TestBasicVMVN5(BaseVnVmTest):
         vm1_fixture.run_cmd_on_vm(cmds=cmd_to_view_output)
 
         output = vm1_fixture.return_output_cmd_dict[i]
-        print(output)
+        print output
         if '10.10.10.10' not in output:
             result = False
         assert vm1_fixture.verify_on_setup()
@@ -2444,7 +2442,7 @@ class TestBasicVMVN9(BaseVnVmTest):
             output, pkt_count = stop_tcpdump_for_vm_intf(
                 None, None, None, vm_fix_pcap_pid_files=vm_fix_pcap_pid_files)
             output = output[0]
-        print(output)
+        print output
         if '1.2.3.4' in output:
             self.logger.info(
                 'Traffic is going to the tap interface of %s correctly' %
@@ -2870,7 +2868,7 @@ class TestBasicVMVNx(BaseVnVmTest):
             self.logger.debug('Checking if the file exists on %s'%vm2_name)
             vm2_fixture.run_cmd_on_vm( cmds= cmd_to_check_file )
             output= vm2_fixture.return_output_cmd_dict[y]
-            print(output)
+            print output
             if size in output:
                 self.logger.info('File of size %sB transferred via tftp properly'%size)
             else:

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
 from scapy.all import *
 import sys
 import argparse
@@ -51,7 +50,7 @@ os.system(
             args.localIP)
 
 id = random.randint(0, 65535)
-print("Using IP id %s" % (id))
+print "Using IP id %s" % (id)
 
 
 if args.overlap:
@@ -86,8 +85,8 @@ else:
 frag = fragment(packet, fragsize=args.fragsize)
 
 if len(frag) != no_of_frags:
-    print("Failure:No. of fragments mismatch for packet length %s, from scapy:%s, expected:%s" % (
-        len(packet), len(frag), no_of_frags))
+    print "Failure:No. of fragments mismatch for packet length %s, from scapy:%s, expected:%s" % (
+        len(packet), len(frag), no_of_frags)
     exit()
 
 #Send the same fragments args.duplicate times
@@ -96,8 +95,8 @@ for i in xrange(args.duplicate):
 
 for c in args.order:
     send(frag[int(c)])
-    print("===================================================")
-    print("Sent fragment:")
+    print "==================================================="
+    print "Sent fragment:"
     frag[int(c)].show()
 
 #Send the remaining fragments if any

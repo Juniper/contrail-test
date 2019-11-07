@@ -1,4 +1,3 @@
-from __future__ import print_function
 import os
 import anydbm
 import argparse
@@ -20,14 +19,14 @@ class AnyDBMManager:
         elif args.delete:
             self.delete_entry(args.delete)
         else:
-            print('No operation chosen. Check help')
+            print 'No operation chosen. Check help'
     # end __init__
 
     def list_entries(self):
         try:
             db_h = anydbm.open(self.dbfile, 'r')
             for k,v in db_h.iteritems():
-                print(k,v)
+                print k,v
         finally:
             db_h.close()
 

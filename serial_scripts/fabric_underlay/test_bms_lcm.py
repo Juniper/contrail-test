@@ -1,4 +1,3 @@
-from __future__ import print_function
 from collections import OrderedDict
 from itertools import repeat
 import re
@@ -220,7 +219,7 @@ class TestBmsLcm(BaseFabricTest):
                 if interface['pxe_enabled'] :
                    mac_node_dict[interface['host_mac']] = node['node_name']
 
-        print(mac_node_dict,mac_node_dict.keys())
+        print mac_node_dict,mac_node_dict.keys()
 
         bms_fixtures_list = []
         for i in xrange(bms_count):
@@ -240,10 +239,10 @@ class TestBmsLcm(BaseFabricTest):
                 for mac in mac_node_dict.keys():
                     ret = dhcp_inspect.is_dhcp_offered(mac)
                     if ret:
-                       print("DHCP Offer for %s seen"%mac)
+                       print "DHCP Offer for %s seen"%mac
                        self.logger.debug("DHCP request from %s seen"%mac)
                     else:
-                       print("DHCP Offer for %s NOT seen"%mac)
+                       print "DHCP Offer for %s NOT seen"%mac
                        dhcp_missing_mac_list.append(mac)
                        self.logger.debug("DHCP request from %s NOT seen"%mac)
 
@@ -255,7 +254,7 @@ class TestBmsLcm(BaseFabricTest):
             nodes_list = self.connections.ironic_h.obj.node.list()
             node_mac_dict = dict(map(lambda x:(x.name,x.uuid),nodes_list))
             for mac in dhcp_missing_mac_list_filtered:
-               print("Work-around for PR 1790911: Rebooting node: %s"%mac_node_dict[mac])
+               print "Work-around for PR 1790911: Rebooting node: %s"%mac_node_dict[mac]
                self.logger.debug("Work-around for PR 1790911: Rebooting node: %s"%mac_node_dict[mac])
                node_id = node_mac_dict[mac_node_dict[mac]]
                self.connections.ironic_h.obj.node.set_boot_device(node_id,"pxe")

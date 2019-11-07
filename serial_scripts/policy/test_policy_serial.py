@@ -1,9 +1,7 @@
-from __future__ import print_function
-from __future__ import absolute_import
 from vn_test import VNFixture
 from policy_test import PolicyFixture
 from vm_test import VMFixture
-from .base import BaseSerialPolicyTest
+from base import BaseSerialPolicyTest
 from tcutils.wrappers import preposttest_wrapper
 from tcutils.topo.sdn_topo_setup import sdnTopoSetupFixture
 from common.system.system_verification import assertEqual
@@ -16,7 +14,7 @@ import json
 import re
 import copy
 import random
-from . import sdn_policy_traffic_test_topo
+import sdn_policy_traffic_test_topo
 from common.topo import sdn_policy_topo_with_multi_project
 from tcutils.util import get_random_name, get_random_cidr, gen_str_with_spl_char
 import os
@@ -44,7 +42,7 @@ class TestSerialPolicy(BaseSerialPolicyTest):
 
         actual_peer_vns_by_policy = policy_test_utils.get_policy_peer_vns(
             self, vns, vn_fixture)
-        print("actual_peer_vns_by_policy: ", actual_peer_vns_by_policy)
+        print "actual_peer_vns_by_policy: ", actual_peer_vns_by_policy
         # actual_peer_vns_by_policy format:
         # {'vnet0':[u'default-domain:admin:vnet1',
         # u'default-domain:admin:vnet2'], ..}]

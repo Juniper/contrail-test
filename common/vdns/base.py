@@ -1,4 +1,3 @@
-from __future__ import print_function
 import test_v1
 from common.connections import ContrailConnections
 from common import isolated_creds
@@ -179,7 +178,7 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
             if not m_obj:
                 self.assertTrue(
                     False, 'record search is failed,please check syntax of regular expression')
-            print(m_obj.group(1))
+            print m_obj.group(1)
             dns_record = m_obj.group(1).split(':')
             dns_record_ip = dns_record[1].lstrip()
             next_ip = self.next_ip_in_list(rec_ip_list, dns_record_ip)
@@ -192,7 +191,7 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
                 result = result.replace("\n", " ")
                 m_obj = re.search(
                     r"Address:[0-9.]*#[0-9]*\s*Name:test1.juniper.net\s*(Address:\s*[0-9.]*)", result)
-                print(m_obj.group(1))
+                print m_obj.group(1)
                 dns_record = m_obj.group(1).split(':')
                 dns_record_ip1 = dns_record[1].lstrip()
                 if record_order == 'round-robin':
@@ -213,12 +212,12 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
                     next_ip = self.next_ip_in_list(rec_ip_list, dns_record_ip1)
                 if record_order == 'random':
                     if dns_record_ip1 not in rec_ip_list:
-                        print("\n VDNS records are not sent in random order")
+                        print "\n VDNS records are not sent in random order"
                         self.assertTrue(
                             False, 'VDNS records are not sent random order')
                 if record_order == 'fixed':
                     if dns_record_ip != dns_record_ip1:
-                        print("\n VDNS records are not sent fixed in fixed order")
+                        print "\n VDNS records are not sent fixed in fixed order"
                         self.assertTrue(
                             False, 'VDNS records are not sent fixed in fixed order')
         return True
@@ -365,7 +364,7 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
                              vm_fixture[vm_list[1]].vm_name)
             vm_fixture[vm_list[1]].run_cmd_on_vm(cmds=cmd_to_check_file)
             output = vm_fixture[vm_list[1]].return_output_cmd_dict[y]
-            print(output)
+            print output
             if size in output:
                 self.logger.info(
                     'File of size %sB transferred via scp properly' % size)
@@ -422,7 +421,7 @@ class BasevDNSTest(test_v1.BaseTestCase_v1):
                 actual_result = False
             else:
                 actual_result = True
-        except AttributeError as e:
+        except AttributeError, e:
             self.logger.error('Unable to get any result of nslookup')
             self.logger.exception(e)
             actual_result = False

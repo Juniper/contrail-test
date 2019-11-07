@@ -1,4 +1,3 @@
-from __future__ import print_function
 import os
 import sys
 from time import sleep
@@ -99,7 +98,7 @@ class VerifySvcChain(ConfigSvcChain):
                             self.logger.info('Multi Svc chains, 1 route deleted via svc0, Route %s exists via svc1 is %s routes %s' % (
                                 dst_vm.vm_ip, left_ri_ecmp-1, dst_vm_ip))
                             dst_vm_ip = False
-                    import pprint; pprint.pprint(dst_vm_ip); print("Route is \n\n")
+                    import pprint; pprint.pprint(dst_vm_ip); print "Route is \n\n"
                 result = True
                 if dst_vm_ip:
                     self.logger.error(

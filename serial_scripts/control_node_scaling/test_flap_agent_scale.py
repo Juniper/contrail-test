@@ -1,6 +1,5 @@
 # Pytho libs
 from __future__ import print_function
-from __future__ import absolute_import
 import eventlet
 import os
 import sys
@@ -32,13 +31,13 @@ from common.contrail_test_init import *
 #
 # Contrail scaling libs
 #
-from .ssh_interactive_commnds import *
-from .cn_introspect_bgp import ControlNodeInspect
-from .vn_oper import VnCfg
-from .bgp_scale import *
+from ssh_interactive_commnds import *
+from cn_introspect_bgp import ControlNodeInspect
+from vn_oper import VnCfg
+from bgp_scale import *
 #from policy import PolicyCmd
 import test
-from .base import BaseBGPScaleTest
+from base import BaseBGPScaleTest
 
 
 class FlapAgentScaleInit (object):
@@ -758,7 +757,7 @@ class FlapAgentScaleInit (object):
                 os.mkdir(logdir)
             except (SystemExit, KeyboardInterrupt):
                 raise
-            except Exception as e:
+            except Exception, e:
                 print (
                     'ABORT: Failed to create logdir directory, since this is a scaling script, check that the number of file descriptors (max files) has not been exceeded:[lsof -n, and ulimit -n] or (2) check for directory name err for log in params (should be "<logdir>/<name>" found: %s aborting script..' % logdir)
                 self.cleanup()
@@ -806,7 +805,7 @@ class FlapAgentScaleInit (object):
             fd = open(filename, 'w')
         except (SystemExit, KeyboardInterrupt):
             raise
-        except Exception as e:
+        except Exception, e:
             print (
                 'ABORT: Failed to open file: %s, since this is a scaling script, check that the number of file descriptors (max files) has not been exceeded:[lsof -n, and ulimit -n]' % filename)
             self.cleanup()
@@ -3595,7 +3594,7 @@ class FlapAgentScaleInit (object):
             result = subprocess.check_output(
                 cmd, stderr=subprocess.STDOUT, shell=True)
             status = True
-        except subprocess.CalledProcessError as OSError:
+        except subprocess.CalledProcessError, OSError:
             if print_err_msg_if_encountered:
                 self._log_print(
                     "WARNING: error executing subprocess shell cmd: '%s'" % cmd)

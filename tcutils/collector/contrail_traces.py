@@ -1,4 +1,3 @@
-from __future__ import print_function
 #
 # Traces Utils
 #
@@ -140,15 +139,15 @@ class TraceUtils(object):
                 data = requests.get(url, stream=True)
             else:
                 data = requests.get(url, prefetch=False)
-        except requests.exceptions.ConnectionError as e:
-            print("Connection to %s failed" % url)
+        except requests.exceptions.ConnectionError, e:
+            print "Connection to %s failed" % url
         if data.status_code == 200:
             try:
                 return etree.fromstring(data.text)
             except Exception as e:
                 return json.loads(data.text)
         else:
-            print("HTTP error code: %d" % response.status_code)
+            print "HTTP error code: %d" % response.status_code
         return None
 
     # end get_url_http
@@ -181,7 +180,7 @@ class TraceUtils(object):
         host = socket.gethostbyaddr(ip)[0]
 
         if not (op_ip and nodename and module):
-            print('If traces to be sent to the database all 3 arguments - opserver_ip,node_name and module must be provided')
+            print 'If traces to be sent to the database all 3 arguments - opserver_ip,node_name and module must be provided'
             return
 
         try:
@@ -208,22 +207,22 @@ class TraceUtils(object):
                 for el in text['traces']:
                     with open(filename, "a+") as f:
                         f.write(el + '\n')
-                print("Saved %s traces to %s" % (elem, filename))
+                print "Saved %s traces to %s" % (elem, filename)
             except Exception as e:
-                print("While saving %s trace ,got exception from get_trace_buffer as %s" % (elem, e))
+                print "While saving %s trace ,got exception from get_trace_buffer as %s" % (elem, e)
             if op_ip:
                 try:
                     url1 = 'http://%s:8081/analytics/send-tracebuffer/%s/%s/%s' % (op_ip,
                                                                                    nodename, module, elem)
                     resp1 = TraceUtils.get_url_http(url1)
                     if (resp1['status'] == 'pass'):
-                        print('Traces saved to database')
+                        print 'Traces saved to database'
                     else:
-                        print('Traces could not be saved to database')
+                        print 'Traces could not be saved to database'
 
                 except Exception as e:
-                    print('Traces could not be saved to database')
-                    print('Got exception as %s' % e)
+                    print 'Traces could not be saved to database'
+                    print 'Got exception as %s' % e
 
     @staticmethod
     def messages_xml_data_to_dict(messages_dict, msg_type):

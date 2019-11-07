@@ -1,4 +1,3 @@
-from __future__ import print_function
 from tcutils.util import retry
 from tcutils.config import vmware_introspect_utils
 from common import log_orig as contrail_logging
@@ -64,5 +63,5 @@ if __name__ == '__main__':
     import pprint
     inputs = Inputs()
     vcenter = VMWareVerificationLib(inputs,'10.204.216.183')
-    print(vcenter.verify_vm_in_vcenter('10.204.216.183','test_vm1'))
+    print vcenter.verify_vm_in_vcenter('10.204.216.183','test_vm1')
 

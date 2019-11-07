@@ -22,7 +22,7 @@ class AnalyticsBaseTest(GenericTestBase):
 class ResourceFactory:
     factories = {}
     def createResource(id):
-        if id not in ResourceFactory.factories:
+        if not ResourceFactory.factories.has_key(id):
             ResourceFactory.factories[id] = \
               eval(id + '.Factory()')
         return ResourceFactory.factories[id].create()

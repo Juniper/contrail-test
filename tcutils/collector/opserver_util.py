@@ -1,4 +1,3 @@
-from __future__ import print_function
 #
 # OpServer Utils
 #
@@ -66,7 +65,7 @@ class OpServerUtils(object):
         if token:
             headers['X-AUTH-TOKEN'] = token['X-AUTH-TOKEN']
         try:
-            print('request version : %s'%(pkg_resources.get_distribution("requests").version[0]))
+            print 'request version : %s'%(pkg_resources.get_distribution("requests").version[0])
             if int(pkg_resources.get_distribution("requests").version[0]) >= 1:
                 response = requests.post(url, stream=True,
                                          data=params,
@@ -75,13 +74,13 @@ class OpServerUtils(object):
                 response = requests.post(url, prefetch=False,
                                          data=params,
                                          headers=headers)
-        except requests.exceptions.ConnectionError as e:
-            print("Connection to %s failed" % url)
+        except requests.exceptions.ConnectionError, e:
+            print "Connection to %s failed" % url
             return None
         if response.status_code in [202 , 200]:
             return response.text
         else:
-            print("HTTP error code: %d" % response.status_code)
+            print "HTTP error code: %d" % response.status_code
         return None
     # end post_url_http
 
@@ -93,8 +92,8 @@ class OpServerUtils(object):
                 data = requests.get(url, stream=True, headers=headers)
             else:
                 data = requests.get(url, prefetch=False, headers=headers)
-        except requests.exceptions.ConnectionError as e:
-            print("Connection to %s failed" % url)
+        except requests.exceptions.ConnectionError, e:
+            print "Connection to %s failed" % url
 
         return data
     # end get_url_http
@@ -105,7 +104,7 @@ class OpServerUtils(object):
         resit = result.iter_lines()
         while not done:
             try:
-                ln = next(resit)
+                ln = resit.next()
                 if ln == '{"value": [':
                     continue
                 if ln == ']}':
@@ -121,7 +120,7 @@ class OpServerUtils(object):
                 for i in out_list:
                     yield i
             except Exception as e:
-                print("Error parsing %s results: %s" % (ln, str(e)))
+                print "Error parsing %s results: %s" % (ln, str(e))
         return
     # end parse_query_result
 
@@ -367,8 +366,8 @@ class OpServerUtils(object):
                 end_time = OpServerUtils.convert_to_utc_timestamp_usec(
                     end_time)
         except:
-            print('Incorrect start-time (%s) or end-time (%s) format' % (start_time,
-                                                                         end_time))
+            print 'Incorrect start-time (%s) or end-time (%s) format' % (start_time,
+                                                                         end_time)
             return None
 
         sf = select_fields
@@ -389,7 +388,7 @@ class OpServerUtils(object):
                 if len(match_v) is 1:
                     if match_v[0][-1] is '*':
                         match_prefix = match_v[0][:(len(match_v[0]) - 1)]
-                        print(match_prefix)
+                        print match_prefix
                         match_elem = OpServerUtils.Match(name=match_e[0],
                                                          value=match_prefix,
                                                          op=OpServerUtils.MatchOp.PREFIX)

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 # general traffic class to use different traffic tools to trigger traffic based on input tool/utils
 # if no tool is passed, then netcat traditional is used for tcp/udp and
 # scapy is used for icmp
@@ -31,11 +30,11 @@ class BaseTraffic():
             tool = SCAPY
 
         if tool == NETCAT: 
-            from .netcat_traffic import Netcat    
+            from netcat_traffic import Netcat    
             return Netcat()
         elif tool == SCAPY:
-            from .scapy_traffic import Scapy 
+            from scapy_traffic import Scapy 
             return Scapy()
         elif tool == SOCKET:
-            from .socket_traffic import SocketTrafficUtil
+            from socket_traffic import SocketTrafficUtil
             return SocketTrafficUtil()

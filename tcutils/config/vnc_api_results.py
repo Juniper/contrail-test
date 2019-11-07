@@ -1,4 +1,3 @@
-from __future__ import print_function
 import re
 from tcutils.verification_util import *
 
@@ -157,7 +156,7 @@ class CsProjectResult (Result):
         return []
 
     def fip_list(self):
-        if 'floating_ip_pool_refs' in self:
+        if self.has_key('floating_ip_pool_refs'):
             p = self.xpath('project', 'floating_ip_pool_refs')
         else:
             p = []
@@ -418,18 +417,18 @@ class CsVNResult (Result):
                               'virtual_machine_interface_back_refs'))
 
     def rts(self):
-        if 'route_target_list' in self.xpath('virtual-network'):
+        if self.xpath('virtual-network').has_key('route_target_list'):
             for rt in self.xpath('virtual-network', 'route_target_list',
                                  'route_target'):
                 yield rt
 
     def ri_links(self):
-        if 'routing_instances' in self.xpath('virtual-network'):
+        if self.xpath('virtual-network').has_key('routing_instances'):
             for ri in self.xpath('virtual-network', 'routing_instances'):
                 yield ri['href']
 
     def ri_refs(self):
-        if 'routing_instances' in self.xpath('virtual-network'):
+        if self.xpath('virtual-network').has_key('routing_instances'):
             for ri in self.xpath('virtual-network', 'routing_instances'):
                 yield ri['to']
 
@@ -470,13 +469,13 @@ class CsRiResult (Result):
     '''
 
     def rt_links(self):
-        if 'route_target_refs' in self.xpath('routing-instance'):
+        if self.xpath('routing-instance').has_key('route_target_refs'):
             for rt in self.xpath('routing-instance', 'route_target_refs'):
                 yield rt['href']
 
     def get_rt(self):
         target = list()
-        if 'route_target_refs' in self.xpath('routing-instance'):
+        if self.xpath('routing-instance').has_key('route_target_refs'):
             for rt in self.xpath('routing-instance', 'route_target_refs'):
                 target.append(rt['to'][0])
         return target
@@ -548,12 +547,14 @@ class CsVmiOfVmResult (Result):
         return links
 
     def fip_link(self):
-        if 'floating_ip_back_refs' in self.xpath('virtual-machine-interface'):
+        if self.xpath('virtual-machine-interface').has_key(
+                'floating_ip_back_refs'):
             return self.xpath('virtual-machine-interface',
                               'floating_ip_back_refs', 0, 'href')
 
     def properties(self, property=None):
-        if 'virtual_machine_interface_properties' in self.xpath('virtual-machine-interface'):
+        if self.xpath('virtual-machine-interface').has_key(
+                'virtual_machine_interface_properties'):
             if property:
                 return self.xpath('virtual-machine-interface',
                               'virtual_machine_interface_properties', property)
@@ -665,7 +666,7 @@ class CsServiceInstanceResult (Result):
 
     def get_vms(self):
         vms = list()
-        if 'virtual_machine_back_refs' in self.xpath('service-instance'):
+        if self.xpath('service-instance').has_key('virtual_machine_back_refs'):
             for vm in self.xpath('service-instance', 'virtual_machine_back_refs'):
                 vms.append(vm['uuid'])
         return vms
@@ -705,7 +706,7 @@ class CsGlobalVrouterConfigResult (Result):
                     link_local_service['ip_fabric_service_port'] = elem[
                         'ip_fabric_service_port']
         except Exception as e:
-            print(e)
+            print e
         finally:
             return link_local_service
 
@@ -715,7 +716,7 @@ class CsLogicalRouterResult(Result):
     '''
     def get_rt(self):
         target = list()
-        if 'route_target_refs' in self.xpath('logical-router'):
+        if self.xpath('logical-router').has_key('route_target_refs'):
             for rt in self.xpath('logical-router', 'route_target_refs'):
                 target.append(rt['to'][0])
         return target
@@ -731,7 +732,7 @@ class CsTableResult(Result):
         CsTableResult access Route table dict
     '''
     def get_route(self):
-        if 'routes' in self.xpath('route-table'):
+        if self.xpath('route-table').has_key('routes'):
             return self.xpath('route-table', 'routes', 'route')
 
     def fq_name(self):

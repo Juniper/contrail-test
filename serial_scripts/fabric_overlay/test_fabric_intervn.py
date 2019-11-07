@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -8,7 +7,7 @@ from __future__ import absolute_import
 # try to pick params.ini in PWD
 
 from tcutils.wrappers import preposttest_wrapper
-from .verify import VerifyEVPNType5
+from verify import VerifyEVPNType5
 from common.contrail_fabric.base import BaseFabricTest
 import test
 import random

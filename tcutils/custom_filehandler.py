@@ -1,4 +1,3 @@
-from __future__ import print_function
 import logging
 import subprocess
 import os
@@ -25,7 +24,7 @@ class CustomFileHandler(logging.FileHandler):
         except OSError:
             subprocess.call('mkdir -p %s' % (path), shell=True)
         fileName = path + '/' + fileName
-        print("\nLog file : %s \n" % (os.path.realpath(fileName)))
+        print "\nLog file : %s \n" % (os.path.realpath(fileName))
 #        super(CustomFileHandler,self).__init__(fileName,mode)
         logging.FileHandler.__init__(self, fileName, mode)
 # end customFileHandler

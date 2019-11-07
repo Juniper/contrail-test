@@ -1,12 +1,10 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import os
 from time import sleep
 from tcutils.util import get_random_cidr
 from tcutils.util import get_random_name
 from tcutils.util import retry
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
-from common.servicechain.mirror.config import ConfigSvcMirror
+from config import ConfigSvcMirror
 from common.servicechain.verify import VerifySvcChain
 from common.ecmp.ecmp_verify import ECMPVerify
 from common.floatingip.config import CreateAssociateFip
@@ -73,7 +71,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
 		    count = (count * 3)/4  #Because the ping to FIP involves NAT. 
             if proto == 'icmp':
                 if not self.inputs.pcap_on_vm:
-                    print(str(svm_name) + ':' + str(count))
+                    print str(svm_name) + ':' + str(count)
                     total_count += count
                     if len(svm) == 1:
                         assert self.verify_icmp_mirror(svm_name, session, pcap, count)
@@ -317,7 +315,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
             sleep(10)
             output_cmd = 'sudo cat /tmp/%s_out.log' % tapintf
             out, err = execute_cmd_out(session, output_cmd, self.logger)
-            print(out)
+            print out
             if '8099' in out:
                 self.logger.info('Mirroring action verified')
             else:

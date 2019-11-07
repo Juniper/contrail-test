@@ -1,4 +1,3 @@
-from __future__ import print_function
 import time
 import atexit
 import requests
@@ -126,7 +125,7 @@ def get_vm_info_by_uuid(inputs,uuid):
                                            True,
                                            True)
         return VM
-    except IOError as ex:
+    except IOError,ex:
         pass
 
 def get_esxi_host_of_vm_by_uuid(inputs,uuid):
@@ -150,7 +149,7 @@ class Inputs:
 
 def main():
     inputs=Inputs()
-    print(get_contrail_vm_by_vm_uuid(inputs,'9175dc3b-5ff5-45ca-a836-05dc986ef19d'))
+    print get_contrail_vm_by_vm_uuid(inputs,'9175dc3b-5ff5-45ca-a836-05dc986ef19d')
 
 if __name__ == "__main__":
     main()

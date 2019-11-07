@@ -75,7 +75,7 @@ class QosQueueFixture(QosBaseFixture):
             queue_obj = self.vnc_api_h.qos_queue_read(fq_name=fq_name)
             self.uuid = queue_obj.uuid
             return self.read()
-        except NoIdError as e:
+        except NoIdError, e:
             pass
         queue_uuid = self.vnc_h.create_queue(self.name,
                               queue_id=self.queue_id,
@@ -147,7 +147,7 @@ class QosQueueFixture(QosBaseFixture):
             self.logger.info('Reading existing Queue with UUID %s' % (
                                                         self.uuid))
             queue_obj = self.vnc_api_h.qos_queue_read(id=self.uuid) 
-        except NoIdError as e:
+        except NoIdError, e:
             self.logger.exception('UUID %s not found, unable to read Queue' % (
                 self.uuid))
             raise e
@@ -218,7 +218,7 @@ class QosForwardingClassFixture(QosBaseFixture):
             fc_obj = self.vnc_api_h.forwarding_class_read(fq_name=fq_name)
             self.uuid = fc_obj.uuid
             return self.read()
-        except NoIdError as e:
+        except NoIdError, e:
             pass
 
         if self.inputs.is_gui_based_config():
@@ -358,7 +358,7 @@ class QosForwardingClassFixture(QosBaseFixture):
             fc_obj = self.vnc_api_h.forwarding_class_read(id=self.uuid)
             self.logger.info('Reading existing FC with UUID %s' % (
                              self.uuid))
-        except NoIdError as e:
+        except NoIdError, e:
             self.logger.exception('UUID %s not found, unable to read FC' % (
                 self.uuid))
             raise e
@@ -446,7 +446,7 @@ class QosConfigFixture(QosBaseFixture):
             qos_config_obj = self.vnc_api_h.qos_config_read(fq_name=fq_name)
             self.uuid = qos_config_obj.uuid
             return self.read()
-        except NoIdError as e:
+        except NoIdError, e:
             pass
         if self.inputs.is_gui_based_config():
             self.webui.create_qos(self)
@@ -544,7 +544,7 @@ class QosConfigFixture(QosBaseFixture):
             self.logger.info('Reading existing qos-config with UUID %s' % (
                              self.uuid))
             self.qos_config_obj = self.vnc_api_h.qos_config_read(id=self.uuid)
-        except NoIdError as e:
+        except NoIdError, e:
             self.logger.exception('UUID %s not found, cant read qos config' % (
                 self.uuid))
             raise e
