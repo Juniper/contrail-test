@@ -17,8 +17,7 @@ RUN yum install -y yum-plugin-priorities && \
       python-linecache2 python-xmltodict python-eventlet python-ncclient \
       python-Fabric python-tabulate python-netifaces python-scp python-yaml \
       python-crypto python-urllib3 python-requests python-jinja2 subunit-filters \
-      ant-junit libXpm libXrender gtk2 nss GConf2 google-chrome-stable firefox openssl \
-      python3 python3-devel && \
+      ant-junit libXpm libXrender gtk2 nss GConf2 google-chrome-stable firefox openssl && \
     yum clean all -y && \
     rm -rf /var/cache/yum && \
     rm -rf /etc/yum.repos.d && \
@@ -30,8 +29,7 @@ RUN wget -c http://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64
     chmod ugo+rx /usr/bin/chromedriver
 
 # pip install python packages
-COPY requirements*.txt /
+COPY requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
-RUN pip3 install -r /requirements3.txt
 RUN ansible-galaxy install Juniper.junos
 COPY entrypoint.sh /
