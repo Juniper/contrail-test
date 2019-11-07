@@ -1,146 +1,94 @@
-from __future__ import print_function
-import argparse
 import select
 import socket
 import sys
 import Queue
-import signal
-import os
-import errno
 
-message = 'Hello'
+min=int(sys.argv[1]) if len(sys.argv) > 1 else 50000
+max=int(sys.argv[2]) if len(sys.argv) > 2 else 50000
+sockets= list()
+# Create a TCP/IP socket
+for port in range(min, max+1):
+    socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    socket.setblocking(0)
+    # Bind the socket to the port
+    service = ('', port)
+    print 'starting up on %s port %s' % service
+    socket.bind(service)
 
-def get_addr_port(tup):
-    return tup[0], tup[1]
+    # Listen for incoming connections
+    socket.listen(5)
+    sockets.append(socket)
 
-class TcpEchoServer(object):
-    def __init__(self, start_port, end_port, pid_file, stats_file):
-        self.sockets= list()
-        self.start_port = start_port
-        self.end_port = end_port
-        self.pid_file = pid_file
-        self.stats_file = stats_file
-        self.stats = dict()
-        self.connections = 0
-        self.write_pid_to_file()
+# Sockets from which we expect to read
+inputs = [s for s in sockets]
 
-    def write_pid_to_file(self):
-        with open(self.pid_file, 'w', 0) as fd:
-            fd.write(str(os.getpid()))
+# Sockets to which we expect to write
+outputs = [ ]
 
-    def write_stats_to_file(self):
-        with open(self.stats_file, 'w', 0) as fd:
-            for dport, connections in self.stats.iteritems():
-                for sip, stats in connections.iteritems():
-                    fd.write('dport: %s - src ip: %s - sent: %s - recv: %s%s'%(
-                        dport, sip, stats['sent'], stats['recv'], os.linesep))
+# Outgoing message queues (socket:Queue)
+message_queues = {}
 
-    def create(self):
-        for port in range(self.start_port, self.end_port+1):
-            for family, socktype, proto, canonname, sockaddr in \
-                    socket.getaddrinfo(None, port, 0, socket.SOCK_STREAM, 0, socket.AI_PASSIVE):
-                sock = socket.socket(family, socktype)
-                if family == socket.AF_INET6:
-                    sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
-                sock.setblocking(0)
-                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                # Bind the socket to the port
-                sock.bind(sockaddr)
-                self.stats[port] = dict()
-                # Listen for incoming connections
-                sock.listen(0)
-                self.sockets.append(sock)
+while inputs:
 
-    def run(self):
-        inputs = [s for s in self.sockets]
-        outputs = []
-        message_queues = {}
-        while inputs:
+    # Wait for at least one of the sockets to be ready for processing
+    readable, writable, exceptional = select.select(inputs, outputs, inputs)
+    # Handle inputs
+    for s in readable:
+        if s in sockets:
+            # A "readable" server socket is ready to accept a connection
+            connection, client_address = s.accept()
+            print 'new connection from', client_address
+            connection.setblocking(0)
+            inputs.append(connection)
+
+            # Give the connection a queue for data we want to send
+            message_queues[connection] = Queue.Queue()
+        else:
             try:
-                readable, writable, exceptional = select.select(inputs, outputs, inputs)
-            except select.error as e:
-                err = e.args[0]
-                if err == errno.EAGAIN or err == errno.EWOULDBLOCK or err == errno.EINTR:
-                    continue
-                raise
-            for s in readable:
-                if s in self.sockets:
-                    connection, client_address = s.accept()
-                    connection.setblocking(0)
-                    self.connections = self.connections + 1
-                    inputs.append(connection)
-                    server_address, server_port = get_addr_port(s.getsockname())
-                    self.stats[server_port][client_address[0]] = {'sent': 0, 'recv': 0}
-                    message_queues[connection] = Queue.Queue()
-                else:
-                    try:
-                        data = s.recv(1024)
-                    except Exception as e:
-                        print(e)
-                        continue
-                    if data:
-                        server_address, server_port = get_addr_port(s.getsockname())
-                        client_address, client_port = get_addr_port(s.getpeername())
-                        self.stats[server_port][client_address]['recv'] += data.count(message)
-                        message_queues[s].put(data)
-                        if s not in outputs:
-                            outputs.append(s)
-                    else:
-                        if s in outputs:
-                            outputs.remove(s)
-                        inputs.remove(s)
-                        s.close()
-                        del message_queues[s]
-            for s in writable:
-                try:
-                    next_msg = message_queues[s].get_nowait()
-                except Queue.Empty:
-                    outputs.remove(s)
-                else:
-                    try:
-                        s.send(next_msg)
-                        server_address, server_port = get_addr_port(s.getsockname())
-                        client_address, client_port = get_addr_port(s.getpeername())
-                        self.stats[server_port][client_address]['sent'] += next_msg.count(message)
-                    except Exception as e:
-                        print(e)
-            for s in exceptional:
-                inputs.remove(s)
+                data = s.recv(1024)
+            except Exception as e:
+                print e
+                continue
+            if data:
+                # A readable client socket has data
+                message_queues[s].put(data)
+                # Add output channel for response
+                if s not in outputs:
+                    outputs.append(s)
+            else:
+                # Interpret empty result as closed connection
+                print 'closing', s, 'after reading no data'
+                # Stop listening for input on the connection
                 if s in outputs:
                     outputs.remove(s)
+                inputs.remove(s)
                 s.close()
+
+                # Remove message queue
                 del message_queues[s]
 
-    def handler(self, signum, frame):
-        self.write_stats_to_file()
-        if signum == signal.SIGTERM:
-            raise SystemExit('Received SIGTERM')
+    # Handle outputs
+    for s in writable:
+        try:
+            next_msg = message_queues[s].get_nowait()
+        except Queue.Empty:
+            # No messages waiting so stop checking for writability.
+            outputs.remove(s)
+        else:
+            try:
+                s.send(next_msg)
+            except Exception as e:
+                print e
 
-def parse_cli(args):
-    '''TCP Echo Server'''
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--start_port', action='store', type=int,
-                        required=True)
-    parser.add_argument('--end_port', action='store', type=int,
-                        required=True)
-    parser.add_argument('--pid_file', action='store',
-                        required=True)
-    parser.add_argument('--stats_file', action='store',
-                        default='/tmp/tcpechoserver.stats')
-    pargs = parser.parse_args(args)
-    return pargs
+    # Handle "exceptional conditions"
+    for s in exceptional:
+        # Stop listening for input on the connection
+        inputs.remove(s)
+        if s in outputs:
+            outputs.remove(s)
+        print 'closing socket', s
+        s.close()
 
-def main():
-    pargs = parse_cli(sys.argv[1:])
-    server = TcpEchoServer(pargs.start_port, pargs.end_port,
-        pargs.pid_file, pargs.stats_file)
-    signal.signal(signal.SIGUSR1, server.handler)
-    signal.signal(signal.SIGTERM, server.handler)
-    server.create()
-    try:
-        server.run()
-    finally:
-        server.write_stats_to_file()
+        # Remove message queue
+        del message_queues[s]
 
-if __name__ == '__main__':
-    main()

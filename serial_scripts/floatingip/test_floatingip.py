@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -31,7 +30,7 @@ from testresources import ResourcedTestCase
 import traffic_tests
 from fabric.context_managers import settings
 from fabric.api import run
-from . import base
+import base
 import test
 from compute_node_test import *
 

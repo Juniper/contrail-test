@@ -1,4 +1,3 @@
-from __future__ import print_function
 import os
 import re
 import sys
@@ -215,7 +214,7 @@ class TestInputs(object):
             return self.host_data[host]['ips']
         username = self.host_data[host]['username']
         password = self.host_data[host]['password']
-        ips = get_ips_of_host(self.get_host_ip(host), nic=nic,
+        ips = get_ips_of_host(host, nic=nic,
                           username=username,
                           password=password,
                           as_sudo=True,
@@ -227,17 +226,17 @@ class TestInputs(object):
     def _get_ip_for_service(self, host, service):
         host_dict = self.host_data[host]
         if service.lower() == 'vrouter':
-            ip = self.get_ips_of_host(host, 'vhost0')[0]
-            self.host_data[host]['control_data_ip'] = ip
-            return ip
+            return self.get_ips_of_host(host, 'vhost0')[0]
         elif service.lower() == 'control':
-            ip_list = self.contrail_configs.get('CONTROL_NODES') or \
-                self.contrail_configs.get('CONTROLLER_NODES') or ''
-            ips = self.get_ips_of_host(host)
-            for ip in ip_list.split(','):
-                if ip in ips:
-                    self.host_data[host]['control_data_ip'] = ip
-                    return ip
+            ip_list = self.contrail_configs.get('CONTROL_NODES')
+            if not ip_list:
+                return
+            else:
+                ips = self.get_ips_of_host(host)
+                for ip in ip_list.split(','):
+                    if ip in ips:
+                        self.host_data[host]['control_data_ip'] = ip
+                        return ip
         elif service.lower() == 'openstack':
             nic = host_dict['roles']['openstack'].get('network_interface') \
                   if host_dict['roles']['openstack'] else \
@@ -881,7 +880,7 @@ class TestInputs(object):
                 hw_to_logical_map_list = [{hw_queue_list[x]:logical_queue_list[x].split(",")} for \
                                      x in range(0,len(hw_queue_list))]
                 qos_queue_per_host = [host_ip , hw_to_logical_map_list]
-        except KeyError as e:
+        except KeyError, e:
             pass
         try:
             if vrouter_data_dict['PRIORITY_ID']:
@@ -900,7 +899,7 @@ class TestInputs(object):
                                         x in range(0,len(priority_id_list))]
                 qos_queue_pg_properties_per_host = [host_ip ,
                                                      pg_properties_list]
-        except KeyError as e:
+        except KeyError, e:
             pass
         return (qos_queue_per_host, qos_queue_pg_properties_per_host)
 
@@ -1036,7 +1035,7 @@ class ContrailTestInit(object):
     # end __init__
 
     def is_ci_setup(self):
-        if 'ci_image' in os.environ:
+        if os.environ.has_key('ci_image'):
             return True
         else:
             return False
@@ -1118,8 +1117,8 @@ class ContrailTestInit(object):
             if failed_services:
                 self.logger.debug('Not all services up. '
                    'Sleeping for %s seconds. iteration: %s' %(delay, i))
-                if i+1 < tries:
-                    time.sleep(delay)
+                time.sleep(delay)
+                continue
             else:
                 return (True, status_dict)
         self.logger.error(
@@ -1158,7 +1157,7 @@ class ContrailTestInit(object):
 
     def reboot(self, server_ip):
         i = socket.gethostbyaddr(server_ip)[0]
-        print("rebooting %s" % i)
+        print "rebooting %s" % i
         if server_ip in self.host_data.keys():
             username = self.host_data[server_ip]['username']
             password = self.host_data[server_ip]['password']
@@ -1523,8 +1522,8 @@ class ContrailTestInit(object):
         #command_to_push.append("set routing-instances %s routing-options static route 0.0.0.0/0 next-hop %s" %(ri_name, ri_gateway))
         # command_to_push.append("commit")
 
-        print("Final commad will be pushed to MX")
-        print("%s" % command_to_push)
+        print "Final commad will be pushed to MX"
+        print "%s" % command_to_push
 
         # for command in command_to_push:
         #    output = self.run_cmd_on_server(mx_ip,command,mx_user,mx_password)
@@ -1548,8 +1547,8 @@ class ContrailTestInit(object):
         command_to_push.append("delete protocols bgp group %s" % (bgp_group))
         command_to_push.append("commit")
 
-        print("Final commad will be pushed to MX")
-        print("%s" % command_to_push)
+        print "Final commad will be pushed to MX"
+        print "%s" % command_to_push
 
         for command in command_to_push:
             output = self.run_cmd_on_server(
@@ -1596,7 +1595,7 @@ class ContrailTestInit(object):
             else
                 Returns 'cirros' image name
         '''
-        if 'ci_image' not in os.environ:
+        if not os.environ.has_key('ci_image'):
             return None
         if image_name in CI_IMAGES:
             return image_name

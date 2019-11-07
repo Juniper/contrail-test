@@ -138,7 +138,7 @@ class TestvDNSBasic0(BasevDNSTest):
             errmsg = "VDNS entry deleted which is not expected, when it has back refrence of ipam."
             self.logger.error(errmsg)
             assert False, errmsg
-        except Exception as msg:
+        except Exception, msg:
             self.logger.debug(msg)
             self.logger.info(
                 "Deletion of the vdns entry failed with back ref of ipam as expected")

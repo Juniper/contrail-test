@@ -491,7 +491,7 @@ class VroWorkflows(VcenterOrchestrator):
                     params['ports'] = str(min) + '-' + str(max)
             if params['direction'] == 'egress':
                 for addr in rule['dst_addresses']:
-                    if 'subnet' in addr and addr['subnet'] != None:
+                    if addr.has_key('subnet') and addr['subnet'] != None:
                         params['addressType'] = 'CIDR'
                         params['address_cidr'] = addr['subnet']['ip_prefix'] + '/' + str(addr['subnet']['ip_prefix_len'])
                         payload = self.get_post_body(wf_name, params)
@@ -500,7 +500,7 @@ class VroWorkflows(VcenterOrchestrator):
                     #need to add addressType = SecurityGroup
             else:
                 for addr in rule['src_addresses']:
-                    if 'subnet' in addr and  addr['subnet'] != None:
+                    if addr.has_key('subnet') and  addr['subnet'] != None:
                         params['addressType'] = 'CIDR'
                         params['address_cidr'] = addr['subnet']['ip_prefix'] + '/' + str(addr['subnet']['ip_prefix_len'])
                         payload = self.get_post_body(wf_name, params)

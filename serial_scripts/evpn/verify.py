@@ -1,4 +1,3 @@
-from __future__ import print_function
 from time import sleep
 import re
 import os
@@ -1279,7 +1278,7 @@ class VerifyEvpnCases():
                              (vn_l2_vm2_fixture.vm_name))
             vn_l2_vm2_fixture.run_cmd_on_vm(cmds=cmd_to_check_file, timeout=60)
             output = vn_l2_vm2_fixture.return_output_cmd_dict[y]
-            print(output)
+            print output
             if size in output:
                 self.logger.info(
                     'File of size %sB transferred via tftp properly' % size)

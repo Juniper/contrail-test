@@ -17,7 +17,7 @@ agent_port = '8085'
 
 def get_neutron_username(params):
     plugin_cfgs = [v['yaml_additional_config'] for k, v in params.iteritems()
-                   if type(v) is dict and 'yaml_additional_config' in v]
+                   if type(v) is dict and v.has_key('yaml_additional_config')]
 
     for plugin_cfg in plugin_cfgs:
         cfg = yaml.load(plugin_cfg)
@@ -86,7 +86,7 @@ def parse_astute(filename, version):
     with open(filename, 'r') as fd:
         params = yaml.load(fd)
     if not version:
-        version = '7.1' if 'network_metadata' in params else '6.1'
+        version = '7.1' if params.has_key('network_metadata') else '6.1'
     if LooseVersion(version) < LooseVersion('7'):
         astute_dict = parse_astute_6(params)
     else:

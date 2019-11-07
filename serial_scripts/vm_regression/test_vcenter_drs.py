@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import absolute_import
 from fixtures import Fixture
 from user_test import UserFixture
 from multiple_vn_vm_test import *
@@ -9,7 +7,7 @@ from common.connections import *
 import time
 from tcutils.commands import ssh, execute_cmd, execute_cmd_out
 from tcutils.util import *
-from .base import *
+from base import *
 from vcenter import *
 import test
 from tcutils.contrail_status_check import ContrailStatusChecker
@@ -126,7 +124,7 @@ def vm2dict(dc, cluster, host, vm, summary):
                              host=host,port=key,
                              macaddress = macaddress)
             except Exception as e:
-                print('%s:%s'%(vmname,val))
+                print '%s:%s'%(vmname,val)
                 return NameToIPMap(vmname=vmname,
                            ip=None,
                            vlanId=None,

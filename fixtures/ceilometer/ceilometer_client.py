@@ -1,4 +1,3 @@
-from __future__ import print_function
 import os
 import openstack
 from common.openstack_libs import ceilo_client as client
@@ -240,8 +239,8 @@ def main():
     #abc = statistic_list(cclient,'ip.floating.receive.bytes')
     abc = resource_list(cclient,query=q)
     #abc = sample_list(cclient,'ip.floating')
-    print(q)
-    print(abc)
+    print q
+    print abc
 
 if __name__ == "__main__":
     main()           

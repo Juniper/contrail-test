@@ -1,6 +1,5 @@
-from __future__ import absolute_import
 import test
-from .base import BaseRbac
+from base import BaseRbac
 from tcutils.wrappers import preposttest_wrapper
 
 class TestRbacBasic(BaseRbac):

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import unittest
 from tcutils.wrappers import preposttest_wrapper
 from vnc_api.vnc_api import NoIdError
@@ -7,7 +6,7 @@ from common.securitygroup.verify import VerifySecGroup
 from policy_test import PolicyFixture
 from vn_test import MultipleVNFixture
 from vm_test import MultipleVMFixture
-from .base import Md5Base
+from base import Md5Base
 from common.policy.config import ConfigPolicy
 from security_group import SecurityGroupFixture,get_secgrp_id_from_name
 from vn_test import VNFixture

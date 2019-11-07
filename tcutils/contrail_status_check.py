@@ -3,11 +3,10 @@
 #   'Node': '10.204.217.11',
 #   'Service': 'contrail-schema'}]
 
-from __future__ import absolute_import
 import re
 import time
 import sys
-from .contrail_status import contrail_status
+from contrail_status import contrail_status
 from collections import defaultdict
 
 class ContrailStatusChecker(object):
@@ -55,18 +54,17 @@ class ContrailStatusChecker(object):
             failed_services = self._get_failed_services(status_dict)
             if (failed_services and expectation) or (not expectation and not failed_services):
                 self.inputs.logger.debug('%s'%failed_services)
-                if i+1 < tries:
-                    self.inputs.logger.debug('Not all services up. '
-                        'Sleeping for %s seconds. iteration: %s' %(delay, i))
-                    time.sleep(delay)
+                self.inputs.logger.debug('Not all services up. '
+                   'Sleeping for %s seconds. iteration: %s' %(delay, i))
+                time.sleep(delay)
                 continue
             elif (expected_state is not None) and (
                 not self._confirm_service_status(status_dict, expected_state)):
-                if i+1 < tries:
-                    self.inputs.logger.debug('All Services are not in expected'
-                        'state %s. Sleeping for %s seconds. iteration: %s' %(
-                         expected_state, delay, i))
-                    time.sleep(delay)
+                self.inputs.logger.debug('All Services are not in'
+                    'expected state %s'
+                   'Sleeping for %s seconds. iteration: %s' %(
+                    expected_state, delay, i))
+                time.sleep(delay)
                 continue
             else:
                 if roles or services:

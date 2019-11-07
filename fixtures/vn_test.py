@@ -1,4 +1,3 @@
-from __future__ import print_function
 import fixtures
 from ipam_test import *
 from project_test import *
@@ -1281,7 +1280,7 @@ class VNFixture(fixtures.Fixture):
         # Get the valid peer VN list for route exchange from calling code as it needs
         # to be looked from outside of VN fixture...
         dst_vn_name_list = self.policy_peer_vns
-        print("VN list for RT import is %s" % dst_vn_name_list)
+        print "VN list for RT import is %s" % dst_vn_name_list
 
         # Get the RT for each VN found in policy list
         if dst_vn_name_list:
@@ -1404,12 +1403,12 @@ class VNFixture(fixtures.Fixture):
         self.delete()
         super(VNFixture, self).cleanUp()
 
-    @retry(delay=2, tries=25)
+    @retry(delay=5, tries=12)
     def _delete_vn(self):
         if (self.option == 'contrail'):
             try:
                 self.vnc_lib_h.virtual_network_delete(id=self.uuid)
-            except RefsExistError as e:
+            except RefsExistError,e:
                 self.logger.debug('RefsExistError %s while deleting VN %s..'
                     'Will retry' %(e, self.vn_name))
                 return False
@@ -1861,7 +1860,7 @@ class VNFixture(fixtures.Fixture):
         try:
             return self.vnc_lib_h.virtual_network_ip_alloc(self.api_vn_obj,
                                                            count=count)
-        except RefsExistError as e:
+        except RefsExistError,e:
             self.logger.debug('No IP available to allocate in VN %s' %(
                 self.vn_name))
             return None
@@ -2122,5 +2121,5 @@ class MultipleVNFixture(fixtures.Fixture):
         return self._vn_subnets
 
     def get_all_fixture_obj(self):
-        return map(lambda name_fixture: (name_fixture[0], name_fixture[1].obj), self._vn_fixtures)
+        return map(lambda (name, fixture): (name, fixture.obj), self._vn_fixtures)
 

@@ -1,5 +1,4 @@
 from __future__ import print_function
-from __future__ import absolute_import
 import time
 import sys
 import os
@@ -17,9 +16,9 @@ import socket
 #
 # Contrail libs
 #
-from .commands import Command
-from .cn_introspect_bgp import ControlNodeInspect
-from .ssh_interactive_commnds import *
+from commands import Command
+from cn_introspect_bgp import ControlNodeInspect
+from ssh_interactive_commnds import *
 
 #
 # Used to kill any residual bgp_stress_test processes including zombies
@@ -59,7 +58,7 @@ def open_logfile(fname):
         fd = open(fname, 'w')
     except (SystemExit, KeyboardInterrupt):
         raise
-    except Exception as e:
+    except Exception, e:
         print (
             'ABORT: Failed to open file:%s, since this is a scaling script, check that the number of file descriptors (max files) has not been exceeded:[lsof -n, and ulimit -n]', fname)
         sys.exit()
@@ -512,7 +511,7 @@ def kill_bgp_stress_python_call(child_name, child_of_child_name, fd, retry=2, de
             except OSError:
                 pass
 
-        except subprocess.CalledProcessError as error:
+        except subprocess.CalledProcessError, error:
             retry -= 1
             log_print("WARNING: command %s failed: %s" %
                       (cmd, error.output), fd)
@@ -823,7 +822,7 @@ def get_kernel_routes_light(self):
 
 def get_localhost_ip():
     local_host = socket.gethostname()
-    from .test_flap_agent_scale import *
+    from test_flap_agent_scale import *
     return TestBGPScale.inputs.host_data[local_host]['host_control_ip']
 #    cmd = 'resolveip -s `hostname`'
 #    cmd = "ip addr show | \grep 192.168.200 | awk '{print $2}' | cut -d '/' -f 1"
@@ -1823,7 +1822,7 @@ def main():
 if __name__ == '__bgp_scale_mock_agent__':
     try:
         bgp_scale_mock_agent()
-    except Exception as msg:
+    except Exception, msg:
         # print traceback.format_exc()
         log_print("WARNING: Hit exception in bgp.py after main..", fd)
     finally:

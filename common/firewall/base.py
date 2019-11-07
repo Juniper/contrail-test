@@ -10,13 +10,14 @@ from firewall_group import FirewallGroupFixture
 from application_policy_set import ApplicationPolicySetFixture
 from address_group import AddressGroupFixture
 from service_group import ServiceGroupFixture
+from tcutils.traffic_utils.base_traffic import BaseTraffic, SCAPY
 from collections import defaultdict
-from collections import OrderedDict as dict
 from vnc_api.vnc_api import NoIdError, BadRequest
 import random
 import copy
 
 class BaseFirewallTest(BaseNeutronTest):
+
     @classmethod
     def setUpClass(cls):
         cls.tags = dict(); cls.vns = dict(); cls.vms = dict()
@@ -396,9 +397,44 @@ class BaseFirewallTest(BaseNeutronTest):
            obj.add_labels(labels)
         return obj
 
+    def start_traffic(self, src_vm_fixture, dst_vm_fixture, proto, sport,
+                      dport, src_vn_fqname=None, dst_vn_fqname=None,
+                      af=None, fip_ip=None):
+        traffic_obj = BaseTraffic.factory(tool=SCAPY, proto=proto)
+        assert traffic_obj.start(src_vm_fixture, dst_vm_fixture, proto, sport,
+                                 dport, sender_vn_fqname=src_vn_fqname,
+                                 receiver_vn_fqname=dst_vn_fqname, af=af,
+                                 fip=fip_ip)
+        return traffic_obj
+
+    def stop_traffic(self, traffic_obj, expectation=True):
+        sent, recv = traffic_obj.stop()
+        if sent is None:
+            return False
+        msg = "transferred between %s and %s, proto %s sport %s and dport %s"%(
+               traffic_obj.src_ip, traffic_obj.dst_ip, traffic_obj.proto,
+               traffic_obj.sport, traffic_obj.dport)
+        if not expectation:
+            assert sent or traffic_obj.proto == 'tcp', "Packets not %s"%msg
+            assert recv < 5, "Packets %s"%msg
+        else:
+            assert sent and recv, "Packets not %s"%msg
+            if recv*100/float(sent) < 90:
+                assert False, "Packets not %s"%msg
+        return True
+
+    @retry(delay=60, tries=1)
+    def verify_traffic(self, src_vm_fixture, dst_vm_fixture, proto, sport=0,
+                       dport=0, src_vn_fqname=None, dst_vn_fqname=None,
+                       af=None, fip_ip=None, expectation=True):
+        traffic_obj = self.start_traffic(src_vm_fixture, dst_vm_fixture, proto,
+                                  sport, dport, src_vn_fqname=src_vn_fqname,
+                                  dst_vn_fqname=dst_vn_fqname, af=af,
+                                  fip_ip=fip_ip)
+        self.sleep(5)
+        return self.stop_traffic(traffic_obj, expectation)
+
     def _verify_traffic(self, vm1, vm2, vm3, exp=True, dport=None, sport=1111):
-        if exp:
-            self._verify_ping(vm1, vm2, vm3, exp=exp)
         dport = dport or random.randint(8000, 8010)
         #Validate tcp 8000 web to logic
         self.verify_traffic(vm1, vm2, 'tcp', sport=sport, dport=dport, expectation=exp)
@@ -412,12 +448,13 @@ class BaseFirewallTest(BaseNeutronTest):
         if exp:
             self.verify_traffic(vm2, vm3, 'tcp', sport=sport, dport=dport, expectation=not exp)
             self.verify_traffic(vm2, vm3, 'udp', sport=dport, dport=sport, expectation=not exp)
+            self._verify_ping(vm1, vm2, vm3, exp=exp)
 
     def _verify_ping(self, vm1, vm2, vm3=None, af=None, exp=True):
-        assert vm1.ping_to_vn(vm2, count=2, af=af, expectation=exp)
+        assert vm1.ping_to_vn(vm2, af=af, expectation=exp)
         if vm3:
-            assert vm1.ping_to_vn(vm3, count=2, af=af, expectation=exp)
-            assert vm2.ping_to_vn(vm3, count=2, af=af, expectation=exp)
+            assert vm1.ping_to_vn(vm3, af=af, expectation=exp)
+            assert vm2.ping_to_vn(vm3, af=af, expectation=exp)
 
     def create_n_security_objects(self, n_fw_rules=20, n_fw_policys=20,
                                   n_sgs=20, n_ags=20, n_aps=20, scope='global',
@@ -444,421 +481,3 @@ class BaseFirewallTest(BaseNeutronTest):
         for obj_type, objs in objs_dict.iteritems():
             for obj in objs:
                 self.perform_cleanup(obj, remove_cleanup=False)
-
-class FirewallBasic(BaseFirewallTest):
-    @classmethod
-    def setUpClass(cls):
-        super(FirewallBasic, cls).setUpClass()
-        try:
-            cls.create_objects()
-        except:
-            cls.tearDownClass()
-            raise
-
-    @classmethod
-    def create_objects(cls):
-        ''' Create class specific objects
-            1) Create VNs HR and ENG
-            2) Create VMs Web, Logic, DB in each VN
-            3) Create Network-Policy to interconnect VNs (for route leaking)
-        '''
-        cls.vns = dict(); cls.vms = dict(); cls.policys = dict()
-        for vn in ['hr', 'eng']:
-            cls.vns[vn] = cls.create_only_vn()
-            for vm in ['web', 'logic', 'db']:
-                cls.vms[vn+'_'+vm] = cls.create_only_vm(vn_fixture=cls.vns[vn],
-                                                        image_name='cirros-traffic')
-        cls.policys['hr_eng'] = cls.setup_only_policy_between_vns(cls.vns['hr'],
-                                                                 cls.vns['eng'])
-        assert cls.check_vms_active(cls.vms.itervalues(), do_assert=False)
-
-    @classmethod
-    def tearDownClass(cls):
-        if getattr(cls, 'policys', None) and 'hr_eng' in cls.policys:
-            cls.vns['hr'].unbind_policies()
-            cls.vns['eng'].unbind_policies()
-            cls.policys['hr_eng'].cleanUp()
-        super(FirewallBasic, cls).tearDownClass()
-
-    def _create_objects(self, SCOPE1='local', SCOPE2='global'):
-        '''
-        Validate global scope APS, FwP, FwR, ServiceGroup, AG, Tag
-        Steps:
-            1. Associate global scope tag respectively,
-               a. App tags to VNs
-               b. Tier tags to VMs
-               c. Site and deployment tags to Project
-            2. Create AG and associate a scoped label
-            3. Create SG with dst tcp 8000, icmp echo
-            4. Create FWR bw web-Tier and Logic-Tier and SG (default match)
-            5. Create another FWR bw Logic-Tier and DB-Tier for udp 8000 (default match)
-            6. Create FwPolicy and attach both the rules
-            7. Create APS with FwPolicy associated
-            8. Validate with traffic EngApp able to communicate based on rules
-            9. Validate that HRApp isnt able to communicate with itself
-            10. Remove application tag from HRApp and should be able to communicate
-        '''
-        if SCOPE1 == 'global':
-            SCOPE2 = 'global'
-        ICMP = 'icmp' if (self.inputs.get_af() == 'v4') else 'icmp6'
-
-        hr_app_tag = self.tags[SCOPE1]['application']['hr']
-        eng_app_tag = self.tags[SCOPE2]['application']['eng']
-        self.set_tag(self.vns['hr'], hr_app_tag)
-        self.set_tag(self.vns['eng'], eng_app_tag)
-        self.set_tag(self.vms['hr_web'], self.tags[SCOPE1]['tier']['web'])
-        self.set_tag(self.vms['hr_logic'], self.tags[SCOPE1]['tier']['logic'])
-        self.set_tag(self.vms['hr_db'], self.tags[SCOPE1]['tier']['db'])
-        self.set_tag(self.vms['eng_web'], self.tags[SCOPE2]['tier']['web'])
-        self.set_tag(self.vms['eng_logic'], self.tags[SCOPE2]['tier']['logic'])
-        self.set_tag(self.vms['eng_db'], self.tags[SCOPE2]['tier']['db'])
-        self.set_tag(self.project, self.tags[SCOPE1]['deployment']['dev'])
-        self.set_tag(self.project, self.tags[SCOPE2]['site']['blr'])
-
-        self.ag_label = self.create_tag('label', 'ag', SCOPE2)
-        self.ag = self.create_address_group(SCOPE2, labels=[self.ag_label])
-        services = [('tcp', (0,65535), (8000,8010))]
-        self.scope1_sg = self.scope2_sg = self.create_service_group(SCOPE1, services)
-        if SCOPE1 != SCOPE2:
-            self.scope2_sg = self.create_service_group(SCOPE2, services)
-        services = [('icmp', (0,65535), (0,65535))]
-        self.sg_icmp = self.create_service_group(SCOPE2, services)
-
-        logic_ep = {'address_group': self.ag.fq_name_str}
-        prefix = 'global:' if SCOPE2 == 'global' else ''
-        site_ep = {'tags': ['%s=%s'%(prefix+'site', 'blr')]}
-        eng_web_ep = hr_web_ep = {'tags': ['%s=%s'%(prefix+'tier', 'web')]}
-        eng_db_ep = hr_db_ep = {'tags': ['%s=%s'%(prefix+'tier', 'db')]}
-        if SCOPE1 != SCOPE2:
-            prefix = 'global:' if SCOPE1 == 'global' else ''
-            hr_web_ep = {'tags': ['%s=%s'%(prefix+'tier', 'web')]}
-            hr_db_ep = {'tags': ['%s=%s'%(prefix+'tier', 'db')]}
-        self.fwr_icmp = self.create_fw_rule(scope=SCOPE2,
-                             service_groups=[self.sg_icmp.uuid],
-                             source=site_ep, destination=site_ep)
-        self.fwr_eng_tcp = self.fwr_hr_tcp = self.create_fw_rule(scope=SCOPE2,
-                             service_groups=[self.scope2_sg.uuid],
-                             source=eng_web_ep, destination=logic_ep)
-        self.fwr_eng_udp = self.fwr_hr_udp = self.create_fw_rule(scope=SCOPE2,
-                             protocol='udp', dports=(8000,8010),
-                             source=logic_ep, destination=eng_db_ep)
-        if SCOPE1 != SCOPE2:
-            self.fwr_hr_tcp = self.create_fw_rule(scope=SCOPE1,
-                             service_groups=[self.scope1_sg.uuid],
-                             source=hr_web_ep, destination=logic_ep)
-            self.fwr_hr_udp = self.create_fw_rule(scope=SCOPE1, protocol='udp',
-                             dports=(8000,8010), source=logic_ep,
-                             destination=hr_db_ep)
-        rules = [{'uuid': self.fwr_icmp.uuid, 'seq_no': 20},
-                 {'uuid': self.fwr_hr_tcp.uuid, 'seq_no': 30},
-                 {'uuid': self.fwr_hr_udp.uuid, 'seq_no': 40}]
-        self.fwp_hr = self.fwp_eng = self.create_fw_policy(scope=SCOPE1, rules=rules)
-        if SCOPE1 != SCOPE2:
-            rules = [{'uuid': self.fwr_icmp.uuid, 'seq_no': 20},
-                     {'uuid': self.fwr_eng_tcp.uuid, 'seq_no': 30},
-                     {'uuid': self.fwr_eng_udp.uuid, 'seq_no': 40}]
-            self.fwp_eng = self.create_fw_policy(scope=SCOPE2, rules=rules)
-        self.aps_hr = self.create_aps(SCOPE1, policies=[{'uuid': self.fwp_hr.uuid, 'seq_no': 20}],
-                                      application=hr_app_tag)
-        self.aps_eng = self.create_aps(SCOPE2, policies=[{'uuid': self.fwp_eng.uuid, 'seq_no': 20}],
-                                       application=eng_app_tag)
-        for vm, obj in self.vms.iteritems():
-            if vm.startswith('eng'):
-                self.add_labels(obj, [self.ag_label])
-
-        assert self.check_vms_booted(self.vms.itervalues(), do_assert=False)
-
-class BaseFirewallTest_1(BaseFirewallTest):
-    @classmethod
-    def setUpClass(cls):
-        super(BaseFirewallTest_1, cls).setUpClass()
-        try:
-            cls.create_objects()
-        except:
-            cls.tearDownClass()
-            raise
-
-    @classmethod
-    def create_objects(cls):
-        ''' Create class specific objects
-            1) Create VNs HR and ENG
-            2) Create VMs Web, Logic, DB in each VN
-            3) Create Network-Policy to interconnect VNs (for route leaking)
-        '''
-        cls.vns = dict(); cls.vms = dict(); cls.policys = dict()
-        kwargs = dict()
-        image_name = getattr(cls, 'image_name', 'cirros-traffic')
-        if image_name:
-            kwargs['image_name'] = image_name
-        for vn in ['hr']:
-            cls.vns[vn] = cls.create_only_vn()
-            for vm in ['web', 'logic', 'db']:
-                cls.vms[vn+'_'+vm] = cls.create_only_vm(vn_fixture=cls.vns[vn],
-                                     **kwargs)
-        assert cls.check_vms_active(cls.vms.itervalues(), do_assert=False)
-
-    def _create_objects(self, SCOPE1='local', SCOPE2='global'):
-        '''
-        Validate global scope APS, FwP, FwR, ServiceGroup, AG, Tag
-        Steps:
-            1. Associate global scope tag respectively,
-               a. App tags to VNs
-               b. Tier tags to VMs
-               c. Site and deployment tags to Project
-            2. Create AG and associate a scoped label
-            3. Create SG with dst tcp 8000, icmp echo
-            4. Create FWR bw web-Tier and Logic-Tier and SG (default match)
-            5. Create another FWR bw Logic-Tier and DB-Tier for udp 8000 (default match)
-            6. Create FwPolicy and attach both the rules
-            7. Create APS with FwPolicy associated
-            8. Validate with traffic EngApp able to communicate based on rules
-            9. Validate that HRApp isnt able to communicate with itself
-            10. Remove application tag from HRApp and should be able to communicate
-        '''
-        if SCOPE1 == 'global':
-            SCOPE2 = 'global'
-        ICMP = 'icmp' if (self.inputs.get_af() == 'v4') else 'icmp6'
-        draft = True if getattr(self, 'draft', None) is True else False
-
-        hr_app_tag = self.tags[SCOPE1]['application']['hr']
-        self.set_tag(self.vns['hr'], hr_app_tag)
-        self.set_tag(self.vms['hr_web'], self.tags[SCOPE1]['tier']['web'])
-        self.set_tag(self.vms['hr_logic'], self.tags[SCOPE1]['tier']['logic'])
-        self.set_tag(self.vms['hr_db'], self.tags[SCOPE1]['tier']['db'])
-        self.set_tag(self.project, self.tags[SCOPE1]['deployment']['dev'])
-        self.set_tag(self.project, self.tags[SCOPE2]['site']['blr'])
-
-        if not getattr(self, 'ag_label', None):
-            self.ag_label = self.create_tag('label', 'ag', SCOPE2)
-        self.ag = self.create_address_group(SCOPE2, labels=[self.ag_label])
-        services = [('tcp', (0,65535), (8000,8010))]
-        self.scope1_sg = self.create_service_group(SCOPE1, services)
-        services = [('icmp', (0,65535), (0,65535))]
-        self.sg_icmp = self.create_service_group(SCOPE2, services)
-
-        if draft:
-            fqname = list(self.ag.fq_name)
-            if SCOPE2 == 'global':
-                fqname[0] = 'draft-policy-management'
-            else:
-                fqname.insert(-1, 'draft-policy-management')
-            logic_ep = {'address_group': ':'.join(fqname)}
-        else:
-            logic_ep = {'address_group': self.ag.fq_name_str}
-        prefix = 'global:' if SCOPE2 == 'global' else ''
-        site_ep = {'tags': ['%s=%s'%(prefix+'site', 'blr')]}
-        prefix = 'global:' if SCOPE1 == 'global' else ''
-        hr_web_ep = {'tags': ['%s=%s'%(prefix+'tier', 'web')]}
-        hr_db_ep = {'tags': ['%s=%s'%(prefix+'tier', 'db')]}
-        self.fwr_icmp = self.create_fw_rule(scope=SCOPE2,
-                             service_groups=[self.sg_icmp.uuid],
-                             source=site_ep, destination=site_ep)
-        self.fwr_hr_tcp = self.create_fw_rule(scope=SCOPE1,
-                             service_groups=[self.scope1_sg.uuid],
-                             source=hr_web_ep, destination=logic_ep)
-        self.fwr_hr_udp = self.create_fw_rule(scope=SCOPE1, protocol='udp',
-                             dports=(8000,8010), source=logic_ep,
-                             destination=hr_db_ep)
-        rules = [{'uuid': self.fwr_icmp.uuid, 'seq_no': 20}]
-        self.fwp_icmp = self.create_fw_policy(scope=SCOPE2, rules=rules)
-        rules = [{'uuid': self.fwr_hr_tcp.uuid, 'seq_no': 30},
-                 {'uuid': self.fwr_hr_udp.uuid, 'seq_no': 40}]
-        self.fwp_hr = self.create_fw_policy(scope=SCOPE1, rules=rules)
-        policies = [{'uuid': self.fwp_hr.uuid, 'seq_no': 20},
-                    {'uuid': self.fwp_icmp.uuid, 'seq_no': 30}]
-        self.aps_hr = self.create_aps(SCOPE1, policies=policies,
-                                      application=hr_app_tag)
-        for vm, obj in self.vms.iteritems():
-            if vm.startswith('hr'):
-                self.add_labels(obj, [self.ag_label])
-
-        assert self.check_vms_booted(self.vms.itervalues(), do_assert=False)
-
-
-class FirewallDraftBasic(BaseFirewallTest_1):
-    draft = True
-    def _test_draft_mode(self, SCOPE1, SCOPE2):
-        # Revert the created draft objects
-        self.enable_security_draft_mode(SCOPE1, SCOPE2)
-        self.addCleanup(self.disable_security_draft_mode, SCOPE1, SCOPE2, retry=3)
-        self.addCleanup(self.discard, SCOPE1, SCOPE2)
-        self._create_objects(SCOPE1, SCOPE2)
-        self.addCleanup(self.commit, SCOPE1, SCOPE2)
-        fixture_states = {
-            'created': [self.ag, self.scope1_sg, self.sg_icmp,
-                        self.fwr_icmp, self.fwr_hr_tcp, self.fwr_hr_udp,
-                        self.fwp_icmp, self.fwp_hr, self.aps_hr],
-            'deleted': [],
-            'updated': []
-        }
-        self.validate_draft(fixture_states, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'], 'udp',
-                            sport=1111, dport=8005)
-        self.discard(SCOPE1, SCOPE2)
-        self.validate_draft({}, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'], 'udp',
-                            sport=1111, dport=8005)
-        # Disable draft mode
-        self._create_objects(SCOPE1, SCOPE2)
-        fixture_states = {
-            'created': [self.ag, self.scope1_sg, self.sg_icmp,
-                        self.fwr_icmp, self.fwr_hr_tcp, self.fwr_hr_udp,
-                        self.fwp_icmp, self.fwp_hr, self.aps_hr]
-        }
-        self.validate_draft(fixture_states, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'], 'udp',
-                            sport=1111, dport=8005)
-        try:
-            self.disable_security_draft_mode(SCOPE1, SCOPE2)
-            assert False, "Disable draft mode with drafts should raise exception"
-        except:
-            pass
-        self.validate_draft(fixture_states, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'], 'udp',
-                            sport=1111, dport=8005)
-        # Commit the created draft objects
-        self.commit(SCOPE1, SCOPE2)
-        self.validate_draft({}, SCOPE1, SCOPE2)
-        self._verify_traffic(self.vms['hr_web'], self.vms['hr_logic'], self.vms['hr_db'])
-
-        # Update security group objects
-        # FWPolicy
-        rules = [{'uuid': self.fwr_icmp.uuid, 'seq_no': 20}]
-        self.fwp_icmp.remove_firewall_rules(rules=rules)
-        fixture_states = {'updated': [self.fwp_icmp]}
-        self.validate_draft(fixture_states, SCOPE1, SCOPE2)
-        self._verify_ping(self.vms['hr_web'], self.vms['hr_logic'], self.vms['hr_db'])
-        self.discard(SCOPE1, SCOPE2)
-        self.validate_draft({}, SCOPE1, SCOPE2)
-        self._verify_ping(self.vms['hr_web'], self.vms['hr_logic'], self.vms['hr_db'])
-        self.fwp_icmp.remove_firewall_rules(rules=rules)
-        self.validate_draft(fixture_states, SCOPE1, SCOPE2)
-        self.commit(SCOPE1, SCOPE2)
-        self.validate_draft({}, SCOPE1, SCOPE2)
-        self._verify_ping(self.vms['hr_web'], self.vms['hr_logic'],
-                          self.vms['hr_db'], exp=False)
-        # SG
-        self.scope1_sg.delete_services([('tcp', (0,65535), (8000,8010))])
-        self.scope1_sg.add_services([('tcp', (0,65535), (8000, 9000))])
-        fixture_states = { 'updated': [self.scope1_sg]}
-        self.validate_draft(fixture_states, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'],
-                            'tcp', sport=1111, dport=8085, expectation=False)
-        self.commit(SCOPE1, SCOPE2)
-        self.validate_draft({}, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'],
-                            'tcp', sport=1111, dport=8085, expectation=True)
-        # FWRule
-        logic_ep = {'address_group': self.ag.fq_name_str}
-        self.fwr_hr_tcp.update(direction='>', destination=logic_ep)
-        fixture_states = { 'updated': [self.fwr_hr_tcp]}
-        self.validate_draft(fixture_states, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'], 'tcp',
-                            sport=1111, dport=8005)
-        self.verify_traffic(self.vms['hr_logic'], self.vms['hr_web'], 'tcp',
-                            sport=1111, dport=8005, expectation=True)
-        self.commit(SCOPE1, SCOPE2)
-        self.validate_draft({}, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'], 'tcp',
-                            sport=1111, dport=8005)
-        self.verify_traffic(self.vms['hr_logic'], self.vms['hr_web'], 'tcp',
-                            sport=1111, dport=8005, expectation=False)
-        #AG
-        self.delete_labels(self.ag, [self.ag_label])
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'], 'tcp',
-                            sport=1111, dport=8005, expectation=False)
-        self.ag.add_subnets(self.vns['hr'].get_cidrs())
-        fixture_states = { 'updated': [self.ag]}
-        self.validate_draft(fixture_states, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'], 'tcp',
-                            sport=1111, dport=8005, expectation=False)
-        self.commit(SCOPE1, SCOPE2)
-        self.validate_draft({}, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'], 'tcp',
-                            sport=1111, dport=8005)
-        #APS
-        policies = [{'uuid': self.fwp_hr.uuid, 'seq_no': 20},
-                    {'uuid': self.fwp_icmp.uuid, 'seq_no': 30}]
-        self.aps_hr.delete_policies(policies)
-        fixture_states = { 'updated': [self.aps_hr]}
-        self.validate_draft(fixture_states, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_db'], 'tcp',
-                            sport=1111, dport=7005, expectation=False)
-        self.commit(SCOPE1, SCOPE2)
-        self.validate_draft({}, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_db'], 'tcp',
-                            sport=1111, dport=7005, expectation=True)
-
-        self.aps_hr.add_policies(policies)
-        rules = [{'uuid': self.fwr_icmp.uuid, 'seq_no': 20}]
-        self.fwp_icmp.add_firewall_rules(rules=rules)
-        self.commit(SCOPE1, SCOPE2)
-        # Delete security objects
-        # SG
-        self.fwr_icmp.update(protocol='udp', dports=(8085, 8085), service_groups=list())
-        self.perform_cleanup(self.sg_icmp)
-        fixture_states = { 'deleted': [self.sg_icmp], 'updated': [self.fwr_icmp]}
-        self.validate_draft(fixture_states, SCOPE1, SCOPE2)
-        self._verify_ping(self.vms['hr_web'], self.vms['hr_logic'],
-                          self.vms['hr_db'])
-        self.discard(SCOPE1, SCOPE2)
-        self.validate_draft({}, SCOPE1, SCOPE2)
-        self.fwr_icmp.update(protocol='udp', dports=(8085, 8085), service_groups=list())
-        self.perform_cleanup(self.sg_icmp)
-        self.commit(SCOPE1, SCOPE2)
-        self.validate_draft({}, SCOPE1, SCOPE2)
-        self._verify_ping(self.vms['hr_web'], self.vms['hr_logic'],
-                          self.vms['hr_db'], exp=False)
-        # FWRule
-        rules = [{'uuid': self.fwr_hr_udp.uuid, 'seq_no': 40}]
-        self.fwp_hr.remove_firewall_rules(rules=rules)
-        self.perform_cleanup(self.fwr_hr_udp)
-        fixture_states = { 'deleted': [self.fwr_hr_udp],
-                           'updated': [self.fwp_hr]}
-        self.validate_draft(fixture_states, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_logic'], self.vms['hr_db'],
-            'udp', sport=1111, dport=8005, expectation=True)
-        self.commit(SCOPE1, SCOPE2)
-        self.validate_draft({}, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_logic'], self.vms['hr_db'],
-            'udp', sport=1111, dport=8005, expectation=False)
-        # FWPolicy
-        policies = [{'uuid': self.fwp_icmp.uuid, 'seq_no': 30}]
-        self.aps_hr.delete_policies(policies)
-        self.perform_cleanup(self.fwp_icmp)
-        fixture_states = { 'deleted': [self.fwp_icmp],
-                           'updated': [self.aps_hr]}
-        self.validate_draft(fixture_states, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'],
-            'udp', sport=1111, dport=8085, expectation=True)
-        self.commit(SCOPE1, SCOPE2)
-        self.validate_draft({}, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'],
-            'udp', sport=1111, dport=8085, expectation=False)
-        # AG
-        rules = [{'uuid': self.fwr_hr_tcp.uuid, 'seq_no': 30}]
-        self.fwp_hr.remove_firewall_rules(rules=rules)
-        self.perform_cleanup(self.fwr_hr_tcp)
-        self.perform_cleanup(self.ag)
-        fixture_states = { 'deleted': [self.fwr_hr_tcp, self.ag],
-                           'updated': [self.fwp_hr]}
-        self.validate_draft(fixture_states, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'],
-            'tcp', sport=1111, dport=8005, expectation=True)
-        self.commit(SCOPE1, SCOPE2)
-        self.validate_draft({}, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'],
-            'tcp', sport=1111, dport=8005, expectation=False)
-        # APS
-        self.perform_cleanup(self.aps_hr)
-        fixture_states = { 'deleted': [self.aps_hr]}
-        self.validate_draft(fixture_states, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'],
-            'tcp', sport=1111, dport=8005, expectation=False)
-        self.commit(SCOPE1, SCOPE2)
-        self.validate_draft({}, SCOPE1, SCOPE2)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'], 'tcp',
-                            sport=1111, dport=8005)
-        self.verify_traffic(self.vms['hr_web'], self.vms['hr_logic'], 'udp',
-                            sport=1111, dport=8005)
-

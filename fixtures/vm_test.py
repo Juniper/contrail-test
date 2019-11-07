@@ -12,6 +12,7 @@ from collections import defaultdict
 from fabric.api import env
 from fabric.api import run
 from fabric.state import output
+from fabric.state import connections as fab_connections
 from fabric.operations import get, put
 from fabric.context_managers import settings, hide
 from subprocess import Popen, PIPE
@@ -58,7 +59,7 @@ class VMFixture(fixtures.Fixture):
     '''
 
     def __init__(self, connections, vm_name=None, vn_obj=None,
-                 vn_objs=None,
+                 vn_objs=[],
                  image_name='ubuntu', subnets=[],
                  instance_type="virtual-server",
                  flavor=None,
@@ -103,7 +104,7 @@ class VMFixture(fixtures.Fixture):
         if self.inputs.is_ci_setup():
             cidrs = []
             for vn_obj in self.vn_objs:
-                if 'subnet_ipam' in vn_obj['network']:
+                if vn_obj['network'].has_key('subnet_ipam'):
                     cidrs.extend(list(map(lambda obj: obj['subnet_cidr'],
                                           vn_obj['network']['subnet_ipam'])))
             if cidrs and get_af_from_cidrs(cidrs) != 'v4':
@@ -128,7 +129,7 @@ class VMFixture(fixtures.Fixture):
         self.agent_vxlan_id = {}
         self.local_ips = {}
         self.cs_vmi_obj = {}
-        self.vm_launch_flag = False
+        self.vm_launch_flag = True
         self.vm_in_api_flag = True
         self.vm_in_agent_flag = True
         self.vm_in_cn_flag = True
@@ -156,9 +157,6 @@ class VMFixture(fixtures.Fixture):
         self._vmi_ids = {}
         self.cfgm_ip = self.inputs.cfgm_ip
         self.collector_ip = self.inputs.collector_ip
-        self.is_vm_up = False
-        self.is_vm_active = False
-        self.copied_files = dict()
         self.port_fixture_list = []
     # end __init__
 
@@ -211,9 +209,9 @@ class VMFixture(fixtures.Fixture):
         self.vn_ids = [self.orch.get_vn_id(x) for x in self.vn_objs]
         self.vm_obj = self.orch.get_vm_if_present(self.vm_name,
                                                   project_id=self.project_id)
+        self.vm_objs = self.orch.get_vm_list(name_pattern=self.vm_name,
+                                             project_id=self.project_id)
         if self.vm_obj:
-            self.vm_objs = self.orch.get_vm_list(name_pattern=self.vm_name,
-                                                 project_id=self.project_id)
             self.vm_id = self.vm_obj.id
             with self.printlock:
                 self.logger.debug('VM %s already present, not creating it'
@@ -325,15 +323,11 @@ class VMFixture(fixtures.Fixture):
 
     @property
     def vm_ip(self):
-        assert self.verify_vm_launched()
         return self.vm_ips[0] if self.vm_ips else None
 
-    @retry(delay=2, tries=5)
+    @retry(delay=1, tries=5)
     def verify_vm_launched(self):
-        if self.vm_launch_flag is True:
-            self.logger.debug('verify_vm_launched is skipped '
-                'since self.vm_launch_flag is set')
-            return True
+        self.vm_launch_flag = True
         #For vcenter sometimes the vm object not updated
         #properly.It affects the verification in parallel run.
         #Hence need to read the vm object before verification
@@ -360,9 +354,8 @@ class VMFixture(fixtures.Fixture):
 
     @property
     def vm_node_ip(self):
-        if not getattr(self, '_vm_node_ip', None):
-            self._vm_node_ip = self.inputs.get_host_ip(
-                                   self.get_host_of_vm(refresh=True))
+        if  not getattr(self, '_vm_node_ip', None):
+            self._vm_node_ip = self.inputs.get_host_ip(self.get_host_of_vm())
         return self._vm_node_ip
 
     #need to set vm_node_ip after vcenter vmotion
@@ -376,10 +369,7 @@ class VMFixture(fixtures.Fixture):
         vm_obj = vm_obj or self.vm_obj
         attr = '_host_' + vm_obj.name
         if refresh or not getattr(self, attr, None):
-            assert self.wait_till_vm_is_active()
-            host = self.orch.get_host_of_vm(vm_obj)
-            if host is not None:
-                setattr(self, attr, host)
+            setattr(self, attr, self.orch.get_host_of_vm(vm_obj))
         return getattr(self, attr, None)
 
     @property
@@ -420,7 +410,7 @@ class VMFixture(fixtures.Fixture):
             return None
         return self.cs_vm_obj
 
-    @retry(delay=1, tries=10)
+    @retry(delay=1, tries=5)
     def get_vmi_obj_from_api_server(self, cfgm_ip=None, refresh=False):
         cfgm_ip = cfgm_ip or self.inputs.cfgm_ip
         if not getattr(self, 'cs_vmi_objs', None):
@@ -491,7 +481,7 @@ class VMFixture(fixtures.Fixture):
         cs_vmi_objs = self.get_vmi_obj_from_api_server(refresh=True)[1]
         for cs_vmi_obj in cs_vmi_objs:
             vmi = cs_vmi_obj['virtual-machine-interface']
-            if 'security_group_refs' in vmi:
+            if vmi.has_key('security_group_refs'):
                 sec_grps = vmi['security_group_refs']
                 for sec_grp in sec_grps:
                     if secgrp == sec_grp['to'][-1]:
@@ -566,7 +556,7 @@ class VMFixture(fixtures.Fixture):
                 uuid = rule['rule_uuid']
             for acl in acls_list:
                 for r in acl['entries']:
-                    if 'uuid' in r:
+                    if r.has_key('uuid'):
                         if r['uuid'] == uuid:
                             result = True
                             break
@@ -751,7 +741,7 @@ class VMFixture(fixtures.Fixture):
                     vmi_id=tmp_vmi_id)[0]
                 vrf_entry = tap_intf[vn_fq_name]['fip_list'][0]['vrf_name']
             return vrf_entry
-        except IndexError as e:
+        except IndexError, e:
             self.logger.warn('Unable to get VRFEntry in agent %s for VM %s,',
                              'VN %s' % (self.vm_node_ip, self.vm_name, vn_fq_name))
             return None
@@ -772,7 +762,7 @@ class VMFixture(fixtures.Fixture):
                     if vn_fq_name in fip['vrf_name']:
                         fip_addr_vm = fip['ip_addr']
                         return fip_addr_vm
-        except IndexError as e:
+        except IndexError, e:
             self.logger.warn('Unable to get Floating IP from agent %s ',
                              'for VM %s,VN %s' % (self.vm_node_ip, self.vm_name, vn_fq_name))
             return None
@@ -1173,8 +1163,8 @@ class VMFixture(fixtures.Fixture):
                     warn_only=True, abort_on_prompts=False):
                 #		output = run('ping %s -c 1' % (self.local_ips[vn_fq_name]))
                 #                expected_result = ' 0% packet loss'
-                output = safe_run('ping %s -c 2 -W %s' %
-                                 (self.local_ips[vn_fq_name], timeout))
+                output = safe_sudo('ping %s -c 2 -W %s' %
+                                  (self.local_ips[vn_fq_name], timeout))
                 failure = ' 100% packet loss'
                 self.logger.debug(output)
                 #if expected_result not in output:
@@ -1311,12 +1301,14 @@ class VMFixture(fixtures.Fixture):
                 return False
         return True
 
-    def ping_to_ip(self, ip, return_output=False, other_opt='', size='56', count='3', timewait='1', expectation=True):
+    def ping_to_ip(self, ip, return_output=False, other_opt='', size='56', count='5', timewait='1', expectation=True):
         """Ping from a VM to an IP specified.
+
         This method logs into the VM from the host machine using ssh and runs ping test to an IP.
         """
         host = self.inputs.host_data[self.vm_node_ip]
         output = ''
+        fab_connections.clear()
         af = get_af_type(ip)
         try:
             vm_host_string = '%s@%s' % (self.vm_username, self.local_ip)
@@ -1345,7 +1337,7 @@ class VMFixture(fixtures.Fixture):
             self.logger.debug(output)
             if return_output is True:
                 return output
-        except Exception as e:
+        except Exception, e:
             self.logger.exception(
                 'Exception occured while trying ping from VM')
             return False
@@ -1381,7 +1373,7 @@ class VMFixture(fixtures.Fixture):
 
     @retry(delay=1, tries=10)
     def ping_with_certainty(self, ip=None, return_output=False, other_opt='',
-                            size='56', count='3', expectation=True,
+                            size='56', count='5', expectation=True,
                             dst_vm_fixture=None, vn_fq_name=None, af=None):
         '''
         Better to call this instead of ping_to_ip.
@@ -2035,10 +2027,13 @@ class VMFixture(fixtures.Fixture):
         if self.inputs.fixture_cleanup == 'force':
             do_cleanup = True
         if do_cleanup:
-            if self.inputs.orchestrator != 'vcenter' and \
-               not self.inputs.ns_agilio_vrouter_data:
-                for each_port_id in self.port_ids or []:
-                    self.interface_detach(each_port_id)
+            if len(self.port_ids) != 0:
+                for each_port_id in self.port_ids:
+                    #in case of vcenter vm_obj dont't have option to  detach interface
+                    if self.inputs.orchestrator == 'vcenter':
+                        break
+                    if not self.inputs.ns_agilio_vrouter_data:
+                        self.interface_detach(each_port_id)
             for vm_obj in list(self.vm_objs):
                 for sec_grp in self.sg_ids:
                     self.logger.info("Removing the security group"
@@ -2119,9 +2114,9 @@ class VMFixture(fixtures.Fixture):
                         i = 'tftp -p -r %s -l %s %s' % (file, file, vm_ip)
                     else:
                         i = 'timeout %d atftp -p -r %s -l %s %s' % (timeout,
-                                                          file, file, vm_ip)
+                                                                    file, file, vm_ip)
                     self.run_cmd_on_vm(cmds=[i], timeout=timeout + 10)
-        except Exception as e:
+        except Exception, e:
             self.logger.exception(
                 'Exception occured while trying to tftp the file')
     # end tftp_file_to_vm
@@ -2147,12 +2142,13 @@ class VMFixture(fixtures.Fixture):
             cmd_outputs = self.run_cmd_on_vm(
                 cmds=[i], timeout=timeout + 10)
             self.logger.debug(cmd_outputs)
-        except Exception as e:
+        except Exception, e:
             self.logger.exception(
                 'Exception occured while trying to scp the file\n%s' % e)
     # end scp_file_to_vm
 
     def put_pub_key_to_vm(self):
+        fab_connections.clear()
         self.logger.debug('Copying public key to VM %s' % (self.vm_name))
         self.orch.put_key_file_to_host(self.vm_node_ip)
         auth_file = '.ssh/authorized_keys'
@@ -2178,7 +2174,7 @@ class VMFixture(fixtures.Fixture):
             '''sed -i -e 's/no-port-forwarding.*sleep 10\" //g' ~root/.ssh/authorized_keys''']
         self.run_cmd_on_vm(cmds, as_sudo=True)
 
-    @retry(delay=5, tries=5)
+    @retry(delay=10, tries=5)
     def check_file_transfer(self, dest_vm_fixture, dest_vn_fq_name=None, mode='scp',
                             size='100', fip=None, expectation=True, af=None):
         '''
@@ -2258,7 +2254,7 @@ class VMFixture(fixtures.Fixture):
                         logger=self.logger)
                     self.run_cmd_on_vm(cmds=['chmod 600 id_rsa'])
 
-        except Exception as e:
+        except Exception, e:
             self.logger.exception(
                 'Exception occured while trying to get the rsa file to the \
                  VM from the agent')
@@ -2275,6 +2271,7 @@ class VMFixture(fixtures.Fixture):
         host = self.inputs.host_data[self.vm_node_ip]
         output = ''
         try:
+            fab_connections.clear()
             if not local_ip:
                 local_ip = self.local_ip
             vm_host_string = '%s@%s' % (
@@ -2294,10 +2291,10 @@ class VMFixture(fixtures.Fixture):
                 zip(cmdList, self.return_output_values_list)
             )
             return self.return_output_cmd_dict
-        except SystemExit as e:
+        except SystemExit, e:
             self.logger.debug('Command exection failed: %s' % (e))
             raise e
-        except Exception as e:
+        except Exception, e:
             self.logger.debug(
                 'Exception occured while running cmds %s' % (cmds))
             self.logger.exception(e)
@@ -2317,13 +2314,10 @@ class VMFixture(fixtures.Fixture):
         return vm_ip
     # end def
 
-    def wait_till_vm_is_up(self, refresh=False):
-        if self.is_vm_up == True and not refresh:
-            return True
+    def wait_till_vm_is_up(self,refresh=False):
         self.logger.info('Waiting for VM %s to be up..' %(self.vm_name))
         self.refresh = refresh
         status = self.wait_till_vm_up()
-        self.refresh = False
         if not status:
             self.logger.error('VM %s does not seem to be fully up. Check logs'
                 %(self.vm_name))
@@ -2339,31 +2333,37 @@ class VMFixture(fixtures.Fixture):
         return return_status
 
     def wait_till_vm_is_active(self):
-        if self.is_vm_active == True:
-            return True
         status = self.orch.wait_till_vm_is_active(self.vm_obj)
         if type(status) == tuple:
             if status[1] in 'ERROR':
-                self.logger.error("VM in error state.")
-                self.is_vm_active = False
                 return False
             elif status[1] in 'ACTIVE':
-                self.is_vm_active = True
                 return True
         elif type(status) == bool:
-            if status is True:
-                self.is_vm_active = True
             return status
-        self.is_vm_active = False
-        return False
 
+    @retry(delay=5, tries=15)
     def wait_till_vm_up(self):
-        status = self.wait_till_vm_is_active()
-        if not status:
-            self.logger.error("VM is not in ACTIVE state")
-            return (False, 'final')
+        vm_status = self.orch.wait_till_vm_is_active(self.vm_obj)
+        if type(vm_status) == tuple:
+            if vm_status[1] in 'ERROR':
+                self.logger.warn("VM in error state. Asserting...")
+                return (False, 'final')
+#            assert False
+
+            if vm_status[1] != 'ACTIVE':
+                result = result and False
+                return result
+        elif type(vm_status) == bool and not vm_status:
+            return (vm_status, 'final')
 
         result = self.verify_vm_launched()
+        #console_check = self.nova_h.wait_till_vm_is_up(self.vm_obj)
+        #result = result and self.nova_h.wait_till_vm_is_up(self.vm_obj)
+        # if not console_check :
+        #    import pdb; pdb.set_trace()
+        #    self.logger.warn('Console logs didnt give enough info on bootup')
+        self.vm_obj.get()
         result = result and self._gather_details()
         for vn_fq_name in self.vn_fq_names:
             if self.vnc_lib_fixture.get_active_forwarding_mode(vn_fq_name) != 'l2':
@@ -2379,7 +2379,6 @@ class VMFixture(fixtures.Fixture):
                               self.vm_name))
             self.logger.debug('Console output: %s' % self.get_console_output())
             return result
-        self.is_vm_up = True
         return True
     # end wait_till_vm_up
 
@@ -2565,21 +2564,26 @@ class VMFixture(fixtures.Fixture):
     # end wait_for_ssh_on_vm
 
     def copy_file_to_vm(self, localfile, dstdir=None, force=False):
-        if not force and localfile in self.copied_files and \
-           self.copied_files[localfile] == dstdir:
-            self.logger.debug('File %s already copied to %s'%(localfile,
-                                                              self.vm_ip))
-            return True
         host = self.inputs.get_host_ip(self.vm_node_ip)
-        dest_dir = '%s@%s:%s' % (self.vm_username, self.local_ip, dstdir or '')
+#        filename = localfile.split('/')[-1]
+#        if dstdir:
+#            remotefile = dstdir + '/' + filename
+#        else:
+#            remotefile = filename
+#        self.inputs.copy_file_to_server(
+#            host, localfile, '/tmp/', filename, force)
+#        cmd = 'fab -u %s -p "%s" -H %s ' % (
+#            self.vm_username, self.vm_password, self.local_ip)
+#        cmd = cmd + 'fput:%s,%s' % ('/tmp/' + filename, remotefile)
+#        self.inputs.run_cmd_on_server(host, cmd)
+
+        dstdir = '%s@%s:%s' % (self.vm_username, self.local_ip, dstdir)
         dest_gw_username = self.inputs.host_data[self.vm_node_ip]['username']
         dest_gw_password = self.inputs.host_data[self.vm_node_ip]['password']
         dest_gw_ip = self.vm_node_ip
-        dest_gw_login = "%s@%s" % (dest_gw_username, dest_gw_ip)
-        remote_copy(localfile, dest_dir, dest_password=self.vm_password,
+        dest_gw_login = "%s@%s" % (dest_gw_username,dest_gw_ip)
+        remote_copy(localfile, dstdir, dest_password=self.vm_password,
                     dest_gw=dest_gw_login, dest_gw_password=dest_gw_password)
-        self.logger.debug('Copied file %s to %s'%(localfile, self.vm_ip))
-        self.copied_files[localfile] = dstdir
     # end copy_file_to_vm
 
     def get_vm_ipv6_addr_from_vm(self, intf='eth0', addr_type='link'):
@@ -2627,6 +2631,8 @@ class VMFixture(fixtures.Fixture):
         key = self.orch.get_key_file()
         pkgdst = PkgHost(self.local_ip, key=key, user=self.vm_username,
                          password=self.vm_password)
+        fab_connections.clear()
+
         assert build_and_install(pkgname, pkgsrc, pkgdst, self.logger)
 
     @retry(delay=2, tries=15)
@@ -2657,7 +2663,9 @@ class VMFixture(fixtures.Fixture):
     def start_webserver(self, listen_port=8000, content=None):
         '''Start Web server on the specified port.                                                                                                                                                                                          
         '''
+        self.wait_till_vm_is_up()
         host = self.inputs.host_data[self.vm_node_ip]
+        fab_connections.clear()
         try:
             vm_host_string = '%s@%s' % (self.vm_username, self.local_ip)
             cmd = 'echo %s >& index.html' % (content or self.vm_name)
@@ -2675,7 +2683,7 @@ class VMFixture(fixtures.Fixture):
                 logger=self.logger
             )
             self.logger.debug(output)
-        except Exception as e:
+        except Exception, e:
             self.logger.exception(
                 'Exception occured while starting webservice on VM')
             return False
@@ -2685,6 +2693,8 @@ class VMFixture(fixtures.Fixture):
         ''' Stop Web Server on the specified port.
         '''
         host = self.inputs.host_data[self.vm_node_ip]
+        fab_connections.clear()
+        #listen_port = "\"Server "+listen_port+"$\""
         try:
             vm_host_string = '%s@%s' % (self.vm_username, self.local_ip)
             cmd = "pkill -f SimpleHTTPServer"
@@ -2695,7 +2705,7 @@ class VMFixture(fixtures.Fixture):
                 logger=self.logger
             )
             self.logger.debug(output)
-        except Exception as e:
+        except Exception, e:
             self.logger.exception(
                 'Exception occured while starting webservice on VM')
             return False
@@ -2723,9 +2733,10 @@ class VMFixture(fixtures.Fixture):
 
     def _gather_details(self):
         self.cs_vmi_obj = {}
-        self.wait_till_vm_is_active()
+        self.get_vmi_objs()
         self.vm_id = self.vm_objs[0].id
         # Figure out the local metadata IP of the VM reachable from host
+        inspect_h = self.agent_inspect[self.vm_node_ip]
 
         api_inspect = self.api_s_inspects[self.cfgm_ip]
         vmi_objs = self.get_vmi_obj_from_api_server(self.cfgm_ip, refresh=True)[1]
@@ -2734,7 +2745,6 @@ class VMFixture(fixtures.Fixture):
                 vmi_obj['virtual-machine-interface']['virtual_network_refs'][0]['to'])
             self.cs_vmi_obj[vmi_vn_fq_name] = vmi_obj
 
-        inspect_h = self.agent_inspect[self.vm_node_ip]
         for vn_fq_name in self.vn_fq_names:
             (domain, project, vn) = vn_fq_name.split(':')
             vnic_type = self.get_vmi_type(self.cs_vmi_obj[vn_fq_name])
@@ -3221,7 +3231,7 @@ class MultipleVMFixture(fixtures.Fixture):
                 vm_fixture = self.useFixture(VMFixture(image_name=image,
                                                        project_name=project, flavor=flavor, connections=self.connections,
                                                        vn_obj=vn_obj, vm_name=vm_name))
-            except Exception as err:
+            except Exception, err:
                 self.logger.error(err)
                 self.logger.debug(traceback.format_exc())
                 break

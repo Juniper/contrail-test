@@ -921,7 +921,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
                                   mac_move_control=mac_move_limit_obj,
                                   mac_aging_time=mac_aging_time,
                                   isid=bd[test_bd]['isid'])
-        except Exception as msg:
+        except Exception, msg:
             assert msg.status_code == 400
             assert msg.content == bd_error
         else:
@@ -952,7 +952,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         #Verify multiple bridge domains can not be added to single VMI and VMI and BD should be in same VN
         try:
             bd_fixture.add_bd_to_vmi(vmi_fixture.uuid, vlan_tag, verify=False)
-        except Exception as msg:
+        except Exception, msg:
             assert msg.status_code == 400
             assert msg.content == vmi_bd_error
         else:

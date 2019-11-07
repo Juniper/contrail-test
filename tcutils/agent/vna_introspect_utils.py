@@ -1,12 +1,10 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import cgitb
 cgitb.enable(format='text')
 
 import logging as LOG
 
 from tcutils.verification_util import *
-from .vna_results import *
+from vna_results import *
 import re
 from netaddr import *
 from tcutils.util import is_v6
@@ -796,7 +794,7 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
         '''
         ping_url = "Snh_PingReq?source_ip=%s&source_port=%s&dest_ip=%s&dest_port=%s&protocol=%s&vrf_name=%s&packet_size=%s&count=%s&interval=%s" % (
             src_ip, src_port, dst_ip, dst_port, proto, vrf, size, count, intv)
-        print(ping_url)
+        print ping_url
         self.ping_out = self.dict_get(ping_url)
         l = {}
         i = 1
@@ -841,8 +839,8 @@ l[0]={'protocol': '1', 'stats_bytes': '222180', 'stats_packets': '2645', 'setup_
                     req_rcv = int(ping_count['PingSummaryResp'][i].values()[0])
                 elif ping_count['PingSummaryResp'][i].keys()[0] == 'pkt_loss':
                     loss = int(ping_count['PingSummaryResp'][i].values()[0])
-            print("%s %s %s" % (req_sent, req_rcv, loss))
-            print("%s" % (count))
+            print "%s %s %s" % (req_sent, req_rcv, loss)
+            print "%s" % (count)
 
             if req_sent == req_rcv:
                 result = True
@@ -1469,13 +1467,13 @@ if __name__ == '__main__':
     x = v.get_vrouter_route_table('4')
 
     vvnagnt = AgentInspect('10.204.217.12')
-    print(vvnagnt.get_vna_vn('default-domain', 'admin', 'vn-1'))
-    print(vvnagnt.get_vna_vn_list('default-domain', 'demo'))
-    print(vvnagnt.get_vna_vrf_id('default-domain', 'demo', 'fe:fe'))
-    print(vvnagnt.get_vna_route(3, '172.168.10.254', 32))
-    print(vvnagnt.get_vna_tap_interface_by_vmi('73caeeed-7cac-4ef4-8268-f16c1ba514a4'))
-    print(vvnagnt.get_vna_tap_interface_by_vm('ae57b6d0-f057-4ccc-95eb-e3932a265752'))
-    print(vvnagnt.get_vna_intf_details('tap8e3d0097-7b'))
-    print(vvnagnt.get_vna_acl_by_vn('default-domain:demfeo:fe'))
-    print(vvnagnt.get_vna_flow_by_vn('default-domain:demo:pub'))
-    print(vvnagnt.get_vna_tap_interface_by_vm('aec7cc6e-977a-4e2d-8650-e583c5f63241'))
+    print vvnagnt.get_vna_vn('default-domain', 'admin', 'vn-1')
+    print vvnagnt.get_vna_vn_list('default-domain', 'demo')
+    print vvnagnt.get_vna_vrf_id('default-domain', 'demo', 'fe:fe')
+    print vvnagnt.get_vna_route(3, '172.168.10.254', 32)
+    print vvnagnt.get_vna_tap_interface_by_vmi('73caeeed-7cac-4ef4-8268-f16c1ba514a4')
+    print vvnagnt.get_vna_tap_interface_by_vm('ae57b6d0-f057-4ccc-95eb-e3932a265752')
+    print vvnagnt.get_vna_intf_details('tap8e3d0097-7b')
+    print vvnagnt.get_vna_acl_by_vn('default-domain:demfeo:fe')
+    print vvnagnt.get_vna_flow_by_vn('default-domain:demo:pub')
+    print vvnagnt.get_vna_tap_interface_by_vm('aec7cc6e-977a-4e2d-8650-e583c5f63241')

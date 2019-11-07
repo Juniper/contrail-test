@@ -272,9 +272,9 @@ def xlate_cn_rules(rules_list):
                 value = replace_key(value)
             new_rule[key] = value
         # Ignore following for now...
-        if 'subnet_list' not in new_rule['dst_addresses']:
+        if not new_rule['dst_addresses'].has_key('subnet_list'):
             new_rule['dst_addresses']['subnet_list'] = []
-        if 'subnet_list' not in new_rule['src_addresses']:
+        if not new_rule['src_addresses'].has_key('subnet_list'):
             new_rule['src_addresses']['subnet_list'] = []
         new_rule['src_addresses']['subnet'] = None
         new_rule['dst_addresses']['subnet'] = None
@@ -295,7 +295,7 @@ def xlate_cn_rules(rules_list):
         else:
             new_rule['action_list']['mirror_to'] = None
         new_rule['action_list']['gateway_name'] = None
-        if 'apply_service' in new_rule['action_list']:
+        if new_rule['action_list'].has_key('apply_service'):
             new_rule['action_list']['apply_service'] = [new_rule['action_list']['apply_service']]
         else:
             new_rule['action_list']['apply_service'] = []
@@ -413,7 +413,7 @@ def compare_action_list(user_action_l, system_action_l):
             break
         else:
             ret = True
-        if 'apply_service' in item_u and item_u['apply_service'] != []:
+        if item_u.has_key('apply_service') and item_u['apply_service'] != []:
 
             for si in item_u['apply_service']:
                 si = si.replace(':','_')

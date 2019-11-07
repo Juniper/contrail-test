@@ -1,4 +1,3 @@
-from __future__ import print_function
 import fixtures
 import testtools
 import os
@@ -109,7 +108,7 @@ class VPCTestSetup(fixtures.Fixture):
     # end verify_common_objects
 
     def tearDown(self):
-        print("Tearing down resources")
+        print "Tearing down resources"
         super(VPCTestSetup, self).cleanUp()
 
     def dirtied(self):
@@ -125,7 +124,7 @@ class _VPCTestSetupResource(TestResource):
     # end make
 
     def clean(self, base_setup):
-        print("Am cleaning up here")
+        print "Am cleaning up here"
 #        super(_VPCTestSetupResource,self).clean()
         base_setup.tearDown()
     # end

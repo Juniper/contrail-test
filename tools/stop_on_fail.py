@@ -3,7 +3,6 @@
 # Copyright (c) 2013 Juniper Networks, Inc. All rights reserved.
 #
 
-from __future__ import print_function
 import sys
 import argparse
 import ConfigParser
@@ -45,7 +44,7 @@ class PassParcentageCalculator(object):
         try:
             self.percentage=(float(self.fail_count)*100/float(self.test_count))
         except Exception as e:
-            print('Probably division by 0')
+            print 'Probably division by 0'
             self.percentage = 0
     # end calculate_pass_parcentage 
 
@@ -53,10 +52,10 @@ class PassParcentageCalculator(object):
         files = self._args.files
         self.calculate_pass_parcentage(files)        
         if self.percentage >= int(self._args.threshold):
-            print('Failed tests %s percent corssed the expected limit %s percent'%(str(self.percentage),str(self._args.threshold)))
+            print 'Failed tests %s percent corssed the expected limit %s percent'%(str(self.percentage),str(self._args.threshold))
             sys.exit(1) 
         else:
-            print('Failures within limit %s percent'%(str(self._args.threshold)))
+            print 'Failures within limit %s percent'%(str(self._args.threshold))
             sys.exit(0)
     # end stop_on_failure 
     

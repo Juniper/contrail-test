@@ -59,13 +59,13 @@ class TestRouters(BaseNeutronTest):
                                          image_name='cirros')
         vn2_vm1_fixture = self.create_vm(vn2_fixture, vn2_vm1_name,
                                          image_name='cirros')
-        router_dict = self.create_router(router_name)
-        self.add_vn_to_router(router_dict['id'], vn1_fixture)
         assert vn1_vm1_fixture.wait_till_vm_is_up()
         assert vn2_vm1_fixture.wait_till_vm_is_up()
         assert vn1_vm1_fixture.ping_with_certainty(vn2_vm1_fixture.vm_ip,
                                                    expectation=False)
 
+        router_dict = self.create_router(router_name)
+        self.add_vn_to_router(router_dict['id'], vn1_fixture)
         self.add_vn_to_router(router_dict['id'], vn2_fixture)
         router_ports = self.quantum_h.get_router_interfaces(
             router_dict['id'])
@@ -250,7 +250,7 @@ class TestRouterSNAT(BaseNeutronTest):
             return (False, 'Skipping Test. Env variable MX_GW_TEST is not set')
         return (True, None)
 
-    @test.attr(type=['cb_sanity'])
+    @test.attr(type=['cb_sanity', 'sanity'])
     @preposttest_wrapper
     def test_basic_snat_behavior(self):
         '''Create an external network, a router

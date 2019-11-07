@@ -1,4 +1,3 @@
-from __future__ import print_function
 class WfTemplate:
 
     def get_create_connection_template(self, params):
@@ -870,4 +869,4 @@ class WfTemplate:
         param_dict = {'wf_name':'create_connection','host_name':'c54','host_ip':'123','port':123}
         temp = _workflow_name_template[param_dict['wf_name']](param_dict)
         #temp = template(param_dict)
-        print(temp)
+        print temp

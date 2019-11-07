@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import test_v1
 from common import isolated_creds
 from vn_test import *
@@ -13,7 +12,7 @@ from quantum_test import *
 from vnc_api_test import *
 from nova_test import *
 from sdn_ui_topo_setup import *
-from .webui_topology import *
+from webui_topology import *
 from floating_ip import *
 from policy_test import *
 from contrail_fixtures import *

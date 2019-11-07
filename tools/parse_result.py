@@ -1,4 +1,3 @@
-from __future__ import print_function
 import sys
 from lxml import etree as ET
 import ConfigParser
@@ -29,7 +28,7 @@ def change_tests_name(doc):
         pkg = el.get('classname').split('.')[0] 
         root.set('name',pkg)
     except Exception as e:
-        print('could not change test cases names')     
+        print 'could not change test cases names'     
 
 def _make_url(log_location, classname, name):
     name = name.split('[')[0]
@@ -58,8 +57,8 @@ def add_logfile_link(doc, log_location):
             log_elem = ET.Element('logfile')
             log_elem.text = log_url
             elem.append(log_elem)
-    except Exception as e:
-        print('Some error %s while adding log links' % (e))
+    except Exception,e:
+        print 'Some error %s while adding log links' % (e)
 # end add_logfile_link
 
 def _get_log_location(report_file):

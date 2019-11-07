@@ -1,5 +1,4 @@
-from __future__ import absolute_import
-from .base import BasePolicyTest
+from base import BasePolicyTest
 from tcutils.wrappers import preposttest_wrapper
 import test
 from vn_test import *
@@ -11,9 +10,9 @@ from common.system.system_verification import system_vna_verify_policy
 from common.system.system_verification import all_policy_verify
 from common.policy import policy_test_helper
 from tcutils.test_lib.test_utils import assertEqual
-from . import sdn_single_vm_multiple_policy_topology
-from . import sdn_policy_traffic_test_topo
-from . import test_policy_basic
+import sdn_single_vm_multiple_policy_topology
+import sdn_policy_traffic_test_topo
+import test_policy_basic
 
 af_test = 'dual'
 

@@ -1,8 +1,6 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import os
 import shelve
-from . import filelock
+import filelock
 
 def fqname_to_str(fqname):
     if type(fqname) is list:
@@ -50,7 +48,7 @@ class TestDB(object):
                     self.close(mode='write')
                     return result
             except filelock.Timeout:
-                print('Unable to acquire lock on', self.db_file)
+                print 'Unable to acquire lock on', self.db_file
                 raise
         return wrapper
 
@@ -522,7 +520,7 @@ class TestDB(object):
 
     @read
     def dump(self):
-        print(self.db)
+        print self.db
 
 def main():
 #    db = TestDB('db.1')
@@ -538,16 +536,16 @@ def main():
 #        if db.get_logical_router_id(entry) == '22c7f61b-aec3-4787-9dbf-98bee9f030fc':
 #            import pdb; pdb.set_trace()
     for entry in db.list_fip_pools():
-        print(entry)
+        print entry
         fips = db.get_fips(entry)
         import pdb; pdb.set_trace()
     exit(0)
     db.delete_project('default-domain:TestProject-LBaas')
     db.set_project_id('default-domain:db-test', 123)
-    print(db.get_project_id('default-domain:db-test'))
+    print db.get_project_id('default-domain:db-test')
     db.add_virtual_network('default-domain:db-test:db-vn', 1234)
-    print(db.get_virtual_network_id('default-domain:db-test:db-vn'))
-    print(db.list_virtual_networks('default-domain:db-test'))
+    print db.get_virtual_network_id('default-domain:db-test:db-vn')
+    print db.list_virtual_networks('default-domain:db-test')
 
 if __name__ == "__main__":
     main()

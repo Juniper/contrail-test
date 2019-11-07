@@ -1,4 +1,3 @@
-from __future__ import print_function
 import time
 import re
 import fixtures
@@ -687,7 +686,7 @@ class VPCFixture(fixtures.Fixture):
     # end delete_security_group
 
     def create_security_group_rule(self, rule):
-        if 'group_id' in rule:
+        if rule.has_key('group_id'):
             cidr_group = rule['group_id']
             ruletail = '-o %s' % rule['group_id']
         else:
@@ -710,7 +709,7 @@ class VPCFixture(fixtures.Fixture):
     # end add_security_group_rule
 
     def delete_security_group_rule(self, rule):
-        if 'group_id' in rule:
+        if rule.has_key('group_id'):
             cidr_group = rule['group_id']
             ruletail = '-o %s' % rule['group_id']
         else:

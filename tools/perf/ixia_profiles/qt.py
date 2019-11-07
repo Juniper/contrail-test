@@ -1,4 +1,3 @@
-from __future__ import print_function
 
 import sys, os
 import time, re
@@ -32,7 +31,7 @@ ixiangpf = IxiaNgpf(ixiahlt)
 configfile = sys.argv[1:]
 
 if not configfile:
-    print("qt.py <configfile>")
+    print "qt.py <configfile>"
     sys.exit(2)
 
 try:
@@ -48,24 +47,24 @@ except (NameError,):
 def printDict(obj, nested_level=0, output=sys.stdout):
     spacing = '   '
     if type(obj) == dict:
-        print('%s' % ((nested_level) * spacing), file=output)
+        print >> output, '%s' % ((nested_level) * spacing)
         for k, v in obj.items():
             if hasattr(v, '__iter__'):
-                print('%s%s:' % ((nested_level + 1) * spacing, k), file=output)
+                print >> output, '%s%s:' % ((nested_level + 1) * spacing, k)
                 printDict(v, nested_level + 1, output)
             else:
-                print('%s%s: %s' % ((nested_level + 1) * spacing, k, v), file=output)
-        print('%s' % (nested_level * spacing), file=output)
+                print >> output, '%s%s: %s' % ((nested_level + 1) * spacing, k, v)
+        print >> output, '%s' % (nested_level * spacing)
     elif type(obj) == list:
-        print('%s[' % ((nested_level) * spacing), file=output)
+        print >> output, '%s[' % ((nested_level) * spacing)
         for v in obj:
             if hasattr(v, '__iter__'):
                 printDict(v, nested_level + 1, output)
             else:
-                print('%s%s' % ((nested_level + 1) * spacing, v), file=output)
-        print('%s]' % ((nested_level) * spacing), file=output)
+                print >> output, '%s%s' % ((nested_level + 1) * spacing, v)
+        print >> output, '%s]' % ((nested_level) * spacing)
     else:
-        print('%s%s' % (nested_level * spacing, obj), file=output)
+        print >> output, '%s%s' % (nested_level * spacing, obj)
 
 
 chassis_ip              = '10.87.123.247'
@@ -110,14 +109,14 @@ if test_control_status['status'] != IxiaHlt.SUCCESS:
 	ixnHLT_errorHandler('test_control:  get_all_qt_handles', test_control_status)
 
 qt_handle_list = test_control_status['qt_handle'].split()
-print("QT_handles:  ", qt_handle_list)
+print "QT_handles:  ", qt_handle_list
 
 #############################################################################
 #   ACTION - qt_apply_config   - SYNC                                       #
 #############################################################################
 #test_handle = qt_handle_list[0]
 for test_handle in qt_handle_list:
-        print("QT_apply_config ", test_handle, ".... sync mode\n")
+        print "QT_apply_config ", test_handle, ".... sync mode\n"
         test_control_status = ixiangpf.test_control(
                 action =        'qt_apply_config',
                 qt_handle =     test_handle,
@@ -127,7 +126,7 @@ for test_handle in qt_handle_list:
                 ixnHLT_errorHandler('test_control: qt_apply_config', test_control_status)
         else:
                 apply_status = test_control_status[test_handle]['status']
-                print("Apply config status for ", test_handle, "-----> ", apply_status)
+                print "Apply config status for ", test_handle, "-----> ", apply_status
 
         vportList = ixiangpf.ixnet.getList("/", 'vport')
         for vport in vportList:
@@ -135,7 +134,7 @@ for test_handle in qt_handle_list:
             time.sleep(5)
         time.sleep(20)
 
-        print("QT_start ", test_handle, ".... sync mode\n")
+        print "QT_start ", test_handle, ".... sync mode\n"
         test_control_status = ixiangpf.test_control(
                 action =        'qt_start',
                 qt_handle =     test_handle,
@@ -144,19 +143,19 @@ for test_handle in qt_handle_list:
         if test_control_status['status'] != IxiaHlt.SUCCESS:
                 ixnHLT_errorHandler('test_control: qt_start', test_control_status)
         elif test_control_status[test_handle]['status'] != IxiaHlt.SUCCESS :
-                print("Failed in test_control: qt_start ", test_handle)
+                print "Failed in test_control: qt_start ", test_handle
                 try:
-                        print("log -->", test_control_status[test_handle]['log'])
+                        print "log -->", test_control_status[test_handle]['log']
                 except:
-                        print("no log message for the qt_start failure..")
+                        print "no log message for the qt_start failure.."
                 else:
-                        print(test_handle, " is Running--> ", test_control_status[test_handle]['is_running'])
-                        print("Done...")
+                        print test_handle, " is Running--> ", test_control_status[test_handle]['is_running']
+                        print "Done..."
 
         #############################################################################
         #   Test Stats                                                              #
         #############################################################################
-        print("Test Stats ....\n")
+        print "Test Stats ....\n"
 
         test_stats_status = ixiangpf.test_stats(
                 mode =        'qt_currently_running',
@@ -164,7 +163,7 @@ for test_handle in qt_handle_list:
 
         if test_stats_status['status'] != IxiaHlt.SUCCESS:
                 ixnHLT_errorHandler('test_stats: qt_currently_running', test_stats_status)
-                print("Currently Running: ", test_stats_status['qt_handle'])
+                print "Currently Running: ", test_stats_status['qt_handle']
 
         ### unit in seconds
         time.sleep(10)
@@ -180,7 +179,7 @@ for test_handle in qt_handle_list:
                         ixnHLT_errorHandler('test_stats: qt_running_status', test_stats_status)
                 else:
                         is_running = test_stats_status[test_handle]['is_running']
-                        print("Test is running ", test_handle, ": ", is_running)
+                        print "Test is running ", test_handle, ": ", is_running
                         if is_running == '1':
                                 test_stats_status = ixiangpf.test_stats(
                                         mode =        'qt_progress',
@@ -188,7 +187,7 @@ for test_handle in qt_handle_list:
                                 )
                                 if test_stats_status['status'] != IxiaHlt.SUCCESS:
                                         ixnHLT_errorHandler('test_stats: qt_progress', test_stats_status)
-                                print("Progress ", test_handle, ": ", test_stats_status[test_handle]['progress'])
+                                print "Progress ", test_handle, ": ", test_stats_status[test_handle]['progress']
                                 time.sleep(3)
 
         #############################################################################
@@ -201,10 +200,10 @@ for test_handle in qt_handle_list:
         if test_stats_status['status'] != IxiaHlt.SUCCESS:
                 ixnHLT_errorHandler('test_stats: qt_result', test_stats_status)
 
-        print("Name: ", test_stats_status[test_handle]['name'])
-        print("Duration: ", test_stats_status[test_handle]['duration'])
-        print("Result: ", test_stats_status[test_handle]['result'])
-        print("ResultPath: ", test_stats_status[test_handle]['result_path'])
+        print "Name: ", test_stats_status[test_handle]['name']
+        print "Duration: ", test_stats_status[test_handle]['duration']
+        print "Result: ", test_stats_status[test_handle]['result']
+        print "ResultPath: ", test_stats_status[test_handle]['result_path']
 
 # #############################################################################
 # 								CLEANUP SESSION

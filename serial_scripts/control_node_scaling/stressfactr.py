@@ -1,6 +1,5 @@
 # Python libs
 from __future__ import print_function
-from __future__ import absolute_import
 import eventlet
 import os
 import sys
@@ -30,7 +29,7 @@ import json
 #
 # Contrail scaling libs
 #
-from .ssh_interactive_commnds import *
+from ssh_interactive_commnds import *
 from flap_agent_scale_test import *
 
 
@@ -1395,7 +1394,7 @@ class Controller (object):
                 return_val = float(num)
                 return_val = round(return_val, 1)
 
-            except subprocess.CalledProcessError as OSError:
+            except subprocess.CalledProcessError, OSError:
                 return_val = -1
 
         return return_val

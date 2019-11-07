@@ -1,8 +1,7 @@
-from __future__ import absolute_import
 import test
 import uuid
 import re
-from .base import ASN4Base
+from base import ASN4Base
 from tcutils.control.cn_introspect_utils import *
 from tcutils.wrappers import preposttest_wrapper
 from physical_router_fixture import PhysicalRouterFixture

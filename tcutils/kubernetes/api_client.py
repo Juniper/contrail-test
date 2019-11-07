@@ -1,4 +1,3 @@
-from __future__ import print_function
 import time
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException

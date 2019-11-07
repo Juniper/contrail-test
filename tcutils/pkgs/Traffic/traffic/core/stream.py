@@ -5,7 +5,6 @@ protocol header.
 
 This needs to be extended for new protocol streams with new protocol.
 """
-from __future__ import print_function
 
 import sys
 import inspect
@@ -45,9 +44,9 @@ def help(header="all"):
         clsobj = clsmember()
         clsattrs = dir(clsobj)
         if "fields" in clsattrs:
-            print(clsname, ": ", clsobj.fields)
+            print clsname, ": ", clsobj.fields
         if "options" in clsattrs:
-            print(clsname, ": ", clsobj.options)
+            print clsname, ": ", clsobj.options
 
 
 class Stream(object):
@@ -67,8 +66,8 @@ class Stream(object):
                 self.protocol = "ipv6"
         try:
             proto = self.all_fields['proto']
-        except KeyError as err:
-            print(err, "Must specify proto.")
+        except KeyError, err:
+            print err, "Must specify proto."
         if 'dst' in self.all_fields.keys():
             self.all_fields['dst'] = str(self.all_fields['dst'])
 

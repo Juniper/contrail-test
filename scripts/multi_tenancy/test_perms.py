@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from common.openstack_libs import ks_client as ksclient
 from vnc_api.vnc_api import *
 import uuid
@@ -23,7 +22,7 @@ from multiple_vn_vm_test import *
 from contrail_fixtures import *
 from keystone_tests import *
 from tcutils.wrappers import preposttest_wrapper
-from .base import BaseMultitenancyTest
+from base import BaseMultitenancyTest
 import tcutils.util as util
 import test
 

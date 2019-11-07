@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import sys
 vizdtestdir = sys.path[0]
 sys.path.insert(1, vizdtestdir + '/../../')
@@ -12,8 +10,8 @@ import socket
 import time
 from lxml import etree
 from tcutils.verification_util import *
-from .opserver_results import *
-from .opserver_util import OpServerUtils
+from opserver_results import *
+from opserver_util import OpServerUtils
 from tcutils.util import *
 from cfgm_common.exceptions import PermissionDenied
 
@@ -50,7 +48,7 @@ class VerificationOpsSrv (VerificationUtilBase):
         except PermissionDenied:
             raise
         except Exception as e:
-            print(e)
+            print e
         return res
 
     def get_ops_vrouter(self, vrouter=None):
@@ -62,7 +60,7 @@ class VerificationOpsSrv (VerificationUtilBase):
                 'analytics/uves/vrouter/' + vrouter + '?flat')
             res = OpVRouterResult(vrouter_dict)
         except Exception as e:
-            print(e)
+            print e
         finally:
             return res
 
@@ -75,7 +73,7 @@ class VerificationOpsSrv (VerificationUtilBase):
                 'analytics/uves/control-node/' + bgprouter + '?flat')
             res = OpBGPRouterResult(bgprouter_dict)
         except Exception as e:
-            print(e)
+            print e
         finally:
             return res
 
@@ -86,7 +84,7 @@ class VerificationOpsSrv (VerificationUtilBase):
                 'analytics/uves/virtual-network/' + vn_fq_name + '?flat')
             res = OpVNResult(vn_dict)
         except Exception as e:
-            print(e)
+            print e
         finally:
             return res
 
@@ -97,7 +95,7 @@ class VerificationOpsSrv (VerificationUtilBase):
                 'analytics/uves/virtual-machine/' + vm + '?flat')
             res = OpVMResult(vm_dict)
         except Exception as e:
-            print(e)
+            print e
         finally:
             return res
 
@@ -108,7 +106,7 @@ class VerificationOpsSrv (VerificationUtilBase):
                 'analytics/uves/loadbalancer/' + lb + '?flat')
             res = OpLBResult(lb_dict)
         except Exception as e:
-            print(e)
+            print e
         finally:
             return res
 
@@ -122,7 +120,7 @@ class VerificationOpsSrv (VerificationUtilBase):
                 'analytics/uves/service-instance/' + svc_instance + '?flat')
             res = OpSIResult(si_dict)
         except Exception as e:
-            print(e)
+            print e
         finally:
             return res
 
@@ -139,7 +137,7 @@ class VerificationOpsSrv (VerificationUtilBase):
                         ':' + right_vn + '?flat')
             res = OpSTResult(st_dict)
         except Exception as e:
-            print(e)
+            print e
         finally:
             return res
 
@@ -185,7 +183,7 @@ class VerificationOpsSrv (VerificationUtilBase):
                                 '/' + module + '/' + 
                                 instance_id + '/' + trace_buffer_name)
         except Exception as e:
-            print(e)
+            print e
         finally:
             return res
 
@@ -209,7 +207,7 @@ class VerificationOpsSrv (VerificationUtilBase):
             dct = self.dict_get("".join(link.split()))
             res = OpBGPPeerResult(dct)
         except Exception as e:
-            print(e)
+            print e
         finally:
             return res
 
@@ -225,7 +223,7 @@ class VerificationOpsSrv (VerificationUtilBase):
                 'analytics/uves/xmpp-peer/' + bgp_node + ':' + peer + '?flat')
             res = OpBGPXmppPeerResult(dct)
         except Exception as e:
-            print(e)
+            print e
         finally:
             return res
 
@@ -237,7 +235,7 @@ class VerificationOpsSrv (VerificationUtilBase):
                 'analytics/uves/analytics-node/' + collector + '?flat')
             res = OpCollectorResult(c_dict)
         except Exception as e:
-            print(e)
+            print e
         finally:
             return res
 
@@ -249,7 +247,7 @@ class VerificationOpsSrv (VerificationUtilBase):
                 'analytics/alarms')
             res = OpCollectorResult(c_dict)
         except Exception as e:
-            print(e)
+            print e
         finally:
             return res
 
@@ -261,7 +259,7 @@ class VerificationOpsSrv (VerificationUtilBase):
                 'analytics/uves/config-node/' + config + '?flat')
             res = OpConfigResult(c_dict)
         except Exception as e:
-            print(e)
+            print e
         finally:
             return res
     
@@ -273,7 +271,7 @@ class VerificationOpsSrv (VerificationUtilBase):
                 'analytics/uves/dns-node/' + control + '?flat')
             res = OpConfigResult(c_dict)
         except Exception as e:
-            print(e)
+            print e
         finally:
             return res
 
@@ -285,7 +283,7 @@ class VerificationOpsSrv (VerificationUtilBase):
                 'analytics/uves/database-node/' + db + '?flat')
             res = OpDbResult(c_dict)
         except Exception as e:
-            print(e)
+            print e
         finally:
             return res
     
@@ -299,7 +297,7 @@ class VerificationOpsSrv (VerificationUtilBase):
                 'analytics/uves/virtual-machine-interface/' + intf + '?flat')
             res = OpVmIntfResult(c_dict)
         except Exception as e:
-            print(e)
+            print e
         finally:
             return res
 
@@ -311,7 +309,7 @@ class VerificationOpsSrv (VerificationUtilBase):
                 'analytics/uves/service-chain/*')
             res = OpServiceChainResult(c_dict)
         except Exception as e:
-            print(e)
+            print e
         finally:
             return res
 
@@ -403,7 +401,7 @@ class VerificationOpsSrvIntrospect (VerificationUtilBase):
             connaction_status['port']= port
             connaction_status['status']= status
         except Exception as e:
-            print(e)
+            print e
         finally:
             return connaction_status
 

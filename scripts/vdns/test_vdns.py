@@ -1,4 +1,3 @@
-from __future__ import print_function
 # Need to import path to test/fixtures and test/scripts/
 # Ex : export PYTHONPATH='$PATH:/root/test/fixtures/:/root/test/scripts/'
 #
@@ -198,8 +197,8 @@ class TestvDNS0(BasevDNSTest):
                 else:
                     sleep(1)
             assert vm_updated, "Record not updated on VM "
-            print(("\nTTL VALUE is %s ", m_obj.group(1)))
-            print(("\nrecord ip address is %s", m_obj.group(2)))
+            print ("\nTTL VALUE is %s ", m_obj.group(1))
+            print ("\nrecord ip address is %s", m_obj.group(2))
             self.assertEqual(int(m_obj.group(1)), ttl_mod,
                              'TTL value is not matching for static record after record modification')
             self.assertEqual(m_obj.group(2), ip_add,
@@ -296,7 +295,7 @@ class TestvDNS0(BasevDNSTest):
             errmsg = "VDNS entry deleted which is not expected, when it is attached to a other vdns servers."
             self.logger.error(errmsg)
             assert False, errmsg
-        except Exception as msg:
+        except Exception, msg:
             self.logger.info(msg)
             self.logger.info(
                 "Not able to delete the vdns entry with back ref as expected")
@@ -367,7 +366,7 @@ class TestvDNS0(BasevDNSTest):
             errmsg = "VDNS entry deleted which is not expected, when it had vdns records."
             self.logger.error(errmsg)
             assert False, errmsg
-        except Exception as msg:
+        except Exception, msg:
             self.logger.info(msg)
             self.logger.info(
                 "Not able to delete the vdns entry with back ref of vdns records")
@@ -679,7 +678,7 @@ class TestvDNS0(BasevDNSTest):
         if not m_obj:
             self.assertTrue(
                 False, 'record search is failed,please check syntax of the regular expression/NSlookup is failed')
-        print(m_obj.group(1))
+        print m_obj.group(1)
         # Ipam DNS mentod is set to default, so DNS resolution to external
         # world needs to be resolved.
         self.assertTrue(vm_fix.ping_with_certainty(ip='salesforce.com'),
@@ -696,7 +695,7 @@ class TestvDNS0(BasevDNSTest):
         if not m_obj1:
             self.assertTrue(
                 False, 'record search is failed,please check syntax of the regular expression/NSlookup is failed')
-        print(m_obj1.group(1))
+        print m_obj1.group(1)
         return True
 
     @preposttest_wrapper

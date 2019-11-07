@@ -97,7 +97,7 @@ class TCPClient(Automaton):
     def send_syn(self):
         log.info("Sending SYN")
         self.pkt[TCP].flags = "S"
-        log.debug(repr(self.pkt))
+        log.debug(`self.pkt`)
         self.send(self.pkt)
         self.pkt[TCP].seq += 1
 
@@ -112,7 +112,7 @@ class TCPClient(Automaton):
         self.pkt[TCP].ack = pkt[TCP].seq + 1
         self.pkt[TCP].flags = "A"
         log.info("Sending ACK for SYN ACK")
-        log.debug(repr(self.pkt))
+        log.debug(`self.pkt`)
         self.send(self.pkt)
 
     @ATMT.receive_condition(ESTABLISHED)
@@ -127,7 +127,7 @@ class TCPClient(Automaton):
         if data and self.pkt[TCP].ack == pkt[TCP].seq:
             self.pkt[TCP].ack += len(data)
             self.pkt[TCP].flags = "A"
-            log.debug(repr(self.pkt))
+            log.debug(`self.pkt`)
             self.send(self.pkt)
             self.rcvbuf += data
             if pkt[TCP].flags & 8 != 0:  # PUSH
@@ -145,13 +145,13 @@ class TCPClient(Automaton):
             log.debug("Sending RST")
             # User requested to reset the TCP connection
             self.pkt[TCP].flags = "R"
-            log.debug(repr(self.pkt))
+            log.debug(`self.pkt`)
             self.send(self.pkt)
             return
 
         self.count += 1
         self.pkt[TCP].flags = "PA"
-        log.debug(repr(self.pkt / d))
+        log.debug(`self.pkt / d`)
         self.send(self.pkt / d)
         self.pkt[TCP].seq += len(d)
         self.gen.update_result("Sent=%s\nReceived=%s" %
@@ -173,7 +173,7 @@ class TCPClient(Automaton):
         log.debug("Sending FIN ACK")
         self.pkt[TCP].flags = "FA"
         self.pkt[TCP].ack = pkt[TCP].seq + 1
-        log.debug(repr(self.pkt))
+        log.debug(`self.pkt`)
         self.send(self.pkt)
         self.pkt[TCP].seq += 1
 

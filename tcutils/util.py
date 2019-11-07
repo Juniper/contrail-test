@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import math
 import subprocess
 import os
@@ -21,7 +19,6 @@ import random
 import fcntl
 import socket
 import struct
-from .fabutils import *
 from fabric.exceptions import CommandTimeout, NetworkError
 from fabric.contrib.files import exists
 from fabric.context_managers import settings, hide, cd, lcd
@@ -32,7 +29,8 @@ import ConfigParser
 from testtools.testcase import TestSkipped
 import functools
 import testtools
-from .fabfile import *
+from fabfile import *
+from fabutils import *
 import ast
 
 sku_dict = {'2014.1': 'icehouse', '2014.2': 'juno', '2015.1': 'kilo', '12': 'liberty', '13': 'mitaka',
@@ -116,7 +114,7 @@ def web_invoke(httplink, logger = None):
     try:
         cmd = 'curl ' + httplink
         output = subprocess.check_output(cmd, shell=True)
-    except Exception as e:
+    except Exception, e:
         output = None
         logger.debug(e)
         return output
@@ -162,6 +160,90 @@ def copy_fabfile_to_agent():
         if not exists(dst):
             put(src, dst)
         env.fab_copied_to_hosts.append(env.host_string)
+
+def run_cmd_through_node(host_string, cmd, password=None, gateway=None,
+                         gateway_password=None, with_sudo=False, timeout=120,
+                         as_daemon=False, raw=False, cd=None, warn_only=True,
+                         logger=None):
+    """ Run command on remote node through another node (gateway).
+        This is useful to run commands on VMs through compute node
+    Args:
+        host_string: host_string on which the command to run
+        password: Password
+        cmd: command
+        gateway: host_string of the node through which host_string will connect
+        gateway_password: Password of gateway hoststring
+        with_sudo: use Sudo
+        timeout: timeout
+        cd: change directory to provided parameter
+        as_daemon: run in background
+        raw: If raw is True, will return the fab _AttributeString object itself without removing any unwanted output
+    """
+    logger = logger or contrail_logging.getLogger(__name__)
+    fab_connections.clear()
+    kwargs = {}
+    if as_daemon:
+        cmd = 'nohup ' + cmd + ' &'
+        kwargs['pty']=False
+
+    if cd:
+        cmd = 'cd %s; %s' % (cd, cmd)
+
+    (username, host_ip) = host_string.split('@')
+
+    if username == 'root':
+        with_sudo = False
+
+    shell = '/bin/bash -l -c'
+
+    if username == 'cirros':
+        shell = '/bin/sh -l -c'
+
+    _run = safe_sudo if with_sudo else safe_run
+
+    #with hide('everything'), settings(host_string=host_string,
+    with settings(host_string=host_string,
+                                      gateway=gateway,
+                                      warn_only=warn_only,
+                                      shell=shell,
+                                      disable_known_hosts=True,
+                                      abort_on_prompts=False):
+        env.forward_agent = True
+        gateway_hoststring = gateway if re.match(r'\w+@[\d\.]+:\d+', gateway) else gateway + ':22'
+        node_hoststring = host_string if re.match(r'\w+@[\d\.]+:\d+', host_string) else host_string + ':22'
+        if password:
+            env.passwords.update({node_hoststring: password})
+            # If gateway_password is not set, guess same password
+            # (if key is used, it will be tried before password)
+            if not gateway_password:
+                env.passwords.update({gateway_hoststring: password})
+
+        if gateway_password:
+            env.passwords.update({gateway_hoststring: gateway_password})
+            if not password:
+                env.passwords.update({node_hoststring: gateway_password})
+
+        logger.debug(cmd)
+        tries = 1
+        output = None
+        while tries > 0:
+            try:
+                output = _run(cmd, timeout=timeout, **kwargs)
+            except CommandTimeout:
+                pass
+            if (output) and ('Fatal error' in output):
+                tries -= 1
+                time.sleep(5)
+            else:
+                break
+        # end while
+
+        if not raw:
+            real_output = remove_unwanted_output(output)
+        else:
+            real_output = output
+        return real_output
+
 
 def run_fab_cmd_on_node(host_string, password, cmd, as_sudo=False, timeout=120, as_daemon=False, raw=False,
                         warn_only=True,
@@ -237,7 +319,7 @@ def wait_for_ssh_on_node(host_string, password=None, logger=None):
     try:
         with settings(host_string=host_string, password=password):
             fab_connections.connect(host_string)
-    except Exception as e:
+    except Exception, e:
         # There can be different kinds of exceptions. Catch all
         logger.debug('Host: %s, password: %s Unable to connect yet. Got: %s' % (
             host_string, password, e))
@@ -249,7 +331,7 @@ def wait_for_ssh_on_node(host_string, password=None, logger=None):
 def safe_sudo(cmd, timeout=30, pty=True):
     try:
         output = sudo(cmd, timeout=timeout, pty=pty)
-    except ChannelException as e:
+    except ChannelException, e:
         # Handle too many concurrent sessions
         if 'Administratively prohibited' in str(e):
             time.sleep(random.randint(1, 5))
@@ -262,7 +344,7 @@ def safe_sudo(cmd, timeout=30, pty=True):
 def safe_run(cmd, timeout=30):
     try:
         output = run(cmd, timeout=timeout)
-    except ChannelException as e:
+    except ChannelException, e:
         # Handle too many concurrent sessions
         if 'Administratively prohibited' in str(e):
             time.sleep(random.randint(1, 5))
@@ -293,7 +375,7 @@ def sshable(host_string, password=None, gateway=None, gateway_password=None,
                 logger.debug("Error on ssh to %s, result: %s %s" % (host_string,
                     result, result.__dict__))
                 return False
-        except CommandTimeout as e:
+        except CommandTimeout, e:
             logger.debug('Could not ssh to %s ' % (host_string))
             return False
 
@@ -359,7 +441,7 @@ class threadsafe_iterator:
 
     def next(self):
         with self.lock:
-            return next(self.it)
+            return self.it.next()
 # end threadsafe_iterator
 
 
@@ -1029,7 +1111,7 @@ def skip_because(*args, **kwargs):
                     if self.inputs.metadata_ssl_enable is False:
                         msg = "Skipped as metadata_ssl_enable is not set to True."
                         check_metadata=1
-                except Exception as e:
+                except Exception, e:
                     msg = "Skipped as metadata_ssl_enable is not defined in testbed file."
                     check_metadata=1
                 if check_metadata == 1:
@@ -1093,7 +1175,7 @@ def get_build_sku(openstack_node_ip, openstack_node_password='c0ntrail123', user
                                               password=openstack_node_password):
                 output = sudo(cmd)
                 build_sku = sku_dict[re.findall("[0-9]+",output)[0]]
-        except NetworkError as e:
+        except NetworkError, e:
             pass
         return build_sku
 

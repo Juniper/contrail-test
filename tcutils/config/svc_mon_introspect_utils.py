@@ -1,8 +1,7 @@
-from __future__ import absolute_import
 import logging as LOG
 
 from tcutils.verification_util import *
-from .svc_mon_results import *
+from svc_mon_results import *
 
 LOG.basicConfig(format='%(levelname)s: %(message)s', level=LOG.DEBUG)
 

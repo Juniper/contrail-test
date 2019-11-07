@@ -649,7 +649,7 @@ True
     # end delete_security_group
 
     def create_security_group_rule(self, sg_id, rule):
-        if 'source-group' in rule:
+        if rule.has_key('source-group'):
             cidr_group = rule['source-group']
         else:
             cidr_group = rule['cidr']
@@ -679,7 +679,7 @@ True
     # end add_security_group_rule
 
     def delete_security_group_rule(self, sg_id, rule):
-        if 'source-group' in rule:
+        if rule.has_key('source-group'):
             cidr_group = rule['source-group']
         else:
             cidr_group = rule['cidr']

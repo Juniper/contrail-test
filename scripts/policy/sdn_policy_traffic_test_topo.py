@@ -1,4 +1,3 @@
-from __future__ import print_function
 from tcutils.util import get_random_cidr,get_random_name
 class sdn_1vn_2vm_config ():
 
@@ -301,7 +300,7 @@ class sdn_3vn_3vm_config ():
 class sdn_2vn_xvm_config ():
 
     def __init__(self):
-        print("building dynamic topo")
+        print "building dynamic topo"
     # end __init__
 
     def build_topo(self, domain='default-domain', project='admin', num_compute=1, traffic='yes', num_vm_per_compute=4, username=None, password=None):

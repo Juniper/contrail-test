@@ -1,4 +1,3 @@
-from __future__ import print_function
 from common.neutron.neutron_util import *
 from tcutils.util import *
 import string
@@ -374,10 +373,10 @@ if __name__ == "__main__":
     import pdb
     pdb.set_trace()
 #    print get_network_c_reqd_attributes1()
-    print(get_network_create_required_attributes())
-    print(get_other_network_create_attributes())
+    print get_network_create_required_attributes()
+    print get_other_network_create_attributes()
 
     # for i in util.combos(get_other_network_create_attributes()):
     #    print i
-    print(get_fixed_ip_dict_list('some_uuid', '10.1.1.0/24'))
-    print(get_pool_dict_list('10.1.1.0/24'))
+    print get_fixed_ip_dict_list('some_uuid', '10.1.1.0/24')
+    print get_pool_dict_list('10.1.1.0/24')

@@ -1,5 +1,4 @@
 
-from future.utils import raise_
 def contrail_fix_ext(*dargs, **dkwargs):
     '''
         Must have methods = (verify_on_setup)
@@ -46,7 +45,7 @@ def contrail_fix_ext(*dargs, **dkwargs):
             for method in ('verify_on_setup', ):
                 if not (method in dir(cls) and callable(getattr(
                         cls, method))):
-                    raise_(NotImplementedError, 'class must implement %s' % method)
+                    raise NotImplementedError, 'class must implement %s' % method
 
         cls.setUp = setup
         return cls
