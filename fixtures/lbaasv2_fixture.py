@@ -167,7 +167,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
             self.active_vr = self._get_vrouter('active')[1]
         return self.active_vr
 
-    @retry(delay=3, tries=15)
+    @retry(tries=12, delay=5)
     def _get_vrouter(self, ha='active'):
         try:
             svc_mon_h = self.connections.get_svc_mon_h()
@@ -207,7 +207,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.inputs.start_service('contrail-vrouter-agent', [standby_vr],
                                   container='agent')
 
-    @retry(delay=3, tries=15)
+    @retry(tries=12, delay=5)
     def _get_active_svc(self):
         active_svc = None
         try:
@@ -387,7 +387,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.logger.info('LoadBalancer(%s): verify_lb_not_in_op_server passed'%self.lb_uuid)
         return True
 
-    @retry(delay=3, tries=15)
+    @retry(delay=6, tries=10)
     def verify_hmon_in_api_server(self):
         self.api_h = self.connections.api_server_inspect
         hmon = self.api_h.get_lb_healthmonitor(self.hmon_id, refresh=True)
@@ -397,7 +397,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.logger.info("HMON %s found in api server" %self.hmon_id)
         return True
 
-    @retry(delay=3, tries=15)
+    @retry(delay=6, tries=10)
     def verify_hmon_not_in_api_server(self):
         self.api_h = self.connections.api_server_inspect
         hmon = self.api_h.get_lb_healthmonitor(self.hmon_id, refresh=True)
@@ -407,7 +407,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.logger.info("HMON %s deleted from api server as expected" %self.hmon_id)
         return True
 
-    @retry(delay=3, tries=15)
+    @retry(delay=6, tries=10)
     def verify_loadbalancer_in_api_server(self):
         self.api_h = self.connections.api_server_inspect
         pool = self.api_h.get_loadbalancer(self.lb_uuid, refresh=True)
@@ -417,18 +417,18 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.logger.info("LB %s found in api server" %self.lb_uuid)
         return True
 
-    @retry(delay=3, tries=15)
+    @retry(delay=6, tries=10)
     def verify_loadbalancer_in_op_server(self):
         self.ops_inspect = self.connections.ops_inspects
-        ip = self.inputs.collector_ip
-        self.logger.debug("Verifying in collector %s ..." % (ip))
-        self.ops_lb_obj = self.ops_inspect[ip].get_ops_loadbalancer(self.lb_uuid)
-        if not self.ops_lb_obj:
-            return False
-        else:
-            return True
+        for ip in self.inputs.collector_ips:
+            self.logger.debug("Verifying in collector %s ..." % (ip))
+            self.ops_lb_obj = self.ops_inspect[ip].get_ops_loadbalancer(self.lb_uuid)
+            if not self.ops_lb_obj:
+                return False
+            else:
+                return True
 
-    @retry(delay=3, tries=15)
+    @retry(delay=6, tries=10)
     def verify_loadbalancer_not_in_api_server(self):
         self.api_h = self.connections.api_server_inspect
         pool = self.api_h.get_loadbalancer(self.lb_uuid, refresh=True)
@@ -438,20 +438,20 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.logger.info("LB %s deleted from api server" %self.lb_uuid)
         return True
 
-    @retry(delay=3, tries=15)
+    @retry(delay=6, tries=10)
     def verify_loadbalancer_not_in_op_server(self):
         self.ops_inspect = self.connections.ops_inspects
-        ip = self.inputs.collector_ip
-        self.logger.debug("Verifying in collector %s ..." % (ip))
-        self.ops_lb_obj = self.ops_inspect[ip].get_ops_loadbalancer(self.lb_uuid)
-        if self.ops_lb_obj:
-            self.logger.warn("LB %s still found in op server" %self.lb_uuid)
-            return False
-        else:
-            self.logger.info("LB %s deleted from op server" %self.lb_uuid)
-            return True
+        for ip in self.inputs.collector_ips:
+            self.logger.debug("Verifying in collector %s ..." % (ip))
+            self.ops_lb_obj = self.ops_inspect[ip].get_ops_loadbalancer(self.lb_uuid)
+            if self.ops_lb_obj:
+                self.logger.warn("LB %s still found in op server" %self.lb_uuid)
+                return False
+            else:
+                self.logger.info("LB %s deleted from op server" %self.lb_uuid)
+                return True
 
-    @retry(delay=3, tries=15)
+    @retry(delay=6, tries=10)
     def verify_si_launched(self, refresh=False):
         svc_mon_h = self.connections.get_svc_mon_h(refresh)
         si = svc_mon_h.get_service_instance(name=self.get_si_name(),
@@ -462,7 +462,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.logger.warn('LB(%s): SI status is not active in svc-mon'%self.lb_uuid)
         return False
 
-    @retry(delay=3, tries=15)
+    @retry(delay=6, tries=10)
     def verify_si_deleted(self, refresh=True):
         svc_mon_h = self.connections.get_svc_mon_h(refresh)
         si = svc_mon_h.get_service_instance(name=self.get_si_name(),
@@ -473,7 +473,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.logger.info("Service instance got deleted")
         return True
 
-    @retry(delay=3, tries=15)
+    @retry(delay=6, tries=10)
     def verify_fip_in_api_server(self):
         self.api_h = self.connections.api_server_inspect
         fip_obj = self.api_h.get_cs_fip(self.fip_id, refresh=True)
@@ -491,7 +491,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.logger.info('LB(%s): verify_fip_in_api_server passed'%self.lb_uuid)
         return True
 
-    @retry(delay=3, tries=15)
+    @retry(delay=6, tries=10)
     def verify_fip_not_in_api_server(self):
         self.api_h = self.connections.api_server_inspect
         if self.api_h.get_cs_fip(self.fip_id, refresh=True):
@@ -508,7 +508,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
             return True
         return False
 
-    @retry(delay=3, tries=15)
+    @retry(6, 10)
     def verify_netns_instance_launched(self):
         active_vr = self.get_active_vrouter()
         active_vm = self.get_active_instance()
@@ -525,7 +525,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.logger.info('Netns instances launched for the LB(%s)' %self.lb_uuid)
         return True
 
-    @retry(delay=3, tries=15)
+    @retry(6, 10)
     def verify_netns_instance_deleted(self):
         active_vr = self.get_active_vrouter()
         active_vm = self.get_active_instance()
@@ -567,7 +567,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.logger.info("netns got launched, so do haproxy")
         return True
 
-    @retry(delay=3, tries=15)
+    @retry(6, 10)
     def verify_vip_in_agent(self):
         exp_label = self.get_vip_label()
         active_vr = self.get_active_vrouter()
@@ -588,7 +588,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.logger.info("Verify VIP in agent passed")
         return True
 
-    @retry(delay=3, tries=15)
+    @retry(6, 10)
     def verify_vip_not_in_agent(self):
         active_vr = self.get_active_vrouter()
         if not active_vr:
@@ -607,7 +607,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
                              %(self.vip_ip, vn_fq_name))
         return True
 
-    @retry(delay=3, tries=15)
+    @retry(6, 10)
     def verify_fip_in_agent(self):
         exp_label = self.get_vip_label()
         active_vr = self.get_active_vrouter()
@@ -628,7 +628,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.logger.info("LB(%s): Verify FIP in agent passed" %self.lb_uuid)
         return True
 
-    @retry(delay=3, tries=15)
+    @retry(6, 10)
     def verify_fip_not_in_agent(self):
         active_vr = self.get_active_vrouter()
         if not active_vr:
@@ -657,7 +657,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.logger.info('LB %s: verify_lb_in_control_node passed'%self.lb_uuid)
         return True
 
-    @retry(delay=3, tries=15)
+    @retry(6, 10)
     def verify_vip_in_control_node(self):
         exp_label = self.get_vip_label()
         if not exp_label:
@@ -684,7 +684,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.logger.info('Verify VIP in control node is passed')
         return True
 
-    @retry(delay=3, tries=15)
+    @retry(6, 10)
     def verify_vip_not_in_control_node(self):
         vn_fqname = self.id_to_fq_name(self.network_id)
         ri_fqname = vn_fqname + vn_fqname[-1:]
@@ -700,7 +700,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
                                  %(ctrl_node, self.vip_ip, ri_fqname))
         return True
 
-    @retry(delay=3, tries=15)
+    @retry(6, 10)
     def verify_fip_in_control_node(self):
         exp_label = self.get_vip_label()
         if not exp_label:
@@ -727,7 +727,7 @@ class LBBaseFixture(vnc_api_test.VncLibFixture):
         self.logger.info('Verify FIP in control node is passed')
         return True
 
-    @retry(delay=3, tries=15)
+    @retry(6, 10)
     def verify_fip_not_in_control_node(self):
         vn_fqname = self.id_to_fq_name(self.fip_net_id)
         ri_fqname = vn_fqname + vn_fqname[-1:]
@@ -1051,7 +1051,7 @@ class LBaasV2Fixture(LBBaseFixture):
             return False
         return True
 
-    @retry(delay=3, tries=15)
+    @retry(12, 5)
     def verify_haproxy_configs_on_setup(self):
         if not self._verify_haproxy_configs()[0]:
             self.logger.warn("Verify haproxy config file on setup failed")
@@ -1059,7 +1059,7 @@ class LBaasV2Fixture(LBBaseFixture):
         self.logger.info("Verify haproxy config file on setup passed")
         return True
 
-    @retry(delay=3, tries=15)
+    @retry(12, 5)
     def verify_haproxy_configs_on_cleanup(self):
         retval = self._verify_haproxy_configs()
         if not self.lb_present:

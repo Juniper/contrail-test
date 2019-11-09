@@ -1196,9 +1196,28 @@ class TestBasicVMVN4(BaseVnVmTest):
     def tearDownClass(cls):
         super(TestBasicVMVN4, cls).tearDownClass()
 
-    @test.attr(type=['sanity', 'vcenter'])
+    @test.attr(type=['sanity', 'ci_sanity', 'vcenter', 'suite1'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6')
+    def test_traffic_bw_vms_diff_pkt_size_w_chksum(self):
+        '''
+        Description:  Test to validate VM creation and deletion.
+        Test steps:
+                1. Create VM in a VN.
+        Pass criteria: Creation and deletion of the VM should go thru fine.
+        Maintainer : ganeshahv@juniper.net
+        '''
+        vn_fixture = self.create_vn()
+        assert vn_fixture.verify_on_setup()
+        vn_obj = vn_fixture.obj
+        vm1_fixture = self.create_vm(vn_fixture=vn_fixture,
+                                     vm_name=get_random_name('vm_add_delete'))
+        assert vm1_fixture.verify_on_setup()
+        return True
+    # end test_traffic_bw_vms_diff_pkt_size_w_chksum
+
+
+    @preposttest_wrapper
     def test_traffic_bw_vms_diff_pkt_size_w_chksum(self):
         '''
         Description:  Test to validate TCP, ICMP, UDP traffic of different packet sizes b/w VMs created within a VN and validate UDP checksum.
@@ -1209,17 +1228,42 @@ class TestBasicVMVN4(BaseVnVmTest):
         Maintainer : ganeshahv@juniper.net
         '''
         vn_fixture = self.create_vn()
+        assert vn_fixture.verify_on_setup()
         # Get all compute host
         host_list = self.connections.orch.get_hosts()
-        vm1_fixture = self.create_vm(vn_fixture=vn_fixture,
-            image_name='cirros-traffic',
-            node_name=host_list[0])
-        vm2_fixture = self.create_vm(vn_fixture=vn_fixture,
-            image_name='cirros-traffic',
-            node_name=host_list[-1])
+        vm1_fixture = self.create_vm(vn_fixture= vn_fixture,
+                                     flavor='contrail_flavor_small',
+                                     image_name='ubuntu-traffic',
+                                     node_name=host_list[0])
+        if len(host_list) > 1:
+            self.logger.info("Multi-Node Setup")
+            vm2_fixture = self.create_vm(vn_fixture= vn_fixture,
+                                         flavor='contrail_flavor_small',
+                                         image_name='ubuntu-traffic',
+                                         node_name=host_list[1])
+        else:
+            self.logger.info("Single-Node Setup")
+            vm2_fixture = self.create_vm(vn_fixture= vn_fixture,
+                                         flavor='contrail_flavor_small',
+                                         image_name='ubuntu-traffic')
+        assert vm1_fixture.verify_on_setup()
+        assert vm2_fixture.verify_on_setup()
 
-        assert vm1_fixture.wait_till_vm_is_up()
-        assert vm2_fixture.wait_till_vm_is_up()
+        out1 = vm1_fixture.wait_till_vm_is_up()
+        if out1 == False:
+            return {'result': out1, 'msg': "%s failed to come up" % vm1_fixture.vm_name}
+        else:
+            self.logger.info('Will install Traffic package on %s' %
+                             vm1_fixture.vm_name)
+            vm1_fixture.install_pkg("Traffic")
+
+        out2 = vm2_fixture.wait_till_vm_is_up()
+        if out2 == False:
+            return {'result': out2, 'msg': "%s failed to come up" % vm2_fixture.vm_name}
+        else:
+            self.logger.info('Will install Traffic package on %s' %
+                             vm2_fixture.vm_name)
+            vm2_fixture.install_pkg("Traffic")
 
         result = True
         msg = []
@@ -2787,6 +2831,9 @@ class TestBasicVMVNx(BaseVnVmTest):
 
         Maintainer : ganeshahv@juniper.net
         '''
+        vm1_name = get_random_name('vm1')
+        vm2_name = get_random_name('vm2')
+        vn_name = get_random_name('vn222')
         scp_test_file_sizes = ['1303'] if self.inputs.is_ci_setup() else \
                               ['1355', '3000']
         file = 'somefile'
@@ -2795,27 +2842,41 @@ class TestBasicVMVNx(BaseVnVmTest):
         x = 'sync'
         cmd_to_sync = [x]
         create_result = True
-        vn_fixture = self.create_vn(orch=self.orchestrator)
-        vm1_fixture = self.create_vm(vn_fixture=vn_fixture,
-            image_name='ubuntu',
-            orch=self.orchestrator)
-        vm2_fixture = self.create_vm(vn_fixture=vn_fixture,
-            image_name='ubuntu')
+        transfer_result = True
+        vn_fixture = self.create_vn(vn_name=vn_name,orch=self.orchestrator)
+        vn_fixture.read()
+        assert vn_fixture.verify_on_setup()
+        vm1_fixture = self.create_vm(vn_fixture=vn_fixture,vm_name=vm1_name,
+                                     flavor='contrail_flavor_small',orch=self.orchestrator)
+        vm2_fixture = self.create_vm(vn_ids=[vn_fixture.uuid],vm_name=vm2_name,
+                                     flavor='contrail_flavor_small')
         assert vm1_fixture.wait_till_vm_is_up()
         assert vm2_fixture.wait_till_vm_is_up()
         for size in scp_test_file_sizes:
+            self.logger.debug("-" * 80)
             self.logger.debug("FILE SIZE = %sB" % size)
+            self.logger.debug("-" * 80)
+
             self.logger.debug('Transferring the file from %s to %s using scp' %
                              (vm1_fixture.vm_name, vm2_fixture.vm_name))
-            msg = 'File of size %sB not transferred via scp ' % size
             if self.inputs.is_ci_setup() and self.inputs.get_af() == 'v4':
                 if is_ip_mine(vm1_fixture.vm_node_ip):
-                    assert vm1_fixture.scp_file_transfer_cirros(vm2_fixture, size=size), msg
+                    file_transfer_result = vm1_fixture.scp_file_transfer_cirros(vm2_fixture, size=size)
                 else:
                     self.skipTest('scp_file_transfer_cirros not posible here')
             else:
-                assert vm1_fixture.check_file_transfer(vm2_fixture,
-                                                       size=size)
+                file_transfer_result = vm1_fixture.check_file_transfer(vm2_fixture,
+                                                                   size=size)
+            if file_transfer_result:
+                self.logger.info(
+                    'File of size %sB transferred via scp properly' % size)
+            else:
+                transfer_result = False
+                self.logger.error(
+                    'File of size %sB not transferred via scp ' % size)
+                break
+        assert transfer_result, 'File not transferred via scp '
+        return transfer_result
     # end test_vm_file_trf_scp_tests
 
     @preposttest_wrapper
