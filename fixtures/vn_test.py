@@ -1404,7 +1404,7 @@ class VNFixture(fixtures.Fixture):
         self.delete()
         super(VNFixture, self).cleanUp()
 
-    @retry(delay=2, tries=25)
+    @retry(delay=5, tries=12)
     def _delete_vn(self):
         if (self.option == 'contrail'):
             try:

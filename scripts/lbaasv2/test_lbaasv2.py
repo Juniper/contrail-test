@@ -43,17 +43,19 @@ class TestLBaaSV2(BaseLBaaSTest):
         members=[]
 
         fip_fix = self.useFixture(VNFixture(connections=self.connections, router_external=True))
-        vn_vm_fix = self.create_vn_and_its_vms(no_of_vm=3)
         client_vm1_fixture = self.create_vm(fip_fix,
-                image_name='cirros-0.4.0')
+                flavor='contrail_flavor_small', image_name='ubuntu')
+
+        vn_vm_fix = self.create_vn_and_its_vms(no_of_vm=3)
 
         vn_vip_fixture = vn_vm_fix[0]
         lb_pool_servers = vn_vm_fix[1]
 
+        assert client_vm1_fixture.wait_till_vm_is_up()
         for VMs in lb_pool_servers:
             members.append(VMs.vm_ip)
 
-        pool_members.update({'address': members})
+        pool_members.update({'address':members})
 
         pool_name = get_random_name('mypool')
         lb_method = 'ROUND_ROBIN'
@@ -72,8 +74,6 @@ class TestLBaaSV2(BaseLBaaSTest):
               default_tls_container='tls_container', hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
 
         assert rr_listener.verify_on_setup(), "Verify on setup failed after new FIP associated"
-        self.start_webservers(lb_pool_servers)
-        assert client_vm1_fixture.wait_till_vm_is_up()
         assert client_vm1_fixture.ping_with_certainty(rr_listener.fip_ip)
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip, port=listener_port, https=True),\
             "Verify LB Method failed for ROUND ROBIN"
@@ -98,6 +98,7 @@ class TestLBaaSV2(BaseLBaaSTest):
         lb_pool_servers = vn_vm_fix[1][1:]
         client_vm1_fixture = vn_vm_fix[1][0]
 
+        assert client_vm1_fixture.wait_till_vm_is_up()
         for VMs in lb_pool_servers:
             members.append(VMs.vm_ip)
 
@@ -119,8 +120,7 @@ class TestLBaaSV2(BaseLBaaSTest):
 
         #Verify all the creations are success
         assert lb.verify_on_setup(), "Verify LB method failed"
-        self.start_webservers(lb_pool_servers)
-        assert client_vm1_fixture.wait_till_vm_is_up()
+
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, lb.vip_ip),\
             "Verify lb method failed"
 
@@ -142,12 +142,15 @@ class TestLBaaSV2(BaseLBaaSTest):
         members=[]
 
         fip_fix = self.useFixture(VNFixture(connections=self.connections, router_external=True))
+        client_vm1_fixture = self.create_vm(fip_fix,
+                flavor='contrail_flavor_small', image_name='ubuntu')
+
         vn_vm_fix = self.create_vn_and_its_vms(no_of_vm=3)
-        client_vm1_fixture = self.create_vm(fip_fix, image_name='cirros-0.4.0')
 
         vn_vip_fixture = vn_vm_fix[0]
         lb_pool_servers = vn_vm_fix[1]
 
+        assert client_vm1_fixture.wait_till_vm_is_up()
         for VMs in lb_pool_servers:
             members.append(VMs.vm_ip)
 
@@ -168,8 +171,6 @@ class TestLBaaSV2(BaseLBaaSTest):
               hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
 
         assert rr_listener.verify_on_setup(), "Verify on setup failed after new FIP associated"
-        self.start_webservers(lb_pool_servers)
-        assert client_vm1_fixture.wait_till_vm_is_up()
         assert client_vm1_fixture.ping_with_certainty(rr_listener.fip_ip)
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
@@ -187,6 +188,7 @@ class TestLBaaSV2(BaseLBaaSTest):
             server.add_security_group(vip_sg.get_uuid())
         for server in lb_pool_servers:
             assert server.verify_security_group(vip_sg.get_uuid())
+        time.sleep(10)
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
 
@@ -214,14 +216,15 @@ class TestLBaaSV2(BaseLBaaSTest):
         members=[]
 
         fip_fix = self.useFixture(VNFixture(connections=self.connections, router_external=True))
-        fip_fix1 = self.useFixture(VNFixture(connections=self.connections, router_external=True))
+        client_vm1_fixture = self.create_vm(fip_fix,
+                flavor='contrail_flavor_small', image_name='ubuntu-traffic')
 
         vn_vm_fix = self.create_vn_and_its_vms(no_of_vm=3)
+
         vn_vip_fixture = vn_vm_fix[0]
         lb_pool_servers = vn_vm_fix[1]
-        client_vm1_fixture = self.create_vm(fip_fix, image_name='cirros-0.4.0')
-        client_vm2_fixture = self.create_vm(fip_fix1, image_name='cirros-0.4.0')
 
+        assert client_vm1_fixture.wait_till_vm_is_up()
         for VMs in lb_pool_servers:
             members.append(VMs.vm_ip)
 
@@ -242,10 +245,13 @@ class TestLBaaSV2(BaseLBaaSTest):
               hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
 
         assert rr_listener.verify_on_setup()
-        self.start_webservers(lb_pool_servers)
-        assert client_vm1_fixture.wait_till_vm_is_up()
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
+
+        fip_fix1 = self.useFixture(VNFixture(connections=self.connections, router_external=True))
+        client_vm2_fixture = self.create_vm(fip_fix1,
+                flavor='contrail_flavor_small', image_name='ubuntu-traffic')
+        assert client_vm2_fixture.wait_till_vm_is_up()
 
         ##Disassociate FIP and associate new FIP
         rr_listener.delete_fip_on_vip()
@@ -254,7 +260,6 @@ class TestLBaaSV2(BaseLBaaSTest):
         rr_listener.create_fip_on_vip()
 
         assert rr_listener.verify_on_setup(), "Verify on setup failed after new FIP associated"
-        assert client_vm2_fixture.wait_till_vm_is_up()
         assert self.verify_lb_method(client_vm2_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
 
@@ -272,11 +277,15 @@ class TestLBaaSV2(BaseLBaaSTest):
         members=[]
 
         fip_fix = self.useFixture(VNFixture(connections=self.connections, router_external=True))
+        client_vm1_fixture = self.create_vm(fip_fix,
+                flavor='contrail_flavor_small', image_name='ubuntu')
+
         vn_vm_fix = self.create_vn_and_its_vms(no_of_vm=3)
+
         vn_vip_fixture = vn_vm_fix[0]
         lb_pool_servers = vn_vm_fix[1]
-        client_vm1_fixture = self.create_vm(fip_fix, image_name='cirros-0.4.0')
 
+        assert client_vm1_fixture.wait_till_vm_is_up()
         for VMs in lb_pool_servers:
             members.append(VMs.vm_ip)
 
@@ -297,8 +306,6 @@ class TestLBaaSV2(BaseLBaaSTest):
               hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
 
         assert rr_listener.verify_on_setup()
-        self.start_webservers(lb_pool_servers)
-        assert client_vm1_fixture.wait_till_vm_is_up()
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
 
@@ -345,12 +352,15 @@ class TestLBaaSV2(BaseLBaaSTest):
         members=[]
 
         fip_fix = self.useFixture(VNFixture(connections=self.connections, router_external=True))
+        client_vm1_fixture = self.create_vm(fip_fix,
+                flavor='contrail_flavor_small', image_name='ubuntu')
+
         vn_vm_fix = self.create_vn_and_its_vms(no_of_vm=3)
-        client_vm1_fixture = self.create_vm(fip_fix, image_name='cirros-0.4.0')
 
         vn_vip_fixture = vn_vm_fix[0]
         lb_pool_servers = vn_vm_fix[1]
 
+        assert client_vm1_fixture.wait_till_vm_is_up()
         for VMs in lb_pool_servers:
             members.append(VMs.vm_ip)
 
@@ -386,20 +396,18 @@ class TestLBaaSV2(BaseLBaaSTest):
 
         assert https_listener.verify_on_setup()
 
-        self.start_webservers(lb_pool_servers)
-        assert client_vm1_fixture.wait_till_vm_is_up()
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, http_listener.fip_ip),\
             "Verify LB failed for ROUND ROBIN"
 
         self.logger.info("Verify after adding few more members")
         for no_of_vm in range(3):
             lb_pool_servers.append(self.create_vm(vn_vip_fixture,
-                image_name='cirros-traffic'))
+                flavor='contrail_flavor_small', image_name='ubuntu'))
             lb_pool_servers[-1].wait_till_vm_is_up()
             lb_pool_servers[-1].start_webserver(listen_port=80)
             http_listener.create_member(address=lb_pool_servers[-1].vm_ip)
 
-        time.sleep(10)
+        time.sleep(50)
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, http_listener.fip_ip),\
             "Verify LB failed for ROUND ROBIN"
 
@@ -411,8 +419,8 @@ class TestLBaaSV2(BaseLBaaSTest):
 
         for server in lb_pool_servers[:3]:
             server.start_webserver(listen_port=TCP_PORT)
+            time.sleep(15)
 
-        time.sleep(5)
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers[:3], http_listener.fip_ip, port=TCP_PORT),\
             "Verify LB failed for ROUND ROBIN"
 
@@ -432,13 +440,15 @@ class TestLBaaSV2(BaseLBaaSTest):
         members=[]
 
         fip_fix = self.useFixture(VNFixture(connections=self.connections, router_external=True))
-        vn_vm_fix = self.create_vn_and_its_vms(no_of_vm=3)
         client_vm1_fixture = self.create_vm(fip_fix,
                 flavor='contrail_flavor_small', image_name='ubuntu')
+
+        vn_vm_fix = self.create_vn_and_its_vms(no_of_vm=3)
 
         vn_vip_fixture = vn_vm_fix[0]
         lb_pool_servers = vn_vm_fix[1]
 
+        assert client_vm1_fixture.wait_till_vm_is_up()
         for VMs in lb_pool_servers:
             members.append(VMs.vm_ip)
 
@@ -459,8 +469,6 @@ class TestLBaaSV2(BaseLBaaSTest):
               hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
 
         assert rr_listener.verify_on_setup()
-        self.start_webservers(lb_pool_servers)
-        assert client_vm1_fixture.wait_till_vm_is_up()
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
 
@@ -496,13 +504,15 @@ class TestLBaaSV2(BaseLBaaSTest):
         members=[]
 
         fip_fix = self.useFixture(VNFixture(connections=self.connections, router_external=True))
-        vn_vm_fix = self.create_vn_and_its_vms(no_of_vm=3)
         client_vm1_fixture = self.create_vm(fip_fix,
                 flavor='contrail_flavor_small', image_name='ubuntu')
+
+        vn_vm_fix = self.create_vn_and_its_vms(no_of_vm=3)
 
         vn_vip_fixture = vn_vm_fix[0]
         lb_pool_servers = vn_vm_fix[1]
 
+        assert client_vm1_fixture.wait_till_vm_is_up()
         for VMs in lb_pool_servers:
             members.append(VMs.vm_ip)
 
@@ -523,8 +533,6 @@ class TestLBaaSV2(BaseLBaaSTest):
               hm_delay=5, hm_timeout=5, hm_max_retries=5, hm_probe_type=HTTP_PROBE)
 
         assert rr_listener.verify_on_setup()
-        self.start_webservers(lb_pool_servers)
-        assert client_vm1_fixture.wait_till_vm_is_up()
         assert self.verify_lb_method(client_vm1_fixture, lb_pool_servers, rr_listener.fip_ip),\
             "Verify LB Method failed for ROUND ROBIN"
 

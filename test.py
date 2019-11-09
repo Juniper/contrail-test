@@ -77,7 +77,7 @@ class BaseTestCase(TagsHack,
         if 'TEST_CONFIG_FILE' in os.environ :
             cls.input_file= os.environ.get('TEST_CONFIG_FILE')
         else:
-            cls.input_file= 'contrail_test_input.yaml'
+            cls.input_file= 'sanity_params.ini'
         cls.logger = contrail_logging.getLogger(cls.__name__)
         cls.inputs = ContrailTestInit(cls.input_file,logger = cls.logger)
 
