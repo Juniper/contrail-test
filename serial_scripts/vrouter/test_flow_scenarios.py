@@ -624,8 +624,7 @@ send(a, count=10000, inter=0, iface='eth0')
                                                index=flow_entry.index)
 
         # Ping should have started to pass after the new VM booted
-        (ping_stats, log) = self.stop_ping(ping_h)
-        assert int(ping_stats['loss']) != 100, ('Pings failed to VM')
+        assert self.stop_ping(ping_h), ('Pings failed to VM')
 
         assert curr_flow_entry, 'Expected flow not found'
         msg = 'Flow nh not updated to point to the newly created VM'

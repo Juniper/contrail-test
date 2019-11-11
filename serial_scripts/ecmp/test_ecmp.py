@@ -163,8 +163,8 @@ class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         assert cluster_status, 'Hash of error nodes and services : %s' % (
                                     error_nodes)
 
-        self.left_vm_fixture.wait_till_vm_is_up()
-        self.right_vm_fixture.wait_till_vm_is_up()
+        self.left_vm_fixture.wait_till_vm_is_up(refresh=True)
+        self.right_vm_fixture.wait_till_vm_is_up(refresh=True)
 
         self.get_rt_info_tap_intf_list(
             self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture,
@@ -181,14 +181,10 @@ class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
         assert cluster_status, 'Hash of error nodes and services : %s' % (
                                     error_nodes)
 
-        self.left_vm_fixture.wait_till_vm_is_up()
-        self.right_vm_fixture.wait_till_vm_is_up()
-
         self.get_rt_info_tap_intf_list(
             self.left_vn_fixture, self.left_vm_fixture, self.right_vm_fixture,
             svm_ids, si_fixture)
 
-        fab_connections.clear()
         self.verify_traffic_flow(self.left_vm_fixture, dst_vm_list,
             si_fixture, self.left_vn_fixture)
     # end test_ecmp_svc_in_network_with_3_instance_service_restarts
@@ -254,10 +250,10 @@ class TestECMPRestart(ECMPTestBase, VerifySvcFirewall, ECMPSolnSetup, ECMPTraffi
                 vm.vm_obj.start()
             except Conflict:
                 pass
-        self.logger.info('Sleeping for 120 seconds')
-        sleep(120)
-        self.left_vm_fixture.wait_till_vm_is_up()
-        self.right_vm_fixture.wait_till_vm_is_up()
+        self.logger.info('Sleeping for 15 seconds')
+        self.sleep(15)
+        self.left_vm_fixture.wait_till_vm_is_up(refresh=True)
+        self.right_vm_fixture.wait_till_vm_is_up(refresh=True)
         assert self.left_vm_fixture.ping_with_certainty(
             self.right_vm_fixture.vm_ip)
     # end test_ecmp_svc_in_network_with_3_instance_reboot_nodes

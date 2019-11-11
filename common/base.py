@@ -21,6 +21,7 @@ from vdns_fixture import VdnsFixture
 from firewall_policy import FirewallPolicyFixture
 from firewall_rule import FirewallRuleFixture
 from tcutils.traffic_utils.base_traffic import BaseTraffic, SOCKET
+from tcutils.traffic_utils.ping_traffic import Ping
 
 class _GenericTestBaseMethods():
 
@@ -733,9 +734,24 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         return True
     # end check_vms_active
 
-    def start_traffic(self, src_vm_fixture, dst_vm_fixture, proto, sport,
-                      dport, src_vn_fqname=None, dst_vn_fqname=None,
+    def start_ping(self, src_vm, dst_vm=None, dst_ip=None):
+        dst_ip = dst_ip or dst_vm.vm_ip
+        ping_h = Ping(src_vm, dst_ip)
+        ping_h.start()
+        return ping_h
+
+    def stop_ping(self, ping_h):
+        (stats, ping_log) = ping_h.stop()
+        self.logger.debug('Ping log : %s' % (ping_log))
+        assert int(stats['loss']) != 100, ('Pings failed to VM')
+        return stats
+
+    def start_traffic(self, src_vm_fixture, dst_vm_fixture, proto, sport=None,
+                      dport=None, src_vn_fqname=None, dst_vn_fqname=None,
                       af=None, fip_ip=None):
+        if proto == 'icmp':
+            return self.start_ping(src_vm_fixture, dst_vm=dst_vm_fixture,
+                                   dst_ip=fip_ip)
         traffic_obj = BaseTraffic.factory(tool=SOCKET, proto=proto)
         assert traffic_obj.start(src_vm_fixture, dst_vm_fixture, proto, sport,
                                  dport, sender_vn_fqname=src_vn_fqname,
@@ -744,6 +760,8 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
         return traffic_obj
 
     def stop_traffic(self, traffic_obj, expectation=True, unidirection=False):
+        if isinstance(traffic_obj, Ping):
+            return self.stop_ping(traffic_obj)
         sent, recv, server_sent, server_recv = traffic_obj.stop()
         if sent is None:
             return False
