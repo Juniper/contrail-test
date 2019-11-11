@@ -1,8 +1,0 @@
-#In env.py file update the gc (global-controller) username and password.
-#paswword (central keystone) password, auth_url and ukai_url)
-
-#sample setup is 
-#Node1 (global-controller + central Keystone )  Mgmt IP 99.1.1.11, Control : 5.5.5.11
-#Node2 (Region-1 cluster) Mgmt: 99.1.1.12, Control: 5.5.5.12
-#Node3 {Region-2 cluster) Mgmt: 99.1.1.13, Control: 5.5.5.13
-

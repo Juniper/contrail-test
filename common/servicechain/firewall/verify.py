@@ -333,8 +333,6 @@ class VerifySvcFirewall(VerifySvcChain):
                     vn_fq_name, si_fix, right_vm_fixture, src='left', intf_type='left', protocol='ServiceChain', left_ri_ecmp=left_ri_ecmp)
                 assert result, msg
         nc_options=''
-        if self.inputs.get_af() == 'v6':
-            nc_options='-6'
         errmsg2 = "TCP traffic failed"
         if si_list1:
             # Remove routes from svc chain 0, but still present in Svc chain 1
