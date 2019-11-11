@@ -15,7 +15,6 @@ SUPPORTED_TOOLS = [NETCAT, SCAPY, SOCKET]
 TCP = 'tcp'
 UDP = 'udp'
 
-
 class BaseTraffic():
 
     @staticmethod
