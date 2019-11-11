@@ -342,19 +342,6 @@ class NovaHelper(object):
         else:
             build_path = 'http://%s/%s/%s' % (webserver, location, image)
 
-        #workaround for bug https://bugs.launchpad.net/juniperopenstack/+bug/1447401 [START]
-        #Can remove this when above bug is fixed
-        if image_type == 'docker':
-            for host in self.hosts_dict['nova/docker']:
-                username = self.inputs.host_data[host]['username']
-                password = self.inputs.host_data[host]['password']
-                ip = self.inputs.host_data[host]['host_ip']
-                with settings(
-                    host_string='%s@%s' % (username, ip),
-                        password=password, warn_only=True, abort_on_prompts=False):
-                    self.load_docker_image_on_host(build_path)
-        #workaround for bug https://bugs.launchpad.net/juniperopenstack/+bug/1447401 [END]
-
         username = self.inputs.host_data[self.openstack_ip]['username']
         password = self.inputs.host_data[self.openstack_ip]['password']
 
@@ -389,19 +376,6 @@ class NovaHelper(object):
             local('mkdir -p %s'%folder)
             self.execute_cmd_with_proxy("wget %s -O %s" % (image_url, filename), do_local=do_local)
             return filename
-
-    def load_docker_image_on_host(self, build_path):
-        run('pwd')
-        image_abs_path = self.download_image(build_path)
-        # Add the image to docker
-        if '.gz' in image_abs_path:
-            image_gz = os.path.basename(image_abs_path)
-            image_tar = image_gz.split('.gz')[0]
-            self.execute_cmd_with_proxy("gunzip -f /tmp/%s" % image_gz)
-        else:
-            image_tar = os.path.basename(image_abs_path)
-
-        self.execute_cmd_with_proxy("docker load -i /tmp/%s" % image_tar)
 
     def get_image_account(self, image_name):
         '''
@@ -608,7 +582,6 @@ class NovaHelper(object):
         else:
             zone, node_name = self.lb_node_zone(zone)
 
-        image_name = self.get_image_name_for_zone(image_name=image_name, zone=zone)
         image = self.get_image(image_name=image_name)
         if not flavor:
             flavor = self.get_default_image_flavor(image_name=image_name)
@@ -756,8 +729,7 @@ class NovaHelper(object):
             if vm_obj.__dict__['OS-EXT-SRV-ATTR:hypervisor_hostname'] is not None:
                 if vm_obj.__dict__['OS-EXT-SRV-ATTR:hypervisor_hostname']\
                     == hypervisor.hypervisor_hostname:
-                    if hypervisor.hypervisor_type == 'QEMU' or \
-                        hypervisor.hypervisor_type == 'docker':
+                    if hypervisor.hypervisor_type == 'QEMU':
                         host_name = vm_obj.__dict__['OS-EXT-SRV-ATTR:host']
                         return host_name and self.get_host_name(host_name)
                     if 'VMware' in hypervisor.hypervisor_type:
@@ -794,32 +766,9 @@ class NovaHelper(object):
         return self._hypervisors
     #end
 
-    def kill_remove_container(self, compute_host_ip, vm_id):
-        get_container_id_cmd = "docker ps -f name=nova-%s | grep 'nova-%s' | cut -d ' ' -f1"\
-                               % (vm_id, vm_id)
-        with settings(
-            host_string='%s@%s' %
-                (self.inputs.host_data[compute_host_ip]['username'],
-                 compute_host_ip),
-            password=self.inputs.host_data[compute_host_ip]['password'],
-            warn_only=True, abort_on_prompts=False):
-                output = run(get_container_id_cmd)
-                if not output:
-                    #if container id not found in docker then return
-                    return
-                container_id = output.split("\n")[-1]
-                run("docker kill %s" % container_id)
-                run("docker rm -f  %s" % container_id)
-
     def delete_vm(self, vm_obj):
         compute_host = self.get_nova_host_of_vm(vm_obj)
         vm_obj.delete()
-        if self.get_compute_node_zone(compute_host) == 'nova/docker':
-            # Workaround for the bug https://bugs.launchpad.net/nova-docker/+bug/1413371
-            # sleep to avoid race condition between docker and vif driver
-            time.sleep(1)
-            self.kill_remove_container(compute_host,
-                                       vm_obj.id)
     # end _delete_vm
 
     def get_key_file(self):
@@ -864,7 +813,7 @@ class NovaHelper(object):
         return self.wait_till_vm_status(vm_obj, 'ACTIVE')
     # end wait_till_vm_is_active
 
-    @retry(tries=60, delay=5)
+    @retry(tries=30, delay=5)
     def wait_till_vm_status(self, vm_obj, status='ACTIVE'):
         try:
             vm_obj.get()
@@ -892,7 +841,7 @@ class NovaHelper(object):
             for hyper in self.obj.hypervisors.list():
                 if hyper.hypervisor_hostname == getattr(vm_obj,
                      'OS-EXT-SRV-ATTR:hypervisor_hostname') and ((u'VMware' in
-                         hyper.hypervisor_type) or (u'docker' in hyper.hypervisor_type)):
+                         hyper.hypervisor_type) ):
                    # can't get console logs for VM in VMware nodes
                    # https://bugs.launchpad.net/nova/+bug/1199754
                    return self.wait_till_vm_is_active(vm_obj)
@@ -958,19 +907,10 @@ class NovaHelper(object):
             if node_name in self.hosts_dict[zone]:
                 return zone
 
-    def get_image_name_for_zone(self, image_name='ubuntu', zone='nova'):
-        image_info = self.images_info[image_name]
-        if zone == 'nova/docker':
-            return image_info['name_docker']
-        else:
-            return image_name
-
     def lb_node_zone(self, zone=None):
         if zone or self.hypervisor_type:
             if (not zone) and self.hypervisor_type:
-                if self.hypervisor_type == 'docker':
-                    zone = 'nova/docker'
-                elif self.hypervisor_type == 'qemu':
+                if self.hypervisor_type == 'qemu':
                     zone = 'nova'
                 else:
                     self.logger.warn("Test on hypervisor type %s not supported yet, \

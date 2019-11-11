@@ -268,9 +268,6 @@ class VMFixture(fixtures.Fixture):
         like in docker setup, image name will be changed while nova vm creation:
         First get the latest zone from orch and then get image info for the zone'''
         self.zone = getattr(vm_obj, 'OS-EXT-AZ:availability_zone', None)
-        self.image_name = self.orch.get_image_name_for_zone(
-            image_name=self.image_name,
-            zone=self.zone)
         (self.vm_username, self.vm_password) = self.orch.get_image_account(
             self.image_name)
 
@@ -420,7 +417,7 @@ class VMFixture(fixtures.Fixture):
             return None
         return self.cs_vm_obj
 
-    @retry(delay=1, tries=10)
+    @retry(delay=2, tries=10)
     def get_vmi_obj_from_api_server(self, cfgm_ip=None, refresh=False):
         cfgm_ip = cfgm_ip or self.inputs.cfgm_ip
         if not getattr(self, 'cs_vmi_objs', None):
@@ -870,9 +867,10 @@ class VMFixture(fixtures.Fixture):
         return tap_intfs
 
     def get_vmi_id(self, vn_fq_name):
-        vmi_ids = self.get_vmi_ids()
-        if vmi_ids and vn_fq_name in vmi_ids:
-            return vmi_ids[vn_fq_name]
+        if vn_fq_name not in self.vmi_ids:
+            self.get_vmi_ids(refresh=True)
+        if vn_fq_name in self.vmi_ids:
+            return self.vmi_ids[vn_fq_name]
 
     def get_vmi_ids(self, refresh=False):
         if not getattr(self, '_vmi_ids', None) or refresh or self.refresh:

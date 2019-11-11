@@ -6,6 +6,7 @@ from fabric.contrib.files import exists
 from fabric.context_managers import settings, hide, cd
 from fabric import state as fab_state
 from fabric.network import HostConnectionCache, normalize_to_string, connect, normalize
+from paramiko.ssh_exception import SSHException
 import re
 from common import log_orig as contrail_logging
 import time
@@ -262,45 +263,58 @@ def remote_copy(src, dest, src_password=None, src_gw=None, src_gw_password=None,
     else:
         raise AttributeError("Invalid source path - %s" % src)
 
+    tries = 0
     if src_node:
         # Source is remote
         with settings(host_string=src_node, gateway=src_gw,
                       warn_only=warn_only, disable_known_hosts=True,
                       abort_on_prompts=False):
             update_env_passwords(src_node, src_password, src_gw, src_gw_password)
-            try:
-                if exists(src_path, use_sudo=with_sudo):
-                    if dest_node:
-                        # Both source and destination are remote
-                        local_dest = tempfile.mkdtemp()
-                        get(src_path, local_dest)
-                        src_path = os.path.join(local_dest, os.listdir(local_dest)[0])
+            while tries < 2:
+                try:
+                    if exists(src_path, use_sudo=with_sudo):
+                        if dest_node:
+                            # Both source and destination are remote
+                            local_dest = tempfile.mkdtemp()
+                            get(src_path, local_dest)
+                            src_path = os.path.join(local_dest, os.listdir(local_dest)[0])
+                        else:
+                            # Source is remote and destination is local
+                            # Copied to destination
+                            get(src_path, dest_path)
+                            return True
                     else:
-                        # Source is remote and destination is local
-                        # Copied to destination
-                        get(src_path, dest_path)
-                        return True
-                else:
-                    raise IOError("Source not found - %s No such file or directory" % src)
-            except NetworkError:
-                pass
+                        raise IOError("Source not found - %s No such file or directory" % src)
+                except (NetworkError, SystemExit, EOFError) as e:
+                    pass
+                except SSHException:
+                    fab_state.connections.clear()
+                tries += 1
+                time.sleep(3)
+                continue
 
+    tries = 0
     if dest_node:
         # Source is either local or remote
         with settings(host_string=dest_node, gateway=dest_gw,
                       warn_only=warn_only, disable_known_hosts=True,
                       abort_on_prompts=False):
             update_env_passwords(dest_node, dest_password, dest_gw, dest_gw_password)
-            try:
-                put(src_path, dest_path, use_sudo=with_sudo)
-                return True
-            except NetworkError:
-                pass
+            while tries < 2:
+                try:
+                    put(src_path, dest_path, use_sudo=with_sudo)
+                    return True
+                except (NetworkError, SystemExit, EOFError) as e:
+                    pass
+                except SSHException:
+                    fab_state.connections.clear()
+                tries += 1
+                time.sleep(3)
+                continue
     else:
         # Both are local
         local("cp -r %s %s" % (src_path, dest_path))
         return True
-
 
 def update_env_passwords(host, password=None, gateway=None, gateway_password=None):
     """ Update env_passwords for the hosts provided
