@@ -1160,7 +1160,7 @@ class VMFixture(fixtures.Fixture):
     def reset_state(self, state):
         self.vm_obj.reset_state(state)
 
-    @retry(delay=1, tries=20)
+    @retry(delay=1, tries=5)
     def ping_vm_from_host(self, vn_fq_name, timeout=2):
         ''' Ping the VM metadata IP from the host
         '''
