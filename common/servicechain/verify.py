@@ -327,6 +327,7 @@ class VerifySvcChain(ConfigSvcChain):
         right_vm_fixture = ret_dict.get('right_vm_fixture')
         st_fixture = ret_dict.get('st_fixture')
         si_fixture = ret_dict.get('si_fixture')
+        evpn = ret_dict.get('evpn')
 
         assert st_fixture.verify_on_setup(), 'ST Verification failed'
         # SVM would have been up in config_svc_chain() itself
@@ -334,11 +335,21 @@ class VerifySvcChain(ConfigSvcChain):
         assert si_fixture.verify_on_setup(wait_for_vms=False), \
             ('SI Verification failed')
 
-        result, msg = self.validate_vn(left_vn_fq_name)
-        assert result, msg
-        right_vn = True if st_fixture.service_mode == 'in-network-nat' else False
-        result, msg = self.validate_vn(right_vn_fq_name, right_vn=right_vn)
-        assert result, msg
+        if not evpn:
+            result, msg = self.validate_vn(left_vn_fq_name)
+            assert result, msg
+            right_vn = True if st_fixture.service_mode == 'in-network-nat' else False
+            result, msg = self.validate_vn(right_vn_fq_name, right_vn=right_vn)
+            assert result, msg
+        else:
+            left_lr_child_vn_fq_name = ret_dict.get('left_lr_child_vn_fixture').vn_fq_name
+            result, msg = self.validate_vn(left_lr_child_vn_fq_name,
+                                           right_vn=True)
+            assert result, msg
+            right_lr_child_vn_fq_name = ret_dict.get('right_lr_child_vn_fixture').vn_fq_name
+            result, msg = self.validate_vn(right_lr_child_vn_fq_name,
+                                           right_vn=True)
+            assert result, msg
 
         result, msg = self.validate_svc_action(
             left_vn_fq_name, si_fixture, right_vm_fixture, src='left')

@@ -11,11 +11,12 @@ from project_test import ProjectFixture
 from security_group import SecurityGroupFixture
 from floating_ip import FloatingIPFixture
 from interface_route_table_fixture import InterfaceRouteTableFixture
-from tcutils.util import get_random_name, get_random_cidr, is_v6
+from tcutils.util import get_random_name, get_random_cidr, is_v6, get_random_vxlan_id
 from tcutils.contrail_status_check import ContrailStatusChecker
 from physical_device_fixture import PhysicalDeviceFixture
 from pif_fixture import PhysicalInterfaceFixture
 from lif_fixture import LogicalInterfaceFixture
+from router_fixture import LogicalRouterFixture
 from vdns_fixture import VdnsFixture
 from firewall_policy import FirewallPolicyFixture
 from firewall_rule import FirewallRuleFixture
@@ -180,6 +181,46 @@ class GenericTestBase(test_v1.BaseTestCase_v1, _GenericTestBaseMethods):
             self.addCleanup(vn_fixture.cleanUp)
         return vn_fixture
     # end create_vn
+
+    def setup_evpn_service_chain(self, left_vn, right_vn, **kwargs):
+        left_lr_fixture = self.create_lr([left_vn])
+        right_lr_fixture = self.create_lr([right_vn])
+        left_internal_vn = left_lr_fixture.get_internal_vn()
+        right_internal_vn = right_lr_fixture.get_internal_vn()
+
+        left_lr_intvn_fixture = self.create_vn(
+            left_lr_fixture.get_internal_vn_name(),
+            uuid=left_internal_vn.uuid, clean_up=False)
+        left_intvn_subnet_list = [get_random_cidr(), get_random_cidr(af='v6')]
+        left_intvn_v4_subnets = {'cidr': left_intvn_subnet_list[0] }
+
+        left_lr_intvn_fixture.create_subnet(left_intvn_v4_subnets)
+        left_intvn_v6_subnets = {'cidr': left_intvn_subnet_list[1] }
+        left_lr_intvn_fixture.create_subnet(left_intvn_v6_subnets)
+
+        right_lr_intvn_fixture = self.create_vn(
+            right_lr_fixture.get_internal_vn_name(),
+            uuid=right_internal_vn.uuid, clean_up=False)
+        right_intvn_subnet_list = [get_random_cidr(), get_random_cidr(af='v6')]
+        right_intvn_v4_subnets = {'cidr': right_intvn_subnet_list[0]}
+        right_intvn_v6_subnets = {'cidr': right_intvn_subnet_list[1]}
+        right_lr_intvn_fixture.create_subnet(right_intvn_v4_subnets)
+        right_lr_intvn_fixture.create_subnet(right_intvn_v6_subnets)
+
+        return (left_lr_intvn_fixture, right_lr_intvn_fixture)
+    #end setup_evpn_service_chain
+
+    def create_lr(self, vn_fixtures, vni=None, devices=None, **kwargs):
+        vn_ids = [vn.uuid for vn in vn_fixtures]
+        vni = vni or str(get_random_vxlan_id(min=10000))
+        self.logger.info('Creating Logical Router with VN uuids: %s, VNI %s'%(
+            vn_ids, vni))
+        lr = self.useFixture(LogicalRouterFixture(
+            connections=self.connections,
+            connected_networks=vn_ids, vni=vni, vxlan_enabled=True,
+            **kwargs))
+        return lr
+    #end create_lr
 
     @classmethod
     def create_only_vm(cls, vn_fixture=None, vm_name=None,

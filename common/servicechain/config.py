@@ -432,6 +432,8 @@ class ConfigSvcChain(fixtures.Fixture):
                         right_vn_name=None,
                         right_vn_subnets=[],
                         right_vn_fixture=None,
+                        left_lr_child_vn_fixture=None,
+                        right_lr_child_vn_fixture=None,
                         left_vm_name=None,
                         left_vm_fixture=None,
                         right_vm_name=None,
@@ -444,6 +446,7 @@ class ConfigSvcChain(fixtures.Fixture):
                         static_route=None,
                         svm_fixtures=[],
                         create_svms=False,
+                        evpn=False,
                         hosts=[],
                         **kwargs):
         '''
@@ -569,6 +572,22 @@ class ConfigSvcChain(fixtures.Fixture):
                                                        service_type=service_type,
                                                        hosts=hosts,
                                                        max_inst=max_inst)
+
+        # For evpn service-chaining in-network/in-network-nat modes,
+            # need to add static routes in S-VMs for the connected networks
+            if (evpn and service_mode != 'transparent'):
+                left_vn_fix = left_lr_child_vn_fixture
+                right_vn_fix = right_lr_child_vn_fixture
+                left_vn_fix_gw = left_vn_fixture.vn_subnet_objs[0]['gateway_ip']
+                right_vn_fix_gw = right_vn_fixture.vn_subnet_objs[0]['gateway_ip']
+                for svm_fix in svm_fixtures:
+                    svm_fix.add_route_in_vm(left_vn_fix.get_cidrs()[0],
+                                            device='eth1',
+                                            gw=left_vn_fix_gw)
+                    svm_fix.add_route_in_vm(right_vn_fix.get_cidrs()[0],
+                                            device='eth2',
+                                            gw=right_vn_fix_gw)
+
         if not si_fixture:
             si_name = get_random_name('si')
             si_fixture = self.config_si(si_name,
@@ -642,6 +661,9 @@ class ConfigSvcChain(fixtures.Fixture):
             'right_vm_fixture' : right_vm_fixture,
             'si_left_vn_fixture' : si_left_vn_fixture,
             'si_right_vn_fixture' : si_right_vn_fixture,
+            'evpn' : evpn,
+            'left_lr_child_vn_fixture': left_lr_child_vn_fixture,
+            'right_lr_child_vn_fixture': right_lr_child_vn_fixture
         }
         if svc_chain_type == 'serial':
             assert si_fixture2.verify_on_setup(wait_for_vms=False), \
@@ -701,6 +723,7 @@ class ConfigSvcChain(fixtures.Fixture):
             max_inst=first_si_max_inst,
             hosts=hosts,
             **kwargs)
+        evpn = ret_dict['evpn']
         policy_fixture = ret_dict['policy_fixture']
         rules_list = policy_fixture.rules_list
         sis = []
@@ -737,6 +760,21 @@ class ConfigSvcChain(fixtures.Fixture):
                                                max_inst=si.get('max_inst', 1),
                                                svc_img_name=si.get('svc_img_name'),
                                                hosts=si.get('hosts', []))
+
+            # For evpn service-chaining in in-network/in-network-nat modes,
+            # need to add static routes in S-VMs for the connected networks
+            if (evpn and si['service_mode'] != 'transparent'):
+                left_vn_fix = ret_dict.get('left_lr_child_vn_fixture')
+                right_vn_fix = ret_dict.get('right_lr_child_vn_fixture')
+                left_vn_fix_gw = si_left_vn_fixture.vn_subnet_objs[0]['gateway_ip']
+                right_vn_fix_gw = si_right_vn_fixture.vn_subnet_objs[0]['gateway_ip']
+                for svm_fix in svms:
+                    svm_fix.add_route_in_vm(left_vn_fix.get_cidrs()[0],
+                                            device='eth1',
+                                            gw=left_vn_fix_gw)
+                    svm_fix.add_route_in_vm(right_vn_fix.get_cidrs()[0],
+                                            device='eth2',
+                                            gw=right_vn_fix_gw)
 
             si_fixture = self.config_si(si_name,
                                         st_fixture,
