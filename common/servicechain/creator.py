@@ -13,7 +13,7 @@ class ServiceChainCreator():
         '''
         self.tc = tc
 
-    def build(self, data):
+    def build(self, data, evpn=False):
         '''
         Sample data :
         data = {
@@ -48,6 +48,12 @@ class ServiceChainCreator():
         # Create left and right VNs, VMs
         left_vn_fixture = self.tc.create_vn(get_random_name('left'))
         right_vn_fixture = self.tc.create_vn(get_random_name('right'))
+
+        if evpn:
+            (left_lr_intvn_fixture,
+             right_lr_intvn_fixture) = self.tc.setup_evpn_service_chain(
+                left_vn_fixture, right_vn_fixture)
+
         left_vm_fixture = self.tc.create_vm(vn_fixture=left_vn_fixture,
                                             node_name=data.get('left_vm', {}).get('host'))
         right_vm_fixture = self.tc.create_vm(vn_fixture=right_vn_fixture,
@@ -68,14 +74,26 @@ class ServiceChainCreator():
             si_input['hosts'] = hosts[:si_count]
             si_inputs.append(si_input)
 
-        svc_chain_info = self.tc.config_multi_inline_svc(
-            si_inputs,
-            proto=data['policy'][0].get('proto', 'any'),
-            left_vn_fixture=left_vn_fixture,
-            right_vn_fixture=right_vn_fixture,
-            left_vm_fixture=left_vm_fixture,
-            right_vm_fixture=right_vm_fixture,
-            create_svms=True)
+        if evpn:
+            svc_chain_info = self.tc.config_multi_inline_svc(
+                si_inputs,
+                proto=data['policy'][0].get('proto', 'any'),
+                left_vn_fixture=left_lr_intvn_fixture,
+                right_vn_fixture=right_lr_intvn_fixture,
+                left_vm_fixture=left_vm_fixture,
+                right_vm_fixture=right_vm_fixture,
+                left_lr_child_vn_fixture=left_vn_fixture,
+                right_lr_child_vn_fixture=right_vn_fixture,
+                create_svms=True, evpn=evpn)
+        else:
+            svc_chain_info = self.tc.config_multi_inline_svc(
+                si_inputs,
+                proto=data['policy'][0].get('proto', 'any'),
+                left_vn_fixture=left_vn_fixture,
+                right_vn_fixture=right_vn_fixture,
+                left_vm_fixture=left_vm_fixture,
+                right_vm_fixture=right_vm_fixture,
+                create_svms=True)
         return svc_chain_info
 
     def _remove_in_nat_in_middle(self, stages_combo):

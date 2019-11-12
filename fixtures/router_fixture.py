@@ -199,6 +199,14 @@ class LogicalRouterFixture(vnc_api_test.VncLibFixture):
         self.logger.info('Deleting LogicalRouter %s(%s)'%(self.name, self.uuid))
         self.vnc_h.delete_router(id=self.uuid)
 
+    def get_internal_vn(self):
+        obj = self.vnc_api_h.virtual_network_read(
+            fq_name=[self.parent_fq_name[0],
+                     self.parent_fq_name[1],
+                     self.get_internal_vn_name()])
+
+        return obj
+
     @retry(6, 10)
     def verify_internal_vn_created_in_api_server(self):
         self.api_h = self.connections.api_server_inspect
