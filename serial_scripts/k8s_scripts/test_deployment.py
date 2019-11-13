@@ -19,7 +19,7 @@ class TestDeployment(BaseK8sTest):
     def parallel_cleanup(self):
         parallelCleanupCandidates = ["PodFixture"]
         self.delete_in_parallel(parallelCleanupCandidates)
-    
+
     @test.attr(type=['k8s_sanity'])
     @preposttest_wrapper
     def test_deployment_with_kube_manager_restart(self):
@@ -28,14 +28,13 @@ class TestDeployment(BaseK8sTest):
             Restart kube manager on all the control nodes and verify redeploying the deployment object with pod replicas take into effect 
             Re-verify the deployment passes and pods work as expected using http service with new set of replicas
         '''
-
         client_pod = self.setup_busybox_pod()
         namespace = 'default'
         labels = {'deployment': 'test'}
-        depname = get_random_name ("dep-test")
+        depname = get_random_name("dep-test")
         dep = self.setup_nginx_deployment(name=depname,
-                                            replicas=3,
-                                            pod_labels=labels)
+                                          replicas=3,
+                                          pod_labels=labels)
         assert dep.verify_on_setup()
         service = self.setup_http_service(namespace=namespace,
                                           labels=labels)
@@ -47,17 +46,19 @@ class TestDeployment(BaseK8sTest):
             s_pod_fixtures.append(s_pod_fixture)
         assert self.validate_nginx_lb(s_pod_fixtures, service.cluster_ip,
                                       test_pod=client_pod)
-        self.restart_kube_manager()
+        active_kube_manager_ip = [self.connections.get_kube_manager_h().ip]
+        self.restart_kube_manager(active_kube_manager_ip)
+        self.invalidate_kube_manager()
         assert self.validate_nginx_lb(s_pod_fixtures, service.cluster_ip,
                                       test_pod=client_pod)
         self.perform_cleanup(dep)
         self.sleep(35)
         '''After restart of the Kube Manager recreate the deployment obect 
-           With additional pod replicas''' 
+           With additional pod replicas'''
         dep = self.setup_nginx_deployment(name=depname,
                                           replicas=5,
                                           pod_labels=labels)
-        
+
         assert dep.verify_on_setup()
         service = self.setup_http_service(namespace=namespace,
                                           labels=labels)
@@ -81,10 +82,10 @@ class TestDeployment(BaseK8sTest):
         client_pod = self.setup_busybox_pod()
         namespace = 'default'
         labels = {'deployment': 'test'}
-        depname = get_random_name ("dep-test")
+        depname = get_random_name("dep-test")
         dep = self.setup_nginx_deployment(name=depname,
-                                            replicas=3,
-                                            pod_labels=labels)
+                                          replicas=3,
+                                          pod_labels=labels)
         assert dep.verify_on_setup()
         service = self.setup_http_service(namespace=namespace,
                                           labels=labels)
@@ -102,11 +103,11 @@ class TestDeployment(BaseK8sTest):
         self.perform_cleanup(dep)
         self.sleep(2)
         '''After restart of the vrouter agent recreate the deployment obect 
-           With additional pod replicas''' 
+           With additional pod replicas'''
         dep = self.setup_nginx_deployment(name=depname,
                                           replicas=5,
                                           pod_labels=labels)
-        
+
         assert dep.verify_on_setup()
         service = self.setup_http_service(namespace=namespace,
                                           labels=labels)
@@ -118,3 +119,4 @@ class TestDeployment(BaseK8sTest):
             s_pod_fixtures.append(s_pod_fixture)
         assert self.validate_nginx_lb(s_pod_fixtures, service.cluster_ip,
                                       test_pod=client_pod)
+
