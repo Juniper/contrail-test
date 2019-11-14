@@ -3134,8 +3134,11 @@ class VMFixture(fixtures.Fixture):
 
         return True
 
-    def add_route_in_vm(self, prefix, prefix_type='net', device='eth0'):
-        cmd = ['route add -%s %s dev %s' % (prefix_type, prefix, device)]
+    def add_route_in_vm(self, prefix, prefix_type='net', device='eth0', gw=None):
+        if gw:
+            cmd = ['route add -%s %s gw %s dev %s' % (prefix_type, prefix, gw, device)]
+        else:
+            cmd = ['route add -%s %s dev %s' % (prefix_type, prefix, device)]
         self.run_cmd_on_vm(cmd, as_sudo=True)
     # end add_route_in_vm
 
