@@ -76,6 +76,7 @@ class Client(api_client.Client):
         self.network_policy_h = dyn_client.resources.get(api_version='v1', kind='NetworkPolicy')
         self.deployment_h = dyn_client.resources.get(api_version='v1', kind='Deployment')
         self.service_h = dyn_client.resources.get(api_version='v1', kind='Service')
+        self.daemonset_h = dyn_client.resources.get(api_version='v1', kind='DaemonSet')
     # end __init__
 
     def get_template(self, obj_type):
