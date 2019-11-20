@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "36c2114c_5b0ea577",
+        "filename": "common/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 746,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-11-20T15:10:03Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "4481f999_96765cb8",
+      "revId": "b18dd8b104540bb241f552bcba87124a7f44878e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "a87ec804_c531b210",
         "filename": "serial_scripts/vrouter/test_flow_scenarios.py",
         "patchSetId": 1
@@ -33,6 +51,24 @@
       "revId": "b18dd8b104540bb241f552bcba87124a7f44878e",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "44624423_a31b7264",
+        "filename": "serial_scripts/vrouter/test_flow_scenarios.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 627,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-11-20T15:10:03Z",
+      "side": 1,
+      "message": "loss of 100% is taken care of in stop_ping itself hence this assert is just dummy. Will remove the assert to avoid confusion.",
+      "parentUuid": "a87ec804_c531b210",
+      "revId": "b18dd8b104540bb241f552bcba87124a7f44878e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     }
   ]
 }
