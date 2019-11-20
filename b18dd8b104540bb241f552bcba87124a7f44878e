@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "4481f999_96765cb8",
+        "filename": "common/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 746,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-11-20T09:07:18Z",
+      "side": 1,
+      "message": "Suggestion: asserting in this method, would limit its use to only positive tests.\n1) this method could return just the stat \u0026 let the test decide, or\n2) this method could take a pass criteria as argument",
+      "revId": "b18dd8b104540bb241f552bcba87124a7f44878e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "a87ec804_c531b210",
+        "filename": "serial_scripts/vrouter/test_flow_scenarios.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 627,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-11-20T09:07:18Z",
+      "side": 1,
+      "message": "stop_ping is returning ping stats in dict, so code should assert on loss statistic",
+      "revId": "b18dd8b104540bb241f552bcba87124a7f44878e",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
