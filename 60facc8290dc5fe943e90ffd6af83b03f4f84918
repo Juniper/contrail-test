@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fa085bb4_a742cae0",
+        "filename": "common/contrail_services.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 278
+      },
+      "writtenOn": "2019-11-21T08:36:14Z",
+      "side": 1,
+      "message": "As Control has 4 count of PODS implemented and also defined part of CONTRAIL_PODS_SERVICES_MAP and so this need to be as below,\n    # Control\n    \u0027control\u0027: [\u0027k8s_contrail-controller-control_\u0027],\n    \u0027dns\u0027: [\u0027k8s_contrail-controller-control-dns_\u0027],\n    \u0027named\u0027: [\u0027k8s_contrail-controller-control-named_\u0027],\n    \u0027control-nodemgr\u0027: [\u0027k8s_contrail-controller-control-nodemgr_\u0027],\nNote: also importantly it has to match more till \"_\" at the end to make sure \"control\" pod definition not conflict/override of other dns/named/control-nodemgr which sharing the name of \"k8s_contrail-controller-control\" to avoid false FAIL",
+      "revId": "60facc8290dc5fe943e90ffd6af83b03f4f84918",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "f12b6c6f_13977b2f",
+        "filename": "common/contrail_services.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 278
+      },
+      "writtenOn": "2019-11-21T08:36:14Z",
+      "side": 1,
+      "message": "As per implementation, this needs to be \"config-database-nodemgr\" and this also to be coded part of CONTRAIL_PODS_SERVICES_MAP for test-verifications.",
+      "revId": "60facc8290dc5fe943e90ffd6af83b03f4f84918",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "52bffcec_91672e84",
+        "filename": "common/contrail_services.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 278
+      },
+      "writtenOn": "2019-11-21T08:36:14Z",
+      "side": 1,
+      "message": "pls fix the Typo of \"additional space\" which will cause Test FAIL..",
+      "revId": "60facc8290dc5fe943e90ffd6af83b03f4f84918",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
