@@ -1,0 +1,73 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f301011b_135d754b",
+        "filename": "fixtures/control_node.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 180,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2019-11-21T12:07:30Z",
+      "side": 1,
+      "message": "why do you need for loop if you are mentioning as4_ext_router[0]?",
+      "range": {
+        "startLine": 180,
+        "startChar": 12,
+        "endLine": 180,
+        "endChar": 47
+      },
+      "revId": "ae687408d64de237eba3d9ef4e0614fc49137c80",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "390692c0_4769b365",
+        "filename": "scripts/RR/test_rr.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 96,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2019-11-21T12:07:30Z",
+      "side": 1,
+      "message": "same as other comment.",
+      "range": {
+        "startLine": 95,
+        "startChar": 8,
+        "endLine": 96,
+        "endChar": 48
+      },
+      "revId": "ae687408d64de237eba3d9ef4e0614fc49137c80",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ca79d694_6f9088c2",
+        "filename": "scripts/RR/test_rr.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 152,
+      "author": {
+        "id": 147
+      },
+      "writtenOn": "2019-11-21T12:07:30Z",
+      "side": 1,
+      "message": "take care of all similar comments.",
+      "range": {
+        "startLine": 151,
+        "startChar": 8,
+        "endLine": 152,
+        "endChar": 48
+      },
+      "revId": "ae687408d64de237eba3d9ef4e0614fc49137c80",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
