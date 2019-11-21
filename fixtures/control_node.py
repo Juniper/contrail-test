@@ -174,6 +174,10 @@ class CNFixture(fixtures.Fixture):
         """
         Check the configured control node has any peer and if so the state is Established.
         """
+        #skip as4_ext_routers
+        skip_peers = []
+        for as4_ext_router in self.inputs.as4_ext_routers:
+            skip_peers.append(as4_ext_router[0])
         result = True
         for entry1 in self.inputs.bgp_ips:
             cn_bgp_entry = self.cn_inspect[
@@ -185,6 +189,8 @@ class CNFixture(fixtures.Fixture):
                     (self.router_ip))
             else:
                 for entry in cn_bgp_entry:
+                    if entry['peer'] in skip_peers:
+                       continue
                     if entry['state'] != 'Established' and entry['router_type'] != 'bgpaas-client':
                         result = result and False
                         self.logger.error('With Peer %s peering is not Established. Current State %s ' % (
