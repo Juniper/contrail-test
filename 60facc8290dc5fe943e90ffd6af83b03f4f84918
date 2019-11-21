@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "49d90ef1_91b3967f",
+        "filename": "common/contrail_services.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-11-21T09:24:37Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "fa085bb4_a742cae0",
+      "revId": "60facc8290dc5fe943e90ffd6af83b03f4f84918",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "f12b6c6f_13977b2f",
         "filename": "common/contrail_services.py",
         "patchSetId": 2
@@ -30,6 +48,24 @@
       "writtenOn": "2019-11-21T08:36:14Z",
       "side": 1,
       "message": "As per implementation, this needs to be \"config-database-nodemgr\" and this also to be coded part of CONTRAIL_PODS_SERVICES_MAP for test-verifications.",
+      "revId": "60facc8290dc5fe943e90ffd6af83b03f4f84918",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "96a605d2_d1a89d49",
+        "filename": "common/contrail_services.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-11-21T09:24:37Z",
+      "side": 1,
+      "message": "1) i\u0027m assuming you are asking for the key name (configdb-nodemgr) to be changed to \"config-database-nodemgr\", I don\u0027t see any reference to this name.\n\n2) \"configdb-nodemgr\" was removed from CONTRAIL_PODS_SERVICES_MAP by this changes https://github.com/Juniper/contrail-test/commit/475a99d5464628d6585fb64a00822df1b58dd44c#diff-b0ae5d99bf450622225e553bc30f5b43",
+      "parentUuid": "f12b6c6f_13977b2f",
       "revId": "60facc8290dc5fe943e90ffd6af83b03f4f84918",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
@@ -50,6 +86,24 @@
       "revId": "60facc8290dc5fe943e90ffd6af83b03f4f84918",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "0bda5443_c33e9d53",
+        "filename": "common/contrail_services.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 30,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-11-21T09:24:37Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "52bffcec_91672e84",
+      "revId": "60facc8290dc5fe943e90ffd6af83b03f4f84918",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     }
   ]
 }
