@@ -834,24 +834,6 @@ class BaseVrouterTest(BaseNeutronTest, VerifySvcMirror):
             retry=True, receiver=receiver)
         return result
 
-    def start_ping(self, src_vm, dst_vm=None, dst_ip=None, wait=False,
-            *args, **kwargs):
-        '''
-        Starts ping from src_vm to dst_ip
-        '''
-        dst_ip = dst_ip or dst_vm.vm_ip
-
-        ping_h = Ping(src_vm, dst_ip, *args, **kwargs)
-        ping_h.start(wait=wait)
-
-        return ping_h
-
-    def stop_ping(self, ping_h):
-        (stats, ping_log) = ping_h.stop()
-        self.logger.debug('Ping log : %s' % (ping_log))
-
-        return (stats, ping_log)
-
     def remove_sg_from_vms(self, vm_fix_list, sg_id=None):
         default_sg_id = get_secgrp_id_from_name(
                                 self.connections,

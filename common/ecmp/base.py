@@ -37,7 +37,7 @@ class ECMPTestBase(GenericTestBase):
             if cls.inputs.is_ci_setup() and cls.inputs.get_af() == 'v4':
                 cls.image_name = cls.inputs.get_ci_image()
             else:
-                cls.image_name = 'ubuntu-traffic'
+                cls.image_name = 'cirros-traffic'
 
             # End Vms
             cls.left_vm_name = get_random_name('left_vm_%s' % (
@@ -50,7 +50,6 @@ class ECMPTestBase(GenericTestBase):
             cls.right_vm_fixture = cls.create_only_vm(cls.right_vn_fixture,
                                                       vm_name=cls.right_vm_name,
                                                       image_name=cls.image_name)
-            cls.check_vms_booted([cls.left_vm_fixture, cls.right_vm_fixture])
         except:
             cls.tearDownClass()
             raise

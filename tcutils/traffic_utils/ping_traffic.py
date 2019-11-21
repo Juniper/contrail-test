@@ -23,25 +23,23 @@ class Ping:
     def __init__(self,
         sender_vm_fixture,
         host,
-        *args,
-        **kwargs
         ):
         self.logger = sender_vm_fixture.logger
         self.sender_vm_fixture = sender_vm_fixture
         self.host = host
-        self.args_string = self.get_cmd_args(**kwargs)
         self.rnd_str = get_random_name()
         self.log_file = result_file + '_' + self.rnd_str + '.log'
         self.result_file = result_file + '_' + self.rnd_str + '.result'
-        self.ping_cmd = 'ping'
         self.pid_file = '/tmp/ping_%s.pid' %(self.rnd_str)
+        self.ping_cmd = 'ping'
         if is_v6(self.host):
             self.ping_cmd = 'ping6'
 
-    def start(self, wait=True):
+    def start(self, wait=False, **kwargs):
         '''
         if c is not passed as argument to ping, 'wait' must be False
         '''
+        self.args_string = self.get_cmd_args(**kwargs)
         cmd = '%s %s %s 2>%s 1>%s' % (self.ping_cmd, self.args_string,
             self.host, self.log_file, self.result_file)
         self.logger.info('Starting %s on %s, args: %s' % (self.ping_cmd,

@@ -381,7 +381,7 @@ class DisablePolicyEcmp(BaseVrouterTest):
         assert self.verify_traffic_for_ecmp(vm1_fixture,
                             [vm2_fixture,vm3_fixture], static_ip)
 
-        (stats, ping_log) = self.stop_ping(ping_h)
+        stats = self.stop_ping(ping_h)
         assert stats['loss'] == '0', ('Ping loss seen after disabling policy with active flow')
 
     @test.attr(type=['dev_reg'])
@@ -444,7 +444,7 @@ class DisablePolicyEcmp(BaseVrouterTest):
         self.remove_sg_from_vms(vm_fixtures)
         #Enable the policy now, some ping loss should be seen now
         self.disable_policy_for_vms(vm_fixtures, disable=False)
-        (stats, ping_log) = self.stop_ping(ping_h)
+        stats = self.stop_ping(ping_h)
         assert stats['loss'] != '0', ('Ping loss not seen after enabling policy with active flow')
 
     @test.attr(type=['dev_reg'])
@@ -504,8 +504,7 @@ class DisablePolicyEcmp(BaseVrouterTest):
         stats = ping_h.get_stats()
         assert int(stats['received']) != 0, ('Ping failed without SG even when policy disabled')
 
-        (stats, ping_log) = self.stop_ping(ping_h)
-        assert int(stats['loss']) != 100, ('Ping failed without SG even when policy disabled')
+        self.stop_ping(ping_h)
 
 class DisablePolicy(BaseVrouterTest, VerifySvcChain):
 
