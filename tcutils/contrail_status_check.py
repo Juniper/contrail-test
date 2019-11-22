@@ -47,11 +47,12 @@ class ContrailStatusChecker(object):
 
     def wait_till_contrail_cluster_stable(self, nodes=None, roles=None,
             services=None, delay=10, tries=30, expectation=True,
-            expected_state=None, keyfile=None, certfile=None, cacert=None):
+            expected_state=None, keyfile=None, certfile=None, cacert=None,
+            refresh=False):
         exp = 'up' if expectation else 'down'
         for i in range(0, tries):
             status_dict = contrail_status(self.inputs, nodes, roles, services,
-                keyfile=keyfile, certfile=certfile, cacert=cacert)
+                keyfile=keyfile, certfile=certfile, cacert=cacert, refresh=refresh)
             failed_services = self._get_failed_services(status_dict)
             if (failed_services and expectation) or (not expectation and not failed_services):
                 self.inputs.logger.debug('%s'%failed_services)
