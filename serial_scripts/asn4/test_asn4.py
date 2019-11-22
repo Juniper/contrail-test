@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import test
 import uuid
 import re
+import copy
 from .base import ASN4Base
 from tcutils.control.cn_introspect_utils import *
 from tcutils.wrappers import preposttest_wrapper
@@ -340,7 +341,7 @@ class TestAsn4(ASN4Base, BaseBGPaaS, LocalASBase):
                 continue
 
             flap_count_init1 = self.get_bgp_router_flap_count(router_name)
-            router_params = device[1]
+            router_params = copy.deepcopy(device[1])
 
             single_mx_bgp_router = True if len(
                 mx_control_ip_address) == 1 else False
