@@ -72,6 +72,24 @@
     },
     {
       "key": {
+        "uuid": "c4838749_4962d092",
+        "filename": "common/contrail_services.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 278
+      },
+      "writtenOn": "2019-11-22T02:15:26Z",
+      "side": 1,
+      "message": "Hi Sunil, \nAlso talked this change owner Senthil who is okay to add verifications for \"configdb-nodemgr\" if that works fine.   As such I verified it works fine on Openshift deployment and if you could also verify this working fine on your K8s deployment, Please integrate this changes only if it also works your \"K8s deployment\"",
+      "parentUuid": "96a605d2_d1a89d49",
+      "revId": "60facc8290dc5fe943e90ffd6af83b03f4f84918",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "52bffcec_91672e84",
         "filename": "common/contrail_services.py",
         "patchSetId": 2
