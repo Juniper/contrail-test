@@ -482,6 +482,9 @@ class TestInputs(object):
             roles.append('webui')
         if host_ip in self.kube_manager_ips or host_data_ip in self.kube_manager_control_ips:
             roles.append('kubernetes')
+        for r in ['analytics_snmp', 'analytics_alarm']:
+            if r in self.host_data[host]['roles']:
+                roles.append(r)
         return roles
 
     def get_prouter_rb_roles(self, name):
