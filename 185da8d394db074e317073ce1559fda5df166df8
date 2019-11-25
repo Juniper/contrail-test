@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "80cfab3a_8a02e215",
+        "filename": "common/k8s/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1280,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-11-25T06:42:48Z",
+      "side": 1,
+      "message": "This method seems to be unused, do you intend to use it in future?",
+      "revId": "185da8d394db074e317073ce1559fda5df166df8",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "57021e27_4c35278e",
+        "filename": "common/k8s/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1324,
+      "author": {
+        "id": 128
+      },
+      "writtenOn": "2019-11-25T06:42:48Z",
+      "side": 1,
+      "message": "This method seems to be unused, do you intend to use it in future?",
+      "revId": "185da8d394db074e317073ce1559fda5df166df8",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
+    }
+  ]
+}
