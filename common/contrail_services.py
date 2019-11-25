@@ -49,6 +49,9 @@ _CONTRAIL_SERVICES_CONTAINER_MAP = {
     'query-engine': ['analytics_query-engine', 'contrail-query-engine', 'analytics_queryengine',
                      'analytics_database_query-engine', 'analytics_database_queryengine'],
     'collector': ['analytics_collector', 'contrail-collector'],
+    'snmp-collector': ['analytics_snmp_snmp-collector'],
+    'snmp-topology': ['analytics_snmp_topology'],
+    'alarmgen': ['analytics_alarm_alarm-gen'],
     'agent-dpdk': ['agent-dpdk'],
     'agent': ['contrail-agent', 'vrouter-agent', 'contrail-vrouter-agent', 'vrouter_agent'],
     'webui': ['webui_web', 'contrail-webui_'],
@@ -104,6 +107,8 @@ CONTRAIL_PODS_SERVICES_MAP = {
     'analytics-database' : ['analytics-cassandra',
                             'analyticsdb-nodemgr',
                             'query-engine'],
+    'analytics_snmp': ['snmp-collector', 'snmp-topology'],
+    'analytics_alarm': ['alarmgen'],
     'webui' : ['webui', 'webui-middleware', 'redis'],
     'kubernetes' : ['contrail-kube-manager'],
 }
