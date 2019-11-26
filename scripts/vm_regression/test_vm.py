@@ -1196,7 +1196,6 @@ class TestBasicVMVN4(BaseVnVmTest):
     def tearDownClass(cls):
         super(TestBasicVMVN4, cls).tearDownClass()
 
-    @test.attr(type=['sanity', 'vcenter'])
     @preposttest_wrapper
     @skip_because(orchestrator = 'vcenter',address_family = 'v6')
     def test_traffic_bw_vms_diff_pkt_size_w_chksum(self):
@@ -1212,10 +1211,10 @@ class TestBasicVMVN4(BaseVnVmTest):
         # Get all compute host
         host_list = self.connections.orch.get_hosts()
         vm1_fixture = self.create_vm(vn_fixture=vn_fixture,
-            image_name='cirros-traffic',
+            image_name='ubuntu-traffic',
             node_name=host_list[0])
         vm2_fixture = self.create_vm(vn_fixture=vn_fixture,
-            image_name='cirros-traffic',
+            image_name='ubuntu-traffic',
             node_name=host_list[-1])
 
         assert vm1_fixture.wait_till_vm_is_up()
@@ -1233,13 +1232,7 @@ class TestBasicVMVN4(BaseVnVmTest):
         dpi = 9100
         proto = 'udp'
         packet_sizes = [40, 64, 254, 748, 1350]
-        cmd_to_increase_mtu = ['ifconfig eth0 mtu 16436']
         for packet_size in packet_sizes:
-            if packet_size > 1400:
-                self.logger.info('Increasing the MTU of the eth0 of VM')
-                vm1_fixture.run_cmd_on_vm(
-                    cmds=cmd_to_increase_mtu, as_sudo=True)
-                vm2_fixture.run_cmd_on_vm(cmds=cmd_to_increase_mtu, as_sudo=True)
             self.logger.info("-" * 80)
             self.logger.info("PACKET SIZE = %sB" % packet_size)
             self.logger.info("-" * 80)
