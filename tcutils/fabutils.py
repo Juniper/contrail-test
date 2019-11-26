@@ -2,6 +2,7 @@ from fabric.operations import get, put, sudo, local
 from fabric.api import run, env
 from fabric.exceptions import CommandTimeout, NetworkError
 from fabric.contrib.files import exists
+from fabric import sftp
 
 from fabric.context_managers import settings, hide, cd
 from fabric import state as fab_state
@@ -69,6 +70,7 @@ class ContrailHostConnectionCache(HostConnectionCache):
         return dict.__contains__(self, key)
 
 fab_state.connections = ContrailHostConnectionCache()
+sftp.connections = fab_state.connections
 
 def remote_cmd(host_string, cmd, password=None, gateway=None,
                gateway_password=None, with_sudo=False, timeout=120,

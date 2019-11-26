@@ -531,9 +531,9 @@ class VerifyIntfMirror(VerifySvcMirror):
             assert result, msg
 
         if sub_intf:
-            src_vm_ip = src_port.obj['fixed_ips'][0]['ip_address']
-            dst_vm_ip = dst_port.obj['fixed_ips'][0]['ip_address']
-            analyzer_vm_ip = analyzer_port.obj['fixed_ips'][0]['ip_address']
+            src_vm_ip = src_port.get_ip_addresses()[0]
+            dst_vm_ip = dst_port.get_ip_addresses()[0]
+            analyzer_vm_ip = analyzer_port.get_ip_addresses()[0]
         else:
             src_vm_ip = src_vm_fixture.get_vm_ips(src_vn_fq_name)[0]
             dst_vm_ip = dst_vm_fixture.get_vm_ips(dst_vn_fq_name)[0]
