@@ -102,6 +102,7 @@ class VncLibFixture(fixtures.Fixture):
             self.inputs.apicafile if self.inputs else None
         self.authn_url = self.inputs.authn_url if self.inputs else \
                          kwargs.get('authn_url', None)
+        self.timeout = kwargs.get('timeout',60)
         if self.connections:
             self.logger = self.connections.logger
             self.project_name = self.connections.project_name
@@ -155,7 +156,8 @@ class VncLibFixture(fixtures.Fixture):
                               apicertfile=self.apicertfile,
                               apikeyfile=self.apikeyfile,
                               apicafile=self.apicafile,
-                              auth_url=self.authn_url)
+                              auth_url=self.authn_url,
+                              timeout=self.timeout)
             if self.orchestrator == 'openstack':
                 self.auth_client = OpenstackAuth(
                                     self.username,
