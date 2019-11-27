@@ -16,6 +16,23 @@
       "revId": "838b597e34ba6b432bb9745f70cb0913f4174c32",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "92960b6c_e0753303",
+        "filename": "common/servicechain/config.py",
+        "patchSetId": 10
+      },
+      "lineNbr": 51,
+      "author": {
+        "id": 126
+      },
+      "writtenOn": "2019-11-27T04:58:44Z",
+      "side": 0,
+      "message": "Same here... There are tests which depends upon the init call.",
+      "revId": "838b597e34ba6b432bb9745f70cb0913f4174c32",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": true
     }
   ]
 }
