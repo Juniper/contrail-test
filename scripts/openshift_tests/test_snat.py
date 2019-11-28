@@ -68,7 +68,6 @@ class TestSNAT(BaseK8sTest):
         return (client1, client2, client3)
     #end setup_namespaces_pods_for_snat_test
 
-    @test.attr(type=['openshift_1'])
     @preposttest_wrapper
     def test_isolated_pod_external_reachability_with_snat_enabled(self):
         """
