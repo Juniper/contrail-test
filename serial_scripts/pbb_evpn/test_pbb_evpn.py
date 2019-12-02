@@ -124,11 +124,11 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
         # Pinging all the VMIs
         for src_vm_fixture in vm_fixtures.values():
             for vmi_fixture in vmi_fixtures.values():
-                vmi_ip = vmi_fixture.obj['fixed_ips'][0]['ip_address']
+                vmi_ip = vmi_fixture.get_ip_addresses()[0]
                 try:
                     socket.inet_aton(vmi_ip)
                 except Exception as e:
-                    vmi_ip = vmi_fixture.obj['fixed_ips'][1]['ip_address']
+                    vmi_ip = vmi_fixture.get_ip_addresses()[1]
                 assert src_vm_fixture.ping_with_certainty(vmi_ip, count=2)
 
         # Send Traffic
@@ -321,7 +321,7 @@ class TestPbbEvpnMacLearning(PbbEvpnTestBase):
         # Traffic
         # Pinging all the VMIs as per defined streams in traffic
         for stream in traffic.values():
-            vmi_ip = vmi_fixtures[stream['dst_vmi']].obj['fixed_ips'][0]['ip_address']
+            vmi_ip = vmi_fixtures[stream['dst_vmi']].get_ip_addresses()[0]
             assert vm_fixtures[stream['src']].ping_with_certainty(vmi_ip)
 
         # Send Traffic
@@ -431,11 +431,11 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
         # Pinging all the VMIs
         for src_vm_fixture in vm_fixtures.values():
             for vmi_fixture in vmi_fixtures.values():
-                vmi_ip = vmi_fixture.obj['fixed_ips'][0]['ip_address']
+                vmi_ip = vmi_fixture.get_ip_addresses()[0]
                 try:
                     socket.inet_aton(vmi_ip)
                 except Exception as e:
-                    vmi_ip = vmi_fixture.obj['fixed_ips'][1]['ip_address']
+                    vmi_ip = vmi_fixture.get_ip_addresses()[1]
                 assert src_vm_fixture.ping_with_certainty(vmi_ip)
 
         # Send Traffic
@@ -488,11 +488,11 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
         # Pinging all the VMIs
         for src_vm_fixture in vm_fixtures.values():
             for vmi_fixture in vmi_fixtures.values():
-                vmi_ip = vmi_fixture.obj['fixed_ips'][0]['ip_address']
+                vmi_ip = vmi_fixture.get_ip_addresses()[0]
                 try:
                     socket.inet_aton(vmi_ip)
                 except Exception as e:
-                    vmi_ip = vmi_fixture.obj['fixed_ips'][1]['ip_address']
+                    vmi_ip = vmi_fixture.get_ip_addresses()[1]
                 assert src_vm_fixture.ping_with_certainty(vmi_ip)
 
         # Send Traffic
@@ -571,11 +571,11 @@ class TestPbbEvpnMacAging(PbbEvpnTestBase):
         # Pinging all the VMIs
         for src_vm_fixture in vm_fixtures.values():
             for vmi_fixture in vmi_fixtures.values():
-                vmi_ip = vmi_fixture.obj['fixed_ips'][0]['ip_address']
+                vmi_ip = vmi_fixture.get_ip_addresses()[0]
                 try:
                     socket.inet_aton(vmi_ip)
                 except Exception as e:
-                    vmi_ip = vmi_fixture.obj['fixed_ips'][1]['ip_address']
+                    vmi_ip = vmi_fixture.get_ip_addresses()[1]
                 assert src_vm_fixture.ping_with_certainty(vmi_ip)
 
         # Send Traffic
@@ -656,11 +656,11 @@ class TestPbbEvpnMacMove(PbbEvpnTestBase):
         # Pinging all the VMIs
         for src_vm_fixture in vm_fixtures.values():
             for vmi_fixture in vmi_fixtures.values():
-                vmi_ip = vmi_fixture.obj['fixed_ips'][0]['ip_address']
+                vmi_ip = vmi_fixture.get_ip_addresses()[0]
                 try:
                     socket.inet_aton(vmi_ip)
                 except Exception as e:
-                    vmi_ip = vmi_fixture.obj['fixed_ips'][1]['ip_address']
+                    vmi_ip = vmi_fixture.get_ip_addresses()[1]
                 assert src_vm_fixture.ping_with_certainty(vmi_ip)
 
         # Send Traffic
@@ -736,11 +736,11 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         # Pinging all the VMIs
         for src_vm_fixture in vm_fixtures.values():
             for vmi_fixture in vmi_fixtures.values():
-                vmi_ip = vmi_fixture.obj['fixed_ips'][0]['ip_address']
+                vmi_ip = vmi_fixture.get_ip_addresses()[0]
                 try:
                     socket.inet_aton(vmi_ip)
                 except Exception as e:
-                    vmi_ip = vmi_fixture.obj['fixed_ips'][1]['ip_address']
+                    vmi_ip = vmi_fixture.get_ip_addresses()[1]
                 assert src_vm_fixture.ping_with_certainty(vmi_ip)
 
         #Disable Mac learning in BD
@@ -805,11 +805,11 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         # Pinging all the VMIs
         for src_vm_fixture in vm_fixtures.values():
             for vmi_fixture in vmi_fixtures.values():
-                vmi_ip = vmi_fixture.obj['fixed_ips'][0]['ip_address']
+                vmi_ip = vmi_fixture.get_ip_addresses()[0]
                 try:
                     socket.inet_aton(vmi_ip)
                 except Exception as e:
-                    vmi_ip = vmi_fixture.obj['fixed_ips'][1]['ip_address']
+                    vmi_ip = vmi_fixture.get_ip_addresses()[1]
                 assert src_vm_fixture.ping_with_certainty(vmi_ip)
 
         # Send Traffic
@@ -987,7 +987,7 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         # Traffic
         # Pinging all the VMIs as per defined streams in traffic
         for stream in traffic.values():
-            vmi_ip = vmi_fixtures[stream['dst_vmi']].obj['fixed_ips'][0]['ip_address']
+            vmi_ip = vmi_fixtures[stream['dst_vmi']].get_ip_addresses()[0]
             assert vm_fixtures[stream['src']].ping_with_certainty(vmi_ip)
 
         # Send Traffic
@@ -1069,11 +1069,11 @@ class TestPbbEvpnBridgeDomainConfig(PbbEvpnTestBase):
         # Pinging all the VMIs
         for src_vm_fixture in vm_fixtures.values():
             for vmi_fixture in vmi_fixtures.values():
-                vmi_ip = vmi_fixture.obj['fixed_ips'][0]['ip_address']
+                vmi_ip = vmi_fixture.get_ip_addresses()[0]
                 try:
                     socket.inet_aton(vmi_ip)
                 except Exception as e:
-                    vmi_ip = vmi_fixture.obj['fixed_ips'][1]['ip_address']
+                    vmi_ip = vmi_fixture.get_ip_addresses()[1]
                 assert src_vm_fixture.ping_with_certainty(vmi_ip)
 
         #Verification for adding BD with ISID 0 to VMI should fail
