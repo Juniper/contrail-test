@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "642ad38f_8bb5b2f9",
+        "filename": "common/k8s/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1280,
+      "author": {
+        "id": 278
+      },
+      "writtenOn": "2019-12-02T20:00:13Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "80cfab3a_8a02e215",
+      "revId": "185da8d394db074e317073ce1559fda5df166df8",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "57021e27_4c35278e",
         "filename": "common/k8s/base.py",
         "patchSetId": 1
@@ -33,6 +51,24 @@
       "revId": "185da8d394db074e317073ce1559fda5df166df8",
       "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "0ecb1b4b_bf31a83e",
+        "filename": "common/k8s/base.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 1324,
+      "author": {
+        "id": 278
+      },
+      "writtenOn": "2019-12-02T20:00:13Z",
+      "side": 1,
+      "message": "Ack",
+      "parentUuid": "57021e27_4c35278e",
+      "revId": "185da8d394db074e317073ce1559fda5df166df8",
+      "serverId": "c72cd27d-1743-4a55-84a4-cd13b8400c52",
+      "unresolved": false
     }
   ]
 }
