@@ -174,7 +174,8 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
                 continue
             except EOFError:
                 time.sleep(1)
-                output = _run(cmd, timeout=timeout, pty=not as_daemon, shell=shell)
+                tries -= 1
+                continue
             if output and 'Fatal error' in output:
                 tries -= 1
                 time.sleep(5)
