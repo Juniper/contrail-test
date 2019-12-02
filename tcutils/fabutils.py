@@ -174,7 +174,12 @@ def remote_cmd(host_string, cmd, password=None, gateway=None,
                 continue
             except EOFError:
                 time.sleep(1)
-                output = _run(cmd, timeout=timeout, pty=not as_daemon, shell=shell)
+                try:
+                    output = _run(cmd, timeout=timeout, pty=not as_daemon, shell=shell)
+                except (CommandTimeout, NetworkError, SystemExit) as e:
+                    tries -= 1
+                    time.sleep(5)
+                    continue
             if output and 'Fatal error' in output:
                 tries -= 1
                 time.sleep(5)
