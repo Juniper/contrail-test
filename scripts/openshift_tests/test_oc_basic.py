@@ -17,7 +17,7 @@ class TestOcBasic(BaseK8sTest):
           3. Verify contrail-status are active for all contrail processes
         '''
         self.logger.info('Verify status of daemonsets')
-        if not self.verify_daemonset_status(namespace='kube-system'):
+        if not self.verify_daemonset_status(namespace='contrail-system'):
             daemonset_status = self.get_daemonset_status()
             self.logger.debug('Daemonset status information: ')
             self.logger.debug(daemonset_status)
@@ -27,10 +27,21 @@ class TestOcBasic(BaseK8sTest):
         self.logger.info('Verifyng status of pods')
         err_msg = "One of more pods not in Running state"
         assert self.verify_pods_status(namespace='kube-system'), err_msg
+        assert self.verify_pods_status(namespace='contrail-system'), err_msg
+        assert self.verify_pods_status(namespace='default'), err_msg
+        assert self.verify_pods_status(namespace='kube-proxy-and-dns'), err_msg
+        assert self.verify_pods_status(namespace='kube-service-catalog'), err_msg
+        assert self.verify_pods_status(namespace='openshift-console'), err_msg
+        assert self.verify_pods_status(namespace='openshift-infra'), err_msg
+        assert self.verify_pods_status(namespace='openshift-logging'), err_msg
+        assert self.verify_pods_status(namespace='openshift-metrics-server'), err_msg
+        assert self.verify_pods_status(namespace='openshift-monitoring'), err_msg
+        assert self.verify_pods_status(namespace='openshift-node'), err_msg
+        assert self.verify_pods_status(namespace='openshift-template-service-broker'), err_msg
+        assert self.verify_pods_status(namespace='openshift-web-console'), err_msg
+        assert self.verify_pods_status(namespace='openshift-ansible-service-broker'), err_msg
 
         self.logger.info('Checking contrail status')
         assert self.inputs.verify_state(),'contrail-status \
             is not good,some processess are already down'
     # end test_oc_basic_sanity 
-
-
