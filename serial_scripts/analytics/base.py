@@ -495,7 +495,7 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
             select_fields=['T'],
             where_clause=query,
             session_type='client')
-        if len(res) != 5:
+        if len(res) != 3:
             self.logger.error('Session sample client returned %s not expected'%res)
             result = result and False
         self.logger.debug(res)
@@ -509,7 +509,7 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
             select_fields=['T'],
             where_clause=query,
             session_type='server')
-        if len(res) != 5:
+        if len(res) != 3:
             self.logger.error('Session sample server returned %s not expected'%res)
             result = result and False
         self.logger.debug(res)
@@ -523,7 +523,7 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
             select_fields=['vn','remote_vn','sample_count'],
             where_clause=query,
             session_type='client')
-        if len(res) and res[0].get('sample_count') !=5:
+        if len(res) and res[0].get('sample_count') !=3:
             self.logger.error('Session sample count returned %s not expected'%res)
             result = result and False
         self.logger.debug(res)
@@ -546,7 +546,7 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
                         'reverse_teardown_pkts'],
         where_clause=query,
         session_type="client")
-        if len(res) and (res[0].get('forward_teardown_pkts') != 5 and res[0].get('reverse_teardown_pkts') != 5):
+        if len(res) and (res[0].get('forward_teardown_pkts') != 3 and res[0].get('reverse_teardown_pkts') != 3):
            self.logger.error('Teardown fields were missing in the result')
            result = result and False
         self.logger.debug(res)
@@ -559,7 +559,7 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
             select_fields=['vn','remote_vn','sample_count'],
             where_clause=query,
             session_type='client')
-        if len(res) and res[0].get('sample_count') !=6:
+        if len(res) and res[0].get('sample_count') !=4:
             self.logger.error('Session sample count returned %s not expected'%res)
             result = result and False
         
@@ -573,7 +573,7 @@ class AnalyticsBaseTest(test_v1.BaseTestCase_v1):
             where_clause=query,
             session_type='server')
         
-        if len(res) and res[0].get('sample_count') !=6:
+        if len(res) and res[0].get('sample_count') !=4:
             self.logger.error('Session sample count returned %s not expected'%res)
             result = result and False
         self.logger.debug(res)

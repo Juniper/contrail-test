@@ -161,9 +161,9 @@ class VcenterOrchestrator(Orchestrator):
                 
 
     def get_default_image(self,image_name):
-        if (image_name == 'ubuntu' or  image_name == 'cirros' or image_name == 'cirros-0.4.0'):
+        if (image_name == 'ubuntu' or  image_name == 'cirros' ):
              return 'vcenter_tiny_vm'
-        if image_name == 'cirros-traffic':
+        if image_name == 'cirros-traffic' or image_name == 'cirros-0.4.0':
             return 'ubuntu-traffic'
         else:
             return image_name
