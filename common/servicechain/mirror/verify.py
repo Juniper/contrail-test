@@ -53,9 +53,9 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         svm = self.get_svms_in_si(si_fixture)
         for svm_name, (session, pcap) in sessions.items():
             if proto == 'icmp':
-                count = 5
+                count = 3
                 if replies:
-                    count += 5
+                    count += 3
             elif proto == 'udp':
                 sport = 8001
                 dport = 9001
