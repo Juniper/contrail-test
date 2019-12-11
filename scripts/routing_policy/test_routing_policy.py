@@ -123,7 +123,10 @@ class TestRP(RPBase, BaseBGPaaS, BaseHC, VerifySvcFirewall):
         vn1_fixture = self.create_vn(vn1_name, vn1_subnets)
         mx_rt = self.inputs.mx_rt
         
-        router_asn = self.inputs.bgp_asn
+        if self.inputs.config['test_configuration'].get('router_asn',False):
+           router_asn = self.inputs.config['test_configuration'].get(‘router_asn’)
+        else:
+           router_asn = self.inputs.bgp_asn
 
         vn1_fixture.add_route_target(routing_instance_name=vn1_fixture.ri_name,
                                     router_asn=router_asn, route_target_number=mx_rt)
