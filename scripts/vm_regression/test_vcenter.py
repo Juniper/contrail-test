@@ -45,7 +45,7 @@ class TestVcenter(BaseVnVmTest):
         '''
         vn_name = get_random_name('vn')
         vn_sub = '12.11.10.0/24'
-        vn_fixture = self.create_vn(vn_name=vn_name, subnets=[vn_sub], enable_dhcp=False)
+        vn_fixture = self.create_vn(vn_name=vn_name, vn_subnets=[vn_sub], enable_dhcp=False)
         assert vn_fixture.verify_on_setup()
 
         vm1 = self.create_vm(vn_fixture=vn_fixture, vm_name=get_random_name('vm'), image_name = 'ubuntu-traffic')
