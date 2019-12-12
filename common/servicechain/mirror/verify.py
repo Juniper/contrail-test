@@ -53,9 +53,9 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         svm = self.get_svms_in_si(si_fixture)
         for svm_name, (session, pcap) in sessions.items():
             if proto == 'icmp':
-                count = 5
+                count = 3
                 if replies:
-                    count += 5
+                    count += 3
             elif proto == 'udp':
                 sport = 8001
                 dport = 9001
@@ -417,7 +417,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         #TODO
         # Check this with Ankit 
         for svm_name, (session, pcap) in sessions.items():
-            count = 10
+            count = 6
             if left_vm_fixture.vm_node_ip != right_vm_fixture.vm_node_ip:
                 count = count * 2
             assert self.verify_icmp_mirror(svm_name, session, pcap, count)
@@ -820,7 +820,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         assert right_vm_fixture.ping_to_ip(
             left_vm_fixture.vm_ip), errmsg
         for svm_name, (session, pcap) in sessions.items():
-            count = 20
+            count = 12 
             self.verify_icmp_mirror(svm_name, session, pcap, count)
 
         self.detach_policy(vn1_policy_fix)
@@ -855,7 +855,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
             if vn1_seq_num[policy_name2] < vn1_seq_num[policy_name1] or vn2_seq_num[policy_name2] < vn2_seq_num[policy_name1]:
                 self.logger.info(
                     '%s is assigned first. Mirroring expected' % policy_name2)
-                count = 20
+                count = 12
             else:
                 self.logger.info(
                     '%s is assigned first. No mirroring expected' % policy_name1)
@@ -889,7 +889,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
             if vn1_seq_num[policy_name2] < vn1_seq_num[policy_name1] or vn2_seq_num[policy_name2] < vn2_seq_num[policy_name1]:
                 self.logger.info(
                     '%s is assigned first. Mirroring expected' % policy_name2)
-                count = 20
+                count = 12
             else:
                 self.logger.info(
                     '%s is assigned first. No mirroring expected' % policy_name1)
@@ -907,7 +907,7 @@ class VerifySvcMirror(ConfigSvcMirror, VerifySvcChain, ECMPVerify):
         assert right_vm_fixture.ping_to_ip(
             left_vm_fixture.vm_ip), errmsg
         for svm_name, (session, pcap) in sessions.items():
-            count = 20
+            count = 12
             assert self.verify_icmp_mirror(svm_name, session, pcap, count)
     # end verify_policy_order_change
 
