@@ -1543,7 +1543,7 @@ class AnalyticsVerification(fixtures.Fixture):
 
             for elem in count_bgp_nodes_dct:
                 expected_bgp_peers = str(
-                    len(self.inputs.bgp_ips) + len(self.inputs.ext_routers) - 1)
+                    len(self.inputs.bgp_ips) + len(self.inputs.ext_routers) + len(self.inputs.as4_ext_routers) - 1)
                 if bgp_host in list(elem.keys()):
                     if (elem[bgp_host] == expected_bgp_peers):
                         self.logger.info("Bgp peers = %s" %

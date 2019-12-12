@@ -68,8 +68,11 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
                         self.vnc_lib.physical_router_update(physical_dev)
         else:
             if self.inputs.ext_routers:
+                as4_ext_router_dict = dict(self.inputs.as4_ext_routers)
                 for i in range(len(list(self.inputs.physical_routers_data.values()))):
                     router_params = list(self.inputs.physical_routers_data.values())[i]
+                    if router_params['name'] in as4_ext_router_dict:
+                        continue
                     if router_params['model'] == 'mx':
                         cmd = []
                         cmd.append('set groups md5_tests routing-options router-id %s' % router_params['mgmt_ip'])
@@ -204,6 +207,12 @@ class Md5Base(VerifySecGroup, ConfigPolicy):
                 for bgpnodes in cn_bgp_entry:
                     bgpnode = str(bgpnodes)
                     for individual_bgp_node in self.inputs.ext_routers:
+                        if individual_bgp_node[0] in bgpnode:
+                            cn_bgp_entry.remove(bgpnodes)
+            if self.inputs.as4_ext_routers:
+                for bgpnodes in cn_bgp_entry:
+                    bgpnode = str(bgpnodes)
+                    for individual_bgp_node in self.inputs.as4_ext_routers:
                         if individual_bgp_node[0] in bgpnode:
                             cn_bgp_entry.remove(bgpnodes)
         str_bgp_entry = str(cn_bgp_entry)

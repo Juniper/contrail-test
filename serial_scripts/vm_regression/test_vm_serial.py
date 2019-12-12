@@ -698,9 +698,12 @@ class TestBasicVMVN0(BaseVnVmTest):
 
         # Check the BGP peering status from the currently active control node
         sleep(5)
+        as4_ext_routers_dict = dict(self.inputs.as4_ext_routers)
         cn_bgp_entry = self.cn_inspect[
             new_active_controller_host_ip].get_cn_bgp_neigh_entry()
         for entry in cn_bgp_entry:
+            if entry['peer'] in as4_ext_routers_dict:
+                continue
             if entry['state'] != 'Established':
                 result = result and False
                 self.logger.error(
