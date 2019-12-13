@@ -18,6 +18,9 @@ _CONTRAIL_SERVICES_OPENSHIFT_CONTAINER_MAP = {
     'analytics-zookeeper': [],
     'analytics-cassandra': ['k8s_contrail-analyticsdb'],
     'stunnel': ['stunnel'],
+    'snmp-collector': ['k8s_contrail-analytics-snmp-collector_contrail-analytics-snmp'],
+    'snmp-topology': ['k8s_contrail-analytics-topology_contrail-analytics-snmp'],
+    'alarmgen': ['k8s_contrail-analytics-alarm-gen_contrail-analytics-alarm'],
     # Vrouter
     'agent-dpdk': [],
     'agent': ['k8s_contrail-vrouter-agent'],
