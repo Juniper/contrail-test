@@ -315,8 +315,9 @@ class TestEvpnt6(TestEvpnt6SPStyle):
         self.connections.vnc_lib_fixture.set_global_igmp_config(igmp_enable=False)
         self.addCleanup(self.connections.vnc_lib_fixture.set_global_igmp_config, igmp_enable=True)
 
-        self.disable_snooping()
-        self.addCleanup(self.enable_snooping)
+        prouters = self.get_associated_prouters(bms_fixture.name)
+        self.disable_snooping(prouters)
+        self.addCleanup(self.enable_snooping, prouters)
 
         time.sleep(40)
 
@@ -347,7 +348,7 @@ class TestEvpnt6(TestEvpnt6SPStyle):
 
         self.logger.info('After disabling IGMP , multcast traffic is sent to all VMs.')
 
-        self.enable_snooping()
+        self.enable_snooping(prouters)
 
 
  
@@ -402,14 +403,8 @@ class TestEvpnt6(TestEvpnt6SPStyle):
                                }
                   }
 
-        result = result & self.send_verify_mcastv2(vm_fixtures, traffic, igmp,vxlan)
-
-        self.configure_igmp_on_vmi(vmi1,False)
-        self.configure_igmp_on_vmi(vmi2,False)
-        self.configure_igmp_on_vmi(vmi3,False)
-        time.sleep(30)
+        result = self.send_verify_mcastv2(vm_fixtures, traffic, igmp,vxlan)
         self.connections.vnc_lib_fixture.set_global_igmp_config(igmp_enable=True)
-        time.sleep(30)
 
     @preposttest_wrapper
     def test_multicast_policy(self):

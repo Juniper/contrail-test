@@ -599,62 +599,28 @@ for i in range(0,$numgrp):
                 assert result, "Error in verifying multicast data traffic on all receivers"
         return result
 
-
-
-    def disable_snooping(self):
-        tors_info_list = self.get_available_devices('tor')
-        tor_params = tors_info_list[0]
-        mgmt_ip=tor_params['mgmt_ip']
-
+    def disable_snooping(self, prouters):
         cmd = []
         cmd.append('deactivate protocols igmp-snooping')
         cmd.append('deactivate groups __contrail_overlay_evpn_ucast_gateway__ protocols igmp-snooping')
+        for prouter in prouters:
+            prouter.netconf.config(stmts=cmd, timeout=120)
 
-        mx_handle = NetconfConnection(host = mgmt_ip)
-        mx_handle.connect()
-        time.sleep(30)
-        cli_output = mx_handle.config(stmts = cmd, timeout = 120)
-        time.sleep(30)
-        mx_handle.disconnect()
-
-    def enable_snooping(self):
-        tors_info_list = self.get_available_devices('tor')
-        tor_params = tors_info_list[0]
-        mgmt_ip=tor_params['mgmt_ip']
-
+    def enable_snooping(self, prouters):
         cmd = []
         cmd.append('activate protocols igmp-snooping')
         cmd.append('activate groups __contrail_overlay_evpn_ucast_gateway__ protocols igmp-snooping')
-        mx_handle = NetconfConnection(host = mgmt_ip)
-        mx_handle.connect()
-        time.sleep(30)
-        cli_output = mx_handle.config(stmts = cmd, timeout = 120)
-        time.sleep(30)
-        mx_handle.disconnect()
+        for prouter in prouters:
+            prouter.netconf.config(stmts=cmd, timeout=120)
     
-
-
-    def get_available_devices(self, device_type,role='leaf'):
-        ''' device_type is one of router/tor
-        '''
-        available = []
-        for (device, device_dict) in self.inputs.physical_routers_data.items():
-            if (device_dict.get('type') == device_type) and (device_dict['role'] == role):
-                available.append(device_dict)
-        return available
-    # end get_available_devices
-
     def configure_igmp_on_vmi(self,vmi,flag):
         '''
             Configure IGMP on VMI:
         '''
-
         vmi_obj = self.vnc_lib.virtual_machine_interface_read(id=vmi)
         vmi_obj.set_igmp_enable(flag)
         self.vnc_h.virtual_machine_interface_update(vmi_obj)
         return True
-
-
 
 class Evpnt6TopologyBase(Evpnt6base):
 

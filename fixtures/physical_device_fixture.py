@@ -245,6 +245,7 @@ class PhysicalDeviceFixture(vnc_api_test.VncLibFixture):
                  host=self.mgmt_ip,
                  username=self.ssh_username,
                  password=self.ssh_password)
+            self.addCleanup(self._netconf.disconnect)
         return self._netconf
 
     def get_config(self):
