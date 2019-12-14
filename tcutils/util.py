@@ -1206,35 +1206,6 @@ def get_hostname_by_ip(host, ip, **kwargs):
         return None
     return output
 
-def execute_ansible_playbook(playbook, playbook_timeout=None, **kwargs):
-    ev = ''
-    for key,value in kwargs.items():
-        ev = ev + ' -e "%s=%s"'%(key, value)
-    cmd = 'ansible-playbook %s %s'%(ev, playbook)
-    if playbook_timeout:
-        cmd = 'timeout %s %s'%(playbook_timeout, cmd)
-    cwd = os.path.dirname(os.path.realpath(__file__))
-    with lcd(cwd+'/ansible'):
-      with settings(warn_only=True):
-        output = local(cmd, capture=True)
-    if output and output.succeeded:
-        return True
-    return False
-
-def execute_junos_command(host, username, password, command):
-    playbook = './junos_command.yml'
-    json_file = '/tmp/%s.json'%host
-    with settings(warn_only=True):
-      with hide('everything'):
-        local('rm -f %s'%json_file)
-    if execute_ansible_playbook(playbook, host=host, username=username,
-                                password=password, command=command,
-                                json=json_file):
-        with open(json_file, 'r') as fd:
-            content = fd.readlines()[0]
-        return ast.literal_eval(content)
-    return False
-
 class SafeList(list):
     def get(self, index, default=None):
         try:
