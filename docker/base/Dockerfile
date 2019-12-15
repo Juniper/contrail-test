@@ -33,5 +33,5 @@ RUN wget -c http://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64
 COPY requirements*.txt /
 RUN pip install -r /requirements.txt
 RUN pip3 install -r /requirements3.txt
-RUN ansible-galaxy install Juniper.junos
+RUN ansible-galaxy install git+https://github.com/Juniper/ansible-junos-stdlib.git,,Juniper.junos
 COPY entrypoint.sh /
