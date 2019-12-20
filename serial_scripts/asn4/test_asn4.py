@@ -160,7 +160,7 @@ class TestAsn4(ASN4Base, BaseBGPaaS, LocalASBase):
             self.connections.vnc_lib.bgp_router_update(
                 phy_router_fixture.bgp_router)
             self.addCleanup(self.reset_bgp_router_asn,
-                            bgp_router_id=phy_router_fixture.bgp_router.uuid, asn=self.inputs.bgp_asn, local_asn=None)
+                            bgp_router_id=phy_router_fixture.bgp_router.uuid, asn=self.inputs.router_asn, local_asn=None)
 
         return phy_router_fixture
 
@@ -451,7 +451,7 @@ class TestAsn4(ASN4Base, BaseBGPaaS, LocalASBase):
                 bgp_obj.set_bgp_router_parameters(router_params)
                 self.connections.vnc_lib.bgp_router_update(bgp_obj)
                 self.addCleanup(self.reset_bgp_router_asn,
-                                bgp_router_id=bgp_obj.uuid,asn=self.inputs.bgp_asn,local_asn=prev_local_asn)
+                                bgp_router_id=bgp_obj.uuid,asn=self.inputs.router_asn,local_asn=prev_local_asn)
 
     def create_vn(self, control_node_config):
 
