@@ -1322,7 +1322,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
         else:
             pods_info = self.connections.k8s_client.read_pods_namespace()
         for pod in pods_info.items:
-            if 'Running' in pod.status.phase or 'Succeeded' in pod.status.phase:
+            if ('running' in pod.status.containerStatuses[0].state.keys()[0]) and ('Running' in pod.status.phase or 'Succeeded' in pod.status.phase):
                 self.logger.info('Pod is in %s' %(pod.status.phase))
                 self.logger.info("Pod {} is in Running or Succeeded state".format(pod.metadata.name))
                 continue
