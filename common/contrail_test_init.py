@@ -1079,6 +1079,12 @@ class ContrailTestInit(object):
             return self.ui_config
         return False
 
+    def get_contrail_status(self, svc, state):
+        '''
+        Check & return List of Hosts for the given Service and State
+        '''
+        return ContrailStatusChecker(self).get_service_status(svc, state)
+
     def verify_state(self):
         result, failed_services = ContrailStatusChecker(self
             ).wait_till_contrail_cluster_stable(tries=1)
