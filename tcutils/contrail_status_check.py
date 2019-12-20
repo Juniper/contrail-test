@@ -47,11 +47,25 @@ class ContrailStatusChecker(object):
     def wait_till_service_down(self, *args, **kwargs):
         return self.wait_till_contrail_cluster_stable(*args, expectation=False, **kwargs)
 
+    def get_service_status(self, svc, state, nodes=None, roles=None,
+            services=None, delay=10, tries=30, expectation=True,
+            expected_state=None, keyfile=None, certfile=None, cacert=None,
+            refresh=False):
+        svchosts = list()
+        status_dict = contrail_status(self.inputs, nodes, roles, services,
+                keyfile=keyfile, certfile=certfile, cacert=cacert, refresh=refresh)
+        for host in status_dict:
+            if status_dict[host].has_key(svc):
+                 if status_dict[host][svc]['status'] == state:
+                    svchosts.append(host)
+        return svchosts
+
     def wait_till_contrail_cluster_stable(self, nodes=None, roles=None,
             services=None, delay=10, tries=30, expectation=True,
             expected_state=None, keyfile=None, certfile=None, cacert=None,
             refresh=False):
         exp = 'up' if expectation else 'down'
+        refresh= 'True' if tries > 1 else 'False'
         for i in range(0, tries):
             status_dict = contrail_status(self.inputs, nodes, roles, services,
                 keyfile=keyfile, certfile=certfile, cacert=cacert, refresh=refresh)
