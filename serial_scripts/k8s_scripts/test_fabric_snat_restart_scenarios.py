@@ -104,6 +104,7 @@ class TestFabricSNATRestarts(BaseK8sTest):
             2.restart the kube manager service
             3.re verify  pods can reach to public network when snat is enabled
         """
+        self.addCleanup(self.invalidate_kube_manager_inspect)
         client1, client2, client3, client4 = self.setup_common_namespaces_pods(isolation=True,
                                                                               ip_fabric_snat=True,
                                                                               ip_fabric_forwarding=True)

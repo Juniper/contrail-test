@@ -519,6 +519,7 @@ class TestNetworkPolicyRestart(BaseK8sTest):
         4. Edit the k8s network policy
         5. Verify that all policy rules are followed
         """
+        self.addCleanup(self.invalidate_kube_manager_inspect)
         pod_list_ns1 = [self.client1_pod_ns1, self.client2_pod_ns1, self.web_pod_ns1, self.ns1]
         pod_list_ns2 = [self.client1_pod_ns2, self.client2_pod_ns2, self.web_pod_ns2, self.ns2]
         pod_list_ns3 = [self.client1_pod_ns3, self.client2_pod_ns3, self.client3_pod_ns3, self.ns3]
