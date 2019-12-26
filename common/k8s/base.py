@@ -383,7 +383,7 @@ class BaseK8sTest(GenericTestBase, vnc_api_test.VncLibFixture):
             return result
     # end do_wget
 
-    @retry(delay=2, tries=15)
+    @retry(delay=2, tries=25)
     def validate_nginx_lb(self,
                           lb_pods,
                           service_ip,
